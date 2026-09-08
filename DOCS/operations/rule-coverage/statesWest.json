@@ -35,7 +35,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             }
           ]
         }
@@ -107,7 +107,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 172
+              "line": 178
             }
           ]
         }
@@ -184,7 +184,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             }
           ]
         }
@@ -257,7 +257,7 @@
           "functions": [
             {
               "name": "StateRetirementExclusion",
-              "line": 25
+              "line": 32
             }
           ]
         },
@@ -266,7 +266,7 @@
           "functions": [
             {
               "name": "retirementExclusion",
-              "line": 41
+              "line": 47
             }
           ]
         }
@@ -349,7 +349,7 @@
           "functions": [
             {
               "name": "StateTaxParams",
-              "line": 33
+              "line": 40
             }
           ]
         },
@@ -358,7 +358,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             }
           ]
         }
@@ -435,11 +435,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             },
             {
               "name": "retirementExclusion",
-              "line": 41
+              "line": 47
             }
           ]
         }
@@ -511,11 +511,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             },
             {
               "name": "retirementExclusion",
-              "line": 41
+              "line": 47
             }
           ]
         }
@@ -597,7 +597,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             }
           ]
         }
@@ -684,7 +684,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             }
           ]
         }
@@ -766,7 +766,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             }
           ]
         }
@@ -829,7 +829,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             }
           ]
         }
@@ -903,7 +903,7 @@
           "functions": [
             {
               "name": "StateRetirementExclusion",
-              "line": 25
+              "line": 32
             }
           ]
         },
@@ -912,7 +912,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             }
           ]
         }
@@ -981,7 +981,7 @@
           "functions": [
             {
               "name": "taxesSocialSecurity",
-              "line": 40
+              "line": 47
             }
           ]
         },
@@ -990,7 +990,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             }
           ]
         }
@@ -1053,7 +1053,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             }
           ]
         }
@@ -1126,7 +1126,7 @@
           "functions": [
             {
               "name": "StateRetirementExclusion",
-              "line": 25
+              "line": 32
             }
           ]
         },
@@ -1135,7 +1135,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             }
           ]
         }
@@ -1203,7 +1203,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             }
           ]
         }
@@ -1266,7 +1266,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             }
           ]
         }
@@ -1364,7 +1364,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             }
           ]
         }
@@ -1465,7 +1465,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             }
           ]
         }
@@ -1528,7 +1528,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             }
           ]
         }
@@ -1595,7 +1595,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             }
           ]
         }
@@ -1606,12 +1606,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3002,
+          "line": 3032,
           "note": null,
           "tests": [
             {
               "title": "subtracts federally taxable Social Security as ORS 316.054 directs",
-              "line": 3014
+              "line": 3044
             }
           ]
         }
@@ -1669,12 +1669,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2959,
+          "line": 2989,
           "note": null,
           "tests": [
             {
               "title": "applies the enacted 4.45% flat rate to ordinary income",
-              "line": 2967
+              "line": 2997
             }
           ]
         }
@@ -1731,7 +1731,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             }
           ]
         }
@@ -1742,12 +1742,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2976,
+          "line": 3006,
           "note": null,
           "tests": [
             {
               "title": "pins the unmodeled Utah Social Security benefits credit",
-              "line": 2995
+              "line": 3025
             }
           ]
         }
@@ -1804,7 +1804,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             }
           ]
         }
@@ -1815,12 +1815,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3196,
+          "line": 3226,
           "note": null,
           "tests": [
             {
               "title": "keeps Washington out of the broad state-income-tax path",
-              "line": 3215
+              "line": 3245
             }
           ]
         }
@@ -1892,7 +1892,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 172
+              "line": 178
             }
           ]
         }
@@ -1951,7 +1951,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 172
+              "line": 178
             }
           ]
         }

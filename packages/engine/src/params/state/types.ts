@@ -12,14 +12,14 @@ import type { FilingStatus, PerStatus } from '../types.js'
 
 /**
  * Marginal bracket: `ratePct` applies to taxable income above `lowerBound`.
- * When `baseTax` is set, it is the cumulative tax already due at that band's
+ * When `baseTax` is set, it is the fixed schedule base applied only above the band's
  * `lowerBound`; entering the band replaces accumulated lower-band tax with
  * that amount, then adds marginal tax on the excess above `lowerBound`.
  */
 export interface StateTaxBracket {
   lowerBound: number
   ratePct: number
-  /** Cumulative tax due at `lowerBound` when a schedule uses a flat base plus marginal rate. */
+  /** Fixed schedule base applied only above `lowerBound`, before marginal tax. */
   baseTax?: number
 }
 

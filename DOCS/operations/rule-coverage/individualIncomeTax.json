@@ -1329,7 +1329,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             }
           ]
         }

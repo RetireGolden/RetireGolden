@@ -37,10 +37,12 @@ Tax year: 2026. Researched 2026-06-13; TY2026 nonbusiness schedule corrected 202
 ## Nonbusiness tax (modeled)
 Ohio gross nonbusiness tax before credits is measured by balance B — Ohio adjusted
 gross income minus taxable business income and applicable taxpayer, spouse, and
-dependent exemptions. The engine models B as ordinary income (plus capital gains
-where applicable) with no standard deduction, no personal exemptions, and no
-business-income split. At B ≤ $26,050 tax is $0; above that, tax is $332 plus
-2.75% of (B − $26,050). This is pre-credit liability only.
+dependent exemptions. In the focused schedule fixtures, with no Social Security,
+retirement adjustment, exemption, credit, or business-income split, ordinaryIncome
+is used as the modeled proxy for B (plus capital gains where applicable) with no
+standard deduction, no personal exemptions, and no business-income split. At B ≤
+$26,050 tax is $0; above that, tax is $332 plus 2.75% of (B − $26,050). This is
+pre-credit liability only.
 
 ## Retirement-income detail
 Ohio has **no standard deduction**; it uses personal/dependent exemptions instead

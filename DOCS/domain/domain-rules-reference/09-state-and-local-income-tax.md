@@ -114,7 +114,7 @@
   (`ri-dot-adv-2025-22-2026-deduction-and-rate-schedule`, [RI.md](../state-tax-research/RI.md); re-read ADV
   each autumn), and Utah S.B. 60 / §59-10-104 4.45% (`ut-code-59-10-104-2026-individual-rate`,
   [UT.md](../state-tax-research/UT.md)). State-only plan fixtures pin the modeled subtotal; whole-return
-  accuracy is not claimed. Calendar-year CA and MN records expire after 2026; later plan years may reuse the
+  accuracy is not claimed. Calendar-year CA, MN, and OH records expire after 2026; later plan years may reuse the
   latest 2026 pack as a planning stand-in.
 - Michigan’s 2026 ordinary retirement deduction is a **combined qualifying** public/private ceiling of
   **$67,610** single/MFS / **$135,220** MFJ (`mi-mcl-206-30-retirement-and-ss`), not a blanket full
