@@ -50,12 +50,15 @@ monotonic and parallel.
 
 ## Simplifications / not modeled
 - The $10,000 exclusion has source-specific sub-limits and ordering rules (e.g. separate treatment for federal/military/state government pensions, each capped); approximated by the single $10k cap.
-- Beginning in tax year 2026 the retirement-income exemption rises to $40,000; we hold the 2025 $10,000 figure for this tax year.
+- Current Oklahoma Tax Commission guidance retains the $10,000-per-person government/other retirement exclusion. HB 2190 proposed $40,000 for tax year 2026, but the official bill history ends with its February 4, 2025 House subcommittee referral and reports no votes. The 2026 pack therefore retains $10,000.
 - HB 2764 (signed 2025) cuts the top rate to 4.5% and consolidates to three brackets effective TY2026; not applied to TY2025.
 - Capital gains: Oklahoma allows a deduction for gains on qualifying Oklahoma-located property / Oklahoma-company stock; we set `capitalGainsAsOrdinary: true` (overstates tax for those specific gains).
 
 ## Citations
-- https://oklahoma.gov/content/dam/ok/en/tax/documents/forms/individuals/current/511-Pkt.pdf — 2025 Form 511 packet: standard deduction $6,350 single; bracket rates 0.25%–4.75%.
+- https://oklahoma.gov/tax/helpcenter/income-tax.html — current Oklahoma Tax Commission guidance: federally included Social Security subtracted; qualifying retirement exclusions up to $10,000 per person (retrieved 2026-09-08).
+- https://www.oklegislature.gov/BillInfo.aspx?Bill=hb2190&Session=2600 — HB 2190 bill history: ends at February 4, 2025 House subcommittee referral; no votes (retrieved 2026-09-08).
+- https://www.oklegislature.gov/cf_pdf/2025-26%20int/hb/HB2190%20int.pdf — HB 2190 introduced bill (proposal only): source of proposed $40,000 cap and proposed January 1, 2026 effective date; not enacted (retrieved 2026-09-08).
+- https://oklahoma.gov/content/dam/ok/en/tax/documents/forms/individuals/current/511-Pkt.pdf — 2025 Form 511 packet: Schedule 511-A line 2 Social Security subtraction; lines 5 and 6 coordinated $10,000 retirement exclusion; standard deduction $6,350 single; bracket rates 0.25%–4.75%.
 - https://www.tax-brackets.org/oklahomataxtable/married-filing-jointly — 2025 single and MFJ bracket thresholds.
 - https://www.law.cornell.edu/regulations/oklahoma/OAC-710-50-15-49 — $10,000 retirement-income deduction.
 - https://smartasset.com/retirement/oklahoma-retirement-taxes — Social Security exempt; $10,000 per-person retirement exclusion.

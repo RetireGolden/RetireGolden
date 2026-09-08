@@ -2092,32 +2092,6 @@ const CT_SS_OTHER_INCOME = 40_000
 const CT_SS_BENEFITS = 40_000
 const CT_FEDERALLY_TAXABLE_SS = 26_600
 
-describeRule('ct-cgs-12-701-20-b-social-security-retirement', {
-  readings: {
-    lowIncomeSocialSecurityFullySubtracted: CT_SS_OTHER_INCOME,
-    packLeavesFederallyTaxableSocialSecurityInTheBase: 66_600,
-  },
-  accepted: 'lowIncomeSocialSecurityFullySubtracted',
-  produced: 'packLeavesFederallyTaxableSocialSecurityInTheBase',
-  note: 'low-income Social Security limb',
-}, ({ accepted, produced, readings }) => {
-  const scenario = input({
-    state: 'CT',
-    ordinaryIncome: CT_SS_OTHER_INCOME,
-    ssBenefits: CT_SS_BENEFITS,
-    agesAlive: [70],
-  })
-
-  it('pins the pack’s failure to subtract the low-income federally taxable benefit', () => {
-    expect(computeStateTaxableIncome(pack('CT'), scenario)).toBeCloseTo(produced, 6)
-    expect(computeStateTaxableIncome(pack('CT'), scenario)).not.toBeCloseTo(accepted, 6)
-    // The two readings differ by the authority-derived $26,600 IRC 86 amount,
-    // not by a Connecticut rate or a standard deduction (both are zero here).
-    expect(readings.lowIncomeSocialSecurityFullySubtracted + CT_FEDERALLY_TAXABLE_SS)
-      .not.toBe(accepted)
-  })
-})
-
 // Table 32 is 0% at federal AGI of $100,000 and over. This source pension is
 // $50,000 of a $100,000 AGI, so the statutory base keeps all $100,000; the
 // unconditional pack exemption removes the $50,000 pension instead.
@@ -2126,23 +2100,48 @@ const CT_HIGH_AGI_TOTAL = 100_000
 
 describeRule('ct-cgs-12-701-20-b-social-security-retirement', {
   readings: {
-    highIncomePensionRemainsInTheBase: CT_HIGH_AGI_TOTAL,
-    packUnconditionallySubtractsThePension: 50_000,
+    statutoryTable32AndSection701SS: {
+      lowIncomeSocialSecurityTaxable: CT_SS_OTHER_INCOME,
+      highIncomePensionTaxable: CT_HIGH_AGI_TOTAL,
+    },
+    packUnconditionalRetirementAndTaxableSS: {
+      lowIncomeSocialSecurityTaxable: 66_600,
+      highIncomePensionTaxable: 50_000,
+    },
   },
-  accepted: 'highIncomePensionRemainsInTheBase',
-  produced: 'packUnconditionallySubtractsThePension',
-  note: 'high-income pension limb',
-}, ({ accepted, produced }) => {
-  const scenario = input({
+  accepted: 'statutoryTable32AndSection701SS',
+  produced: 'packUnconditionalRetirementAndTaxableSS',
+}, ({ accepted, produced, readings }) => {
+  const lowIncomeSocialSecurity = input({
+    state: 'CT',
+    ordinaryIncome: CT_SS_OTHER_INCOME,
+    ssBenefits: CT_SS_BENEFITS,
+    agesAlive: [70],
+  })
+  const highIncomePension = input({
     state: 'CT',
     ordinaryIncome: CT_HIGH_AGI_TOTAL,
     privateRetirementIncome: CT_HIGH_AGI_PENSION,
     agesAlive: [70],
   })
 
+  it('pins the pack’s failure to subtract the low-income federally taxable benefit', () => {
+    const observed = computeStateTaxableIncome(pack('CT'), lowIncomeSocialSecurity)
+    expect(observed).toBeCloseTo(produced.lowIncomeSocialSecurityTaxable, 6)
+    expect(observed).not.toBeCloseTo(accepted.lowIncomeSocialSecurityTaxable, 6)
+    // Worksheet: provisional income $60,000 → IRC 86 federally taxable SS
+    // $26,600; federal AGI $66,600 is below Connecticut’s $75,000 gate, so
+    // the statutory base keeps only the $40,000 non-Social-Security income.
+    // The pack instead retains the federally taxable share, so the gap is exactly
+    // the IRC 86 amount.
+    expect(readings.statutoryTable32AndSection701SS.lowIncomeSocialSecurityTaxable
+      + CT_FEDERALLY_TAXABLE_SS).toBe(produced.lowIncomeSocialSecurityTaxable)
+  })
+
   it('pins the pack’s unconditional pension exclusion above the statutory schedule', () => {
-    expect(computeStateTaxableIncome(pack('CT'), scenario)).toBeCloseTo(produced, 6)
-    expect(computeStateTaxableIncome(pack('CT'), scenario)).not.toBeCloseTo(accepted, 6)
+    const observed = computeStateTaxableIncome(pack('CT'), highIncomePension)
+    expect(observed).toBeCloseTo(produced.highIncomePensionTaxable, 6)
+    expect(observed).not.toBeCloseTo(accepted.highIncomePensionTaxable, 6)
   })
 })
 
@@ -2990,28 +2989,83 @@ describeRule('oh-rev-code-5747-02-a-3-c-2026-nonbusiness-rate-schedule', {
   })
 })
 
+const OK_STD_DED = 6_350 // 68 O.S. §2358(E)(2)(g) single standard deduction (2026 pack)
+const OK_OTHER_INCOME = 10_000
+const OK_PRIVATE_RETIREMENT = 25_000
+const OK_CAP_EXCLUSION = 10_000 // enacted Schedule 511-A line 6 cap; proposed H.B. 2190 $40,000 is unenacted
+const OK_SS_FEDERALLY_TAXABLE = 9_600 // provisional income $40,000 → IRC 86 taxable SS
+const OK_CAP_CURRENT_TAXABLE =
+  OK_OTHER_INCOME + OK_PRIVATE_RETIREMENT - OK_CAP_EXCLUSION - OK_STD_DED
+const OK_CAP_PROPOSED_HB2190_TAXABLE = OK_OTHER_INCOME - OK_STD_DED
+const OK_CAP_NO_EXCLUSION_TAXABLE = OK_OTHER_INCOME + OK_PRIVATE_RETIREMENT - OK_STD_DED
+const OK_SS_EXCLUDED_BASE = 20_000 - OK_STD_DED
+const OK_SS_TAXING_COUNTERFACTUAL = 20_000 + OK_SS_FEDERALLY_TAXABLE - OK_STD_DED
+
 describeRule('ok-stat-68-2358-retirement-and-social-security', {
   readings: {
-    sourceFullyExcludesMilitaryRetirement: 0,
-    packAppliesTheTenThousandDollarCap: 3_650,
+    schedule511A: {
+      militaryRetirementTaxable: 0,
+      federallyTaxableSocialSecurityExcludedBase: OK_SS_EXCLUDED_BASE,
+      qualifyingRetirementTenThousandCapBase: OK_CAP_CURRENT_TAXABLE,
+    },
+    packSharedCapApproximation: {
+      militaryRetirementTaxable: 3_650,
+      federallyTaxableSocialSecurityExcludedBase: OK_SS_EXCLUDED_BASE,
+      qualifyingRetirementTenThousandCapBase: OK_CAP_CURRENT_TAXABLE,
+    },
   },
-  accepted: 'sourceFullyExcludesMilitaryRetirement',
-  produced: 'packAppliesTheTenThousandDollarCap',
-  note: 'military-retirement exception to the common cap',
+  accepted: 'schedule511A',
+  produced: 'packSharedCapApproximation',
 }, ({ accepted, produced }) => {
-  // The OTC packet's line A4 is a full exclusion, while the generic pack has
-  // one shared $10,000 cap for a retirement bucket with no military category.
-  const scenario = input({
+  const militaryRetirement = input({
     state: 'OK',
     ordinaryIncome: 20_000,
     publicPensionIncome: 20_000,
     agesAlive: [70],
   })
+  const socialSecurityExclusion = input({
+    state: 'OK',
+    ordinaryIncome: 20_000,
+    ssBenefits: 40_000,
+    agesAlive: [70],
+  })
+  const qualifyingRetirementCap = input({
+    state: 'OK',
+    ordinaryIncome: OK_OTHER_INCOME + OK_PRIVATE_RETIREMENT,
+    privateRetirementIncome: OK_PRIVATE_RETIREMENT,
+    agesAlive: [70],
+  })
 
   it('pins the military exception the generic retirement bucket cannot express', () => {
-    const taxable = computeStateTaxableIncome(pack('OK'), scenario)
-    expect(taxable).toBe(produced)
-    expect(taxable).not.toBe(accepted)
+    // Schedule 511-A line 4: 100% Armed Forces exclusion. The $20,000 military
+    // pension is already inside ordinaryIncome; pack shared $10,000 cap leaves
+    // $20,000 − $10,000 − $6,350.
+    const taxable = computeStateTaxableIncome(pack('OK'), militaryRetirement)
+    expect(taxable).toBe(produced.militaryRetirementTaxable)
+    expect(taxable).not.toBe(accepted.militaryRetirementTaxable)
+  })
+
+  it('subtracts federally taxable Social Security to the extent included under IRC 86', () => {
+    // Schedule 511-A line 2: subtract SS included in federal AGI. Worksheet:
+    // provisional income $40,000 → IRC 86 federally taxable SS $9,600; federal
+    // AGI $29,600. Oklahoma base keeps only $20,000 ordinary − $6,350.
+    const taxable = computeStateTaxableIncome(pack('OK'), socialSecurityExclusion)
+    expect(taxable).toBe(OK_SS_EXCLUDED_BASE)
+    const taxesSS = computeStateTaxableIncome({ ...pack('OK'), taxesSocialSecurity: true }, socialSecurityExclusion)
+    expect(taxesSS).toBe(OK_SS_TAXING_COUNTERFACTUAL)
+    expect(taxesSS).not.toBe(taxable)
+  })
+
+  it('caps ordinary qualifying retirement at Schedule 511-A line 6 $10,000', () => {
+    // Line 6: exclude up to $10,000 of qualifying private-plan retirement, not
+    // to exceed the federally included amount. Worksheet: $35,000 total ordinary
+    // including $25,000 private retirement − $10,000 exclusion − $6,350 standard
+    // deduction = $18,650 Oklahoma taxable income. Proposed unenacted H.B. 2190
+    // would raise the cap to $40,000 ($3,650); omitting any cap leaves $28,650.
+    const taxable = computeStateTaxableIncome(pack('OK'), qualifyingRetirementCap)
+    expect(taxable).toBe(produced.qualifyingRetirementTenThousandCapBase)
+    expect(taxable).not.toBe(OK_CAP_PROPOSED_HB2190_TAXABLE)
+    expect(taxable).not.toBe(OK_CAP_NO_EXCLUSION_TAXABLE)
   })
 })
 
@@ -3190,70 +3244,154 @@ describeRule('ri-gen-laws-44-30-12-social-security-and-pension-modification', {
   })
 })
 
+const VT_STD_SINGLE = 7_400
+const VT_STD_JOINT = 14_850
+// Single mid-band: ordinary $40,000 + SS $30,000 → IRC 86 federally taxable
+// SS $22,350; federal AGI $62,350. §5830e(a)(1)(B) excludes
+// $22,350 × ($65,000 − $62,350) / ($65,000 − $55,000) = $5,922.75, leaving
+// $16,427.25 in the Vermont base → $49,027.25 before brackets.
+const VT_SINGLE_MID_FED_TAXABLE_SS = 22_350
+const VT_SINGLE_MID_AGI = 40_000 + VT_SINGLE_MID_FED_TAXABLE_SS
+const VT_SINGLE_MID_EXCLUDED_SS = VT_SINGLE_MID_FED_TAXABLE_SS
+  * (65_000 - VT_SINGLE_MID_AGI) / (65_000 - 55_000)
+const VT_SINGLE_MID_ACCEPTED = 40_000 + (VT_SINGLE_MID_FED_TAXABLE_SS - VT_SINGLE_MID_EXCLUDED_SS)
+  - VT_STD_SINGLE
+const VT_SINGLE_MID_PRODUCED = 40_000 + VT_SINGLE_MID_FED_TAXABLE_SS - VT_STD_SINGLE
+// Joint mid-band: ordinary $50,000 + SS $35,000 → provisional income $67,500;
+// IRC 86 federally taxable SS min($29,750, $6,000 + 85% × ($67,500 − $44,000))
+// = $25,975; federal AGI $75,975. §5830e(a)(2)(B) excludes
+// $25,975 × ($80,000 − $75,975) / ($80,000 − $70,000) = $10,454.9375 →
+// $50,670.0625 Vermont taxable income.
+const VT_JOINT_MID_FED_TAXABLE_SS = 25_975
+const VT_JOINT_MID_AGI = 50_000 + VT_JOINT_MID_FED_TAXABLE_SS
+const VT_JOINT_MID_EXCLUDED_SS = VT_JOINT_MID_FED_TAXABLE_SS
+  * (80_000 - VT_JOINT_MID_AGI) / (80_000 - 70_000)
+const VT_JOINT_MID_ACCEPTED = 50_000 + (VT_JOINT_MID_FED_TAXABLE_SS - VT_JOINT_MID_EXCLUDED_SS)
+  - VT_STD_JOINT
+const VT_JOINT_MID_PRODUCED = 50_000 + VT_JOINT_MID_FED_TAXABLE_SS - VT_STD_JOINT
+
 describeRule('vt-stat-32-5830e-social-security-inclusion', {
   readings: {
-    sourceExcludesAllBenefitsAtOrBelowFiftyFiveThousandAGI: 20_000 - 7_400,
-    packTaxesTheFederalTaxableShare: 22_200,
+    agency5830eExclusion: {
+      lowAgiFullExclusionTaxable: 20_000 - VT_STD_SINGLE,
+      singleMidBandProportionalTaxable: VT_SINGLE_MID_ACCEPTED,
+      jointMidBandProportionalTaxable: VT_JOINT_MID_ACCEPTED,
+    },
+    packIncludesAllFederalTaxableSS: {
+      lowAgiFullExclusionTaxable: 22_200,
+      singleMidBandProportionalTaxable: VT_SINGLE_MID_PRODUCED,
+      jointMidBandProportionalTaxable: VT_JOINT_MID_PRODUCED,
+    },
   },
-  accepted: 'sourceExcludesAllBenefitsAtOrBelowFiftyFiveThousandAGI',
-  produced: 'packTaxesTheFederalTaxableShare',
+  accepted: 'agency5830eExclusion',
+  produced: 'packIncludesAllFederalTaxableSS',
 }, ({ accepted, produced }) => {
-  // Ordinary income plus the federal taxable benefit is below $55,000, so the
-  // source excludes the whole federal benefit; the pack's boolean includes its
-  // computed 9,600 share, producing 20,000 + 9,600 - 7,400 = 22,200.
-  const scenario = input({ state: 'VT', ordinaryIncome: 20_000, ssBenefits: 40_000 })
+  const lowAgi = input({ state: 'VT', ordinaryIncome: 20_000, ssBenefits: 40_000 })
+  const singleMidBand = input({ state: 'VT', ordinaryIncome: 40_000, ssBenefits: 30_000 })
+  const jointMidBand = input({
+    state: 'VT',
+    filingStatus: 'marriedFilingJointly',
+    ordinaryIncome: 50_000,
+    ssBenefits: 35_000,
+  })
 
   it('pins Vermont\'s complete low-AGI Social Security exclusion', () => {
-    const taxable = computeStateTaxableIncome(pack('VT'), scenario)
-    expect(taxable).toBe(produced)
-    expect(taxable).not.toBe(accepted)
+    // Worksheet: ordinary $20,000 + SS $40,000 → IRC 86 federally taxable SS
+    // $9,600; federal AGI $29,600 ≤ $55,000, so §5830e(a)(1)(A) excludes all
+    // $9,600. Vermont taxable income = $20,000 − $7,400 = $12,600.
+    const taxable = computeStateTaxableIncome(pack('VT'), lowAgi)
+    expect(taxable).toBe(produced.lowAgiFullExclusionTaxable)
+    expect(taxable).not.toBeCloseTo(accepted.lowAgiFullExclusionTaxable, 6)
+  })
+
+  it('pins the single mid-band proportional Social Security exclusion', () => {
+    const taxable = computeStateTaxableIncome(pack('VT'), singleMidBand)
+    expect(taxable).toBeCloseTo(produced.singleMidBandProportionalTaxable, 6)
+    expect(taxable).not.toBeCloseTo(accepted.singleMidBandProportionalTaxable, 6)
+  })
+
+  it('pins the joint mid-band proportional Social Security exclusion', () => {
+    const taxable = computeStateTaxableIncome(pack('VT'), jointMidBand)
+    expect(taxable).toBeCloseTo(produced.jointMidBandProportionalTaxable, 6)
+    expect(taxable).not.toBeCloseTo(accepted.jointMidBandProportionalTaxable, 6)
   })
 })
 
+const VA_STD_DED = 8_750
+const VA_PENSION = 20_000
+const VA_SS_BENEFITS = 30_000
+// SS-adjusted FAGI limb: $56,000 total ordinary including $20,000 private
+// pension + SS $30,000 → provisional income $71,000; IRC 86 federally taxable
+// SS min($25,500, $4,500 + 85% × ($71,000 − $34,000)) = $25,500; federal AGI
+// $81,500. Va. Code §58.1-322.03(5) subtracts gross Title II benefits for
+// adjusted FAGI ($81,500 − $30,000 = $51,500), phasing the $12,000 deduction to
+// $10,500 and yielding $36,750 taxable income. Subtracting only the federally
+// taxable share would leave adjusted FAGI at $56,000, a $6,000 deduction, and
+// $41,250 taxable; using unadjusted FAGI phases the deduction to zero ($47,250).
+const VA_SS_ORDINARY = 56_000
+const VA_SS_FED_TAXABLE = 25_500
+const VA_SS_FAGI = VA_SS_ORDINARY + VA_SS_FED_TAXABLE
+const VA_SS_ADJUSTED_FAGI_GROSS = VA_SS_FAGI - VA_SS_BENEFITS
+const VA_SS_DEDUCTION_STATUTORY = 12_000 - (VA_SS_ADJUSTED_FAGI_GROSS - 50_000)
+const VA_SS_ACCEPTED = VA_SS_ORDINARY - VA_SS_DEDUCTION_STATUTORY - VA_STD_DED
+const VA_SS_PRODUCED = VA_SS_ORDINARY - 12_000 - VA_STD_DED
+const VA_SS_ADJUSTED_FAGI_TAXABLE_ONLY = VA_SS_FAGI - VA_SS_FED_TAXABLE
+const VA_SS_DEDUCTION_TAXABLE_ONLY = 12_000 - (VA_SS_ADJUSTED_FAGI_TAXABLE_ONLY - 50_000)
+const VA_SS_WRONG_TAXABLE_ONLY = VA_SS_ORDINARY - VA_SS_DEDUCTION_TAXABLE_ONLY - VA_STD_DED
+const VA_SS_WRONG_UNADJUSTED = VA_SS_ORDINARY - VA_STD_DED
+
 describeRule('va-code-58-1-322-03-age-deduction-and-social-security', {
   readings: {
-    sourcePhasesTheAgeDeductionToZero: 120_000 - 8_750,
-    packSubtractsTheRetirementCapWithoutThePhaseout: 99_250,
+    statutoryAdjustedFagiPhaseout: {
+      highIncomePhaseoutTaxable: 120_000 - VA_STD_DED,
+      wageOnlyAgeDeductionTaxable: 40_000 - VA_STD_DED - 12_000,
+      socialSecurityAdjustedFagiTaxable: VA_SS_ACCEPTED,
+    },
+    packRetirementCapWithoutPhaseout: {
+      highIncomePhaseoutTaxable: 120_000 - 12_000 - VA_STD_DED,
+      wageOnlyAgeDeductionTaxable: 40_000 - VA_STD_DED,
+      socialSecurityAdjustedFagiTaxable: VA_SS_PRODUCED,
+    },
   },
-  accepted: 'sourcePhasesTheAgeDeductionToZero',
-  produced: 'packSubtractsTheRetirementCapWithoutThePhaseout',
+  accepted: 'statutoryAdjustedFagiPhaseout',
+  produced: 'packRetirementCapWithoutPhaseout',
 }, ({ accepted, produced }) => {
-  // The $120,000 total is above Virginia's $50,000 single threshold, so the
-  // source phase-out leaves no age deduction; the pack subtracts $12,000 from
-  // the private-retirement bucket because the filer is 65 (120,000 - 12,000 -
-  // 8,750 = 99,250).
-  const scenario = input({
+  const highIncome = input({
     state: 'VA',
     ordinaryIncome: 120_000,
     privateRetirementIncome: 20_000,
     agesAlive: [65],
   })
+  const wageOnly = input({ state: 'VA', ordinaryIncome: 40_000, agesAlive: [65] })
+  const socialSecurityAdjusted = input({
+    state: 'VA',
+    ordinaryIncome: VA_SS_ORDINARY,
+    privateRetirementIncome: VA_PENSION,
+    ssBenefits: VA_SS_BENEFITS,
+    agesAlive: [65],
+  })
 
   it('pins the high-income phase-out that the retirement-cap mapping misses', () => {
-    const taxable = computeStateTaxableIncome(pack('VA'), scenario)
-    expect(taxable).toBe(produced)
-    expect(taxable).not.toBe(accepted)
+    // Worksheet: $120,000 total ordinary including $20,000 private pension →
+    // adjusted FAGI above $50,000, so §58.1-322.03(5) phases the $12,000
+    // deduction to zero.
+    const taxable = computeStateTaxableIncome(pack('VA'), highIncome)
+    expect(taxable).toBe(produced.highIncomePhaseoutTaxable)
+    expect(taxable).not.toBe(accepted.highIncomePhaseoutTaxable)
   })
-})
-
-describeRule('va-code-58-1-322-03-age-deduction-and-social-security', {
-  readings: {
-    sourceAllowsTheTwelveThousandDollarWageOnlyDeduction: 40_000 - 8_750 - 12_000,
-    packHasNoRetirementDistributionToSubtract: 31_250,
-  },
-  accepted: 'sourceAllowsTheTwelveThousandDollarWageOnlyDeduction',
-  produced: 'packHasNoRetirementDistributionToSubtract',
-  note: 'wage-only age deduction limb',
-}, ({ accepted, produced }) => {
-  // At $40,000 AGI the source grants the full $12,000 age deduction even with
-  // wages only; the pack has no retirement distribution through which to map
-  // it and therefore leaves 40,000 - 8,750 = 31,250 taxable.
-  const scenario = input({ state: 'VA', ordinaryIncome: 40_000, agesAlive: [65] })
 
   it('pins the opposite direction when an age-65 filer has wages but no modeled pension', () => {
-    const taxable = computeStateTaxableIncome(pack('VA'), scenario)
-    expect(taxable).toBe(produced)
-    expect(taxable).not.toBe(accepted)
+    const taxable = computeStateTaxableIncome(pack('VA'), wageOnly)
+    expect(taxable).toBe(produced.wageOnlyAgeDeductionTaxable)
+    expect(taxable).not.toBe(accepted.wageOnlyAgeDeductionTaxable)
+  })
+
+  it('pins the age deduction against adjusted FAGI after Title II Social Security', () => {
+    const taxable = computeStateTaxableIncome(pack('VA'), socialSecurityAdjusted)
+    expect(taxable).toBe(produced.socialSecurityAdjustedFagiTaxable)
+    expect(taxable).not.toBe(accepted.socialSecurityAdjustedFagiTaxable)
+    expect(taxable).not.toBe(VA_SS_WRONG_TAXABLE_ONLY)
+    expect(taxable).not.toBe(VA_SS_WRONG_UNADJUSTED)
   })
 })
 
