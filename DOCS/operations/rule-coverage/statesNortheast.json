@@ -56,23 +56,23 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2028,
+          "line": 2095,
           "note": "low-income Social Security limb",
           "tests": [
             {
               "title": "pins the pack’s failure to subtract the low-income federally taxable benefit",
-              "line": 2044
+              "line": 2111
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2060,
+          "line": 2127,
           "note": "high-income pension limb",
           "tests": [
             {
               "title": "pins the pack’s unconditional pension exclusion above the statutory schedule",
-              "line": 2076
+              "line": 2143
             }
           ]
         }
@@ -139,20 +139,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
-          "line": 1311,
+          "line": 1310,
           "note": null,
           "tests": [
             {
               "title": "exempts a noncontributory public pension the statute leaves in",
-              "line": 1330
+              "line": 1329
             },
             {
               "title": "taxes a private IRA of the same amount, which is the other bucket",
-              "line": 1339
+              "line": 1338
             },
             {
               "title": "reaches the statute once the public override is dropped",
-              "line": 1349
+              "line": 1348
             }
           ]
         }
@@ -215,16 +215,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2525,
+          "line": 2592,
           "note": null,
           "tests": [
             {
               "title": "deducts Social Security included in federal gross income",
-              "line": 2539
+              "line": 2606
             },
             {
               "title": "would leave the federally taxable share in if the deduction were dropped",
-              "line": 2544
+              "line": 2611
             }
           ]
         }
@@ -497,16 +497,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2742,
+          "line": 2809,
           "note": null,
           "tests": [
             {
               "title": "leaves a New Hampshire retiree with no state base at all",
-              "line": 2763
+              "line": 2830
             },
             {
               "title": "would build a base if Chapter 77 were still in force",
-              "line": 2768
+              "line": 2835
             }
           ]
         }
@@ -573,20 +573,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
-          "line": 1196,
+          "line": 1195,
           "note": null,
           "tests": [
             {
               "title": "grants a $50,000 subtraction to a household over the $150,000 AGI ceiling",
-              "line": 1213
+              "line": 1212
             },
             {
               "title": "reaches the statute once the cap is withheld",
-              "line": 1219
+              "line": 1218
             },
             {
               "title": "under-excludes a single filer below $100,000 of income, in the other direction",
-              "line": 1227
+              "line": 1226
             }
           ]
         }
@@ -896,12 +896,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2960,
+          "line": 3027,
           "note": null,
           "tests": [
             {
               "title": "prices single and joint filers on the TY2026 deduction and schedule",
-              "line": 2975
+              "line": 3042
             }
           ]
         }
@@ -978,34 +978,34 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2987,
+          "line": 3054,
           "note": "Social Security AGI threshold limb",
           "tests": [
             {
               "title": "pins the low-AGI age-qualified Social Security modification",
-              "line": 3002
+              "line": 3069
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3009,
+          "line": 3076,
           "note": "pension ceiling limb",
           "tests": [
             {
               "title": "pins the current pension ceiling rather than the stale pack cap",
-              "line": 3028
+              "line": 3095
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3035,
+          "line": 3102,
           "note": "pension AGI-threshold limb",
           "tests": [
             {
               "title": "pins the opposite direction when the pension AGI test disallows any modification",
-              "line": 3055
+              "line": 3122
             }
           ]
         }
@@ -1088,12 +1088,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3062,
+          "line": 3129,
           "note": null,
           "tests": [
             {
               "title": "pins Vermont's complete low-AGI Social Security exclusion",
-              "line": 3075
+              "line": 3142
             }
           ]
         }

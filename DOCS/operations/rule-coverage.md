@@ -11,17 +11,17 @@ The registry is the machine-checked chain from a rule to its implementation and 
 
 | Metric | Count |
 | --- | ---: |
-| Total rules | 441 |
+| Total rules | 443 |
 | Classification: approximated | 122 |
 | Classification: outOfScope | 75 |
-| Classification: settled | 239 |
+| Classification: settled | 241 |
 | Classification: unsettled | 5 |
-| Volatility: annuallyIndexed | 64 |
+| Volatility: annuallyIndexed | 66 |
 | Volatility: awaitingGuidance | 11 |
 | Volatility: staticStatute | 359 |
 | Volatility: sunsetting | 7 |
 | Federal jurisdiction | 327 |
-| State jurisdiction total | 114 |
+| State jurisdiction total | 116 |
 
 | State jurisdiction | Count |
 | --- | ---: |
@@ -29,7 +29,7 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | AL | 9 |
 | AR | 9 |
 | AZ | 8 |
-| CA | 1 |
+| CA | 2 |
 | CO | 2 |
 | CT | 1 |
 | DC | 1 |
@@ -48,7 +48,7 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | MD | 2 |
 | ME | 2 |
 | MI | 2 |
-| MN | 1 |
+| MN | 2 |
 | MO | 1 |
 | MS | 7 |
 | MT | 2 |
@@ -147,7 +147,7 @@ None.
 | model/planCrossFieldChecks.ts | 2026-09-05 | qualified-annuity start-age ceilings covered; checkAccountCrossFieldRules still directly enforces uncovered Form 8606 basis placement/exclusion on inherited IRAs, qualified-annuity funding from owned traditional funds, QLAC qualification, and other cross-field gates |
 | model/retirementActionAnnualTaxFacts.ts | 2026-09-05 | IRC 219(f)(3) designated post-year contribution window now covered via persistedPlanOwnedNonRothIraAnnualFilingSourceRecordSchema; remaining persistence contracts are opening-basis, completeness, finalization, identity, and safe-cent totals |
 | montecarlo/mortality.ts | 2026-08-29 | Derives q(x) from the period life table registered at longevity/ssaPeriod2022.ts (ssa-table-4c6-period-life-table-vintage); the e(x)-to-q(x) derivation itself is engine math with no separate statutory claim, and this consumer is deliberately not pinned |
-| params/state/data/year2026.ts | 2026-09-07 | de-code-30-1108-standard-deduction names the § 1108 basic and age-65 enforcers for single/MFJ; de-pit-est-2026-qss-standard-deduction-joint-mapper names the QSS standard-deduction approximation; de-code-30-1102-a-14-rate-schedule names the Delaware 5.55% bracket cell and bracketTax; hi-hrs-235-2-4-a-2-f-2026-standard-deduction names the Hawaii TY2026 single/MFJ deduction cell and taxable-income enforcer; ri-dot-adv-2025-22-2026-deduction-and-rate-schedule names the Rhode Island TY2026 single/MFJ deduction and bracket cells plus their taxable-income and bracket enforcers; ut-code-59-10-104-2026-individual-rate names the Utah TY2026 4.45% rate cell and bracketTax. Blindness, itemization, credits, and retirement qualifying-income scope remain partial or unmodelled. Existing law records name this pack, including WV rates and Social Security; residuals include KY aggregate MFJ deduction convention without spouse-allocation record, IA minimum-income/alternate and enhanced-senior conformity omissions, DC August emergency statutory-conformity timing unresolved, ME modeled Maine-AGI proxy / personal exemption / blindness / part-year month approximation, WV personal exemptions / senior any-income / disability / pension-subtype modifications, and MI source qualification / (9)/(10)/(11) elections / pre-1946 public exception / per-person agesAlive proxy versus return-level ceiling. Not complete law coverage. |
+| params/state/data/year2026.ts | 2026-09-07 | ca-ftb-2026-540-es-standard-deduction names the California TY2026 estimated-tax worksheet single/MFJ deduction cells and computeStateTaxableIncome only — retained 2025 Schedule X/Y brackets, continuous lower-income schedule behavior, credits, and whole-return figures remain outside that settled record; mn-dor-2026-rate-schedule-and-standard-deduction names the Minnesota TY2026 single/MFJ deduction and bracket cells plus taxable-income and bracketTax enforcers; mn-stat-290-0132-subd-26-social-security-inclusion remains approximated with zero runtime subtraction (indexed simplified thresholds versus unindexed alternate maxima are source-discriminated in the record, not modeled). de-code-30-1108-standard-deduction names the § 1108 basic and age-65 enforcers for single/MFJ; de-pit-est-2026-qss-standard-deduction-joint-mapper names the QSS standard-deduction approximation; de-code-30-1102-a-14-rate-schedule names the Delaware 5.55% bracket cell and bracketTax; hi-hrs-235-2-4-a-2-f-2026-standard-deduction names the Hawaii TY2026 single/MFJ deduction cell and taxable-income enforcer; ri-dot-adv-2025-22-2026-deduction-and-rate-schedule names the Rhode Island TY2026 single/MFJ deduction and bracket cells plus their taxable-income and bracket enforcers; ut-code-59-10-104-2026-individual-rate names the Utah TY2026 4.45% rate cell and bracketTax. Blindness, itemization, credits, and retirement qualifying-income scope remain partial or unmodelled. Existing law records name this pack, including WV rates and Social Security; residuals include KY aggregate MFJ deduction convention without spouse-allocation record, IA minimum-income/alternate and enhanced-senior conformity omissions, DC August emergency statutory-conformity timing unresolved, ME modeled Maine-AGI proxy / personal exemption / blindness / part-year month approximation, WV personal exemptions / senior any-income / disability / pension-subtype modifications, and MI source qualification / (9)/(10)/(11) elections / pre-1946 public exception / per-person agesAlive proxy versus return-level ceiling. Calendar-year CA and MN records expire after 2026; stateParamsFor may reuse the 2026 pack in later plan years as a stand-in. Not complete law coverage. |
 | params/state/index.ts | 2026-09-05 | conformStateStandardDeduction named by whole-federal and Maine age-addition records; resolves independent age-addition adoption without scaling a state-published basic; unresolved selector contract: years before the earliest published pack receive that earliest pack with no supported-year guard or validity marker — a current-pack historical approximation, not enforcement of per-record effectiveFrom metadata |
 | projection/annualCashFlowCapture.ts | 2026-08-29 | Form 8606 basis, QCD exclusion, annuity and penalty character composition; assembly composes results computed and registered elsewhere and enforces none of them, so no record names it |
 | projection/compare.ts | 2026-09-04 | after-tax estate haircuts incl. taxable step-up registered (irc-1014-a-1-basis-at-death-fair-market-value); owned cross-owner traditional-basis allocation registered on projection/estateTraditionalBasis.ts (irc-408-d-2-estate-household-basis-allocation) with account membership and destination selection here, not in the helper; inherited traditional balance and unavailable inherited-basis interaction remain residual; HSA terminal inclusion base delegated to estateHsaIncome.ts (irc-223-f-8-B-estate-predeath-expense-reduction); terminal zero-haircut spouse destination convention (not rollover or treat-as-own adjudication), charity carve-out, default destination, and other class residuals remain |
@@ -203,16 +203,16 @@ Per-rule payloads are sharded one file per record module under `DOCS/operations/
 | rule-coverage/socialSecurity.json | 49 |
 | rule-coverage/socialSecurityEarnings.json | 3 |
 | rule-coverage/socialSecurityMaritalEligibility.json | 4 |
-| rule-coverage/statesMidwest.json | 29 |
+| rule-coverage/statesMidwest.json | 30 |
 | rule-coverage/statesNortheast.json | 13 |
 | rule-coverage/statesSouthAtlantic.json | 14 |
 | rule-coverage/statesSouthCentral.json | 33 |
-| rule-coverage/statesWest.json | 25 |
+| rule-coverage/statesWest.json | 26 |
 | rule-coverage/transfersAndUnmodeledRegimes.json | 6 |
 
 ## Re-verification due dates
 
-The 25 earliest due dates are shown below (441 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
+The 25 earliest due dates are shown below (443 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
 
 | Rule | Volatility | Verified on | Due on |
 | --- | --- | --- | --- |
@@ -252,18 +252,18 @@ Version 5 is a breaking discriminator for strict version checks: manifest.rules 
 
 ## Quote fidelity
 
-Committed ledger generated at 2026-09-08T03:11:54.090Z over 1267 authority entries (9 fetched live, 332 from cache).
+Committed ledger generated at 2026-09-08T05:56:51.696Z over 1275 authority entries (9 fetched live, 335 from cache).
 
-37 serious, 56 advisory, 1174 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
+37 serious, 56 advisory, 1182 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
 not treated as a CI gate; how to read each verdict: DOCS/operations/quote-fidelity.md.
 
 | Verdict | Class | Count |
 | --- | --- | ---: |
-| ELISION-EXACT | ok | 67 |
+| ELISION-EXACT | ok | 70 |
 | ELISION-PUNCTUATION | advisory | 7 |
-| EXACT | ok | 872 |
+| EXACT | ok | 873 |
 | PDF-NOT-VERIFIABLE | advisory | 7 |
-| PDF-WORD-LEVEL | ok | 235 |
+| PDF-WORD-LEVEL | ok | 239 |
 | PUNCTUATION | advisory | 42 |
 | UNFETCHABLE | serious | 37 |
 

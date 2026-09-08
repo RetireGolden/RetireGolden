@@ -564,6 +564,37 @@ export const westStateRecords = {
   // 40 booklet and the DOR individual-income-tax page (verified 2026-08-28).
   // ---------------------------------------------------------------------------
 
+  'ca-ftb-2026-540-es-standard-deduction': {
+    title: 'California\'s 2026 estimated-tax worksheet lists $5,706/$11,412 standard deductions',
+    statement:
+      'California FTB\'s 2026 estimated-tax worksheet lists a $5,706 standard deduction for single/MFS and $11,412 for MFJ/HOH/QSS. The pack stores those published amounts in its supported single/MFJ deduction cells. Settled only for that deduction instruction and mapping: itemization, credits, unsupported filing-status routing, the separate tax-table calculation, the additional tax above $1 million, final 2026 resident-return figures, and whole-return accuracy are outside this record.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'This record transcribes a 2026 estimated-tax instruction, not a final 2026 resident-return schedule. The record expires after 2026. Because stateParamsFor reuses the latest pack in later plan years, any later-year use is a 2026-pack stand-in rather than a claim that these amounts remain legally current.',
+    jurisdiction: 'state:CA',
+    authority: [{
+      kind: 'formInstruction',
+      citation: 'California FTB, 2026 Form 540-ES Instructions, Estimated Tax Worksheet line 2b',
+      url: 'https://www.ftb.ca.gov/forms/2026/2026-540-es-instructions.html',
+      quotedText:
+        '$5,706 single or married/RDP filing separately … $11,412 married/RDP filing jointly, head of household, or qualifying surviving spouse/RDP',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: 2026,
+    verifiedOn: '2026-09-07',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#CA',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+    ],
+  },
+
   'ca-rtc-17087-social-security-exclusion': {
     title: 'California does not apply IRC 86 to Social Security or Tier 1 Railroad benefits',
     statement:

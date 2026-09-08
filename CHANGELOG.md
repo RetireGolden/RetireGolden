@@ -24,6 +24,33 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   bundle-budget gate now fails if any other chunk statically imports the
   worker entry, matching that entry by basename so `/assets/`, `../`,
   nested, and query-string specifiers cannot fail open.
+- **California and Minnesota 2026 parameter corrections:**
+  aligned the 2026 state pack with primary sources for California's Form 540-ES
+  estimated-tax worksheet standard deduction ($5,706 / $11,412;
+  `ca-ftb-2026-540-es-standard-deduction`) and Minnesota DOR TY2026 single/MFJ
+  deduction ($15,300 / $30,600) and whole-dollar rate bands
+  (`mn-dor-2026-rate-schedule-and-standard-deduction`). California retains 2025
+  Schedule X/Y bracket arrays unchanged; FTB directs the tax table through
+  $100,000 while the engine uses continuous schedules at lower incomes — that
+  behavior is disclosed but is not an FTB table oracle. Minnesota §290.0132
+  subd. 26 Social Security subtraction evidence was corrected
+  (`mn-stat-290-0132-subd-26-social-security-inclusion`); indexed simplified
+  thresholds versus unindexed alternate maxima are source-discriminated, but
+  runtime subtraction remains unimplemented and approximated. Before → after on
+  representative fixtures: CA single/MFJ $20,000 / $40,000 ordinary taxable
+  income $14,460 / $28,920 → $14,294 / $28,588; CA Schedule X/Y bracket arrays
+  unchanged but fixed-income output at taxable $100,001 moves with the deduction:
+  single $105,707 ordinary tax $5,754.169 → $5,738.731; MFJ $111,413 ordinary
+  tax $3,089.76 → $3,069.84; MN single $50,000 ordinary tax $1,949.395 →
+  $1,876.605; MN MFJ $80,600 ordinary tax $2,826.815 → $2,693.85; MN SS FAGI
+  $84,000 / $90,000 produced tax $4,261.395 / $4,669.395 → $4,188.605 /
+  $4,596.605 (taxable $68,700 / $74,700) while accepted post-subtraction
+  counterfactuals remain $1,876.605 / $2,515.805. Observed case impact: 22
+  metrics across 5 California example plans show lower lifetime taxes ($104–$790)
+  and higher terminal wealth; no default Minnesota case is represented
+  (`ca-mn-case-delta-adjudication.md`). Calendar-year records expire after 2026;
+  later plan years may reuse the 2026 pack as a planning stand-in. No whole-return,
+  credit, itemization, or MN SS runtime closure claim.
 - **QLAC purchase candidate owner age:** `annuityPurchaseGenerator` now gates and sizes the QLAC candidate from the selected traditional account owner's age for its product-policy younger-than-83 gate and preferred start ages 80–83, not the primary household member. Treas. Reg. 1.408-8(a)(3) governs IRA-owner substitution for the legal QLAC commencement deadline; it does not supply the <83 gate. A primary age 84 / spouse-owner age 82 household now emits the candidate at start age 83 (restored under the younger-owner rule); a primary age 82 / older-owner household loses the candidate when the owner's age crosses the gate. When the selected traditional account's owner does not resolve in the household, the generator suppresses the QLAC candidate rather than substituting the primary — a fail-closed boundary on raw generator input, not a new stored-plan regression.
 - Corrected one guarded ordinary simultaneous early current-spouse Social Security shape to combine the claimant's reduced own benefit with the separately reduced positive excess of half the worker PIA over the claimant PIA. The admitted 1964-01-02 pair claiming at 62 changes from $15,600 to $16,080 in the full 2027 row. A claimant's original claim age, strict unclamped DOB-plus-claim-age dates, one non-disabled stream per person, the MFJ/two-person proxy, and worker-start-no-later ordering bound the correction. Delayed-own, later-worker staggered, disability, multiple-stream, and unavailable historical-entitlement cases retain the disclosed legacy behavior.
 - Repaired first-distribution-calendar-year §4974 timing in

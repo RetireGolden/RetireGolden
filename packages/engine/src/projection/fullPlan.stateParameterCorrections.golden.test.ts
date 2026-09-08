@@ -86,6 +86,42 @@ const FIXTURES = [
     worksheet:
       '20,000 × 4.45% flat rate = 890 (2026 Utah S.B. 60 / §59-10-104).',
   },
+  {
+    ruleId: 'ca-ftb-2026-540-es-standard-deduction',
+    state: 'CA',
+    filingStatus: 'single' as const,
+    income: 105_707,
+    expectedTax: 5_738.73,
+    worksheet:
+      '105,707 − 5,706 deduction = 100,001 taxable; 2025 Schedule X above the table range => 5,738.731 modeled subtotal.',
+  },
+  {
+    ruleId: 'ca-ftb-2026-540-es-standard-deduction',
+    state: 'CA',
+    filingStatus: 'marriedFilingJointly' as const,
+    income: 111_413,
+    expectedTax: 3_069.84,
+    worksheet:
+      '111,413 − 11,412 deduction = 100,001 taxable; 2025 Schedule Y above the table range => 3,069.84 modeled subtotal.',
+  },
+  {
+    ruleId: 'mn-dor-2026-rate-schedule-and-standard-deduction',
+    state: 'MN',
+    filingStatus: 'single' as const,
+    income: 50_000,
+    expectedTax: 1_876.61,
+    worksheet:
+      '50,000 − 15,300 TY2026 deduction = 34,700 taxable; DOR TY2026 breakpoints => 1,876.605.',
+  },
+  {
+    ruleId: 'mn-dor-2026-rate-schedule-and-standard-deduction',
+    state: 'MN',
+    filingStatus: 'marriedFilingJointly' as const,
+    income: 80_600,
+    expectedTax: 2_693.85,
+    worksheet:
+      '80,600 − 30,600 TY2026 deduction = 50,000 taxable; DOR TY2026 breakpoints => 2,693.85.',
+  },
 ] as const
 
 describe('state 2026 parameter corrections — plan integration', () => {

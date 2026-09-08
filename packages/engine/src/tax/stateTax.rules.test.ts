@@ -1858,13 +1858,37 @@ describeRule('ms-capital-gains-taxed-as-ordinary', {
   })
 })
 
+// 2026 Form 540-ES line 2b: $5,706 single / $11,412 MFJ standard deduction.
+const CA_STD_SCENARIOS = [
+  input({ state: 'CA', ordinaryIncome: 20_000 }),
+  input({ state: 'CA', filingStatus: 'marriedFilingJointly', ordinaryIncome: 40_000 }),
+] as const
+
+describeRule('ca-ftb-2026-540-es-standard-deduction', {
+  readings: {
+    estimatedWorksheetDeductionMapping: [14_294, 28_588],
+    stalePackDeductionMapping: [14_460, 28_920],
+  },
+  accepted: 'estimatedWorksheetDeductionMapping',
+}, ({ accepted, readings }) => {
+  // 2026 Form 540-ES line 2b: $5,706 single / $11,412 MFJ.
+
+  it('maps the supported single and MFJ deduction cells to California taxable income', () => {
+    CA_STD_SCENARIOS.forEach((scenario, index) => {
+      expect(computeStateTaxableIncome(pack('CA'), scenario)).toBeCloseTo(accepted[index]!, 6)
+      expect(computeStateTaxableIncome(pack('CA'), scenario))
+        .not.toBeCloseTo(readings.stalePackDeductionMapping[index]!, 6)
+    })
+  })
+})
+
 // IRC 86 does not apply in California, so none of its federally taxable
-// $34,000 Social Security share enters the state base. The $5,540 California
+// $34,000 Social Security share enters the state base. The $5,706 California
 // standard deduction is the only subtraction in this fixture.
 const CA_SS_OTHER_INCOME = 90_000
 const CA_SS_BENEFITS = 40_000
 const CA_FEDERALLY_TAXABLE_SS = 0.85 * CA_SS_BENEFITS
-const CA_DEDUCTION_SINGLE = 5_540
+const CA_DEDUCTION_SINGLE = 5_706
 
 describeRule('ca-rtc-17087-social-security-exclusion', {
   readings: {
@@ -1886,6 +1910,49 @@ describeRule('ca-rtc-17087-social-security-exclusion', {
     expect(computeStateTaxableIncome(pack('CA'), scenario)).toBeCloseTo(accepted, 6)
     expect(computeStateTaxableIncome(pack('CA'), scenario))
       .not.toBeCloseTo(readings.federallyTaxableBenefitLeftInCaliforniaBase, 6)
+  })
+})
+
+const MN_PARAM_SCENARIOS = [
+  input({ state: 'MN', ordinaryIncome: 50_000 }),
+  input({ state: 'MN', filingStatus: 'marriedFilingJointly', ordinaryIncome: 80_600 }),
+] as const
+
+describeRule('mn-dor-2026-rate-schedule-and-standard-deduction', {
+  readings: {
+    dorTy2026Breakpoints: [1_876.605, 2_693.85],
+    stalePackCells: [1_949.395, 2_826.815],
+  },
+  accepted: 'dorTy2026Breakpoints',
+}, ({ accepted, readings }) => {
+  // DOR TY2026 ranges represented by pack breakpoints: $15,300 / $30,600
+  // deductions and $33,310 / $48,700 first-band ceilings. Single: 50,000 −
+  // 15,300 = 34,700 taxable => 1,876.605. MFJ: 80,600 − 30,600 = 50,000 =>
+  // 2,693.85.
+  const acceptedTaxable = [34_700, 50_000]
+  const staleTaxable = [35_425, 51_450]
+
+  it('prices single and joint filers on the DOR TY2026 deduction and schedule', () => {
+    expect(pack('MN').brackets.single).toEqual([
+      { lowerBound: 0, ratePct: 5.35 },
+      { lowerBound: 33_310, ratePct: 6.8 },
+      { lowerBound: 109_430, ratePct: 7.85 },
+      { lowerBound: 203_150, ratePct: 9.85 },
+    ])
+    expect(pack('MN').brackets.marriedFilingJointly).toEqual([
+      { lowerBound: 0, ratePct: 5.35 },
+      { lowerBound: 48_700, ratePct: 6.8 },
+      { lowerBound: 193_480, ratePct: 7.85 },
+      { lowerBound: 337_930, ratePct: 9.85 },
+    ])
+    MN_PARAM_SCENARIOS.forEach((scenario, index) => {
+      expect(computeStateTaxableIncome(pack('MN'), scenario)).toBeCloseTo(acceptedTaxable[index]!, 6)
+      expect(computeStateTax(pack('MN'), scenario)).toBeCloseTo(accepted[index]!, 2)
+      expect(computeStateTaxableIncome(pack('MN'), scenario))
+        .not.toBeCloseTo(staleTaxable[index]!, 6)
+      expect(computeStateTax(pack('MN'), scenario))
+        .not.toBeCloseTo(readings.stalePackCells[index]!, 2)
+    })
   })
 })
 

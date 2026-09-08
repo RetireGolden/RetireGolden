@@ -544,6 +544,13 @@ const STATE_PRIMARY_PUBLISHERS: Readonly<Partial<Record<UsStateCode, readonly st
   ],
   CA: [
     'leginfo.legislature.ca.gov', // California Legislative Information, Revenue and Taxation Code
+    // Verified 2026-09-07 against the staged 2026 Form 540-ES instructions URL.
+    // The ca-ftb-2026-540-es-standard-deduction record cites FTB's estimated-tax
+    // worksheet line 2b; this is a deliberate form-instruction admission matching
+    // the Delaware/Maine official-worksheet convention, not a verifier fallback.
+    // Bare `ftb.ca.gov`: usable document URLs carry `www.ftb.ca.gov`, and
+    // `hostAndPublisherOf` strips the prefix.
+    'ftb.ca.gov', // California Franchise Tax Board: forms and instructions
   ],
   CO: [
     'olls.info', // Colorado Office of Legislative Legal Services, Colorado Revised Statutes
@@ -731,6 +738,14 @@ const STATE_PRIMARY_PUBLISHERS: Readonly<Partial<Record<UsStateCode, readonly st
   ],
   MN: [
     'revisor.mn.gov', // Office of the Revisor of Statutes, Minnesota Statutes
+    // Verified 2026-09-07 against the staged DOR rate page and TY2026
+    // inflation-adjusted amounts PDF. The mn-dor-2026-rate-schedule-and-standard-
+    // deduction and mn-stat-290-0132-subd-26-social-security-inclusion records
+    // cite Minnesota DOR agency publications; this is a deliberate agency-
+    // publication admission, not a verifier fallback. Bare `revenue.state.mn.us`:
+    // usable document URLs carry `www.revenue.state.mn.us`, and
+    // `hostAndPublisherOf` strips the prefix.
+    'revenue.state.mn.us', // Minnesota Department of Revenue
   ],
   MT: [
     // Verified 2026-08-29. `mca.legmt.gov` serves the current Montana Code
@@ -1646,14 +1661,30 @@ describe('tax rule registry conformance', () => {
     }]])).toEqual([])
   })
 
-  it('admits nothing for a state with no researched publisher tier', () => {
-    // Fails closed rather than open. A state whose hosts have not been verified
-    // has an absent tier, not an empty permission, so the first record written
-    // for it cannot cite anything until someone does the research.
+  it('refuses an unlisted publisher even in a researched state tier', () => {
+    // Fails closed on the publisher, not on the state. California has a
+    // researched tier, but a host absent from that tier is still off-source —
+    // deny-by-default holds per publisher, not only per absent state entry.
     expect(offSourceAuthorities([['ca-fictional', {
       jurisdiction: 'state:CA',
-      authority: [{ citation: 'Cal. Rev. & Tax. Code 17041', url: 'https://www.ftb.ca.gov/' }],
-    }]])).toEqual(['ca-fictional:Cal. Rev. & Tax. Code 17041:www.ftb.ca.gov'])
+      authority: [{ citation: 'Cal. Rev. & Tax. Code 17041', url: 'https://example.com/' }],
+    }]])).toEqual(['ca-fictional:Cal. Rev. & Tax. Code 17041:example.com'])
+    // Verified 2026-09-07 admissions stay live, not vacuously passing because
+    // no synthetic record happens to cite them yet.
+    expect(offSourceAuthorities([['ca-fictional', {
+      jurisdiction: 'state:CA',
+      authority: [{
+        citation: '2026 Form 540-ES instructions',
+        url: 'https://www.ftb.ca.gov/forms/2026/2026-540-es-instructions.pdf',
+      }],
+    }]])).toEqual([])
+    expect(offSourceAuthorities([['mn-fictional', {
+      jurisdiction: 'state:MN',
+      authority: [{
+        citation: 'Minnesota Department of Revenue, 2026 rate schedule',
+        url: 'https://www.revenue.state.mn.us/tax-individual-income-tax/rates',
+      }],
+    }]])).toEqual([])
   })
 
   it('refuses a state agency statement as authority for a federal rule', () => {

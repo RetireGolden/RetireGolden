@@ -804,12 +804,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2287,
+          "line": 2354,
           "note": null,
           "tests": [
             {
               "title": "pins the overbroad Kansas public-pension override",
-              "line": 2303
+              "line": 2370
             }
           ]
         }
@@ -887,12 +887,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2257,
+          "line": 2324,
           "note": null,
           "tests": [
             {
               "title": "subtracts all post-2023 federally taxable Kansas Social Security",
-              "line": 2273
+              "line": 2340
             }
           ]
         }
@@ -950,16 +950,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2557,
+          "line": 2624,
           "note": null,
           "tests": [
             {
               "title": "deducts Social Security from Michigan taxable income",
-              "line": 2571
+              "line": 2638
             },
             {
               "title": "would add the federally taxable share if Michigan taxed it",
-              "line": 2576
+              "line": 2643
             }
           ]
         }
@@ -1077,18 +1077,100 @@
       ]
     },
     {
-      "id": "mn-stat-290-0132-subd-26-social-security-inclusion",
-      "title": "Minnesota subtracts federally taxable Social Security on an income-tested schedule the pack omits",
-      "classification": "approximated",
-      "errorDirection": "overstatesTax",
-      "conventionRationale": null,
+      "id": "mn-dor-2026-rate-schedule-and-standard-deduction",
+      "title": "Minnesota publishes TY2026 single/MFJ deductions and income-tax bands",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "DOR publishes the annually adjusted whole-dollar ranges. bracketTax uses endpoint breakpoints over continuous modeled dollars; at whole-dollar inputs this represents the published ranges. The record expires after TY2026. Later plan years may reuse the latest 2026 pack as a planning stand-in and are not certified by this annual record.",
       "contraryReading": null,
       "jurisdiction": "state:MN",
       "volatility": "annuallyIndexed",
       "effectiveFrom": 2026,
-      "effectiveThrough": null,
-      "verifiedOn": "2026-08-27",
-      "dueOn": "2026-12-25",
+      "effectiveThrough": 2026,
+      "verifiedOn": "2026-09-07",
+      "dueOn": "2027-01-05",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "MN",
+              "line": 480
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "bracketTax",
+              "line": 29
+            },
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 90
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 1921,
+          "note": null,
+          "tests": [
+            {
+              "title": "prices single and joint filers on the DOR TY2026 deduction and schedule",
+              "line": 1935
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Minnesota DOR, Income Tax Rates for 2026, single filers",
+          "url": "https://www.revenue.state.mn.us/minnesota-income-tax-rates-and-brackets"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Minnesota DOR, Income Tax Rates for 2026, married filing jointly",
+          "url": "https://www.revenue.state.mn.us/minnesota-income-tax-rates-and-brackets"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Minnesota DOR, Tax Year 2026 Inflation-Adjusted Amounts, section 290.0123 subd. 1",
+          "url": "https://www.revenue.state.mn.us/sites/default/files/2025-12/inflation-adjusted-amounts-2026.pdf"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Minnesota DOR, Tax Year 2026 Inflation-Adjusted Amounts, publication scope",
+          "url": "https://www.revenue.state.mn.us/sites/default/files/2025-12/inflation-adjusted-amounts-2026.pdf"
+        }
+      ]
+    },
+    {
+      "id": "mn-stat-290-0132-subd-26-social-security-inclusion",
+      "title": "Minnesota subtracts federally taxable Social Security on an income-tested schedule the pack omits",
+      "classification": "approximated",
+      "errorDirection": "overstatesTax",
+      "conventionRationale": "The existing subdivision 26(c)(1)-(2) quotations are statutory-year base amounts. Subdivision 26(j) requires annual adjustment of the simplified-subtraction thresholds, and the DOR TY2026 table supplies the operative values. The quoted DOR table marks the alternate maxima as Not Indexed. The engine has no field or enforcer for either subtraction; later pack fallback remains an annually stale stand-in.",
+      "contraryReading": null,
+      "jurisdiction": "state:MN",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": 2026,
+      "verifiedOn": "2026-09-07",
+      "dueOn": "2027-01-05",
       "implementedBy": [
         "packages/engine/src/params/state/data/year2026.ts",
         "packages/engine/src/tax/stateTax.ts"
@@ -1119,16 +1201,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
-          "line": 1095,
+          "line": 1087,
           "note": null,
           "tests": [
             {
-              "title": "leaves the whole federally taxable share in, with no subdivision-26 subtraction",
-              "line": 1112
-            },
-            {
-              "title": "reaches the statute once the simplified subtraction is taken off the base",
-              "line": 1120
+              "title": "overstates Minnesota tax while the pack taxes federally taxable Social Security with no subtraction",
+              "line": 1102
             }
           ]
         }
@@ -1155,6 +1233,21 @@
           "kind": "statute",
           "citation": "Minn. Stat. 290.0132, subd. 26(c)(1)–(2)",
           "url": "https://www.revisor.mn.gov/statutes/cite/290.0132"
+        },
+        {
+          "kind": "statute",
+          "citation": "Minn. Stat. 290.0132, subd. 26(j)",
+          "url": "https://www.revisor.mn.gov/statutes/cite/290.0132"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Minnesota DOR, Tax Year 2026 Inflation-Adjusted Amounts, section 290.0132 subd. 26 simplified thresholds",
+          "url": "https://www.revenue.state.mn.us/sites/default/files/2025-12/inflation-adjusted-amounts-2026.pdf"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Minnesota DOR, Tax Year 2026 Inflation-Adjusted Amounts, section 290.0132 subd. 26 alternate maxima",
+          "url": "https://www.revenue.state.mn.us/sites/default/files/2025-12/inflation-adjusted-amounts-2026.pdf"
         }
       ]
     },
@@ -1936,20 +2029,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
-          "line": 1142,
+          "line": 1141,
           "note": null,
           "tests": [
             {
               "title": "exempts a school-retirement annuity the closed list does not name",
-              "line": 1159
+              "line": 1158
             },
             {
               "title": "taxes a private IRA of the same amount, which is the other bucket",
-              "line": 1165
+              "line": 1164
             },
             {
               "title": "reaches the statute once the public override is dropped",
-              "line": 1175
+              "line": 1174
             }
           ]
         }
@@ -2017,16 +2110,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2712,
+          "line": 2779,
           "note": null,
           "tests": [
             {
               "title": "subtracts every federally included Social Security dollar from 2024",
-              "line": 2728
+              "line": 2795
             },
             {
               "title": "would tax 85% of the benefit under the shopping-list reading",
-              "line": 2734
+              "line": 2801
             }
           ]
         }
@@ -2098,23 +2191,23 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2815,
+          "line": 2882,
           "note": "public-pension deduction limb",
           "tests": [
             {
               "title": "pins the over-broad full public-pension override",
-              "line": 2834
+              "line": 2901
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2841,
+          "line": 2908,
           "note": "retirement-income credit limb",
           "tests": [
             {
               "title": "pins the omitted Ohio retirement-income credit",
-              "line": 2855
+              "line": 2922
             }
           ]
         }
@@ -2254,12 +2347,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3166,
+          "line": 3233,
           "note": "30% long-term capital-gain subtraction",
           "tests": [
             {
               "title": "pins Wisconsin's unrepresented long-term capital-gain exclusion",
-              "line": 3180
+              "line": 3247
             }
           ]
         }
@@ -2326,20 +2419,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3187,
+          "line": 3254,
           "note": "age-67 retirement attribution and election limbs",
           "tests": [
             {
               "title": "shelters retirement dollars received by the under-67 spouse",
-              "line": 3211
+              "line": 3278
             },
             {
               "title": "matches the pooled $48,000 cap when both spouses are 67",
-              "line": 3220
+              "line": 3287
             },
             {
               "title": "grants a 65-year-old nothing where Line 17 would allow $5,000",
-              "line": 3233
+              "line": 3300
             }
           ]
         }

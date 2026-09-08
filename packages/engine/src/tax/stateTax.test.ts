@@ -238,7 +238,9 @@ describe('createStateTaxCalculator', () => {
         ],
       }),
     )
-    const taxable = 60_000 - 2770
+    // Internal split-year continuous-model regression only: half the 2026
+    // Form 540-ES single deduction ($2,853), not an FTB table value.
+    const taxable = 60_000 - 2_853
     const expected =
       5539.5 * 0.01 +
       (13_132 - 5539.5) * 0.02 +
@@ -247,6 +249,7 @@ describe('createStateTaxCalculator', () => {
       (36_362 - 28_771) * 0.08 +
       (taxable - 36_362) * 0.093
     expect(tax).toBeCloseTo(expected, 2)
+    expect(tax).toBeCloseTo(3_533.99, 2)
   })
 
   it('apportions the full-year taxable Social Security amount across a split year (MN)', () => {

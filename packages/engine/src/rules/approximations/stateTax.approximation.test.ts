@@ -1076,59 +1076,58 @@ describeRule('mi-mcl-206-30-retirement-and-ss', {
   })
 })
 
-const mnSingleTax = (taxable: number) => bandedTax(
-  [
-    [0, 31_690, 5.35], [31_690, 104_090, 6.8],
-    [104_090, 193_240, 7.85], [193_240, Infinity, 9.85],
-  ],
-  taxable,
-)
-const MN_DEDUCTION = 14_575
-const MN_ORDINARY = 50_000
 const MN_SS = 40_000
 const MN_SS_FEDERALLY_TAXABLE = 0.85 * MN_SS
-// FAGI = 50,000 + 34,000 = 84,000. Phaseout threshold $78,000. Excess $6,000
-// is two $4,000 steps counting the fraction, so the simplified subtraction
-// shrinks 20%: 34,000 × 0.80 = 27,200.
-const MN_SIMPLIFIED_SUBTRACTION = MN_SS_FEDERALLY_TAXABLE * 0.8
+const MN_SS_SCENARIOS = [
+  input({ state: 'MN', ordinaryIncome: 50_000, ssBenefits: MN_SS, agesAlive: [70] }),
+  input({ state: 'MN', ordinaryIncome: 56_000, ssBenefits: MN_SS, agesAlive: [70] }),
+] as const
+const MN_SS_PRODUCED_TAXABLE = [68_700, 74_700]
 
 describeRule('mn-stat-290-0132-subd-26-social-security-inclusion', {
   readings: {
-    simplifiedSubtractionAtThisAgi:
-      mnSingleTax(MN_ORDINARY + MN_SS_FEDERALLY_TAXABLE - MN_SIMPLIFIED_SUBTRACTION - MN_DEDUCTION),
-    federallyTaxableShareLeftInTheBase:
-      mnSingleTax(MN_ORDINARY + MN_SS_FEDERALLY_TAXABLE - MN_DEDUCTION),
+    // Independent authority worksheets on TY2026 DOR bands: FAGI $84,000 full
+    // $34,000 subtraction => taxable $34,700 => $1,876.605; FAGI $90,000 one
+    // $4,000 step over $86,410 => subtraction $30,600 => taxable $44,100 =>
+    // $2,515.805.
+    ty2026PostSubtraction: [1_876.605, 2_515.805],
+    // Rejected unindexed statutory base thresholds ($78,000 single).
+    unindexedBaseThresholds: [2_339.005, 2_978.205],
+    // Shipped pack with taxesSocialSecurity:true and zero subtraction.
+    noSubtractionPack: [4_188.605, 4_596.605],
   },
-  accepted: 'simplifiedSubtractionAtThisAgi',
-  produced: 'federallyTaxableShareLeftInTheBase',
-}, ({ accepted, produced }) => {
-  const scenario = input({
-    state: 'MN',
-    ordinaryIncome: MN_ORDINARY,
-    ssBenefits: MN_SS,
-    agesAlive: [70],
-  })
+  accepted: 'ty2026PostSubtraction',
+  produced: 'noSubtractionPack',
+}, ({ accepted, produced, readings }) => {
+  it('overstates Minnesota tax while the pack taxes federally taxable Social Security with no subtraction', () => {
+    const mn = pack('MN')
+    MN_SS_SCENARIOS.forEach((scenario, index) => {
+      expect(computeStateTax(mn, scenario)).toBeCloseTo(produced[index]!, 6)
+      expect(computeStateTaxDetail(mn, scenario).taxableIncome)
+        .toBeCloseTo(MN_SS_PRODUCED_TAXABLE[index]!, 6)
+      expect(computeStateTax(mn, scenario)).toBeGreaterThan(accepted[index]!)
+      expect(computeStateTax(mn, scenario))
+        .not.toBeCloseTo(readings.unindexedBaseThresholds[index]!, 6)
+      expect(produced[index]!).not.toBe(PRODUCED_TBD)
+    })
 
-  it('leaves the whole federally taxable share in, with no subdivision-26 subtraction', () => {
-    expect(computeStateTax(pack('MN'), scenario)).toBeCloseTo(produced, 6)
-    expect(computeStateTaxDetail(pack('MN'), scenario).taxableIncome)
-      .toBeCloseTo(MN_ORDINARY + MN_SS_FEDERALLY_TAXABLE - MN_DEDUCTION, 6)
-    expect(computeStateTax(pack('MN'), scenario)).toBeGreaterThan(accepted)
-    expect(produced).not.toBe(PRODUCED_TBD)
-  })
-
-  it('reaches the statute once the simplified subtraction is taken off the base', () => {
-    // No pack field for an income-tested SS subtraction. The accepted figure
-    // is priced by handing the calculator the post-subtraction ordinary, which
-    // is what the missing field would compute internally.
-    const preSubtracted = input({
+    // No pack field for an income-tested SS subtraction. The accepted figures
+    // are priced by handing the calculator the post-subtraction ordinary.
+    const preSubtracted84000 = input({
       state: 'MN',
-      ordinaryIncome: MN_ORDINARY + MN_SS_FEDERALLY_TAXABLE - MN_SIMPLIFIED_SUBTRACTION,
+      ordinaryIncome: 50_000,
       ssBenefits: 0,
       agesAlive: [70],
     })
-    const noSsFlag = { ...pack('MN'), taxesSocialSecurity: false }
-    expect(computeStateTax(noSsFlag, preSubtracted)).toBeCloseTo(accepted, 6)
+    const preSubtracted90000 = input({
+      state: 'MN',
+      ordinaryIncome: 56_000 + MN_SS_FEDERALLY_TAXABLE - 30_600,
+      ssBenefits: 0,
+      agesAlive: [70],
+    })
+    const noSsFlag = { ...mn, taxesSocialSecurity: false }
+    expect(computeStateTax(noSsFlag, preSubtracted84000)).toBeCloseTo(accepted[0]!, 6)
+    expect(computeStateTax(noSsFlag, preSubtracted90000)).toBeCloseTo(accepted[1]!, 6)
   })
 })
 
