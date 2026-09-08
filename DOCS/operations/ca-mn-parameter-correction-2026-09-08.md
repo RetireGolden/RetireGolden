@@ -8,12 +8,14 @@
 
 | Artifact | SHA-256 |
 |---|---|
-| Before manifest (`ca-mn-cases-before.json`) | `7c9a667d07a67c3311aea9e00ecb8fe7844a7cb83a1ed2ca6b05f36d1017e76b` |
-| After manifest (`ca-mn-cases-after.json`) | `1ec994933970f32a8bc7f7e5f8b055a437a5f33369757aaf56628f1fcf36aeed` |
-| Diff log (`ca-mn-cases-diff.log`) | `e0cef9f98ae75e68b52a86c681f8a09cd097cf861453e092ac287992c2936f5c` |
-| Direct after observation (`ca-mn-after-main.json`) | `63caf404b2c62abcde5059c7642ad01072571038993d247e3a81f3abbbb36dc0` |
+| Before manifest ([ca-mn-cases-before.json](ca-mn-parameter-correction-2026-09-08/ca-mn-cases-before.json)) | `7c9a667d07a67c3311aea9e00ecb8fe7844a7cb83a1ed2ca6b05f36d1017e76b` |
+| After manifest ([ca-mn-cases-after.json](ca-mn-parameter-correction-2026-09-08/ca-mn-cases-after.json)) | `1ec994933970f32a8bc7f7e5f8b055a437a5f33369757aaf56628f1fcf36aeed` |
+| Diff log ([ca-mn-cases-diff.log](ca-mn-parameter-correction-2026-09-08/ca-mn-cases-diff.log)) | `d03cfa233af72140bac5029f9080413c820e751477f3f8ec5794b3a035c344c2` |
+| Direct after observation ([ca-mn-after-main.json](ca-mn-parameter-correction-2026-09-08/ca-mn-after-main.json)) | `63caf404b2c62abcde5059c7642ad01072571038993d247e3a81f3abbbb36dc0` |
 
 Both manifests carry the same **29** case IDs. Exactly **five** cases differ, exclusively in the **22** metrics printed by the diff log. No warning, recommendation, depletion-year, case-membership, or option delta appears.
+
+The three JSON artifacts are preserved byte-for-byte from the observed runs. The diff log preserves its result header and all 22 delta rows; machine-specific command boilerplate and the expected pre-allowlist exit-1 trailer are omitted. Its published hash binds this extracted log. The original run classified all 22 differences as unexpected before the scoped allowance was applied. The observation's head field names the base checkout; the after values were captured with this PR's parameter changes applied before commit.
 
 ## Case-delta table
 
