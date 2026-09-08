@@ -1,0 +1,25 @@
+{
+  "producerSha": "93cc91130605bc17cb583c5a5e899591773e048c",
+  "cases": [
+    {
+      "name": "initial-clean",
+      "accepted": true,
+      "body": "## OpenRouter pull-request review\n<!-- openrouter-review-ledger:v1:eyJsdiI6MSwicmVwbyI6IlJldGlyZUdvbGRlbi9SZXRpcmVHb2xkZW4iLCJwciI6MjY3LCJzaGEiOiJhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhIiwiZ2VuIjoiOWIxZTNkOTk2NzFmIiwicm91bmQiOjEsImZpbmRpbmdzIjpbXX0= -->\n\n**Verdict:** `clean`\n**Scope:** `full-pr` (full-pr)\n**Mode:** `initial`\n**Commit:** `aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa`\n**Cost:** unavailable \u2014 incomplete: no cost reported for `test/model`\n\n### Lanes\n\n- `test/model`: ok (0 finding(s))\n\nNo structured findings from the successful lane(s).\n\n[Workflow run](https://github.com/RetireGolden/RetireGolden/actions/runs/123)\n"
+    },
+    {
+      "name": "verify-clean-disputed",
+      "accepted": true,
+      "body": "## OpenRouter pull-request review\n<!-- openrouter-review-ledger:v1:eyJsdiI6MSwicmVwbyI6IlJldGlyZUdvbGRlbi9SZXRpcmVHb2xkZW4iLCJwciI6MjY3LCJzaGEiOiJhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhIiwiZ2VuIjoiOWIxZTNkOTk2NzFmIiwicm91bmQiOjIsImZpbmRpbmdzIjpbeyJpZCI6InIxLTEiLCJzZXYiOiJyaXNrIiwiZmlsZSI6InBhY2thZ2VzL2VuZ2luZS9zcmMvZXhhbXBsZS50cyIsImxpbmUiOjQyLCJ0aXRsZSI6IlN5bnRoZXRpYyBjb250cmFjdCBmaW5kaW5nIiwiZXYiOiJTeW50aGV0aWMgZXZpZGVuY2U7IG5vIHJlcG9zaXRvcnkgb3IgbW9kZWwgZGF0YS4iLCJzdCI6ImRpc3B1dGVkIiwibSI6WyJ0ZXN0L21vZGVsIl19XX0= -->\n\n**Verdict:** `clean`\n**Scope:** `full-pr` (full-pr)\n**Mode:** `verify`\n**Commit:** `aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa`\n**Cost:** unavailable \u2014 incomplete: no cost reported for `test/model`\n\n### Lanes\n\n- `test/model`: ok (0 finding(s))\n\n### Round 2 resolution\n\n- No prior findings were open.\n\nNo structured findings from the successful lane(s).\n\n[Workflow run](https://github.com/RetireGolden/RetireGolden/actions/runs/123)\n"
+    },
+    {
+      "name": "initial-issues",
+      "accepted": false,
+      "body": "## OpenRouter pull-request review\n<!-- openrouter-review-ledger:v1:eyJsdiI6MSwicmVwbyI6IlJldGlyZUdvbGRlbi9SZXRpcmVHb2xkZW4iLCJwciI6MjY3LCJzaGEiOiJhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhIiwiZ2VuIjoiOWIxZTNkOTk2NzFmIiwicm91bmQiOjEsImZpbmRpbmdzIjpbeyJpZCI6InIxLTEiLCJzZXYiOiJyaXNrIiwiZmlsZSI6InBhY2thZ2VzL2VuZ2luZS9zcmMvZXhhbXBsZS50cyIsImxpbmUiOjQyLCJ0aXRsZSI6IlN5bnRoZXRpYyBjb250cmFjdCBmaW5kaW5nIiwiZXYiOiJTeW50aGV0aWMgZXZpZGVuY2U7IG5vIHJlcG9zaXRvcnkgb3IgbW9kZWwgZGF0YS4iLCJzdCI6Im9wZW4iLCJtIjpbInRlc3QvbW9kZWwiXX1dfQ== -->\n\n**Verdict:** `issues`\n**Scope:** `full-pr` (full-pr)\n**Mode:** `initial`\n**Commit:** `aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa`\n**Cost:** unavailable \u2014 incomplete: no cost reported for `test/model`\n\n### Lanes\n\n- `test/model`: ok (0 finding(s))\n\n### Findings\n\n#### \ud83d\udfe0 Issue 1 \u2014 Synthetic contract finding\n\n`packages/engine/src/example.ts:42` \u00b7 `risk` \u00b7 identified by test/model\n\nSynthetic evidence; no repository or model data.\n\n\n[Workflow run](https://github.com/RetireGolden/RetireGolden/actions/runs/123)\n"
+    },
+    {
+      "name": "initial-clean-policy",
+      "accepted": true,
+      "body": "## OpenRouter pull-request review\n<!-- openrouter-review-ledger:v1:eyJsdiI6MSwicmVwbyI6IlJldGlyZUdvbGRlbi9SZXRpcmVHb2xkZW4iLCJwciI6MjY3LCJzaGEiOiJhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhIiwiZ2VuIjoiOWIxZTNkOTk2NzFmIiwicm91bmQiOjEsImZpbmRpbmdzIjpbXX0= -->\n\n**Verdict:** `clean`\n**Scope:** `full-pr` (full-pr)\n**Mode:** `initial`\n**Commit:** `aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa`\n**Cost:** unavailable \u2014 incomplete: no cost reported for `test/model`\n**Review policy:** `code/standard` \u00b7 `dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd`\n**Policy source:** `bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb` \u00b7 1 guidance file(s)\n\n### Lanes\n\n- `test/model`: ok (0 finding(s))\n\nNo structured findings from the successful lane(s).\n\n[Workflow run](https://github.com/RetireGolden/RetireGolden/actions/runs/123)\n"
+    }
+  ]
+}

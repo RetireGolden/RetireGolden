@@ -9,6 +9,8 @@ import swaWorkflow from '../../.github/workflows/azure-static-web-apps-retiregol
 import recoveryWorkflow from '../../.github/workflows/openrouter-review-recovery.yml?raw'
 import reviewCaller from '../../.github/workflows/openrouter-code-review.yml?raw'
 import ciRunbook from '../../DOCS/operations/ci-cd-and-deploy.md?raw'
+import readme from '../../README.md?raw'
+import openrouterProducerFixture from './fixtures/openrouter-producer.json'
 import {
   authorizeExactHeadPullRequest,
   collectProvenanceReviewRuns,
@@ -114,6 +116,12 @@ const cleanDisputedReviewBody = cleanReviewBody
   .replace('**Mode:** `initial`', '**Mode:** `verify`')
 
 const reviewContext = { repository, pullNumber, headSha: sha, workflowRunUrl: workflowUrl }
+const producerReviewContext = {
+  repository: { full_name: 'RetireGolden/RetireGolden' },
+  pullNumber: 267,
+  headSha: 'a'.repeat(40),
+  workflowRunUrl: 'https://github.com/RetireGolden/RetireGolden/actions/runs/123',
+}
 
 function review(overrides: Record<string, unknown> = {}) {
   return {
@@ -270,6 +278,7 @@ describe('trusted default-branch review verification recovery', () => {
     expect(recoveryWorkflow).toContain("if: github.ref != format('refs/heads/{0}', github.event.repository.default_branch)")
     expect(recoveryWorkflow).toContain('Dispatch recovery from the default branch.')
     expect(recoveryWorkflow).toContain('uses: FlyOverCoderKY/openrouter-pr-review-action@93cc91130605bc17cb583c5a5e899591773e048c')
+    expect(recoveryWorkflow).toContain('review_policy: base')
     expect(recoveryWorkflow).toContain('effort: low')
     expect(recoveryWorkflow).toContain("max_tool_turns: '30'")
     expect(recoveryWorkflow).toContain("max_diff_kb: '600'")
@@ -472,18 +481,28 @@ describe('OpenRouter CI authorization contract', () => {
   })
 
   it('keeps documented producer revisions synchronized with the caller action reference', () => {
+    expect(reviewCaller).toContain('review_policy: base')
     const currentCaller = reviewCaller.split('\n').find((line) => line.trimStart().startsWith(`uses: ${TRUSTED_REUSABLE_REVIEW_WORKFLOW} `))
     expect(currentCaller).toBeDefined()
     const callerReferences = [...(currentCaller ?? '').matchAll(/action#\d+@([a-f0-9]{40})/g)]
     expect(callerReferences).toHaveLength(1)
     const producerSha = callerReferences[0]?.[1]
     expect(producerSha).toMatch(/^[a-f0-9]{40}$/)
-    for (const source of [helperContent, ciRunbook]) {
+    expect(openrouterProducerFixture.producerSha).toBe(producerSha)
+    for (const source of [helperContent, ciRunbook, readme]) {
       const references = [...source.matchAll(/openrouter-pr-review-action(?:@|\/(?:blob|tree)\/)([a-f0-9]{40})/g)]
       expect(references.length).toBeGreaterThan(0)
       for (const reference of references) expect(reference[1]).toBe(producerSha)
     }
   })
+
+  it.each(openrouterProducerFixture.cases.map((fixtureCase) => [fixtureCase.name, fixtureCase]))(
+    'honors pinned producer fixture case %s through findTrustedCleanReview',
+    (_name, fixtureCase) => {
+      const result = findTrustedCleanReview([review({ body: fixtureCase.body })], producerReviewContext)
+      expect(Boolean(result)).toBe(fixtureCase.accepted)
+    },
+  )
 
   it('pins the Azure bootstrap helper blob to the final helper content', () => {
     expect(swaWorkflow).toContain(`const helperPin = '${expectedHelperBlobSha}'`)

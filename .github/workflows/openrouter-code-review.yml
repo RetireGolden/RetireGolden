@@ -35,6 +35,7 @@
 #
 # Standing roster: Grok 4.6 + GLM 5.3 Flash; recall-safe Luna judge.
 # Shared configuration: https://github.com/RetireGolden/.github/blob/a6a690b82fa76bbda4334b87dd179551534d183b/.github/workflows/openrouter-code-review.yml
+# Policy reference: https://github.com/RetireGolden/.github/blob/a6a690b82fa76bbda4334b87dd179551534d183b/README.md
 
 name: OpenRouter code review
 
