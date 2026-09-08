@@ -168,7 +168,7 @@ function review(overrides: Record<string, unknown> = {}) {
 function trustedRun(overrides: Record<string, unknown> = {}) {
   return {
     id: 123,
-    name: 'OpenRouter code review',
+    name: 'OpenRouter PR #643: auto',
     event: 'pull_request',
     status: 'completed',
     conclusion: 'success',
@@ -339,6 +339,11 @@ describe('trusted default-branch review verification recovery', () => {
 
   it.each([
     ['valid PR', { runs: [], allowed: true }],
+    ['manual name without display title', { runs: [{ status: 'queued', name: 'OpenRouter PR #643: auto', event: 'workflow_dispatch' }], allowed: false }],
+    ['unattributable legacy manual run', { runs: [{ status: 'in_progress', name: 'OpenRouter code review', event: 'workflow_dispatch' }], allowed: false }],
+    ['other PR manual run', { runs: [{ status: 'queued', name: 'OpenRouter PR #642: auto', event: 'workflow_dispatch' }], allowed: true }],
+    ['active legacy recovery', { legacyRuns: [{ id: 122, status: 'in_progress' }], allowed: false }],
+    ['current forwarder only', { legacyRuns: [{ id: 123, status: 'in_progress' }], allowed: true }],
     ['invalid number', { prNumber: '643x', runs: [], allowed: false }],
     ['closed PR', { pr: { ...recoveryForwardPr, state: 'closed' }, allowed: false }],
     ['draft PR', { pr: { ...recoveryForwardPr, draft: true }, allowed: false }],
@@ -379,10 +384,11 @@ describe('trusted default-branch review verification recovery', () => {
   ])(
     'runs the actual workflow forwarder for %s',
     async (_name, options) => {
-      const { prNumber, pr, runs = [], allowed } = options as {
+      const { prNumber, pr, runs = [], legacyRuns = [], allowed } = options as {
         prNumber?: string
         pr?: Record<string, unknown>
         runs?: Record<string, unknown>[]
+        legacyRuns?: Record<string, unknown>[]
         allowed: boolean
       }
       const dispatches: Record<string, unknown>[] = []
@@ -390,7 +396,7 @@ describe('trusted default-branch review verification recovery', () => {
       const script = recoveryForwarderScript()
       const execution = runInNewContext(`(async () => {${script}\n})()`, {
         process: { env: { PR_NUMBER: prNumber ?? '643' } },
-        context: { repo: { owner: 'RetireGolden', repo: 'RetireGolden' }, payload: {
+        context: { runId: 123, repo: { owner: 'RetireGolden', repo: 'RetireGolden' }, payload: {
         repository: { full_name: repository.full_name, default_branch: 'main' },
       } },
         core: { info: () => undefined },
@@ -406,16 +412,17 @@ describe('trusted default-branch review verification recovery', () => {
               listWorkflowRuns: () => undefined,
             },
           },
-          paginate: async (_endpoint: unknown, parameters: { status: string }) => {
+          paginate: async (_endpoint: unknown, parameters: { status: string; workflow_id: string }) => {
             expect(['queued', 'in_progress', 'waiting', 'pending', 'requested']).toContain(parameters.status)
             activeQueries.push(parameters.status)
-            return runs.filter((run) => run.status === parameters.status)
+            const source = parameters.workflow_id === 'openrouter-review-recovery.yml' ? legacyRuns : runs
+            return source.filter((run) => run.status === parameters.status)
           },
         },
       }) as Promise<void>
       if (allowed) {
         await execution
-        expect(activeQueries).toEqual(['queued', 'in_progress', 'waiting', 'pending', 'requested'])
+        expect(activeQueries).toEqual(Array.from({ length: 2 }, () => ['queued', 'in_progress', 'waiting', 'pending', 'requested']).flat())
         expect(dispatches).toEqual([
           {
             owner: 'RetireGolden',
@@ -598,7 +605,8 @@ describe('OpenRouter CI authorization contract', () => {
     expect(reviewCaller).toContain('review_profiles_enabled: true')
     expect(reviewCaller).toContain("review_level: ${{ inputs.review_level || 'auto' }}")
     expect(profileCompletionCaller).toContain('name: OpenRouter profile completion')
-    expect(profileCompletionCaller).toMatch(/^ {2}complete:\r?\n {4}uses: /m)
+    expect(profileCompletionCaller).toMatch(/^ {2}complete:\r?\n {4}if: /m)
+    expect(profileCompletionCaller).toContain("if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)")
     expect(profileCompletionCaller).toContain(`openrouter-profile-completion.yml@${TRUSTED_REUSABLE_REVIEW_WORKFLOW_SHA}`)
     expect(profileCompletionCaller).toContain("source_run_id: ${{ github.event.workflow_run.id && format('{0}', github.event.workflow_run.id) || '' }}")
     expect(profileCompletionCaller).toContain('actions: write')
@@ -852,6 +860,12 @@ describe('OpenRouter CI authorization contract', () => {
   it('requires trusted OpenRouter caller runs and an unchanged default-branch blob', () => {
     const run = trustedRun()
     expect(reviewRunSkipReason(run, repository)).toBeUndefined()
+    for (const name of ['OpenRouter code review', 'OpenRouter PR #643: deep']) {
+      expect(reviewRunSkipReason({ ...run, name }, repository)).toBeUndefined()
+      expect(reviewDispatchRunSkipReason({ ...run, name, event: 'workflow_dispatch' }, repository)).toBeUndefined()
+    }
+    expect(reviewRunSkipReason({ ...run, path: '.github/workflows/other.yml' }, repository)).toMatch(/path/)
+    expect(reviewRunSkipReason({ ...run, referenced_workflows: [] }, repository)).toMatch(/reusable/)
     expect(reviewRunSkipReason({ ...run, workflow_id: 1 }, repository)).toMatch(/id/)
     expect(reviewRunSkipReason({ ...run, event: 'workflow_dispatch' }, repository)).toMatch(/pull_request/)
     expect(reviewDispatchRunSkipReason({ ...run, event: 'workflow_dispatch' }, repository)).toBeUndefined()

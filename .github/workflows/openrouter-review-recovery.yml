@@ -38,18 +38,25 @@ jobs:
               throw new Error('Recovery requires an open same-repository PR targeting the default branch')
             }
             const prefix = `OpenRouter PR #${pr.number}: `
-            // Query every active status; dispatch runs carry main SHA, so a head-only
-            // query would miss them. Avoid scanning completed review history.
-            for (const status of ['queued', 'in_progress', 'waiting', 'pending', 'requested']) {
-              const runs = await github.paginate(github.rest.actions.listWorkflowRuns, {
-                owner, repo, workflow_id: 'openrouter-code-review.yml', status, per_page: 100,
-              })
-              // GitHub caps filtered run searches at 1,000: do not treat a truncated
-              // active set as proof that no matching review exists.
-              if (runs.length >= 1000) throw new Error('Active review search reached its safety limit')
-              if (runs.some(run => run.status !== 'completed' &&
-                  (run.head_sha === pr.head.sha || run.display_title?.startsWith(prefix)))) {
-                throw new Error('Wait for current review runs to finish before recovery')
+            // Include legacy recovery runs during migration. Their dispatch SHA is main
+            // and their title may not identify a PR, so conservatively wait for them.
+            for (const workflow_id of ['openrouter-code-review.yml', 'openrouter-review-recovery.yml']) {
+              for (const status of ['queued', 'in_progress', 'waiting', 'pending', 'requested']) {
+                const runs = await github.paginate(github.rest.actions.listWorkflowRuns, {
+                  owner, repo, workflow_id, status, per_page: 100,
+                })
+                // GitHub caps filtered searches at 1,000; truncation is not absence.
+                if (runs.length >= 1000) throw new Error('Active review search reached its safety limit')
+                if (runs.some(run => {
+                  if (run.id === context.runId || run.status === 'completed') return false
+                  if (workflow_id === 'openrouter-review-recovery.yml') return true
+                  const titles = [run.name, run.display_title].filter(value => typeof value === 'string')
+                  const hasPrTitle = titles.some(value => /^OpenRouter PR #[1-9][0-9]*: /.test(value))
+                  return run.head_sha === pr.head.sha || titles.some(value => value.startsWith(prefix)) ||
+                    (run.event === 'workflow_dispatch' && !hasPrTitle)
+                })) {
+                  throw new Error('Wait for current review runs to finish before recovery')
+                }
               }
             }
             await github.rest.actions.createWorkflowDispatch({

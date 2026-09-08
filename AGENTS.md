@@ -180,9 +180,11 @@ Code, Codex, Cursor, the Grok and OpenRouter review bots, and any other tool.
   the first-pass review gate (`review / openrouter-first-pass-gate`) run
   without the label. The broker normally adds `run-ci` after an exact-head
   clean review and current trusted profile proof, then reruns the existing
-  exact-head Azure workflow. For manual recovery and same-repository
-  Dependabot PRs, apply `run-ci`, then rerun that
-  Azure workflow; the label alone does not start CI. The resolve gate is path-triggered (workspace
+  exact-head Azure workflow, including reviews forwarded from recovery.
+  For same-repository Dependabot PRs or explicit recovery when the broker
+  failed, first verify the current exact-head clean ledger and trusted profile
+  proof, then confirm no Azure CI is already active before applying `run-ci`
+  and rerunning that exact-head Azure workflow. The label alone does not start CI. The resolve gate is path-triggered (workspace
   manifest, lockfile, or any `package.json`) and is expected only on PRs
   that touch those files.
 - During migration to this profile-enabled caller, while `main` still has the
@@ -191,6 +193,9 @@ Code, Codex, Cursor, the Grok and OpenRouter review bots, and any other tool.
   That previous implementation verifies the full PR while retaining findings;
   do not substitute an ordinary review dispatch for this migration proof.
   This is an exception to the shared same-head dispatch restriction.
+  Before merging the migration, wait for every legacy recovery run to finish.
+  A legacy run spanning the merge is not eligible under the new caller pins;
+  obtain a normal current-policy review and profile proof after it finishes.
 - After this revision is merged, recovery is a compatibility forwarder to the
   normal trusted review workflow on `main`. The forwarding run publishes no
   verdict. Wait for the resulting review and current profile proof, then `run-ci`

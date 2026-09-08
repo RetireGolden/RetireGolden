@@ -73,8 +73,10 @@ generation id, a positive round, and a `findings` array that is either empty or 
 `disputed` entries with zero `open` findings (a clean **Verdict** therefore means no open findings,
 not necessarily an empty ledger). Ledger finding states are only `open` and `disputed`; a `fixed`
 resolution removes the entry rather than storing a settled state. Both authorization paths also prove the
-successful `pull_request` review run came from the same repository and that its caller workflow blob at
-the reviewed head exactly equals the caller blob on the default branch. They read GitHub APIs only and
+successful review run came from the same repository and that its caller workflow blob at
+the run commit exactly equals the caller blob on the default branch. Normal `pull_request` runs
+use the reviewed head; trusted `workflow_dispatch` runs use the default-branch commit and must
+be linked from the exact-head ledger. They read GitHub APIs only and
 never check out or execute PR code.
 
 #### Review continuity on manual reruns
@@ -198,36 +200,44 @@ workflows on the default branch, the pinned reusable org workflows they invoke, 
 artifact, workflow run, job, and caller-blob provenance — not cryptographic signatures on review
 bodies or status descriptions.
 
-For operational recovery, a maintainer may dispatch the review workflow, apply `run-ci`, then rerun the existing
-exact-head Azure workflow. The dispatch
-run may report `main` as its `head_sha`; authorization accepts it only when an exact-head bot review contains
-the canonical ledger link, the fetched run passes the same workflow/repository/caller-blob checks, and the
-run succeeds. The broker can authorize the resulting normal review after profile completion. If automatic
-recovery fails, apply the label and rerun the exact-head Azure run only after the profile proof
-succeeds. The broker never auto-labels or reruns a Dependabot PR.
+For operational recovery, a maintainer may dispatch the normal review workflow from `main`
+and wait for its exact-head clean ledger and current profile proof. The run may report `main`
+as its `head_sha`; authorization accepts it only when the exact-head bot review links the run,
+which must succeed and pass the workflow/repository/caller-blob checks. The broker then adds
+`run-ci` and reruns the existing exact-head Azure workflow. If the broker fails, or for a
+same-repository Dependabot PR that the broker skips, verify both proofs and confirm no Azure
+CI is already active before manually applying the label and rerunning the existing workflow.
 
 For a caller-pin migration with an existing review ledger while `main` still carries the legacy
-verify-mode recovery workflow, follow the existing migration procedure on `main` before this
-profile pin merges. After the forwarder in
+verify-mode recovery workflow, complete the existing migration procedure on `main` before this
+profile pin merges. Wait for **all legacy recovery runs to finish before merging**. Their CI
+admission requires the registered recovery workflow ID, default-branch dispatch, and matching
+pinned recovery Git blobs at both the run commit and the current default branch. A legacy run
+that spans the merge cannot satisfy the new pins; after it finishes, obtain a normal review
+and current profile proof. Do not relax the pins to accept stale evidence.
+
+After the forwarder in
 [`openrouter-review-recovery.yml`](../../.github/workflows/openrouter-review-recovery.yml) lands on
 `main`, recovery is a cheap default-branch dispatcher only:
 
 `gh workflow run openrouter-review-recovery.yml --ref main -f pr_number=<PR>`
 
-The forwarder rejects dispatch while a matching review is active. Once it finishes, dispatch
-the forwarder again to invoke the normal trusted
+One successful forwarder dispatch invokes the normal trusted
 [`openrouter-code-review.yml`](../../.github/workflows/openrouter-code-review.yml) with
-`review_level: auto` and `reset_review: false`. It performs no review itself — wait for that review
-and [`openrouter-profile-completion.yml`](../../.github/workflows/openrouter-profile-completion.yml).
-It refuses forks, closed or draft PRs, and active review runs for the target head. Off-default
-dispatches fail explicitly.
+`review_level: auto` and the default `reset_review: false`. Do not dispatch it again after success.
+It performs no review itself: wait for the resulting review and
+[`openrouter-profile-completion.yml`](../../.github/workflows/openrouter-profile-completion.yml).
+If rejected because a review is active, wait for that review to finish and reassess whether
+recovery is still necessary. The guard checks both run-name fields and conservatively waits
+for active legacy recovery or unattributable manual runs, excluding itself. It refuses forks,
+closed or draft PRs, and off-default dispatches.
 
-CI admits a recovery dispatch only when its workflow ID matches GitHub's registered recovery
-workflow, the dispatch came from the default branch in this repository, and the workflow files at
-both the run commit and current default branch match the helper's pinned recovery Git blob SHA. The
-broker may authorize `run-ci` from a subsequent successful normal review and profile completion;
-it does not grant CI from the forwarding run alone. When changing the recovery workflow, update its
-blob pin in the helper together.
+The forwarding run alone cannot authorize CI; only the subsequent normal review and profile
+proof can. The helper retains the strict recovery provenance check for compatibility, but the
+new forwarder produces no review for that path. When changing the recovery workflow, update
+its blob pin in the helper together. The broker uses a repository-wide sweep so coalesced
+GitHub events cannot lose a ready PR, skips expensive review checks when Azure is ineligible,
+and has a ten-minute job limit so a stuck sweep releases the queue.
 
 ## Build and SPA routing
 

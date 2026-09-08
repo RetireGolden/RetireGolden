@@ -13,7 +13,7 @@ export const DEPENDABOT_LOGIN = 'dependabot[bot]'
 export const TRUSTED_REVIEW_WORKFLOW_ID = 341686683
 export const TRUSTED_OPENROUTER_CALLER_PATH = '.github/workflows/openrouter-code-review.yml'
 export const TRUSTED_RECOVERY_WORKFLOW_PATH = '.github/workflows/openrouter-review-recovery.yml'
-export const TRUSTED_RECOVERY_WORKFLOW_BLOB_SHA = '2267d4086bdd760a6c2d6f60717f3fb63aea1fbc'
+export const TRUSTED_RECOVERY_WORKFLOW_BLOB_SHA = '9f0e0c6ba3a26f1507c58efcfa7ebdb5c05e34e1'
 export const TRUSTED_REUSABLE_REVIEW_WORKFLOW =
   'RetireGolden/.github/.github/workflows/openrouter-code-review.yml@3d92f63176b55e5ade2dbe4a081c21ad249826ea'
 export const TRUSTED_REUSABLE_REVIEW_WORKFLOW_SHA = '3d92f63176b55e5ade2dbe4a081c21ad249826ea'
@@ -210,7 +210,7 @@ function trustedOpenRouterRunProvenance(workflowRun, repository) {
   if (workflowRun.workflow_id !== TRUSTED_REVIEW_WORKFLOW_ID) {
     return 'workflow run id is not the trusted OpenRouter workflow'
   }
-  if (workflowRun.name !== 'OpenRouter code review') return 'workflow run name is not OpenRouter code review'
+  // Run names are presentation data; workflow ID, path and pinned source establish trust.
   if (workflowRun.path !== TRUSTED_OPENROUTER_CALLER_PATH) {
     return 'workflow run path is not the trusted OpenRouter caller'
   }
