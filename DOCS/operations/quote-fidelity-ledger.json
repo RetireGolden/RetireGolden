@@ -1,14 +1,14 @@
 {
-  "generatedAt": "2026-09-08T05:56:51.696Z",
+  "generatedAt": "2026-09-08T09:45:20.448Z",
   "recordCount": 443,
   "urlCount": 344,
   "fetched": 9,
   "cached": 335,
-  "entryCount": 1275,
+  "entryCount": 1277,
   "counts": {
-    "EXACT": 873,
+    "EXACT": 874,
     "PUNCTUATION": 42,
-    "PDF-WORD-LEVEL": 239,
+    "PDF-WORD-LEVEL": 240,
     "ELISION-EXACT": 70,
     "ELISION-PUNCTUATION": 7,
     "PDF-NOT-VERIFIABLE": 7,
@@ -552,7 +552,27 @@
       "citation": "Instructions for Form 8606 (2025), Line 7",
       "host": "www.irs.gov",
       "url": "https://www.irs.gov/pub/irs-pdf/i8606.pdf",
-      "quoteSha256": "359551b76e014055",
+      "quoteSha256": "edf0c3144646d69d",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "2 elision segments, all present in the extracted text",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-408-d-8-includible-qcd-basis",
+      "citation": "IRC 408(d)(8)(D)",
+      "host": "www.govinfo.gov",
+      "url": "https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapD-partI-subpartA-sec408.htm",
+      "quoteSha256": "52085cc7c951e455",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-408-d-8-includible-qcd-basis",
+      "citation": "Instructions for Form 8606 (2025), Line 7",
+      "host": "www.irs.gov",
+      "url": "https://www.irs.gov/pub/irs-pdf/i8606.pdf",
+      "quoteSha256": "edf0c3144646d69d",
       "verdict": "PDF-WORD-LEVEL",
       "detail": "2 elision segments, all present in the extracted text",
       "diagnosis": null
@@ -852,7 +872,7 @@
       "citation": "IRS Notice 2025-67",
       "host": "www.irs.gov",
       "url": "https://www.irs.gov/pub/irs-drop/n-25-67.pdf",
-      "quoteSha256": "78f53decf7a33dd5",
+      "quoteSha256": "5775c27856a947ba",
       "verdict": "PDF-WORD-LEVEL",
       "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
       "diagnosis": null

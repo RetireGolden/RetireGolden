@@ -320,11 +320,11 @@ describe('publishAnnualQcdActionExecutionEvidence', () => {
 
   describeRule('irc-408-d-8-B-ongoing-sep-simple-source-exclusion', {
     readings: {
-      noticeAllowsAnInactiveSep: 5_000,
+      noticeAllowsAnInactiveSepOrSimple: 5_000,
       literalBarsEverySepOrSimple: 0,
     },
-    accepted: 'noticeAllowsAnInactiveSep',
-    note: 'inactive SEP',
+    accepted: 'noticeAllowsAnInactiveSepOrSimple',
+    note: 'inactive SEP/SIMPLE',
   }, ({ accepted, readings }) => {
     it('executes a QCD from an inactive SEP IRA under Notice 2007-7', () => {
       const result = publishAnnualQcdActionExecutionEvidence({
@@ -335,18 +335,35 @@ describe('publishAnnualQcdActionExecutionEvidence', () => {
       expect(executed).toBe(accepted)
       expect(executed).not.toBe(readings.literalBarsEverySepOrSimple)
     })
+
+    it('executes a QCD from an inactive SIMPLE IRA under Notice 2007-7', () => {
+      const result = publishAnnualQcdActionExecutionEvidence({
+        ownerFinalizationInputs: fixture(10_000, { p1IraSubtype: 'simple', p1SepOngoing: false }).inputs,
+      })
+      const executed = publishedExecutedAmount(result)
+      expect(result.status).toBe('annualQcdActionExecutionEvidencePublished')
+      expect(executed).toBe(accepted)
+      expect(executed).not.toBe(readings.literalBarsEverySepOrSimple)
+    })
   })
 
   describeRule('irc-408-d-8-B-ongoing-sep-simple-source-exclusion', {
     readings: {
-      noticeRefusesAnOngoingSep: 0,
-      treatsAnOngoingSepIraAsARegularIra: 5_000,
+      noticeRefusesAnOngoingSepOrSimple: 0,
+      treatsAnOngoingSepOrSimpleIraAsARegularIra: 5_000,
     },
-    accepted: 'noticeRefusesAnOngoingSep',
-    note: 'ongoing SEP',
+    accepted: 'noticeRefusesAnOngoingSepOrSimple',
+    note: 'ongoing SEP/SIMPLE',
   }, ({ accepted, readings }) => {
     it('does not execute a QCD from a SEP IRA whose activity is unknown', () => {
       const { inputs } = fixture(10_000, { p1IraSubtype: 'sep', p1SepActivityUnknown: true })
+      const result = publishAnnualQcdActionExecutionEvidence({ ownerFinalizationInputs: inputs })
+      expect(refusedExecutedAmount(result)).toBe(0)
+      expect(p1EligibilityReasonCodes(inputs)).toContain('qcd-sep-simple-activity-unknown')
+    })
+
+    it('does not execute a QCD from a SIMPLE IRA whose activity is unknown', () => {
+      const { inputs } = fixture(10_000, { p1IraSubtype: 'simple', p1SepActivityUnknown: true })
       const result = publishAnnualQcdActionExecutionEvidence({ ownerFinalizationInputs: inputs })
       expect(refusedExecutedAmount(result)).toBe(0)
       expect(p1EligibilityReasonCodes(inputs)).toContain('qcd-sep-simple-activity-unknown')
@@ -357,8 +374,21 @@ describe('publishAnnualQcdActionExecutionEvidence', () => {
       const result = publishAnnualQcdActionExecutionEvidence({ ownerFinalizationInputs: inputs })
       const executed = refusedExecutedAmount(result)
       expect(executed).toBe(accepted)
-      expect(executed).not.toBe(readings.treatsAnOngoingSepIraAsARegularIra)
+      expect(executed).not.toBe(readings.treatsAnOngoingSepOrSimpleIraAsARegularIra)
       expect(p1EligibilityReasonCodes(inputs)).toContain('qcd-ongoing-sep-simple')
+      expect(p1EligibilityReasonCodes(inputs)).not.toContain('qcd-sep-simple-activity-unknown')
+      expect(p1EligibilityReasonCodes(inputs)).not.toContain('qcd-source-not-ira')
+    })
+
+    it('does not execute a QCD from an ongoing SIMPLE IRA', () => {
+      const { inputs } = fixture(10_000, { p1IraSubtype: 'simple', p1SepOngoing: true })
+      const result = publishAnnualQcdActionExecutionEvidence({ ownerFinalizationInputs: inputs })
+      const executed = refusedExecutedAmount(result)
+      expect(executed).toBe(accepted)
+      expect(executed).not.toBe(readings.treatsAnOngoingSepOrSimpleIraAsARegularIra)
+      expect(p1EligibilityReasonCodes(inputs)).toContain('qcd-ongoing-sep-simple')
+      expect(p1EligibilityReasonCodes(inputs)).not.toContain('qcd-sep-simple-activity-unknown')
+      expect(p1EligibilityReasonCodes(inputs)).not.toContain('qcd-source-not-ira')
     })
   })
 

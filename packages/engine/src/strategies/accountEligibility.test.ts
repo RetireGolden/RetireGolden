@@ -1904,6 +1904,41 @@ describe('outOfScope refusals reached through evaluateRetirementActionEligibilit
       expect(codes).not.toContain('source-account-not-found')
       expect(codes).not.toContain('required-facts-missing')
     })
+
+    it('refuses an effective spouse treat-as-own inherited IRA at eligibility and identity allocation', () => {
+      const effectiveTreatAsOwnInheritedIra = ownedIra({
+        inherited: {
+          ownerDeathYear: 2024,
+          decedentHadStartedRmds: false,
+          beneficiary: {
+            beneficiaryClass: 'designated-individual',
+            provenance: { source: 'manual', asOf: '2026-01-01' },
+            election: 'treat-as-own',
+            treatAsOwnElectionYear: 2026,
+            edbCategory: 'surviving-spouse',
+            soleBeneficiary: true,
+            spouseUnlimitedWithdrawalRight: true,
+          },
+        },
+      })
+      expect(isTreatAsOwnEffective(effectiveTreatAsOwnInheritedIra, 2026)).toBe(true)
+
+      const eligibility = refuse(qcdRequest(), [effectiveTreatAsOwnInheritedIra])
+      expect(eligibility.status).not.toBe('accepted')
+      expect(eligibility.codes).toContain('qcd-inherited-basis-unsupported')
+      expect(eligibility.codes).not.toContain('qcd-source-not-ira')
+
+      const allocation = allocateQcdIdentity([effectiveTreatAsOwnInheritedIra])
+      expect(allocation.status).toBe('blocked')
+      expect(allocation.request).toBeNull()
+      if (allocation.status !== 'blocked') return
+      const allocationCodes = allocation.issues.flatMap((issue) => issue.reason?.code ?? [])
+      expect(allocationCodes).toContain('qcd-inherited-basis-unsupported')
+      expect(allocationCodes).not.toContain('qcd-source-not-ira')
+      expect(allocationCodes).not.toContain('person-not-found')
+      expect(allocationCodes).not.toContain('source-account-not-found')
+      expect(allocationCodes).not.toContain('required-facts-missing')
+    })
   })
 
   describeRefusal('irc-72-t-1-qcd-not-early-distribution-exception', {
