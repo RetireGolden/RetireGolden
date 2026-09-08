@@ -536,6 +536,24 @@ export const individualIncomeTaxRecords = {
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section55&num=0&edition=prelim',
       quotedText:
         'In the case of any taxable year beginning in a calendar year after 2018 (2026, in the case of the $1,000,000 amount in subparagraph (A)(ii)(I)), the amounts described in clause (ii) shall each be increased by an amount equal to- (I) such dollar amount, multiplied by (II) the cost-of-living adjustment determined under section 1(f)(3) for the calendar year in which the taxable year begins, determined by substituting for "calendar year 2016" in subparagraph (A)(ii) thereof- (1) "calendar year 2017", in the case of the $109,400 amount in subparagraph (A)(i)(I) and the $70,300 amount in subparagraph (A)(i)(II), and (2) "calendar year 2025", in the case of the $1,000,000 amount in subparagraph (A)(ii)(I).',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 63(c)(4)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section63&num=0&edition=prelim',
+      quotedText:
+        'In the case of any taxable year beginning in a calendar year after 1988, each dollar amount contained in paragraph (2)(B), (2)(C), or (5) or subsection (f) shall be increased by an amount equal to- (A) such dollar amount, multiplied by (B) the cost-of-living adjustment determined under section 1(f)(3) for the calendar year in which the taxable year begins, by substituting for "calendar year 2016" in subparagraph (A)(ii) thereof- (i) "calendar year 1987" in the case of the dollar amounts contained in paragraph (2)(B), (2)(C), or (5)(A) or subsection (f), and (ii) "calendar year 1997" in the case of the dollar amount contained in paragraph (5)(B).',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 55(d)(3)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section55&num=0&edition=prelim',
+      quotedText:
+        'In the case of any taxable year beginning in a calendar year after 2012, the amounts described in subparagraph (B) shall each be increased by an amount equal to- (i) such dollar amount, multiplied by (ii) the cost-of-living adjustment determined under section 1(f)(3) for the calendar year in which the taxable year begins, determined by substituting "calendar year 2011" for "calendar year 2016" in subparagraph (A)(ii) thereof.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 55(d)(3)(B)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section55&num=0&edition=prelim',
+      quotedText:
+        'The amounts described in this subparagraph are- (i) each of the dollar amounts contained in subsection (b)(1)(A), (ii) each of the dollar amounts contained in subparagraphs (A), (B), and (D) of paragraph (1), and (iii) each of the dollar amounts in subparagraphs (A) and (B) of paragraph (2).',
     }],
     volatility: 'annuallyIndexed',
     effectiveFrom: 2026,

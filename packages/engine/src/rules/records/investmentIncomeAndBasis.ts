@@ -312,6 +312,12 @@ export const investmentIncomeAndBasisRecords = {
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1091&num=0&edition=prelim',
       quotedText:
         'In the case of any loss claimed to have been sustained from any sale or other disposition of shares of stock or securities where it appears that, within a period beginning 30 days before the date of such sale or disposition and ending 30 days after such date, the taxpayer has acquired (by purchase or by an exchange on which the entire amount of gain or loss was recognized by law), or has entered into a contract or option so to acquire, substantially identical stock or securities, then no deduction shall be allowed under section 165 unless the taxpayer is a dealer in stock or securities and the loss is sustained in a transaction made in the ordinary course of such business.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 1091(d)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1091&num=0&edition=prelim',
+      quotedText:
+        'If the property consists of stock or securities the acquisition of which (or the contract or option to acquire which) resulted in the nondeductibility (under this section or corresponding provisions of prior internal revenue laws) of the loss from the sale or other disposition of substantially identical stock or securities, then the basis shall be the basis of the stock or securities so sold or disposed of, increased or decreased, as the case may be, by the difference, if any, between the price at which the property was acquired and the price at which such substantially identical stock or securities were sold or otherwise disposed of.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
@@ -511,7 +517,7 @@ export const investmentIncomeAndBasisRecords = {
   'irc-121-d-6-exclusion-cannot-reach-recapture': {
     title: 'The residence exclusion cannot reach depreciation recapture',
     statement:
-      'Gain on a principal residence owned and used as such for two of the preceding five years is excluded up to 250,000 dollars, or 500,000 on a joint return. The exclusion does not apply to gain up to the depreciation adjustments attributable to periods after 6 May 1997, so recapture is carved out first and the cap then applies only to what remains.',
+      'Gain on a principal residence owned and used as such for two of the preceding five years is excluded up to 250,000 dollars, or up to 500,000 on a joint return satisfying section 121(b)(2)(A). The exclusion does not apply to gain up to the depreciation adjustments attributable to periods after 6 May 1997, so recapture is carved out first and the cap then applies only to what remains.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -524,6 +530,18 @@ export const investmentIncomeAndBasisRecords = {
       url: 'https://www.law.cornell.edu/uscode/text/26/121',
       quotedText:
         'Gross income shall not include gain from the sale or exchange of property if, during the 5-year period ending on the date of the sale or exchange, such property has been owned and used by the taxpayer as the taxpayer\u2019s principal residence for periods aggregating 2 years or more.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 121(b)(1)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section121&num=0&edition=prelim',
+      quotedText:
+        'The amount of gain excluded from gross income under subsection (a) with respect to any sale or exchange shall not exceed $250,000.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 121(b)(2)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section121&num=0&edition=prelim',
+      quotedText:
+        'Paragraph (1) shall be applied by substituting "$500,000" for "$250,000" if- (i) either spouse meets the ownership requirements of subsection (a) with respect to such property; (ii) both spouses meet the use requirements of subsection (a) with respect to such property; and (iii) neither spouse is ineligible for the benefits of subsection (a) with respect to such property by reason of paragraph (3).',
     }, {
       kind: 'statute',
       citation: 'IRC 121(d)(6)',
@@ -721,9 +739,9 @@ export const investmentIncomeAndBasisRecords = {
     ],
   },
   'irc-1-h-1-E-unrecaptured-section-1250-gain': {
-    title: 'Depreciation on real property is capital gain capped at 25 percent, not ordinary income',
+    title: 'Section 168 straight-line real-property depreciation can produce unrecaptured section 1250 gain subject to a 25-percent maximum rate',
     statement:
-      'Depreciation taken on real property is generally not section 1250 recapture, because additional depreciation means only the excess over the straight-line method and real property placed in service after 1986 is depreciated straight line. It is unrecaptured section 1250 gain: long-term capital gain to which the maximum rate is 25 percent. Not modelled: the engine adds the whole recapture figure to ordinary income. The direction is fixed by the fact that 25 percent is a ceiling rather than a rate. For a taxpayer whose marginal ordinary rate exceeds 25 percent the engine overstates tax on that slice by the difference between the two rates; for a taxpayer already below 25 percent the answer is the same either way. It cannot understate.',
+      'For nonresidential real property and residential rental property to which section 168 applies, section 168(b)(3) requires the straight-line method. Section 1250 defines additional depreciation for property held more than one year as depreciation above the amount that straight-line depreciation would have produced, so depreciation that does not exceed that amount is generally not section 1250 recapture. On a disposition producing long-term capital gain, gain attributable to that depreciation can instead be unrecaptured section 1250 gain, subject to a maximum 25 percent rate. Not modelled: the engine adds the whole recapture figure to ordinary income. The direction is fixed by the fact that 25 percent is a ceiling rather than a rate. For a taxpayer whose marginal ordinary rate exceeds 25 percent the engine overstates tax on that slice by the difference between the two rates; for a taxpayer already below 25 percent the answer is the same either way. It cannot understate.',
     classification: 'approximated',
     contraryReading: null,
     errorDirection: 'overstatesTax',
@@ -734,19 +752,25 @@ export const investmentIncomeAndBasisRecords = {
       citation: 'IRC 1(h)(1)(E)',
       url: 'https://www.law.cornell.edu/uscode/text/26/1',
       quotedText:
-        'If a taxpayer has a net capital gain for any taxable year, the tax imposed by this section for such taxable year shall not exceed the sum of— ... (E) 25 percent of the excess (if any) of— (i) the unrecaptured section 1250 gain (or, if less, the net capital gain (determined without regard to paragraph (11))), over (ii) the excess (if any) of ...',
+        'If a taxpayer has a net capital gain for any taxable year, the tax imposed by this section for such taxable year shall not exceed the sum of— … (E) 25 percent of the excess (if any) of— (i) the unrecaptured section 1250 gain (or, if less, the net capital gain (determined without regard to paragraph (11))), over (ii) the excess (if any) of …',
     }, {
       kind: 'statute',
       citation: 'IRC 1(h)(6)(A)(i)',
       url: 'https://www.law.cornell.edu/uscode/text/26/1',
       quotedText:
-        'The term “unrecaptured section 1250 gain” means the excess (if any) of— (i) the amount of long-term capital gain (not otherwise treated as ordinary income) which would be treated as ordinary income if section 1250(b)(1) included all depreciation and the applicable percentage under section 1250(a) were 100 percent, over ...',
+        'The term “unrecaptured section 1250 gain” means the excess (if any) of— (i) the amount of long-term capital gain (not otherwise treated as ordinary income) which would be treated as ordinary income if section 1250(b)(1) included all depreciation and the applicable percentage under section 1250(a) were 100 percent, over …',
     }, {
       kind: 'statute',
       citation: 'IRC 1250(b)(1)',
       url: 'https://www.law.cornell.edu/uscode/text/26/1250',
       quotedText:
         'The term “additional depreciation” means, in the case of any property, the depreciation adjustments in respect of such property; except that, in the case of property held more than one year, it means such adjustments only to the extent that they exceed the amount of the depreciation adjustments which would have resulted if such adjustments had been determined for each taxable year under the straight line method of adjustment.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 168(b)(3)(A)-(B)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section168&num=0&edition=prelim',
+      quotedText:
+        'The applicable depreciation method shall be the straight line method in the case of the following property: (A) Nonresidential real property. (B) Residential rental property.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
@@ -793,7 +817,13 @@ export const investmentIncomeAndBasisRecords = {
       citation: 'IRC 121(b)(5)(A) and (B)',
       url: 'https://www.law.cornell.edu/uscode/text/26/121',
       quotedText:
-        'Subsection (a) shall not apply to so much of the gain from the sale or exchange of property as is allocated to periods of nonqualified use. ... gain shall be allocated to periods of nonqualified use based on the ratio which— (i) the aggregate periods of nonqualified use during the period such property was owned by the taxpayer, bears to (ii) the period such property was owned by the taxpayer.',
+        'Subsection (a) shall not apply to so much of the gain from the sale or exchange of property as is allocated to periods of nonqualified use. … gain shall be allocated to periods of nonqualified use based on the ratio which— (i) the aggregate periods of nonqualified use during the period such property was owned by the taxpayer, bears to (ii) the period such property was owned by the taxpayer.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 121(b)(5)(C)(i)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section121&num=0&edition=prelim',
+      quotedText:
+        'The term "period of nonqualified use" means any period (other than the portion of any period preceding January 1, 2009) during which the property is not used as the principal residence of the taxpayer or the taxpayer\'s spouse or former spouse.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
@@ -827,6 +857,12 @@ export const investmentIncomeAndBasisRecords = {
       url: 'https://www.ecfr.gov/api/renderer/v1/content/enhanced/current/title-26?chapter=I&subchapter=A&part=1&section=1.1012-1',
       quotedText:
         'Except as provided in paragraph (e)(2) of this section (dealing with stock for which the average basis method is permitted), if a taxpayer sells or transfers shares of stock in a corporation that the taxpayer purchased or acquired on different dates or at different prices and the taxpayer does not adequately identify the lot from which the stock is sold or transferred, the stock sold or transferred is charged against the earliest lot the taxpayer purchased or acquired to determine the basis and holding period of the stock.',
+    }, {
+      kind: 'regulation',
+      citation: '26 CFR 1.1012-1(e)(1)(i)-(ii)',
+      url: 'https://www.ecfr.gov/api/renderer/v1/content/enhanced/current/title-26?chapter=I&subchapter=A&part=1&section=1.1012-1',
+      quotedText:
+        'Notwithstanding paragraph (c) of this section, and except as provided in paragraph (e)(8) of this section, a taxpayer may use the average basis method described in paragraph (e)(7) of this section to determine the cost or other basis of identical shares of stock if— (i) The taxpayer leaves shares of stock in a regulated investment company (as defined in paragraph (e)(5) of this section) or shares of stock acquired after December 31, 2010, in connection with a dividend reinvestment plan (as defined in paragraph (e)(6) of this section) with a custodian or agent in an account maintained for the acquisition or redemption, sale, or other disposition of shares of the stock; and (ii) The taxpayer acquires identical shares of stock at different prices or bases in the account.',
     }, {
       kind: 'statute',
       citation: 'IRC 1222(3)',
@@ -885,7 +921,7 @@ export const investmentIncomeAndBasisRecords = {
   'irc-454-savings-bond-interest-deferral': {
     title: 'Savings-bond interest is deferred until redemption, maturity, or disposition unless elected',
     statement:
-      'IRC 454(a) permits a cash-method holder of a discount savings obligation to elect current inclusion of the increase in redemption price, but absent that election section 454(c) includes the increase in redemption value (to the extent not previously includible) in gross income in the taxable year of final redemption or final maturity, whichever is earlier. RetireGolden has no savings-bond instrument, redemption or maturity date, or section 454 election and therefore produces no savings-bond deferral or default-inclusion result.',
+      'IRC 454(a) permits a taxpayer whose accounting method does not otherwise include a qualifying discount obligation\'s redemption-price increase to elect current inclusion. For the obligations described in 26 CFR 1.454-1(a)(1), if the election is not made and the section 1037 nonrecognition rule does not apply, the increase is included when the obligation is redeemed or disposed of, or finally matures, whichever is earlier. RetireGolden has no savings-bond instrument, redemption or maturity date, or section 454 election and therefore produces no savings-bond deferral or default-inclusion result.',
     classification: 'outOfScope',
     outOfScope: {
       shape: 'inexpressibleInput',
@@ -907,11 +943,11 @@ export const investmentIncomeAndBasisRecords = {
       quotedText:
         'If, in the case of a taxpayer owning any non-interest-bearing obligation issued at a discount and redeemable for fixed amounts increasing at stated intervals or owning an obligation described in paragraph (2) of subsection (c), the increase in the redemption price of such obligation occurring in the taxable year does not (under the method of accounting used in computing his taxable income) constitute income to him in such year, such taxpayer may, at his election made in his return for any taxable year, treat such increase as income received in such taxable year.',
     }, {
-      kind: 'statute',
-      citation: 'IRC 454(c)',
-      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section454&num=0&edition=prelim',
+      kind: 'regulation',
+      citation: '26 CFR 1.454-1(a)(1)',
+      url: 'https://www.ecfr.gov/api/renderer/v1/content/enhanced/current/title-26?chapter=I&subchapter=A&part=1&section=1.454-1',
       quotedText:
-        'the increase in redemption value (to the extent not previously includible in gross income) in excess of the amount paid for such series E bond shall be includible in gross income in the taxable year in which the obligation is finally redeemed or in the taxable year of final maturity, whichever is earlier.',
+        'If the election is not made and section 1037 (or so much of section 1031 as relates to section 1037) does not apply, the taxpayer shall treat the increase as constituting income for the year in which the obligation is redeemed or disposed of, or finally matures, whichever is earlier.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
