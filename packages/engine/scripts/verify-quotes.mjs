@@ -1015,8 +1015,12 @@ function verdictForInner(entry, source) {
   }
 
   const quote = collapse(entry.quotedText.replace(INVISIBLE, ''))
+  const elided = /\.\.\.|…/.test(quote)
   const segments = segmentsOf(quote)
-  const elided = segments.length > 1
+
+  if (elided && segments.length === 0) {
+    return { verdict: 'ELISION-BROKEN', detail: 'no substantive segment between elision markers' }
+  }
 
   // A PDF can never produce a PASS. Extraction loses § (U+FFFD), glues ½ to the
   // preceding digit, and drops every curly character, so certifying that a
@@ -1030,7 +1034,9 @@ function verdictForInner(entry, source) {
       return {
         verdict: 'PDF-WORD-LEVEL',
         detail: elided
-          ? `${segments.length} elision segments, all present in the extracted text`
+          ? segments.length === 1
+            ? '1 elision segment, all present in the extracted text'
+            : `${segments.length} elision segments, all present in the extracted text`
           : 'present in the extracted text; character fidelity is not verifiable from a PDF',
       }
     }
@@ -1072,7 +1078,13 @@ function verdictForInner(entry, source) {
 
   if (rungs.every((r) => r === 0)) {
     return elided
-      ? { verdict: 'ELISION-EXACT', detail: `${segments.length} segments, every one a literal substring` }
+      ? {
+          verdict: 'ELISION-EXACT',
+          detail:
+            segments.length === 1
+              ? '1 elision segment, a literal substring'
+              : `${segments.length} elision segments, every one a literal substring`,
+        }
       : { verdict: 'EXACT', detail: 'literal substring of the source' }
   }
 

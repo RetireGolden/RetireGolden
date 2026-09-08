@@ -956,7 +956,7 @@ export const investmentIncomeAndBasisRecords = {
         'If, in the case of a taxpayer owning any non-interest-bearing obligation issued at a discount and redeemable for fixed amounts increasing at stated intervals or owning an obligation described in paragraph (2) of subsection (c), the increase in the redemption price of such obligation occurring in the taxable year does not (under the method of accounting used in computing his taxable income) constitute income to him in such year, such taxpayer may, at his election made in his return for any taxable year, treat such increase as income received in such taxable year.',
     }, {
       kind: 'statute',
-      citation: 'IRC 454(c)(1)-(2)',
+      citation: 'IRC 454(c)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section454&num=0&edition=prelim',
       quotedText:
         'In the case of a taxpayer who- (1) holds a series E United States savings bond at the date of maturity, and (2) pursuant to regulations prescribed under chapter 31 of title 31 (A) retains his investment in such series E bond in an obligation of the United States, other than a current income obligation, or (B) exchanges such series E bond for another nontransferable obligation of the United States in an exchange upon which gain or loss is not recognized because of section 1037 (or so much of section 1031 as relates to section 1037), the increase in redemption value (to the extent not previously includible in gross income) in excess of the amount paid for such series E bond shall be includible in gross income in the taxable year in which the obligation is finally redeemed or in the taxable year of final maturity, whichever is earlier.',
