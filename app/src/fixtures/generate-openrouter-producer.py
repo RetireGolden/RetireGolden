@@ -15,7 +15,7 @@ from or_pr_review.merge import MergedIssue
 from or_pr_review.schema import LaneResult, SCHEMA_VERSION
 from or_pr_review.review_policy import PolicyFile, ResolvedPolicy
 
-PRODUCER = "4fe6e668c9352b3f2a65254c4900d6443b5279e2"
+PRODUCER = "2eb560ca23346c4387828b4b9763698702094210"
 root = Path(publish.__file__).resolve().parents[2]
 
 
