@@ -386,7 +386,7 @@
           "functions": [
             {
               "name": "buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput",
-              "line": 437
+              "line": 438
             }
           ]
         },
@@ -2651,16 +2651,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/ordinaryFederalFilingDeadline.test.ts",
-          "line": 8,
+          "line": 10,
           "note": null,
           "tests": [
             {
               "title": "moves the 2027 tax-year deadline past the Monday-observed Emancipation Day",
-              "line": 21
+              "line": 23
             },
             {
               "title": "covers an ordinary weekday, Friday-observed Saturday holiday, Monday holiday, and the 2006 floor",
-              "line": 27
+              "line": 29
+            },
+            {
+              "title": "drives the post-candidate builder on the 2027 tax-year adjusted deadline",
+              "line": 38
             }
           ]
         }

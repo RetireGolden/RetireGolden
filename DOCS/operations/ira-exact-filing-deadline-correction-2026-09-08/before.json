@@ -1,0 +1,894 @@
+{
+  "kind": "rule-020-F1-before-after-observation",
+  "observedAt": "2026-09-08T12:44:05.336Z",
+  "head": "bad69a8404e95b00882f9fcdd205e4a3c3b72fb2",
+  "canonicalFixtureSource": "packages/engine/src/actions/ownedNonRothIraAnnualPostCandidateEvidence.test.ts#base",
+  "runtimeEntryPoint": "packages/engine/src/actions/ownedNonRothIraAnnualPostCandidateEvidence.ts#buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput",
+  "sourceHashesSha256": {
+    "packages/engine/src/actions/ownedNonRothIraAnnualPostCandidateEvidence.ts": "4be4a58558a964005110080ea53798b1481637ff3c6f2ec2fcf02d513b92c779",
+    "packages/engine/src/actions/ownedNonRothIraAnnualPostCandidateEvidence.test.ts": "8243ae608a6fe854dc4ef9b5242ad2a937d0f550bdba1a6bd53057686a73e7e4",
+    "packages/engine/src/tax/ordinaryFederalFilingDeadline.ts": "87ee9bdfaddd4f4b4748d9bb179fb97c3fc3fae6afecd00575543045166ad521"
+  },
+  "cases": [
+    {
+      "deadlineDate": "2031-04-15",
+      "contributionDate": "2031-04-15",
+      "exactInput": {
+        "inventoryInput": {
+          "plan": {
+            "schemaVersion": 5,
+            "id": "post-candidate-plan",
+            "name": "Test plan",
+            "origin": "user",
+            "createdAtIso": "2026-01-01T00:00:00.000Z",
+            "updatedAtIso": "2026-01-01T00:00:00.000Z",
+            "household": {
+              "filingStatus": "single",
+              "hasQualifyingDependent": false,
+              "state": "KY",
+              "stateMoves": [],
+              "capitalLossCarryforward": 0,
+              "people": [
+                {
+                  "id": "p1",
+                  "name": "Pat",
+                  "dob": "1950-01-01",
+                  "sex": "average",
+                  "retirementAge": null,
+                  "longevity": {
+                    "planningAge": 100,
+                    "source": "manual"
+                  }
+                }
+              ]
+            },
+            "accounts": [
+              {
+                "type": "traditional",
+                "id": "ira-requested",
+                "name": "ira-requested",
+                "ownerPersonId": "p1",
+                "annualReturnPct": 0,
+                "kind": "ira",
+                "balance": 100,
+                "annualContribution": 0
+              },
+              {
+                "type": "traditional",
+                "id": "ira-unrequested",
+                "name": "ira-unrequested",
+                "ownerPersonId": "p1",
+                "annualReturnPct": 0,
+                "kind": "ira",
+                "balance": 200,
+                "annualContribution": 0
+              },
+              {
+                "type": "traditional",
+                "id": "employer-plan",
+                "name": "employer-plan",
+                "ownerPersonId": "p1",
+                "annualReturnPct": 0,
+                "kind": "employer",
+                "balance": 300,
+                "annualContribution": 0
+              },
+              {
+                "type": "traditional",
+                "id": "inherited-ira",
+                "name": "Inherited IRA",
+                "ownerPersonId": "p1",
+                "annualReturnPct": 0,
+                "kind": "ira",
+                "balance": 400,
+                "annualContribution": 0,
+                "inherited": {
+                  "ownerDeathYear": 2028,
+                  "decedentHadStartedRmds": true
+                }
+              }
+            ],
+            "insurance": [],
+            "careEvents": [],
+            "incomes": [],
+            "expenses": {
+              "baseAnnual": 0,
+              "phases": [],
+              "oneTimeGoals": [],
+              "healthcare": {
+                "pre65MonthlyPremiumPerPerson": 0,
+                "applyAcaCredit": false,
+                "medicareExtrasMonthlyPerPerson": 0
+              }
+            },
+            "strategies": {
+              "withdrawalOrder": {
+                "mode": "sequential"
+              },
+              "rothConversion": {
+                "mode": "none"
+              },
+              "qcdAnnual": 0,
+              "retirementActions": [
+                {
+                  "actionId": "withdrawal",
+                  "kind": "ordinaryWithdrawal",
+                  "year": 2030,
+                  "executionDate": "2030-06-15",
+                  "executionSequence": 10,
+                  "requestedAmount": 10000,
+                  "provenance": {
+                    "source": "manual"
+                  },
+                  "personId": "p1",
+                  "allocations": [
+                    {
+                      "allocationId": "withdrawal-allocation",
+                      "sourceAccountId": "ira-requested",
+                      "requestedAmount": 10000
+                    }
+                  ],
+                  "purpose": {
+                    "kind": "spending"
+                  }
+                }
+              ]
+            },
+            "assumptions": {
+              "inflationPct": 0,
+              "healthcareExtraInflationPct": 0,
+              "defaultReturnPct": 0,
+              "ssCola": {
+                "mode": "fixed",
+                "annualPct": 0
+              },
+              "ssHaircut": null,
+              "stateEffectiveTaxPct": 0,
+              "localIncomeTaxPct": 0,
+              "recentAnnualMagi": 0,
+              "heirTaxRatePct": 25,
+              "safeWithdrawalRatePct": 4
+            },
+            "annualFederalTaxFacts": {
+              "foreignIncomeAdjustments": []
+            },
+            "scenarios": [],
+            "retirementActionEligibilityFacts": {
+              "iraClassifications": [
+                {
+                  "sourceAccountId": "ira-requested",
+                  "subtype": "traditional",
+                  "evidenceId": "classification-requested",
+                  "provenance": {
+                    "source": "manual"
+                  }
+                },
+                {
+                  "sourceAccountId": "ira-unrequested",
+                  "subtype": "sep",
+                  "evidenceId": "classification-sibling",
+                  "provenance": {
+                    "source": "manual"
+                  }
+                }
+              ],
+              "sepSimpleActivities": [],
+              "deductibleIraContributions": []
+            }
+          },
+          "taxYear": 2030,
+          "runtimeRecords": [],
+          "runtimeInventoryAttestation": {
+            "predicate": "completeAnnualRetirementPhysicalEventInventory",
+            "planId": "post-candidate-plan",
+            "taxYear": 2030,
+            "ledgerRunId": "ledger-2030",
+            "inventoryStatus": "completeIncludingExplicitEmpty",
+            "resolvedEventIds": [],
+            "unresolvedActivityIds": [],
+            "evidenceId": "runtime-inventory",
+            "upstreamEvidenceId": "runtime-inventory-upstream"
+          }
+        },
+        "movementInput": {
+          "ownerPersonId": "p1",
+          "taxYear": 2030,
+          "requests": [
+            {
+              "actionId": "withdrawal",
+              "kind": "ordinaryWithdrawal",
+              "year": 2030,
+              "executionDate": "2030-06-15",
+              "executionSequence": 10,
+              "requestedAmount": 10000,
+              "provenance": {
+                "source": "manual"
+              },
+              "personId": "p1",
+              "allocations": [
+                {
+                  "allocationId": "withdrawal-allocation",
+                  "sourceAccountId": "ira-requested",
+                  "requestedAmount": 10000
+                }
+              ],
+              "purpose": {
+                "kind": "spending"
+              }
+            }
+          ],
+          "openingBalances": [
+            {
+              "accountId": "ira-requested",
+              "openingBalance": 10000
+            }
+          ],
+          "sourceEvidence": [
+            {
+              "predicate": "ownedNonRothIraOrdinaryWithdrawalMovementSource",
+              "sourceAccountId": "ira-requested",
+              "ownerPersonId": "p1",
+              "accountType": "traditional",
+              "accountKind": "ira",
+              "inheritanceStatus": "owned",
+              "subtype": "traditional",
+              "accountOwnershipEvidenceId": "owned-ira-plan-account-ownership:7cf112a671d1a9ce598ecb41d699d2326110def197d14f77a15373bec536e9e2",
+              "iraClassificationEvidenceId": "classification-requested"
+            }
+          ]
+        },
+        "movementCandidate": {
+          "status": "movementCandidateStaged",
+          "movement": "notCommitted",
+          "movementCandidateId": "owned-non-roth-ira-movement-candidate:27e451cb7fa7ce5aa799d1263614b80d03304c1d1ef23d7c828acc0fe1c247e2",
+          "ownerPersonId": "p1",
+          "taxYear": 2030,
+          "scheduleIssues": [],
+          "candidateBalances": [
+            {
+              "sourceAccountId": "ira-requested",
+              "ownerPersonId": "p1",
+              "openingBalance": 10000,
+              "requestedAmount": 10000,
+              "executedAmount": 10000,
+              "unexecutedAmount": 0,
+              "candidateClosingBalance": 0
+            }
+          ],
+          "actions": [
+            {
+              "request": {
+                "actionId": "withdrawal",
+                "kind": "ordinaryWithdrawal",
+                "year": 2030,
+                "executionDate": "2030-06-15",
+                "executionSequence": 10,
+                "requestedAmount": 10000,
+                "provenance": {
+                  "source": "manual"
+                },
+                "personId": "p1",
+                "allocations": [
+                  {
+                    "allocationId": "withdrawal-allocation",
+                    "sourceAccountId": "ira-requested",
+                    "requestedAmount": 10000
+                  }
+                ],
+                "purpose": {
+                  "kind": "spending"
+                }
+              },
+              "actionId": "withdrawal",
+              "ownerPersonId": "p1",
+              "taxYear": 2030,
+              "executionDate": "2030-06-15",
+              "executionSequence": 10,
+              "requestedAmount": 10000,
+              "executedAmount": 10000,
+              "unexecutedAmount": 0,
+              "candidateDisposition": {
+                "candidateStatus": "fullyStaged",
+                "requestedAmount": 10000,
+                "stagedAmount": 10000,
+                "unstagedAmount": 0,
+                "reasons": []
+              },
+              "allocations": [
+                {
+                  "allocationId": "withdrawal-allocation",
+                  "sourceAccountId": "ira-requested",
+                  "requestedAmount": 10000,
+                  "balanceBefore": 10000,
+                  "executedAmount": 10000,
+                  "unexecutedAmount": 0,
+                  "candidateBalanceAfter": 0,
+                  "sourceEvidence": {
+                    "predicate": "ownedNonRothIraOrdinaryWithdrawalMovementSource",
+                    "sourceAccountId": "ira-requested",
+                    "ownerPersonId": "p1",
+                    "accountType": "traditional",
+                    "accountKind": "ira",
+                    "inheritanceStatus": "owned",
+                    "subtype": "traditional",
+                    "accountOwnershipEvidenceId": "owned-ira-plan-account-ownership:7cf112a671d1a9ce598ecb41d699d2326110def197d14f77a15373bec536e9e2",
+                    "iraClassificationEvidenceId": "classification-requested"
+                  }
+                }
+              ]
+            }
+          ],
+          "line7Distributions": [
+            {
+              "actionId": "withdrawal",
+              "allocationId": "withdrawal-allocation",
+              "sourceAccountId": "ira-requested",
+              "scheduledDate": "2030-06-15",
+              "scheduledSequence": 10,
+              "grossAmount": 10000
+            }
+          ]
+        },
+        "postCandidateSnapshot": {
+          "predicate": "completePlanOwnedNonRothIraPostCandidateSnapshot",
+          "planId": "post-candidate-plan",
+          "ownerPersonId": "p1",
+          "taxYear": 2030,
+          "ledgerRunId": "ledger-2030",
+          "inventoryEvidenceId": "annual-retirement-physical-event-inventory:309986c6b7af9b39233933161fbbc5fff8a222434625310e98c46d172c46fd1f",
+          "movementCandidateId": "owned-non-roth-ira-movement-candidate:27e451cb7fa7ce5aa799d1263614b80d03304c1d1ef23d7c828acc0fe1c247e2",
+          "applicationStatus": "canonicalMovementCandidateAppliedExactlyOnce",
+          "allocationApplications": [
+            {
+              "actionId": "withdrawal",
+              "allocationId": "withdrawal-allocation",
+              "sourceAccountId": "ira-requested",
+              "scheduledDate": "2030-06-15",
+              "scheduledSequence": 10,
+              "requestedAmount": 10000,
+              "balanceBefore": 10000,
+              "executedAmount": 10000,
+              "unexecutedAmount": 0,
+              "candidateBalanceAfter": 0,
+              "applicationEvidenceId": "application-withdrawal-withdrawal-allocation",
+              "upstreamEvidenceId": "application-withdrawal-withdrawal-allocation-upstream"
+            }
+          ],
+          "candidateBalances": [
+            {
+              "sourceAccountId": "ira-requested",
+              "ownerPersonId": "p1",
+              "openingBalance": 10000,
+              "requestedAmount": 10000,
+              "executedAmount": 10000,
+              "unexecutedAmount": 0,
+              "candidateClosingBalance": 0,
+              "evidenceId": "candidate-balance-ira-requested",
+              "upstreamEvidenceId": "candidate-balance-ira-requested-upstream"
+            }
+          ],
+          "yearEndApplicableBalances": [
+            {
+              "predicate": "ownedNonRothIraForm8606ApplicableTaxYearEndBalance",
+              "planId": "post-candidate-plan",
+              "ownerPersonId": "p1",
+              "sourceAccountId": "ira-requested",
+              "taxYear": 2030,
+              "ledgerRunId": "ledger-2030",
+              "ledgerPhase": "form8606ApplicableTaxYearEndAfterCanonicalMovementCandidate",
+              "asOfDate": "2030-12-31",
+              "yearEndApplicableBalanceAmount": 0,
+              "evidenceId": "year-end-requested",
+              "upstreamEvidenceId": "year-end-requested-upstream"
+            },
+            {
+              "predicate": "ownedNonRothIraForm8606ApplicableTaxYearEndBalance",
+              "planId": "post-candidate-plan",
+              "ownerPersonId": "p1",
+              "sourceAccountId": "ira-unrequested",
+              "taxYear": 2030,
+              "ledgerRunId": "ledger-2030",
+              "ledgerPhase": "form8606ApplicableTaxYearEndAfterCanonicalMovementCandidate",
+              "asOfDate": "2030-12-31",
+              "yearEndApplicableBalanceAmount": 20000,
+              "evidenceId": "year-end-sibling",
+              "upstreamEvidenceId": "year-end-sibling-upstream"
+            }
+          ],
+          "evidenceId": "post-candidate-snapshot",
+          "upstreamEvidenceId": "post-candidate-snapshot-upstream"
+        },
+        "annualBasisRecord": {
+          "predicate": "completePlanOwnedNonRothIraAnnualBasisRecord",
+          "planId": "post-candidate-plan",
+          "ownerPersonId": "p1",
+          "taxYear": 2030,
+          "ledgerRunId": "ledger-2030",
+          "recordStatus": "openingBasisAndExplicitZeroRolloverFactsComplete",
+          "openingBasisAmount": 4000,
+          "outstandingRolloverAmount": 0,
+          "rolloverRepaymentAdjustmentAmount": 0,
+          "evidenceId": "annual-basis-record",
+          "upstreamEvidenceId": "annual-basis-record-upstream"
+        },
+        "postYearContributionWindow": {
+          "predicate": "completePlanOwnedNonRothIraPostYearNondeductibleContributionWindow",
+          "planId": "post-candidate-plan",
+          "ownerPersonId": "p1",
+          "taxYear": 2030,
+          "ledgerRunId": "ledger-2030",
+          "inventoryStatus": "completeIncludingExplicitEmpty",
+          "deadlineEvidence": {
+            "predicate": "federalIraContributionDeadlineForTaxYear",
+            "designatedTaxYear": 2030,
+            "deadlineStatus": "authoritativeFederalDeadlineEstablished",
+            "deadlineKind": "ordinaryFederalFilingDeadlineExcludingDisasterRelief",
+            "calendarAdjustmentStatus": "weekendAndDistrictOfColumbiaHolidayAdjustmentApplied",
+            "deadlineDate": "2031-04-15",
+            "evidenceId": "contribution-deadline",
+            "upstreamEvidenceId": "contribution-deadline-upstream"
+          },
+          "contributions": [
+            {
+              "contributionId": "post-year-contribution",
+              "planId": "post-candidate-plan",
+              "ownerPersonId": "p1",
+              "sourceAccountId": "ira-unrequested",
+              "designatedTaxYear": 2030,
+              "contributionDate": "2031-04-15",
+              "nondeductibleContributionAmount": 2500,
+              "evidenceId": "post-year-contribution-evidence",
+              "upstreamEvidenceId": "post-year-contribution-upstream"
+            }
+          ],
+          "evidenceId": "contribution-window",
+          "upstreamEvidenceId": "contribution-window-upstream"
+        }
+      },
+      "observed": {
+        "status": "postCandidateClassificationInputBuilt",
+        "issueKinds": []
+      }
+    },
+    {
+      "deadlineDate": "2031-04-18",
+      "contributionDate": "2031-04-18",
+      "exactInput": {
+        "inventoryInput": {
+          "plan": {
+            "schemaVersion": 5,
+            "id": "post-candidate-plan",
+            "name": "Test plan",
+            "origin": "user",
+            "createdAtIso": "2026-01-01T00:00:00.000Z",
+            "updatedAtIso": "2026-01-01T00:00:00.000Z",
+            "household": {
+              "filingStatus": "single",
+              "hasQualifyingDependent": false,
+              "state": "KY",
+              "stateMoves": [],
+              "capitalLossCarryforward": 0,
+              "people": [
+                {
+                  "id": "p1",
+                  "name": "Pat",
+                  "dob": "1950-01-01",
+                  "sex": "average",
+                  "retirementAge": null,
+                  "longevity": {
+                    "planningAge": 100,
+                    "source": "manual"
+                  }
+                }
+              ]
+            },
+            "accounts": [
+              {
+                "type": "traditional",
+                "id": "ira-requested",
+                "name": "ira-requested",
+                "ownerPersonId": "p1",
+                "annualReturnPct": 0,
+                "kind": "ira",
+                "balance": 100,
+                "annualContribution": 0
+              },
+              {
+                "type": "traditional",
+                "id": "ira-unrequested",
+                "name": "ira-unrequested",
+                "ownerPersonId": "p1",
+                "annualReturnPct": 0,
+                "kind": "ira",
+                "balance": 200,
+                "annualContribution": 0
+              },
+              {
+                "type": "traditional",
+                "id": "employer-plan",
+                "name": "employer-plan",
+                "ownerPersonId": "p1",
+                "annualReturnPct": 0,
+                "kind": "employer",
+                "balance": 300,
+                "annualContribution": 0
+              },
+              {
+                "type": "traditional",
+                "id": "inherited-ira",
+                "name": "Inherited IRA",
+                "ownerPersonId": "p1",
+                "annualReturnPct": 0,
+                "kind": "ira",
+                "balance": 400,
+                "annualContribution": 0,
+                "inherited": {
+                  "ownerDeathYear": 2028,
+                  "decedentHadStartedRmds": true
+                }
+              }
+            ],
+            "insurance": [],
+            "careEvents": [],
+            "incomes": [],
+            "expenses": {
+              "baseAnnual": 0,
+              "phases": [],
+              "oneTimeGoals": [],
+              "healthcare": {
+                "pre65MonthlyPremiumPerPerson": 0,
+                "applyAcaCredit": false,
+                "medicareExtrasMonthlyPerPerson": 0
+              }
+            },
+            "strategies": {
+              "withdrawalOrder": {
+                "mode": "sequential"
+              },
+              "rothConversion": {
+                "mode": "none"
+              },
+              "qcdAnnual": 0,
+              "retirementActions": [
+                {
+                  "actionId": "withdrawal",
+                  "kind": "ordinaryWithdrawal",
+                  "year": 2030,
+                  "executionDate": "2030-06-15",
+                  "executionSequence": 10,
+                  "requestedAmount": 10000,
+                  "provenance": {
+                    "source": "manual"
+                  },
+                  "personId": "p1",
+                  "allocations": [
+                    {
+                      "allocationId": "withdrawal-allocation",
+                      "sourceAccountId": "ira-requested",
+                      "requestedAmount": 10000
+                    }
+                  ],
+                  "purpose": {
+                    "kind": "spending"
+                  }
+                }
+              ]
+            },
+            "assumptions": {
+              "inflationPct": 0,
+              "healthcareExtraInflationPct": 0,
+              "defaultReturnPct": 0,
+              "ssCola": {
+                "mode": "fixed",
+                "annualPct": 0
+              },
+              "ssHaircut": null,
+              "stateEffectiveTaxPct": 0,
+              "localIncomeTaxPct": 0,
+              "recentAnnualMagi": 0,
+              "heirTaxRatePct": 25,
+              "safeWithdrawalRatePct": 4
+            },
+            "annualFederalTaxFacts": {
+              "foreignIncomeAdjustments": []
+            },
+            "scenarios": [],
+            "retirementActionEligibilityFacts": {
+              "iraClassifications": [
+                {
+                  "sourceAccountId": "ira-requested",
+                  "subtype": "traditional",
+                  "evidenceId": "classification-requested",
+                  "provenance": {
+                    "source": "manual"
+                  }
+                },
+                {
+                  "sourceAccountId": "ira-unrequested",
+                  "subtype": "sep",
+                  "evidenceId": "classification-sibling",
+                  "provenance": {
+                    "source": "manual"
+                  }
+                }
+              ],
+              "sepSimpleActivities": [],
+              "deductibleIraContributions": []
+            }
+          },
+          "taxYear": 2030,
+          "runtimeRecords": [],
+          "runtimeInventoryAttestation": {
+            "predicate": "completeAnnualRetirementPhysicalEventInventory",
+            "planId": "post-candidate-plan",
+            "taxYear": 2030,
+            "ledgerRunId": "ledger-2030",
+            "inventoryStatus": "completeIncludingExplicitEmpty",
+            "resolvedEventIds": [],
+            "unresolvedActivityIds": [],
+            "evidenceId": "runtime-inventory",
+            "upstreamEvidenceId": "runtime-inventory-upstream"
+          }
+        },
+        "movementInput": {
+          "ownerPersonId": "p1",
+          "taxYear": 2030,
+          "requests": [
+            {
+              "actionId": "withdrawal",
+              "kind": "ordinaryWithdrawal",
+              "year": 2030,
+              "executionDate": "2030-06-15",
+              "executionSequence": 10,
+              "requestedAmount": 10000,
+              "provenance": {
+                "source": "manual"
+              },
+              "personId": "p1",
+              "allocations": [
+                {
+                  "allocationId": "withdrawal-allocation",
+                  "sourceAccountId": "ira-requested",
+                  "requestedAmount": 10000
+                }
+              ],
+              "purpose": {
+                "kind": "spending"
+              }
+            }
+          ],
+          "openingBalances": [
+            {
+              "accountId": "ira-requested",
+              "openingBalance": 10000
+            }
+          ],
+          "sourceEvidence": [
+            {
+              "predicate": "ownedNonRothIraOrdinaryWithdrawalMovementSource",
+              "sourceAccountId": "ira-requested",
+              "ownerPersonId": "p1",
+              "accountType": "traditional",
+              "accountKind": "ira",
+              "inheritanceStatus": "owned",
+              "subtype": "traditional",
+              "accountOwnershipEvidenceId": "owned-ira-plan-account-ownership:7cf112a671d1a9ce598ecb41d699d2326110def197d14f77a15373bec536e9e2",
+              "iraClassificationEvidenceId": "classification-requested"
+            }
+          ]
+        },
+        "movementCandidate": {
+          "status": "movementCandidateStaged",
+          "movement": "notCommitted",
+          "movementCandidateId": "owned-non-roth-ira-movement-candidate:27e451cb7fa7ce5aa799d1263614b80d03304c1d1ef23d7c828acc0fe1c247e2",
+          "ownerPersonId": "p1",
+          "taxYear": 2030,
+          "scheduleIssues": [],
+          "candidateBalances": [
+            {
+              "sourceAccountId": "ira-requested",
+              "ownerPersonId": "p1",
+              "openingBalance": 10000,
+              "requestedAmount": 10000,
+              "executedAmount": 10000,
+              "unexecutedAmount": 0,
+              "candidateClosingBalance": 0
+            }
+          ],
+          "actions": [
+            {
+              "request": {
+                "actionId": "withdrawal",
+                "kind": "ordinaryWithdrawal",
+                "year": 2030,
+                "executionDate": "2030-06-15",
+                "executionSequence": 10,
+                "requestedAmount": 10000,
+                "provenance": {
+                  "source": "manual"
+                },
+                "personId": "p1",
+                "allocations": [
+                  {
+                    "allocationId": "withdrawal-allocation",
+                    "sourceAccountId": "ira-requested",
+                    "requestedAmount": 10000
+                  }
+                ],
+                "purpose": {
+                  "kind": "spending"
+                }
+              },
+              "actionId": "withdrawal",
+              "ownerPersonId": "p1",
+              "taxYear": 2030,
+              "executionDate": "2030-06-15",
+              "executionSequence": 10,
+              "requestedAmount": 10000,
+              "executedAmount": 10000,
+              "unexecutedAmount": 0,
+              "candidateDisposition": {
+                "candidateStatus": "fullyStaged",
+                "requestedAmount": 10000,
+                "stagedAmount": 10000,
+                "unstagedAmount": 0,
+                "reasons": []
+              },
+              "allocations": [
+                {
+                  "allocationId": "withdrawal-allocation",
+                  "sourceAccountId": "ira-requested",
+                  "requestedAmount": 10000,
+                  "balanceBefore": 10000,
+                  "executedAmount": 10000,
+                  "unexecutedAmount": 0,
+                  "candidateBalanceAfter": 0,
+                  "sourceEvidence": {
+                    "predicate": "ownedNonRothIraOrdinaryWithdrawalMovementSource",
+                    "sourceAccountId": "ira-requested",
+                    "ownerPersonId": "p1",
+                    "accountType": "traditional",
+                    "accountKind": "ira",
+                    "inheritanceStatus": "owned",
+                    "subtype": "traditional",
+                    "accountOwnershipEvidenceId": "owned-ira-plan-account-ownership:7cf112a671d1a9ce598ecb41d699d2326110def197d14f77a15373bec536e9e2",
+                    "iraClassificationEvidenceId": "classification-requested"
+                  }
+                }
+              ]
+            }
+          ],
+          "line7Distributions": [
+            {
+              "actionId": "withdrawal",
+              "allocationId": "withdrawal-allocation",
+              "sourceAccountId": "ira-requested",
+              "scheduledDate": "2030-06-15",
+              "scheduledSequence": 10,
+              "grossAmount": 10000
+            }
+          ]
+        },
+        "postCandidateSnapshot": {
+          "predicate": "completePlanOwnedNonRothIraPostCandidateSnapshot",
+          "planId": "post-candidate-plan",
+          "ownerPersonId": "p1",
+          "taxYear": 2030,
+          "ledgerRunId": "ledger-2030",
+          "inventoryEvidenceId": "annual-retirement-physical-event-inventory:309986c6b7af9b39233933161fbbc5fff8a222434625310e98c46d172c46fd1f",
+          "movementCandidateId": "owned-non-roth-ira-movement-candidate:27e451cb7fa7ce5aa799d1263614b80d03304c1d1ef23d7c828acc0fe1c247e2",
+          "applicationStatus": "canonicalMovementCandidateAppliedExactlyOnce",
+          "allocationApplications": [
+            {
+              "actionId": "withdrawal",
+              "allocationId": "withdrawal-allocation",
+              "sourceAccountId": "ira-requested",
+              "scheduledDate": "2030-06-15",
+              "scheduledSequence": 10,
+              "requestedAmount": 10000,
+              "balanceBefore": 10000,
+              "executedAmount": 10000,
+              "unexecutedAmount": 0,
+              "candidateBalanceAfter": 0,
+              "applicationEvidenceId": "application-withdrawal-withdrawal-allocation",
+              "upstreamEvidenceId": "application-withdrawal-withdrawal-allocation-upstream"
+            }
+          ],
+          "candidateBalances": [
+            {
+              "sourceAccountId": "ira-requested",
+              "ownerPersonId": "p1",
+              "openingBalance": 10000,
+              "requestedAmount": 10000,
+              "executedAmount": 10000,
+              "unexecutedAmount": 0,
+              "candidateClosingBalance": 0,
+              "evidenceId": "candidate-balance-ira-requested",
+              "upstreamEvidenceId": "candidate-balance-ira-requested-upstream"
+            }
+          ],
+          "yearEndApplicableBalances": [
+            {
+              "predicate": "ownedNonRothIraForm8606ApplicableTaxYearEndBalance",
+              "planId": "post-candidate-plan",
+              "ownerPersonId": "p1",
+              "sourceAccountId": "ira-requested",
+              "taxYear": 2030,
+              "ledgerRunId": "ledger-2030",
+              "ledgerPhase": "form8606ApplicableTaxYearEndAfterCanonicalMovementCandidate",
+              "asOfDate": "2030-12-31",
+              "yearEndApplicableBalanceAmount": 0,
+              "evidenceId": "year-end-requested",
+              "upstreamEvidenceId": "year-end-requested-upstream"
+            },
+            {
+              "predicate": "ownedNonRothIraForm8606ApplicableTaxYearEndBalance",
+              "planId": "post-candidate-plan",
+              "ownerPersonId": "p1",
+              "sourceAccountId": "ira-unrequested",
+              "taxYear": 2030,
+              "ledgerRunId": "ledger-2030",
+              "ledgerPhase": "form8606ApplicableTaxYearEndAfterCanonicalMovementCandidate",
+              "asOfDate": "2030-12-31",
+              "yearEndApplicableBalanceAmount": 20000,
+              "evidenceId": "year-end-sibling",
+              "upstreamEvidenceId": "year-end-sibling-upstream"
+            }
+          ],
+          "evidenceId": "post-candidate-snapshot",
+          "upstreamEvidenceId": "post-candidate-snapshot-upstream"
+        },
+        "annualBasisRecord": {
+          "predicate": "completePlanOwnedNonRothIraAnnualBasisRecord",
+          "planId": "post-candidate-plan",
+          "ownerPersonId": "p1",
+          "taxYear": 2030,
+          "ledgerRunId": "ledger-2030",
+          "recordStatus": "openingBasisAndExplicitZeroRolloverFactsComplete",
+          "openingBasisAmount": 4000,
+          "outstandingRolloverAmount": 0,
+          "rolloverRepaymentAdjustmentAmount": 0,
+          "evidenceId": "annual-basis-record",
+          "upstreamEvidenceId": "annual-basis-record-upstream"
+        },
+        "postYearContributionWindow": {
+          "predicate": "completePlanOwnedNonRothIraPostYearNondeductibleContributionWindow",
+          "planId": "post-candidate-plan",
+          "ownerPersonId": "p1",
+          "taxYear": 2030,
+          "ledgerRunId": "ledger-2030",
+          "inventoryStatus": "completeIncludingExplicitEmpty",
+          "deadlineEvidence": {
+            "predicate": "federalIraContributionDeadlineForTaxYear",
+            "designatedTaxYear": 2030,
+            "deadlineStatus": "authoritativeFederalDeadlineEstablished",
+            "deadlineKind": "ordinaryFederalFilingDeadlineExcludingDisasterRelief",
+            "calendarAdjustmentStatus": "weekendAndDistrictOfColumbiaHolidayAdjustmentApplied",
+            "deadlineDate": "2031-04-18",
+            "evidenceId": "contribution-deadline",
+            "upstreamEvidenceId": "contribution-deadline-upstream"
+          },
+          "contributions": [
+            {
+              "contributionId": "post-year-contribution",
+              "planId": "post-candidate-plan",
+              "ownerPersonId": "p1",
+              "sourceAccountId": "ira-unrequested",
+              "designatedTaxYear": 2030,
+              "contributionDate": "2031-04-18",
+              "nondeductibleContributionAmount": 2500,
+              "evidenceId": "post-year-contribution-evidence",
+              "upstreamEvidenceId": "post-year-contribution-upstream"
+            }
+          ],
+          "evidenceId": "contribution-window",
+          "upstreamEvidenceId": "contribution-window-upstream"
+        }
+      },
+      "observed": {
+        "status": "postCandidateClassificationInputBuilt",
+        "issueKinds": []
+      }
+    }
+  ]
+}

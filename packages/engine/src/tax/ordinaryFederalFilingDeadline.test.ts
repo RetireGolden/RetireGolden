@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
+import { buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput } from '../actions/ownedNonRothIraAnnualPostCandidateEvidence.js'
 import { ordinaryFederalFilingDeadline as modelOrdinaryFederalFilingDeadline } from '../model/retirementActionAnnualTaxFacts.js'
 import { describeRule } from '../rules/describeRule.js'
+import { base } from '../testing/ownedNonRothIraPostCandidateFixture.test-support.js'
 
 import { ordinaryFederalFilingDeadline } from './ordinaryFederalFilingDeadline.js'
 
@@ -31,6 +33,47 @@ describeRule('irc-6072-a-7503-ordinary-federal-filing-deadline', {
     expect(ordinaryFederalFilingDeadline(2021)).toBe('2022-04-18')
     // 2007-04-15 Sunday, 04-16 Monday holiday → deadline Tuesday 04-17.
     expect(ordinaryFederalFilingDeadline(2006)).toBe('2007-04-17')
+  })
+
+  it('drives the post-candidate builder on the 2027 tax-year adjusted deadline', () => {
+    const worksheet = base(10_000, 2027)
+    worksheet.postYearContributionWindow.deadlineEvidence = {
+      ...worksheet.postYearContributionWindow.deadlineEvidence,
+      deadlineDate: accepted,
+    }
+    worksheet.postYearContributionWindow.contributions = [{
+      ...worksheet.postYearContributionWindow.contributions[0]!,
+      contributionDate: accepted,
+    }]
+    expect(
+      buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput(worksheet).status,
+    ).toBe('postCandidateClassificationInputBuilt')
+
+    const fixedApril15 = structuredClone(worksheet)
+    fixedApril15.postYearContributionWindow.deadlineEvidence = {
+      ...fixedApril15.postYearContributionWindow.deadlineEvidence,
+      deadlineDate: readings.fixedApril15,
+    }
+    fixedApril15.postYearContributionWindow.contributions = [{
+      ...fixedApril15.postYearContributionWindow.contributions[0]!,
+      contributionDate: readings.fixedApril15,
+    }]
+    expect(
+      buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput(fixedApril15).status,
+    ).toBe('contributionWindowIncomplete')
+
+    const weekendOnly = structuredClone(worksheet)
+    weekendOnly.postYearContributionWindow.deadlineEvidence = {
+      ...weekendOnly.postYearContributionWindow.deadlineEvidence,
+      deadlineDate: readings.weekendOnlySkip,
+    }
+    weekendOnly.postYearContributionWindow.contributions = [{
+      ...weekendOnly.postYearContributionWindow.contributions[0]!,
+      contributionDate: readings.weekendOnlySkip,
+    }]
+    expect(
+      buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput(weekendOnly).status,
+    ).toBe('contributionWindowIncomplete')
   })
 })
 
