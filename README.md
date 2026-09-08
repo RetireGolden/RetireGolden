@@ -60,7 +60,7 @@ GitHub Actions builds production on pushes to `main`; the Azure preview workflow
 
 | Job | What it does |
 |-----|----------------|
-| `authorize` | API-only live exact-head `run-ci` + decoded trusted-clean-review gate; push to `main` is authorized, forks are not, and same-repository Dependabot can be authorized only after a maintainer applies `run-ci`, reruns the existing exact-head Azure workflow, and passes the trusted clean-review gate |
+| `authorize` | API-only live exact-head `run-ci` + decoded trusted-clean-review and current profile-proof gate; push to `main` is authorized, forks are not, and same-repository Dependabot can be authorized only after a maintainer applies `run-ci`, reruns the existing exact-head Azure workflow, and passes both the trusted clean-review and current profile-proof gates |
 | `lint` | Root `pnpm install --frozen-lockfile` + `pnpm lint` (engine, planner-ui, and app) |
 | `test engine`, `test planner-ui`, `test web` → `test` | Independent workspace coverage jobs run in parallel; the fail-closed aggregate keeps the required `test` context |
 | `e2e` | Playwright browser smoke/layout specs (`pnpm test:e2e` in `app/`) |
@@ -72,7 +72,8 @@ GitHub Actions builds production on pushes to `main`; the Azure preview workflow
 **Triggers:** push to `main` deploys production; opened/synchronized/reopened PRs create a cheap placeholder and receive a preview only after exact-head authorization; closing a PR removes the preview.
 
 Same-repository PRs first pass an API-only live authorization gate: `run-ci`, an exact-head decoded clean
-OpenRouter ledger from the real GitHub Actions bot, and a review-caller blob equal to the default branch.
+OpenRouter ledger from the real GitHub Actions bot, a review-caller blob equal to the default branch,
+and current trusted `openrouter-profile` proof. Manual and Dependabot paths require the same proof.
 Lint, the three coverage shards (aggregated as `test`), e2e, and build then run in parallel; deploy waits
 for them all. Forks never authorize or deploy; the broker does not automatically label or rerun Dependabot PRs. For manual recovery or a same-repository Dependabot PR, apply `run-ci`, then rerun the existing exact-head Azure workflow; the label alone does not start CI.
 
@@ -80,10 +81,12 @@ for them all. Forks never authorize or deploy; the broker does not automatically
 
 [`.github/workflows/openrouter-ci-broker.yml`](.github/workflows/openrouter-ci-broker.yml)
 
-Runs on completed OpenRouter reviews and completed Azure CI runs from the default branch only. It checks
-the live, same-repository PR head, decoded bot-authored clean ledger, and head/default caller-blob equality
-through GitHub APIs. It first identifies an eligible skipped Azure run, then adds `run-ci` and reruns that
-specific run, serializing competing completion events by head. It never checks out or executes PR code.
+Runs from trusted default-branch code when an OpenRouter review, profile completion, or Azure CI run
+completes. One repository-wide lock serializes decisions, and each wake-up inspects all open PRs so
+coalesced pending events cannot lose a ready PR. For each PR, it checks the live same-repository head,
+decoded bot-authored clean ledger, matching caller blobs, and current profile proof through GitHub APIs.
+It identifies an eligible skipped Azure run, then adds `run-ci` and reruns that specific run. It never
+checks out or executes PR code.
 
 **Requirements:** repository secret `AZURE_STATIC_WEB_APPS_API_TOKEN` (Azure SWA deployment token). Node **24** in CI (the workspaces require Node >=24.15.0). SPA routing is configured in [`app/public/staticwebapp.config.json`](app/public/staticwebapp.config.json).
 
@@ -133,11 +136,17 @@ Runs on pull-request open, sync, reopen, and ready-for-review (and manually from
 
 Cutover requires this ordered operation: first merge the pinned OpenRouter action and central `RetireGolden/.github` reusable; then merge the product caller change while the existing Grok gate is still satisfied; immediately replace Main Guard's required context `review / grok-first-pass-gate` with `review / openrouter-first-pass-gate`. GitHub cannot make the workflow merge and ruleset edit atomic, so operators should expect a short controlled interval in which open PRs may wait for the old context. Keep that interval brief, verify the new context on an active PR, and manually dispatch OpenRouter for any existing PR that needs a seed. The old Grok workflow remains available only for explicit emergency dispatches and is never an OpenRouter fallback.
 
+### OpenRouter profile completion
+
+[`.github/workflows/openrouter-profile-completion.yml`](.github/workflows/openrouter-profile-completion.yml)
+
+Runs on review completion, pushes to `main`, and manual dispatch. The trusted default-branch workflow verifies the current PR head, review policy, required lanes, and pending requests before publishing `openrouter-profile`. Its successful proof is required by the CI broker; a successful review workflow alone does not authorize CI.
+
 ### OpenRouter review recovery
 
 [`.github/workflows/openrouter-review-recovery.yml`](.github/workflows/openrouter-review-recovery.yml)
 
-For caller-pin migrations with an existing review ledger, dispatch this workflow from the default branch after other reviews finish. It verifies the full PR while retaining previous review decisions. CI accepts it only after checking the registered workflow identity and pinned workflow contents; a clean result still requires `run-ci` and a successful exact-head Azure run. See the [recovery procedure](DOCS/operations/ci-cd-and-deploy.md).
+For caller-pin migrations with an existing review ledger, dispatch this workflow from the default branch after other reviews finish. It forwards to the normal review workflow on the default branch, preserving previous findings. Follow the resulting OpenRouter code review and profile completion runs; completion of the forwarding workflow is not a review verdict. A clean profile proof and successful exact-head Azure run remain required. See the [recovery procedure](DOCS/operations/ci-cd-and-deploy.md).
 
 ### Engine package release
 
@@ -171,5 +180,16 @@ remain in [AGENTS.md](AGENTS.md)):
 
 Branch-targeted guidance applies after merge to the target branch; new or moved
 source files are still reviewed. Offline policy lint and explain semantics follow the
-[OpenRouter review-policy spec](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/93cc91130605bc17cb583c5a5e899591773e048c/docs/review-policy.md).
+[OpenRouter review-policy spec](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/188cd5557765c858a37c1da78960cd353bcbcd60/docs/review-policy.md).
 The pinned shared OpenRouter caller enables `review_policy: base`.
+
+
+## Review profiles and CI proof
+
+The caller enables trusted profiles from the [organization workflow](https://github.com/RetireGolden/.github/blob/3d92f63176b55e5ade2dbe4a081c21ad249826ea/README.md). Code uses required Grok plus optional GLM; deep adds required Astra Flex. This preserves the standing baseline; `REVIEW.md` cannot name arbitrary models or remove required lanes.
+
+From Actions → **OpenRouter code review**, dispatch from `main` with a PR number and `review_level: auto`, `deep`, or `cancel`. Deep requests require repository write/maintain/admin permission, retain existing findings, and stay pending across retries and pushes until their own required review succeeds. Cancel removes a manual pending request; it cannot lower a policy requirement. Leave `reset_review` false.
+
+**OpenRouter profile completion** checks the exact PR head, effective current policy, required lanes, and accepted requests. The `openrouter-profile` status supplements the existing first-pass gate and repository CI. A successful review workflow alone does not establish a clean or complete review. The CI broker also checks the trusted completion proof before requesting expensive CI.
+
+Profile artifacts retain 30 days (requests 90 days), and the gate accepts PRs younger than 25 days. Open a replacement PR for older work. Missing evidence fails closed. An automatic policy refresh is requested at most once per head/configuration; use a manual rerun if that request fails. Maintainer labels and automatic path escalation are not enabled in this rollout.

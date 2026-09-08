@@ -8,11 +8,13 @@ import brokerWorkflow from '../../.github/workflows/openrouter-ci-broker.yml?raw
 import swaWorkflow from '../../.github/workflows/azure-static-web-apps-retiregolden.yml?raw'
 import recoveryWorkflow from '../../.github/workflows/openrouter-review-recovery.yml?raw'
 import reviewCaller from '../../.github/workflows/openrouter-code-review.yml?raw'
+import profileCompletionCaller from '../../.github/workflows/openrouter-profile-completion.yml?raw'
 import ciRunbook from '../../DOCS/operations/ci-cd-and-deploy.md?raw'
 import readme from '../../README.md?raw'
 import openrouterProducerFixture from './fixtures/openrouter-producer.json'
 import {
   authorizeExactHeadPullRequest,
+  authorizeReviewProfile,
   collectProvenanceReviewRuns,
   findTrustedCleanReview,
   hasActiveOrRealAzureWork,
@@ -27,6 +29,9 @@ import {
   reviewDispatchRunSkipReason,
   reviewRunSkipReason,
   terminalSameRepositoryWorkflowRunUrl,
+  TRUSTED_PROFILE_CONSUMER_OWNER,
+  TRUSTED_PROFILE_CONSUMER_PATH,
+  TRUSTED_PROFILE_CONSUMER_REPO,
   TRUSTED_RECOVERY_WORKFLOW_PATH,
   TRUSTED_RECOVERY_WORKFLOW_BLOB_SHA,
   TRUSTED_REUSABLE_REVIEW_WORKFLOW,
@@ -42,7 +47,8 @@ import type {
 } from '../../.github/scripts/ci-acceleration.mjs'
 
 const helperPath = new URL('../../.github/scripts/ci-acceleration.mjs', import.meta.url)
-const helperContent = readFileSync(helperPath, 'utf8')
+// The pin addresses Git's LF blob, independent of Windows checkout line endings.
+const helperContent = readFileSync(helperPath, 'utf8').replace(/\r\n/g, '\n')
 const expectedHelperBlobSha = createHash('sha1')
   .update(`blob ${Buffer.byteLength(helperContent, 'utf8')}\0${helperContent}`, 'utf8')
   .digest('hex')
@@ -123,6 +129,32 @@ const producerReviewContext = {
   workflowRunUrl: 'https://github.com/RetireGolden/RetireGolden/actions/runs/123',
 }
 
+const profileConsumerFixture = [
+  'export async function authorizeProfileReceipt(_github, input) {',
+  '  if (input.orgWorkflowSha !== "3d92f63176b55e5ade2dbe4a081c21ad249826ea") throw new Error("missing or wrong org pin");',
+  '  if (typeof input?.review?.body === "string" && input.review.body.includes("PROFILE_DENY")) {',
+  '    return { authorized: false, reason: "fixture profile denied" }',
+  '  }',
+  '  return { authorized: true, reason: "fixture profile authorized" }',
+  '}',
+].join('\n')
+
+function profileConsumerContent(content = profileConsumerFixture) {
+  return {
+    type: 'file',
+    content: Buffer.from(content, 'utf8').toString('base64'),
+  }
+}
+
+function isTrustedProfileConsumerRequest(request: GetContentRequest) {
+  return (
+    request.owner === TRUSTED_PROFILE_CONSUMER_OWNER &&
+    request.repo === TRUSTED_PROFILE_CONSUMER_REPO &&
+    request.path === TRUSTED_PROFILE_CONSUMER_PATH &&
+    request.ref === TRUSTED_REUSABLE_REVIEW_WORKFLOW_SHA
+  )
+}
+
 function review(overrides: Record<string, unknown> = {}) {
   return {
     user: { login: 'github-actions[bot]', id: 41898282, type: 'Bot' },
@@ -136,7 +168,7 @@ function review(overrides: Record<string, unknown> = {}) {
 function trustedRun(overrides: Record<string, unknown> = {}) {
   return {
     id: 123,
-    name: 'OpenRouter code review',
+    name: 'OpenRouter PR #643: auto',
     event: 'pull_request',
     status: 'completed',
     conclusion: 'success',
@@ -175,8 +207,14 @@ function mockGithub(overrides: Record<string, unknown> = {}) {
     repos: {
       listPullRequestsAssociatedWithCommit: async function listPullRequestsAssociatedWithCommit() {},
       getContent: async (_args: GetContentRequest) => {
+        if (isTrustedProfileConsumerRequest(_args)) {
+          return { data: profileConsumerContent() }
+        }
         if (_args.path === '.github/workflows/openrouter-code-review.yml') {
           return _args.ref === 'main' ? defaultCaller : headCaller
+        }
+        if (_args.path === TRUSTED_RECOVERY_WORKFLOW_PATH) {
+          return { data: { type: 'file', sha: TRUSTED_RECOVERY_WORKFLOW_BLOB_SHA } }
         }
         throw new Error(`unexpected getContent path ${_args.path}`)
       },
@@ -264,60 +302,142 @@ const recoveryContext = {
   allowDispatch: true,
 }
 
+const recoveryForwardPr = {
+  number: 643,
+  state: 'open',
+  draft: false,
+  base: { ref: 'main' },
+  head: { sha, repo: { full_name: repository.full_name } },
+}
+
+function recoveryForwarderScript() {
+  const block = recoveryWorkflow.match(/ {10}script: \|\r?\n((?: {12}[^\n]*\n)+)/)?.[1]
+  expect(block).toBeDefined()
+  return (block ?? '').replace(/^ {12}/gm, '')
+}
+
 describe('trusted default-branch review verification recovery', () => {
   it('pins the complete recovery workflow Git blob', () => {
     const content = recoveryWorkflow.replace(/\r\n/g, '\n')
     const blob = createHash('sha1').update(`blob ${Buffer.byteLength(content)}\0${content}`).digest('hex')
     expect(TRUSTED_RECOVERY_WORKFLOW_BLOB_SHA).toBe(blob)
-    expect(recoveryWorkflow).toContain('review_mode: verify')
-    expect(recoveryWorkflow).toContain('review_scope: full-pr')
-    expect(recoveryWorkflow).toContain('fail_on: any')
-    expect(recoveryWorkflow).toContain('run: test "$VERDICT" = clean')
-    expect(recoveryWorkflow).toContain('persist-credentials: false')
+    expect(recoveryWorkflow).not.toContain('openrouter-pr-review-action')
+    expect(recoveryWorkflow).not.toContain('actions/checkout@')
+    expect(recoveryWorkflow).not.toContain('secrets.')
+    expect(recoveryWorkflow).toContain('actions/github-script@')
+    expect(recoveryWorkflow).toContain('createWorkflowDispatch')
+    expect(recoveryWorkflow).toContain("workflow_id: 'openrouter-code-review.yml'")
+    expect(recoveryWorkflow).toContain('ref: repository.default_branch')
+    expect(recoveryWorkflow).toContain("review_level: 'auto'")
+    expect(recoveryWorkflow).not.toContain('reset_review:')
     expect(recoveryWorkflow).toContain("if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)")
     expect(recoveryWorkflow).toContain("if: github.ref != format('refs/heads/{0}', github.event.repository.default_branch)")
     expect(recoveryWorkflow).toContain('Dispatch recovery from the default branch.')
-    expect(recoveryWorkflow).toContain('uses: FlyOverCoderKY/openrouter-pr-review-action@93cc91130605bc17cb583c5a5e899591773e048c')
-    expect(recoveryWorkflow).toContain('review_policy: base')
-    expect(recoveryWorkflow).toContain('effort: low')
-    expect(recoveryWorkflow).toContain("max_tool_turns: '30'")
-    expect(recoveryWorkflow).toContain("max_diff_kb: '600'")
     const triggers = recoveryWorkflow.split('on:')[1]?.split('\npermissions:')[0]
     expect(triggers?.match(/^ {2}\w+:/gm)).toEqual(['  workflow_dispatch:'])
   })
 
   it.each([
-    ['valid PR', '643', 'open', 'main', repository.full_name, 'completed', true],
-    ['invalid number', '643x', 'open', 'main', repository.full_name, 'completed', false],
-    ['closed PR', '643', 'closed', 'main', repository.full_name, 'completed', false],
-    ['other base', '643', 'open', 'develop', repository.full_name, 'completed', false],
-    ['fork', '643', 'open', 'main', 'other/repo', 'completed', false],
-    ['active review', '643', 'open', 'main', repository.full_name, 'in_progress', false],
-  ])('runs the actual workflow preflight for %s', async (_name, number, state, base, headRepo, status, allowed) => {
-    const block = recoveryWorkflow.match(/ {10}script: \|\r?\n((?: {12}[^\n]*\n)+)/)?.[1]
-    expect(block).toBeDefined()
-    const script = (block ?? '').replace(/^ {12}/gm, '')
-    const outputs: Record<string, string> = {}
-    const result = runInNewContext(`(async () => {${script}\n})()`, {
-      process: { env: { PR_NUMBER: number } },
-      context: { repo: { owner: 'RetireGolden', repo: 'RetireGolden' }, payload: {
+    ['valid PR', { runs: [], allowed: true }],
+    ['manual name without display title', { runs: [{ status: 'queued', name: 'OpenRouter PR #643: auto', event: 'workflow_dispatch' }], allowed: false }],
+    ['unattributable legacy manual run', { runs: [{ status: 'in_progress', name: 'OpenRouter code review', event: 'workflow_dispatch' }], allowed: false }],
+    ['other PR manual run', { runs: [{ status: 'queued', name: 'OpenRouter PR #642: auto', event: 'workflow_dispatch' }], allowed: true }],
+    ['active legacy recovery', { legacyRuns: [{ id: 122, status: 'in_progress' }], allowed: false }],
+    ['current forwarder only', { legacyRuns: [{ id: 123, status: 'in_progress' }], allowed: true }],
+    ['invalid number', { prNumber: '643x', runs: [], allowed: false }],
+    ['closed PR', { pr: { ...recoveryForwardPr, state: 'closed' }, allowed: false }],
+    ['draft PR', { pr: { ...recoveryForwardPr, draft: true }, allowed: false }],
+    ['other base', { pr: { ...recoveryForwardPr, base: { ref: 'develop' } }, allowed: false }],
+    [
+      'fork',
+      {
+        pr: {
+          ...recoveryForwardPr,
+          head: { sha, repo: { full_name: 'other/repo' } },
+        },
+        allowed: false,
+      },
+    ],
+    ...['queued', 'in_progress', 'waiting', 'pending', 'requested'].flatMap<[string, { runs: Record<string, unknown>[]; allowed: boolean }]>((status) => [
+      [`active ${status} review same head`, { runs: [{ status, head_sha: sha }], allowed: false }],
+      [`active ${status} manual review`, {
+        runs: [{ status, display_title: 'OpenRouter PR #643: manual review' }], allowed: false,
+      }],
+    ]),
+    ['active search cap', {
+      runs: Array.from({ length: 1000 }, () => ({ status: 'queued', head_sha: 'b'.repeat(40) })),
+      allowed: false,
+    }],
+    [
+      'unrelated active run',
+      {
+        runs: [
+          {
+            status: 'in_progress',
+            head_sha: 'b'.repeat(40),
+            display_title: 'Something else',
+          },
+        ],
+        allowed: true,
+      },
+    ],
+  ])(
+    'runs the actual workflow forwarder for %s',
+    async (_name, options) => {
+      const { prNumber, pr, runs = [], legacyRuns = [], allowed } = options as {
+        prNumber?: string
+        pr?: Record<string, unknown>
+        runs?: Record<string, unknown>[]
+        legacyRuns?: Record<string, unknown>[]
+        allowed: boolean
+      }
+      const dispatches: Record<string, unknown>[] = []
+      const activeQueries: string[] = []
+      const script = recoveryForwarderScript()
+      const execution = runInNewContext(`(async () => {${script}\n})()`, {
+        process: { env: { PR_NUMBER: prNumber ?? '643' } },
+        context: { runId: 123, repo: { owner: 'RetireGolden', repo: 'RetireGolden' }, payload: {
         repository: { full_name: repository.full_name, default_branch: 'main' },
       } },
-      core: { setOutput: (key: string, value: string) => { outputs[key] = value } },
-      github: {
-        rest: { pulls: { get: async () => ({ data: { number: 643, state, base: { ref: base },
-          head: { sha, repo: { full_name: headRepo } } } }) }, actions: { listWorkflowRuns: () => undefined } },
-        paginate: async () => [{ status }],
-      },
-    }) as Promise<void>
-    if (allowed) {
-      await result
-      expect(outputs).toEqual({ number: '643', head: sha })
-    } else {
-      await expect(result).rejects.toThrow()
-      expect(outputs).toEqual({})
-    }
-  })
+        core: { info: () => undefined },
+        github: {
+          rest: {
+            pulls: {
+              get: async () => ({ data: pr ?? recoveryForwardPr }),
+            },
+            actions: {
+              createWorkflowDispatch: async (args: Record<string, unknown>) => {
+                dispatches.push(args)
+              },
+              listWorkflowRuns: () => undefined,
+            },
+          },
+          paginate: async (_endpoint: unknown, parameters: { status: string; workflow_id: string }) => {
+            expect(['queued', 'in_progress', 'waiting', 'pending', 'requested']).toContain(parameters.status)
+            activeQueries.push(parameters.status)
+            const source = parameters.workflow_id === 'openrouter-review-recovery.yml' ? legacyRuns : runs
+            return source.filter((run) => run.status === parameters.status)
+          },
+        },
+      }) as Promise<void>
+      if (allowed) {
+        await execution
+        expect(activeQueries).toEqual(Array.from({ length: 2 }, () => ['queued', 'in_progress', 'waiting', 'pending', 'requested']).flat())
+        expect(dispatches).toEqual([
+          {
+            owner: 'RetireGolden',
+            repo: 'RetireGolden',
+            workflow_id: 'openrouter-code-review.yml',
+            ref: 'main',
+            inputs: { pr_number: '643', review_level: 'auto' },
+          },
+        ])
+      } else {
+        await expect(execution).rejects.toThrow()
+        expect(dispatches).toEqual([])
+      }
+    },
+  )
 
   it('authorizes recovery as the sole trusted run when the PR caller differs from main', async () => {
     const github = recoveryGithub()
@@ -482,6 +602,17 @@ describe('OpenRouter CI authorization contract', () => {
 
   it('keeps documented producer revisions synchronized with the caller action reference', () => {
     expect(reviewCaller).toContain('review_policy: base')
+    expect(reviewCaller).toContain('review_profiles_enabled: true')
+    expect(reviewCaller).toContain("review_level: ${{ inputs.review_level || 'auto' }}")
+    expect(profileCompletionCaller).toContain('name: OpenRouter profile completion')
+    expect(profileCompletionCaller).toMatch(/^ {2}complete:\r?\n {4}if: /m)
+    expect(profileCompletionCaller).toContain("if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)")
+    expect(profileCompletionCaller).toContain(`openrouter-profile-completion.yml@${TRUSTED_REUSABLE_REVIEW_WORKFLOW_SHA}`)
+    expect(profileCompletionCaller).toContain("source_run_id: ${{ github.event.workflow_run.id && format('{0}', github.event.workflow_run.id) || '' }}")
+    expect(profileCompletionCaller).toContain('actions: write')
+    expect(profileCompletionCaller).toContain('statuses: write')
+    expect(profileCompletionCaller).not.toContain('steps:')
+    expect(profileCompletionCaller).not.toContain('actions/checkout@')
     const currentCaller = reviewCaller.split('\n').find((line) => line.trimStart().startsWith(`uses: ${TRUSTED_REUSABLE_REVIEW_WORKFLOW} `))
     expect(currentCaller).toBeDefined()
     const callerReferences = [...(currentCaller ?? '').matchAll(/action#\d+@([a-f0-9]{40})/g)]
@@ -729,6 +860,12 @@ describe('OpenRouter CI authorization contract', () => {
   it('requires trusted OpenRouter caller runs and an unchanged default-branch blob', () => {
     const run = trustedRun()
     expect(reviewRunSkipReason(run, repository)).toBeUndefined()
+    for (const name of ['OpenRouter code review', 'OpenRouter PR #643: deep']) {
+      expect(reviewRunSkipReason({ ...run, name }, repository)).toBeUndefined()
+      expect(reviewDispatchRunSkipReason({ ...run, name, event: 'workflow_dispatch' }, repository)).toBeUndefined()
+    }
+    expect(reviewRunSkipReason({ ...run, path: '.github/workflows/other.yml' }, repository)).toMatch(/path/)
+    expect(reviewRunSkipReason({ ...run, referenced_workflows: [] }, repository)).toMatch(/reusable/)
     expect(reviewRunSkipReason({ ...run, workflow_id: 1 }, repository)).toMatch(/id/)
     expect(reviewRunSkipReason({ ...run, event: 'workflow_dispatch' }, repository)).toMatch(/pull_request/)
     expect(reviewDispatchRunSkipReason({ ...run, event: 'workflow_dispatch' }, repository)).toBeUndefined()
@@ -771,7 +908,26 @@ describe('OpenRouter CI authorization contract', () => {
   })
 
   it('authorizes through the shared helper with bounded head_sha queries and dispatch recovery', async () => {
-    const github = mockGithub()
+    const profileConsumerReads: GetContentRequest[] = []
+    const github = mockGithub({
+      rest: {
+        repos: {
+          getContent: async (request: GetContentRequest) => {
+            if (isTrustedProfileConsumerRequest(request)) {
+              profileConsumerReads.push(request)
+              return { data: profileConsumerContent() }
+            }
+            if (request.path === '.github/workflows/openrouter-code-review.yml') {
+              return { data: { type: 'file', sha: 'default-blob' } }
+            }
+            if (request.path === TRUSTED_RECOVERY_WORKFLOW_PATH) {
+              return { data: { type: 'file', sha: TRUSTED_RECOVERY_WORKFLOW_BLOB_SHA } }
+            }
+            throw new Error(`unexpected getContent path ${request.path}`)
+          },
+        },
+      },
+    })
     const result = await authorizeExactHeadPullRequest(github, { setFailed: () => undefined }, {
       owner: 'RetireGolden',
       repo: 'RetireGolden',
@@ -785,6 +941,14 @@ describe('OpenRouter CI authorization contract', () => {
       runAttempt: 1,
     })
     expect(result).toMatchObject({ authorized: true, failJob: false })
+    expect(profileConsumerReads).toEqual([
+      {
+        owner: TRUSTED_PROFILE_CONSUMER_OWNER,
+        repo: TRUSTED_PROFILE_CONSUMER_REPO,
+        path: TRUSTED_PROFILE_CONSUMER_PATH,
+        ref: TRUSTED_REUSABLE_REVIEW_WORKFLOW_SHA,
+      },
+    ])
   })
 
   it('authorizes exact-head clean reviews that retain disputed ledger history', async () => {
@@ -1082,16 +1246,21 @@ describe('OpenRouter CI authorization contract', () => {
   })
 
   it('keeps both authorization paths API-only, pinning github-script and supported APIs', () => {
-    expect(brokerWorkflow).toContain('workflows: [OpenRouter code review, Azure Static Web Apps CI/CD]')
+    expect(brokerWorkflow).toContain(
+      'workflows: [OpenRouter code review, OpenRouter profile completion, Azure Static Web Apps CI/CD]',
+    )
     expect(brokerWorkflow).toContain('actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8')
     expect(brokerWorkflow).toContain('actions: write')
     expect(brokerWorkflow).toContain('issues: write')
     expect(brokerWorkflow).toContain('pull-requests: write')
-    expect(brokerWorkflow).toContain('group: openrouter-ci-broker-${{ github.event.workflow_run.head_sha }}')
-    expect(brokerWorkflow).toContain('github.rest.repos.listPullRequestsAssociatedWithCommit')
+    expect(brokerWorkflow).toContain('group: openrouter-ci-broker')
+    expect(brokerWorkflow).toContain('github.rest.pulls.list')
     expect(brokerWorkflow).toContain('helper.collectProvenanceReviewRuns')
-    expect(brokerWorkflow).toContain('allowDispatch: false')
-    expect(brokerWorkflow).toContain('head_sha: trigger.head_sha')
+    expect(brokerWorkflow).toContain('helper.authorizeReviewProfile')
+    expect(brokerWorkflow).toContain('for (const candidate of pendingPrs)')
+    expect(brokerWorkflow).not.toContain('github.event.workflow_run.head_sha')
+    expect(brokerWorkflow).toContain('allowDispatch: true')
+    expect(brokerWorkflow).toContain('head_sha: expectedHeadSha')
     expect(brokerWorkflow).not.toContain('actions/checkout@')
     expect(brokerWorkflow).not.toContain('listWorkflowRunAssociatedPullRequests')
 
@@ -1154,5 +1323,166 @@ describe('OpenRouter CI authorization contract', () => {
     expect(postLabelRead).toBeGreaterThan(label)
     expect(rerun).toBeGreaterThan(postLabelRead)
     expect(brokerWorkflow).toContain("run.status === 'completed' && run.run_attempt === 1")
+  })
+
+  const authorize = (
+    github: ReturnType<typeof mockGithub>,
+    runAttempt: number,
+    labels = [{ name: 'run-ci' }],
+  ) =>
+    authorizeExactHeadPullRequest(
+      github,
+      { setFailed: () => undefined },
+      {
+        owner: 'RetireGolden',
+        repo: 'RetireGolden',
+        repository,
+        defaultBranch: 'main',
+        eventPr: { number: pullNumber, head: { sha }, labels },
+        runAttempt,
+      },
+    )
+
+  it('loads the trusted profile consumer through the org workflow pin', async () => {
+    const github = mockGithub()
+    const originalRead = github.rest.repos.getContent
+    const reads: GetContentRequest[] = []
+    github.rest.repos.getContent = (request: GetContentRequest) => {
+      reads.push(request)
+      return originalRead(request)
+    }
+    const result = await authorizeReviewProfile(github, {
+      owner: 'RetireGolden', repo: 'RetireGolden', repository,
+      defaultBranch: 'main', headSha: sha, pullNumber,
+      review: review(), reviewRun: trustedRun(),
+    })
+    expect(result.authorized).toBe(true)
+    expect(reads).toEqual([{
+      owner: TRUSTED_PROFILE_CONSUMER_OWNER,
+      repo: TRUSTED_PROFILE_CONSUMER_REPO,
+      path: TRUSTED_PROFILE_CONSUMER_PATH,
+      ref: TRUSTED_REUSABLE_REVIEW_WORKFLOW_SHA,
+    }])
+  })
+
+  it('fails closed when the trusted profile consumer cannot be loaded', async () => {
+    const github = mockGithub({
+      rest: {
+        repos: {
+          getContent: async (request: GetContentRequest) => {
+            if (isTrustedProfileConsumerRequest(request)) {
+              throw Object.assign(new Error('not found'), { status: 404 })
+            }
+            if (request.path === '.github/workflows/openrouter-code-review.yml') {
+              return { data: { type: 'file', sha: 'default-blob' } }
+            }
+            if (request.path === TRUSTED_RECOVERY_WORKFLOW_PATH) {
+              return { data: { type: 'file', sha: TRUSTED_RECOVERY_WORKFLOW_BLOB_SHA } }
+            }
+            throw new Error(`unexpected getContent path ${request.path}`)
+          },
+        },
+      },
+    })
+    const result = await authorize(github, 2)
+    expect(result).toMatchObject({ authorized: false, failJob: true })
+    expect(result.reason).toMatch(/cannot load trusted profile consumer/)
+  })
+
+  it('fails closed when the trusted profile consumer is missing required exports', async () => {
+    const github = mockGithub({
+      rest: {
+        repos: {
+          getContent: async (request: GetContentRequest) => {
+            if (isTrustedProfileConsumerRequest(request)) {
+              return {
+                data: profileConsumerContent('export const only = true;'),
+              }
+            }
+            if (request.path === '.github/workflows/openrouter-code-review.yml') {
+              return { data: { type: 'file', sha: 'default-blob' } }
+            }
+            if (request.path === TRUSTED_RECOVERY_WORKFLOW_PATH) {
+              return { data: { type: 'file', sha: TRUSTED_RECOVERY_WORKFLOW_BLOB_SHA } }
+            }
+            throw new Error(`unexpected getContent path ${request.path}`)
+          },
+        },
+      },
+    })
+    const result = await authorize(github, 2)
+    expect(result).toMatchObject({ authorized: false, failJob: true })
+    expect(result.reason).toMatch(/missing required exports/)
+  })
+
+  it('fails closed when the trusted profile consumer response is not a file', async () => {
+    const github = mockGithub({
+      rest: {
+        repos: {
+          getContent: async (request: GetContentRequest) => {
+            if (isTrustedProfileConsumerRequest(request)) {
+              return { data: { type: 'symlink', sha: 'abc' } }
+            }
+            if (request.path === '.github/workflows/openrouter-code-review.yml') {
+              return { data: { type: 'file', sha: 'default-blob' } }
+            }
+            if (request.path === TRUSTED_RECOVERY_WORKFLOW_PATH) {
+              return { data: { type: 'file', sha: TRUSTED_RECOVERY_WORKFLOW_BLOB_SHA } }
+            }
+            throw new Error(`unexpected getContent path ${request.path}`)
+          },
+        },
+      },
+    })
+    const result = await authorize(github, 2)
+    expect(result).toMatchObject({ authorized: false, failJob: true })
+    expect(result.reason).toMatch(/not a file/)
+  })
+
+  it('stops CI when the trusted profile consumer denies authorization', async () => {
+    const github = mockGithub({
+      paginate: async (request: PaginatedRequest, params: PaginatedRequestParameters) => {
+        if (request.name.includes('listReviews')) {
+          return [
+            review({
+              body: cleanReviewBody.replace('[Workflow run]', 'PROFILE_DENY\n\n[Workflow run]'),
+            }),
+          ]
+        }
+        return mockGithub().paginate(request, params)
+      },
+    })
+    const result = await authorize(github, 2)
+    expect(result).toMatchObject({ authorized: false, failJob: true })
+    expect(result.reason).toMatch(/fixture profile denied/)
+  })
+
+  it('still rejects a stale clean ledger before the profile consumer can authorize', async () => {
+    const github = mockGithub({
+      paginate: async (request: PaginatedRequest, params: PaginatedRequestParameters) => {
+        if (request.name.includes('listReviews')) return []
+        return mockGithub().paginate(request, params)
+      },
+    })
+    const result = await authorize(github, 2)
+    expect(result).toMatchObject({ authorized: false, failJob: true })
+    expect(result.reason).toMatch(/clean authoritative ledger/)
+  })
+
+  it('exposes authorizeReviewProfile as a standalone wrapper', async () => {
+    const result = await authorizeReviewProfile(mockGithub(), {
+      owner: 'RetireGolden',
+      repo: 'RetireGolden',
+      repository,
+      defaultBranch: 'main',
+      headSha: sha,
+      pullNumber,
+      review: review(),
+      reviewRun: trustedRun(),
+    })
+    expect(result).toMatchObject({
+      authorized: true,
+      reason: 'fixture profile authorized',
+    })
   })
 })

@@ -13,7 +13,8 @@ One workflow drives build + deploy:
 It triggers on push to `main` and on `opened`, `synchronize`, `reopened`, and `closed` pull-request
 events targeting `main`. On a same-repository PR,
 the lightweight `authorize` job reads **live** PR state before any checkout: it requires the current head,
-the `run-ci` label, and an exact-head clean OpenRouter review ledger. An unauthorized run therefore stays
+the `run-ci` label, an exact-head clean OpenRouter review ledger, and a successful trusted
+`openrouter-profile` completion status for that head. An unauthorized run therefore stays
 cheap and its expensive jobs report skipped (see [Label-gated PR CI](#label-gated-pr-ci) below).
 
 ```
@@ -27,7 +28,7 @@ authorize ─┬─► lint ─────┐
 
 | Job | Runs | What it does |
 |-----|------|--------------|
-| `authorize` | push + non-closed PR events | API-only live-state gate. Pushes to `main` pass; same-repo PRs must be open, unchanged at the event head, carry `run-ci`, and have the trusted exact-head clean OpenRouter ledger. Unlabeled first attempts remain cheap placeholders; requested paths fail closed. Forks do not pass; manual recovery and same-repository Dependabot use `run-ci` followed by a rerun of the existing exact-head Azure workflow. |
+| `authorize` | push + non-closed PR events | API-only live-state gate. Pushes to `main` pass; same-repo PRs must be open, unchanged at the event head, carry `run-ci`, have the trusted exact-head clean OpenRouter ledger, and pass the org profile consumer's `openrouter-profile` proof for that head. Unlabeled first attempts remain cheap placeholders; requested paths fail closed. Forks do not pass; manual recovery and same-repository Dependabot use `run-ci` followed by a rerun of the existing exact-head Azure workflow. |
 | `lint` | authorized push/PR | root `pnpm install --frozen-lockfile` then `pnpm lint` (ESLint in `packages/engine`, `packages/planner-ui`, and `app`) |
 | `test engine`, `test planner-ui`, `test web` | authorized push/PR, in parallel | Each workspace runs its own `test:coverage`, retaining its own coverage threshold. The fail-closed aggregate check is still named **`test`** for Main Guard. |
 | `e2e` | authorized push/PR | Playwright browser layout tests (`pnpm test:e2e`) in `app/` |
@@ -48,10 +49,12 @@ scan is cheap and it is a Main Guard required check (also in [security-scanning.
 To keep Actions minutes down, PR pushes do **not** run the expensive pipeline by default — review bots can
 iterate without every commit running lint/test/e2e/build/deploy/DAST. The trusted default-branch
 [`openrouter-ci-broker.yml`](../../.github/workflows/openrouter-ci-broker.yml) automatically adds
-`run-ci` only after a successful OpenRouter run is associated with exactly one open same-repository PR to
-`main`, whose live head still equals the run SHA and whose `github-actions[bot]` review has bot id
-`41898282`, type `Bot`, the decoded clean ledger, these production Markdown fields, and that run's exact
-URL. The lane section is intentionally variable-length:
+`run-ci` only after independently validating an eligible open same-repository PR to `main`.
+Review, profile-completion, and Azure completion events wake a sweep; the event SHA is not
+assumed to be a PR head. For each eligible live head, the `github-actions[bot]` review must
+have bot id `41898282`, type `Bot`, the decoded clean ledger, these production Markdown fields,
+the provenance-valid review run's exact URL, and a successful trusted `openrouter-profile`
+completion status bound to the same head. The lane section is intentionally variable-length:
 
 ```
 ## OpenRouter pull-request review
@@ -70,20 +73,26 @@ generation id, a positive round, and a `findings` array that is either empty or 
 `disputed` entries with zero `open` findings (a clean **Verdict** therefore means no open findings,
 not necessarily an empty ledger). Ledger finding states are only `open` and `disputed`; a `fixed`
 resolution removes the entry rather than storing a settled state. Both authorization paths also prove the
-successful `pull_request` review run came from the same repository and that its caller workflow blob at
-the reviewed head exactly equals the caller blob on the default branch. They read GitHub APIs only and
+successful review run came from the same repository and that its caller workflow blob at
+the run commit exactly equals the caller blob on the default branch. Normal `pull_request` runs
+use the reviewed head; trusted `workflow_dispatch` runs use the default-branch commit and must
+be linked from the exact-head ledger. They read GitHub APIs only and
 never check out or execute PR code.
 
 #### Review continuity on manual reruns
 
-The pinned reusable workflow now treats manual dispatch as a full-PR recheck
+The pinned reusable workflow treats manual dispatch as a full-PR recheck
 that retains the existing ledger, finding IDs, and rebuttals. It requires both
 file coverage and finding resolutions. With no ledger it seeds an initial
-review. `reset_review: true` explicitly starts a new initial review; leave it
-false for ordinary manual rechecks. Caller-pin migrations use the dedicated
-`openrouter-review-recovery.yml` workflow described below, which has no reset
-input. Pushes retain latest-commit verification scope.
-Do not dispatch redundantly over a completed exact-head review.
+review. `reset_review: true` is rejected for profile reviews — leave it
+false so findings are retained. Dispatch `review_level: auto`, `deep`, or
+`cancel` from `main`; deep requests stay pending until their own required
+lanes succeed and block an older clean review from authorizing CI. Caller-pin
+migrations while `main` still carries the legacy recovery workflow use the
+dedicated `openrouter-review-recovery.yml` workflow described below. After
+that forwarder lands on `main`, recovery dispatches the normal trusted review
+instead of running its own review. Pushes retain latest-commit verification
+scope. Do not dispatch redundantly over a completed exact-head review.
 
 Agents must paginate reviews, inline comments, and issue comments, and read
 every continuation part of a multipart review. The first API page or first
@@ -92,15 +101,15 @@ published part can omit the latest verdict or remaining findings.
 #### Ledger producer contract
 
 The embedded ledger is produced by the pinned upstream review action
-[`FlyOverCoderKY/openrouter-pr-review-action@93cc91130605bc17cb583c5a5e899591773e048c`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/tree/93cc91130605bc17cb583c5a5e899591773e048c).
+[`FlyOverCoderKY/openrouter-pr-review-action@188cd5557765c858a37c1da78960cd353bcbcd60`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/tree/188cd5557765c858a37c1da78960cd353bcbcd60).
 RetireGolden authorization validates decoded markers against that producer, not a vendored copy:
 
 | Contract | Source |
 |----------|--------|
-| Finding decode (`id`, `sev`, `file`, `line`, `title`, `ev`, `st`, `m`) | [`loop.py` `_decode_finding`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/93cc91130605bc17cb583c5a5e899591773e048c/src/or_pr_review/loop.py#L476-L516) |
-| Safe relative paths for `file` | [`schema.py` `valid_review_path`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/93cc91130605bc17cb583c5a5e899591773e048c/src/or_pr_review/schema.py#L269-L271) is a three-line compatibility predicate delegating to [`normalize_review_path`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/93cc91130605bc17cb583c5a5e899591773e048c/src/or_pr_review/schema.py#L244-L266); its length limit is [`MAX_FILE = 500`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/93cc91130605bc17cb583c5a5e899591773e048c/src/or_pr_review/schema.py#L26). |
-| Round state: `fixed` removes an entry; `disputed` is carried; open counts | [`loop.py` `apply_round`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/93cc91130605bc17cb583c5a5e899591773e048c/src/or_pr_review/loop.py#L193-L288) (including `open_issue_count`) |
-| Ledger encode/decode envelope | [`loop.py` `_encode`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/93cc91130605bc17cb583c5a5e899591773e048c/src/or_pr_review/loop.py#L374-L398) / [`_decode`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/93cc91130605bc17cb583c5a5e899591773e048c/src/or_pr_review/loop.py#L435-L473) |
+| Finding decode (`id`, `sev`, `file`, `line`, `title`, `ev`, `st`, `m`) | [`loop.py` `_decode_finding`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/188cd5557765c858a37c1da78960cd353bcbcd60/src/or_pr_review/loop.py#L478-L518) |
+| Safe relative paths for `file` | [`schema.py` `valid_review_path`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/188cd5557765c858a37c1da78960cd353bcbcd60/src/or_pr_review/schema.py#L280-L282) is a three-line compatibility predicate delegating to [`normalize_review_path`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/188cd5557765c858a37c1da78960cd353bcbcd60/src/or_pr_review/schema.py#L255-L277); its length limit is [`MAX_FILE = 500`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/188cd5557765c858a37c1da78960cd353bcbcd60/src/or_pr_review/schema.py#L26). |
+| Round state: `fixed` removes an entry; `disputed` is carried; open counts | [`loop.py` `apply_round`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/188cd5557765c858a37c1da78960cd353bcbcd60/src/or_pr_review/loop.py#L195-L289) (including `open_issue_count`) |
+| Ledger encode/decode envelope | [`loop.py` `_encode`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/188cd5557765c858a37c1da78960cd353bcbcd60/src/or_pr_review/loop.py#L376-L400) / [`_decode`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/188cd5557765c858a37c1da78960cd353bcbcd60/src/or_pr_review/loop.py#L437-L475) |
 
 These function spans were checked against the source at the linked immutable action revision.
 The path predicate's short span is intentional: normalization contains the validation logic.
@@ -112,19 +121,55 @@ The caller's action reference is read only from the active `uses:` line, so its 
 may name other action revisions. Guards recognize the documented action references and GitHub
 `blob`/`tree` links; bare SHAs in prose remain subject to review, not a claim of exhaustive detection.
 
-The current caller uses the [shared configuration from organization PR #39](https://github.com/RetireGolden/.github/blob/a6a690b82fa76bbda4334b87dd179551534d183b/.github/workflows/openrouter-code-review.yml) and enables
-`review_policy: base`. Root and nested `REVIEW.md` guidance comes from the immutable target-branch
-tip and is frozen before model calls. A policy proposed by the PR begins affecting reviews only
-after merge. The standing Grok/GLM roster and Luna merge judge are unchanged; the expired Astra
-trial is no longer evaluated. Model budgets and CI authorization remain workflow-owned.
+The shared 22-minute review job prioritizes reviewer completion: it reserves 60 seconds total for the tool-free judge, 180 seconds for publication, and a 5-second margin. Review lanes can use roughly 18 minutes, subject to setup time. If judging times out or fails, publication retains the validated lane findings through the deterministic merge fallback.
 
-At this producer revision, `loop.py` and `schema.py` are unchanged from the previous approved
-producer. The existing ledger and safe-path predicates therefore remain unchanged locally.
-Policy source/digest receipt fields follow the existing positional header; offline tests using
-actual producer output confirm clean-ledger acceptance and open-finding rejection in both CI
-consumers. The review publication context is v2; the findings ledger remains v1.
+The [pinned shared workflow](https://github.com/RetireGolden/.github/blob/3d92f63176b55e5ade2dbe4a081c21ad249826ea/README.md) uses the 180-second HTTP limit for connection/header setup and socket inactivity. Active bodies can finish within the remaining lane-stage deadline; a structured finish uses its whole remaining window before any retry. Timeout diagnostics distinguish connection setup, inactivity, and absolute deadline expiry.
 
-- The broker serializes review/Azure completion events for a head, finds the newest eligible skipped Azure
+The current caller uses the [shared configuration from organization PR #44](https://github.com/RetireGolden/.github/blob/3d92f63176b55e5ade2dbe4a081c21ad249826ea/.github/workflows/openrouter-code-review.yml)
+with `review_profiles_enabled: true`, `review_policy: base`, and org workflow pin
+`3d92f63176b55e5ade2dbe4a081c21ad249826ea`. Root and nested `REVIEW.md` guidance comes from the
+immutable target-branch tip and is frozen before model calls. A policy proposed by the PR begins
+affecting reviews only after merge. The `code` profile uses required Grok plus optional GLM;
+`review_level: deep` adds required Astra Flex. `REVIEW.md` cannot remove required lanes or name
+arbitrary models. Model budgets and CI authorization remain workflow-owned.
+
+The findings ledger remains v1; prepared review context is v3. Offline tests using actual producer
+output confirm clean-ledger acceptance and open-finding rejection in both CI consumers.
+
+#### Review profiles and profile completion
+
+[`openrouter-code-review.yml`](../../.github/workflows/openrouter-code-review.yml) forwards to the
+org reusable at `3d92f63176b55e5ade2dbe4a081c21ad249826ea`. Reviews publish both the v1 ledger
+marker and a v1 plan receipt (`<!-- openrouter-review-plan:v1:… -->`) that records the effective
+profile, required and successful models, and the authoritative workflow run.
+
+[`openrouter-profile-completion.yml`](../../.github/workflows/openrouter-profile-completion.yml)
+invokes the matching org reusable on `workflow_run` completion of OpenRouter code review, on `main`
+pushes, and on manual dispatch. Its proof job (`complete / profile #<n> <digest>`) verifies the trusted review artifacts
+and current base policy. A separate publish job rechecks the obligations and successful proof
+before writing the `openrouter-profile` commit status. Profile artifacts retain 30 days (requests 90 days).
+
+CI authorization and the broker load the org
+[`scripts/profile_consumer.mjs`](https://github.com/RetireGolden/.github/blob/3d92f63176b55e5ade2dbe4a081c21ad249826ea/scripts/profile_consumer.mjs)
+at the org workflow pin through `getContent` — it performs GitHub provenance and receipt binding
+only, with no policy parsing or artifact downloads in the consumer itself. `authorizeProfileReceipt`
+requires an exact-head trusted bot review with a satisfied clean receipt, provenance-valid review
+and completion runs, a successful non-pending `openrouter-profile` status targeting the completion
+run, matching caller blobs on live `main`, and a PR younger than 25 days. A pending deep request or
+pending `openrouter-profile` status blocks an older clean review from authorizing CI. Open a
+replacement PR for older work.
+
+The broker serializes OpenRouter review, profile completion, and Azure completion events across
+the repository. Each wake-up inspects all open PRs, so coalesced pending events cannot drop a
+ready PR. It checks Azure run eligibility first, skipping review/provenance API calls for PRs
+with active or already-executed CI, or without an eligible skipped run. After an exact-head clean ledger and successful profile proof, it adds `run-ci` and reruns
+the skipped Azure workflow. It also reacts to profile completion alone when the review proof already
+holds. Manual review dispatches and profile-completion reruns are broker inputs; the broker does
+not initiate recovery forwarding. This rollout supplements the existing first-pass gate with
+`openrouter-profile`; it does not yet add that context to the Main Guard branch ruleset.
+
+- The broker serializes decisions across the repository and checks every open PR,
+  finds the newest eligible skipped Azure
   `pull_request` run before it mutates the PR, rechecks live PR state, adds `run-ci`, rechecks again, then
   reruns that run through the Actions API. It does nothing when live work is queued/running or a
   current-head Azure run has already performed a non-skipped expensive job. For manual recovery and
@@ -148,49 +193,51 @@ consumers. The review publication context is v2; the findings ledger remains v1.
 - The Azure Static Web Apps and Semgrep workflows also **cancel in-progress PR runs** when a newer commit is
   pushed (concurrency groups), so rapid-fire pushes only pay for the latest commit. Pushes to `main` are never cancelled.
 
-The trust boundary is explicit: GitHub review objects do not expose which workflow created them. The broker
-therefore admits only same-repository PRs and trusts the write-capable repository workflows on the default
-branch, plus the pinned reusable review workflow they invoke. The Markdown workflow URL is an identifying
-link, not cryptographic provenance; a signed central artifact or ledger would be future hardening.
+The trust boundary is explicit: GitHub review objects do not expose which workflow created them.
+Authorization therefore admits only same-repository PRs and trusts the write-capable repository
+workflows on the default branch, the pinned reusable org workflows they invoke, and the org
+`scripts/profile_consumer.mjs` loaded at the org workflow pin. Trust is established through GitHub
+artifact, workflow run, job, and caller-blob provenance — not cryptographic signatures on review
+bodies or status descriptions.
 
-For operational recovery, a maintainer may dispatch the review workflow, apply `run-ci`, then rerun the existing
-exact-head Azure workflow. The dispatch
-run may report `main` as its `head_sha`; authorization accepts it only when an exact-head bot review contains
-the canonical ledger link, the fetched run passes the same workflow/repository/caller-blob checks, and the
-run succeeds. The human label and exact-head Azure rerun remain required after dispatch; the broker never
-auto-labels or reruns a Dependabot PR.
+For operational recovery, a maintainer may dispatch the normal review workflow from `main`
+and wait for its exact-head clean ledger and current profile proof. The run may report `main`
+as its `head_sha`; authorization accepts it only when the exact-head bot review links the run,
+which must succeed and pass the workflow/repository/caller-blob checks. The broker then adds
+`run-ci` and reruns the existing exact-head Azure workflow. If the broker fails, or for a
+same-repository Dependabot PR that the broker skips, verify both proofs and confirm no Azure
+CI is already active before manually applying the label and rerunning the existing workflow.
 
-For a caller-pin migration with an existing review ledger, use
-`gh workflow run openrouter-review-recovery.yml --ref main -f pr_number=<PR>`.
-This dedicated workflow runs explicit verify mode instead of restarting the initial review.
-It retains the ledger but examines the full PR, including when that ledger already names
-the current head. Earlier commits are not omitted based on the prior ledger. It refuses forks and
-closed PRs, uses a pinned action against the resolved PR head, and fails
-unless verification reports `clean`; the action refuses verification without an existing ledger.
-Normal pull-request review and first-pass gates are unchanged.
+For a caller-pin migration with an existing review ledger while `main` still carries the legacy
+verify-mode recovery workflow, complete the existing migration procedure on `main` before this
+profile pin merges. Wait for **all legacy recovery runs to finish before merging**. Their CI
+admission requires the registered recovery workflow ID, default-branch dispatch, and matching
+pinned recovery Git blobs at both the run commit and the current default branch. A legacy run
+that spans the merge cannot satisfy the new pins; after it finishes, obtain a normal review
+and current profile proof. Do not relax the pins to accept stale evidence.
 
-The recovery workflow uses the same action producer as the regular caller in the table above. Its
-[`_resolve_loop` guard](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/93cc91130605bc17cb583c5a5e899591773e048c/src/or_pr_review/cli.py#L701-L743)
-rejects verify mode without an existing ledger. Recovery fixes the baseline Grok/GLM lanes and Luna
-judge locally, with the existing follow-up
-budget of low effort, 30 tool turns and 600 KB. It changes coverage to full PR and retains prior
-ledger decisions; it does not claim to be an independent first-pass review or inherit future central
-model or budget changes. Recovery also loads target-branch REVIEW.md guidance. Changes to these
-workflow choices require review and a new workflow blob pin.
+After the forwarder in
+[`openrouter-review-recovery.yml`](../../.github/workflows/openrouter-review-recovery.yml) lands on
+`main`, recovery is a cheap default-branch dispatcher only:
 
-Wait for other reviews before dispatching. Recovery rejects active ordinary reviews of the target
-head before invoking the action. CI additionally refuses a recovery created before an ordinary
-exact-head review completed, including an ordinary run that later posts issues; dispatch a new
-recovery after all reviews finish in that case. Ordinary follow-up jobs share recovery's concurrency
-group. Off-default dispatches fail explicitly and cannot authorize CI.
+`gh workflow run openrouter-review-recovery.yml --ref main -f pr_number=<PR>`
 
-CI admits this recovery only when its workflow ID matches GitHub's registered recovery workflow,
-the dispatch came from the default branch in this repository, and the workflow files at both the
-run commit and current default branch match the helper's pinned recovery Git blob SHA. The usual
-exact-head bot ledger, successful-run, live-label and PR-state checks still apply. After recovery,
-apply `run-ci` and rerun the existing exact-head Azure workflow, then wait for every required job.
-The broker does not initiate this recovery or grant CI automatically from it. When changing the
-recovery workflow, update its blob pin in the helper and the helper's Azure bootstrap pin together.
+One successful forwarder dispatch invokes the normal trusted
+[`openrouter-code-review.yml`](../../.github/workflows/openrouter-code-review.yml) with
+`review_level: auto` and the default `reset_review: false`. Do not dispatch it again after success.
+It performs no review itself: wait for the resulting review and
+[`openrouter-profile-completion.yml`](../../.github/workflows/openrouter-profile-completion.yml).
+If rejected because a review is active, wait for that review to finish and reassess whether
+recovery is still necessary. The guard checks both run-name fields and conservatively waits
+for active legacy recovery or unattributable manual runs, excluding itself. It refuses forks,
+closed or draft PRs, and off-default dispatches.
+
+The forwarding run alone cannot authorize CI; only the subsequent normal review and profile
+proof can. The helper retains the strict recovery provenance check for compatibility, but the
+new forwarder produces no review for that path. When changing the recovery workflow, update
+its blob pin in the helper together. The broker uses a repository-wide sweep so coalesced
+GitHub events cannot lose a ready PR, skips expensive review checks when Azure is ineligible,
+and has a ten-minute job limit so a stuck sweep releases the queue.
 
 ## Build and SPA routing
 

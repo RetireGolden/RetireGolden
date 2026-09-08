@@ -33,28 +33,37 @@
 # `git diff base...head` when GitHub rejects a patch over 20,000 lines;
 # the complete patch then enters the same dense-diff packing above.
 #
-# Standing roster: Grok 4.6 + GLM 5.3 Flash; recall-safe Luna judge.
-# Shared configuration: https://github.com/RetireGolden/.github/blob/a6a690b82fa76bbda4334b87dd179551534d183b/.github/workflows/openrouter-code-review.yml
-# Policy reference: https://github.com/RetireGolden/.github/blob/a6a690b82fa76bbda4334b87dd179551534d183b/README.md
+# Standard: required Grok 4.6 + optional GLM 5.3 Flash; Luna judge.
+# Deep adds required Astra Flex; effort and limits follow the selected profile.
+# Shared configuration: https://github.com/RetireGolden/.github/blob/3d92f63176b55e5ade2dbe4a081c21ad249826ea/.github/workflows/openrouter-code-review.yml
+# Policy reference: https://github.com/RetireGolden/.github/blob/3d92f63176b55e5ade2dbe4a081c21ad249826ea/README.md
 
 name: OpenRouter code review
+run-name: "${{ format('OpenRouter PR #{0}: {1}', github.event.pull_request.number || inputs.pr_number, inputs.review_level || 'auto') }}"
 
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
     inputs:
+      review_level:
+        description: Follow policy, request deep review, or cancel a pending deep request
+        required: false
+        type: choice
+        options: [auto, deep, cancel]
+        default: auto
       pr_number:
         description: PR number to review
         required: true
         type: string
       reset_review:
-        description: Discard review history and start over (normally leave false)
+        description: Legacy input; profile reviews require false to retain findings
         required: false
         type: boolean
         default: false
 
 permissions:
+  actions: read
   contents: read
   pull-requests: write
   # The central reusable publishes the stable required-gate commit status.
@@ -65,9 +74,11 @@ jobs:
   # `review / openrouter-first-pass-gate`.
   review:
     if: github.event_name == 'workflow_dispatch' || !github.event.pull_request.draft
-    uses: RetireGolden/.github/.github/workflows/openrouter-code-review.yml@a6a690b82fa76bbda4334b87dd179551534d183b # .github#39 (after action v1.3.1; action#35@93cc91130605bc17cb583c5a5e899591773e048c; guidance and transport repair)
+    uses: RetireGolden/.github/.github/workflows/openrouter-code-review.yml@3d92f63176b55e5ade2dbe4a081c21ad249826ea # .github#44; action#39@188cd5557765c858a37c1da78960cd353bcbcd60 (trusted profiles and request gates)
     with:
       review_policy: base
+      review_profiles_enabled: true
+      review_level: ${{ inputs.review_level || 'auto' }}
       reset_review: ${{ inputs.reset_review || false }}
       pr_number: ${{ inputs.pr_number || github.event.inputs.pr_number || github.event.pull_request.number }}
     secrets:

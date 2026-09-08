@@ -151,17 +151,19 @@ Code, Codex, Cursor, the Grok and OpenRouter review bots, and any other tool.
 - With this repository's review-continuity workflow pin, an ordinary manual
   dispatch reviews the full PR **without resetting** existing finding IDs,
   ledger decisions, or rebuttals. This supersedes the older-pin dispatch
-  behavior described in the shared section. Leave `reset_review` false;
-  set it true only when intentionally discarding review history. Keep the
-  rule against redundant dispatches on an already-reviewed head.
+  behavior described in the shared section. Profile reviews require
+  `reset_review: false`; discarding history with `true` is rejected. Do not
+  repeat an ordinary `auto` dispatch on an already-reviewed head. An intentional
+  maintainer `deep` request is the specific exception described below.
 - Poll all pages of reviews, inline comments, and issue comments. Read every
   continuation part of a large review, and match the explicit reviewed SHA
   and bot identity before deciding that a head is reviewed or clean.
 
 - Repository admin: @FlyOverCoderKY.
 - Merge grant: standing, recorded by @FlyOverCoderKY on 2026-09-02 (PR
-  #588). The post-push-approval and CLA conditions named in the shared
-  Merging section both exist here, so admin bypass applies.
+  #588). In this repository, administrative override is permitted only for
+  an agent-authored CLA restriction. This supersedes the broader bypass
+  language in the shared section; post-push approval must actually be met.
 - The required-check list and the thread and approval rules below were
   read from the live ruleset on 2026-09-03 with
   `gh api repos/RetireGolden/RetireGolden/rules/branches/main`. Re-run it
@@ -177,22 +179,38 @@ Code, Codex, Cursor, the Grok and OpenRouter review bots, and any other tool.
   ruleset would let it through. Semgrep (`Scan (p/default)`), `CLA`, and
   the first-pass review gate (`review / openrouter-first-pass-gate`) run
   without the label. The broker normally adds `run-ci` after an exact-head
-  clean review and reruns the existing exact-head Azure workflow. For manual
-  recovery and same-repository Dependabot PRs, apply `run-ci`, then rerun that
-  Azure workflow; the label alone does not start CI. The resolve gate is path-triggered (workspace
+  clean review and current trusted profile proof, then reruns the existing
+  exact-head Azure workflow, including reviews forwarded from recovery.
+  For same-repository Dependabot PRs or explicit recovery when the broker
+  failed, first verify the current exact-head clean ledger and trusted profile
+  proof, then confirm no Azure CI is already active before applying `run-ci`
+  and rerunning that exact-head Azure workflow. The label alone does not start CI. The resolve gate is path-triggered (workspace
   manifest, lockfile, or any `package.json`) and is expected only on PRs
   that touch those files.
-- For a caller-pin migration with a seeded review ledger, the dedicated
-  `openrouter-review-recovery.yml` may be dispatched from `main` after other
-  review runs finish, even when a completed review exists for that head. It
-  verifies the full PR while retaining the ledger; it does not restart the
-  initial review. This is an exception specifically to "Never dispatch on top of
-  a completed review of the same SHA" in the shared Automated review section;
-  the ordinary review workflow must not be dispatched to perform this recovery.
-  A clean successful recovery, `run-ci`, and an exact-head Azure rerun
-  are still required before merge. See the CI/CD runbook for provenance checks.
+- During migration to this profile-enabled caller, while `main` still has the
+  previous recovery implementation, dispatch `openrouter-review-recovery.yml`
+  from `main` only after the review ledger is seeded and other reviews finish.
+  That previous implementation verifies the full PR while retaining findings;
+  do not substitute an ordinary review dispatch for this migration proof.
+  This is an exception to the shared same-head dispatch restriction.
+  Before merging the migration, wait for every legacy recovery run to finish.
+  A legacy run spanning the merge is not eligible under the new caller pins;
+  obtain a normal current-policy review and profile proof after it finishes.
+- After this revision is merged, recovery is a compatibility forwarder to the
+  normal trusted review workflow on `main`. The forwarding run publishes no
+  verdict. Wait for the resulting review and current profile proof, then `run-ci`
+  and actual exact-head Azure CI. See the CI/CD runbook for provenance checks.
 - `main` also requires every review thread resolved and a post-push approval
-  by someone other than the pusher. Resolve the threads yourself; the
-  post-push approval is the rule the admin bypass clears for agent-authored
-  PRs. CLA currently passes for the admin's own commits, so it is not what
-  the bypass is for here.
+  by someone other than the pusher. Resolve the threads yourself and obtain
+  the qualifying approval; never use the administrative override to bypass
+  it. CLA currently passes for the admin's own commits.
+
+
+### Current review profile workflow
+
+- The caller now enables organization profiles. Earlier `reset_review: true` guidance applies only to legacy callers; profile reviews require `false` and retain findings.
+- Use `review_level: deep` on a default-branch manual dispatch to request extra review; `cancel` cancels only a manual pending request. A fresh deep request needs its own successful required lanes, even if this head already has an older clean deep review.
+- An intentional deep request on an already reviewed head is an exception to the shared rule against redundant same-head dispatches. Wait for that request's required lanes and current profile proof before treating the head as review-clean or authorizing CI.
+- Check `OpenRouter profile completion` and the `openrouter-profile` status for the current head in addition to the existing review and CI requirements. The profile gate rechecks current base policy. A missing/failed required lane or pending deep request is not clean.
+- Profile evidence is bounded to PRs younger than 25 days. For older work, open a replacement PR; do not bypass the profile gate or delete request evidence.
+- Recovery now forwards to the normal trusted review workflow on `main`. Wait for that review and its profile completion; the forwarding run does not publish a review itself. The existing caller-pin migration procedure applies until this revision is on `main`.

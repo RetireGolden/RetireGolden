@@ -92,6 +92,22 @@ export interface AuthorizationResult {
   readonly reason: string
 }
 
+export interface ProfileReviewAuthorizationInput {
+  readonly owner: string
+  readonly repo: string
+  readonly repository: RepositoryRef
+  readonly defaultBranch: string
+  readonly headSha: string
+  readonly pullNumber: number
+  readonly review: PullRequestReview
+  readonly reviewRun: WorkflowRun
+}
+
+export interface ProfileReviewAuthorizationResult {
+  readonly authorized: boolean
+  readonly reason: string
+}
+
 export interface GetContentRequest {
   readonly owner: string
   readonly repo: string
@@ -174,6 +190,10 @@ export interface GitHubLike {
     }
   }
   paginate: (request: PaginatedRequest, parameters: PaginatedRequestParameters) => Promise<unknown[]>
+  request?: (
+    route: string,
+    parameters?: Record<string, unknown>,
+  ) => Promise<{ readonly data: unknown }>
 }
 
 export interface CoreLike {
@@ -193,6 +213,10 @@ export const TRUSTED_RECOVERY_WORKFLOW_PATH: string
 export const TRUSTED_RECOVERY_WORKFLOW_BLOB_SHA: string
 export const TRUSTED_REUSABLE_REVIEW_WORKFLOW: string
 export const TRUSTED_REUSABLE_REVIEW_WORKFLOW_SHA: string
+export const TRUSTED_PROFILE_CONSUMER_OWNER: string
+export const TRUSTED_PROFILE_CONSUMER_REPO: string
+export const TRUSTED_PROFILE_CONSUMER_PATH: string
+export const PROFILE_CONSUMER_MAX_BYTES: number
 export const EXPENSIVE_AZURE_JOB_NAMES: ReadonlySet<string>
 
 export function workflowRunUrl(owner: string, repo: string, runId: number): string
@@ -255,6 +279,10 @@ export function authorizeExactHeadPullRequest(
     readonly runAttempt: number
   },
 ): Promise<AuthorizationResult>
+export function authorizeReviewProfile(
+  github: GitHubLike,
+  input: ProfileReviewAuthorizationInput,
+): Promise<ProfileReviewAuthorizationResult>
 export function isExpensiveAzureJob(job: AzureJob): boolean
 export function hasOnlySkippedExpensiveAzureJobs(jobs: readonly AzureJob[]): boolean
 export function hasActiveOrRealAzureWork(
