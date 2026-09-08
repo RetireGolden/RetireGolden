@@ -192,6 +192,21 @@
           "kind": "statute",
           "citation": "IRC 55(d)(4)(B)(i)",
           "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section55&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 63(c)(4)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section63&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 55(d)(3)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section55&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 55(d)(3)(B)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section55&num=0&edition=prelim"
         }
       ]
     },

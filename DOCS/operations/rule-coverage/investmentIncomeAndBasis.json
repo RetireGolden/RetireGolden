@@ -170,7 +170,7 @@
     },
     {
       "id": "irc-1-h-1-E-unrecaptured-section-1250-gain",
-      "title": "Depreciation on real property is capital gain capped at 25 percent, not ordinary income",
+      "title": "Section 168 straight-line real-property depreciation can produce unrecaptured section 1250 gain subject to a 25-percent maximum rate",
       "classification": "approximated",
       "errorDirection": "overstatesTax",
       "conventionRationale": null,
@@ -246,6 +246,11 @@
           "kind": "statute",
           "citation": "IRC 1250(b)(1)",
           "url": "https://www.law.cornell.edu/uscode/text/26/1250"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 168(b)(3)(A)-(B)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section168&num=0&edition=prelim"
         }
       ]
     },
@@ -672,6 +677,11 @@
           "kind": "statute",
           "citation": "IRC 1091(a)",
           "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1091&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 1091(d)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1091&num=0&edition=prelim"
         }
       ]
     },
@@ -775,6 +785,11 @@
           "kind": "statute",
           "citation": "IRC 121(b)(5)(A) and (B)",
           "url": "https://www.law.cornell.edu/uscode/text/26/121"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 121(b)(5)(C)(i)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section121&num=0&edition=prelim"
         }
       ]
     },
@@ -838,6 +853,16 @@
           "kind": "statute",
           "citation": "IRC 121(a)",
           "url": "https://www.law.cornell.edu/uscode/text/26/121"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 121(b)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section121&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 121(b)(2)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section121&num=0&edition=prelim"
         },
         {
           "kind": "statute",
@@ -1620,9 +1645,9 @@
           "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section454&num=0&edition=prelim"
         },
         {
-          "kind": "statute",
-          "citation": "IRC 454(c)",
-          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section454&num=0&edition=prelim"
+          "kind": "regulation",
+          "citation": "26 CFR 1.454-1(a)(1)",
+          "url": "https://www.ecfr.gov/api/renderer/v1/content/enhanced/current/title-26?chapter=I&subchapter=A&part=1&section=1.454-1"
         }
       ]
     },
@@ -1748,6 +1773,11 @@
         {
           "kind": "regulation",
           "citation": "26 CFR 1.1012-1(c)(1)(i)",
+          "url": "https://www.ecfr.gov/api/renderer/v1/content/enhanced/current/title-26?chapter=I&subchapter=A&part=1&section=1.1012-1"
+        },
+        {
+          "kind": "regulation",
+          "citation": "26 CFR 1.1012-1(e)(1)(i)-(ii)",
           "url": "https://www.ecfr.gov/api/renderer/v1/content/enhanced/current/title-26?chapter=I&subchapter=A&part=1&section=1.1012-1"
         },
         {

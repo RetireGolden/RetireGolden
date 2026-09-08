@@ -1,18 +1,18 @@
 {
-  "generatedAt": "2026-09-08T11:58:05.581Z",
+  "generatedAt": "2026-09-08T14:16:29.736Z",
   "recordCount": 444,
-  "urlCount": 349,
-  "fetched": 9,
-  "cached": 340,
-  "entryCount": 1284,
+  "urlCount": 352,
+  "fetched": 1,
+  "cached": 351,
+  "entryCount": 1293,
   "counts": {
-    "EXACT": 908,
+    "EXACT": 915,
     "PUNCTUATION": 42,
     "PDF-WORD-LEVEL": 245,
     "ELISION-EXACT": 72,
     "ELISION-PUNCTUATION": 7,
     "PDF-NOT-VERIFIABLE": 7,
-    "UNFETCHABLE": 3
+    "UNFETCHABLE": 5
   },
   "hostConventions": {
     "uscode.house.gov": {
@@ -8025,6 +8025,16 @@
       "diagnosis": null
     },
     {
+      "id": "irc-1091-a-wash-sale-thirty-day-window",
+      "citation": "IRC 1091(d)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1091&num=0&edition=prelim",
+      "quoteSha256": "5c0a3c745e21b52c",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
       "id": "rev-rul-2008-5-ira-wash-sale-permanent-loss-disallowance",
       "citation": "Rev. Rul. 2008-5, FACTS",
       "host": "www.irs.gov",
@@ -8140,6 +8150,26 @@
       "host": "www.law.cornell.edu",
       "url": "https://www.law.cornell.edu/uscode/text/26/121",
       "quoteSha256": "ac935e07138a2ee5",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-121-d-6-exclusion-cannot-reach-recapture",
+      "citation": "IRC 121(b)(1)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section121&num=0&edition=prelim",
+      "quoteSha256": "0613d39cd9a6d8c1",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-121-d-6-exclusion-cannot-reach-recapture",
+      "citation": "IRC 121(b)(2)(A)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section121&num=0&edition=prelim",
+      "quoteSha256": "231c2ce88108a8d1",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null
@@ -8279,7 +8309,7 @@
       "citation": "IRC 1(h)(1)(E)",
       "host": "www.law.cornell.edu",
       "url": "https://www.law.cornell.edu/uscode/text/26/1",
-      "quoteSha256": "940e04f3ee3ddeeb",
+      "quoteSha256": "5d12915ded859827",
       "verdict": "ELISION-EXACT",
       "detail": "2 segments, every one a literal substring",
       "diagnosis": null
@@ -8289,7 +8319,7 @@
       "citation": "IRC 1(h)(6)(A)(i)",
       "host": "www.law.cornell.edu",
       "url": "https://www.law.cornell.edu/uscode/text/26/1",
-      "quoteSha256": "068f0ddec0541cef",
+      "quoteSha256": "627271b08c45be4e",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null
@@ -8300,6 +8330,16 @@
       "host": "www.law.cornell.edu",
       "url": "https://www.law.cornell.edu/uscode/text/26/1250",
       "quoteSha256": "fb692262a6591647",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-1-h-1-E-unrecaptured-section-1250-gain",
+      "citation": "IRC 168(b)(3)(A)-(B)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section168&num=0&edition=prelim",
+      "quoteSha256": "d340e91a24cbf5bd",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null
@@ -8339,9 +8379,19 @@
       "citation": "IRC 121(b)(5)(A) and (B)",
       "host": "www.law.cornell.edu",
       "url": "https://www.law.cornell.edu/uscode/text/26/121",
-      "quoteSha256": "4dbead343a9a7113",
+      "quoteSha256": "843da820fdb75a73",
       "verdict": "ELISION-EXACT",
       "detail": "2 segments, every one a literal substring",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-121-a-b-principal-residence-eligibility-tests",
+      "citation": "IRC 121(b)(5)(C)(i)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section121&num=0&edition=prelim",
+      "quoteSha256": "810dcbea89fdb8a3",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -8350,6 +8400,16 @@
       "host": "www.ecfr.gov",
       "url": "https://www.ecfr.gov/api/renderer/v1/content/enhanced/current/title-26?chapter=I&subchapter=A&part=1&section=1.1012-1",
       "quoteSha256": "619630e8a28e5595",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "treas-reg-1-1012-1-c-lot-basis-and-holding-period",
+      "citation": "26 CFR 1.1012-1(e)(1)(i)-(ii)",
+      "host": "www.ecfr.gov",
+      "url": "https://www.ecfr.gov/api/renderer/v1/content/enhanced/current/title-26?chapter=I&subchapter=A&part=1&section=1.1012-1",
+      "quoteSha256": "80cab44151de4927",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null
@@ -8386,10 +8446,10 @@
     },
     {
       "id": "irc-454-savings-bond-interest-deferral",
-      "citation": "IRC 454(c)",
-      "host": "uscode.house.gov",
-      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section454&num=0&edition=prelim",
-      "quoteSha256": "ca4e15f94990185e",
+      "citation": "26 CFR 1.454-1(a)(1)",
+      "host": "www.ecfr.gov",
+      "url": "https://www.ecfr.gov/api/renderer/v1/content/enhanced/current/title-26?chapter=I&subchapter=A&part=1&section=1.454-1",
+      "quoteSha256": "5e4310f4609e0680",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null
@@ -8960,6 +9020,36 @@
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section55&num=0&edition=prelim",
       "quoteSha256": "1285ee0a6736a195",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-1-j-3-B-rate-tables-adjusted-each-year",
+      "citation": "IRC 63(c)(4)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section63&num=0&edition=prelim",
+      "quoteSha256": "7480023a8a7aee84",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-1-j-3-B-rate-tables-adjusted-each-year",
+      "citation": "IRC 55(d)(3)(A)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section55&num=0&edition=prelim",
+      "quoteSha256": "8fcfc039801313e5",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-1-j-3-B-rate-tables-adjusted-each-year",
+      "citation": "IRC 55(d)(3)(B)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section55&num=0&edition=prelim",
+      "quoteSha256": "3f214ac60661a619",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null
@@ -10040,8 +10130,8 @@
       "host": "www.ilga.gov",
       "url": "https://www.ilga.gov/Documents/legislation/ilcs/documents/003500050K203.htm",
       "quoteSha256": "af6ec3bd3b93c85a",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -10050,8 +10140,8 @@
       "host": "www.ilga.gov",
       "url": "https://www.ilga.gov/Documents/legislation/ilcs/documents/003500050K203.htm",
       "quoteSha256": "b20aa287a892d09c",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
