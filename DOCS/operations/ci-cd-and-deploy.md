@@ -50,8 +50,9 @@ To keep Actions minutes down, PR pushes do **not** run the expensive pipeline by
 iterate without every commit running lint/test/e2e/build/deploy/DAST. The trusted default-branch
 [`openrouter-ci-broker.yml`](../../.github/workflows/openrouter-ci-broker.yml) automatically adds
 `run-ci` only after independently validating an eligible open same-repository PR to `main`.
-Review, profile-completion, and Azure completion events wake a sweep; the event SHA is not
-assumed to be a PR head. For each eligible live head, the `github-actions[bot]` review must
+Review, profile-completion, and Azure completion events, plus explicit default-branch
+`workflow_dispatch` recovery with a completed profile `source_run_id`, wake a sweep; the event SHA
+is not assumed to be a PR head. For each eligible live head, the `github-actions[bot]` review must
 have bot id `41898282`, type `Bot`, the decoded clean ledger, these production Markdown fields,
 the provenance-valid review run's exact URL, and a successful trusted `openrouter-profile`
 completion status bound to the same head. The lane section is intentionally variable-length:

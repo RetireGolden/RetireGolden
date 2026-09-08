@@ -82,7 +82,8 @@ for them all. Forks never authorize or deploy; the broker does not automatically
 [`.github/workflows/openrouter-ci-broker.yml`](.github/workflows/openrouter-ci-broker.yml)
 
 Runs from trusted default-branch code when an OpenRouter review, profile completion, or Azure CI run
-completes. One repository-wide lock serializes decisions, and each wake-up inspects all open PRs so
+completes, or when explicitly dispatched on the default branch with a completed profile run ID
+as `source_run_id`. One repository-wide lock serializes decisions, and each wake-up inspects all open PRs so
 coalesced pending events cannot lose a ready PR. For each PR, it checks the live same-repository head,
 decoded bot-authored clean ledger, matching caller blobs, and current profile proof through GitHub APIs.
 It identifies an eligible skipped Azure run, then adds `run-ci` and reruns that specific run. It never

@@ -41,7 +41,7 @@ type DispatchOptions = {
   registeredState?: string;
 };
 
-function fixture({ denied = 0, broken = 0, completedCi = false, missingCi = false } = {}) {
+function fixture({ denied = 0, broken = 0, completedCi = false, missingCi = false, multipleCi = false } = {}) {
   const reruns: number[] = [];
   const labels = new Set<number>();
   const profileChecks: number[] = [];
@@ -109,14 +109,17 @@ function fixture({ denied = 0, broken = 0, completedCi = false, missingCi = fals
       if (endpoint === listRuns) {
         if (missingCi) return [];
         const id = Number(input.head_sha![0]);
-        return [
-          {
-            id,
-            head_sha: input.head_sha,
-            status: reruns.includes(id) ? 'queued' : 'completed',
-            run_attempt: completedCi ? 2 : 1,
-          },
-        ];
+        const latest = {
+          id,
+          head_sha: input.head_sha,
+          status: reruns.includes(id) ? 'queued' : 'completed',
+          run_attempt: completedCi ? 2 : 1,
+          created_at: '2026-09-02T00:00:00Z',
+        };
+        // Oldest first forces the actual workflow's Date.parse comparator to run.
+        return multipleCi
+          ? [{ ...latest, id: id + 100, created_at: '2026-09-01T00:00:00Z' }, latest]
+          : [latest];
       }
       throw new Error('unexpected pagination');
     },
@@ -149,7 +152,7 @@ function fixture({ denied = 0, broken = 0, completedCi = false, missingCi = fals
       `(async () => {${script}\n})()`,
       {
         github: { ...github, rest: { ...github.rest, actions } },
-        Date: { now: () => now },
+        Date: class extends Date { static now() { return now; } },
         setTimeout: (resolve: () => void, delay: number) => { now += delay; resolve(); },
         context: {
           repo: { owner: 'RetireGolden', repo: 'fixture' },
@@ -176,6 +179,13 @@ function fixture({ denied = 0, broken = 0, completedCi = false, missingCi = fals
 }
 
 describe('broker queue and open-PR sweep', () => {
+  it('selects the newer eligible CI run using native date parsing', async () => {
+    const state = fixture({ multipleCi: true });
+    await state.runDispatch();
+    expect(state.reruns).toEqual([1, 2]);
+    expect(state.failures).toEqual([]);
+  });
+
   it('uses one non-cancelling lock and sweeps both PRs for a main-SHA event', async () => {
     expect(workflow).toMatch(
       /concurrency:\n {2}group: openrouter-ci-broker\n {2}cancel-in-progress: false/,
