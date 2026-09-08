@@ -476,13 +476,24 @@ describe('Narrow viewports and the remaining partial-issue items (#439, #440, #4
     expect(indexCss).toMatch(
       /@media \(min-width: 641px\) and \(max-width: 880px\) \{[\s\S]*?\.nav \{[\s\S]*?flex-wrap:\s*wrap/,
     )
-    // Reading columns are narrower than the viewport; the shell is a container so the
-    // theme cluster wraps instead of a lone nav link.
-    expect(rule('.app-shell', indexCss)).toMatch(/container-type:\s*inline-size/)
-    expect(rule('.app-shell', indexCss)).toMatch(/container-name:\s*app-shell/)
-    expect(indexCss).toMatch(/@container app-shell \(max-width: 52rem\)/)
-    expect(indexCss).toMatch(/@container app-shell \(max-width: 52rem\) \{[\s\S]*?\.nav \{[\s\S]*?flex-wrap:\s*nowrap/)
-    expect(indexCss).toMatch(/@container app-shell \(max-width: 52rem\) \{[\s\S]*?\.theme-switcher-button \{[\s\S]*?min-width:\s*3\.8rem/)
+    // Size container is the header, never the shell: inline-size containment
+    // would become the containing block for position:fixed help bubbles and modals.
+    expect(rule('.app-shell', indexCss)).not.toMatch(/container-type/)
+    expect(rule('.app-header', indexCss)).toMatch(/container-type:\s*inline-size/)
+    expect(rule('.app-header', indexCss)).toMatch(/container-name:\s*app-header/)
+    expect(rule('.app-header', indexCss)).toMatch(/align-items:\s*flex-start/)
+    const containerAt = indexCss.indexOf('@container app-header (max-width: 52rem)')
+    expect(containerAt, '52rem header container').toBeGreaterThanOrEqual(0)
+    const containerBody = ruleBodyAt(indexCss, containerAt, '@container app-header (max-width: 52rem)')
+    expect(containerBody).toMatch(/\.header-menu \{[\s\S]*?flex-wrap:\s*wrap/)
+    expect(containerBody).toMatch(/\.nav \{[\s\S]*?flex-wrap:\s*nowrap/)
+    expect(containerBody).not.toMatch(/min-width:\s*max-content/)
+    expect(containerBody).toMatch(/\.theme-switcher-button \{[\s\S]*?min-width:\s*3\.6rem/)
+    const largeTextAt = indexCss.indexOf('@container app-header (max-width: 36rem)')
+    expect(largeTextAt, '36rem large-text wrap fallback').toBeGreaterThanOrEqual(0)
+    expect(ruleBodyAt(indexCss, largeTextAt, '@container app-header (max-width: 36rem)')).toMatch(
+      /\.nav \{[\s\S]*?flex-wrap:\s*wrap/,
+    )
   })
 
   it('the rail strip shows a scroll cue, snaps to chips, separates groups, and scrolls itself to the active chip (#439)', () => {

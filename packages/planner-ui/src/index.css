@@ -169,10 +169,6 @@ code {
   max-width: 52rem;
   margin: 0 auto;
   padding: 0 1.25rem 3rem;
-  /* Query the content column, not the viewport: reading routes (#443) are
-     narrower than the window, so a 1024px desktop still has an ~48rem header. */
-  container-type: inline-size;
-  container-name: app-shell;
 }
 
 /* The landing/plan-picker route holds little content, so the full 80rem workspace
@@ -212,11 +208,19 @@ code {
 .app-header {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  /* Top-aligned so a wrapped theme cluster does not drop the wordmark (#440).
+     One-row headers look the same as center because the items share a height. */
+  align-items: flex-start;
   justify-content: flex-start;
-  gap: 1rem;
+  gap: 0.75rem;
   padding: 1rem 0;
   border-bottom: 1px solid var(--border);
+  /* Query the header column, not the viewport: reading routes (#443) are
+     narrower than the window. Lives on the header, never `.app-shell` —
+     `container-type: inline-size` is a containing block for `position: fixed`
+     descendants (help bubbles, modal backdrops). */
+  container-type: inline-size;
+  container-name: app-header;
 }
 
 .brand {
@@ -366,17 +370,12 @@ code {
   z-index: 1;
 }
 
-/* Reading and reading-narrow shells are a ~42–48rem column inside a wide
+/* Reading and reading-narrow headers are a ~42–48rem column inside a wide
    window. Keep the four primary links on one row (#676); if brand + nav +
    theme cannot share that column, the theme cluster wraps — same collapse
    as #440, never a lone second-row Disclaimer. The 641–880 viewport band
    below still wins in that range so #440 is unchanged. */
-@container app-shell (max-width: 52rem) {
-  .app-header {
-    align-items: flex-start;
-    gap: 0.5rem;
-  }
-
+@container app-header (max-width: 52rem) {
   .header-menu {
     flex-wrap: wrap;
     gap: 0.5rem;
@@ -385,14 +384,23 @@ code {
 
   .nav {
     flex-wrap: nowrap;
-    min-width: max-content;
   }
 
-  /* 4.2rem × 3 plus the Theme label overshoots the 48rem reading column
-     by ~30px; keep the label and shrink the segments just enough. */
+  /* 4.2rem × 3 plus the Theme label overshoots the 48rem reading column;
+     keep the label and shrink the segments just enough. */
   .theme-switcher-button {
-    min-width: 3.8rem;
+    min-width: 3.6rem;
     padding: 0.35rem 0.5rem;
+  }
+}
+
+/* Large text (WCAG 1.4.4 / 200%): brand + four nowrap links can exceed the
+   column. Prefer wrapping a link over a horizontal scrollbar. Default 16px
+   rem keeps 36rem below the reading measures, so #676 at 1024px is unchanged. */
+@container app-header (max-width: 36rem) {
+  .nav {
+    flex-wrap: wrap;
+    min-width: 0;
   }
 }
 
