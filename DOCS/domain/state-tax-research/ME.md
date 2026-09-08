@@ -1,6 +1,6 @@
 # Maine (ME) — state income tax for retirement planning
 
-Tax year: 2026. Researched 2026-06-13; standard-deduction correction 2026-09-05.
+Tax year: 2026. Researched 2026-06-13; standard-deduction correction 2026-09-05; pension-cap correction 2026-09-08.
 
 > **2026 update (PR #23 review, 2026-07-17; age-addition and phase-out correction 2026-09-05):**
 > Maine **decoupled from the federal basic standard deduction** for tax years
@@ -92,7 +92,10 @@ The pack maps `retirement: { kind: "capped", capPerPerson: 49824 }` with no age
 gate and no Social Security offset. Registry record
 `me-mrs-36-5122-2-m2-m3-2026-pension-deduction` registers the exact 2026
 maximum and discloses that the flat cap cannot enforce plan qualification,
-military separation, the gross-benefit offset, or the M-3 phaseout.
+military separation, the gross-benefit offset, the M-3 phaseout, or per-recipient
+MFJ attribution — `retirementExclusion` multiplies `capPerPerson` by
+`agesAlive.length` because the plan schema cannot attribute retirement income to
+each spouse separately.
 
 ## Modeled standard-deduction examples
 
@@ -110,7 +113,7 @@ At $139,750 the §5124-C(2) fraction is 0.5 on the combined $17,750 deduction
 $73.2875 of tax, not the full $2,050 / $146.575.
 
 ## Simplifications / not modeled
-- **Pension deduction scope:** the flat cap does not verify that every `privateRetirementIncome` dollar qualifies under M-2, does not separate military retirement (§5122(2)(M-2)(1)(b)), does not reduce the nonmilitary maximum by gross Social Security or Railroad Retirement (§5122(2)(M-2)(1)(a)), and does not apply the M-3 federal-AGI phaseout. The runtime cap matches the July 2026 MRS maximum (**$49,824**); the offset and phaseout omissions can still move modeled tax in either direction.
+- **Pension deduction scope:** the flat cap does not verify that every `privateRetirementIncome` dollar qualifies under M-2, does not separate military retirement (§5122(2)(M-2)(1)(b)), does not reduce the nonmilitary maximum by gross Social Security or Railroad Retirement (§5122(2)(M-2)(1)(a)), does not apply the M-3 federal-AGI phaseout, and does not attribute retirement income by recipient on MFJ returns — `retirementExclusion` multiplies `capPerPerson` by `agesAlive.length`, so a one-recipient household can be over-excluded when both spouses are marked alive. The runtime cap matches the July 2026 MRS maximum (**$49,824**); the offset, phaseout, and per-recipient omissions can still move modeled tax in either direction.
 - **Personal exemption** ($5,300 on the MRS 2026 schedule) not modeled; that omission can offset modeled tax on a complete return, so no net Form 1040ME tax direction is asserted.
 - **Blindness** additional amount not modeled — the engine age counter drives IRC 63(f) age relief only.
 - Head-of-household basic amounts and other Form 1040ME lines outside the pack levers are not modeled.

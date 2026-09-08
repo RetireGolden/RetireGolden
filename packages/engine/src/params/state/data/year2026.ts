@@ -426,7 +426,9 @@ const rawStateYear2026 = {
       // — tagged only for the age addition, not whole-federal basic conformity.
       // 2% surcharge on taxable income over $1M single / $1.5M MFJ is encoded
       // as an equivalent 9.15% top bracket. Personal exemption and blindness
-      // remain unmodeled.
+      // remain unmodeled. July 2026 Form 1040ES-ME publishes
+      // retirement.capPerPerson $49,824; the flat cap omits the gross Social
+      // Security/Railroad Retirement offset and the M-3 federal-AGI phaseout.
       code: 'ME', name: 'Maine', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
       standardDeduction: { single: 15700, marriedFilingJointly: 31400 },
       standardDeductionAge65AdditionConformity: 'federal',

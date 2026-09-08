@@ -477,6 +477,13 @@ retroactive to January 1, 2026); Social Security is already fully exempt in the 
 Michigan’s 2026 ordinary retirement path is a **$67,610 / $135,220** combined qualifying ceiling (not a
 full exemption); the shared capped pack rule remains a coarse approximation of qualification, elections,
 and the pre-1946 public exception.
+Maine's §5122(2)(M-2) pension-income deduction carries the MRS July 2026 Form 1040ES-ME **$49,824**
+per-person TY2026 maximum (`me-mrs-36-5122-2-m2-m3-2026-pension-deduction`,
+[ME.md](../domain/state-tax-research/ME.md);
+[MRS 2026 Form 1040ES-ME Instructions](https://www.maine.gov/revenue/sites/maine.gov.revenue/files/inline-files/26_1040es_fillable.pdf)).
+The flat cap does not verify plan qualification, separate military retirement, reduce by gross
+Social Security/Railroad Retirement, or apply the M-3 federal-AGI phaseout; personal exemption and whole
+Form 1040ME accuracy remain outside this bounded claim.
 
 **2026 parameter corrections (DE, HI, RI, UT):** Delaware §1102(a)(14) 5.55%
 (`de-code-30-1102-a-14-rate-schedule`, [DE.md](../domain/state-tax-research/DE.md)), Hawaii
@@ -505,13 +512,7 @@ age-65 additional amount ($2,050 unmarried / $1,650 per eligible person married)
 Maine's basic (`mrs-36-5124-c-1-b-decoupled-standard-deduction`). Maine's §5124-C(2) proportional
 phase-out of the combined basic-plus-age total is modeled through `standardDeductionPhaseout` on the
 pack and `phaseOutStandardDeduction` (`mrs-36-5124-c-2-standard-deduction-phaseout`), using a modeled
-Maine-AGI proxy rather than certified Form 1040ME AGI. Maine's §5122(2)(M-2) pension-income deduction
-carries the MRS July 2026 Form 1040ES-ME **$49,824** per-person TY2026 maximum
-(`me-mrs-36-5122-2-m2-m3-2026-pension-deduction`, [ME.md](../domain/state-tax-research/ME.md);
-[MRS 2026 Form 1040ES-ME Instructions](https://www.maine.gov/revenue/sites/maine.gov.revenue/files/inline-files/26_1040es_fillable.pdf)).
-The flat cap does not verify plan qualification, separate military retirement, reduce by gross
-Social Security/Railroad Retirement, or apply the M-3 federal-AGI phaseout; personal exemption and whole
-Form 1040ME accuracy remain outside this bounded claim. AZ left the whole-federal list on
+Maine-AGI proxy rather than certified Form 1040ME AGI. AZ left the whole-federal list on
 2026-08-05: A.R.S. §43-1041(A) sets Arizona's own amounts and (H) borrows only the federal indexation
 *method*, so the pack now carries Arizona's published figure untagged
 (`ars-43-1041-standard-deduction-published-amount`). A state that publishes its own fixed statutory age
