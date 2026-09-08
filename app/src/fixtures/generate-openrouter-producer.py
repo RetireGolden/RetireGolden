@@ -15,7 +15,7 @@ from or_pr_review.merge import MergedIssue
 from or_pr_review.schema import LaneResult, SCHEMA_VERSION
 from or_pr_review.review_policy import PolicyFile, ResolvedPolicy
 
-PRODUCER = "5bb16c7a5ba87a802d7884ccbfa5e99d10978a49"
+PRODUCER = "212775ffea22e806cddcb706c73a3df26fbcb6d0"
 root = Path(publish.__file__).resolve().parents[2]
 
 
@@ -38,6 +38,8 @@ for name, mode, status in [
     ("verify-clean-disputed", "verify", "disputed"),
     ("initial-issues", "initial", "open"),
     ("initial-clean-policy", "initial", None),
+    ("rebase-clean-disputed", "verify", "disputed"),
+    ("rebase-issues", "verify", "open"),
 ]:
     finding = LedgerFinding(
         "r1-1",
@@ -59,7 +61,7 @@ for name, mode, status in [
         base_ref="main",
         head_ref="test",
         mode=mode,
-        plan=DiffPlan("full-pr", "full-pr", None, sha, None),
+        plan=DiffPlan("rebase" if name.startswith("rebase-") else "full-pr", "full-pr", None, sha, None),
         truncation=Truncation("diff", False, 4, 4, 300),
         policy_base_sha="b" * 40 if name.endswith("-policy") else "",
         review_policy=ResolvedPolicy(

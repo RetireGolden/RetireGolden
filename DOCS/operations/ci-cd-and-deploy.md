@@ -50,8 +50,9 @@ To keep Actions minutes down, PR pushes do **not** run the expensive pipeline by
 iterate without every commit running lint/test/e2e/build/deploy/DAST. The trusted default-branch
 [`openrouter-ci-broker.yml`](../../.github/workflows/openrouter-ci-broker.yml) automatically adds
 `run-ci` only after independently validating an eligible open same-repository PR to `main`.
-Review, profile-completion, and Azure completion events wake a sweep; the event SHA is not
-assumed to be a PR head. For each eligible live head, the `github-actions[bot]` review must
+Review, profile-completion, and Azure completion events, plus explicit default-branch
+`workflow_dispatch` recovery with a completed profile `source_run_id`, wake a sweep; the event SHA
+is not assumed to be a PR head. For each eligible live head, the `github-actions[bot]` review must
 have bot id `41898282`, type `Bot`, the decoded clean ledger, these production Markdown fields,
 the provenance-valid review run's exact URL, and a successful trusted `openrouter-profile`
 completion status bound to the same head. The lane section is intentionally variable-length:
@@ -111,15 +112,15 @@ proof against current caller pins. Historical branch-caller audits therefore
 do not permanently block a workflow-pin migration.
 
 The embedded ledger is produced by the pinned upstream review action
-[`FlyOverCoderKY/openrouter-pr-review-action@5bb16c7a5ba87a802d7884ccbfa5e99d10978a49`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/tree/5bb16c7a5ba87a802d7884ccbfa5e99d10978a49).
+[`FlyOverCoderKY/openrouter-pr-review-action@212775ffea22e806cddcb706c73a3df26fbcb6d0`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/tree/212775ffea22e806cddcb706c73a3df26fbcb6d0).
 RetireGolden authorization validates decoded markers against that producer, not a vendored copy:
 
 | Contract | Source |
 |----------|--------|
-| Finding decode (`id`, `sev`, `file`, `line`, `title`, `ev`, `st`, `m`) | [`loop.py` `_decode_finding`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/5bb16c7a5ba87a802d7884ccbfa5e99d10978a49/src/or_pr_review/loop.py#L478-L518) |
-| Safe relative paths for `file` | [`schema.py` `valid_review_path`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/5bb16c7a5ba87a802d7884ccbfa5e99d10978a49/src/or_pr_review/schema.py#L280-L282) is a three-line compatibility predicate delegating to [`normalize_review_path`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/5bb16c7a5ba87a802d7884ccbfa5e99d10978a49/src/or_pr_review/schema.py#L255-L277); its length limit is [`MAX_FILE = 500`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/5bb16c7a5ba87a802d7884ccbfa5e99d10978a49/src/or_pr_review/schema.py#L26). |
-| Round state: `fixed` removes an entry; `disputed` is carried; open counts | [`loop.py` `apply_round`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/5bb16c7a5ba87a802d7884ccbfa5e99d10978a49/src/or_pr_review/loop.py#L195-L289) (including `open_issue_count`) |
-| Ledger encode/decode envelope | [`loop.py` `_encode`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/5bb16c7a5ba87a802d7884ccbfa5e99d10978a49/src/or_pr_review/loop.py#L376-L400) / [`_decode`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/5bb16c7a5ba87a802d7884ccbfa5e99d10978a49/src/or_pr_review/loop.py#L437-L475) |
+| Finding decode (`id`, `sev`, `file`, `line`, `title`, `ev`, `st`, `m`) | [`loop.py` `_decode_finding`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/212775ffea22e806cddcb706c73a3df26fbcb6d0/src/or_pr_review/loop.py#L486-L526) |
+| Safe relative paths for `file` | [`schema.py` `valid_review_path`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/212775ffea22e806cddcb706c73a3df26fbcb6d0/src/or_pr_review/schema.py#L280-L282) is a three-line compatibility predicate delegating to [`normalize_review_path`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/212775ffea22e806cddcb706c73a3df26fbcb6d0/src/or_pr_review/schema.py#L255-L277); its length limit is [`MAX_FILE = 500`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/212775ffea22e806cddcb706c73a3df26fbcb6d0/src/or_pr_review/schema.py#L26). |
+| Round state: `fixed` removes an entry; `disputed` is carried; open counts | [`loop.py` `apply_round`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/212775ffea22e806cddcb706c73a3df26fbcb6d0/src/or_pr_review/loop.py#L196-L298) (including `open_issue_count`) |
+| Ledger encode/decode envelope | [`loop.py` `_encode`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/212775ffea22e806cddcb706c73a3df26fbcb6d0/src/or_pr_review/loop.py#L384-L408) / [`_decode`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/212775ffea22e806cddcb706c73a3df26fbcb6d0/src/or_pr_review/loop.py#L445-L483) |
 
 These function spans were checked against the source at the linked immutable action revision.
 The path predicate's short span is intentional: normalization contains the validation logic.
@@ -133,11 +134,11 @@ may name other action revisions. Guards recognize the documented action referenc
 
 The shared 22-minute review job prioritizes reviewer completion: it reserves 60 seconds total for the tool-free judge, 180 seconds for publication, and a 5-second margin. Review lanes can use roughly 18 minutes, subject to setup time. If judging times out or fails, publication retains the validated lane findings through the deterministic merge fallback.
 
-The [pinned shared workflow](https://github.com/RetireGolden/.github/blob/05c616eae68252214effb03d8422e2ec56667fc7/README.md) uses the 180-second HTTP limit for connection/header setup and socket inactivity. Active bodies can finish within the remaining lane-stage deadline; a structured finish uses its whole remaining window before any retry. Timeout diagnostics distinguish connection setup, inactivity, and absolute deadline expiry.
+The [pinned shared workflow](https://github.com/RetireGolden/.github/blob/a190c3d834f2e3048b4eef8129fa3c8e10891aa0/README.md) uses the 180-second HTTP limit for connection/header setup and socket inactivity. Active bodies can finish within the remaining lane-stage deadline; a structured finish uses its whole remaining window before any retry. Timeout diagnostics distinguish connection setup, inactivity, and absolute deadline expiry.
 
-The current caller uses the [shared configuration through organization PR #49](https://github.com/RetireGolden/.github/blob/05c616eae68252214effb03d8422e2ec56667fc7/.github/workflows/openrouter-code-review.yml)
+The current caller uses the [shared configuration through organization PR #51](https://github.com/RetireGolden/.github/blob/a190c3d834f2e3048b4eef8129fa3c8e10891aa0/.github/workflows/openrouter-code-review.yml)
 with `review_profiles_enabled: true`, `review_policy: base`, and org workflow pin
-`05c616eae68252214effb03d8422e2ec56667fc7`. Root and nested `REVIEW.md` guidance comes from the
+`a190c3d834f2e3048b4eef8129fa3c8e10891aa0`. Root and nested `REVIEW.md` guidance comes from the
 immutable target-branch tip and is frozen before model calls. A policy proposed by the PR begins
 affecting reviews only after merge. The `code` profile uses required Grok plus optional GLM;
 `review_level: deep` adds required Astra Flex. `REVIEW.md` cannot remove required lanes or name
@@ -148,8 +149,24 @@ output confirm clean-ledger acceptance and open-finding rejection in both CI con
 
 #### Review profiles and profile completion
 
+Bot-dispatched reviews use an explicit default-branch notification because GitHub
+suppresses their downstream `workflow_run` events. The profile caller accepts
+`source_run_id`, waits briefly for that review run to finish, and independently
+validates its provenance and current receipts. A bot-dispatched profile run then
+explicitly wakes the CI broker, which still rechecks the exact-head clean ledger
+and trusted proof. Only the final notification job requests Actions write access;
+model review jobs retain Actions read access.
+
+If a delivery job fails, use `gh workflow run openrouter-profile-completion.yml
+--ref main -f source_run_id=<completed-review-run>` to retry proof delivery. If
+proof already completed but the broker did not wake, use `gh workflow run
+openrouter-ci-broker.yml --ref main -f source_run_id=<completed-profile-run>`.
+Do not repeat the paid review just to deliver a notification. The source ID is a
+wake-up hint, never CI authorization; missing evidence still blocks CI. Manual
+proof and broker dispatches from feature branches intentionally skip their jobs.
+
 [`openrouter-code-review.yml`](../../.github/workflows/openrouter-code-review.yml) forwards to the
-org reusable at `05c616eae68252214effb03d8422e2ec56667fc7`. Reviews publish both the v1 ledger
+org reusable at `a190c3d834f2e3048b4eef8129fa3c8e10891aa0`. Reviews publish both the v1 ledger
 marker and a v1 plan receipt (`<!-- openrouter-review-plan:v1:… -->`) that records the effective
 profile, required and successful models, and the authoritative workflow run.
 
@@ -160,7 +177,7 @@ and current base policy. A separate publish job rechecks the obligations and suc
 before writing the `openrouter-profile` commit status. Profile artifacts retain 30 days (requests 90 days).
 
 CI authorization and the broker load the org
-[`scripts/profile_consumer.mjs`](https://github.com/RetireGolden/.github/blob/05c616eae68252214effb03d8422e2ec56667fc7/scripts/profile_consumer.mjs)
+[`scripts/profile_consumer.mjs`](https://github.com/RetireGolden/.github/blob/a190c3d834f2e3048b4eef8129fa3c8e10891aa0/scripts/profile_consumer.mjs)
 at the org workflow pin through `getContent` — it performs GitHub provenance and receipt binding
 only, with no policy parsing or artifact downloads in the consumer itself. `authorizeProfileReceipt`
 requires an exact-head trusted bot review with a satisfied clean receipt, provenance-valid review

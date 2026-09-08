@@ -131,7 +131,7 @@ const producerReviewContext = {
 
 const profileConsumerFixture = [
   'export async function authorizeProfileReceipt(_github, input) {',
-  '  if (input.orgWorkflowSha !== "05c616eae68252214effb03d8422e2ec56667fc7") throw new Error("missing or wrong org pin");',
+  '  if (input.orgWorkflowSha !== "a190c3d834f2e3048b4eef8129fa3c8e10891aa0") throw new Error("missing or wrong org pin");',
   '  if (typeof input?.review?.body === "string" && input.review.body.includes("PROFILE_DENY")) {',
   '    return { authorized: false, reason: "fixture profile denied" }',
   '  }',
@@ -586,7 +586,7 @@ describe('OpenRouter CI authorization contract', () => {
       `RetireGolden/.github/.github/workflows/openrouter-code-review.yml@${TRUSTED_REUSABLE_REVIEW_WORKFLOW_SHA}`,
     )
     expect(reviewCaller).toContain(`uses: ${TRUSTED_REUSABLE_REVIEW_WORKFLOW}`)
-    for (const source of [reviewCaller, ciRunbook]) {
+    for (const source of [reviewCaller, ciRunbook, readme]) {
       const policyLinks = [...source.matchAll(/https:\/\/github\.com\/RetireGolden\/\.github\/(?:blob|tree)\/([a-f0-9]{40})\//g)]
       expect(policyLinks.length).toBeGreaterThan(0)
       for (const link of policyLinks) expect(link[1]).toBe(TRUSTED_REUSABLE_REVIEW_WORKFLOW_SHA)
@@ -601,7 +601,6 @@ describe('OpenRouter CI authorization contract', () => {
   })
 
   it('keeps documented producer revisions synchronized with the caller action reference', () => {
-    expect(reviewCaller).toMatch(/permissions:\r?\n {2}actions: read/)
     expect(reviewCaller).toContain('review_policy: base')
     expect(reviewCaller).toContain('review_profiles_enabled: true')
     expect(reviewCaller).toContain("review_level: ${{ inputs.review_level || 'auto' }}")
@@ -609,7 +608,9 @@ describe('OpenRouter CI authorization contract', () => {
     expect(profileCompletionCaller).toMatch(/^ {2}complete:\r?\n {4}if: /m)
     expect(profileCompletionCaller).toContain("if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)")
     expect(profileCompletionCaller).toContain(`openrouter-profile-completion.yml@${TRUSTED_REUSABLE_REVIEW_WORKFLOW_SHA}`)
-    expect(profileCompletionCaller).toContain("source_run_id: ${{ github.event.workflow_run.id && format('{0}', github.event.workflow_run.id) || '' }}")
+    expect(profileCompletionCaller).toContain("source_run_id: ${{ inputs.source_run_id || (github.event.workflow_run.id && format('{0}', github.event.workflow_run.id)) || '' }}")
+    expect(reviewCaller).toMatch(/^permissions:\r?\n(?:[ \t]+#[^\r\n]*\r?\n)* {2}actions: write\r?\n/m)
+    expect(profileCompletionCaller).toMatch(/ {2}workflow_dispatch:\r?\n {4}inputs:\r?\n {6}source_run_id:\r?\n {8}description: [^\r\n]+\r?\n {8}required: false\r?\n {8}type: string/)
     expect(profileCompletionCaller).toContain('actions: write')
     expect(profileCompletionCaller).toContain('statuses: write')
     expect(profileCompletionCaller).not.toContain('steps:')

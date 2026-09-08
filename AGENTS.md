@@ -214,3 +214,20 @@ Code, Codex, Cursor, the Grok and OpenRouter review bots, and any other tool.
 - Check `OpenRouter profile completion` and the `openrouter-profile` status for the current head in addition to the existing review and CI requirements. The profile gate rechecks current base policy. A missing/failed required lane or pending deep request is not clean.
 - Profile evidence is bounded to PRs younger than 25 days. For older work, open a replacement PR; do not bypass the profile gate or delete request evidence.
 - Recovery now forwards to the normal trusted review workflow on `main`. Wait for that review and its profile completion; the forwarding run does not publish a review itself. The existing caller-pin migration procedure applies until this revision is on `main`.
+
+### Notification delivery recovery
+
+- If a current trusted review completed but profile delivery failed, dispatch
+  `openrouter-profile-completion.yml` from `main` with that completed review's
+  run ID as `source_run_id`. This rechecks evidence without paying for another
+  review. It does not repair stale caller provenance after a pin change.
+- If a current trusted profile proof completed but CI did not wake, dispatch
+  `openrouter-ci-broker.yml` from `main` with the completed **profile** run ID
+  as `source_run_id`. The broker independently rechecks the clean ledger and
+  proof before applying `run-ci` or rerunning CI. Check for active CI first.
+- The broker's source wait is capped at 90 seconds; if runner cleanup has not
+  finished, retry this cheap delivery dispatch after the source run completes.
+  A delivery timeout does not justify another paid review or a gate bypass.
+- For a stale caller pin, follow the existing pin-migration procedure. Align
+  the branch with current main before its next legitimate fix push, and retain
+  the ledger and any pending deep request. Do not silently use old-pin evidence.

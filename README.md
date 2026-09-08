@@ -52,7 +52,7 @@ pnpm dev
 
 ## CI/CD
 
-GitHub Actions builds production on pushes to `main`; the Azure preview workflow listens for opened, synchronized, reopened, and closed PR events. Semgrep runs on pushes to `main` and PRs targeting `main`, while ZAP runs only for an authorized same-repository PR preview after deploy. OpenRouter review runs on its pull-request events or manual dispatch, and its trusted broker is a `workflow_run` consumer (not a PR-activity workflow). The resolve gate covers manifest-touching PRs and weekly runs; Grok Build is manual emergency-only; Owl parity is manual; both package releases also have their version-tag triggers (`engine-v*` and `planner-ui-v*`). Full setup notes: [DOCS/operations/ci-cd-and-deploy.md](DOCS/operations/ci-cd-and-deploy.md).
+GitHub Actions builds production on pushes to `main`; the Azure preview workflow listens for opened, synchronized, reopened, and closed PR events. Semgrep runs on pushes to `main` and PRs targeting `main`, while ZAP runs only for an authorized same-repository PR preview after deploy. OpenRouter review runs on its pull-request events or manual dispatch, and its trusted broker accepts completion events and explicit default-branch delivery recovery. The resolve gate covers manifest-touching PRs and weekly runs; Grok Build is manual emergency-only; Owl parity is manual; both package releases also have their version-tag triggers (`engine-v*` and `planner-ui-v*`). Full setup notes: [DOCS/operations/ci-cd-and-deploy.md](DOCS/operations/ci-cd-and-deploy.md).
 
 ### Azure Static Web Apps — build & deploy
 
@@ -82,7 +82,8 @@ for them all. Forks never authorize or deploy; the broker does not automatically
 [`.github/workflows/openrouter-ci-broker.yml`](.github/workflows/openrouter-ci-broker.yml)
 
 Runs from trusted default-branch code when an OpenRouter review, profile completion, or Azure CI run
-completes. One repository-wide lock serializes decisions, and each wake-up inspects all open PRs so
+completes, or when explicitly dispatched on the default branch with a completed profile run ID
+as `source_run_id`. One repository-wide lock serializes decisions, and each wake-up inspects all open PRs so
 coalesced pending events cannot lose a ready PR. For each PR, it checks the live same-repository head,
 decoded bot-authored clean ledger, matching caller blobs, and current profile proof through GitHub APIs.
 It identifies an eligible skipped Azure run, then adds `run-ci` and reruns that specific run. It never
@@ -180,16 +181,54 @@ remain in [AGENTS.md](AGENTS.md)):
 
 Branch-targeted guidance applies after merge to the target branch; new or moved
 source files are still reviewed. Offline policy lint and explain semantics follow the
-[OpenRouter review-policy spec](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/5bb16c7a5ba87a802d7884ccbfa5e99d10978a49/docs/review-policy.md).
+[OpenRouter review-policy spec](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/212775ffea22e806cddcb706c73a3df26fbcb6d0/docs/review-policy.md).
 The pinned shared OpenRouter caller enables `review_policy: base`.
 
 
+After a rebase or force-push makes the last reviewed commit unreachable, the
+shared harness selects `rebase` scope automatically: a full current-PR sweep at
+all severities with earlier reviews and replies as bounded context. Finding IDs
+and round progression survive. Valid disputes remain settled; current-code
+evidence can reopen an invalidated dispute. Fixed or retired findings supply
+historical context for detecting regressions. A clean current-head review and
+current profile proof are still required; old-lineage evidence cannot unlock CI.
+
 ## Review profiles and CI proof
 
-The caller enables trusted profiles from the [organization workflow](https://github.com/RetireGolden/.github/blob/05c616eae68252214effb03d8422e2ec56667fc7/README.md). Code uses required Grok plus optional GLM; deep adds required Astra Flex. This preserves the standing baseline; `REVIEW.md` cannot name arbitrary models or remove required lanes.
+The caller enables trusted profiles from the [organization workflow](https://github.com/RetireGolden/.github/blob/a190c3d834f2e3048b4eef8129fa3c8e10891aa0/README.md). Code uses required Grok plus optional GLM; deep adds required Astra Flex. This preserves the standing baseline; `REVIEW.md` cannot name arbitrary models or remove required lanes.
 
 From Actions → **OpenRouter code review**, dispatch from `main` with a PR number and `review_level: auto`, `deep`, or `cancel`. Deep requests require repository write/maintain/admin permission, retain existing findings, and stay pending across retries and pushes until their own required review succeeds. Cancel removes a manual pending request; it cannot lower a policy requirement. Leave `reset_review` false.
 
 **OpenRouter profile completion** checks the exact PR head, effective current policy, required lanes, and accepted requests. The `openrouter-profile` status supplements the existing first-pass gate and repository CI. A successful review workflow alone does not establish a clean or complete review. The CI broker also checks the trusted completion proof before requesting expensive CI.
 
 Profile artifacts retain 30 days (requests 90 days), and the gate accepts PRs younger than 25 days. Open a replacement PR for older work. Missing evidence fails closed. An automatic policy refresh is requested at most once per head/configuration; use a manual rerun if that request fails. Maintainer labels and automatic path escalation are not enabled in this rollout.
+
+Dispatch **OpenRouter profile completion** from the default branch; selecting a
+feature branch intentionally skips its trusted proof job. Bot-dispatched reviews
+explicitly wake this workflow because GitHub suppresses their downstream
+`workflow_run` events. The optional `source_run_id` identifies a completed review
+run to inspect; the receiver still checks its provenance and current evidence.
+If notification delivery fails, retry profile completion with that run ID on
+`main` instead of paying for another review.
+
+The CI broker also accepts a default-branch manual dispatch with the completed
+**profile-completion** run ID as `source_run_id`. It waits for completion and
+rechecks the clean review and profile proof before adding `run-ci` or rerunning
+CI. Notification failure does not invalidate the completed review; missing proof
+still blocks CI. These delivery waits do not shorten model review time.
+
+The broker polls a notifying profile run for up to 90 seconds within its
+ten-minute job limit. The notification job depends on completed planning,
+proof and publication jobs; the wait covers only notification/API/runner cleanup,
+not the multi-PR proof work. If that tail still exceeds 90 seconds, the broker
+fails visibly with the source-run recovery instruction. Retry its dispatch after
+the source finishes; do not rerun the model panel.
+
+The [immutable shared workflow](https://github.com/RetireGolden/.github/blob/a190c3d834f2e3048b4eef8129fa3c8e10891aa0/.github/workflows/openrouter-code-review.yml#L169)
+sets `actions: read` as its default, inherited by both model-review jobs. Its
+notification job explicitly overrides that default with `actions: write`.
+GitHub's [token-triggering documentation](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow)
+lists `workflow_dispatch` and `repository_dispatch` as the unconditional
+exceptions; it does not list `workflow_run`. The observed recovery review
+[RetireGolden run 34255246099](https://github.com/RetireGolden/RetireGolden/actions/runs/34255246099)
+was bot-dispatched and completed without downstream profile or broker runs.
