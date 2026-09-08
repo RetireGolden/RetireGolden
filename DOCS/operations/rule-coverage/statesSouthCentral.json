@@ -820,17 +820,17 @@
     },
     {
       "id": "al-form40-age-65-retirement-exclusion-cap",
-      "title": "Alabama's age-65 retirement exclusion: the pack's $6,000 private-bucket cap has no staged operative text",
-      "classification": "unsettled",
+      "title": "Alabama's age-65 retirement exclusion is $6,000 for each qualifying taxpayer",
+      "classification": "settled",
       "errorDirection": null,
-      "conventionRationale": "BLOCKED-SOURCE: the $6,000 age-65 exclusion's operative text is not in the staged booklet; quote pends a staged primary",
-      "contraryReading": "If the research corpus's 2026 parameter is operative — $12,000 per person at age 65 — the pack's $6,000 understates the exclusion and overstates Alabama tax; if no exclusion exists, the pack understates tax by the granted cap.",
+      "conventionRationale": null,
+      "contraryReading": null,
       "jurisdiction": "state:AL",
-      "volatility": "awaitingGuidance",
+      "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-28",
-      "dueOn": "2026-11-26",
+      "verifiedOn": "2026-09-08",
+      "dueOn": "2027-09-08",
       "implementedBy": [
         "packages/engine/src/params/state/data/year2026.ts",
         "packages/engine/src/params/state/types.ts",
@@ -876,19 +876,19 @@
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
           "line": 3416,
-          "note": "unsettled: operative text unsourced",
+          "note": "settled: enacted and form authority support $6,000 per taxpayer at age 65",
           "tests": [
             {
-              "title": "implements the encoded $6,000 convention and discriminates the competing readings",
-              "line": 3442
+              "title": "implements the enacted $6,000 reading and discriminates source-error counterfactuals",
+              "line": 3438
             },
             {
-              "title": "reaches the no-exclusion reading once the cap is withheld",
-              "line": 3451
+              "title": "reaches the no-exclusion counterfactual once the cap is withheld",
+              "line": 3447
             },
             {
-              "title": "reaches the research 2026 reading under a doubled cap",
-              "line": 3459
+              "title": "reaches the doubled-cap counterfactual under a doubled cap",
+              "line": 3455
             }
           ]
         }
@@ -896,6 +896,21 @@
       "refusalFixtureFiles": [],
       "refusalFixtures": [],
       "authorities": [
+        {
+          "kind": "statute",
+          "citation": "Ala. Code § 40-18-19(a)(13), as retained by 2026 Ala. H.B. 341, p. 6 — amount",
+          "url": "https://alison.legislature.state.al.us/files/pdf/SearchableInstruments/2026RS/HB341-enr.pdf"
+        },
+        {
+          "kind": "statute",
+          "citation": "Ala. Code § 40-18-19(a)(13), as retained by 2026 Ala. H.B. 341, p. 6 — age restriction",
+          "url": "https://alison.legislature.state.al.us/files/pdf/SearchableInstruments/2026RS/HB341-enr.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "Alabama Department of Revenue, 2025 Form 40, Schedule RS — retirement income exclusion",
+          "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40.pdf"
+        },
         {
           "kind": "formInstruction",
           "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Pensions and Annuities",
