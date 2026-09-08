@@ -1,14 +1,14 @@
 {
-  "generatedAt": "2026-09-08T00:18:34.672Z",
+  "generatedAt": "2026-09-08T03:11:54.090Z",
   "recordCount": 441,
   "urlCount": 341,
   "fetched": 9,
   "cached": 332,
-  "entryCount": 1262,
+  "entryCount": 1267,
   "counts": {
-    "EXACT": 867,
-    "PUNCTUATION": 43,
-    "PDF-WORD-LEVEL": 234,
+    "EXACT": 872,
+    "PUNCTUATION": 42,
+    "PDF-WORD-LEVEL": 235,
     "ELISION-EXACT": 67,
     "ELISION-PUNCTUATION": 7,
     "PDF-NOT-VERIFIABLE": 7,
@@ -4010,11 +4010,31 @@
     {
       "id": "irc-219-c-1-spousal-ira-combined-compensation",
       "citation": "IRC 219(c)(1)",
-      "host": "www.law.cornell.edu",
-      "url": "https://www.law.cornell.edu/uscode/text/26/219",
-      "quoteSha256": "25230514813d6911",
-      "verdict": "PUNCTUATION",
-      "detail": "matches only after: dash-spacing",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section219&num=0&edition=prelim",
+      "quoteSha256": "bce32f06584a6161",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-219-c-1-spousal-ira-combined-compensation",
+      "citation": "IRC 219(c)(2)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section219&num=0&edition=prelim",
+      "quoteSha256": "9bf39154824d9eb7",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-219-b-5-C-iii-ira-catch-up-indexed",
+      "citation": "IRC 219(b)(5)(B)(i)-(ii)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section219&num=0&edition=prelim",
+      "quoteSha256": "1a137bf3b423779f",
+      "verdict": "ELISION-EXACT",
+      "detail": "2 segments, every one a literal substring",
       "diagnosis": null
     },
     {
@@ -4408,6 +4428,16 @@
       "diagnosis": null
     },
     {
+      "id": "irc-408-p-2-E-i-II-simple-enhanced-elective-deferral-election",
+      "citation": "Notice 2025-67, enhanced SIMPLE limitation under section 408(p)(2)(E)(i)(I) or (II)",
+      "host": "www.irs.gov",
+      "url": "https://www.irs.gov/pub/irs-drop/n-25-67.pdf",
+      "quoteSha256": "3ceb77c162bcb1de",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
       "id": "irc-401-a-17-plan-compensation-cap",
       "citation": "IRC 401(a)(17)(A)",
       "host": "uscode.house.gov",
@@ -4539,6 +4569,16 @@
     },
     {
       "id": "irc-411-a-2-vesting-schedule-maximums",
+      "citation": "IRC 411(a)(2)(B)(i)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section411&num=0&edition=prelim",
+      "quoteSha256": "f1bf059738d5f083",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-411-a-2-vesting-schedule-maximums",
       "citation": "IRC 411(a)(2)(B)(ii)",
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section411&num=0&edition=prelim",
@@ -4552,7 +4592,7 @@
       "citation": "IRC 411(a)(2)(B)(iii)",
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section411&num=0&edition=prelim",
-      "quoteSha256": "ab588205c92f38fc",
+      "quoteSha256": "62123bd7f7dd8813",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null
@@ -4572,9 +4612,9 @@
       "citation": "IRC 402(g)(7)(A)(i)-(iii)",
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402&num=0&edition=prelim",
-      "quoteSha256": "6ecc6eb133f41b2d",
-      "verdict": "ELISION-EXACT",
-      "detail": "3 segments, every one a literal substring",
+      "quoteSha256": "1c938da4f718e228",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -4709,10 +4749,20 @@
     },
     {
       "id": "irc-6433-a-1-savers-match-qualified-retirement-savings-contributions",
-      "citation": "IRC 6433(a)(1)-(2)(A)",
+      "citation": "IRC 6433(a)(1)",
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section6433&num=0&edition=prelim",
       "quoteSha256": "bd9bd590b16a8ca1",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-6433-a-1-savers-match-qualified-retirement-savings-contributions",
+      "citation": "IRC 6433(a)(2)(A)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section6433&num=0&edition=prelim",
+      "quoteSha256": "254891b1eff96f49",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null

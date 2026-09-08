@@ -816,13 +816,16 @@ describe('IRA contribution ceilings', () => {
 
   /** Scheduled contributions skip the legacy "owner must have wages" gate, which
    *  is what lets a non-earning spouse reach the 219(c) pool at all. */
-  function scheduledIra(ownerPersonId: string, annualAmount: number) {
+  function scheduledIra(ownerPersonId: string, annualAmount: number, id?: string) {
     return {
-      id: testIds(), name: `${ownerPersonId} IRA`, type: 'traditional', kind: 'ira', ownerPersonId,
+      id: id ?? testIds(), name: `${ownerPersonId} IRA`, type: 'traditional', kind: 'ira', ownerPersonId,
       balance: 0, annualReturnPct: 0, annualContribution: 0,
       contributionSchedule: [{ annualAmount, fromAge: null, toAge: null, escalationPct: 0 }],
     } as never
   }
+
+  const P1_IRA = 'p1-ira'
+  const P2_IRA = 'p2-ira'
 
   describeRule('irc-219-b-1-ira-limit-lesser-of-compensation', {
     readings: { dollarLimitOnly: 7_500, lesserOfCompensation: 3_000 },
@@ -843,25 +846,117 @@ describe('IRA contribution ceilings', () => {
   })
 
   describeRule('irc-219-c-1-spousal-ira-combined-compensation', {
-    readings: { ownCompensationOnly: 7_500, combinedCompensationPool: 10_000, noCompensationCap: 15_000 },
-    accepted: 'combinedCompensationPool',
+    readings: {
+      statutoryPerOwner: [
+        [5_000, 5_000],
+        [5_000, 5_000],
+        [6_000, 4_000],
+        [2_500, 7_500],
+        [7_500, 2_500],
+        [2_500, 7_500],
+      ],
+      ungatedSharedPool: [
+        [7_500, 2_500],
+        [2_500, 7_500],
+        [7_500, 2_500],
+        [2_500, 7_500],
+        [7_500, 2_500],
+        [2_500, 7_500],
+      ],
+      ownCompensationOnly: [
+        [5_000, 5_000],
+        [5_000, 5_000],
+        [6_000, 4_000],
+        [6_000, 4_000],
+        [7_500, 0],
+        [7_500, 0],
+      ],
+    },
+    accepted: 'statutoryPerOwner',
   }, ({ accepted, readings }) => {
-    it('lets a non-earning spouse draw on the earner’s compensation, up to the combined total', () => {
-      const plan = basePlan()
-      plan.household.filingStatus = 'marriedFilingJointly'
-      plan.household.people = [youngPerson('p1', 'Earner'), youngPerson('p2', 'Homemaker')]
-      plan.incomes = [wages(10_000, 'p1')] // p2 has no compensation of their own
-      plan.accounts = [cash(1_000_000), scheduledIra('p1', 7_500), scheduledIra('p2', 7_500)]
+    it('allocates MFJ IRA contributions per owner under section 219(c)', () => {
+      // Independent worksheet (IRC 219(b)(1), (c)(1)-(2); 2026 $7,500 cap, no catch-up):
+      // 5k/5k both orders => 5k each (219(c) inapplicable — equal compensation);
+      // 6k/4k higher-first => 6k/4k, lower-first => 2.5k/7.5k;
+      // 10k/0 earner-first => 7.5k/2.5k, nonworker-first => 2.5k/7.5k.
+      const cases = [
+        { wages: [5_000, 5_000], reverse: false },
+        { wages: [5_000, 5_000], reverse: true },
+        { wages: [6_000, 4_000], reverse: false },
+        { wages: [6_000, 4_000], reverse: true },
+        { wages: [10_000, 0], reverse: false },
+        { wages: [10_000, 0], reverse: true },
+      ] as const
 
-      const result = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax })
-      const y = result.years.find((r) => r.year === 2026)!
+      const actual: [number, number][] = []
 
-      // Each spouse is still separately held to the 7,500 dollar limit, so the
-      // binding constraint here is the 10,000 of combined compensation.
-      expect(y.contributions).toBeCloseTo(accepted, 6)
-      expect(y.contributions).not.toBeCloseTo(readings.ownCompensationOnly, 6)
-      expect(y.contributions).not.toBeCloseTo(readings.noCompensationCap, 6)
+      for (const [index, { wages: [w1, w2], reverse }] of cases.entries()) {
+        const plan = basePlan()
+        plan.household.filingStatus = 'marriedFilingJointly'
+        plan.household.people = [youngPerson('p1', 'Pat'), youngPerson('p2', 'Spouse')]
+        plan.incomes = [wages(w1, 'p1'), wages(w2, 'p2')]
+        const p1Ira = scheduledIra('p1', 7_500, P1_IRA)
+        const p2Ira = scheduledIra('p2', 7_500, P2_IRA)
+        plan.accounts = reverse
+          ? [cash(1_000_000), p2Ira, p1Ira]
+          : [cash(1_000_000), p1Ira, p2Ira]
+
+        const y = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax })
+          .years.find((r) => r.year === 2026)!
+        const [expectedP1, expectedP2] = accepted[index]!
+        const tuple: [number, number] = [y.balances[P1_IRA]!, y.balances[P2_IRA]!]
+
+        actual.push(tuple)
+        expect(tuple[0] + tuple[1]).toEqual(expectedP1 + expectedP2)
+        expect(y.contributions).toEqual(expectedP1 + expectedP2)
+      }
+
+      expect(actual).toEqual(accepted)
+      expect(actual).not.toEqual(readings.ungatedSharedPool)
+      expect(actual).not.toEqual(readings.ownCompensationOnly)
     })
+  })
+
+  it('shares the per-owner wage ceiling across traditional and Roth IRA rows', () => {
+    // Hand worksheet (IRC 219(b)(1), 408A(c)(2); 2026 $7,500 cap, no catch-up):
+    // MFJ, equal $5,000 wages — section 219(c) does not apply. Pat requests
+    // $5,000 traditional then $5,000 Roth; the combined statutory ceiling is
+    // $5,000 (lesser of $7,500 and own compensation), not $7,500 per row.
+    const P1_TRAD = 'p1-trad'
+    const P1_ROTH = 'p1-roth'
+    const plan = basePlan()
+    plan.household.filingStatus = 'marriedFilingJointly'
+    plan.household.people = [youngPerson('p1', 'Pat'), youngPerson('p2', 'Spouse')]
+    plan.incomes = [wages(5_000, 'p1'), wages(5_000, 'p2')]
+    plan.accounts = [
+      cash(1_000_000),
+      scheduledIra('p1', 5_000, P1_TRAD),
+      {
+        id: P1_ROTH,
+        name: 'p1 roth IRA',
+        type: 'roth',
+        kind: 'ira',
+        ownerPersonId: 'p1',
+        balance: 0,
+        annualReturnPct: 0,
+        annualContribution: 0,
+        contributionSchedule: [{
+          annualAmount: 5_000,
+          fromAge: null,
+          toAge: null,
+          escalationPct: 0,
+        }],
+      } as never,
+      scheduledIra('p2', 7_500, P2_IRA),
+    ]
+
+    const y = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax })
+      .years.find((r) => r.year === 2026)!
+
+    expect(y.balances[P1_TRAD]).toEqual(5_000)
+    expect(y.balances[P1_ROTH]).toEqual(0)
+    expect(y.balances[P2_IRA]).toEqual(5_000)
+    expect(y.contributions).toEqual(10_000)
   })
 
   describeRule('irc-219-f-1-compensation-excludes-deferred-income', {

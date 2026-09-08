@@ -361,25 +361,29 @@ export const contributionAndDeferralLimitRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'Two prongs pull in opposite directions and both must hold. Capping each spouse at their own wages alone would deny a non-earning spouse an IRA the statute plainly allows; pooling without a per-person dollar limit would let one spouse absorb the whole household ceiling. The engine models the pool only when the projected filing status is married filing jointly and both spouses are alive, since section 219(c)(2) conditions the rule on a joint return.',
+      'Section 219(c)(2)(B) is a strict-lesser compensation gate: paragraph (1) applies only when one spouse\'s compensation is less than the other\'s, so equal or higher earners remain on section 219(b)(1) alone. Each owner still faces the annual dollar limit ($7,500 in 2026 before age 50) regardless of pooling. The lesser earner\'s combined-compensation room is both spouses\' compensation minus the other spouse\'s traditional, designated nondeductible, and Roth IRA contributions already made (paragraph (1)(B)(ii)). When scarce room remains, competing requests apply in Plan account order — a modeling convention under scarcity, not a statutory priority rule. Pooling every living MFJ pair without the strict-lesser gate overfunds equal and higher earners; applying only each spouse\'s own wages denies the non-earning spouse an IRA the statute allows.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: 'IRC 219(c)(1)',
-      url: 'https://www.law.cornell.edu/uscode/text/26/219',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section219&num=0&edition=prelim',
       quotedText:
-        'shall be equal to the lesser of - (A) the dollar amount in effect under subsection (b)(1)(A) for the taxable year, or (B) the sum of - (i) the compensation includible in such individual’s gross income for the taxable year, plus (ii) the compensation includible in the gross income of such individual’s spouse for the taxable year reduced by ...',
+        'In the case of an individual to whom this paragraph applies for the taxable year, the limitation of paragraph (1) of subsection (b) shall be equal to the lesser of- (A) the dollar amount in effect under subsection (b)(1)(A) for the taxable year, or (B) the sum of- (i) the compensation includible in such individual\'s gross income for the taxable year, plus (ii) the compensation includible in the gross income of such individual\'s spouse for the taxable year reduced by- (I) the amount allowed as a deduction under subsection (a) to such spouse for such taxable year, (II) the amount of any designated nondeductible contribution (as defined in section 408(o)) on behalf of such spouse for such taxable year, and (III) the amount of any contribution on behalf of such spouse to a Roth IRA under section 408A for such taxable year.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 219(c)(2)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section219&num=0&edition=prelim',
+      quotedText:
+        'Paragraph (1) shall apply to any individual if- (A) such individual files a joint return for the taxable year, and (B) the amount of compensation (if any) includible in such individual\'s gross income for the taxable year is less than the compensation includible in the gross income of such individual\'s spouse for the taxable year.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-09-07',
     implementedBy: [
-      'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts#annualContributionsAndEmployerMatch',
     ],
   },
@@ -395,6 +399,12 @@ export const contributionAndDeferralLimitRecords = {
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
+      citation: 'IRC 219(b)(5)(B)(i)-(ii)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section219&num=0&edition=prelim',
+      quotedText:
+        'In the case of an individual who has attained the age of 50 before the close of the taxable year, the deductible amount for such taxable year shall be increased by the applicable amount. … For purposes of clause (i), the applicable amount is $1,000.',
+    }, {
+      kind: 'statute',
       citation: 'IRC 219(b)(5)(C)(iii)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section219&num=0&edition=prelim',
       quotedText:
@@ -403,7 +413,7 @@ export const contributionAndDeferralLimitRecords = {
     volatility: 'annuallyIndexed',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-29',
+    verifiedOn: '2026-09-07',
     implementedBy: [
       'packages/engine/src/projection/simulate.ts',
       'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts',
@@ -1028,11 +1038,17 @@ export const contributionAndDeferralLimitRecords = {
       url: 'https://www.irs.gov/pub/irs-drop/n-25-67.pdf',
       quotedText:
         'The limitation under section 408(p)(2)(E)(i)(III) that generally applies to salary reduction contributions under a SIMPLE retirement account or elective contributions under a SIMPLE 401(k) plan is increased from $16,500 to $17,000.',
+    }, {
+      kind: 'irsNotice',
+      citation: 'Notice 2025-67, enhanced SIMPLE limitation under section 408(p)(2)(E)(i)(I) or (II)',
+      url: 'https://www.irs.gov/pub/irs-drop/n-25-67.pdf',
+      quotedText:
+        'The limitation for certain of those accounts or plans under section 408(p)(2)(E)(i)(I) or (II) is increased from $17,600 to $18,100.',
     }],
     volatility: 'annuallyIndexed',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-26',
+    verifiedOn: '2026-09-07',
     implementedBy: [
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/projection/simulate.ts',
@@ -1233,6 +1249,12 @@ export const contributionAndDeferralLimitRecords = {
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
+      citation: 'IRC 411(a)(2)(B)(i)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section411&num=0&edition=prelim',
+      quotedText:
+        'In the case of a defined contribution plan, a plan satisfies the requirements of this paragraph if it satisfies the requirements of clause (ii) or (iii).',
+    }, {
+      kind: 'statute',
       citation: 'IRC 411(a)(2)(B)(ii)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section411&num=0&edition=prelim',
       quotedText:
@@ -1242,12 +1264,12 @@ export const contributionAndDeferralLimitRecords = {
       citation: 'IRC 411(a)(2)(B)(iii)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section411&num=0&edition=prelim',
       quotedText:
-        'A plan satisfies the requirements of this clause if an employee has a nonforfeitable right to a percentage of the employee\'s accrued benefit derived from employer contributions determined under the following table:',
+        'A plan satisfies the requirements of this clause if an employee has a nonforfeitable right to a percentage of the employee\'s accrued benefit derived from employer contributions determined under the following table: Years of service: The nonforfeitable percentage is: 2 20 3 40 4 60 5 80 6 or more 100.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-26',
+    verifiedOn: '2026-09-07',
     implementedBy: [
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/actions/contract.ts',
@@ -1289,7 +1311,7 @@ export const contributionAndDeferralLimitRecords = {
       citation: 'IRC 402(g)(7)(A)(i)-(iii)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402&num=0&edition=prelim',
       quotedText:
-        '$3,000, … $15,000 reduced by the sum of- … the excess of $5,000 multiplied by the number of years of service of the employee with the qualified organization over the employer contributions described in paragraph (3) made by the organization on behalf of such employee for prior taxable years (determined in the manner prescribed by the Secretary).',
+        '(i) $3,000, (ii) $15,000 reduced by the sum of- (I) the amounts not included in gross income for prior taxable years by reason of this paragraph, plus (II) the aggregate amount of designated Roth contributions (as defined in section 402A(c)) permitted for prior taxable years by reason of this paragraph, or (iii) the excess of $5,000 multiplied by the number of years of service of the employee with the qualified organization over the employer contributions described in paragraph (3) made by the organization on behalf of such employee for prior taxable years (determined in the manner prescribed by the Secretary).',
     }, {
       kind: 'regulation',
       citation: '26 CFR 1.403(b)-4(c)(3)(iii)-(iv)',
@@ -1300,7 +1322,7 @@ export const contributionAndDeferralLimitRecords = {
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-26',
+    verifiedOn: '2026-09-07',
     implementedBy: [
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/projection/simulate.ts',
@@ -1553,10 +1575,16 @@ export const contributionAndDeferralLimitRecords = {
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
-      citation: 'IRC 6433(a)(1)-(2)(A)',
+      citation: 'IRC 6433(a)(1)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section6433&num=0&edition=prelim',
       quotedText:
         'Any eligible individual who makes qualified retirement savings contributions for the taxable year shall be allowed a matching contribution for such taxable year in an amount equal to the applicable percentage of so much of the qualified retirement savings contributions made by such eligible individual for the taxable year as does not exceed $2,000.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 6433(a)(2)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section6433&num=0&edition=prelim',
+      quotedText:
+        'Except as provided in subparagraph (B), the matching contribution under this section shall be allowed as a credit which shall be payable by the Secretary as a contribution (as soon as practicable after the eligible individual has filed a tax return making a claim for such matching contribution for the taxable year) to the applicable retirement savings vehicle of the eligible individual.',
     }, {
       kind: 'legislativeHistory',
       citation: 'P.L. 117-328, division T, title I, section 103(a), (f)',
@@ -1573,7 +1601,7 @@ export const contributionAndDeferralLimitRecords = {
     volatility: 'awaitingGuidance',
     effectiveFrom: 2027,
     effectiveThrough: null,
-    verifiedOn: '2026-08-26',
+    verifiedOn: '2026-09-07',
     implementedBy: [
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/actions/contract.ts',

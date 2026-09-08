@@ -46,12 +46,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.contributions-growth.test.ts",
-          "line": 827,
+          "line": 830,
           "note": null,
           "tests": [
             {
               "title": "holds a low earner to compensation rather than to the dollar limit",
-              "line": 831
+              "line": 834
             }
           ]
         }
@@ -165,8 +165,8 @@
       "volatility": "annuallyIndexed",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-29",
-      "dueOn": "2026-12-27",
+      "verifiedOn": "2026-09-07",
+      "dueOn": "2027-01-05",
       "implementedBy": [
         "packages/engine/src/params/data/year2026.ts",
         "packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts",
@@ -207,12 +207,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.contributions-growth.test.ts",
-          "line": 906,
+          "line": 1001,
           "note": null,
           "tests": [
             {
               "title": "projects the age-50 catch-up instead of holding it flat",
-              "line": 910
+              "line": 1005
             }
           ]
         }
@@ -220,6 +220,11 @@
       "refusalFixtureFiles": [],
       "refusalFixtures": [],
       "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 219(b)(5)(B)(i)-(ii)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section219&num=0&edition=prelim"
+        },
         {
           "kind": "statute",
           "citation": "IRC 219(b)(5)(C)(iii)",
@@ -232,17 +237,16 @@
       "title": "A jointly filing couple funds both IRAs from combined compensation",
       "classification": "settled",
       "errorDirection": null,
-      "conventionRationale": "Two prongs pull in opposite directions and both must hold. Capping each spouse at their own wages alone would deny a non-earning spouse an IRA the statute plainly allows; pooling without a per-person dollar limit would let one spouse absorb the whole household ceiling. The engine models the pool only when the projected filing status is married filing jointly and both spouses are alive, since section 219(c)(2) conditions the rule on a joint return.",
+      "conventionRationale": "Section 219(c)(2)(B) is a strict-lesser compensation gate: paragraph (1) applies only when one spouse's compensation is less than the other's, so equal or higher earners remain on section 219(b)(1) alone. Each owner still faces the annual dollar limit ($7,500 in 2026 before age 50) regardless of pooling. The lesser earner's combined-compensation room is both spouses' compensation minus the other spouse's traditional, designated nondeductible, and Roth IRA contributions already made (paragraph (1)(B)(ii)). When scarce room remains, competing requests apply in Plan account order — a modeling convention under scarcity, not a statutory priority rule. Pooling every living MFJ pair without the strict-lesser gate overfunds equal and higher earners; applying only each spouse's own wages denies the non-earning spouse an IRA the statute allows.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-03",
-      "dueOn": "2027-08-03",
+      "verifiedOn": "2026-09-07",
+      "dueOn": "2027-09-07",
       "implementedBy": [
-        "packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts",
-        "packages/engine/src/projection/simulate.ts"
+        "packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts"
       ],
       "implementations": [
         {
@@ -253,15 +257,6 @@
               "line": 184
             }
           ]
-        },
-        {
-          "path": "packages/engine/src/projection/simulate.ts",
-          "functions": [
-            {
-              "name": "simulatePlan",
-              "line": 375
-            }
-          ]
         }
       ],
       "fixtureFiles": [
@@ -270,12 +265,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.contributions-growth.test.ts",
-          "line": 845,
+          "line": 848,
           "note": null,
           "tests": [
             {
-              "title": "lets a non-earning spouse draw on the earner’s compensation, up to the combined total",
-              "line": 849
+              "title": "allocates MFJ IRA contributions per owner under section 219(c)",
+              "line": 877
             }
           ]
         }
@@ -286,7 +281,12 @@
         {
           "kind": "statute",
           "citation": "IRC 219(c)(1)",
-          "url": "https://www.law.cornell.edu/uscode/text/26/219"
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section219&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 219(c)(2)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section219&num=0&edition=prelim"
         }
       ]
     },
@@ -333,12 +333,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.contributions-growth.test.ts",
-          "line": 867,
+          "line": 962,
           "note": null,
           "tests": [
             {
               "title": "gives a retiree living on a pension no contribution room",
-              "line": 871
+              "line": 966
             }
           ]
         }
@@ -1220,8 +1220,8 @@
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-26",
-      "dueOn": "2027-08-26",
+      "verifiedOn": "2026-09-07",
+      "dueOn": "2027-09-07",
       "implementedBy": [
         "packages/engine/src/model/plan.ts",
         "packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts",
@@ -1343,8 +1343,8 @@
       "volatility": "annuallyIndexed",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-26",
-      "dueOn": "2026-12-24",
+      "verifiedOn": "2026-09-07",
+      "dueOn": "2027-01-05",
       "implementedBy": [
         "packages/engine/src/model/plan.ts",
         "packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts",
@@ -1403,6 +1403,11 @@
           "kind": "irsNotice",
           "citation": "Notice 2025-67, SIMPLE retirement account and SIMPLE 401(k) limitation",
           "url": "https://www.irs.gov/pub/irs-drop/n-25-67.pdf"
+        },
+        {
+          "kind": "irsNotice",
+          "citation": "Notice 2025-67, enhanced SIMPLE limitation under section 408(p)(2)(E)(i)(I) or (II)",
+          "url": "https://www.irs.gov/pub/irs-drop/n-25-67.pdf"
         }
       ]
     },
@@ -1417,8 +1422,8 @@
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-26",
-      "dueOn": "2027-08-26",
+      "verifiedOn": "2026-09-07",
+      "dueOn": "2027-09-07",
       "implementedBy": [
         "packages/engine/src/actions/contract.ts",
         "packages/engine/src/model/plan.ts"
@@ -1448,6 +1453,11 @@
       "refusalFixtureFiles": [],
       "refusalFixtures": [],
       "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 411(a)(2)(B)(i)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section411&num=0&edition=prelim"
+        },
         {
           "kind": "statute",
           "citation": "IRC 411(a)(2)(B)(ii)",
@@ -2691,8 +2701,8 @@
       "volatility": "awaitingGuidance",
       "effectiveFrom": 2027,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-26",
-      "dueOn": "2026-11-24",
+      "verifiedOn": "2026-09-07",
+      "dueOn": "2026-12-06",
       "implementedBy": [
         "packages/engine/src/actions/contract.ts",
         "packages/engine/src/model/plan.ts"
@@ -2724,7 +2734,12 @@
       "authorities": [
         {
           "kind": "statute",
-          "citation": "IRC 6433(a)(1)-(2)(A)",
+          "citation": "IRC 6433(a)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section6433&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 6433(a)(2)(A)",
           "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section6433&num=0&edition=prelim"
         },
         {

@@ -222,7 +222,6 @@ The 25 earliest due dates are shown below (441 rules total). Comparing dueOn to 
 | irc-402A-e-1-A-plesa-optional-designated-roth-subaccount | awaitingGuidance | 2026-08-26 | 2026-11-24 |
 | irc-402A-e-3-A-plesa-participant-contribution-cap | awaitingGuidance | 2026-08-26 | 2026-11-24 |
 | irc-402A-e-7-B-i-plesa-distribution-qualified-roth-treatment | awaitingGuidance | 2026-08-26 | 2026-11-24 |
-| irc-6433-a-1-savers-match-qualified-retirement-savings-contributions | awaitingGuidance | 2026-08-26 | 2026-11-24 |
 | irc-6433-f-6-savers-match-early-distribution-recovery-tax | awaitingGuidance | 2026-08-26 | 2026-11-24 |
 | al-form40-age-65-retirement-exclusion-cap | awaitingGuidance | 2026-08-28 | 2026-11-26 |
 | irc-408-d-8-A-annual-qcd-limit | annuallyIndexed | 2026-08-02 | 2026-11-30 |
@@ -241,6 +240,7 @@ The 25 earliest due dates are shown below (441 rules total). Comparing dueOn to 
 | irc-55-d-exemption-phase-out-rate | annuallyIndexed | 2026-08-04 | 2026-12-02 |
 | irc-63-c-7-B-ii-conformed-state-deduction-tracks-federal | annuallyIndexed | 2026-08-04 | 2026-12-02 |
 | rev-proc-2025-25-aca-applicable-percentage-2026 | annuallyIndexed | 2026-08-04 | 2026-12-02 |
+| usc-42-403-a-2-family-maximum-formula | annuallyIndexed | 2026-08-04 | 2026-12-02 |
 
 ## Manifest contract
 
@@ -252,19 +252,19 @@ Version 5 is a breaking discriminator for strict version checks: manifest.rules 
 
 ## Quote fidelity
 
-Committed ledger generated at 2026-09-08T00:18:34.672Z over 1262 authority entries (9 fetched live, 332 from cache).
+Committed ledger generated at 2026-09-08T03:11:54.090Z over 1267 authority entries (9 fetched live, 332 from cache).
 
-37 serious, 57 advisory, 1168 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
+37 serious, 56 advisory, 1174 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
 not treated as a CI gate; how to read each verdict: DOCS/operations/quote-fidelity.md.
 
 | Verdict | Class | Count |
 | --- | --- | ---: |
 | ELISION-EXACT | ok | 67 |
 | ELISION-PUNCTUATION | advisory | 7 |
-| EXACT | ok | 867 |
+| EXACT | ok | 872 |
 | PDF-NOT-VERIFIABLE | advisory | 7 |
-| PDF-WORD-LEVEL | ok | 234 |
-| PUNCTUATION | advisory | 43 |
+| PDF-WORD-LEVEL | ok | 235 |
+| PUNCTUATION | advisory | 42 |
 | UNFETCHABLE | serious | 37 |
 
 Regenerate: pnpm verify:quotes -- --json > DOCS/operations/quote-fidelity-ledger.json (network required), then pnpm rules:coverage.

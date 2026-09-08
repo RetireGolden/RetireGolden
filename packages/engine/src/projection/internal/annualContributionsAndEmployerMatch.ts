@@ -366,6 +366,17 @@ export function annualContributionsAndEmployerMatch(
       compensationKey = iraCompensationIsShared
         ? input.iraHouseholdCompensationKey
         : ownerId
+      if (iraCompensationIsShared) {
+        const ownerCompensation = input.wagesByPerson.get(ownerId) ?? 0
+        let spouseCompensation = 0
+        for (const [personId, wages] of input.wagesByPerson) {
+          if (personId !== ownerId) spouseCompensation += wages
+        }
+        // IRC 219(c)(2)(B): section (c) applies only when own compensation is strictly less.
+        if (ownerCompensation >= spouseCompensation) {
+          limit = Math.min(limit, ownerCompensation)
+        }
+      }
     } else if (account.type === 'hsa') { // IRC 223(b)(5) divides one family base but not either spouse's whole (b)(3) catch-up; 223(g)(1) indexes only the base.
       groupKey = `${ownerId}:hsa`
       const hasFamilyCoverage = input.peopleCount === 2
