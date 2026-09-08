@@ -20,8 +20,8 @@
             "id": "post-candidate-plan",
             "name": "Test plan",
             "origin": "user",
-            "createdAtIso": "2026-01-01T00:00:00Z",
-            "updatedAtIso": "2026-01-01T00:00:00Z",
+            "createdAtIso": "2026-01-01T00:00:00.000Z",
+            "updatedAtIso": "2026-01-01T00:00:00.000Z",
             "household": {
               "filingStatus": "single",
               "hasQualifyingDependent": false,
@@ -460,8 +460,8 @@
             "id": "post-candidate-plan",
             "name": "Test plan",
             "origin": "user",
-            "createdAtIso": "2026-01-01T00:00:00Z",
-            "updatedAtIso": "2026-01-01T00:00:00Z",
+            "createdAtIso": "2026-01-01T00:00:00.000Z",
+            "updatedAtIso": "2026-01-01T00:00:00.000Z",
             "household": {
               "filingStatus": "single",
               "hasQualifyingDependent": false,
