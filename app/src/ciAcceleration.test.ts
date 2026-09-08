@@ -131,7 +131,7 @@ const producerReviewContext = {
 
 const profileConsumerFixture = [
   'export async function authorizeProfileReceipt(_github, input) {',
-  '  if (input.orgWorkflowSha !== "273dd054ab1c34950a3c2eeab2f00254db405e68") throw new Error("missing or wrong org pin");',
+  '  if (input.orgWorkflowSha !== "a190c3d834f2e3048b4eef8129fa3c8e10891aa0") throw new Error("missing or wrong org pin");',
   '  if (typeof input?.review?.body === "string" && input.review.body.includes("PROFILE_DENY")) {',
   '    return { authorized: false, reason: "fixture profile denied" }',
   '  }',
