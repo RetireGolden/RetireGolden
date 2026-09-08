@@ -66,7 +66,7 @@ describe('vite.config.ts projection/internal chunk module list', () => {
     expect(missing, `missing under packages/engine/src/projection/internal/: ${missing.join(', ')}`).toEqual([])
   })
 
-  it('does not isolate fundingClose/settlement in the worker graph (circular TDZ, #672, both Optimize-rail channels)', () => {
+  it('does not isolate fundingClose/settlement in the worker graph (circular TDZ, #672, Monte Carlo and both Optimize-rail channels)', () => {
     expect(viteConfigText).toMatch(/codeSplitting:\s*workerAnnualProjectionCodeSplitting/)
     const workerGroups = viteConfigText.match(
       /const workerAnnualProjectionCodeSplitting\s*=\s*\{[\s\S]*?\}\s*satisfies ViteCodeSplitting/,

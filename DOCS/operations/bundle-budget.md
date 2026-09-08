@@ -92,8 +92,8 @@ The worker graph cannot isolate those two coordinators. With
 `includeDependenciesRecursively: false`, their remaining value imports land in the worker entry,
 and the coordinator chunks then import the entry — a circular ES module graph. Production
 minifies one of those live bindings to `oe` and TDZ-crashes on first spawn
-(`Cannot access 'oe' before initialization`; #672, both Optimize-rail
-surfaces: How much can I spend? and Roth & Tax Optimizer). The worker
+(`Cannot access 'oe' before initialization`; #672, Monte Carlo and both
+Optimize-rail surfaces: How much can I spend? and Roth & Tax Optimizer). The worker
 therefore keeps those coordinators in the entry and only splits kernels and publications. The
 bundle-budget CLI fails the build if any other `dist/assets` chunk statically imports
 `planner.worker-*.js`.
