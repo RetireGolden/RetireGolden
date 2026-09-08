@@ -293,12 +293,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.contributions-growth.test.ts",
-          "line": 983,
+          "line": 941,
           "note": null,
           "tests": [
             {
               "title": "does not give a second ceiling to someone holding both IRA flavours",
-              "line": 987
+              "line": 948
             }
           ]
         }
