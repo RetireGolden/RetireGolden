@@ -67,7 +67,7 @@ describe('seedPlanFromTenForty', () => {
     const pension = r.plan.accounts.find((a) => a.type === 'pension')!
     expect(pension).toMatchObject({ monthlyAmount: 1500, startAge: 68, survivorPct: 50 })
 
-    // SS benefits → benefit basis with the FRA-claim simplification.
+    // SS benefits → benefit basis with the fixed-age-67 assumption.
     const ss = r.plan.incomes.find((i) => i.type === 'socialSecurity')!
     expect(ss).toMatchObject({ piaMonthly: 3000, claimAge: { years: 67, months: 0 } })
 
