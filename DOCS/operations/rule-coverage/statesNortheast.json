@@ -65,7 +65,7 @@
             },
             {
               "title": "pins the pack’s unconditional pension exclusion above the statutory schedule",
-              "line": 2139
+              "line": 2141
             }
           ]
         }
@@ -208,16 +208,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2589,
+          "line": 2591,
           "note": null,
           "tests": [
             {
               "title": "deducts Social Security included in federal gross income",
-              "line": 2603
+              "line": 2605
             },
             {
               "title": "would leave the federally taxable share in if the deduction were dropped",
-              "line": 2608
+              "line": 2610
             }
           ]
         }
@@ -490,16 +490,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2806,
+          "line": 2808,
           "note": null,
           "tests": [
             {
               "title": "leaves a New Hampshire retiree with no state base at all",
-              "line": 2827
+              "line": 2829
             },
             {
               "title": "would build a base if Chapter 77 were still in force",
-              "line": 2832
+              "line": 2834
             }
           ]
         }
@@ -889,12 +889,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3135,
+          "line": 3145,
           "note": null,
           "tests": [
             {
               "title": "prices single and joint filers on the TY2026 deduction and schedule",
-              "line": 3150
+              "line": 3160
             }
           ]
         }
@@ -971,34 +971,34 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3162,
+          "line": 3172,
           "note": "Social Security AGI threshold limb",
           "tests": [
             {
               "title": "pins the low-AGI age-qualified Social Security modification",
-              "line": 3177
+              "line": 3187
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3184,
+          "line": 3194,
           "note": "pension ceiling limb",
           "tests": [
             {
               "title": "pins the current pension ceiling rather than the stale pack cap",
-              "line": 3203
+              "line": 3213
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3210,
+          "line": 3220,
           "note": "pension AGI-threshold limb",
           "tests": [
             {
               "title": "pins the opposite direction when the pension AGI test disallows any modification",
-              "line": 3230
+              "line": 3240
             }
           ]
         }
@@ -1081,20 +1081,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3263,
+          "line": 3273,
           "note": null,
           "tests": [
             {
               "title": "pins Vermont's complete low-AGI Social Security exclusion",
-              "line": 3288
+              "line": 3298
             },
             {
               "title": "pins the single mid-band proportional Social Security exclusion",
-              "line": 3297
+              "line": 3307
             },
             {
               "title": "pins the joint mid-band proportional Social Security exclusion",
-              "line": 3303
+              "line": 3313
             }
           ]
         }
