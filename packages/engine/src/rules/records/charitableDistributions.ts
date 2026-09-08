@@ -70,6 +70,18 @@ export const charitableDistributionRecords = {
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
+      citation: 'IRC 408(d)(8)(D)',
+      url: 'https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapD-partI-subpartA-sec408.htm',
+      quotedText:
+        'Notwithstanding section 72, in determining the extent to which a distribution is a qualified charitable distribution, the entire amount of the distribution shall be treated as includible in gross income without regard to subparagraph (A) to the extent that such amount does not exceed the aggregate amount which would have been so includible if all amounts in all individual retirement plans of the individual were distributed during such taxable year and all such plans were treated as 1 contract for purposes of determining under section 72 the aggregate amount which would have been so includible. Proper adjustments shall be made in applying section 72 to other distributions in such taxable year and subsequent taxable years.',
+    }, {
+      kind: 'formInstruction',
+      citation: 'Instructions for Form 8606 (2025), Line 7',
+      url: 'https://www.irs.gov/pub/irs-pdf/i8606.pdf',
+      quotedText:
+        'Don’t include any of the following on line 7 … Qualified charitable distributions (QCDs).',
+    }, {
+      kind: 'statute',
       citation: 'IRC 408(d)(8)(E)',
       url: 'https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapD-partI-subpartA-sec408.htm',
       quotedText:
@@ -545,7 +557,7 @@ export const charitableDistributionRecords = {
       citation: 'IRS Notice 2025-67',
       url: 'https://www.irs.gov/pub/irs-drop/n-25-67.pdf',
       quotedText:
-        'The amount of qualified charitable distributions made directly to a split-interest entity that are not includible in gross income under section 408(d)(8)(F)(i)(II) pursuant to a one-time election is increased from $54,000 to $55,000.',
+        'The aggregate amount of qualified charitable distributions that are not includible in gross income under section 408(d)(8)(A) is increased from $108,000 to $111,000. The amount of qualified charitable distributions made directly to a split-interest entity that are not includible in gross income under section 408(d)(8)(F)(i)(II) pursuant to a one-time election is increased from $54,000 to $55,000.',
     }, {
       kind: 'formInstruction',
       citation: 'Instructions for Form 1040 (2025), line 4a/4b Exception 3',
@@ -623,7 +635,7 @@ export const charitableDistributionRecords = {
   'irc-408-d-8-A-named-qcd-limit-after-the-pack-year': {
     title: 'Named QCD in a tax year with no sourced exclusion limit',
     statement:
-      'The QCD exclusion limit is a per-taxpayer dollar amount indexed annually, and the sourced figure exists only for a year the IRS has published. Not modelled: a named QCD scheduled for a year past the parameter pack is refused qcd-tax-year-limit-unsupported and moves nothing, because the projection has no sourced limit for that year and general plan inflation is not a source. The aggregate qcdAnnual arm does extrapolate its limit by plan inflation; the named arm does not inherit that, because the aggregate arm never claims an action executed and the named arm claims exactly that. A named request also stands the aggregate arm down for its year, so such a year gives nothing at all and the projection warns.',
+      'The QCD exclusion limit is a per-taxpayer dollar amount indexed annually, and the sourced figure exists only for a year the IRS has published. Not modelled: a named QCD scheduled for a year past the parameter pack is blocked by the post-pass with a taxParameterUnavailable issue and moves nothing, because the projection has no sourced limit for that year and general plan inflation is not a source. The aggregate qcdAnnual arm does extrapolate its limit by plan inflation; the named arm does not inherit that, because the aggregate arm never claims an action executed and the named arm claims exactly that. A named request also stands the aggregate arm down for its year, so such a year gives nothing at all and the projection warns.',
     classification: 'outOfScope',
     outOfScope: { shape: 'typedRefusal' },
     contraryReading: null,

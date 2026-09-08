@@ -335,6 +335,16 @@ describe('publishAnnualQcdActionExecutionEvidence', () => {
       expect(executed).toBe(accepted)
       expect(executed).not.toBe(readings.literalBarsEverySepOrSimple)
     })
+
+    it('executes a QCD from an inactive SIMPLE IRA under Notice 2007-7', () => {
+      const result = publishAnnualQcdActionExecutionEvidence({
+        ownerFinalizationInputs: fixture(10_000, { p1IraSubtype: 'simple', p1SepOngoing: false }).inputs,
+      })
+      const executed = publishedExecutedAmount(result)
+      expect(result.status).toBe('annualQcdActionExecutionEvidencePublished')
+      expect(executed).toBe(accepted)
+      expect(executed).not.toBe(readings.literalBarsEverySepOrSimple)
+    })
   })
 
   describeRule('irc-408-d-8-B-ongoing-sep-simple-source-exclusion', {
@@ -359,6 +369,17 @@ describe('publishAnnualQcdActionExecutionEvidence', () => {
       expect(executed).toBe(accepted)
       expect(executed).not.toBe(readings.treatsAnOngoingSepIraAsARegularIra)
       expect(p1EligibilityReasonCodes(inputs)).toContain('qcd-ongoing-sep-simple')
+    })
+
+    it('does not execute a QCD from an ongoing SIMPLE IRA', () => {
+      const { inputs } = fixture(10_000, { p1IraSubtype: 'simple', p1SepOngoing: true })
+      const result = publishAnnualQcdActionExecutionEvidence({ ownerFinalizationInputs: inputs })
+      const executed = refusedExecutedAmount(result)
+      expect(executed).toBe(accepted)
+      expect(executed).not.toBe(readings.treatsAnOngoingSepIraAsARegularIra)
+      expect(p1EligibilityReasonCodes(inputs)).toContain('qcd-ongoing-sep-simple')
+      expect(p1EligibilityReasonCodes(inputs)).not.toContain('qcd-sep-simple-activity-unknown')
+      expect(p1EligibilityReasonCodes(inputs)).not.toContain('qcd-source-not-ira')
     })
   })
 

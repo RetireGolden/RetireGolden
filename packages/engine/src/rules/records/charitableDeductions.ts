@@ -470,16 +470,12 @@ export const charitableDeductionRecords = {
 
   // --- Registered 2026-08-04: the charitable and section 68 cluster --------
   //
-  // Four of these say the same structural thing from different angles. The
-  // engine holds an exact, well-tested implementation of the OBBBA charitable
-  // and section 68 rules in packages/engine/src/actions -- the section 170
-  // ledgers, the section 68 attribution chain, and the parameters they read --
-  // and `git grep` finds no reference to any of it from
-  // packages/engine/src/projection or packages/engine/src/tax/federalTax.ts.
-  // The figure a plan actually shows comes from `itemizedTotal`, which sums
-  // capped SALT, mortgage interest and charitable and applies no limitation to
-  // the third. So the correct code is not what runs, and the records below
-  // pin the live behaviour rather than the shelved one.
+  // The engine holds exact staged implementations of the OBBBA charitable and
+  // section 68 rules under packages/engine/src/actions. The live federal-tax path
+  // now applies the 0.5 percent floor and section 68 reduction, but still omits
+  // the 60 percent cash ceiling, charitable carryforward, and nonitemizer
+  // allowance. The records below pin that narrower live approximation while the
+  // staged ledgers retain the fuller evidence contract for later integration.
 
   'irc-170-p-nonitemizer-deduction-dollar-cap': {
     title: 'Dollar cap on the charitable deduction of a taxpayer who does not itemize',
@@ -598,7 +594,7 @@ export const charitableDeductionRecords = {
     verifiedOn: '2026-08-04',
     implementedBy: ['packages/engine/src/tax/federalTax.ts'],
     implementedByFunctions: [
-      'packages/engine/src/tax/federalTax.ts#deduction',
+      'packages/engine/src/tax/federalTax.ts#computeFederalTax',
     ],
   },
 
