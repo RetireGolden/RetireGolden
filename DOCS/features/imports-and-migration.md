@@ -159,7 +159,7 @@ mapping rather than reading the first column and dropping the rest.
 - 4b IRA distributions → unmapped pointer (withdrawals are modeled from balances, not history).
 - 5b pensions → a pension account paying that amount monthly starting now (COLA/survivor defaults
   flagged).
-- 6a SS benefits → a benefit basis with the claim-at-FRA simplification, flagged.
+- 6a SS benefits → a benefit basis with the fixed-age-67 assumption, flagged.
 - 11 + 2a → `assumptions.recentAnnualMagi` (the IRMAA two-year lookback).
 - Line 7 → guidance only (a loss points at the capital-loss-carryforward field).
 

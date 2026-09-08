@@ -297,12 +297,12 @@ describeRule('irc-401-a-9-C-i-II-still-working-exception', {
 
 /**
  * The Single Life Table divisor itself is settled and correct now; what is
- * still absent is the greater-of arm of Treas. Reg. 1.401(a)(9)-5(d)(1)(ii).
- * The engine cannot compute the employee side at all: `inheritedAccountSchema`
- * in model/plan.ts carries only `ownerDeathYear` and `decedentHadStartedRmds`,
- * so no decedent age or birth year reaches
- * `beneficiaryRemainingLifeExpectancy`, which reads the table at the
- * beneficiary's age and nothing else.
+ * still absent on this vector is the greater-of arm of Treas. Reg.
+ * 1.401(a)(9)-5(d)(1)(ii). Classified WS3 schedules carry beneficiary
+ * ownerBirthYear and compute the employee arm in inheritedRequirementForYear;
+ * only the legacy inheritedForcedAmount helper this fixture calls still
+ * omits that owner fact and divides by beneficiaryRemainingLifeExpectancy
+ * alone.
  *
  * The gap bites when the beneficiary is OLDER than the decedent, because then
  * the beneficiary's short expectancy is the one displacing the longer employee
