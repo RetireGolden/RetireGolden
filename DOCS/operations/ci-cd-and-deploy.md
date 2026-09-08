@@ -104,6 +104,12 @@ The profile receipt validator accepts retained `disputed` findings in a clean
 ledger, matching the review loop and CI consumer. Open findings still block a
 clean receipt. This does not resolve GitHub threads or change merge approvals.
 
+The final CI race check ignores matching reviews that completed before trusted
+profile proof started. It still blocks every matching active run and any run
+completing at or after that time, and validates the authoritative review and
+proof against current caller pins. Historical branch-caller audits therefore
+do not permanently block a workflow-pin migration.
+
 The embedded ledger is produced by the pinned upstream review action
 [`FlyOverCoderKY/openrouter-pr-review-action@5bb16c7a5ba87a802d7884ccbfa5e99d10978a49`](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/tree/5bb16c7a5ba87a802d7884ccbfa5e99d10978a49).
 RetireGolden authorization validates decoded markers against that producer, not a vendored copy:
@@ -127,11 +133,11 @@ may name other action revisions. Guards recognize the documented action referenc
 
 The shared 22-minute review job prioritizes reviewer completion: it reserves 60 seconds total for the tool-free judge, 180 seconds for publication, and a 5-second margin. Review lanes can use roughly 18 minutes, subject to setup time. If judging times out or fails, publication retains the validated lane findings through the deterministic merge fallback.
 
-The [pinned shared workflow](https://github.com/RetireGolden/.github/blob/d10864c65393de4a8a5799b1613410c1a2b28a1d/README.md) uses the 180-second HTTP limit for connection/header setup and socket inactivity. Active bodies can finish within the remaining lane-stage deadline; a structured finish uses its whole remaining window before any retry. Timeout diagnostics distinguish connection setup, inactivity, and absolute deadline expiry.
+The [pinned shared workflow](https://github.com/RetireGolden/.github/blob/05c616eae68252214effb03d8422e2ec56667fc7/README.md) uses the 180-second HTTP limit for connection/header setup and socket inactivity. Active bodies can finish within the remaining lane-stage deadline; a structured finish uses its whole remaining window before any retry. Timeout diagnostics distinguish connection setup, inactivity, and absolute deadline expiry.
 
-The current caller uses the [shared configuration through organization PR #48](https://github.com/RetireGolden/.github/blob/d10864c65393de4a8a5799b1613410c1a2b28a1d/.github/workflows/openrouter-code-review.yml)
+The current caller uses the [shared configuration through organization PR #49](https://github.com/RetireGolden/.github/blob/05c616eae68252214effb03d8422e2ec56667fc7/.github/workflows/openrouter-code-review.yml)
 with `review_profiles_enabled: true`, `review_policy: base`, and org workflow pin
-`d10864c65393de4a8a5799b1613410c1a2b28a1d`. Root and nested `REVIEW.md` guidance comes from the
+`05c616eae68252214effb03d8422e2ec56667fc7`. Root and nested `REVIEW.md` guidance comes from the
 immutable target-branch tip and is frozen before model calls. A policy proposed by the PR begins
 affecting reviews only after merge. The `code` profile uses required Grok plus optional GLM;
 `review_level: deep` adds required Astra Flex. `REVIEW.md` cannot remove required lanes or name
@@ -143,7 +149,7 @@ output confirm clean-ledger acceptance and open-finding rejection in both CI con
 #### Review profiles and profile completion
 
 [`openrouter-code-review.yml`](../../.github/workflows/openrouter-code-review.yml) forwards to the
-org reusable at `d10864c65393de4a8a5799b1613410c1a2b28a1d`. Reviews publish both the v1 ledger
+org reusable at `05c616eae68252214effb03d8422e2ec56667fc7`. Reviews publish both the v1 ledger
 marker and a v1 plan receipt (`<!-- openrouter-review-plan:v1:… -->`) that records the effective
 profile, required and successful models, and the authoritative workflow run.
 
@@ -154,7 +160,7 @@ and current base policy. A separate publish job rechecks the obligations and suc
 before writing the `openrouter-profile` commit status. Profile artifacts retain 30 days (requests 90 days).
 
 CI authorization and the broker load the org
-[`scripts/profile_consumer.mjs`](https://github.com/RetireGolden/.github/blob/d10864c65393de4a8a5799b1613410c1a2b28a1d/scripts/profile_consumer.mjs)
+[`scripts/profile_consumer.mjs`](https://github.com/RetireGolden/.github/blob/05c616eae68252214effb03d8422e2ec56667fc7/scripts/profile_consumer.mjs)
 at the org workflow pin through `getContent` — it performs GitHub provenance and receipt binding
 only, with no policy parsing or artifact downloads in the consumer itself. `authorizeProfileReceipt`
 requires an exact-head trusted bot review with a satisfied clean receipt, provenance-valid review
