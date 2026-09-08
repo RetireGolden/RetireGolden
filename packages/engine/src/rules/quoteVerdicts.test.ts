@@ -83,6 +83,65 @@ describe('serious-verdict set across the TS/.mjs boundary', () => {
   })
 })
 
+describe('declared elision markers', () => {
+  const SOURCE =
+    '<html><body><p>The operative words continue with a qualifier.</p></body></html>'
+
+  function elisionSource(html: string): QuoteVerdictSource {
+    return {
+      url: 'https://example.gov/elision',
+      ok: true,
+      isPdf: false,
+      suspectStub: false,
+      variants: htmlVariants(html),
+      fromCache: true,
+    }
+  }
+
+  it('labels a terminal Unicode ellipsis ELISION-EXACT, not EXACT', () => {
+    const { verdict, detail } = verdictFor(
+      { quotedText: 'The operative words …' },
+      elisionSource(SOURCE),
+    )
+    expect(verdict).toBe('ELISION-EXACT')
+    expect(verdict).not.toBe('EXACT')
+    expect(detail).toBe('1 elision segment, a literal substring')
+  })
+
+  it('labels a terminal ASCII ellipsis ELISION-EXACT, not EXACT', () => {
+    const { verdict } = verdictFor(
+      { quotedText: 'The operative words ...' },
+      elisionSource(SOURCE),
+    )
+    expect(verdict).toBe('ELISION-EXACT')
+    expect(verdict).not.toBe('EXACT')
+  })
+
+  it('labels a leading elision marker ELISION-EXACT when the retained segment matches', () => {
+    const { verdict, detail } = verdictFor(
+      { quotedText: '… continue with a qualifier.' },
+      elisionSource(SOURCE),
+    )
+    expect(verdict).toBe('ELISION-EXACT')
+    expect(detail).toBe('1 elision segment, a literal substring')
+  })
+
+  it('returns ELISION-BROKEN for a marker-only quote', () => {
+    const { verdict, detail } = verdictFor({ quotedText: '…' }, elisionSource(SOURCE))
+    expect(verdict).toBe('ELISION-BROKEN')
+    expect(detail).toBe('no substantive segment between elision markers')
+  })
+
+  it('still returns EXACT for an unelided literal substring', () => {
+    const { verdict, detail } = verdictFor(
+      { quotedText: 'The operative words continue' },
+      elisionSource(SOURCE),
+    )
+    expect(verdict).toBe('EXACT')
+    expect(detail).toBe('literal substring of the source')
+  })
+})
+
 describe('fetch identity ladder gate', () => {
   it('retries only refused statuses on allowlisted hosts', () => {
     expect(fallbackEligible('www.ssa.gov', 403)).toBe(true)

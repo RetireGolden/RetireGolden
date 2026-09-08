@@ -74,8 +74,9 @@ Seven rates: 10/12/22/24/32/35/37%. 2026 thresholds (taxable income):
 - **Indexing in projected years:** the ledger is nominal, so for a year with no published parameter pack
   `indexFederalTaxPack` carries the annually-indexed figures forward at the plan's inflation rate before income
   meets them — rate-bracket bounds (`irc-1-j-3-B-rate-tables-adjusted-each-year`), the standard deduction and the
-  age-65 addition, the 15%/20% capital-gain breakpoints, and the AMT exemption, phase-out threshold and 28%-rate
-  threshold. The statutory rounding steps and the C-CPI-U basis are not reproduced. Figures with **no** indexing
+  age-65 addition, the 15%/20% capital-gain breakpoints, the AMT exemption and phase-out threshold (§55(d)(4)(A),
+  indexed by §55(d)(4)(B)), and the 26/28-percent AMT breakpoint (§55(b)(1)(A), indexed by §55(d)(3)(A) and
+  §55(d)(3)(B)(i)). The statutory rounding steps and the C-CPI-U basis are not reproduced. Figures with **no** indexing
   provision are deliberately left flat and creep by design: the §86 provisional-income tiers, the §1411 NIIT
   thresholds, the §121 exclusion, the §1211(b) $3,000 ordinary offset, and the senior deduction with its MAGI
   threshold (`irc-151-d-5-C-senior-deduction-not-indexed`). The SALT cap follows its own schedule instead

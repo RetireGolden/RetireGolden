@@ -170,7 +170,7 @@
     },
     {
       "id": "irc-1-h-1-E-unrecaptured-section-1250-gain",
-      "title": "Depreciation on real property is capital gain capped at 25 percent, not ordinary income",
+      "title": "Section 168 straight-line real-property depreciation can produce unrecaptured section 1250 gain subject to a 25-percent maximum rate",
       "classification": "approximated",
       "errorDirection": "overstatesTax",
       "conventionRationale": null,
@@ -179,8 +179,8 @@
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-03",
-      "dueOn": "2027-08-03",
+      "verifiedOn": "2026-09-08",
+      "dueOn": "2027-09-08",
       "implementedBy": [
         "packages/engine/src/projection/simulate.ts",
         "packages/engine/src/tax/propertySale.ts"
@@ -211,20 +211,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/annuityAndProperty.approximation.test.ts",
-          "line": 220,
+          "line": 222,
           "note": null,
           "tests": [
             {
               "title": "classifies the depreciation as ordinary income rather than capital gain",
-              "line": 241
+              "line": 243
             },
             {
               "title": "leaves the capital-gain slice short by the depreciation",
-              "line": 246
+              "line": 248
             },
             {
               "title": "returns no field in which a 25 percent ceiling could be carried",
-              "line": 253
+              "line": 255
             }
           ]
         }
@@ -246,6 +246,11 @@
           "kind": "statute",
           "citation": "IRC 1250(b)(1)",
           "url": "https://www.law.cornell.edu/uscode/text/26/1250"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 168(b)(3)(A)-(B)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section168&num=0&edition=prelim"
         }
       ]
     },
@@ -613,8 +618,8 @@
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-27",
-      "dueOn": "2027-08-27",
+      "verifiedOn": "2026-09-08",
+      "dueOn": "2027-09-08",
       "implementedBy": [
         "packages/engine/src/model/plan.ts",
         "packages/engine/src/projection/internal/annualWithdrawalPlanning.ts",
@@ -672,6 +677,11 @@
           "kind": "statute",
           "citation": "IRC 1091(a)",
           "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1091&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 1091(d)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1091&num=0&edition=prelim"
         }
       ]
     },
@@ -686,8 +696,8 @@
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-03",
-      "dueOn": "2027-08-03",
+      "verifiedOn": "2026-09-08",
+      "dueOn": "2027-09-08",
       "implementedBy": [
         "packages/engine/src/insights/detectors/missingDataBasis.ts",
         "packages/engine/src/projection/simulate.ts",
@@ -728,27 +738,27 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/annuityAndProperty.approximation.test.ts",
-          "line": 294,
+          "line": 296,
           "note": "a seller who fails the two-year test entirely",
           "tests": [
             {
               "title": "excludes the whole gain from a sale that qualifies for nothing",
-              "line": 303
+              "line": 305
             },
             {
               "title": "takes no input by which any eligibility test could be expressed",
-              "line": 313
+              "line": 315
             }
           ]
         },
         {
           "path": "packages/engine/src/rules/approximations/annuityAndProperty.approximation.test.ts",
-          "line": 348,
+          "line": 350,
           "note": "gain allocated to periods of nonqualified use after 2008",
           "tests": [
             {
               "title": "excludes the nonqualified-use share along with the rest",
-              "line": 357
+              "line": 359
             }
           ]
         }
@@ -775,6 +785,16 @@
           "kind": "statute",
           "citation": "IRC 121(b)(5)(A) and (B)",
           "url": "https://www.law.cornell.edu/uscode/text/26/121"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 121(b)(5)(C)(i)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section121&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 121(b)(5)(C)(ii)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section121&num=0&edition=prelim"
         }
       ]
     },
@@ -789,8 +809,8 @@
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-03",
-      "dueOn": "2027-08-03",
+      "verifiedOn": "2026-09-08",
+      "dueOn": "2027-09-08",
       "implementedBy": [
         "packages/engine/src/params/data/year2026.ts",
         "packages/engine/src/tax/propertySale.ts"
@@ -838,6 +858,21 @@
           "kind": "statute",
           "citation": "IRC 121(a)",
           "url": "https://www.law.cornell.edu/uscode/text/26/121"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 121(b)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section121&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 121(b)(2) chapeau",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section121&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 121(b)(2)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section121&num=0&edition=prelim"
         },
         {
           "kind": "statute",
@@ -1567,14 +1602,14 @@
       "title": "Savings-bond interest is deferred until redemption, maturity, or disposition unless elected",
       "classification": "outOfScope",
       "errorDirection": null,
-      "conventionRationale": "The absence surface spans model/plan.ts, projection/internal/distributedTaxableYieldRows.ts, and projection/simulate.ts. taxableAccountSchema.interestYieldPct is a generic current-year yield; distributedTaxableYieldRows prices it for the current year, and simulate.ts immediately adds the returned interest to ordinary income. None of those surfaces identifies a savings bond, redemption or maturity date, accounting method, or the section 454 election that would select current inclusion. Treating generic interest as a savings bond would conflate an ordinary brokerage yield with a deferred savings-bond obligation.",
+      "conventionRationale": "The absence surface spans model/plan.ts, projection/internal/distributedTaxableYieldRows.ts, and projection/simulate.ts. taxableAccountSchema.interestYieldPct is a generic current-year yield; distributedTaxableYieldRows prices it for the current year, and simulate.ts immediately adds the returned interest to ordinary income. None of those surfaces identifies a savings bond, a redemption/disposition/final-maturity event or date, accounting method, or the section 454 election that would select current inclusion. Treating generic interest as a savings bond would conflate an ordinary brokerage yield with a deferred savings-bond obligation.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-27",
-      "dueOn": "2027-08-27",
+      "verifiedOn": "2026-09-08",
+      "dueOn": "2027-09-08",
       "implementedBy": [
         "packages/engine/src/model/plan.ts",
         "packages/engine/src/projection/internal/distributedTaxableYieldRows.ts",
@@ -1623,6 +1658,11 @@
           "kind": "statute",
           "citation": "IRC 454(c)",
           "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section454&num=0&edition=prelim"
+        },
+        {
+          "kind": "regulation",
+          "citation": "26 CFR 1.454-1(a)(1)",
+          "url": "https://www.ecfr.gov/api/renderer/v1/content/enhanced/current/title-26?chapter=I&subchapter=A&part=1&section=1.454-1"
         }
       ]
     },
@@ -1681,8 +1721,8 @@
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-04",
-      "dueOn": "2027-08-04",
+      "verifiedOn": "2026-09-08",
+      "dueOn": "2027-09-08",
       "implementedBy": [
         "packages/engine/src/actions/taxableWithdrawalCharacter.ts",
         "packages/engine/src/projection/internal/annualAnnuityPurchaseFunding.ts"
@@ -1748,6 +1788,11 @@
         {
           "kind": "regulation",
           "citation": "26 CFR 1.1012-1(c)(1)(i)",
+          "url": "https://www.ecfr.gov/api/renderer/v1/content/enhanced/current/title-26?chapter=I&subchapter=A&part=1&section=1.1012-1"
+        },
+        {
+          "kind": "regulation",
+          "citation": "26 CFR 1.1012-1(e)(1)(i)-(ii)",
           "url": "https://www.ecfr.gov/api/renderer/v1/content/enhanced/current/title-26?chapter=I&subchapter=A&part=1&section=1.1012-1"
         },
         {
