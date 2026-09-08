@@ -113,8 +113,9 @@ const annualProjectionCodeSplitting = {
 // value imports in the worker entry, then import the entry — a circular ES
 // module graph. Production minifies one of those live bindings to `oe` and
 // TDZ-crashes on first spawn: "Cannot access 'oe' before initialization"
-// (#672, Design QA on /plan/:id/spending-solver). Kernels and publications
-// stay split: they do not import the worker entry.
+// (#672, Design QA on both Optimize-rail routes: /plan/:id/spending-solver
+// and /plan/:id/optimize). Kernels and publications stay split: they do
+// not import the worker entry.
 const workerAnnualProjectionCodeSplitting = {
   groups: [
     {

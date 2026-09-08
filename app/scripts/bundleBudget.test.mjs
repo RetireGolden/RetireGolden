@@ -156,7 +156,7 @@ describe('evaluateBudget — oversize', () => {
   })
 })
 
-describe('worker entry import cycle (#672)', () => {
+describe('worker entry import cycle (#672, both Optimize-rail channels)', () => {
   it('parses static relative imports from a Rolldown ES chunk', () => {
     expect(
       parseStaticRelativeImports(

@@ -119,7 +119,7 @@ if (workerGraph.importers === null) {
 } else if (workerGraph.importers.length > 0) {
   result.failures.push(
     `worker graph cycle: ${workerGraph.importers.join(', ')} statically import ${workerGraph.workerNames.join(', ')} ` +
-      '(isolated coordinator chunks must not import the worker entry — #672 TDZ on first spawn)',
+      '(isolated coordinator chunks must not import the worker entry — #672 TDZ on first spawn, both Optimize-rail channels)',
   )
 }
 

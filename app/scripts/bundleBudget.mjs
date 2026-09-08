@@ -157,7 +157,7 @@ export function parseLandingScripts(html) {
  *
  * Used to detect a worker-graph cycle: an isolated coordinator chunk that
  * imports the worker entry (which imported that coordinator) TDZ-crashes
- * production on first spawn (#672).
+ * production on first spawn (#672, both Optimize-rail worker channels).
  */
 export function parseStaticRelativeImports(source) {
   return [...source.matchAll(/\bfrom\s*["'](\.\/[^"']+)["']/g)].map((m) => m[1].replace(/^\.\//, ''))

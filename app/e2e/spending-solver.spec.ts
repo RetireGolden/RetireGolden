@@ -8,8 +8,8 @@ import { openExamplePlan } from './helpers'
  * (packages/planner-ui/src/workers/planner.worker.ts) with its own Rolldown
  * codeSplitting config. Isolating the funding/settlement coordinators in
  * that graph created a circular chunk import whose production TDZ read as
- * "Cannot access 'oe' before initialization" (#672). Mirrors the Optimize
- * pattern in optimize.spec.ts.
+ * "Cannot access 'oe' before initialization" (#672). Same worker as
+ * Roth & Tax Optimizer (optimize.spec.ts); both routes auto-run on mount.
  */
 test.describe('Spending solver', () => {
   test('runs the solver for an example plan and renders a completed answer', async ({ page }) => {
@@ -30,5 +30,6 @@ test.describe('Spending solver', () => {
     const noLevel = page.getByRole('heading', { name: 'No sustainable spending level found', level: 2 })
     await expect(dollarResult.or(noLevel)).toBeVisible({ timeout: 60_000 })
     await expect(page.getByText(/Solver error/)).toHaveCount(0)
+    await expect(page.getByText(/Cannot access ['"]oe['"] before initialization/)).toHaveCount(0)
   })
 })

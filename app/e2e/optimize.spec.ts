@@ -8,7 +8,10 @@ import { openExamplePlan } from './helpers'
  * (packages/planner-ui/src/workers/planner.worker.ts) with its own Rolldown
  * codeSplitting config, so a Vite/Rolldown bump can break the worker bundle
  * while lint, unit tests, and pack-smoke all stay green. Mirrors the
- * Monte Carlo pattern in smoke.spec.ts.
+ * Monte Carlo pattern in smoke.spec.ts. The same worker graph TDZ that
+ * crashed How much can I spend? (#672) also crashed this route as
+ * "Optimizer error: Cannot access 'oe' before initialization" and left
+ * Download recommendation report disabled after retry.
  */
 test.describe('Optimize', () => {
   test('runs the solver for an example plan and renders a completed recommendation', async ({ page }) => {
@@ -44,5 +47,20 @@ test.describe('Optimize', () => {
     const noBenefit = page.getByRole('heading', { name: 'No beneficial conversions found', level: 2 })
     const infeasible = page.getByRole('heading', { name: "Couldn't optimize this plan", level: 2 })
     await expect(dollarResult.or(incumbentHolds).or(noBenefit).or(infeasible)).toBeVisible({ timeout: 60_000 })
+    await expect(page.getByText(/Optimizer error:/)).toHaveCount(0)
+    await expect(page.getByText(/Cannot access ['"]oe['"] before initialization/)).toHaveCount(0)
+
+    // A completed run that produced a recommendation (dollar / incumbent /
+    // no-benefit) keeps the report download enabled. An infeasible well is
+    // the no-recommendation path (#426) and correctly leaves it disabled.
+    // The hosted TDZ crash left it disabled after retry because there was
+    // still no held result.
+    const download = page.getByRole('button', { name: 'Download recommendation report' })
+    await expect(download).toBeVisible()
+    if (await infeasible.isVisible()) {
+      await expect(download).toBeDisabled()
+    } else {
+      await expect(download).toBeEnabled()
+    }
   })
 })
