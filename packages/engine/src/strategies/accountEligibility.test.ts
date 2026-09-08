@@ -1911,6 +1911,8 @@ describe('outOfScope refusals reached through evaluateRetirementActionEligibilit
           ownerDeathYear: 2024,
           decedentHadStartedRmds: false,
           beneficiary: {
+            beneficiaryClass: 'designated-individual',
+            provenance: { source: 'manual', asOf: '2026-01-01' },
             election: 'treat-as-own',
             treatAsOwnElectionYear: 2026,
             edbCategory: 'surviving-spouse',
