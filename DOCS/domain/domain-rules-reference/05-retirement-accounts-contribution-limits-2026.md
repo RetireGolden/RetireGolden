@@ -9,6 +9,17 @@
 | IRA | $7,500; catch-up 50+ $1,100. An IRA does not receive the $11,250 employer-plan super catch-up at ages 60-63 ([IRC 219](https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section219&num=0&edition=prelim); `irc-219-b-5-B-ira-catch-up-excludes-employer-plan-super-catch-up`). |
 | HSA (self/family) | parameter data (≈$4,400/$8,750) + $1,000 55+ catch-up |
 
+- **MFJ IRA compensation.** For a living married-filing-jointly pair, section 219(c) lets the
+  strictly lesser-earning spouse measure the limit from combined compensation reduced by the other
+  spouse's traditional, designated nondeductible, and Roth IRA contributions already made. Equal and
+  higher earners remain on section 219(b)(1) and cannot contribute more than their own compensation,
+  even though the household pool still tracks combined wages for total conservation. Traditional and
+  Roth IRA contributions share one per-owner annual ceiling ([IRC 408A(c)(2)](https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408A&num=0&edition=prelim);
+  `irc-408A-c-2-roth-shares-the-section-219-ceiling`). When scarce room remains, the enforcer applies
+  competing requests in Plan account order — a scarcity convention, not a statutory mandate
+  (`irc-219-c-1-spousal-ira-combined-compensation`). Other modeled IRA, employer-plan, and HSA limits
+  are unchanged.
+
 - **Married HSA holders share one family limit.** Where either spouse has family coverage, IRC 223(b)(5) treats
   both as having only that coverage and divides the paragraph (1) limitation equally between them absent a
   different agreement. The $1,000 age-55 catch-up sits outside the division under (5)(B), so each spouse gets half

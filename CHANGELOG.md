@@ -4,6 +4,14 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## Unreleased
 
+- **MFJ IRA spousal compensation ceiling:** corrected the living MFJ IRA pass so equal and higher
+  earners cannot exceed their own wages under IRC 219(b)(1) while the strictly lesser spouse may
+  still use section 219(c) combined-compensation room; the shared household pool still conserves total
+  compensation. Confirmed before/after on representative fixtures: equal $5,000 wages each moves from
+  $7,500/$2,500 to $5,000/$5,000; $6,000/$4,000 with the higher earner processed first moves from
+  $7,500/$2,500 to $6,000/$4,000; $10,000/$0 earner-first and the reversed lower-first
+  $2,500/$7,500 case are unchanged.
+
 - **Planner-worker TDZ (#672):** the planner Web Worker no longer isolates
   the funding/year-close and owned-IRA settlement coordinators as their own
   chunks. Those isolated chunks imported the worker entry (a circular ES module
