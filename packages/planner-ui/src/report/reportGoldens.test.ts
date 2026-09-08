@@ -23,6 +23,8 @@
  * values unchanged in these examples — numeric state correction oracles live
  * in engine fixtures. State law oracle coverage lives in engine goldens and
  * DOCS/domain.
+ * 2026-09-08: CA/MN provenance wording plus early-career-match CA observed
+ * results refreshed in committed report goldens; not a new oracle.
  */
 import { describe, expect, it } from 'vitest'
 

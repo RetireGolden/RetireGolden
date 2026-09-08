@@ -22,6 +22,11 @@ function round2(n: number): number {
 }
 
 const EXPECTED: Record<string, { depletionYear: number | null; endingInvestable: number; lifetimeTax: number; lifetimeRoth: number }> = {
+  // Reviewed 2026-09-08: CA TY2026 standard deduction corrected 5,540 -> 5,706
+  // (ca-ftb-2026-540-es-standard-deduction; DOCS/operations/ca-mn-parameter-
+  // correction-2026-09-08.md). Five single-filer CA examples move: lower lifetime
+  // tax, higher ending wealth; glidepath/static also show fill-to-target Roth
+  // feedback. Characterization only -- not a legal oracle.
   // Re-baselined 2026-08-03 for the IRC 1(j)(3)(B) indexing correction. The
   // projection is nominal, but the federal rate brackets, standard deduction,
   // capital-gain breakpoints and AMT amounts were read off the 2026 pack for
@@ -138,7 +143,7 @@ const EXPECTED: Record<string, { depletionYear: number | null; endingInvestable:
   'survivor-years': { depletionYear: 2043, endingInvestable: 0, lifetimeTax: 79_020.67, lifetimeRoth: 0 },
   'moving-state-tax': { depletionYear: null, endingInvestable: 3_880_516.31, lifetimeTax: 732_565.75, lifetimeRoth: 0 },
   'ltc-shock': { depletionYear: 2033, endingInvestable: 0, lifetimeTax: 0, lifetimeRoth: 0 },
-  'early-career-match': { depletionYear: null, endingInvestable: 17_025_657.14, lifetimeTax: 2_806_799.12, lifetimeRoth: 0 },
+  'early-career-match': { depletionYear: null, endingInvestable: 17_028_288.16, lifetimeTax: 2_806_009.29, lifetimeRoth: 0 },
   'aggressive-saver': { depletionYear: null, endingInvestable: 138_916_241.94, lifetimeTax: 6_849_942.2, lifetimeRoth: 0 },
   // coast-fire reviewed 2026-07-16: CO standard deduction moved to the 2026
   // federal-equivalent ($15,750 -> $16,100) in the state-pack staleness sweep,
@@ -201,21 +206,21 @@ const EXPECTED: Record<string, { depletionYear: number | null; endingInvestable:
   // larger balance instead of at ages 45-59. A smaller forced distribution
   // buying more estate and more nominal lifetime tax is the expected shape for
   // a household this far from depletion.
-  'bridge-early-retirement': { depletionYear: null, endingInvestable: 11_972_870.71, lifetimeTax: 1_452_039, lifetimeRoth: 0 },
+  'bridge-early-retirement': { depletionYear: null, endingInvestable: 11_977_572.35, lifetimeTax: 1_451_864.02, lifetimeRoth: 0 },
   'lean-fat-fire': { depletionYear: null, endingInvestable: 43_545_918.82, lifetimeTax: 2_692_779.67, lifetimeRoth: 0 },
-  'hsa-stealth-retirement': { depletionYear: null, endingInvestable: 4_484_178.89, lifetimeTax: 808_157.31, lifetimeRoth: 0 },
+  'hsa-stealth-retirement': { depletionYear: null, endingInvestable: 4_493_650.52, lifetimeTax: 807_950.5, lifetimeRoth: 0 },
   'salary-growth-escalation': { depletionYear: null, endingInvestable: 46_295_269.76, lifetimeTax: 2_552_250.15, lifetimeRoth: 0 },
   // New July enhancement examples (positive/negative cases for guardrails, annuities+estate, allocation+MC v2, HSA/property depth)
   'guardrails-flex-goals': { depletionYear: 2041, endingInvestable: 0, lifetimeTax: 7_903.47, lifetimeRoth: 0 },
   'annuity-purchases-estate': { depletionYear: null, endingInvestable: 3_254_253.2, lifetimeTax: 342_232.06, lifetimeRoth: 857_968.22 },
-  'glidepath-allocation': { depletionYear: null, endingInvestable: 1_272_036.74, lifetimeTax: 347_184.45, lifetimeRoth: 765_715.27 },
+  'glidepath-allocation': { depletionYear: null, endingInvestable: 1_272_656.33, lifetimeTax: 347_018.53, lifetimeRoth: 765_919.48 },
   // Re-baselined for exact committed Form 8606 line-8 character: generated
   // conversions now size gross dollars against their taxable fraction.
   'hsa-property-depth': { depletionYear: 2043, endingInvestable: 0, lifetimeTax: 32_843.21, lifetimeRoth: 180_171.15 },
   // A-B control variants for direct Plan Compare (fixed target, no annuity, static allocation, no HSA)
   'fixed-target-spending': { depletionYear: 2034, endingInvestable: 0, lifetimeTax: 7_215.17, lifetimeRoth: 0 },
   'no-annuity-brokerage': { depletionYear: null, endingInvestable: 3_684_430.57, lifetimeTax: 278_493.11, lifetimeRoth: 1_230_830.55 },
-  'static-allocation-control': { depletionYear: null, endingInvestable: 839_732.49, lifetimeTax: 329_064.48, lifetimeRoth: 759_692.67 },
+  'static-allocation-control': { depletionYear: null, endingInvestable: 840_094.51, lifetimeTax: 328_960.33, lifetimeRoth: 759_850.34 },
   'brokerage-no-hsa': { depletionYear: 2043, endingInvestable: 0, lifetimeTax: 24_137.83, lifetimeRoth: 0 },
   // A-B decision pairs (savings location for early retirement; Trump-account IRA head start).
   // The A-vs-B deltas are the story: the all-401(k) control pays $87.0k of
