@@ -2926,6 +2926,28 @@ describeRule('oh-rev-code-5747-01-social-security-and-public-pension', {
   })
 })
 
+describeRule('oh-rev-code-5747-02-a-3-c-2026-nonbusiness-rate-schedule', {
+  readings: {
+    // §5747.02(A)(3)(c): $332 + 2.75% × ($50,000 − $26,050) = $990.625.
+    enactedThreeThirtyTwoPlusMarginal: 332 + (50_000 - 26_050) * 0.0275,
+    // Pack brackets omit the $332 cumulative base at $26,050.
+    packMarginalOnlyNoBase: 658.625,
+  },
+  accepted: 'enactedThreeThirtyTwoPlusMarginal',
+  produced: 'packMarginalOnlyNoBase',
+}, ({ accepted, produced }) => {
+  // Main observation on base a7f4c07: computeStateTax(pack('OH'), B=$50,000)
+  // yields $658.625 for both supported filing statuses. The statutory reading
+  // is pinned from the primary packet, not from the engine.
+  const scenario = input({ state: 'OH', ordinaryIncome: 50_000 })
+
+  it('pins the omitted $332 cumulative base on the TY2026 nonbusiness schedule', () => {
+    expect(computeStateTax(pack('OH'), scenario)).toBe(produced)
+    expect(computeStateTax(pack('OH'), scenario)).not.toBe(accepted)
+    expect(accepted).toBe(990.625)
+  })
+})
+
 describeRule('ok-stat-68-2358-retirement-and-social-security', {
   readings: {
     sourceFullyExcludesMilitaryRetirement: 0,

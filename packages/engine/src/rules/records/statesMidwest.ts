@@ -1427,6 +1427,55 @@ export const midwestStateRecords = {
     ],
   },
 
+  'oh-rev-code-5747-02-a-3-c-2026-nonbusiness-rate-schedule': {
+    title: 'Ohio TY2026 nonbusiness tax carries a $332 cumulative base above $26,050 that the pack omits',
+    statement:
+      'For taxable years beginning in 2026 and thereafter, Ohio Rev. Code §5747.02(A)(3) imposes no tax when the individual nonbusiness balance B — Ohio adjusted gross income minus taxable business income and applicable taxpayer, spouse, and dependent exemptions — is at most $26,050, and §5747.02(A)(3)(c) sets tax at $332.00 plus 2.75% of the amount in excess of $26,050. Division (A)(3) supplies one schedule for individuals without a filing-status branch; single and married filing jointly therefore share the breakpoint, base, and rate. The enacted Legislative Service Commission H.B. 96 tax Greenbook independently confirms TY2026 uses that single bracket and that H.B. 96 suspends inflation indexing for TY2025 and TY2026, so the TY2026 threshold remains $26,050. Approximated: the pack\'s OH brackets carry a 0% band to $26,050 and 2.75% above it but omit the $332 cumulative base at the threshold, so bracketTax charges only the marginal excess above $26,050. At every B above $26,050 the engine understates gross nonbusiness tax before credits by exactly $332. Taxable business income under (A)(4), exemptions that reduce B, retirement and senior credits, municipal tax, and whole-return liability remain outside this record. The captured Ohio Department of Taxation 2026 IT 1040 ES worksheet prints the prior-year $342 / 2.75% / 3.125% table and conflicts with enacted law; that administrative artifact is disclosed here but does not support the $332 formula and has not been reconciled.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'understatesTax',
+    conventionRationale:
+      'The captured 2026 IT 1040 ES estimated-payment worksheet reproduces the 2025 schedule ($342 plus 2.75% of excess over $26,050, then $2,394.32 plus 3.125% above $100,000) and conflicts directly with the current enacted §5747.02(A)(3)(c) and the LSC enacted-budget Greenbook. For the legal TY2026 nonbusiness schedule the current statute plus enacted analysis controls the supported reading; the worksheet is preserved as an explicit contrary administrative artifact, not as support for the pack omission.',
+    jurisdiction: 'state:OH',
+    authority: [{
+      kind: 'statute',
+      citation: 'Ohio Rev. Code §5747.02(A)(3)',
+      url: 'https://codes.ohio.gov/ohio-revised-code/section-5747.02',
+      quotedText:
+        '(3) In the case of individuals, the tax imposed by this section on income other than taxable business income shall be measured by Ohio adjusted gross income, less taxable business income and less an exemption for the taxpayer, the taxpayer\'s spouse, and each dependent as provided in section 5747.025 of the Revised Code. If the balance thus obtained is equal to or less than twenty-six thousand fifty dollars, no tax shall be imposed on that balance.',
+    }, {
+      kind: 'statute',
+      citation: 'Ohio Rev. Code §5747.02(A)(3)(c)',
+      url: 'https://codes.ohio.gov/ohio-revised-code/section-5747.02',
+      quotedText:
+        'For taxable years beginning in 2026 and thereafter, $332.00 plus 2.75% of the amount in excess of $26,050.',
+    }, {
+      kind: 'legislativeHistory',
+      citation: 'LSC enacted H.B. 96 Tax Greenbook, PDF p. 2 / extracted lines 108-112',
+      url: 'https://www.lsc.ohio.gov/assets/legislation/136/hb96/en0/files/hb96-tax-greenbook-as-enacted-136th-general-assembly.pdf',
+      quotedText:
+        'creates a single tax bracket in which a taxpayer owes $332 plus 2.75% of income above $26,050. H.B. 96 suspends the inflation indexing of both the income tax brackets and personal exemption amounts in TY 2025 and TY 2026.',
+    }, {
+      kind: 'formInstruction',
+      citation: 'Ohio Department of Taxation, 2026 IT 1040 ES estimated-payment worksheet (captured v1768492539), nonbusiness bracket table',
+      url: 'https://dam.assets.ohio.gov/image/upload/v1768492539/tax.ohio.gov/forms/ohio_individual/individual/2026/ites-instructions-fi.pdf',
+      quotedText:
+        '$342.00 plus 2.750% of the amount in excess of $ 26,050…$2,394.32 plus 3.125% of the amount in excess of $100,000',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-08',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#OH',
+      'packages/engine/src/tax/stateTax.ts#bracketTax',
+    ],
+  },
+
   'wi-stat-71-05-retirement-income-subtraction': {
     title: 'Wisconsin’s $24,000 age-67 retirement subtraction is per-recipient and credits-restricted; the pack caps pooled income and skips the election',
     statement:
