@@ -35,7 +35,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             }
           ]
         }
@@ -108,7 +108,7 @@
           "functions": [
             {
               "name": "StateTaxParams",
-              "line": 33
+              "line": 40
             }
           ]
         },
@@ -117,7 +117,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             }
           ]
         }
@@ -204,7 +204,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 172
+              "line": 178
             }
           ]
         }
@@ -291,7 +291,7 @@
           "functions": [
             {
               "name": "StateRetirementExclusion",
-              "line": 25
+              "line": 32
             }
           ]
         },
@@ -300,7 +300,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             }
           ]
         }
@@ -383,7 +383,7 @@
           "functions": [
             {
               "name": "StateRetirementExclusion",
-              "line": 25
+              "line": 32
             }
           ]
         },
@@ -392,7 +392,7 @@
           "functions": [
             {
               "name": "retirementExclusion",
-              "line": 41
+              "line": 47
             }
           ]
         }
@@ -464,11 +464,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             },
             {
               "name": "retirementExclusion",
-              "line": 41
+              "line": 47
             }
           ]
         }
@@ -545,7 +545,7 @@
           "functions": [
             {
               "name": "StateTaxParams",
-              "line": 33
+              "line": 40
             }
           ]
         },
@@ -554,7 +554,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 172
+              "line": 178
             }
           ]
         }
@@ -636,11 +636,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             },
             {
               "name": "retirementExclusion",
-              "line": 41
+              "line": 47
             }
           ]
         }
@@ -712,11 +712,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             },
             {
               "name": "retirementExclusion",
-              "line": 41
+              "line": 47
             }
           ]
         }
@@ -784,7 +784,7 @@
           "functions": [
             {
               "name": "StateRetirementExclusion",
-              "line": 25
+              "line": 32
             }
           ]
         },
@@ -793,7 +793,7 @@
           "functions": [
             {
               "name": "retirementExclusion",
-              "line": 41
+              "line": 47
             }
           ]
         }
@@ -876,7 +876,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             }
           ]
         }
@@ -939,7 +939,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             }
           ]
         }
@@ -1011,11 +1011,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             },
             {
               "name": "retirementExclusion",
-              "line": 41
+              "line": 47
             }
           ]
         }
@@ -1112,7 +1112,7 @@
             },
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             }
           ]
         }
@@ -1190,7 +1190,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             }
           ]
         }
@@ -1283,7 +1283,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             }
           ]
         }
@@ -1355,7 +1355,7 @@
           "functions": [
             {
               "name": "computeStateTaxDetail",
-              "line": 172
+              "line": 178
             }
           ]
         }
@@ -1442,7 +1442,7 @@
           "functions": [
             {
               "name": "StateRetirementExclusion",
-              "line": 25
+              "line": 32
             }
           ]
         },
@@ -1451,7 +1451,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             }
           ]
         }
@@ -1537,7 +1537,7 @@
           "functions": [
             {
               "name": "StateTaxParams",
-              "line": 33
+              "line": 40
             }
           ]
         },
@@ -1546,7 +1546,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             }
           ]
         }
@@ -1618,7 +1618,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             }
           ]
         }
@@ -1694,11 +1694,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             },
             {
               "name": "retirementExclusion",
-              "line": 41
+              "line": 47
             }
           ]
         }
@@ -1774,7 +1774,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             }
           ]
         }
@@ -1851,11 +1851,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             },
             {
               "name": "retirementExclusion",
-              "line": 41
+              "line": 47
             }
           ]
         }
@@ -1942,7 +1942,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             }
           ]
         }
@@ -2014,11 +2014,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             },
             {
               "name": "retirementExclusion",
-              "line": 41
+              "line": 47
             }
           ]
         }
@@ -2099,7 +2099,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             }
           ]
         }
@@ -2176,11 +2176,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             },
             {
               "name": "retirementExclusion",
-              "line": 41
+              "line": 47
             }
           ]
         }
@@ -2233,6 +2233,88 @@
       ]
     },
     {
+      "id": "oh-rev-code-5747-02-a-3-c-2026-nonbusiness-rate-schedule",
+      "title": "Ohio TY2026 nonbusiness tax carries a $332 cumulative base above $26,050",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "For the legal TY2026 nonbusiness schedule the current statute plus enacted analysis controls the supported reading. The captured 2026 IT 1040 ES estimated-payment worksheet reproduces the 2025 schedule ($342 plus 2.75% of excess over $26,050, then $2,394.32 plus 3.125% above $100,000) and conflicts directly with enacted §5747.02(A)(3)(c) and the LSC enacted-budget Greenbook; that administrative artifact is disclosed but not adopted as support for the pack. Part-year residency uses the engine's existing linear month-proration convention (prorateParams scales bracket breakpoints and baseTax); that scaling is a model convention, not authority-backed Ohio part-year law. The record expires after TY2026; later plan years may reuse the latest 2026 pack as a planning stand-in and are not certified by this annual record.",
+      "contraryReading": null,
+      "jurisdiction": "state:OH",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": 2026,
+      "verifiedOn": "2026-09-08",
+      "dueOn": "2027-01-06",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "states.OH",
+              "line": 684
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "bracketTax",
+              "line": 29
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 2952,
+          "note": null,
+          "tests": [
+            {
+              "title": "prices the TY2026 nonbusiness schedule at the statutory breakpoints",
+              "line": 2963
+            },
+            {
+              "title": "rejects the IT 1040 ES upper band and baseTax add-on semantics via hybridWorksheetUpperBandOnEnactedLowerBand",
+              "line": 2975
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "Ohio Rev. Code §5747.02(A)(3)",
+          "url": "https://codes.ohio.gov/ohio-revised-code/section-5747.02"
+        },
+        {
+          "kind": "statute",
+          "citation": "Ohio Rev. Code §5747.02(A)(3)(c)",
+          "url": "https://codes.ohio.gov/ohio-revised-code/section-5747.02"
+        },
+        {
+          "kind": "legislativeHistory",
+          "citation": "LSC enacted H.B. 96 Tax Greenbook, PDF p. 2 / extracted lines 108-112",
+          "url": "https://www.lsc.ohio.gov/assets/legislation/136/hb96/en0/files/hb96-tax-greenbook-as-enacted-136th-general-assembly.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "Ohio Department of Taxation, 2026 IT 1040 ES estimated-payment worksheet (captured v1768492539), nonbusiness bracket table",
+          "url": "https://dam.assets.ohio.gov/image/upload/v1768492539/tax.ohio.gov/forms/ohio_individual/individual/2026/ites-instructions-fi.pdf"
+        }
+      ]
+    },
+    {
       "id": "sd-no-individual-income-tax",
       "title": "South Dakota levies no individual income tax, and could",
       "classification": "settled",
@@ -2264,7 +2346,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             }
           ]
         }
@@ -2336,7 +2418,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             }
           ]
         }
@@ -2347,12 +2429,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3233,
+          "line": 3297,
           "note": "30% long-term capital-gain subtraction",
           "tests": [
             {
               "title": "pins Wisconsin's unrepresented long-term capital-gain exclusion",
-              "line": 3247
+              "line": 3311
             }
           ]
         }
@@ -2404,11 +2486,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             },
             {
               "name": "retirementExclusion",
-              "line": 41
+              "line": 47
             }
           ]
         }
@@ -2419,20 +2501,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3254,
+          "line": 3318,
           "note": "age-67 retirement attribution and election limbs",
           "tests": [
             {
               "title": "shelters retirement dollars received by the under-67 spouse",
-              "line": 3278
+              "line": 3342
             },
             {
               "title": "matches the pooled $48,000 cap when both spouses are 67",
-              "line": 3287
+              "line": 3351
             },
             {
               "title": "grants a 65-year-old nothing where Line 17 would allow $5,000",
-              "line": 3300
+              "line": 3364
             }
           ]
         }

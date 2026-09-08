@@ -654,6 +654,10 @@ const STATE_PRIMARY_PUBLISHERS: Readonly<Partial<Record<UsStateCode, readonly st
   OH: [
     // Verified 2026-08-27 against the staged Ohio Revised Code sections.
     'codes.ohio.gov', // Ohio Revised Code
+    // Verified 2026-09-08: LSC enacted-budget Greenbook and Ohio DOR form
+    // artifacts for oh-rev-code-5747-02-a-3-c-2026-nonbusiness-rate-schedule.
+    'lsc.ohio.gov', // Ohio Legislative Service Commission
+    'dam.assets.ohio.gov', // Ohio Department of Taxation document CDN
   ],
   OK: [
     // Verified 2026-08-27 against the staged Oklahoma Tax Commission Form
@@ -1641,6 +1645,40 @@ describe('tax rule registry conformance', () => {
       jurisdiction: 'state:ND',
       authority: [{ citation: 'NDCC 57-38-01', url: 'https://www.ftb.ca.gov/' }],
     }]])).toEqual(['nd-fictional:NDCC 57-38-01:www.ftb.ca.gov'])
+  })
+
+  it('admits the Ohio LSC and DOR artifact hosts only for an Ohio rule', () => {
+    // Verified 2026-09-08: the enacted H.B. 96 Greenbook and the captured 2026
+    // IT 1040 ES worksheet are served from these hosts. The admission is the
+    // exact normalized publisher, not a parent domain or federal-tier bypass.
+    const lscGreenbook = {
+      citation: 'LSC enacted H.B. 96 Tax Greenbook',
+      url: 'https://www.lsc.ohio.gov/assets/legislation/136/hb96/en0/files/hb96-tax-greenbook-as-enacted-136th-general-assembly.pdf',
+    }
+    const odtWorksheet = {
+      citation: 'Ohio Department of Taxation, 2026 IT 1040 ES estimated-payment worksheet',
+      url: 'https://dam.assets.ohio.gov/image/upload/v1768492539/tax.ohio.gov/forms/ohio_individual/individual/2026/ites-instructions-fi.pdf',
+    }
+    expect(offSourceAuthorities([['oh-fictional', {
+      jurisdiction: 'state:OH',
+      authority: [lscGreenbook],
+    }]])).toEqual([])
+    expect(offSourceAuthorities([['oh-fictional', {
+      jurisdiction: 'state:OH',
+      authority: [odtWorksheet],
+    }]])).toEqual([])
+    expect(offSourceAuthorities([['in-fictional', {
+      jurisdiction: 'state:IN',
+      authority: [lscGreenbook],
+    }]])).toEqual(['in-fictional:LSC enacted H.B. 96 Tax Greenbook:www.lsc.ohio.gov'])
+    expect(offSourceAuthorities([['irc-fictional-federal', {
+      jurisdiction: 'federal',
+      authority: [odtWorksheet],
+    }]])).toEqual(['irc-fictional-federal:Ohio Department of Taxation, 2026 IT 1040 ES estimated-payment worksheet:dam.assets.ohio.gov'])
+    expect(stateRulesMissingStateAuthority([['oh-fictional', {
+      jurisdiction: 'state:OH',
+      authority: [lscGreenbook],
+    }]])).toEqual([])
   })
 
   it('admits the Alabama Legislature ALISON enrolled-act host only for an Alabama rule', () => {

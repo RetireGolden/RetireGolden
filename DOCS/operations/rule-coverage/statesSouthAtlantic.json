@@ -45,7 +45,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             }
           ]
         }
@@ -181,11 +181,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             },
             {
               "name": "retirementExclusion",
-              "line": 41
+              "line": 47
             }
           ]
         }
@@ -274,7 +274,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             }
           ]
         }
@@ -372,7 +372,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             }
           ]
         }
@@ -445,7 +445,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             }
           ]
         }
@@ -528,7 +528,7 @@
           "functions": [
             {
               "name": "StateRetirementExclusion",
-              "line": 25
+              "line": 32
             }
           ]
         },
@@ -537,7 +537,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             }
           ]
         }
@@ -610,7 +610,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             }
           ]
         }
@@ -682,11 +682,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             },
             {
               "name": "retirementExclusion",
-              "line": 41
+              "line": 47
             }
           ]
         }
@@ -777,7 +777,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             }
           ]
         }
@@ -840,11 +840,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             },
             {
               "name": "retirementExclusion",
-              "line": 41
+              "line": 47
             }
           ]
         }
@@ -916,11 +916,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             },
             {
               "name": "retirementExclusion",
-              "line": 41
+              "line": 47
             }
           ]
         }
@@ -931,23 +931,23 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3149,
+          "line": 3213,
           "note": null,
           "tests": [
             {
               "title": "pins the high-income phase-out that the retirement-cap mapping misses",
-              "line": 3168
+              "line": 3232
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3175,
+          "line": 3239,
           "note": "wage-only age deduction limb",
           "tests": [
             {
               "title": "pins the opposite direction when an age-65 filer has wages but no modeled pension",
-              "line": 3189
+              "line": 3253
             }
           ]
         }
@@ -994,7 +994,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             }
           ]
         }

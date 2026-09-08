@@ -589,3 +589,36 @@ describe('the age-65 additional standard deduction in a conformed state', () => 
     expect(300_000 - nd.taxableIncome).toBeCloseTo(federal.deduction, 6)
   })
 })
+
+describe('Ohio TY2026 nonbusiness cumulative base (§5747.02(A)(3)(c))', () => {
+  const oh = pack('OH')
+  const calc = createStateTaxCalculator()
+  const boundaryVector = [
+    { income: 26_050, tax: 0 },
+    { income: 26_051, tax: 332.0275 },
+    { income: 50_000, tax: 990.625 },
+    { income: 150_000, tax: 3740.625 },
+  ] as const
+
+  it('prices the statutory breakpoint vector for single and MFJ', () => {
+    for (const status of ['single', 'marriedFilingJointly'] as const) {
+      for (const { income, tax } of boundaryVector) {
+        expect(computeStateTax(oh, input({ filingStatus: status, ordinaryIncome: income }))).toBeCloseTo(tax, 6)
+      }
+    }
+  })
+
+  it('prorates the cumulative base with split-year residency under the existing linear convention', () => {
+    // Hand worksheet: annual B=$50,000 → $990.625 pre-credit; six months OH
+    // plus six months no-tax scales income, threshold, and base by 6/12 →
+    // $495.3125. Engine convention only — not a claim about Ohio part-year law.
+    const tax = calc.compute(input({
+      ordinaryIncome: 50_000,
+      stateResidency: [
+        { state: 'OH', months: 6 },
+        { state: 'TX', months: 6 },
+      ],
+    }))
+    expect(tax).toBeCloseTo(495.3125, 6)
+  })
+})

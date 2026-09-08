@@ -2907,22 +2907,86 @@ describeRule('oh-rev-code-5747-01-social-security-and-public-pension', {
 
 describeRule('oh-rev-code-5747-01-social-security-and-public-pension', {
   readings: {
-    sourceAppliesTheTwoHundredDollarRetirementCredit: (50_000 - 26_050) * 0.0275 - 200,
-    packOmitsTheRetirementCredit: 658.625,
+    sourceAppliesTheTwoHundredDollarRetirementCredit: 332 + (50_000 - 26_050) * 0.0275 - 200,
+    packOmitsTheRetirementCredit: 332 + (50_000 - 26_050) * 0.0275,
   },
   accepted: 'sourceAppliesTheTwoHundredDollarRetirementCredit',
   produced: 'packOmitsTheRetirementCredit',
   note: 'retirement-income credit limb',
 }, ({ accepted, produced }) => {
   // Section 5747.055(B) gives $200 when retirement income exceeds $8,000 and
-  // modified AGI is below $100,000. The pack computes the pre-credit $658.625
-  // Ohio tax and has no credit channel.
+  // modified AGI is below $100,000. The pack computes pre-credit gross tax
+  // ($990.625 at this income) and has no credit channel.
   const scenario = input({ state: 'OH', ordinaryIncome: 50_000, privateRetirementIncome: 10_000 })
 
   it('pins the omitted Ohio retirement-income credit', () => {
     const tax = computeStateTax(pack('OH'), scenario)
     expect(tax).toBe(produced)
     expect(tax).not.toBe(accepted)
+    expect(accepted).toBe(790.625)
+    expect(produced).toBe(990.625)
+  })
+})
+
+const OH_NONBUSINESS_BOUNDARY = [
+  { income: 26_050, tax: 0 },
+  { income: 26_051, tax: 332.0275 },
+  { income: 50_000, tax: 990.625 },
+  { income: 150_000, tax: 3740.625 },
+] as const
+
+const actualOH = pack('OH')
+const OH_WORKSHEET_UPPER_BAND = { lowerBound: 100_000, ratePct: 3.125, baseTax: 2394.32 } as const
+
+/** Enacted lower band plus IT 1040 ES second band — not the whole official table. */
+function ohHybridWorksheetUpperBandOnEnactedLowerBand(): StateTaxParams {
+  return {
+    ...actualOH,
+    brackets: {
+      single: [...actualOH.brackets.single, OH_WORKSHEET_UPPER_BAND],
+      marriedFilingJointly: [...actualOH.brackets.marriedFilingJointly, OH_WORKSHEET_UPPER_BAND],
+    },
+  }
+}
+
+describeRule('oh-rev-code-5747-02-a-3-c-2026-nonbusiness-rate-schedule', {
+  readings: {
+    enactedThreeThirtyTwoPlusMarginal: OH_NONBUSINESS_BOUNDARY.map(({ tax }) => tax),
+    packMarginalOnlyNoBase: [0, 0.0275, 658.625, 3408.625],
+    hybridWorksheetUpperBandOnEnactedLowerBand: [0, 332.0275, 990.625, 3956.82],
+  },
+  accepted: 'enactedThreeThirtyTwoPlusMarginal',
+}, ({ accepted, readings }) => {
+  // §5747.02(A)(3)(c): $332 + 2.75% × (B − $26,050). At B=$50,000 → $990.625;
+  // at B=$150,000 → $3,740.625. The rejected no-base vector is the pre-fix
+  // runtime on base a7f4c07.
+  it('prices the TY2026 nonbusiness schedule at the statutory breakpoints', () => {
+    for (const status of ['single', 'marriedFilingJointly'] as const) {
+      OH_NONBUSINESS_BOUNDARY.forEach(({ income }, index) => {
+        const tax = computeStateTax(actualOH, input({ filingStatus: status, ordinaryIncome: income }))
+        expect(tax).toBeCloseTo(accepted[index]!, 6)
+        if (index > 0) {
+          expect(tax).not.toBeCloseTo(readings.packMarginalOnlyNoBase[index]!, 6)
+        }
+      })
+    }
+  })
+
+  it('rejects the IT 1040 ES upper band and baseTax add-on semantics via hybridWorksheetUpperBandOnEnactedLowerBand', () => {
+    const hybrid = ohHybridWorksheetUpperBandOnEnactedLowerBand()
+    // Independent worksheet at B=$150,000 above $100,000:
+    //   enacted §5747.02(A)(3)(c): $332 + 2.75% × ($150,000 − $26,050) = $3,740.625
+    //   IT 1040 ES second band (replace): $2,394.32 + 3.125% × ($150,000 − $100,000) = $3,956.82
+    //   mistaken add-on: prior bands to $100,000 accumulate $2,365.625, then
+    //   += $2,394.32 + 3.125% × $50,000 → $6,322.445
+    for (const status of ['single', 'marriedFilingJointly'] as const) {
+      expect(computeStateTax(hybrid, input({ filingStatus: status, ordinaryIncome: 150_000 })))
+        .toBeCloseTo(readings.hybridWorksheetUpperBandOnEnactedLowerBand[3]!, 6)
+      expect(computeStateTax(actualOH, input({ filingStatus: status, ordinaryIncome: 150_000 })))
+        .toBeCloseTo(accepted[3]!, 6)
+      expect(computeStateTax(actualOH, input({ filingStatus: status, ordinaryIncome: 150_000 })))
+        .not.toBeCloseTo(readings.hybridWorksheetUpperBandOnEnactedLowerBand[3]!, 6)
+    }
   })
 })
 

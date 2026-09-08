@@ -36,7 +36,7 @@
           "functions": [
             {
               "name": "StateRetirementExclusion",
-              "line": 25
+              "line": 32
             }
           ]
         },
@@ -45,7 +45,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             }
           ]
         }
@@ -124,11 +124,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             },
             {
               "name": "retirementExclusion",
-              "line": 41
+              "line": 47
             }
           ]
         }
@@ -204,7 +204,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             }
           ]
         }
@@ -286,7 +286,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             }
           ]
         }
@@ -486,7 +486,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             }
           ]
         }
@@ -558,11 +558,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             },
             {
               "name": "retirementExclusion",
-              "line": 41
+              "line": 47
             }
           ]
         }
@@ -648,11 +648,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             },
             {
               "name": "retirementExclusion",
-              "line": 41
+              "line": 47
             }
           ]
         }
@@ -729,7 +729,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             }
           ]
         }
@@ -801,11 +801,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             },
             {
               "name": "retirementExclusion",
-              "line": 41
+              "line": 47
             }
           ]
         }
@@ -885,7 +885,7 @@
             },
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             }
           ]
         }
@@ -896,12 +896,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3027,
+          "line": 3091,
           "note": null,
           "tests": [
             {
               "title": "prices single and joint filers on the TY2026 deduction and schedule",
-              "line": 3042
+              "line": 3106
             }
           ]
         }
@@ -963,11 +963,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             },
             {
               "name": "retirementExclusion",
-              "line": 41
+              "line": 47
             }
           ]
         }
@@ -978,34 +978,34 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3054,
+          "line": 3118,
           "note": "Social Security AGI threshold limb",
           "tests": [
             {
               "title": "pins the low-AGI age-qualified Social Security modification",
-              "line": 3069
+              "line": 3133
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3076,
+          "line": 3140,
           "note": "pension ceiling limb",
           "tests": [
             {
               "title": "pins the current pension ceiling rather than the stale pack cap",
-              "line": 3095
+              "line": 3159
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3102,
+          "line": 3166,
           "note": "pension AGI-threshold limb",
           "tests": [
             {
               "title": "pins the opposite direction when the pension AGI test disallows any modification",
-              "line": 3122
+              "line": 3186
             }
           ]
         }
@@ -1077,7 +1077,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 90
+              "line": 96
             }
           ]
         }
@@ -1088,12 +1088,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3129,
+          "line": 3193,
           "note": null,
           "tests": [
             {
               "title": "pins Vermont's complete low-AGI Social Security exclusion",
-              "line": 3142
+              "line": 3206
             }
           ]
         }

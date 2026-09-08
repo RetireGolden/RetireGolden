@@ -1,0 +1,68 @@
+{
+  "observedAt": "2026-09-08T10:50:14.312Z",
+  "head": "a7f4c07ba7554d971f5835143da5624c8f2586b1",
+  "note": "Actual engine observations, not an independent correctness oracle. No retirement income, Social Security, exemptions or credits; split tests existing linear residency convention.",
+  "hashes": {
+    "packages/engine/src/tax/stateTax.ts": "853f2e62b9f19e76d624080bc93a6025fcb7ce7bd5568adfec4257fafcedf7cc",
+    "packages/engine/src/params/state/data/year2026.ts": "4225c3502db14aab5dc29d2f78b3a945d01a6d036e0755c1b7df533388924b04",
+    "packages/engine/src/params/state/types.ts": "41c872a69b93536e72df57b1154abd350736948009568ee64ef2a945e4ee011e"
+  },
+  "rows": [
+    {
+      "filingStatus": "single",
+      "ordinaryIncome": 26050,
+      "direct": 0,
+      "annual": 0,
+      "split": 0
+    },
+    {
+      "filingStatus": "single",
+      "ordinaryIncome": 26051,
+      "direct": 0.0275,
+      "annual": 0.0275,
+      "split": 0.01375
+    },
+    {
+      "filingStatus": "single",
+      "ordinaryIncome": 50000,
+      "direct": 658.625,
+      "annual": 658.625,
+      "split": 329.3125
+    },
+    {
+      "filingStatus": "single",
+      "ordinaryIncome": 100000,
+      "direct": 2033.625,
+      "annual": 2033.625,
+      "split": 1016.8125
+    },
+    {
+      "filingStatus": "marriedFilingJointly",
+      "ordinaryIncome": 26050,
+      "direct": 0,
+      "annual": 0,
+      "split": 0
+    },
+    {
+      "filingStatus": "marriedFilingJointly",
+      "ordinaryIncome": 26051,
+      "direct": 0.0275,
+      "annual": 0.0275,
+      "split": 0.01375
+    },
+    {
+      "filingStatus": "marriedFilingJointly",
+      "ordinaryIncome": 50000,
+      "direct": 658.625,
+      "annual": 658.625,
+      "split": 329.3125
+    },
+    {
+      "filingStatus": "marriedFilingJointly",
+      "ordinaryIncome": 100000,
+      "direct": 2033.625,
+      "annual": 2033.625,
+      "split": 1016.8125
+    }
+  ]
+}

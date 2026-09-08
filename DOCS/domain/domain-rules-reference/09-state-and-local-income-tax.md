@@ -96,7 +96,7 @@
   The sole pack also stands in outside 2026 under the existing fallback; statutory authority is 2026+, not a
   historical §11-21-4i proof. Personal exemptions and senior any-income/disability/pension-subtype items remain
   unmodeled.
-- **2026 parameter corrections (CA, DE, HI, MN, RI, UT):** six registry records now carry TY2026 figures transcribed
+- **2026 parameter corrections (CA, DE, HI, MN, OH, RI, UT):** seven registry records now carry TY2026 figures transcribed
   from primary sources — California's 2026 Form 540-ES estimated-tax worksheet standard deduction ($5,706 / $11,412;
   `ca-ftb-2026-540-es-standard-deduction`, [CA.md](../state-tax-research/CA.md); retained 2025 Schedule X/Y brackets,
   continuous lower-income schedule behavior, and whole-return figures outside the settled deduction record),
@@ -106,11 +106,15 @@
   §235-2.4(a)(2)(G) phase from 2028 is not carried), Minnesota DOR TY2026 deduction ($15,300 / $30,600) and
   whole-dollar bands (`mn-dor-2026-rate-schedule-and-standard-deduction`, [MN.md](../state-tax-research/MN.md);
   §290.0132 subd. 26 Social Security subtraction remains approximated with zero runtime subtraction —
-  `mn-stat-290-0132-subd-26-social-security-inclusion`), Rhode Island ADV 2025-22 TY2026 deduction and schedule
+  `mn-stat-290-0132-subd-26-social-security-inclusion`), Ohio §5747.02(A)(3)(c) $332 plus 2.75% above $26,050
+  for gross nonbusiness tax before credits on the same individual schedule for supported single/MFJ
+  (`oh-rev-code-5747-02-a-3-c-2026-nonbusiness-rate-schedule`, [OH.md](../state-tax-research/OH.md); exemptions,
+  credits, business income, municipal tax, and whole-return accuracy remain outside that settled record),
+  Rhode Island ADV 2025-22 TY2026 deduction and schedule
   (`ri-dot-adv-2025-22-2026-deduction-and-rate-schedule`, [RI.md](../state-tax-research/RI.md); re-read ADV
   each autumn), and Utah S.B. 60 / §59-10-104 4.45% (`ut-code-59-10-104-2026-individual-rate`,
   [UT.md](../state-tax-research/UT.md)). State-only plan fixtures pin the modeled subtotal; whole-return
-  accuracy is not claimed. Calendar-year CA and MN records expire after 2026; later plan years may reuse the
+  accuracy is not claimed. Calendar-year CA, MN, and OH records expire after 2026; later plan years may reuse the
   latest 2026 pack as a planning stand-in.
 - Michigan’s 2026 ordinary retirement deduction is a **combined qualifying** public/private ceiling of
   **$67,610** single/MFS / **$135,220** MFJ (`mi-mcl-206-30-retirement-and-ss`), not a blanket full
@@ -118,9 +122,10 @@
   benefits, source qualification, (9)/(10)/(11) elections, and return-level versus per-person ceiling remain
   approximated. Social Security stays on the separate settled sibling
   (`mi-mcl-206-30-f-iii-social-security`).
-- Mid-year state moves prorate state taxable income, deductions, brackets, and retirement caps by months in
-  each state segment. Taxable Social Security is computed once on the full-year federal base and then
-  apportioned by months.
+- Mid-year state moves prorate state taxable income, deductions, brackets, cumulative
+  band base amounts, and retirement caps by months in each state segment. Taxable
+  Social Security is computed once on the full-year federal base and then apportioned
+  by months.
 - Optional local income tax is a user-entered flat percentage applied to computed state taxable income. This
   is planning support for common local layers, not a locality rule pack.
 - Sources: the per-state research in [state-tax-research/](../state-tax-research/) and the own-state revenue,

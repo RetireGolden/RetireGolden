@@ -682,13 +682,13 @@ const rawStateYear2026 = {
       retirement: { kind: 'none' },
     },
     OH: {
-      // 2025 budget flattening complete: from 2026 a single 2.75% rate applies
-      // above the $26,050 zero bracket (the 3.5% bracket is eliminated).
+      // TY2026: zero at/below $26,050; $332 plus 2.75% of excess strictly above
+      // (single and MFJ share the same cells).
       code: 'OH', name: 'Ohio', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
       standardDeduction: { single: 0, marriedFilingJointly: 0 },
       brackets: {
-        single: [{ lowerBound: 0, ratePct: 0 }, { lowerBound: 26050, ratePct: 2.75 }],
-        marriedFilingJointly: [{ lowerBound: 0, ratePct: 0 }, { lowerBound: 26050, ratePct: 2.75 }],
+        single: [{ lowerBound: 0, ratePct: 0 }, { lowerBound: 26050, ratePct: 2.75, baseTax: 332 }],
+        marriedFilingJointly: [{ lowerBound: 0, ratePct: 0 }, { lowerBound: 26050, ratePct: 2.75, baseTax: 332 }],
       },
       retirement: { kind: 'none' },
     },
