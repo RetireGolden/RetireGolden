@@ -151,9 +151,10 @@ Code, Codex, Cursor, the Grok and OpenRouter review bots, and any other tool.
 - With this repository's review-continuity workflow pin, an ordinary manual
   dispatch reviews the full PR **without resetting** existing finding IDs,
   ledger decisions, or rebuttals. This supersedes the older-pin dispatch
-  behavior described in the shared section. Leave `reset_review` false;
-  set it true only when intentionally discarding review history. Keep the
-  rule against redundant dispatches on an already-reviewed head.
+  behavior described in the shared section. Profile reviews require
+  `reset_review: false`; discarding history with `true` is rejected. Do not
+  repeat an ordinary `auto` dispatch on an already-reviewed head. An intentional
+  maintainer `deep` request is the specific exception described below.
 - Poll all pages of reviews, inline comments, and issue comments. Read every
   continuation part of a large review, and match the explicit reviewed SHA
   and bot identity before deciding that a head is reviewed or clean.

@@ -33,7 +33,8 @@
 # `git diff base...head` when GitHub rejects a patch over 20,000 lines;
 # the complete patch then enters the same dense-diff packing above.
 #
-# Standing roster: Grok 4.6 + GLM 5.3 Flash; recall-safe Luna judge.
+# Standard: required Grok 4.6 + optional GLM 5.3 Flash; Luna judge.
+# Deep adds required Astra Flex; effort and limits follow the selected profile.
 # Shared configuration: https://github.com/RetireGolden/.github/blob/eac44d1fba1e89760ebf0a1b7826a119e1b6ba79/.github/workflows/openrouter-code-review.yml
 # Policy reference: https://github.com/RetireGolden/.github/blob/eac44d1fba1e89760ebf0a1b7826a119e1b6ba79/README.md
 

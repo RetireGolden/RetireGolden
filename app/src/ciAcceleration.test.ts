@@ -48,7 +48,8 @@ import type {
 } from '../../.github/scripts/ci-acceleration.mjs'
 
 const helperPath = new URL('../../.github/scripts/ci-acceleration.mjs', import.meta.url)
-const helperContent = readFileSync(helperPath, 'utf8')
+// The pin addresses Git's LF blob, independent of Windows checkout line endings.
+const helperContent = readFileSync(helperPath, 'utf8').replace(/\r\n/g, '\n')
 const expectedHelperBlobSha = createHash('sha1')
   .update(`blob ${Buffer.byteLength(helperContent, 'utf8')}\0${helperContent}`, 'utf8')
   .digest('hex')
