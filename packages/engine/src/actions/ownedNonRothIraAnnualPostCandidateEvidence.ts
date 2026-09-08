@@ -43,6 +43,7 @@ import {
 } from './structuralId.js'
 import { deepFreeze } from './freeze.js'
 import { nonblank } from './plainData.js'
+import { ordinaryFederalFilingDeadline } from '../tax/ordinaryFederalFilingDeadline.js'
 
 export interface PlanOwnedNonRothIraCandidateAllocationApplication {
   actionId: ActionId
@@ -731,15 +732,14 @@ export function buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput(
     typeof deadline.deadlineDate === 'string' ? deadline.deadlineDate : ''
   const parsedDeadline =
     deadlineDate === '' ? null : parseCivilIsoDate(deadlineDate)
-  const deadlineYear = String(taxYear + 1).padStart(4, '0')
+  const expectedOrdinaryDeadline = ordinaryFederalFilingDeadline(taxYear)
   if (
     parsedDeadline === null ||
     formatCivilDate(parsedDeadline) !== deadlineDate ||
-    parsedDeadline.year !== taxYear + 1 ||
-    deadlineDate < `${deadlineYear}-04-15` ||
-    deadlineDate > `${deadlineYear}-04-18`
+    expectedOrdinaryDeadline === null ||
+    deadlineDate !== expectedOrdinaryDeadline
   ) {
-    contributionIssues.push(issue('contributionWindowIncomplete', 'The ordinary federal IRA deadline must be a canonical April 15-18 date in the following calendar year, excluding disaster relief'))
+    contributionIssues.push(issue('contributionWindowIncomplete', 'The evidenced ordinary federal IRA deadline must exact-match the supported federal calendar for the tax year, excluding disaster relief'))
   }
   const contributionIds = new Set<string>()
   const contributions = [...contribution.contributions].sort((left, right) =>

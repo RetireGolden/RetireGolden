@@ -386,7 +386,7 @@
           "functions": [
             {
               "name": "buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput",
-              "line": 437
+              "line": 438
             }
           ]
         },
@@ -406,16 +406,24 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/ownedNonRothIraAnnualFilingEvidence.test.ts",
-          "line": 763,
+          "line": 766,
           "note": null,
           "tests": [
             {
               "title": "refuses a prior-year contribution made after the unextended deadline",
-              "line": 775
+              "line": 785
             },
             {
               "title": "counts a contribution made inside the window toward that year basis",
-              "line": 794
+              "line": 804
+            },
+            {
+              "title": "accepts the post-candidate builder when the evidenced deadline exact-matches the ordinary federal calendar",
+              "line": 821
+            },
+            {
+              "title": "refuses the post-candidate builder when the evidenced deadline is in-band but not the exact ordinary date",
+              "line": 838
             }
           ]
         }

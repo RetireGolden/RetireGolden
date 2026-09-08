@@ -4,6 +4,13 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## Unreleased
 
+- **Owned-IRA post-candidate contribution deadline:** the post-candidate
+  classification builder now refuses evidenced ordinary deadlines that are
+  canonical but not the exact `ordinaryFederalFilingDeadline` date for the tax
+  year (for example, 2031-04-18 for tax year 2030). The exact 2031-04-15 case
+  still builds. Filing-evidence and persistence paths already enforced exact
+  equality; this aligns the post-candidate enforcer.
+
 - **Ohio TY2026 nonbusiness tax base:** corrected gross nonbusiness tax above
   $26,050 by restoring the enacted §5747.02(A)(3)(c) $332 cumulative base before
   credits on the same individual schedule for supported single and MFJ filing

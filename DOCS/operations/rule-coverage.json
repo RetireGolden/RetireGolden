@@ -74,11 +74,11 @@
     }
   },
   "attestations": {
-    "totalFiles": 376,
+    "totalFiles": 377,
     "byStatus": {
       "partial": 58,
       "registered": 110,
-      "rule-free": 208,
+      "rule-free": 209,
       "unswept": 0
     },
     "sweptPct": 100,
@@ -134,7 +134,7 @@
     {
       "path": "actions/ownedNonRothIraAnnualPostCandidateEvidence.ts",
       "sweptOn": "2026-08-29",
-      "note": "Pool completeness (every owned non-inherited sibling, employer/inherited/foreign refused) is registered under irc-408-d-2-A-owner-wide-non-inherited-ira-pool and the contribution window was already covered; the line 1/4/6/9 staging composition and the path's type-level explicit-zero line 8 remain the residuals"
+      "note": "Pool completeness (every owned non-inherited sibling, employer/inherited/foreign refused) is registered under irc-408-d-2-A-owner-wide-non-inherited-ira-pool and the contribution window is covered with exact ordinary-deadline enforcement via ordinaryFederalFilingDeadline; the line 1/4/6/9 staging composition and the path's type-level explicit-zero line 8 remain the residuals"
     },
     {
       "path": "actions/retirementActionCandidateIdentityAllocator.ts",
@@ -543,10 +543,10 @@
     },
     {
       "directory": "testing",
-      "files": 4,
+      "files": 5,
       "byStatus": {
         "partial": 1,
-        "rule-free": 3
+        "rule-free": 4
       }
     }
   ],

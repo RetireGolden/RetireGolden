@@ -81,12 +81,12 @@ The registry is the machine-checked chain from a rule to its implementation and 
 
 | Metric | Value |
 | --- | ---: |
-| Engine source files | 376 |
+| Engine source files | 377 |
 | Swept | 100.0% |
 | Grandfathered unswept baseline | 0 |
 | partial | 58 |
 | registered | 110 |
-| rule-free | 208 |
+| rule-free | 209 |
 | unswept | 0 |
 
 ## Per-directory rollup
@@ -113,7 +113,7 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | spending | 5 | 0 | 0 | 5 | 0 |
 | strategies | 7 | 3 | 4 | 0 | 0 |
 | tax | 9 | 3 | 5 | 1 | 0 |
-| testing | 4 | 1 | 0 | 3 | 0 |
+| testing | 5 | 1 | 0 | 4 | 0 |
 
 ## Unswept files
 
@@ -132,7 +132,7 @@ None.
 | actions/beneficiaryTraditionalIraWithdrawalCharacter.ts | 2026-08-29 | The nonzero-line-8 refusal mixes two things the reviewers rightly split: for a non-spouse beneficiary it is the 408(d)(3)(C)(i) bar, registered at that record's own enforcers, and for a spouse beneficiary a conversion after electing ownership is lawful but unsupported - the refusal reason names exactly that, so the engine-scope half stays the residual here |
 | actions/ownedNonRothIraAnnualFilingEvidence.ts | 2026-08-29 | Prior-year contribution window covered and the ownedIraPool filter is now pinned by the pool-scope record; the January-1 opening-basis anchor stays an engine convention (408(d)(2)(C) computes values as of the close of the year) and is the sole residual |
 | actions/ownedNonRothIraAnnualPlanCoordinator.ts | 2026-08-29 | The owner-wide non-inherited pool filter and the out-of-pool line-8 refusal are registered under irc-408-d-2-A-owner-wide-non-inherited-ira-pool; the line-7/line-8 stacking composition and the exact age-59½ threshold representation remain the residuals |
-| actions/ownedNonRothIraAnnualPostCandidateEvidence.ts | 2026-08-29 | Pool completeness (every owned non-inherited sibling, employer/inherited/foreign refused) is registered under irc-408-d-2-A-owner-wide-non-inherited-ira-pool and the contribution window was already covered; the line 1/4/6/9 staging composition and the path's type-level explicit-zero line 8 remain the residuals |
+| actions/ownedNonRothIraAnnualPostCandidateEvidence.ts | 2026-08-29 | Pool completeness (every owned non-inherited sibling, employer/inherited/foreign refused) is registered under irc-408-d-2-A-owner-wide-non-inherited-ira-pool and the contribution window is covered with exact ordinary-deadline enforcement via ordinaryFederalFilingDeadline; the line 1/4/6/9 staging composition and the path's type-level explicit-zero line 8 remain the residuals |
 | actions/retirementActionCandidateIdentityAllocator.ts | 2026-09-05 | conversion source and destination identity registered under irc-408-d-3-A-i, the inherited-source refusal under irc-408-d-3-C-i, and the named-action designated-Roth refusal under irc-408A-d-3-B (conversionDestinationIssue kind gate); qcdSourceIssue covers the three QCD source gates as identity-only (employer qcd-source-not-ira, Roth qcd-source-not-ira, inherited qcd-inherited-basis-unsupported); residual qcd-source-owner-mismatch and other conversion, withdrawal, and identity contracts |
 | actions/retirementActionManualReview.ts | 2026-08-29 | replacement source-owner and Roth-destination identity checks registered under irc-408-d-3-A-i; the type gate here does not discriminate a designated Roth (that vehicle refusal lives in the identity allocator), and the QCD source-owner clause remains open |
 | actions/rothConversionExecution.ts | 2026-08-29 | ordering and inherited-bar records name executeRothConversions; the positive-basis deferred-character branch publishes null character for the downstream annual 408(d)(2) pass to resolve, and that deferral plus the direct-vehicle gates remain the residual |
