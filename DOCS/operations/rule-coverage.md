@@ -216,7 +216,6 @@ The 25 earliest due dates are shown below (443 rules total). Comparing dueOn to 
 
 | Rule | Volatility | Verified on | Due on |
 | --- | --- | --- | --- |
-| irc-408-d-8-includible-qcd-basis | awaitingGuidance | 2026-08-02 | 2026-10-31 |
 | irc-170-p-standard-deduction-carryover | awaitingGuidance | 2026-08-04 | 2026-11-02 |
 | irc-408-d-8-B-ii-age-70-half | awaitingGuidance | 2026-08-05 | 2026-11-03 |
 | irc-402A-e-1-A-plesa-optional-designated-roth-subaccount | awaitingGuidance | 2026-08-26 | 2026-11-24 |
@@ -241,6 +240,7 @@ The 25 earliest due dates are shown below (443 rules total). Comparing dueOn to 
 | irc-63-c-7-B-ii-conformed-state-deduction-tracks-federal | annuallyIndexed | 2026-08-04 | 2026-12-02 |
 | rev-proc-2025-25-aca-applicable-percentage-2026 | annuallyIndexed | 2026-08-04 | 2026-12-02 |
 | usc-42-403-a-2-family-maximum-formula | annuallyIndexed | 2026-08-04 | 2026-12-02 |
+| usc-42-403-f-3-retirement-earnings-test | annuallyIndexed | 2026-08-04 | 2026-12-02 |
 
 ## Manifest contract
 
@@ -252,7 +252,7 @@ Version 5 is a breaking discriminator for strict version checks: manifest.rules 
 
 ## Quote fidelity
 
-Committed ledger generated at 2026-09-08T08:43:17.616Z over 1277 authority entries (12 fetched live, 332 from cache).
+Committed ledger generated at 2026-09-08T09:45:20.448Z over 1277 authority entries (9 fetched live, 335 from cache).
 
 37 serious, 56 advisory, 1184 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
 not treated as a CI gate; how to read each verdict: DOCS/operations/quote-fidelity.md.

@@ -395,11 +395,13 @@ The post-70½ deductible-contribution offset **is** applied on this arm, from
 `retirementActionEligibilityFacts.deductibleIraContributions` and a per-donor lifetime running total the annual
 pass carries. A donor whose contribution history the projection cannot prove is failed closed
 `qcd-contribution-history-unknown` rather than offset by an assumed zero. The annual exclusion limit must be a
-sourced figure for the action's own tax year: a gift scheduled past the parameter pack is refused
-`qcd-tax-year-limit-unsupported` and stands the aggregate arm down for that year too
-(`irc-408-d-8-A-named-qcd-limit-after-the-pack-year`, `outOfScope` — the aggregate arm extrapolates its limit by
-plan inflation and the named arm deliberately does not inherit that, because only the named arm claims an action
-executed).
+sourced figure for the action's own tax year: a gift scheduled past the parameter pack is blocked
+by the tax-character post-pass with a `taxParameterUnavailable` issue, moves nothing, and stands the aggregate
+arm down for that year too (`irc-408-d-8-A-named-qcd-limit-after-the-pack-year`, `outOfScope` — the aggregate arm
+extrapolates its limit by plan inflation and the named arm deliberately does not inherit that, because only the
+named arm claims an action executed). Until later annual stages establish the personal indexed limit, the
+eligibility prerequisite also attaches `qcd-tax-year-limit-unsupported` as a missing annual-stage placeholder;
+that code names an unestablished stage, not a year-specific calendar test, and is not the post-pass refusal.
 
 Two boundaries are worth reading before citing this arm:
 

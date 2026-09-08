@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-09-08T08:43:17.616Z",
+  "generatedAt": "2026-09-08T09:45:20.448Z",
   "recordCount": 443,
   "urlCount": 344,
-  "fetched": 12,
-  "cached": 332,
+  "fetched": 9,
+  "cached": 335,
   "entryCount": 1277,
   "counts": {
     "EXACT": 874,
@@ -552,7 +552,7 @@
       "citation": "Instructions for Form 8606 (2025), Line 7",
       "host": "www.irs.gov",
       "url": "https://www.irs.gov/pub/irs-pdf/i8606.pdf",
-      "quoteSha256": "359551b76e014055",
+      "quoteSha256": "edf0c3144646d69d",
       "verdict": "PDF-WORD-LEVEL",
       "detail": "2 elision segments, all present in the extracted text",
       "diagnosis": null

@@ -709,16 +709,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/annualQcdActionExecutionEvidence.test.ts",
-          "line": 386,
+          "line": 395,
           "note": null,
           "tests": [
             {
               "title": "executes an IRA source and refuses an employer-plan source",
-              "line": 393
+              "line": 402
             },
             {
               "title": "allocates identity for an ordinary IRA and blocks an employer-kind source that differs only in kind",
-              "line": 405
+              "line": 414
             }
           ]
         }
@@ -781,42 +781,42 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/annualQcdActionExecutionEvidence.test.ts",
-          "line": 454,
+          "line": 463,
           "note": "DAF / supporting organization",
           "tests": [
             {
               "title": "executes an attested public charity and refuses without the no-DAF attestation",
-              "line": 462
+              "line": 471
             },
             {
               "title": "refuses an explicitly designated donor-advised fund even with affirmative attestations",
-              "line": 476
+              "line": 485
             },
             {
               "title": "refuses an explicitly designated supporting organization even with affirmative attestations",
-              "line": 485
+              "line": 494
             }
           ]
         },
         {
           "path": "packages/engine/src/actions/annualQcdActionExecutionEvidence.test.ts",
-          "line": 495,
+          "line": 504,
           "note": "direct-from-custodian attestation",
           "tests": [
             {
               "title": "refuses a QCD without the direct-from-custodian attestation",
-              "line": 503
+              "line": 512
             }
           ]
         },
         {
           "path": "packages/engine/src/actions/annualQcdActionExecutionEvidence.test.ts",
-          "line": 516,
+          "line": 525,
           "note": "eligible-organization attestation",
           "tests": [
             {
               "title": "refuses a QCD without the eligible-organization attestation",
-              "line": 524
+              "line": 533
             }
           ]
         }
@@ -899,23 +899,23 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/annualQcdActionExecutionEvidence.test.ts",
-          "line": 575,
+          "line": 584,
           "note": "month-end birth",
           "tests": [
             {
               "title": "clamps a nonexistent target day to the last day of that month",
-              "line": 580
+              "line": 589
             }
           ]
         },
         {
           "path": "packages/engine/src/actions/annualQcdActionExecutionEvidence.test.ts",
-          "line": 601,
+          "line": 610,
           "note": "leap-day birth",
           "tests": [
             {
               "title": "adds 846 months in one step rather than clamping the 70th anniversary first",
-              "line": 610
+              "line": 619
             }
           ]
         }
@@ -1082,7 +1082,7 @@
         {
           "path": "packages/engine/src/actions/annualQcdActionExecutionEvidence.test.ts",
           "line": 321,
-          "note": "inactive SEP",
+          "note": "inactive SEP/SIMPLE",
           "tests": [
             {
               "title": "executes a QCD from an inactive SEP IRA under Notice 2007-7",
@@ -1097,19 +1097,23 @@
         {
           "path": "packages/engine/src/actions/annualQcdActionExecutionEvidence.test.ts",
           "line": 350,
-          "note": "ongoing SEP",
+          "note": "ongoing SEP/SIMPLE",
           "tests": [
             {
               "title": "does not execute a QCD from a SEP IRA whose activity is unknown",
               "line": 358
             },
             {
-              "title": "does not execute a QCD from an ongoing SEP IRA",
+              "title": "does not execute a QCD from a SIMPLE IRA whose activity is unknown",
               "line": 365
             },
             {
+              "title": "does not execute a QCD from an ongoing SEP IRA",
+              "line": 372
+            },
+            {
               "title": "does not execute a QCD from an ongoing SIMPLE IRA",
-              "line": 374
+              "line": 383
             }
           ]
         }
@@ -1360,16 +1364,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/annualQcdActionExecutionEvidence.test.ts",
-          "line": 537,
+          "line": 546,
           "note": null,
           "tests": [
             {
               "title": "lets the non-excluded portion proceed to section 170 treatment",
-              "line": 544
+              "line": 553
             },
             {
               "title": "pins notApplicable treatment on a wholly excluded QCD",
-              "line": 557
+              "line": 566
             }
           ]
         }
@@ -1696,8 +1700,8 @@
       "volatility": "awaitingGuidance",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-02",
-      "dueOn": "2026-10-31",
+      "verifiedOn": "2026-09-08",
+      "dueOn": "2026-12-07",
       "implementedBy": [
         "packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts"
       ],

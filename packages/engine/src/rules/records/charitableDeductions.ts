@@ -474,8 +474,9 @@ export const charitableDeductionRecords = {
   // section 68 rules under packages/engine/src/actions. The live federal-tax path
   // now applies the 0.5 percent floor and section 68 reduction, but still omits
   // the 60 percent cash ceiling, charitable carryforward, and nonitemizer
-  // allowance. The records below pin that narrower live approximation while the
-  // staged ledgers retain the fuller evidence contract for later integration.
+  // allowance. Settled records in this cluster (such as the 170(p) dollar cap)
+  // are pinned by those staged ledgers, not by computeFederalTax; the two
+  // approximated projection records below pin what computeFederalTax still omits.
 
   'irc-170-p-nonitemizer-deduction-dollar-cap': {
     title: 'Dollar cap on the charitable deduction of a taxpayer who does not itemize',
@@ -573,7 +574,7 @@ export const charitableDeductionRecords = {
     contraryReading: null,
     errorDirection: 'overstatesTax',
     conventionRationale:
-      'The smallest of these gaps per year and the one that reaches the most households, because after the OBBBA standard deduction most retirees do not itemize at all, and for them the engine’s charitable input is inert. It is also the only one of the four whose sign favours the fisc, and no interaction runs the other way: the allowance is a floor-free, carryover-free addition to a base the engine already grants, so omitting it can only enlarge taxable income. What it is NOT is a typed refusal — the projection accepts the charitable figure, silently discards it, and returns a number, which is why this is approximated rather than outOfScope. The correct ledger, including the shared joint cap and the (G)(i) capacity interaction, is in packages/engine/src/actions/annualQcdStandardSection170pLedger.ts and is registered at irc-170-p-nonitemizer-deduction-dollar-cap.',
+      'The smallest of the two live projection gaps per year and the one that reaches the most households, because after the OBBBA standard deduction most retirees do not itemize at all, and for them the engine’s charitable input is inert. It is also the only one whose sign favours the fisc, and no interaction runs the other way: the allowance is a floor-free, carryover-free addition to a base the engine already grants, so omitting it can only enlarge taxable income. What it is NOT is a typed refusal — the projection accepts the charitable figure, silently discards it, and returns a number, which is why this is approximated rather than outOfScope. The correct ledger, including the shared joint cap and the (G)(i) capacity interaction, is in packages/engine/src/actions/annualQcdStandardSection170pLedger.ts and is registered at irc-170-p-nonitemizer-deduction-dollar-cap.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',

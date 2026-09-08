@@ -39,7 +39,7 @@ export const charitableDistributionRecords = {
       kind: 'formInstruction',
       citation: 'Instructions for Form 8606 (2025), Line 7',
       url: 'https://www.irs.gov/pub/irs-pdf/i8606.pdf',
-      quotedText: 'Don’t include any of the following on line 7 ... Qualified charitable distributions (QCDs).',
+      quotedText: 'Don’t include any of the following on line 7 … Qualified charitable distributions (QCDs).',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
@@ -96,7 +96,7 @@ export const charitableDistributionRecords = {
     volatility: 'awaitingGuidance',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-02',
+    verifiedOn: '2026-09-08',
     implementedBy: ['packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts'],
     implementedByFunctions: [
       'packages/engine/src/actions/annualQcdTaxCharacterPostPass.ts#stageAnnualQcdTaxCharacterPostPass',
@@ -635,7 +635,7 @@ export const charitableDistributionRecords = {
   'irc-408-d-8-A-named-qcd-limit-after-the-pack-year': {
     title: 'Named QCD in a tax year with no sourced exclusion limit',
     statement:
-      'The QCD exclusion limit is a per-taxpayer dollar amount indexed annually, and the sourced figure exists only for a year the IRS has published. Not modelled: a named QCD scheduled for a year past the parameter pack is blocked by the post-pass with a taxParameterUnavailable issue and moves nothing, because the projection has no sourced limit for that year and general plan inflation is not a source. The aggregate qcdAnnual arm does extrapolate its limit by plan inflation; the named arm does not inherit that, because the aggregate arm never claims an action executed and the named arm claims exactly that. A named request also stands the aggregate arm down for its year, so such a year gives nothing at all and the projection warns.',
+      'The QCD exclusion limit is a per-taxpayer dollar amount indexed annually, and the sourced figure exists only for a year the IRS has published. Not modelled: a named QCD scheduled for a year past the parameter pack is blocked by the tax-character post-pass with a taxParameterUnavailable issue and moves nothing, because the projection has no sourced limit for that year and general plan inflation is not a source. Until the personal indexed limit stage runs, the eligibility prerequisite also attaches qcd-tax-year-limit-unsupported as a missing annual-stage placeholder; that prerequisite code names an unestablished stage, not a post-pack year, and is not the post-pass refusal path. The aggregate qcdAnnual arm does extrapolate its limit by plan inflation; the named arm does not inherit that, because the aggregate arm never claims an action executed and the named arm claims exactly that. A named request also stands the aggregate arm down for its year, so such a year gives nothing at all and the projection warns.',
     classification: 'outOfScope',
     outOfScope: { shape: 'typedRefusal' },
     contraryReading: null,
