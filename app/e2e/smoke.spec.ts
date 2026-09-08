@@ -131,7 +131,10 @@ test.describe('Smoke', () => {
 
     await page.getByRole('link', { name: 'Monte Carlo' }).click()
     // The 1,000-path auto-run finishes and the success gauge shows a rate.
+    // Same shared worker as the Optimize-rail tools; a production TDZ on
+    // first spawn (#672) surfaces here as Simulation error.
     await expect(page.locator('.success-gauge-value')).toContainText('%', { timeout: 60_000 })
+    await expect(page.getByText(/Simulation error/)).toHaveCount(0)
   })
 
   test('backup export → clear → import round-trips', async ({ page }) => {

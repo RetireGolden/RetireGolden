@@ -28,7 +28,12 @@ import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { evaluateBudget, parseLandingScripts, parsePrecacheUrls } from './bundleBudget.mjs'
+import {
+  evaluateBudget,
+  parseLandingScripts,
+  parsePrecacheUrls,
+  workerEntryImporters,
+} from './bundleBudget.mjs'
 
 const distDir = fileURLToPath(new URL('../dist', import.meta.url))
 const assetsDir = join(distDir, 'assets')
@@ -99,6 +104,25 @@ for (const row of result.rows) {
   console.log(`  ${row.size.toFixed(1).padStart(8)} / ${String(row.max).padStart(5)}  ${pct.padStart(4)}%  ${row.label}${name}`)
 }
 
+const workerGraph = workerEntryImporters(
+  listAssets()
+    .filter((asset) => asset.name.endsWith('.js'))
+    .map((asset) => ({
+      name: asset.name,
+      source: readFileSync(join(assetsDir, asset.name), 'utf8'),
+    })),
+)
+if (workerGraph.importers === null) {
+  result.failures.push(
+    'could not find planner.worker-*.js in dist/assets, so the worker import cycle is unmeasured',
+  )
+} else if (workerGraph.importers.length > 0) {
+  result.failures.push(
+    `worker graph cycle: ${workerGraph.importers.join(', ')} statically import ${workerGraph.workerNames.join(', ')} ` +
+      '(isolated coordinator chunks must not import the worker entry — #672 TDZ on first spawn, Monte Carlo and both Optimize-rail channels)',
+  )
+}
+
 if (result.failures.length > 0 && !reportOnly) {
   console.error('\nbundle budget FAILED:')
   for (const failure of result.failures) console.error(`  - ${failure}`)
@@ -115,4 +139,7 @@ if (result.failures.length > 0) {
   for (const failure of result.failures) console.log(`  - ${failure}`)
 } else {
   console.log('bundle budget OK')
+  if (workerGraph.importers !== null && workerGraph.importers.length === 0) {
+    console.log('worker graph: no isolated chunk imports the worker entry')
+  }
 }

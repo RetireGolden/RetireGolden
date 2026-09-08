@@ -65,4 +65,17 @@ describe('vite.config.ts projection/internal chunk module list', () => {
     const missing = names.filter((name) => !existsSync(`${engineProjectionInternalDir}/${name}`))
     expect(missing, `missing under packages/engine/src/projection/internal/: ${missing.join(', ')}`).toEqual([])
   })
+
+  it('does not isolate fundingClose/settlement in the worker graph (circular TDZ, #672, Monte Carlo and both Optimize-rail channels)', () => {
+    expect(viteConfigText).toMatch(/codeSplitting:\s*workerAnnualProjectionCodeSplitting/)
+    const workerGroups = viteConfigText.match(
+      /const workerAnnualProjectionCodeSplitting\s*=\s*\{[\s\S]*?\}\s*satisfies ViteCodeSplitting/,
+    )
+    expect(workerGroups, 'workerAnnualProjectionCodeSplitting must stay a named constant').toBeTruthy()
+    expect(workerGroups[0]).not.toContain('annualProjectionFundingClose')
+    expect(workerGroups[0]).not.toContain('annualProjectionSettlement')
+    // The app build still isolates those coordinators; only the worker drops them.
+    expect(viteConfigText).toMatch(/name:\s*'annualProjectionFundingClose'/)
+    expect(viteConfigText).toMatch(/name:\s*'annualProjectionSettlement'/)
+  })
 })

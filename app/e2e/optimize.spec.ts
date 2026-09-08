@@ -3,12 +3,16 @@ import { expect, test } from '@playwright/test'
 import { openExamplePlan } from './helpers'
 
 /**
- * Browser coverage for the optimizer, which unit tests cannot reach: it
- * loads the ~3.4 MB HiGHS wasm inside a module worker
- * (packages/planner-ui/src/workers/planner.worker.ts) with its own Rolldown
- * codeSplitting config, so a Vite/Rolldown bump can break the worker bundle
- * while lint, unit tests, and pack-smoke all stay green. Mirrors the
- * Monte Carlo pattern in smoke.spec.ts.
+ * Browser smoke for the optimizer, which unit tests cannot reach: it loads
+ * the ~3.4 MB HiGHS wasm inside a module worker
+ * (packages/planner-ui/src/workers/planner.worker.ts). A Vite/Rolldown bump
+ * can break that spawn while lint, unit tests, and pack-smoke stay green.
+ * Mirrors the Monte Carlo pattern in smoke.spec.ts.
+ *
+ * This spec runs against Vite's dev server, like the rest of app/e2e — it
+ * does not load the production Rolldown worker graph that #672 crashed on
+ * (Optimizer error / disabled Download recommendation report after retry).
+ * The production pin is the bundle-budget cycle check over dist/assets.
  */
 test.describe('Optimize', () => {
   test('runs the solver for an example plan and renders a completed recommendation', async ({ page }) => {
@@ -44,5 +48,19 @@ test.describe('Optimize', () => {
     const noBenefit = page.getByRole('heading', { name: 'No beneficial conversions found', level: 2 })
     const infeasible = page.getByRole('heading', { name: "Couldn't optimize this plan", level: 2 })
     await expect(dollarResult.or(incumbentHolds).or(noBenefit).or(infeasible)).toBeVisible({ timeout: 60_000 })
+    await expect(page.getByText(/Optimizer error:/)).toHaveCount(0)
+
+    // A completed run that produced a recommendation (dollar / incumbent /
+    // no-benefit) keeps the report download enabled. An infeasible well is
+    // the no-recommendation path (#426) and correctly leaves it disabled.
+    // The hosted TDZ crash left it disabled after retry because there was
+    // still no held result.
+    const download = page.getByRole('button', { name: 'Download recommendation report' })
+    await expect(download).toBeVisible()
+    if (await infeasible.isVisible()) {
+      await expect(download).toBeDisabled()
+    } else {
+      await expect(download).toBeEnabled()
+    }
   })
 })

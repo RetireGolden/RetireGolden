@@ -146,6 +146,60 @@ export function parseLandingScripts(html) {
 }
 
 /**
+ * Basename of a static import specifier, with a query or hash stripped.
+ * `./chunk.js`, `../chunk.js`, `/assets/chunk.js`, `./nested/chunk.js`,
+ * and `./chunk.js?v=1` all become `chunk.js`.
+ */
+function staticImportBasename(spec) {
+  const path = spec.split(/[?#]/, 1)[0]
+  const slash = path.lastIndexOf('/')
+  return slash === -1 ? path : path.slice(slash + 1)
+}
+
+/**
+ * Static import specifiers in a Rolldown ES chunk: `from "…"` and
+ * side-effect `import "…"`. Dynamic `import()` is not scanned — it does
+ * not create the module-init cycle that TDZ-crashed production.
+ *
+ * Returns each specifier's basename so a cycle is visible whether the
+ * chunk writes a same-directory relative, `../`, `/assets/…`, a nested
+ * path, or a query suffix. Matching only `./` relatives would fail open
+ * on those forms (#672).
+ */
+export function parseStaticRelativeImports(source) {
+  const named = [...source.matchAll(/\bfrom\s*["']([^"']+)["']/g)].map((m) => m[1])
+  const sideEffect = [...source.matchAll(/\bimport\s*["']([^"']+)["']/g)].map((m) => m[1])
+  return [...named, ...sideEffect].map(staticImportBasename)
+}
+
+const workerEntryBudget = CHUNK_BUDGETS.find((budget) => budget.label === 'planner Web Worker')
+if (workerEntryBudget === undefined) {
+  throw new Error('bundleBudget.mjs: missing CHUNK_BUDGETS row labeled "planner Web Worker"')
+}
+const WORKER_ENTRY_NAME = workerEntryBudget.match
+
+/**
+ * Chunks other than the worker entry that statically import it.
+ *
+ * `chunks` is `{ name, source }[]`. Returns `{ workerNames, importers }`.
+ * `importers: null` means the worker entry itself was missing — fail closed;
+ * the single-worker budget already requires exactly one entry, and a cycle
+ * check with no entry has not actually checked the graph.
+ */
+export function workerEntryImporters(chunks) {
+  const workerNames = chunks.filter((chunk) => WORKER_ENTRY_NAME.test(chunk.name)).map((chunk) => chunk.name)
+  if (workerNames.length === 0) return { workerNames, importers: null }
+  const workerSet = new Set(workerNames)
+  const importers = []
+  for (const chunk of chunks) {
+    if (workerSet.has(chunk.name)) continue
+    const imports = parseStaticRelativeImports(chunk.source)
+    if (imports.some((name) => workerSet.has(name))) importers.push(chunk.name)
+  }
+  return { workerNames, importers }
+}
+
+/**
  * The URLs workbox lists in the generated service worker's precache manifest.
  *
  * Returns `null` when the `precacheAndRoute([...])` call cannot be found —
