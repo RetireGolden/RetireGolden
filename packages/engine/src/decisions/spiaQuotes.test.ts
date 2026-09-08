@@ -1,6 +1,6 @@
 /**
  * SPIA payout-rate producer (annuity-pension-and-home-equity decisions, step 2):
- * anchors, endpoint clamps, and linear interpolation shared by annuitization,
+ * 65/70 linear-interpolation segment and endpoint clamps shared by annuitization,
  * purchase candidates, and annuitization-headroom.
  */
 import { describe, expect, it } from 'vitest'

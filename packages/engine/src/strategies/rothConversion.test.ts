@@ -48,13 +48,14 @@ describe('sizeRothConversion', () => {
     expect(r.ok).toBe(true)
     if (!r.ok) return
     // Source: DOCS/domain/domain-rules-reference/01-federal-income-tax-2026.md.
-    // Worksheet (2026 single, below $75k senior phase-out): top of 12% taxable
-    // $50,400 + standard deduction $16,100 + §63(f) age-65 addition $2,050 +
-    // OBBBA enhanced senior deduction $6,000 = $74,550. Rejects $66,500 (no
-    // age adjustments) and $72,500 (senior deduction without §63(f) addition).
+    // Worksheet (2026 single): top of 12% taxable $50,400 + standard deduction
+    // $16,100 + §63(f) age-65 addition $2,050 + OBBBA enhanced senior deduction
+    // $6,000 = $74,550. Competing misreadings: $66,500 (no age adjustments) and
+    // $72,500 (senior deduction without §63(f) addition).
+    // MAGI here equals the conversion amount (~$74,550), $450 below the $75k
+    // §151(d)(5)(C) phase-out threshold; full $6,000 senior deduction applies—
+    // phase-out slope is not exercised by this fixture.
     expect(r.amount).toBeCloseTo(74_550, 1)
-    expect(r.amount).not.toBeCloseTo(66_500, 1)
-    expect(r.amount).not.toBeCloseTo(72_500, 1)
   })
 
   it('accounts for Social Security phase-in when filling a bracket', () => {
