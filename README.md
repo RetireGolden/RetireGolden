@@ -180,13 +180,13 @@ remain in [AGENTS.md](AGENTS.md)):
 
 Branch-targeted guidance applies after merge to the target branch; new or moved
 source files are still reviewed. Offline policy lint and explain semantics follow the
-[OpenRouter review-policy spec](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/188cd5557765c858a37c1da78960cd353bcbcd60/docs/review-policy.md).
+[OpenRouter review-policy spec](https://github.com/FlyOverCoderKY/openrouter-pr-review-action/blob/5bb16c7a5ba87a802d7884ccbfa5e99d10978a49/docs/review-policy.md).
 The pinned shared OpenRouter caller enables `review_policy: base`.
 
 
 ## Review profiles and CI proof
 
-The caller enables trusted profiles from the [organization workflow](https://github.com/RetireGolden/.github/blob/3d92f63176b55e5ade2dbe4a081c21ad249826ea/README.md). Code uses required Grok plus optional GLM; deep adds required Astra Flex. This preserves the standing baseline; `REVIEW.md` cannot name arbitrary models or remove required lanes.
+The caller enables trusted profiles from the [organization workflow](https://github.com/RetireGolden/.github/blob/05c616eae68252214effb03d8422e2ec56667fc7/README.md). Code uses required Grok plus optional GLM; deep adds required Astra Flex. This preserves the standing baseline; `REVIEW.md` cannot name arbitrary models or remove required lanes.
 
 From Actions → **OpenRouter code review**, dispatch from `main` with a PR number and `review_level: auto`, `deep`, or `cancel`. Deep requests require repository write/maintain/admin permission, retain existing findings, and stay pending across retries and pushes until their own required review succeeds. Cancel removes a manual pending request; it cannot lower a policy requirement. Leave `reset_review` false.
 
