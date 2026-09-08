@@ -195,7 +195,13 @@ describe('ORACLE-013: California graduated state income tax vs FTB Schedule X/Y 
   it('exempts Social Security while taxing pension above the table range (Schedule Y)', () => {
     // MFJ, $111,413 ordinary (including $30,000 pension), $40,000 Social
     // Security. CA excludes SS and has no retirement subtraction, so taxable
-    // income is $111,413 − $11,412 = $100,001. Schedule Y tax = $3,069.84.
+    // income is $111,413 − $11,412 = $100,001. Schedule Y stack above the
+    // table range:
+    //   22,158 * 1%   =   221.58
+    //   30,370 * 2%   =   607.40   (22,158 -> 52,528)
+    //   30,376 * 4%   = 1,215.04   (52,528 -> 82,904)
+    //   17,097 * 6%   = 1,025.82   (82,904 -> 100,001)
+    //   total         = 3,069.84
     const tax = computeStateTax(
       ca,
       stateInput('CA', {

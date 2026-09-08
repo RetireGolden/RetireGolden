@@ -48,7 +48,8 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   counterfactuals remain $1,876.605 / $2,515.805. Observed case impact: 22
   metrics across 5 California example plans show lower lifetime taxes ($104–$790)
   and higher terminal wealth; no default Minnesota case is represented
-  (`ca-mn-case-delta-adjudication.md`). Calendar-year records expire after 2026;
+  ([`DOCS/operations/ca-mn-parameter-correction-2026-09-08.md`](DOCS/operations/ca-mn-parameter-correction-2026-09-08.md)).
+  Calendar-year records expire after 2026;
   later plan years may reuse the 2026 pack as a planning stand-in. No whole-return,
   credit, itemization, or MN SS runtime closure claim.
 - **QLAC purchase candidate owner age:** `annuityPurchaseGenerator` now gates and sizes the QLAC candidate from the selected traditional account owner's age for its product-policy younger-than-83 gate and preferred start ages 80–83, not the primary household member. Treas. Reg. 1.408-8(a)(3) governs IRA-owner substitution for the legal QLAC commencement deadline; it does not supply the <83 gate. A primary age 84 / spouse-owner age 82 household now emits the candidate at start age 83 (restored under the younger-owner rule); a primary age 82 / older-owner household loses the candidate when the owner's age crosses the gate. When the selected traditional account's owner does not resolve in the household, the generator suppresses the QLAC candidate rather than substituting the primary — a fail-closed boundary on raw generator input, not a new stored-plan regression.

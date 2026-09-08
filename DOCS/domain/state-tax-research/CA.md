@@ -15,8 +15,27 @@ Tax year: 2026 pack (deduction from 2026 Form 540-ES; bracket arrays retained fr
 - taxesSocialSecurity: false
 - capitalGainsAsOrdinary: true
 - standardDeduction: { single: 5706, marriedFilingJointly: 11412 }
-- brackets.single: retained 2025 Schedule X thresholds (1%–12.3%)
-- brackets.marriedFilingJointly: retained 2025 Schedule Y thresholds (1%–12.3%)
+- brackets.single (retained 2025 Schedule X; not final TY2026):
+  - 1% from $0
+  - 2% from $11,079
+  - 4% from $26,264
+  - 6% from $41,452
+  - 8% from $57,542
+  - 9.3% from $72,724
+  - 10.3% from $371,479
+  - 11.3% from $445,771
+  - 12.3% from $742,953
+- brackets.marriedFilingJointly (retained 2025 Schedule Y; not final TY2026):
+  - 1% from $0
+  - 2% from $22,158
+  - 4% from $52,528
+  - 6% from $82,904
+  - 8% from $115,084
+  - 9.3% from $145,448
+  - 10.3% from $742,958
+  - 11.3% from $891,542
+  - 12.3% from $1,485,906
+- Engine breakpoints: $11,079 / $26,264 / $41,452 / $57,542 / $72,724 / $371,479 / $445,771 / $742,953 single and $22,158 / $52,528 / $82,904 / $115,084 / $145,448 / $742,958 / $891,542 / $1,485,906 MFJ (continuous mathematical representation of the retained 2025 schedules).
 - retirement: { kind: "none" }
 
 ## Retirement-income detail
