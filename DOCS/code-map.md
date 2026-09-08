@@ -20,7 +20,7 @@ RetireGolden/
 ├── DOCS/             this documentation set
 ├── LICENSE            AGPL-3.0-only (© RetireGolden, LLC); see TRADEMARKS.md for the brand policy
 ├── .github/workflows/  CI: azure-static-web-apps-retiregolden.yml, openrouter-ci-broker.yml, grok-code-review.yml, openrouter-code-review.yml, owl-parity.yml,
-                        openrouter-review-recovery.yml, semgrep.yml, zap.yml, cla.yml (CLA signatures), resolve-gate.yml (fresh
+                        openrouter-profile-completion.yml, openrouter-review-recovery.yml, semgrep.yml, zap.yml, cla.yml (CLA signatures), resolve-gate.yml (fresh
                         dependency resolve exercises the pnpm trust policy), publish-engine.yml /
                         publish-planner-ui.yml (npm releases on engine-v* / planner-ui-v* tags)
 ├── .github/scripts/    trusted CI broker predicates (`ci-acceleration.mjs`)

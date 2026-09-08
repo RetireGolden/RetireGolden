@@ -60,7 +60,7 @@ GitHub Actions builds production on pushes to `main`; the Azure preview workflow
 
 | Job | What it does |
 |-----|----------------|
-| `authorize` | API-only live exact-head `run-ci` + decoded trusted-clean-review gate; push to `main` is authorized, forks are not, and same-repository Dependabot can be authorized only after a maintainer applies `run-ci`, reruns the existing exact-head Azure workflow, and passes the trusted clean-review gate |
+| `authorize` | API-only live exact-head `run-ci` + decoded trusted-clean-review and current profile-proof gate; push to `main` is authorized, forks are not, and same-repository Dependabot can be authorized only after a maintainer applies `run-ci`, reruns the existing exact-head Azure workflow, and passes both the trusted clean-review and current profile-proof gates |
 | `lint` | Root `pnpm install --frozen-lockfile` + `pnpm lint` (engine, planner-ui, and app) |
 | `test engine`, `test planner-ui`, `test web` → `test` | Independent workspace coverage jobs run in parallel; the fail-closed aggregate keeps the required `test` context |
 | `e2e` | Playwright browser smoke/layout specs (`pnpm test:e2e` in `app/`) |
@@ -72,7 +72,8 @@ GitHub Actions builds production on pushes to `main`; the Azure preview workflow
 **Triggers:** push to `main` deploys production; opened/synchronized/reopened PRs create a cheap placeholder and receive a preview only after exact-head authorization; closing a PR removes the preview.
 
 Same-repository PRs first pass an API-only live authorization gate: `run-ci`, an exact-head decoded clean
-OpenRouter ledger from the real GitHub Actions bot, and a review-caller blob equal to the default branch.
+OpenRouter ledger from the real GitHub Actions bot, a review-caller blob equal to the default branch,
+and current trusted `openrouter-profile` proof. Manual and Dependabot paths require the same proof.
 Lint, the three coverage shards (aggregated as `test`), e2e, and build then run in parallel; deploy waits
 for them all. Forks never authorize or deploy; the broker does not automatically label or rerun Dependabot PRs. For manual recovery or a same-repository Dependabot PR, apply `run-ci`, then rerun the existing exact-head Azure workflow; the label alone does not start CI.
 

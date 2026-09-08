@@ -38,6 +38,8 @@ function fixture({ denied = 0, broken = 0, completedCi = false, missingCi = fals
   const profileChecks: number[] = [];
   const reviewReads: number[] = [];
   const failures: string[] = [];
+  const warnings: string[] = [];
+  let sweeps = 0;
   const listPulls = async () => {};
   const listReviews = async () => {};
   const listRuns = async () => {};
@@ -58,7 +60,7 @@ function fixture({ denied = 0, broken = 0, completedCi = false, missingCi = fals
         list: listPulls,
         listReviews,
         get: ({ pull_number }: { pull_number: number }) => {
-          if (pull_number === broken) throw new Error('API unavailable');
+          if (pull_number === broken) throw Object.assign(new Error('API unavailable'), { status: 503 });
           return {
             data: {
               number: pull_number,
@@ -70,6 +72,9 @@ function fixture({ denied = 0, broken = 0, completedCi = false, missingCi = fals
         },
       },
       actions: {
+        getWorkflow: ({ workflow_id }: { workflow_id: string }) => ({
+          data: { id: 123, path: `.github/workflows/${workflow_id}` },
+        }),
         listWorkflowRuns: listRuns,
         listJobsForWorkflowRun: listJobs,
         reRunWorkflow: ({ run_id }: { run_id: number }) => {
@@ -83,7 +88,10 @@ function fixture({ denied = 0, broken = 0, completedCi = false, missingCi = fals
       },
     },
     paginate: (endpoint: unknown, input: { head_sha?: string; pull_number?: number }) => {
-      if (endpoint === listPulls) return [{ number: 1 }, { number: 2 }];
+      if (endpoint === listPulls) {
+        sweeps += 1;
+        return [{ number: 1 }, { number: 2 }];
+      }
       if (endpoint === listReviews) {
         reviewReads.push(input.pull_number!);
         return [{ body: 'clean fixture' }];
@@ -104,7 +112,7 @@ function fixture({ denied = 0, broken = 0, completedCi = false, missingCi = fals
       throw new Error('unexpected pagination');
     },
   };
-  const run = async (name = 'OpenRouter profile completion') => {
+  const run = async (name = 'OpenRouter profile completion', workflowId = 123, path = '.github/workflows/openrouter-profile-completion.yml') => {
     await runInNewContext(
       `(async () => {${script}\n})()`,
       {
@@ -113,19 +121,19 @@ function fixture({ denied = 0, broken = 0, completedCi = false, missingCi = fals
           repo: { owner: 'RetireGolden', repo: 'fixture' },
           payload: {
             repository: { default_branch: 'main' },
-            workflow_run: { name, head_sha: 'f'.repeat(40) },
+            workflow_run: { name, path, workflow_id: workflowId, head_sha: 'f'.repeat(40) },
           },
         },
         core: {
           info: () => {},
-          warning: () => {},
+          warning: (message: string) => warnings.push(message),
           setFailed: (message: string) => failures.push(message),
         },
       },
       { importModuleDynamically: constants.USE_MAIN_CONTEXT_DEFAULT_LOADER },
     );
   };
-  return { run, reruns, labels, profileChecks, reviewReads, failures };
+  return { run, reruns, labels, profileChecks, reviewReads, failures, warnings, sweeps: () => sweeps };
 }
 
 describe('broker queue and open-PR sweep', () => {
@@ -142,7 +150,7 @@ describe('broker queue and open-PR sweep', () => {
   it('does not rerun active CI when a later coalesced event wakes the same queue', async () => {
     const state = fixture();
     await state.run('OpenRouter code review');
-    await state.run('CI');
+    await state.run('Azure Static Web Apps CI/CD');
     expect(state.reruns).toEqual([1, 2]);
     expect(state.profileChecks).toEqual([1, 2]);
     expect(state.reviewReads).toEqual([1, 2]);
@@ -168,10 +176,25 @@ describe('broker queue and open-PR sweep', () => {
     expect(state.reruns).toEqual([2]);
   });
 
+  it('accepts a dynamic run-name on the trusted workflow path', async () => {
+    const state = fixture();
+    await state.run('OpenRouter PR #678: auto', 123, '.github/workflows/openrouter-code-review.yml');
+    expect(state.reruns).toEqual([1, 2]);
+  });
+
+  it('ignores a colliding display name from another workflow identity', async () => {
+    const state = fixture();
+    await state.run('OpenRouter code review', 999);
+    expect(state.sweeps()).toBe(0);
+    expect(state.profileChecks).toEqual([]);
+    expect(state.reruns).toEqual([]);
+  });
+
   it('does not let one failed PR lookup starve another ready PR', async () => {
     const state = fixture({ broken: 1 });
     await state.run();
     expect(state.reruns).toEqual([2]);
     expect(state.failures).toEqual(['CI authorization failed for 1 PR(s)']);
+    expect(state.warnings).toEqual(['CI authorization could not complete for PR #1 (HTTP 503)']);
   });
 });

@@ -30,6 +30,24 @@ jobs:
           script: |
             const { owner, repo } = context.repo
             const defaultBranch = context.payload.repository.default_branch
+            const trigger = context.payload.workflow_run
+            const triggerPaths = new Set([
+              '.github/workflows/openrouter-code-review.yml',
+              '.github/workflows/openrouter-profile-completion.yml',
+              '.github/workflows/azure-static-web-apps-retiregolden.yml',
+            ])
+            // workflow_run.name can be a dynamic run-name. Match the stable path
+            // and API workflow id, not its display name or the event head SHA.
+            if (!triggerPaths.has(trigger?.path)) return core.info('skip: unrecognized wake-up workflow')
+            const triggerPath = trigger.path.split('/').pop()
+            const { data: triggerWorkflow } = await github.rest.actions.getWorkflow({
+              owner, repo, workflow_id: triggerPath,
+            })
+            if (!Number.isSafeInteger(trigger?.workflow_id) ||
+                trigger.workflow_id !== triggerWorkflow.id ||
+                triggerWorkflow.path !== `.github/workflows/${triggerPath}`) {
+              return core.info('skip: wake-up workflow identity does not match its trusted path')
+            }
             const helperFile = await github.rest.repos.getContent({
               owner,
               repo,
@@ -143,9 +161,10 @@ jobs:
             for (const candidate of pendingPrs) {
               try {
                 await authorizeOne(candidate)
-              } catch {
+              } catch (error) {
                 failures += 1
-                core.warning(`CI authorization could not complete for PR #${candidate.number}`)
+                const status = Number.isInteger(error?.status) ? ` (HTTP ${error.status})` : ''
+                core.warning(`CI authorization could not complete for PR #${candidate.number}${status}`)
               }
             }
             if (failures) core.setFailed(`CI authorization failed for ${failures} PR(s)`)

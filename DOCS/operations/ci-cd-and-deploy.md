@@ -49,10 +49,11 @@ scan is cheap and it is a Main Guard required check (also in [security-scanning.
 To keep Actions minutes down, PR pushes do **not** run the expensive pipeline by default — review bots can
 iterate without every commit running lint/test/e2e/build/deploy/DAST. The trusted default-branch
 [`openrouter-ci-broker.yml`](../../.github/workflows/openrouter-ci-broker.yml) automatically adds
-`run-ci` only after a successful OpenRouter code review or profile completion run is associated with
-exactly one open same-repository PR to `main`, whose live head still equals the run SHA and whose
-`github-actions[bot]` review has bot id `41898282`, type `Bot`, the decoded clean ledger, these
-production Markdown fields, that run's exact URL, and a successful trusted `openrouter-profile`
+`run-ci` only after independently validating an eligible open same-repository PR to `main`.
+Review, profile-completion, and Azure completion events wake a sweep; the event SHA is not
+assumed to be a PR head. For each eligible live head, the `github-actions[bot]` review must
+have bot id `41898282`, type `Bot`, the decoded clean ledger, these production Markdown fields,
+the provenance-valid review run's exact URL, and a successful trusted `openrouter-profile`
 completion status bound to the same head. The lane section is intentionally variable-length:
 
 ```
@@ -118,7 +119,7 @@ The caller's action reference is read only from the active `uses:` line, so its 
 may name other action revisions. Guards recognize the documented action references and GitHub
 `blob`/`tree` links; bare SHAs in prose remain subject to review, not a claim of exhaustive detection.
 
-The current caller uses the [shared configuration from organization PR #41](https://github.com/RetireGolden/.github/blob/eac44d1fba1e89760ebf0a1b7826a119e1b6ba79/.github/workflows/openrouter-code-review.yml)
+The current caller uses the [shared configuration from organization PR #42](https://github.com/RetireGolden/.github/blob/eac44d1fba1e89760ebf0a1b7826a119e1b6ba79/.github/workflows/openrouter-code-review.yml)
 with `review_profiles_enabled: true`, `review_policy: base`, and org workflow pin
 `eac44d1fba1e89760ebf0a1b7826a119e1b6ba79`. Root and nested `REVIEW.md` guidance comes from the
 immutable target-branch tip and is frozen before model calls. A policy proposed by the PR begins

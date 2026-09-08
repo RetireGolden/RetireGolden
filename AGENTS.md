@@ -179,20 +179,22 @@ Code, Codex, Cursor, the Grok and OpenRouter review bots, and any other tool.
   ruleset would let it through. Semgrep (`Scan (p/default)`), `CLA`, and
   the first-pass review gate (`review / openrouter-first-pass-gate`) run
   without the label. The broker normally adds `run-ci` after an exact-head
-  clean review and reruns the existing exact-head Azure workflow. For manual
-  recovery and same-repository Dependabot PRs, apply `run-ci`, then rerun that
+  clean review and current trusted profile proof, then reruns the existing
+  exact-head Azure workflow. For manual recovery and same-repository
+  Dependabot PRs, apply `run-ci`, then rerun that
   Azure workflow; the label alone does not start CI. The resolve gate is path-triggered (workspace
   manifest, lockfile, or any `package.json`) and is expected only on PRs
   that touch those files.
-- For a caller-pin migration with a seeded review ledger, the dedicated
-  `openrouter-review-recovery.yml` may be dispatched from `main` after other
-  review runs finish, even when a completed review exists for that head. It
-  verifies the full PR while retaining the ledger; it does not restart the
-  initial review. This is an exception specifically to "Never dispatch on top of
-  a completed review of the same SHA" in the shared Automated review section;
-  the ordinary review workflow must not be dispatched to perform this recovery.
-  A clean successful recovery, `run-ci`, and an exact-head Azure rerun
-  are still required before merge. See the CI/CD runbook for provenance checks.
+- During migration to this profile-enabled caller, while `main` still has the
+  previous recovery implementation, dispatch `openrouter-review-recovery.yml`
+  from `main` only after the review ledger is seeded and other reviews finish.
+  That previous implementation verifies the full PR while retaining findings;
+  do not substitute an ordinary review dispatch for this migration proof.
+  This is an exception to the shared same-head dispatch restriction.
+- After this revision is merged, recovery is a compatibility forwarder to the
+  normal trusted review workflow on `main`. The forwarding run publishes no
+  verdict. Wait for the resulting review and current profile proof, then `run-ci`
+  and actual exact-head Azure CI. See the CI/CD runbook for provenance checks.
 - `main` also requires every review thread resolved and a post-push approval
   by someone other than the pusher. Resolve the threads yourself and obtain
   the qualifying approval; never use the administrative override to bypass

@@ -37,13 +37,20 @@ jobs:
                 pr.head.repo?.full_name !== repository.full_name) {
               throw new Error('Recovery requires an open same-repository PR targeting the default branch')
             }
-            const runs = await github.paginate(github.rest.actions.listWorkflowRuns, {
-              owner, repo, workflow_id: 'openrouter-code-review.yml', per_page: 100,
-            })
             const prefix = `OpenRouter PR #${pr.number}: `
-            if (runs.some(run => run.status !== 'completed' &&
-                (run.head_sha === pr.head.sha || run.display_title?.startsWith(prefix)))) {
-              throw new Error('Wait for current review runs to finish before recovery')
+            // Query every active status; dispatch runs carry main SHA, so a head-only
+            // query would miss them. Avoid scanning completed review history.
+            for (const status of ['queued', 'in_progress', 'waiting', 'pending', 'requested']) {
+              const runs = await github.paginate(github.rest.actions.listWorkflowRuns, {
+                owner, repo, workflow_id: 'openrouter-code-review.yml', status, per_page: 100,
+              })
+              // GitHub caps filtered run searches at 1,000: do not treat a truncated
+              // active set as proof that no matching review exists.
+              if (runs.length >= 1000) throw new Error('Active review search reached its safety limit')
+              if (runs.some(run => run.status !== 'completed' &&
+                  (run.head_sha === pr.head.sha || run.display_title?.startsWith(prefix)))) {
+                throw new Error('Wait for current review runs to finish before recovery')
+              }
             }
             await github.rest.actions.createWorkflowDispatch({
               owner, repo, workflow_id: 'openrouter-code-review.yml',

@@ -353,17 +353,16 @@ describe('trusted default-branch review verification recovery', () => {
         allowed: false,
       },
     ],
-    [
-      'active review same head',
-      { runs: [{ status: 'in_progress', head_sha: sha }], allowed: false },
-    ],
-    [
-      'active manual-titled review',
-      {
-        runs: [{ status: 'queued', display_title: 'OpenRouter PR #643: manual review' }],
-        allowed: false,
-      },
-    ],
+    ...['queued', 'in_progress', 'waiting', 'pending', 'requested'].flatMap<[string, { runs: Record<string, unknown>[]; allowed: boolean }]>((status) => [
+      [`active ${status} review same head`, { runs: [{ status, head_sha: sha }], allowed: false }],
+      [`active ${status} manual review`, {
+        runs: [{ status, display_title: 'OpenRouter PR #643: manual review' }], allowed: false,
+      }],
+    ]),
+    ['active search cap', {
+      runs: Array.from({ length: 1000 }, () => ({ status: 'queued', head_sha: 'b'.repeat(40) })),
+      allowed: false,
+    }],
     [
       'unrelated active run',
       {
@@ -387,6 +386,7 @@ describe('trusted default-branch review verification recovery', () => {
         allowed: boolean
       }
       const dispatches: Record<string, unknown>[] = []
+      const activeQueries: string[] = []
       const script = recoveryForwarderScript()
       const execution = runInNewContext(`(async () => {${script}\n})()`, {
         process: { env: { PR_NUMBER: prNumber ?? '643' } },
@@ -406,11 +406,16 @@ describe('trusted default-branch review verification recovery', () => {
               listWorkflowRuns: () => undefined,
             },
           },
-          paginate: async () => runs,
+          paginate: async (_endpoint: unknown, parameters: { status: string }) => {
+            expect(['queued', 'in_progress', 'waiting', 'pending', 'requested']).toContain(parameters.status)
+            activeQueries.push(parameters.status)
+            return runs.filter((run) => run.status === parameters.status)
+          },
         },
       }) as Promise<void>
       if (allowed) {
         await execution
+        expect(activeQueries).toEqual(['queued', 'in_progress', 'waiting', 'pending', 'requested'])
         expect(dispatches).toEqual([
           {
             owner: 'RetireGolden',
