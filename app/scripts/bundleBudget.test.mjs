@@ -96,6 +96,13 @@ describe('parsePrecacheUrls', () => {
   it('returns null when the call form is gone, rather than an empty list', () => {
     expect(parsePrecacheUrls('self.addEventListener("install", () => {})')).toBeNull()
   })
+
+  it('keeps parsePrecacheUrls JSDoc on that export', () => {
+    const text = readFileSync(fileURLToPath(new URL('./bundleBudget.mjs', import.meta.url)), 'utf8')
+    expect(text).toMatch(
+      /quietly drop\n \* the precache row[\s\S]{0,80}export function parsePrecacheUrls/,
+    )
+  })
 })
 
 describe('evaluateBudget — a healthy build', () => {
@@ -170,6 +177,40 @@ describe('worker entry import cycle (#672, Monte Carlo and both Optimize-rail ch
     expect(
       parseStaticRelativeImports('import"./planner.worker-aaa.js";export const x=1;'),
     ).toEqual(['planner.worker-aaa.js'])
+    expect(
+      parseStaticRelativeImports('import{k as oe}from"../planner.worker-aaa.js";'),
+    ).toEqual(['planner.worker-aaa.js'])
+    expect(
+      parseStaticRelativeImports('import{k as oe}from"/assets/planner.worker-aaa.js";'),
+    ).toEqual(['planner.worker-aaa.js'])
+    expect(
+      parseStaticRelativeImports('import{k as oe}from"./nested/planner.worker-aaa.js";'),
+    ).toEqual(['planner.worker-aaa.js'])
+    expect(
+      parseStaticRelativeImports('import{k as oe}from"./planner.worker-aaa.js?v=1";'),
+    ).toEqual(['planner.worker-aaa.js'])
+  })
+
+  it('reports a worker-entry import that is not a same-directory relative', () => {
+    const result = workerEntryImporters([
+      { name: 'planner.worker-aaa.js', source: 'export const k=1;' },
+      {
+        name: 'annualProjectionFundingClose-bbb.js',
+        source: 'import{k as oe}from"/assets/planner.worker-aaa.js";const d=oe;',
+      },
+    ])
+    expect(result.importers).toEqual(['annualProjectionFundingClose-bbb.js'])
+  })
+
+  it('does not treat a dynamic import() as a static cycle', () => {
+    const result = workerEntryImporters([
+      { name: 'planner.worker-aaa.js', source: 'export const k=1;' },
+      {
+        name: 'lazy-bbb.js',
+        source: 'export const load=()=>import("./planner.worker-aaa.js");',
+      },
+    ])
+    expect(result.importers).toEqual([])
   })
 
   it('reports isolated coordinator chunks that import the worker entry', () => {
@@ -214,13 +255,6 @@ describe('worker entry import cycle (#672, Monte Carlo and both Optimize-rail ch
     expect(workerEntryImporters([{ name: 'planner.worker-aaa.js', source: '' }]).workerNames).toEqual([
       'planner.worker-aaa.js',
     ])
-  })
-
-  it('keeps parsePrecacheUrls JSDoc on that export', () => {
-    const text = readFileSync(fileURLToPath(new URL('./bundleBudget.mjs', import.meta.url)), 'utf8')
-    expect(text).toMatch(
-      /quietly drop\n \* the precache row[\s\S]{0,80}export function parsePrecacheUrls/,
-    )
   })
 })
 

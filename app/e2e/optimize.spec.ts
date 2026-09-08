@@ -49,7 +49,6 @@ test.describe('Optimize', () => {
     const infeasible = page.getByRole('heading', { name: "Couldn't optimize this plan", level: 2 })
     await expect(dollarResult.or(incumbentHolds).or(noBenefit).or(infeasible)).toBeVisible({ timeout: 60_000 })
     await expect(page.getByText(/Optimizer error:/)).toHaveCount(0)
-    await expect(page.getByText(/Cannot access ['"]oe['"] before initialization/)).toHaveCount(0)
 
     // A completed run that produced a recommendation (dollar / incumbent /
     // no-benefit) keeps the report download enabled. An infeasible well is

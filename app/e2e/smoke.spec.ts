@@ -135,7 +135,6 @@ test.describe('Smoke', () => {
     // first spawn (#672) surfaces here as Simulation error.
     await expect(page.locator('.success-gauge-value')).toContainText('%', { timeout: 60_000 })
     await expect(page.getByText(/Simulation error/)).toHaveCount(0)
-    await expect(page.getByText(/Cannot access ['"]oe['"] before initialization/)).toHaveCount(0)
   })
 
   test('backup export → clear → import round-trips', async ({ page }) => {

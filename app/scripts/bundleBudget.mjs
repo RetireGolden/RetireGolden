@@ -146,18 +146,30 @@ export function parseLandingScripts(html) {
 }
 
 /**
- * Static relative import specifiers in a Rolldown ES chunk: `from "./chunk.js"`
- * and side-effect `import "./chunk.js"`. Dynamic `import()` is not scanned —
- * it does not create the module-init cycle that TDZ-crashed production.
+ * Basename of a static import specifier, with a query or hash stripped.
+ * `./chunk.js`, `../chunk.js`, `/assets/chunk.js`, `./nested/chunk.js`,
+ * and `./chunk.js?v=1` all become `chunk.js`.
+ */
+function staticImportBasename(spec) {
+  const path = spec.split(/[?#]/, 1)[0]
+  const slash = path.lastIndexOf('/')
+  return slash === -1 ? path : path.slice(slash + 1)
+}
+
+/**
+ * Static import specifiers in a Rolldown ES chunk: `from "…"` and
+ * side-effect `import "…"`. Dynamic `import()` is not scanned — it does
+ * not create the module-init cycle that TDZ-crashed production.
  *
- * Used to detect a worker-graph cycle: an isolated coordinator chunk that
- * imports the worker entry (which imported that coordinator) TDZ-crashes
- * production on first spawn (#672, Monte Carlo and both Optimize-rail channels).
+ * Returns each specifier's basename so a cycle is visible whether the
+ * chunk writes a same-directory relative, `../`, `/assets/…`, a nested
+ * path, or a query suffix. Matching only `./` relatives would fail open
+ * on those forms (#672).
  */
 export function parseStaticRelativeImports(source) {
-  const named = [...source.matchAll(/\bfrom\s*["'](\.\/[^"']+)["']/g)].map((m) => m[1])
-  const sideEffect = [...source.matchAll(/\bimport\s*["'](\.\/[^"']+)["']/g)].map((m) => m[1])
-  return [...named, ...sideEffect].map((spec) => spec.replace(/^\.\//, ''))
+  const named = [...source.matchAll(/\bfrom\s*["']([^"']+)["']/g)].map((m) => m[1])
+  const sideEffect = [...source.matchAll(/\bimport\s*["']([^"']+)["']/g)].map((m) => m[1])
+  return [...named, ...sideEffect].map(staticImportBasename)
 }
 
 const workerEntryBudget = CHUNK_BUDGETS.find((budget) => budget.label === 'planner Web Worker')

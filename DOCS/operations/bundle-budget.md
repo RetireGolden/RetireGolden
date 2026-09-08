@@ -96,7 +96,8 @@ minifies one of those live bindings to `oe` and TDZ-crashes on first spawn
 Optimize-rail surfaces: How much can I spend? and Roth & Tax Optimizer). The worker
 therefore keeps those coordinators in the entry and only splits kernels and publications. The
 bundle-budget CLI fails the build if any other `dist/assets` chunk statically imports
-`planner.worker-*.js`.
+`planner.worker-*.js`, matching the entry by basename so a `../`, `/assets/`,
+nested, or query-string specifier cannot fail open.
 
 The kernel, publication, and (in the app graph) coordinator chunks stay
 precached; the split changes parsing and chunk ownership, not the offline

@@ -32,6 +32,5 @@ test.describe('Spending solver', () => {
     const noLevel = page.getByRole('heading', { name: 'No sustainable spending level found', level: 2 })
     await expect(dollarResult.or(noLevel)).toBeVisible({ timeout: 60_000 })
     await expect(page.getByText(/Solver error/)).toHaveCount(0)
-    await expect(page.getByText(/Cannot access ['"]oe['"] before initialization/)).toHaveCount(0)
   })
 })
