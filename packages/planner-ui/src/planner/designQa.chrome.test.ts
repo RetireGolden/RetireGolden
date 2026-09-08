@@ -459,13 +459,29 @@ describe('Shared native-control treatment (#447, #451, #458, #466, #467, #469)',
   })
 })
 
-describe('Narrow viewports and the remaining partial-issue items (#439, #440, #462, #467, #469, #473)', () => {
+describe('Narrow viewports and the remaining partial-issue items (#439, #440, #462, #467, #469, #473, #676)', () => {
   const src = sheet
 
   it('between the phone and two-column layouts the brand anchors top-left and only the theme cluster wraps (#440)', () => {
     expect(indexCss).toMatch(/@media \(min-width: 641px\) and \(max-width: 880px\) \{\s*\.app-header \{\s*align-items: flex-start;/)
     // The nav may wrap or shrink; the brand stays anchored because the header is top-aligned.
     expect(indexCss).not.toMatch(/\.nav \{\s*flex-wrap: nowrap;\s*flex-shrink: 0;/)
+  })
+
+  it('desktop primary nav stays on one row so Disclaimer cannot orphan at 1024px (#676)', () => {
+    const nav = rule('.nav', indexCss)
+    expect(nav).toMatch(/flex-wrap:\s*nowrap/)
+    expect(rule('.nav-link', indexCss)).toMatch(/white-space:\s*nowrap/)
+    // Tablet band may still wrap the nav (#440); that override must remain after the desktop default.
+    expect(indexCss).toMatch(
+      /@media \(min-width: 641px\) and \(max-width: 880px\) \{[\s\S]*?\.nav \{[\s\S]*?flex-wrap:\s*wrap/,
+    )
+    // Reading columns are narrower than the viewport; the shell is a container so the
+    // theme cluster wraps instead of a lone nav link.
+    expect(rule('.app-shell', indexCss)).toMatch(/container-type:\s*inline-size/)
+    expect(rule('.app-shell', indexCss)).toMatch(/container-name:\s*app-shell/)
+    expect(indexCss).toMatch(/@container app-shell \(max-width: 52rem\)/)
+    expect(indexCss).toMatch(/@container app-shell \(max-width: 52rem\) \{[\s\S]*?\.nav \{[\s\S]*?flex-wrap:\s*nowrap/)
   })
 
   it('the rail strip shows a scroll cue, snaps to chips, separates groups, and scrolls itself to the active chip (#439)', () => {

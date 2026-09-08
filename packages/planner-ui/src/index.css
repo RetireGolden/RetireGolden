@@ -169,6 +169,10 @@ code {
   max-width: 52rem;
   margin: 0 auto;
   padding: 0 1.25rem 3rem;
+  /* Query the content column, not the viewport: reading routes (#443) are
+     narrower than the window, so a 1024px desktop still has an ~48rem header. */
+  container-type: inline-size;
+  container-name: app-shell;
 }
 
 /* The landing/plan-picker route holds little content, so the full 80rem workspace
@@ -269,8 +273,11 @@ code {
 
 .nav {
   display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
+  gap: 0.35rem;
+  /* Desktop default: four primary links stay on one row. Wrapping here is
+     what orphaned Disclaimer under Planner at 1024px (#676); the 641–880
+     band still opts back into wrap for #440. */
+  flex-wrap: nowrap;
 }
 
 .theme-switcher-cluster {
@@ -334,8 +341,9 @@ code {
 .nav-link {
   color: var(--muted);
   text-decoration: none;
-  padding: 0.35rem 0.65rem;
+  padding: 0.35rem 0.5rem;
   border-radius: 6px;
+  white-space: nowrap;
 }
 
 .nav-link:hover {
@@ -358,6 +366,27 @@ code {
   z-index: 1;
 }
 
+/* Reading and reading-narrow shells are a ~42–48rem column inside a wide
+   window. Keep the four primary links on one row (#676); if brand + nav +
+   theme cannot share that column, the theme cluster wraps — same collapse
+   as #440, never a lone second-row Disclaimer. The 641–880 viewport band
+   below still wins in that range so #440 is unchanged. */
+@container app-shell (max-width: 52rem) {
+  .app-header {
+    align-items: flex-start;
+  }
+
+  .header-menu {
+    flex-wrap: wrap;
+    row-gap: 0.35rem;
+  }
+
+  .nav {
+    flex-wrap: nowrap;
+    min-width: max-content;
+  }
+}
+
 /* Between the two-column breakpoint and the phone layout the nav used to wrap
    inside its own box, which made the first header line tall and centred the
    brand in it, so the wordmark read as dropped (#440). The brand stays the
@@ -378,6 +407,7 @@ code {
      labels, translations); with the header top-aligned that no longer moves
      the brand, which is the anchor #440 asked for. */
   .nav {
+    flex-wrap: wrap;
     min-width: 0;
   }
 }

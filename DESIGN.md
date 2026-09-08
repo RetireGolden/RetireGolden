@@ -95,7 +95,7 @@ components:
     backgroundColor: "transparent"
     textColor: "{colors.slate-muted}"
     rounded: "{rounded.sm}"
-    padding: "0.35rem 0.65rem"
+    padding: "0.35rem 0.5rem"
   kpi-label:
     textColor: "{colors.slate-muted}"
     typography: "{typography.label}"
@@ -305,6 +305,11 @@ transitions, restrained hover states that shift a border or tint a background by
 - **Header between 641px and 880px:** the header is top-aligned so the brand stays the top-left
   anchor whatever else moves; the nav sits beside it and may wrap or shrink at the low end of the
   range, and the theme cluster wraps below. Under 640px the phone layout applies.
+- **Header at desktop (≥881px), including reading columns:** the four primary links
+  (`Planner` / `Examples` / `Learn` / `Disclaimer`) stay on one row. A reading or reading-narrow
+  shell is narrower than the viewport; if brand + links + theme cannot share that row, the theme
+  cluster wraps below (same collapse as 641–880). A single leftover nav link never wraps on its
+  own (#676).
 - **Breadcrumbs:** muted with `/` separators; current page is Ink at 550.
 
 ### Forms and figures
