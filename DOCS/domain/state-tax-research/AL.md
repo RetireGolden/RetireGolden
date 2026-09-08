@@ -1,6 +1,6 @@
 # Alabama (AL) — state income tax for retirement planning
 
-Tax year: 2025. Researched 2026-06-13.
+Tax year: 2025. Researched 2026-06-13; age-65 exclusion source corrected 2026-09-08.
 
 ## Summary
 - Broad individual income tax: **yes** (graduated, 2%–5%)
@@ -41,7 +41,7 @@ maximums per the Tax Foundation cross-check.
 
 ## Simplifications / not modeled
 - DB pensions are *fully* exempt but modeled via the $6,000 IRA/401(k) cap — conservative (overstates tax) for pension-heavy retirees.
-- The $6,000 IRA/401(k) exclusion rises to $12,000 in 2026 (not modeled; 2025 figure held).
+- Enrolled 2026 H.B. 341 retains Ala. Code § 40-18-19(a)(13)'s $6,000 age-65 retirement-income exemption; 2025 Schedule RS likewise caps each qualifying taxpayer at $6,000. Exact age measurement and mixed-source ordering are not modeled.
 - Income-based phase-down of the standard deduction and the personal/dependent exemptions ($1,500 single / $3,000 MFJ / $1,000 dependent) not modeled.
 - Local occupational ("city") taxes not modeled.
 
@@ -49,4 +49,6 @@ maximums per the Tax Foundation cross-check.
 - https://www.revenue.alabama.gov/faqs/what-is-alabamas-individual-income-tax-rate/ — 2%/4%/5% brackets, single and MFJ thresholds.
 - https://www.revenue.alabama.gov/faqs/how-much-is-the-alabama-standard-deduction/ — standard deduction.
 - https://taxfoundation.org/data/all/state/state-income-tax-rates/ — 2025 AL brackets, standard deduction ($3,000/$8,500), SS exempt cross-check.
-- Kiplinger / ACTS Retirement — DB pensions fully exempt; IRA/401(k) $6,000 exclusion at 65+ (rising to $12,000 in 2026); SS exempt.
+- https://alison.legislature.state.al.us/files/pdf/SearchableInstruments/2026RS/HB341-enr.pdf — enrolled 2026 H.B. 341, § 40-18-19(a)(13): first $6,000 of taxable retirement income, for individual taxpayers age 65+.
+- https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40.pdf — 2025 Schedule RS: each taxpayer is eligible for up to $6,000, bounded by retirement income taxable to Alabama.
+- https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf — 2025 Form 40 booklet: Federal Social Security benefits and qualifying defined-benefit retirement payments are listed as income not reported; other pension and IRA distributions use Schedule RS.

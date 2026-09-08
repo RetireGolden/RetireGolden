@@ -14,11 +14,11 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | Total rules | 443 |
 | Classification: approximated | 122 |
 | Classification: outOfScope | 75 |
-| Classification: settled | 241 |
-| Classification: unsettled | 5 |
+| Classification: settled | 242 |
+| Classification: unsettled | 4 |
 | Volatility: annuallyIndexed | 66 |
-| Volatility: awaitingGuidance | 11 |
-| Volatility: staticStatute | 359 |
+| Volatility: awaitingGuidance | 10 |
+| Volatility: staticStatute | 360 |
 | Volatility: sunsetting | 7 |
 | Federal jurisdiction | 327 |
 | State jurisdiction total | 116 |
@@ -222,7 +222,6 @@ The 25 earliest due dates are shown below (443 rules total). Comparing dueOn to 
 | irc-402A-e-3-A-plesa-participant-contribution-cap | awaitingGuidance | 2026-08-26 | 2026-11-24 |
 | irc-402A-e-7-B-i-plesa-distribution-qualified-roth-treatment | awaitingGuidance | 2026-08-26 | 2026-11-24 |
 | irc-6433-f-6-savers-match-early-distribution-recovery-tax | awaitingGuidance | 2026-08-26 | 2026-11-24 |
-| al-form40-age-65-retirement-exclusion-cap | awaitingGuidance | 2026-08-28 | 2026-11-26 |
 | irc-408-d-8-A-annual-qcd-limit | annuallyIndexed | 2026-08-02 | 2026-11-30 |
 | cfr-20-404-1574-b-2-sga-non-blind-monthly-amount | annuallyIndexed | 2026-08-03 | 2026-12-01 |
 | irc-1-h-capital-gain-stacked-on-ordinary | annuallyIndexed | 2026-08-03 | 2026-12-01 |
@@ -241,6 +240,7 @@ The 25 earliest due dates are shown below (443 rules total). Comparing dueOn to 
 | rev-proc-2025-25-aca-applicable-percentage-2026 | annuallyIndexed | 2026-08-04 | 2026-12-02 |
 | usc-42-403-a-2-family-maximum-formula | annuallyIndexed | 2026-08-04 | 2026-12-02 |
 | usc-42-403-f-3-retirement-earnings-test | annuallyIndexed | 2026-08-04 | 2026-12-02 |
+| usc-42-415-a-1-pia-bend-point-formula | annuallyIndexed | 2026-08-04 | 2026-12-02 |
 
 ## Manifest contract
 
@@ -252,9 +252,9 @@ Version 5 is a breaking discriminator for strict version checks: manifest.rules 
 
 ## Quote fidelity
 
-Committed ledger generated at 2026-09-08T09:45:20.448Z over 1277 authority entries (9 fetched live, 335 from cache).
+Committed ledger generated at 2026-09-08T10:51:09.020Z over 1280 authority entries (9 fetched live, 337 from cache).
 
-37 serious, 56 advisory, 1184 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
+37 serious, 56 advisory, 1187 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
 not treated as a CI gate; how to read each verdict: DOCS/operations/quote-fidelity.md.
 
 | Verdict | Class | Count |
@@ -263,7 +263,7 @@ not treated as a CI gate; how to read each verdict: DOCS/operations/quote-fideli
 | ELISION-PUNCTUATION | advisory | 7 |
 | EXACT | ok | 874 |
 | PDF-NOT-VERIFIABLE | advisory | 7 |
-| PDF-WORD-LEVEL | ok | 240 |
+| PDF-WORD-LEVEL | ok | 243 |
 | PUNCTUATION | advisory | 42 |
 | UNFETCHABLE | serious | 37 |
 

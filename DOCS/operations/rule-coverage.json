@@ -6,13 +6,13 @@
     "byClassification": {
       "approximated": 122,
       "outOfScope": 75,
-      "settled": 241,
-      "unsettled": 5
+      "settled": 242,
+      "unsettled": 4
     },
     "byVolatility": {
       "annuallyIndexed": 66,
-      "awaitingGuidance": 11,
-      "staticStatute": 359,
+      "awaitingGuidance": 10,
+      "staticStatute": 360,
       "sunsetting": 7
     },
     "byJurisdiction": {
@@ -658,16 +658,16 @@
     }
   ],
   "quoteFidelity": {
-    "generatedAt": "2026-09-08T09:45:20.448Z",
-    "entryCount": 1277,
+    "generatedAt": "2026-09-08T10:51:09.020Z",
+    "entryCount": 1280,
     "fetched": 9,
-    "cached": 335,
+    "cached": 337,
     "counts": {
       "ELISION-EXACT": 70,
       "ELISION-PUNCTUATION": 7,
       "EXACT": 874,
       "PDF-NOT-VERIFIABLE": 7,
-      "PDF-WORD-LEVEL": 240,
+      "PDF-WORD-LEVEL": 243,
       "PUNCTUATION": 42,
       "UNFETCHABLE": 37
     }

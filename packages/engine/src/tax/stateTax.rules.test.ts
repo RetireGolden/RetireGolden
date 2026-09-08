@@ -3315,7 +3315,13 @@ const alSingleTax = (taxable: number) => bandedTax(
   [[0, 500, 2], [500, 3000, 4], [3000, Infinity, 5]],
   taxable,
 )
+const alMfjTax = (taxable: number) => bandedTax(
+  [[0, 1000, 2], [1000, 6000, 4], [6000, Infinity, 5]],
+  taxable,
+)
 const AL_DEDUCTION_SINGLE = 3_000
+const AL_DEDUCTION_JOINT = 8_500
+const AL_RETIREMENT_INCOME = 40_000
 
 describeRule('al-form40-social-security-exclusion', {
   readings: {
@@ -3415,53 +3421,113 @@ describeRule('al-dor-individual-income-tax-rate-schedule', {
 
 describeRule('al-form40-age-65-retirement-exclusion-cap', {
   readings: {
-    // No exclusion beyond the exempt list is derivable from the staged
-    // booklet. Taxable 40,000 − 3,000 = 37,000 → tax 1,810.
-    stagedInstructionsCarryNoAgeExclusion: alSingleTax(37_000),
-    // The engine's convention choice, disclosed on the record: $6,000 per
-    // person at 65+. Taxable 40,000 − 6,000 − 3,000 = 31,000 → tax 1,510.
+    // Source-error counterfactual: omit the enacted age-65 exclusion.
+    // Taxable 40,000 − 3,000 = 37,000 → tax 1,810.
+    noAgeExclusionCounterfactual: alSingleTax(37_000),
+    // Enacted/form reading: $6,000 per taxpayer at 65+.
+    // Taxable 40,000 − 6,000 − 3,000 = 31,000 → tax 1,510.
     encodedSixThousandAtSixtyFive: alSingleTax(31_000),
-    // The research corpus's 2026 parameter, unquotable until a primary is
-    // staged. Taxable 40,000 − 12,000 − 3,000 = 25,000 → tax 1,210.
-    researchTwelveThousandFor2026: alSingleTax(25_000),
+    // Source-error counterfactual: double the enacted per-taxpayer cap.
+    // Taxable 40,000 − 12,000 − 3,000 = 25,000 → tax 1,210.
+    doubledCapCounterfactual: alSingleTax(25_000),
+    // MFJ both 65: $6,000 per taxpayer → taxable 19,500 → tax 895.
+    bothSixtyFiveTwelveThousandMfj: alMfjTax(
+      AL_RETIREMENT_INCOME - 12_000 - AL_DEDUCTION_JOINT,
+    ),
+    // MFJ one 65 / household $6,000 cap counterfactual: taxable 25,500 → tax 1,195.
+    oneSixtyFiveSixThousandMfj: alMfjTax(
+      AL_RETIREMENT_INCOME - 6_000 - AL_DEDUCTION_JOINT,
+    ),
   },
-  // Repo convention for unsettled fixtures (irc-408-d-8-B-ii-age-70-half,
-  // treas-reg-1-401-a-9-2-b-2-v-applicable-age-1959): accepted carries the
-  // convention the engine took, disclosed on the record's conventionRationale;
-  // the competing readings stay pinned as distinct values.
   accepted: 'encodedSixThousandAtSixtyFive',
-  note: 'unsettled: operative text unsourced',
+  note: 'settled: enacted and form authority support $6,000 per taxpayer at age 65',
 }, ({ accepted, readings }) => {
   const scenario = input({
     state: 'AL',
-    ordinaryIncome: 40_000,
-    privateRetirementIncome: 40_000,
+    ordinaryIncome: AL_RETIREMENT_INCOME,
+    privateRetirementIncome: AL_RETIREMENT_INCOME,
     agesAlive: [70],
   })
 
-  it('implements the encoded $6,000 convention and discriminates the competing readings', () => {
+  it('implements the enacted $6,000 reading and discriminates source-error counterfactuals', () => {
     expect(computeStateTax(pack('AL'), scenario)).toBeCloseTo(accepted, 6)
     expect(accepted).toBeCloseTo(1510, 6)
-    expect(readings.stagedInstructionsCarryNoAgeExclusion).toBeCloseTo(1810, 6)
-    expect(readings.researchTwelveThousandFor2026).toBeCloseTo(1210, 6)
-    expect(computeStateTax(pack('AL'), scenario)).not.toBeCloseTo(readings.stagedInstructionsCarryNoAgeExclusion, 6)
-    expect(computeStateTax(pack('AL'), scenario)).not.toBeCloseTo(readings.researchTwelveThousandFor2026, 6)
+    expect(readings.noAgeExclusionCounterfactual).toBeCloseTo(1810, 6)
+    expect(readings.doubledCapCounterfactual).toBeCloseTo(1210, 6)
+    expect(computeStateTax(pack('AL'), scenario)).not.toBeCloseTo(readings.noAgeExclusionCounterfactual, 6)
+    expect(computeStateTax(pack('AL'), scenario)).not.toBeCloseTo(readings.doubledCapCounterfactual, 6)
   })
 
-  it('reaches the no-exclusion reading once the cap is withheld', () => {
+  it('withholds the exclusion below age 65', () => {
+    const at64 = input({
+      state: 'AL',
+      ordinaryIncome: AL_RETIREMENT_INCOME,
+      privateRetirementIncome: AL_RETIREMENT_INCOME,
+      agesAlive: [64],
+    })
+    expect(computeStateTax(pack('AL'), at64))
+      .toBeCloseTo(readings.noAgeExclusionCounterfactual, 6)
+    expect(computeStateTax(pack('AL'), at64)).not.toBeCloseTo(accepted, 6)
+  })
+
+  it('doubles the cap on a joint return when both spouses are 65', () => {
+    const both65 = input({
+      state: 'AL',
+      filingStatus: 'marriedFilingJointly',
+      ordinaryIncome: AL_RETIREMENT_INCOME,
+      privateRetirementIncome: AL_RETIREMENT_INCOME,
+      agesAlive: [65, 65],
+    })
+    expect(computeStateTax(pack('AL'), both65))
+      .toBeCloseTo(readings.bothSixtyFiveTwelveThousandMfj, 6)
+    expect(computeStateTax(pack('AL'), both65))
+      .not.toBeCloseTo(readings.oneSixtyFiveSixThousandMfj, 6)
+  })
+
+  it('grants only one $6,000 cap when one spouse is below 65', () => {
+    const oneEligible = input({
+      state: 'AL',
+      filingStatus: 'marriedFilingJointly',
+      ordinaryIncome: AL_RETIREMENT_INCOME,
+      privateRetirementIncome: AL_RETIREMENT_INCOME,
+      agesAlive: [65, 64],
+    })
+    expect(computeStateTax(pack('AL'), oneEligible))
+      .toBeCloseTo(readings.oneSixtyFiveSixThousandMfj, 6)
+    expect(computeStateTax(pack('AL'), oneEligible))
+      .not.toBeCloseTo(readings.bothSixtyFiveTwelveThousandMfj, 6)
+  })
+
+  it('reaches the no-exclusion counterfactual once the cap is withheld', () => {
     const noCap = {
       ...pack('AL'),
       retirementPrivate: { kind: 'none' as const },
     }
-    expect(computeStateTax(noCap, scenario)).toBeCloseTo(readings.stagedInstructionsCarryNoAgeExclusion, 6)
+    expect(computeStateTax(noCap, scenario)).toBeCloseTo(readings.noAgeExclusionCounterfactual, 6)
   })
 
-  it('reaches the research 2026 reading under a doubled cap', () => {
+  it('reaches the doubled-cap counterfactual under a doubled cap', () => {
     const doubled = {
       ...pack('AL'),
       retirementPrivate: { kind: 'capped' as const, capPerPerson: 12_000, minAge: 65 },
     }
-    expect(computeStateTax(doubled, scenario)).toBeCloseTo(readings.researchTwelveThousandFor2026, 6)
+    expect(computeStateTax(doubled, scenario)).toBeCloseTo(readings.doubledCapCounterfactual, 6)
+  })
+
+  it('reaches the no-age-gate counterfactual once minAge is dropped', () => {
+    const noAgeGate = {
+      ...pack('AL'),
+      retirementPrivate: { kind: 'capped' as const, capPerPerson: 6_000 },
+    }
+    const at64 = input({
+      state: 'AL',
+      ordinaryIncome: AL_RETIREMENT_INCOME,
+      privateRetirementIncome: AL_RETIREMENT_INCOME,
+      agesAlive: [64],
+    })
+    expect(computeStateTax(noAgeGate, at64)).toBeCloseTo(accepted, 6)
+    expect(computeStateTax(noAgeGate, at64))
+      .not.toBeCloseTo(readings.noAgeExclusionCounterfactual, 6)
   })
 })
 

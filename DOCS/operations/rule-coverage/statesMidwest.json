@@ -1274,7 +1274,7 @@
           "functions": [
             {
               "name": "MO",
-              "line": 538
+              "line": 535
             }
           ]
         },
@@ -1346,7 +1346,7 @@
           "functions": [
             {
               "name": "states.ND",
-              "line": 662
+              "line": 659
             }
           ]
         },
@@ -1524,11 +1524,11 @@
           "functions": [
             {
               "name": "ND.capitalGainsTaxablePct",
-              "line": 673
+              "line": 670
             },
             {
               "name": "states.ND",
-              "line": 662
+              "line": 659
             }
           ]
         },
@@ -1609,7 +1609,7 @@
           "functions": [
             {
               "name": "ND.capitalGainsTaxablePct",
-              "line": 673
+              "line": 670
             }
           ]
         },
@@ -1765,7 +1765,7 @@
           "functions": [
             {
               "name": "states.ND",
-              "line": 662
+              "line": 659
             }
           ]
         },
@@ -1924,7 +1924,7 @@
           "functions": [
             {
               "name": "states.ND",
-              "line": 662
+              "line": 659
             }
           ]
         },
@@ -2090,7 +2090,7 @@
           "functions": [
             {
               "name": "states.NE",
-              "line": 573
+              "line": 570
             }
           ]
         },
@@ -2255,7 +2255,7 @@
           "functions": [
             {
               "name": "SD",
-              "line": 766
+              "line": 763
             }
           ]
         },
@@ -2327,7 +2327,7 @@
           "functions": [
             {
               "name": "WI",
-              "line": 843
+              "line": 840
             }
           ]
         },
@@ -2395,7 +2395,7 @@
           "functions": [
             {
               "name": "WI",
-              "line": 843
+              "line": 840
             }
           ]
         },

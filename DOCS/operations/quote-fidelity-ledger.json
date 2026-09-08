@@ -1,14 +1,14 @@
 {
-  "generatedAt": "2026-09-08T09:45:20.448Z",
+  "generatedAt": "2026-09-08T10:51:09.020Z",
   "recordCount": 443,
-  "urlCount": 344,
+  "urlCount": 346,
   "fetched": 9,
-  "cached": 335,
-  "entryCount": 1277,
+  "cached": 337,
+  "entryCount": 1280,
   "counts": {
     "EXACT": 874,
     "PUNCTUATION": 42,
-    "PDF-WORD-LEVEL": 240,
+    "PDF-WORD-LEVEL": 243,
     "ELISION-EXACT": 70,
     "ELISION-PUNCTUATION": 7,
     "PDF-NOT-VERIFIABLE": 7,
@@ -12193,6 +12193,36 @@
     },
     {
       "id": "al-form40-age-65-retirement-exclusion-cap",
+      "citation": "Ala. Code § 40-18-19(a)(13), as retained by 2026 Ala. H.B. 341, p. 6 — amount",
+      "host": "alison.legislature.state.al.us",
+      "url": "https://alison.legislature.state.al.us/files/pdf/SearchableInstruments/2026RS/HB341-enr.pdf",
+      "quoteSha256": "dc7ebeceb563b26e",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "2 elision segments, all present in the extracted text",
+      "diagnosis": null
+    },
+    {
+      "id": "al-form40-age-65-retirement-exclusion-cap",
+      "citation": "Ala. Code § 40-18-19(a)(13), as retained by 2026 Ala. H.B. 341, p. 6 — age restriction",
+      "host": "alison.legislature.state.al.us",
+      "url": "https://alison.legislature.state.al.us/files/pdf/SearchableInstruments/2026RS/HB341-enr.pdf",
+      "quoteSha256": "2200f9774ab237f7",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "al-form40-age-65-retirement-exclusion-cap",
+      "citation": "Alabama Department of Revenue, 2025 Form 40, Schedule RS — retirement income exclusion",
+      "host": "www.revenue.alabama.gov",
+      "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40.pdf",
+      "quoteSha256": "212570196e7b9adb",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "al-form40-age-65-retirement-exclusion-cap",
       "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Pensions and Annuities",
       "host": "www.revenue.alabama.gov",
       "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf",
@@ -12226,7 +12256,7 @@
       "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, page 9 Standard Deduction chart — Single column",
       "host": "www.revenue.alabama.gov",
       "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf",
-      "quoteSha256": "d5b0e9975fc944a2",
+      "quoteSha256": "4688bbb54eba02e4",
       "verdict": "PDF-WORD-LEVEL",
       "detail": "4 elision segments, all present in the extracted text",
       "diagnosis": null

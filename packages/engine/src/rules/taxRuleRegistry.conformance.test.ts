@@ -488,13 +488,19 @@ const STATE_PRIMARY_PUBLISHERS: Readonly<Partial<Record<UsStateCode, readonly st
     'akleg.gov',
   ],
   AL: [
-    // Verified 2026-08-28 against the staged Form 40 booklet PDF and the
-    // Department of Revenue individual-income-tax page. Alabama's Code host
-    // does not supply quote-verifiable operative text for these limbs; the
-    // Department's own booklet and agency page are deliberately admitted as
-    // the primary publishers — the same form-instruction / agency-publication
-    // boundary used for Georgia, Oklahoma, and Utah where script-rendered
-    // code pages cannot carry the quote.
+    // Verified 2026-09-08 against the official enrolled 2026 H.B. 341 PDF on
+    // Alabama Legislature ALISON (`alison.legislature.state.al.us`) and, from
+    // 2026-08-28, the staged Form 40 booklet PDF and the Department of Revenue
+    // individual-income-tax page. Alabama's Code host does not supply
+    // quote-verifiable operative text for these limbs. ALISON is admitted as
+    // the enrolled-act publisher — the Arkansas pattern — not as a form-
+    // instruction substitute. The Department's booklet and agency page are
+    // admitted under the same form-instruction / agency-publication boundary
+    // used for Georgia, Oklahoma, and Utah where script-rendered code pages
+    // cannot carry the quote.
+    //
+    // Enrolled acts: `.../files/pdf/SearchableInstruments/<session>/<bill>-enr.pdf`
+    'alison.legislature.state.al.us', // Alabama Legislature ALISON: enrolled acts
     //
     // Bare `revenue.alabama.gov`: usable document URLs carry
     // `www.revenue.alabama.gov`, and `hostAndPublisherOf` strips the prefix.
@@ -1637,6 +1643,32 @@ describe('tax rule registry conformance', () => {
     }]])).toEqual(['nd-fictional:NDCC 57-38-01:www.ftb.ca.gov'])
   })
 
+  it('admits the Alabama Legislature ALISON enrolled-act host only for an Alabama rule', () => {
+    // Verified 2026-09-08: the enrolled 2026 H.B. 341 PDF is served from
+    // this host. The admission is the exact publisher, not a parent domain or
+    // a federal-tier bypass.
+    const hb341 = {
+      citation: 'Ala. Code § 40-18-19(a)(13), as retained by 2026 Ala. H.B. 341, p. 6 — amount',
+      url: 'https://alison.legislature.state.al.us/files/pdf/SearchableInstruments/2026RS/HB341-enr.pdf',
+    }
+    expect(offSourceAuthorities([['al-fictional', {
+      jurisdiction: 'state:AL',
+      authority: [hb341],
+    }]])).toEqual([])
+    expect(offSourceAuthorities([['ms-fictional', {
+      jurisdiction: 'state:MS',
+      authority: [hb341],
+    }]])).toEqual(['ms-fictional:Ala. Code § 40-18-19(a)(13), as retained by 2026 Ala. H.B. 341, p. 6 — amount:alison.legislature.state.al.us'])
+    expect(offSourceAuthorities([['irc-fictional-federal', {
+      jurisdiction: 'federal',
+      authority: [hb341],
+    }]])).toEqual(['irc-fictional-federal:Ala. Code § 40-18-19(a)(13), as retained by 2026 Ala. H.B. 341, p. 6 — amount:alison.legislature.state.al.us'])
+    expect(stateRulesMissingStateAuthority([['al-fictional', {
+      jurisdiction: 'state:AL',
+      authority: [hb341],
+    }]])).toEqual([])
+  })
+
   it('admits the www. spelling a state department actually serves', () => {
     // The North Dakota tier is recorded as the bare `tax.nd.gov`, but no
     // citation can carry that host: it answers 301 to `www.tax.nd.gov`, and
@@ -1907,7 +1939,7 @@ describe('periodic re-verification', () => {
     const latestDueOn = taxRuleIds
       .map((ruleId) => taxRuleDueOn(ruleId))
       .reduce((latest, dueOn) => (dueOn > latest ? dueOn : latest))
-    expect(latestDueOn).toBe('2027-09-07')
+    expect(latestDueOn).toBe('2027-09-08')
     expect(taxRulesDueForVerification(latestDueOn)).toEqual([...taxRuleIds])
   })
 

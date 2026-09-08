@@ -1427,7 +1427,7 @@ const alApproxSingleTax = (taxable: number) => bandedTax(
 const AL_APPROX_DEDUCTION = 3_000
 const AL_PACK_CAP = 6_000
 const AL_DB_PENSION = 40_000
-// Chart row (Single): AGI $17,750 and above → standard deduction $2,500.
+// Chart row (Single): AGI $35,500 and above → standard deduction $2,500.
 const AL_CHART_SLID_SINGLE_DEDUCTION = 2_500
 const AL_HIGH_AGI = 50_000
 
@@ -1493,7 +1493,7 @@ describeRule('al-form40-defined-benefit-414j-exemption', {
 
 describeRule('al-form40-standard-deduction-agi-slide', {
   readings: {
-    // Page-9 Single chart: AGI $17,750 and above → $2,500 (not the $3,000 max).
+    // Page-9 Single chart: AGI $35,500 and above → $2,500 (not the $3,000 max).
     // Taxable 50,000 − 2,500 = 47,500 → tax 2,335.
     chartSlidesSingleDeductionAtHighAgi:
       alApproxSingleTax(AL_HIGH_AGI - AL_CHART_SLID_SINGLE_DEDUCTION),
@@ -1505,7 +1505,7 @@ describeRule('al-form40-standard-deduction-agi-slide', {
   accepted: 'chartSlidesSingleDeductionAtHighAgi',
   produced: 'packHoldsMaximumStandardDeductionFlat',
 }, ({ accepted, produced }) => {
-  // Fixture AGI $50,000 is above the Single chart row "$17,750 and above"
+  // Fixture AGI $50,000 is above the Single chart row "$35,500 and above"
   // ($2,500). The pack still grants the $3,000 maximum.
   const scenario = input({
     state: 'AL',
