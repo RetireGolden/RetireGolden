@@ -165,7 +165,6 @@ Do not repeat the paid review just to deliver a notification. The source ID is a
 wake-up hint, never CI authorization; missing evidence still blocks CI. Manual
 proof and broker dispatches from feature branches intentionally skip their jobs.
 
-
 [`openrouter-code-review.yml`](../../.github/workflows/openrouter-code-review.yml) forwards to the
 org reusable at `a190c3d834f2e3048b4eef8129fa3c8e10891aa0`. Reviews publish both the v1 ledger
 marker and a v1 plan receipt (`<!-- openrouter-review-plan:v1:… -->`) that records the effective
