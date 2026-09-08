@@ -793,8 +793,8 @@
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-03",
-      "dueOn": "2027-08-03",
+      "verifiedOn": "2026-09-07",
+      "dueOn": "2027-09-07",
       "implementedBy": [
         "packages/engine/src/tax/federalTax.ts"
       ],
@@ -830,6 +830,11 @@
       "authorities": [
         {
           "kind": "statute",
+          "citation": "IRC 86(a)(1)",
+          "url": "https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapB-partII-sec86.htm"
+        },
+        {
+          "kind": "statute",
           "citation": "IRC 86(a)(2)",
           "url": "https://www.law.cornell.edu/uscode/text/26/86"
         },
@@ -837,6 +842,11 @@
           "kind": "statute",
           "citation": "IRC 86(b)(2)",
           "url": "https://www.law.cornell.edu/uscode/text/26/86"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 86(c)",
+          "url": "https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapB-partII-sec86.htm"
         }
       ]
     },
@@ -1097,8 +1107,8 @@
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-27",
-      "dueOn": "2027-08-27",
+      "verifiedOn": "2026-09-07",
+      "dueOn": "2027-09-07",
       "implementedBy": [
         "packages/engine/src/projection/internal/annualSocialSecurity.ts",
         "packages/engine/src/projection/simulate.ts",
@@ -1164,12 +1174,12 @@
         },
         {
           "kind": "agencyGuidance",
-          "citation": "SSA POMS RS 00615.482, § C.1",
+          "citation": "SSA POMS RS 00615.482, § B.1",
           "url": "https://secure.ssa.gov/poms.nsf/lnx/0300615482"
         },
         {
           "kind": "agencyGuidance",
-          "citation": "SSA POMS RS 00615.482, § C.1 note",
+          "citation": "SSA POMS RS 00615.482, § B.1 note",
           "url": "https://secure.ssa.gov/poms.nsf/lnx/0300615482"
         }
       ]
@@ -1295,8 +1305,8 @@
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-03",
-      "dueOn": "2027-08-03",
+      "verifiedOn": "2026-09-07",
+      "dueOn": "2027-09-07",
       "implementedBy": [
         "packages/engine/src/insights/detectors/ssClaimMilestone.ts",
         "packages/engine/src/projection/internal/annualSocialSecurity.ts",
@@ -1373,7 +1383,12 @@
         {
           "kind": "statute",
           "citation": "42 U.S.C. 402(b)(2)",
-          "url": "https://www.law.cornell.edu/uscode/text/42/402"
+          "url": "https://www.govinfo.gov/content/pkg/USCODE-2024-title42/html/USCODE-2024-title42-chap7-subchapII-sec402.htm"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 402(c)(2)",
+          "url": "https://www.govinfo.gov/content/pkg/USCODE-2024-title42/html/USCODE-2024-title42-chap7-subchapII-sec402.htm"
         }
       ]
     },
@@ -1526,8 +1541,8 @@
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-27",
-      "dueOn": "2027-08-27",
+      "verifiedOn": "2026-09-07",
+      "dueOn": "2027-09-07",
       "implementedBy": [
         "packages/engine/src/model/plan.ts"
       ],
@@ -1551,6 +1566,11 @@
           "kind": "statute",
           "citation": "42 U.S.C. 402(d)(2)",
           "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 403(a)(6)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section403&num=0&edition=prelim"
         }
       ]
     },
@@ -1565,8 +1585,8 @@
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-26",
-      "dueOn": "2027-08-26",
+      "verifiedOn": "2026-09-07",
+      "dueOn": "2027-09-07",
       "implementedBy": [
         "packages/engine/src/model/plan.ts"
       ],
@@ -1603,13 +1623,13 @@
         },
         {
           "kind": "regulation",
-          "citation": "20 CFR 404.336(e)",
-          "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR219bf3e41a78e9f/section-404.336"
+          "citation": "20 CFR 404.335(e)",
+          "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR219bf3e41a78e9f/section-404.335"
         },
         {
           "kind": "regulation",
-          "citation": "20 CFR 404.336(e)(1)",
-          "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR219bf3e41a78e9f/section-404.336"
+          "citation": "20 CFR 404.335(e)(1)",
+          "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR219bf3e41a78e9f/section-404.335"
         }
       ]
     },

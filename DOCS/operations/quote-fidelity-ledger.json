@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-09-07T22:59:26.043Z",
+  "generatedAt": "2026-09-08T00:18:34.672Z",
   "recordCount": 441,
-  "urlCount": 340,
-  "fetched": 35,
-  "cached": 305,
-  "entryCount": 1258,
+  "urlCount": 341,
+  "fetched": 9,
+  "cached": 332,
+  "entryCount": 1262,
   "counts": {
-    "EXACT": 863,
+    "EXACT": 867,
     "PUNCTUATION": 43,
     "PDF-WORD-LEVEL": 234,
     "ELISION-EXACT": 67,
@@ -5819,6 +5819,16 @@
     },
     {
       "id": "irc-86-a-taxable-social-security-two-tier",
+      "citation": "IRC 86(a)(1)",
+      "host": "www.govinfo.gov",
+      "url": "https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapB-partII-sec86.htm",
+      "quoteSha256": "29f8a4cd45cd0efe",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-86-a-taxable-social-security-two-tier",
       "citation": "IRC 86(a)(2)",
       "host": "www.law.cornell.edu",
       "url": "https://www.law.cornell.edu/uscode/text/26/86",
@@ -5835,6 +5845,16 @@
       "quoteSha256": "e7e6330cdf529602",
       "verdict": "PUNCTUATION",
       "detail": "matches only after: dash-spacing",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-86-a-taxable-social-security-two-tier",
+      "citation": "IRC 86(c)",
+      "host": "www.govinfo.gov",
+      "url": "https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapB-partII-sec86.htm",
+      "quoteSha256": "1782075788db7a09",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -5920,9 +5940,19 @@
     {
       "id": "usc-42-402-b-2-spousal-half-of-pia",
       "citation": "42 U.S.C. 402(b)(2)",
-      "host": "www.law.cornell.edu",
-      "url": "https://www.law.cornell.edu/uscode/text/42/402",
-      "quoteSha256": "9e6d2e5e1f51e41a",
+      "host": "www.govinfo.gov",
+      "url": "https://www.govinfo.gov/content/pkg/USCODE-2024-title42/html/USCODE-2024-title42-chap7-subchapII-sec402.htm",
+      "quoteSha256": "495b56c33c52ecff",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-402-b-2-spousal-half-of-pia",
+      "citation": "42 U.S.C. 402(c)(2)",
+      "host": "www.govinfo.gov",
+      "url": "https://www.govinfo.gov/content/pkg/USCODE-2024-title42/html/USCODE-2024-title42-chap7-subchapII-sec402.htm",
+      "quoteSha256": "cb3db3d3c2d1bc8a",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null
@@ -6311,9 +6341,9 @@
     },
     {
       "id": "usc-42-402-e-1-a-current-survivor-remarriage-before-60",
-      "citation": "20 CFR 404.336(e)",
+      "citation": "20 CFR 404.335(e)",
       "host": "www.ecfr.gov",
-      "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR219bf3e41a78e9f/section-404.336",
+      "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR219bf3e41a78e9f/section-404.335",
       "quoteSha256": "e71f7d3c72ed84f6",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
@@ -6321,9 +6351,9 @@
     },
     {
       "id": "usc-42-402-e-1-a-current-survivor-remarriage-before-60",
-      "citation": "20 CFR 404.336(e)(1)",
+      "citation": "20 CFR 404.335(e)(1)",
       "host": "www.ecfr.gov",
-      "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR219bf3e41a78e9f/section-404.336",
+      "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR219bf3e41a78e9f/section-404.335",
       "quoteSha256": "f03db28b81588a50",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
@@ -6471,7 +6501,7 @@
     },
     {
       "id": "poms-rs-00615-482-arf-crediting-months",
-      "citation": "SSA POMS RS 00615.482, § C.1",
+      "citation": "SSA POMS RS 00615.482, § B.1",
       "host": "secure.ssa.gov",
       "url": "https://secure.ssa.gov/poms.nsf/lnx/0300615482",
       "quoteSha256": "2b12bbdfd7cbc001",
@@ -6481,7 +6511,7 @@
     },
     {
       "id": "poms-rs-00615-482-arf-crediting-months",
-      "citation": "SSA POMS RS 00615.482, § C.1 note",
+      "citation": "SSA POMS RS 00615.482, § B.1 note",
       "host": "secure.ssa.gov",
       "url": "https://secure.ssa.gov/poms.nsf/lnx/0300615482",
       "quoteSha256": "222fe6076de4fb2c",
@@ -6785,6 +6815,16 @@
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim",
       "quoteSha256": "4f76b1ca877a293c",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-402-d-2-ssdi-child-auxiliary",
+      "citation": "42 U.S.C. 403(a)(6)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section403&num=0&edition=prelim",
+      "quoteSha256": "a225a3c7f06ee7ce",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null
