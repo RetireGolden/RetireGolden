@@ -131,7 +131,7 @@ const producerReviewContext = {
 
 const profileConsumerFixture = [
   'export async function authorizeProfileReceipt(_github, input) {',
-  '  if (input.orgWorkflowSha !== "a89c14022c0bce5ace6cc9480924ec877e039c8e") throw new Error("missing or wrong org pin");',
+  '  if (input.orgWorkflowSha !== "d10864c65393de4a8a5799b1613410c1a2b28a1d") throw new Error("missing or wrong org pin");',
   '  if (typeof input?.review?.body === "string" && input.review.body.includes("PROFILE_DENY")) {',
   '    return { authorized: false, reason: "fixture profile denied" }',
   '  }',
@@ -601,6 +601,7 @@ describe('OpenRouter CI authorization contract', () => {
   })
 
   it('keeps documented producer revisions synchronized with the caller action reference', () => {
+    expect(reviewCaller).toMatch(/permissions:\r?\n {2}actions: read/)
     expect(reviewCaller).toContain('review_policy: base')
     expect(reviewCaller).toContain('review_profiles_enabled: true')
     expect(reviewCaller).toContain("review_level: ${{ inputs.review_level || 'auto' }}")
