@@ -1,0 +1,709 @@
+{
+  "cases": [
+    {
+      "endYear": 2059,
+      "id": "example:example-couple",
+      "metrics": {
+        "depletionYear": null,
+        "endingAfterTaxEstate": 3697353,
+        "endingInvestable": 2724918,
+        "endingNetWorth": 3697353,
+        "lifetimeRothConversions": 1014366,
+        "lifetimeTaxesAndPenalties": 431349,
+        "modeledYears": 34
+      },
+      "name": "Example couple",
+      "source": {
+        "id": "example-couple",
+        "label": "Example couple",
+        "type": "example"
+      },
+      "startYear": 2026,
+      "warnings": [
+        "Sam has no Roth account, so Sam’s share of the Roth conversion was skipped — a conversion has to land in the same person’s own Roth. Opening a Roth IRA for Sam would let that share convert.",
+        "Some Marketplace years use gross enrollment premium because required ACA reconciliation facts are missing or unsupported.",
+        "Some pre-65 years exceed 400% of the federal poverty line: no ACA credit (the cliff).",
+        "Spending withdrawals from traditional accounts pushed income above the Roth-conversion target in some years."
+      ]
+    },
+    {
+      "endYear": 2052,
+      "id": "example:under-saved-single",
+      "metrics": {
+        "depletionYear": 2046,
+        "endingAfterTaxEstate": 0,
+        "endingInvestable": 0,
+        "endingNetWorth": 0,
+        "lifetimeRothConversions": 0,
+        "lifetimeTaxesAndPenalties": 183714,
+        "modeledYears": 27
+      },
+      "name": "Under-saved single retiree",
+      "source": {
+        "id": "under-saved-single",
+        "label": "Under-saved single retiree",
+        "type": "example"
+      },
+      "startYear": 2026,
+      "warnings": []
+    },
+    {
+      "endYear": 2049,
+      "id": "example:bracket-fill-roth",
+      "metrics": {
+        "depletionYear": null,
+        "endingAfterTaxEstate": 623754,
+        "endingInvestable": 623754,
+        "endingNetWorth": 623754,
+        "lifetimeRothConversions": 472533,
+        "lifetimeTaxesAndPenalties": 163853,
+        "modeledYears": 24
+      },
+      "name": "Bracket-fill Roth conversions",
+      "source": {
+        "id": "bracket-fill-roth",
+        "label": "Bracket-fill Roth conversions",
+        "type": "example"
+      },
+      "startYear": 2026,
+      "warnings": [
+        "Riley has no Roth account, so Riley’s share of the Roth conversion was skipped — a conversion has to land in the same person’s own Roth. Opening a Roth IRA for Riley would let that share convert.",
+        "Spending withdrawals from traditional accounts pushed income above the Roth-conversion target in some years."
+      ]
+    },
+    {
+      "endYear": 2056,
+      "id": "example:early-retiree-aca",
+      "metrics": {
+        "depletionYear": null,
+        "endingAfterTaxEstate": 539207,
+        "endingInvestable": 539207,
+        "endingNetWorth": 539207,
+        "lifetimeRothConversions": 59662,
+        "lifetimeTaxesAndPenalties": 105502,
+        "modeledYears": 31
+      },
+      "name": "Early retiree & the ACA cliff",
+      "source": {
+        "id": "early-retiree-aca",
+        "label": "Early retiree & the ACA cliff",
+        "type": "example"
+      },
+      "startYear": 2026,
+      "warnings": [
+        "Some Marketplace years use gross enrollment premium because required ACA reconciliation facts are missing or unsupported."
+      ]
+    },
+    {
+      "endYear": 2048,
+      "id": "example:rmd-irmaa",
+      "metrics": {
+        "depletionYear": null,
+        "endingAfterTaxEstate": 1208828,
+        "endingInvestable": 1546195,
+        "endingNetWorth": 1546195,
+        "lifetimeRothConversions": 0,
+        "lifetimeTaxesAndPenalties": 512838,
+        "modeledYears": 23
+      },
+      "name": "High balances: RMDs & IRMAA",
+      "source": {
+        "id": "rmd-irmaa",
+        "label": "High balances: RMDs & IRMAA",
+        "type": "example"
+      },
+      "startYear": 2026,
+      "warnings": []
+    },
+    {
+      "endYear": 2042,
+      "id": "example:inherited-ira-beneficiary",
+      "metrics": {
+        "depletionYear": 2032,
+        "endingAfterTaxEstate": 0,
+        "endingInvestable": 0,
+        "endingNetWorth": 0,
+        "lifetimeRothConversions": 0,
+        "lifetimeTaxesAndPenalties": 49648,
+        "modeledYears": 17
+      },
+      "name": "Inherited IRA beneficiary schedules",
+      "source": {
+        "id": "inherited-ira-beneficiary",
+        "label": "Inherited IRA beneficiary schedules",
+        "type": "example"
+      },
+      "startYear": 2026,
+      "warnings": []
+    },
+    {
+      "endYear": 2057,
+      "id": "example:survivor-years",
+      "metrics": {
+        "depletionYear": 2043,
+        "endingAfterTaxEstate": 0,
+        "endingInvestable": 0,
+        "endingNetWorth": 0,
+        "lifetimeRothConversions": 0,
+        "lifetimeTaxesAndPenalties": 79021,
+        "modeledYears": 32
+      },
+      "name": "Survivor years (widow's penalty)",
+      "source": {
+        "id": "survivor-years",
+        "label": "Survivor years (widow's penalty)",
+        "type": "example"
+      },
+      "startYear": 2026,
+      "warnings": []
+    },
+    {
+      "endYear": 2056,
+      "id": "example:moving-state-tax",
+      "metrics": {
+        "depletionYear": null,
+        "endingAfterTaxEstate": 3880516,
+        "endingInvestable": 3880516,
+        "endingNetWorth": 3880516,
+        "lifetimeRothConversions": 0,
+        "lifetimeTaxesAndPenalties": 732566,
+        "modeledYears": 31
+      },
+      "name": "Moving in retirement (state tax)",
+      "source": {
+        "id": "moving-state-tax",
+        "label": "Moving in retirement (state tax)",
+        "type": "example"
+      },
+      "startYear": 2026,
+      "warnings": [
+        "Some Marketplace years use gross enrollment premium because required ACA reconciliation facts are missing or unsupported.",
+        "Some pre-65 years exceed 400% of the federal poverty line: no ACA credit (the cliff)."
+      ]
+    },
+    {
+      "endYear": 2056,
+      "id": "example:ltc-shock",
+      "metrics": {
+        "depletionYear": 2033,
+        "endingAfterTaxEstate": 0,
+        "endingInvestable": 0,
+        "endingNetWorth": 0,
+        "lifetimeRothConversions": 0,
+        "lifetimeTaxesAndPenalties": 0,
+        "modeledYears": 31
+      },
+      "name": "Long-term-care shock",
+      "source": {
+        "id": "ltc-shock",
+        "label": "Long-term-care shock",
+        "type": "example"
+      },
+      "startYear": 2026,
+      "warnings": [
+        "Some Marketplace years use gross enrollment premium because required ACA reconciliation facts are missing or unsupported."
+      ]
+    },
+    {
+      "endYear": 2091,
+      "id": "example:early-career-match",
+      "metrics": {
+        "depletionYear": null,
+        "endingAfterTaxEstate": 15443046,
+        "endingInvestable": 17025657,
+        "endingNetWorth": 17025657,
+        "lifetimeRothConversions": 0,
+        "lifetimeTaxesAndPenalties": 2806799,
+        "modeledYears": 66
+      },
+      "name": "Just getting started",
+      "source": {
+        "id": "early-career-match",
+        "label": "Just getting started",
+        "type": "example"
+      },
+      "startYear": 2026,
+      "warnings": [
+        "Some Marketplace years use gross enrollment premium because required ACA reconciliation facts are missing or unsupported."
+      ]
+    },
+    {
+      "endYear": 2091,
+      "id": "example:aggressive-saver",
+      "metrics": {
+        "depletionYear": null,
+        "endingAfterTaxEstate": 134924369,
+        "endingInvestable": 138916242,
+        "endingNetWorth": 138916242,
+        "lifetimeRothConversions": 0,
+        "lifetimeTaxesAndPenalties": 6849942,
+        "modeledYears": 66
+      },
+      "name": "Aggressive saver to early retirement",
+      "source": {
+        "id": "aggressive-saver",
+        "label": "Aggressive saver to early retirement",
+        "type": "example"
+      },
+      "startYear": 2026,
+      "warnings": [
+        "Some Marketplace years use gross enrollment premium because required ACA reconciliation facts are missing or unsupported.",
+        "Some pre-65 years exceed 400% of the federal poverty line: no ACA credit (the cliff)."
+      ]
+    },
+    {
+      "endYear": 2086,
+      "id": "example:coast-fire",
+      "metrics": {
+        "depletionYear": null,
+        "endingAfterTaxEstate": 7592622,
+        "endingInvestable": 8107715,
+        "endingNetWorth": 8107715,
+        "lifetimeRothConversions": 0,
+        "lifetimeTaxesAndPenalties": 1707504,
+        "modeledYears": 61
+      },
+      "name": "Coast FIRE",
+      "source": {
+        "id": "coast-fire",
+        "label": "Coast FIRE",
+        "type": "example"
+      },
+      "startYear": 2026,
+      "warnings": [
+        "Some Marketplace years use gross enrollment premium because required ACA reconciliation facts are missing or unsupported.",
+        "Some contributions were reduced to stay within IRS annual limits.",
+        "Some pre-65 years exceed 400% of the federal poverty line: no ACA credit (the cliff).",
+        "Surplus cash had no cash/taxable account to land in; tracked as unassigned (0% growth)."
+      ]
+    },
+    {
+      "endYear": 2086,
+      "id": "example:barista-fire",
+      "metrics": {
+        "depletionYear": null,
+        "endingAfterTaxEstate": 13165839,
+        "endingInvestable": 14569925,
+        "endingNetWorth": 14569925,
+        "lifetimeRothConversions": 0,
+        "lifetimeTaxesAndPenalties": 2091402,
+        "modeledYears": 61
+      },
+      "name": "Barista FIRE",
+      "source": {
+        "id": "barista-fire",
+        "label": "Barista FIRE",
+        "type": "example"
+      },
+      "startYear": 2026,
+      "warnings": [
+        "Some Marketplace years use gross enrollment premium because required ACA reconciliation facts are missing or unsupported.",
+        "Some pre-65 years exceed 400% of the federal poverty line: no ACA credit (the cliff)."
+      ]
+    },
+    {
+      "endYear": 2071,
+      "id": "example:bridge-early-retirement",
+      "metrics": {
+        "depletionYear": null,
+        "endingAfterTaxEstate": 10726629,
+        "endingInvestable": 11972871,
+        "endingNetWorth": 11972871,
+        "lifetimeRothConversions": 0,
+        "lifetimeTaxesAndPenalties": 1452039,
+        "modeledYears": 46
+      },
+      "name": "Bridge to 59½ (SEPP)",
+      "source": {
+        "id": "bridge-early-retirement",
+        "label": "Bridge to 59½ (SEPP)",
+        "type": "example"
+      },
+      "startYear": 2026,
+      "warnings": [
+        "Some Marketplace years use gross enrollment premium because required ACA reconciliation facts are missing or unsupported.",
+        "Some pre-65 years exceed 400% of the federal poverty line: no ACA credit (the cliff)."
+      ]
+    },
+    {
+      "endYear": 2086,
+      "id": "example:lean-fat-fire",
+      "metrics": {
+        "depletionYear": null,
+        "endingAfterTaxEstate": 41715782,
+        "endingInvestable": 43545919,
+        "endingNetWorth": 43545919,
+        "lifetimeRothConversions": 0,
+        "lifetimeTaxesAndPenalties": 2692780,
+        "modeledYears": 61
+      },
+      "name": "Lean vs. Fat FIRE",
+      "source": {
+        "id": "lean-fat-fire",
+        "label": "Lean vs. Fat FIRE",
+        "type": "example"
+      },
+      "startYear": 2026,
+      "warnings": [
+        "Some Marketplace years use gross enrollment premium because required ACA reconciliation facts are missing or unsupported.",
+        "Some pre-65 years exceed 400% of the federal poverty line: no ACA credit (the cliff)."
+      ]
+    },
+    {
+      "endYear": 2076,
+      "id": "example:hsa-stealth-retirement",
+      "metrics": {
+        "depletionYear": null,
+        "endingAfterTaxEstate": 4023781,
+        "endingInvestable": 4484179,
+        "endingNetWorth": 4484179,
+        "lifetimeRothConversions": 0,
+        "lifetimeTaxesAndPenalties": 808157,
+        "modeledYears": 51
+      },
+      "name": "HSA as a stealth account",
+      "source": {
+        "id": "hsa-stealth-retirement",
+        "label": "HSA as a stealth account",
+        "type": "example"
+      },
+      "startYear": 2026,
+      "warnings": [
+        "Early-withdrawal penalties were charged (pre-59½ traditional or pre-65 HSA).",
+        "Some Marketplace years use gross enrollment premium because required ACA reconciliation facts are missing or unsupported.",
+        "Some contributions were reduced to stay within IRS annual limits.",
+        "Some pre-65 years exceed 400% of the federal poverty line: no ACA credit (the cliff)."
+      ]
+    },
+    {
+      "endYear": 2091,
+      "id": "example:salary-growth-escalation",
+      "metrics": {
+        "depletionYear": null,
+        "endingAfterTaxEstate": 44647230,
+        "endingInvestable": 46295270,
+        "endingNetWorth": 46295270,
+        "lifetimeRothConversions": 0,
+        "lifetimeTaxesAndPenalties": 2552250,
+        "modeledYears": 66
+      },
+      "name": "Salary growth & escalation",
+      "source": {
+        "id": "salary-growth-escalation",
+        "label": "Salary growth & escalation",
+        "type": "example"
+      },
+      "startYear": 2026,
+      "warnings": [
+        "Some Marketplace years use gross enrollment premium because required ACA reconciliation facts are missing or unsupported.",
+        "Some pre-65 years exceed 400% of the federal poverty line: no ACA credit (the cliff)."
+      ]
+    },
+    {
+      "endYear": 2055,
+      "id": "example:guardrails-flex-goals",
+      "metrics": {
+        "depletionYear": 2041,
+        "endingAfterTaxEstate": 0,
+        "endingInvestable": 0,
+        "endingNetWorth": 0,
+        "lifetimeRothConversions": 0,
+        "lifetimeTaxesAndPenalties": 7903,
+        "modeledYears": 30
+      },
+      "name": "Guardrails and flexible goals",
+      "source": {
+        "id": "guardrails-flex-goals",
+        "label": "Guardrails and flexible goals",
+        "type": "example"
+      },
+      "startYear": 2026,
+      "warnings": [
+        "Some Marketplace years use gross enrollment premium because required ACA reconciliation facts are missing or unsupported."
+      ]
+    },
+    {
+      "endYear": 2056,
+      "id": "example:annuity-purchases-estate",
+      "metrics": {
+        "depletionYear": null,
+        "endingAfterTaxEstate": 3254253,
+        "endingInvestable": 3254253,
+        "endingNetWorth": 3254253,
+        "lifetimeRothConversions": 857968,
+        "lifetimeTaxesAndPenalties": 342232,
+        "modeledYears": 31
+      },
+      "name": "Annuity ladder and estate beneficiaries",
+      "source": {
+        "id": "annuity-purchases-estate",
+        "label": "Annuity ladder and estate beneficiaries",
+        "type": "example"
+      },
+      "startYear": 2026,
+      "warnings": [
+        "A requested Roth conversion exceeded the available traditional balance and was reduced.",
+        "Spending withdrawals from traditional accounts pushed income above the Roth-conversion target in some years."
+      ]
+    },
+    {
+      "endYear": 2053,
+      "id": "example:glidepath-allocation",
+      "metrics": {
+        "depletionYear": null,
+        "endingAfterTaxEstate": 1272037,
+        "endingInvestable": 1272037,
+        "endingNetWorth": 1272037,
+        "lifetimeRothConversions": 765715,
+        "lifetimeTaxesAndPenalties": 347184,
+        "modeledYears": 28
+      },
+      "name": "Glidepath allocation and rebalancing",
+      "source": {
+        "id": "glidepath-allocation",
+        "label": "Glidepath allocation and rebalancing",
+        "type": "example"
+      },
+      "startYear": 2026,
+      "warnings": [
+        "A requested Roth conversion exceeded the available traditional balance and was reduced.",
+        "Some Marketplace years use gross enrollment premium because required ACA reconciliation facts are missing or unsupported.",
+        "Spending withdrawals from traditional accounts pushed income above the Roth-conversion target in some years."
+      ]
+    },
+    {
+      "endYear": 2053,
+      "id": "example:hsa-property-depth",
+      "metrics": {
+        "depletionYear": 2043,
+        "endingAfterTaxEstate": 0,
+        "endingInvestable": 0,
+        "endingNetWorth": 0,
+        "lifetimeRothConversions": 180171,
+        "lifetimeTaxesAndPenalties": 32843,
+        "modeledYears": 28
+      },
+      "name": "HSA medical sub-ledger and home sale",
+      "source": {
+        "id": "hsa-property-depth",
+        "label": "HSA medical sub-ledger and home sale",
+        "type": "example"
+      },
+      "startYear": 2026,
+      "warnings": [
+        "A requested Roth conversion exceeded the available traditional balance and was reduced.",
+        "Some HSA withdrawals exceeded modeled qualified medical expenses; the excess was taxed as ordinary income (and penalized before 65).",
+        "Some Marketplace years use gross enrollment premium because required ACA reconciliation facts are missing or unsupported."
+      ]
+    },
+    {
+      "endYear": 2055,
+      "id": "example:fixed-target-spending",
+      "metrics": {
+        "depletionYear": 2034,
+        "endingAfterTaxEstate": 0,
+        "endingInvestable": 0,
+        "endingNetWorth": 0,
+        "lifetimeRothConversions": 0,
+        "lifetimeTaxesAndPenalties": 7215,
+        "modeledYears": 30
+      },
+      "name": "Fixed target spending (no guardrails)",
+      "source": {
+        "id": "fixed-target-spending",
+        "label": "Fixed target spending (no guardrails)",
+        "type": "example"
+      },
+      "startYear": 2026,
+      "warnings": [
+        "Some Marketplace years use gross enrollment premium because required ACA reconciliation facts are missing or unsupported."
+      ]
+    },
+    {
+      "endYear": 2056,
+      "id": "example:no-annuity-brokerage",
+      "metrics": {
+        "depletionYear": null,
+        "endingAfterTaxEstate": 3684431,
+        "endingInvestable": 3684431,
+        "endingNetWorth": 3684431,
+        "lifetimeRothConversions": 1230831,
+        "lifetimeTaxesAndPenalties": 278493,
+        "modeledYears": 31
+      },
+      "name": "Brokerage only (no annuity purchases)",
+      "source": {
+        "id": "no-annuity-brokerage",
+        "label": "Brokerage only (no annuity purchases)",
+        "type": "example"
+      },
+      "startYear": 2026,
+      "warnings": [
+        "A requested Roth conversion exceeded the available traditional balance and was reduced.",
+        "Spending withdrawals from traditional accounts pushed income above the Roth-conversion target in some years."
+      ]
+    },
+    {
+      "endYear": 2053,
+      "id": "example:static-allocation-control",
+      "metrics": {
+        "depletionYear": null,
+        "endingAfterTaxEstate": 839732,
+        "endingInvestable": 839732,
+        "endingNetWorth": 839732,
+        "lifetimeRothConversions": 759693,
+        "lifetimeTaxesAndPenalties": 329064,
+        "modeledYears": 28
+      },
+      "name": "Static allocation (no glidepath)",
+      "source": {
+        "id": "static-allocation-control",
+        "label": "Static allocation (no glidepath)",
+        "type": "example"
+      },
+      "startYear": 2026,
+      "warnings": [
+        "A requested Roth conversion exceeded the available traditional balance and was reduced.",
+        "Some Marketplace years use gross enrollment premium because required ACA reconciliation facts are missing or unsupported.",
+        "Spending withdrawals from traditional accounts pushed income above the Roth-conversion target in some years."
+      ]
+    },
+    {
+      "endYear": 2053,
+      "id": "example:brokerage-no-hsa",
+      "metrics": {
+        "depletionYear": 2043,
+        "endingAfterTaxEstate": 0,
+        "endingInvestable": 0,
+        "endingNetWorth": 0,
+        "lifetimeRothConversions": 0,
+        "lifetimeTaxesAndPenalties": 24138,
+        "modeledYears": 28
+      },
+      "name": "Brokerage instead of HSA",
+      "source": {
+        "id": "brokerage-no-hsa",
+        "label": "Brokerage instead of HSA",
+        "type": "example"
+      },
+      "startYear": 2026,
+      "warnings": [
+        "Roth conversions were requested but the plan has no Roth account; conversions skipped.",
+        "Some Marketplace years use gross enrollment premium because required ACA reconciliation facts are missing or unsupported."
+      ]
+    },
+    {
+      "endYear": 2078,
+      "id": "example:all-401k-no-bridge",
+      "metrics": {
+        "depletionYear": 2067,
+        "endingAfterTaxEstate": 0,
+        "endingInvestable": 0,
+        "endingNetWorth": 0,
+        "lifetimeRothConversions": 0,
+        "lifetimeTaxesAndPenalties": 950722,
+        "modeledYears": 53
+      },
+      "name": "All-in 401(k) (no bridge)",
+      "source": {
+        "id": "all-401k-no-bridge",
+        "label": "All-in 401(k) (no bridge)",
+        "type": "example"
+      },
+      "startYear": 2026,
+      "warnings": [
+        "Early-withdrawal penalties were charged (pre-59½ traditional or pre-65 HSA).",
+        "Some Marketplace years use gross enrollment premium because required ACA reconciliation facts are missing or unsupported.",
+        "Some pre-65 years exceed 400% of the federal poverty line: no ACA credit (the cliff)."
+      ]
+    },
+    {
+      "endYear": 2078,
+      "id": "example:brokerage-bridge-401k",
+      "metrics": {
+        "depletionYear": 2068,
+        "endingAfterTaxEstate": 0,
+        "endingInvestable": 0,
+        "endingNetWorth": 0,
+        "lifetimeRothConversions": 0,
+        "lifetimeTaxesAndPenalties": 876459,
+        "modeledYears": 53
+      },
+      "name": "401(k) plus brokerage bridge",
+      "source": {
+        "id": "brokerage-bridge-401k",
+        "label": "401(k) plus brokerage bridge",
+        "type": "example"
+      },
+      "startYear": 2026,
+      "warnings": [
+        "Some Marketplace years use gross enrollment premium because required ACA reconciliation facts are missing or unsupported.",
+        "Some pre-65 years exceed 400% of the federal poverty line: no ACA credit (the cliff)."
+      ]
+    },
+    {
+      "endYear": 2096,
+      "id": "example:no-head-start-grad",
+      "metrics": {
+        "depletionYear": null,
+        "endingAfterTaxEstate": 15795758,
+        "endingInvestable": 17961669,
+        "endingNetWorth": 17961669,
+        "lifetimeRothConversions": 0,
+        "lifetimeTaxesAndPenalties": 3328629,
+        "modeledYears": 71
+      },
+      "name": "Starting from zero (no head start)",
+      "source": {
+        "id": "no-head-start-grad",
+        "label": "Starting from zero (no head start)",
+        "type": "example"
+      },
+      "startYear": 2026,
+      "warnings": [
+        "Some Marketplace years use gross enrollment premium because required ACA reconciliation facts are missing or unsupported."
+      ]
+    },
+    {
+      "endYear": 2096,
+      "id": "example:trump-account-head-start",
+      "metrics": {
+        "depletionYear": null,
+        "endingAfterTaxEstate": 23037333,
+        "endingInvestable": 26331101,
+        "endingNetWorth": 26331101,
+        "lifetimeRothConversions": 0,
+        "lifetimeTaxesAndPenalties": 4835380,
+        "modeledYears": 71
+      },
+      "name": "Trump account IRA head start",
+      "source": {
+        "id": "trump-account-head-start",
+        "label": "Trump account IRA head start",
+        "type": "example"
+      },
+      "startYear": 2026,
+      "warnings": [
+        "Some Marketplace years use gross enrollment premium because required ACA reconciliation facts are missing or unsupported."
+      ]
+    }
+  ],
+  "caseSet": "default-example-library",
+  "kind": "retiregolden.case-runner.manifest",
+  "options": {
+    "decisionMaxCandidates": null,
+    "federalParameterPackYear": 2026,
+    "includeDecisions": false,
+    "parameterDataAsOf": "June 2026",
+    "parameterDataBasis": "2025 published federal and state rules",
+    "rounding": "whole-dollar",
+    "startYear": 2026,
+    "stateParameterPackYear": 2026,
+    "taxStack": "federal-plus-modeled-state"
+  },
+  "totals": {
+    "caseCount": 29,
+    "warningCount": 53
+  },
+  "version": 1
+}

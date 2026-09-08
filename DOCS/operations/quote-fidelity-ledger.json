@@ -1,15 +1,15 @@
 {
-  "generatedAt": "2026-09-08T03:11:54.090Z",
-  "recordCount": 441,
-  "urlCount": 341,
+  "generatedAt": "2026-09-08T05:56:51.696Z",
+  "recordCount": 443,
+  "urlCount": 344,
   "fetched": 9,
-  "cached": 332,
-  "entryCount": 1267,
+  "cached": 335,
+  "entryCount": 1275,
   "counts": {
-    "EXACT": 872,
+    "EXACT": 873,
     "PUNCTUATION": 42,
-    "PDF-WORD-LEVEL": 235,
-    "ELISION-EXACT": 67,
+    "PDF-WORD-LEVEL": 239,
+    "ELISION-EXACT": 70,
     "ELISION-PUNCTUATION": 7,
     "PDF-NOT-VERIFIABLE": 7,
     "UNFETCHABLE": 37
@@ -10662,6 +10662,46 @@
       "fetchProfile": "browserFallback"
     },
     {
+      "id": "mn-dor-2026-rate-schedule-and-standard-deduction",
+      "citation": "Minnesota DOR, Income Tax Rates for 2026, single filers",
+      "host": "www.revenue.state.mn.us",
+      "url": "https://www.revenue.state.mn.us/minnesota-income-tax-rates-and-brackets",
+      "quoteSha256": "7a55bed1d769ed2b",
+      "verdict": "ELISION-EXACT",
+      "detail": "16 segments, every one a literal substring",
+      "diagnosis": null
+    },
+    {
+      "id": "mn-dor-2026-rate-schedule-and-standard-deduction",
+      "citation": "Minnesota DOR, Income Tax Rates for 2026, married filing jointly",
+      "host": "www.revenue.state.mn.us",
+      "url": "https://www.revenue.state.mn.us/minnesota-income-tax-rates-and-brackets",
+      "quoteSha256": "3ee5a9ef3171a375",
+      "verdict": "ELISION-EXACT",
+      "detail": "16 segments, every one a literal substring",
+      "diagnosis": null
+    },
+    {
+      "id": "mn-dor-2026-rate-schedule-and-standard-deduction",
+      "citation": "Minnesota DOR, Tax Year 2026 Inflation-Adjusted Amounts, section 290.0123 subd. 1",
+      "host": "www.revenue.state.mn.us",
+      "url": "https://www.revenue.state.mn.us/sites/default/files/2025-12/inflation-adjusted-amounts-2026.pdf",
+      "quoteSha256": "0e8a00dc7b30d08f",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "2 elision segments, all present in the extracted text",
+      "diagnosis": null
+    },
+    {
+      "id": "mn-dor-2026-rate-schedule-and-standard-deduction",
+      "citation": "Minnesota DOR, Tax Year 2026 Inflation-Adjusted Amounts, publication scope",
+      "host": "www.revenue.state.mn.us",
+      "url": "https://www.revenue.state.mn.us/sites/default/files/2025-12/inflation-adjusted-amounts-2026.pdf",
+      "quoteSha256": "6618d16324997b10",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
       "id": "mn-stat-290-0132-subd-26-social-security-inclusion",
       "citation": "Minn. Stat. 290.0132, subd. 26(a)",
       "host": "www.revisor.mn.gov",
@@ -10699,6 +10739,36 @@
       "quoteSha256": "4120452716f01633",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "mn-stat-290-0132-subd-26-social-security-inclusion",
+      "citation": "Minn. Stat. 290.0132, subd. 26(j)",
+      "host": "www.revisor.mn.gov",
+      "url": "https://www.revisor.mn.gov/statutes/cite/290.0132",
+      "quoteSha256": "d34cd5a92883a3e0",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "mn-stat-290-0132-subd-26-social-security-inclusion",
+      "citation": "Minnesota DOR, Tax Year 2026 Inflation-Adjusted Amounts, section 290.0132 subd. 26 simplified thresholds",
+      "host": "www.revenue.state.mn.us",
+      "url": "https://www.revenue.state.mn.us/sites/default/files/2025-12/inflation-adjusted-amounts-2026.pdf",
+      "quoteSha256": "ddd008d056b9667e",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "14 elision segments, all present in the extracted text",
+      "diagnosis": null
+    },
+    {
+      "id": "mn-stat-290-0132-subd-26-social-security-inclusion",
+      "citation": "Minnesota DOR, Tax Year 2026 Inflation-Adjusted Amounts, section 290.0132 subd. 26 alternate maxima",
+      "host": "www.revenue.state.mn.us",
+      "url": "https://www.revenue.state.mn.us/sites/default/files/2025-12/inflation-adjusted-amounts-2026.pdf",
+      "quoteSha256": "6ae63bb5788d396e",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "14 elision segments, all present in the extracted text",
       "diagnosis": null
     },
     {
@@ -12449,6 +12519,16 @@
       "quoteSha256": "e5da7602148abc3d",
       "verdict": "PDF-WORD-LEVEL",
       "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "ca-ftb-2026-540-es-standard-deduction",
+      "citation": "California FTB, 2026 Form 540-ES Instructions, Estimated Tax Worksheet line 2b",
+      "host": "www.ftb.ca.gov",
+      "url": "https://www.ftb.ca.gov/forms/2026/2026-540-es-instructions.html",
+      "quoteSha256": "5c39b7b0813456a5",
+      "verdict": "ELISION-EXACT",
+      "detail": "2 segments, every one a literal substring",
       "diagnosis": null
     },
     {

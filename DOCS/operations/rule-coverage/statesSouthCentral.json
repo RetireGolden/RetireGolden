@@ -789,16 +789,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3311,
+          "line": 3378,
           "note": null,
           "tests": [
             {
               "title": "prices Alabama single brackets rather than the joint schedule",
-              "line": 3327
+              "line": 3394
             },
             {
               "title": "prices the joint schedule on a joint return, distinct from the single breaks",
-              "line": 3334
+              "line": 3401
             }
           ]
         }
@@ -875,20 +875,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3349,
+          "line": 3416,
           "note": "unsettled: operative text unsourced",
           "tests": [
             {
               "title": "implements the encoded $6,000 convention and discriminates the competing readings",
-              "line": 3375
+              "line": 3442
             },
             {
               "title": "reaches the no-exclusion reading once the cap is withheld",
-              "line": 3384
+              "line": 3451
             },
             {
               "title": "reaches the research 2026 reading under a doubled cap",
-              "line": 3392
+              "line": 3459
             }
           ]
         }
@@ -1019,20 +1019,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
-          "line": 1435,
+          "line": 1434,
           "note": "private-bucket defined-benefit limb",
           "tests": [
             {
               "title": "taxes a private-employer 414(j) pension above the $6,000 private-bucket cap",
-              "line": 1462
+              "line": 1461
             },
             {
               "title": "taxes the whole pension for an under-65 private defined-benefit retiree",
-              "line": 1470
+              "line": 1469
             },
             {
               "title": "reaches the booklet for the private pension once that bucket is full",
-              "line": 1485
+              "line": 1484
             }
           ]
         }
@@ -1104,12 +1104,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3281,
+          "line": 3348,
           "note": null,
           "tests": [
             {
               "title": "keeps a taxable IRA distribution in the Alabama base",
-              "line": 3297
+              "line": 3364
             }
           ]
         }
@@ -1172,12 +1172,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
-          "line": 1556,
+          "line": 1555,
           "note": null,
           "tests": [
             {
               "title": "charges tax on the exemption dollars every Alabama return subtracts",
-              "line": 1575
+              "line": 1574
             }
           ]
         }
@@ -1304,12 +1304,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3253,
+          "line": 3320,
           "note": null,
           "tests": [
             {
               "title": "omits federally taxable Social Security from the Alabama base",
-              "line": 3270
+              "line": 3337
             }
           ]
         }
@@ -1367,20 +1367,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
-          "line": 1495,
+          "line": 1494,
           "note": null,
           "tests": [
             {
               "title": "grants the $3,000 single maximum where the chart has slid to $2,500",
-              "line": 1517
+              "line": 1516
             },
             {
               "title": "reaches the chart once the pack deduction is replaced with the slid amount",
-              "line": 1525
+              "line": 1524
             },
             {
               "title": "grants the $8,500 joint maximum where the chart row reads $5,000",
-              "line": 1536
+              "line": 1535
             }
           ]
         }
@@ -1452,46 +1452,46 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2333,
+          "line": 2400,
           "note": "Social Security limb",
           "tests": [
             {
               "title": "keeps Social Security out of Kentucky adjusted gross income",
-              "line": 2349
+              "line": 2416
             },
             {
               "title": "would pull the federally taxable share in if Kentucky taxed it",
-              "line": 2355
+              "line": 2422
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2364,
+          "line": 2431,
           "note": "retirement-distribution limb",
           "tests": [
             {
               "title": "excludes $31,110 of a private IRA distribution with no age gate",
-              "line": 2383
+              "line": 2450
             },
             {
               "title": "would charge more if private retirement were left in the base",
-              "line": 2389
+              "line": 2456
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2400,
+          "line": 2467,
           "note": "flat-rate limb",
           "tests": [
             {
               "title": "taxes net income at three and one-half percent for 2026",
-              "line": 2415
+              "line": 2482
             },
             {
               "title": "would charge more at the former four percent rate",
-              "line": 2419
+              "line": 2486
             }
           ]
         }
@@ -1568,16 +1568,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
-          "line": 1364,
+          "line": 1363,
           "note": null,
           "tests": [
             {
               "title": "pins the held-forward unindexed $12,000 against the CPI-U indexing method",
-              "line": 1392
+              "line": 1391
             },
             {
               "title": "withholds the exemption at 64, which is the age the statute names",
-              "line": 1404
+              "line": 1403
             }
           ]
         }
@@ -1643,20 +1643,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2441,
+          "line": 2508,
           "note": null,
           "tests": [
             {
               "title": "keeps Social Security out of the Louisiana base",
-              "line": 2455
+              "line": 2522
             },
             {
               "title": "would pull the federally taxable share in if Louisiana taxed it",
-              "line": 2461
+              "line": 2528
             },
             {
               "title": "also exempts a United States Government retirement annuity in the public bucket",
-              "line": 2467
+              "line": 2534
             }
           ]
         }
@@ -2337,12 +2337,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2862,
+          "line": 2929,
           "note": "military-retirement exception to the common cap",
           "tests": [
             {
               "title": "pins the military exception the generic retirement bucket cannot express",
-              "line": 2880
+              "line": 2947
             }
           ]
         }

@@ -1180,14 +1180,65 @@ export const midwestStateRecords = {
     ],
   },
 
+  'mn-dor-2026-rate-schedule-and-standard-deduction': {
+    title: 'Minnesota publishes TY2026 single/MFJ deductions and income-tax bands',
+    statement:
+      'For TY2026, Minnesota publishes a $15,300 standard deduction for single filers and $30,600 for MFJ. Its whole-dollar bands are single: 5.35% for $0-$33,310, 6.80% for $33,311-$109,430, 7.85% for $109,431-$203,150, and 9.85% from $203,151; MFJ: 5.35% for $0-$48,700, 6.80% for $48,701-$193,480, 7.85% for $193,481-$337,930, and 9.85% from $337,931. The pack represents those bands as continuous mathematical breakpoints at $33,310/$109,430/$203,150 single and $48,700/$193,480/$337,930 MFJ. Settled only for those supported TY2026 cells; other statuses, exemptions, additions, limitations, surtax, Social Security subtraction, and whole-return accuracy are outside this record.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'DOR publishes the annually adjusted whole-dollar ranges. bracketTax uses endpoint breakpoints over continuous modeled dollars; at whole-dollar inputs this represents the published ranges. The record expires after TY2026. Later plan years may reuse the latest 2026 pack as a planning stand-in and are not certified by this annual record.',
+    jurisdiction: 'state:MN',
+    authority: [{
+      kind: 'stateAgencyPublication',
+      citation: 'Minnesota DOR, Income Tax Rates for 2026, single filers',
+      url: 'https://www.revenue.state.mn.us/minnesota-income-tax-rates-and-brackets',
+      quotedText:
+        'Income Tax Rates for 2026 … Single … Tax Rate … Income From... … Up To … 5.35% … $0 … $33,310 … 6.80% … $33,311 … $109,430 … 7.85% … $109,431 … $203,150 … 9.85% … $203,151',
+    }, {
+      kind: 'stateAgencyPublication',
+      citation: 'Minnesota DOR, Income Tax Rates for 2026, married filing jointly',
+      url: 'https://www.revenue.state.mn.us/minnesota-income-tax-rates-and-brackets',
+      quotedText:
+        'Income Tax Rates for 2026 … Married Filing Jointly … Tax Rate … Income From... … Up To … 5.35% … $0 … $48,700 … 6.80% … $48,701 … $193,480 … 7.85% … $193,481 … $337,930 … 9.85% … $337,931',
+    }, {
+      kind: 'stateAgencyPublication',
+      citation: 'Minnesota DOR, Tax Year 2026 Inflation-Adjusted Amounts, section 290.0123 subd. 1',
+      url: 'https://www.revenue.state.mn.us/sites/default/files/2025-12/inflation-adjusted-amounts-2026.pdf',
+      quotedText:
+        'Married Joint or Surviving Spouse 2023 $30,600 … Single, Married Separate 2023 $15,300',
+    }, {
+      kind: 'stateAgencyPublication',
+      citation: 'Minnesota DOR, Tax Year 2026 Inflation-Adjusted Amounts, publication scope',
+      url: 'https://www.revenue.state.mn.us/sites/default/files/2025-12/inflation-adjusted-amounts-2026.pdf',
+      quotedText:
+        'All income tax amounts are for tax year 2026.',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: 2026,
+    verifiedOn: '2026-09-07',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#MN',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+      'packages/engine/src/tax/stateTax.ts#bracketTax',
+    ],
+  },
+
   'mn-stat-290-0132-subd-26-social-security-inclusion': {
     title: 'Minnesota subtracts federally taxable Social Security on an income-tested schedule the pack omits',
     statement:
-      'Minnesota allows a subtraction equal to the greater of a simplified subtraction of taxable Social Security benefits, reduced 10 percent for each $4,000 of AGI (or fraction thereof) over $78,000 single / $100,000 joint, or an alternate subtraction capped at a much smaller indexed maximum. Approximated: the pack encodes `taxesSocialSecurity: true` and subtracts nothing, so a Minnesota retiree who still has subtraction room is charged tax on federally taxable benefits the statute takes out. The gap closes at high AGI, where the simplified subtraction phases to zero; below that line the engine overstates Minnesota tax. Private retirement remains `{ kind: \'none\' }`, which this record does not re-open: subdivision 34\'s qualified-public-pension subtraction is a different provision and is not modelled.',
+      'For TY2026, Minnesota allows the greater of a simplified subtraction of federally taxable Social Security or an alternate subtraction. The simplified amount is reduced 10 percent for each $4,000 of AGI, or fraction, above $86,410 single/HOH or $110,780 MFJ/surviving spouse; MFS uses $55,390. The DOR table marks alternate maxima $4,560 single/HOH, $5,840 MFJ/surviving spouse, and $2,920 MFS as Not Indexed. Approximated: the pack encodes taxesSocialSecurity:true and subtracts nothing, so it overstates tax while either subtraction remains. Private retirement stays kind:none; subdivision 34\'s qualified-public-pension subtraction is separate and unmodeled.',
     classification: 'approximated',
     contraryReading: null,
     errorDirection: 'overstatesTax',
-    conventionRationale: null,
+    conventionRationale:
+      'The existing subdivision 26(c)(1)-(2) quotations are statutory-year base amounts. Subdivision 26(j) requires annual adjustment of the simplified-subtraction thresholds, and the DOR TY2026 table supplies the operative values. The quoted DOR table marks the alternate maxima as Not Indexed. The engine has no field or enforcer for either subtraction; later pack fallback remains an annually stale stand-in.',
     jurisdiction: 'state:MN',
     authority: [{
       kind: 'statute',
@@ -1213,11 +1264,29 @@ export const midwestStateRecords = {
       url: 'https://www.revisor.mn.gov/statutes/cite/290.0132',
       quotedText:
         '(1) $100,000 for a married taxpayer filing a joint return or surviving spouse; (2) $78,000 for a single or head of household taxpayer; and',
+    }, {
+      kind: 'statute',
+      citation: 'Minn. Stat. 290.0132, subd. 26(j)',
+      url: 'https://www.revisor.mn.gov/statutes/cite/290.0132',
+      quotedText:
+        'The commissioner shall adjust the phaseout threshold amounts in paragraph (c), clauses (1) and (2), as provided in section 270C.22.',
+    }, {
+      kind: 'stateAgencyPublication',
+      citation: 'Minnesota DOR, Tax Year 2026 Inflation-Adjusted Amounts, section 290.0132 subd. 26 simplified thresholds',
+      url: 'https://www.revenue.state.mn.us/sites/default/files/2025-12/inflation-adjusted-amounts-2026.pdf',
+      quotedText:
+        'Tax Year 2026 Inflation-Adjusted Amounts … All income tax amounts are for tax year 2026. … Social Security Subtraction … Simplified Subtraction … Phase-out Threshold … Married Joint or Surviving Spouse … 2023 … $110,780 … Single; Head of Household … 2023 … $86,410 … Married Separate … 2023 … $55,390',
+    }, {
+      kind: 'stateAgencyPublication',
+      citation: 'Minnesota DOR, Tax Year 2026 Inflation-Adjusted Amounts, section 290.0132 subd. 26 alternate maxima',
+      url: 'https://www.revenue.state.mn.us/sites/default/files/2025-12/inflation-adjusted-amounts-2026.pdf',
+      quotedText:
+        'Tax Year 2026 Inflation-Adjusted Amounts … All income tax amounts are for tax year 2026. … Social Security Subtraction … Alternate Subtraction … Maximum Subtraction … Married Joint or Surviving Spouse … Not Indexed … $5,840 … Single, Head of Household … Not Indexed … $4,560 … Married Separate … Not Indexed … $2,920',
     }],
     volatility: 'annuallyIndexed',
     effectiveFrom: 2026,
-    effectiveThrough: null,
-    verifiedOn: '2026-08-27',
+    effectiveThrough: 2026,
+    verifiedOn: '2026-09-07',
     implementedBy: [
       'packages/engine/src/tax/stateTax.ts',
       'packages/engine/src/params/state/data/year2026.ts',

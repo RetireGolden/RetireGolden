@@ -142,28 +142,28 @@ describe('ORACLE-010: Kentucky retirement exclusion vs KY DOR 2026', () => {
 
 /**
  * ORACLE-013 (DOCS/external-oracles.md) - California graduated income tax vs
- * the Franchise Tax Board 2025 Schedule X rate schedule.
+ * the Franchise Tax Board 2025 Schedule X/Y rate schedules above $100,000.
  *
- * The state pack carries the latest-published FTB values into the 2026
- * planning year (same convention as ORACLE-009/NJ). The oracle claim is the
- * Schedule X bracket arithmetic on California taxable income; FTB personal
- * exemption CREDITS ($149 single for 2025) are a documented pack
- * simplification and are outside the asserted subset (see
- * DOCS/domain/state-tax-research/CA.md, researched 2026-06-13).
+ * The standard deduction comes from 2026 Form 540-ES Estimated Tax Worksheet
+ * line 2b ($5,706 single / $11,412 MFJ). The retained 2025 Schedule X/Y
+ * bracket arrays apply only above $100,000 of California taxable income; FTB
+ * directs filers to the tax table through that amount while the engine uses
+ * continuous schedules at lower incomes. FTB personal exemption credits are
+ * outside the asserted subset (see DOCS/domain/state-tax-research/CA.md).
  *
  * Oracle: California Franchise Tax Board.
+ *   2026 Form 540-ES instructions (standard deduction):
+ *     https://www.ftb.ca.gov/forms/2026/2026-540-es-instructions.html
  *   2025 Schedule X/Y rate schedules:
  *     https://www.ftb.ca.gov/forms/2025/2025-540-tax-rate-schedules.pdf
- *   2025 Form 540 instructions (standard deduction $5,540 / $11,080; SS exempt):
- *     https://www.ftb.ca.gov/forms/2025/2025-540-instructions.html
- * Research date: 2026-06-13. Pack year: 2026. Source tax year: 2025.
+ * Research date: 2026-09-07. Pack year: 2026. Source tax year: 2025 schedules.
  * Tolerance: $1, asserted to cents where the model is exact.
  */
-describe('ORACLE-013: California graduated state income tax vs FTB Schedule X', () => {
-  it('pack CA parameters match the published FTB schedule and deduction', () => {
+describe('ORACLE-013: California graduated state income tax vs FTB Schedule X/Y above $100,000', () => {
+  it('pack CA parameters carry the 2026 estimated-tax deduction and 2025 schedules', () => {
     expect(ca.hasIncomeTax).toBe(true)
     expect(ca.taxesSocialSecurity).toBe(false)
-    expect(ca.standardDeduction).toEqual({ single: 5_540, marriedFilingJointly: 11_080 })
+    expect(ca.standardDeduction).toEqual({ single: 5_706, marriedFilingJointly: 11_412 })
     expect(ca.brackets.single).toEqual([
       { lowerBound: 0, ratePct: 1 },
       { lowerBound: 11_079, ratePct: 2 },
@@ -178,39 +178,41 @@ describe('ORACLE-013: California graduated state income tax vs FTB Schedule X', 
     expect(ca.retirementPrivate).toEqual({ kind: 'none' })
   })
 
-  it('taxes a single filer across six Schedule X bracket layers', () => {
-    // Single, $100,000 CA taxable income (model input: 105,540 ordinary less
-    // the 5,540 standard deduction). Schedule X stack:
+  it('taxes a single filer on Schedule X at taxable income $100,001', () => {
+    // Single, $105,707 ordinary less the $5,706 standard deduction => $100,001
+    // taxable. Schedule X stack above the table range:
     //   11,079 * 1%    =   110.79
     //   15,185 * 2%    =   303.70   (11,079 -> 26,264)
     //   15,188 * 4%    =   607.52   (26,264 -> 41,452)
     //   16,090 * 6%    =   965.40   (41,452 -> 57,542)
     //   15,182 * 8%    = 1,214.56   (57,542 -> 72,724)
-    //   27,276 * 9.3%  = 2,536.668  (72,724 -> 100,000)
-    //   total          = 5,738.638
-    const tax = computeStateTax(ca, stateInput('CA', { ordinaryIncome: 105_540, agesAlive: [45] }))
-    expectMoney(tax, 5_738.64)
+    //   27,277 * 9.3%  = 2,536.761  (72,724 -> 100,001)
+    //   total          = 5,738.731
+    const tax = computeStateTax(ca, stateInput('CA', { ordinaryIncome: 105_707, agesAlive: [45] }))
+    expectMoney(tax, 5_738.73)
   })
 
-  it('exempts Social Security while fully taxing pension income (no exclusion)', () => {
-    // MFJ retirees 68/66, $80,000 ordinary income (including a $30,000
-    // pension), $40,000 Social Security. CA exempts SS entirely and has no
-    // retirement-income exclusion, so taxable = 80,000 - 11,080 = 68,920.
-    //   22,158 * 1% =   221.58
-    //   30,370 * 2% =   607.40   (22,158 -> 52,528)
-    //   16,392 * 4% =   655.68   (52,528 -> 68,920)
-    //   total       = 1,484.66
+  it('exempts Social Security while taxing pension above the table range (Schedule Y)', () => {
+    // MFJ, $111,413 ordinary (including $30,000 pension), $40,000 Social
+    // Security. CA excludes SS and has no retirement subtraction, so taxable
+    // income is $111,413 − $11,412 = $100,001. Schedule Y stack above the
+    // table range:
+    //   22,158 * 1%   =   221.58
+    //   30,370 * 2%   =   607.40   (22,158 -> 52,528)
+    //   30,376 * 4%   = 1,215.04   (52,528 -> 82,904)
+    //   17,097 * 6%   = 1,025.82   (82,904 -> 100,001)
+    //   total         = 3,069.84
     const tax = computeStateTax(
       ca,
       stateInput('CA', {
         filingStatus: 'marriedFilingJointly',
-        ordinaryIncome: 80_000,
+        ordinaryIncome: 111_413,
         retirementIncome: 30_000,
         ssBenefits: 40_000,
         agesAlive: [68, 66],
       }),
     )
-    expectMoney(tax, 1_484.66)
+    expectMoney(tax, 3_069.84)
   })
 })
 

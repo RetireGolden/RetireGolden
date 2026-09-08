@@ -735,6 +735,69 @@
       ]
     },
     {
+      "id": "ca-ftb-2026-540-es-standard-deduction",
+      "title": "California's 2026 estimated-tax worksheet lists $5,706/$11,412 standard deductions",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "This record transcribes a 2026 estimated-tax instruction, not a final 2026 resident-return schedule. The record expires after 2026. Because stateParamsFor reuses the latest pack in later plan years, any later-year use is a 2026-pack stand-in rather than a claim that these amounts remain legally current.",
+      "contraryReading": null,
+      "jurisdiction": "state:CA",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": 2026,
+      "verifiedOn": "2026-09-07",
+      "dueOn": "2027-01-05",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "CA",
+              "line": 219
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 90
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 1867,
+          "note": null,
+          "tests": [
+            {
+              "title": "maps the supported single and MFJ deduction cells to California taxable income",
+              "line": 1876
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "formInstruction",
+          "citation": "California FTB, 2026 Form 540-ES Instructions, Estimated Tax Worksheet line 2b",
+          "url": "https://www.ftb.ca.gov/forms/2026/2026-540-es-instructions.html"
+        }
+      ]
+    },
+    {
       "id": "ca-rtc-17087-social-security-exclusion",
       "title": "California does not apply IRC 86 to Social Security or Tier 1 Railroad benefits",
       "classification": "settled",
@@ -777,12 +840,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 1869,
+          "line": 1893,
           "note": null,
           "tests": [
             {
               "title": "omits California Social Security from the taxable base",
-              "line": 1885
+              "line": 1909
             }
           ]
         }
@@ -860,12 +923,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 1931,
+          "line": 1998,
           "note": "age-55-through-64 pension-and-annuity limb",
           "tests": [
             {
               "title": "pins the missing Colorado age-60 retirement subtraction",
-              "line": 1948
+              "line": 2015
             }
           ]
         }
@@ -938,12 +1001,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 1963,
+          "line": 2030,
           "note": "age-65 Social Security limb",
           "tests": [
             {
               "title": "pins the Colorado age-65 Social Security subtraction the pack misses",
-              "line": 1980
+              "line": 2047
             }
           ]
         }
@@ -1001,12 +1064,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2174,
+          "line": 2241,
           "note": null,
           "tests": [
             {
               "title": "deducts the TY2026 standard deduction before the first bracket",
-              "line": 2186
+              "line": 2253
             }
           ]
         }
@@ -1083,12 +1146,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2204,
+          "line": 2271,
           "note": null,
           "tests": [
             {
               "title": "pins the unmodelled Hawaii private-pension exclusion",
-              "line": 2219
+              "line": 2286
             }
           ]
         }
@@ -1151,12 +1214,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2230,
+          "line": 2297,
           "note": null,
           "tests": [
             {
               "title": "deducts Idaho’s federally included Social Security amount",
-              "line": 2246
+              "line": 2313
             }
           ]
         }
@@ -1214,27 +1277,27 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2636,
+          "line": 2703,
           "note": "age-65 additional subtraction, 15-30-2120(3)(g) floor",
           "tests": [
             {
               "title": "pins the missing Montana age-65 subtraction",
-              "line": 2656
+              "line": 2723
             },
             {
               "title": "grants nothing below 65 under either reading",
-              "line": 2661
+              "line": 2728
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2679,
+          "line": 2746,
           "note": "per-taxpayer doubling for a couple both 65",
           "tests": [
             {
               "title": "pins the missing per-taxpayer doubling for a couple both 65",
-              "line": 2697
+              "line": 2764
             }
           ]
         }
@@ -1312,20 +1375,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2592,
+          "line": 2659,
           "note": null,
           "tests": [
             {
               "title": "starts Montana from federal taxable income, so federally taxable Social Security stays in",
-              "line": 2611
+              "line": 2678
             },
             {
               "title": "would drop the benefit if Montana subtracted it the way a false flag does",
-              "line": 2617
+              "line": 2684
             },
             {
               "title": "carries the federal standard deduction with it, not a frozen state figure",
-              "line": 2623
+              "line": 2690
             }
           ]
         }
@@ -1413,12 +1476,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2776,
+          "line": 2843,
           "note": null,
           "tests": [
             {
               "title": "pins the high-income path where the blanket pack exclusion diverges from the source threshold",
-              "line": 2791
+              "line": 2858
             }
           ]
         }
@@ -1543,12 +1606,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2935,
+          "line": 3002,
           "note": null,
           "tests": [
             {
               "title": "subtracts federally taxable Social Security as ORS 316.054 directs",
-              "line": 2947
+              "line": 3014
             }
           ]
         }
@@ -1606,12 +1669,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2892,
+          "line": 2959,
           "note": null,
           "tests": [
             {
               "title": "applies the enacted 4.45% flat rate to ordinary income",
-              "line": 2900
+              "line": 2967
             }
           ]
         }
@@ -1679,12 +1742,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2909,
+          "line": 2976,
           "note": null,
           "tests": [
             {
               "title": "pins the unmodeled Utah Social Security benefits credit",
-              "line": 2928
+              "line": 2995
             }
           ]
         }
@@ -1752,12 +1815,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3129,
+          "line": 3196,
           "note": null,
           "tests": [
             {
               "title": "keeps Washington out of the broad state-income-tax path",
-              "line": 3148
+              "line": 3215
             }
           ]
         }

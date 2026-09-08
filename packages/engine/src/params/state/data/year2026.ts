@@ -223,7 +223,7 @@ const rawStateYear2026 = {
         'DOCS/domain/state-tax-research/CA.md',
         'https://www.ftb.ca.gov/forms/2025/2025-540-tax-rate-schedules.pdf',
       ],
-      standardDeduction: { single: 5540, marriedFilingJointly: 11080 },
+      standardDeduction: { single: 5706, marriedFilingJointly: 11412 },
       brackets: {
         single: [
           { lowerBound: 0, ratePct: 1 }, { lowerBound: 11079, ratePct: 2 }, { lowerBound: 26264, ratePct: 4 },
@@ -481,15 +481,15 @@ const rawStateYear2026 = {
       code: 'MN', name: 'Minnesota', hasIncomeTax: true, taxesSocialSecurity: true, capitalGainsAsOrdinary: true,
       capitalGainsNotes: 'Long-term capital gains are taxed as ordinary income; high-income NIIT-like surtax omitted.',
       capitalGainsSources: ['DOCS/domain/state-tax-research/MN.md', 'https://www.revenue.state.mn.us/'],
-      standardDeduction: { single: 14575, marriedFilingJointly: 29150 },
+      standardDeduction: { single: 15300, marriedFilingJointly: 30600 },
       brackets: {
         single: [
-          { lowerBound: 0, ratePct: 5.35 }, { lowerBound: 31690, ratePct: 6.8 }, { lowerBound: 104090, ratePct: 7.85 },
-          { lowerBound: 193240, ratePct: 9.85 },
+          { lowerBound: 0, ratePct: 5.35 }, { lowerBound: 33310, ratePct: 6.8 }, { lowerBound: 109430, ratePct: 7.85 },
+          { lowerBound: 203150, ratePct: 9.85 },
         ],
         marriedFilingJointly: [
-          { lowerBound: 0, ratePct: 5.35 }, { lowerBound: 46330, ratePct: 6.8 }, { lowerBound: 184040, ratePct: 7.85 },
-          { lowerBound: 321450, ratePct: 9.85 },
+          { lowerBound: 0, ratePct: 5.35 }, { lowerBound: 48700, ratePct: 6.8 }, { lowerBound: 193480, ratePct: 7.85 },
+          { lowerBound: 337930, ratePct: 9.85 },
         ],
       },
       retirement: { kind: 'none' },

@@ -1,0 +1,252 @@
+{
+  "at": "2026-09-08T04:50:03.068Z",
+  "head": "db200d520427ba2c67671dff0d6e54604dfd7f0b",
+  "note": "Actual engine outputs only; not statutory expected values. No parameter mutation or alternate calculator.",
+  "rows": [
+    {
+      "id": "ca-deduction-single",
+      "input": {
+        "year": 2026,
+        "state": "CA",
+        "ordinaryIncome": 20000,
+        "filingStatus": "single",
+        "capitalGains": 0,
+        "ssBenefits": 0,
+        "peopleAged65Plus": 0
+      },
+      "actual": {
+        "taxableIncome": 14294,
+        "stateTax": 175.09,
+        "localTax": 0,
+        "totalTax": 175.09
+      }
+    },
+    {
+      "id": "ca-deduction-mfj",
+      "input": {
+        "year": 2026,
+        "state": "CA",
+        "ordinaryIncome": 40000,
+        "filingStatus": "marriedFilingJointly",
+        "capitalGains": 0,
+        "ssBenefits": 0,
+        "peopleAged65Plus": 0
+      },
+      "actual": {
+        "taxableIncome": 28588,
+        "stateTax": 350.18,
+        "localTax": 0,
+        "totalTax": 350.18
+      }
+    },
+    {
+      "id": "ca-oracle-single",
+      "input": {
+        "year": 2026,
+        "state": "CA",
+        "ordinaryIncome": 105707,
+        "filingStatus": "single",
+        "capitalGains": 0,
+        "ssBenefits": 0,
+        "peopleAged65Plus": 0
+      },
+      "actual": {
+        "taxableIncome": 100001,
+        "stateTax": 5738.731,
+        "localTax": 0,
+        "totalTax": 5738.731
+      }
+    },
+    {
+      "id": "ca-oracle-mfj-ss-pension",
+      "input": {
+        "year": 2026,
+        "state": "CA",
+        "ordinaryIncome": 111413,
+        "filingStatus": "marriedFilingJointly",
+        "capitalGains": 0,
+        "ssBenefits": 40000,
+        "peopleAged65Plus": 0,
+        "retirementIncome": 30000,
+        "agesAlive": [
+          70,
+          68
+        ]
+      },
+      "actual": {
+        "taxableIncome": 100001,
+        "stateTax": 3069.84,
+        "localTax": 0,
+        "totalTax": 3069.84
+      }
+    },
+    {
+      "id": "ca-ss-base",
+      "input": {
+        "year": 2026,
+        "state": "CA",
+        "ordinaryIncome": 90000,
+        "filingStatus": "single",
+        "capitalGains": 0,
+        "ssBenefits": 40000,
+        "peopleAged65Plus": 0
+      },
+      "actual": {
+        "taxableIncome": 84294,
+        "stateTax": 4277.98,
+        "localTax": 0,
+        "totalTax": 4277.98
+      }
+    },
+    {
+      "id": "mn-schedule-single",
+      "input": {
+        "year": 2026,
+        "state": "MN",
+        "ordinaryIncome": 50000,
+        "filingStatus": "single",
+        "capitalGains": 0,
+        "ssBenefits": 0,
+        "peopleAged65Plus": 0
+      },
+      "actual": {
+        "taxableIncome": 34700,
+        "stateTax": 1876.605,
+        "localTax": 0,
+        "totalTax": 1876.605
+      }
+    },
+    {
+      "id": "mn-schedule-mfj",
+      "input": {
+        "year": 2026,
+        "state": "MN",
+        "ordinaryIncome": 80600,
+        "filingStatus": "marriedFilingJointly",
+        "capitalGains": 0,
+        "ssBenefits": 0,
+        "peopleAged65Plus": 0
+      },
+      "actual": {
+        "taxableIncome": 50000,
+        "stateTax": 2693.85,
+        "localTax": 0,
+        "totalTax": 2693.85
+      }
+    },
+    {
+      "id": "mn-ss-84k-fagi",
+      "input": {
+        "year": 2026,
+        "state": "MN",
+        "ordinaryIncome": 50000,
+        "filingStatus": "single",
+        "capitalGains": 0,
+        "ssBenefits": 40000,
+        "peopleAged65Plus": 0,
+        "agesAlive": [
+          70
+        ]
+      },
+      "actual": {
+        "taxableIncome": 68700,
+        "stateTax": 4188.605,
+        "localTax": 0,
+        "totalTax": 4188.605
+      }
+    },
+    {
+      "id": "mn-ss-90k-fagi",
+      "input": {
+        "year": 2026,
+        "state": "MN",
+        "ordinaryIncome": 56000,
+        "filingStatus": "single",
+        "capitalGains": 0,
+        "ssBenefits": 40000,
+        "peopleAged65Plus": 0,
+        "agesAlive": [
+          70
+        ]
+      },
+      "actual": {
+        "taxableIncome": 74700,
+        "stateTax": 4596.605,
+        "localTax": 0,
+        "totalTax": 4596.605
+      }
+    }
+  ],
+  "split": {
+    "input": {
+      "year": 2026,
+      "state": "NV",
+      "ordinaryIncome": 120000,
+      "filingStatus": "single",
+      "capitalGains": 0,
+      "ssBenefits": 0,
+      "peopleAged65Plus": 0,
+      "stateResidency": [
+        {
+          "state": "CA",
+          "months": 6
+        },
+        {
+          "state": "NV",
+          "months": 6
+        }
+      ]
+    },
+    "actualTax": 3533.9900000000002
+  },
+  "plans": [
+    {
+      "state": "CA",
+      "filingStatus": "single",
+      "income": 105707,
+      "actual": {
+        "year": 2026,
+        "tax": 5738.731,
+        "recurring": 105707,
+        "surplusInvested": 99968.269,
+        "cash": 199968.269
+      }
+    },
+    {
+      "state": "CA",
+      "filingStatus": "marriedFilingJointly",
+      "income": 111413,
+      "actual": {
+        "year": 2026,
+        "tax": 3069.84,
+        "recurring": 111413,
+        "surplusInvested": 108343.16,
+        "cash": 208343.16
+      }
+    },
+    {
+      "state": "MN",
+      "filingStatus": "single",
+      "income": 50000,
+      "actual": {
+        "year": 2026,
+        "tax": 1876.605,
+        "recurring": 50000,
+        "surplusInvested": 48123.395,
+        "cash": 148123.395
+      }
+    },
+    {
+      "state": "MN",
+      "filingStatus": "marriedFilingJointly",
+      "income": 80600,
+      "actual": {
+        "year": 2026,
+        "tax": 2693.85,
+        "recurring": 80600,
+        "surplusInvested": 77906.15,
+        "cash": 177906.15
+      }
+    }
+  ]
+}

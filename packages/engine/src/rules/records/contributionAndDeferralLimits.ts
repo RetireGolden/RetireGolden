@@ -354,14 +354,14 @@ export const contributionAndDeferralLimitRecords = {
     ],
   },
   'irc-219-c-1-spousal-ira-combined-compensation': {
-    title: 'A jointly filing couple funds both IRAs from combined compensation',
+    title: 'A lower-compensation spouse on a joint return may use combined compensation for an IRA',
     statement:
       'Section 219(c) lets a married individual who files jointly, and whose own compensation is the lesser of the two, measure the limit against the combined compensation of both spouses, reduced by the contributions already made by the other spouse. The household ceiling is therefore combined compensation, while each spouse remains separately held to the dollar limit.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'Section 219(c)(2)(B) is a strict-lesser compensation gate: paragraph (1) applies only when one spouse\'s compensation is less than the other\'s, so equal or higher earners remain on section 219(b)(1) alone. Each owner still faces the annual dollar limit ($7,500 in 2026 before age 50) regardless of pooling. The lesser earner\'s combined-compensation room is both spouses\' compensation minus the other spouse\'s traditional, designated nondeductible, and Roth IRA contributions already made (paragraph (1)(B)(ii)). When scarce room remains, competing requests apply in Plan account order — a modeling convention under scarcity, not a statutory priority rule. Pooling every living MFJ pair without the strict-lesser gate overfunds equal and higher earners; applying only each spouse\'s own wages denies the non-earning spouse an IRA the statute allows.',
+      'Section 219(c)(2)(B) is a strict-lesser compensation gate: section 219(c)(1) applies only when one spouse\'s compensation is less than the other\'s, so equal or higher earners remain on section 219(b)(1) alone. Each owner still faces the annual dollar limit ($7,500 in 2026 before age 50) regardless of pooling. The lesser earner\'s combined-compensation room is both spouses\' compensation minus the other spouse\'s traditional, designated nondeductible, and Roth IRA contributions already made (section 219(c)(1)(B)(ii)). When scarce room remains, competing requests apply in Plan account order — a modeling convention under scarcity, not a statutory priority rule. Pooling every living MFJ pair without the strict-lesser gate overfunds equal and higher earners; applying only each spouse\'s own wages denies the non-earning spouse an IRA the statute allows.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',

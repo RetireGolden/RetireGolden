@@ -15,7 +15,7 @@ const STARTING_CASH = 100_000
 
 const FIXTURES = [
   {
-    ruleId: 'de-code-30-1102-a-14-rate-schedule',
+    evidenceLabel: 'de-code-30-1102-a-14-rate-schedule',
     state: 'DE',
     filingStatus: 'single' as const,
     income: 33_250,
@@ -24,7 +24,7 @@ const FIXTURES = [
       '33,250 − 3,250 deduction = 30,000 taxable; 3,000×2.2% + 5,000×3.9% + 10,000×4.8% + 5,000×5.2% + 5,000×5.55% = 1,278.50 (30 Del. C. §1102(a)(14)).',
   },
   {
-    ruleId: 'de-code-30-1102-a-14-rate-schedule',
+    evidenceLabel: 'de-code-30-1102-a-14-rate-schedule',
     state: 'DE',
     filingStatus: 'marriedFilingJointly' as const,
     income: 36_500,
@@ -33,7 +33,7 @@ const FIXTURES = [
       '36,500 − 6,500 deduction = 30,000 taxable; same §1102(a)(14) band schedule => 1,278.50.',
   },
   {
-    ruleId: 'hi-hrs-235-2-4-a-2-f-2026-standard-deduction',
+    evidenceLabel: 'hi-hrs-235-2-4-a-2-f-2026-standard-deduction',
     state: 'HI',
     filingStatus: 'single' as const,
     income: 10_000,
@@ -42,7 +42,7 @@ const FIXTURES = [
       '10,000 − 8,000 TY2026 standard deduction = 2,000 taxable × 1.4% first bracket = 28 (HRS §235-2.4(a)(2)(F)).',
   },
   {
-    ruleId: 'hi-hrs-235-2-4-a-2-f-2026-standard-deduction',
+    evidenceLabel: 'hi-hrs-235-2-4-a-2-f-2026-standard-deduction',
     state: 'HI',
     filingStatus: 'marriedFilingJointly' as const,
     income: 20_000,
@@ -51,7 +51,7 @@ const FIXTURES = [
       '20,000 − 16,000 TY2026 standard deduction = 4,000 taxable × 1.4% = 56 (HRS §235-2.4(a)(2)(F)).',
   },
   {
-    ruleId: 'ri-dot-adv-2025-22-2026-deduction-and-rate-schedule',
+    evidenceLabel: 'ri-dot-adv-2025-22-2026-deduction-and-rate-schedule',
     state: 'RI',
     filingStatus: 'single' as const,
     income: 220_000,
@@ -60,7 +60,7 @@ const FIXTURES = [
       '220,000 − 11,200 deduction = 208,800 taxable; 82,050×3.75% + 104,400×4.75% + 22,350×5.99% = 9,374.64 (ADV 2025-22).',
   },
   {
-    ruleId: 'ri-dot-adv-2025-22-2026-deduction-and-rate-schedule',
+    evidenceLabel: 'ri-dot-adv-2025-22-2026-deduction-and-rate-schedule',
     state: 'RI',
     filingStatus: 'marriedFilingJointly' as const,
     income: 220_000,
@@ -69,7 +69,7 @@ const FIXTURES = [
       '220,000 − 22,400 deduction = 197,600 taxable; same ADV thresholds with an $11,150 top slice => 8,703.76.',
   },
   {
-    ruleId: 'ut-code-59-10-104-2026-individual-rate',
+    evidenceLabel: 'ut-code-59-10-104-2026-individual-rate',
     state: 'UT',
     filingStatus: 'single' as const,
     income: 20_000,
@@ -78,7 +78,7 @@ const FIXTURES = [
       '20,000 × 4.45% flat rate = 890 (2026 Utah S.B. 60 / §59-10-104).',
   },
   {
-    ruleId: 'ut-code-59-10-104-2026-individual-rate',
+    evidenceLabel: 'ut-code-59-10-104-2026-individual-rate',
     state: 'UT',
     filingStatus: 'marriedFilingJointly' as const,
     income: 20_000,
@@ -86,10 +86,46 @@ const FIXTURES = [
     worksheet:
       '20,000 × 4.45% flat rate = 890 (2026 Utah S.B. 60 / §59-10-104).',
   },
+  {
+    evidenceLabel: 'ORACLE-013 — 2026 deduction + retained 2025 Schedule X/Y (integration)',
+    state: 'CA',
+    filingStatus: 'single' as const,
+    income: 105_707,
+    expectedTax: 5_738.73,
+    worksheet:
+      '105,707 − 5,706 deduction = 100,001 taxable; 2025 Schedule X above the table range => 5,738.731 modeled subtotal. Not a settled ca-ftb-2026-540-es-standard-deduction-only test.',
+  },
+  {
+    evidenceLabel: 'ORACLE-013 — 2026 deduction + retained 2025 Schedule X/Y (integration)',
+    state: 'CA',
+    filingStatus: 'marriedFilingJointly' as const,
+    income: 111_413,
+    expectedTax: 3_069.84,
+    worksheet:
+      '111,413 − 11,412 deduction = 100,001 taxable; 2025 Schedule Y above the table range => 3,069.84 modeled subtotal. Not a settled ca-ftb-2026-540-es-standard-deduction-only test.',
+  },
+  {
+    evidenceLabel: 'mn-dor-2026-rate-schedule-and-standard-deduction',
+    state: 'MN',
+    filingStatus: 'single' as const,
+    income: 50_000,
+    expectedTax: 1_876.61,
+    worksheet:
+      '50,000 − 15,300 TY2026 deduction = 34,700 taxable; DOR TY2026 breakpoints => 1,876.605.',
+  },
+  {
+    evidenceLabel: 'mn-dor-2026-rate-schedule-and-standard-deduction',
+    state: 'MN',
+    filingStatus: 'marriedFilingJointly' as const,
+    income: 80_600,
+    expectedTax: 2_693.85,
+    worksheet:
+      '80,600 − 30,600 TY2026 deduction = 50,000 taxable; DOR TY2026 breakpoints => 2,693.85.',
+  },
 ] as const
 
 describe('state 2026 parameter corrections — plan integration', () => {
-  it.each(FIXTURES)('$ruleId ($state $filingStatus)', (fixture) => {
+  it.each(FIXTURES)('$evidenceLabel ($state $filingStatus)', (fixture) => {
     // State-only calculator: year.tax is the modeled state subtotal, not a return.
     const plan =
       fixture.filingStatus === 'marriedFilingJointly'

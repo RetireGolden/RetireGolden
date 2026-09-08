@@ -1340,16 +1340,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.test.ts",
-          "line": 389,
+          "line": 392,
           "note": null,
           "tests": [
             {
               "title": "measures nominal income against the federal deduction prescribed for that year",
-              "line": 393
+              "line": 396
             },
             {
               "title": "leaves a published year exactly as published",
-              "line": 406
+              "line": 409
             }
           ]
         }
