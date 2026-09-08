@@ -538,6 +538,12 @@ export const investmentIncomeAndBasisRecords = {
         'The amount of gain excluded from gross income under subsection (a) with respect to any sale or exchange shall not exceed $250,000.',
     }, {
       kind: 'statute',
+      citation: 'IRC 121(b)(2) chapeau',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section121&num=0&edition=prelim',
+      quotedText:
+        'In the case of a husband and wife who make a joint return for the taxable year of the sale or exchange of the property-',
+    }, {
+      kind: 'statute',
       citation: 'IRC 121(b)(2)(A)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section121&num=0&edition=prelim',
       quotedText:
@@ -824,6 +830,12 @@ export const investmentIncomeAndBasisRecords = {
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section121&num=0&edition=prelim',
       quotedText:
         'The term "period of nonqualified use" means any period (other than the portion of any period preceding January 1, 2009) during which the property is not used as the principal residence of the taxpayer or the taxpayer\'s spouse or former spouse.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 121(b)(5)(C)(ii)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section121&num=0&edition=prelim',
+      quotedText:
+        'The term "period of nonqualified use" does not include- (I) any portion of the 5-year period described in subsection (a) which is after the last date that such property is used as the principal residence of the taxpayer or the taxpayer\'s spouse, (II) any period (not to exceed an aggregate period of 10 years) during which the taxpayer or the taxpayer\'s spouse is serving on qualified official extended duty (as defined in subsection (d)(9)(C)) described in clause (i), (ii), or (iii) of subsection (d)(9)(A), and (III) any other period of temporary absence (not to exceed an aggregate period of 2 years) due to change of employment, health conditions, or such other unforeseen circumstances as may be specified by the Secretary.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
@@ -921,7 +933,7 @@ export const investmentIncomeAndBasisRecords = {
   'irc-454-savings-bond-interest-deferral': {
     title: 'Savings-bond interest is deferred until redemption, maturity, or disposition unless elected',
     statement:
-      'IRC 454(a) permits a taxpayer whose accounting method does not otherwise include a qualifying discount obligation\'s redemption-price increase to elect current inclusion. For the obligations described in 26 CFR 1.454-1(a)(1), if the election is not made and the section 1037 nonrecognition rule does not apply, the increase is included when the obligation is redeemed or disposed of, or finally matures, whichever is earlier. RetireGolden has no savings-bond instrument, redemption or maturity date, or section 454 election and therefore produces no savings-bond deferral or default-inclusion result.',
+      'IRC 454(a) permits a taxpayer whose accounting method does not otherwise include a qualifying discount obligation\'s redemption-price increase to elect current inclusion. 26 CFR 1.454-1(a)(1) covers (i) qualifying non-interest-bearing discount obligations, (ii) specified retained matured-series-E investments, and (iii) specified section-1037 exchanges; if the election is not made and the section 1037 nonrecognition rule does not apply, the increase is included when the obligation is redeemed or disposed of, or finally matures, whichever is earlier. RetireGolden has no savings-bond instrument, redemption or maturity date, or section 454 election and therefore produces no savings-bond deferral or default-inclusion result.',
     classification: 'outOfScope',
     outOfScope: {
       shape: 'inexpressibleInput',
@@ -943,11 +955,17 @@ export const investmentIncomeAndBasisRecords = {
       quotedText:
         'If, in the case of a taxpayer owning any non-interest-bearing obligation issued at a discount and redeemable for fixed amounts increasing at stated intervals or owning an obligation described in paragraph (2) of subsection (c), the increase in the redemption price of such obligation occurring in the taxable year does not (under the method of accounting used in computing his taxable income) constitute income to him in such year, such taxpayer may, at his election made in his return for any taxable year, treat such increase as income received in such taxable year.',
     }, {
+      kind: 'statute',
+      citation: 'IRC 454(c)(1)-(2)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section454&num=0&edition=prelim',
+      quotedText:
+        'In the case of a taxpayer who- (1) holds a series E United States savings bond at the date of maturity, and (2) pursuant to regulations prescribed under chapter 31 of title 31 (A) retains his investment in such series E bond in an obligation of the United States, other than a current income obligation, or (B) exchanges such series E bond for another nontransferable obligation of the United States in an exchange upon which gain or loss is not recognized because of section 1037 (or so much of section 1031 as relates to section 1037),',
+    }, {
       kind: 'regulation',
       citation: '26 CFR 1.454-1(a)(1)',
       url: 'https://www.ecfr.gov/api/renderer/v1/content/enhanced/current/title-26?chapter=I&subchapter=A&part=1&section=1.454-1',
       quotedText:
-        'If the election is not made and section 1037 (or so much of section 1031 as relates to section 1037) does not apply, the taxpayer shall treat the increase as constituting income for the year in which the obligation is redeemed or disposed of, or finally matures, whichever is earlier.',
+        'If a taxpayer owns— (i) A non-interest-bearing obligation issued at a discount and redeemable for fixed amounts increasing at stated intervals (other than an obligation issued by a corporation after May 27, 1969, as to which ratable inclusion of original issue discount is required under section 1232(a)(3)), or (ii) An obligation of the United States, other than a current income obligation, in which he retains his investment in a matured series E U.S. savings bond, or (iii) A nontransferable obligation (whether or not a current income obligation) of the United States for which a series E U.S. savings bond was exchanged (whether or not at final maturity) in an exchange upon which gain is not recognized because of section 1037(a) (or so much of section 1031(b) as relates to section 1037), and if the increase, if any, in redemption price of such obligation described in subdivision (i), (ii), or (iii) of this subparagraph during the taxable year (as described in subparagraph (2) of this paragraph) does not constitute income for such year under the method of accounting used in computing his taxable income, then the taxpayer may, at his election, treat the increase as constituting income for the year in which such increase occurs. If the election is not made and section 1037 (or so much of section 1031 as relates to section 1037) does not apply, the taxpayer shall treat the increase as constituting income for the year in which the obligation is redeemed or disposed of, or finally matures, whichever is earlier.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,

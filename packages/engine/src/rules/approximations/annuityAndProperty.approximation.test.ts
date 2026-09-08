@@ -207,10 +207,12 @@ describeRule('treas-reg-1-72-5-b-2-joint-and-survivor-expected-return', {
 // ---------------------------------------------------------------------------
 
 /**
- * Real property placed in service after 1986 is depreciated straight line, so
- * its depreciation is not section 1250 recapture and not ordinary income: it is
- * unrecaptured section 1250 gain, long-term capital gain to which 25 percent is
- * a CEILING. The engine routes the whole recapture figure to ordinary income.
+ * For nonresidential real property and residential rental property to which
+ * section 168 applies, section 168(b)(3) requires straight-line depreciation.
+ * For this modeled rental, depreciation up to the straight-line amount is not
+ * section 1250 recapture; on a disposition producing long-term gain it can be
+ * unrecaptured section 1250 gain subject to a 25 percent ceiling. The engine
+ * routes the whole recapture figure to ordinary income.
  */
 const SALE_PRICE = 900_000
 const COST_BASIS = 500_000

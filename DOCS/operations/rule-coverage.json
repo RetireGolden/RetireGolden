@@ -658,18 +658,18 @@
     }
   ],
   "quoteFidelity": {
-    "generatedAt": "2026-09-08T14:16:29.736Z",
-    "entryCount": 1293,
-    "fetched": 1,
-    "cached": 351,
+    "generatedAt": "2026-09-08T18:08:44.551Z",
+    "entryCount": 1299,
+    "fetched": 0,
+    "cached": 352,
     "counts": {
       "ELISION-EXACT": 72,
       "ELISION-PUNCTUATION": 7,
-      "EXACT": 915,
+      "EXACT": 923,
       "PDF-NOT-VERIFIABLE": 7,
       "PDF-WORD-LEVEL": 245,
       "PUNCTUATION": 42,
-      "UNFETCHABLE": 5
+      "UNFETCHABLE": 3
     }
   }
 }

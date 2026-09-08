@@ -211,20 +211,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/annuityAndProperty.approximation.test.ts",
-          "line": 220,
+          "line": 222,
           "note": null,
           "tests": [
             {
               "title": "classifies the depreciation as ordinary income rather than capital gain",
-              "line": 241
+              "line": 243
             },
             {
               "title": "leaves the capital-gain slice short by the depreciation",
-              "line": 246
+              "line": 248
             },
             {
               "title": "returns no field in which a 25 percent ceiling could be carried",
-              "line": 253
+              "line": 255
             }
           ]
         }
@@ -738,27 +738,27 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/annuityAndProperty.approximation.test.ts",
-          "line": 294,
+          "line": 296,
           "note": "a seller who fails the two-year test entirely",
           "tests": [
             {
               "title": "excludes the whole gain from a sale that qualifies for nothing",
-              "line": 303
+              "line": 305
             },
             {
               "title": "takes no input by which any eligibility test could be expressed",
-              "line": 313
+              "line": 315
             }
           ]
         },
         {
           "path": "packages/engine/src/rules/approximations/annuityAndProperty.approximation.test.ts",
-          "line": 348,
+          "line": 350,
           "note": "gain allocated to periods of nonqualified use after 2008",
           "tests": [
             {
               "title": "excludes the nonqualified-use share along with the rest",
-              "line": 357
+              "line": 359
             }
           ]
         }
@@ -789,6 +789,11 @@
         {
           "kind": "statute",
           "citation": "IRC 121(b)(5)(C)(i)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section121&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 121(b)(5)(C)(ii)",
           "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section121&num=0&edition=prelim"
         }
       ]
@@ -857,6 +862,11 @@
         {
           "kind": "statute",
           "citation": "IRC 121(b)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section121&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 121(b)(2) chapeau",
           "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section121&num=0&edition=prelim"
         },
         {
@@ -1642,6 +1652,11 @@
         {
           "kind": "statute",
           "citation": "IRC 454(a)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section454&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 454(c)(1)-(2)",
           "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section454&num=0&edition=prelim"
         },
         {

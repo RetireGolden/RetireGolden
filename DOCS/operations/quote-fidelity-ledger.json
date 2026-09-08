@@ -1,18 +1,18 @@
 {
-  "generatedAt": "2026-09-08T14:16:29.736Z",
+  "generatedAt": "2026-09-08T18:08:44.551Z",
   "recordCount": 444,
   "urlCount": 352,
-  "fetched": 1,
-  "cached": 351,
-  "entryCount": 1293,
+  "fetched": 0,
+  "cached": 352,
+  "entryCount": 1299,
   "counts": {
-    "EXACT": 915,
+    "EXACT": 923,
     "PUNCTUATION": 42,
     "PDF-WORD-LEVEL": 245,
     "ELISION-EXACT": 72,
     "ELISION-PUNCTUATION": 7,
     "PDF-NOT-VERIFIABLE": 7,
-    "UNFETCHABLE": 5
+    "UNFETCHABLE": 3
   },
   "hostConventions": {
     "uscode.house.gov": {
@@ -8166,6 +8166,16 @@
     },
     {
       "id": "irc-121-d-6-exclusion-cannot-reach-recapture",
+      "citation": "IRC 121(b)(2) chapeau",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section121&num=0&edition=prelim",
+      "quoteSha256": "c8884a8f0f31a447",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-121-d-6-exclusion-cannot-reach-recapture",
       "citation": "IRC 121(b)(2)(A)",
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section121&num=0&edition=prelim",
@@ -8395,6 +8405,16 @@
       "diagnosis": null
     },
     {
+      "id": "irc-121-a-b-principal-residence-eligibility-tests",
+      "citation": "IRC 121(b)(5)(C)(ii)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section121&num=0&edition=prelim",
+      "quoteSha256": "66052d51e2e1bcde",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
       "id": "treas-reg-1-1012-1-c-lot-basis-and-holding-period",
       "citation": "26 CFR 1.1012-1(c)(1)(i)",
       "host": "www.ecfr.gov",
@@ -8446,10 +8466,20 @@
     },
     {
       "id": "irc-454-savings-bond-interest-deferral",
+      "citation": "IRC 454(c)(1)-(2)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section454&num=0&edition=prelim",
+      "quoteSha256": "76b493fa49b8db06",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-454-savings-bond-interest-deferral",
       "citation": "26 CFR 1.454-1(a)(1)",
       "host": "www.ecfr.gov",
       "url": "https://www.ecfr.gov/api/renderer/v1/content/enhanced/current/title-26?chapter=I&subchapter=A&part=1&section=1.454-1",
-      "quoteSha256": "5e4310f4609e0680",
+      "quoteSha256": "ee46190e2f2013d9",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null
@@ -9046,10 +9076,40 @@
     },
     {
       "id": "irc-1-j-3-B-rate-tables-adjusted-each-year",
-      "citation": "IRC 55(d)(3)(B)",
+      "citation": "IRC 55(d)(3)(B)(i)",
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section55&num=0&edition=prelim",
-      "quoteSha256": "3f214ac60661a619",
+      "quoteSha256": "61a740ab1856d59f",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-1-j-3-B-rate-tables-adjusted-each-year",
+      "citation": "IRC 55(d)(4)(B)(iii)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section55&num=0&edition=prelim",
+      "quoteSha256": "56f6c16a966b6009",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-1-j-3-B-rate-tables-adjusted-each-year",
+      "citation": "IRC 55(b)(1)(A)(i)-(ii)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section55&num=0&edition=prelim",
+      "quoteSha256": "0e6062736a559343",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-1-j-3-B-rate-tables-adjusted-each-year",
+      "citation": "IRC 55(d)(3)(C)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section55&num=0&edition=prelim",
+      "quoteSha256": "0b05a170ae167459",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null
@@ -10130,8 +10190,8 @@
       "host": "www.ilga.gov",
       "url": "https://www.ilga.gov/Documents/legislation/ilcs/documents/003500050K203.htm",
       "quoteSha256": "af6ec3bd3b93c85a",
-      "verdict": "UNFETCHABLE",
-      "detail": "request failed: TypeError: fetch failed",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -10140,8 +10200,8 @@
       "host": "www.ilga.gov",
       "url": "https://www.ilga.gov/Documents/legislation/ilcs/documents/003500050K203.htm",
       "quoteSha256": "b20aa287a892d09c",
-      "verdict": "UNFETCHABLE",
-      "detail": "request failed: TypeError: fetch failed",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {

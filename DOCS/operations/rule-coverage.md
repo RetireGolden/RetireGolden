@@ -252,19 +252,19 @@ Version 5 is a breaking discriminator for strict version checks: manifest.rules 
 
 ## Quote fidelity
 
-Committed ledger generated at 2026-09-08T14:16:29.736Z over 1293 authority entries (1 fetched live, 351 from cache).
+Committed ledger generated at 2026-09-08T18:08:44.551Z over 1299 authority entries (0 fetched live, 352 from cache).
 
-5 serious, 56 advisory, 1232 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
+3 serious, 56 advisory, 1240 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
 not treated as a CI gate; how to read each verdict: DOCS/operations/quote-fidelity.md.
 
 | Verdict | Class | Count |
 | --- | --- | ---: |
 | ELISION-EXACT | ok | 72 |
 | ELISION-PUNCTUATION | advisory | 7 |
-| EXACT | ok | 915 |
+| EXACT | ok | 923 |
 | PDF-NOT-VERIFIABLE | advisory | 7 |
 | PDF-WORD-LEVEL | ok | 245 |
 | PUNCTUATION | advisory | 42 |
-| UNFETCHABLE | serious | 5 |
+| UNFETCHABLE | serious | 3 |
 
 Regenerate: pnpm verify:quotes -- --json > DOCS/operations/quote-fidelity-ledger.json (network required), then pnpm rules:coverage.
