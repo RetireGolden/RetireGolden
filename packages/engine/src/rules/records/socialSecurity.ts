@@ -27,6 +27,12 @@ export const socialSecurityRecords = {
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
+      citation: 'IRC 86(a)(1)',
+      url: 'https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapB-partII-sec86.htm',
+      quotedText:
+        'Except as provided in paragraph (2), gross income for the taxable year of any taxpayer described in subsection (b) (notwithstanding section 207 of the Social Security Act) includes social security benefits in an amount equal to the lesser of— (A) one-half of the social security benefits received during the taxable year, or (B) one-half of the excess described in subsection (b)(1).',
+    }, {
+      kind: 'statute',
       citation: 'IRC 86(a)(2)',
       url: 'https://www.law.cornell.edu/uscode/text/26/86',
       quotedText:
@@ -37,12 +43,6 @@ export const socialSecurityRecords = {
       url: 'https://www.law.cornell.edu/uscode/text/26/86',
       quotedText:
         'adjusted gross income - (A) determined without regard to this section and sections 85(c), 135, 137, 221, 911, 931, and 933, and (B) increased by the amount of interest received or accrued by the taxpayer during the taxable year which is exempt from tax.',
-    }, {
-      kind: 'statute',
-      citation: 'IRC 86(a)(1)',
-      url: 'https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapB-partII-sec86.htm',
-      quotedText:
-        'Except as provided in paragraph (2), gross income for the taxable year of any taxpayer described in subsection (b) (notwithstanding section 207 of the Social Security Act) includes social security benefits in an amount equal to the lesser of— (A) one-half of the social security benefits received during the taxable year, or (B) one-half of the excess described in subsection (b)(1).',
     }, {
       kind: 'statute',
       citation: 'IRC 86(c)',
@@ -267,9 +267,9 @@ export const socialSecurityRecords = {
     authority: [{
       kind: 'statute',
       citation: '42 U.S.C. 402(b)(2)',
-      url: 'https://www.law.cornell.edu/uscode/text/42/402',
+      url: 'https://www.govinfo.gov/content/pkg/USCODE-2024-title42/html/USCODE-2024-title42-chap7-subchapII-sec402.htm',
       quotedText:
-        'such wife\u2019s insurance benefit for each month shall be equal to one-half of the primary insurance amount of her husband (or, in the case of a divorced wife, her former husband) for such month.',
+        'Except as provided in subsection (q), such wife\'s insurance benefit for each month shall be equal to one-half of the primary insurance amount of her husband (or, in the case of a divorced wife, her former husband) for such month.',
     }, {
       kind: 'statute',
       citation: '42 U.S.C. 402(c)(2)',
@@ -1480,10 +1480,10 @@ export const socialSecurityRecords = {
         "Such child's insurance benefit for each month shall, if the individual on the basis of whose wages and self-employment income the child is entitled to such benefit has not died prior to the end of such month, be equal to one-half of the primary insurance amount of such individual for such month.",
     }, {
       kind: 'statute',
-      citation: '42 U.S.C. 403(a)(1)',
-      url: 'https://www.govinfo.gov/content/pkg/USCODE-2024-title42/html/USCODE-2024-title42-chap7-subchapII-sec403.htm',
+      citation: '42 U.S.C. 403(a)(6)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section403&num=0&edition=prelim',
       quotedText:
-        'In the case of an individual whose primary insurance amount has been computed or recomputed under section 415(a)(1) or (4) of this title, or section 415(d) of this title, as in effect after December 1978, the total monthly benefits to which beneficiaries may be entitled under section 402 or 423 of this title for a month on the basis of the wages and self-employment income of such individual shall, except as provided by paragraphs (3) and (6) (but prior to any increases resulting from the application of paragraph (2)(A)(ii)(III) of section 415(i) of this title), be reduced as necessary so as not to exceed— …',
+        "Notwithstanding any of the preceding provisions of this subsection other than paragraphs (3)(A), (3)(C), (3)(D), (4), and (5) (but subject to section 415(i)(2)(A)(ii) of this title), the total monthly benefits to which beneficiaries may be entitled under sections 402 and 423 of this title for any month on the basis of the wages and self-employment income of an individual entitled to disability insurance benefits shall be reduced (before the application of section 424a of this title) to the smaller of- (A) 85 percent of such individual's average indexed monthly earnings (or 100 percent of his primary insurance amount, if larger), or (B) 150 percent of such individual's primary insurance amount.",
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,

@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-09-07T23:53:29.952Z",
+  "generatedAt": "2026-09-08T00:18:34.672Z",
   "recordCount": 441,
-  "urlCount": 342,
-  "fetched": 12,
-  "cached": 330,
+  "urlCount": 341,
+  "fetched": 9,
+  "cached": 332,
   "entryCount": 1262,
   "counts": {
     "EXACT": 867,
@@ -5819,6 +5819,16 @@
     },
     {
       "id": "irc-86-a-taxable-social-security-two-tier",
+      "citation": "IRC 86(a)(1)",
+      "host": "www.govinfo.gov",
+      "url": "https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapB-partII-sec86.htm",
+      "quoteSha256": "29f8a4cd45cd0efe",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-86-a-taxable-social-security-two-tier",
       "citation": "IRC 86(a)(2)",
       "host": "www.law.cornell.edu",
       "url": "https://www.law.cornell.edu/uscode/text/26/86",
@@ -5835,16 +5845,6 @@
       "quoteSha256": "e7e6330cdf529602",
       "verdict": "PUNCTUATION",
       "detail": "matches only after: dash-spacing",
-      "diagnosis": null
-    },
-    {
-      "id": "irc-86-a-taxable-social-security-two-tier",
-      "citation": "IRC 86(a)(1)",
-      "host": "www.govinfo.gov",
-      "url": "https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapB-partII-sec86.htm",
-      "quoteSha256": "29f8a4cd45cd0efe",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -5940,9 +5940,9 @@
     {
       "id": "usc-42-402-b-2-spousal-half-of-pia",
       "citation": "42 U.S.C. 402(b)(2)",
-      "host": "www.law.cornell.edu",
-      "url": "https://www.law.cornell.edu/uscode/text/42/402",
-      "quoteSha256": "9e6d2e5e1f51e41a",
+      "host": "www.govinfo.gov",
+      "url": "https://www.govinfo.gov/content/pkg/USCODE-2024-title42/html/USCODE-2024-title42-chap7-subchapII-sec402.htm",
+      "quoteSha256": "495b56c33c52ecff",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null
@@ -6821,10 +6821,10 @@
     },
     {
       "id": "usc-42-402-d-2-ssdi-child-auxiliary",
-      "citation": "42 U.S.C. 403(a)(1)",
-      "host": "www.govinfo.gov",
-      "url": "https://www.govinfo.gov/content/pkg/USCODE-2024-title42/html/USCODE-2024-title42-chap7-subchapII-sec403.htm",
-      "quoteSha256": "f6dcf5a061d62783",
+      "citation": "42 U.S.C. 403(a)(6)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section403&num=0&edition=prelim",
+      "quoteSha256": "a225a3c7f06ee7ce",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null

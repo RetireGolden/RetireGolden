@@ -658,10 +658,10 @@
     }
   ],
   "quoteFidelity": {
-    "generatedAt": "2026-09-07T23:53:29.952Z",
+    "generatedAt": "2026-09-08T00:18:34.672Z",
     "entryCount": 1262,
-    "fetched": 12,
-    "cached": 330,
+    "fetched": 9,
+    "cached": 332,
     "counts": {
       "ELISION-EXACT": 67,
       "ELISION-PUNCTUATION": 7,

@@ -830,6 +830,11 @@
       "authorities": [
         {
           "kind": "statute",
+          "citation": "IRC 86(a)(1)",
+          "url": "https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapB-partII-sec86.htm"
+        },
+        {
+          "kind": "statute",
           "citation": "IRC 86(a)(2)",
           "url": "https://www.law.cornell.edu/uscode/text/26/86"
         },
@@ -837,11 +842,6 @@
           "kind": "statute",
           "citation": "IRC 86(b)(2)",
           "url": "https://www.law.cornell.edu/uscode/text/26/86"
-        },
-        {
-          "kind": "statute",
-          "citation": "IRC 86(a)(1)",
-          "url": "https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleA-chap1-subchapB-partII-sec86.htm"
         },
         {
           "kind": "statute",
@@ -1383,7 +1383,7 @@
         {
           "kind": "statute",
           "citation": "42 U.S.C. 402(b)(2)",
-          "url": "https://www.law.cornell.edu/uscode/text/42/402"
+          "url": "https://www.govinfo.gov/content/pkg/USCODE-2024-title42/html/USCODE-2024-title42-chap7-subchapII-sec402.htm"
         },
         {
           "kind": "statute",
@@ -1569,8 +1569,8 @@
         },
         {
           "kind": "statute",
-          "citation": "42 U.S.C. 403(a)(1)",
-          "url": "https://www.govinfo.gov/content/pkg/USCODE-2024-title42/html/USCODE-2024-title42-chap7-subchapII-sec403.htm"
+          "citation": "42 U.S.C. 403(a)(6)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section403&num=0&edition=prelim"
         }
       ]
     },
