@@ -157,3 +157,46 @@ describeRule('cfr-20-404-335-ordinary-widow-eligibility', {
     expect(amounts).not.toEqual(readings.importingWorkerOldAgeMinimum62)
   })
 })
+
+describeRule('cfr-20-404-336-surviving-divorced-spouse-eligibility', {
+  // Claimant born 1960-06-15, claims at FRA 67 in 2027, currently single.
+  // Worksheet relationship is surviving-divorced; projected into the pre-
+  // discriminator deceased proxy (verified capture p04-before-helper-observed.json
+  // at 73ed8773). Deceased ex DOB 1950-06-15, PIA 2,400, claim age omitted/FRA,
+  // no remarriage. Worksheet assumes fully insured, valid marriage under
+  // 404.336(a)(1), application met, age at least 60, own benefit below deceased
+  // PIA, and unmarried; (b)(1)–(4), disabled (c), (d), and (e)(2)–(3) are outside
+  // this duration-only fixture.
+  //
+  // Vector:
+  //   [0] marriageYears 0.75 (nine months) → 404.336(a)(2) ten-year duration
+  //       refuses → null.
+  //   [1] marriageYears 10 → (a)(2) met; unreduced survivor at FRA equals PIA
+  //       2,400 when the deceased is treated as claimed at FRA.
+  // The rejected ordinary-widow proxy applies the nine-month 404.335(a)(1) floor
+  // to every deceased formerSpouse, so both cells pay 2,400.
+  readings: {
+    statutory404336TenYearDuration: [null, 2_400],
+    currentDeceasedProxyOrdinaryWidowNineMonth: [2_400, 2_400],
+  },
+  accepted: 'statutory404336TenYearDuration',
+  produced: 'currentDeceasedProxyOrdinaryWidowNineMonth',
+}, ({ accepted, produced }) => {
+  it('pins the missing surviving-divorced discriminator against the deceased proxy nine-month duration', () => {
+    const deceasedProxy: FormerSpouse = {
+      id: 'former',
+      relationship: 'deceased',
+      dob: '1950-06-15',
+      piaMonthly: 2_400,
+      marriageYears: 0.75,
+      remarriedAtAge: null,
+    }
+    const amounts = [
+      monthlyOf(deceasedProxy),
+      monthlyOf({ ...deceasedProxy, marriageYears: 10 }),
+    ]
+
+    expect(amounts).toEqual(produced)
+    expect(amounts).not.toEqual(accepted)
+  })
+})
