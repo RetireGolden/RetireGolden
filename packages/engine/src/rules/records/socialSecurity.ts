@@ -133,7 +133,7 @@ export const socialSecurityRecords = {
     jurisdiction: 'federal',
     authority: [{
       kind: 'regulation',
-      citation: '20 CFR 404.313(b)(1), (b)(2)',
+      citation: '20 CFR 404.313(a), (b)(2)',
       url: 'https://www.law.cornell.edu/cfr/text/20/404.313',
       quotedText:
         'You may earn a credit for each month during the period beginning with the month you attain full retirement age (as defined in \u00a7 404.409) and ending with the month you attain age 70 (72 before 1984). ... Credit percentages. The applicable credit amount for each month of delayed retirement can be found in the table below. If your date of birth is: The credit for each month you delay retirement is: ... After 1/1/1943 2/3 of 1%',
@@ -2006,7 +2006,7 @@ export const socialSecurityRecords = {
   'irc-86-c-provisional-income-thresholds': {
     title: 'The Social Security base amounts are fixed dollars, and the joint figure is not double',
     statement:
-      'The two provisional-income thresholds that gate benefit taxation are the base amount, 25,000 for an unmarried filer and 32,000 on a joint return, and the adjusted base amount, 34,000 and 44,000. Section 86 contains no cost-of-living provision of any kind, so all four figures have stood in the same nominal dollars since 1993 and move only by legislation. Two errors follow from forgetting that. Scaling them with an inflation factor understates taxable Social Security in every projected year, because the whole design of the section is that a rising nominal benefit crosses a still threshold. And the joint amounts are not twice the unmarried ones -- 32,000 against 25,000 and 44,000 against 34,000 -- so the doubling that holds for the standard deduction must not be carried across to these.',
+      'The two provisional-income thresholds that gate benefit taxation are the base amount, 25,000 for an unmarried filer and 32,000 on a joint return, and the adjusted base amount, 34,000 and 44,000. Section 86(c) states fixed-dollar base and adjusted-base amounts without an indexing clause in that subsection. Two errors follow from forgetting that. Scaling them with an inflation factor understates taxable Social Security in every projected year, because the whole design of the section is that a rising nominal benefit crosses a still threshold. And the joint amounts are not twice the unmarried ones -- 32,000 against 25,000 and 44,000 against 34,000 -- so the doubling that holds for the standard deduction must not be carried across to these.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,

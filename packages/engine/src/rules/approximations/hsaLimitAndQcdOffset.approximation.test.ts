@@ -508,31 +508,135 @@ describeRule('irc-408-d-8-B-ii-projection-annual-age-proxy', {
   })
 })
 
+/**
+ * Rev. Proc. 2025-19 §2.01(1) publishes the 2026 self-only and family bases.
+ * Pin them before any fixture uses them as authority so pack drift cannot
+ * silently redefine the accepted readings.
+ */
+const HSA_2026_SELF_ONLY = 4_400
+const HSA_2026_FAMILY = 8_750
+/** IRC 223(b)(1)-(2): six eligible self-only months at 1/12 of $4,400. */
+const HSA_2026_SIX_MONTH_SELF_ONLY = 6 * (HSA_2026_SELF_ONLY / 12)
+
+/** Observed produced pins (Main scratch probe, 2026-09-09). */
+const HSA_PRODUCED_MEDICARE_ENTITLEMENT = 5_400
+const HSA_PRODUCED_TWO_PERSON_SELF_ONLY = 4_375
+const HSA_PRODUCED_SIX_MONTH_SELF_ONLY = 4_400
+
+/** Under-55 couple for coverage-tier fixtures; coverage facts are source-side. */
+function youngerThan55Couple(): Plan {
+  const plan = createEmptyPlan({ newId: testIds, now: fixedNow })
+  plan.household.filingStatus = 'marriedFilingJointly'
+  plan.household.people[0] = {
+    id: 'p1',
+    name: 'Pat',
+    dob: '1996-03-15',
+    sex: 'average',
+    retirementAge: 80,
+    longevity: { planningAge: 90, source: 'manual' },
+  }
+  plan.household.people.push({
+    id: 'p2',
+    name: 'Sam',
+    dob: '1996-04-15',
+    sex: 'average',
+    retirementAge: 80,
+    longevity: { planningAge: 90, source: 'manual' },
+  })
+  plan.assumptions.inflationPct = 0
+  plan.assumptions.defaultReturnPct = 0
+  return plan
+}
+
+/** Under-55 single owner for monthly-proration fixtures; month facts are source-side. */
+function youngerThan55Single(): Plan {
+  const plan = createEmptyPlan({ newId: testIds, now: fixedNow })
+  plan.household.people[0] = {
+    id: 'p1',
+    name: 'Pat',
+    dob: '1996-03-15',
+    sex: 'average',
+    retirementAge: 80,
+    longevity: { planningAge: 90, source: 'manual' },
+  }
+  plan.assumptions.inflationPct = 0
+  plan.assumptions.defaultReturnPct = 0
+  return plan
+}
+
 describeRule('irc-223-b-2-7-projection-coverage-proration-and-medicare', {
   readings: {
-    // 223(b)(7) sets the monthly limitation to zero for the first month of
-    // Medicare entitlement and every month after. At 73 the taxpayer has been
-    // entitled for eight years, so no month of the year carries a limit.
-    statuteZeroOnceEntitledToMedicare: 0,
-    engineAllowsAWholeSelfOnlyLimitPlusCatchUp:
-      pack2026.contributionLimits.hsaSelfOnly + pack2026.contributionLimits.hsaCatchUp55,
+    // IRC 223(b)(1)-(2) monthly sum at the coverage tier and eligibility months
+    // the authority facts describe; IRC 223(b)(7) zero once Medicare-entitled.
+    statute: {
+      medicareEntitlement: 0,
+      twoPersonSelfOnlyCoverage: HSA_2026_SELF_ONLY,
+      sixMonthSelfOnlyProration: HSA_2026_SIX_MONTH_SELF_ONLY,
+    },
+    // Shipped projection shortcut: household size for coverage tier, whole-year
+    // limit regardless of eligible months, and no Medicare zeroing.
+    engineApproximation: {
+      medicareEntitlement: HSA_PRODUCED_MEDICARE_ENTITLEMENT,
+      twoPersonSelfOnlyCoverage: HSA_PRODUCED_TWO_PERSON_SELF_ONLY,
+      sixMonthSelfOnlyProration: HSA_PRODUCED_SIX_MONTH_SELF_ONLY,
+    },
   },
-  accepted: 'statuteZeroOnceEntitledToMedicare',
-  produced: 'engineAllowsAWholeSelfOnlyLimitPlusCatchUp',
-  note: 'Medicare entitlement',
+  accepted: 'statute',
+  produced: 'engineApproximation',
+  note: 'coverage tier, monthly proration, and Medicare entitlement',
 }, ({ accepted, produced }) => {
-  it('allows a whole HSA limit to a taxpayer eight years into Medicare', () => {
+  it('allows self-only base plus age-55 catch-up when Medicare entitlement is source-side stipulated, not inferred from age 73', () => {
     const plan = workingSeptuagenarian()
-    // One person, so the coverage tier is self-only and 223(b)(5) division —
-    // which IS implemented — never enters. This fixture is about (b)(7) alone.
+    // Source-side authority facts (absent from Plan): taxpayer is entitled to
+    // Medicare title XVIII benefits for all of 2026. Calendar age 73 does not
+    // establish entitlement; the fixture stipulates it. One person, so the
+    // coverage tier is self-only and 223(b)(5) division never enters.
     plan.accounts = [cash(0), hsa(0, 20_000)]
     plan.incomes = [wages(120_000)]
 
-    const result = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax })
-    const year = result.years.find((y) => y.year === 2026)!
+    const year = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax })
+      .years.find((y) => y.year === 2026)!
 
-    expect(year.contributions).toBeCloseTo(produced, 6)
-    expect(year.contributions).not.toBeCloseTo(accepted, 6)
+    expect(year.contributions).toBeCloseTo(produced.medicareEntitlement, 6)
+    expect(year.contributions).not.toBeCloseTo(accepted.medicareEntitlement, 6)
+  })
+
+  it('caps one MFJ HSA owner at half the family base ($4,375) when self-only coverage is source-side stipulated', () => {
+    // Source-side authority facts (absent from Plan): two-person MFJ household;
+    // HSA owner under 55; self-only HDHP for all 12 months; other person
+    // neither covered by family HDHP nor making HSA contributions. Coverage
+    // tier is not expressible in the plan schema — the engine substitutes
+    // household size and applies 223(b)(5) division.
+    expect(pack2026.contributionLimits.hsaSelfOnly).toBe(HSA_2026_SELF_ONLY)
+    expect(pack2026.contributionLimits.hsaFamily).toBe(HSA_2026_FAMILY)
+
+    const plan = youngerThan55Couple()
+    plan.accounts = [cash(0), hsa(0, 20_000)]
+    plan.incomes = [wages(120_000)]
+
+    const year = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax })
+      .years.find((y) => y.year === 2026)!
+
+    expect(year.contributions).toBeCloseTo(produced.twoPersonSelfOnlyCoverage, 6)
+    expect(year.contributions).not.toBeCloseTo(accepted.twoPersonSelfOnlyCoverage, 6)
+  })
+
+  it('applies the whole self-only annual limit ($4,400) despite six eligible months being source-side stipulated', () => {
+    // Source-side authority facts (absent from Plan): one owner under 55;
+    // self-only eligible 1 January through 30 June only; ineligible 1 July
+    // through 31 December and specifically not eligible 1 December; no
+    // catch-up or last-month rule. Eligible months are not expressible in the
+    // plan schema — the engine applies a whole annual limit.
+    // Worksheet: 6 × ($4,400 / 12) = $2,200; no intermediate per-month rounding.
+    const plan = youngerThan55Single()
+    plan.accounts = [cash(0), hsa(0, 20_000)]
+    plan.incomes = [wages(120_000)]
+
+    const year = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax })
+      .years.find((y) => y.year === 2026)!
+
+    expect(year.contributions).toBeCloseTo(produced.sixMonthSelfOnlyProration, 6)
+    expect(year.contributions).not.toBeCloseTo(accepted.sixMonthSelfOnlyProration, 6)
   })
 })
 
