@@ -210,25 +210,80 @@ function destinationCredits(
 
 /**
  * B holds both kinds, with the designated Roth account earlier in Plan order.
- * This is the fact pattern that separates the three candidate destination
- * policies, and it is why the readings below are objects rather than dollar
- * figures: on the converted amount ALONE the accepted policy and the pre-fix
- * build agree at 50,000, so a fixture keyed on `year.rothConversion` would have
- * been green under the defect and proved nothing. The readings carry the
- * destination as well as the amount, which is what makes them disagree.
+ * Four candidate destination policies share one registered vector; each
+ * coordinate is a complete observed slice for one fact pattern:
  *
- *   fallbackToFirstRothIra      the accepted reading -- pass over the
- *                               designated Roth account and credit B's first
- *                               Roth IRA in Plan order
- *   creditFirstRothInPlanOrder  what this engine did before the destination
- *                               search read `kind`: credit the first account of
- *                               type roth, which here is the designated Roth
- *                               account no conversion may reach
- *   trimDesignatedRothOnly      refuse the slice of any owner whose first Roth
- *                               is a designated Roth account, converting
- *                               nothing and letting Plan array order decide a
- *                               five-figure answer
+ *   statute                     pass over the designated Roth account and
+ *                               credit B's first Roth IRA in Plan order
+ *   creditFirstRothInPlanOrder  credit the first account of type roth, which
+ *                               here is the designated Roth account
+ *   trimDesignatedRothOnly      refuse any owner whose first Roth is a
+ *                               designated Roth account
+ *   anyRothAccountAccepted      treat any Roth account, including a named
+ *                               employer destination, as lawful
  */
+type ConversionDestinationReading = {
+  bothKindsInPlanOrder: {
+    converted: number
+    rothIra: number
+    designatedRoth: number
+  }
+  designatedOnlyHousehold: number
+  mixedHouseholdConverted: number
+  namedEmployerDestination: {
+    committed: boolean
+    executedAmount: number
+    destinationCreditAmount: number
+  }
+}
+
+function expectConversionCoordinate<
+  K extends keyof ConversionDestinationReading,
+>(
+  coordinate: K,
+  observed: ConversionDestinationReading[K],
+  accepted: ConversionDestinationReading,
+  readings: Record<string, ConversionDestinationReading>,
+) {
+  const acceptedSlice = accepted[coordinate]
+  if (typeof observed === 'number' && typeof acceptedSlice === 'number') {
+    expect(observed).toBeCloseTo(acceptedSlice, 6)
+    for (const reading of Object.values(readings)) {
+      const rejectedSlice = reading[coordinate]
+      if (typeof rejectedSlice !== 'number' || rejectedSlice === acceptedSlice) continue
+      expect(observed).not.toBeCloseTo(rejectedSlice, 6)
+    }
+    return
+  }
+  if (
+    coordinate === 'bothKindsInPlanOrder'
+    && typeof observed === 'object'
+    && observed !== null
+  ) {
+    const slice = observed as ConversionDestinationReading['bothKindsInPlanOrder']
+    const acceptedBothKinds = acceptedSlice as ConversionDestinationReading['bothKindsInPlanOrder']
+    expect(slice.converted).toBeCloseTo(acceptedBothKinds.converted, 6)
+    expect(slice.rothIra).toBeCloseTo(acceptedBothKinds.rothIra, 6)
+    expect(slice.designatedRoth).toBeCloseTo(acceptedBothKinds.designatedRoth, 6)
+    for (const reading of Object.values(readings)) {
+      const rejected = reading.bothKindsInPlanOrder
+      if (JSON.stringify(rejected) === JSON.stringify(acceptedBothKinds)) continue
+      const matches = (
+        Math.abs(slice.converted - rejected.converted) < 1e-6
+        && Math.abs(slice.rothIra - rejected.rothIra) < 1e-6
+        && Math.abs(slice.designatedRoth - rejected.designatedRoth) < 1e-6
+      )
+      expect(matches).toBe(false)
+    }
+    return
+  }
+  expect(observed).toEqual(acceptedSlice)
+  for (const reading of Object.values(readings)) {
+    if (JSON.stringify(reading[coordinate]) === JSON.stringify(acceptedSlice)) continue
+    expect(observed).not.toEqual(reading[coordinate])
+  }
+}
+
 describeRule('irc-408A-d-3-B-conversion-destination-must-be-a-roth-ira', {
   readings: {
     statute: {
@@ -236,44 +291,56 @@ describeRule('irc-408A-d-3-B-conversion-destination-must-be-a-roth-ira', {
         converted: REQUESTED_CONVERSION,
         rothIra: REQUESTED_CONVERSION,
         designatedRoth: 0,
-        treatsEmployerRothAsLawfulDestination: false,
       },
       designatedOnlyHousehold: 0,
       mixedHouseholdConverted: REQUESTED_CONVERSION / 2,
-      namedEmployerDestination: { committed: false, executedAmount: 0 },
+      namedEmployerDestination: {
+        committed: false,
+        executedAmount: 0,
+        destinationCreditAmount: 0,
+      },
     },
     creditFirstRothInPlanOrder: {
       bothKindsInPlanOrder: {
         converted: REQUESTED_CONVERSION,
         rothIra: 0,
         designatedRoth: REQUESTED_CONVERSION,
-        treatsEmployerRothAsLawfulDestination: true,
       },
       designatedOnlyHousehold: 0,
       mixedHouseholdConverted: REQUESTED_CONVERSION / 2,
-      namedEmployerDestination: { committed: false, executedAmount: 0 },
+      namedEmployerDestination: {
+        committed: false,
+        executedAmount: 0,
+        destinationCreditAmount: 0,
+      },
     },
     trimDesignatedRothOnly: {
       bothKindsInPlanOrder: {
         converted: 0,
         rothIra: 0,
         designatedRoth: 0,
-        treatsEmployerRothAsLawfulDestination: false,
       },
       designatedOnlyHousehold: 0,
       mixedHouseholdConverted: 0,
-      namedEmployerDestination: { committed: false, executedAmount: 0 },
+      namedEmployerDestination: {
+        committed: false,
+        executedAmount: 0,
+        destinationCreditAmount: 0,
+      },
     },
     anyRothAccountAccepted: {
       bothKindsInPlanOrder: {
         converted: REQUESTED_CONVERSION,
         rothIra: REQUESTED_CONVERSION,
         designatedRoth: 0,
-        treatsEmployerRothAsLawfulDestination: true,
       },
       designatedOnlyHousehold: REQUESTED_CONVERSION,
       mixedHouseholdConverted: REQUESTED_CONVERSION,
-      namedEmployerDestination: { committed: true, executedAmount: REQUESTED_CONVERSION },
+      namedEmployerDestination: {
+        committed: true,
+        executedAmount: REQUESTED_CONVERSION,
+        destinationCreditAmount: REQUESTED_CONVERSION,
+      },
     },
   },
   accepted: 'statute',
@@ -291,17 +358,12 @@ describeRule('irc-408A-d-3-B-conversion-destination-must-be-a-roth-ira', {
 
   it('converts into the Roth IRA and leaves the designated Roth account alone', () => {
     const { year } = runOf(bothKindsPlan())
-    const bothKinds = accepted.bothKindsInPlanOrder
-
-    expect(year.rothConversion).toBeCloseTo(bothKinds.converted, 6)
-    expect(year.balances['rothBIra']).toBeCloseTo(bothKinds.rothIra, 6)
-    expect(year.balances['rothB401k']).toBeCloseTo(bothKinds.designatedRoth, 6)
-    expect(year.balances['tradB']).toBeCloseTo(400_000 - bothKinds.converted, 6)
-    expect(year.balances['rothB401k']).not.toBeCloseTo(
-      readings.creditFirstRothInPlanOrder.bothKindsInPlanOrder.designatedRoth,
-      6,
-    )
-    expect(year.rothConversion).not.toBeCloseTo(readings.trimDesignatedRothOnly.bothKindsInPlanOrder.converted, 6)
+    expectConversionCoordinate('bothKindsInPlanOrder', {
+      converted: year.rothConversion,
+      rothIra: year.balances['rothBIra']!,
+      designatedRoth: year.balances['rothB401k']!,
+    }, accepted, readings)
+    expect(year.balances['tradB']).toBeCloseTo(400_000 - accepted.bothKindsInPlanOrder.converted, 6)
   })
 
   it('names the Roth IRA on the destination credit, not the earlier Roth account', () => {
@@ -327,6 +389,11 @@ describeRule('irc-408A-d-3-B-conversion-destination-must-be-a-roth-ira', {
     // be silent here.
     const { year, warnings } = runOf(bothKindsPlan())
 
+    expectConversionCoordinate('bothKindsInPlanOrder', {
+      converted: year.rothConversion,
+      rothIra: year.balances['rothBIra']!,
+      designatedRoth: year.balances['rothB401k']!,
+    }, accepted, readings)
     expect(year.magi).toBeCloseTo(accepted.bothKindsInPlanOrder.converted, 6)
     expect(warnings).toEqual([])
   })
@@ -345,8 +412,7 @@ describeRule('irc-408A-d-3-B-conversion-destination-must-be-a-roth-ira', {
 
     const { year, warnings } = runOf(plan)
 
-    expect(year.rothConversion).toBeCloseTo(accepted.designatedOnlyHousehold, 6)
-    expect(year.rothConversion).not.toBeCloseTo(readings.anyRothAccountAccepted.designatedOnlyHousehold, 6)
+    expectConversionCoordinate('designatedOnlyHousehold', year.rothConversion, accepted, readings)
     expect(year.balances['rothB401k']).toBeCloseTo(0, 6)
     expect(year.balances['tradB']).toBeCloseTo(400_000, 6)
     expect(destinationCredits(year)).toEqual([])
@@ -377,9 +443,7 @@ describeRule('irc-408A-d-3-B-conversion-destination-must-be-a-roth-ira', {
 
     const { year, warnings } = runOf(plan)
 
-    expect(year.rothConversion).toBeCloseTo(accepted.mixedHouseholdConverted, 6)
-    expect(year.rothConversion).not.toBeCloseTo(readings.anyRothAccountAccepted.mixedHouseholdConverted, 6)
-    expect(year.rothConversion).not.toBeCloseTo(readings.trimDesignatedRothOnly.mixedHouseholdConverted, 6)
+    expectConversionCoordinate('mixedHouseholdConverted', year.rothConversion, accepted, readings)
     expect(year.balances['rothAIra']).toBeCloseTo(accepted.mixedHouseholdConverted, 6)
     expect(year.balances['rothB401k']).toBeCloseTo(0, 6)
     expect(year.balances['tradB']).toBeCloseTo(400_000 - accepted.designatedOnlyHousehold, 6)
@@ -524,11 +588,22 @@ describeRule('irc-408A-d-3-B-conversion-destination-must-be-a-roth-ira', {
     const reasonCodes = evidence.reasons.map((reason) => reason.code)
 
     expect(reasonCodes).toEqual(['conversion-employer-destination-unsupported'])
-    expect(result.committed).toBe(accepted.namedEmployerDestination.committed)
-    expect(evidence.executedAmount).toBe(accepted.namedEmployerDestination.executedAmount)
-    expect(result.committed).not.toBe(readings.anyRothAccountAccepted.namedEmployerDestination.committed)
-    expect(evidence.executedAmount).not.toBe(
-      readings.anyRothAccountAccepted.namedEmployerDestination.executedAmount,
-    )
+    expectConversionCoordinate('namedEmployerDestination', {
+      committed: result.committed,
+      executedAmount: evidence.executedAmount,
+      destinationCreditAmount: evidence.destinationCreditAmount,
+    }, accepted, readings)
+    expect(result.balances).toEqual([
+      {
+        accountId: asAccountId('roth-employer'),
+        openingBalance: asUsdCents(0),
+        closingBalance: asUsdCents(0),
+      },
+      {
+        accountId: asAccountId('traditional-a'),
+        openingBalance: asUsdCents(100_000),
+        closingBalance: asUsdCents(100_000),
+      },
+    ])
   })
 })

@@ -293,12 +293,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.contributions-growth.test.ts",
-          "line": 939,
+          "line": 937,
           "note": null,
           "tests": [
             {
               "title": "does not give a second ceiling to someone holding both IRA flavours",
-              "line": 946
+              "line": 944
             }
           ]
         }
@@ -616,36 +616,36 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/conversionDestinationVehicle.test.ts",
-          "line": 232,
+          "line": 287,
           "note": null,
           "tests": [
             {
               "title": "converts into the Roth IRA and leaves the designated Roth account alone",
-              "line": 292
+              "line": 359
             },
             {
               "title": "names the Roth IRA on the destination credit, not the earlier Roth account",
-              "line": 307
+              "line": 369
             },
             {
               "title": "recognises the income and says nothing, because nothing was refused",
-              "line": 322
+              "line": 384
             },
             {
               "title": "converts nothing, and says the employer account is what stands in the way",
-              "line": 334
+              "line": 401
             },
             {
               "title": "trims only the designated-Roth owner’s slice, and names them",
-              "line": 364
+              "line": 430
             },
             {
               "title": "keeps the destination-less copy for a household holding no Roth at all",
-              "line": 395
+              "line": 459
             },
             {
               "title": "refuses a named employer Roth destination on the action executor without moving money",
-              "line": 410
+              "line": 474
             }
           ]
         }

@@ -1146,32 +1146,32 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rmd/rmdShortfallExcise.test.ts",
-          "line": 117,
+          "line": 191,
           "note": null,
           "tests": [
             {
               "title": "applies 25 percent to required minus timely distributed",
-              "line": 157
+              "line": 231
             },
             {
               "title": "requires the corrective distribution and the reflecting return inside the window",
-              "line": 166
+              "line": 239
             },
             {
               "title": "uses the earliest statutory correction-window endpoint",
-              "line": 189
+              "line": 261
             },
             {
               "title": "does not turn a waiver request or denial into a grant",
-              "line": 197
+              "line": 269
             },
             {
               "title": "uses zero only for an explicit modeled grant",
-              "line": 208
+              "line": 279
             },
             {
               "title": "requires the entire remaining benefit after the emptying year and prices the excise on the shortfall",
-              "line": 217
+              "line": 288
             }
           ]
         },
@@ -3786,12 +3786,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rmd/rmdShortfallExcise.test.ts",
-          "line": 287,
+          "line": 330,
           "note": "each independently modeled automatic-waiver condition",
           "tests": [
             {
               "title": "requires the EDB, default-life-expectancy, ninth-year-election, and Commissioner conditions",
-              "line": 295
+              "line": 338
             }
           ]
         }
@@ -3849,16 +3849,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rmd/rmdShortfallExcise.test.ts",
-          "line": 334,
+          "line": 377,
           "note": "same-year death, full correction, later-of deadline, and Commissioner conditions",
           "tests": [
             {
               "title": "requires each independently modeled year-of-death waiver condition",
-              "line": 342
+              "line": 385
             },
             {
               "title": "waives when the beneficiary filing deadline is later than December 31 of the following year",
-              "line": 382
+              "line": 425
             }
           ]
         }

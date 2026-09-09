@@ -511,15 +511,15 @@ describe('contributions', () => {
     },
     accepted: 'statutory',
   }, ({ accepted, readings }) => {
-    it('never lets total additions exceed the participant pay', () => {
-      const plan = basePlan()
-      plan.household.people[0]! = {
-        ...plan.household.people[0]!,
+    it('binds both total additions and the deferral to the participant pay prong', () => {
+      const matchPlan = basePlan()
+      matchPlan.household.people[0]! = {
+        ...matchPlan.household.people[0]!,
         dob: '1980-06-15',
         retirementAge: 70,
       }
-      plan.incomes = [wages(30_000)]
-      plan.accounts = [
+      matchPlan.incomes = [wages(30_000)]
+      matchPlan.accounts = [
         { ...cash(1_000_000) },
         {
           id: testIds(), name: '401k', type: 'traditional', kind: 'employer',
@@ -529,26 +529,14 @@ describe('contributions', () => {
         } as never,
       ]
 
-      const result = simulatePlan(validate(plan), { startYear: 2026, horizonEndYear: 2026, taxCalculator: noTax })
-      const year = result.years[0]!
-      const annualAdditions = year.contributions + year.employerMatch
-
-      expect(annualAdditions).toBeCloseTo(accepted.totalAdditionsAtThirtyThousandCompensation, 6)
-      expect(annualAdditions).not.toBeCloseTo(
-        readings.rejectedDollarProngAlone.totalAdditionsAtThirtyThousandCompensation,
-        6,
-      )
-    })
-
-    it('binds the deferral itself, not only the match', () => {
-      const plan = basePlan()
-      plan.household.people[0]! = {
-        ...plan.household.people[0]!,
+      const deferralPlan = basePlan()
+      deferralPlan.household.people[0]! = {
+        ...deferralPlan.household.people[0]!,
         dob: '1980-06-15',
         retirementAge: 70,
       }
-      plan.incomes = [wages(20_000)]
-      plan.accounts = [
+      deferralPlan.incomes = [wages(20_000)]
+      deferralPlan.accounts = [
         { ...cash(1_000_000) },
         {
           id: testIds(), name: '401k', type: 'traditional', kind: 'employer',
@@ -557,15 +545,25 @@ describe('contributions', () => {
         } as never,
       ]
 
-      const result = simulatePlan(validate(plan), { startYear: 2026, horizonEndYear: 2026, taxCalculator: noTax })
-      const year = result.years[0]!
+      const matchYear = simulatePlan(validate(matchPlan), {
+        startYear: 2026, horizonEndYear: 2026, taxCalculator: noTax,
+      }).years[0]!
+      const deferralYear = simulatePlan(validate(deferralPlan), {
+        startYear: 2026, horizonEndYear: 2026, taxCalculator: noTax,
+      }).years[0]!
 
-      expect(year.employerMatch).toBeCloseTo(0, 6)
-      expect(year.contributions).toBeCloseTo(accepted.deferralAtTwentyThousandCompensation, 6)
-      expect(year.contributions).not.toBeCloseTo(
-        readings.rejectedDollarProngAlone.deferralAtTwentyThousandCompensation,
-        6,
-      )
+      const observed = {
+        totalAdditionsAtThirtyThousandCompensation:
+          matchYear.contributions + matchYear.employerMatch,
+        deferralAtTwentyThousandCompensation: deferralYear.contributions,
+      }
+
+      expect(observed.totalAdditionsAtThirtyThousandCompensation)
+        .toBeCloseTo(accepted.totalAdditionsAtThirtyThousandCompensation, 6)
+      expect(observed.deferralAtTwentyThousandCompensation)
+        .toBeCloseTo(accepted.deferralAtTwentyThousandCompensation, 6)
+      expect(observed).not.toEqual(readings.rejectedDollarProngAlone)
+      expect(deferralYear.employerMatch).toBeCloseTo(0, 6)
     })
   })
 

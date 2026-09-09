@@ -56,12 +56,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.contributions-growth.test.ts",
-          "line": 682,
+          "line": 680,
           "note": null,
           "tests": [
             {
               "title": "reduces realized MAGI and ACA household MAGI by the allowed HSA contribution",
-              "line": 689
+              "line": 687
             }
           ]
         }
@@ -222,12 +222,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.contributions-growth.test.ts",
-          "line": 610,
+          "line": 608,
           "note": null,
           "tests": [
             {
               "title": "matches the published 2026 self-only and family HSA limits",
-              "line": 620
+              "line": 618
             }
           ]
         }
