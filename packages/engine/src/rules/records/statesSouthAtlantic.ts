@@ -166,6 +166,75 @@ export const southAtlanticStateRecords = {
     ],
   },
 
+  'sc-code-12-6-1120-4-social-security-subtraction': {
+    title: 'South Carolina determines gross income without Internal Revenue Code section 86 for Social Security',
+    statement:
+      'South Carolina gross income is determined without application of Internal Revenue Code section 86. That is what `taxesSocialSecurity: false` encodes for the Social Security limb only: federally included Social Security never reaches the South Carolina base. Railroad Retirement provenance is outside this record and is registered separately at `sc-form1040-line-o-railroad-benefits-not-modeled`; the retirement deduction at `sc-code-12-6-1170-retirement-income-deduction` and Guard or Reserve pay at `sc-code-12-6-1120-7-reserve-national-guard-pay-not-modeled` are separate limbs as well.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:SC',
+    authority: [{
+      kind: 'statute',
+      citation: 'S.C. Code 12-6-1120(4)',
+      url: 'https://www.scstatehouse.gov/code/t12c006.php',
+      quotedText:
+        '(4) South Carolina gross income is determined without application of Internal Revenue Code Sections 78 (Gross-up of Dividends received from Certain Foreign Corporations), 86 (Social Security and Tier 1 Railroad Retirement Benefits), and 87 (Alcohol Fuel Credit).',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-09',
+    implementedBy: [
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#states.SC',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+    ],
+  },
+
+  'sc-form1040-line-o-railroad-benefits-not-modeled': {
+    title: 'South Carolina’s 2025 SC1040 line o reaches federally taxed railroad retirement; the engine cannot certify payer or category',
+    statement:
+      'The 2025 South Carolina Form SC1040 instructions direct taxpayers to enter on line o the amount of Social Security from Title 2 of the Social Security Act or railroad retirement that was taxed on the federal return. That form line is a different limb from the Social Security subtraction registered at `sc-code-12-6-1120-4-social-security-subtraction`, which rests on section 12-6-1120(4) and the pack\'s `taxesSocialSecurity: false` carrier rather than on line o. Out of scope: `incomeStreamSchema` has no railroad-retirement type, `pensionSchema.source` is only `private` or `public`, and `StateTaxParams` carries no Railroad Retirement Board payer, Title 2 versus railroad category, or federal-taxability facts — so no accepted `socialSecurity`, wages, pension, or generic ordinary income input can identify qualifying line o railroad retirement. Generic amounts entered through those channels are still priced under the pack\'s existing rules; the engine emits no law-specific refusal for this limb. This record quotes tax year 2025 form instructions only and does not extend that line to later years without a later source.',
+    classification: 'outOfScope',
+    outOfScope: {
+      shape: 'inexpressibleInput',
+      missingInputFacts: [
+        'railroad retirement benefits taxed on the federal return, as distinct from Title 2 Social Security benefits taxed on the federal return: incomeStreamSchema has no railroad-retirement type',
+        'Railroad Retirement Board payer or railroad benefit category on pensionSchema, whose `source` enum is only private or public',
+        'federal return inclusion status for railroad retirement on StateTaxParams, which carries only the `taxesSocialSecurity` boolean and no railroad-benefit classification',
+      ],
+    },
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:SC',
+    authority: [{
+      kind: 'formInstruction',
+      citation: 'South Carolina Department of Revenue, 2025 Form SC1040 instructions, line o',
+      url: 'https://dor.sc.gov/sites/dor/files/forms/SC1040Instr_2025.pdf',
+      quotedText:
+        'Line o: Social Security and/or railroad retirement if taxed on your federal return Enter the amount of Social Security from Title 2 of the Social Security Act or railroad retirement that was taxed on your federal return.',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2025,
+    effectiveThrough: 2025,
+    verifiedOn: '2026-09-09',
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/params/state/types.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#incomeStreamSchema',
+      'packages/engine/src/model/plan.ts#pensionSchema',
+      'packages/engine/src/params/state/types.ts#StateTaxParams',
+    ],
+  },
+
   'sc-code-12-6-1170-retirement-income-deduction': {
     title: 'South Carolina’s retirement deduction has a tier below age 65',
     statement:

@@ -957,6 +957,10 @@ const STATE_EXACT_PUBLICATION_URLS: Readonly<Partial<Record<UsStateCode, readonl
   PA: [
     'https://www.pa.gov/agencies/revenue/forms-and-publications/pa-personal-income-tax-guide/gross-compensation',
   ],
+  SC: [
+    // Verified TY2025 SC1040 instructions, line o; admit only this publication.
+    'https://dor.sc.gov/sites/dor/files/forms/SC1040Instr_2025.pdf',
+  ],
   VA: [
     // Verified 2026-09-09: DTF Subtractions page quoted for Tier 1/2 railroad
     // guidance; law.lis.virginia.gov remains the Code publisher.
@@ -1751,6 +1755,22 @@ describe('tax rule registry conformance', () => {
       jurisdiction: 'state:AL',
       authority: [hb341],
     }]])).toEqual([])
+  })
+
+  it('admits the verified SC1040 publication without admitting neighboring resources', () => {
+    const url = 'https://dor.sc.gov/sites/dor/files/forms/SC1040Instr_2025.pdf'
+    const authority = { citation: '2025 SC1040 instructions, line o', url }
+    expect(offSourceAuthorities([['sc-fictional', {
+      jurisdiction: 'state:SC', authority: [authority],
+    }]])).toEqual([])
+    expect(stateRulesMissingStateAuthority([['sc-fictional', {
+      jurisdiction: 'state:SC', authority: [authority],
+    }]])).toEqual([])
+    for (const unverifiedUrl of [url.replace('2025', '2024'), `${url}?download=1`]) {
+      expect(offSourceAuthorities([['sc-fictional', {
+        jurisdiction: 'state:SC', authority: [{ ...authority, url: unverifiedUrl }],
+      }]])).toHaveLength(1)
+    }
   })
 
   it('admits verified NJ, OR, PA, and VA agency-publication pages by exact URL only', () => {
