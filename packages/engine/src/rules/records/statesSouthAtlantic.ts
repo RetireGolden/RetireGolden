@@ -203,6 +203,45 @@ export const southAtlanticStateRecords = {
     ],
   },
 
+  'sc-code-12-6-1120-7-reserve-national-guard-pay-not-modeled': {
+    title: 'South Carolina excludes limited Guard and Reserve pay under §12-6-1120(7); the engine cannot certify service or pay type',
+    statement:
+      'S.C. Code §12-6-1120(7) excludes from South Carolina gross income compensation or retirement benefits from the United States or any state for service in a state National Guard or reserve component, but only for the customary annual training period (not exceeding fifteen days for guard members or fourteen days plus travel time for reserve members), weekend drills, and inactive duty training, with a fifteen-day active-duty deduction when annual-training pay was not excluded in the same taxable year. That exclusion is a different limb from the retirement deduction at `sc-code-12-6-1170-retirement-income-deduction` and from federally taxable Social Security the pack removes through `taxesSocialSecurity: false`; it does not reach every Guard or Reserve dollar. Out of scope: `wagesIncomeSchema` carries only annual gross wages with no Guard or reserve service, pay-type, training-day, drill, inactive-duty, or active-duty facts, `pensionSchema` distinguishes only private versus public source, and `StateTaxParams` / `StateRetirementExclusion` carry no National Guard or reserve pay-type facts — so no accepted wages, ordinary, public or private pension input can identify qualifying §12-6-1120(7) compensation or retirement benefits. Generic amounts entered through those channels are still priced under the pack\'s existing rules; the engine emits no law-specific refusal for this limb.',
+    classification: 'outOfScope',
+    outOfScope: {
+      shape: 'inexpressibleInput',
+      missingInputFacts: [
+        'compensation or retirement benefits from the United States or any state for service in a state National Guard or reserve component',
+        'pay limited to customary annual training (not more than fifteen days for guard or fourteen days plus travel for reserve), weekend drills, inactive duty training, or fifteen days of active-duty pay when annual-training pay was not excluded in the same year: wagesIncomeSchema has no Guard or reserve service or pay-type fields',
+        'National Guard or reserve service category on pensionSchema, whose `source` enum is only private or public',
+      ],
+    },
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:SC',
+    authority: [{
+      kind: 'statute',
+      citation: 'S.C. Code 12-6-1120(7)',
+      url: 'https://www.scstatehouse.gov/code/t12c006.php',
+      quotedText:
+        '(7) South Carolina gross income does not include compensation or retirement benefits received from the United States or any state for service in a state National Guard or a reserve component of the Armed Forces of the United States. This exclusion only applies to compensation and retirement benefits received for the customary annual training period not to exceed fifteen days for guard members or fourteen days plus travel time for reserve members, weekend drills, and inactive duty training. National Guard or reserve members that are called to active duty are allowed to deduct fifteen days of active duty pay if they have not excluded pay for the annual training period for the same taxable year.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-08-04',
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/params/state/types.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#wagesIncomeSchema',
+      'packages/engine/src/model/plan.ts#pensionSchema',
+      'packages/engine/src/params/state/types.ts#StateTaxParams',
+    ],
+  },
+
   'dc-code-47-1803-03-federal-standard-and-ss': {
     title: 'The District excludes federally taxable Social Security and follows the federal standard-deduction choice',
     statement:
@@ -607,6 +646,50 @@ export const southAtlanticStateRecords = {
       'packages/engine/src/params/state/data/year2026.ts#VA',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
       'packages/engine/src/tax/stateTax.ts#retirementExclusion',
+    ],
+  },
+
+  'va-railroad-retirement-and-unemployment-benefits-not-modeled': {
+    title: 'Virginia subtracts Tier 2 and other railroad benefits included in federal AGI; the engine cannot certify benefit type',
+    statement:
+      'Virginia Department of Taxation guidance on Tier 2 and other Railroad Retirement and Railroad Unemployment Benefits states that federal and Virginia law exempt Tier 2 vested dual benefits, as well as certain other Railroad Retirement Act benefits and Railroad Unemployment Insurance benefits from income tax, and that the subtraction is the benefit amount included in federal adjusted gross income as a taxable pension or annuity that was not already deducted on the federal return. Social Security and Tier 1 Railroad Retirement benefits taxed under IRC section 86 are a separate subtraction limb; the age deduction registered at `va-code-58-1-322-03-age-deduction-and-social-security` references adjusted federal AGI reduced by those benefits but does not reach Tier 2 or Railroad Unemployment. Out of scope: `incomeStreamSchema` has no railroad-retirement type, `pensionSchema` carries only a private-or-public `source` enum, and `StateTaxParams` / `StateRetirementExclusion` carry no railroad-benefit type or federal-deduction facts — so no accepted ordinary, wages, public or private pension, or `ssBenefits` input can identify qualifying Tier 2, vested dual, other Railroad Retirement Act, or Railroad Unemployment Insurance dollars or federal-AGI inclusion not already deducted federally. Generic amounts entered through those channels are still priced under the pack\'s existing rules; the engine emits no law-specific refusal for this limb.',
+    classification: 'outOfScope',
+    outOfScope: {
+      shape: 'inexpressibleInput',
+      missingInputFacts: [
+        'Tier 2, vested dual, other Railroad Retirement Act, or Railroad Unemployment Insurance benefits included in federal adjusted gross income as a taxable pension or annuity not already deducted on the federal return: incomeStreamSchema has no railroad-retirement type',
+        'railroad benefit type or federal-AGI inclusion and federal-deduction status on pensionSchema, whose `source` enum is only private or public',
+      ],
+    },
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:VA',
+    authority: [{
+      kind: 'stateAgencyPublication',
+      citation: 'Virginia Department of Taxation, Subtractions — Social Security Act and Equivalent Tier 1 Railroad Retirement Act Benefits',
+      url: 'https://www.tax.virginia.gov/subtractions',
+      quotedText:
+        'Virginia law exempts Social Security and Tier 1 Railroad Retirement benefits from taxation. If you were required to include any of your benefits in federal adjusted gross income, subtract that amount on your Virginia return. Do not include Tier 2 Railroad Retirement Benefits and Other Railroad Retirement and Railroad Unemployment Benefits. For subtracting other benefits, see Tier 2 and other Railroad Retirement and Railroad Unemployment Benefits.',
+    }, {
+      kind: 'stateAgencyPublication',
+      citation: 'Virginia Department of Taxation, Subtractions — Tier 2 and other Railroad Retirement and Railroad Unemployment Benefits',
+      url: 'https://www.tax.virginia.gov/subtractions',
+      quotedText:
+        'Federal and Virginia law exempt Tier 2 vested dual benefits, as well as certain other Railroad Retirement Act benefits and Railroad Unemployment Insurance benefits from income tax. The amount to be subtracted is the benefit amount that was included in federal adjusted gross income as a taxable pension or annuity, and that was not already deducted on your federal return.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-09',
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/params/state/types.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#incomeStreamSchema',
+      'packages/engine/src/model/plan.ts#pensionSchema',
+      'packages/engine/src/params/state/types.ts#StateTaxParams',
     ],
   },
 } satisfies Record<string, TaxRuleRecord>

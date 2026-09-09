@@ -188,6 +188,51 @@ export const northeastStateRecords = {
     ],
   },
 
+  'ny-it225-s122-non-ss-railroad-benefits-not-modeled': {
+    title: 'New York subtracts non-Tier-1 railroad benefits on IT-225 S-122; the engine cannot identify them',
+    statement:
+      'New York Department of Taxation and Finance guidance allows a subtraction from federal adjusted gross income when computing New York adjusted gross income for supplemental annuity or Tier 2 benefits received under the Railroad Retirement Act of 1974, or benefits received under the Railroad Unemployment Insurance Act, that were included in federal adjusted gross income and are exempt from state income taxes under Title 45 of the United States Code, using Form IT-225 code S-122. Social Security-equivalent Tier 1 railroad retirement benefits are a separate subtraction registered at `ny-dtf-social-security-subtraction`. Out of scope: `incomeStreamSchema` has no railroad-retirement type, `pensionSchema.source` is only `private` or `public`, `TaxYearInput` carries no Railroad Retirement Act category, Railroad Unemployment Insurance Act provenance, or Title 45 exemption flag, and `StateTaxParams` carries no railroad-benefit classification — so no accepted `socialSecurity`, `pension`, `wages`, or generic ordinary income input can identify qualifying S-122 benefits. Generic amounts entered through those channels are still priced under the pack\'s existing rules; the engine emits no law-specific refusal for this limb. This record does not certify part-year allocation, unsupported filing statuses, or whole-return IT-225 accuracy.',
+    classification: 'outOfScope',
+    outOfScope: {
+      shape: 'inexpressibleInput',
+      missingInputFacts: [
+        'whether a benefit is supplemental annuity or Tier 2 under the Railroad Retirement Act of 1974, as distinct from Social Security-equivalent Tier 1 railroad retirement benefits',
+        'whether a benefit is received under the Railroad Unemployment Insurance Act',
+        'whether the benefit is exempt from state income taxes under Title 45 of the United States Code',
+      ],
+    },
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:NY',
+    authority: [{
+      kind: 'stateAgencyPublication',
+      citation: 'New York State Department of Taxation and Finance, Information for retired persons — Railroad Retirement benefits (IT-225 code S-122)',
+      url: 'https://www.tax.ny.gov/pit/file/information_for_seniors.htm',
+      quotedText:
+        'If you included in your federal adjusted gross income either: supplemental annuity or Tier 2 benefits received under the Railroad Retirement Act of 1974, or benefits received under the Railroad Unemployment Insurance Act, and those benefits are exempt from state income taxes under Title 45 of the United States Code, you may subtract the amount of those benefits from your federal adjusted gross income when computing your New York adjusted gross income using Form IT-225 . See IT-225-I , New York State Modifications , code S-122 Certain railroad retirement income and railroad unemployment insurance benefits.',
+    }, {
+      kind: 'stateAgencyPublication',
+      citation: 'New York State Department of Taxation and Finance, Information for retired persons — Social Security equivalent Railroad Retirement benefits',
+      url: 'https://www.tax.ny.gov/pit/file/information_for_seniors.htm',
+      quotedText:
+        'Social Security equivalent Tier 1 railroad retirement benefits that are included in federal adjusted gross income may be subtracted from your federal adjusted gross income when computing your New York adjusted gross income.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-09',
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/params/state/types.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#incomeStreamSchema',
+      'packages/engine/src/model/plan.ts#pensionSchema',
+      'packages/engine/src/params/state/types.ts#StateTaxParams',
+    ],
+  },
+
   'mrs-36-5124-c-1-b-decoupled-standard-deduction': {
     title: 'Maine’s 2026 standard deduction uses Maine’s basic plus the federal age-65 addition',
     statement:
@@ -765,6 +810,50 @@ export const northeastStateRecords = {
       'packages/engine/src/params/state/data/year2026.ts#RI',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
       'packages/engine/src/tax/stateTax.ts#retirementExclusion',
+    ],
+  },
+
+  'ri-schedule-m-1d-railroad-benefits-not-modeled': {
+    title: 'Rhode Island exempts federally included 1974 Railroad Retirement benefits on Schedule M line 1d; the engine cannot identify them',
+    statement:
+      'The final 2025 Rhode Island resident instructions for tax year 2025 state that under the Federal 1974 Railroad Retirement Act the entire amount of Railroad Retirement benefits included in gross income for federal income tax purposes is exempt from state income taxes, reported on RI Schedule M line 1d. That limb is separate from the pension or annuity modification on Schedule M line 1t and from the Social Security and pension approximations registered at `ri-gen-laws-44-30-12-social-security-and-pension-modification`. Out of scope: `incomeStreamSchema` has no railroad-retirement type, `pensionSchema.source` is only `private` or `public`, `TaxYearInput` carries no Railroad Retirement Board payer or Federal 1974 Railroad Retirement Act provenance, and `StateTaxParams` / `StateRetirementExclusion` carry no railroad-benefit payer facts — so no accepted `socialSecurity`, `pension`, `wages`, or generic ordinary income input can identify qualifying Schedule M line 1d benefits. Generic amounts entered through those channels are still priced under the pack\'s existing rules; the engine emits no law-specific refusal for this limb. This record quotes tax year 2025 final resident instructions only and does not extend that exemption to later years without a later source.',
+    classification: 'outOfScope',
+    outOfScope: {
+      shape: 'inexpressibleInput',
+      missingInputFacts: [
+        'whether Railroad Retirement benefits are paid by the Railroad Retirement Board under the Federal 1974 Railroad Retirement Act, as distinct from pension income reported on Schedule M line 1t',
+        'the amount of Railroad Retirement benefits included in gross income for federal income tax purposes that qualify for the full state exemption',
+      ],
+    },
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:RI',
+    authority: [{
+      kind: 'formInstruction',
+      citation: 'Rhode Island Division of Taxation, 2025 RI-1040 Resident booklet instructions, Schedule M line 1d',
+      url: 'https://tax.ri.gov/sites/g/files/xkgbur541/files/2025-12/2025%201040R%20Instructions%20122025.pdf',
+      quotedText:
+        'Line 1d – Under the Federal 1974 Railroad Retirement Act, the entire amount of Railroad Retirement benefits included in gross income for federal income tax purposes are exempt from state income taxes.',
+    }, {
+      kind: 'formInstruction',
+      citation: 'Rhode Island Division of Taxation, 2025 RI Schedule M, line 1d',
+      url: 'https://tax.ri.gov/sites/g/files/xkgbur541/files/2026-01/2025%20RI%20Schedule%20M_w.pdf',
+      quotedText:
+        'Railroad Retirement benefits paid by the Railroad Retirement Board',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2025,
+    effectiveThrough: 2025,
+    verifiedOn: '2026-09-09',
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/params/state/types.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#incomeStreamSchema',
+      'packages/engine/src/model/plan.ts#pensionSchema',
+      'packages/engine/src/params/state/types.ts#StateTaxParams',
     ],
   },
 

@@ -1639,4 +1639,42 @@ export const midwestStateRecords = {
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
+
+  'wi-schedule-sb-15-railroad-benefits-not-modeled': {
+    title: 'Wisconsin excludes U.S. Railroad Retirement Board benefits on federal line 5b; the engine cannot certify RRB payer',
+    statement:
+      'The 2025 Wisconsin Schedule SB instructions for tax year 2025, Line 15, state that Wisconsin does not tax amounts received from the U.S. Railroad Retirement Board and that a taxpayer may subtract railroad retirement benefits included on line 5b of federal Form 1040 or 1040-SR; the line title also names railroad unemployment insurance and sickness benefits. That exclusion is scoped to RRB-paid amounts with federal line 5b inclusion, not to every pension — qualified-plan and IRA retirement subtractions on Line 16 remain registered at `wi-stat-71-05-retirement-income-subtraction`, and Social Security at Line 4. Out of scope: `incomeStreamSchema` has no railroad-retirement type, `pensionSchema` has no U.S. Railroad Retirement Board payer fact, and `StateTaxParams` / `StateRetirementExclusion` carry no railroad-benefit payer facts — so no accepted ordinary, wages, public or private pension, or `ssBenefits` input can identify Line 15 railroad retirement, unemployment, or sickness dollars. Generic amounts entered through those channels are still priced under the pack\'s existing rules; the engine emits no law-specific refusal for this limb. This record quotes tax year 2025 Schedule SB instructions only and does not extend that exclusion to later years without a later source.',
+    classification: 'outOfScope',
+    outOfScope: {
+      shape: 'inexpressibleInput',
+      missingInputFacts: [
+        'U.S. Railroad Retirement Board-paid railroad retirement, unemployment, or sickness benefits included on federal Form 1040 or 1040-SR line 5b: incomeStreamSchema has no railroad-retirement type',
+        'U.S. Railroad Retirement Board payer on pensionSchema, whose `source` enum is only private or public',
+      ],
+    },
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:WI',
+    authority: [{
+      kind: 'formInstruction',
+      citation: '2025 Wisconsin Schedule SB Instructions, Line 15',
+      url: 'https://www.revenue.wi.gov/TaxForms2025/2025-ScheduleSB-Inst.pdf',
+      quotedText:
+        'Line 15 – Railroad Retirement Benefits, Railroad Unemployment Insurance, and Sickness Benefits\nWisconsin does not tax amounts received from the U.S. Railroad Retirement Board. You may subtract railroad retirement benefits included on line 5b of your federal Form 1040 or 1040-SR.',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2025,
+    effectiveThrough: 2025,
+    verifiedOn: '2026-09-09',
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/params/state/types.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#incomeStreamSchema',
+      'packages/engine/src/model/plan.ts#pensionSchema',
+      'packages/engine/src/params/state/types.ts#StateTaxParams',
+    ],
+  },
 } satisfies Record<string, TaxRuleRecord>
