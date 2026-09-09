@@ -3287,8 +3287,8 @@
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-03",
-      "dueOn": "2027-08-03",
+      "verifiedOn": "2026-09-09",
+      "dueOn": "2027-09-09",
       "implementedBy": [
         "packages/engine/src/actions/beneficiaryTraditionalIraResidualRmdAllocation.ts"
       ],

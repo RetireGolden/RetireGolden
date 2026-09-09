@@ -12,11 +12,11 @@
  *                       10% penalty (a non-qualified distribution).
  *
  * The engine approximates the 59½ boundary as "age 60 attained," matching the
- * traditional early-withdrawal penalty elsewhere in the simulation, and folds
- * the account's own 5-year clock into that age proxy (an existing Roth is
- * almost always open >5 years by 59½). Conversions performed during the
- * projection each carry their own explicit 5-year clock, which is the case that
- * actually matters for the early-retirement "conversion ladder."
+ * traditional early-withdrawal penalty elsewhere in the simulation. It does not
+ * model the §408A(d)(2)(B) five-taxable-year period or a household first-Roth-
+ * year fact; qualified earnings are inferred from attained age alone. Conversion
+ * layers each carry their own explicit five-year recapture clock, which is the
+ * case that actually matters for the early-retirement "conversion ladder."
  */
 
 /** The engine's 59½ proxy: no early-withdrawal penalty once age 60 is attained. */

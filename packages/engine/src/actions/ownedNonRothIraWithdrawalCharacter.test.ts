@@ -1,19 +1,287 @@
 import { describe, expect, it } from 'vitest'
 import { describeRule } from '../rules/describeRule.js'
+import { singlePersonPlan, traditionalAccount } from '../testing/planFixtures.js'
+import { ordinaryFederalFilingDeadline } from '../tax/ordinaryFederalFilingDeadline.js'
 
+import { buildAnnualRetirementPhysicalEventInventory } from './annualRetirementPhysicalEventInventory.js'
 import {
   asAccountId,
   asActionId,
   asAllocationId,
   asPersonId,
+  asPlanId,
 } from './identity.js'
-import { asUsdCents } from './money.js'
+import { asPositiveUsdCents, asUsdCents } from './money.js'
 import type { AnnualIraBasisAllocationEntryInput } from './annualIraBasisAllocation.js'
+import { buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput } from './ownedNonRothIraAnnualPostCandidateEvidence.js'
+import { stageOwnedNonRothIraOrdinaryWithdrawalMovements } from './ownedNonRothIraMovementCandidate.js'
+import { deriveActionStructuralId } from './structuralId.js'
 import {
   classifyOwnedNonRothIraAnnualWithdrawals,
   type ClassifyOwnedNonRothIraAnnualWithdrawalsInput,
   type OwnedNonRothIraPoolMemberEvidence,
 } from './ownedNonRothIraWithdrawalCharacter.js'
+
+/** Independent worksheet: owned 100c year-end, inherited 80c sibling in Plan only. */
+const OWNED_YEAR_END_BALANCE = 100
+const INHERITED_IRA_YEAR_END_BALANCE = 80
+const OWNED_POOL_BASIS = 50
+const LINE7_DISTRIBUTION = 10
+const OWNED_OPENING_BEFORE_DISTRIBUTION = OWNED_YEAR_END_BALANCE + LINE7_DISTRIBUTION
+const REJECTED_INHERITED_INCLUSION_DENOMINATOR =
+  OWNED_YEAR_END_BALANCE + INHERITED_IRA_YEAR_END_BALANCE + LINE7_DISTRIBUTION
+const TAX_YEAR = 2030
+
+function buildOwnedPoolWithInheritedSiblingPostCandidateInput(
+  options: { includeInheritedYearEndBalance: boolean },
+) {
+  const ownerPersonId = asPersonId('p1')
+  const ownedIraId = asAccountId('owned-ira')
+  const inheritedIraId = asAccountId('inherited-ira')
+  const actionId = asActionId('owned-withdrawal')
+  const allocationId = asAllocationId('owned-withdrawal-allocation')
+  const planId = asPlanId('owned-pool-inherited-sibling-plan')
+
+  const plan = singlePersonPlan({ dob: '1950-01-01', planningAge: 100 })
+  plan.id = planId
+  const inheritedAccount = traditionalAccount(
+    inheritedIraId,
+    INHERITED_IRA_YEAR_END_BALANCE,
+    ownerPersonId,
+  )
+  if (inheritedAccount.type !== 'traditional') {
+    throw new Error('fixture drift: inherited account must be traditional')
+  }
+  inheritedAccount.inherited = {
+    ownerDeathYear: 2028,
+    decedentHadStartedRmds: true,
+  }
+  plan.accounts = [
+    traditionalAccount(ownedIraId, OWNED_OPENING_BEFORE_DISTRIBUTION, ownerPersonId),
+    inheritedAccount,
+  ]
+  plan.strategies.retirementActions = [{
+    actionId,
+    kind: 'ordinaryWithdrawal',
+    personId: ownerPersonId,
+    year: TAX_YEAR,
+    executionDate: `${TAX_YEAR}-06-01`,
+    executionSequence: 1,
+    requestedAmount: asPositiveUsdCents(LINE7_DISTRIBUTION),
+    provenance: { source: 'manual' },
+    allocations: [{
+      allocationId,
+      sourceAccountId: ownedIraId,
+      requestedAmount: asPositiveUsdCents(LINE7_DISTRIBUTION),
+    }],
+    purpose: { kind: 'spending' },
+  }]
+  plan.retirementActionEligibilityFacts = {
+    iraClassifications: [{
+      sourceAccountId: ownedIraId,
+      subtype: 'traditional',
+      evidenceId: 'classification-owned-ira',
+      provenance: { source: 'manual' },
+    }],
+    sepSimpleActivities: [],
+    deductibleIraContributions: [],
+  }
+
+  const ledgerRunId = `ledger-${TAX_YEAR}`
+  const inventoryInput = {
+    plan,
+    taxYear: TAX_YEAR,
+    runtimeRecords: [],
+    runtimeInventoryAttestation: {
+      predicate: 'completeAnnualRetirementPhysicalEventInventory' as const,
+      planId,
+      taxYear: TAX_YEAR,
+      ledgerRunId,
+      inventoryStatus: 'completeIncludingExplicitEmpty' as const,
+      resolvedEventIds: [],
+      unresolvedActivityIds: [],
+      evidenceId: 'runtime-inventory',
+      upstreamEvidenceId: 'runtime-inventory-upstream',
+    },
+  }
+  const builtInventory = buildAnnualRetirementPhysicalEventInventory(inventoryInput)
+  if (builtInventory.status !== 'annualPhysicalEventInventoryBuilt') {
+    throw new Error(`inventory failed: ${JSON.stringify(builtInventory.issues)}`)
+  }
+  const ownedPool = builtInventory.ownedIraPools.find(
+    (pool) => pool.ownerPersonId === ownerPersonId,
+  )
+  if (ownedPool === undefined) {
+    throw new Error('annual inventory did not build an owned IRA pool')
+  }
+
+  const ownershipEvidenceId = deriveActionStructuralId(
+    'owned-ira-plan-account-ownership',
+    [planId, ownerPersonId, ownedIraId, 'traditional', 'ira', 'owned'],
+  )
+  const withdrawal = plan.strategies.retirementActions[0]!
+  if (withdrawal.kind !== 'ordinaryWithdrawal') {
+    throw new Error('fixture drift: expected ordinary withdrawal action')
+  }
+  const movementInput = {
+    ownerPersonId,
+    taxYear: TAX_YEAR,
+    requests: [withdrawal],
+    openingBalances: [{
+      accountId: ownedIraId,
+      openingBalance: asUsdCents(OWNED_OPENING_BEFORE_DISTRIBUTION),
+    }],
+    sourceEvidence: [{
+      predicate: 'ownedNonRothIraOrdinaryWithdrawalMovementSource' as const,
+      sourceAccountId: ownedIraId,
+      ownerPersonId,
+      accountType: 'traditional' as const,
+      accountKind: 'ira' as const,
+      inheritanceStatus: 'owned' as const,
+      subtype: 'traditional' as const,
+      accountOwnershipEvidenceId: ownershipEvidenceId,
+      iraClassificationEvidenceId: 'classification-owned-ira',
+    }],
+  }
+  const movementCandidate = stageOwnedNonRothIraOrdinaryWithdrawalMovements(movementInput)
+  if (movementCandidate.status !== 'movementCandidateStaged') {
+    throw new Error(`movement staging failed: ${movementCandidate.status}`)
+  }
+
+  const deadlineDate = ordinaryFederalFilingDeadline(TAX_YEAR)
+  if (deadlineDate === null) {
+    throw new Error(
+      `fixture tax year ${TAX_YEAR} must have a supported ordinary federal filing deadline`,
+    )
+  }
+  const ownedYearEndBalance = {
+    predicate: 'ownedNonRothIraForm8606ApplicableTaxYearEndBalance' as const,
+    planId,
+    ownerPersonId,
+    sourceAccountId: ownedIraId,
+    taxYear: TAX_YEAR,
+    ledgerRunId,
+    ledgerPhase: 'form8606ApplicableTaxYearEndAfterCanonicalMovementCandidate' as const,
+    asOfDate: `${TAX_YEAR}-12-31`,
+    yearEndApplicableBalanceAmount: asUsdCents(OWNED_YEAR_END_BALANCE),
+    evidenceId: 'year-end-owned',
+    upstreamEvidenceId: 'year-end-owned-upstream',
+  }
+  const inheritedYearEndBalance = {
+    predicate: 'ownedNonRothIraForm8606ApplicableTaxYearEndBalance' as const,
+    planId,
+    ownerPersonId,
+    sourceAccountId: inheritedIraId,
+    taxYear: TAX_YEAR,
+    ledgerRunId,
+    ledgerPhase: 'form8606ApplicableTaxYearEndAfterCanonicalMovementCandidate' as const,
+    asOfDate: `${TAX_YEAR}-12-31`,
+    yearEndApplicableBalanceAmount: asUsdCents(INHERITED_IRA_YEAR_END_BALANCE),
+    evidenceId: 'year-end-inherited',
+    upstreamEvidenceId: 'year-end-inherited-upstream',
+  }
+  const postCandidateInput = {
+    inventoryInput,
+    movementInput,
+    movementCandidate,
+    postCandidateSnapshot: {
+      predicate: 'completePlanOwnedNonRothIraPostCandidateSnapshot' as const,
+      planId,
+      ownerPersonId,
+      taxYear: TAX_YEAR,
+      ledgerRunId,
+      inventoryEvidenceId: builtInventory.inventoryEvidenceId,
+      movementCandidateId: movementCandidate.movementCandidateId,
+      applicationStatus: 'canonicalMovementCandidateAppliedExactlyOnce' as const,
+      allocationApplications: movementCandidate.actions.flatMap((action) =>
+        action.allocations.map((allocation) => ({
+          actionId: action.actionId,
+          allocationId: allocation.allocationId,
+          sourceAccountId: allocation.sourceAccountId,
+          scheduledDate: action.executionDate,
+          scheduledSequence: action.executionSequence,
+          requestedAmount: allocation.requestedAmount,
+          balanceBefore: allocation.balanceBefore,
+          executedAmount: allocation.executedAmount,
+          unexecutedAmount: allocation.unexecutedAmount,
+          candidateBalanceAfter: allocation.candidateBalanceAfter,
+          applicationEvidenceId: `application-${action.actionId}-${allocation.allocationId}`,
+          upstreamEvidenceId: `application-${action.actionId}-${allocation.allocationId}-upstream`,
+        }))),
+      candidateBalances: movementCandidate.candidateBalances.map((balance) => ({
+        ...balance,
+        evidenceId: `candidate-balance-${balance.sourceAccountId}`,
+        upstreamEvidenceId: `candidate-balance-${balance.sourceAccountId}-upstream`,
+      })),
+      yearEndApplicableBalances: options.includeInheritedYearEndBalance
+        ? [ownedYearEndBalance, inheritedYearEndBalance]
+        : [ownedYearEndBalance],
+      evidenceId: 'post-candidate-snapshot',
+      upstreamEvidenceId: 'post-candidate-snapshot-upstream',
+    },
+    annualBasisRecord: {
+      predicate: 'completePlanOwnedNonRothIraAnnualBasisRecord' as const,
+      planId,
+      ownerPersonId,
+      taxYear: TAX_YEAR,
+      ledgerRunId,
+      recordStatus: 'openingBasisAndExplicitZeroRolloverFactsComplete' as const,
+      openingBasisAmount: asUsdCents(OWNED_POOL_BASIS),
+      outstandingRolloverAmount: 0 as const,
+      rolloverRepaymentAdjustmentAmount: 0 as const,
+      evidenceId: 'annual-basis-record',
+      upstreamEvidenceId: 'annual-basis-record-upstream',
+    },
+    postYearContributionWindow: {
+      predicate: 'completePlanOwnedNonRothIraPostYearNondeductibleContributionWindow' as const,
+      planId,
+      ownerPersonId,
+      taxYear: TAX_YEAR,
+      ledgerRunId,
+      inventoryStatus: 'completeIncludingExplicitEmpty' as const,
+      deadlineEvidence: {
+        predicate: 'federalIraContributionDeadlineForTaxYear' as const,
+        designatedTaxYear: TAX_YEAR,
+        deadlineStatus: 'authoritativeFederalDeadlineEstablished' as const,
+        deadlineKind: 'ordinaryFederalFilingDeadlineExcludingDisasterRelief' as const,
+        calendarAdjustmentStatus: 'weekendAndDistrictOfColumbiaHolidayAdjustmentApplied' as const,
+        deadlineDate,
+        evidenceId: 'contribution-deadline',
+        upstreamEvidenceId: 'contribution-deadline-upstream',
+      },
+      contributions: [],
+      evidenceId: 'contribution-window',
+      upstreamEvidenceId: 'contribution-window-upstream',
+    },
+  }
+
+  return {
+    plan,
+    ownedIraId,
+    inheritedIraId,
+    ownedPoolSourceAccountIds: ownedPool.sourceAccountIds,
+    postCandidateInput,
+  }
+}
+
+function classifyOwnedPoolWithInheritedSiblingViaProductionPath() {
+  const fixture = buildOwnedPoolWithInheritedSiblingPostCandidateInput({
+    includeInheritedYearEndBalance: false,
+  })
+  const built = buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput(
+    fixture.postCandidateInput,
+  )
+  if (built.status !== 'postCandidateClassificationInputBuilt') {
+    throw new Error(
+      `post-candidate classification input failed: ${built.status} ${JSON.stringify(built.issues)}`,
+    )
+  }
+
+  return {
+    ...fixture,
+    classification: classifyOwnedNonRothIraAnnualWithdrawals(built.classificationInput),
+  }
+}
 
 function member(
   suffix: string,
@@ -128,11 +396,24 @@ describe('classifyOwnedNonRothIraAnnualWithdrawals', () => {
   // (its 100c year-end balance plus its 10c distribution) instead of the
   // pooled 220c.
   describeRule('irc-408-d-2-annual-pro-rata-basis', {
-    readings: { aggregatedOneContract: 220, perAccountSeparately: 110 },
+    readings: {
+      aggregatedOneContract: {
+        multiOwnedDenominator: 220,
+        ownedWithInheritedDenominator: 110,
+      },
+      perAccountSeparately: {
+        multiOwnedDenominator: 110,
+        ownedWithInheritedDenominator: 110,
+      },
+      rejectedIncludesInheritedIraBalance: {
+        multiOwnedDenominator: 220,
+        ownedWithInheritedDenominator: 190,
+      },
+    },
     accepted: 'aggregatedOneContract',
   }, ({ accepted, readings }) => {
-    it('derives one annual denominator across every owned non-Roth IRA', () => {
-      const result = classifyOwnedNonRothIraAnnualWithdrawals(input({
+    it('derives one annual denominator across owned non-Roth IRAs and excludes inherited balances', () => {
+      const multiOwnedResult = classifyOwnedNonRothIraAnnualWithdrawals(input({
         poolMembers: [
           { ...member('traditional', 'traditional'), yearEndApplicableBalanceAmount: asUsdCents(100) },
           { ...member('sep', 'sep'), yearEndApplicableBalanceAmount: asUsdCents(50) },
@@ -155,9 +436,70 @@ describe('classifyOwnedNonRothIraAnnualWithdrawals', () => {
         line7Distributions: [activity('traditional', 'ira-traditional', 10)],
         line8Conversions: [activity('conversion', 'ira-sep', 5, '2030-07-01')],
       }))
-      expect(result.annualBasisEvidence.annualBasisDenominatorAmount).toBe(accepted)
-      expect(result.annualBasisEvidence.annualBasisDenominatorAmount)
-        .not.toBe(readings.perAccountSeparately)
+
+      const {
+        plan,
+        ownedIraId,
+        inheritedIraId,
+        ownedPoolSourceAccountIds,
+        classification: inheritedSiblingResult,
+      } = classifyOwnedPoolWithInheritedSiblingViaProductionPath()
+
+      const observed = {
+        multiOwnedDenominator:
+          multiOwnedResult.annualBasisEvidence.annualBasisDenominatorAmount,
+        ownedWithInheritedDenominator:
+          inheritedSiblingResult.annualBasisEvidence.annualBasisDenominatorAmount,
+      }
+      expect(observed).toEqual(accepted)
+      expect(observed).not.toEqual(readings.perAccountSeparately)
+      expect(observed).not.toEqual(readings.rejectedIncludesInheritedIraBalance)
+
+      const inheritedInPlan = plan.accounts.find(
+        (account) => account.id === inheritedIraId,
+      )
+      if (inheritedInPlan === undefined || inheritedInPlan.type !== 'traditional') {
+        throw new Error('fixture drift: inherited IRA must be a traditional account')
+      }
+      expect(inheritedInPlan.inherited).toBeDefined()
+      expect(ownedPoolSourceAccountIds).toEqual([ownedIraId])
+      expect(inheritedSiblingResult.annualBasisEvidence.poolMembers.map(
+        (item) => item.sourceAccountId,
+      )).toEqual([ownedIraId])
+      expect(inheritedSiblingResult.annualBasisEvidence.basisNumeratorAmount)
+        .toBe(OWNED_POOL_BASIS)
+      expect(readings.rejectedIncludesInheritedIraBalance.ownedWithInheritedDenominator)
+        .toBe(REJECTED_INHERITED_INCLUSION_DENOMINATOR)
+      expect(inheritedSiblingResult.line7AllocationEvidence.annualNontaxableBasisAmount)
+        .toBe(5)
+      expect(inheritedSiblingResult.line7AllocationEvidence.annualTaxableAmount).toBe(5)
+      expect(inheritedSiblingResult.withdrawals[0]).toMatchObject({
+        executedAmount: LINE7_DISTRIBUTION,
+        basisRecoveredAmount: 5,
+        ordinaryIncomeAmount: 5,
+      })
+      expect(inheritedSiblingResult.withdrawals[0]?.basisRecoveredAmount).not.toBe(3)
+      expect(inheritedSiblingResult.withdrawals[0]?.ordinaryIncomeAmount).not.toBe(7)
+
+      // Instructions for Form 8606: file a separate Form 8606 for the IRA from
+      // each decedent. Worksheet: owned traditional IRA (100c year-end) plus a
+      // separate inherited IRA (80c) in Plan data. The accepted path supplies
+      // only the owned year-end balance to the post-candidate snapshot; the
+      // production builder refuses an inherited 80c year-end line outright.
+      const inheritedSnapshotAttempt = buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput(
+        buildOwnedPoolWithInheritedSiblingPostCandidateInput({
+          includeInheritedYearEndBalance: true,
+        }).postCandidateInput,
+      )
+      expect(inheritedSnapshotAttempt.status).toBe('snapshotIncomplete')
+      if (inheritedSnapshotAttempt.status !== 'snapshotIncomplete') return
+      expect(inheritedSnapshotAttempt.issues).toEqual(
+        expect.arrayContaining([expect.objectContaining({
+          kind: 'snapshotIncomplete',
+          detail: 'Year-end snapshot contains an employer, inherited, or foreign account',
+          sourceAccountId: inheritedIraId,
+        })]),
+      )
     })
   })
 
