@@ -935,6 +935,67 @@ export const westStateRecords = {
     ],
   },
 
+  'or-lro-2026-rate-schedule-and-standard-deduction': {
+    title: 'Oregon publishes TY2026 indexed brackets and basic deductions; the pack still carries TY2025 cells',
+    statement:
+      'For tax year 2026, Oregon\'s resident income tax uses four rates — 4.75%, 6.75%, 8.75%, and 9.9% — on an annually indexed schedule adopted under ORS 316.037 in lieu of the statutory base table, with ORS 316.042 making a joint return twice the tax on half the joint taxable income. The Oregon Legislative Revenue Office Report #1-26 publishes the TY2026 single schedule at taxable-income breakpoints $4,550, $11,400, and $125,000 and the joint schedule at $9,100, $22,800, and $250,000, with basic standard deductions of $2,910 for single and married-filing-separately filers and $5,820 for joint and qualifying-surviving-spouse filers. Approximated: the pack still carries TY2025 carry-forward cells — single standard deduction $2,835, joint $5,670, and bracket breakpoints single $4,050/$10,200/$125,000 and joint $8,100/$20,400/$250,000 — so modeled Oregon tax is generally overstated at the gate\'s boundary and mid-band coordinates. Supported pack scope is single and married filing jointly only; head-of-household $4,685, age or blind additions, exemption credits, reduced business rates, and other return modifications are documented but unsupported. bracketTax applies continuous marginal rates at breakpoint thresholds and does not replicate LRO\'s printed whole-dollar base-tax constants.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'overstatesTax',
+    conventionRationale:
+      'The official LRO schedule prints rounded whole-dollar base taxes ($216, $679, $432, $1,357 at the gate\'s boundary coordinates); the engine composes exact marginal rates and can retain fractional cents. This record registers the continuous-breakpoint representation authorized for the current single/MFJ pack fields and does not claim exact replication of Oregon\'s printed table. Primary gate evidence is LRO Report #1-26; final resident-return closure is outside this record. The record expires after TY2026.',
+    jurisdiction: 'state:OR',
+    authority: [{
+      kind: 'statute',
+      citation: 'Or. Rev. Stat. §316.037(1)(b)',
+      url: 'https://www.oregonlegislature.gov/bills_laws/ors/ors316.html',
+      quotedText:
+        'For tax years beginning in each calendar year, the Department of Revenue shall adopt a table that shall apply in lieu of the table contained in paragraph (a) of this subsection, as follows:',
+    }, {
+      kind: 'statute',
+      citation: 'Or. Rev. Stat. §316.037(1)(b)(B)',
+      url: 'https://www.oregonlegislature.gov/bills_laws/ors/ors316.html',
+      quotedText: 'The rate applicable to any rate bracket as adjusted under subparagraph (A) of this paragraph may not be changed.',
+    }, {
+      kind: 'statute',
+      citation: 'Or. Rev. Stat. §316.042',
+      url: 'https://www.oregonlegislature.gov/bills_laws/ors/ors316.html',
+      quotedText:
+        'In the case of a joint return of spouses in a marriage, pursuant to ORS 316.122 or pursuant to ORS 316.367, the tax imposed by ORS 316.037 shall be twice the tax which would be imposed if the taxable income were cut in half.',
+    }, {
+      kind: 'statute',
+      citation: 'Or. Rev. Stat. §316.695(1)(c)(C)(i)',
+      url: 'https://www.oregonlegislature.gov/bills_laws/ors/ors316.html',
+      quotedText:
+        'For purposes of subparagraph (A) of this paragraph for tax years beginning on or after January 1, 2003, the Department of Revenue shall annually recompute the basic standard deduction for each category of return filer listed under subparagraph (B) of this paragraph.',
+    }, {
+      kind: 'stateAgencyPublication',
+      citation: 'Oregon Legislative Revenue Office, Oregon Public Finance: Basic Facts, Report #1-26, page C2, TY2026 basic deductions',
+      url: 'https://apps.oregonlegislature.gov/liz/2026R1/Downloads/CommitteeMeetingDocument/312065',
+      quotedText:
+        'The Oregon standard deductions for tax year 2026 are $5,820 on joint returns, $2,910 on single and married-filing-separate returns and $4,685 for head-of-household returns.',
+    }, {
+      kind: 'stateAgencyPublication',
+      citation: 'Oregon Legislative Revenue Office, Oregon Public Finance: Basic Facts, Report #1-26, page C2, TY2026 single and joint rate schedule breakpoints',
+      url: 'https://apps.oregonlegislature.gov/liz/2026R1/Downloads/CommitteeMeetingDocument/312065',
+      quotedText:
+        '2026 TAX YEAR RATE SCHEDULE … SINGLE RETURNS … JOINT RETURNS … Not over $4,550 … Not over $9,100 … $4,550 to $11,400 … $9,100 to $22,800 … $11,400 to $125,000 … $22,800 to $250,000 … Over $125,000 … Over $250,000',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: 2026,
+    verifiedOn: '2026-09-09',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#states.OR',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+      'packages/engine/src/tax/stateTax.ts#bracketTax',
+    ],
+  },
+
   'or-stat-316-054-social-security-exclusion': {
     title: 'Oregon subtracts federally taxable Social Security from federal taxable income',
     statement:

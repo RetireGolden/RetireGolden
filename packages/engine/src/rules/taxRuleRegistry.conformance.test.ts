@@ -671,6 +671,8 @@ const STATE_PRIMARY_PUBLISHERS: Readonly<Partial<Record<UsStateCode, readonly st
     // Verified 2026-08-27 against the staged ORS fetch; the OR-17 PDF is
     // corroborating material but is not cited from the broad oregon.gov host.
     'oregonlegislature.gov', // Oregon Revised Statutes
+    // Verified 2026-09-09: LRO Report #1-26 TY2026 schedule and deductions.
+    'apps.oregonlegislature.gov',
   ],
   RI: [
     // Verified 2026-08-27 against the staged Rhode Island statutes.
@@ -724,6 +726,8 @@ const STATE_PRIMARY_PUBLISHERS: Readonly<Partial<Record<UsStateCode, readonly st
   // `hostAndPublisherOf` strips a leading `www.` before comparing.
   LA: [
     'legis.la.gov', // Louisiana State Legislature, Louisiana Revised Statutes
+    // Verified 2026-09-09: LDR IT-540ESi estimated-tax instructions.
+    'dam.ldr.la.gov',
   ],
   // Verified 2026-08-27 from the staged WS4d-B fetches.
   MA: [
