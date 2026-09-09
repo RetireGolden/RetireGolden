@@ -221,6 +221,9 @@ describe('contributions / convertibility / RMD eligibility', () => {
   // a legal bar on pre-2020 spouse elections (Treas. Reg. 1.408-8(c)(1)(i)).
   // The engine nonetheless refuses isTreatAsOwnEffective when ownerDeathYear is
   // before 2020; the 2019 result is the produced approximation, not the legal answer.
+  // Fixture scope: boundary-only — accepted true means current regulation carries
+  // no owner-death-year bar, not that a 2026 election is timely or that (c)(1)(iii)–(iv)
+  // catch-up prerequisites are satisfied for a 2019 death.
   describeRule('pl-116-94-div-o-sec-401-b-1-post-2019-inherited-regime-boundary', {
     readings: {
       spouseElectionWithoutDeathYearBar: true,

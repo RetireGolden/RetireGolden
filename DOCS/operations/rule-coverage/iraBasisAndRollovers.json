@@ -416,7 +416,7 @@
           "functions": [
             {
               "name": "isAggregatedIra",
-              "line": 1389
+              "line": 1391
             }
           ]
         }
@@ -1368,7 +1368,7 @@
             },
             {
               "name": "isConvertibleToRoth",
-              "line": 1357
+              "line": 1359
             }
           ]
         }
@@ -1381,16 +1381,16 @@
       "refusalFixtures": [
         {
           "path": "packages/engine/src/strategies/accountEligibility.test.ts",
-          "line": 1770,
+          "line": 1773,
           "note": null,
           "tests": [
             {
               "title": "refuses an inherited source instead of computing a conversion",
-              "line": 1775
+              "line": 1778
             },
             {
               "title": "accepts the same request from an owned IRA, so the refusal is the inherited fact and not the shape of the fixture",
-              "line": 1781
+              "line": 1784
             }
           ]
         }
@@ -1503,20 +1503,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/strategies/accountEligibility.test.ts",
-          "line": 1514,
+          "line": 1517,
           "note": null,
           "tests": [
             {
               "title": "refuses the conversion outright inside the two-year period",
-              "line": 1542
+              "line": 1545
             },
             {
               "title": "lifts the bar on the 24-month anniversary itself",
-              "line": 1549
+              "line": 1552
             },
             {
               "title": "does not reach an ordinary traditional IRA of the same owner",
-              "line": 1555
+              "line": 1558
             }
           ]
         }

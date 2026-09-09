@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-09-09T00:42:35.478Z",
+  "generatedAt": "2026-09-09T01:31:58.723Z",
   "recordCount": 446,
   "urlCount": 356,
   "fetched": 0,
   "cached": 356,
-  "entryCount": 1311,
+  "entryCount": 1315,
   "counts": {
-    "EXACT": 917,
+    "EXACT": 921,
     "PUNCTUATION": 43,
     "PDF-WORD-LEVEL": 248,
     "ELISION-EXACT": 85,
@@ -1650,9 +1650,49 @@
     {
       "id": "pl-116-94-div-o-sec-401-b-1-post-2019-inherited-regime-boundary",
       "citation": "Treas. Reg. 1.408-8(c)(1)(i)",
-      "host": "www.irs.gov",
-      "url": "https://www.irs.gov/irb/2024-33_IRB",
-      "quoteSha256": "cdb48b2e491fe52d",
+      "host": "www.law.cornell.edu",
+      "url": "https://www.law.cornell.edu/cfr/text/26/1.408-8",
+      "quoteSha256": "b60bdfa587662e6e",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "pl-116-94-div-o-sec-401-b-1-post-2019-inherited-regime-boundary",
+      "citation": "Treas. Reg. 1.408-8(c)(2)",
+      "host": "www.law.cornell.edu",
+      "url": "https://www.law.cornell.edu/cfr/text/26/1.408-8",
+      "quoteSha256": "5d5427049c85585b",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "pl-116-94-div-o-sec-401-b-1-post-2019-inherited-regime-boundary",
+      "citation": "Treas. Reg. 1.408-8(c)(1)(iii)",
+      "host": "www.law.cornell.edu",
+      "url": "https://www.law.cornell.edu/cfr/text/26/1.408-8",
+      "quoteSha256": "ac78147504a815ca",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "pl-116-94-div-o-sec-401-b-1-post-2019-inherited-regime-boundary",
+      "citation": "Treas. Reg. 1.408-8(c)(1)(iv)",
+      "host": "www.law.cornell.edu",
+      "url": "https://www.law.cornell.edu/cfr/text/26/1.408-8",
+      "quoteSha256": "bda84aea5e2e2504",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "pl-116-94-div-o-sec-401-b-1-post-2019-inherited-regime-boundary",
+      "citation": "Treas. Reg. 1.408-8(j)",
+      "host": "www.law.cornell.edu",
+      "url": "https://www.law.cornell.edu/cfr/text/26/1.408-8",
+      "quoteSha256": "8fc3ff810e0471c8",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null
@@ -1660,8 +1700,8 @@
     {
       "id": "pl-116-94-div-o-sec-401-b-1-post-2019-inherited-regime-boundary",
       "citation": "Treas. Reg. 1.408-8(c)(3)",
-      "host": "www.irs.gov",
-      "url": "https://www.irs.gov/irb/2024-33_IRB",
+      "host": "www.law.cornell.edu",
+      "url": "https://www.law.cornell.edu/cfr/text/26/1.408-8",
       "quoteSha256": "8166a803b2873266",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
@@ -13220,6 +13260,18 @@
     {
       "id": "treas-reg-1-408-8-c-2-spousal-deemed-election",
       "citation": "Treas. Reg. 1.408-8(c)(2)",
+      "host": "www.law.cornell.edu",
+      "note": "quote uses U+0027 (') where this host renders U+2019 (’)"
+    },
+    {
+      "id": "pl-116-94-div-o-sec-401-b-1-post-2019-inherited-regime-boundary",
+      "citation": "Treas. Reg. 1.408-8(c)(1)(i)",
+      "host": "www.law.cornell.edu",
+      "note": "quote uses U+0027 (') where this host renders U+2019 (’)"
+    },
+    {
+      "id": "pl-116-94-div-o-sec-401-b-1-post-2019-inherited-regime-boundary",
+      "citation": "Treas. Reg. 1.408-8(c)(1)(iii)",
       "host": "www.law.cornell.edu",
       "note": "quote uses U+0027 (') where this host renders U+2019 (’)"
     },

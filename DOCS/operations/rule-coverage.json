@@ -344,7 +344,7 @@
     {
       "path": "strategies/accountEligibility.ts",
       "sweptOn": "2026-08-25",
-      "note": "The pre-SECURE S2 helper boundary is registered as pl-116-94-div-o-sec-401-b-1-post-2019-inherited-regime-boundary. The consumer remains partial: the product still does not derive the Treas. Reg. 1.408-8(c)(2) deemed election from required-distribution or contribution history, and this attestation does not claim complete ownership of every eligibility/refusal branch."
+      "note": "The isTreatAsOwnEffective pre-2020 helper cutoff is registered narrowly as pl-116-94-div-o-sec-401-b-1-post-2019-inherited-regime-boundary (helper only; classifyInheritedRegime and spouseTreatAsOwnCatchUp cutoffs are independent). The consumer remains partial: the product still does not derive the Treas. Reg. 1.408-8(c)(2) deemed election from required-distribution or contribution history, and this attestation does not claim complete ownership of every eligibility/refusal branch."
     },
     {
       "path": "strategies/optimizer.ts",
@@ -658,14 +658,14 @@
     }
   ],
   "quoteFidelity": {
-    "generatedAt": "2026-09-09T00:42:35.478Z",
-    "entryCount": 1311,
+    "generatedAt": "2026-09-09T01:31:58.723Z",
+    "entryCount": 1315,
     "fetched": 0,
     "cached": 356,
     "counts": {
       "ELISION-EXACT": 85,
       "ELISION-PUNCTUATION": 8,
-      "EXACT": 917,
+      "EXACT": 921,
       "PDF-NOT-VERIFIABLE": 7,
       "PDF-WORD-LEVEL": 248,
       "PUNCTUATION": 43,

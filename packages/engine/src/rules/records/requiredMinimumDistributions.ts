@@ -121,14 +121,14 @@ export const requiredMinimumDistributionRecords = {
   },
 
   'pl-116-94-div-o-sec-401-b-1-post-2019-inherited-regime-boundary': {
-    title: 'The engine uses the SECURE Act\u2019s general post-2019 death boundary as a legacy inherited-IRA model cutoff',
+    title: 'isTreatAsOwnEffective refuses pre-2020 owner death as a modeled SECURE helper cutoff',
     statement:
-      'Section 401 of the SECURE Act generally applies its beneficiary-distribution amendments to distributions with respect to employees who die after December 31, 2019. The engine uses that general effective date as a model boundary: isTreatAsOwnEffective returns false for an inherited IRA whose owner died before 2020, even when the Plan supplies a surviving-spouse treat-as-own election that would otherwise satisfy the helper\u2019s structural conditions. This is a labeled engine approximation, not a rule that federal law barred a surviving spouse from treating a pre-2020 inherited IRA as the spouse\u2019s own.',
+      'isTreatAsOwnEffective returns false when ownerDeathYear is before 2020, even when the Plan otherwise supplies a structurally valid surviving-spouse treat-as-own election. That gate is the helper\u2019s labeled engine approximation of the SECURE Act beneficiary-amendment effective date, not a claim that federal law barred a pre-2020 spouse election. classifyInheritedRegime and spouseTreatAsOwnCatchUp enforce independent pre-2020 cutoffs elsewhere; this record registers only the helper behavior pinned by its fixture and does not comprehensively register every X1 model boundary in the inherited stack.',
     classification: 'approximated',
     contraryReading: null,
     errorDirection: 'bothDirections',
     conventionRationale:
-      'The code reuses the general effective date of the SECURE Act beneficiary-distribution amendments as the cutoff for its X1 legacy inherited-account model. Pub. L. 116-94 section 401(b)(1) supports that amendment date, while current Treas. Reg. 1.408-8(c)(1)-(3) supplies the spouse election and its effect without that owner-death-year condition. Depending on the spouse\u2019s age, basis, RMD position, later withdrawals, and conversion choices, keeping the account outside the spouse\u2019s owned pool can raise or lower modeled tax, so the direction is not one-sided.',
+      'Pub. L. 116-94 section 401(b)(1) is the statutory effective date the helper reuses; current Treas. Reg. 1.408-8(c)(1) supplies the spouse election without that owner-death-year condition. The fixture\u2019s accepted reading is boundary-only: current regulation carries no owner-death-year bar on a spouse election, but it does not certify that a late election year satisfies (c)(1)(iii)-(iv) timing, \u00a71.402(c)-2(j)(4) catch-up prerequisites, or historical pre-effective-date regimes for a pre-2020 death. Keeping the account outside the spouse\u2019s owned pool can raise or lower modeled tax depending on age, basis, RMD position, and later withdrawals, so the direction is not one-sided.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -139,13 +139,37 @@ export const requiredMinimumDistributionRecords = {
     }, {
       kind: 'regulation',
       citation: 'Treas. Reg. 1.408-8(c)(1)(i)',
-      url: 'https://www.irs.gov/irb/2024-33_IRB',
+      url: 'https://www.law.cornell.edu/cfr/text/26/1.408-8',
       quotedText:
-        'The surviving spouse of an individual may elect, in the manner described in paragraph (c)(2) of this section, to treat the surviving spouse\u2019s entire interest as a beneficiary in the individual\u2019s IRA (or the remaining part of that interest if distributions have begun) as the surviving spouse\u2019s own IRA.',
+        'The surviving spouse of an individual may elect, in the manner described in paragraph (c)(2) of this section, to treat the surviving spouse\'s entire interest as a beneficiary in the individual\'s IRA (or the remaining part of that interest if distributions have begun) as the surviving spouse\'s own IRA.',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.408-8(c)(2)',
+      url: 'https://www.law.cornell.edu/cfr/text/26/1.408-8',
+      quotedText:
+        'The election described in paragraph (c)(1) of this section is made by the surviving spouse redesignating the account as an account in the name of the surviving spouse as IRA owner rather than as beneficiary.',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.408-8(c)(1)(iii)',
+      url: 'https://www.law.cornell.edu/cfr/text/26/1.408-8',
+      quotedText:
+        'If \u00a7 1.402(c)-2(j)(4) (the special rule for catch-up distributions after a surviving spouse reaches the applicable age) would apply to the IRA owner\'s surviving spouse had a distribution been made directly to the surviving spouse in a calendar year, then, except as provided in paragraph (c)(1)(iv) of this section, the election described in this paragraph (c)(1) may not be made in that calendar year.',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.408-8(c)(1)(iv)',
+      url: 'https://www.law.cornell.edu/cfr/text/26/1.408-8',
+      quotedText:
+        'In the case of a surviving spouse who, pursuant to the timing rule in paragraph (c)(1)(iii) of this section, may not make the election described in paragraph (c)(1)(i) of this section in a calendar year, the spouse may nevertheless make the election in that calendar year provided that the election does not apply to amounts in the IRA that would be treated as required minimum distributions under \u00a7 1.402(c)-2(j)(4)(ii) had they been distributed in that calendar year. Thus, the election can be made in a calendar year only after the amounts treated as required minimum distributions under \u00a7 1.402(c)-2(j)(4)(ii) for that calendar year have been distributed from the IRA.',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.408-8(j)',
+      url: 'https://www.law.cornell.edu/cfr/text/26/1.408-8',
+      quotedText:
+        'This section applies for purposes of determining required minimum distributions for calendar years beginning on or after January 1, 2025. For earlier calendar years, the rules of 26 CFR 1.408-8 (as it appeared in the April 1, 2023, edition of 26 CFR part 1) apply.',
     }, {
       kind: 'regulation',
       citation: 'Treas. Reg. 1.408-8(c)(3)',
-      url: 'https://www.irs.gov/irb/2024-33_IRB',
+      url: 'https://www.law.cornell.edu/cfr/text/26/1.408-8',
       quotedText:
         'Following an election described in paragraph (c)(1) of this section, the surviving spouse is considered the IRA owner for whose benefit the trust is maintained for all purposes under the Internal Revenue Code (including section 72(t)).',
     }],
@@ -390,7 +414,7 @@ export const requiredMinimumDistributionRecords = {
   'irc-401-a-9-H-designated-beneficiary-ten-year-rule': {
     title: 'SECURE Act ten-year rule for a designated beneficiary',
     statement:
-      'Where an employee dies before the entire interest in a defined contribution plan has been distributed, a designated beneficiary who is not an eligible designated beneficiary must have the whole interest distributed within ten years of the death, and that deadline applies whether or not distributions had already begun. An inherited account therefore leaves the owner Uniform Lifetime schedule entirely rather than continuing it under a different divisor: it runs a separate forced-distribution clock from the death year, so the engine excludes it from the owner RMD pass and drives it from the ten-year deadline instead.',
+      'Where an employee dies before the entire interest in a defined contribution plan has been distributed, a designated beneficiary who is not an eligible designated beneficiary must have the whole interest distributed within ten years of the death, and that deadline applies whether or not distributions had already begun. Every inherited account leaves the owner Uniform Lifetime schedule — the engine excludes inherited accounts from the owner RMD pass — but classified spouse and eligible-designated-beneficiary paths may follow separately registered life-expectancy or treat-as-own schedules; this record registers the ten-year final deadline for the non-EDB designated-beneficiary path and for the labeled legacy fallback, not every classified inherited schedule.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -423,7 +447,7 @@ export const requiredMinimumDistributionRecords = {
         'Distributions satisfy this paragraph (c)(3) if the employee\u2019s entire interest is distributed by the end of the calendar year that includes the tenth anniversary of the date of the employee\u2019s death. For example, if an employee died on any day in 2021, the entire interest must be distributed by the end of 2031 in order to satisfy the 5-year rule in section 401(a)(9)(B)(ii), as extended to 10 years by section 401(a)(9)(H)(i).',
     }],
     volatility: 'staticStatute',
-    effectiveFrom: 2026,
+    effectiveFrom: 2020,
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
     implementedBy: [
@@ -848,7 +872,7 @@ export const requiredMinimumDistributionRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'Three notes on how far this reaches. First, the subtract-one branch is the only one an inherited account in this engine can take: a surviving spouse does not hold an inherited IRA at all under IRC 408(d)(3)(C)(ii), so the (d)(3)(iv) redetermination has no path here, and the engine holds no beneficiary-category fact that could select it. Second, the table is read at a whole age, as singleLifeExpectancyYears in params/index.ts does, and the fixed entry may fall to zero or below for a beneficiary who inherits past about 110; the module then requires the whole remaining interest, since there is nothing left to divide by. Third, this record covers the beneficiary expectancy only. The greater-of test that compares it against the employee expectancy is a separate paragraph and is registered separately as treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy, where it remains out of scope. Until this record was settled the module divided by a sex-specific SSA period life expectancy looked up at the beneficiary current age, described in its own header as a documented proxy for the Single Life Table; the fixture asserting that behaviour called the same SSA function the module called and could not have failed.',
+      'Three notes on how far this reaches. First, on the labeled legacy path — accounts with only the two-field inherited block and classifier-refusal fallbacks — the fixed subtract-one branch is what inheritedForcedAmount can reach; that path holds no beneficiary-category fact and cannot select the (d)(3)(iv) spouse redetermination arm. Classified schedules execute the spouse-redetermined path in the exact ledger via classifyInheritedRegime and inheritedRequirementForYear in strategies/inheritedIra.ts (S0/S1 spouse remain-beneficiary and K2 spouse rows). Second, the table is read at a whole age, as singleLifeExpectancyYears in params/index.ts does, and the fixed entry may fall to zero or below for a beneficiary who inherits past about 110; the module then requires the whole remaining interest, since there is nothing left to divide by. Third, this record covers the beneficiary expectancy only. The greater-of test that compares it against the employee expectancy is a separate paragraph and is registered separately as treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy, where it remains out of scope. Until this record was settled the module divided by a sex-specific SSA period life expectancy looked up at the beneficiary current age, described in its own header as a documented proxy for the Single Life Table; the fixture asserting that behaviour called the same SSA function the module called and could not have failed.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'regulation',
