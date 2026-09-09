@@ -4,6 +4,28 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## Unreleased
 
+- **Louisiana TY2026 standard deduction:** corrected `states.LA.standardDeduction` to
+  $12,875 single and $25,750 MFJ per La. R.S. 47:294 CPI-U indexing and LDR 2026 Form
+  IT-540ESi (`la-ldr-it540es-2026-standard-deduction`). Retirement cap CPI indexing,
+  unsupported filing statuses, exemptions, credits, and whole-return accuracy remain
+  outside this correction. Before → after on representative fixtures: single base
+  $12,875 tax $11.25 → $0; MFJ base $25,750 tax $22.50 → $0; single $100,000 tax
+  $2,625 → $2,613.75; MFJ $100,000 tax $2,250 → $2,227.50.
+
+- **Oregon TY2026 rate schedule and standard deduction:** corrected `states.OR`
+  standard deduction to $2,910/$5,820 and indexed bracket lowerBounds to single
+  $4,550/$11,400 and joint $9,100/$22,800 per LRO Report #1-26
+  (`or-lro-2026-rate-schedule-and-standard-deduction`). The engine composes continuous
+  marginal rates and does not replicate LRO printed whole-dollar base taxes; HOH,
+  age/blind additions, exemption credits, and whole-return accuracy remain outside this
+  correction. Before → after on representative fixtures: single $100,000 tax
+  $8,216.9375 → $8,176.375; MFJ $100,000 tax $7,683.875 → $7,602.75.
+  In the bundled Oregon Barista FIRE example, the observed long-horizon comparison
+  increases ending investable assets/net worth by $46,584 and after-tax estate by
+  $41,124. Nominal lifetime taxes and penalties increase by $2,765 alongside the
+  larger ending balances; that aggregate includes federal tax and is not a
+  fixed-income Oregon tax comparison.
+
 - **Surviving-divorced Social Security duration:** added additive
   `FormerSpouse.relationship: surviving-divorced` with a ten-year
   marriage-before-divorce gate on the non-disabled age-60 survivor path

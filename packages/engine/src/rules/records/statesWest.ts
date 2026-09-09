@@ -936,14 +936,14 @@ export const westStateRecords = {
   },
 
   'or-lro-2026-rate-schedule-and-standard-deduction': {
-    title: 'Oregon publishes TY2026 indexed brackets and basic deductions; the pack still carries TY2025 cells',
+    title: 'Oregon publishes TY2026 indexed brackets and basic deductions represented by continuous marginal breakpoints',
     statement:
-      'For tax year 2026, Oregon\'s resident income tax uses four rates — 4.75%, 6.75%, 8.75%, and 9.9% — on an annually indexed schedule adopted under ORS 316.037 in lieu of the statutory base table, with ORS 316.042 making a joint return twice the tax on half the joint taxable income. The Oregon Legislative Revenue Office Report #1-26 publishes the TY2026 single schedule at taxable-income breakpoints $4,550, $11,400, and $125,000 and the joint schedule at $9,100, $22,800, and $250,000, with basic standard deductions of $2,910 for single and married-filing-separately filers and $5,820 for joint and qualifying-surviving-spouse filers. Approximated: the pack still carries TY2025 carry-forward cells — single standard deduction $2,835, joint $5,670, and bracket breakpoints single $4,050/$10,200/$125,000 and joint $8,100/$20,400/$250,000 — so modeled Oregon tax is generally overstated at the gate\'s boundary and mid-band coordinates. Supported pack scope is single and married filing jointly only; head-of-household $4,685, age or blind additions, exemption credits, reduced business rates, and other return modifications are documented but unsupported. bracketTax applies continuous marginal rates at breakpoint thresholds and does not replicate LRO\'s printed whole-dollar base-tax constants.',
+      'For tax year 2026, Oregon\'s resident income tax uses four rates — 4.75%, 6.75%, 8.75%, and 9.9% — on an annually indexed schedule adopted under ORS 316.037 in lieu of the statutory base table, with ORS 316.042 making a joint return twice the tax on half the joint taxable income. The Oregon Legislative Revenue Office Report #1-26 publishes the TY2026 single schedule at taxable-income breakpoints $4,550, $11,400, and $125,000 and the joint schedule at $9,100, $22,800, and $250,000, with basic standard deductions of $2,910 for single and married-filing-separately filers and $5,820 for joint returns. The pack stores those TY2026 single and MFJ deduction and breakpoint cells. Approximated: bracketTax applies continuous marginal rates at breakpoint thresholds and does not replicate LRO\'s printed whole-dollar base-tax constants ($216, $679, $432, and $1,357 at the gate\'s boundary taxable-income coordinates). Supported pack scope is single and married filing jointly only; head-of-household $4,685, age or blind additions, exemption credits, reduced business rates, and other return modifications are documented but unsupported.',
     classification: 'approximated',
     contraryReading: null,
-    errorDirection: 'overstatesTax',
+    errorDirection: 'bothDirections',
     conventionRationale:
-      'The official LRO schedule prints rounded whole-dollar base taxes ($216, $679, $432, $1,357 at the gate\'s boundary coordinates); the engine composes exact marginal rates and can retain fractional cents. This record registers the continuous-breakpoint representation authorized for the current single/MFJ pack fields and does not claim exact replication of Oregon\'s printed table. Primary gate evidence is LRO Report #1-26; final resident-return closure is outside this record. The record expires after TY2026.',
+      'The signed gap at LRO boundary coordinates is +$0.125 at single $4,550 taxable, −$0.50 at single $11,400, +$0.25 at joint $9,100, and $0 at joint $22,800 — so the continuous engine neither uniformly over- nor under-states relative to LRO\'s printed whole-dollar table. This record registers the continuous-breakpoint representation authorized for the current single/MFJ pack fields and does not claim exact replication of Oregon\'s printed table or whole-return fidelity. Primary gate evidence is LRO Report #1-26; final resident-return closure is outside this record. The record expires after TY2026.',
     jurisdiction: 'state:OR',
     authority: [{
       kind: 'statute',
@@ -980,6 +980,12 @@ export const westStateRecords = {
       url: 'https://apps.oregonlegislature.gov/liz/2026R1/Downloads/CommitteeMeetingDocument/312065',
       quotedText:
         '2026 TAX YEAR RATE SCHEDULE … SINGLE RETURNS … JOINT RETURNS … Not over $4,550 … Not over $9,100 … $4,550 to $11,400 … $9,100 to $22,800 … $11,400 to $125,000 … $22,800 to $250,000 … Over $125,000 … Over $250,000',
+    }, {
+      kind: 'stateAgencyPublication',
+      citation: 'Oregon Legislative Revenue Office, Oregon Public Finance: Basic Facts, Report #1-26, page C2, TY2026 printed whole-dollar base taxes',
+      url: 'https://apps.oregonlegislature.gov/liz/2026R1/Downloads/CommitteeMeetingDocument/312065',
+      quotedText:
+        '$4,550 to $11,400 $216 + 6.75% of income over $4,550 … $9,100 to $22,800 $432 + 6.75% of income over $9,100 … $11,400 to $125,000 $679 + 8.75% of income over $11,400 … $22,800 to $250,000 $1,357 + 8.75% of income over $22,800',
     }],
     volatility: 'annuallyIndexed',
     effectiveFrom: 2026,

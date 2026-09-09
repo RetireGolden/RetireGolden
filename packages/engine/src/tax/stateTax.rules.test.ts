@@ -2648,7 +2648,8 @@ describeRule('ky-krs-141-retirement-and-social-security', {
 })
 
 const LA_RATE = 0.03
-const LA_DEDUCTION = 12_500
+// La. R.S. 47:294; LDR 2026 IT-540ESi TY2026 single standard deduction.
+const LA_DEDUCTION = 12_875
 const laTax = (taxable: number) => Math.max(0, taxable) * LA_RATE
 
 const LA_SS_OTHER = 90_000
@@ -3272,9 +3273,10 @@ describeRule('or-stat-316-054-social-security-exclusion', {
   readings: {
     // ORS 316.054 subtracts every federally taxable benefit; at this income
     // the federal 85% cap is 34,000, so retaining it would be 100,000 +
-    // 34,000 - 2,835 = 131,165.
-    subtractTheFederalSocialSecurityAmount: 100_000 - 2_835,
-    includeTheFederalSocialSecurityAmount: 100_000 + 34_000 - 2_835,
+    // 34,000 - 2,910 = 131,090. ORS 316.695; LRO Report #1-26 p.C2 TY2026
+    // single standard deduction.
+    subtractTheFederalSocialSecurityAmount: 100_000 - 2_910,
+    includeTheFederalSocialSecurityAmount: 100_000 + 34_000 - 2_910,
   },
   accepted: 'subtractTheFederalSocialSecurityAmount',
 }, ({ accepted, readings }) => {

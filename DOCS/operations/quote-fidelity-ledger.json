@@ -1,15 +1,15 @@
 {
-  "generatedAt": "2026-09-09T08:01:49.079Z",
-  "recordCount": 448,
-  "urlCount": 357,
+  "generatedAt": "2026-09-09T10:38:32.491Z",
+  "recordCount": 450,
+  "urlCount": 360,
   "fetched": 0,
-  "cached": 357,
-  "entryCount": 1325,
+  "cached": 360,
+  "entryCount": 1338,
   "counts": {
-    "EXACT": 929,
+    "EXACT": 936,
     "PUNCTUATION": 42,
-    "PDF-WORD-LEVEL": 249,
-    "ELISION-EXACT": 87,
+    "PDF-WORD-LEVEL": 253,
+    "ELISION-EXACT": 89,
     "ELISION-PUNCTUATION": 8,
     "PDF-NOT-VERIFIABLE": 7,
     "UNFETCHABLE": 3
@@ -12472,6 +12472,66 @@
       "diagnosis": null
     },
     {
+      "id": "la-ldr-it540es-2026-standard-deduction",
+      "citation": "La. R.S. 47:294(A)",
+      "host": "legis.la.gov",
+      "url": "https://legis.la.gov/Legis/Law.aspx?d=101761",
+      "quoteSha256": "1e5b5a9aea728916",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "la-ldr-it540es-2026-standard-deduction",
+      "citation": "La. R.S. 47:294(A)(1), TY2025 single and separate base amount",
+      "host": "legis.la.gov",
+      "url": "https://legis.la.gov/Legis/Law.aspx?d=101761",
+      "quoteSha256": "778674161f67dcd2",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "la-ldr-it540es-2026-standard-deduction",
+      "citation": "La. R.S. 47:294(A)(2), filing-status cell",
+      "host": "legis.la.gov",
+      "url": "https://legis.la.gov/Legis/Law.aspx?d=101761",
+      "quoteSha256": "d687a9bea29ed4cb",
+      "verdict": "ELISION-EXACT",
+      "detail": "2 elision segments, every one a literal substring",
+      "diagnosis": null
+    },
+    {
+      "id": "la-ldr-it540es-2026-standard-deduction",
+      "citation": "La. R.S. 47:294(A)(2), amount cell",
+      "host": "legis.la.gov",
+      "url": "https://legis.la.gov/Legis/Law.aspx?d=101761",
+      "quoteSha256": "053538e763aeed75",
+      "verdict": "ELISION-EXACT",
+      "detail": "2 elision segments, every one a literal substring",
+      "diagnosis": null
+    },
+    {
+      "id": "la-ldr-it540es-2026-standard-deduction",
+      "citation": "La. R.S. 47:294(B)",
+      "host": "legis.la.gov",
+      "url": "https://legis.la.gov/Legis/Law.aspx?d=101761",
+      "quoteSha256": "dd2ab5931cf2fd79",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "la-ldr-it540es-2026-standard-deduction",
+      "citation": "Louisiana Department of Revenue, 2026 Form IT-540ESi instructions, estimated tax worksheet",
+      "host": "dam.ldr.la.gov",
+      "url": "https://dam.ldr.la.gov/taxforms/IT540ESi-2026.pdf",
+      "quoteSha256": "0838e6832850e860",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "4 elision segments, all present in the extracted text",
+      "diagnosis": null
+    },
+    {
       "id": "ok-stat-68-2358-retirement-and-social-security",
       "citation": "2025 Oklahoma Form 511 packet, Schedule 511-A line 2",
       "host": "oklahoma.gov",
@@ -13209,6 +13269,76 @@
       "quoteSha256": "710d1f483bf50264",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "or-lro-2026-rate-schedule-and-standard-deduction",
+      "citation": "Or. Rev. Stat. §316.037(1)(b)",
+      "host": "www.oregonlegislature.gov",
+      "url": "https://www.oregonlegislature.gov/bills_laws/ors/ors316.html",
+      "quoteSha256": "e384af649a62f0c8",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "or-lro-2026-rate-schedule-and-standard-deduction",
+      "citation": "Or. Rev. Stat. §316.037(1)(b)(B)",
+      "host": "www.oregonlegislature.gov",
+      "url": "https://www.oregonlegislature.gov/bills_laws/ors/ors316.html",
+      "quoteSha256": "23aa4edfb5c54097",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "or-lro-2026-rate-schedule-and-standard-deduction",
+      "citation": "Or. Rev. Stat. §316.042",
+      "host": "www.oregonlegislature.gov",
+      "url": "https://www.oregonlegislature.gov/bills_laws/ors/ors316.html",
+      "quoteSha256": "fec5daf9706f86d8",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "or-lro-2026-rate-schedule-and-standard-deduction",
+      "citation": "Or. Rev. Stat. §316.695(1)(c)(C)(i)",
+      "host": "www.oregonlegislature.gov",
+      "url": "https://www.oregonlegislature.gov/bills_laws/ors/ors316.html",
+      "quoteSha256": "e87645ceaa01fe3e",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "or-lro-2026-rate-schedule-and-standard-deduction",
+      "citation": "Oregon Legislative Revenue Office, Oregon Public Finance: Basic Facts, Report #1-26, page C2, TY2026 basic deductions",
+      "host": "apps.oregonlegislature.gov",
+      "url": "https://apps.oregonlegislature.gov/liz/2026R1/Downloads/CommitteeMeetingDocument/312065",
+      "quoteSha256": "6cb75aa6c9a98678",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "or-lro-2026-rate-schedule-and-standard-deduction",
+      "citation": "Oregon Legislative Revenue Office, Oregon Public Finance: Basic Facts, Report #1-26, page C2, TY2026 single and joint rate schedule breakpoints",
+      "host": "apps.oregonlegislature.gov",
+      "url": "https://apps.oregonlegislature.gov/liz/2026R1/Downloads/CommitteeMeetingDocument/312065",
+      "quoteSha256": "87653c0bc8de88e3",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "11 elision segments, all present in the extracted text",
+      "diagnosis": null
+    },
+    {
+      "id": "or-lro-2026-rate-schedule-and-standard-deduction",
+      "citation": "Oregon Legislative Revenue Office, Oregon Public Finance: Basic Facts, Report #1-26, page C2, TY2026 printed whole-dollar base taxes",
+      "host": "apps.oregonlegislature.gov",
+      "url": "https://apps.oregonlegislature.gov/liz/2026R1/Downloads/CommitteeMeetingDocument/312065",
+      "quoteSha256": "cb1453870ec6d73b",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "4 elision segments, all present in the extracted text",
       "diagnosis": null
     },
     {

@@ -1277,27 +1277,27 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2853,
+          "line": 2854,
           "note": "age-65 additional subtraction, 15-30-2120(3)(g) floor",
           "tests": [
             {
               "title": "pins the missing Montana age-65 subtraction",
-              "line": 2873
+              "line": 2874
             },
             {
               "title": "grants nothing below 65 under either reading",
-              "line": 2878
+              "line": 2879
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2896,
+          "line": 2897,
           "note": "per-taxpayer doubling for a couple both 65",
           "tests": [
             {
               "title": "pins the missing per-taxpayer doubling for a couple both 65",
-              "line": 2914
+              "line": 2915
             }
           ]
         }
@@ -1375,20 +1375,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2809,
+          "line": 2810,
           "note": null,
           "tests": [
             {
               "title": "starts Montana from federal taxable income, so federally taxable Social Security stays in",
-              "line": 2828
+              "line": 2829
             },
             {
               "title": "would drop the benefit if Montana subtracted it the way a false flag does",
-              "line": 2834
+              "line": 2835
             },
             {
               "title": "carries the federal standard deduction with it, not a frozen state figure",
-              "line": 2840
+              "line": 2841
             }
           ]
         }
@@ -1476,12 +1476,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2993,
+          "line": 2994,
           "note": null,
           "tests": [
             {
               "title": "pins the high-income path where the blanket pack exclusion diverges from the source threshold",
-              "line": 3008
+              "line": 3009
             }
           ]
         }
@@ -1564,6 +1564,103 @@
       ]
     },
     {
+      "id": "or-lro-2026-rate-schedule-and-standard-deduction",
+      "title": "Oregon publishes TY2026 indexed brackets and basic deductions represented by continuous marginal breakpoints",
+      "classification": "approximated",
+      "errorDirection": "bothDirections",
+      "conventionRationale": "The signed gap at LRO boundary coordinates is +$0.125 at single $4,550 taxable, −$0.50 at single $11,400, +$0.25 at joint $9,100, and $0 at joint $22,800 — so the continuous engine neither uniformly over- nor under-states relative to LRO's printed whole-dollar table. This record registers the continuous-breakpoint representation authorized for the current single/MFJ pack fields and does not claim exact replication of Oregon's printed table or whole-return fidelity. Primary gate evidence is LRO Report #1-26; final resident-return closure is outside this record. The record expires after TY2026.",
+      "contraryReading": null,
+      "jurisdiction": "state:OR",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": 2026,
+      "verifiedOn": "2026-09-09",
+      "dueOn": "2027-01-07",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "states.OR",
+              "line": 715
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "bracketTax",
+              "line": 29
+            },
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 96
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateAnnualParameters.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateAnnualParameters.rules.test.ts",
+          "line": 194,
+          "note": null,
+          "tests": [
+            {
+              "title": "pins LRO TY2026 continuous schedule against printed whole-dollar and stale-pack witnesses",
+              "line": 203
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "Or. Rev. Stat. §316.037(1)(b)",
+          "url": "https://www.oregonlegislature.gov/bills_laws/ors/ors316.html"
+        },
+        {
+          "kind": "statute",
+          "citation": "Or. Rev. Stat. §316.037(1)(b)(B)",
+          "url": "https://www.oregonlegislature.gov/bills_laws/ors/ors316.html"
+        },
+        {
+          "kind": "statute",
+          "citation": "Or. Rev. Stat. §316.042",
+          "url": "https://www.oregonlegislature.gov/bills_laws/ors/ors316.html"
+        },
+        {
+          "kind": "statute",
+          "citation": "Or. Rev. Stat. §316.695(1)(c)(C)(i)",
+          "url": "https://www.oregonlegislature.gov/bills_laws/ors/ors316.html"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Oregon Legislative Revenue Office, Oregon Public Finance: Basic Facts, Report #1-26, page C2, TY2026 basic deductions",
+          "url": "https://apps.oregonlegislature.gov/liz/2026R1/Downloads/CommitteeMeetingDocument/312065"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Oregon Legislative Revenue Office, Oregon Public Finance: Basic Facts, Report #1-26, page C2, TY2026 single and joint rate schedule breakpoints",
+          "url": "https://apps.oregonlegislature.gov/liz/2026R1/Downloads/CommitteeMeetingDocument/312065"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Oregon Legislative Revenue Office, Oregon Public Finance: Basic Facts, Report #1-26, page C2, TY2026 printed whole-dollar base taxes",
+          "url": "https://apps.oregonlegislature.gov/liz/2026R1/Downloads/CommitteeMeetingDocument/312065"
+        }
+      ]
+    },
+    {
       "id": "or-stat-316-054-social-security-exclusion",
       "title": "Oregon subtracts federally taxable Social Security from federal taxable income",
       "classification": "settled",
@@ -1606,12 +1703,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3271,
+          "line": 3272,
           "note": null,
           "tests": [
             {
               "title": "subtracts federally taxable Social Security as ORS 316.054 directs",
-              "line": 3283
+              "line": 3285
             }
           ]
         }
@@ -1669,12 +1766,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3228,
+          "line": 3229,
           "note": null,
           "tests": [
             {
               "title": "applies the enacted 4.45% flat rate to ordinary income",
-              "line": 3236
+              "line": 3237
             }
           ]
         }
@@ -1742,12 +1839,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3245,
+          "line": 3246,
           "note": null,
           "tests": [
             {
               "title": "pins the unmodeled Utah Social Security benefits credit",
-              "line": 3264
+              "line": 3265
             }
           ]
         }
@@ -1815,12 +1912,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3549,
+          "line": 3551,
           "note": null,
           "tests": [
             {
               "title": "keeps Washington out of the broad state-income-tax path",
-              "line": 3568
+              "line": 3570
             }
           ]
         }

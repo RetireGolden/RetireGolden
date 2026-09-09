@@ -46,8 +46,18 @@ MFJ (2× the $125,000 single threshold).
 - $256-per-exemption personal exemption credit (a credit, not a deduction) not modeled.
 - Local transit/county taxes (e.g. Portland-area Metro/Multnomah) not modeled.
 
+## 2026 correction (pack update; historical 2025 figures above unchanged)
+
+TY2026 LRO Report #1-26: standard deduction $2,910 single/MFS and $5,820 joint; bracket
+breakpoints single $4,550/$11,400/$125,000 and joint $9,100/$22,800/$250,000
+(`or-lro-2026-rate-schedule-and-standard-deduction`). The engine represents DOR bands as
+continuous marginal breakpoints; LRO prints whole-dollar base-tax constants at boundaries.
+HOH $4,685, age/blind additions, exemption credits, and other return modifications remain
+unsupported.
+
 ## Citations
 - https://www.oregon.gov/dor/forms/FormsPubs/publication-or-17_101-431_2025.pdf — 2025 Publication OR-17: standard deduction $2,835 single / $5,670 MFJ; SS exempt.
+- https://apps.oregonlegislature.gov/liz/2026R1/Downloads/CommitteeMeetingDocument/312065 — LRO Report #1-26 TY2026 rate schedule and deductions.
 - https://ustax.tools/oregon-tax-brackets-2025/ — 2025 single and MFJ bracket thresholds (4.75%/6.75%/8.75%/9.9%).
 - https://nationaltaxreports.com/oregon-taxes-on-pensions-iras-and-401ks/ — pensions/IRA/401(k) generally taxable; SS exempt.
 - Tax Foundation, State Individual Income Tax Rates and Brackets 2025 — OR top rate 9.9%.

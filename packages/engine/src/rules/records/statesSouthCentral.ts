@@ -1207,12 +1207,12 @@ export const southCentralStateRecords = {
   },
 
   'la-ldr-it540es-2026-standard-deduction': {
-    title: 'Louisiana\'s TY2026 CPI-indexed standard deduction is $12,875 single and $25,750 joint; the pack still carries the TY2025 base',
+    title: 'Louisiana\'s TY2026 CPI-indexed standard deduction is $12,875 single and $25,750 joint',
     statement:
-      'La. R.S. 47:294(A) allows a standard deduction in determining a taxpayer\'s tax liability pursuant to this Part, sets a $12,500.00 base for single and married-filing-separately filers and two hundred percent of that amount for married-filing-jointly, head-of-household, and qualifying-surviving-spouse filers under §294(A)(1)-(2), and §294(B) requires annual CPI-U adjustment beginning January 1, 2026 by multiplying the prior year\'s standard deduction. Louisiana Department of Revenue 2026 Form IT-540ESi instructions publish the agency-computed TY2026 result as Single $12,875 and Married Filing Joint $25,750 and apply those amounts before multiplying Louisiana taxable income by three percent. Approximated: the pack still carries $12,500 single and $25,000 married filing jointly — the TY2025 statutory base held forward in year2026.ts — so Louisiana taxable income is too high and tax is overstated once the first CPI-U adjustment applies. Supported filing statuses only: married filing separately, head of household, and qualifying surviving spouse amounts are documented on the same worksheet but are not separate pack cells. Exemptions, credits, retirement Schedule E adjustments, and whole-return accuracy remain outside this record.',
-    classification: 'approximated',
+      'La. R.S. 47:294(A) allows a standard deduction in determining a taxpayer\'s tax liability pursuant to this Part, sets a $12,500.00 base for single and married-filing-separately filers and two hundred percent of that amount for married-filing-jointly, head-of-household, and qualifying-surviving-spouse filers under §294(A)(1)-(2), and §294(B) requires annual CPI-U adjustment beginning January 1, 2026 by multiplying the prior year\'s standard deduction. Louisiana Department of Revenue 2026 Form IT-540ESi instructions publish the agency-computed TY2026 result as Single $12,875 and Married Filing Joint $25,750 and apply those amounts before multiplying Louisiana taxable income by three percent. The pack stores those published amounts in its supported single and married-filing-jointly deduction cells. Settled only for that CPI-indexed standard deduction on supported single and MFJ filings: married filing separately, head of household, and qualifying surviving spouse amounts are documented on the same worksheet but are not separate pack cells; exemptions, credits, retirement Schedule E adjustments, and whole-return accuracy remain outside this record.',
+    classification: 'settled',
     contraryReading: null,
-    errorDirection: 'overstatesTax',
+    errorDirection: null,
     conventionRationale:
       'Primary gate evidence is the 2026 IT-540ESi estimated-tax worksheet plus La. R.S. 47:294 indexing; a final TY2026 resident Form IT-540 was not located. The record expires after TY2026. Later plan years may reuse the latest pack as a planning stand-in and are not certified by this annual record.',
     jurisdiction: 'state:LA',
