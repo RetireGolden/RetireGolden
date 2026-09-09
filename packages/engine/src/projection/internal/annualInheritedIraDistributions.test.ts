@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
+import { describeRefusal } from '../../rules/describeRefusal.js'
+
 import type {
   Account,
   InheritedAccount,
@@ -588,27 +590,89 @@ describe('annualInheritedIraDistributions', () => {
     })
   })
 
-  it('publishes the successor-clock row before any post-election owner-side row', () => {
-    const facts = inherited(2024, true, beneficiary({
-      edbCategory: 'surviving-spouse',
-      election: 'treat-as-own',
-      spouseUnlimitedWithdrawalRight: true,
-      treatAsOwnElectionYear: 2026,
-    }))
-    const spouse = account('spouse', 'traditional', facts, 100_000)
-    const result = run({
-      balances: [{ account: spouse, balance: 100_000 }],
-      classEntries: [classEntry(spouse)],
+  it('refuses pre-SECURE legacy successor schedules with X1 authority when the beneficiary dies in horizon', () => {
+    const facts = inherited(2019, true, undefined)
+    const legacy = account('pre-secure-legacy', 'traditional', facts, 120_000)
+    const entry = classEntry(legacy)
+    expect(entry.primary).toMatchObject({
+      kind: 'refusal',
+      refusal: 'legacy-planning-approximation',
+      row: 'X1',
+    })
+
+    const dead = run({
+      balances: [{ account: legacy, balance: 120_000 }],
+      classEntries: [entry],
       alive: false,
     })
 
-    expect(result.rows[0]?.evidence).toMatchObject({
-      matrixRow: 'S2',
+    expect(dead.rows[0]?.evidence).toMatchObject({
+      regime: 'legacy-planning-approximation',
+      matrixRow: 'X1',
       requirementKind: 'none',
-      disclosures: ['successor-clock-out-of-scope'],
+      refusalCode: 'successor-clock-out-of-scope',
+      citations: ['SECURE Act §401(b)(1)'],
     })
-    expect(result.rows[0]?.distribution).toBeNull()
-    expect(result.rmdShortfallObligations).toEqual([])
+    expect(dead.rows[0]?.distribution).toBeNull()
+    expect(dead.rmdShortfallObligations).toEqual([])
+    expect(dead.rows[0]?.evidence.refusalReason)
+      .toContain('pre-SECURE legacy path')
+    expect(dead.rows[0]?.evidence.refusalReason).not.toMatch(/H\(iii\)/)
+    expect(dead.rows[0]?.evidence.refusalReason).not.toMatch(/\(e\)\(3\)/)
+  })
+
+  describeRefusal('irc-401-a-9-H-iii-in-horizon-beneficiary-death-successor-clock', {
+    entryPoint:
+      'packages/engine/src/projection/internal/annualInheritedIraDistributions.ts#annualInheritedIraDistributions',
+    outOfScopeInput:
+      'an inherited IRA whose modeled current beneficiary has died during the projection horizon',
+    refusal:
+      "requirementKind 'none' with refusalCode 'successor-clock-out-of-scope', no forced distribution, and no section 4974 obligations",
+  }, () => {
+    it('refuses successor schedules once an eligible designated beneficiary dies in horizon', () => {
+      const facts = inherited(2023, true, beneficiary({
+        ownerBirthYear: 1948,
+        beneficiaryBirthYear: 1940,
+        edbCategory: 'not-more-than-10-years-younger',
+        ownerYearOfDeathRmdSatisfied: false,
+      }), 'edb-decedent')
+      const inheritedAccount = account('edb-inherited', 'traditional', facts, 300_000)
+      const entry = classEntry(inheritedAccount)
+      expect(entry.primary).toMatchObject({
+        kind: 'regime',
+        regime: 'edb-life-expectancy',
+        row: 'R3',
+      })
+
+      const alive = run({
+        balances: [{ account: inheritedAccount, balance: 300_000 }],
+        classEntries: [entry],
+        alive: true,
+      })
+      const dead = run({
+        balances: [{ account: inheritedAccount, balance: 300_000 }],
+        classEntries: [entry],
+        alive: false,
+      })
+
+      expect(alive.rows[0]?.evidence).toMatchObject({
+        matrixRow: 'R3',
+        regime: 'edb-life-expectancy',
+        requirementKind: 'annual-rmd',
+      })
+      expect(alive.rows[0]?.evidence.disclosures)
+        .toContain('successor-clock-out-of-scope')
+      expect(alive.rows[0]?.distribution?.executed).toBeGreaterThan(0)
+      expect(alive.rmdShortfallObligations).toHaveLength(1)
+
+      expect(dead.rows[0]?.evidence).toMatchObject({
+        matrixRow: 'R3',
+        requirementKind: 'none',
+        refusalCode: 'successor-clock-out-of-scope',
+      })
+      expect(dead.rows[0]?.distribution).toBeNull()
+      expect(dead.rmdShortfallObligations).toEqual([])
+    })
   })
 
   it('keeps the unsatisfied death-year RMD ahead of the S2 ownership flip', () => {

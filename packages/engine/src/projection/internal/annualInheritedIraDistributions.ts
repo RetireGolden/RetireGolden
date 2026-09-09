@@ -180,6 +180,10 @@ export function annualInheritedIraDistributions(
     if (!beneficiaryState.alive) {
       const primaryClass =
         cache.primary.kind === 'regime' ? cache.primary : undefined
+      const successorRefusalReason =
+        state.account.inherited.ownerDeathYear < 2020
+          ? `${cache.primary.kind === 'refusal' ? cache.primary.reason : 'pre-SECURE inherited regime'}; the modeled beneficiary has died and successor schedules for this pre-SECURE legacy path are out of scope`
+          : 'beneficiary death starts the successor 10-year clock (IRC §401(a)(9)(H)(iii); Treas. Reg. §1.401(a)(9)-5(e)(3); matrix X2); successor schedules are out of scope'
       addRow(balanceIndex, state, {
         accountId: state.account.id,
         ownerPersonId: cache.ownerPersonId,
@@ -192,8 +196,7 @@ export function annualInheritedIraDistributions(
         ...(primaryClass !== undefined
           ? { classification: primaryClass.classification }
           : {}),
-        refusalReason:
-          'beneficiary death starts the successor 10-year clock (IRC §401(a)(9)(H)(iii); Treas. Reg. §1.401(a)(9)-5(e)(3); matrix X2); successor schedules are out of scope',
+        refusalReason: successorRefusalReason,
         refusalCode: 'successor-clock-out-of-scope',
         requirementKind: 'none',
         requiredAmount: 0,

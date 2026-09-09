@@ -2,21 +2,21 @@
   "kind": "retiregolden.rules-coverage.manifest",
   "version": 5,
   "registry": {
-    "total": 450,
+    "total": 451,
     "byClassification": {
       "approximated": 126,
-      "outOfScope": 75,
+      "outOfScope": 76,
       "settled": 245,
       "unsettled": 4
     },
     "byVolatility": {
       "annuallyIndexed": 70,
       "awaitingGuidance": 10,
-      "staticStatute": 363,
+      "staticStatute": 364,
       "sunsetting": 7
     },
     "byJurisdiction": {
-      "federal": 330,
+      "federal": 331,
       "states": {
         "AK": 1,
         "AL": 9,
@@ -208,7 +208,7 @@
     },
     {
       "path": "params/state/data/year2026.ts",
-      "sweptOn": "2026-09-08",
+      "sweptOn": "2026-09-09",
       "note": "ca-ftb-2026-540-es-standard-deduction names the California TY2026 estimated-tax worksheet single/MFJ deduction cells and computeStateTaxableIncome only — retained 2025 Schedule X/Y brackets, continuous lower-income schedule behavior, credits, and whole-return figures remain outside that settled record; mn-dor-2026-rate-schedule-and-standard-deduction names the Minnesota TY2026 single/MFJ deduction and bracket cells plus taxable-income and bracketTax enforcers; mn-stat-290-0132-subd-26-social-security-inclusion remains approximated with zero runtime subtraction (indexed simplified thresholds versus unindexed alternate maxima are source-discriminated in the record, not modeled). de-code-30-1108-standard-deduction names the § 1108 basic and age-65 enforcers for single/MFJ; de-pit-est-2026-qss-standard-deduction-joint-mapper names the QSS standard-deduction approximation; de-code-30-1102-a-14-rate-schedule names the Delaware 5.55% bracket cell and bracketTax; hi-hrs-235-2-4-a-2-f-2026-standard-deduction names the Hawaii TY2026 single/MFJ deduction cell and taxable-income enforcer; ri-dot-adv-2025-22-2026-deduction-and-rate-schedule names the Rhode Island TY2026 single/MFJ deduction and bracket cells plus their taxable-income and bracket enforcers; ut-code-59-10-104-2026-individual-rate names the Utah TY2026 4.45% rate cell and bracketTax; oh-rev-code-5747-02-a-3-c-2026-nonbusiness-rate-schedule names the OH TY2026 single/MFJ 2.75% band cells with baseTax $332; the optional StateTaxBracket.baseTax field represents cumulative schedule tax. Blindness, itemization, credits, and retirement qualifying-income scope remain partial or unmodelled. Existing law records name this pack, including WV rates and Social Security; residuals include KY aggregate MFJ deduction convention without spouse-allocation record, IA minimum-income/alternate and enhanced-senior conformity omissions, DC August emergency statutory-conformity timing unresolved, ME modeled Maine-AGI proxy / personal exemption / blindness / part-year month approximation / me-mrs-36-5122-2-m2-m3-2026-pension-deduction $49,824 TY2026 maximum without SS offset military separation M-3 phaseout or plan qualification, WV personal exemptions / senior any-income / disability / pension-subtype modifications, and MI source qualification / (9)/(10)/(11) elections / pre-1946 public exception / per-person agesAlive proxy versus return-level ceiling. la-ldr-it540es-2026-standard-deduction covers Louisiana TY2026 single/MFJ deduction cells; or-lro-2026-rate-schedule-and-standard-deduction covers refreshed Oregon cells while disclosing continuous marginal versus printed whole-dollar base taxes. Calendar-year CA, LA, MN, OH, and OR records expire after 2026; stateParamsFor may reuse the 2026 pack in later plan years as a stand-in. Not complete law coverage."
     },
     {
@@ -268,8 +268,8 @@
     },
     {
       "path": "projection/internal/annualInheritedIraDistributions.ts",
-      "sweptOn": "2026-09-01",
-      "note": "the annual inherited-account required-distribution planner consumes one aggregate live row and prior-December-31 opening per compatible logical account id, preserving first-id order and selected last-row facts. It returns fresh ordered logical balance operations, evidence rows, source-ordered totals, and grouped section 4974 obligations without mutating live state. Before any write, the caller materializes every helper-owned result channel into one recursively frozen plain snapshot and validates all cached operations; it then commits each logical closing balance once through the pro-rata physical ledger, journals one runtime occurrence, and hands the cached grouped obligations to the excise seam. Twelve inherited-RMD records name the helper. Residual rule-bearing behavior remains: dead-beneficiary successor-clock suppression has no dedicated registry record; inherited-Roth forced dollars use the Roth/nonordinary channel while nonqualified inherited-Roth earnings tax remains disclosure-only."
+      "sweptOn": "2026-09-09",
+      "note": "the annual inherited-account required-distribution planner consumes one aggregate live row and prior-December-31 opening per compatible logical account id, preserving first-id order and selected last-row facts. It returns fresh ordered logical balance operations, evidence rows, source-ordered totals, and grouped section 4974 obligations without mutating live state. Before any write, the caller materializes every helper-owned result channel into one recursively frozen plain snapshot and validates all cached operations; it then commits each logical closing balance once through the pro-rata physical ledger, journals one runtime occurrence, and hands the cached grouped obligations to the excise seam. Thirteen inherited-RMD records name the helper, including irc-401-a-9-H-iii-in-horizon-beneficiary-death-successor-clock for the in-horizon beneficiary-death typed refusal; the shared dead-beneficiary branch publishes H(iii) authority prose only for post-2019 owner deaths while pre-2020 X1 legacy rows retain X1 reason and authority in the refusal disclosure. Residual rule-bearing behavior remains: inherited-Roth forced dollars use the Roth/nonordinary channel while nonqualified inherited-Roth earnings tax remains disclosure-only."
     },
     {
       "path": "projection/internal/annualOptimizerProbePublication.ts",
@@ -604,7 +604,7 @@
     {
       "module": "requiredMinimumDistributions",
       "path": "rule-coverage/requiredMinimumDistributions.json",
-      "ruleCount": 42
+      "ruleCount": 43
     },
     {
       "module": "rothAccounts",
@@ -658,14 +658,14 @@
     }
   ],
   "quoteFidelity": {
-    "generatedAt": "2026-09-09T10:38:32.491Z",
-    "entryCount": 1338,
+    "generatedAt": "2026-09-09T13:21:05.201Z",
+    "entryCount": 1345,
     "fetched": 0,
     "cached": 360,
     "counts": {
       "ELISION-EXACT": 89,
       "ELISION-PUNCTUATION": 8,
-      "EXACT": 936,
+      "EXACT": 943,
       "PDF-NOT-VERIFIABLE": 7,
       "PDF-WORD-LEVEL": 253,
       "PUNCTUATION": 42,

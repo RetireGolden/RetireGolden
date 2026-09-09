@@ -369,10 +369,10 @@ describe('manifest rule projection contract', () => {
 
     const linkedRecords = Object.values(TAX_RULE_REGISTRY).filter((record) =>
       record.implementedBy.includes(inheritedPlanner))
-    expect(linkedRecords).toHaveLength(12)
+    expect(linkedRecords).toHaveLength(13)
     expect(COVERAGE_ATTESTATIONS[
       'projection/internal/annualInheritedIraDistributions.ts'
-    ]?.note).toContain('Twelve inherited-RMD records name the helper.')
+    ]?.note).toContain('Thirteen inherited-RMD records name the helper,')
   })
 
   // Published lines are deep-link anchors on the transparency page, so each

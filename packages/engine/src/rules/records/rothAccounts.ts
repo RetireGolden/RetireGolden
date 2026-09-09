@@ -189,13 +189,13 @@ export const rothAccountRecords = {
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-25',
+    verifiedOn: '2026-09-09',
     implementedBy: [
       'packages/engine/src/actions/rothConversionExecution.ts',
-      'packages/engine/src/actions/ownedNonRothIraWithdrawalCharacter.ts',
+      'packages/engine/src/strategies/accountEligibility.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/actions/ownedNonRothIraWithdrawalCharacter.ts#classifyOwnedNonRothIraAnnualWithdrawals',
+      'packages/engine/src/strategies/accountEligibility.ts#resolveOwnerAggregatedIraBasis',
       'packages/engine/src/actions/rothConversionExecution.ts#executeRothConversions',
     ],
   },
@@ -295,11 +295,17 @@ export const rothAccountRecords = {
       url: 'https://www.irs.gov/publications/p590b',
       quotedText:
         'Order the distributions as follows. Regular contributions. Conversion and rollover contributions, on a first-in, first-out basis (generally, total conversions and rollovers from the earliest year first). … Taxable portion (the amount required to be included in gross income because of the conversion or rollover) first. Nontaxable portion. Earnings on contributions.',
+    }, {
+      kind: 'irsPublication',
+      citation: 'IRS Publication 590-B (2025), Aggregation rules',
+      url: 'https://www.irs.gov/publications/p590b',
+      quotedText:
+        'Add together all conversion and rollover contributions made during the year.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-25',
+    verifiedOn: '2026-09-09',
     implementedBy: [
       'packages/engine/src/strategies/rothBasis.ts',
       'packages/engine/src/projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts',

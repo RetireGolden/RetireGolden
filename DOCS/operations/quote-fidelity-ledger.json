@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-09-09T10:38:32.491Z",
-  "recordCount": 450,
+  "generatedAt": "2026-09-09T13:21:05.201Z",
+  "recordCount": 451,
   "urlCount": 360,
   "fetched": 0,
   "cached": 360,
-  "entryCount": 1338,
+  "entryCount": 1345,
   "counts": {
-    "EXACT": 936,
+    "EXACT": 943,
     "PUNCTUATION": 42,
     "PDF-WORD-LEVEL": 253,
     "ELISION-EXACT": 89,
@@ -2359,6 +2359,26 @@
     },
     {
       "id": "irc-4974-rmd-shortfall-excise-tax",
+      "citation": "Treas. Reg. 54.4974-1(g)(2)",
+      "host": "www.ecfr.gov",
+      "url": "https://www.ecfr.gov/current/title-26/section-54.4974-1",
+      "quoteSha256": "0fc6348ad18709ef",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-4974-rmd-shortfall-excise-tax",
+      "citation": "Treas. Reg. 54.4974-1(g)(3)",
+      "host": "www.ecfr.gov",
+      "url": "https://www.ecfr.gov/current/title-26/section-54.4974-1",
+      "quoteSha256": "4abc14f1e39b61a6",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-4974-rmd-shortfall-excise-tax",
       "citation": "2025 Instructions for Form 5329, Part IX",
       "host": "www.irs.gov",
       "url": "https://www.irs.gov/pub/irs-pdf/i5329.pdf",
@@ -2708,6 +2728,46 @@
       "diagnosis": null
     },
     {
+      "id": "irc-401-a-9-H-iii-in-horizon-beneficiary-death-successor-clock",
+      "citation": "Pub. L. 116-94, div. O, sec. 401(b)(1)",
+      "host": "www.govinfo.gov",
+      "url": "https://www.govinfo.gov/content/pkg/PLAW-116publ94/html/PLAW-116publ94.htm",
+      "quoteSha256": "71ab2d0de03d81cc",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-401-a-9-H-iii-in-horizon-beneficiary-death-successor-clock",
+      "citation": "IRC 401(a)(9)(H)(iii)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section401&num=0&edition=prelim",
+      "quoteSha256": "f4e1be5a82fca8ee",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-401-a-9-H-iii-in-horizon-beneficiary-death-successor-clock",
+      "citation": "Treas. Reg. 1.401(a)(9)-5(e)(1)",
+      "host": "www.ecfr.gov",
+      "url": "https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-5",
+      "quoteSha256": "e12ee1b29870ea18",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-401-a-9-H-iii-in-horizon-beneficiary-death-successor-clock",
+      "citation": "Treas. Reg. 1.401(a)(9)-5(e)(3)",
+      "host": "www.ecfr.gov",
+      "url": "https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-5",
+      "quoteSha256": "a410b8a913c99467",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
       "id": "treas-reg-1-401-a-9-9-d-joint-life-table-divisor-literals",
       "citation": "Treas. Reg. 1.401(a)(9)-9(d), Table 3",
       "host": "www.ecfr.gov",
@@ -3015,6 +3075,16 @@
       "quoteSha256": "9ddb1c0a1e54aa56",
       "verdict": "ELISION-EXACT",
       "detail": "2 elision segments, every one a literal substring",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-408A-d-4-B-same-year-conversion-aggregation",
+      "citation": "IRS Publication 590-B (2025), Aggregation rules",
+      "host": "www.irs.gov",
+      "url": "https://www.irs.gov/publications/p590b",
+      "quoteSha256": "9965c93e4ffe5442",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {

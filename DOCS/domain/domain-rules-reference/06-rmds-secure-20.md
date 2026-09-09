@@ -154,7 +154,9 @@
   apply the greater-of-owner test when facts support it
   (`treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy`, settled for classified facts); EDB
   life-expectancy uses the beneficiary's expectancy (`irc-401-a-9-E-ii-eligible-designated-beneficiary`, settled
-  for classified facts). **Fail closed:** death before 2020, successor beneficiary; pre-RBD
+  for classified facts). **Fail closed:** death before 2020; an initial successor beneficiary at
+  classification (matrix X2); an eligible designated beneficiary's in-horizon death
+  (`irc-401-a-9-H-iii-in-horizon-beneficiary-death-successor-clock`); pre-RBD
   non-designated beneficiaries under the five-year rule
   (`irc-401-a-9-B-ii-non-designated-beneficiary-five-year-rule`,
   `treas-reg-54-4974-1-c-five-year-deadline-rmd`); post-RBD estates, trusts, and other entity
