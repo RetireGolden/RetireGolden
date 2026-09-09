@@ -492,17 +492,24 @@ describe('contributions', () => {
 
   // IRC 415(c)(1) caps ANNUAL ADDITIONS -- 415(c)(2) defines those as employer
   // contributions plus employee contributions plus forfeitures -- at the LESSER
-  // of the dollar amount and 100 percent of compensation. The cap is on the
-  // total, not on the match, which is what makes the pay prong bite so hard:
-  // deferrals consume it first and the match gets only what is left.
-  //
-  // Wages 30,000, a 200 percent match on all pay. Deferrals reach 24,500:
-  //   pay prong binds:     24,500 + 5,500  = 30,000, exactly the pay
-  //   dollar prong alone:  24,500 + 47,500 = 72,000, more than twice the pay
+  // of the dollar amount and 100 percent of compensation. Two coordinates pin
+  // the pay prong:
+  //   wages $30,000, 200% match on all pay, deferrals reach $24,500:
+  //     pay prong binds total additions at $30,000, not $72,000;
+  //   wages $20,000, no match, $24,500 requested:
+  //     pay prong binds the deferral at $20,000, not $24,500 under 402(g) alone.
   describeRule('irc-415-c-1-annual-additions-lesser-of', {
-    readings: { totalCappedByCompensation: 30_000, totalCappedByDollarLimit: 72_000 },
-    accepted: 'totalCappedByCompensation',
-    note: 'the cap binds total additions, not the match alone',
+    readings: {
+      statutory: {
+        totalAdditionsAtThirtyThousandCompensation: 30_000,
+        deferralAtTwentyThousandCompensation: 20_000,
+      },
+      rejectedDollarProngAlone: {
+        totalAdditionsAtThirtyThousandCompensation: 72_000,
+        deferralAtTwentyThousandCompensation: 24_500,
+      },
+    },
+    accepted: 'statutory',
   }, ({ accepted, readings }) => {
     it('never lets total additions exceed the participant pay', () => {
       const plan = basePlan()
@@ -526,25 +533,13 @@ describe('contributions', () => {
       const year = result.years[0]!
       const annualAdditions = year.contributions + year.employerMatch
 
-      expect(annualAdditions).toBeCloseTo(accepted, 6)
-      expect(annualAdditions).not.toBeCloseTo(readings.totalCappedByDollarLimit, 6)
+      expect(annualAdditions).toBeCloseTo(accepted.totalAdditionsAtThirtyThousandCompensation, 6)
+      expect(annualAdditions).not.toBeCloseTo(
+        readings.rejectedDollarProngAlone.totalAdditionsAtThirtyThousandCompensation,
+        6,
+      )
     })
-  })
 
-  // The same cap, reached without a match at all. 415(c)(2)(B) puts "the
-  // employee contributions" inside annual additions, so the pay prong binds the
-  // deferral itself -- there is no match left to zero out. This is the case a
-  // fixture that only watches the match cannot see: a participant paid less
-  // than the 402(g) limit would otherwise defer more than they earned.
-  //
-  // Wages 20,000, no match, 24,500 asked for. Age 46, so no catch-up:
-  //   pay prong binds:           20,000, exactly the pay
-  //   402(g) limit alone binds:  24,500, more than the participant earned
-  describeRule('irc-415-c-1-annual-additions-lesser-of', {
-    readings: { deferralCappedByCompensation: 20_000, deferralCappedByDeferralLimitOnly: 24_500 },
-    accepted: 'deferralCappedByCompensation',
-    note: 'the pay prong binds deferrals too',
-  }, ({ accepted, readings }) => {
     it('binds the deferral itself, not only the match', () => {
       const plan = basePlan()
       plan.household.people[0]! = {
@@ -566,8 +561,11 @@ describe('contributions', () => {
       const year = result.years[0]!
 
       expect(year.employerMatch).toBeCloseTo(0, 6)
-      expect(year.contributions).toBeCloseTo(accepted, 6)
-      expect(year.contributions).not.toBeCloseTo(readings.deferralCappedByDeferralLimitOnly, 6)
+      expect(year.contributions).toBeCloseTo(accepted.deferralAtTwentyThousandCompensation, 6)
+      expect(year.contributions).not.toBeCloseTo(
+        readings.rejectedDollarProngAlone.deferralAtTwentyThousandCompensation,
+        6,
+      )
     })
   })
 
