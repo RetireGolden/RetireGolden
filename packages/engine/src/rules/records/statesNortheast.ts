@@ -637,7 +637,7 @@ export const northeastStateRecords = {
         'for taxable years beginning on or after January 1, 2021, for a taxpayer with gross income in excess of $100,000, but not more than $125,000, 50 percent of payments for a married couple filing jointly, 25 percent of payments for a married couple filing separately, or 37.5 percent of payments for an individual filing as a single taxpayer or individual determining tax pursuant to subsection a. of N.J.S.54A:2-1;',
     }, {
       kind: 'statute',
-      citation: 'N.J.S.54A:6-10(b)(1), P.L.2021 c.129, $125,000–$150,000 band',
+      citation: 'N.J.S.A. 54A:6-10(b)(1), as amended by P.L.2021, c.129 ($125,000–$150,000 band)',
       url: 'https://pub.njleg.gov/bills/2020/AL21/129_.HTM',
       quotedText:
         'for taxable years beginning on or after January 1, 2021, for a taxpayer with gross income in excess of $125,000, but not more than $150,000, 25 percent of payments for a married couple filing jointly, 12.5 percent of payments for a married couple filing separately, or 18.75 percent of payments for an individual filing as a single taxpayer or individual determining tax pursuant to subsection a. of N.J.S.54A:2-1',

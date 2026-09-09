@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-09T18:21:11.455Z",
+  "generatedAt": "2026-09-09T18:49:21.646Z",
   "recordCount": 456,
   "urlCount": 363,
   "fetched": 0,
@@ -10296,7 +10296,7 @@
     },
     {
       "id": "nj-stat-54a-6-10-retirement-income-exclusion",
-      "citation": "N.J.S.54A:6-10(b)(1), P.L.2021 c.129, $125,000–$150,000 band",
+      "citation": "N.J.S.A. 54A:6-10(b)(1), as amended by P.L.2021, c.129 ($125,000–$150,000 band)",
       "host": "pub.njleg.gov",
       "url": "https://pub.njleg.gov/bills/2020/AL21/129_.HTM",
       "quoteSha256": "f50d3fb1401b77db",
@@ -12193,7 +12193,7 @@
     },
     {
       "id": "aca-26-51-307-a-2-ira-age-fifty-nine-and-a-half-gate",
-      "citation": "Ark. Code Ann. 26-51-307(a)(2)(A) (2017 Ark. Acts, Act 141, § 3)",
+      "citation": "Ark. Code Ann. 26-51-307(a)(2)(A) (2017 Ark. Acts, Act 141, § 3; PDF margin line numbers retained)",
       "host": "arkleg.state.ar.us",
       "url": "https://arkleg.state.ar.us/Home/FTPDocument?path=%2FACTS%2F2017R%2FPublic%2FACT141.pdf",
       "quoteSha256": "219fc6933100ff65",
@@ -12213,7 +12213,7 @@
     },
     {
       "id": "aca-26-51-307-a-2-ira-age-fifty-nine-and-a-half-gate",
-      "citation": "Ark. Code Ann. 26-51-307(a)(2)(B), Act 141 §3",
+      "citation": "Ark. Code Ann. 26-51-307(a)(2)(B) (2017 Ark. Acts, Act 141, § 3; PDF margin line numbers retained)",
       "host": "arkleg.state.ar.us",
       "url": "https://arkleg.state.ar.us/Home/FTPDocument?path=%2FACTS%2F2017R%2FPublic%2FACT141.pdf",
       "quoteSha256": "61ea8c1e6933c8ef",
