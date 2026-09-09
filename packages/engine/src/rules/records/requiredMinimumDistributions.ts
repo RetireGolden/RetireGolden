@@ -83,7 +83,7 @@ export const requiredMinimumDistributionRecords = {
   'treas-reg-1-408-8-c-3-spouse-treated-as-owner': {
     title: 'After the election the spouse is the owner for all Code purposes',
     statement:
-      'Following an election under 1.408-8(c)(1) or a deemed election under (c)(2), the surviving spouse is the IRA owner for all purposes under the Code, section 72(t) expressly included. The zero additional-tax rate that IRC 72(t)(2)(A)(ii) gives a death beneficiary no longer applies, and the balance folds into the spouse’s own 408(d)(2) aggregation pool.',
+      'Following an election under 1.408-8(c)(1) or a deemed election under (c)(2), the surviving spouse is the IRA owner for all purposes under the Code, section 72(t) expressly included. The zero additional-tax rate that IRC 72(t)(2)(A)(ii) gives a death beneficiary no longer applies once owner treatment has begun.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -1091,6 +1091,18 @@ export const requiredMinimumDistributionRecords = {
       quotedText:
         'In the case in which the amount not paid is an amount required to be paid by April 1 of a calendar year, such amount is a required minimum distribution for the previous calendar year, i.e., for the employee’s or the individual’s first distribution calendar year. However, the excise tax under section 4974 is imposed for the calendar year containing the last day by which the amount is required to be distributed, i.e., the calendar year containing the employee’s or individual’s required beginning date, even though the preceding calendar year is the calendar year for which the amount is required to be distributed. There is also a required minimum distribution for the calendar year which contains the employee’s or individual’s required beginning date. Such distribution is also required to be made during the calendar year which contains the employee’s or individual’s required beginning date.',
     }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 54.4974-1(g)(2)',
+      url: 'https://www.ecfr.gov/current/title-26/section-54.4974-1',
+      quotedText:
+        'Unless the Commissioner determines otherwise, the tax under paragraph (a) of this section is waived automatically if— (i) The employee\'s or individual\'s death is before the employee\'s or individual\'s required beginning date; (ii) The payee is an individual— (A) Who is an eligible designated beneficiary (as defined in § 1.401(a)(9)-4(e)); (B) Whose required minimum distribution amount for a calendar year is determined under the life expectancy rule described in § 1.401(a)(9)-3(c)(4); and (C) Who did not make an affirmative election to have the life expectancy rule apply as described in § 1.401(a)(9)-3(c)(5)(iii); (iii) The payee fails to satisfy the minimum distribution requirement; and (iv) The payee elects the 10-year rule described in § 1.401(a)(9)-3(c)(3) by the end of the ninth calendar year following the calendar year of the employee\'s death.',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 54.4974-1(g)(3)',
+      url: 'https://www.ecfr.gov/current/title-26/section-54.4974-1',
+      quotedText:
+        'Unless the Commissioner determines otherwise, the tax under paragraph (a) of this section is waived automatically if— (i) A distribution is required to be made to an individual under § 1.401(a)(9)-3 or § 1.401(a)(9)-5 in a calendar year; (ii) The individual who was required to take the distribution described in paragraph (g)(3)(i) of this section died in that calendar year without satisfying that distribution requirement; and (iii) The beneficiary of the individual described in paragraph (g)(3)(ii) of this section takes a corrective distribution in the amount needed to satisfy that distribution requirement no later than the tax filing deadline (including extensions thereof) for the taxable year of that beneficiary that begins with or within that calendar year (or, if later, the last day of the calendar year following that calendar year).',
+    }, {
       kind: 'formInstruction',
       citation: '2025 Instructions for Form 5329, Part IX',
       url: 'https://www.irs.gov/pub/irs-pdf/i5329.pdf',
@@ -1100,7 +1112,7 @@ export const requiredMinimumDistributionRecords = {
     volatility: 'staticStatute',
     effectiveFrom: 2023,
     effectiveThrough: null,
-    verifiedOn: '2026-09-06',
+    verifiedOn: '2026-09-09',
     implementedBy: [
       'packages/engine/src/rmd/rmdApplicablePlanForAccount.ts',
       'packages/engine/src/projection/internal/annualInheritedIraDistributions.ts',
@@ -1634,6 +1646,50 @@ export const requiredMinimumDistributionRecords = {
       'packages/engine/src/model/plan.ts#inheritedBeneficiarySchema',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/strategies/inheritedIra.ts#classifyInheritedRegime',
+    ],
+  },
+
+  'irc-401-a-9-H-iii-in-horizon-beneficiary-death-successor-clock': {
+    title: 'Successor schedules after an in-horizon beneficiary death are not modeled',
+    statement:
+      'Section 401(a)(9)(H)(iii) and Treas. Reg. §1.401(a)(9)-5(e)(3) require the remaining interest to be distributed within ten years after an eligible designated beneficiary\'s death. When the modeled current beneficiary dies during the projection horizon, annualInheritedIraDistributions suppresses forced distributions, publishes requirementKind none with refusalCode successor-clock-out-of-scope, and emits no section 4974 obligations. Successor ten-year schedules and post-death successor RMD amounts are not implemented. This refusal is distinct from the initial beneficiaryClass successor-beneficiary classifier refusal at classifyInheritedRegime, which refuses matrix row X2 at classification time rather than suppressing distributions mid-horizon.',
+    classification: 'outOfScope',
+    outOfScope: { shape: 'typedRefusal' },
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'The planner already knows the inherited class from cache but has no successor identity, successor election, or post-beneficiary-death schedule facts. Suppressing movement and shortfall obligations is therefore a typed refusal rather than a silent zero. inheritedRegime.test.ts continues to own the initial successor-beneficiary classifier path; this record registers only the in-horizon beneficiary-death branch in annualInheritedIraDistributions.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'Pub. L. 116-94, div. O, sec. 401(b)(1)',
+      url: 'https://www.govinfo.gov/content/pkg/PLAW-116publ94/html/PLAW-116publ94.htm',
+      quotedText:
+        'Except as provided in this subsection, the amendments made by this section shall apply to distributions with respect to employees who die after December 31, 2019.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 401(a)(9)(H)(iii)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section401&num=0&edition=prelim',
+      quotedText:
+        'If an eligible designated beneficiary dies before the portion of the employee\'s interest to which this subparagraph applies is entirely distributed, the exception under clause (ii) shall not apply to any beneficiary of such eligible designated beneficiary and the remainder of such portion shall be distributed within 10 years after the death of such eligible designated beneficiary.',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.401(a)(9)-5(e)(3)',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-5',
+      quotedText:
+        'If the employee\'s designated beneficiary is an eligible designated beneficiary (as determined in accordance with § 1.401(a)(9)-4(e)), then the calendar year described in this paragraph (e)(3) is the calendar year that includes the tenth anniversary of the date of the designated beneficiary\'s death.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2020,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-09',
+    implementedBy: [
+      'packages/engine/src/projection/internal/annualInheritedIraDistributions.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualInheritedIraDistributions.ts#annualInheritedIraDistributions',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },
 
