@@ -614,13 +614,13 @@ export const iraBasisAndRolloverRecords = {
     implementedBy: [
       'packages/engine/src/internal/iraAnnuityContractValue.ts',
       'packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts',
-      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/model/planCrossFieldChecks.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/internal/iraAnnuityContractValue.ts#ownedIraFundedAnnuityContracts',
       'packages/engine/src/internal/ownedNonRothIraRuntimeSourceSeries.ts#validateOwnedNonRothIraRuntimeSourceSeries',
-      'packages/engine/src/model/plan.ts#annuitySchema',
+      'packages/engine/src/model/planCrossFieldChecks.ts#checkAccountCrossFieldRules',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },

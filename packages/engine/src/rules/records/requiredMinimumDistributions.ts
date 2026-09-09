@@ -233,12 +233,12 @@ export const requiredMinimumDistributionRecords = {
       citation: 'Treas. Reg. 1.408-8(e)(4)(i)',
       url: 'https://www.law.cornell.edu/cfr/text/26/1.408-8',
       quotedText:
-        'each of the owner’s IRAs is subject to a requirement to distribute a proportionate share of the shortfall for the calendar year to a beneficiary of that IRA, with the proportions based on the account balances determined under paragraph (b)(2) of this section.',
+        'This paragraph (e)(4) provides a special rule that applies if an IRA owner has multiple IRAs (which do not all have identical beneficiary designations) that are aggregated in accordance with paragraph (e)(1) of this section and that IRA owner dies before taking the total required minimum distribution for the calendar year of the IRA owner\'s death (that is, there is a shortfall). In that case, each of the owner\'s IRAs is subject to a requirement to distribute a proportionate share of the shortfall for the calendar year to a beneficiary of that IRA, with the proportions based on the account balances determined under paragraph (b)(2) of this section.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-09-09',
     implementedBy: ['packages/engine/src/actions/beneficiaryTraditionalIraResidualRmdAllocation.ts'],
     implementedByFunctions: [
       'packages/engine/src/actions/beneficiaryTraditionalIraResidualRmdAllocation.ts#prepareBeneficiaryTraditionalIraResidualRmdAllocation',
@@ -1895,7 +1895,8 @@ export const requiredMinimumDistributionRecords = {
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
-    conventionRationale: null,
+    conventionRationale:
+      'Published fixture scope is the single describeRule it inside simulate.inheritedRegimeExecution.test.ts (E6b same-year flip). Sibling its in that file exercise related inherited-regime behavior but are not fixtures for this rule id; the coverage scanner binds only tests inside the describeRule callback wrapper.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'regulation',

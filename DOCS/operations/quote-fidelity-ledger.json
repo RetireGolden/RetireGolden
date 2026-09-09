@@ -1,13 +1,13 @@
 {
-  "generatedAt": "2026-09-09T05:02:51.885Z",
+  "generatedAt": "2026-09-09T08:01:49.079Z",
   "recordCount": 448,
   "urlCount": 357,
   "fetched": 0,
   "cached": 357,
   "entryCount": 1325,
   "counts": {
-    "EXACT": 928,
-    "PUNCTUATION": 43,
+    "EXACT": 929,
+    "PUNCTUATION": 42,
     "PDF-WORD-LEVEL": 249,
     "ELISION-EXACT": 87,
     "ELISION-PUNCTUATION": 8,
@@ -1722,9 +1722,9 @@
       "citation": "Treas. Reg. 1.408-8(e)(4)(i)",
       "host": "www.law.cornell.edu",
       "url": "https://www.law.cornell.edu/cfr/text/26/1.408-8",
-      "quoteSha256": "631fa5030f7b73f8",
-      "verdict": "PUNCTUATION",
-      "detail": "matches only after: apostrophe",
+      "quoteSha256": "4819e28947bf68f2",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -13378,6 +13378,12 @@
     {
       "id": "treas-reg-1-401-a-9-5-joint-life-spouse-sole-beneficiary",
       "citation": "Treas. Reg. 1.401(a)(9)-5",
+      "host": "www.law.cornell.edu",
+      "note": "quote uses U+0027 (') where this host renders U+2019 (’)"
+    },
+    {
+      "id": "treas-reg-1-408-8-e-4-i-year-of-death-proportionate-shortfall",
+      "citation": "Treas. Reg. 1.408-8(e)(4)(i)",
       "host": "www.law.cornell.edu",
       "note": "quote uses U+0027 (') where this host renders U+2019 (’)"
     },
