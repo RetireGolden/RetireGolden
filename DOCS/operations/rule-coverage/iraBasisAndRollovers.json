@@ -1381,16 +1381,16 @@
       "refusalFixtures": [
         {
           "path": "packages/engine/src/strategies/accountEligibility.test.ts",
-          "line": 1721,
+          "line": 1770,
           "note": null,
           "tests": [
             {
               "title": "refuses an inherited source instead of computing a conversion",
-              "line": 1726
+              "line": 1775
             },
             {
               "title": "accepts the same request from an owned IRA, so the refusal is the inherited fact and not the shape of the fixture",
-              "line": 1732
+              "line": 1781
             }
           ]
         }
@@ -1503,20 +1503,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/strategies/accountEligibility.test.ts",
-          "line": 1465,
+          "line": 1514,
           "note": null,
           "tests": [
             {
               "title": "refuses the conversion outright inside the two-year period",
-              "line": 1493
+              "line": 1542
             },
             {
               "title": "lifts the bar on the 24-month anniversary itself",
-              "line": 1500
+              "line": 1549
             },
             {
               "title": "does not reach an ordinary traditional IRA of the same owner",
-              "line": 1506
+              "line": 1555
             }
           ]
         }

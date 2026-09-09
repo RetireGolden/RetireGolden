@@ -217,6 +217,55 @@ describe('contributions / convertibility / RMD eligibility', () => {
     }, 2026)).toBe(false)
   })
 
+  // Pub. L. 116-94 sec. 401(b)(1) is the SECURE Act amendment effective date, not
+  // a legal bar on pre-2020 spouse elections (Treas. Reg. 1.408-8(c)(1)(i)).
+  // The engine nonetheless refuses isTreatAsOwnEffective when ownerDeathYear is
+  // before 2020; the 2019 result is the produced approximation, not the legal answer.
+  describeRule('pl-116-94-div-o-sec-401-b-1-post-2019-inherited-regime-boundary', {
+    readings: {
+      spouseElectionWithoutDeathYearBar: true,
+      modelBoundaryRefusesPre2020Death: false,
+    },
+    accepted: 'spouseElectionWithoutDeathYearBar',
+    produced: 'modelBoundaryRefusesPre2020Death',
+  }, ({ accepted, produced }) => {
+    const electionYear = 2026
+    const spouseElectionFacts = {
+      election: 'treat-as-own' as const,
+      treatAsOwnElectionYear: electionYear,
+      edbCategory: 'surviving-spouse' as const,
+      soleBeneficiary: true,
+      spouseUnlimitedWithdrawalRight: true,
+    }
+
+    it('refuses treat-as-own for pre-2020 owner death despite otherwise valid spouse election facts', () => {
+      expect(isTreatAsOwnEffective({
+        kind: 'ira',
+        inherited: {
+          ownerDeathYear: 2019,
+          beneficiary: spouseElectionFacts,
+        },
+      }, electionYear)).toBe(produced)
+      expect(isTreatAsOwnEffective({
+        kind: 'ira',
+        inherited: {
+          ownerDeathYear: 2019,
+          beneficiary: spouseElectionFacts,
+        },
+      }, electionYear)).not.toBe(accepted)
+    })
+
+    it('permits treat-as-own at the election year once owner death is not before 2020', () => {
+      expect(isTreatAsOwnEffective({
+        kind: 'ira',
+        inherited: {
+          ownerDeathYear: 2020,
+          beneficiary: spouseElectionFacts,
+        },
+      }, electionYear)).toBe(accepted)
+    })
+  })
+
   it('isTreatAsOwnEffective returns false when RBD derivation needs review', () => {
     // Born-1960 owner died 2025 with decedentHadStartedRmds true contradicts
     // derivation (RBD 2036) — classifier refuses; flip never takes effect.

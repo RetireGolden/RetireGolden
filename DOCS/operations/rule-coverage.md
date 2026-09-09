@@ -11,16 +11,16 @@ The registry is the machine-checked chain from a rule to its implementation and 
 
 | Metric | Count |
 | --- | ---: |
-| Total rules | 445 |
-| Classification: approximated | 123 |
+| Total rules | 446 |
+| Classification: approximated | 124 |
 | Classification: outOfScope | 75 |
 | Classification: settled | 243 |
 | Classification: unsettled | 4 |
 | Volatility: annuallyIndexed | 68 |
 | Volatility: awaitingGuidance | 10 |
-| Volatility: staticStatute | 360 |
+| Volatility: staticStatute | 361 |
 | Volatility: sunsetting | 7 |
-| Federal jurisdiction | 327 |
+| Federal jurisdiction | 328 |
 | State jurisdiction total | 118 |
 
 | State jurisdiction | Count |
@@ -174,7 +174,7 @@ None.
 | rmd/applicableAge.ts | 2026-09-05 | Law-derived 70½/July-1949 and age-72 cohort limbs plus IRA RBD-year derivation are registered at treas-reg-1-401-a-9-2-b-2-ii-iii-applicable-age-70-half-and-72 (enforcing applicableAgeAttainYears and deriveRbdComparison). Born-1959 contest, including deriveRbdComparison's conditional comparison/refusal, is now registered at treas-reg-1-401-a-9-2-b-2-v-applicable-age-1959 (adding deriveRbdComparison only; applicableAgeAttainYears sibling listings on treas-reg-1-401-a-9-2-b-2-ii-iii-applicable-age-70-half-and-72, irc-401-a-9-C-v-applicable-age, and treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy unchanged). SECURE 2.0 73/75 tiers on irc-401-a-9-C-v-applicable-age; QCD month-end 70½ on irc-408-d-8-B-ii-age-70-half. Residual: year-granular death-vs-RBD still consumes an asserted RBD-status fact when death falls in the RBD calendar year and does not observe an exact death date inside that year |
 | socialSecurity/maritalBenefits.ts | 2026-09-04 | Living-divorced and ordinary-widow eligibility gates, plus half-PIA pricing, are named on this file. Residual: claimant-has-claimed timing (claimantAge vs claimAge) is an engine convention with no record; survivor amount assembly is delegated to already-registered survivorBenefit.ts/claimFactor.ts/nra.ts without a borrowed pin here |
 | socialSecurity/piaFromEarnings.ts | 2026-09-04 | Initial-computation base window, annual indexed-earnings penny rounding, and computation-year count/five-year dropout with 1951 floor registered as approximations on records/socialSecurityEarnings.ts. Residuals: future unpublished AWI/bend points use awiForYearOrLatest / bendPointsForEligibilityYearOrLatest (missing_awi is unused); disability young-worker dropout, disability-year eligibility/indexing, prior-entitlement termination gaps, childcare dropout, and alternative widow indexing remain unmodeled. Disability freeze and post-entitlement recomputation stay on the socialSecurity shard. |
-| strategies/accountEligibility.ts | 2026-08-25 | SECURE 2020 gate portion of S2 treat-as-own election timing not registered to this file |
+| strategies/accountEligibility.ts | 2026-08-25 | The pre-SECURE S2 helper boundary is registered as pl-116-94-div-o-sec-401-b-1-post-2019-inherited-regime-boundary. The consumer remains partial: the product still does not derive the Treas. Reg. 1.408-8(c)(2) deemed election from required-distribution or contribution history, and this attestation does not claim complete ownership of every eligibility/refusal branch. |
 | strategies/optimizer.ts | 2026-09-05 | Ordinary-bracket PWL registered (irc-1-j-2-progressive-ordinary-rate-schedule); §86 in-solve linearization registered as approximated (irc-86-a-optimizer-taxable-social-security-linearization); senior-deduction phase-out slope registered (irc-151-d-5-C-iii-I-senior-deduction-per-individual-phase-out) with its omitted cap still outside that record; flat 15% LTCG is registered on projection/optimizePlan.ts (irc-1-h-optimizer-flat-fifteen-percent-preferential-rate). IRMAA uniform threshold indexing and beneficiary-month exposure are registered as approximated (usc-42-1395r-i-5-optimizer-uniform-threshold-indexing; usc-42-1395r-i-3-1395w-113-a-7-optimizer-beneficiary-month-exposure). Residual (non-exhaustive): SSA-44 numerical proxy, projected premium-price scaling, top-tier equality handling, and other unlisted linearizations/constraints (e.g. state-bracket PWL) remain unregistered here; IRMAA MAGI omits the direct §135/§911/§931/§933 without-regard addbacks (ledger-feed gap registered at usc-42-1395r-i-4-a-i-irmaa-magi-foreign-exclusion-addback, not pinned here); the provisional-income scalar affects taxable SS, not the IRMAA MAGI base directly; ACA MAGI cap and RMD floor divisor are documented policy/model residuals in DOCS/features/optimizer.md §"Documented simplifications" (no registry record or errorDirection — headroom restriction and floor distortion proved; taxpayer-tax direction has not been established) |
 | strategies/rothConversion.ts | 2026-09-06 | Bracket/IRMAA/ACA FPL/senior-deduction sizing via computeFederalTax; optional top-level broad and narrow foreign-exclusion addbacks transport into federal pricing with ACA-local nested compatibility fallback; sizing metrics unchanged by narrow transport; no record names this file; annual resolver transport remains pending and is not pinned here |
 | tax/federalTax.ts | 2026-09-06 | implements §86 SS inclusion, NIIT, AMT screen, senior-deduction phase-out, LTCG stacking with records naming it, but §170(b)(1)(I)(i)-(vi) category waterfall is applied only in the ledger file its record names; foreignExclusionAddback is the broad addback for §86, §151 senior MAGI, and zero-rate LTCG headroom; optional niitSection911A1NetAddback supplies the §1411(d) NIIT threshold leg with omitted-narrow reuse of the broad amount as a disclosed compatibility approximation (irc-1411-d-modified-agi-foreign-exclusion-addback); calculator accepts characterized inputs only and has no annual support policy |
@@ -198,7 +198,7 @@ Per-rule payloads are sharded one file per record module under `DOCS/operations/
 | rule-coverage/investmentIncomeAndBasis.json | 31 |
 | rule-coverage/iraBasisAndRollovers.json | 15 |
 | rule-coverage/medicareAndHealthCoverage.json | 18 |
-| rule-coverage/requiredMinimumDistributions.json | 41 |
+| rule-coverage/requiredMinimumDistributions.json | 42 |
 | rule-coverage/rothAccounts.json | 13 |
 | rule-coverage/socialSecurity.json | 49 |
 | rule-coverage/socialSecurityEarnings.json | 3 |
@@ -212,7 +212,7 @@ Per-rule payloads are sharded one file per record module under `DOCS/operations/
 
 ## Re-verification due dates
 
-The 25 earliest due dates are shown below (445 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
+The 25 earliest due dates are shown below (446 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
 
 | Rule | Volatility | Verified on | Due on |
 | --- | --- | --- | --- |
@@ -252,16 +252,16 @@ Version 5 is a breaking discriminator for strict version checks: manifest.rules 
 
 ## Quote fidelity
 
-Committed ledger generated at 2026-09-08T23:21:16.522Z over 1307 authority entries (1 fetched live, 354 from cache).
+Committed ledger generated at 2026-09-09T00:42:35.478Z over 1311 authority entries (0 fetched live, 356 from cache).
 
-3 serious, 58 advisory, 1246 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
+3 serious, 58 advisory, 1250 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
 not treated as a CI gate; how to read each verdict: DOCS/operations/quote-fidelity.md.
 
 | Verdict | Class | Count |
 | --- | --- | ---: |
 | ELISION-EXACT | ok | 85 |
 | ELISION-PUNCTUATION | advisory | 8 |
-| EXACT | ok | 913 |
+| EXACT | ok | 917 |
 | PDF-NOT-VERIFIABLE | advisory | 7 |
 | PDF-WORD-LEVEL | ok | 248 |
 | PUNCTUATION | advisory | 43 |

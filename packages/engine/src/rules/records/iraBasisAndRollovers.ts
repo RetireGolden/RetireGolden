@@ -322,7 +322,7 @@ export const iraBasisAndRolloverRecords = {
   'irc-408-d-3-C-ii-surviving-spouse-not-inherited': {
     title: 'A surviving spouse does not hold an inherited IRA',
     statement:
-      'An IRA acquired by reason of death is treated as inherited only where the acquiring individual was not the surviving spouse of the decedent. A surviving spouse is therefore outside the inherited-IRA rules: the rollover and conversion bar of 408(d)(3)(C)(i) does not reach them, so Form 8606 line 8 can be non-zero for a spousal pool.',
+      'An IRA acquired by reason of death is treated as inherited only where the acquiring individual was not the surviving spouse of the decedent. A surviving spouse is therefore outside the inherited-IRA definition in 408(d)(3)(C)(ii), so the inherited-IRA rollover bar in 408(d)(3)(C)(i) does not reach them.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,

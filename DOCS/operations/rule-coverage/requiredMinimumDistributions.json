@@ -652,7 +652,7 @@
       "title": "SECURE Act ten-year rule for a designated beneficiary",
       "classification": "settled",
       "errorDirection": null,
-      "conventionRationale": "Two limits on how far this record reaches, stated so it is not read as covering more than it does. First, the engine treats every inherited account as held by a beneficiary who is not an eligible designated beneficiary, because the plan model carries no beneficiary category. A surviving spouse, a minor child of the employee, a disabled or chronically ill beneficiary, or a beneficiary not more than ten years younger than the decedent is entitled under 401(a)(9)(H)(ii) to the life-expectancy payout in (B)(iii), and will be shown a faster forced drawdown than the law requires. Second, the size of the annual amount required in years one through nine when the decedent had reached the required beginning date is a separate question from the ten-year deadline registered here. The divisor is registered as treas-reg-1-401-a-9-5-d-3-beneficiary-single-life-denominator, and the greater-of test it does not apply as treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy.",
+      "conventionRationale": "Two limits on how far this record reaches, stated so it is not read as covering more than it does. First, an account using the legacy two-field inherited block without beneficiary facts remains on the labeled non-EDB-style legacy-planning-approximation. The current Plan schema also carries beneficiaryClass, edbCategory, election, sole-beneficiary, withdrawal-right, and beneficiary-age facts, and classifyInheritedRegime uses those facts for spouse and eligible-designated-beneficiary paths. This record’s legacy fixture therefore demonstrates only that fallback path; it must not be read as saying every inherited account lacks a beneficiary category or that classified spouse and EDB schedules are unmodeled. Second, the size of the annual amount required in years one through nine when the decedent had reached the required beginning date is a separate question from the ten-year deadline registered here. The divisor is registered as treas-reg-1-401-a-9-5-d-3-beneficiary-single-life-denominator, and the greater-of test omitted only on the legacy path is registered as treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -710,20 +710,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/strategies/accountEligibility.test.ts",
-          "line": 1518,
+          "line": 1567,
           "note": null,
           "tests": [
             {
               "title": "keeps an inherited account off the owner RMD schedule entirely",
-              "line": 1536
+              "line": 1585
             },
             {
               "title": "sweeps the balance in the tenth year after the death and not the fifth",
-              "line": 1541
+              "line": 1590
             },
             {
               "title": "forces nothing in the interim years when the decedent had not begun distributions",
-              "line": 1547
+              "line": 1596
             }
           ]
         }
@@ -745,6 +745,11 @@
           "kind": "statute",
           "citation": "IRC 408(a)(6)",
           "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.401(a)(9)-3(c)(3)",
+          "url": "https://www.irs.gov/irb/2024-33_IRB"
         }
       ]
     },
@@ -1342,6 +1347,73 @@
           "kind": "irsNotice",
           "citation": "Notice 2024-35, section I",
           "url": "https://www.irs.gov/pub/irs-drop/n-24-35.pdf"
+        }
+      ]
+    },
+    {
+      "id": "pl-116-94-div-o-sec-401-b-1-post-2019-inherited-regime-boundary",
+      "title": "The engine uses the SECURE Act’s general post-2019 death boundary as a legacy inherited-IRA model cutoff",
+      "classification": "approximated",
+      "errorDirection": "bothDirections",
+      "conventionRationale": "The code reuses the general effective date of the SECURE Act beneficiary-distribution amendments as the cutoff for its X1 legacy inherited-account model. Pub. L. 116-94 section 401(b)(1) supports that amendment date, while current Treas. Reg. 1.408-8(c)(1)-(3) supplies the spouse election and its effect without that owner-death-year condition. Depending on the spouse’s age, basis, RMD position, later withdrawals, and conversion choices, keeping the account outside the spouse’s owned pool can raise or lower modeled tax, so the direction is not one-sided.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2020,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-08",
+      "dueOn": "2027-09-08",
+      "implementedBy": [
+        "packages/engine/src/strategies/accountEligibility.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/strategies/accountEligibility.ts",
+          "functions": [
+            {
+              "name": "isTreatAsOwnEffective",
+              "line": 1229
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/strategies/accountEligibility.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/strategies/accountEligibility.test.ts",
+          "line": 224,
+          "note": null,
+          "tests": [
+            {
+              "title": "refuses treat-as-own for pre-2020 owner death despite otherwise valid spouse election facts",
+              "line": 241
+            },
+            {
+              "title": "permits treat-as-own at the election year once owner death is not before 2020",
+              "line": 258
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "Pub. L. 116-94, div. O, sec. 401(b)(1)",
+          "url": "https://www.govinfo.gov/content/pkg/PLAW-116publ94/html/PLAW-116publ94.htm"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.408-8(c)(1)(i)",
+          "url": "https://www.irs.gov/irb/2024-33_IRB"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.408-8(c)(3)",
+          "url": "https://www.irs.gov/irb/2024-33_IRB"
         }
       ]
     },
@@ -2822,7 +2894,7 @@
       "title": "Spousal deemed election on an undistributed post-death-year amount",
       "classification": "settled",
       "errorDirection": null,
-      "conventionRationale": "The regulation measures the trigger per calendar year, so an unobserved year is refused rather than assumed satisfied: an unobserved year is exactly the year in which the deemed election would have occurred.",
+      "conventionRationale": "The standalone evaluator refuses an unobserved calendar year rather than assuming the deemed-election trigger is absent. The annual projection does not call this evaluator or infer a deemed election from required-distribution or contribution history; it uses an explicit treatAsOwnElectionYear Plan fact. That missing production integration remains open, so this record must not be read as end-to-end product enforcement of the deemed-election trigger.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",

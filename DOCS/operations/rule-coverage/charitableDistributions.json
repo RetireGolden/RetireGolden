@@ -1448,20 +1448,20 @@
       "refusalFixtures": [
         {
           "path": "packages/engine/src/strategies/accountEligibility.test.ts",
-          "line": 1823,
+          "line": 1872,
           "note": "the direct-payment limb, not the missing attestation",
           "tests": [
             {
               "title": "refuses a direct trustee payment to a split-interest entity",
-              "line": 1849
+              "line": 1898
             },
             {
               "title": "does not let the direct-payment attestation buy the entity class back",
-              "line": 1855
+              "line": 1904
             },
             {
               "title": "accepts the same transfer to an ordinary public charity, so the refusal is the entity class",
-              "line": 1863
+              "line": 1912
             }
           ]
         }
@@ -1539,20 +1539,20 @@
       "refusalFixtures": [
         {
           "path": "packages/engine/src/strategies/accountEligibility.test.ts",
-          "line": 1778,
+          "line": 1827,
           "note": null,
           "tests": [
             {
               "title": "requires the affirmative not-a-split-interest attestation the record describes",
-              "line": 1784
+              "line": 1833
             },
             {
               "title": "refuses a destination the request itself names as a split-interest entity",
-              "line": 1802
+              "line": 1851
             },
             {
               "title": "stays quiet on an ordinary public charity with the attestation given",
-              "line": 1818
+              "line": 1867
             }
           ]
         }
@@ -1645,28 +1645,28 @@
       "refusalFixtures": [
         {
           "path": "packages/engine/src/strategies/accountEligibility.test.ts",
-          "line": 1868,
+          "line": 1917,
           "note": null,
           "tests": [
             {
               "title": "refuses an inherited source rather than borrowing the donor own-IRA basis pool",
-              "line": 1874
+              "line": 1923
             },
             {
               "title": "does not mistake the inherited IRA for a non-IRA source",
-              "line": 1880
+              "line": 1929
             },
             {
               "title": "accepts the same request from the donor own IRA, so the refusal is the inherited fact",
-              "line": 1887
+              "line": 1936
             },
             {
               "title": "allocates an owned traditional IRA and blocks an inherited source as qcd-inherited-basis-unsupported",
-              "line": 1891
+              "line": 1940
             },
             {
               "title": "refuses an effective spouse treat-as-own inherited IRA at eligibility and identity allocation",
-              "line": 1908
+              "line": 1957
             }
           ]
         }
@@ -1832,20 +1832,20 @@
       "refusalFixtures": [
         {
           "path": "packages/engine/src/strategies/accountEligibility.test.ts",
-          "line": 1740,
+          "line": 1789,
           "note": null,
           "tests": [
             {
               "title": "refuses a Roth source instead of proving how much would otherwise be includible",
-              "line": 1745
+              "line": 1794
             },
             {
               "title": "does not confuse the Roth source with the generic not-an-IRA refusal",
-              "line": 1751
+              "line": 1800
             },
             {
               "title": "allocates an owned traditional IRA and blocks a Roth source as qcd-source-not-ira",
-              "line": 1761
+              "line": 1810
             }
           ]
         }
@@ -1918,16 +1918,16 @@
       "refusalFixtures": [
         {
           "path": "packages/engine/src/strategies/accountEligibility.test.ts",
-          "line": 1944,
+          "line": 1993,
           "note": null,
           "tests": [
             {
               "title": "refuses a QCD below age 70½ instead of pricing an early distribution",
-              "line": 1955
+              "line": 2004
             },
             {
               "title": "accepts the same request once the donor is past 70½, which is also past 59½",
-              "line": 1961
+              "line": 2010
             }
           ]
         }

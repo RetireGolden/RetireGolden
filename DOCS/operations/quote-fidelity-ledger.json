@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-09-08T23:21:16.522Z",
-  "recordCount": 445,
-  "urlCount": 355,
-  "fetched": 1,
-  "cached": 354,
-  "entryCount": 1307,
+  "generatedAt": "2026-09-09T00:42:35.478Z",
+  "recordCount": 446,
+  "urlCount": 356,
+  "fetched": 0,
+  "cached": 356,
+  "entryCount": 1311,
   "counts": {
-    "EXACT": 913,
+    "EXACT": 917,
     "PUNCTUATION": 43,
     "PDF-WORD-LEVEL": 248,
     "ELISION-EXACT": 85,
@@ -1638,6 +1638,36 @@
       "diagnosis": null
     },
     {
+      "id": "pl-116-94-div-o-sec-401-b-1-post-2019-inherited-regime-boundary",
+      "citation": "Pub. L. 116-94, div. O, sec. 401(b)(1)",
+      "host": "www.govinfo.gov",
+      "url": "https://www.govinfo.gov/content/pkg/PLAW-116publ94/html/PLAW-116publ94.htm",
+      "quoteSha256": "71ab2d0de03d81cc",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "pl-116-94-div-o-sec-401-b-1-post-2019-inherited-regime-boundary",
+      "citation": "Treas. Reg. 1.408-8(c)(1)(i)",
+      "host": "www.irs.gov",
+      "url": "https://www.irs.gov/irb/2024-33_IRB",
+      "quoteSha256": "cdb48b2e491fe52d",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "pl-116-94-div-o-sec-401-b-1-post-2019-inherited-regime-boundary",
+      "citation": "Treas. Reg. 1.408-8(c)(3)",
+      "host": "www.irs.gov",
+      "url": "https://www.irs.gov/irb/2024-33_IRB",
+      "quoteSha256": "8166a803b2873266",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
       "id": "treas-reg-1-401-a-9-5-joint-life-spouse-sole-beneficiary",
       "citation": "Treas. Reg. 1.401(a)(9)-5",
       "host": "www.law.cornell.edu",
@@ -1813,6 +1843,16 @@
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim",
       "quoteSha256": "6793876521d14f4e",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-401-a-9-H-designated-beneficiary-ten-year-rule",
+      "citation": "Treas. Reg. 1.401(a)(9)-3(c)(3)",
+      "host": "www.irs.gov",
+      "url": "https://www.irs.gov/irb/2024-33_IRB",
+      "quoteSha256": "82c9f3c44117d05d",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null
