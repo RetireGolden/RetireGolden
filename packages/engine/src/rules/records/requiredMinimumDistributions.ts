@@ -1895,8 +1895,7 @@ export const requiredMinimumDistributionRecords = {
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
-    conventionRationale:
-      'Published fixture scope is the single describeRule it inside simulate.inheritedRegimeExecution.test.ts (E6b same-year flip). Sibling its in that file exercise related inherited-regime behavior but are not fixtures for this rule id; the coverage scanner binds only tests inside the describeRule callback wrapper.',
+    conventionRationale: null,
     jurisdiction: 'federal',
     authority: [{
       kind: 'regulation',

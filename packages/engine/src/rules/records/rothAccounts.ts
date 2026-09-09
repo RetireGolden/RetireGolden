@@ -52,7 +52,7 @@ export const rothAccountRecords = {
     contraryReading: null,
     errorDirection: 'understatesTax',
     conventionRationale:
-      'Recorded as an explicit gap rather than left silent, because the direction of the error is knowable: a high income household will show Roth contributions it could not actually make, and the overstatement grows with income. The reduction runs off adjusted gross income, which the projection determines only after the contribution loop has already run, so the phase-out is approximated rather than modeled in the same pass.',
+      'Recorded as an explicit gap rather than left silent, because the direction of the error is knowable: a high income household will show Roth contributions it could not actually make, and the overstatement grows with income. The engine never applies the section 408A(c)(3) phase-out in any pass; there is no later clawback once adjusted gross income is known, and the classification stays approximated.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',

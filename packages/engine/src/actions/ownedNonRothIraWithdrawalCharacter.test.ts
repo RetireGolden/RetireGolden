@@ -28,12 +28,13 @@ const INHERITED_IRA_YEAR_END_BALANCE = 80
 const OWNED_POOL_BASIS = 50
 const LINE7_DISTRIBUTION = 10
 const OWNED_OPENING_BEFORE_DISTRIBUTION = OWNED_YEAR_END_BALANCE + LINE7_DISTRIBUTION
-const OWNED_POOL_DENOMINATOR = OWNED_YEAR_END_BALANCE + LINE7_DISTRIBUTION
 const REJECTED_INHERITED_INCLUSION_DENOMINATOR =
   OWNED_YEAR_END_BALANCE + INHERITED_IRA_YEAR_END_BALANCE + LINE7_DISTRIBUTION
 const TAX_YEAR = 2030
 
-function classifyOwnedPoolWithInheritedSiblingViaProductionPath() {
+function buildOwnedPoolWithInheritedSiblingPostCandidateInput(
+  options: { includeInheritedYearEndBalance: boolean },
+) {
   const ownerPersonId = asPersonId('p1')
   const ownedIraId = asAccountId('owned-ira')
   const inheritedIraId = asAccountId('inherited-ira')
@@ -147,7 +148,38 @@ function classifyOwnedPoolWithInheritedSiblingViaProductionPath() {
     throw new Error(`movement staging failed: ${movementCandidate.status}`)
   }
 
-  const deadlineDate = ordinaryFederalFilingDeadline(TAX_YEAR) ?? `${TAX_YEAR + 1}-04-15`
+  const deadlineDate = ordinaryFederalFilingDeadline(TAX_YEAR)
+  if (deadlineDate === null) {
+    throw new Error(
+      `fixture tax year ${TAX_YEAR} must have a supported ordinary federal filing deadline`,
+    )
+  }
+  const ownedYearEndBalance = {
+    predicate: 'ownedNonRothIraForm8606ApplicableTaxYearEndBalance' as const,
+    planId,
+    ownerPersonId,
+    sourceAccountId: ownedIraId,
+    taxYear: TAX_YEAR,
+    ledgerRunId,
+    ledgerPhase: 'form8606ApplicableTaxYearEndAfterCanonicalMovementCandidate' as const,
+    asOfDate: `${TAX_YEAR}-12-31`,
+    yearEndApplicableBalanceAmount: asUsdCents(OWNED_YEAR_END_BALANCE),
+    evidenceId: 'year-end-owned',
+    upstreamEvidenceId: 'year-end-owned-upstream',
+  }
+  const inheritedYearEndBalance = {
+    predicate: 'ownedNonRothIraForm8606ApplicableTaxYearEndBalance' as const,
+    planId,
+    ownerPersonId,
+    sourceAccountId: inheritedIraId,
+    taxYear: TAX_YEAR,
+    ledgerRunId,
+    ledgerPhase: 'form8606ApplicableTaxYearEndAfterCanonicalMovementCandidate' as const,
+    asOfDate: `${TAX_YEAR}-12-31`,
+    yearEndApplicableBalanceAmount: asUsdCents(INHERITED_IRA_YEAR_END_BALANCE),
+    evidenceId: 'year-end-inherited',
+    upstreamEvidenceId: 'year-end-inherited-upstream',
+  }
   const postCandidateInput = {
     inventoryInput,
     movementInput,
@@ -181,19 +213,9 @@ function classifyOwnedPoolWithInheritedSiblingViaProductionPath() {
         evidenceId: `candidate-balance-${balance.sourceAccountId}`,
         upstreamEvidenceId: `candidate-balance-${balance.sourceAccountId}-upstream`,
       })),
-      yearEndApplicableBalances: [{
-        predicate: 'ownedNonRothIraForm8606ApplicableTaxYearEndBalance' as const,
-        planId,
-        ownerPersonId,
-        sourceAccountId: ownedIraId,
-        taxYear: TAX_YEAR,
-        ledgerRunId,
-        ledgerPhase: 'form8606ApplicableTaxYearEndAfterCanonicalMovementCandidate' as const,
-        asOfDate: `${TAX_YEAR}-12-31`,
-        yearEndApplicableBalanceAmount: asUsdCents(OWNED_YEAR_END_BALANCE),
-        evidenceId: 'year-end-owned',
-        upstreamEvidenceId: 'year-end-owned-upstream',
-      }],
+      yearEndApplicableBalances: options.includeInheritedYearEndBalance
+        ? [ownedYearEndBalance, inheritedYearEndBalance]
+        : [ownedYearEndBalance],
       evidenceId: 'post-candidate-snapshot',
       upstreamEvidenceId: 'post-candidate-snapshot-upstream',
     },
@@ -233,8 +255,21 @@ function classifyOwnedPoolWithInheritedSiblingViaProductionPath() {
     },
   }
 
-  const built = buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput(
+  return {
+    plan,
+    ownedIraId,
+    inheritedIraId,
+    ownedPoolSourceAccountIds: ownedPool.sourceAccountIds,
     postCandidateInput,
+  }
+}
+
+function classifyOwnedPoolWithInheritedSiblingViaProductionPath() {
+  const fixture = buildOwnedPoolWithInheritedSiblingPostCandidateInput({
+    includeInheritedYearEndBalance: false,
+  })
+  const built = buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput(
+    fixture.postCandidateInput,
   )
   if (built.status !== 'postCandidateClassificationInputBuilt') {
     throw new Error(
@@ -243,10 +278,7 @@ function classifyOwnedPoolWithInheritedSiblingViaProductionPath() {
   }
 
   return {
-    plan,
-    ownedIraId,
-    inheritedIraId,
-    ownedPoolSourceAccountIds: ownedPool.sourceAccountIds,
+    ...fixture,
     classification: classifyOwnedNonRothIraAnnualWithdrawals(built.classificationInput),
   }
 }
@@ -380,8 +412,8 @@ describe('classifyOwnedNonRothIraAnnualWithdrawals', () => {
     },
     accepted: 'aggregatedOneContract',
   }, ({ accepted, readings }) => {
-    it('derives one annual denominator across every owned non-Roth IRA', () => {
-      const result = classifyOwnedNonRothIraAnnualWithdrawals(input({
+    it('derives one annual denominator across owned non-Roth IRAs and excludes inherited balances', () => {
+      const multiOwnedResult = classifyOwnedNonRothIraAnnualWithdrawals(input({
         poolMembers: [
           { ...member('traditional', 'traditional'), yearEndApplicableBalanceAmount: asUsdCents(100) },
           { ...member('sep', 'sep'), yearEndApplicableBalanceAmount: asUsdCents(50) },
@@ -404,27 +436,24 @@ describe('classifyOwnedNonRothIraAnnualWithdrawals', () => {
         line7Distributions: [activity('traditional', 'ira-traditional', 10)],
         line8Conversions: [activity('conversion', 'ira-sep', 5, '2030-07-01')],
       }))
-      expect(result.annualBasisEvidence.annualBasisDenominatorAmount)
-        .toBe(accepted.multiOwnedDenominator)
-      expect(result.annualBasisEvidence.annualBasisDenominatorAmount)
-        .not.toBe(readings.perAccountSeparately.multiOwnedDenominator)
-    })
 
-    // Pub. 590-B: a beneficiary cannot combine inherited-IRA basis with an owned
-    // pool. Worksheet: owned traditional IRA (100c year-end) plus a separate
-    // inherited IRA (80c) in Plan data that must stay out of the owned
-    // §408(d)(2) aggregate. A 10c distribution yields denominator 110c; wrongly
-    // sweeping the inherited 80c into the owner pool would yield 190c. With
-    // 50c basis, nearest-cent half-up on 50/110 × 10 recovers 5c of basis
-    // (not 3c on the rejected 50/190 × 10 reading).
-    it('keeps an inherited IRA balance out of the owned annual denominator', () => {
       const {
         plan,
         ownedIraId,
         inheritedIraId,
         ownedPoolSourceAccountIds,
-        classification: result,
+        classification: inheritedSiblingResult,
       } = classifyOwnedPoolWithInheritedSiblingViaProductionPath()
+
+      const observed = {
+        multiOwnedDenominator:
+          multiOwnedResult.annualBasisEvidence.annualBasisDenominatorAmount,
+        ownedWithInheritedDenominator:
+          inheritedSiblingResult.annualBasisEvidence.annualBasisDenominatorAmount,
+      }
+      expect(observed).toEqual(accepted)
+      expect(observed).not.toEqual(readings.perAccountSeparately)
+      expect(observed).not.toEqual(readings.rejectedIncludesInheritedIraBalance)
 
       const inheritedInPlan = plan.accounts.find(
         (account) => account.id === inheritedIraId,
@@ -434,26 +463,43 @@ describe('classifyOwnedNonRothIraAnnualWithdrawals', () => {
       }
       expect(inheritedInPlan.inherited).toBeDefined()
       expect(ownedPoolSourceAccountIds).toEqual([ownedIraId])
-      expect(result.annualBasisEvidence.poolMembers.map((item) => item.sourceAccountId))
-        .toEqual([ownedIraId])
-      expect(result.annualBasisEvidence.basisNumeratorAmount).toBe(OWNED_POOL_BASIS)
-      expect(result.annualBasisEvidence.annualBasisDenominatorAmount)
-        .toBe(OWNED_POOL_DENOMINATOR)
-      expect(result.annualBasisEvidence.annualBasisDenominatorAmount)
-        .toBe(accepted.ownedWithInheritedDenominator)
-      expect(result.annualBasisEvidence.annualBasisDenominatorAmount)
-        .not.toBe(readings.rejectedIncludesInheritedIraBalance.ownedWithInheritedDenominator)
+      expect(inheritedSiblingResult.annualBasisEvidence.poolMembers.map(
+        (item) => item.sourceAccountId,
+      )).toEqual([ownedIraId])
+      expect(inheritedSiblingResult.annualBasisEvidence.basisNumeratorAmount)
+        .toBe(OWNED_POOL_BASIS)
       expect(readings.rejectedIncludesInheritedIraBalance.ownedWithInheritedDenominator)
         .toBe(REJECTED_INHERITED_INCLUSION_DENOMINATOR)
-      expect(result.line7AllocationEvidence.annualNontaxableBasisAmount).toBe(5)
-      expect(result.line7AllocationEvidence.annualTaxableAmount).toBe(5)
-      expect(result.withdrawals[0]).toMatchObject({
+      expect(inheritedSiblingResult.line7AllocationEvidence.annualNontaxableBasisAmount)
+        .toBe(5)
+      expect(inheritedSiblingResult.line7AllocationEvidence.annualTaxableAmount).toBe(5)
+      expect(inheritedSiblingResult.withdrawals[0]).toMatchObject({
         executedAmount: LINE7_DISTRIBUTION,
         basisRecoveredAmount: 5,
         ordinaryIncomeAmount: 5,
       })
-      expect(result.withdrawals[0]?.basisRecoveredAmount).not.toBe(3)
-      expect(result.withdrawals[0]?.ordinaryIncomeAmount).not.toBe(7)
+      expect(inheritedSiblingResult.withdrawals[0]?.basisRecoveredAmount).not.toBe(3)
+      expect(inheritedSiblingResult.withdrawals[0]?.ordinaryIncomeAmount).not.toBe(7)
+
+      // Instructions for Form 8606: file a separate Form 8606 for the IRA from
+      // each decedent. Worksheet: owned traditional IRA (100c year-end) plus a
+      // separate inherited IRA (80c) in Plan data. The accepted path supplies
+      // only the owned year-end balance to the post-candidate snapshot; the
+      // production builder refuses an inherited 80c year-end line outright.
+      const inheritedSnapshotAttempt = buildPlanOwnedNonRothIraAnnualPostCandidateClassificationInput(
+        buildOwnedPoolWithInheritedSiblingPostCandidateInput({
+          includeInheritedYearEndBalance: true,
+        }).postCandidateInput,
+      )
+      expect(inheritedSnapshotAttempt.status).toBe('snapshotIncomplete')
+      if (inheritedSnapshotAttempt.status !== 'snapshotIncomplete') return
+      expect(inheritedSnapshotAttempt.issues).toEqual(
+        expect.arrayContaining([expect.objectContaining({
+          kind: 'snapshotIncomplete',
+          detail: 'Year-end snapshot contains an employer, inherited, or foreign account',
+          sourceAccountId: inheritedIraId,
+        })]),
+      )
     })
   })
 

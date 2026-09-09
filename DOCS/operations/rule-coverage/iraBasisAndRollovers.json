@@ -56,12 +56,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/ownedNonRothIraWithdrawalCharacter.test.ts",
-          "line": 468,
+          "line": 514,
           "note": "following-calendar-year contribution window",
           "tests": [
             {
               "title": "removes the line-4 amount before characterizing a positive distribution",
-              "line": 476
+              "line": 522
             }
           ]
         }
@@ -1027,16 +1027,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/ownedNonRothIraWithdrawalCharacter.test.ts",
-          "line": 366,
+          "line": 398,
           "note": null,
           "tests": [
             {
-              "title": "derives one annual denominator across every owned non-Roth IRA",
-              "line": 383
-            },
-            {
-              "title": "keeps an inherited IRA balance out of the owned annual denominator",
-              "line": 420
+              "title": "derives one annual denominator across owned non-Roth IRAs and excludes inherited balances",
+              "line": 415
             }
           ]
         }
