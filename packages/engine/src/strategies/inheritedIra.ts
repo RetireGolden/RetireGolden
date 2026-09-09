@@ -559,7 +559,7 @@ export function classifyInheritedRegime(input: {
     return refusal(
       'legacy-planning-approximation',
       'X1',
-      `ownerDeathYear ${deathYear} is before 2020 (SECURE Act §401(b)(1) boundary); pre-SECURE beneficiary regimes are not modeled — use the labeled legacy-planning-approximation path`,
+      `ownerDeathYear ${deathYear} is before 2020 (engine SECURE-date approximation per Pub. L. 116-94 section 401(b)(1); pre-SECURE beneficiary regimes are not modeled — use the labeled legacy-planning-approximation path`,
     )
   }
 
@@ -1522,7 +1522,7 @@ export function spouseTreatAsOwnCatchUp(input: {
 
   if (inherited.ownerDeathYear < 2020) {
     throw new Error(
-      `spouse treat-as-own catch-up requires ownerDeathYear on or after 2020 (SECURE Act §401(b)(1) boundary); the §1.401(a)(9)-3(c)(3) ten-year rule is a SECURE Act regime for deaths after 12/31/2019 — ownerDeathYear ${inherited.ownerDeathYear} cannot have a spouse under it`,
+      `spouse treat-as-own catch-up requires ownerDeathYear on or after 2020 (engine SECURE-date approximation per Pub. L. 116-94 section 401(b)(1); the §1.401(a)(9)-3(c)(3) ten-year rule is a SECURE Act regime for deaths after 12/31/2019 — ownerDeathYear ${inherited.ownerDeathYear} cannot have a spouse under it`,
     )
   }
 

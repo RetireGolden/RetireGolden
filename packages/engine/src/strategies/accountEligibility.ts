@@ -1214,8 +1214,10 @@ export function hasSpouseTreatAsOwnElection(
  * Whether a spouse's explicit treat-as-own election has taken effect for an
  * account in a calendar year. Mirrors the classifier's S2 structural gate
  * (`classifyInheritedRegime` in strategies/inheritedIra.ts): IRA kind only,
- * ownerDeathYear on or after 2020 (SECURE Act §401(b)(1) boundary — pre-2020
- * deaths classify X1 legacy before the classifier reaches S2), edbCategory
+ * ownerDeathYear on or after 2020 (engine SECURE-date approximation reused
+ * from Pub. L. 116-94 section 401(b)(1) — pre-2020 deaths are refused here
+ * and independently in classifyInheritedRegime/spouseTreatAsOwnCatchUp, not
+ * because federal law barred the election), edbCategory
  * `'surviving-spouse'`, soleBeneficiary true, spouseUnlimitedWithdrawalRight
  * true, election `'treat-as-own'`, and a defined `treatAsOwnElectionYear` with
  * `year >=` it. After those gates, runs the classifier's RBD screen

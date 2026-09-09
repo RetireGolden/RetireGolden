@@ -2,9 +2,9 @@
   "kind": "retiregolden.rules-coverage.manifest",
   "version": 5,
   "registry": {
-    "total": 445,
+    "total": 446,
     "byClassification": {
-      "approximated": 123,
+      "approximated": 124,
       "outOfScope": 75,
       "settled": 243,
       "unsettled": 4
@@ -12,11 +12,11 @@
     "byVolatility": {
       "annuallyIndexed": 68,
       "awaitingGuidance": 10,
-      "staticStatute": 360,
+      "staticStatute": 361,
       "sunsetting": 7
     },
     "byJurisdiction": {
-      "federal": 327,
+      "federal": 328,
       "states": {
         "AK": 1,
         "AL": 9,
@@ -344,7 +344,7 @@
     {
       "path": "strategies/accountEligibility.ts",
       "sweptOn": "2026-08-25",
-      "note": "SECURE 2020 gate portion of S2 treat-as-own election timing not registered to this file"
+      "note": "The isTreatAsOwnEffective pre-2020 helper cutoff is registered narrowly as pl-116-94-div-o-sec-401-b-1-post-2019-inherited-regime-boundary (helper only; classifyInheritedRegime and spouseTreatAsOwnCatchUp cutoffs are independent). The consumer remains partial: the product still does not derive the Treas. Reg. 1.408-8(c)(2) deemed election from required-distribution or contribution history, and this attestation does not claim complete ownership of every eligibility/refusal branch."
     },
     {
       "path": "strategies/optimizer.ts",
@@ -604,7 +604,7 @@
     {
       "module": "requiredMinimumDistributions",
       "path": "rule-coverage/requiredMinimumDistributions.json",
-      "ruleCount": 41
+      "ruleCount": 42
     },
     {
       "module": "rothAccounts",
@@ -658,14 +658,14 @@
     }
   ],
   "quoteFidelity": {
-    "generatedAt": "2026-09-08T23:21:16.522Z",
-    "entryCount": 1307,
-    "fetched": 1,
-    "cached": 354,
+    "generatedAt": "2026-09-09T01:31:58.723Z",
+    "entryCount": 1315,
+    "fetched": 0,
+    "cached": 356,
     "counts": {
       "ELISION-EXACT": 85,
       "ELISION-PUNCTUATION": 8,
-      "EXACT": 913,
+      "EXACT": 921,
       "PDF-NOT-VERIFIABLE": 7,
       "PDF-WORD-LEVEL": 248,
       "PUNCTUATION": 43,
