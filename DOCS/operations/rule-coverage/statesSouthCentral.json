@@ -1588,10 +1588,6 @@
           "path": "packages/engine/src/tax/stateTax.ts",
           "functions": [
             {
-              "name": "computeStateTaxDetail",
-              "line": 178
-            },
-            {
               "name": "computeStateTaxableIncome",
               "line": 96
             }

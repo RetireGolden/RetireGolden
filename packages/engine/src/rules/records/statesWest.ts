@@ -1027,7 +1027,7 @@ export const westStateRecords = {
       'packages/engine/src/tax/stateTax.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#OR',
+      'packages/engine/src/params/state/data/year2026.ts#states.OR',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },

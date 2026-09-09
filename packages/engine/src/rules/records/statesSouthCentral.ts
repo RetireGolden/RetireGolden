@@ -1262,7 +1262,6 @@ export const southCentralStateRecords = {
     implementedByFunctions: [
       'packages/engine/src/params/state/data/year2026.ts#states.LA',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
-      'packages/engine/src/tax/stateTax.ts#computeStateTaxDetail',
     ],
   },
 

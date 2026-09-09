@@ -1652,13 +1652,13 @@ export const requiredMinimumDistributionRecords = {
   'irc-401-a-9-H-iii-in-horizon-beneficiary-death-successor-clock': {
     title: 'Successor schedules after an in-horizon beneficiary death are not modeled',
     statement:
-      'Section 401(a)(9)(H)(iii) and Treas. Reg. §1.401(a)(9)-5(e)(3) require the remaining interest to be distributed within ten years after an eligible designated beneficiary\'s death. When the modeled current beneficiary dies during the projection horizon, annualInheritedIraDistributions suppresses forced distributions, publishes requirementKind none with refusalCode successor-clock-out-of-scope, and emits no section 4974 obligations. Successor ten-year schedules and post-death successor RMD amounts are not implemented. This refusal is distinct from the initial beneficiaryClass successor-beneficiary classifier refusal at classifyInheritedRegime, which refuses matrix row X2 at classification time rather than suppressing distributions mid-horizon.',
+      'For a post-2019 owner death governed by this record, when the modeled current beneficiary dies during the projection horizon, Section 401(a)(9)(H)(iii) and Treas. Reg. §1.401(a)(9)-5(e)(3) require the remaining interest to be distributed within ten years after an eligible designated beneficiary\'s death. annualInheritedIraDistributions suppresses forced distributions, publishes requirementKind none with refusalCode successor-clock-out-of-scope, and emits no section 4974 obligations. Successor ten-year schedules and post-death successor RMD amounts are not implemented. This refusal is distinct from the initial beneficiaryClass successor-beneficiary classifier refusal at classifyInheritedRegime, which refuses matrix row X2 at classification time rather than suppressing distributions mid-horizon.',
     classification: 'outOfScope',
     outOfScope: { shape: 'typedRefusal' },
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The planner already knows the inherited class from cache but has no successor identity, successor election, or post-beneficiary-death schedule facts. Suppressing movement and shortfall obligations is therefore a typed refusal rather than a silent zero. inheritedRegime.test.ts continues to own the initial successor-beneficiary classifier path; this record registers only the in-horizon beneficiary-death branch in annualInheritedIraDistributions.',
+      'The planner already knows the inherited class from cache but has no successor identity, successor election, or post-beneficiary-death schedule facts. Suppressing movement and shortfall obligations is therefore a typed refusal rather than a silent zero. inheritedRegime.test.ts continues to own the initial successor-beneficiary classifier path; this record registers only the in-horizon beneficiary-death branch in annualInheritedIraDistributions. The common dead-beneficiary branch also fails closed for a pre-2020 X1 legacy row; that row is outside this record\'s governing period and retains its X1 reason and authority rather than being attributed to H(iii).',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -1672,6 +1672,12 @@ export const requiredMinimumDistributionRecords = {
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section401&num=0&edition=prelim',
       quotedText:
         'If an eligible designated beneficiary dies before the portion of the employee\'s interest to which this subparagraph applies is entirely distributed, the exception under clause (ii) shall not apply to any beneficiary of such eligible designated beneficiary and the remainder of such portion shall be distributed within 10 years after the death of such eligible designated beneficiary.',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.401(a)(9)-5(e)(1)',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-5',
+      quotedText:
+        'Except as provided in paragraph (f) of this section, if an employee\'s accrued benefit is in the form of an individual account under a defined contribution plan, then the entire interest of the employee must be distributed by the end of the earliest of the calendar years described in paragraph (e)(2), (3), or (4) of this section. However, the preceding sentence does not apply if section 401(a)(9)(H) does not apply with respect to the employee (for example, if both the employee and the employee\'s designated beneficiary died before January 1, 2020).',
     }, {
       kind: 'regulation',
       citation: 'Treas. Reg. 1.401(a)(9)-5(e)(3)',

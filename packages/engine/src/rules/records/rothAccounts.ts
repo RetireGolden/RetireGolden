@@ -189,7 +189,7 @@ export const rothAccountRecords = {
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-25',
+    verifiedOn: '2026-09-09',
     implementedBy: [
       'packages/engine/src/actions/rothConversionExecution.ts',
       'packages/engine/src/strategies/accountEligibility.ts',

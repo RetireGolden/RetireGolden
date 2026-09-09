@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-09-09T12:12:01.545Z",
+  "generatedAt": "2026-09-09T13:21:05.201Z",
   "recordCount": 451,
   "urlCount": 360,
   "fetched": 0,
   "cached": 360,
-  "entryCount": 1344,
+  "entryCount": 1345,
   "counts": {
-    "EXACT": 942,
+    "EXACT": 943,
     "PUNCTUATION": 42,
     "PDF-WORD-LEVEL": 253,
     "ELISION-EXACT": 89,
@@ -2743,6 +2743,16 @@
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section401&num=0&edition=prelim",
       "quoteSha256": "f4e1be5a82fca8ee",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-401-a-9-H-iii-in-horizon-beneficiary-death-successor-clock",
+      "citation": "Treas. Reg. 1.401(a)(9)-5(e)(1)",
+      "host": "www.ecfr.gov",
+      "url": "https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-5",
+      "quoteSha256": "e12ee1b29870ea18",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null
