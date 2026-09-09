@@ -119,7 +119,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1589
+              "line": 1594
             }
           ]
         },
@@ -184,7 +184,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1589
+              "line": 1594
             }
           ]
         },
@@ -272,7 +272,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1589
+              "line": 1594
             }
           ]
         },
@@ -357,7 +357,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1589
+              "line": 1594
             }
           ]
         }
@@ -592,7 +592,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1589
+              "line": 1594
             },
             {
               "name": "wagesIncomeSchema",
@@ -625,12 +625,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 838,
+          "line": 907,
           "note": null,
           "tests": [
             {
               "title": "cannot preserve a grace-year non-service-month benefit from annual wages alone",
-              "line": 852
+              "line": 921
             }
           ]
         }
@@ -682,7 +682,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1589
+              "line": 1594
             }
           ]
         }
@@ -1001,7 +1001,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1589
+              "line": 1594
             }
           ]
         }
@@ -1149,12 +1149,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 773,
+          "line": 842,
           "note": null,
           "tests": [
             {
               "title": "rounds annual withholding to one ARF crediting month per year",
-              "line": 781
+              "line": 850
             }
           ]
         }
@@ -1320,7 +1320,7 @@
           "functions": [
             {
               "name": "resolveCurrentSpouseSpousalAnnualPriorYear",
-              "line": 153
+              "line": 159
             }
           ]
         },
@@ -1356,7 +1356,7 @@
           "functions": [
             {
               "name": "maritalBenefitFor",
-              "line": 96
+              "line": 144
             }
           ]
         }
@@ -1501,7 +1501,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1589
+              "line": 1594
             }
           ]
         }
@@ -1589,7 +1589,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1589
+              "line": 1594
             }
           ]
         }
@@ -1648,7 +1648,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1589
+              "line": 1594
             }
           ]
         }
@@ -1813,7 +1813,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1589
+              "line": 1594
             }
           ]
         }
@@ -1878,16 +1878,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 972,
+          "line": 1041,
           "note": null,
           "tests": [
             {
               "title": "steps the survivor up to the deceased spouse’s larger benefit without adding both",
-              "line": 980
+              "line": 1049
             },
             {
               "title": "keeps the survivor’s own larger benefit when the deceased’s amount is smaller",
-              "line": 1007
+              "line": 1076
             }
           ]
         }
@@ -2093,7 +2093,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1589
+              "line": 1594
             }
           ]
         },
@@ -2185,7 +2185,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1589
+              "line": 1594
             }
           ]
         },
@@ -2491,12 +2491,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 790,
+          "line": 859,
           "note": "shares the ARF observable",
           "tests": [
             {
               "title": "collapses the charging sequence into the annual ratio",
-              "line": 799
+              "line": 868
             }
           ]
         }
@@ -2564,12 +2564,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 586,
+          "line": 655,
           "note": null,
           "tests": [
             {
               "title": "withholds half the below-FRA excess and one-third of the FRA-year excess",
-              "line": 595
+              "line": 664
             }
           ]
         }
@@ -2890,12 +2890,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 951,
+          "line": 1020,
           "note": null,
           "tests": [
             {
               "title": "does not recompute a higher PIA from post-FRA covered wages",
-              "line": 959
+              "line": 1028
             }
           ]
         }
@@ -3114,7 +3114,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1589
+              "line": 1594
             }
           ]
         },
@@ -3368,7 +3368,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1589
+              "line": 1594
             }
           ]
         },

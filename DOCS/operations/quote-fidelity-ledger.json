@@ -1,15 +1,15 @@
 {
-  "generatedAt": "2026-09-09T03:32:03.600Z",
-  "recordCount": 446,
-  "urlCount": 356,
+  "generatedAt": "2026-09-09T04:01:50.055Z",
+  "recordCount": 447,
+  "urlCount": 357,
   "fetched": 0,
-  "cached": 356,
-  "entryCount": 1317,
+  "cached": 357,
+  "entryCount": 1322,
   "counts": {
-    "EXACT": 922,
+    "EXACT": 926,
     "PUNCTUATION": 43,
     "PDF-WORD-LEVEL": 249,
-    "ELISION-EXACT": 85,
+    "ELISION-EXACT": 86,
     "ELISION-PUNCTUATION": 8,
     "PDF-NOT-VERIFIABLE": 7,
     "UNFETCHABLE": 3
@@ -7652,6 +7652,56 @@
       "quoteSha256": "39673654c04618e1",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "cfr-20-404-336-surviving-divorced-spouse-eligibility",
+      "citation": "20 CFR 404.336",
+      "host": "www.ecfr.gov",
+      "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR219bf3e41a78e9f/section-404.336",
+      "quoteSha256": "941a85289720cfbf",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "cfr-20-404-336-surviving-divorced-spouse-eligibility",
+      "citation": "20 CFR 404.336(a)(1)",
+      "host": "www.ecfr.gov",
+      "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR219bf3e41a78e9f/section-404.336",
+      "quoteSha256": "693a4746eca49331",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "cfr-20-404-336-surviving-divorced-spouse-eligibility",
+      "citation": "20 CFR 404.336(a)(2)",
+      "host": "www.ecfr.gov",
+      "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR219bf3e41a78e9f/section-404.336",
+      "quoteSha256": "e4129e8821501abe",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "cfr-20-404-336-surviving-divorced-spouse-eligibility",
+      "citation": "42 U.S.C. 416(d)(2)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section416&num=0&edition=prelim",
+      "quoteSha256": "ccd735b01e396dc2",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "cfr-20-404-336-surviving-divorced-spouse-eligibility",
+      "citation": "42 U.S.C. 402(e)(1)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim",
+      "quoteSha256": "f2e54dc4f941dbd9",
+      "verdict": "ELISION-EXACT",
+      "detail": "2 elision segments, every one a literal substring",
       "diagnosis": null
     },
     {
