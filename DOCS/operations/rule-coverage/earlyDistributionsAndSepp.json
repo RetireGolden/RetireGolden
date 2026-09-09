@@ -101,16 +101,16 @@
       "refusalFixtures": [
         {
           "path": "packages/engine/src/actions/execution.test.ts",
-          "line": 1953,
+          "line": 1948,
           "note": null,
           "tests": [
             {
               "title": "answers a non-retirement source with notApplicable rather than a penalty figure",
-              "line": 1958
+              "line": 1953
             },
             {
               "title": "does not extend that answer to a retirement source",
-              "line": 1997
+              "line": 1992
             }
           ]
         }

@@ -1150,7 +1150,7 @@
       "title": "A timely excess-elective-deferral distribution avoids taxing the deferral twice",
       "classification": "outOfScope",
       "errorDirection": null,
-      "conventionRationale": "The contribution allocator prevents modeled requests from exceeding its aggregate ceiling; it is not a record of an actual excess or a corrective distribution. actions/contract.test.ts gates the request and persisted action unions against a correction kind, while model/plan.test.ts gates the missing correction facts.",
+      "conventionRationale": "The contribution allocator prevents modeled requests from exceeding its aggregate ceiling; it is not a record of an actual excess or a corrective distribution. actions/contract.test.ts gates the request and persisted action unions against a correction kind. The correction facts are absent from model/plan.ts; the current model/plan.test.ts membership list does not separately assert those correction facts.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -2844,23 +2844,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/actions/execution.test.ts",
-          "line": 1789,
-          "note": "already-vested equity execution",
+          "line": 1798,
+          "note": "already-vested and same-year cliff partial execution",
           "tests": [
             {
               "title": "classifies an already-vested equity execution as ordinary income anyway",
-              "line": 1804
-            }
-          ]
-        },
-        {
-          "path": "packages/engine/src/actions/execution.test.ts",
-          "line": 1835,
-          "note": "partial-execution cliff vest",
-          "tests": [
+              "line": 1818
+            },
             {
               "title": "reports ordinary income only on the executed part of a same-year cliff vest",
-              "line": 1844
+              "line": 1839
             }
           ]
         }
