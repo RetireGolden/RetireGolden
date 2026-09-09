@@ -173,7 +173,7 @@ export const southCentralStateRecords = {
   'tn-hall-income-tax-repealed-from-2021': {
     title: 'Tennessee’s Hall tax on interest and dividends is gone from 2021',
     statement:
-      'The Hall income tax — Tennessee\'s tax on interest from bonds and notes and on dividends from stock, and the one tax the 2014 constitutional amendment expressly preserved — was stepped down by statute from four percent for 2017 to one percent for 2020 and repealed beginning January 1, 2021. Together with the constitutional bar on taxing earned income, that leaves Tennessee levying no individual income tax of any kind, which is what the pack\'s `hasIncomeTax: false` encodes. The date is 2021 and not 2022: the 2016 act that created the elimination set it at 2022, and the 2017 IMPROVE Act moved it forward a year. This half of Tennessee\'s negative is statutory, and article II, section 28 leaves the Legislature express power to tax stock and bond income again by simple majority.',
+      'The Department of Revenue states that the Hall income tax was repealed beginning January 1, 2021. The 2026 pack\'s zero-tax Tennessee branch reflects that repeal; the constitutional bar on taxing earned income is registered separately at tn-const-2-28-earned-income-tax-prohibited. The quoted article II, section 28 text retains the Legislature\'s power to levy a tax upon incomes derived from stocks and bonds that are not taxed ad valorem.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -195,11 +195,13 @@ export const southCentralStateRecords = {
       // far more often than it is wrong and cannot tell a genuinely short page
       // from a blocked one. A citation nothing can check is the one thing these
       // records must not have, so the rates page, which states the repeal with
-      // its date and its statutory ramp, is cited instead.
+      // its date, is cited instead.
       //
       // The elision is real. What falls between the two segments is the
-      // department's four-row rate table for 2017 through 2020; the segments
-      // are the sentence that introduces it and the row that ends it.
+      // department's rate table leading up to the repeal; the segments are the
+      // sentence that introduces it and the row that ends it. The statement
+      // claims only what those segments quote — the repeal date — not the
+      // elided table rows.
       kind: 'stateAgencyPublication',
       citation: 'TN Dept. of Revenue, Hall Income Tax — Due Date and Tax Rates',
       url: 'https://www.tn.gov/revenue/taxes/hall-income-tax/due-date-and-tax-rates.html',
@@ -523,7 +525,10 @@ export const southCentralStateRecords = {
     jurisdiction: 'state:AR',
     authority: [{
       kind: 'statute',
-      citation: 'Ark. Code Ann. 26-51-307(a)(2)(A) (2017 Ark. Acts, Act 141, § 3)',
+      // Enrolled Act 141 PDF margin line numbers 15 and 16 appear in the
+      // extraction as "15 an individual" and "16 one-half"; they are margin
+      // labels, not statutory text. Preserved verbatim for PDF-WORD-LEVEL verify.
+      citation: 'Ark. Code Ann. 26-51-307(a)(2)(A) (2017 Ark. Acts, Act 141, § 3; PDF margin line numbers retained)',
       url: 'https://arkleg.state.ar.us/Home/FTPDocument?path=%2FACTS%2F2017R%2FPublic%2FACT141.pdf',
       quotedText:
         '(2)(A) Only individual retirement account benefits received by 15 an individual retirement account participant after reaching fifty-nine and 16 one-half (59½) years of age qualify for the exemption.',
@@ -533,6 +538,31 @@ export const southCentralStateRecords = {
       url: 'https://www.dfa.arkansas.gov/wp-content/uploads/2025_AR1000F_and_AR1000NR_Instructions.pdf',
       quotedText:
         'If you received a traditional IRA distribution after reaching the age of fifty-nine and one-half (59 1/2), the first $6,000 is exempt from tax.',
+    }, {
+      kind: 'statute',
+      // Enrolled Act 141 PDF margin line numbers 18–21 appear in the
+      // extraction ("an 18 individual", "before the 19 individual", "one-half 20
+      // (59½)", "or 21 disability"); margin labels, not statutory numbers.
+      // Preserved verbatim for PDF-WORD-LEVEL verify.
+      citation: 'Ark. Code Ann. 26-51-307(a)(2)(B) (2017 Ark. Acts, Act 141, § 3; PDF margin line numbers retained)',
+      url: 'https://arkleg.state.ar.us/Home/FTPDocument?path=%2FACTS%2F2017R%2FPublic%2FACT141.pdf',
+      quotedText:
+        '(B) The only other distributions or withdrawals from an 18 individual retirement account that qualify for the exemption before the 19 individual retirement account participant reaches fifty-nine and one-half 20 (59½) years of age are those made on account of the participant\'s death or 21 disability.',
+    }, {
+      kind: 'formInstruction',
+      citation: '2025 AR1000F/AR1000NR instructions, Line 18A, IRA early distributions',
+      url: 'https://www.dfa.arkansas.gov/wp-content/uploads/2025_AR1000F_and_AR1000NR_Instructions.pdf',
+      quotedText:
+        'Premature distributions made on account of the participant’s death or disability also qualify for the exemption. All other premature distributions or early withdrawals including, but not limited to, those taken for medical expenses, higher education expenses, or a first-time home purchase do not qualify for the exemption.',
+    }, {
+      kind: 'formInstruction',
+      citation: '2025 AR1000F/AR1000NR instructions, Line 18A, employment-related retirement benefits',
+      url: 'https://www.dfa.arkansas.gov/wp-content/uploads/2025_AR1000F_and_AR1000NR_Instructions.pdf',
+      // The PDF visually wraps employment- / related; its reading-order text
+      // joins the compound as employmentrelated. Preserve that extraction for
+      // this PDF-only, word-level quote rather than eliding the scope word.
+      quotedText:
+        'You might be eligible for the $6,000 exemption for retirement or disability benefits provided the distribution was from public or private employmentrelated retirement systems, plans, or programs. (The recipient does not have to be retired.) The method of funding is irrelevant. The exemption may be taken from either lump-sum or installment payments. The early withdrawal penalty may be applicable even though the exemption is granted.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2018,

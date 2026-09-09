@@ -1,14 +1,14 @@
 {
-  "generatedAt": "2026-09-09T16:41:03.557Z",
+  "generatedAt": "2026-09-09T18:49:21.646Z",
   "recordCount": 456,
   "urlCount": 363,
   "fetched": 0,
   "cached": 363,
-  "entryCount": 1350,
+  "entryCount": 1359,
   "counts": {
-    "EXACT": 945,
+    "EXACT": 947,
     "PUNCTUATION": 42,
-    "PDF-WORD-LEVEL": 254,
+    "PDF-WORD-LEVEL": 261,
     "ELISION-EXACT": 91,
     "ELISION-PUNCTUATION": 8,
     "PDF-NOT-VERIFIABLE": 7,
@@ -10295,6 +10295,16 @@
       "diagnosis": null
     },
     {
+      "id": "nj-stat-54a-6-10-retirement-income-exclusion",
+      "citation": "N.J.S.A. 54A:6-10(b)(1), as amended by P.L.2021, c.129 ($125,000–$150,000 band)",
+      "host": "pub.njleg.gov",
+      "url": "https://pub.njleg.gov/bills/2020/AL21/129_.HTM",
+      "quoteSha256": "f50d3fb1401b77db",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
       "id": "ri-dot-adv-2025-22-2026-deduction-and-rate-schedule",
       "citation": "Rhode Island Division of Taxation, ADV 2025-22, TY2026 scope",
       "host": "tax.ri.gov",
@@ -10816,6 +10826,16 @@
     },
     {
       "id": "ic-6-3-2-1-flat-rate-ramp",
+      "citation": "IC 6-3-2-1(b)(9)",
+      "host": "iga.in.gov",
+      "url": "https://iga.in.gov/ic/2026/Title_6/Article_3/Chapter_2.pdf",
+      "quoteSha256": "fad75ed5a69b5c29",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "ic-6-3-2-1-flat-rate-ramp",
       "citation": "Indiana DOR, Departmental Notice #1, effective Jan. 1, 2026 (R46 / 01-26)",
       "host": "www.in.gov",
       "url": "https://www.in.gov/dor/files/dn01.pdf",
@@ -10980,6 +11000,16 @@
       "host": "iga.in.gov",
       "url": "https://iga.in.gov/ic/2026/Title_6/Article_3/Chapter_1.pdf",
       "quoteSha256": "07874e177889caf8",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "ic-6-3-1-3-5-exemptions-not-a-standard-deduction",
+      "citation": "IC 6-3-1-3.5(a)(4)",
+      "host": "iga.in.gov",
+      "url": "https://iga.in.gov/ic/2026/Title_6/Article_3/Chapter_1.pdf",
+      "quoteSha256": "de11d34aa329817e",
       "verdict": "PDF-WORD-LEVEL",
       "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
       "diagnosis": null
@@ -12163,7 +12193,7 @@
     },
     {
       "id": "aca-26-51-307-a-2-ira-age-fifty-nine-and-a-half-gate",
-      "citation": "Ark. Code Ann. 26-51-307(a)(2)(A) (2017 Ark. Acts, Act 141, § 3)",
+      "citation": "Ark. Code Ann. 26-51-307(a)(2)(A) (2017 Ark. Acts, Act 141, § 3; PDF margin line numbers retained)",
       "host": "arkleg.state.ar.us",
       "url": "https://arkleg.state.ar.us/Home/FTPDocument?path=%2FACTS%2F2017R%2FPublic%2FACT141.pdf",
       "quoteSha256": "219fc6933100ff65",
@@ -12177,6 +12207,36 @@
       "host": "www.dfa.arkansas.gov",
       "url": "https://www.dfa.arkansas.gov/wp-content/uploads/2025_AR1000F_and_AR1000NR_Instructions.pdf",
       "quoteSha256": "4823729e2df81325",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "aca-26-51-307-a-2-ira-age-fifty-nine-and-a-half-gate",
+      "citation": "Ark. Code Ann. 26-51-307(a)(2)(B) (2017 Ark. Acts, Act 141, § 3; PDF margin line numbers retained)",
+      "host": "arkleg.state.ar.us",
+      "url": "https://arkleg.state.ar.us/Home/FTPDocument?path=%2FACTS%2F2017R%2FPublic%2FACT141.pdf",
+      "quoteSha256": "61ea8c1e6933c8ef",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "aca-26-51-307-a-2-ira-age-fifty-nine-and-a-half-gate",
+      "citation": "2025 AR1000F/AR1000NR instructions, Line 18A, IRA early distributions",
+      "host": "www.dfa.arkansas.gov",
+      "url": "https://www.dfa.arkansas.gov/wp-content/uploads/2025_AR1000F_and_AR1000NR_Instructions.pdf",
+      "quoteSha256": "a104f6c238edaa6c",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "aca-26-51-307-a-2-ira-age-fifty-nine-and-a-half-gate",
+      "citation": "2025 AR1000F/AR1000NR instructions, Line 18A, employment-related retirement benefits",
+      "host": "www.dfa.arkansas.gov",
+      "url": "https://www.dfa.arkansas.gov/wp-content/uploads/2025_AR1000F_and_AR1000NR_Instructions.pdf",
+      "quoteSha256": "2e206533ee717cce",
       "verdict": "PDF-WORD-LEVEL",
       "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
       "diagnosis": null
@@ -13076,7 +13136,7 @@
       "citation": "2025 Arizona Form 140 instructions, Line 29b",
       "host": "azdor.gov",
       "url": "https://azdor.gov/sites/default/files/document/FORMS_INDIVIDUAL_2025_140Booklet.pdf",
-      "quoteSha256": "841ef7b50ce2f12c",
+      "quoteSha256": "168ccd78cec03bb1",
       "verdict": "PDF-WORD-LEVEL",
       "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
       "diagnosis": null
@@ -13127,6 +13187,16 @@
       "host": "azdor.gov",
       "url": "https://azdor.gov/sites/default/files/document/FORMS_INDIVIDUAL_2025_140Booklet.pdf",
       "quoteSha256": "767cfcea8600b392",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "ars-43-1022-2-government-pension-exclusion",
+      "citation": "2025 Arizona Form 140 instructions, Line 29a, each-spouse amount",
+      "host": "azdor.gov",
+      "url": "https://azdor.gov/sites/default/files/document/FORMS_INDIVIDUAL_2025_140Booklet.pdf",
+      "quoteSha256": "71a67483f74d6ce1",
       "verdict": "PDF-WORD-LEVEL",
       "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
       "diagnosis": null
@@ -13246,7 +13316,7 @@
       "citation": "Colo. Rev. Stat. 39-22-104(4)(f)(III)(B)",
       "host": "olls.info",
       "url": "https://olls.info/crs/crs2026-title-39.htm",
-      "quoteSha256": "704d8ea400e68ba6",
+      "quoteSha256": "ab49c5474727a8f7",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null
@@ -13267,6 +13337,16 @@
       "host": "files.hawaii.gov",
       "url": "https://files.hawaii.gov/tax/legal/hrs/hrs_235.pdf",
       "quoteSha256": "691406d79e17bcf1",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "hi-hrs-235-7-pension-and-social-security",
+      "citation": "Haw. Rev. Stat. 235-7(a), lead-in",
+      "host": "files.hawaii.gov",
+      "url": "https://files.hawaii.gov/tax/legal/hrs/hrs_235.pdf",
+      "quoteSha256": "b6664f8f00a228e9",
       "verdict": "PDF-WORD-LEVEL",
       "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
       "diagnosis": null
@@ -13557,6 +13637,16 @@
       "host": "app.leg.wa.gov",
       "url": "https://app.leg.wa.gov/RCW/default.aspx?cite=82.87.040",
       "quoteSha256": "50c6f1e3c506fc01",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "wa-rcw-82-87-capital-gains-excise",
+      "citation": "Wash. Rev. Code §82.87.050, lead-in",
+      "host": "app.leg.wa.gov",
+      "url": "https://app.leg.wa.gov/RCW/default.aspx?cite=82.87.050",
+      "quoteSha256": "b5a7c458552f928d",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null

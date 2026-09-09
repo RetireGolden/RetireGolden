@@ -311,6 +311,11 @@
         },
         {
           "kind": "formInstruction",
+          "citation": "2025 Arizona Form 140 instructions, Line 29a, each-spouse amount",
+          "url": "https://azdor.gov/sites/default/files/document/FORMS_INDIVIDUAL_2025_140Booklet.pdf"
+        },
+        {
+          "kind": "formInstruction",
           "citation": "2025 Arizona Form 140 instructions, Line 29a, out-of-state public pensions",
           "url": "https://azdor.gov/sites/default/files/document/FORMS_INDIVIDUAL_2025_140Booklet.pdf"
         }
@@ -1161,6 +1166,11 @@
       "authorities": [
         {
           "kind": "statute",
+          "citation": "Haw. Rev. Stat. 235-7(a), lead-in",
+          "url": "https://files.hawaii.gov/tax/legal/hrs/hrs_235.pdf"
+        },
+        {
+          "kind": "statute",
           "citation": "Haw. Rev. Stat. 235-7(a)(2)",
           "url": "https://files.hawaii.gov/tax/legal/hrs/hrs_235.pdf"
         },
@@ -2003,6 +2013,11 @@
           "kind": "statute",
           "citation": "Wash. Rev. Code §82.87.040(1)",
           "url": "https://app.leg.wa.gov/RCW/default.aspx?cite=82.87.040"
+        },
+        {
+          "kind": "statute",
+          "citation": "Wash. Rev. Code §82.87.050, lead-in",
+          "url": "https://app.leg.wa.gov/RCW/default.aspx?cite=82.87.050"
         },
         {
           "kind": "statute",
