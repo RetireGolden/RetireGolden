@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-09T03:01:44.491Z",
+  "generatedAt": "2026-09-09T03:32:03.600Z",
   "recordCount": 446,
   "urlCount": 356,
   "fetched": 0,
@@ -12006,9 +12006,9 @@
       "citation": "Ark. Code Ann. 26-51-307(b)(2) (2017 Ark. Acts, Act 141, § 3)",
       "host": "arkleg.state.ar.us",
       "url": "https://arkleg.state.ar.us/Home/FTPDocument?path=%2FACTS%2F2017R%2FPublic%2FACT141.pdf",
-      "quoteSha256": "1165fe46441b901b",
+      "quoteSha256": "38656b2693da49f5",
       "verdict": "PDF-WORD-LEVEL",
-      "detail": "3 elision segments, all present in the extracted text",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
       "diagnosis": null
     },
     {

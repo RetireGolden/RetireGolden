@@ -576,7 +576,7 @@ export const southCentralStateRecords = {
       citation: 'Ark. Code Ann. 26-51-307(b)(2) (2017 Ark. Acts, Act 141, § 3)',
       url: 'https://arkleg.state.ar.us/Home/FTPDocument?path=%2FACTS%2F2017R%2FPublic%2FACT141.pdf',
       quotedText:
-        'does not apply to … retirement or disability benefits received under a plan, system, or fund … described in § 26-51-404(b)(6).',
+        'does not apply to 3 retirement or disability benefits received under a plan, system, or fund 4 described in § 26-51-404(b)(6).',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2018,
