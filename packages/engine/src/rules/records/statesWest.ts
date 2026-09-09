@@ -355,7 +355,7 @@ export const westStateRecords = {
       citation: '2025 Arizona Form 140 instructions, Line 29b',
       url: 'https://azdor.gov/sites/default/files/document/FORMS_INDIVIDUAL_2025_140Booklet.pdf',
       quotedText:
-        'If you received benefits, annuities and pensions as retired or retainer pay of the uniformed services of the United States, you may subtract 100% of the amount you received.',
+        'If you received benefits, annuities and pensions as retired or retainer pay of the uniformed services of the United States, you may subtract 100% of the amount you received. If you are married and filing a joint return and both you and your spouse each received such income, each spouse may subtract 100% of the amount received. If you are the surviving spouse of a deceased military veteran, and are receiving payments from the uniformed services of the United States, you may exclude 100% of the payments you received.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2021,
@@ -439,6 +439,12 @@ export const westStateRecords = {
       url: 'https://azdor.gov/sites/default/files/document/FORMS_INDIVIDUAL_2025_140Booklet.pdf',
       quotedText:
         'If you received pension income from any of the sources listed below, subtract the amount you received or $2,500, whichever is less.',
+    }, {
+      kind: 'formInstruction',
+      citation: '2025 Arizona Form 140 instructions, Line 29a, each-spouse amount',
+      url: 'https://azdor.gov/sites/default/files/document/FORMS_INDIVIDUAL_2025_140Booklet.pdf',
+      quotedText:
+        'If both you and your spouse receive such pension income, each spouse may subtract the amount received or $2,500, whichever is less.',
     }, {
       kind: 'formInstruction',
       citation: '2025 Arizona Form 140 instructions, Line 29a, out-of-state public pensions',
@@ -679,7 +685,7 @@ export const westStateRecords = {
       citation: 'Colo. Rev. Stat. 39-22-104(4)(f)(III)(B)',
       url: 'https://olls.info/crs/crs2026-title-39.htm',
       quotedText:
-        'For income tax years commencing on or after January 1, 2022, the cap set forth in this subsection (4)(f)(III)(B) is calculated by first considering the total amount of social security benefits a taxpayer received that were included in federal taxable income at the close of the taxable year. If the total amount of such social security benefits exceeds the cap set forth in this subsection (4)(f)(III)(B), then the cap is increased to an amount equal to the total amount of such social security benefits.',
+        'Amounts subtracted under this subsection (4)(f) are capped at twenty-four thousand dollars per tax year for any individual who is sixty-five years of age or older at the close of the taxable year. For income tax years commencing on or after January 1, 2022, the cap set forth in this subsection (4)(f)(III)(B) is calculated by first considering the total amount of social security benefits a taxpayer received that were included in federal taxable income at the close of the taxable year. If the total amount of such social security benefits exceeds the cap set forth in this subsection (4)(f)(III)(B), then the cap is increased to an amount equal to the total amount of such social security benefits.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
@@ -744,6 +750,12 @@ export const westStateRecords = {
     conventionRationale: null,
     jurisdiction: 'state:HI',
     authority: [{
+      kind: 'statute',
+      citation: 'Haw. Rev. Stat. 235-7(a), lead-in',
+      url: 'https://files.hawaii.gov/tax/legal/hrs/hrs_235.pdf',
+      quotedText:
+        '(a) There shall be excluded from gross income, adjusted gross income, and taxable income:',
+    }, {
       kind: 'statute',
       citation: 'Haw. Rev. Stat. 235-7(a)(2)',
       url: 'https://files.hawaii.gov/tax/legal/hrs/hrs_235.pdf',
@@ -1177,6 +1189,12 @@ export const westStateRecords = {
       url: 'https://app.leg.wa.gov/RCW/default.aspx?cite=82.87.040',
       quotedText:
         '(1)(a) Beginning January 1, 2022, an excise tax is imposed on the sale or exchange of long-term capital assets. Only individuals are subject to payment of the tax, which equals seven percent multiplied by an individual\'s Washington capital gains. (b) Beginning January 1, 2025, an additional excise tax is imposed on the sale or exchange of long-term capital assets, which equals 2.90 percent multiplied by the portion of an individual\'s Washington capital gains exceeding $1,000,000.',
+    }, {
+      kind: 'statute',
+      citation: 'Wash. Rev. Code §82.87.050, lead-in',
+      url: 'https://app.leg.wa.gov/RCW/default.aspx?cite=82.87.050',
+      quotedText:
+        'This chapter does not apply to the sale or exchange of:',
     }, {
       kind: 'statute',
       citation: 'Wash. Rev. Code §82.87.050(3)',

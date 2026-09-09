@@ -249,6 +249,21 @@
           "kind": "formInstruction",
           "citation": "2025 Form AR1000F/AR1000NR instructions, Line 17, traditional IRA distributions",
           "url": "https://www.dfa.arkansas.gov/wp-content/uploads/2025_AR1000F_and_AR1000NR_Instructions.pdf"
+        },
+        {
+          "kind": "statute",
+          "citation": "Ark. Code Ann. 26-51-307(a)(2)(B), Act 141 §3",
+          "url": "https://arkleg.state.ar.us/Home/FTPDocument?path=%2FACTS%2F2017R%2FPublic%2FACT141.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "2025 AR1000F/AR1000NR instructions, Line 18A, IRA early distributions",
+          "url": "https://www.dfa.arkansas.gov/wp-content/uploads/2025_AR1000F_and_AR1000NR_Instructions.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "2025 AR1000F/AR1000NR instructions, Line 18A, employment-related retirement benefits",
+          "url": "https://www.dfa.arkansas.gov/wp-content/uploads/2025_AR1000F_and_AR1000NR_Instructions.pdf"
         }
       ]
     },

@@ -676,7 +676,7 @@ export const midwestStateRecords = {
   'ic-6-3-2-1-flat-rate-ramp': {
     title: 'Indiana’s flat individual rate and its legislated ramp',
     statement:
-      'Indiana imposes one flat rate on Indiana adjusted gross income, with no brackets and no variation by filing status. The statutory schedule is 3.05% for 2024, 3% for 2025, 2.95% for 2026, and 2.9% for taxable years after 2026 and before 2030. From 2030 through 2043 the rate falls a further five hundredths of a point in each even-numbered year, but only where the budget agency certifies four consecutive years of state general fund revenue growth of at least 3.5% together with a forecast of the same — a condition no projection can evaluate, so 2.9% is the last figure the pack may carry and only through 2029. The pack holds 2.95% for both filing statuses. A refresh that carries a prior year’s rate forward is wrong by construction, which is why Indiana sits on the never-hold-forward list in the pack header.',
+      'Indiana imposes one flat rate on Indiana adjusted gross income, with no brackets and no variation by filing status. The statutory schedule is 3.05% for 2024, 3% for 2025, 2.95% for 2026, and 2.9% for taxable years after 2026 and before 2030. For taxable years 2030 and 2031, subsection (b)(9) makes a further 0.05-percentage-point reduction conditional on the budget agency determination: each of the four specified fiscal years must meet the 3.5% revenue-growth test and the specified forecast must also meet 3.5%. The unconditional 2.9% interval quoted here ends before 2030; this record does not certify a projected rate after 2029. The pack holds 2.95% for both filing statuses. A refresh that carries a prior year’s rate forward is wrong by construction, which is why Indiana sits on the never-hold-forward list in the pack header.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -694,6 +694,12 @@ export const midwestStateRecords = {
       url: 'https://iga.in.gov/ic/2026/Title_6/Article_3/Chapter_2.pdf',
       quotedText:
         'For taxable years beginning after December 31, 2026, and before January 1, 2030, two and nine-tenths percent (2.9%).',
+    }, {
+      kind: 'statute',
+      citation: 'IC 6-3-2-1(b)(9)',
+      url: 'https://iga.in.gov/ic/2026/Title_6/Article_3/Chapter_2.pdf',
+      quotedText:
+        '(9) For taxable years beginning after December 31, 2029, and before January 1, 2032, if, as determined by the budget agency under subsection (e), the: (A) state general fund revenue collections in each of the state fiscal years ending: (i) June 30, 2025; (ii) June 30, 2026; (iii) June 30, 2027; and (iv) June 30, 2028; exceed by at least three and one-half percent (3.5%) the state general fund revenue collections for the respective immediately preceding state fiscal year; and (B) amount of forecasted state general fund revenue collections for the state fiscal year ending June 30, 2029, are estimated to exceed by at least three and one-half percent (3.5%) the state general fund revenue collections in the state fiscal year ending June 30, 2028; the tax rate shall be decreased by the percentage point of five one-hundredths of one percent (0.05%) beginning January 1 of the even-numbered year immediately succeeding the year of the budget agency determination under subsection (e).',
     }, {
       // Not `formInstruction`: Departmental Notice #1 is neither a form nor an
       // instruction to one. It is a WITHHOLDING notice that states the annual
@@ -989,6 +995,12 @@ export const midwestStateRecords = {
       url: 'https://iga.in.gov/ic/2026/Title_6/Article_3/Chapter_1.pdf',
       quotedText:
         'Subtract one thousand dollars ($1,000), or in the case of a joint return filed by a husband and wife, subtract for each spouse one thousand dollars ($1,000).',
+    }, {
+      kind: 'statute',
+      citation: 'IC 6-3-1-3.5(a)(4)',
+      url: 'https://iga.in.gov/ic/2026/Title_6/Article_3/Chapter_1.pdf',
+      quotedText:
+        '(4) Subtract one thousand dollars ($1,000) for: (A) each of the exemptions provided by Section 151(c) of the Internal Revenue Code (as effective January 1, 2017); (B) each additional amount allowable under Section 63(f) of the Internal Revenue Code; and (C) the spouse of the taxpayer if a separate return is made by the taxpayer and if the spouse, for the calendar year in which the taxable year of the taxpayer begins, has no gross income and is not the dependent of another taxpayer.',
     }, {
       kind: 'statute',
       citation: 'IC 6-3-1-3.5(a)(4)(B)',

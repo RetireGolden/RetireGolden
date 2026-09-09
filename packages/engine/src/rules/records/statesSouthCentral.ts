@@ -173,7 +173,7 @@ export const southCentralStateRecords = {
   'tn-hall-income-tax-repealed-from-2021': {
     title: 'Tennessee’s Hall tax on interest and dividends is gone from 2021',
     statement:
-      'The Hall income tax — Tennessee\'s tax on interest from bonds and notes and on dividends from stock, and the one tax the 2014 constitutional amendment expressly preserved — was stepped down by statute from four percent for 2017 to one percent for 2020 and repealed beginning January 1, 2021. Together with the constitutional bar on taxing earned income, that leaves Tennessee levying no individual income tax of any kind, which is what the pack\'s `hasIncomeTax: false` encodes. The date is 2021 and not 2022: the 2016 act that created the elimination set it at 2022, and the 2017 IMPROVE Act moved it forward a year. This half of Tennessee\'s negative is statutory, and article II, section 28 leaves the Legislature express power to tax stock and bond income again by simple majority.',
+      'The Hall income tax — Tennessee\'s tax on interest from bonds and notes and on dividends from stock, and the one tax the 2014 constitutional amendment expressly preserved — was stepped down by statute from four percent for 2017 to one percent for 2020 and repealed beginning January 1, 2021. Together with the constitutional bar on taxing earned income, that leaves Tennessee levying no individual income tax of any kind, which is what the pack\'s `hasIncomeTax: false` encodes. This half of Tennessee\'s negative is statutory, and article II, section 28 leaves the Legislature express power to tax stock and bond income again by simple majority.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -533,6 +533,27 @@ export const southCentralStateRecords = {
       url: 'https://www.dfa.arkansas.gov/wp-content/uploads/2025_AR1000F_and_AR1000NR_Instructions.pdf',
       quotedText:
         'If you received a traditional IRA distribution after reaching the age of fifty-nine and one-half (59 1/2), the first $6,000 is exempt from tax.',
+    }, {
+      kind: 'statute',
+      citation: 'Ark. Code Ann. 26-51-307(a)(2)(B), Act 141 §3',
+      url: 'https://arkleg.state.ar.us/Home/FTPDocument?path=%2FACTS%2F2017R%2FPublic%2FACT141.pdf',
+      quotedText:
+        '(B) The only other distributions or withdrawals from an 18 individual retirement account that qualify for the exemption before the 19 individual retirement account participant reaches fifty-nine and one-half 20 (59½) years of age are those made on account of the participant\'s death or 21 disability.',
+    }, {
+      kind: 'formInstruction',
+      citation: '2025 AR1000F/AR1000NR instructions, Line 18A, IRA early distributions',
+      url: 'https://www.dfa.arkansas.gov/wp-content/uploads/2025_AR1000F_and_AR1000NR_Instructions.pdf',
+      quotedText:
+        'Premature distributions made on account of the participant’s death or disability also qualify for the exemption. All other premature distributions or early withdrawals including, but not limited to, those taken for medical expenses, higher education expenses, or a first-time home purchase do not qualify for the exemption.',
+    }, {
+      kind: 'formInstruction',
+      citation: '2025 AR1000F/AR1000NR instructions, Line 18A, employment-related retirement benefits',
+      url: 'https://www.dfa.arkansas.gov/wp-content/uploads/2025_AR1000F_and_AR1000NR_Instructions.pdf',
+      // The PDF visually wraps employment- / related; its reading-order text
+      // joins the compound as employmentrelated. Preserve that extraction for
+      // this PDF-only, word-level quote rather than eliding the scope word.
+      quotedText:
+        'You might be eligible for the $6,000 exemption for retirement or disability benefits provided the distribution was from public or private employmentrelated retirement systems, plans, or programs. (The recipient does not have to be retired.) The method of funding is irrelevant. The exemption may be taken from either lump-sum or installment payments. The early withdrawal penalty may be applicable even though the exemption is granted.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2018,
