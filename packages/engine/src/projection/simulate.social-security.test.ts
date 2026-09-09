@@ -549,6 +549,75 @@ describe('social security', () => {
     expect(result.years.find((y) => y.year === 2033)!.incomes.socialSecurity).toBeCloseTo(12_000, 6)
   })
 
+  it('withholds surviving-divorced survivor benefit under ten years but pays it at ten years', () => {
+    // Oracle: 404.336(a)(2) ten-year duration; claimant FRA 67 unreduced survivor
+    // equals deceased PIA 2,400/mo when the deceased is treated as claimed at FRA.
+    const makePlan = (marriageYears: number): Plan => {
+      const plan = basePlan()
+      plan.incomes = [
+        {
+          type: 'socialSecurity',
+          id: testIds(),
+          personId: 'p1',
+          piaMonthly: 1_000,
+          earnings: null,
+          claimAge: { years: 67, months: 0 },
+          formerSpouses: [
+            {
+              id: 'ex',
+              relationship: 'surviving-divorced',
+              dob: '1950-06-15',
+              piaMonthly: 2_400,
+              marriageYears,
+              remarriedAtAge: null,
+            },
+          ],
+        },
+      ]
+      plan.accounts = [cash(2_000_000)]
+      return plan
+    }
+
+    const shortMarriage = simulatePlan(validate(makePlan(0.75)), { startYear: 2026, taxCalculator: noTax }).years.find(
+      (y) => y.year === 2033,
+    )!.incomes.socialSecurity
+    expect(shortMarriage).toBeCloseTo(12_000, 6)
+
+    const tenYears = simulatePlan(validate(makePlan(10)), { startYear: 2026, taxCalculator: noTax }).years.find(
+      (y) => y.year === 2033,
+    )!.incomes.socialSecurity
+    expect(tenYears).toBeCloseTo(28_800, 6)
+  })
+
+  it('keeps the legacy deceased relationship on the ordinary-widow nine-month duration', () => {
+    const plan = basePlan()
+    plan.incomes = [
+      {
+        type: 'socialSecurity',
+        id: testIds(),
+        personId: 'p1',
+        piaMonthly: 1_000,
+        earnings: null,
+        claimAge: { years: 67, months: 0 },
+        formerSpouses: [
+          {
+            id: 'ex',
+            relationship: 'deceased',
+            dob: '1950-06-15',
+            piaMonthly: 2_400,
+            marriageYears: 0.75,
+            remarriedAtAge: null,
+          },
+        ],
+      },
+    ]
+    plan.accounts = [cash(2_000_000)]
+    const survivorIncome = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax }).years.find(
+      (y) => y.year === 2033,
+    )!.incomes.socialSecurity
+    expect(survivorIncome).toBeCloseTo(28_800, 6)
+  })
+
   it('pays survivor on a deceased former spouse but forfeits it after remarriage before 60', () => {
     const deceased = (remarriedAtAge: number | null): IncomeStream => ({
       type: 'socialSecurity',

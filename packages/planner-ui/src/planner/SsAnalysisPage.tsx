@@ -25,7 +25,10 @@ import { EMBEDDED_REAL_YIELD_CURVE } from '@retiregolden/engine/params'
 import type { TipsLadder } from '@retiregolden/engine/model/plan'
 import { computeBreakEven } from '../socialSecurity/breakEven'
 import { rankSwitchStrategies } from '../socialSecurity/survivorSwitching'
-import { passesModeledOrdinaryWidowRecordGates } from '@retiregolden/engine/socialSecurity/maritalBenefits'
+import {
+  passesModeledOrdinaryWidowRecordGates,
+  passesModeledSurvivingDivorcedRecordGates,
+} from '@retiregolden/engine/socialSecurity/maritalBenefits'
 import { survivorBenefitMonthly } from '@retiregolden/engine/socialSecurity/survivorBenefit'
 import { ficaOasdiPaidIn } from '../socialSecurity/ficaReturn'
 import { expectedPvSingle } from '../socialSecurity/expectedPv'
@@ -1222,7 +1225,9 @@ function SurvivorSwitchingPanel({ discountPct }: { discountPct: number }) {
   const people = claimingPeople(plan)
   if (plan.household.people.length !== 1 || people.length !== 1) return null
   const { person, pia, stream } = people[0]!
-  const eligible = (stream.formerSpouses ?? []).filter(passesModeledOrdinaryWidowRecordGates)
+  const eligible = (stream.formerSpouses ?? []).filter(
+    (record) => passesModeledOrdinaryWidowRecordGates(record) || passesModeledSurvivingDivorcedRecordGates(record),
+  )
   if (eligible.length === 0) return null
   // Pick the deceased ex whose **payable** survivor benefit is highest (not raw
   // PIA): after RIB-LIM + the deceased's claim-age factor, a lower-PIA ex who

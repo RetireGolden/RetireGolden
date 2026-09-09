@@ -3434,7 +3434,8 @@
                       "type": "string",
                       "enum": [
                         "divorced",
-                        "deceased"
+                        "deceased",
+                        "surviving-divorced"
                       ]
                     },
                     "dob": {

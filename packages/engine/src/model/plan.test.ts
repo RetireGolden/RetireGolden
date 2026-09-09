@@ -2966,4 +2966,29 @@ describe('annualFederalTaxFacts', () => {
       expect(duplicate.issues.join('\n')).toContain('duplicate annual federal-tax fact year 2026')
     }
   })
+
+  it('accepts surviving-divorced former spouses additively and keeps legacy deceased records valid', () => {
+    const plan = validCouplePlan()
+    const ss = plan.incomes.find((income) => income.type === 'socialSecurity' && income.personId === 'p1')
+    if (ss?.type !== 'socialSecurity') throw new Error('expected p1 social security stream')
+    ss.formerSpouses = [
+      {
+        id: 'legacy-deceased',
+        relationship: 'deceased',
+        dob: '1955-01-01',
+        piaMonthly: 2_400,
+        marriageYears: 0.75,
+        remarriedAtAge: null,
+      },
+      {
+        id: 'surviving-divorced',
+        relationship: 'surviving-divorced',
+        dob: '1950-06-15',
+        piaMonthly: 2_400,
+        marriageYears: 10,
+        remarriedAtAge: null,
+      },
+    ]
+    expect(parsePlan(plan).ok).toBe(true)
+  })
 })

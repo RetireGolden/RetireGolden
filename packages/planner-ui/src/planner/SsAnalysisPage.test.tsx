@@ -5,6 +5,7 @@ import { createRoot, type Root } from 'react-dom/client'
 import { MemoryRouter } from 'react-router'
 
 import type { Plan } from '@retiregolden/engine/model/plan'
+import { createEmptyPlan, parsePlan } from '@retiregolden/engine/model/plan'
 import { createSamplePlan } from '../testSupport/samplePlan'
 import { waitFor } from '../testSupport/settle'
 import { WorkspaceReadOnlyContext } from '../data/workspaceReadOnly'
@@ -142,6 +143,106 @@ describe('the claim-age sweep is not run in the render path', () => {
     await sweepSettled(container)
     expect(container.querySelectorAll('.heatmap-cell-button').length).toBeGreaterThan(0)
     expect(container.querySelector('.skeleton')).toBeNull()
+  })
+})
+
+describe('survivor switching eligibility', () => {
+  let id = 0
+  const nextId = () => `ss-survivor-${++id}`
+
+  function singleWidowPlan(relationship: 'deceased' | 'surviving-divorced', marriageYears: number): Plan {
+    const plan = createEmptyPlan({ newId: nextId })
+    plan.household.people[0] = {
+      id: 'p1',
+      name: 'Pat',
+      dob: '1964-06-15',
+      sex: 'average',
+      retirementAge: null,
+      longevity: { planningAge: 92, source: 'manual' },
+    }
+    plan.incomes = [
+      {
+        type: 'socialSecurity',
+        id: nextId(),
+        personId: 'p1',
+        piaMonthly: 1_000,
+        earnings: null,
+        claimAge: { years: 67, months: 0 },
+        formerSpouses: [
+          {
+            id: nextId(),
+            relationship,
+            dob: '1950-06-15',
+            piaMonthly: 2_400,
+            marriageYears,
+            remarriedAtAge: null,
+          },
+        ],
+      },
+    ]
+    const parsed = parsePlan(plan)
+    if (!parsed.ok) throw new Error(parsed.issues.join('; '))
+    return parsed.plan
+  }
+
+  it('shows survivor switching for a surviving-divorced record that meets the ten-year gate', async () => {
+    const plan = singleWidowPlan('surviving-divorced', 10)
+    await act(async () => {
+      root.render(
+        <MemoryRouter>
+          <PlanCtx.Provider value={contextFor(plan, () => {})}>
+            <SsAnalysisPage />
+          </PlanCtx.Provider>
+        </MemoryRouter>,
+      )
+    })
+    await sweepSettled(container)
+    await act(async () => {
+      const benefitsTab = [...container.querySelectorAll('button')].find((button) => button.textContent === 'Benefits only')
+      if (!benefitsTab) throw new Error('Missing Benefits only tab')
+      benefitsTab.click()
+    })
+    expect(container.textContent).toContain('Survivor vs. personal timing')
+  })
+
+  it('keeps survivor switching for a legacy deceased record under the nine-month gate', async () => {
+    const plan = singleWidowPlan('deceased', 0.75)
+    await act(async () => {
+      root.render(
+        <MemoryRouter>
+          <PlanCtx.Provider value={contextFor(plan, () => {})}>
+            <SsAnalysisPage />
+          </PlanCtx.Provider>
+        </MemoryRouter>,
+      )
+    })
+    await sweepSettled(container)
+    await act(async () => {
+      const benefitsTab = [...container.querySelectorAll('button')].find((button) => button.textContent === 'Benefits only')
+      if (!benefitsTab) throw new Error('Missing Benefits only tab')
+      benefitsTab.click()
+    })
+    expect(container.textContent).toContain('Survivor vs. personal timing')
+  })
+
+  it('hides survivor switching when a surviving-divorced record is under the ten-year gate', async () => {
+    const plan = singleWidowPlan('surviving-divorced', 0.75)
+    await act(async () => {
+      root.render(
+        <MemoryRouter>
+          <PlanCtx.Provider value={contextFor(plan, () => {})}>
+            <SsAnalysisPage />
+          </PlanCtx.Provider>
+        </MemoryRouter>,
+      )
+    })
+    await sweepSettled(container)
+    await act(async () => {
+      const benefitsTab = [...container.querySelectorAll('button')].find((button) => button.textContent === 'Benefits only')
+      if (!benefitsTab) throw new Error('Missing Benefits only tab')
+      benefitsTab.click()
+    })
+    expect(container.textContent).not.toContain('Survivor vs. personal timing')
   })
 })
 

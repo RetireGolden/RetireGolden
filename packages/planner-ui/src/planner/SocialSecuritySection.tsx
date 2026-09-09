@@ -141,7 +141,7 @@ export function FormerSpousesEditor({
   // Two records of the same kind carry only a chip for a title; the ordinal
   // keeps them and their Remove buttons apart (same family as #541, #549).
   const ordinals = ordinalSuffixes(records.map((r) => r.relationship))
-  const add = (relationship: 'divorced' | 'deceased') =>
+  const add = (relationship: 'divorced' | 'deceased' | 'surviving-divorced') =>
     setStream((s) => {
       const list = s.formerSpouses ?? (s.formerSpouses = [])
       list.push({
@@ -149,11 +149,14 @@ export function FormerSpousesEditor({
         relationship,
         dob: '1960-01-01',
         piaMonthly: 0,
-        // A new divorced record opens at the engine's own floor (the statute
-        // lives there, not here); a deceased record keeps its long-standing
-        // one-year default, which is above the survivor floor. The fields
-        // below say so while a value sits under either floor.
-        marriageYears: relationship === 'divorced' ? DIVORCED_MIN_MARRIAGE_YEARS : 1,
+        // A new divorced or surviving-divorced record opens at the engine's
+        // own ten-year floor; a deceased spouse record keeps its long-standing
+        // one-year default, which is above the ordinary nine-month survivor
+        // floor. The fields below say so while a value sits under either floor.
+        marriageYears:
+          relationship === 'divorced' || relationship === 'surviving-divorced'
+            ? DIVORCED_MIN_MARRIAGE_YEARS
+            : 1,
         remarriedAtAge: null,
       })
     })
@@ -172,7 +175,7 @@ export function FormerSpousesEditor({
       <h4 style={{ margin: '0 0 0.3rem' }}>Former spouses</h4>
       <p className="card-hint">
         A {DIVORCED_MIN_MARRIAGE_YEARS}+ year marriage to a living ex (while you're currently unmarried) can pay a divorced-spousal benefit of up to
-        half their benefit; a deceased former spouse can pay a survivor benefit. You receive whichever is largest of your
+        half their benefit; a deceased spouse or a deceased divorced ex can pay a survivor benefit. You receive whichever is largest of your
         own, spousal, and survivor benefits, so add any that might apply.
       </p>
       {records.map((r, i) => {
@@ -184,7 +187,10 @@ export function FormerSpousesEditor({
         const inapplicable = r.relationship === 'divorced' && !householdIsSingle
         // Each kind has its own floor in the engine (maritalBenefitFor returns
         // nothing under it); the note names the one that applies.
-        const minYears = r.relationship === 'divorced' ? DIVORCED_MIN_MARRIAGE_YEARS : SURVIVOR_MIN_MARRIAGE_YEARS
+        const minYears =
+          r.relationship === 'divorced' || r.relationship === 'surviving-divorced'
+            ? DIVORCED_MIN_MARRIAGE_YEARS
+            : SURVIVOR_MIN_MARRIAGE_YEARS
         const underMinYears = r.marriageYears < minYears
         // Both conditions can hold at once; each has its own note so the
         // ten-year floor is disclosed even while the partner rule applies.
@@ -192,7 +198,13 @@ export function FormerSpousesEditor({
         const yearsNoteId = `former-spouse-${r.id}-years-note`
         const describedBy =
           [inapplicable ? partnerNoteId : '', underMinYears ? yearsNoteId : ''].filter(Boolean).join(' ') || undefined
-        const kindLabel = r.relationship === 'divorced' ? 'Divorced ex' : 'Survivor'
+        const kindLabel =
+          r.relationship === 'divorced'
+            ? 'Divorced ex'
+            : r.relationship === 'surviving-divorced'
+              ? 'Deceased divorced ex'
+              : 'Deceased spouse'
+        const isSurvivorRecord = r.relationship === 'deceased' || r.relationship === 'surviving-divorced'
         return (
           <div key={r.id} className="item-row">
             <div className="item-row-head">
@@ -221,7 +233,8 @@ export function FormerSpousesEditor({
                 value={r.relationship}
                 options={[
                   { value: 'divorced', label: 'Living ex (divorced-spousal)' },
-                  { value: 'deceased', label: 'Deceased (survivor)' },
+                  { value: 'deceased', label: 'Deceased spouse (widow/widower)' },
+                  { value: 'surviving-divorced', label: 'Deceased divorced ex (survivor)' },
                 ]}
                 describedBy={describedBy}
                 onCommit={(v) => updateRecord(r.id, (x) => (x.relationship = v))}
@@ -246,16 +259,18 @@ export function FormerSpousesEditor({
                 hint={
                   r.relationship === 'divorced'
                     ? `${DIVORCED_MIN_MARRIAGE_YEARS}+ for divorced-spousal.`
-                    : `${survivorFloorLabel()} minimum.`
+                    : r.relationship === 'surviving-divorced'
+                      ? `${DIVORCED_MIN_MARRIAGE_YEARS}+ before divorce for surviving-divorced.`
+                      : `${survivorFloorLabel()} minimum.`
                 }
                 path={`incomes.${streamIndex}.formerSpouses.${i}.marriageYears`}
                 value={r.marriageYears}
-                step={r.relationship === 'divorced' ? 1 : 0.25}
+                step={r.relationship === 'deceased' ? 0.25 : 1}
                 disabled={inapplicable}
                 describedBy={describedBy}
                 onCommit={(v) => updateRecord(r.id, (x) => (x.marriageYears = v ?? 0))}
               />
-              {r.relationship === 'deceased' ? (
+              {isSurvivorRecord ? (
                 <NumberField
                   label="Age you remarried"
                   help="Entering a remarriage before age 60 excludes the survivor benefit here even if that marriage later ended. Leaving this blank can still include a survivor benefit in your estimate—even in a coupled household—and does not mean you are actually eligible. Leave blank only if you did not remarry after this spouse died."
@@ -265,7 +280,7 @@ export function FormerSpousesEditor({
                   onCommit={(v) => updateRecord(r.id, (x) => (x.remarriedAtAge = v === null ? null : Math.round(v)))}
                 />
               ) : null}
-              {r.relationship === 'deceased' ? (
+              {isSurvivorRecord ? (
                 <NumberField
                   label="When they claimed (age)"
                   hint="Leave blank if they claimed at/after FRA."
@@ -281,7 +296,7 @@ export function FormerSpousesEditor({
                   }
                 />
               ) : null}
-              {r.relationship === 'deceased' && r.deceasedClaimAge ? (
+              {isSurvivorRecord && r.deceasedClaimAge ? (
                 <NumberField
                   label="When they claimed (+ months)"
                   path={`incomes.${streamIndex}.formerSpouses.${i}.deceasedClaimAge.months`}
@@ -305,7 +320,9 @@ export function FormerSpousesEditor({
               <p id={yearsNoteId} className="field-hint" style={{ color: 'var(--warn)' }}>
                 {r.relationship === 'divorced'
                   ? `A divorced-spousal benefit needs a marriage of ${DIVORCED_MIN_MARRIAGE_YEARS} or more years.`
-                  : `A survivor benefit needs a marriage of at least ${survivorFloorLabel()}.`}{' '}
+                  : r.relationship === 'surviving-divorced'
+                    ? `A surviving-divorced survivor benefit needs a marriage of ${DIVORCED_MIN_MARRIAGE_YEARS} or more years before divorce.`
+                    : `A survivor benefit needs a marriage of at least ${survivorFloorLabel()}.`}{' '}
                 Under that, this record pays nothing.
               </p>
             ) : null}
@@ -317,7 +334,10 @@ export function FormerSpousesEditor({
           + Divorced ex-spouse
         </button>
         <button type="button" className="btn btn-secondary btn-small" onClick={() => add('deceased')}>
-          + Deceased former spouse
+          + Deceased spouse
+        </button>
+        <button type="button" className="btn btn-secondary btn-small" onClick={() => add('surviving-divorced')}>
+          + Deceased divorced ex
         </button>
       </div>
     </div>

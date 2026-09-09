@@ -451,7 +451,7 @@ describe('Former spouses (#535)', () => {
     const { container, unmount } = await mount(<FormerSpousesEditor stream={stream} streamIndex={2} setStream={setStream} householdIsSingle />)
     const buttons = [...container.querySelectorAll('button')]
     await act(async () => buttons.find((b) => b.textContent === '+ Divorced ex-spouse')!.click())
-    await act(async () => buttons.find((b) => b.textContent === '+ Deceased former spouse')!.click())
+    await act(async () => buttons.find((b) => b.textContent === '+ Deceased spouse')!.click())
     // A divorced record opens at the engine floor; a deceased one keeps its
     // long-standing one-year default, above the survivor floor.
     expect(stream.formerSpouses!.map((r) => [r.relationship, r.marriageYears])).toEqual([

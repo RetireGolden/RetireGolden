@@ -3443,7 +3443,8 @@ export const planJsonSchema: JsonSchemaDocument = {
                       "type": "string",
                       "enum": [
                         "divorced",
-                        "deceased"
+                        "deceased",
+                        "surviving-divorced"
                       ]
                     },
                     "dob": {

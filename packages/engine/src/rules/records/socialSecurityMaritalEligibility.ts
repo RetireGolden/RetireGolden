@@ -170,14 +170,14 @@ export const socialSecurityMaritalEligibilityRecords = {
   },
 
   'cfr-20-404-336-surviving-divorced-spouse-eligibility': {
-    title: 'Surviving-divorced ten-year divorce duration on the non-disabled age-60 survivor path',
+    title: 'Surviving-divorced ten-year marriage-immediately-before-divorce duration under 404.336(a)(2)',
     statement:
-      'Subject to the other entitlement requirements in 20 CFR 404.336(a)(1) and (b) through (e), a surviving divorced wife or husband of a person who died fully insured is entitled on the ten-year marriage-immediately-before-divorce duration in 404.336(a)(2). Unlike ordinary widow 404.335(a)(1), §404.336(a)(2) supplies that ten-year definition and has no nine-month duration-exception branch. formerSpouseSchema carries relationship divorced or deceased only, so worksheet surviving-divorced facts must be projected into the deceased proxy; maritalBenefitFor routes every deceased formerSpouse through passesModeledOrdinaryWidowRecordGates, which applies the ordinary nine-month floor from cfr-20-404-335-ordinary-widow-eligibility instead of the ten-year gate. That ordinary-widow record remains correct for its scope; this record is the missing surviving-divorced relationship contract and its duration limb only. The companion fixture holds the claimant at survivor FRA 67 with a deceased ex PIA of 2,400 treated as claimed at FRA so pricing is the unreduced survivor amount when duration passes. Worksheet assumes fully insured status, valid marriage under 404.336(a)(1), the application requirement met, age at least 60 on the non-disabled path, own old-age benefit below the deceased PIA, and no remarriage; paragraphs (b)(1)–(4), the disabled-age-50 alternative and its conditions in (c), the (d) own-benefit restriction, and remarriage exceptions in (e)(1)–(3) are not adjudicated here. Because the engine pays a nine-month surviving-divorced projection that 404.336(a)(2) would refuse, and because a missing or extra benefit dollar can be replaced by or avoid a fully taxable withdrawal, the tax error including replacement withdrawals runs both ways.',
-    classification: 'approximated',
+      'When the other entitlement requirements in 20 CFR 404.336(a)(1) and (b) through (e) are met, a surviving divorced wife or husband must have been married to the insured for at least ten years immediately before the divorce became final (404.336(a)(2)). Unlike 404.335(a)(1), surviving-divorced duration has no nine-month floor and no duration-exception branch. passesModeledSurvivingDivorcedRecordGates enforces that ten-year gate on relationship surviving-divorced. The legacy deceased relationship remains on the ordinary-widow nine-month path. This record is the (a)(2) duration limb only — not full surviving-divorced entitlement, not the ordinary-widow path, and not survivor pricing or remarriage adjudication.',
+    classification: 'settled',
     contraryReading: null,
-    errorDirection: 'bothDirections',
+    errorDirection: null,
     conventionRationale:
-      'DEFECT — no behavior change in this registry slice. formerSpouseSchema.relationship accepts divorced and deceased only; surviving-divorced is the proposed additive enum value from the P04 contract packet. Until phase two adds it, worksheet surviving-divorced facts are entered as deceased and priced on the ordinary-widow nine-month path. passesModeledOrdinaryWidowRecordGates is the actual duration enforcer on that proxy; isWidowEligible and maritalBenefitFor are not pinned here because they do not discriminate the companion vector. The fixture projects surviving-divorced worksheet facts into relationship deceased and marriageYears [0.75, 10]; verified capture p04-before-helper-observed.json at 73ed8773 records produced [2,400, 2,400]. Authority duration oracle: 0.75 years is below ten years so 404.336(a)(2) refuses; ten years meets (a)(2) and, with the other assumed limbs, yields the unreduced survivor amount equal to the deceased PIA at FRA.',
+      'formerSpouseSchema.relationship accepts surviving-divorced alongside divorced and deceased; saved plans with relationship deceased keep the ordinary-widow nine-month path. passesModeledSurvivingDivorcedRecordGates is pinned here. The fixture uses marriageYears [0.75, 10]: nine months refuses (a)(2); ten years satisfies (a)(2), and with the other assumed limbs yields the unreduced survivor amount at FRA. Unadjudicated residuals not carried in formerSpouseSchema: fully insured status, valid marriage under (a)(1), application and its 404.336(b)(1)–(4) exceptions, age-60 non-disabled and disabled-age-50 paths and their conditions in (c), the (d) own-old-age-benefit restriction, remarriage and its (e)(1)–(3) exceptions, and claim-age sequencing between own and survivor benefits.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'regulation',
@@ -213,10 +213,10 @@ export const socialSecurityMaritalEligibilityRecords = {
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-09-06',
+    verifiedOn: '2026-09-09',
     implementedBy: ['packages/engine/src/socialSecurity/maritalBenefits.ts'],
     implementedByFunctions: [
-      'packages/engine/src/socialSecurity/maritalBenefits.ts#passesModeledOrdinaryWidowRecordGates',
+      'packages/engine/src/socialSecurity/maritalBenefits.ts#passesModeledSurvivingDivorcedRecordGates',
     ],
   },
 

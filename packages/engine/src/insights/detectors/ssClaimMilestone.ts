@@ -19,6 +19,12 @@ import {
 type SocialSecurityIncome = Extract<Plan['incomes'][number], { type: 'socialSecurity' }>
 type HouseholdPerson = Plan['household']['people'][number]
 
+/** Former-spouse relationships that publish a survivor (not living-divorced spousal) benefit. */
+const SURVIVOR_FORMER_RELATIONSHIPS: readonly FormerSpouse['relationship'][] = [
+  'deceased',
+  'surviving-divorced',
+]
+
 /**
  * Half a cent in plan dollars. `formatEvidenceUsd` rounds with
  * `Math.round(amount * 100)`, so amounts in (0, 0.005) render as `$0` and must
@@ -299,7 +305,7 @@ function formerSpouseWonOverOwnPriorYear(args: {
   projectedAge: number
   startYear: number
   /** Relationship filter matching the caller's enabling-event arm. */
-  formerRelationship: FormerSpouse['relationship']
+  formerRelationships: readonly FormerSpouse['relationship'][]
   claimantIsSingle: boolean
   /**
    * When set, include the current-spouse spousal total as a competing prior-year
@@ -315,7 +321,7 @@ function formerSpouseWonOverOwnPriorYear(args: {
     personId,
     projectedAge,
     startYear,
-    formerRelationship,
+    formerRelationships,
     claimantIsSingle,
     currentSpouseCompetitor,
   } = args
@@ -339,8 +345,8 @@ function formerSpouseWonOverOwnPriorYear(args: {
   let bestFormerAnnual = 0
   for (const stream of plan.incomes) {
     if (stream.type !== 'socialSecurity' || stream.personId !== personId) continue
-    const formers = (stream.formerSpouses ?? []).filter(
-      (former) => former.relationship === formerRelationship,
+    const formers = (stream.formerSpouses ?? []).filter((former) =>
+      formerRelationships.includes(former.relationship),
     )
     if (formers.length === 0) continue
     const formerPayableMonths = annualSocialSecurityPayableMonths(
@@ -552,8 +558,9 @@ function effectiveLifeAgeFromPublishedPeople(
  * Distinguishes via published start-year rows only: positive aux with the same
  * source at start, no earlier in-horizon zero, and the enabling event already
  * present at start (co-spouse claim-in-force pre-horizon, co-spouse death
- * *before* the horizon for household survivor, a deceased former spouse on the
- * claimant's stream for former-spouse survivor, or a living former spouse whose
+ * *before* the horizon for household survivor, a deceased or surviving-divorced
+ * former spouse on the claimant's stream for former-spouse survivor, or a living
+ * former spouse whose
  * marital benefit already *won* over own benefit pre-horizon — eligibility alone
  * is not enough when the published auxiliary first appears because a different
  * enabler arrives at start). A first-year NEW entitlement — spouse claims or
@@ -616,8 +623,10 @@ function auxiliaryAlreadyPayingAtHorizonStart(args: {
     (candidate): candidate is SocialSecurityIncome =>
       candidate.type === 'socialSecurity' && candidate.id === entry.streamId,
   )
-  const hasDeceasedFormerSpouse =
-    streamIncome?.formerSpouses?.some((former) => former.relationship === 'deceased') === true
+  const hasSurvivorFormerSpouse =
+    streamIncome?.formerSpouses?.some((former) =>
+      SURVIVOR_FORMER_RELATIONSHIPS.includes(former.relationship),
+    ) === true
 
   const coPerson = plan.household.people.find((candidate) => candidate.id !== personId)
   if (entry.source === 'survivor') {
@@ -629,7 +638,7 @@ function auxiliaryAlreadyPayingAtHorizonStart(args: {
     if (coState === undefined || coState.alive) {
       // Survivor from a deceased former spouse on this stream while household
       // co-person is still alive — death is a plan fact, not an in-horizon event.
-      return hasDeceasedFormerSpouse
+      return hasSurvivorFormerSpouse
     }
     // Household co-spouse not alive at start. Parallel to first-claim-year
     // enabling: only death *before* the horizon is pre-horizon. Effective life
@@ -646,7 +655,7 @@ function auxiliaryAlreadyPayingAtHorizonStart(args: {
     // source — that former never paid, so death-at-start is NEW. When the
     // deceased former never won pre-horizon, fall through to death-timing.
     const lifeAge = effectiveLifeAgeFromPublishedPeople(projectionYears, coPerson.id)
-    if (hasDeceasedFormerSpouse) {
+    if (hasSurvivorFormerSpouse) {
       // Current-spouse top-up only competed while the co-person was still alive
       // in the prior year (death-at-start → prior alive; death-before-start → not).
       const coAliveInPriorYear =
@@ -656,7 +665,7 @@ function auxiliaryAlreadyPayingAtHorizonStart(args: {
         personId,
         projectedAge,
         startYear: firstProjectionYear.year,
-        formerRelationship: 'deceased',
+        formerRelationships: SURVIVOR_FORMER_RELATIONSHIPS,
         // Survivor eligibility does not require single household; pass false
         // when a co-person exists (divorced-spousal arm is N/A for deceased).
         claimantIsSingle: false,
@@ -708,7 +717,7 @@ function auxiliaryAlreadyPayingAtHorizonStart(args: {
       personId,
       projectedAge,
       startYear: firstProjectionYear.year,
-      formerRelationship: 'divorced',
+      formerRelationships: ['divorced'],
       claimantIsSingle: true,
     })
     // null = eligible former, no usable own on any stream → already-paying

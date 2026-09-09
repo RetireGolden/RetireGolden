@@ -14,7 +14,7 @@ export const blocks: ArticleBlock[] = [
     type: 'list',
     items: [
       'A long marriage to a living ex-spouse may support a divorced-spousal benefit if the claimant is currently unmarried.',
-      'A deceased former spouse may support a survivor benefit, subject to survivor and remarriage rules.',
+      'A deceased spouse or a deceased divorced ex may support a survivor benefit when the modeled eligibility rules are met; the two record types use different marriage-duration floors.',
       'RetireGolden lets a single-person plan enter former-spouse records, then compares the eligible former-spouse benefit against the person\'s own benefit.',
     ],
   },
@@ -36,7 +36,8 @@ export const blocks: ArticleBlock[] = [
     columns: ['Record type', 'Main eligibility idea', 'Modeled benefit idea'],
     rows: [
       ['Living ex-spouse', 'A marriage of at least ten years and a currently unmarried claimant', 'Up to half of the former spouse PIA, reduced for early claiming'],
-      ['Deceased former spouse', 'Survivor eligibility and remarriage rules', 'A survivor-style benefit compared with the claimant\'s own benefit'],
+      ['Deceased spouse', 'Widow/widower survivor eligibility, including a modeled nine-month marriage floor when other rules are met', 'A survivor-style benefit compared with the claimant\'s own benefit'],
+      ['Deceased divorced ex', 'A marriage of at least ten years immediately before divorce, when other surviving-divorced eligibility is met', 'A surviving-divorced survivor benefit compared with the claimant\'s own benefit'],
       ['Current spouse', 'A current two-person household', 'Handled separately through the current-spouse top-up and survivor step-up'],
     ],
   },
@@ -55,12 +56,12 @@ export const blocks: ArticleBlock[] = [
   { type: 'heading', text: 'Why it matters in RetireGolden' },
   {
     type: 'prose',
-    md: 'On the **Social Security** screen, a Social Security income stream can include former spouses. RetireGolden asks for the relationship type, former spouse date of birth, their estimated primary insurance amount, years married, and remarriage age when relevant. The projection then uses the larger eligible benefit rather than adding all benefits together.',
+    md: 'On the **Social Security** screen, a Social Security income stream can include former spouses. Choose **Deceased spouse** for a widow/widower record (modeled nine-month marriage floor when other eligibility is met) or **Deceased divorced ex** for a surviving-divorced record (ten years immediately before divorce when other eligibility is met). RetireGolden asks for date of birth, estimated primary insurance amount, years married, and remarriage age when relevant. The projection then uses the larger eligible benefit rather than adding all benefits together.',
   },
   {
     type: 'callout',
     tone: 'note',
-    md: 'Model note: RetireGolden uses planning-level simplifications. Divorced-spousal benefits require the claimant to be single in the modeled household. Survivor benefits on a former spouse use simplified reductions and should be checked against SSA before making a filing decision.',
+    md: 'Model note: RetireGolden uses planning-level simplifications. Divorced-spousal benefits require the claimant to be single in the modeled household. Survivor benefits use simplified reductions and do not model every statutory duration exception or remarriage limb; check SSA eligibility before making a filing decision.',
   },
   { type: 'heading', text: 'Common mistakes' },
   {
