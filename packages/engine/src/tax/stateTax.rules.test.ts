@@ -2211,16 +2211,26 @@ const GA_RETIREMENT_INCOME = 70_000
 const GA_PRE65_RETIREMENT_CAP = 35_000
 const GA_DEDUCTION_SINGLE = 15_000
 
+// Shared federal discriminator for the Social Security limb: at $90,000 of other
+// income IRC 86 includes 85% of a $40,000 benefit ($34,000). Georgia subtracts
+// that share via `taxesSocialSecurity: false`; the counterfactual flag adds it.
+const GA_SS_OTHER_INCOME = 90_000
+const GA_SS_BENEFITS = 40_000
+const GA_SS_FEDERALLY_TAXABLE = GA_SS_BENEFITS * 0.85
+
 describeRule('ga-code-48-7-27-retirement-and-social-security-exclusion', {
   readings: {
     ageSixtyThreeTakesTheThirtyFiveThousandDollarGeorgiaExclusion:
       GA_RETIREMENT_INCOME - GA_PRE65_RETIREMENT_CAP - GA_DEDUCTION_SINGLE,
     packWaitsUntilAgeSixtyFive: 55_000,
+    federallyIncludedSocialSecurityOmittedFromGeorgiaBase:
+      GA_SS_OTHER_INCOME - GA_DEDUCTION_SINGLE,
+    counterfactualAddsThirtyFourThousandToTheBase: GA_SS_FEDERALLY_TAXABLE,
   },
   accepted: 'ageSixtyThreeTakesTheThirtyFiveThousandDollarGeorgiaExclusion',
   produced: 'packWaitsUntilAgeSixtyFive',
   note: 'age-62-through-64 retirement-income limb',
-}, ({ accepted, produced }) => {
+}, ({ accepted, produced, readings }) => {
   const scenario = input({
     state: 'GA',
     ordinaryIncome: GA_RETIREMENT_INCOME,
@@ -2231,6 +2241,22 @@ describeRule('ga-code-48-7-27-retirement-and-social-security-exclusion', {
   it('pins the missing Georgia age-63 retirement exclusion', () => {
     expect(computeStateTaxableIncome(pack('GA'), scenario)).toBeCloseTo(produced, 6)
     expect(computeStateTaxableIncome(pack('GA'), scenario)).not.toBeCloseTo(accepted, 6)
+  })
+
+  it('subtracts federally taxable Social Security on Schedule 1 line 8 separately from the retirement limb', () => {
+    const withBenefits = input({
+      state: 'GA',
+      ordinaryIncome: GA_SS_OTHER_INCOME,
+      ssBenefits: GA_SS_BENEFITS,
+      agesAlive: [70],
+    })
+    expect(computeStateTaxableIncome(pack('GA'), withBenefits))
+      .toBeCloseTo(readings.federallyIncludedSocialSecurityOmittedFromGeorgiaBase, 6)
+    const taxing = { ...pack('GA'), taxesSocialSecurity: true }
+    expect(
+      computeStateTaxableIncome(taxing, withBenefits)
+        - computeStateTaxableIncome(pack('GA'), withBenefits),
+    ).toBeCloseTo(readings.counterfactualAddsThirtyFourThousandToTheBase, 6)
   })
 })
 

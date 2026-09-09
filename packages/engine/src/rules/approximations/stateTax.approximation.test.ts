@@ -1250,6 +1250,10 @@ const mdSingleTax = (taxable: number) => bandedTax(
 const MD_DEDUCTION = 3350
 const MD_IRA = 80_000
 const MD_PACK_CAP = 41_200
+const MD_PUBLIC_PENSION = 80_000
+const MD_LOWER_GROSS_SS = 20_000
+const MD_HIGHER_GROSS_SS = 30_000
+const MD_GROSS_SS_DELTA = MD_HIGHER_GROSS_SS - MD_LOWER_GROSS_SS
 
 describeRule('md-tax-10-209-pension-exclusion', {
   readings: {
@@ -1259,10 +1263,14 @@ describeRule('md-tax-10-209-pension-exclusion', {
     // Pack `{ kind: 'capped', capPerPerson: 41200, minAge: 65 }` cannot see
     // IRA versus 401(k), so the cap is granted on the IRA too.
     fortyOneThousandTwoHundredGrantedOnAnIra: mdSingleTax(MD_IRA - MD_PACK_CAP - MD_DEDUCTION),
+    // §10-209(b)(2): the annual maximum is reduced dollar-for-dollar by gross
+    // Social Security received. The pack cap stays flat when gross SS rises.
+    packLeavesTaxableIncomeUnchangedWhenGrossSocialSecurityRises: 0,
+    statutoryCapReducedDollarForDollarByGrossSocialSecurity: MD_GROSS_SS_DELTA,
   },
   accepted: 'iraStaysInTheBase',
   produced: 'fortyOneThousandTwoHundredGrantedOnAnIra',
-}, ({ accepted, produced }) => {
+}, ({ accepted, produced, readings }) => {
   const scenario = input({
     state: 'MD',
     ordinaryIncome: MD_IRA,
@@ -1295,6 +1303,27 @@ describeRule('md-tax-10-209-pension-exclusion', {
       agesAlive: [64],
     })
     expect(computeStateTax(pack('MD'), tooYoung)).toBeCloseTo(accepted, 6)
+  })
+
+  it('does not reduce the pack pension cap when gross Social Security rises by $10,000', () => {
+    const lowerGrossSocialSecurity = input({
+      state: 'MD',
+      publicPensionIncome: MD_PUBLIC_PENSION,
+      ssBenefits: MD_LOWER_GROSS_SS,
+      agesAlive: [65],
+    })
+    const higherGrossSocialSecurity = input({
+      state: 'MD',
+      publicPensionIncome: MD_PUBLIC_PENSION,
+      ssBenefits: MD_HIGHER_GROSS_SS,
+      agesAlive: [65],
+    })
+    const producedDelta = computeStateTaxableIncome(pack('MD'), higherGrossSocialSecurity)
+      - computeStateTaxableIncome(pack('MD'), lowerGrossSocialSecurity)
+    expect(producedDelta).toBeCloseTo(readings.packLeavesTaxableIncomeUnchangedWhenGrossSocialSecurityRises, 6)
+    expect(producedDelta).not.toBeCloseTo(readings.statutoryCapReducedDollarForDollarByGrossSocialSecurity, 6)
+    // Observation invocation for orchestrator: computeStateTaxableIncome(pack('MD'), …)
+    // with publicPensionIncome 80,000, agesAlive [65], ssBenefits 20,000 vs 30,000.
   })
 })
 
