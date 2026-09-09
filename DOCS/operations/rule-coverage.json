@@ -2,21 +2,21 @@
   "kind": "retiregolden.rules-coverage.manifest",
   "version": 5,
   "registry": {
-    "total": 450,
+    "total": 451,
     "byClassification": {
       "approximated": 126,
-      "outOfScope": 75,
+      "outOfScope": 76,
       "settled": 245,
       "unsettled": 4
     },
     "byVolatility": {
       "annuallyIndexed": 70,
       "awaitingGuidance": 10,
-      "staticStatute": 363,
+      "staticStatute": 364,
       "sunsetting": 7
     },
     "byJurisdiction": {
-      "federal": 330,
+      "federal": 331,
       "states": {
         "AK": 1,
         "AL": 9,
@@ -268,8 +268,8 @@
     },
     {
       "path": "projection/internal/annualInheritedIraDistributions.ts",
-      "sweptOn": "2026-09-01",
-      "note": "the annual inherited-account required-distribution planner consumes one aggregate live row and prior-December-31 opening per compatible logical account id, preserving first-id order and selected last-row facts. It returns fresh ordered logical balance operations, evidence rows, source-ordered totals, and grouped section 4974 obligations without mutating live state. Before any write, the caller materializes every helper-owned result channel into one recursively frozen plain snapshot and validates all cached operations; it then commits each logical closing balance once through the pro-rata physical ledger, journals one runtime occurrence, and hands the cached grouped obligations to the excise seam. Twelve inherited-RMD records name the helper. Residual rule-bearing behavior remains: dead-beneficiary successor-clock suppression has no dedicated registry record; inherited-Roth forced dollars use the Roth/nonordinary channel while nonqualified inherited-Roth earnings tax remains disclosure-only."
+      "sweptOn": "2026-09-09",
+      "note": "the annual inherited-account required-distribution planner consumes one aggregate live row and prior-December-31 opening per compatible logical account id, preserving first-id order and selected last-row facts. It returns fresh ordered logical balance operations, evidence rows, source-ordered totals, and grouped section 4974 obligations without mutating live state. Before any write, the caller materializes every helper-owned result channel into one recursively frozen plain snapshot and validates all cached operations; it then commits each logical closing balance once through the pro-rata physical ledger, journals one runtime occurrence, and hands the cached grouped obligations to the excise seam. Thirteen inherited-RMD records name the helper, including irc-401-a-9-H-iii-in-horizon-beneficiary-death-successor-clock for the in-horizon beneficiary-death typed refusal. Residual rule-bearing behavior remains: inherited-Roth forced dollars use the Roth/nonordinary channel while nonqualified inherited-Roth earnings tax remains disclosure-only."
     },
     {
       "path": "projection/internal/annualOptimizerProbePublication.ts",
@@ -604,7 +604,7 @@
     {
       "module": "requiredMinimumDistributions",
       "path": "rule-coverage/requiredMinimumDistributions.json",
-      "ruleCount": 42
+      "ruleCount": 43
     },
     {
       "module": "rothAccounts",
@@ -658,14 +658,14 @@
     }
   ],
   "quoteFidelity": {
-    "generatedAt": "2026-09-09T10:38:32.491Z",
-    "entryCount": 1338,
+    "generatedAt": "2026-09-09T12:12:01.545Z",
+    "entryCount": 1344,
     "fetched": 0,
     "cached": 360,
     "counts": {
       "ELISION-EXACT": 89,
       "ELISION-PUNCTUATION": 8,
-      "EXACT": 936,
+      "EXACT": 942,
       "PDF-NOT-VERIFIABLE": 7,
       "PDF-WORD-LEVEL": 253,
       "PUNCTUATION": 42,

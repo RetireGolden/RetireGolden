@@ -11,16 +11,16 @@ The registry is the machine-checked chain from a rule to its implementation and 
 
 | Metric | Count |
 | --- | ---: |
-| Total rules | 450 |
+| Total rules | 451 |
 | Classification: approximated | 126 |
-| Classification: outOfScope | 75 |
+| Classification: outOfScope | 76 |
 | Classification: settled | 245 |
 | Classification: unsettled | 4 |
 | Volatility: annuallyIndexed | 70 |
 | Volatility: awaitingGuidance | 10 |
-| Volatility: staticStatute | 363 |
+| Volatility: staticStatute | 364 |
 | Volatility: sunsetting | 7 |
-| Federal jurisdiction | 330 |
+| Federal jurisdiction | 331 |
 | State jurisdiction total | 120 |
 
 | State jurisdiction | Count |
@@ -159,7 +159,7 @@ None.
 | projection/internal/annualFundingApplicationAndClosePhase.ts | 2026-09-02 | effectful post-action annual funding, application, and close sequence relocated from simulatePlan. It composes the independently attested withdrawal strategy/plan, candidate evaluation, fixed-point, withdrawal character, HECM, ACA and optimizer publication, apply-flow, post-solve growth, retirement-action settlement publication, tax, penalty, and YearResult producers. It preserves their original read/mutation/publication order while owning accepted balance, basis, debt, tax, penalty, warning, runtime-journal, cash-flow, and core YearResult commits; no calculation or chronology changed. The owned-IRA settlement coordinator supplies the attempt-local assumptions and invokes this phase through the explicit callback; simulatePlan supplies the surrounding annual facts and live ledgers, then publishes only the settled result and optional optimizer probe |
 | projection/internal/annualFundingCandidateEvaluation.ts | 2026-09-02 | the pure candidate evaluator composes registered federal capital-loss netting, federal/combined tax calculators, ACA household-MAGI and premium-credit pricing, and the separately attested traditional/HSA/Roth withdrawal-character coordinator. Its bounded HSA-cap refresh, informational ACA support-code filtering, gross-premium candidate handling, and exact ordering of those producers preserve reviewed simulator composition conventions rather than introducing new filing-grade rules. Annual withdrawal-order resolution and account-drain planning belong to projection/internal/annualWithdrawalPlanning.ts; annualFundingApplicationAndClosePhase retains Form 8606 character, immutable annual-context construction, warning insertion, accepted basis mutation, every balance/cash-flow/healthcare commit, and core-result publication |
 | projection/internal/annualFundingWithdrawalEffects.ts | 2026-09-02 | the annual candidate/final withdrawal-character coordinator composes the traditional and HSA penalty proxies in partially registered strategies/accountEligibility.ts (whose registry entry explicitly retains the S2 election-timing residual) with the registered strategies/rothBasis.ts ordering, conversion-layer recapture and nonqualified-earnings character. It preserves the pre-existing projection-only withdrawalTreatment policy (ordered capByMedicalExpenses allocation, assumeAllQualified, and legacy tax-free-but-penalized treatment), owner-wide Roth-IRA pooling, per-account employer-Roth pooling, inherited-Roth exclusion, and missing-basis silence; those simulator composition/pooling conventions remain residual rather than being presented as filing-grade rules. Candidate tax/ACA reconciliation now belongs to projection/internal/annualFundingCandidateEvaluation.ts. annualFundingApplicationAndClosePhase retains Form 8606 character, warning insertion, accepted Roth-basis mutation, every account/ledger commit, and cash-flow publication |
-| projection/internal/annualInheritedIraDistributions.ts | 2026-09-01 | the annual inherited-account required-distribution planner consumes one aggregate live row and prior-December-31 opening per compatible logical account id, preserving first-id order and selected last-row facts. It returns fresh ordered logical balance operations, evidence rows, source-ordered totals, and grouped section 4974 obligations without mutating live state. Before any write, the caller materializes every helper-owned result channel into one recursively frozen plain snapshot and validates all cached operations; it then commits each logical closing balance once through the pro-rata physical ledger, journals one runtime occurrence, and hands the cached grouped obligations to the excise seam. Twelve inherited-RMD records name the helper. Residual rule-bearing behavior remains: dead-beneficiary successor-clock suppression has no dedicated registry record; inherited-Roth forced dollars use the Roth/nonordinary channel while nonqualified inherited-Roth earnings tax remains disclosure-only. |
+| projection/internal/annualInheritedIraDistributions.ts | 2026-09-09 | the annual inherited-account required-distribution planner consumes one aggregate live row and prior-December-31 opening per compatible logical account id, preserving first-id order and selected last-row facts. It returns fresh ordered logical balance operations, evidence rows, source-ordered totals, and grouped section 4974 obligations without mutating live state. Before any write, the caller materializes every helper-owned result channel into one recursively frozen plain snapshot and validates all cached operations; it then commits each logical closing balance once through the pro-rata physical ledger, journals one runtime occurrence, and hands the cached grouped obligations to the excise seam. Thirteen inherited-RMD records name the helper, including irc-401-a-9-H-iii-in-horizon-beneficiary-death-successor-clock for the in-horizon beneficiary-death typed refusal. Residual rule-bearing behavior remains: inherited-Roth forced dollars use the Roth/nonordinary channel while nonqualified inherited-Roth earnings tax remains disclosure-only. |
 | projection/internal/annualOptimizerProbePublication.ts | 2026-09-02 | the pure annual optimizer-probe publication coordinator composes already-settled traditional/RMD/inherited/QCD, Form 8606, retirement-action, tax, ACA, income and contribution evidence into the optimizer input contract. It preserves the existing S2 post-flip forced-distribution remap, QCD ordinary-income/cash corrections, caller-supplied gross-to-taxable conversion callback, remaining traditional taxable fractions, exact-cent committed-action and strategy-movement aggregation, ACA headroom, and SSA-44/IRMAA publication. These are optimization-input composition and accounting conventions around independently registered rule producers, not new filing-grade calculations. The helper mutates no caller-owned value and returns fresh movement arrays and a fresh probe. annualFundingApplicationAndClosePhase retains the capture gate, recursively detached annual snapshots, and probe assembly; annualOwnedNonRothIraSettlementPhase retains later replay/fraction adjustment, while simulatePlan alone invokes the capture sink after settlement and publishes the settled probe and annual result |
 | projection/internal/annualOwnedNonRothIraSettlementPhase.ts | 2026-09-02 | effectful owned non-Roth IRA annual settlement driver relocated from simulatePlan and now named by the Form 8606 pro-rata measurement-instant record. It composes the separately attested settlement-attempt, counterfactual-liability, linked-withdrawal authorization, and committed-replay publication boundaries behind one explicit annual-pass callback. It owns attempt ordering, rollback authorization, household/owner retry and fallback, counterfactual observation, and optional replay attachment while preserving the original transactional sequence; the remaining control-flow is projection-composition rather than an additional statutory calculation. The funding/application/close callback retains every attempt-local economic commit, and simulatePlan retains the earlier annual phases plus final settled YearResult append and optimizer-probe publication |
 | projection/internal/annualQcdExecutionInput.ts | 2026-09-02 | the immutable named-QCD preparation coordinator composes the registered annual prerequisite and physical-staging producers. It owns donor alive/prior-offset evidence assembly, including the same registered 846-calendar-month threshold-year convention, exact-cent floored source capacity, owner RMD-pool snapshots, staged per-account gift attribution, and complete owned-IRA Form 8606 pool-capacity inputs. These are evidence, transaction-snapshot, and projection-composition semantics; the underlying QCD eligibility, section 219 offset, RMD coordination, and Form 8606 rules remain in their registered action producers. internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts supplies post-forced-distribution balances plus owner RMD/basis/offset state and retains the executor call, all gift debits, basis/RMD character, runtime journaling, warnings, cash-flow writes, settlement, and publication |
@@ -198,7 +198,7 @@ Per-rule payloads are sharded one file per record module under `DOCS/operations/
 | rule-coverage/investmentIncomeAndBasis.json | 31 |
 | rule-coverage/iraBasisAndRollovers.json | 15 |
 | rule-coverage/medicareAndHealthCoverage.json | 18 |
-| rule-coverage/requiredMinimumDistributions.json | 42 |
+| rule-coverage/requiredMinimumDistributions.json | 43 |
 | rule-coverage/rothAccounts.json | 13 |
 | rule-coverage/socialSecurity.json | 49 |
 | rule-coverage/socialSecurityEarnings.json | 3 |
@@ -212,7 +212,7 @@ Per-rule payloads are sharded one file per record module under `DOCS/operations/
 
 ## Re-verification due dates
 
-The 25 earliest due dates are shown below (450 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
+The 25 earliest due dates are shown below (451 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
 
 | Rule | Volatility | Verified on | Due on |
 | --- | --- | --- | --- |
@@ -252,16 +252,16 @@ Version 5 is a breaking discriminator for strict version checks: manifest.rules 
 
 ## Quote fidelity
 
-Committed ledger generated at 2026-09-09T10:38:32.491Z over 1338 authority entries (0 fetched live, 360 from cache).
+Committed ledger generated at 2026-09-09T12:12:01.545Z over 1344 authority entries (0 fetched live, 360 from cache).
 
-3 serious, 57 advisory, 1278 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
+3 serious, 57 advisory, 1284 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
 not treated as a CI gate; how to read each verdict: DOCS/operations/quote-fidelity.md.
 
 | Verdict | Class | Count |
 | --- | --- | ---: |
 | ELISION-EXACT | ok | 89 |
 | ELISION-PUNCTUATION | advisory | 8 |
-| EXACT | ok | 936 |
+| EXACT | ok | 942 |
 | PDF-NOT-VERIFIABLE | advisory | 7 |
 | PDF-WORD-LEVEL | ok | 253 |
 | PUNCTUATION | advisory | 42 |

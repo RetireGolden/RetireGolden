@@ -849,6 +849,83 @@
       ]
     },
     {
+      "id": "irc-401-a-9-H-iii-in-horizon-beneficiary-death-successor-clock",
+      "title": "Successor schedules after an in-horizon beneficiary death are not modeled",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": "The planner already knows the inherited class from cache but has no successor identity, successor election, or post-beneficiary-death schedule facts. Suppressing movement and shortfall obligations is therefore a typed refusal rather than a silent zero. inheritedRegime.test.ts continues to own the initial successor-beneficiary classifier path; this record registers only the in-horizon beneficiary-death branch in annualInheritedIraDistributions.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2020,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-09",
+      "dueOn": "2027-09-09",
+      "implementedBy": [
+        "packages/engine/src/projection/internal/annualInheritedIraDistributions.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/projection/internal/annualInheritedIraDistributions.ts",
+          "functions": [
+            {
+              "name": "annualInheritedIraDistributions",
+              "line": 110
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 375
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "refusalFixtureFiles": [
+        "packages/engine/src/projection/internal/annualInheritedIraDistributions.test.ts"
+      ],
+      "refusalFixtures": [
+        {
+          "path": "packages/engine/src/projection/internal/annualInheritedIraDistributions.test.ts",
+          "line": 593,
+          "note": null,
+          "tests": [
+            {
+              "title": "suppresses movement and shortfall obligations once the beneficiary is dead",
+              "line": 601
+            },
+            {
+              "title": "still plans a forced distribution for the same account while the beneficiary is alive",
+              "line": 625
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "Pub. L. 116-94, div. O, sec. 401(b)(1)",
+          "url": "https://www.govinfo.gov/content/pkg/PLAW-116publ94/html/PLAW-116publ94.htm"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 401(a)(9)(H)(iii)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section401&num=0&edition=prelim"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.401(a)(9)-5(e)(3)",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-5"
+        }
+      ]
+    },
+    {
       "id": "irc-402-c-4-B-rmd-not-eligible-rollover-distribution",
       "title": "Required distributions are not eligible rollover distributions",
       "classification": "approximated",
@@ -1083,8 +1160,8 @@
       "volatility": "staticStatute",
       "effectiveFrom": 2023,
       "effectiveThrough": null,
-      "verifiedOn": "2026-09-06",
-      "dueOn": "2027-09-06",
+      "verifiedOn": "2026-09-09",
+      "dueOn": "2027-09-09",
       "implementedBy": [
         "packages/engine/src/projection/internal/annualInheritedIraDistributions.ts",
         "packages/engine/src/projection/internal/annualOwnerRmdPlan.ts",
@@ -1229,6 +1306,16 @@
           "kind": "regulation",
           "citation": "Former Treas. Reg. 54.4974-2 Q&A-6, April 1, 2023 edition",
           "url": "https://www.govinfo.gov/content/pkg/CFR-2023-title26-vol19/pdf/CFR-2023-title26-vol19-sec54-4974-2.pdf"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 54.4974-1(g)(2)",
+          "url": "https://www.ecfr.gov/current/title-26/section-54.4974-1"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 54.4974-1(g)(3)",
+          "url": "https://www.ecfr.gov/current/title-26/section-54.4974-1"
         },
         {
           "kind": "formInstruction",
