@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
+import { parsePlan, type Plan } from '../model/plan.js'
 import { describeRule } from '../rules/describeRule.js'
+import { createFlatTaxCalculator } from '../testing/flatTax.js'
+import { singlePersonPlan } from '../testing/planFixtures.js'
+import { simulatePlan } from '../projection/simulate.js'
 import {
   computeRmdShortfallExcise,
   rmdCorrectionWindowEnd,
@@ -107,37 +111,135 @@ function yearOfDeathWaiver(
   }
 }
 
+// Sub-cent residue matches projection/rmdShortfallExcise.test.ts: the planner
+// cannot leave whole-dollar balances undistributed, but ledger-cent rounding
+// keeps a final-sweep requirement on the books with zero executed movement.
+const POST_DEADLINE_REMAINING_BALANCE = 0.004
+const POST_DEADLINE_EXCISE_TAX = POST_DEADLINE_REMAINING_BALANCE * 0.25
+const noTax = createFlatTaxCalculator(0)
+
+type ShortfallExciseReading = {
+  partialShortfallTax: number
+  qualifiedCorrectionTax: number
+  waiverDeniedTax: number
+  postDeadlineRequiredAmount: number
+  postDeadlineExciseTax: number
+}
+
+function expectShortfallReading<K extends keyof ShortfallExciseReading>(
+  field: K,
+  observed: ShortfallExciseReading[K],
+  accepted: ShortfallExciseReading,
+  readings: Record<string, ShortfallExciseReading>,
+  tolerance = 6,
+) {
+  if (typeof observed === 'number' && typeof accepted[field] === 'number') {
+    expect(observed).toBeCloseTo(accepted[field], tolerance)
+    for (const reading of Object.values(readings)) {
+      if (reading[field] === accepted[field]) continue
+      expect(observed).not.toBeCloseTo(reading[field], tolerance)
+    }
+    return
+  }
+  expect(observed).toBe(accepted[field])
+  for (const reading of Object.values(readings)) {
+    if (reading[field] === accepted[field]) continue
+    expect(observed).not.toBe(reading[field])
+  }
+}
+
+function postDeadlineInheritedPlan(): Plan {
+  const plan = singlePersonPlan({ dob: '1980-06-15', planningAge: 60 })
+  plan.household.people[0]!.id = 'beneficiary'
+  plan.accounts = [{
+    type: 'traditional',
+    kind: 'ira',
+    id: 'inherited-traditional',
+    name: 'Inherited traditional IRA',
+    ownerPersonId: 'beneficiary',
+    annualReturnPct: 0,
+    balance: POST_DEADLINE_REMAINING_BALANCE,
+    annualContribution: 0,
+    inherited: {
+      decedentId: 'decedent',
+      ownerDeathYear: 2022,
+      decedentHadStartedRmds: false,
+      beneficiary: {
+        beneficiaryClass: 'designated-individual',
+        edbCategory: 'none',
+        beneficiaryBirthYear: 1980,
+        soleBeneficiary: true,
+        election: 'none',
+        ownerBirthYear: 1970,
+        provenance: { source: 'test fixture', asOf: '2026-01-01' },
+      },
+    },
+  }]
+  return plan
+}
+
+function runPostDeadlineInheritedPlan() {
+  const parsed = parsePlan(postDeadlineInheritedPlan())
+  if (!parsed.ok) throw new Error(parsed.issues.join('; '))
+  return simulatePlan(parsed.plan, {
+    startYear: 2026,
+    horizonEndYear: 2033,
+    taxCalculator: noTax,
+  })
+}
+
 describeRule('irc-4974-rmd-shortfall-excise-tax', {
   readings: {
-    statuteTaxesOnlyTheTwoThousandDollarShortfall: 500,
-    rejectedTaxOnTheWholeRequiredAmount: 2_500,
+    statute: {
+      partialShortfallTax: 500,
+      qualifiedCorrectionTax: 200,
+      waiverDeniedTax: 500,
+      postDeadlineRequiredAmount: POST_DEADLINE_REMAINING_BALANCE,
+      postDeadlineExciseTax: POST_DEADLINE_EXCISE_TAX,
+    },
+    rejectedTaxOnTheWholeRequiredAmount: {
+      partialShortfallTax: 2_500,
+      qualifiedCorrectionTax: 200,
+      waiverDeniedTax: 500,
+      postDeadlineRequiredAmount: POST_DEADLINE_REMAINING_BALANCE,
+      postDeadlineExciseTax: POST_DEADLINE_EXCISE_TAX,
+    },
+    rejectedDefaultRateAfterBothCorrectionConditions: {
+      partialShortfallTax: 500,
+      qualifiedCorrectionTax: 500,
+      waiverDeniedTax: 500,
+      postDeadlineRequiredAmount: POST_DEADLINE_REMAINING_BALANCE,
+      postDeadlineExciseTax: POST_DEADLINE_EXCISE_TAX,
+    },
+    rejectedAutomaticZeroForAReasonableErrorRequest: {
+      partialShortfallTax: 500,
+      qualifiedCorrectionTax: 200,
+      waiverDeniedTax: 0,
+      postDeadlineRequiredAmount: POST_DEADLINE_REMAINING_BALANCE,
+      postDeadlineExciseTax: POST_DEADLINE_EXCISE_TAX,
+    },
+    rejectedZeroObligationAfterEmptyingYear: {
+      partialShortfallTax: 500,
+      qualifiedCorrectionTax: 200,
+      waiverDeniedTax: 500,
+      postDeadlineRequiredAmount: 0,
+      postDeadlineExciseTax: 0,
+    },
   },
-  accepted: 'statuteTaxesOnlyTheTwoThousandDollarShortfall',
-  note: 'partial shortfall',
+  accepted: 'statute',
 }, ({ accepted, readings }) => {
   it('applies 25 percent to required minus timely distributed', () => {
     const result = computeRmdShortfallExcise(obligation())
 
     expect(result.shortfall).toBe(2_000)
-    expect(result.tax).toBe(accepted)
-    expect(result.tax).not.toBe(readings.rejectedTaxOnTheWholeRequiredAmount)
+    expectShortfallReading('partialShortfallTax', result.tax, accepted, readings)
     expect(result.reason).toBe('default25Percent')
   })
-})
 
-describeRule('irc-4974-rmd-shortfall-excise-tax', {
-  readings: {
-    statuteReducesAQualifiedCorrectionToTenPercent: 200,
-    rejectedDefaultRateAfterBothCorrectionConditions: 500,
-  },
-  accepted: 'statuteReducesAQualifiedCorrectionToTenPercent',
-  note: '10 percent correction path',
-}, ({ accepted, readings }) => {
   it('requires the corrective distribution and the reflecting return inside the window', () => {
     const result = computeRmdShortfallExcise(obligation(), corrected())
 
-    expect(result.tax).toBe(accepted)
-    expect(result.tax).not.toBe(readings.rejectedDefaultRateAfterBothCorrectionConditions)
+    expectShortfallReading('qualifiedCorrectionTax', result.tax, accepted, readings)
     expect(result.reason).toBe('corrected10Percent')
   })
 
@@ -163,24 +265,14 @@ describeRule('irc-4974-rmd-shortfall-excise-tax', {
       assessedOn: '2027-11-15',
     })).toBe('2027-11-15')
   })
-})
 
-describeRule('irc-4974-rmd-shortfall-excise-tax', {
-  readings: {
-    statuteLeavesTaxInPlaceWhenWaiverIsDenied: 500,
-    rejectedAutomaticZeroForAReasonableErrorRequest: 0,
-  },
-  accepted: 'statuteLeavesTaxInPlaceWhenWaiverIsDenied',
-  note: 'discretionary waiver denied versus granted',
-}, ({ accepted, readings }) => {
   it('does not turn a waiver request or denial into a grant', () => {
     for (const discretionaryWaiver of ['requested', 'denied'] as const) {
       const result = computeRmdShortfallExcise(obligation(), {
         obligationId: obligation().obligationId,
         discretionaryWaiver,
       })
-      expect(result.tax).toBe(accepted)
-      expect(result.tax).not.toBe(readings.rejectedAutomaticZeroForAReasonableErrorRequest)
+      expectShortfallReading('waiverDeniedTax', result.tax, accepted, readings)
     }
   })
 
@@ -191,6 +283,47 @@ describeRule('irc-4974-rmd-shortfall-excise-tax', {
     })
     expect(result.tax).toBe(0)
     expect(result.reason).toBe('discretionaryWaiverGranted')
+  })
+
+  it('requires the entire remaining benefit after the emptying year and prices the excise on the shortfall', () => {
+    // Independent worksheet (Treas. Reg. §54.4974-1(e)):
+    // Death 2022 → ten-year emptying year 2032. If any benefit remains, each
+    // later calendar year requires the entire remainder (worksheet example uses
+    // $50,000; this compact fixture uses a sub-cent residue so simulatePlan can
+    // keep the requirement on the books without clearing it at ledger cents).
+    // Rejected: zero obligation as if the emptying year discharged it.
+    // Excise: 25% × remainder shortfall.
+    // Compact inherited fixture adapted from projection/rmdShortfallExcise.test.ts;
+    // annualInheritedIraDistributions wires inheritedRequirementForYear into
+    // §4974 obligations before computeRmdShortfallExcise runs.
+    const postDeadlineYear = runPostDeadlineInheritedPlan().years.find((row) => row.year === 2033)!
+    const inheritedEvidence = postDeadlineYear.inheritedAccounts?.find(
+      (row) => row.accountId === 'inherited-traditional',
+    )
+    expect(inheritedEvidence?.requirementKind).toBe('final-sweep')
+    expect(inheritedEvidence?.executedRequiredAmount).toBe(0)
+    const postDeadlineExcise = postDeadlineYear.rmdShortfallExciseDetails?.find(
+      (detail) => detail.distributionCalendarYear === 2033,
+    )
+    expect(postDeadlineExcise).toBeDefined()
+
+    const observed = {
+      postDeadlineRequiredAmount: inheritedEvidence!.requiredAmount,
+      postDeadlineExciseTax: postDeadlineExcise!.tax,
+    }
+    expect(observed).toEqual({
+      postDeadlineRequiredAmount: accepted.postDeadlineRequiredAmount,
+      postDeadlineExciseTax: accepted.postDeadlineExciseTax,
+    })
+    expect(observed).not.toEqual({
+      postDeadlineRequiredAmount:
+        readings.rejectedZeroObligationAfterEmptyingYear.postDeadlineRequiredAmount,
+      postDeadlineExciseTax:
+        readings.rejectedZeroObligationAfterEmptyingYear.postDeadlineExciseTax,
+    })
+    expect(postDeadlineExcise!.shortfall).toBeCloseTo(POST_DEADLINE_REMAINING_BALANCE, 12)
+    expect(postDeadlineExcise!.reason).toBe('default25Percent')
+    expect(postDeadlineYear.rmdShortfallExciseTax).toBeCloseTo(POST_DEADLINE_EXCISE_TAX, 12)
   })
 })
 

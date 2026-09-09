@@ -1,5 +1,17 @@
 import { expect, it } from 'vitest'
 
+import {
+  executeRothConversions,
+  type ExecuteRothConversionsInput,
+} from '../actions/rothConversionExecution.js'
+import { rothConversionRequestSchema } from '../actions/contract.js'
+import {
+  asAccountId,
+  asActionId,
+  asAllocationId,
+  asPersonId,
+} from '../actions/identity.js'
+import { asUsdCents } from '../actions/money.js'
 import { createEmptyPlan, parsePlan, type Account, type Plan } from '../model/plan.js'
 import { describeRule } from '../rules/describeRule.js'
 import { createFlatTaxCalculator } from '../testing/flatTax.js'
@@ -23,10 +35,9 @@ import type {
  * 402A(c)(4)(B), reaches a distribution from the plan that maintains the
  * account and so can never reach one out of an IRA.
  *
- * Two suites, because the record turns on two independent questions and one
- * spec cannot hold both. The first asks where the dollars go for an owner who
- * holds both kinds; the second asks what happens to an owner who holds only the
- * wrong kind.
+ * One registered vector covers destination selection when both kinds exist,
+ * refusal when only the wrong kind exists, and an explicitly named employer
+ * destination. Each coordinate exercises the same destination-kind boundary.
  */
 
 let counter = 0
@@ -199,42 +210,141 @@ function destinationCredits(
 
 /**
  * B holds both kinds, with the designated Roth account earlier in Plan order.
- * This is the fact pattern that separates the three candidate destination
- * policies, and it is why the readings below are objects rather than dollar
- * figures: on the converted amount ALONE the accepted policy and the pre-fix
- * build agree at 50,000, so a fixture keyed on `year.rothConversion` would have
- * been green under the defect and proved nothing. The readings carry the
- * destination as well as the amount, which is what makes them disagree.
+ * Four candidate destination policies share one registered vector; each
+ * coordinate is a complete observed slice for one fact pattern:
  *
- *   fallbackToFirstRothIra      the accepted reading -- pass over the
- *                               designated Roth account and credit B's first
- *                               Roth IRA in Plan order
- *   creditFirstRothInPlanOrder  what this engine did before the destination
- *                               search read `kind`: credit the first account of
- *                               type roth, which here is the designated Roth
- *                               account no conversion may reach
- *   trimDesignatedRothOnly      refuse the slice of any owner whose first Roth
- *                               is a designated Roth account, converting
- *                               nothing and letting Plan array order decide a
- *                               five-figure answer
+ *   statute                     pass over the designated Roth account and
+ *                               credit B's first Roth IRA in Plan order
+ *   creditFirstRothInPlanOrder  credit the first account of type roth, which
+ *                               here is the designated Roth account
+ *   trimDesignatedRothOnly      refuse any owner whose first Roth is a
+ *                               designated Roth account
+ *   anyRothAccountAccepted      treat any Roth account, including a named
+ *                               employer destination, as lawful
  */
+type ConversionDestinationReading = {
+  bothKindsInPlanOrder: {
+    converted: number
+    rothIra: number
+    designatedRoth: number
+  }
+  designatedOnlyHousehold: number
+  mixedHouseholdConverted: number
+  namedEmployerDestination: {
+    committed: boolean
+    executedAmount: number
+    destinationCreditAmount: number
+  }
+}
+
+function expectConversionCoordinate<
+  K extends keyof ConversionDestinationReading,
+>(
+  coordinate: K,
+  observed: ConversionDestinationReading[K],
+  accepted: ConversionDestinationReading,
+  readings: Record<string, ConversionDestinationReading>,
+) {
+  const acceptedSlice = accepted[coordinate]
+  if (typeof observed === 'number' && typeof acceptedSlice === 'number') {
+    expect(observed).toBeCloseTo(acceptedSlice, 6)
+    for (const reading of Object.values(readings)) {
+      const rejectedSlice = reading[coordinate]
+      if (typeof rejectedSlice !== 'number' || rejectedSlice === acceptedSlice) continue
+      expect(observed).not.toBeCloseTo(rejectedSlice, 6)
+    }
+    return
+  }
+  if (
+    coordinate === 'bothKindsInPlanOrder'
+    && typeof observed === 'object'
+    && observed !== null
+  ) {
+    const slice = observed as ConversionDestinationReading['bothKindsInPlanOrder']
+    const acceptedBothKinds = acceptedSlice as ConversionDestinationReading['bothKindsInPlanOrder']
+    expect(slice.converted).toBeCloseTo(acceptedBothKinds.converted, 6)
+    expect(slice.rothIra).toBeCloseTo(acceptedBothKinds.rothIra, 6)
+    expect(slice.designatedRoth).toBeCloseTo(acceptedBothKinds.designatedRoth, 6)
+    for (const reading of Object.values(readings)) {
+      const rejected = reading.bothKindsInPlanOrder
+      if (JSON.stringify(rejected) === JSON.stringify(acceptedBothKinds)) continue
+      const matches = (
+        Math.abs(slice.converted - rejected.converted) < 1e-6
+        && Math.abs(slice.rothIra - rejected.rothIra) < 1e-6
+        && Math.abs(slice.designatedRoth - rejected.designatedRoth) < 1e-6
+      )
+      expect(matches).toBe(false)
+    }
+    return
+  }
+  expect(observed).toEqual(acceptedSlice)
+  for (const reading of Object.values(readings)) {
+    if (JSON.stringify(reading[coordinate]) === JSON.stringify(acceptedSlice)) continue
+    expect(observed).not.toEqual(reading[coordinate])
+  }
+}
+
 describeRule('irc-408A-d-3-B-conversion-destination-must-be-a-roth-ira', {
-  note: 'a Roth IRA sitting behind a designated Roth account in Plan order',
   readings: {
-    fallbackToFirstRothIra: {
-      converted: REQUESTED_CONVERSION,
-      rothIra: REQUESTED_CONVERSION,
-      designatedRoth: 0,
+    statute: {
+      bothKindsInPlanOrder: {
+        converted: REQUESTED_CONVERSION,
+        rothIra: REQUESTED_CONVERSION,
+        designatedRoth: 0,
+      },
+      designatedOnlyHousehold: 0,
+      mixedHouseholdConverted: REQUESTED_CONVERSION / 2,
+      namedEmployerDestination: {
+        committed: false,
+        executedAmount: 0,
+        destinationCreditAmount: 0,
+      },
     },
     creditFirstRothInPlanOrder: {
-      converted: REQUESTED_CONVERSION,
-      rothIra: 0,
-      designatedRoth: REQUESTED_CONVERSION,
+      bothKindsInPlanOrder: {
+        converted: REQUESTED_CONVERSION,
+        rothIra: 0,
+        designatedRoth: REQUESTED_CONVERSION,
+      },
+      designatedOnlyHousehold: 0,
+      mixedHouseholdConverted: REQUESTED_CONVERSION / 2,
+      namedEmployerDestination: {
+        committed: false,
+        executedAmount: 0,
+        destinationCreditAmount: 0,
+      },
     },
-    trimDesignatedRothOnly: { converted: 0, rothIra: 0, designatedRoth: 0 },
+    trimDesignatedRothOnly: {
+      bothKindsInPlanOrder: {
+        converted: 0,
+        rothIra: 0,
+        designatedRoth: 0,
+      },
+      designatedOnlyHousehold: 0,
+      mixedHouseholdConverted: 0,
+      namedEmployerDestination: {
+        committed: false,
+        executedAmount: 0,
+        destinationCreditAmount: 0,
+      },
+    },
+    anyRothAccountAccepted: {
+      bothKindsInPlanOrder: {
+        converted: REQUESTED_CONVERSION,
+        rothIra: REQUESTED_CONVERSION,
+        designatedRoth: 0,
+      },
+      designatedOnlyHousehold: REQUESTED_CONVERSION,
+      mixedHouseholdConverted: REQUESTED_CONVERSION,
+      namedEmployerDestination: {
+        committed: true,
+        executedAmount: REQUESTED_CONVERSION,
+        destinationCreditAmount: REQUESTED_CONVERSION,
+      },
+    },
   },
-  accepted: 'fallbackToFirstRothIra',
-}, ({ accepted }) => {
+  accepted: 'statute',
+}, ({ accepted, readings }) => {
   function bothKindsPlan(): Plan {
     const plan = marriedHousehold()
     plan.accounts = [
@@ -248,11 +358,12 @@ describeRule('irc-408A-d-3-B-conversion-destination-must-be-a-roth-ira', {
 
   it('converts into the Roth IRA and leaves the designated Roth account alone', () => {
     const { year } = runOf(bothKindsPlan())
-
-    expect(year.rothConversion).toBeCloseTo(accepted.converted, 6)
-    expect(year.balances['rothBIra']).toBeCloseTo(accepted.rothIra, 6)
-    expect(year.balances['rothB401k']).toBeCloseTo(accepted.designatedRoth, 6)
-    expect(year.balances['tradB']).toBeCloseTo(400_000 - accepted.converted, 6)
+    expectConversionCoordinate('bothKindsInPlanOrder', {
+      converted: year.rothConversion,
+      rothIra: year.balances['rothBIra']!,
+      designatedRoth: year.balances['rothB401k']!,
+    }, accepted, readings)
+    expect(year.balances['tradB']).toBeCloseTo(400_000 - accepted.bothKindsInPlanOrder.converted, 6)
   })
 
   it('names the Roth IRA on the destination credit, not the earlier Roth account', () => {
@@ -267,7 +378,7 @@ describeRule('irc-408A-d-3-B-conversion-destination-must-be-a-roth-ira', {
     expect(credits).toHaveLength(1)
     expect(credits[0]!.destinationRothAccountId).toBe('rothBIra')
     expect(credits[0]!.destinationCreditedAmountPlanDollars)
-      .toBeCloseTo(accepted.converted, 6)
+      .toBeCloseTo(accepted.bothKindsInPlanOrder.converted, 6)
   })
 
   it('recognises the income and says nothing, because nothing was refused', () => {
@@ -278,27 +389,15 @@ describeRule('irc-408A-d-3-B-conversion-destination-must-be-a-roth-ira', {
     // be silent here.
     const { year, warnings } = runOf(bothKindsPlan())
 
-    expect(year.magi).toBeCloseTo(accepted.converted, 6)
+    expectConversionCoordinate('bothKindsInPlanOrder', {
+      converted: year.rothConversion,
+      rothIra: year.balances['rothBIra']!,
+      designatedRoth: year.balances['rothB401k']!,
+    }, accepted, readings)
+    expect(year.magi).toBeCloseTo(accepted.bothKindsInPlanOrder.converted, 6)
     expect(warnings).toEqual([])
   })
-})
 
-/**
- * B's only Roth account is a designated Roth account, so there is nowhere a
- * rollover out of B's traditional IRA could legally land and the statutory
- * answer is "convert nothing" rather than "convert less". The two readings
- * disagree on the amount alone here, which is why this question needs a spec of
- * its own: the engine used to move the whole request into the employer account
- * and say nothing about it.
- */
-describeRule('irc-408A-d-3-B-conversion-destination-must-be-a-roth-ira', {
-  note: 'an owner whose only Roth is a designated Roth account',
-  readings: {
-    statuteRequiresARothIra: 0,
-    anyRothAccountAccepted: REQUESTED_CONVERSION,
-  },
-  accepted: 'statuteRequiresARothIra',
-}, ({ accepted, readings }) => {
   it('converts nothing, and says the employer account is what stands in the way', () => {
     // No Roth IRA anywhere in the plan, so the refusal is stated once at the
     // household level -- the same arm that used to say "the plan has no Roth
@@ -313,8 +412,7 @@ describeRule('irc-408A-d-3-B-conversion-destination-must-be-a-roth-ira', {
 
     const { year, warnings } = runOf(plan)
 
-    expect(year.rothConversion).toBeCloseTo(accepted, 6)
-    expect(year.rothConversion).not.toBeCloseTo(readings.anyRothAccountAccepted, 6)
+    expectConversionCoordinate('designatedOnlyHousehold', year.rothConversion, accepted, readings)
     expect(year.balances['rothB401k']).toBeCloseTo(0, 6)
     expect(year.balances['tradB']).toBeCloseTo(400_000, 6)
     expect(destinationCredits(year)).toEqual([])
@@ -345,10 +443,10 @@ describeRule('irc-408A-d-3-B-conversion-destination-must-be-a-roth-ira', {
 
     const { year, warnings } = runOf(plan)
 
-    expect(year.rothConversion).toBeCloseTo(REQUESTED_CONVERSION / 2, 6)
-    expect(year.balances['rothAIra']).toBeCloseTo(REQUESTED_CONVERSION / 2, 6)
+    expectConversionCoordinate('mixedHouseholdConverted', year.rothConversion, accepted, readings)
+    expect(year.balances['rothAIra']).toBeCloseTo(accepted.mixedHouseholdConverted, 6)
     expect(year.balances['rothB401k']).toBeCloseTo(0, 6)
-    expect(year.balances['tradB']).toBeCloseTo(400_000 - accepted, 6)
+    expect(year.balances['tradB']).toBeCloseTo(400_000 - accepted.designatedOnlyHousehold, 6)
     const credits = destinationCredits(year)
     expect(credits).toHaveLength(1)
     expect(credits[0]!.destinationRothAccountId).toBe('rothAIra')
@@ -367,9 +465,145 @@ describeRule('irc-408A-d-3-B-conversion-destination-must-be-a-roth-ira', {
 
     const { year, warnings } = runOf(plan)
 
-    expect(year.rothConversion).toBeCloseTo(accepted, 6)
+    expect(year.rothConversion).toBeCloseTo(accepted.designatedOnlyHousehold, 6)
     expect(warnings).toEqual([
       'Roth conversions were requested but the plan has no Roth account; conversions skipped.',
+    ])
+  })
+
+  it('refuses a named employer Roth destination on the action executor without moving money', () => {
+    const namedEmployerDestinationInput = (): ExecuteRothConversionsInput => {
+      // Cloned from the fully-valid executor fixture in
+      // actions/rothConversionExecution.test.ts (withBasis(0) + person p1),
+      // then the destination account alone is switched to kind: 'employer'.
+      const personId = asPersonId('p1')
+      const sourceAccountId = asAccountId('traditional-a')
+      const destinationAccountId = asAccountId('roth-employer')
+      const value = createEmptyPlan({ newId: testIds, now: fixedNow })
+      value.household.filingStatus = 'single'
+      value.household.people = [{
+        id: personId,
+        name: 'Pat',
+        dob: '1960-01-01',
+        sex: 'average',
+        retirementAge: null,
+        longevity: { planningAge: 100, source: 'manual' },
+      }]
+      value.assumptions.inflationPct = 0
+      value.assumptions.defaultReturnPct = 0
+      value.accounts = [
+        {
+          type: 'traditional',
+          kind: 'ira',
+          id: sourceAccountId,
+          name: 'IRA',
+          ownerPersonId: personId,
+          annualReturnPct: 0,
+          balance: 100_000,
+          annualContribution: 0,
+        },
+        {
+          type: 'roth',
+          kind: 'employer',
+          id: destinationAccountId,
+          name: 'Roth 401(k)',
+          ownerPersonId: personId,
+          annualReturnPct: 0,
+          balance: 0,
+          annualContribution: 0,
+        },
+      ]
+      value.retirementActionEligibilityFacts = {
+        iraClassifications: [{
+          sourceAccountId,
+          subtype: 'traditional',
+          evidenceId: 'classification-traditional-a',
+          provenance: { source: 'manual' },
+        }],
+        sepSimpleActivities: [],
+        deductibleIraContributions: [],
+      }
+      const conversionRequest = rothConversionRequestSchema.parse({
+        actionId: asActionId('conversion-a'),
+        kind: 'rothConversion',
+        personId,
+        year: CONVERSION_YEAR,
+        executionDate: '2026-12-15',
+        executionSequence: 1,
+        requestedAmount: REQUESTED_CONVERSION,
+        allocations: [{
+          allocationId: asAllocationId('allocation-a'),
+          sourceAccountId,
+          requestedAmount: REQUESTED_CONVERSION,
+        }],
+        destinationRothAccountId: destinationAccountId,
+        taxFunding: { kind: 'noneExpected' },
+        provenance: { source: 'manual' },
+      })
+      return {
+        year: CONVERSION_YEAR,
+        plan: value,
+        requests: [conversionRequest],
+        openingBalances: [
+          { accountId: sourceAccountId, openingBalance: asUsdCents(100_000) },
+          { accountId: destinationAccountId, openingBalance: asUsdCents(0) },
+        ],
+        runtimeEvidence: {
+          personAliveEvidence: [{
+            evidenceId: 'alive-conversion-a',
+            actionId: conversionRequest.actionId,
+            personId: conversionRequest.personId,
+            actionYear: CONVERSION_YEAR,
+            actionDate: '2026-12-15',
+            alive: true,
+          }],
+          // DOB 1960-01-01 and year 2026: owner is 66, before the SECURE 2.0
+          // RMD start age of 73, so the aggregated IRA RMD sum for the year is
+          // zero and Treas. Reg. 1.408A-4 A-6(b) withholds nothing.
+          ownerIraRmdSatisfactionEvidence: [{
+            evidenceId: 'rmd-conversion-a',
+            actionId: conversionRequest.actionId,
+            personId: conversionRequest.personId,
+            actionYear: CONVERSION_YEAR,
+            actionDate: '2026-12-15',
+            requiredAmount: asUsdCents(0),
+            distributedAmount: asUsdCents(0),
+          }],
+          // IRC 408(d)(2) numerator proven at zero: basis admission is
+          // satisfied and the whole gross would be taxable if the movement ran.
+          ownerAggregatedIraBasisEvidence: [{
+            evidenceId: 'basis-conversion-a',
+            actionId: conversionRequest.actionId,
+            personId: conversionRequest.personId,
+            actionYear: CONVERSION_YEAR,
+            actionDate: '2026-12-15',
+            basisAmount: asUsdCents(0),
+          }],
+        },
+      }
+    }
+
+    const result = executeRothConversions(namedEmployerDestinationInput())
+    const evidence = result.evidence[0]!
+    const reasonCodes = evidence.reasons.map((reason) => reason.code)
+
+    expect(reasonCodes).toEqual(['conversion-employer-destination-unsupported'])
+    expectConversionCoordinate('namedEmployerDestination', {
+      committed: result.committed,
+      executedAmount: evidence.executedAmount,
+      destinationCreditAmount: evidence.destinationCreditAmount,
+    }, accepted, readings)
+    expect(result.balances).toEqual([
+      {
+        accountId: asAccountId('roth-employer'),
+        openingBalance: asUsdCents(0),
+        closingBalance: asUsdCents(0),
+      },
+      {
+        accountId: asAccountId('traditional-a'),
+        openingBalance: asUsdCents(100_000),
+        closingBalance: asUsdCents(100_000),
+      },
     ])
   })
 })
