@@ -1146,42 +1146,32 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rmd/rmdShortfallExcise.test.ts",
-          "line": 110,
-          "note": "partial shortfall",
+          "line": 117,
+          "note": null,
           "tests": [
             {
               "title": "applies 25 percent to required minus timely distributed",
-              "line": 118
-            }
-          ]
-        },
-        {
-          "path": "packages/engine/src/rmd/rmdShortfallExcise.test.ts",
-          "line": 128,
-          "note": "10 percent correction path",
-          "tests": [
+              "line": 157
+            },
             {
               "title": "requires the corrective distribution and the reflecting return inside the window",
-              "line": 136
+              "line": 166
             },
             {
               "title": "uses the earliest statutory correction-window endpoint",
-              "line": 159
-            }
-          ]
-        },
-        {
-          "path": "packages/engine/src/rmd/rmdShortfallExcise.test.ts",
-          "line": 168,
-          "note": "discretionary waiver denied versus granted",
-          "tests": [
+              "line": 189
+            },
             {
               "title": "does not turn a waiver request or denial into a grant",
-              "line": 176
+              "line": 197
             },
             {
               "title": "uses zero only for an explicit modeled grant",
-              "line": 187
+              "line": 208
+            },
+            {
+              "title": "requires the entire remaining benefit after the emptying year and prices the excise on the shortfall",
+              "line": 217
             }
           ]
         },
@@ -3796,12 +3786,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rmd/rmdShortfallExcise.test.ts",
-          "line": 197,
+          "line": 287,
           "note": "each independently modeled automatic-waiver condition",
           "tests": [
             {
               "title": "requires the EDB, default-life-expectancy, ninth-year-election, and Commissioner conditions",
-              "line": 205
+              "line": 295
             }
           ]
         }
@@ -3859,16 +3849,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rmd/rmdShortfallExcise.test.ts",
-          "line": 244,
+          "line": 334,
           "note": "same-year death, full correction, later-of deadline, and Commissioner conditions",
           "tests": [
             {
               "title": "requires each independently modeled year-of-death waiver condition",
-              "line": 252
+              "line": 342
             },
             {
               "title": "waives when the beneficiary filing deadline is later than December 31 of the following year",
-              "line": 292
+              "line": 382
             }
           ]
         }

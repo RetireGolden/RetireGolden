@@ -293,12 +293,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.contributions-growth.test.ts",
-          "line": 941,
+          "line": 939,
           "note": null,
           "tests": [
             {
               "title": "does not give a second ceiling to someone holding both IRA flavours",
-              "line": 948
+              "line": 946
             }
           ]
         }
@@ -616,39 +616,36 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/conversionDestinationVehicle.test.ts",
-          "line": 221,
-          "note": "a Roth IRA sitting behind a designated Roth account in Plan order",
+          "line": 232,
+          "note": null,
           "tests": [
             {
               "title": "converts into the Roth IRA and leaves the designated Roth account alone",
-              "line": 249
+              "line": 292
             },
             {
               "title": "names the Roth IRA on the destination credit, not the earlier Roth account",
-              "line": 258
+              "line": 307
             },
             {
               "title": "recognises the income and says nothing, because nothing was refused",
-              "line": 273
-            }
-          ]
-        },
-        {
-          "path": "packages/engine/src/projection/conversionDestinationVehicle.test.ts",
-          "line": 294,
-          "note": "an owner whose only Roth is a designated Roth account",
-          "tests": [
+              "line": 322
+            },
             {
               "title": "converts nothing, and says the employer account is what stands in the way",
-              "line": 302
+              "line": 334
             },
             {
               "title": "trims only the designated-Roth owner’s slice, and names them",
-              "line": 332
+              "line": 364
             },
             {
               "title": "keeps the destination-less copy for a household holding no Roth at all",
-              "line": 361
+              "line": 395
+            },
+            {
+              "title": "refuses a named employer Roth destination on the action executor without moving money",
+              "line": 410
             }
           ]
         }

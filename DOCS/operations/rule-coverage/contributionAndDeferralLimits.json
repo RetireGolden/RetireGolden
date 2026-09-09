@@ -46,12 +46,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.contributions-growth.test.ts",
-          "line": 830,
+          "line": 828,
           "note": null,
           "tests": [
             {
               "title": "holds a low earner to compensation rather than to the dollar limit",
-              "line": 834
+              "line": 832
             }
           ]
         }
@@ -207,12 +207,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.contributions-growth.test.ts",
-          "line": 1008,
+          "line": 1006,
           "note": null,
           "tests": [
             {
               "title": "projects the age-50 catch-up instead of holding it flat",
-              "line": 1012
+              "line": 1010
             }
           ]
         }
@@ -265,12 +265,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.contributions-growth.test.ts",
-          "line": 848,
+          "line": 846,
           "note": null,
           "tests": [
             {
               "title": "allocates MFJ IRA contributions per owner under section 219(c)",
-              "line": 877
+              "line": 875
             }
           ]
         }
@@ -333,12 +333,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.contributions-growth.test.ts",
-          "line": 920,
+          "line": 918,
           "note": null,
           "tests": [
             {
               "title": "gives a retiree living on a pension no contribution room",
-              "line": 924
+              "line": 922
             }
           ]
         }
@@ -1120,12 +1120,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.contributions-growth.test.ts",
-          "line": 582,
+          "line": 580,
           "note": null,
           "tests": [
             {
               "title": "shares one deferral limit across every employer plan",
-              "line": 586
+              "line": 584
             }
           ]
         }
@@ -2329,23 +2329,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.contributions-growth.test.ts",
-          "line": 502,
-          "note": "the cap binds total additions, not the match alone",
+          "line": 501,
+          "note": null,
           "tests": [
             {
               "title": "never lets total additions exceed the participant pay",
-              "line": 507
-            }
-          ]
-        },
-        {
-          "path": "packages/engine/src/projection/simulate.contributions-growth.test.ts",
-          "line": 543,
-          "note": "the pay prong binds deferrals too",
-          "tests": [
+              "line": 514
+            },
             {
               "title": "binds the deferral itself, not only the match",
-              "line": 548
+              "line": 543
             }
           ]
         }
