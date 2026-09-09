@@ -302,7 +302,7 @@ export const westStateRecords = {
   'ars-43-1022-10-social-security-railroad-exclusion': {
     title: 'Arizona subtracts every federally taxable Social Security dollar',
     statement:
-      'A.R.S. 43-1022(10) subtracts from Arizona gross income the amount included in federal adjusted gross income under IRC 86 — Social Security benefits under Title II of the Social Security Act and railroad retirement benefits alike — with no income threshold, age condition or cap. The department extends the same line to tier 1 and tier 2 railroad retirement, railroad disability, unemployment and sickness payments. The pack expresses it as `taxesSocialSecurity: false`, so no benefit dollar reaches the 2.5% rate at any income level.',
+      'A.R.S. 43-1022(10) subtracts from Arizona gross income the amount included in federal adjusted gross income under IRC 86 — Social Security and railroad retirement benefits — with no income threshold, age condition or cap; Form 140 line 30 uses the same scope for taxpayers who included such social security or railroad retirement benefits on the federal return. The pack expresses it as `taxesSocialSecurity: false`, so no federally taxable benefit dollar reaches the 2.5% rate at any income level.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,

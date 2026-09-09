@@ -222,12 +222,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 300,
+          "line": 288,
           "note": null,
           "tests": [
             {
               "title": "cannot distinguish protected first and ninth trial-work months from annual SGA",
-              "line": 314
+              "line": 302
             }
           ]
         }
@@ -310,12 +310,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 331,
+          "line": 319,
           "note": null,
           "tests": [
             {
               "title": "cannot distinguish January-only EPE from every-month SGA on annual wages",
-              "line": 345
+              "line": 333
             }
           ]
         }
@@ -625,12 +625,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 828,
+          "line": 838,
           "note": null,
           "tests": [
             {
               "title": "cannot preserve a grace-year non-service-month benefit from annual wages alone",
-              "line": 842
+              "line": 852
             }
           ]
         }
@@ -1149,12 +1149,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 763,
+          "line": 773,
           "note": null,
           "tests": [
             {
               "title": "rounds annual withholding to one ARF crediting month per year",
-              "line": 771
+              "line": 781
             }
           ]
         }
@@ -1446,22 +1446,15 @@
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
           "line": 214,
-          "note": "claimAge gate",
+          "note": null,
           "tests": [
             {
               "title": "does not start the SSDI spouse auxiliary before the worker reaches claimAge",
-              "line": 223
-            }
-          ]
-        },
-        {
-          "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 250,
-          "note": "425(a) suspension limb",
-          "tests": [
+              "line": 222
+            },
             {
               "title": "zeros only the SSDI worker when wages exceed annual SGA, leaving the spouse paid",
-              "line": 260
+              "line": 246
             }
           ]
         }
@@ -1885,16 +1878,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 962,
+          "line": 972,
           "note": null,
           "tests": [
             {
               "title": "steps the survivor up to the deceased spouse’s larger benefit without adding both",
-              "line": 970
+              "line": 980
             },
             {
               "title": "keeps the survivor’s own larger benefit when the deceased’s amount is smaller",
-              "line": 997
+              "line": 1007
             }
           ]
         }
@@ -2041,12 +2034,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 454,
+          "line": 442,
           "note": null,
           "tests": [
             {
               "title": "adds reduced own and the separately reduced spouse excess in the full year after simultaneous early claims",
-              "line": 462
+              "line": 450
             }
           ]
         }
@@ -2129,16 +2122,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 399,
+          "line": 387,
           "note": null,
           "tests": [
             {
               "title": "deems own filed so year-one benefit is the own amount, not restricted spouse-only",
-              "line": 406
+              "line": 394
             },
             {
               "title": "exposes exactly one claimAge and no restricted-application vocabulary on the SS stream",
-              "line": 429
+              "line": 417
             }
           ]
         }
@@ -2498,12 +2491,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 780,
+          "line": 790,
           "note": "shares the ARF observable",
           "tests": [
             {
               "title": "collapses the charging sequence into the annual ratio",
-              "line": 789
+              "line": 799
             }
           ]
         }
@@ -2571,12 +2564,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 604,
+          "line": 586,
           "note": null,
           "tests": [
             {
-              "title": "withholds half the excess for a beneficiary under FRA all year",
-              "line": 608
+              "title": "withholds half the below-FRA excess and one-third of the FRA-year excess",
+              "line": 595
             }
           ]
         }
@@ -2897,12 +2890,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 941,
+          "line": 951,
           "note": null,
           "tests": [
             {
               "title": "does not recompute a higher PIA from post-FRA covered wages",
-              "line": 949
+              "line": 959
             }
           ]
         }

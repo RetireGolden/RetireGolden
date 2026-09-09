@@ -457,6 +457,12 @@ export const medicareAndHealthCoverageRecords = {
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
+      citation: 'IRC 36B(d)(2)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section36B&num=0&edition=prelim',
+      quotedText:
+        'The term "household income" means, with respect to any taxpayer, an amount equal to the sum of- (i) the modified adjusted gross income of the taxpayer, plus (ii) the aggregate modified adjusted gross incomes of all other individuals who- (I) were taken into account in determining the taxpayer\'s family size under paragraph (1), and (II) were required to file a return of tax imposed by section 1 for the taxable year.',
+    }, {
+      kind: 'statute',
       citation: 'IRC 36B(d)(2)(B)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section36B&num=0&edition=prelim',
       quotedText:

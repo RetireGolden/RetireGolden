@@ -1,14 +1,14 @@
 {
-  "generatedAt": "2026-09-09T01:31:58.723Z",
+  "generatedAt": "2026-09-09T03:01:44.491Z",
   "recordCount": 446,
   "urlCount": 356,
   "fetched": 0,
   "cached": 356,
-  "entryCount": 1315,
+  "entryCount": 1317,
   "counts": {
-    "EXACT": 921,
+    "EXACT": 922,
     "PUNCTUATION": 43,
-    "PDF-WORD-LEVEL": 248,
+    "PDF-WORD-LEVEL": 249,
     "ELISION-EXACT": 85,
     "ELISION-PUNCTUATION": 8,
     "PDF-NOT-VERIFIABLE": 7,
@@ -5683,6 +5683,16 @@
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section36B&num=0&edition=prelim",
       "quoteSha256": "8aef3a0a0ae2e83b",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-36B-d-2-B-aca-household-magi-composition",
+      "citation": "IRC 36B(d)(2)(A)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section36B&num=0&edition=prelim",
+      "quoteSha256": "77376da8beb7d962",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null
@@ -11989,6 +11999,16 @@
       "quoteSha256": "9a739c2c1f65fa4d",
       "verdict": "PDF-WORD-LEVEL",
       "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "aca-26-51-404-b-6-social-security-exclusion",
+      "citation": "Ark. Code Ann. 26-51-307(b)(2) (2017 Ark. Acts, Act 141, § 3)",
+      "host": "arkleg.state.ar.us",
+      "url": "https://arkleg.state.ar.us/Home/FTPDocument?path=%2FACTS%2F2017R%2FPublic%2FACT141.pdf",
+      "quoteSha256": "1165fe46441b901b",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "3 elision segments, all present in the extracted text",
       "diagnosis": null
     },
     {
