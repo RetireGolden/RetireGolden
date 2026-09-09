@@ -158,10 +158,10 @@ export const northeastStateRecords = {
     ],
   },
 
-  'ny-tax-612-c-3-c-social-security-subtraction': {
-    title: 'New York subtracts federally included Social Security from adjusted gross income',
+  'ny-dtf-social-security-subtraction': {
+    title: 'DTF allows federally included Social Security to be subtracted in New York adjusted gross income',
     statement:
-      'New York subtracts Social Security benefits that are included in federal adjusted gross income when computing New York adjusted gross income. That is what `taxesSocialSecurity: false` encodes: the federally taxable share is subtracted back out and never reaches the New York base. Tier I Railroad Retirement provenance, part-year allocation, and unsupported filing statuses remain outside this record.',
+      'New York Department of Taxation and Finance guidance allows Social Security benefits included in federal adjusted gross income to be subtracted when computing New York adjusted gross income. That is what `taxesSocialSecurity: false` encodes: the pack takes the allowed full subtraction and the federally taxable share never reaches the New York base. Tier I Railroad Retirement provenance, part-year allocation, and unsupported filing statuses remain outside this record.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,

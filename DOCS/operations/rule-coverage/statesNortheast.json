@@ -56,16 +56,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2468,
+          "line": 2479,
           "note": null,
           "tests": [
             {
               "title": "pins the pack’s failure to subtract the low-income federally taxable benefit",
-              "line": 2495
+              "line": 2506
             },
             {
               "title": "pins the pack’s unconditional pension exclusion above the statutory schedule",
-              "line": 2508
+              "line": 2519
             }
           ]
         }
@@ -132,20 +132,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
-          "line": 1343,
+          "line": 1348,
           "note": null,
           "tests": [
             {
               "title": "exempts a noncontributory public pension the statute leaves in",
-              "line": 1362
+              "line": 1367
             },
             {
               "title": "taxes a private IRA of the same amount, which is the other bucket",
-              "line": 1371
+              "line": 1376
             },
             {
               "title": "reaches the statute once the public override is dropped",
-              "line": 1381
+              "line": 1386
             }
           ]
         }
@@ -208,16 +208,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2959,
+          "line": 2970,
           "note": null,
           "tests": [
             {
               "title": "deducts Social Security included in federal gross income",
-              "line": 2973
+              "line": 2984
             },
             {
               "title": "would leave the federally taxable share in if the deduction were dropped",
-              "line": 2978
+              "line": 2989
             }
           ]
         }
@@ -284,12 +284,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 1122,
+          "line": 1123,
           "note": null,
           "tests": [
             {
               "title": "pins the current flat cap against gross Social Security offset and agesAlive doubling the pack still omits",
-              "line": 1216
+              "line": 1217
             }
           ]
         }
@@ -402,16 +402,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 951,
+          "line": 952,
           "note": null,
           "tests": [
             {
               "title": "subtracts Maine published basic plus the IRC 63(c)(3) age-65 addition",
-              "line": 1047
+              "line": 1048
             },
             {
               "title": "holds Maine’s basic deduction still as the federal figure is projected upward",
-              "line": 1098
+              "line": 1099
             }
           ]
         }
@@ -602,16 +602,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3176,
+          "line": 3187,
           "note": null,
           "tests": [
             {
               "title": "leaves a New Hampshire retiree with no state base at all",
-              "line": 3197
+              "line": 3208
             },
             {
               "title": "would build a base if Chapter 77 were still in force",
-              "line": 3202
+              "line": 3213
             }
           ]
         }
@@ -674,12 +674,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 413,
+          "line": 414,
           "note": null,
           "tests": [
             {
               "title": "omits Social Security from the New Jersey return base",
-              "line": 432
+              "line": 433
             }
           ]
         }
@@ -785,6 +785,69 @@
       ]
     },
     {
+      "id": "ny-dtf-social-security-subtraction",
+      "title": "DTF allows federally included Social Security to be subtracted in New York adjusted gross income",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:NY",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-09",
+      "dueOn": "2027-09-09",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "states.NY",
+              "line": 632
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 96
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 450,
+          "note": null,
+          "tests": [
+            {
+              "title": "subtracts federally included Social Security when computing New York adjusted gross income",
+              "line": 469
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "New York State Department of Taxation and Finance, Information for retired persons — Social Security",
+          "url": "https://www.tax.ny.gov/pit/file/information_for_seniors.htm"
+        }
+      ]
+    },
+    {
       "id": "ny-tax-612-c-3-a-pension-annuity-exclusion",
       "title": "New York’s $20,000 pension exclusion requires attaining 59½",
       "classification": "approximated",
@@ -862,69 +925,6 @@
           "kind": "statute",
           "citation": "N.Y. Tax Law 612(c)",
           "url": "https://www.nysenate.gov/legislation/laws/TAX/612"
-        }
-      ]
-    },
-    {
-      "id": "ny-tax-612-c-3-c-social-security-subtraction",
-      "title": "New York subtracts federally included Social Security from adjusted gross income",
-      "classification": "settled",
-      "errorDirection": null,
-      "conventionRationale": null,
-      "contraryReading": null,
-      "jurisdiction": "state:NY",
-      "volatility": "staticStatute",
-      "effectiveFrom": 2026,
-      "effectiveThrough": null,
-      "verifiedOn": "2026-09-09",
-      "dueOn": "2027-09-09",
-      "implementedBy": [
-        "packages/engine/src/params/state/data/year2026.ts",
-        "packages/engine/src/tax/stateTax.ts"
-      ],
-      "implementations": [
-        {
-          "path": "packages/engine/src/params/state/data/year2026.ts",
-          "functions": [
-            {
-              "name": "states.NY",
-              "line": 632
-            }
-          ]
-        },
-        {
-          "path": "packages/engine/src/tax/stateTax.ts",
-          "functions": [
-            {
-              "name": "computeStateTaxableIncome",
-              "line": 96
-            }
-          ]
-        }
-      ],
-      "fixtureFiles": [
-        "packages/engine/src/tax/stateTax.rules.test.ts"
-      ],
-      "fixtures": [
-        {
-          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 449,
-          "note": null,
-          "tests": [
-            {
-              "title": "subtracts federally included Social Security when computing New York adjusted gross income",
-              "line": 468
-            }
-          ]
-        }
-      ],
-      "refusalFixtureFiles": [],
-      "refusalFixtures": [],
-      "authorities": [
-        {
-          "kind": "stateAgencyPublication",
-          "citation": "New York State Department of Taxation and Finance, Information for retired persons — Social Security",
-          "url": "https://www.tax.ny.gov/pit/file/information_for_seniors.htm"
         }
       ]
     },
@@ -1123,12 +1123,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 485,
+          "line": 486,
           "note": null,
           "tests": [
             {
               "title": "never taxes Social Security payments as Pennsylvania compensation",
-              "line": 504
+              "line": 505
             }
           ]
         }
@@ -1190,12 +1190,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3514,
+          "line": 3525,
           "note": null,
           "tests": [
             {
               "title": "prices single and joint filers on the TY2026 deduction and schedule",
-              "line": 3529
+              "line": 3540
             }
           ]
         }
@@ -1272,34 +1272,34 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3541,
+          "line": 3552,
           "note": "Social Security AGI threshold limb",
           "tests": [
             {
               "title": "pins the low-AGI age-qualified Social Security modification",
-              "line": 3556
+              "line": 3567
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3563,
+          "line": 3574,
           "note": "pension ceiling limb",
           "tests": [
             {
               "title": "pins the current pension ceiling rather than the stale pack cap",
-              "line": 3582
+              "line": 3593
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3589,
+          "line": 3600,
           "note": "pension AGI-threshold limb",
           "tests": [
             {
               "title": "pins the opposite direction when the pension AGI test disallows any modification",
-              "line": 3609
+              "line": 3620
             }
           ]
         }
@@ -1382,20 +1382,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3642,
+          "line": 3653,
           "note": null,
           "tests": [
             {
               "title": "pins Vermont's complete low-AGI Social Security exclusion",
-              "line": 3667
+              "line": 3678
             },
             {
               "title": "pins the single mid-band proportional Social Security exclusion",
-              "line": 3676
+              "line": 3687
             },
             {
               "title": "pins the joint mid-band proportional Social Security exclusion",
-              "line": 3682
+              "line": 3693
             }
           ]
         }

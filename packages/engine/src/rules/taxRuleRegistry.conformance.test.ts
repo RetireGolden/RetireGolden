@@ -862,7 +862,7 @@ const STATE_PRIMARY_PUBLISHERS: Readonly<Partial<Record<UsStateCode, readonly st
   NY: [
     'nysenate.gov', // New York State Senate, Consolidated Laws (Tax Law)
     // Verified 2026-09-09: DTF seniors guidance for
-    // ny-tax-612-c-3-c-social-security-subtraction. Bare `tax.ny.gov`: usable
+    // ny-dtf-social-security-subtraction. Bare `tax.ny.gov`: usable
     // document URLs carry `www.tax.ny.gov`, and `hostAndPublisherOf` strips
     // the prefix.
     'tax.ny.gov', // New York State Department of Taxation and Finance
@@ -900,13 +900,11 @@ const STATE_PRIMARY_PUBLISHERS: Readonly<Partial<Record<UsStateCode, readonly st
     // that produced the repeal are scans whose OCR cannot be quoted. So the
     // department's own statement is the only usable authority, and it lives at
     // www.tn.gov/revenue/... — which means admitting `tn.gov`, the whole
-    // executive branch, exactly as the Pennsylvania note above refused to do
-    // for `pa.gov`.
-    //
-    // The difference is that Pennsylvania had an alternative and Tennessee does
-    // not. 61 Pa. Code carries the operative language the PA Guide restates;
-    // there is no Tennessee equivalent, because the thing being registered is a
-    // repeal and a repealed chapter has no text. Admitting `tn.gov` is a real
+    // executive branch, while bare `pa.gov` stays out. Pennsylvania records
+    // generally rest on 61 Pa. Code; one verified Guide page is admitted by
+    // exact URL in `STATE_EXACT_PUBLICATION_URLS` below. Tennessee has no
+    // equivalent, because the thing being registered is a repeal and a repealed
+    // chapter has no text. Admitting `tn.gov` is a real
     // cost recorded here rather than a line quietly crossed: it means a future
     // Tennessee record could be sourced to any Tennessee agency without this
     // table objecting, and reviewers of such a record should say so.
@@ -1835,7 +1833,7 @@ describe('tax rule registry conformance', () => {
 
   it('admits tax.ny.gov only for a New York rule', () => {
     // Verified 2026-09-09: DTF seniors guidance for
-    // ny-tax-612-c-3-c-social-security-subtraction.
+    // ny-dtf-social-security-subtraction.
     const nyDtfSeniors = {
       citation: 'New York State Department of Taxation and Finance, Information for retired persons — Social Security',
       url: 'https://www.tax.ny.gov/pit/file/information_for_seniors.htm',

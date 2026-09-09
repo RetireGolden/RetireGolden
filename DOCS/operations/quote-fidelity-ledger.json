@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-09-09T16:02:39.823Z",
+  "generatedAt": "2026-09-09T16:41:03.557Z",
   "recordCount": 456,
   "urlCount": 363,
-  "fetched": 3,
-  "cached": 360,
+  "fetched": 0,
+  "cached": 363,
   "entryCount": 1350,
   "counts": {
     "EXACT": 945,
@@ -9895,7 +9895,7 @@
       "diagnosis": null
     },
     {
-      "id": "ny-tax-612-c-3-c-social-security-subtraction",
+      "id": "ny-dtf-social-security-subtraction",
       "citation": "New York State Department of Taxation and Finance, Information for retired persons — Social Security",
       "host": "www.tax.ny.gov",
       "url": "https://www.tax.ny.gov/pit/file/information_for_seniors.htm",

@@ -402,7 +402,8 @@ describeRule('pa-pit-no-capital-loss-carryforward', {
 // IRC §86 federal discriminator (single filer, $90,000 non-SS ordinary income,
 // $40,000 Social Security):
 //   provisional income = $90,000 + $20,000 = $110,000 > $34,000
-//   federally taxable = min($34,000, 0.85×($110,000−$34,000) + min($6,000, $20,000))
+//   single add-on = half of ($34,000 − $25,000) = $4,500
+//   federally taxable = min($34,000, 0.85×($110,000−$34,000) + min($4,500, $20,000))
 //                     = $34,000
 // State deductions cancel in the with-SS / without-SS pair, so actual base delta
 // is 0; flipping `taxesSocialSecurity` adds exactly $34,000.
@@ -446,7 +447,7 @@ const NY_SS_OTHER_INCOME = 90_000
 const NY_SS_BENEFITS = 40_000
 const NY_SS_FEDERALLY_TAXABLE = 34_000
 
-describeRule('ny-tax-612-c-3-c-social-security-subtraction', {
+describeRule('ny-dtf-social-security-subtraction', {
   readings: {
     baseDeltaWithAndWithoutBenefits: 0,
     counterfactualAddsThirtyFourThousandToTheBase: NY_SS_FEDERALLY_TAXABLE,
@@ -2404,15 +2405,23 @@ const GA_SS_FEDERALLY_TAXABLE = 34_000
 
 describeRule('ga-code-48-7-27-retirement-and-social-security-exclusion', {
   readings: {
-    ageSixtyThreeTakesTheThirtyFiveThousandDollarGeorgiaExclusion:
-      GA_RETIREMENT_INCOME - GA_PRE65_RETIREMENT_CAP - GA_DEDUCTION_SINGLE,
-    packWaitsUntilAgeSixtyFive: 55_000,
-    baseDeltaWithAndWithoutBenefits: 0,
-    counterfactualAddsThirtyFourThousandToTheBase: GA_SS_FEDERALLY_TAXABLE,
+    accepted: {
+      retirementTaxableIncome:
+        GA_RETIREMENT_INCOME - GA_PRE65_RETIREMENT_CAP - GA_DEDUCTION_SINGLE,
+      socialSecurityTaxableIncomeDelta: 0,
+    },
+    produced: {
+      retirementTaxableIncome: 55_000,
+      socialSecurityTaxableIncomeDelta: 0,
+    },
+    counterfactualReading: {
+      retirementTaxableIncome: 55_000,
+      socialSecurityTaxableIncomeDelta: GA_SS_FEDERALLY_TAXABLE,
+    },
   },
-  accepted: 'ageSixtyThreeTakesTheThirtyFiveThousandDollarGeorgiaExclusion',
-  produced: 'packWaitsUntilAgeSixtyFive',
-  note: 'age-62-through-64 retirement-income limb',
+  accepted: 'accepted',
+  produced: 'produced',
+  note: 'age-62-through-64 retirement-income and Schedule 1 line 8 Social Security limbs',
 }, ({ accepted, produced, readings }) => {
   const scenario = input({
     state: 'GA',
@@ -2422,8 +2431,10 @@ describeRule('ga-code-48-7-27-retirement-and-social-security-exclusion', {
   })
 
   it('pins the missing Georgia age-63 retirement exclusion', () => {
-    expect(computeStateTaxableIncome(pack('GA'), scenario)).toBeCloseTo(produced, 6)
-    expect(computeStateTaxableIncome(pack('GA'), scenario)).not.toBeCloseTo(accepted, 6)
+    expect(computeStateTaxableIncome(pack('GA'), scenario))
+      .toBeCloseTo(produced.retirementTaxableIncome, 6)
+    expect(computeStateTaxableIncome(pack('GA'), scenario))
+      .not.toBeCloseTo(accepted.retirementTaxableIncome, 6)
   })
 
   it('subtracts federally taxable Social Security on Schedule 1 line 8 separately from the retirement limb', () => {
@@ -2441,12 +2452,12 @@ describeRule('ga-code-48-7-27-retirement-and-social-security-exclusion', {
     expect(
       computeStateTaxableIncome(pack('GA'), withBenefits)
         - computeStateTaxableIncome(pack('GA'), withoutBenefits),
-    ).toBeCloseTo(readings.baseDeltaWithAndWithoutBenefits, 6)
+    ).toBeCloseTo(accepted.socialSecurityTaxableIncomeDelta, 6)
     const taxing = { ...pack('GA'), taxesSocialSecurity: true }
     expect(
       computeStateTaxableIncome(taxing, withBenefits)
         - computeStateTaxableIncome(pack('GA'), withBenefits),
-    ).toBeCloseTo(readings.counterfactualAddsThirtyFourThousandToTheBase, 6)
+    ).toBeCloseTo(readings.counterfactualReading.socialSecurityTaxableIncomeDelta, 6)
   })
 })
 
