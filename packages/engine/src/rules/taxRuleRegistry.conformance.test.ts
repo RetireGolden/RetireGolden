@@ -462,18 +462,17 @@ const STATE_PRIMARY_PUBLISHERS: Readonly<Partial<Record<UsStateCode, readonly st
   // all. Nor is a host under active reorganisation a good thing to pin a
   // citation to.
   //
-  // So Pennsylvania is sourced to the Pennsylvania Code instead. Both PA records
-  // rest on 61 Pa. Code § 101.6 and § 103.13, which carry the operative language
-  // the Guide restates, are the Department's own regulations rather than its
-  // summary of them, and have a `kind` this registry can label honestly —
-  // `regulation`.
+  // Pennsylvania records generally rest on the Pennsylvania Code — 61 Pa. Code
+  // carries operative language the Guide restates and has a `kind` this registry
+  // can label honestly as `regulation`. One verified agency-publication page on
+  // `www.pa.gov` is admitted by exact URL in `STATE_EXACT_PUBLICATION_URLS`
+  // below; bare `pa.gov` stays out because it is the whole executive branch.
   //
   // `TaxRuleAuthorityKind` has since gained `stateAgencyPublication`, and that
-  // does NOT reopen the Pennsylvania question. The kind names what a citation
-  // IS; this table names which publisher it may come FROM, and the two guards
-  // are independent. Pennsylvania still has a regulation carrying the operative
-  // language, so it still has no need to cite a department summary, and the
-  // reason `pa.gov` stays out is unchanged: it is the whole executive branch.
+  // does NOT reopen the portal question. The kind names what a citation IS; this
+  // table names which publisher it may come FROM, and the two guards are
+  // independent. The exact-URL admission is the narrow agency-publication
+  // boundary for one checked page, not a host-tier broadening.
   // What the new kind changed is the states where no such regulation exists —
   // see the SD, TN and WY entries below, each of which had to admit a publisher
   // deliberately because the negative it registers has no code section to quote.
@@ -793,8 +792,9 @@ const STATE_PRIMARY_PUBLISHERS: Readonly<Partial<Record<UsStateCode, readonly st
     // Verified 2026-08-27. P.L.2021, c.129 is served from this host as the
     // enrolled act that reprints N.J.S.A. 54A:6-10 in full. `nj.gov` is NOT
     // listed: it is the whole executive branch, the shape refused for
-    // `pa.gov`. The Treasury topic page restates the same exclusion; the
-    // enrolled act is the operative language and has a narrower publisher.
+    // `pa.gov`. The NJIT-12 exempt-income page is admitted by exact URL in
+    // `STATE_EXACT_PUBLICATION_URLS` below; the enrolled act remains the
+    // operative language for the pension exclusion record.
     'pub.njleg.gov', // New Jersey Legislature, public laws
   ],
   ME: [
@@ -861,9 +861,16 @@ const STATE_PRIMARY_PUBLISHERS: Readonly<Partial<Record<UsStateCode, readonly st
   ],
   NY: [
     'nysenate.gov', // New York State Senate, Consolidated Laws (Tax Law)
+    // Verified 2026-09-09: DTF seniors guidance for
+    // ny-tax-612-c-3-c-social-security-subtraction. Bare `tax.ny.gov`: usable
+    // document URLs carry `www.tax.ny.gov`, and `hostAndPublisherOf` strips
+    // the prefix.
+    'tax.ny.gov', // New York State Department of Taxation and Finance
   ],
   PA: [
     'pacodeandbulletin.gov', // Pennsylvania Code and Bulletin (61 Pa. Code, Revenue)
+    // The gross-compensation guide page is NOT admitted here; see
+    // `STATE_EXACT_PUBLICATION_URLS` below. Bare `pa.gov` stays out.
   ],
   SC: [
     'scstatehouse.gov', // South Carolina Legislature, Code of Laws
@@ -930,6 +937,28 @@ const STATE_PRIMARY_PUBLISHERS: Readonly<Partial<Record<UsStateCode, readonly st
     // nothing at a citable wyo.gov URL.
     'sos.wyo.gov',
   ],
+}
+
+/**
+ * Verified state agency-publication pages admitted by exact URL when the
+ * executive portal is too broad to list as a publisher.
+ *
+ * Compared literally — no prefix match, no path normalisation, no trailing-
+ * slash folding. A query string, a neighbouring path, or a credential smuggled
+ * into the authority string must not widen what was checked.
+ */
+const STATE_EXACT_PUBLICATION_URLS: Readonly<Partial<Record<UsStateCode, readonly string[]>>> = {
+  NJ: [
+    'https://www.nj.gov/treasury/taxation/njit12.shtml',
+  ],
+  PA: [
+    'https://www.pa.gov/agencies/revenue/forms-and-publications/pa-personal-income-tax-guide/gross-compensation',
+  ],
+}
+
+function isExactStatePublicationAdmitted(stateCode: UsStateCode, url: string): boolean {
+  const admitted = STATE_EXACT_PUBLICATION_URLS[stateCode]
+  return admitted !== undefined && admitted.includes(url)
 }
 
 /**
@@ -1038,6 +1067,10 @@ function offSourceAuthorities(
         continue
       }
       if (!admissible.includes(parsed.publisher)) {
+        if (rule.jurisdiction !== 'federal') {
+          const stateCode = rule.jurisdiction.slice('state:'.length) as UsStateCode
+          if (isExactStatePublicationAdmitted(stateCode, authority.url)) continue
+        }
         offSource.push(`${ruleId}:${authority.citation}:${parsed.host}`)
       }
     }
@@ -1056,7 +1089,8 @@ function stateRulesMissingStateAuthority(
       const stateHosts = STATE_PRIMARY_PUBLISHERS[stateCode] ?? []
       return !rule.authority.some((authority) => {
         const parsed = hostAndPublisherOf(authority.url)
-        return parsed !== null && stateHosts.includes(parsed.publisher)
+        if (parsed !== null && stateHosts.includes(parsed.publisher)) return true
+        return isExactStatePublicationAdmitted(stateCode, authority.url)
       })
     })
     .map(([ruleId]) => ruleId)
@@ -1709,6 +1743,123 @@ describe('tax rule registry conformance', () => {
       jurisdiction: 'state:AL',
       authority: [hb341],
     }]])).toEqual([])
+  })
+
+  it('admits verified NJ and PA agency-publication pages by exact URL only', () => {
+    // Verified 2026-09-09: NJIT-12 and the PA gross-compensation guide are
+    // served from executive-branch portals too broad to list as publishers.
+    // Admission is the exact checked URL, not `nj.gov` or `pa.gov`.
+    const njNjit12 = {
+      citation: 'New Jersey Division of Taxation, Exempt (Nontaxable) Income',
+      url: 'https://www.nj.gov/treasury/taxation/njit12.shtml',
+    }
+    const paGrossComp = {
+      citation: 'Pennsylvania Department of Revenue, Personal Income Tax Guide — Gross Compensation, Income Items Never Taxable as PA Compensation',
+      url: 'https://www.pa.gov/agencies/revenue/forms-and-publications/pa-personal-income-tax-guide/gross-compensation',
+    }
+    expect(offSourceAuthorities([['nj-fictional', {
+      jurisdiction: 'state:NJ',
+      authority: [njNjit12],
+    }]])).toEqual([])
+    expect(stateRulesMissingStateAuthority([['nj-fictional', {
+      jurisdiction: 'state:NJ',
+      authority: [njNjit12],
+    }]])).toEqual([])
+    expect(offSourceAuthorities([['pa-fictional', {
+      jurisdiction: 'state:PA',
+      authority: [paGrossComp],
+    }]])).toEqual([])
+    expect(stateRulesMissingStateAuthority([['pa-fictional', {
+      jurisdiction: 'state:PA',
+      authority: [paGrossComp],
+    }]])).toEqual([])
+    expect(offSourceAuthorities([['pa-fictional', {
+      jurisdiction: 'state:PA',
+      authority: [njNjit12],
+    }]])).toEqual(['pa-fictional:New Jersey Division of Taxation, Exempt (Nontaxable) Income:www.nj.gov'])
+    expect(offSourceAuthorities([['nj-fictional', {
+      jurisdiction: 'state:NJ',
+      authority: [paGrossComp],
+    }]])).toEqual(['nj-fictional:Pennsylvania Department of Revenue, Personal Income Tax Guide — Gross Compensation, Income Items Never Taxable as PA Compensation:www.pa.gov'])
+    expect(offSourceAuthorities([['irc-fictional-federal', {
+      jurisdiction: 'federal',
+      authority: [njNjit12],
+    }]])).toEqual(['irc-fictional-federal:New Jersey Division of Taxation, Exempt (Nontaxable) Income:www.nj.gov'])
+    expect(offSourceAuthorities([['irc-fictional-federal', {
+      jurisdiction: 'federal',
+      authority: [paGrossComp],
+    }]])).toEqual(['irc-fictional-federal:Pennsylvania Department of Revenue, Personal Income Tax Guide — Gross Compensation, Income Items Never Taxable as PA Compensation:www.pa.gov'])
+    expect(offSourceAuthorities([['nj-fictional', {
+      jurisdiction: 'state:NJ',
+      authority: [{
+        citation: 'NJ Treasury topic index',
+        url: 'https://www.nj.gov/treasury/taxation/',
+      }],
+    }]])).toEqual(['nj-fictional:NJ Treasury topic index:www.nj.gov'])
+    expect(offSourceAuthorities([['pa-fictional', {
+      jurisdiction: 'state:PA',
+      authority: [{
+        citation: 'PA revenue agency index',
+        url: 'https://www.pa.gov/agencies/revenue/',
+      }],
+    }]])).toEqual(['pa-fictional:PA revenue agency index:www.pa.gov'])
+    expect(offSourceAuthorities([['nj-fictional', {
+      jurisdiction: 'state:NJ',
+      authority: [{
+        citation: 'NJIT-12 with query suffix',
+        url: 'https://www.nj.gov/treasury/taxation/njit12.shtml?utm_source=test',
+      }],
+    }]])).toEqual(['nj-fictional:NJIT-12 with query suffix:www.nj.gov'])
+    expect(offSourceAuthorities([['pa-fictional', {
+      jurisdiction: 'state:PA',
+      authority: [{
+        citation: 'Gross compensation with trailing slash',
+        url: 'https://www.pa.gov/agencies/revenue/forms-and-publications/pa-personal-income-tax-guide/gross-compensation/',
+      }],
+    }]])).toEqual(['pa-fictional:Gross compensation with trailing slash:www.pa.gov'])
+    expect(offSourceAuthorities([['nj-fictional', {
+      jurisdiction: 'state:NJ',
+      authority: [{
+        citation: 'Credential-smuggled NJIT-12',
+        url: 'https://www.nj.gov@evil.example/treasury/taxation/njit12.shtml',
+      }],
+    }]])).toEqual(['nj-fictional:Credential-smuggled NJIT-12:evil.example'])
+    expect(stateRulesMissingStateAuthority([['nj-fictional', {
+      jurisdiction: 'state:NJ',
+      authority: [{
+        citation: 'NJ Treasury topic index',
+        url: 'https://www.nj.gov/treasury/taxation/',
+      }],
+    }]])).toEqual(['nj-fictional'])
+  })
+
+  it('admits tax.ny.gov only for a New York rule', () => {
+    // Verified 2026-09-09: DTF seniors guidance for
+    // ny-tax-612-c-3-c-social-security-subtraction.
+    const nyDtfSeniors = {
+      citation: 'New York State Department of Taxation and Finance, Information for retired persons — Social Security',
+      url: 'https://www.tax.ny.gov/pit/file/information_for_seniors.htm',
+    }
+    expect(offSourceAuthorities([['ny-fictional', {
+      jurisdiction: 'state:NY',
+      authority: [nyDtfSeniors],
+    }]])).toEqual([])
+    expect(stateRulesMissingStateAuthority([['ny-fictional', {
+      jurisdiction: 'state:NY',
+      authority: [nyDtfSeniors],
+    }]])).toEqual([])
+    expect(offSourceAuthorities([['nj-fictional', {
+      jurisdiction: 'state:NJ',
+      authority: [nyDtfSeniors],
+    }]])).toEqual(['nj-fictional:New York State Department of Taxation and Finance, Information for retired persons — Social Security:www.tax.ny.gov'])
+    expect(offSourceAuthorities([['irc-fictional-federal', {
+      jurisdiction: 'federal',
+      authority: [nyDtfSeniors],
+    }]])).toEqual(['irc-fictional-federal:New York State Department of Taxation and Finance, Information for retired persons — Social Security:www.tax.ny.gov'])
+    expect(stateRulesMissingStateAuthority([['nj-fictional', {
+      jurisdiction: 'state:NJ',
+      authority: [nyDtfSeniors],
+    }]])).toEqual(['nj-fictional'])
   })
 
   it('admits the www. spelling a state department actually serves', () => {

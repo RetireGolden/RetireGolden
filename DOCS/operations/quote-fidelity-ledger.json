@@ -1,15 +1,15 @@
 {
-  "generatedAt": "2026-09-09T13:21:05.201Z",
-  "recordCount": 451,
-  "urlCount": 360,
-  "fetched": 0,
+  "generatedAt": "2026-09-09T16:02:39.823Z",
+  "recordCount": 456,
+  "urlCount": 363,
+  "fetched": 3,
   "cached": 360,
-  "entryCount": 1345,
+  "entryCount": 1350,
   "counts": {
-    "EXACT": 943,
+    "EXACT": 945,
     "PUNCTUATION": 42,
-    "PDF-WORD-LEVEL": 253,
-    "ELISION-EXACT": 89,
+    "PDF-WORD-LEVEL": 254,
+    "ELISION-EXACT": 91,
     "ELISION-PUNCTUATION": 8,
     "PDF-NOT-VERIFIABLE": 7,
     "UNFETCHABLE": 3
@@ -9855,6 +9855,16 @@
       "diagnosis": null
     },
     {
+      "id": "pa-pit-social-security-not-compensation",
+      "citation": "Pennsylvania Department of Revenue, Personal Income Tax Guide — Gross Compensation, Income Items Never Taxable as PA Compensation",
+      "host": "www.pa.gov",
+      "url": "https://www.pa.gov/agencies/revenue/forms-and-publications/pa-personal-income-tax-guide/gross-compensation",
+      "quoteSha256": "aeed29fee3ae0286",
+      "verdict": "ELISION-EXACT",
+      "detail": "2 elision segments, every one a literal substring",
+      "diagnosis": null
+    },
+    {
       "id": "ny-tax-612-c-3-a-pension-annuity-exclusion",
       "citation": "N.Y. Tax Law 612(c)(3-a)",
       "host": "www.nysenate.gov",
@@ -9882,6 +9892,16 @@
       "quoteSha256": "d5b0313ce3bb3959",
       "verdict": "UNFETCHABLE",
       "detail": "HTTP 403",
+      "diagnosis": null
+    },
+    {
+      "id": "ny-tax-612-c-3-c-social-security-subtraction",
+      "citation": "New York State Department of Taxation and Finance, Information for retired persons — Social Security",
+      "host": "www.tax.ny.gov",
+      "url": "https://www.tax.ny.gov/pit/file/information_for_seniors.htm",
+      "quoteSha256": "3cc44ef04dcd8983",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -10225,6 +10245,16 @@
       "diagnosis": null
     },
     {
+      "id": "nj-njit12-social-security-exclusion",
+      "citation": "New Jersey Division of Taxation, Exempt (Nontaxable) Income",
+      "host": "www.nj.gov",
+      "url": "https://www.nj.gov/treasury/taxation/njit12.shtml",
+      "quoteSha256": "66677d4fb1fdff64",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
       "id": "nj-stat-54a-6-10-retirement-income-exclusion",
       "citation": "N.J.S.A. 54A:6-10(b)(1), as amended by P.L.2021, c.129",
       "host": "pub.njleg.gov",
@@ -10525,6 +10555,16 @@
       "diagnosis": null
     },
     {
+      "id": "il-ita-203-a-2-L-social-security-subtraction",
+      "citation": "35 ILCS 5/203(a)(2)(L)",
+      "host": "www.ilga.gov",
+      "url": "https://www.ilga.gov/Documents/legislation/ilcs/documents/003500050K203.htm",
+      "quoteSha256": "11744da307c87047",
+      "verdict": "ELISION-EXACT",
+      "detail": "2 elision segments, every one a literal substring",
+      "diagnosis": null
+    },
+    {
       "id": "mo-rsmo-143-121-capital-gain-deduction",
       "citation": "Mo. Rev. Stat. 143.121.3(14)(a)",
       "host": "revisor.mo.gov",
@@ -10550,6 +10590,16 @@
       "host": "www.legis.iowa.gov",
       "url": "https://www.legis.iowa.gov/docs/code/422.7.pdf",
       "quoteSha256": "6ae5138dca25301f",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "iowa-code-422-7-8-social-security-subtraction",
+      "citation": "Iowa Code 422.7(8) (2026)",
+      "host": "www.legis.iowa.gov",
+      "url": "https://www.legis.iowa.gov/docs/code/422.7.pdf",
+      "quoteSha256": "2805165f9216e7b9",
       "verdict": "PDF-WORD-LEVEL",
       "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
       "diagnosis": null
