@@ -44,6 +44,7 @@ const SUBTYPE_LABELS: Record<string, string> = {
   person: 'Person',
   divorced: 'Divorced-spousal record',
   deceased: 'Survivor record',
+  'surviving-divorced': 'Deceased divorced ex (survivor)',
   wages: 'Wages',
   socialSecurity: 'Social Security',
   recurring: 'Recurring income',

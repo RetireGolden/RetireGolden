@@ -173,6 +173,7 @@ describe('buildHouseholdGraph', () => {
     // Former spouses are unnamed benefit-source records attached to the claimant.
     expect(nodeById(graph, 'fs:ss1:fs1').label).toBe('Former spouse (living)')
     expect(nodeById(graph, 'fs:ss1:fs2').subtype).toBe('deceased')
+    expect(nodeById(graph, 'fs:ss1:fs2').label).toBe('Former spouse (deceased)')
     expect(edgeIds(graph)).toContain('formerSpouseOf:fs:ss1:fs1->person:p1')
     // Charity destination splits: pct to charity, remainder to heirs.
     const charity = graph.edges.find((e) => e.id === 'beneficiary:acct:brokerage->estate:charity')
@@ -184,6 +185,32 @@ describe('buildHouseholdGraph', () => {
     expect(edgeIds(graph)).toContain('beneficiary:ins:life1->person:p2')
     expect(nodeById(graph, 'ins:life1').amount).toBe(250_000)
     expect(nodeById(graph, 'ins:life1').amountKind).toBe('deathBenefit')
+  })
+
+  it('surviving-divorced former spouses carry the new subtype and a distinct label', () => {
+    const plan = coupleFixture()
+    const ss1 = plan.incomes.find((s) => s.id === 'ss1') as Extract<IncomeStream, { type: 'socialSecurity' }>
+    ss1.formerSpouses = [
+      {
+        id: 'fs-sd',
+        relationship: 'surviving-divorced',
+        dob: '1961-03-15',
+        piaMonthly: 2_600,
+        marriageYears: 12,
+        remarriedAtAge: null,
+      },
+    ]
+    const graph = buildHouseholdGraph(validatePlan(plan))
+    const node = nodeById(graph, 'fs:ss1:fs-sd')
+    expect(node.subtype).toBe('surviving-divorced')
+    expect(node.label).toBe('Deceased divorced ex (survivor)')
+  })
+
+  it('maps surviving-divorced subtypes to readable labels in the view model', async () => {
+    const { subtypeLabel } = await import('./mapViewModel')
+    expect(subtypeLabel({ subtype: 'surviving-divorced' })).toBe('Deceased divorced ex (survivor)')
+    expect(subtypeLabel({ subtype: 'deceased' })).toBe('Survivor record')
+    expect(subtypeLabel({ subtype: 'divorced' })).toBe('Divorced-spousal record')
   })
 
   it('multiple properties: values and debts land in totals as entered', () => {

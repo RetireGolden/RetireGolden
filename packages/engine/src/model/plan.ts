@@ -1548,29 +1548,34 @@ export const wagesIncomeSchema = z.object({
 
 /**
  * A former spouse who can unlock a benefit on someone else's record: a living
- * ex-spouse (divorced-spousal) or a deceased former spouse (survivor). Their PIA
- * is a simple user estimate, not an earnings import (spec §1.3).
+ * ex-spouse (divorced-spousal), a deceased spouse (ordinary widow/widower), or
+ * a deceased former spouse after divorce (surviving-divorced). Their PIA is a
+ * simple user estimate, not an earnings import (spec §1.3).
  */
 export const formerSpouseSchema = z.object({
   id: idSchema,
-  /** 'divorced' = living ex (divorced-spousal); 'deceased' = former spouse who died (survivor). */
-  relationship: z.enum(['divorced', 'deceased']),
+  /**
+   * 'divorced' = living ex (divorced-spousal); 'deceased' = spouse who died
+   * (ordinary widow/widower survivor); 'surviving-divorced' = former spouse who
+   * died after divorce (404.336 ten-year duration survivor).
+   */
+  relationship: z.enum(['divorced', 'deceased', 'surviving-divorced']),
   /** Ex/deceased spouse's date of birth — drives their eligibility age. */
   dob: isoDate,
   /** User-estimated monthly PIA of the ex/deceased spouse, today's dollars. */
   piaMonthly: nonNegative,
-  /** Years the marriage lasted: gates divorced-spousal (≥10) and survivor (≥9 months). */
+  /** Years the marriage lasted: gates divorced-spousal (≥10), ordinary survivor (≥9 months), and surviving-divorced (≥10). */
   marriageYears: nonNegative,
   /**
-   * Deceased only: the claimant's age when they remarried after this death, if
-   * they did. null = did not remarry after this spouse's death. The engine
-   * treats a value below 60 as a permanent forfeiture even when the claimant is
-   * now single, and preserves a value at or after 60 even when the claimant is
-   * still married.
+   * Survivor paths only: the claimant's age when they remarried after this
+   * death, if they did. null = did not remarry after this spouse's death. The
+   * engine treats a value below 60 as a permanent forfeiture even when the
+   * claimant is now single, and preserves a value at or after 60 even when the
+   * claimant is still married.
    */
   remarriedAtAge: z.number().int().min(0).max(120).nullable(),
   /**
-   * Deceased only: the age the deceased ex actually claimed their own benefit
+   * Survivor paths only: the age the deceased ex actually claimed their own benefit
    * (62–70), used for the survivor base (claim-age-adjusted) and the RIB-LIM /
    * widow's-limit cap. Omitted/null = claimed at the deceased's FRA (the safe
    * default: actual benefit = PIA, no early reduction, no delayed credits), so

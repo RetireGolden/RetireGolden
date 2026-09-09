@@ -413,6 +413,18 @@ function ladderLabel(l: TipsLadder): string {
   return l.name
 }
 
+/** Readable former-spouse node label; matches the Social Security editor vocabulary. */
+function formerSpouseNodeLabel(relationship: 'divorced' | 'deceased' | 'surviving-divorced'): string {
+  switch (relationship) {
+    case 'divorced':
+      return 'Former spouse (living)'
+    case 'surviving-divorced':
+      return 'Deceased divorced ex (survivor)'
+    case 'deceased':
+      return 'Former spouse (deceased)'
+  }
+}
+
 export function buildHouseholdGraph(plan: Plan): HouseholdGraph {
   const nodes: HouseholdNode[] = []
   const edges: HouseholdEdge[] = []
@@ -488,7 +500,7 @@ export function buildHouseholdGraph(plan: Plan): HouseholdGraph {
         id,
         kind: 'formerSpouse',
         subtype: fs.relationship,
-        label: fs.relationship === 'divorced' ? 'Former spouse (living)' : 'Former spouse (deceased)',
+        label: formerSpouseNodeLabel(fs.relationship),
         amount: fs.piaMonthly,
         amountKind: 'monthlyBenefit',
         personIds: [s.personId],

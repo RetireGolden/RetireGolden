@@ -10,11 +10,15 @@
  *    claim age, with no delayed credits (same factor as current-spousal). Worker
  *    entitlement, fully-insured status, and years since divorce are unmodeled
  *    (`cfr-20-404-331-living-divorced-spouse-eligibility`).
- *  - Survivor: marriage lasted ≥9 months, the claimant is ≥60, and remarriage
- *    before 60 is treated as an unconditional historical forfeiture even when
- *    the claimant is now single; at/after 60 preserves it. Ordinary-widow
- *    20 CFR 404.335, not surviving-divorced 404.336
- *    (`cfr-20-404-335-ordinary-widow-eligibility`). Survivor benefit is based
+ *  - Ordinary survivor (deceased spouse): marriage lasted ≥9 months, the
+ *    claimant is ≥60, and remarriage before 60 is treated as an unconditional
+ *    historical forfeiture even when the claimant is now single; at/after 60
+ *    preserves it. Ordinary-widow 20 CFR 404.335
+ *    (`cfr-20-404-335-ordinary-widow-eligibility`).
+ *  - Surviving-divorced survivor: marriage lasted ≥10 years before divorce, with
+ *    the same age-60 and remarriage gates on the non-disabled path. 20 CFR
+ *    404.336 (`cfr-20-404-336-surviving-divorced-spouse-eligibility`). Survivor
+ *    benefit is based
  *    on the deceased's actual benefit, with the early-claim widow(er) reduction
  *    and the RIB-LIM widow's-limit cap applied by the shared
  *    `survivorBenefitMonthly` helper (cited in domain rules §4).
@@ -72,8 +76,13 @@ function isDivorcedSpouseEligible(record: FormerSpouse, ctx: MaritalBenefitConte
   return true
 }
 
+/** Historical remarriage before 60 is an unconditional forfeiture; at/after 60 is preserved. */
+export function passesSurvivorRemarriageGate(record: FormerSpouse): boolean {
+  return record.remarriedAtAge === null || record.remarriedAtAge >= REMARRIAGE_SURVIVOR_PRESERVE_AGE
+}
+
 /**
- * Modeled ordinary-widow record gates on a deceased former-spouse record:
+ * Modeled ordinary-widow record gates on a deceased-spouse record:
  * relationship, 9-month duration, and historical remarriage before 60. Does not
  * test current marital status, statutory duration/remarriage exceptions, or
  * complete claimant eligibility; isWidowEligible owns the age-60 gate.
@@ -81,7 +90,31 @@ function isDivorcedSpouseEligible(record: FormerSpouse, ctx: MaritalBenefitConte
 export function passesModeledOrdinaryWidowRecordGates(record: FormerSpouse): boolean {
   if (record.relationship !== 'deceased') return false
   if (record.marriageYears < SURVIVOR_MIN_MARRIAGE_YEARS) return false
-  if (record.remarriedAtAge !== null && record.remarriedAtAge < REMARRIAGE_SURVIVOR_PRESERVE_AGE) return false
+  if (!passesSurvivorRemarriageGate(record)) return false
+  return true
+}
+
+/**
+ * Modeled surviving-divorced 404.336(a)(2) duration: relationship
+ * surviving-divorced and ten years immediately before divorce. Does not test
+ * remarriage, valid marriage, application, own-benefit, disability, or complete
+ * claimant eligibility.
+ */
+export function passesModeledSurvivingDivorcedDurationGates(record: FormerSpouse): boolean {
+  if (record.relationship !== 'surviving-divorced') return false
+  if (record.marriageYears < DIVORCED_MIN_MARRIAGE_YEARS) return false
+  return true
+}
+
+/**
+ * Modeled surviving-divorced record gates: (a)(2) duration and the historical
+ * remarriage gate. Does not test valid marriage, application, own-benefit,
+ * disability, or complete claimant eligibility; isSurvivingDivorcedEligible owns
+ * the age-60 gate.
+ */
+export function passesModeledSurvivingDivorcedRecordGates(record: FormerSpouse): boolean {
+  if (!passesModeledSurvivingDivorcedDurationGates(record)) return false
+  if (!passesSurvivorRemarriageGate(record)) return false
   return true
 }
 
@@ -90,6 +123,32 @@ function isWidowEligible(record: FormerSpouse, ctx: MaritalBenefitContext): bool
   if (!passesModeledOrdinaryWidowRecordGates(record)) return false
   if (ctx.claimantAge < SURVIVOR_MIN_AGE) return false
   return true
+}
+
+/** Surviving-divorced gates actually applied here; fully-insured and application facts are absent. */
+function isSurvivingDivorcedEligible(record: FormerSpouse, ctx: MaritalBenefitContext): boolean {
+  if (!passesModeledSurvivingDivorcedRecordGates(record)) return false
+  if (ctx.claimantAge < SURVIVOR_MIN_AGE) return false
+  return true
+}
+
+function survivorBenefitFromFormerSpouse(record: FormerSpouse, ctx: MaritalBenefitContext): MaritalBenefitCandidate {
+  const exDobYear = birthYear(record.dob)
+  const exDobMonth = Number(record.dob.slice(5, 7))
+  const exDobDay = Number(record.dob.slice(8, 10))
+  const exEffYear = effectiveBirthYear(exDobYear, exDobMonth, exDobDay)
+  const exFra = fraForBirthYear(exEffYear)
+  const exClaimAge: ClaimAge = record.deceasedClaimAge ?? { years: exFra.years, months: exFra.extraMonths }
+  const deceasedActualMonthly = record.piaMonthly * claimFactor(exDobYear, exDobMonth, exDobDay, exClaimAge)
+  const claimantEffYear = effectiveBirthYear(ctx.claimantDob.year, ctx.claimantDob.month, ctx.claimantDob.day)
+  const survivorFraMonths = fraTotalMonths(survivorFraForBirthYear(claimantEffYear))
+  const monthly = survivorBenefitMonthly({
+    deceasedPiaMonthly: record.piaMonthly,
+    deceasedActualMonthly,
+    survivorClaimAge: ctx.claimantSurvivorClaimAge ?? ctx.claimantClaimAge,
+    survivorFraMonths,
+  })
+  return { kind: 'survivor', monthly }
 }
 
 /** Eligibility + monthly amount for one former-spouse record; null if not eligible this year. */
@@ -108,28 +167,14 @@ export function maritalBenefitFor(record: FormerSpouse, ctx: MaritalBenefitConte
     return { kind: 'divorcedSpousal', monthly: 0.5 * record.piaMonthly * factor }
   }
 
-  // Deceased former spouse → survivor.
+  if (record.relationship === 'surviving-divorced') {
+    if (!isSurvivingDivorcedEligible(record, ctx)) return null
+    return survivorBenefitFromFormerSpouse(record, ctx)
+  }
+
+  // Deceased spouse → ordinary-widow survivor.
   if (!isWidowEligible(record, ctx)) return null
-  // Survivor base = the deceased ex's actual (claim-age-adjusted) benefit, with
-  // the RIB-LIM widow's-limit cap and the early-claim widow(er) reduction — both
-  // computed by the shared helper (cited in domain rules §4). The deceased's
-  // claim age defaults to "claimed at FRA" (factor 1, actual = PIA) when omitted.
-  const exDobYear = birthYear(record.dob)
-  const exDobMonth = Number(record.dob.slice(5, 7))
-  const exDobDay = Number(record.dob.slice(8, 10))
-  const exEffYear = effectiveBirthYear(exDobYear, exDobMonth, exDobDay)
-  const exFra = fraForBirthYear(exEffYear)
-  const exClaimAge: ClaimAge = record.deceasedClaimAge ?? { years: exFra.years, months: exFra.extraMonths }
-  const deceasedActualMonthly = record.piaMonthly * claimFactor(exDobYear, exDobMonth, exDobDay, exClaimAge)
-  const claimantEffYear = effectiveBirthYear(ctx.claimantDob.year, ctx.claimantDob.month, ctx.claimantDob.day)
-  const survivorFraMonths = fraTotalMonths(survivorFraForBirthYear(claimantEffYear))
-  const monthly = survivorBenefitMonthly({
-    deceasedPiaMonthly: record.piaMonthly,
-    deceasedActualMonthly,
-    survivorClaimAge: ctx.claimantSurvivorClaimAge ?? ctx.claimantClaimAge,
-    survivorFraMonths,
-  })
-  return { kind: 'survivor', monthly }
+  return survivorBenefitFromFormerSpouse(record, ctx)
 }
 
 /** Largest eligible monthly marital benefit across all former spouses; null if none. */

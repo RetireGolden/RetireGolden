@@ -4,6 +4,14 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## Unreleased
 
+- **Surviving-divorced Social Security duration:** added additive
+  `FormerSpouse.relationship: surviving-divorced` with a ten-year
+  marriage-before-divorce gate on the non-disabled age-60 survivor path
+  (`cfr-20-404-336-surviving-divorced-spouse-eligibility`). Legacy saved plans
+  that still use `relationship: deceased` keep the ordinary-widow nine-month
+  duration unchanged. The planner UI now labels deceased spouse and deceased
+  divorced ex separately and exposes the new relationship option.
+
 - **Maine TY2026 pension cap:** corrected `states.ME.retirement.capPerPerson` from
   $48,216 to $49,824 per MRS July 2026 Form 1040ES-ME instructions
   (`me-mrs-36-5122-2-m2-m3-2026-pension-deduction`). Gross Social Security and
