@@ -399,6 +399,122 @@ describeRule('pa-pit-no-capital-loss-carryforward', {
   })
 })
 
+// IRC §86 federal discriminator (single filer, $90,000 non-SS ordinary income,
+// $40,000 Social Security):
+//   provisional income = $90,000 + $20,000 = $110,000 > $34,000
+//   single add-on = half of ($34,000 − $25,000) = $4,500
+//   federally taxable = min($34,000, 0.85×($110,000−$34,000) + min($4,500, $20,000))
+//                     = $34,000
+// State deductions cancel in the with-SS / without-SS pair, so actual base delta
+// is 0; flipping `taxesSocialSecurity` adds exactly $34,000.
+const NJ_SS_OTHER_INCOME = 90_000
+const NJ_SS_BENEFITS = 40_000
+const NJ_SS_FEDERALLY_TAXABLE = 34_000
+
+describeRule('nj-njit12-social-security-exclusion', {
+  readings: {
+    baseDeltaWithAndWithoutBenefits: 0,
+    counterfactualAddsThirtyFourThousandToTheBase: NJ_SS_FEDERALLY_TAXABLE,
+  },
+  accepted: 'baseDeltaWithAndWithoutBenefits',
+}, ({ readings }) => {
+  const withBenefits = input({
+    state: 'NJ',
+    ordinaryIncome: NJ_SS_OTHER_INCOME,
+    ssBenefits: NJ_SS_BENEFITS,
+    agesAlive: [70],
+  })
+  const withoutBenefits = input({
+    state: 'NJ',
+    ordinaryIncome: NJ_SS_OTHER_INCOME,
+    agesAlive: [70],
+  })
+
+  it('omits Social Security from the New Jersey return base', () => {
+    expect(
+      computeStateTaxableIncome(pack('NJ'), withBenefits)
+        - computeStateTaxableIncome(pack('NJ'), withoutBenefits),
+    ).toBeCloseTo(readings.baseDeltaWithAndWithoutBenefits, 6)
+    const taxing = { ...pack('NJ'), taxesSocialSecurity: true }
+    expect(
+      computeStateTaxableIncome(taxing, withBenefits)
+        - computeStateTaxableIncome(pack('NJ'), withBenefits),
+    ).toBeCloseTo(readings.counterfactualAddsThirtyFourThousandToTheBase, 6)
+  })
+})
+
+const NY_SS_OTHER_INCOME = 90_000
+const NY_SS_BENEFITS = 40_000
+const NY_SS_FEDERALLY_TAXABLE = 34_000
+
+describeRule('ny-dtf-social-security-subtraction', {
+  readings: {
+    baseDeltaWithAndWithoutBenefits: 0,
+    counterfactualAddsThirtyFourThousandToTheBase: NY_SS_FEDERALLY_TAXABLE,
+  },
+  accepted: 'baseDeltaWithAndWithoutBenefits',
+}, ({ readings }) => {
+  const withBenefits = input({
+    state: 'NY',
+    ordinaryIncome: NY_SS_OTHER_INCOME,
+    ssBenefits: NY_SS_BENEFITS,
+    agesAlive: [70],
+  })
+  const withoutBenefits = input({
+    state: 'NY',
+    ordinaryIncome: NY_SS_OTHER_INCOME,
+    agesAlive: [70],
+  })
+
+  it('subtracts federally included Social Security when computing New York adjusted gross income', () => {
+    expect(
+      computeStateTaxableIncome(pack('NY'), withBenefits)
+        - computeStateTaxableIncome(pack('NY'), withoutBenefits),
+    ).toBeCloseTo(readings.baseDeltaWithAndWithoutBenefits, 6)
+    const taxing = { ...pack('NY'), taxesSocialSecurity: true }
+    expect(
+      computeStateTaxableIncome(taxing, withBenefits)
+        - computeStateTaxableIncome(pack('NY'), withBenefits),
+    ).toBeCloseTo(readings.counterfactualAddsThirtyFourThousandToTheBase, 6)
+  })
+})
+
+const PA_SS_OTHER_INCOME = 90_000
+const PA_SS_BENEFITS = 40_000
+const PA_SS_FEDERALLY_TAXABLE = 34_000
+
+describeRule('pa-pit-social-security-not-compensation', {
+  readings: {
+    baseDeltaWithAndWithoutBenefits: 0,
+    counterfactualAddsThirtyFourThousandToTheBase: PA_SS_FEDERALLY_TAXABLE,
+  },
+  accepted: 'baseDeltaWithAndWithoutBenefits',
+}, ({ readings }) => {
+  const withBenefits = input({
+    state: 'PA',
+    ordinaryIncome: PA_SS_OTHER_INCOME,
+    ssBenefits: PA_SS_BENEFITS,
+    agesAlive: [70],
+  })
+  const withoutBenefits = input({
+    state: 'PA',
+    ordinaryIncome: PA_SS_OTHER_INCOME,
+    agesAlive: [70],
+  })
+
+  it('never taxes Social Security payments as Pennsylvania compensation', () => {
+    expect(
+      computeStateTaxableIncome(pack('PA'), withBenefits)
+        - computeStateTaxableIncome(pack('PA'), withoutBenefits),
+    ).toBeCloseTo(readings.baseDeltaWithAndWithoutBenefits, 6)
+    const taxing = { ...pack('PA'), taxesSocialSecurity: true }
+    expect(
+      computeStateTaxableIncome(taxing, withBenefits)
+        - computeStateTaxableIncome(pack('PA'), withBenefits),
+    ).toBeCloseTo(readings.counterfactualAddsThirtyFourThousandToTheBase, 6)
+  })
+})
+
 // The three constitutional records share a shape: the pack answers with
 // `hasIncomeTax: false`, which zeroes the base outright, and the discriminating
 // question is whether the constitutional bar really reaches the income a
@@ -690,6 +806,42 @@ describeRule('il-ita-203-a-2-F-retirement-income-subtraction', {
   })
 })
 
+const IL_SS_OTHER_INCOME = 90_000
+const IL_SS_BENEFITS = 40_000
+const IL_SS_FEDERALLY_TAXABLE = 34_000
+
+describeRule('il-ita-203-a-2-L-social-security-subtraction', {
+  readings: {
+    baseDeltaWithAndWithoutBenefits: 0,
+    counterfactualAddsThirtyFourThousandToTheBase: IL_SS_FEDERALLY_TAXABLE,
+  },
+  accepted: 'baseDeltaWithAndWithoutBenefits',
+}, ({ readings }) => {
+  const withBenefits = input({
+    state: 'IL',
+    ordinaryIncome: IL_SS_OTHER_INCOME,
+    ssBenefits: IL_SS_BENEFITS,
+    agesAlive: [70],
+  })
+  const withoutBenefits = input({
+    state: 'IL',
+    ordinaryIncome: IL_SS_OTHER_INCOME,
+    agesAlive: [70],
+  })
+
+  it('subtracts Social Security included under IRC section 86', () => {
+    expect(
+      computeStateTaxableIncome(pack('IL'), withBenefits)
+        - computeStateTaxableIncome(pack('IL'), withoutBenefits),
+    ).toBeCloseTo(readings.baseDeltaWithAndWithoutBenefits, 6)
+    const taxing = { ...pack('IL'), taxesSocialSecurity: true }
+    expect(
+      computeStateTaxableIncome(taxing, withBenefits)
+        - computeStateTaxableIncome(pack('IL'), withBenefits),
+    ).toBeCloseTo(readings.counterfactualAddsThirtyFourThousandToTheBase, 6)
+  })
+})
+
 // MO 2026 brackets: 0% to 1,348 then 2%, 2.5%, 3%, 3.5%, 4%, 4.5% in 1,348-wide
 // steps, 4.7% above 9,436. Standard deduction 16,100 (federal-conformed).
 function missouriTax(taxable: number): number {
@@ -758,6 +910,42 @@ describeRule('iowa-code-422-7-19-a-retirement-income-exclusion', {
       retirementPublic: { kind: 'full' as const, minAge: 65 },
     }
     expect(computeStateTax(gated, scenario)).toBeCloseTo(readings.exclusionFromSixtyFive, 6)
+  })
+})
+
+const IA_SS_OTHER_INCOME = 90_000
+const IA_SS_BENEFITS = 40_000
+const IA_SS_FEDERALLY_TAXABLE = 34_000
+
+describeRule('iowa-code-422-7-8-social-security-subtraction', {
+  readings: {
+    baseDeltaWithAndWithoutBenefits: 0,
+    counterfactualAddsThirtyFourThousandToTheBase: IA_SS_FEDERALLY_TAXABLE,
+  },
+  accepted: 'baseDeltaWithAndWithoutBenefits',
+}, ({ readings }) => {
+  const withBenefits = input({
+    state: 'IA',
+    ordinaryIncome: IA_SS_OTHER_INCOME,
+    ssBenefits: IA_SS_BENEFITS,
+    agesAlive: [70],
+  })
+  const withoutBenefits = input({
+    state: 'IA',
+    ordinaryIncome: IA_SS_OTHER_INCOME,
+    agesAlive: [70],
+  })
+
+  it('subtracts Social Security taxable under IRC section 86 to the extent included', () => {
+    expect(
+      computeStateTaxableIncome(pack('IA'), withBenefits)
+        - computeStateTaxableIncome(pack('IA'), withoutBenefits),
+    ).toBeCloseTo(readings.baseDeltaWithAndWithoutBenefits, 6)
+    const taxing = { ...pack('IA'), taxesSocialSecurity: true }
+    expect(
+      computeStateTaxableIncome(taxing, withBenefits)
+        - computeStateTaxableIncome(pack('IA'), withBenefits),
+    ).toBeCloseTo(readings.counterfactualAddsThirtyFourThousandToTheBase, 6)
   })
 })
 
@@ -2211,16 +2399,30 @@ const GA_RETIREMENT_INCOME = 70_000
 const GA_PRE65_RETIREMENT_CAP = 35_000
 const GA_DEDUCTION_SINGLE = 15_000
 
+const GA_SS_OTHER_INCOME = 90_000
+const GA_SS_BENEFITS = 40_000
+const GA_SS_FEDERALLY_TAXABLE = 34_000
+
 describeRule('ga-code-48-7-27-retirement-and-social-security-exclusion', {
   readings: {
-    ageSixtyThreeTakesTheThirtyFiveThousandDollarGeorgiaExclusion:
-      GA_RETIREMENT_INCOME - GA_PRE65_RETIREMENT_CAP - GA_DEDUCTION_SINGLE,
-    packWaitsUntilAgeSixtyFive: 55_000,
+    accepted: {
+      retirementTaxableIncome:
+        GA_RETIREMENT_INCOME - GA_PRE65_RETIREMENT_CAP - GA_DEDUCTION_SINGLE,
+      socialSecurityTaxableIncomeDelta: 0,
+    },
+    produced: {
+      retirementTaxableIncome: 55_000,
+      socialSecurityTaxableIncomeDelta: 0,
+    },
+    counterfactualReading: {
+      retirementTaxableIncome: 55_000,
+      socialSecurityTaxableIncomeDelta: GA_SS_FEDERALLY_TAXABLE,
+    },
   },
-  accepted: 'ageSixtyThreeTakesTheThirtyFiveThousandDollarGeorgiaExclusion',
-  produced: 'packWaitsUntilAgeSixtyFive',
-  note: 'age-62-through-64 retirement-income limb',
-}, ({ accepted, produced }) => {
+  accepted: 'accepted',
+  produced: 'produced',
+  note: 'age-62-through-64 retirement-income and Schedule 1 line 8 Social Security limbs',
+}, ({ accepted, produced, readings }) => {
   const scenario = input({
     state: 'GA',
     ordinaryIncome: GA_RETIREMENT_INCOME,
@@ -2229,8 +2431,33 @@ describeRule('ga-code-48-7-27-retirement-and-social-security-exclusion', {
   })
 
   it('pins the missing Georgia age-63 retirement exclusion', () => {
-    expect(computeStateTaxableIncome(pack('GA'), scenario)).toBeCloseTo(produced, 6)
-    expect(computeStateTaxableIncome(pack('GA'), scenario)).not.toBeCloseTo(accepted, 6)
+    expect(computeStateTaxableIncome(pack('GA'), scenario))
+      .toBeCloseTo(produced.retirementTaxableIncome, 6)
+    expect(computeStateTaxableIncome(pack('GA'), scenario))
+      .not.toBeCloseTo(accepted.retirementTaxableIncome, 6)
+  })
+
+  it('subtracts federally taxable Social Security on Schedule 1 line 8 separately from the retirement limb', () => {
+    const withBenefits = input({
+      state: 'GA',
+      ordinaryIncome: GA_SS_OTHER_INCOME,
+      ssBenefits: GA_SS_BENEFITS,
+      agesAlive: [70],
+    })
+    const withoutBenefits = input({
+      state: 'GA',
+      ordinaryIncome: GA_SS_OTHER_INCOME,
+      agesAlive: [70],
+    })
+    expect(
+      computeStateTaxableIncome(pack('GA'), withBenefits)
+        - computeStateTaxableIncome(pack('GA'), withoutBenefits),
+    ).toBeCloseTo(accepted.socialSecurityTaxableIncomeDelta, 6)
+    const taxing = { ...pack('GA'), taxesSocialSecurity: true }
+    expect(
+      computeStateTaxableIncome(taxing, withBenefits)
+        - computeStateTaxableIncome(pack('GA'), withBenefits),
+    ).toBeCloseTo(readings.counterfactualReading.socialSecurityTaxableIncomeDelta, 6)
   })
 })
 

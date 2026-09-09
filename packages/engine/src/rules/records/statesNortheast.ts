@@ -85,6 +85,36 @@ export const northeastStateRecords = {
     ],
   },
 
+  'pa-pit-social-security-not-compensation': {
+    title: 'Pennsylvania never taxes Social Security as compensation',
+    statement:
+      'Pennsylvania\'s Personal Income Tax Guide lists Social Security payments among income items never taxable as Pennsylvania compensation. That is what `taxesSocialSecurity: false` encodes: the benefit never reaches the compensation base the flat rate applies to. This record settles only that treatment; it does not certify Pennsylvania\'s complete income taxonomy, retirement-plan eligibility, or Railroad Retirement routing from the shared `ssBenefits` input.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:PA',
+    authority: [{
+      kind: 'stateAgencyPublication',
+      citation: 'Pennsylvania Department of Revenue, Personal Income Tax Guide — Gross Compensation, Income Items Never Taxable as PA Compensation',
+      url: 'https://www.pa.gov/agencies/revenue/forms-and-publications/pa-personal-income-tax-guide/gross-compensation',
+      quotedText:
+        'Income Items Never Taxable as PA Compensation \u2026 Retirement income, such as: distributions from eligible Pennsylvania retirement plans* after retirement age; Social Security payments; railroad retirement benefits',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-09',
+    implementedBy: [
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#states.PA',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+    ],
+  },
+
   'ny-tax-612-c-3-a-pension-annuity-exclusion': {
     title: 'New York’s $20,000 pension exclusion requires attaining 59½',
     statement:
@@ -125,6 +155,36 @@ export const northeastStateRecords = {
       'packages/engine/src/params/state/data/year2026.ts#states.NY',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
       'packages/engine/src/tax/stateTax.ts#retirementExclusion',
+    ],
+  },
+
+  'ny-dtf-social-security-subtraction': {
+    title: 'DTF allows federally included Social Security to be subtracted in New York adjusted gross income',
+    statement:
+      'New York Department of Taxation and Finance guidance allows Social Security benefits included in federal adjusted gross income to be subtracted when computing New York adjusted gross income. That is what `taxesSocialSecurity: false` encodes: the pack takes the allowed full subtraction and the federally taxable share never reaches the New York base. Tier I Railroad Retirement provenance, part-year allocation, and unsupported filing statuses remain outside this record.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:NY',
+    authority: [{
+      kind: 'stateAgencyPublication',
+      citation: 'New York State Department of Taxation and Finance, Information for retired persons — Social Security',
+      url: 'https://www.tax.ny.gov/pit/file/information_for_seniors.htm',
+      quotedText:
+        'Social security benefits that are included in federal adjusted gross income may be subtracted from your federal adjusted gross income when computing your New York adjusted gross income.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-09',
+    implementedBy: [
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#states.NY',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
 
@@ -512,10 +572,40 @@ export const northeastStateRecords = {
     ],
   },
 
+  'nj-njit12-social-security-exclusion': {
+    title: 'New Jersey does not tax Social Security benefits',
+    statement:
+      'New Jersey\'s Division of Taxation lists Social Security benefits among items not subject to New Jersey tax that should not be included on a New Jersey return. That is what `taxesSocialSecurity: false` encodes: the benefit never reaches the New Jersey base. Pension exclusions and Railroad Retirement treatment remain outside this record.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:NJ',
+    authority: [{
+      kind: 'stateAgencyPublication',
+      citation: 'New Jersey Division of Taxation, Exempt (Nontaxable) Income',
+      url: 'https://www.nj.gov/treasury/taxation/njit12.shtml',
+      quotedText:
+        'Certain items of income are not subject to New Jersey tax and should not be included when you file a New Jersey return. Below is a partial list of such items. Social Security benefits;',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-09',
+    implementedBy: [
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#states.NJ',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+    ],
+  },
+
   'nj-stat-54a-6-10-retirement-income-exclusion': {
     title: 'New Jersey\'s pension exclusion is age-62, per-return, and AGI-capped; the pack is a flat $50,000',
     statement:
-      'From 2021 New Jersey excludes pension, disability, or retirement-plan payments received by a person 62 or older, but only if gross income for the year is not more than $150,000, and the dollar ceiling for a taxpayer at or below $100,000 of gross income is $100,000 joint / $75,000 single / $50,000 married-filing-separately. Between $100,000 and $150,000 the exclusion is a percentage of the payments rather than those ceilings. Approximated: the pack encodes `{ kind: \'capped\', capPerPerson: 50000, minAge: 62 }` with no AGI test, so a household over $150,000 is given a $50,000 subtraction the statute withholds (understating tax) and a single filer under $100,000 is given $50,000 rather than $75,000 (overstating tax). Social Security is not in this section and is not registered from the staged sources.',
+      'From 2021 New Jersey excludes pension, disability, or retirement-plan payments received by a person 62 or older, but only if gross income for the year is not more than $150,000, and the dollar ceiling for a taxpayer at or below $100,000 of gross income is $100,000 joint / $75,000 single / $50,000 married-filing-separately. Between $100,000 and $150,000 the exclusion is a percentage of the payments rather than those ceilings. Approximated: the pack encodes `{ kind: \'capped\', capPerPerson: 50000, minAge: 62 }` with no AGI test, so a household over $150,000 is given a $50,000 subtraction the statute withholds (understating tax) and a single filer under $100,000 is given $50,000 rather than $75,000 (overstating tax). Social Security is registered separately at nj-njit12-social-security-exclusion.',
     classification: 'approximated',
     contraryReading: null,
     errorDirection: 'bothDirections',

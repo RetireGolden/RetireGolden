@@ -150,6 +150,36 @@ export const midwestStateRecords = {
     ],
   },
 
+  'il-ita-203-a-2-L-social-security-subtraction': {
+    title: 'Illinois deducts Social Security included under IRC section 86',
+    statement:
+      'Illinois base income deducts an amount equal to all Social Security benefits included in federal adjusted gross income pursuant to IRC section 86. That is what `taxesSocialSecurity: false` encodes: the federally taxable share is subtracted back out and never reaches the Illinois base. The adjacent (L) clause also names railroad retirement benefits included under IRC sections 72(r) and 86; this record claims only the Social Security limb and does not certify that the shared `ssBenefits` input establishes separate Railroad Retirement provenance.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:IL',
+    authority: [{
+      kind: 'statute',
+      citation: '35 ILCS 5/203(a)(2)(L)',
+      url: 'https://www.ilga.gov/Documents/legislation/ilcs/documents/003500050K203.htm',
+      quotedText:
+        'and by deducting from the total so obtained the sum of the following amounts: \u2026 (L) For taxable years ending after December 31, 1983, an amount equal to all social security benefits and railroad retirement benefits included in such total pursuant to Sections 72(r) and 86 of the Internal Revenue Code;',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-09',
+    implementedBy: [
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#states.IL',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+    ],
+  },
+
   'mo-rsmo-143-121-capital-gain-deduction': {
     title: 'Missouri subtracts 100% of an individual’s capital gains',
     statement:
@@ -214,6 +244,36 @@ export const midwestStateRecords = {
       'packages/engine/src/params/state/data/year2026.ts#IA',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
       'packages/engine/src/tax/stateTax.ts#retirementExclusion',
+    ],
+  },
+
+  'iowa-code-422-7-8-social-security-subtraction': {
+    title: 'Iowa subtracts Social Security taxable under IRC section 86',
+    statement:
+      'Iowa subtracts, to the extent included, the amount of Social Security benefits taxable under IRC section 86. That is what `taxesSocialSecurity: false` encodes: the federally taxable share is subtracted back out and never reaches the Iowa base.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:IA',
+    authority: [{
+      kind: 'statute',
+      citation: 'Iowa Code 422.7(8) (2026)',
+      url: 'https://www.legis.iowa.gov/docs/code/422.7.pdf',
+      quotedText:
+        'Subtract, to the extent included, the amount of social security benefits taxable under section 86 of the Internal Revenue Code.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-09',
+    implementedBy: [
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#states.IA',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
 
