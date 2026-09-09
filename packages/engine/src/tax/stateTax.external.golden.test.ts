@@ -477,9 +477,9 @@ describe('ORACLE-016: South Carolina H.4216 two-tier schedule + SCIAD vs SCDOR',
  *     models that phase-out on the combined basic-plus-age total using a
  *     modeled Maine-AGI proxy; this oracle still asserts only schedule tax at
  *     the chosen taxable income T, not a complete return.
- * Maine's $48,216-per-person pension deduction and its reduction by
- * SS/Railroad Retirement received are likewise outside this subset; wage
- * income only here.
+ * Maine's $49,824-per-person TY2026 pension maximum (MRS July 2026 Form
+ * 1040ES-ME) and its reduction by SS/Railroad Retirement received are
+ * likewise outside this subset; wage income only here.
  *
  * SCOPE: under-65 inputs only (`peopleAged65Plus: 0`). A future age-65+ case
  * must resolve the age addition through the production path

@@ -25,6 +25,10 @@
  * DOCS/domain.
  * 2026-09-08: CA/MN provenance wording plus early-career-match CA observed
  * results refreshed in committed report goldens; not a new oracle.
+ * 2026-09-08: Maine pension-cap provenance appendix refreshed to match the
+ * engine's published $49,824 maximum and disclosed omissions. These report
+ * examples have no calculation changes; the Maine numeric oracle is in the
+ * engine's state-tax fixtures.
  */
 import { describe, expect, it } from 'vitest'
 

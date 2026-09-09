@@ -1,14 +1,14 @@
 {
-  "generatedAt": "2026-09-08T21:16:54.577Z",
-  "recordCount": 444,
-  "urlCount": 352,
-  "fetched": 0,
-  "cached": 352,
-  "entryCount": 1297,
+  "generatedAt": "2026-09-08T23:21:16.522Z",
+  "recordCount": 445,
+  "urlCount": 355,
+  "fetched": 1,
+  "cached": 354,
+  "entryCount": 1307,
   "counts": {
-    "EXACT": 908,
-    "PUNCTUATION": 41,
-    "PDF-WORD-LEVEL": 245,
+    "EXACT": 913,
+    "PUNCTUATION": 43,
+    "PDF-WORD-LEVEL": 248,
     "ELISION-EXACT": 85,
     "ELISION-PUNCTUATION": 8,
     "PDF-NOT-VERIFIABLE": 7,
@@ -9802,6 +9802,106 @@
       "quoteSha256": "9ae2cf1bea389124",
       "verdict": "ELISION-PUNCTUATION",
       "detail": "matches only after: dashes",
+      "diagnosis": null
+    },
+    {
+      "id": "me-mrs-36-5122-2-m2-m3-2026-pension-deduction",
+      "citation": "Maine Revenue Services, 2026 Form 1040ES-ME Instructions, revised July 2026, worksheet line 2 note",
+      "host": "www.maine.gov",
+      "url": "https://www.maine.gov/revenue/sites/maine.gov.revenue/files/inline-files/26_1040es_fillable.pdf",
+      "quoteSha256": "bcf7f8567bb6822a",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "me-mrs-36-5122-2-m2-m3-2026-pension-deduction",
+      "citation": "Maine Revenue Services, 2026 Form 1040ES-ME Instructions, revised July 2026, pension maximum basis",
+      "host": "www.maine.gov",
+      "url": "https://www.maine.gov/revenue/sites/maine.gov.revenue/files/inline-files/26_1040es_fillable.pdf",
+      "quoteSha256": "dcab59449cd25d7b",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "me-mrs-36-5122-2-m2-m3-2026-pension-deduction",
+      "citation": "36 M.R.S. §5122(2)(M-2)(1)(a)",
+      "host": "legislature.maine.gov",
+      "url": "https://legislature.maine.gov/statutes/36/title36sec5122.html",
+      "quoteSha256": "1f2707930824fa9f",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "me-mrs-36-5122-2-m2-m3-2026-pension-deduction",
+      "citation": "36 M.R.S. §5122(2)(M-2)(1)(b)",
+      "host": "legislature.maine.gov",
+      "url": "https://legislature.maine.gov/statutes/36/title36sec5122.html",
+      "quoteSha256": "bdde3ad769893d87",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "me-mrs-36-5122-2-m2-m3-2026-pension-deduction",
+      "citation": "36 M.R.S. §5122(2)(M-2)(2)(d)(iv)",
+      "host": "legislature.maine.gov",
+      "url": "https://legislature.maine.gov/statutes/36/title36sec5122.html",
+      "quoteSha256": "90a6ec2ae6ed5851",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "me-mrs-36-5122-2-m2-m3-2026-pension-deduction",
+      "citation": "36 M.R.S. §5122(2)(M-3)",
+      "host": "legislature.maine.gov",
+      "url": "https://legislature.maine.gov/statutes/36/title36sec5122.html",
+      "quoteSha256": "abaf36c03b17ccdc",
+      "verdict": "PUNCTUATION",
+      "detail": "matches only after: dashes",
+      "diagnosis": null
+    },
+    {
+      "id": "me-mrs-36-5122-2-m2-m3-2026-pension-deduction",
+      "citation": "36 M.R.S. §5122(2)(M-3), applicable amount definition",
+      "host": "legislature.maine.gov",
+      "url": "https://legislature.maine.gov/statutes/36/title36sec5122.html",
+      "quoteSha256": "e8ece28dc91c0f2c",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "me-mrs-36-5122-2-m2-m3-2026-pension-deduction",
+      "citation": "36 M.R.S. §5403(11)",
+      "host": "legislature.maine.gov",
+      "url": "https://legislature.maine.gov/statutes/36/title36sec5403.html",
+      "quoteSha256": "5258fa2809b00b07",
+      "verdict": "PUNCTUATION",
+      "detail": "matches only after: dashes",
+      "diagnosis": null
+    },
+    {
+      "id": "me-mrs-36-5122-2-m2-m3-2026-pension-deduction",
+      "citation": "36 M.R.S. §5403, COLA rounding",
+      "host": "legislature.maine.gov",
+      "url": "https://legislature.maine.gov/statutes/36/title36sec5403.html",
+      "quoteSha256": "dff27c4e41d85a93",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "me-mrs-36-5122-2-m2-m3-2026-pension-deduction",
+      "citation": "Maine Revenue Services, 2025 Form 1040ME General Instructions, Schedule 1S line 4 instructions, PDF page 7 (MFJ per-recipient allocation)",
+      "host": "www.maine.gov",
+      "url": "https://www.maine.gov/revenue/sites/maine.gov.revenue/files/inline-files/25_1040me_gen_instr_w_cover_pg.pdf",
+      "quoteSha256": "9ae4bfbfe7df0f21",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
       "diagnosis": null
     },
     {

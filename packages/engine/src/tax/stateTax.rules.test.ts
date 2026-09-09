@@ -923,6 +923,157 @@ describeRule('mrs-36-5124-c-1-b-decoupled-standard-deduction', {
   })
 })
 
+const ME_PENSION_ORDINARY = 80_000
+const ME_PENSION_PRIVATE = 60_000
+const ME_PENSION_BASIC_SINGLE = 15_700
+const ME_PENSION_BASIC_MFJ = 31_400
+const ME_PENSION_2026_MAX = 49_824
+const ME_PENSION_BELOW_CAP_PRIVATE = 30_000
+const ME_PENSION_MFJ_ORDINARY = 150_000
+const ME_PENSION_MFJ_PRIVATE = 60_000
+
+describeRule('me-mrs-36-5122-2-m2-m3-2026-pension-deduction', {
+  readings: {
+    independentWorksheetWhereSupported: {
+      qualifyingNonmilitaryNoOffsetM3NumeratorZero:
+        ME_PENSION_ORDINARY - ME_PENSION_2026_MAX - ME_PENSION_BASIC_SINGLE,
+      qualifyingNonmilitaryWithGrossSocialSecurityOffsetM3NumeratorZero:
+        ME_PENSION_ORDINARY - (ME_PENSION_2026_MAX - 20_000) - ME_PENSION_BASIC_SINGLE,
+      qualifyingNonmilitaryBelowCapLesserOfBenefits:
+        ME_PENSION_ORDINARY - ME_PENSION_BELOW_CAP_PRIVATE - ME_PENSION_BASIC_SINGLE,
+      mfjOneRepresentedEligibleRecipient:
+        ME_PENSION_MFJ_ORDINARY - ME_PENSION_2026_MAX - ME_PENSION_BASIC_MFJ,
+    },
+    currentFlatCapPerPersonApproximation: {
+      qualifyingNonmilitaryNoOffsetM3NumeratorZero:
+        ME_PENSION_ORDINARY - ME_PENSION_2026_MAX - ME_PENSION_BASIC_SINGLE,
+      qualifyingNonmilitaryWithGrossSocialSecurityOffsetM3NumeratorZero:
+        ME_PENSION_ORDINARY - ME_PENSION_2026_MAX - ME_PENSION_BASIC_SINGLE,
+      qualifyingNonmilitaryBelowCapLesserOfBenefits:
+        ME_PENSION_ORDINARY - ME_PENSION_BELOW_CAP_PRIVATE - ME_PENSION_BASIC_SINGLE,
+      mfjOneRepresentedEligibleRecipient:
+        ME_PENSION_MFJ_ORDINARY - ME_PENSION_MFJ_PRIVATE - ME_PENSION_BASIC_MFJ,
+    },
+  },
+  accepted: 'independentWorksheetWhereSupported',
+  produced: 'currentFlatCapPerPersonApproximation',
+}, ({ accepted, produced, readings }) => {
+  type MainePensionCaseKey =
+    | 'qualifyingNonmilitaryNoOffsetM3NumeratorZero'
+    | 'qualifyingNonmilitaryWithGrossSocialSecurityOffsetM3NumeratorZero'
+    | 'qualifyingNonmilitaryBelowCapLesserOfBenefits'
+    | 'mfjOneRepresentedEligibleRecipient'
+  type MainePensionVector = Record<MainePensionCaseKey, number>
+  type MainePensionCase = {
+    key: MainePensionCaseKey
+    filingStatus: TaxYearInput['filingStatus']
+    ordinaryIncome: number
+    privateRetirementIncome: number
+    ssBenefits: number
+    agesAlive: number[]
+  }
+
+  const ME_PENSION_CASES: ReadonlyArray<MainePensionCase> = [
+    {
+      key: 'qualifyingNonmilitaryNoOffsetM3NumeratorZero',
+      filingStatus: 'single',
+      ordinaryIncome: ME_PENSION_ORDINARY,
+      privateRetirementIncome: ME_PENSION_PRIVATE,
+      ssBenefits: 0,
+      agesAlive: [60],
+    },
+    {
+      key: 'qualifyingNonmilitaryWithGrossSocialSecurityOffsetM3NumeratorZero',
+      filingStatus: 'single',
+      ordinaryIncome: ME_PENSION_ORDINARY,
+      privateRetirementIncome: ME_PENSION_PRIVATE,
+      ssBenefits: 20_000,
+      agesAlive: [60],
+    },
+    {
+      key: 'qualifyingNonmilitaryBelowCapLesserOfBenefits',
+      filingStatus: 'single',
+      ordinaryIncome: ME_PENSION_ORDINARY,
+      privateRetirementIncome: ME_PENSION_BELOW_CAP_PRIVATE,
+      ssBenefits: 0,
+      agesAlive: [60],
+    },
+    {
+      key: 'mfjOneRepresentedEligibleRecipient',
+      filingStatus: 'marriedFilingJointly',
+      ordinaryIncome: ME_PENSION_MFJ_ORDINARY,
+      privateRetirementIncome: ME_PENSION_MFJ_PRIVATE,
+      ssBenefits: 0,
+      agesAlive: [60, 60],
+    },
+  ]
+
+  function pensionScenario(c: MainePensionCase): TaxYearInput {
+    return input({
+      state: 'ME',
+      filingStatus: c.filingStatus,
+      ordinaryIncome: c.ordinaryIncome,
+      privateRetirementIncome: c.privateRetirementIncome,
+      ssBenefits: c.ssBenefits,
+      agesAlive: c.agesAlive,
+    })
+  }
+
+  function expectTaxableVector(expected: MainePensionVector): void {
+    for (const c of ME_PENSION_CASES) {
+      expect(computeStateTaxableIncome(pack('ME'), pensionScenario(c)))
+        .toBe(expected[c.key])
+    }
+  }
+
+  it('pins the current flat cap against gross Social Security offset and agesAlive doubling the pack still omits', () => {
+    // Independent worksheet (MRS 2026 Form 1040ES-ME Instructions rev. July 2026,
+    // https://www.maine.gov/revenue/sites/maine.gov.revenue/files/inline-files/26_1040es_fillable.pdf;
+    // 36 M.R.S. §5122(2)(M-2) and (M-3); §5403(11)). privateRetirementIncome
+    // stands in for a qualifying nonmilitary pension in this bounded worksheet;
+    // the schema cannot verify that premise or attribute income by recipient.
+    // No-offset: 80,000 − 49,824 − 15,700 = 14,476. With $20,000 gross Social
+    // Security the statutory nonmilitary amount is 49,824 − 20,000 = 29,824, so
+    // 80,000 − 29,824 − 15,700 = 34,476; the current flat cap ignores the
+    // offset and still subtracts 49,824, yielding 14,476. Below-cap: 80,000 −
+    // 30,000 − 15,700 = 34,300 (lesser of benefits in federal AGI); an
+    // unconditional published-maximum subtraction would yield 14,476. MFJ with
+    // two agesAlive but one represented recipient: Schedule 1S line 4 (MRS 2025
+    // Form 1040ME General Instructions,
+    // https://www.maine.gov/revenue/sites/maine.gov.revenue/files/inline-files/25_1040me_gen_instr_w_cover_pg.pdf)
+    // allows each spouse to deduct only qualifying pension in federal AGI — not
+    // automatic cap doubling because both spouses are alive; the TY2026 $49,824
+    // maximum is separate (2026 Form 1040ES-ME above). Statutory one-recipient
+    // 150,000 − 49,824 − 31,400 = 68,776; the current proxy subtracts the full
+    // $60,000 pension because agesAlive.length doubles the cap headroom.
+    // M-3 numerator is zero in the single rows: federal AGI is $80,000 and
+    // $97,000 after the IRC 86 taxable share, each below the unindexed $125,000
+    // single applicable amount; no located 2026 indexed figure is asserted.
+    const meCap = { kind: 'capped' as const, capPerPerson: ME_PENSION_2026_MAX }
+    const me = pack('ME')
+    expect(me.retirementPrivate).toEqual(meCap)
+    expect(me.retirementPublic).toEqual(meCap)
+    expect(me.retirementRuleShared).toBe(true)
+    expectTaxableVector(produced)
+    for (const c of ME_PENSION_CASES) {
+      const taxable = computeStateTaxableIncome(pack('ME'), pensionScenario(c))
+      expect(taxable).toBe(produced[c.key])
+      if (c.key === 'qualifyingNonmilitaryNoOffsetM3NumeratorZero'
+        || c.key === 'qualifyingNonmilitaryBelowCapLesserOfBenefits') {
+        expect(taxable).toBe(accepted[c.key])
+      } else {
+        expect(taxable).not.toBe(accepted[c.key])
+      }
+    }
+    expect(readings.currentFlatCapPerPersonApproximation.qualifyingNonmilitaryNoOffsetM3NumeratorZero)
+      .toBe(readings.currentFlatCapPerPersonApproximation.qualifyingNonmilitaryWithGrossSocialSecurityOffsetM3NumeratorZero)
+    expect(readings.independentWorksheetWhereSupported.qualifyingNonmilitaryNoOffsetM3NumeratorZero)
+      .not.toBe(readings.independentWorksheetWhereSupported.qualifyingNonmilitaryWithGrossSocialSecurityOffsetM3NumeratorZero)
+    expect(readings.independentWorksheetWhereSupported.mfjOneRepresentedEligibleRecipient)
+      .not.toBe(readings.currentFlatCapPerPersonApproximation.mfjOneRepresentedEligibleRecipient)
+  })
+})
+
 // ─── The rest of the seven no-individual-income-tax states ───────────────────
 //
 // Same outward shape as the Nevada, Texas and Florida fixtures above — the pack

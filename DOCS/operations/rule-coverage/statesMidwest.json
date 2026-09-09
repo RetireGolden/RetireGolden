@@ -46,16 +46,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 1594,
+          "line": 1745,
           "note": null,
           "tests": [
             {
               "title": "leaves a high-income Hoosier’s Social Security out of the Indiana base",
-              "line": 1608
+              "line": 1759
             },
             {
               "title": "would pull 34,000 of benefit into the base if Indiana taxed it",
-              "line": 1613
+              "line": 1764
             }
           ]
         }
@@ -215,20 +215,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 1546,
+          "line": 1697,
           "note": null,
           "tests": [
             {
               "title": "charges the 2026 step of the ramp, not the 2025 one",
-              "line": 1559
+              "line": 1710
             },
             {
               "title": "would over-charge by the ramp step if the prior year were held forward",
-              "line": 1564
+              "line": 1715
             },
             {
               "title": "is filing-status blind, with no married-filing-jointly doubling",
-              "line": 1576
+              "line": 1727
             }
           ]
         }
@@ -479,20 +479,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 1628,
+          "line": 1779,
           "note": null,
           "tests": [
             {
               "title": "taxes a TRF pension in full",
-              "line": 1642
+              "line": 1793
             },
             {
               "title": "taxes a private pension and an IRA distribution the same way",
-              "line": 1647
+              "line": 1798
             },
             {
               "title": "would exempt the whole pension under the override the pack used to carry",
-              "line": 1659
+              "line": 1810
             }
           ]
         }
@@ -804,12 +804,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2353,
+          "line": 2504,
           "note": null,
           "tests": [
             {
               "title": "pins the overbroad Kansas public-pension override",
-              "line": 2369
+              "line": 2520
             }
           ]
         }
@@ -887,12 +887,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2323,
+          "line": 2474,
           "note": null,
           "tests": [
             {
               "title": "subtracts all post-2023 federally taxable Kansas Social Security",
-              "line": 2339
+              "line": 2490
             }
           ]
         }
@@ -930,7 +930,7 @@
           "functions": [
             {
               "name": "MI",
-              "line": 474
+              "line": 476
             }
           ]
         },
@@ -950,16 +950,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2623,
+          "line": 2774,
           "note": null,
           "tests": [
             {
               "title": "deducts Social Security from Michigan taxable income",
-              "line": 2637
+              "line": 2788
             },
             {
               "title": "would add the federally taxable share if Michigan taxed it",
-              "line": 2642
+              "line": 2793
             }
           ]
         }
@@ -1002,7 +1002,7 @@
           "functions": [
             {
               "name": "MI",
-              "line": 474
+              "line": 476
             }
           ]
         },
@@ -1099,7 +1099,7 @@
           "functions": [
             {
               "name": "MN",
-              "line": 480
+              "line": 482
             }
           ]
         },
@@ -1123,12 +1123,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 1921,
+          "line": 2072,
           "note": null,
           "tests": [
             {
               "title": "prices single and joint filers on the DOR TY2026 deduction and schedule",
-              "line": 1935
+              "line": 2086
             }
           ]
         }
@@ -1181,7 +1181,7 @@
           "functions": [
             {
               "name": "MN",
-              "line": 480
+              "line": 482
             }
           ]
         },
@@ -1274,7 +1274,7 @@
           "functions": [
             {
               "name": "MO",
-              "line": 535
+              "line": 537
             }
           ]
         },
@@ -1346,7 +1346,7 @@
           "functions": [
             {
               "name": "states.ND",
-              "line": 659
+              "line": 661
             }
           ]
         },
@@ -1524,11 +1524,11 @@
           "functions": [
             {
               "name": "ND.capitalGainsTaxablePct",
-              "line": 670
+              "line": 672
             },
             {
               "name": "states.ND",
-              "line": 659
+              "line": 661
             }
           ]
         },
@@ -1609,7 +1609,7 @@
           "functions": [
             {
               "name": "ND.capitalGainsTaxablePct",
-              "line": 670
+              "line": 672
             }
           ]
         },
@@ -1765,7 +1765,7 @@
           "functions": [
             {
               "name": "states.ND",
-              "line": 659
+              "line": 661
             }
           ]
         },
@@ -1924,7 +1924,7 @@
           "functions": [
             {
               "name": "states.ND",
-              "line": 659
+              "line": 661
             }
           ]
         },
@@ -2090,7 +2090,7 @@
           "functions": [
             {
               "name": "states.NE",
-              "line": 570
+              "line": 572
             }
           ]
         },
@@ -2110,16 +2110,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2778,
+          "line": 2929,
           "note": null,
           "tests": [
             {
               "title": "subtracts every federally included Social Security dollar from 2024",
-              "line": 2794
+              "line": 2945
             },
             {
               "title": "would tax 85% of the benefit under the shopping-list reading",
-              "line": 2800
+              "line": 2951
             }
           ]
         }
@@ -2191,23 +2191,23 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2881,
+          "line": 3032,
           "note": "public-pension deduction limb",
           "tests": [
             {
               "title": "pins the over-broad full public-pension override",
-              "line": 2900
+              "line": 3051
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2907,
+          "line": 3058,
           "note": "retirement-income credit limb",
           "tests": [
             {
               "title": "pins the omitted Ohio retirement-income credit",
-              "line": 2921
+              "line": 3072
             }
           ]
         }
@@ -2255,7 +2255,7 @@
           "functions": [
             {
               "name": "states.OH",
-              "line": 684
+              "line": 686
             }
           ]
         },
@@ -2275,16 +2275,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2951,
+          "line": 3102,
           "note": null,
           "tests": [
             {
               "title": "prices the TY2026 nonbusiness schedule at the statutory breakpoints",
-              "line": 2962
+              "line": 3113
             },
             {
               "title": "rejects the IT 1040 ES upper band and baseTax add-on semantics via hybridWorksheetUpperBandOnEnactedLowerBand",
-              "line": 2974
+              "line": 3125
             }
           ]
         }
@@ -2337,7 +2337,7 @@
           "functions": [
             {
               "name": "SD",
-              "line": 763
+              "line": 765
             }
           ]
         },
@@ -2357,16 +2357,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 978,
+          "line": 1129,
           "note": null,
           "tests": [
             {
               "title": "leaves a South Dakota retiree with no state base at all",
-              "line": 997
+              "line": 1148
             },
             {
               "title": "would build a base the day the Legislature exercised the power it holds",
-              "line": 1002
+              "line": 1153
             }
           ]
         }
@@ -2409,7 +2409,7 @@
           "functions": [
             {
               "name": "WI",
-              "line": 840
+              "line": 842
             }
           ]
         },
@@ -2429,12 +2429,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3435,
+          "line": 3586,
           "note": "30% long-term capital-gain subtraction",
           "tests": [
             {
               "title": "pins Wisconsin's unrepresented long-term capital-gain exclusion",
-              "line": 3449
+              "line": 3600
             }
           ]
         }
@@ -2477,7 +2477,7 @@
           "functions": [
             {
               "name": "WI",
-              "line": 840
+              "line": 842
             }
           ]
         },
@@ -2501,20 +2501,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3456,
+          "line": 3607,
           "note": "age-67 retirement attribution and election limbs",
           "tests": [
             {
               "title": "shelters retirement dollars received by the under-67 spouse",
-              "line": 3480
+              "line": 3631
             },
             {
               "title": "matches the pooled $48,000 cap when both spouses are 67",
-              "line": 3489
+              "line": 3640
             },
             {
               "title": "grants a 65-year-old nothing where Line 17 would allow $5,000",
-              "line": 3502
+              "line": 3653
             }
           ]
         }

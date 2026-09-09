@@ -56,12 +56,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 1967,
+          "line": 2118,
           "note": null,
           "tests": [
             {
               "title": "omits the District Social Security subtraction from the taxable base",
-              "line": 1983
+              "line": 2134
             }
           ]
         }
@@ -124,12 +124,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2153,
+          "line": 2304,
           "note": null,
           "tests": [
             {
               "title": "prices single and joint filers on the §1102(a)(14) band schedule",
-              "line": 2164
+              "line": 2315
             }
           ]
         }
@@ -196,23 +196,23 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2179,
+          "line": 2330,
           "note": "Social Security limb",
           "tests": [
             {
               "title": "subtracts Delaware Social Security included in federal AGI",
-              "line": 2197
+              "line": 2348
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2207,
+          "line": 2358,
           "note": "retirement-age limb",
           "tests": [
             {
               "title": "subtracts the $12,500 Delaware retirement cap from age 60",
-              "line": 2223
+              "line": 2374
             }
           ]
         }
@@ -548,12 +548,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2063,
+          "line": 2214,
           "note": "age-62-through-64 retirement-income limb",
           "tests": [
             {
               "title": "pins the missing Georgia age-63 retirement exclusion",
-              "line": 2080
+              "line": 2231
             }
           ]
         }
@@ -601,7 +601,7 @@
           "functions": [
             {
               "name": "MD",
-              "line": 449
+              "line": 451
             }
           ]
         },
@@ -621,16 +621,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2556,
+          "line": 2707,
           "note": null,
           "tests": [
             {
               "title": "keeps Social Security out of Maryland adjusted gross income",
-              "line": 2571
+              "line": 2722
             },
             {
               "title": "would add the federally taxable portion if Maryland taxed it",
-              "line": 2577
+              "line": 2728
             }
           ]
         }
@@ -673,7 +673,7 @@
           "functions": [
             {
               "name": "MD",
-              "line": 449
+              "line": 451
             }
           ]
         },
@@ -768,7 +768,7 @@
           "functions": [
             {
               "name": "NC",
-              "line": 651
+              "line": 653
             }
           ]
         },
@@ -788,12 +788,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2864,
+          "line": 3015,
           "note": null,
           "tests": [
             {
               "title": "subtracts Title II Social Security from North Carolina income",
-              "line": 2873
+              "line": 3024
             }
           ]
         }
@@ -831,7 +831,7 @@
           "functions": [
             {
               "name": "states.SC",
-              "line": 749
+              "line": 751
             }
           ]
         },
@@ -907,7 +907,7 @@
           "functions": [
             {
               "name": "VA",
-              "line": 802
+              "line": 804
             }
           ]
         },
@@ -931,20 +931,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3343,
+          "line": 3494,
           "note": null,
           "tests": [
             {
               "title": "pins the high-income phase-out that the retirement-cap mapping misses",
-              "line": 3374
+              "line": 3525
             },
             {
               "title": "pins the opposite direction when an age-65 filer has wages but no modeled pension",
-              "line": 3383
+              "line": 3534
             },
             {
               "title": "pins the age deduction against adjusted FAGI after Title II Social Security",
-              "line": 3389
+              "line": 3540
             }
           ]
         }
@@ -982,7 +982,7 @@
           "functions": [
             {
               "name": "WV",
-              "line": 823
+              "line": 825
             }
           ]
         },
@@ -1064,7 +1064,7 @@
           "functions": [
             {
               "name": "WV",
-              "line": 823
+              "line": 825
             }
           ]
         },

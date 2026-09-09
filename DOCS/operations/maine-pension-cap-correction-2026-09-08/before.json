@@ -1,0 +1,45 @@
+{
+  "kind": "maine-pension-literal-input-observation",
+  "observedAt": "2026-09-08T15:02:10.144Z",
+  "head": "45246050c897bd3cb7d0f1513e6af3544b94c68b",
+  "sourceHashes": {
+    "packages/engine/src/params/state/data/year2026.ts": "138e3e15c7f68903cc19b103af87854f5948096bfd9d8040c80ea54922db75ab",
+    "packages/engine/src/tax/stateTax.ts": "7e2097c33e0e5c940bb8c458e09f578a01969e81ace307e4f48338638cb5a745"
+  },
+  "cases": [
+    {
+      "input": {
+        "year": 2026,
+        "state": "ME",
+        "filingStatus": "single",
+        "ordinaryIncome": 80000,
+        "privateRetirementIncome": 60000,
+        "capitalGains": 0,
+        "ssBenefits": 0,
+        "peopleAged65Plus": 0,
+        "agesAlive": [
+          60
+        ]
+      },
+      "taxableIncome": 16084,
+      "tax": 932.872
+    },
+    {
+      "input": {
+        "year": 2026,
+        "state": "ME",
+        "filingStatus": "single",
+        "ordinaryIncome": 80000,
+        "privateRetirementIncome": 60000,
+        "capitalGains": 0,
+        "ssBenefits": 20000,
+        "peopleAged65Plus": 0,
+        "agesAlive": [
+          60
+        ]
+      },
+      "taxableIncome": 16084,
+      "tax": 932.872
+    }
+  ]
+}
