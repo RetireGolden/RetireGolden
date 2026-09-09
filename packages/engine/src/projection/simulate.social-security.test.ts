@@ -207,19 +207,18 @@ describe('social security', () => {
     })
   })
 
-  // A 58-year-old worker is already entitled to SSDI. Section 402(c)(1) makes
-  // the 67-year-old spouse eligible on that record, yielding the worker's
-  // 24,000 plus a 12,000 one-half-PIA auxiliary. The generic top-up incorrectly
-  // waits for the worker stream's ordinary claimAge of 62.
+  // Section 402(c)(1) makes the spouse eligible on a living disabled worker's
+  // record without waiting for the worker's ordinary claimAge, and section 425(a)
+  // suspends auxiliaries when the worker's wages exceed annual SGA. The engine
+  // gates the spouse on the worker claimAge and zeros only the worker on SGA.
   describeRule('usc-42-402-c-2-ssdi-spouse-auxiliary', {
     readings: {
-      ssdiWorkerAndEligibleSpouse: 36_000,
-      waitsForWorkerRetirementClaimAge: 24_000,
+      statute: { claimAgeGate: 36_000, suspension: 0 },
+      currentEngine: { claimAgeGate: 24_000, suspension: 12_000 },
     },
-    accepted: 'ssdiWorkerAndEligibleSpouse',
-    produced: 'waitsForWorkerRetirementClaimAge',
-    note: 'claimAge gate',
-  }, ({ accepted, produced }) => {
+    accepted: 'statute',
+    produced: 'currentEngine',
+  }, ({ accepted, produced, readings }) => {
     it('does not start the SSDI spouse auxiliary before the worker reaches claimAge', () => {
       const plan = basePlan()
       plan.household.filingStatus = 'marriedFilingJointly'
@@ -239,24 +238,11 @@ describe('social security', () => {
       const result = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax })
       const observed = socialSecurityIncomeIn(result, 2026)
 
-      expect(observed).toBeCloseTo(produced, 6)
-      expect(observed).not.toBeCloseTo(accepted, 6)
+      expect(observed).toBeCloseTo(produced.claimAgeGate, 6)
+      expect(observed).not.toBeCloseTo(accepted.claimAgeGate, 6)
+      expect(observed).not.toBeCloseTo(readings.statute.suspension, 6)
     })
-  })
 
-  // Section 425(a): worker SSDI suspension suspends auxiliaries on that record.
-  // Worker at claimAge 62 with wages above SGAx12; spouse at FRA is otherwise
-  // eligible. Authority-side household is 0; engine zeros only the worker.
-  describeRule('usc-42-402-c-2-ssdi-spouse-auxiliary', {
-    readings: {
-      householdSuspendedUnder425a: 0,
-      // Worker zeroed by SGA; spouse half-PIA still paid (12,000).
-      workerZeroedSpouseStillPaid: 12_000,
-    },
-    accepted: 'householdSuspendedUnder425a',
-    produced: 'workerZeroedSpouseStillPaid',
-    note: '425(a) suspension limb',
-  }, ({ accepted, produced }) => {
     it('zeros only the SSDI worker when wages exceed annual SGA, leaving the spouse paid', () => {
       const plan = basePlan()
       plan.household.filingStatus = 'marriedFilingJointly'
@@ -276,8 +262,10 @@ describe('social security', () => {
 
       const result = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax })
       const observed = socialSecurityIncomeIn(result, 2026)
-      expect(observed).toBeCloseTo(produced, 6)
-      expect(observed).not.toBeCloseTo(accepted, 6)
+
+      expect(observed).toBeCloseTo(produced.suspension, 6)
+      expect(observed).not.toBeCloseTo(accepted.suspension, 6)
+      expect(observed).not.toBeCloseTo(readings.statute.claimAgeGate, 6)
     })
   })
 
@@ -589,40 +577,62 @@ describe('social security', () => {
     expect(ownOnly).toBeCloseTo(12_000, 6)
   })
 
-  // 42 U.S.C. 403(f)(3) changes BOTH the rate and the exempt amount in the year
-  // full retirement age is attained: 50 percent above the lower exempt amount
-  // before that year, 33 1/3 percent above a higher one during it. Applying the
-  // FRA-year treatment early is the natural collapse of the two cases, and here
-  // it would wipe the withholding out entirely.
-  //
-  // Age 62 in 2026, so the 2026 pack applies unindexed. Wages 40,000 against
-  // the 24,480 below-FRA exempt amount:
-  //   below FRA:   (40,000 - 24,480) / 2 = 7,760
-  //   FRA-year:    (40,000 - 65,160) / 3 is negative, so 0
-  // The claimed benefit is 16,800, comfortably above 7,760, so the withholding
-  // is not capped and the raw formula is what the assertion sees.
+  // 42 U.S.C. 403(f)(3): 50% above the lower exempt amount before FRA, 33 1/3%
+  // above the higher exempt amount in the FRA-attainment year. Below FRA:
+  //   (40,000 - 24,480) / 2 = 7,760
+  // FRA year with wages above the higher exempt amount:
+  //   (70,000 - 65,160) / 3 = 1,613.3333333333333
+  // Flat /2 on the FRA-year excess would be 2,420; omitting the FRA-year rate is 0.
   describeRule('usc-42-403-f-3-retirement-earnings-test', {
-    readings: { halfAboveLowerExemptAmount: 7_760, fraYearTreatmentApplied: 0 },
-    accepted: 'halfAboveLowerExemptAmount',
+    readings: {
+      statutoryRates: { belowFra: 7_760, fraYear: 1_613.3333333333333 },
+      fraYearTreatmentAppliedEarly: { belowFra: 0, fraYear: 1_613.3333333333333 },
+      flatHalfRate: { belowFra: 7_760, fraYear: 2_420 },
+      noFraYearWithholding: { belowFra: 7_760, fraYear: 0 },
+    },
+    accepted: 'statutoryRates',
   }, ({ accepted, readings }) => {
-    it('withholds half the excess for a beneficiary under FRA all year', () => {
-      const plan = basePlan()
-      plan.household.people[0]! = {
-        ...plan.household.people[0]!,
+    it('withholds half the below-FRA excess and one-third of the FRA-year excess', () => {
+      const belowFraPlan = basePlan()
+      belowFraPlan.household.people[0]! = {
+        ...belowFraPlan.household.people[0]!,
         dob: '1964-06-15', // 62 in 2026, FRA 67
         retirementAge: 68,
       }
-      plan.incomes = [
+      belowFraPlan.incomes = [
         wages(40_000),
         { type: 'socialSecurity', id: testIds(), personId: 'p1', piaMonthly: 2_000, earnings: null, claimAge: { years: 62, months: 0 } },
       ]
-      plan.accounts = [cash(2_000_000)]
+      belowFraPlan.accounts = [cash(2_000_000)]
 
-      const result = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax })
-      const age62 = result.years.find((y) => y.year === 2026)!
+      const belowFraResult = simulatePlan(validate(belowFraPlan), { startYear: 2026, taxCalculator: noTax })
+      const belowFraYear = belowFraResult.years.find((y) => y.year === 2026)!
 
-      expect(age62.ssEarningsTestWithheld).toBeCloseTo(accepted, 6)
-      expect(age62.ssEarningsTestWithheld).not.toBeCloseTo(readings.fraYearTreatmentApplied, 6)
+      const fraYearPlan = basePlan()
+      fraYearPlan.household.people[0]! = {
+        ...fraYearPlan.household.people[0]!,
+        dob: '1960-06-15', // 67 in 2027, FRA 67
+        retirementAge: 68,
+      }
+      fraYearPlan.incomes = [
+        wages(70_000),
+        { type: 'socialSecurity', id: testIds(), personId: 'p1', piaMonthly: 2_000, earnings: null, claimAge: { years: 62, months: 0 } },
+      ]
+      fraYearPlan.accounts = [cash(2_000_000)]
+
+      const fraYearResult = simulatePlan(validate(fraYearPlan), { startYear: 2027, taxCalculator: noTax })
+      const fraYearObserved = fraYearResult.years.find((y) => y.year === 2027)!
+
+      const observed = {
+        belowFra: belowFraYear.ssEarningsTestWithheld,
+        fraYear: fraYearObserved.ssEarningsTestWithheld,
+      }
+
+      expect(observed.belowFra).toBeCloseTo(accepted.belowFra, 6)
+      expect(observed.fraYear).toBeCloseTo(accepted.fraYear, 6)
+      expect(observed).not.toEqual(readings.fraYearTreatmentAppliedEarly)
+      expect(observed.fraYear).not.toBeCloseTo(readings.flatHalfRate.fraYear, 6)
+      expect(observed.fraYear).not.toBeCloseTo(readings.noFraYearWithholding.fraYear, 6)
     })
   })
 

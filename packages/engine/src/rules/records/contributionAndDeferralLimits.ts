@@ -428,7 +428,7 @@ export const contributionAndDeferralLimitRecords = {
   'irc-219-f-1-compensation-excludes-deferred-income': {
     title: 'Pension, annuity and deferred income are not compensation for IRA purposes',
     statement:
-      'Section 219(f)(1) defines compensation to include earned income and to exclude any amount received as a pension or annuity or as deferred compensation. Retirement income therefore does not create IRA contribution room, so a person whose only income is a pension or Social Security has a compensation ceiling of zero.',
+      'Section 219(f)(1) defines compensation to include earned income and to exclude any amount received as a pension or annuity or as deferred compensation. A person whose only income is a pension therefore has a compensation ceiling of zero.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,

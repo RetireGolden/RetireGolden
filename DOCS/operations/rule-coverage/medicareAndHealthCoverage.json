@@ -428,6 +428,11 @@
       "authorities": [
         {
           "kind": "statute",
+          "citation": "IRC 36B(d)(2)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section36B&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
           "citation": "IRC 36B(d)(2)(B)",
           "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section36B&num=0&edition=prelim"
         }
