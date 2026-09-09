@@ -26,7 +26,7 @@ invents an edge the schema does not carry, and never infers a legal relationship
 | Filing status | `household.filingStatus` (`single` / `marriedFilingJointly` only) |
 | Account ownership | `accountBase.ownerPersonId` (a person, or `null` = joint); traditional/Roth/HSA must be individually owned (schema-enforced) |
 | Income attribution | `wages.personId`, `socialSecurity.personId`; recurring/one-time income is household-level (no person link) |
-| Former spouses on a Social Security record | `socialSecurityIncome.formerSpouses[]` (`divorced` / `deceased`, DOB, PIA estimate, marriage years) — unlocks divorced-spousal / survivor benefits; former spouses are **unnamed** in the schema |
+| Former spouses on a Social Security record | `socialSecurityIncome.formerSpouses[]` (`divorced` / `deceased` / `surviving-divorced`, DOB, PIA estimate, marriage years, remarriage age when relevant) — unlocks divorced-spousal and survivor benefit records; former spouses are **unnamed** in the schema |
 | Estate destination of an account | `accountBase.estateBeneficiary` — **categorical** (`spouse` / `nonSpouse` / `charity` + charity %), not a named person |
 | HSA beneficiary shorthand | `hsa.beneficiary` (`spouse` / `nonSpouse`; superseded by `estateBeneficiary` when both present) |
 | Spouse-sole-beneficiary assertion on a traditional account | `traditional.spouseSoleBeneficiary` (RMD joint-life divisor gate) |

@@ -36,12 +36,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/socialSecurity/maritalBenefits.eligibility.test.ts",
-          "line": 34,
+          "line": 38,
           "note": null,
           "tests": [
             {
               "title": "pins the calendar-year age-62 blanket against worker entitlement and the two-year independently entitled path",
-              "line": 56
+              "line": 60
             }
           ]
         }
@@ -236,11 +236,11 @@
           "functions": [
             {
               "name": "isWidowEligible",
-              "line": 111
+              "line": 122
             },
             {
               "name": "passesModeledOrdinaryWidowRecordGates",
-              "line": 89
+              "line": 90
             }
           ]
         }
@@ -251,12 +251,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/socialSecurity/maritalBenefits.eligibility.test.ts",
-          "line": 76,
+          "line": 80,
           "note": null,
           "tests": [
             {
               "title": "pins the ordinary nine-month widow path, including currently-single after a pre-60 intervening marriage and coupled null remarriage timing",
-              "line": 118
+              "line": 122
             }
           ]
         }
@@ -322,11 +322,11 @@
       ]
     },
     {
-      "id": "cfr-20-404-336-surviving-divorced-spouse-eligibility",
-      "title": "Surviving-divorced ten-year marriage-immediately-before-divorce duration under 404.336(a)(2)",
-      "classification": "settled",
-      "errorDirection": null,
-      "conventionRationale": "formerSpouseSchema.relationship accepts surviving-divorced alongside divorced and deceased; saved plans with relationship deceased keep the ordinary-widow nine-month path. passesModeledSurvivingDivorcedRecordGates is pinned here. The fixture uses marriageYears [0.75, 10]: nine months refuses (a)(2); ten years satisfies (a)(2), and with the other assumed limbs yields the unreduced survivor amount at FRA. Unadjudicated residuals not carried in formerSpouseSchema: fully insured status, valid marriage under (a)(1), application and its 404.336(b)(1)–(4) exceptions, age-60 non-disabled and disabled-age-50 paths and their conditions in (c), the (d) own-old-age-benefit restriction, remarriage and its (e)(1)–(3) exceptions, and claim-age sequencing between own and survivor benefits.",
+      "id": "cfr-20-404-336-e-surviving-divorced-remarriage",
+      "title": "Surviving-divorced remarriage gate under 404.336(e) and (e)(1)",
+      "classification": "approximated",
+      "errorDirection": "bothDirections",
+      "conventionRationale": "DEFECT — no behavior change in this registry slice. 20 CFR 404.336(e) starts from currently unmarried; a later marriage that has ended leaves the claimant unmarried and inside that lead-in. passesSurvivorRemarriageGate instead rejects whenever remarriedAtAge is below 60, including when claimantIsSingle is true. Independently, passesSurvivorRemarriageGate never reads claimantIsSingle, so a schema-valid coupled context with remarriedAtAge null still receives a candidate; a null remarriedAtAge lacks the facts of any 404.336(e) exception and does not prove a marriage before 60. The companion fixture holds ten-year duration, claimant age 67, deceased ex at FRA, and PIA 2,400 so the unreduced survivor amount is 2,400 when the gate passes: remarried at 55 now single (worksheet currently unmarried pays; engine null), then remarried at 60 still married ((e)(1) pays; engine 2,400). Paragraph (e)(2) and (e)(3) disabled-remarriage facts have no formerSpouse fields and are not adjudicated here.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -342,7 +342,70 @@
           "path": "packages/engine/src/socialSecurity/maritalBenefits.ts",
           "functions": [
             {
-              "name": "passesModeledSurvivingDivorcedRecordGates",
+              "name": "passesSurvivorRemarriageGate",
+              "line": 80
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/socialSecurity/maritalBenefits.eligibility.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/socialSecurity/maritalBenefits.eligibility.test.ts",
+          "line": 201,
+          "note": null,
+          "tests": [
+            {
+              "title": "pins the historical remarriedAtAge gate against currently unmarried and (e)(1) preservation",
+              "line": 224
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.336(e), (e)(1)",
+          "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR219bf3e41a78e9f/section-404.336"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 402(e)(1)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 402(e)(3)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "cfr-20-404-336-surviving-divorced-spouse-eligibility",
+      "title": "Surviving-divorced ten-year marriage-immediately-before-divorce duration under 404.336(a)(2)",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "formerSpouseSchema.relationship accepts surviving-divorced alongside divorced and deceased; saved plans with relationship deceased keep the ordinary-widow nine-month path. passesModeledSurvivingDivorcedDurationGates is pinned here. The fixture uses marriageYears [0.75, 10] as boolean refused/accepted duration outputs with remarriage held out. remarriedAtAge is carried on formerSpouseSchema and is enforced by passesSurvivorRemarriageGate, which the composite passesModeledSurvivingDivorcedRecordGates calls but which is owned by `cfr-20-404-336-e-surviving-divorced-remarriage`. Unadjudicated residuals not carried in formerSpouseSchema: fully insured status, valid marriage under (a)(1), application and its 404.336(b)(1)–(4) exceptions, age-60 non-disabled and disabled-age-50 paths and their conditions in (c), the (d) own-old-age-benefit restriction, and claim-age sequencing between own and survivor benefits.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-09",
+      "dueOn": "2027-09-09",
+      "implementedBy": [
+        "packages/engine/src/socialSecurity/maritalBenefits.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/socialSecurity/maritalBenefits.ts",
+          "functions": [
+            {
+              "name": "passesModeledSurvivingDivorcedDurationGates",
               "line": 103
             }
           ]
@@ -354,11 +417,11 @@
       "fixtures": [
         {
           "path": "packages/engine/src/socialSecurity/maritalBenefits.eligibility.test.ts",
-          "line": 161,
+          "line": 165,
           "note": null,
           "tests": [
             {
-              "title": "pins the surviving-divorced ten-year duration against the legacy deceased nine-month proxy",
+              "title": "pins the surviving-divorced ten-year duration against the ordinary nine-month proxy",
               "line": 182
             }
           ]

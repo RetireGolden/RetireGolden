@@ -1,15 +1,15 @@
 {
-  "generatedAt": "2026-09-09T04:01:50.055Z",
-  "recordCount": 447,
+  "generatedAt": "2026-09-09T05:02:51.885Z",
+  "recordCount": 448,
   "urlCount": 357,
   "fetched": 0,
   "cached": 357,
-  "entryCount": 1322,
+  "entryCount": 1325,
   "counts": {
-    "EXACT": 926,
+    "EXACT": 928,
     "PUNCTUATION": 43,
     "PDF-WORD-LEVEL": 249,
-    "ELISION-EXACT": 86,
+    "ELISION-EXACT": 87,
     "ELISION-PUNCTUATION": 8,
     "PDF-NOT-VERIFIABLE": 7,
     "UNFETCHABLE": 3
@@ -7702,6 +7702,36 @@
       "quoteSha256": "f2e54dc4f941dbd9",
       "verdict": "ELISION-EXACT",
       "detail": "2 elision segments, every one a literal substring",
+      "diagnosis": null
+    },
+    {
+      "id": "cfr-20-404-336-e-surviving-divorced-remarriage",
+      "citation": "20 CFR 404.336(e), (e)(1)",
+      "host": "www.ecfr.gov",
+      "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR219bf3e41a78e9f/section-404.336",
+      "quoteSha256": "27c38d33db8d6edd",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "cfr-20-404-336-e-surviving-divorced-remarriage",
+      "citation": "42 U.S.C. 402(e)(1)(A)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim",
+      "quoteSha256": "f2e54dc4f941dbd9",
+      "verdict": "ELISION-EXACT",
+      "detail": "2 elision segments, every one a literal substring",
+      "diagnosis": null
+    },
+    {
+      "id": "cfr-20-404-336-e-surviving-divorced-remarriage",
+      "citation": "42 U.S.C. 402(e)(3)(A)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim",
+      "quoteSha256": "19c6d913b5757011",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {

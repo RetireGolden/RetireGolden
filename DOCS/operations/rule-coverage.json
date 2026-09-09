@@ -2,9 +2,9 @@
   "kind": "retiregolden.rules-coverage.manifest",
   "version": 5,
   "registry": {
-    "total": 447,
+    "total": 448,
     "byClassification": {
-      "approximated": 124,
+      "approximated": 125,
       "outOfScope": 75,
       "settled": 244,
       "unsettled": 4
@@ -12,11 +12,11 @@
     "byVolatility": {
       "annuallyIndexed": 68,
       "awaitingGuidance": 10,
-      "staticStatute": 362,
+      "staticStatute": 363,
       "sunsetting": 7
     },
     "byJurisdiction": {
-      "federal": 329,
+      "federal": 330,
       "states": {
         "AK": 1,
         "AL": 9,
@@ -334,7 +334,7 @@
     {
       "path": "socialSecurity/maritalBenefits.ts",
       "sweptOn": "2026-09-09",
-      "note": "Living-divorced, ordinary-widow, and surviving-divorced duration eligibility gates, plus half-PIA and survivor pricing, are named on this file. Residual: claimant-has-claimed timing (claimantAge vs claimAge) is an engine convention with no record; survivor amount assembly is delegated to already-registered survivorBenefit.ts/claimFactor.ts/nra.ts without a borrowed pin here"
+      "note": "Living-divorced, ordinary-widow, surviving-divorced duration, and surviving-divorced remarriage eligibility gates, plus half-PIA and survivor pricing, are named on this file. Residual: claimant-has-claimed timing (claimantAge vs claimAge) is an engine convention with no record; survivor amount assembly is delegated to already-registered survivorBenefit.ts/claimFactor.ts/nra.ts without a borrowed pin here"
     },
     {
       "path": "socialSecurity/piaFromEarnings.ts",
@@ -624,7 +624,7 @@
     {
       "module": "socialSecurityMaritalEligibility",
       "path": "rule-coverage/socialSecurityMaritalEligibility.json",
-      "ruleCount": 5
+      "ruleCount": 6
     },
     {
       "module": "statesMidwest",
@@ -658,14 +658,14 @@
     }
   ],
   "quoteFidelity": {
-    "generatedAt": "2026-09-09T04:01:50.055Z",
-    "entryCount": 1322,
+    "generatedAt": "2026-09-09T05:02:51.885Z",
+    "entryCount": 1325,
     "fetched": 0,
     "cached": 357,
     "counts": {
-      "ELISION-EXACT": 86,
+      "ELISION-EXACT": 87,
       "ELISION-PUNCTUATION": 8,
-      "EXACT": 926,
+      "EXACT": 928,
       "PDF-NOT-VERIFIABLE": 7,
       "PDF-WORD-LEVEL": 249,
       "PUNCTUATION": 43,

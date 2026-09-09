@@ -76,7 +76,8 @@ function isDivorcedSpouseEligible(record: FormerSpouse, ctx: MaritalBenefitConte
   return true
 }
 
-function passesSurvivorRemarriageGate(record: FormerSpouse): boolean {
+/** Historical remarriage before 60 is an unconditional forfeiture; at/after 60 is preserved. */
+export function passesSurvivorRemarriageGate(record: FormerSpouse): boolean {
   return record.remarriedAtAge === null || record.remarriedAtAge >= REMARRIAGE_SURVIVOR_PRESERVE_AGE
 }
 
@@ -94,15 +95,25 @@ export function passesModeledOrdinaryWidowRecordGates(record: FormerSpouse): boo
 }
 
 /**
- * Modeled surviving-divorced record gates: relationship, ten-year divorce
- * duration in 404.336(a)(2), and the same historical remarriage gate as the
- * ordinary survivor path. Does not test valid marriage, application, own-benefit,
+ * Modeled surviving-divorced 404.336(a)(2) duration: relationship
+ * surviving-divorced and ten years immediately before divorce. Does not test
+ * remarriage, valid marriage, application, own-benefit, disability, or complete
+ * claimant eligibility.
+ */
+export function passesModeledSurvivingDivorcedDurationGates(record: FormerSpouse): boolean {
+  if (record.relationship !== 'surviving-divorced') return false
+  if (record.marriageYears < DIVORCED_MIN_MARRIAGE_YEARS) return false
+  return true
+}
+
+/**
+ * Modeled surviving-divorced record gates: (a)(2) duration and the historical
+ * remarriage gate. Does not test valid marriage, application, own-benefit,
  * disability, or complete claimant eligibility; isSurvivingDivorcedEligible owns
  * the age-60 gate.
  */
 export function passesModeledSurvivingDivorcedRecordGates(record: FormerSpouse): boolean {
-  if (record.relationship !== 'surviving-divorced') return false
-  if (record.marriageYears < DIVORCED_MIN_MARRIAGE_YEARS) return false
+  if (!passesModeledSurvivingDivorcedDurationGates(record)) return false
   if (!passesSurvivorRemarriageGate(record)) return false
   return true
 }

@@ -441,7 +441,7 @@ describe('Former spouses (#535)', () => {
     await unmount()
   })
 
-  it('opens a new divorced record at the engine floor, and a deceased one at its prior default', async () => {
+  it('opens new former-spouse records at each kind’s engine default marriage years', async () => {
     const stream = streamWith([])
     const added: NonNullable<SsStream['formerSpouses']> = []
     const setStream = (mut: (s: SsStream) => void) => {
@@ -452,13 +452,42 @@ describe('Former spouses (#535)', () => {
     const buttons = [...container.querySelectorAll('button')]
     await act(async () => buttons.find((b) => b.textContent === '+ Divorced ex-spouse')!.click())
     await act(async () => buttons.find((b) => b.textContent === '+ Deceased spouse')!.click())
-    // A divorced record opens at the engine floor; a deceased one keeps its
-    // long-standing one-year default, above the survivor floor.
+    await act(async () => buttons.find((b) => b.textContent === '+ Deceased divorced ex')!.click())
+    // Divorced and surviving-divorced records open at the engine ten-year floor;
+    // a deceased spouse record keeps its long-standing one-year default, above
+    // the ordinary nine-month survivor floor.
     expect(stream.formerSpouses!.map((r) => [r.relationship, r.marriageYears])).toEqual([
       ['divorced', DIVORCED_MIN_MARRIAGE_YEARS],
       ['deceased', 1],
+      ['surviving-divorced', DIVORCED_MIN_MARRIAGE_YEARS],
     ])
     expect(1).toBeGreaterThan(SURVIVOR_MIN_MARRIAGE_YEARS)
+    await unmount()
+  })
+
+  it('discloses the ten-year floor on a surviving-divorced record under it', async () => {
+    const stream = streamWith([
+      {
+        id: 'sd-1',
+        relationship: 'surviving-divorced',
+        dob: '1955-01-01',
+        piaMonthly: 2_400,
+        marriageYears: 4,
+        remarriedAtAge: null,
+      },
+    ])
+    const { container, unmount } = await mount(
+      <FormerSpousesEditor stream={stream} streamIndex={2} setStream={() => undefined} householdIsSingle />,
+    )
+    const row = container.querySelector<HTMLElement>('.item-row')!
+    const note = row.querySelector<HTMLElement>('#former-spouse-sd-1-years-note')!
+    expect(note.textContent).toContain('10 or more years')
+    expect(note.textContent).toContain('before divorce')
+    expect(note.textContent).toContain('pays nothing')
+    const years = [...row.querySelectorAll('label')].find((l) => l.textContent === 'Years married')!.control as HTMLInputElement
+    expect(years.disabled).toBe(false)
+    expect(years.getAttribute('aria-describedby')).toContain(note.id)
+    expect(row.querySelector('#former-spouse-sd-1-partner-note')).toBeNull()
     await unmount()
   })
 

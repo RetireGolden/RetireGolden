@@ -1,7 +1,7 @@
 /**
  * Social Security marital eligibility records: living divorced-spouse
  * entitlement on a worker's record, ordinary-widow duration and remarriage
- * gates, surviving-divorced ten-year divorce duration, and the inexpressible
+ * gates, surviving-divorced ten-year divorce duration and remarriage gate, and the inexpressible
  * duration-exception and divorced-remarriage continuation limbs.
  *
  * One slice of the tax rule registry. `../taxRuleRegistry.ts` composes every
@@ -172,12 +172,12 @@ export const socialSecurityMaritalEligibilityRecords = {
   'cfr-20-404-336-surviving-divorced-spouse-eligibility': {
     title: 'Surviving-divorced ten-year marriage-immediately-before-divorce duration under 404.336(a)(2)',
     statement:
-      'When the other entitlement requirements in 20 CFR 404.336(a)(1) and (b) through (e) are met, a surviving divorced wife or husband must have been married to the insured for at least ten years immediately before the divorce became final (404.336(a)(2)). Unlike 404.335(a)(1), surviving-divorced duration has no nine-month floor and no duration-exception branch. passesModeledSurvivingDivorcedRecordGates enforces that ten-year gate on relationship surviving-divorced. The legacy deceased relationship remains on the ordinary-widow nine-month path. This record is the (a)(2) duration limb only — not full surviving-divorced entitlement, not the ordinary-widow path, and not survivor pricing or remarriage adjudication.',
+      'When the other entitlement requirements in 20 CFR 404.336(a)(1) and (b) through (e) are met, a surviving divorced wife or husband must have been married to the insured for at least ten years immediately before the divorce became final (404.336(a)(2)). Unlike 404.335(a)(1), surviving-divorced duration has no nine-month floor and no duration-exception branch. passesModeledSurvivingDivorcedDurationGates enforces that ten-year gate on relationship surviving-divorced. The legacy deceased relationship remains on the ordinary-widow nine-month path. This record is the (a)(2) duration limb only — not full surviving-divorced entitlement, not the ordinary-widow path, not survivor pricing, and not remarriage adjudication.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'formerSpouseSchema.relationship accepts surviving-divorced alongside divorced and deceased; saved plans with relationship deceased keep the ordinary-widow nine-month path. passesModeledSurvivingDivorcedRecordGates is pinned here. The fixture uses marriageYears [0.75, 10]: nine months refuses (a)(2); ten years satisfies (a)(2), and with the other assumed limbs yields the unreduced survivor amount at FRA. Unadjudicated residuals not carried in formerSpouseSchema: fully insured status, valid marriage under (a)(1), application and its 404.336(b)(1)–(4) exceptions, age-60 non-disabled and disabled-age-50 paths and their conditions in (c), the (d) own-old-age-benefit restriction, remarriage and its (e)(1)–(3) exceptions, and claim-age sequencing between own and survivor benefits.',
+      'formerSpouseSchema.relationship accepts surviving-divorced alongside divorced and deceased; saved plans with relationship deceased keep the ordinary-widow nine-month path. passesModeledSurvivingDivorcedDurationGates is pinned here. The fixture uses marriageYears [0.75, 10] as boolean refused/accepted duration outputs with remarriage held out. remarriedAtAge is carried on formerSpouseSchema and is enforced by passesSurvivorRemarriageGate, which the composite passesModeledSurvivingDivorcedRecordGates calls but which is owned by `cfr-20-404-336-e-surviving-divorced-remarriage`. Unadjudicated residuals not carried in formerSpouseSchema: fully insured status, valid marriage under (a)(1), application and its 404.336(b)(1)–(4) exceptions, age-60 non-disabled and disabled-age-50 paths and their conditions in (c), the (d) own-old-age-benefit restriction, and claim-age sequencing between own and survivor benefits.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'regulation',
@@ -216,7 +216,46 @@ export const socialSecurityMaritalEligibilityRecords = {
     verifiedOn: '2026-09-09',
     implementedBy: ['packages/engine/src/socialSecurity/maritalBenefits.ts'],
     implementedByFunctions: [
-      'packages/engine/src/socialSecurity/maritalBenefits.ts#passesModeledSurvivingDivorcedRecordGates',
+      'packages/engine/src/socialSecurity/maritalBenefits.ts#passesModeledSurvivingDivorcedDurationGates',
+    ],
+  },
+
+  'cfr-20-404-336-e-surviving-divorced-remarriage': {
+    title: 'Surviving-divorced remarriage gate under 404.336(e) and (e)(1)',
+    statement:
+      'Subject to the other entitlement requirements in 20 CFR 404.336(a) through (d), a surviving divorced wife or husband must be unmarried unless, for benefits for months after 1983, one of the conditions in 404.336(e)(1) through (e)(3) applies; remarriage after age 60 is preserved under (e)(1). passesSurvivorRemarriageGate enforces only the historical remarriedAtAge fact: null or age 60 or older passes; below 60 is an unconditional forfeiture even when the claimant is now single. It does not read claimantIsSingle, so current marital status is not adjudicated and a coupled household with remarriedAtAge null still receives a candidate without establishing any 404.336(e) exception. It does not adjudicate the disabled-remarriage alternatives in (e)(2) and (e)(3). The composite passesModeledSurvivingDivorcedRecordGates calls this gate after the (a)(2) duration predicate. The modeled benefit-candidate error runs both ways: the pinned pre-60-now-single case omits a payable candidate, while the omitted current-status coupling can admit a candidate that the authority would refuse. This fixture does not quantify downstream tax or replacement-withdrawal effects.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'bothDirections',
+    conventionRationale:
+      'DEFECT — no behavior change in this registry slice. 20 CFR 404.336(e) starts from currently unmarried; a later marriage that has ended leaves the claimant unmarried and inside that lead-in. passesSurvivorRemarriageGate instead rejects whenever remarriedAtAge is below 60, including when claimantIsSingle is true. Independently, passesSurvivorRemarriageGate never reads claimantIsSingle, so a schema-valid coupled context with remarriedAtAge null still receives a candidate; a null remarriedAtAge lacks the facts of any 404.336(e) exception and does not prove a marriage before 60. The companion fixture holds ten-year duration, claimant age 67, deceased ex at FRA, and PIA 2,400 so the unreduced survivor amount is 2,400 when the gate passes: remarried at 55 now single (worksheet currently unmarried pays; engine null), then remarried at 60 still married ((e)(1) pays; engine 2,400). Paragraph (e)(2) and (e)(3) disabled-remarriage facts have no formerSpouse fields and are not adjudicated here.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'regulation',
+      citation: '20 CFR 404.336(e), (e)(1)',
+      url: 'https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR219bf3e41a78e9f/section-404.336',
+      quotedText:
+        'You are unmarried, unless for benefits for months after 1983 you meet one of the conditions in paragraphs (e)(1) through (3) of this section: (1) You remarried after you became 60 years old.',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 402(e)(1)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim',
+      quotedText:
+        'The widow … and every surviving divorced wife (as defined in section 416(d) of this title) of an individual who died a fully insured individual, if such widow or such surviving divorced wife- (A) is not married, (B)(i) has attained age 60, …',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 402(e)(3)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim',
+      quotedText:
+        'a widow or surviving divorced wife marries after attaining age 60 (or after attaining age 50 if she was entitled before such marriage occurred to benefits based on disability under this subsection), or',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-09',
+    implementedBy: ['packages/engine/src/socialSecurity/maritalBenefits.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/socialSecurity/maritalBenefits.ts#passesSurvivorRemarriageGate',
     ],
   },
 

@@ -2,7 +2,11 @@ import { expect, it } from 'vitest'
 
 import type { FormerSpouse } from '../model/plan.js'
 import { describeRule } from '../rules/describeRule.js'
-import { maritalBenefitFor, type MaritalBenefitContext } from './maritalBenefits.js'
+import {
+  maritalBenefitFor,
+  passesModeledSurvivingDivorcedDurationGates,
+  type MaritalBenefitContext,
+} from './maritalBenefits.js'
 
 /**
  * Eligibility-only fixtures for the living-divorced and ordinary-widow gates.
@@ -159,27 +163,23 @@ describeRule('cfr-20-404-335-ordinary-widow-eligibility', {
 })
 
 describeRule('cfr-20-404-336-surviving-divorced-spouse-eligibility', {
-  // Claimant born 1960-06-15, claims at FRA 67 in 2027, currently single.
-  // Worksheet relationship is surviving-divorced. Deceased ex DOB 1950-06-15,
-  // PIA 2,400, claim age omitted/FRA, no remarriage. Worksheet assumes fully
+  // Surviving-divorced relationship, no remarriage. Worksheet assumes fully
   // insured, valid marriage under 404.336(a)(1), application met, age at least
   // 60, own benefit below deceased PIA, and unmarried; (b)(1)–(4), disabled
-  // (c), (d), and (e)(2)–(3) are outside this duration-only fixture.
+  // (c), (d), and remarriage (e) are outside this duration-only fixture.
   //
   // Vector:
-  //   [0] marriageYears 0.75 (nine months) → 404.336(a)(2) ten-year duration
-  //       refuses → null.
-  //   [1] marriageYears 10 → (a)(2) met; unreduced survivor at FRA equals PIA
-  //       2,400 when the deceased is treated as claimed at FRA.
-  // The rejected ordinary-widow proxy would apply the nine-month 404.335(a)(1)
-  // floor if surviving-divorced facts were still entered as deceased.
+  //   [0] marriageYears 0.75 (nine months) → 404.336(a)(2) refuses.
+  //   [1] marriageYears 10 → (a)(2) satisfied.
+  // The rejected ordinary-widow proxy would admit nine months on the deceased
+  // path.
   readings: {
-    statutory404336TenYearDuration: [null, 2_400],
-    currentDeceasedProxyOrdinaryWidowNineMonth: [2_400, 2_400],
+    statutory404336TenYearDuration: [false, true],
+    ordinaryWidowNineMonthProxy: [true, true],
   },
   accepted: 'statutory404336TenYearDuration',
 }, ({ accepted, readings }) => {
-  it('pins the surviving-divorced ten-year duration against the legacy deceased nine-month proxy', () => {
+  it('pins the surviving-divorced ten-year duration against the ordinary nine-month proxy', () => {
     const survivingDivorced: FormerSpouse = {
       id: 'former',
       relationship: 'surviving-divorced',
@@ -188,12 +188,54 @@ describeRule('cfr-20-404-336-surviving-divorced-spouse-eligibility', {
       marriageYears: 0.75,
       remarriedAtAge: null,
     }
-    const amounts = [
-      monthlyOf(survivingDivorced),
-      monthlyOf({ ...survivingDivorced, marriageYears: 10 }),
+    const passes = [
+      passesModeledSurvivingDivorcedDurationGates(survivingDivorced),
+      passesModeledSurvivingDivorcedDurationGates({ ...survivingDivorced, marriageYears: 10 }),
     ]
 
-    expect(amounts).toEqual(accepted)
-    expect(amounts).not.toEqual(readings.currentDeceasedProxyOrdinaryWidowNineMonth)
+    expect(passes).toEqual(accepted)
+    expect(passes).not.toEqual(readings.ordinaryWidowNineMonthProxy)
+  })
+})
+
+describeRule('cfr-20-404-336-e-surviving-divorced-remarriage', {
+  // Claimant born 1960-06-15, claims at FRA 67 in 2027. Ten-year marriage,
+  // deceased ex DOB 1950-06-15, PIA 2,400, claim age omitted/FRA. Worksheet
+  // assumes fully insured, valid marriage under 404.336(a)(1), application met,
+  // age at least 60, own benefit below deceased PIA, and the other (e) limbs
+  // outside remarriedAtAge; (b)(1)–(4), disabled (c), (d), and (e)(2)–(3) are
+  // outside this fixture.
+  //
+  // Vector:
+  //   [0] remarriedAtAge 55, currently single → 404.336(e) currently unmarried
+  //       pays 2,400; engine null (unconditional pre-60 historical remarriage
+  //       refusal).
+  //   [1] remarriedAtAge 60, currently married → 404.336(e)(1) pays 2,400;
+  //       engine 2,400.
+  // claimantIsSingle is not read on this path; current marital status and
+  // (e)(2)–(3) remain separate residuals.
+  readings: {
+    statutory404336UnmarriedOrRemarriedAfter60: [2_400, 2_400],
+    engineUnconditionalPre60RemarriageForfeiture: [null, 2_400],
+  },
+  accepted: 'statutory404336UnmarriedOrRemarriedAfter60',
+  produced: 'engineUnconditionalPre60RemarriageForfeiture',
+}, ({ accepted, produced }) => {
+  it('pins the historical remarriedAtAge gate against currently unmarried and (e)(1) preservation', () => {
+    const base: FormerSpouse = {
+      id: 'former',
+      relationship: 'surviving-divorced',
+      dob: '1950-06-15',
+      piaMonthly: 2_400,
+      marriageYears: 10,
+      remarriedAtAge: null,
+    }
+    const amounts = [
+      monthlyOf({ ...base, remarriedAtAge: 55 }),
+      monthlyOf({ ...base, remarriedAtAge: 60 }, { ...ctx, claimantIsSingle: false }),
+    ]
+
+    expect(amounts).toEqual(produced)
+    expect(amounts).not.toEqual(accepted)
   })
 })
