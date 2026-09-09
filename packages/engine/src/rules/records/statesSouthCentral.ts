@@ -1206,6 +1206,66 @@ export const southCentralStateRecords = {
     ],
   },
 
+  'la-ldr-it540es-2026-standard-deduction': {
+    title: 'Louisiana\'s TY2026 CPI-indexed standard deduction is $12,875 single and $25,750 joint',
+    statement:
+      'La. R.S. 47:294(A) allows a standard deduction in determining a taxpayer\'s tax liability pursuant to this Part, sets a $12,500.00 base for single and married-filing-separately filers and two hundred percent of that amount for married-filing-jointly, head-of-household, and qualifying-surviving-spouse filers under §294(A)(1)-(2), and §294(B) requires annual CPI-U adjustment beginning January 1, 2026 by multiplying the prior year\'s standard deduction. Louisiana Department of Revenue 2026 Form IT-540ESi instructions publish the agency-computed TY2026 result as Single $12,875 and Married Filing Joint $25,750 and apply those amounts before multiplying Louisiana taxable income by three percent. The pack stores those published amounts in its supported single and married-filing-jointly deduction cells. Settled only for that CPI-indexed standard deduction on supported single and MFJ filings: married filing separately, head of household, and qualifying surviving spouse amounts are documented on the same worksheet but are not separate pack cells; exemptions, credits, retirement Schedule E adjustments, and whole-return accuracy remain outside this record.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'Primary gate evidence is the 2026 IT-540ESi estimated-tax worksheet plus La. R.S. 47:294 indexing; a final TY2026 resident Form IT-540 was not located. The record expires after TY2026. Later plan years may reuse the latest pack as a planning stand-in and are not certified by this annual record.',
+    jurisdiction: 'state:LA',
+    authority: [{
+      kind: 'statute',
+      citation: 'La. R.S. 47:294(A)',
+      url: 'https://legis.la.gov/Legis/Law.aspx?d=101761',
+      quotedText:
+        'A standard deduction shall be allowed in determining a taxpayer\'s tax liability pursuant to this Part.',
+    }, {
+      kind: 'statute',
+      citation: 'La. R.S. 47:294(A)(1), TY2025 single and separate base amount',
+      url: 'https://legis.la.gov/Legis/Law.aspx?d=101761',
+      quotedText:
+        'Single Individual and Married-Separate $12,500.00',
+    }, {
+      kind: 'statute',
+      citation: 'La. R.S. 47:294(A)(2), filing-status cell',
+      url: 'https://legis.la.gov/Legis/Law.aspx?d=101761',
+      quotedText: 'Married-Joint Return, a Qualified Surviving … Spouse, and Head of Household',
+    }, {
+      kind: 'statute',
+      citation: 'La. R.S. 47:294(A)(2), amount cell',
+      url: 'https://legis.la.gov/Legis/Law.aspx?d=101761',
+      quotedText: '200% of the dollar amount … provided for Single Individuals',
+    }, {
+      kind: 'statute',
+      citation: 'La. R.S. 47:294(B)',
+      url: 'https://legis.la.gov/Legis/Law.aspx?d=101761',
+      quotedText:
+        'Beginning January 1, 2026, and thereafter, the amount of the standard deduction provided in Subsection A of this Section shall be adjusted annually by an amount calculated by multiplying the amount of the prior year\'s standard deduction by the percentage increase in the Consumer Price Index United States city average for all urban consumers (CPI-U),  as reported by the United States Department of Labor, Bureau of Labor Statistics, or its successor, for the previous calendar year.',
+    }, {
+      kind: 'stateAgencyPublication',
+      citation: 'Louisiana Department of Revenue, 2026 Form IT-540ESi instructions, estimated tax worksheet',
+      url: 'https://dam.ldr.la.gov/taxforms/IT540ESi-2026.pdf',
+      quotedText:
+        'Single $12,875 … Married Filing Joint $25,750 … Your Estimated Louisiana Taxable Income (Subtract Lines 2 and 3 from Line 1.) … Estimated Louisiana Income Tax (Multiply Line 4 by .03.)',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: 2026,
+    verifiedOn: '2026-09-09',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#states.LA',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxDetail',
+    ],
+  },
+
   'ok-stat-68-2358-retirement-and-social-security': {
     title: 'Oklahoma subtracts Social Security and caps ordinary retirement exclusions at $10,000 per person',
     statement:

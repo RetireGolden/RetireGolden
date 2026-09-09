@@ -415,7 +415,7 @@ const rawStateYear2026 = {
     },
     LA: {
       code: 'LA', name: 'Louisiana', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
-      standardDeduction: { single: 12500, marriedFilingJointly: 25000 },
+      standardDeduction: { single: 12875, marriedFilingJointly: 25750 },
       brackets: { single: [{ lowerBound: 0, ratePct: 3 }], marriedFilingJointly: [{ lowerBound: 0, ratePct: 3 }] },
       retirement: { kind: 'capped', capPerPerson: 12000, minAge: 65 },
     },
@@ -714,14 +714,14 @@ const rawStateYear2026 = {
     },
     OR: {
       code: 'OR', name: 'Oregon', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
-      standardDeduction: { single: 2835, marriedFilingJointly: 5670 },
+      standardDeduction: { single: 2910, marriedFilingJointly: 5820 },
       brackets: {
         single: [
-          { lowerBound: 0, ratePct: 4.75 }, { lowerBound: 4050, ratePct: 6.75 }, { lowerBound: 10200, ratePct: 8.75 },
+          { lowerBound: 0, ratePct: 4.75 }, { lowerBound: 4550, ratePct: 6.75 }, { lowerBound: 11400, ratePct: 8.75 },
           { lowerBound: 125000, ratePct: 9.9 },
         ],
         marriedFilingJointly: [
-          { lowerBound: 0, ratePct: 4.75 }, { lowerBound: 8100, ratePct: 6.75 }, { lowerBound: 20400, ratePct: 8.75 },
+          { lowerBound: 0, ratePct: 4.75 }, { lowerBound: 9100, ratePct: 6.75 }, { lowerBound: 22800, ratePct: 8.75 },
           { lowerBound: 250000, ratePct: 9.9 },
         ],
       },

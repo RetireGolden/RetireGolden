@@ -37,8 +37,17 @@ benefits (and federal railroad/SS) are fully exempt separately.
 - The $12,000 exclusion is CPI-adjusted from 2025; the 2025 nominal $12,000 is held forward.
 - Standard deduction is also CPI-adjusted starting 2026; 2025 nominal amounts used.
 
+## 2026 correction (pack update; historical 2025 figures above unchanged)
+
+La. R.S. 47:294(B) CPI-U adjustment beginning January 1, 2026 yields TY2026 standard
+deduction **$12,875** single and **$25,750** MFJ per LDR 2026 Form IT-540ESi
+(`la-ldr-it540es-2026-standard-deduction`). The $12,000 retirement cap CPI indexing from
+the same statute family remains unimplemented in the pack
+(`la-rs-47-44-1-retirement-exemption`).
+
 ## Citations
 - https://revenue.louisiana.gov/tax-education-and-faqs/faqs/income-tax-reform/what-are-the-individual-income-tax-rates-and-brackets/ — flat 3% for periods on/after 1/1/2025.
 - https://www.mgocpa.com/perspective/louisiana-enacts-significant-tax-changes/ — standard deduction $12,500 single / $25,000 MFJ; retirement exemption raised to $12,000.
 - https://www.law.cornell.edu/regulations/louisiana/La-Admin-Code-tit-61-SS-I-1311 — annual retirement income exemption, age 65+, up to $12,000 per person.
+- https://dam.ldr.la.gov/taxforms/IT540ESi-2026.pdf — TY2026 estimated-tax worksheet: Single $12,875, Married Filing Joint $25,750.
 - Tax Foundation, State Individual Income Tax Rates and Brackets 2025 — LA flat 3.0%.

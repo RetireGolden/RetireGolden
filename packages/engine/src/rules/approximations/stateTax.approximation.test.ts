@@ -1355,7 +1355,8 @@ describeRule('ma-gen-laws-ch62-s2-public-pension-exclusion', {
 })
 
 const LA_RATE = 0.03
-const LA_DEDUCTION = 12_500
+// La. R.S. 47:294; LDR 2026 IT-540ESi TY2026 single standard deduction.
+const LA_DEDUCTION = 12_875
 const laTax = (taxable: number) => Math.max(0, taxable) * LA_RATE
 const LA_RETIREMENT = 40_000
 const LA_PACK_EXEMPTION = 12_000
@@ -1394,8 +1395,8 @@ describeRule('la-rs-47-44-1-retirement-exemption', {
       .toBeCloseTo(LA_RETIREMENT - LA_PACK_EXEMPTION - LA_DEDUCTION, 6)
     expect(produced).toBe(heldForward)
     expect(produced).not.toBe(PRODUCED_TBD)
-    // Derivation: (40,000 − 12,000 − 12,500) × 3% = 465.
-    expect(heldForward).toBeCloseTo(465, 6)
+    // Derivation: IT-540ESi TY2026 $12,875 deduction — (40,000 − 12,000 − 12,875) × 3% = 453.75.
+    expect(heldForward).toBeCloseTo(453.75, 6)
     expect(produced).not.toBe(accepted)
     expect(typeof accepted).toBe('string')
   })

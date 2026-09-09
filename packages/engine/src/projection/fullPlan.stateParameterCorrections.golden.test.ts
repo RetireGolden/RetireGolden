@@ -122,6 +122,42 @@ const FIXTURES = [
     worksheet:
       '80,600 − 30,600 TY2026 deduction = 50,000 taxable; DOR TY2026 breakpoints => 2,693.85.',
   },
+  {
+    evidenceLabel: 'la-ldr-it540es-2026-standard-deduction',
+    state: 'LA',
+    filingStatus: 'single' as const,
+    income: 100_000,
+    expectedTax: 2_613.75,
+    worksheet:
+      '100,000 − 12,875 TY2026 deduction = 87,125 taxable; 87,125 × 3% = 2,613.75 (IT-540ESi / La. R.S. 47:294).',
+  },
+  {
+    evidenceLabel: 'la-ldr-it540es-2026-standard-deduction',
+    state: 'LA',
+    filingStatus: 'marriedFilingJointly' as const,
+    income: 100_000,
+    expectedTax: 2_227.50,
+    worksheet:
+      '100,000 − 25,750 TY2026 deduction = 74,250 taxable; 74,250 × 3% = 2,227.50 (IT-540ESi / La. R.S. 47:294).',
+  },
+  {
+    evidenceLabel: 'or-lro-2026-rate-schedule-and-standard-deduction',
+    state: 'OR',
+    filingStatus: 'single' as const,
+    income: 100_000,
+    expectedTax: 8_176.375,
+    worksheet:
+      '100,000 − 2,910 TY2026 deduction = 97,090 taxable; continuous marginal breakpoints => 8,176.375 modeled subtotal. Not LRO printed whole-dollar table replication.',
+  },
+  {
+    evidenceLabel: 'or-lro-2026-rate-schedule-and-standard-deduction',
+    state: 'OR',
+    filingStatus: 'marriedFilingJointly' as const,
+    income: 100_000,
+    expectedTax: 7_602.75,
+    worksheet:
+      '100,000 − 5,820 TY2026 deduction = 94,180 taxable; continuous marginal breakpoints => 7,602.75 modeled subtotal. Not LRO printed whole-dollar table replication.',
+  },
 ] as const
 
 describe('state 2026 parameter corrections — plan integration', () => {

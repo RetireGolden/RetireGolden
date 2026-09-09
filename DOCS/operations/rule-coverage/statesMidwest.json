@@ -950,16 +950,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2774,
+          "line": 2775,
           "note": null,
           "tests": [
             {
               "title": "deducts Social Security from Michigan taxable income",
-              "line": 2788
+              "line": 2789
             },
             {
               "title": "would add the federally taxable share if Michigan taxed it",
-              "line": 2793
+              "line": 2794
             }
           ]
         }
@@ -2110,16 +2110,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2929,
+          "line": 2930,
           "note": null,
           "tests": [
             {
               "title": "subtracts every federally included Social Security dollar from 2024",
-              "line": 2945
+              "line": 2946
             },
             {
               "title": "would tax 85% of the benefit under the shopping-list reading",
-              "line": 2951
+              "line": 2952
             }
           ]
         }
@@ -2191,23 +2191,23 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3032,
+          "line": 3033,
           "note": "public-pension deduction limb",
           "tests": [
             {
               "title": "pins the over-broad full public-pension override",
-              "line": 3051
+              "line": 3052
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3058,
+          "line": 3059,
           "note": "retirement-income credit limb",
           "tests": [
             {
               "title": "pins the omitted Ohio retirement-income credit",
-              "line": 3072
+              "line": 3073
             }
           ]
         }
@@ -2275,16 +2275,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3102,
+          "line": 3103,
           "note": null,
           "tests": [
             {
               "title": "prices the TY2026 nonbusiness schedule at the statutory breakpoints",
-              "line": 3113
+              "line": 3114
             },
             {
               "title": "rejects the IT 1040 ES upper band and baseTax add-on semantics via hybridWorksheetUpperBandOnEnactedLowerBand",
-              "line": 3125
+              "line": 3126
             }
           ]
         }
@@ -2429,12 +2429,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3586,
+          "line": 3588,
           "note": "30% long-term capital-gain subtraction",
           "tests": [
             {
               "title": "pins Wisconsin's unrepresented long-term capital-gain exclusion",
-              "line": 3600
+              "line": 3602
             }
           ]
         }
@@ -2501,20 +2501,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3607,
+          "line": 3609,
           "note": "age-67 retirement attribution and election limbs",
           "tests": [
             {
               "title": "shelters retirement dollars received by the under-67 spouse",
-              "line": 3631
+              "line": 3633
             },
             {
               "title": "matches the pooled $48,000 cap when both spouses are 67",
-              "line": 3640
+              "line": 3642
             },
             {
               "title": "grants a 65-year-old nothing where Line 17 would allow $5,000",
-              "line": 3653
+              "line": 3655
             }
           ]
         }

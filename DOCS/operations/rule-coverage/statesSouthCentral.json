@@ -794,16 +794,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3737,
+          "line": 3739,
           "note": null,
           "tests": [
             {
               "title": "prices Alabama single brackets rather than the joint schedule",
-              "line": 3753
+              "line": 3755
             },
             {
               "title": "prices the joint schedule on a joint return, distinct from the single breaks",
-              "line": 3760
+              "line": 3762
             }
           ]
         }
@@ -880,36 +880,36 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3775,
+          "line": 3777,
           "note": "settled: enacted and form authority support $6,000 per taxpayer at age 65",
           "tests": [
             {
               "title": "implements the enacted $6,000 reading and discriminates source-error counterfactuals",
-              "line": 3805
+              "line": 3807
             },
             {
               "title": "withholds the exclusion below age 65",
-              "line": 3814
+              "line": 3816
             },
             {
               "title": "doubles the cap on a joint return when both spouses are 65",
-              "line": 3826
+              "line": 3828
             },
             {
               "title": "grants only one $6,000 cap when one spouse is below 65",
-              "line": 3840
+              "line": 3842
             },
             {
               "title": "reaches the no-exclusion counterfactual once the cap is withheld",
-              "line": 3854
+              "line": 3856
             },
             {
               "title": "reaches the doubled-cap counterfactual under a doubled cap",
-              "line": 3862
+              "line": 3864
             },
             {
               "title": "reaches the no-age-gate counterfactual once minAge is dropped",
-              "line": 3870
+              "line": 3872
             }
           ]
         }
@@ -1055,20 +1055,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
-          "line": 1434,
+          "line": 1435,
           "note": "private-bucket defined-benefit limb",
           "tests": [
             {
               "title": "taxes a private-employer 414(j) pension above the $6,000 private-bucket cap",
-              "line": 1461
+              "line": 1462
             },
             {
               "title": "taxes the whole pension for an under-65 private defined-benefit retiree",
-              "line": 1469
+              "line": 1470
             },
             {
               "title": "reaches the booklet for the private pension once that bucket is full",
-              "line": 1484
+              "line": 1485
             }
           ]
         }
@@ -1140,12 +1140,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3707,
+          "line": 3709,
           "note": null,
           "tests": [
             {
               "title": "keeps a taxable IRA distribution in the Alabama base",
-              "line": 3723
+              "line": 3725
             }
           ]
         }
@@ -1208,12 +1208,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
-          "line": 1555,
+          "line": 1556,
           "note": null,
           "tests": [
             {
               "title": "charges tax on the exemption dollars every Alabama return subtracts",
-              "line": 1574
+              "line": 1575
             }
           ]
         }
@@ -1340,12 +1340,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3679,
+          "line": 3681,
           "note": null,
           "tests": [
             {
               "title": "omits federally taxable Social Security from the Alabama base",
-              "line": 3696
+              "line": 3698
             }
           ]
         }
@@ -1403,20 +1403,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
-          "line": 1494,
+          "line": 1495,
           "note": null,
           "tests": [
             {
               "title": "grants the $3,000 single maximum where the chart has slid to $2,500",
-              "line": 1516
+              "line": 1517
             },
             {
               "title": "reaches the chart once the pack deduction is replaced with the slid amount",
-              "line": 1524
+              "line": 1525
             },
             {
               "title": "grants the $8,500 joint maximum where the chart row reads $5,000",
-              "line": 1535
+              "line": 1536
             }
           ]
         }
@@ -1558,6 +1558,98 @@
       ]
     },
     {
+      "id": "la-ldr-it540es-2026-standard-deduction",
+      "title": "Louisiana's TY2026 CPI-indexed standard deduction is $12,875 single and $25,750 joint",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "Primary gate evidence is the 2026 IT-540ESi estimated-tax worksheet plus La. R.S. 47:294 indexing; a final TY2026 resident Form IT-540 was not located. The record expires after TY2026. Later plan years may reuse the latest pack as a planning stand-in and are not certified by this annual record.",
+      "contraryReading": null,
+      "jurisdiction": "state:LA",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": 2026,
+      "verifiedOn": "2026-09-09",
+      "dueOn": "2027-01-07",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "states.LA",
+              "line": 416
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxDetail",
+              "line": 178
+            },
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 96
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateAnnualParameters.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateAnnualParameters.rules.test.ts",
+          "line": 94,
+          "note": null,
+          "tests": [
+            {
+              "title": "pins the CPI-indexed IT-540ESi deduction at boundary and 100k coordinates",
+              "line": 101
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "La. R.S. 47:294(A)",
+          "url": "https://legis.la.gov/Legis/Law.aspx?d=101761"
+        },
+        {
+          "kind": "statute",
+          "citation": "La. R.S. 47:294(A)(1), TY2025 single and separate base amount",
+          "url": "https://legis.la.gov/Legis/Law.aspx?d=101761"
+        },
+        {
+          "kind": "statute",
+          "citation": "La. R.S. 47:294(A)(2), filing-status cell",
+          "url": "https://legis.la.gov/Legis/Law.aspx?d=101761"
+        },
+        {
+          "kind": "statute",
+          "citation": "La. R.S. 47:294(A)(2), amount cell",
+          "url": "https://legis.la.gov/Legis/Law.aspx?d=101761"
+        },
+        {
+          "kind": "statute",
+          "citation": "La. R.S. 47:294(B)",
+          "url": "https://legis.la.gov/Legis/Law.aspx?d=101761"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Louisiana Department of Revenue, 2026 Form IT-540ESi instructions, estimated tax worksheet",
+          "url": "https://dam.ldr.la.gov/taxforms/IT540ESi-2026.pdf"
+        }
+      ]
+    },
+    {
       "id": "la-rs-47-44-1-retirement-exemption",
       "title": "Louisiana exempts retirement income from age 65, CPI-U indexed from 2026; the pack holds $12,000 flat",
       "classification": "approximated",
@@ -1604,16 +1696,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
-          "line": 1363,
+          "line": 1364,
           "note": null,
           "tests": [
             {
               "title": "pins the held-forward unindexed $12,000 against the CPI-U indexing method",
-              "line": 1391
+              "line": 1392
             },
             {
               "title": "withholds the exemption at 64, which is the age the statute names",
-              "line": 1403
+              "line": 1404
             }
           ]
         }
@@ -1679,20 +1771,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2658,
+          "line": 2659,
           "note": null,
           "tests": [
             {
               "title": "keeps Social Security out of the Louisiana base",
-              "line": 2672
+              "line": 2673
             },
             {
               "title": "would pull the federally taxable share in if Louisiana taxed it",
-              "line": 2678
+              "line": 2679
             },
             {
               "title": "also exempts a United States Government retirement annuity in the public bucket",
-              "line": 2684
+              "line": 2685
             }
           ]
         }
@@ -2373,20 +2465,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3155,
+          "line": 3156,
           "note": null,
           "tests": [
             {
               "title": "pins the military exception the generic retirement bucket cannot express",
-              "line": 3190
+              "line": 3191
             },
             {
               "title": "subtracts federally taxable Social Security to the extent included under IRC 86",
-              "line": 3199
+              "line": 3200
             },
             {
               "title": "caps ordinary qualifying retirement at Schedule 511-A line 6 $10,000",
-              "line": 3210
+              "line": 3211
             }
           ]
         }

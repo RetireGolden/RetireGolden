@@ -185,7 +185,11 @@ const EXPECTED: Record<string, { depletionYear: number | null; endingInvestable:
   // tax not paid, left in accounts returning 6-7.5% for the balance of a horizon
   // that runs 25 more years past the first of those savings.
   'coast-fire': { depletionYear: null, endingInvestable: 8_107_715.21, lifetimeTax: 1_707_504.36, lifetimeRoth: 0 },
-  'barista-fire': { depletionYear: null, endingInvestable: 14_569_925.04, lifetimeTax: 2_091_401.98, lifetimeRoth: 0 },
+  // Reviewed 2026-09-09: Oregon TY2026 LRO Report #1-26 standard deduction $2,835 -> $2,910
+  // and indexed breakpoints single $4,050/$10,200 -> $4,550/$11,400 (`or-lro-2026-rate-
+  // schedule-and-standard-deduction`). barista-fire is the only curated OR example.
+  // Observed characterization only — engine record/fixtures supply the legal oracle.
+  'barista-fire': { depletionYear: null, endingInvestable: 14_616_509.01, lifetimeTax: 2_094_166.96, lifetimeRoth: 0 },
   // bridge-early-retirement re-baselined 2026-08-04 for the Notice 2022-6
   // section 3.02(a) correction. It is the one example carrying a 72(t) SEPP
   // election, and its payment was sized from the engine's SSA period table
