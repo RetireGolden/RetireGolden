@@ -56,20 +56,24 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2644,
+          "line": 2674,
           "note": null,
           "tests": [
             {
               "title": "pins the pack’s failure to subtract the low-income federally taxable benefit",
-              "line": 2673
+              "line": 2705
             },
             {
               "title": "pins the pack’s unconditional pension exclusion above the statutory schedule",
-              "line": 2686
+              "line": 2718
             },
             {
               "title": "pins the pack’s omission of the above-threshold partial Social Security subtraction",
-              "line": 2692
+              "line": 2724
+            },
+            {
+              "title": "pins the pack’s omission when the §86(b)(1) excess limb binds below 25% of benefits",
+              "line": 2747
             }
           ]
         }
@@ -217,16 +221,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3215,
+          "line": 3275,
           "note": null,
           "tests": [
             {
               "title": "deducts Social Security included in federal gross income",
-              "line": 3229
+              "line": 3289
             },
             {
               "title": "would leave the federally taxable share in if the deduction were dropped",
-              "line": 3234
+              "line": 3294
             }
           ]
         }
@@ -611,16 +615,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3432,
+          "line": 3492,
           "note": null,
           "tests": [
             {
               "title": "leaves a New Hampshire retiree with no state base at all",
-              "line": 3453
+              "line": 3513
             },
             {
               "title": "would build a base if Chapter 77 were still in force",
-              "line": 3458
+              "line": 3518
             }
           ]
         }
@@ -1518,12 +1522,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3858,
+          "line": 3918,
           "note": null,
           "tests": [
             {
               "title": "prices single and joint filers on the TY2026 deduction and schedule",
-              "line": 3873
+              "line": 3933
             }
           ]
         }
@@ -1600,34 +1604,34 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3885,
+          "line": 3945,
           "note": "Social Security AGI threshold limb",
           "tests": [
             {
               "title": "pins the low-AGI age-qualified Social Security modification",
-              "line": 3900
+              "line": 3960
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3907,
+          "line": 3967,
           "note": "pension ceiling limb",
           "tests": [
             {
               "title": "pins the current pension ceiling rather than the stale pack cap",
-              "line": 3926
+              "line": 3986
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3933,
+          "line": 3993,
           "note": "pension AGI-threshold limb",
           "tests": [
             {
               "title": "pins the opposite direction when the pension AGI test disallows any modification",
-              "line": 3953
+              "line": 4013
             }
           ]
         }
@@ -1773,20 +1777,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3986,
+          "line": 4046,
           "note": null,
           "tests": [
             {
               "title": "pins Vermont's complete low-AGI Social Security exclusion",
-              "line": 4011
+              "line": 4071
             },
             {
               "title": "pins the single mid-band proportional Social Security exclusion",
-              "line": 4020
+              "line": 4080
             },
             {
               "title": "pins the joint mid-band proportional Social Security exclusion",
-              "line": 4026
+              "line": 4086
             }
           ]
         }

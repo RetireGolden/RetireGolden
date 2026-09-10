@@ -533,7 +533,9 @@ describe('simulatePlan annual cash-flow portfolio and property sources', () => {
     //   payments = 188,000 (NOT filing-grade actuarial FMV — see
     //   iraAnnuityCharacter.approximation.test.ts,
     //   irc-408-d-2-C-annuity-contract-close-of-year-value). With 408(d)(2)(C)
-    //   add-back, line 9 = 1,000,000, line 10 = 0.2, line 12 = 12,300.99.
+    //   add-back, line 9 = 1,000,000, line 10 = 0.2, line 12 = 12,300.99,
+    //   line 14 = 200,000 - 12,300.99 = 187,699.01 dollars; ×100 = 18,769,901
+    //   UsdCents.
     //   Annuity payment basis share = 12,000 × 0.2 = 2,400.
     const plan = singlePersonPlan({ dob: '1946-01-01', planningAge: 95, retirementAge: null })
     plan.accounts = [

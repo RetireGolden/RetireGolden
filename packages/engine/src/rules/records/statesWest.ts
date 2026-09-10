@@ -985,9 +985,9 @@ export const westStateRecords = {
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
-    conventionRationale:
-      'Schedule A and Schedule B are quoted as separate authorities. Ellipses omit PDF line numbers and page furniture only; they do not omit statutory words.',
+    conventionRationale: null,
     jurisdiction: 'state:NM',
+    // Schedule A and Schedule B are quoted as separate authorities. Ellipses omit PDF line numbers and page furniture only; they do not omit statutory words.
     authority: [{
       kind: 'statute',
       citation: 'NMSA §7-2-7 (HB 252 SECTION 5), effective period',

@@ -2639,6 +2639,36 @@ const CT_ABOVE_THRESHOLD_RETAINED_IN_BASE = Math.min(
 const CT_ABOVE_THRESHOLD_ACCEPTED_BASE = CT_ABOVE_THRESHOLD_ORDINARY + CT_ABOVE_THRESHOLD_RETAINED_IN_BASE
 const CT_ABOVE_THRESHOLD_OBSERVED_BASE = CT_ABOVE_THRESHOLD_ORDINARY + CT_ABOVE_THRESHOLD_FEDERAL_TAXABLE_SS
 const CT_ABOVE_THRESHOLD_FULL_EXCLUSION_BASE = CT_ABOVE_THRESHOLD_ORDINARY
+// Second above-threshold fixture: ordinary $40,000, $100,000 benefits,
+// provisional income $90,000. IRC §86 federally taxable share $52,100; federal
+// AGI $92,100 clears the §701(x)(IV) $75,000 gate. The §86(b)(1) excess limb
+// (25% × ($90,000 − $25,000) = $16,250) binds below the 25%-of-benefits limb
+// ($25,000), so Connecticut retains $16,250 — not the full federally taxable
+// share the pack keeps, and not the contrary flat-25%-of-benefits reading.
+const CT_SECOND_ABOVE_THRESHOLD_ORDINARY = 40_000
+const CT_SECOND_ABOVE_THRESHOLD_SS = 100_000
+const CT_SECOND_ABOVE_THRESHOLD_PROVISIONAL =
+  CT_SECOND_ABOVE_THRESHOLD_ORDINARY + 0.5 * CT_SECOND_ABOVE_THRESHOLD_SS
+const CT_SECOND_ABOVE_THRESHOLD_FEDERAL_TAXABLE_SS = Math.min(
+  0.85 * CT_SECOND_ABOVE_THRESHOLD_SS,
+  0.85 * (CT_SECOND_ABOVE_THRESHOLD_PROVISIONAL - CT_IRC86_UPPER) + CT_IRC86_BASE_ADDON,
+)
+const CT_SECOND_ABOVE_THRESHOLD_FEDERAL_AGI =
+  CT_SECOND_ABOVE_THRESHOLD_ORDINARY + CT_SECOND_ABOVE_THRESHOLD_FEDERAL_TAXABLE_SS
+const CT_SECOND_ABOVE_THRESHOLD_BENEFITS_LIMB = 0.25 * CT_SECOND_ABOVE_THRESHOLD_SS
+const CT_SECOND_ABOVE_THRESHOLD_EXCESS_LIMB =
+  0.25 * (CT_SECOND_ABOVE_THRESHOLD_PROVISIONAL - CT_IRC86_LOWER)
+const CT_SECOND_ABOVE_THRESHOLD_RETAINED_IN_BASE = Math.min(
+  CT_SECOND_ABOVE_THRESHOLD_BENEFITS_LIMB,
+  CT_SECOND_ABOVE_THRESHOLD_EXCESS_LIMB,
+)
+const CT_SECOND_ABOVE_THRESHOLD_ACCEPTED_BASE =
+  CT_SECOND_ABOVE_THRESHOLD_ORDINARY + CT_SECOND_ABOVE_THRESHOLD_RETAINED_IN_BASE
+const CT_SECOND_ABOVE_THRESHOLD_OBSERVED_BASE =
+  CT_SECOND_ABOVE_THRESHOLD_ORDINARY + CT_SECOND_ABOVE_THRESHOLD_FEDERAL_TAXABLE_SS
+const CT_SECOND_ABOVE_THRESHOLD_FLAT_BENEFITS_BASE =
+  CT_SECOND_ABOVE_THRESHOLD_ORDINARY + CT_SECOND_ABOVE_THRESHOLD_BENEFITS_LIMB
+const CT_SECOND_ABOVE_THRESHOLD_FULL_EXCLUSION_BASE = CT_SECOND_ABOVE_THRESHOLD_ORDINARY
 const CT_INTERMEDIATE_BASE_OPTS = { standardDeductionAllowedOverride: 0 } as const
 
 describeRule('ct-cgs-12-701-20-b-social-security-retirement', {
@@ -2647,11 +2677,13 @@ describeRule('ct-cgs-12-701-20-b-social-security-retirement', {
       lowIncomeSocialSecurityTaxable: CT_SS_OTHER_INCOME,
       highIncomePensionTaxable: CT_HIGH_AGI_TOTAL,
       aboveThresholdPartialSubtractionBase: CT_ABOVE_THRESHOLD_ACCEPTED_BASE,
+      secondAboveThresholdExcessLimbBase: CT_SECOND_ABOVE_THRESHOLD_ACCEPTED_BASE,
     },
     packUnconditionalRetirementAndTaxableSS: {
       lowIncomeSocialSecurityTaxable: CT_SS_OTHER_INCOME + CT_FEDERALLY_TAXABLE_SS,
       highIncomePensionTaxable: CT_HIGH_AGI_TOTAL - CT_HIGH_AGI_PENSION,
       aboveThresholdPartialSubtractionBase: CT_ABOVE_THRESHOLD_OBSERVED_BASE,
+      secondAboveThresholdExcessLimbBase: CT_SECOND_ABOVE_THRESHOLD_OBSERVED_BASE,
     },
   },
   accepted: 'statutoryTable32AndSection701SS',
@@ -2710,6 +2742,34 @@ describeRule('ct-cgs-12-701-20-b-social-security-retirement', {
       .toBe(accepted.aboveThresholdPartialSubtractionBase)
     expect(CT_ABOVE_THRESHOLD_ORDINARY + CT_ABOVE_THRESHOLD_FEDERAL_TAXABLE_SS)
       .toBe(produced.aboveThresholdPartialSubtractionBase)
+  })
+
+  it('pins the pack’s omission when the §86(b)(1) excess limb binds below 25% of benefits', () => {
+    const secondAboveThresholdSocialSecurity = input({
+      state: 'CT',
+      ordinaryIncome: CT_SECOND_ABOVE_THRESHOLD_ORDINARY,
+      ssBenefits: CT_SECOND_ABOVE_THRESHOLD_SS,
+      agesAlive: [70],
+    })
+    const observed = computeStateTaxableIncome(
+      pack('CT'),
+      secondAboveThresholdSocialSecurity,
+      CT_INTERMEDIATE_BASE_OPTS,
+    )
+    expect(observed).toBeCloseTo(produced.secondAboveThresholdExcessLimbBase, 6)
+    expect(observed).not.toBeCloseTo(accepted.secondAboveThresholdExcessLimbBase, 6)
+    expect(observed).not.toBeCloseTo(CT_SECOND_ABOVE_THRESHOLD_FLAT_BENEFITS_BASE, 6)
+    expect(observed).not.toBeCloseTo(CT_SECOND_ABOVE_THRESHOLD_FULL_EXCLUSION_BASE, 6)
+    expect(CT_SECOND_ABOVE_THRESHOLD_EXCESS_LIMB).toBeLessThan(CT_SECOND_ABOVE_THRESHOLD_BENEFITS_LIMB)
+    expect(CT_SECOND_ABOVE_THRESHOLD_FEDERAL_AGI).toBeGreaterThan(75_000)
+    expect(accepted.secondAboveThresholdExcessLimbBase)
+      .toBe(CT_SECOND_ABOVE_THRESHOLD_ORDINARY + CT_SECOND_ABOVE_THRESHOLD_EXCESS_LIMB)
+    expect(accepted.secondAboveThresholdExcessLimbBase)
+      .not.toBe(CT_SECOND_ABOVE_THRESHOLD_FLAT_BENEFITS_BASE)
+    expect(accepted.secondAboveThresholdExcessLimbBase)
+      .not.toBe(CT_SECOND_ABOVE_THRESHOLD_FULL_EXCLUSION_BASE)
+    expect(CT_SECOND_ABOVE_THRESHOLD_ORDINARY + CT_SECOND_ABOVE_THRESHOLD_FEDERAL_TAXABLE_SS)
+      .toBe(produced.secondAboveThresholdExcessLimbBase)
   })
 })
 
