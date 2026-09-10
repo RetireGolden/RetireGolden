@@ -2689,59 +2689,57 @@ const DE_SS_BENEFITS = 40_000
 const DE_FEDERALLY_TAXABLE_SS = 0.85 * DE_SS_BENEFITS
 const DE_DEDUCTION_SINGLE = 3_250 // 30 Del. C. § 1108(a)(3) basic amount (2026 pack)
 
-describeRule('de-code-30-1106-social-security-retirement-subtractions', {
-  readings: {
-    federallyTaxableSocialSecuritySubtracted: DE_SS_OTHER_INCOME - DE_DEDUCTION_SINGLE,
-    federallyTaxableSocialSecurityLeftInTheBase:
-      DE_SS_OTHER_INCOME + DE_FEDERALLY_TAXABLE_SS - DE_DEDUCTION_SINGLE,
-  },
-  accepted: 'federallyTaxableSocialSecuritySubtracted',
-  note: 'Social Security limb',
-}, ({ accepted, readings }) => {
-  // Age 64 with the helper's default `peopleAged65Plus: 0` isolates the Social
-  // Security subtraction limb; age 70 would contradict that household fact.
-  const scenario = input({
-    state: 'DE',
-    ordinaryIncome: DE_SS_OTHER_INCOME,
-    ssBenefits: DE_SS_BENEFITS,
-    agesAlive: [64],
-  })
-
-  it('subtracts Delaware Social Security included in federal AGI', () => {
-    expect(computeStateTaxableIncome(pack('DE'), scenario)).toBeCloseTo(accepted, 6)
-    expect(computeStateTaxableIncome(pack('DE'), scenario))
-      .not.toBeCloseTo(readings.federallyTaxableSocialSecurityLeftInTheBase, 6)
-  })
-})
-
 const DE_RETIREMENT_INCOME = 40_000
 const DE_RETIREMENT_CAP = 12_500
 
 describeRule('de-code-30-1106-social-security-retirement-subtractions', {
   readings: {
-    ageSixtyTakesTheSharedTwelveThousandFiveHundredCap:
-      DE_RETIREMENT_INCOME - DE_RETIREMENT_CAP - DE_DEDUCTION_SINGLE,
-    ageFiftyNineGetsNoRetirementSubtraction: DE_RETIREMENT_INCOME - DE_DEDUCTION_SINGLE,
+    accepted: {
+      socialSecurityTaxableIncome: DE_SS_OTHER_INCOME - DE_DEDUCTION_SINGLE,
+      retirementTaxableIncome:
+        DE_RETIREMENT_INCOME - DE_RETIREMENT_CAP - DE_DEDUCTION_SINGLE,
+    },
+    counterfactual: {
+      socialSecurityTaxableIncome:
+        DE_SS_OTHER_INCOME + DE_FEDERALLY_TAXABLE_SS - DE_DEDUCTION_SINGLE,
+      retirementTaxableIncome: DE_RETIREMENT_INCOME - DE_DEDUCTION_SINGLE,
+    },
   },
-  accepted: 'ageSixtyTakesTheSharedTwelveThousandFiveHundredCap',
-  note: 'retirement-age limb',
+  accepted: 'accepted',
+  note: 'Social Security and age-60 retirement limbs',
 }, ({ accepted, readings }) => {
-  const scenario = input({
+  // Age 64 with the helper's default `peopleAged65Plus: 0` isolates the Social
+  // Security subtraction limb; age 70 would contradict that household fact.
+  const socialSecurityScenario = input({
+    state: 'DE',
+    ordinaryIncome: DE_SS_OTHER_INCOME,
+    ssBenefits: DE_SS_BENEFITS,
+    agesAlive: [64],
+  })
+  const retirementScenario = input({
     state: 'DE',
     ordinaryIncome: DE_RETIREMENT_INCOME,
     privateRetirementIncome: DE_RETIREMENT_INCOME,
     agesAlive: [60],
   })
 
+  it('subtracts Delaware Social Security included in federal AGI', () => {
+    expect(computeStateTaxableIncome(pack('DE'), socialSecurityScenario))
+      .toBeCloseTo(accepted.socialSecurityTaxableIncome, 6)
+    expect(computeStateTaxableIncome(pack('DE'), socialSecurityScenario))
+      .not.toBeCloseTo(readings.counterfactual.socialSecurityTaxableIncome, 6)
+  })
+
   it('subtracts the $12,500 Delaware retirement cap from age 60', () => {
-    expect(computeStateTaxableIncome(pack('DE'), scenario)).toBeCloseTo(accepted, 6)
+    expect(computeStateTaxableIncome(pack('DE'), retirementScenario))
+      .toBeCloseTo(accepted.retirementTaxableIncome, 6)
     const tooYoung = {
       ...pack('DE'),
       retirementPrivate: { kind: 'capped' as const, capPerPerson: DE_RETIREMENT_CAP, minAge: 61 },
       retirementPublic: { kind: 'capped' as const, capPerPerson: DE_RETIREMENT_CAP, minAge: 61 },
     }
-    expect(computeStateTaxableIncome(tooYoung, scenario))
-      .toBeCloseTo(readings.ageFiftyNineGetsNoRetirementSubtraction, 6)
+    expect(computeStateTaxableIncome(tooYoung, retirementScenario))
+      .toBeCloseTo(readings.counterfactual.retirementTaxableIncome, 6)
   })
 })
 
@@ -2779,6 +2777,63 @@ describeRule('hi-hrs-235-2-4-a-2-f-2026-standard-deduction', {
 // $40,000 in the base. The Plan has no field separating that pension from an
 // IRA distribution, so the test is deliberately the private-pension limb.
 const HI_PRIVATE_PENSION = 40_000
+
+const HI_SS_OTHER_INCOME = 90_000
+const HI_SS_BENEFITS = 40_000
+// IRC §86 federal discriminator (single filer, $90,000 non-SS ordinary income,
+// $40,000 Social Security) — Haw. Rev. Stat. §235-2.3(b)(3) makes §86
+// inoperative in Hawaii; this worksheet pins the counterfactual inclusion only.
+//   provisional income = $90,000 + 0.5×$40,000 = $110,000 — IRC §86(b)
+//   single thresholds: $25,000 lower / $34,000 upper — IRC §86(c)
+//   lower-band add-on = min(50%×($34,000−$25,000), 50%×benefits) = $4,500 — IRC §86(a)(1)
+//   high-tier uncapped = 0.85×($110,000−$34,000) + $4,500 = $69,100 — IRC §86(a)(2)
+//   federally taxable = min($69,100, 0.85×$40,000) = $34,000 — IRC §86(a)(2) cap
+const HI_SS_PROVISIONAL_INCOME = HI_SS_OTHER_INCOME + 0.5 * HI_SS_BENEFITS
+const HI_IRC86_LOWER_THRESHOLD_SINGLE = 25_000
+const HI_IRC86_UPPER_THRESHOLD_SINGLE = 34_000
+const HI_IRC86_LOWER_BAND_ADDON = Math.min(
+  0.5 * (HI_IRC86_UPPER_THRESHOLD_SINGLE - HI_IRC86_LOWER_THRESHOLD_SINGLE),
+  0.5 * HI_SS_BENEFITS,
+)
+const HI_IRC86_HIGH_TIER_UNCAPPED =
+  0.85 * (HI_SS_PROVISIONAL_INCOME - HI_IRC86_UPPER_THRESHOLD_SINGLE) + HI_IRC86_LOWER_BAND_ADDON
+const HI_FEDERALLY_TAXABLE_SS = Math.min(HI_IRC86_HIGH_TIER_UNCAPPED, 0.85 * HI_SS_BENEFITS)
+const HI_DEDUCTION_SINGLE = 8_000 // HRS §235-2.4(a)(2)(F) TY2026 single amount
+
+describeRule('hi-hrs-235-2-3-social-security-subtraction', {
+  readings: {
+    sectionEightySixInoperativePairedDelta: 0,
+    sectionEightySixOperativeCounterfactualDelta: HI_FEDERALLY_TAXABLE_SS,
+  },
+  accepted: 'sectionEightySixInoperativePairedDelta',
+}, ({ accepted, readings }) => {
+  const withBenefits = input({
+    state: 'HI',
+    ordinaryIncome: HI_SS_OTHER_INCOME,
+    ssBenefits: HI_SS_BENEFITS,
+    agesAlive: [70],
+  })
+  const withoutBenefits = input({
+    state: 'HI',
+    ordinaryIncome: HI_SS_OTHER_INCOME,
+    agesAlive: [70],
+  })
+
+  it('holds Hawaii taxable income unchanged when federally included Social Security is added', () => {
+    const without = computeStateTaxableIncome(pack('HI'), withoutBenefits)
+    const withBenefitsBase = computeStateTaxableIncome(pack('HI'), withBenefits)
+    expect(without).toBe(HI_SS_OTHER_INCOME - HI_DEDUCTION_SINGLE)
+    expect(withBenefitsBase).toBe(without)
+    expect(withBenefitsBase - without).toBeCloseTo(accepted, 6)
+  })
+
+  it('would raise the base by the IRC 86 inclusion if Social Security were taxed', () => {
+    const withBenefitsBase = computeStateTaxableIncome(pack('HI'), withBenefits)
+    const taxed = computeStateTaxableIncome({ ...pack('HI'), taxesSocialSecurity: true }, withBenefits)
+    expect(taxed - withBenefitsBase).toBeCloseTo(readings.sectionEightySixOperativeCounterfactualDelta, 6)
+    expect(taxed).toBe(HI_SS_OTHER_INCOME + HI_FEDERALLY_TAXABLE_SS - HI_DEDUCTION_SINGLE)
+  })
+})
 
 describeRule('hi-hrs-235-7-pension-and-social-security', {
   readings: {
@@ -3515,17 +3570,24 @@ const OK_CAP_NO_EXCLUSION_TAXABLE = OK_OTHER_INCOME + OK_PRIVATE_RETIREMENT - OK
 const OK_SS_EXCLUDED_BASE = 20_000 - OK_STD_DED
 const OK_SS_TAXING_COUNTERFACTUAL = 20_000 + OK_SS_FEDERALLY_TAXABLE - OK_STD_DED
 
+const OK_CSRS_BACKGROUND = 90_000
+const OK_CSRS_QUALIFYING = 15_000
+const OK_CSRS_WITHOUT_BASE = OK_CSRS_BACKGROUND - OK_STD_DED
+const OK_CSRS_WITH_BASE = OK_CSRS_BACKGROUND + OK_CSRS_QUALIFYING - OK_CAP_EXCLUSION - OK_STD_DED
+
 describeRule('ok-stat-68-2358-retirement-and-social-security', {
   readings: {
     schedule511A: {
       militaryRetirementTaxable: 0,
       federallyTaxableSocialSecurityExcludedBase: OK_SS_EXCLUDED_BASE,
       qualifyingRetirementTenThousandCapBase: OK_CAP_CURRENT_TAXABLE,
+      qualifyingCsrsInLieuIncrementalBase: 0,
     },
     packSharedCapApproximation: {
       militaryRetirementTaxable: 3_650,
       federallyTaxableSocialSecurityExcludedBase: OK_SS_EXCLUDED_BASE,
       qualifyingRetirementTenThousandCapBase: OK_CAP_CURRENT_TAXABLE,
+      qualifyingCsrsInLieuIncrementalBase: OK_CSRS_WITH_BASE - OK_CSRS_WITHOUT_BASE,
     },
   },
   accepted: 'schedule511A',
@@ -3580,6 +3642,31 @@ describeRule('ok-stat-68-2358-retirement-and-social-security', {
     expect(taxable).toBe(produced.qualifyingRetirementTenThousandCapBase)
     expect(taxable).not.toBe(OK_CAP_PROPOSED_HB2190_TAXABLE)
     expect(taxable).not.toBe(OK_CAP_NO_EXCLUSION_TAXABLE)
+  })
+
+  it('pins the missing qualifying CSRS-in-lieu exclusion on Schedule 511-A line 3', () => {
+    // Source-side assumptions: $15,000 Federal CSRS paid in lieu of Social Security
+    // and fully included in federal AGI, with qualifying CSA/CSF 1099-R documentation.
+    // High $90,000 background ordinary income keeps clamps and deductions identical
+    // so only the CSRS limb moves: accepted incremental base 0; the shared $10,000
+    // cap absorbs only $10,000 of the $15,000, leaving a $5,000 pack increment.
+    const withoutCsrs = input({
+      state: 'OK',
+      ordinaryIncome: OK_CSRS_BACKGROUND,
+      publicPensionIncome: 0,
+      agesAlive: [70],
+    })
+    const withCsrs = input({
+      state: 'OK',
+      ordinaryIncome: OK_CSRS_BACKGROUND + OK_CSRS_QUALIFYING,
+      publicPensionIncome: OK_CSRS_QUALIFYING,
+      agesAlive: [70],
+    })
+    expect(computeStateTaxableIncome(pack('OK'), withoutCsrs)).toBe(OK_CSRS_WITHOUT_BASE)
+    const taxable = computeStateTaxableIncome(pack('OK'), withCsrs)
+    expect(taxable - OK_CSRS_WITHOUT_BASE).toBe(produced.qualifyingCsrsInLieuIncrementalBase)
+    expect(taxable - OK_CSRS_WITHOUT_BASE).not.toBe(accepted.qualifyingCsrsInLieuIncrementalBase)
+    expect(taxable).toBe(OK_CSRS_WITH_BASE)
   })
 })
 

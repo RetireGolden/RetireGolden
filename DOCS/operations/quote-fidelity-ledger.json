@@ -1,14 +1,14 @@
 {
-  "generatedAt": "2026-09-10T01:37:46.244Z",
-  "recordCount": 469,
+  "generatedAt": "2026-09-10T12:49:46.235Z",
+  "recordCount": 470,
   "urlCount": 371,
   "fetched": 0,
   "cached": 371,
-  "entryCount": 1389,
+  "entryCount": 1390,
   "counts": {
     "EXACT": 963,
     "PUNCTUATION": 44,
-    "PDF-WORD-LEVEL": 273,
+    "PDF-WORD-LEVEL": 274,
     "ELISION-EXACT": 91,
     "ELISION-PUNCTUATION": 8,
     "PDF-NOT-VERIFIABLE": 7,
@@ -13589,6 +13589,16 @@
       "quoteSha256": "691406d79e17bcf1",
       "verdict": "PDF-WORD-LEVEL",
       "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "hi-hrs-235-2-3-social-security-subtraction",
+      "citation": "Haw. Rev. Stat. §235-2.3(b)(3)",
+      "host": "files.hawaii.gov",
+      "url": "https://files.hawaii.gov/tax/legal/hrs/hrs_235.pdf",
+      "quoteSha256": "07892941a02f3dcd",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "2 elision segments, all present in the extracted text",
       "diagnosis": null
     },
     {

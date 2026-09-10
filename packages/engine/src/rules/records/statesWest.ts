@@ -740,6 +740,37 @@ export const westStateRecords = {
     ],
   },
 
+  'hi-hrs-235-2-3-social-security-subtraction': {
+    title: 'Hawaii makes IRC section 86 nonoperative for federally included Social Security',
+    statement:
+      'Hawaii\'s conformity section lists IRC section 86 among the Code provisions that are not operative for Hawaii income-tax purposes, so the federally taxable share of Social Security and tier 1 railroad retirement benefits does not enter the Hawaii base. The pack expresses that limb as `taxesSocialSecurity: false` in `computeStateTaxableIncome`. This record registers only that federal-inclusion subtraction; it does not claim railroad-benefit eligibility typing, pension exclusions under section 235-7, or whole-return accuracy.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'The Hawaii Department of Taxation\'s unofficial HRS compilation is labeled as of 2025-12-31; the quoted lead-in and paragraph (3) are nevertheless explicit. Later conformity changes beyond that compilation are not certified here.',
+    jurisdiction: 'state:HI',
+    authority: [{
+      kind: 'statute',
+      citation: 'Haw. Rev. Stat. §235-2.3(b)(3)',
+      url: 'https://files.hawaii.gov/tax/legal/hrs/hrs_235.pdf',
+      quotedText:
+        '(b) The following Internal Revenue Code subchapters, parts of subchapters, sections, subsections, and parts of subsections shall not be operative for the purposes of this chapter, unless otherwise provided: … (3) Section 86 (with respect to social security and tier 1 railroad retirement benefits);',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-09',
+    implementedBy: [
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#states.HI',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+    ],
+  },
+
   'hi-hrs-235-7-pension-and-social-security': {
     title: 'Hawaii excludes every pension for past services, not only public pensions',
     statement:

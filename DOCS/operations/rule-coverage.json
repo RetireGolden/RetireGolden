@@ -2,17 +2,17 @@
   "kind": "retiregolden.rules-coverage.manifest",
   "version": 5,
   "registry": {
-    "total": 469,
+    "total": 470,
     "byClassification": {
       "approximated": 127,
       "outOfScope": 86,
-      "settled": 252,
+      "settled": 253,
       "unsettled": 4
     },
     "byVolatility": {
       "annuallyIndexed": 74,
       "awaitingGuidance": 10,
-      "staticStatute": 378,
+      "staticStatute": 379,
       "sunsetting": 7
     },
     "byJurisdiction": {
@@ -29,7 +29,7 @@
         "DE": 4,
         "FL": 1,
         "GA": 1,
-        "HI": 2,
+        "HI": 3,
         "IA": 2,
         "ID": 1,
         "IL": 2,
@@ -70,7 +70,7 @@
         "WV": 2,
         "WY": 1
       },
-      "stateTotal": 138
+      "stateTotal": 139
     }
   },
   "attestations": {
@@ -649,7 +649,7 @@
     {
       "module": "statesWest",
       "path": "rule-coverage/statesWest.json",
-      "ruleCount": 29
+      "ruleCount": 30
     },
     {
       "module": "transfersAndUnmodeledRegimes",
@@ -658,8 +658,8 @@
     }
   ],
   "quoteFidelity": {
-    "generatedAt": "2026-09-10T01:37:46.244Z",
-    "entryCount": 1389,
+    "generatedAt": "2026-09-10T12:49:46.235Z",
+    "entryCount": 1390,
     "fetched": 0,
     "cached": 371,
     "counts": {
@@ -667,7 +667,7 @@
       "ELISION-PUNCTUATION": 8,
       "EXACT": 963,
       "PDF-NOT-VERIFIABLE": 7,
-      "PDF-WORD-LEVEL": 273,
+      "PDF-WORD-LEVEL": 274,
       "PUNCTUATION": 44,
       "UNFETCHABLE": 3
     }

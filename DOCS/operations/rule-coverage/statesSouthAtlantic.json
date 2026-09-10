@@ -196,23 +196,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2692,
-          "note": "Social Security limb",
+          "line": 2695,
+          "note": "Social Security and age-60 retirement limbs",
           "tests": [
             {
               "title": "subtracts Delaware Social Security included in federal AGI",
-              "line": 2710
-            }
-          ]
-        },
-        {
-          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2720,
-          "note": "retirement-age limb",
-          "tests": [
+              "line": 2726
+            },
             {
               "title": "subtracts the $12,500 Delaware retirement cap from age 60",
-              "line": 2736
+              "line": 2733
             }
           ]
         }
@@ -625,16 +618,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3070,
+          "line": 3125,
           "note": null,
           "tests": [
             {
               "title": "keeps Social Security out of Maryland adjusted gross income",
-              "line": 3085
+              "line": 3140
             },
             {
               "title": "would add the federally taxable portion if Maryland taxed it",
-              "line": 3091
+              "line": 3146
             }
           ]
         }
@@ -796,12 +789,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3378,
+          "line": 3433,
           "note": null,
           "tests": [
             {
               "title": "subtracts Title II Social Security from North Carolina income",
-              "line": 3387
+              "line": 3442
             }
           ]
         }
@@ -1171,20 +1164,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3858,
+          "line": 3945,
           "note": null,
           "tests": [
             {
               "title": "pins the high-income phase-out that the retirement-cap mapping misses",
-              "line": 3889
+              "line": 3976
             },
             {
               "title": "pins the opposite direction when an age-65 filer has wages but no modeled pension",
-              "line": 3898
+              "line": 3985
             },
             {
               "title": "pins the age deduction against adjusted FAGI after Title II Social Security",
-              "line": 3904
+              "line": 3991
             }
           ]
         }
