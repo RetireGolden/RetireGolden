@@ -113,8 +113,12 @@ Three things now hold that shape closed. The bundle-budget CLI fails the build o
 import cycle among `dist/assets` chunks (`staticImportCycles`, Tarjan over `from "…"` and
 side-effect `import "…"` specifiers matched by basename; dynamic `import()` is not an edge), and
 still fails it if any other chunk statically imports `planner.worker-*.js`. The engine's funding
-phase reads the tolerance at call time rather than aliasing it at module level, so even a future
-cycle could not turn it into `undefined`. And [`e2e-dist/`](../../app/e2e-dist) runs Playwright
+phase reads the tolerance at call time rather than aliasing it at module level, so a future cycle
+through *that* module could not turn it into `undefined` — read that as one module's habit, not a
+class-wide guarantee: `annualWithdrawalPlanning.ts`, `annualHealthcareExpenses.ts`,
+`annualAggregateRothConversionPhase.ts`, and `annualAggregateRothConversionTargetPlan.ts` still
+hold `const EPSILON = ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS` at module level, so the cycle gate,
+not the call-time read, is what keeps the class closed. And [`e2e-dist/`](../../app/e2e-dist) runs Playwright
 against `vite preview` of the built `dist/` (`pnpm test:e2e:dist`, in the `build` CI job after the
 budget gate): it opens the example couple, requires neither spurious note, then raises baseline
 spending until the plan depletes and requires the Results page to say so. If a coordinator ever
@@ -123,12 +127,12 @@ dependencies with it.
 
 The `useProjection` row went 640 → 700 KiB when the two coordinators folded back in
 (27.9 + 3.4 KiB, measured 634.6 KiB before the fold): the same bytes, now counted where they
-execute. The kernel and publication chunks stay precached; the split changes parsing and chunk
+execute. Not the same slack, though — 634.6 under 640 was 0.8%, an unusually tight row; 665.2
+under 700 is 5.0%, which is where the per-class band above starts. The kernel and publication chunks stay precached; the split changes parsing and chunk
 ownership, not the offline guarantee or the one-worker-entry invariant.
 
 The groups match those engine modules by **exact bare filename**
-(`ANNUAL_PROJECTION_SETTLEMENT_MODULE_NAME`, `ANNUAL_PROJECTION_FUNDING_CLOSE_MODULE_NAME`,
-`ANNUAL_PROJECTION_PUBLICATION_MODULE_NAME`, `ANNUAL_PROJECTION_KERNEL_MODULE_NAMES` — all in
+(`ANNUAL_PROJECTION_PUBLICATION_MODULE_NAME` and `ANNUAL_PROJECTION_KERNEL_MODULE_NAMES` — both in
 [`app/vite.config.ts`](../../app/vite.config.ts)), not a directory glob or a naming convention: a
 convention regex was considered and rejected because it could not be made to reproduce this exact table.
 Renaming or moving one of those files under `packages/engine/src/projection/internal/` does not fail the

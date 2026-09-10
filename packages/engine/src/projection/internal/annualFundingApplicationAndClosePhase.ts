@@ -122,7 +122,6 @@ type Form8606ConsequentialChannel =
   | 'conversions'
   | 'annuityPayments'
 
-
 interface AnnualFundingApplicationAndClosePhaseFacts {
   readonly year: number
   readonly startYear: number

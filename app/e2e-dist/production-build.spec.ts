@@ -25,7 +25,11 @@ test.describe('Production build', () => {
     test.setTimeout(90_000)
     await openExamplePlan(page, 'Example couple')
 
-    const notes = page.getByRole('listitem')
+    // Scoped to the Modeling-notes callout, not `page.getByRole('listitem')`:
+    // ResultsPage renders several other lists (Facts used, per-detail notes,
+    // the inherited-RMD schedule, citations), and the positive pin below
+    // would count a repeat of the same phrase in any of them.
+    const notes = page.locator('.callout--warn').filter({ hasText: 'Modeling notes' }).getByRole('listitem')
     await expect(page.getByText('Your money lasts the full plan, through 2059.')).toBeVisible({ timeout: 30_000 })
     // A converged solver emits neither of these for a plan that converges in
     // every year under the engine's unit tests.

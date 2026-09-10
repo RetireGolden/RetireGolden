@@ -39,9 +39,13 @@ export const CHUNK_BUDGETS = [
     // Raised 640 -> 700 when the funding/year-close (27.9 KiB) and owned-IRA
     // settlement (3.4 KiB) coordinators folded back into this chunk: their
     // explicit-only chunks sat in a static import cycle with it, which is
-    // the hazard staticImportCycles() below now fails the build on. Measured
-    // 634.6 KiB before the fold, so the row is the same headroom for the
-    // same bytes, now counted where they execute.
+    // the hazard staticImportCycles() below now fails the build on. Same
+    // bytes, now counted where they execute -- but not the same headroom:
+    // 634.6 KiB under 640 was 0.8% slack, an unusually tight row; 665.2 KiB
+    // under 700 is 5.0%, the low end of the 5-21% band the per-class chunk
+    // rows are documented to sit in (DOCS/operations/bundle-budget.md).
+    // That is a row set the way the others are, not allowance to spend:
+    // growth here still has to be justified.
     maxKiB: 700,
   },
   {
