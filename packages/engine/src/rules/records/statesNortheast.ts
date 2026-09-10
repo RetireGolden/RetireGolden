@@ -161,7 +161,7 @@ export const northeastStateRecords = {
   'ny-dtf-qualified-government-pension-full-subtraction': {
     title: 'DTF allows a full subtraction for qualifying New York State, local, or federal-government pension when correctly routed',
     statement:
-      'Given an independently established qualifying New York State or local government pension or federal-government pension, including a qualifying military pension, and only its federally included qualifying amount correctly routed to `publicPensionIncome`, the supported calculation subtracts that amount in full through `retirementPublic: { kind: \'full\' }` without the private $20,000 cap or private age gate registered at `ny-tax-612-c-3-a-pension-annuity-exclusion`. The `public` enum is a caller routing category, not evidence of a qualifying governmental issuer or eligible portion; issuer and portion facts are registered separately at `ny-government-pension-issuer-qualification-not-modeled`. This record certifies only that conditional subtraction calculation, not issuer eligibility, automatic routing, every public pension, a military input feature, Optional Retirement Program employment-attributable limits beyond what the source states, or whole-return correctness. Social Security is registered at `ny-dtf-social-security-subtraction`; non-Tier-1 railroad benefits are registered at `ny-it225-s122-non-ss-railroad-benefits-not-modeled`. The annual pension producer routes explicit `source: \'public\'` to `publicPensionIncome` and is a read-only routing dependency, not a statutory issuer enforcer.',
+      'Given an independently established qualifying New York State or local government pension or federal-government pension, including a qualifying military pension, and only its federally included qualifying amount correctly routed to `publicPensionIncome`, the supported calculation subtracts that amount in full through `retirementPublic: { kind: \'full\' }` without the private $20,000 cap or private age gate registered at `ny-tax-612-c-3-a-pension-annuity-exclusion`. The `public` enum is a caller routing category, not evidence of a qualifying governmental issuer or eligible portion; when those facts are absent the coarse public bucket instead subtracts every routed dollar and is registered as approximated at `ny-government-pension-issuer-qualification-not-modeled`. This record certifies only that conditional subtraction calculation, not issuer eligibility, automatic routing, every public pension, a military input feature, Optional Retirement Program employment-attributable limits beyond what the source states, or whole-return correctness. Social Security is registered at `ny-dtf-social-security-subtraction`; non-Tier-1 railroad benefits are registered at `ny-it225-s122-non-ss-railroad-benefits-not-modeled`. The annual pension producer routes explicit `source: \'public\'` to `publicPensionIncome` and is a read-only routing dependency, not a statutory issuer enforcer.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -195,6 +195,7 @@ export const northeastStateRecords = {
       'packages/engine/src/params/state/data/year2026.ts',
     ],
     implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#PUBLIC_PENSION_OVERRIDES',
       'packages/engine/src/params/state/data/year2026.ts#states.NY',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
       'packages/engine/src/tax/stateTax.ts#retirementExclusion',
@@ -202,23 +203,15 @@ export const northeastStateRecords = {
   },
 
   'ny-government-pension-issuer-qualification-not-modeled': {
-    title: 'New York’s governmental-pension subtraction requires issuer and qualifying-portion facts the engine cannot accept',
+    title: 'New York subtracts qualifying governmental pensions only, but the coarse public bucket removes every `publicPensionIncome` dollar',
     statement:
-      'New York Department of Taxation and Finance guidance allows a full subtraction only for distributions from a New York State or local government pension plan or federal government pension plan, including military pensions under the United States or its agencies, to the extent included in federal adjusted gross income. That issuer and qualifying-portion boundary is what `ny-dtf-qualified-government-pension-full-subtraction` certifies once a caller has already established eligibility and routed the correct amount to `publicPensionIncome`; this record does not claim the whole subtraction is absent. Out of scope: `pensionSchema.source` is only `private` or `public`, `incomeStreamSchema` has no governmental issuer, plan, military-service, or eligible-portion fields, and `StateTaxParams` / `StateRetirementExclusion` carry no New York State, local, federal, or military issuer facts — so no accepted pension or income-stream input can establish whether a `public` amount is a qualifying New York State, local, or federal-government pension or what portion is eligible, including Optional Retirement Program employment-attributable limits. `annualPensionAndAnnuityIncome` treats explicit `source: \'public\'` as public and omitted `source` as private; neither branch validates issuer. Generic public income is still priced under the pack\'s existing rules; the engine emits no law-specific issuer refusal.',
-    classification: 'outOfScope',
-    outOfScope: {
-      shape: 'inexpressibleInput',
-      missingInputFacts: [
-        'whether a pension is from a New York State or local government pension plan or a federal government pension plan, including military service, as distinct from any other public payor',
-        'any source-specific eligible portion of a governmental pension, including Optional Retirement Program amounts limited to employment with the State, City University of New York, or the New York State Education Department',
-        'governmental issuer or plan provenance on pensionSchema, whose `source` enum is only private or public',
-        'issuer, plan, military-service, or qualifying-portion facts on incomeStreamSchema, whose types are wages, socialSecurity, recurring, and oneTime only',
-        'governmental issuer or qualifying-portion classification on StateTaxParams / StateRetirementExclusion, which carry only retirement-exclusion kind, cap, and age facts',
-      ],
-    },
-    contraryReading: null,
-    errorDirection: null,
-    conventionRationale: null,
+      'New York Department of Taxation and Finance guidance allows a full subtraction only for distributions from a New York State or local government pension plan or a federal government pension plan, including military pensions under the United States or its agencies, to the extent included in federal adjusted gross income — and, for Optional Retirement Program members, only the portion attributable to employment with the State, City University of New York, or the New York State Education Department. Approximated: the 2026 pack sets `retirementPublic: { kind: \'full\' }` through `PUBLIC_PENSION_OVERRIDES`, so `retirementExclusion` subtracts every `publicPensionIncome` dollar without an issuer check or an ORP employment-attributable portion check. `pensionSchema.source` is only `private` or `public`, `incomeStreamSchema` has no governmental issuer, plan, military-service, or eligible-portion fields, and `StateTaxParams` / `StateRetirementExclusion` carry no New York issuer or portion facts — missing eligibility is a caller assumption, not a typed field. That coarse bucket understates tax when a routed `public` amount is not a qualifying governmental pension or includes a non-qualifying ORP excess; it does not claim every out-of-state public pension is taxable. The conditional full subtraction once eligibility is established is registered at `ny-dtf-qualified-government-pension-full-subtraction`.',
+    classification: 'approximated',
+    contraryReading:
+      'Department guidance ties the full subtraction to qualifying New York State, local, or federal-government issuers and, for Optional Retirement Program members, to the employment-attributable portion only. A $60,000 ORP distribution fully included in federal adjusted gross income but entirely outside SUNY, CUNY, or New York State Education Department employment adds $60,000 to New York adjusted gross income relative to the same household without that distribution; age 40 keeps the private $20,000 exclusion from applying.',
+    errorDirection: 'understatesTax',
+    conventionRationale:
+      'The public bucket is one `{ kind: \'full\' }` flag because `pensionSchema.source` carries no issuer, plan, or ORP portion facts and `annualPensionAndAnnuityIncome` routes explicit `source: \'public\'` to `publicPensionIncome` without validating them. The pin uses the 2026 observed model window — baseline ordinary income $90,000 at age 40, scenario ordinary income $150,000 with $60,000 routed `publicPensionIncome` — not a new enactment. Absolute totals of $82,000 in both limbs on main are a routing observation, not the legal oracle.',
     jurisdiction: 'state:NY',
     authority: [{
       kind: 'stateAgencyPublication',
@@ -244,13 +237,18 @@ export const northeastStateRecords = {
     effectiveThrough: null,
     verifiedOn: '2026-09-09',
     implementedBy: [
-      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/params/state/types.ts',
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/projection/internal/annualPensionAndAnnuityIncome.ts',
     ],
     implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#PUBLIC_PENSION_OVERRIDES',
+      'packages/engine/src/params/state/types.ts#StateRetirementExclusion',
+      'packages/engine/src/tax/stateTax.ts#retirementExclusion',
       'packages/engine/src/model/plan.ts#pensionSchema',
-      'packages/engine/src/model/plan.ts#incomeStreamSchema',
-      'packages/engine/src/params/state/types.ts#StateTaxParams',
+      'packages/engine/src/projection/internal/annualPensionAndAnnuityIncome.ts#annualPensionAndAnnuityIncome',
     ],
   },
 
@@ -971,7 +969,7 @@ export const northeastStateRecords = {
   'ri-schedule-m-1d-railroad-benefits-not-modeled': {
     title: 'Rhode Island exempts federally included 1974 Railroad Retirement benefits on Schedule M line 1d; the engine cannot identify them',
     statement:
-      'The final 2025 Rhode Island resident instructions for tax year 2025 state that under the Federal 1974 Railroad Retirement Act the entire amount of Railroad Retirement benefits included in gross income for federal income tax purposes is exempt from state income taxes, reported on RI Schedule M line 1d. That limb is separate from the pension or annuity modification on Schedule M line 1t and from the Social Security and pension approximations registered at `ri-gen-laws-44-30-12-social-security-and-pension-modification`. Out of scope: `incomeStreamSchema` has no railroad-retirement type, `pensionSchema.source` is only `private` or `public`, `TaxYearInput` carries no Railroad Retirement Board payer or Federal 1974 Railroad Retirement Act provenance, and `StateTaxParams` / `StateRetirementExclusion` carry no railroad-benefit payer facts — so no accepted `socialSecurity`, `pension`, `wages`, or generic ordinary income input can identify qualifying Schedule M line 1d benefits. Generic amounts entered through those channels are still priced under the pack\'s existing rules; the engine emits no law-specific refusal for this limb. This record quotes tax year 2025 final resident instructions only and does not extend that exemption to later years without a later source.',
+      'The 2025 Rhode Island resident instructions for tax year 2025 state that under the Federal 1974 Railroad Retirement Act the entire amount of Railroad Retirement benefits included in gross income for federal income tax purposes is exempt from state income taxes, reported on RI Schedule M line 1d. That limb is separate from the pension or annuity modification on Schedule M line 1t and from the Social Security and pension approximations registered at `ri-gen-laws-44-30-12-social-security-and-pension-modification`. Out of scope: `incomeStreamSchema` has no railroad-retirement type, `pensionSchema.source` is only `private` or `public`, `TaxYearInput` carries no Railroad Retirement Board payer or Federal 1974 Railroad Retirement Act provenance, and `StateTaxParams` / `StateRetirementExclusion` carry no railroad-benefit payer facts — so no accepted `socialSecurity`, `pension`, `wages`, or generic ordinary income input can identify qualifying Schedule M line 1d benefits. Generic amounts entered through those channels are still priced under the pack\'s existing rules; the engine emits no law-specific refusal for this limb. This record quotes tax year 2025 resident instructions only and does not extend that exemption to later years without a later source.',
     classification: 'outOfScope',
     outOfScope: {
       shape: 'inexpressibleInput',
@@ -985,6 +983,12 @@ export const northeastStateRecords = {
     conventionRationale: null,
     jurisdiction: 'state:RI',
     authority: [{
+      kind: 'formInstruction',
+      citation: 'Rhode Island Division of Taxation, 2025 RI-1040 Resident booklet instructions, title page',
+      url: 'https://tax.ri.gov/sites/g/files/xkgbur541/files/2025-12/2025%201040R%20Instructions%20122025.pdf',
+      quotedText:
+        'The RI-1040 Resident booklet contains returns and instructions for filing the 2025 Rhode Island Resident Individual Income Tax Return.',
+    }, {
       kind: 'formInstruction',
       citation: 'Rhode Island Division of Taxation, 2025 RI-1040 Resident booklet instructions, Schedule M line 1d',
       url: 'https://tax.ri.gov/sites/g/files/xkgbur541/files/2025-12/2025%201040R%20Instructions%20122025.pdf',

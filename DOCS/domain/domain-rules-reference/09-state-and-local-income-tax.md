@@ -45,7 +45,7 @@
   §26-51-430(c) say the same of Arkansas's brackets and of its standard deduction
   (`aca-26-51-201-published-indexed-rate-schedule`, `aca-26-51-430-c-published-indexed-standard-deduction`).
   Re-read all of them every autumn.
-- ND, AR, AZ and IN are the cases where the public-pension bucket is coarser than the state's law, and the flag
+- ND, AR, AZ, IN and NY are the cases where the public-pension bucket is coarser than the state's law, and the flag
   cannot be right for both populations in any of them. ND subtracts military and 20-year peace-officer
   retirement and no other public pension, so `{ kind: 'full' }` also exempts the CSRS, FERS and state PERS
   pensions ND taxes (`ndcc-57-38-30-3-2-closed-subtraction-list`). AZ subtracts uniformed-services retired pay
@@ -57,8 +57,12 @@
   retirement is deducted in full and *every* other public pension, INPRS/PERF, TRF, municipal police and fire
   alike, gets nothing at all, so the bucket carries `none`
   (`ic-6-3-2-4-military-retirement-deduction`, with the capped and Social-Security-offset civil service annuity
-  registered beside it as `ic-6-3-2-3-7-civil-service-annuity-age-62`). The first two **understate** tax, which
-  is the dangerous direction; the last two overstate it.
+  registered beside it as `ic-6-3-2-3-7-civil-service-annuity-age-62`). NY subtracts qualifying New York
+  State, local, and federal-government pensions in full and limits Optional Retirement Program members to the
+  employment-attributable portion, but `{ kind: 'full' }` removes every routed `publicPensionIncome` dollar
+  without issuer or ORP portion checks (`ny-government-pension-issuer-qualification-not-modeled`). ND, AZ, and
+  NY **understate** tax on the coarse `{ kind: 'full' }` bucket — the dangerous direction. AR and IN
+  **overstate** it.
 - **Local income tax is a caller input, and Indiana is where that hurts.** `computeStateTaxDetail` applies a
   flat `localRatePct` to state taxable income, but no `StateTaxParams` field carries a per-state default and
   both `assumptions.localIncomeTaxPct` and a relocation candidate's `localRatePct` default to zero. All 92

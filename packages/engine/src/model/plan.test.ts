@@ -3011,6 +3011,7 @@ describe('benefit provenance schema vocabulary', () => {
   ] as const
 
   it('exposes only private/public pension source and the four income-stream types', () => {
+    expect(pensionSchema.shape.source.unwrap().options).toEqual(['private', 'public'])
     expect(pensionSchema.shape.source.safeParse('private').success).toBe(true)
     expect(pensionSchema.shape.source.safeParse('public').success).toBe(true)
     expect(pensionSchema.shape.source.safeParse('federal').success).toBe(false)

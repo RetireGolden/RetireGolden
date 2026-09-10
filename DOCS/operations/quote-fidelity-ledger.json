@@ -1,14 +1,14 @@
 {
-  "generatedAt": "2026-09-10T00:48:35.094Z",
-  "recordCount": 468,
-  "urlCount": 370,
+  "generatedAt": "2026-09-10T01:37:46.244Z",
+  "recordCount": 469,
+  "urlCount": 371,
   "fetched": 0,
-  "cached": 370,
-  "entryCount": 1382,
+  "cached": 371,
+  "entryCount": 1389,
   "counts": {
-    "EXACT": 960,
+    "EXACT": 963,
     "PUNCTUATION": 44,
-    "PDF-WORD-LEVEL": 269,
+    "PDF-WORD-LEVEL": 273,
     "ELISION-EXACT": 91,
     "ELISION-PUNCTUATION": 8,
     "PDF-NOT-VERIFIABLE": 7,
@@ -10526,6 +10526,16 @@
     },
     {
       "id": "ri-schedule-m-1d-railroad-benefits-not-modeled",
+      "citation": "Rhode Island Division of Taxation, 2025 RI-1040 Resident booklet instructions, title page",
+      "host": "tax.ri.gov",
+      "url": "https://tax.ri.gov/sites/g/files/xkgbur541/files/2025-12/2025%201040R%20Instructions%20122025.pdf",
+      "quoteSha256": "7bfdf0d54efce105",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "ri-schedule-m-1d-railroad-benefits-not-modeled",
       "citation": "Rhode Island Division of Taxation, 2025 RI-1040 Resident booklet instructions, Schedule M line 1d",
       "host": "tax.ri.gov",
       "url": "https://tax.ri.gov/sites/g/files/xkgbur541/files/2025-12/2025%201040R%20Instructions%20122025.pdf",
@@ -11683,6 +11693,16 @@
     },
     {
       "id": "wi-schedule-sb-15-railroad-benefits-not-modeled",
+      "citation": "2025 Wisconsin Schedule SB Instructions, title page",
+      "host": "www.revenue.wi.gov",
+      "url": "https://www.revenue.wi.gov/TaxForms2025/2025-ScheduleSB-Inst.pdf",
+      "quoteSha256": "385579b8c09598dd",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "wi-schedule-sb-15-railroad-benefits-not-modeled",
       "citation": "2025 Wisconsin Schedule SB Instructions, Line 15",
       "host": "www.revenue.wi.gov",
       "url": "https://www.revenue.wi.gov/TaxForms2025/2025-ScheduleSB-Inst.pdf",
@@ -11812,13 +11832,43 @@
       "diagnosis": null
     },
     {
+      "id": "sc-45-usc-231m-railroad-annuities-not-modeled",
+      "citation": "45 U.S.C. 231m(a)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?edition=prelim&num=0&req=granuleid%3AUSC-prelim-title45-section231m",
+      "quoteSha256": "7d58c5b18b86a593",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "sc-45-usc-231m-railroad-annuities-not-modeled",
+      "citation": "45 U.S.C. 231m(b)(1)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?edition=prelim&num=0&req=granuleid%3AUSC-prelim-title45-section231m",
+      "quoteSha256": "520471ed57370685",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "sc-45-usc-231m-railroad-annuities-not-modeled",
+      "citation": "S.C. Code 12-6-1120(4)",
+      "host": "www.scstatehouse.gov",
+      "url": "https://www.scstatehouse.gov/code/t12c006.php",
+      "quoteSha256": "dcf2dba20474dbe7",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
       "id": "sc-form1040-line-o-railroad-benefits-not-modeled",
       "citation": "South Carolina Department of Revenue, 2025 Form SC1040 instructions, line o",
       "host": "dor.sc.gov",
       "url": "https://dor.sc.gov/sites/dor/files/forms/SC1040Instr_2025.pdf",
-      "quoteSha256": "d91ea2931ba8729a",
+      "quoteSha256": "423aaf5a62c56b51",
       "verdict": "PDF-WORD-LEVEL",
-      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "detail": "2 elision segments, all present in the extracted text",
       "diagnosis": null
     },
     {
@@ -13753,6 +13803,16 @@
     },
     {
       "id": "or-oar-150-316-0065-railroad-benefits-not-modeled",
+      "citation": "Oregon Department of Revenue, 2025 Publication OR-17 (rev. 01-29-26), title page",
+      "host": "www.oregon.gov",
+      "url": "https://www.oregon.gov/dor/forms/FormsPubs/publication-or-17_101-431_2025.pdf",
+      "quoteSha256": "ee83709e22ceec85",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "2 elision segments, all present in the extracted text",
+      "diagnosis": null
+    },
+    {
+      "id": "or-oar-150-316-0065-railroad-benefits-not-modeled",
       "citation": "Oregon Department of Revenue, 2025 Publication OR-17 (rev. 01-29-26), supplemental RRB benefits under OAR 150-316-0065",
       "host": "www.oregon.gov",
       "url": "https://www.oregon.gov/dor/forms/FormsPubs/publication-or-17_101-431_2025.pdf",
@@ -13773,7 +13833,17 @@
     },
     {
       "id": "ut-code-59-10-114-2-d-railroad-benefits-not-modeled",
-      "citation": "Utah Code §59-10-114(2)(d), effective 10/14/2025",
+      "citation": "Utah Code §59-10-114, edition effective 10/14/2025",
+      "host": "le.utah.gov",
+      "url": "https://le.utah.gov/xcode/Title59/Chapter10/C59-10-S114_2025101420251206.pdf",
+      "quoteSha256": "a1d09c4609a61787",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "ut-code-59-10-114-2-d-railroad-benefits-not-modeled",
+      "citation": "Utah Code §59-10-114(2)(d)",
       "host": "le.utah.gov",
       "url": "https://le.utah.gov/xcode/Title59/Chapter10/C59-10-S114_2025101420251206.pdf",
       "quoteSha256": "18475ba1bcfcfef2",

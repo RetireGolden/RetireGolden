@@ -1062,6 +1062,12 @@ export const westStateRecords = {
     jurisdiction: 'state:OR',
     authority: [{
       kind: 'formInstruction',
+      citation: 'Oregon Department of Revenue, 2025 Publication OR-17 (rev. 01-29-26), title page',
+      url: 'https://www.oregon.gov/dor/forms/FormsPubs/publication-or-17_101-431_2025.pdf',
+      quotedText:
+        '2025 Publication OR-17 ... 150-101-431 (Rev. 01-29-26)',
+    }, {
+      kind: 'formInstruction',
       citation: 'Oregon Department of Revenue, 2025 Publication OR-17 (rev. 01-29-26), supplemental RRB benefits under OAR 150-316-0065',
       url: 'https://www.oregon.gov/dor/forms/FormsPubs/publication-or-17_101-431_2025.pdf',
       quotedText:
@@ -1091,7 +1097,7 @@ export const westStateRecords = {
   'ut-code-59-10-114-2-d-railroad-benefits-not-modeled': {
     title: 'Utah subtracts qualifying Railroad Retirement Act of 1974 benefits included in federal AGI; the engine cannot identify them',
     statement:
-      'Utah Code §59-10-114(2)(d), effective 10/14/2025, subtracts from adjusted gross income the amount of a railroad retirement benefit paid in accordance with the Railroad Retirement Act of 1974 to a resident or nonresident individual for the taxable year, to the extent that benefit is included in adjusted gross income on the individual\'s federal return for that year. That subtraction is distinct from the Social Security benefits credit registered at `ut-code-59-10-114-social-security-tax-credit`. Out of scope: `incomeStreamSchema` has no railroad-retirement type, `pensionSchema` does not carry RRA 1974 payer or federal-AGI inclusion facts, and `StateTaxParams` / `StateRetirementExclusion` carry no railroad-retirement provenance — so no accepted ordinary, wages, public or private pension, or `ssBenefits` input can identify the qualifying railroad retirement subtraction. Generic amounts entered through those channels are still priced under the pack\'s existing rules; the engine emits no law-specific refusal for this limb.',
+      'The quoted Utah Code §59-10-114(2)(d) version effective October 14, 2025 subtracts from adjusted gross income the amount of a railroad retirement benefit paid in accordance with the Railroad Retirement Act of 1974 to a resident or nonresident individual for the taxable year, to the extent that benefit is included in adjusted gross income on the individual\'s federal return for that year. That October 14 date is the quoted edition\'s effective date, not the original enactment of the railroad exclusion. That subtraction is distinct from the Social Security benefits credit registered at `ut-code-59-10-114-social-security-tax-credit`. Out of scope: `incomeStreamSchema` has no railroad-retirement type, `pensionSchema` does not carry RRA 1974 payer or federal-AGI inclusion facts, and `StateTaxParams` / `StateRetirementExclusion` carry no railroad-retirement provenance — so no accepted ordinary, wages, public or private pension, or `ssBenefits` input can identify the qualifying railroad retirement subtraction. Generic amounts entered through those channels are still priced under the pack\'s existing rules; the engine emits no law-specific refusal for this limb.',
     classification: 'outOfScope',
     outOfScope: {
       shape: 'inexpressibleInput',
@@ -1106,13 +1112,19 @@ export const westStateRecords = {
     jurisdiction: 'state:UT',
     authority: [{
       kind: 'statute',
-      citation: 'Utah Code §59-10-114(2)(d), effective 10/14/2025',
+      citation: 'Utah Code §59-10-114, edition effective 10/14/2025',
+      url: 'https://le.utah.gov/xcode/Title59/Chapter10/C59-10-S114_2025101420251206.pdf',
+      quotedText:
+        'Effective 10/14/2025 59-10-114 Additions to and subtractions from adjusted gross income of an individual.',
+    }, {
+      kind: 'statute',
+      citation: 'Utah Code §59-10-114(2)(d)',
       url: 'https://le.utah.gov/xcode/Title59/Chapter10/C59-10-S114_2025101420251206.pdf',
       quotedText:
         '(d) the amount of a railroad retirement benefit: (i) paid: (A) in accordance with The Railroad Retirement Act of 1974, 45 U.S.C. Sec. 231 et seq.; (B) to a resident or nonresident individual; and (C) for the taxable year; and (ii) to the extent that railroad retirement benefit is included in adjusted gross income on that resident or nonresident individual\'s federal individual income tax return for that taxable year;',
     }],
     volatility: 'staticStatute',
-    effectiveFrom: 2026,
+    effectiveFrom: 2025,
     effectiveThrough: null,
     verifiedOn: '2026-09-09',
     implementedBy: [

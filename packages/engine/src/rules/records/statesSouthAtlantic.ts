@@ -169,7 +169,7 @@ export const southAtlanticStateRecords = {
   'sc-code-12-6-1120-4-social-security-subtraction': {
     title: 'South Carolina determines gross income without Internal Revenue Code section 86 for Social Security',
     statement:
-      'South Carolina gross income is determined without application of Internal Revenue Code section 86. That is what `taxesSocialSecurity: false` encodes for the Social Security limb only: federally included Social Security never reaches the South Carolina base. Railroad Retirement provenance is outside this record and is registered separately at `sc-form1040-line-o-railroad-benefits-not-modeled`; the retirement deduction at `sc-code-12-6-1170-retirement-income-deduction` and Guard or Reserve pay at `sc-code-12-6-1120-7-reserve-national-guard-pay-not-modeled` are separate limbs as well.',
+      'South Carolina gross income is determined without application of Internal Revenue Code section 86. That is what `taxesSocialSecurity: false` encodes for the Social Security limb only: federally included Social Security never reaches the South Carolina base. Railroad Retirement Act annuity provenance is outside this record and is registered separately at `sc-45-usc-231m-railroad-annuities-not-modeled`; the 2025 return-instruction limb at `sc-form1040-line-o-railroad-benefits-not-modeled`, the retirement deduction at `sc-code-12-6-1170-retirement-income-deduction`, and Guard or Reserve pay at `sc-code-12-6-1120-7-reserve-national-guard-pay-not-modeled` are separate limbs as well.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -196,10 +196,60 @@ export const southAtlanticStateRecords = {
     ],
   },
 
+  'sc-45-usc-231m-railroad-annuities-not-modeled': {
+    title: '45 U.S.C. 231m exempts Railroad Retirement Act annuities from state income tax; the engine cannot certify annuity category or federally included amount',
+    statement:
+      'Section 231m(a) of title 45 prohibits state income tax on any annuity or supplemental annuity except as provided in subsection (b) and the Internal Revenue Code — a federal exemption that reaches South Carolina to the extent qualifying Railroad Retirement Act annuity or supplemental-annuity amounts would otherwise enter the state base. Subsection (b)(1) preserves federal income taxation of supplemental annuities under section 231a(b), so federal and state treatment can diverge for that limb. S.C. Code §12-6-1120(4) independently supplies the state-law counterpart for IRC section 86 Social Security and Tier 1 Railroad Retirement benefits; the companion settled record certifies only Title 2 Social Security, while Tier 1 railroad identification remains within this record’s missing-input boundary. The broader Railroad Retirement Act annuity exemption registered here rests on 45 U.S.C. 231m, not on South Carolina paragraph (4) alone. This record covers RRA annuities and supplemental annuities only; it does not reach every payment issued by the Railroad Retirement Board, private railroad-employer pensions, or unemployment or sickness benefits. That limb is separate from the Social Security subtraction registered at `sc-code-12-6-1120-4-social-security-subtraction`, which settles only Internal Revenue Code section 86 for Title 2 Social Security, and from the 2025 return-instruction limb at `sc-form1040-line-o-railroad-benefits-not-modeled`, which quotes broader tax-year-2025 SC1040 line o wording without fixing a post-2025 form window. Out of scope: `incomeStreamSchema` has no railroad-retirement type, `pensionSchema.source` is only `private` or `public`, and `StateTaxParams` carries no RRA annuity or supplemental-annuity qualification, Railroad Retirement Board payer or category, or separately identifiable federally included RRA benefit amount — so no accepted `socialSecurity`, wages, pension, or generic ordinary income input can identify qualifying 231m annuity dollars. Generic amounts entered through those channels are still priced under the pack\'s existing rules; the engine emits no law-specific refusal for this limb. `effectiveFrom: 2026` marks the first observed and supported modeling window for this statutory limb, not an assertion that section 231m began in 2026.',
+    classification: 'outOfScope',
+    outOfScope: {
+      shape: 'inexpressibleInput',
+      missingInputFacts: [
+        'RRA annuity or supplemental-annuity qualification and payer/category distinct from ordinary private/public pension and Social Security streams: incomeStreamSchema has no railroad-retirement type and pensionSchema.source is only private or public',
+        'separately identifiable federally included RRA benefit amount otherwise entering the state base on StateTaxParams, which carries only the `taxesSocialSecurity` boolean and no railroad-benefit classification',
+      ],
+    },
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:SC',
+    authority: [{
+      kind: 'statute',
+      citation: '45 U.S.C. 231m(a)',
+      url: 'https://uscode.house.gov/view.xhtml?edition=prelim&num=0&req=granuleid%3AUSC-prelim-title45-section231m',
+      quotedText:
+        '(a) Except as provided in subsection (b) of this section and the Internal Revenue Code of 1986 [26 U.S.C. 1 et seq.], notwithstanding any other law of the United States, or of any State, territory, or the District of Columbia, no annuity or supplemental annuity shall be assignable or be subject to any tax or to garnishment, attachment, or other legal process under any circumstances whatsoever, nor shall the payment thereof be anticipated',
+    }, {
+      kind: 'statute',
+      citation: '45 U.S.C. 231m(b)(1)',
+      url: 'https://uscode.house.gov/view.xhtml?edition=prelim&num=0&req=granuleid%3AUSC-prelim-title45-section231m',
+      quotedText:
+        '(b)(1) This section shall not operate to exclude the amount of any supplemental annuity paid to an individual under section 231a(b) of this title from income taxable pursuant to the Federal income tax provisions of the Internal Revenue Code of 1986 [26 U.S.C. 1 et seq.].',
+    }, {
+      kind: 'statute',
+      citation: 'S.C. Code 12-6-1120(4)',
+      url: 'https://www.scstatehouse.gov/code/t12c006.php',
+      quotedText:
+        '(4) South Carolina gross income is determined without application of Internal Revenue Code Sections 78 (Gross-up of Dividends received from Certain Foreign Corporations), 86 (Social Security and Tier 1 Railroad Retirement Benefits), and 87 (Alcohol Fuel Credit).',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-09',
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/params/state/types.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#incomeStreamSchema',
+      'packages/engine/src/model/plan.ts#pensionSchema',
+      'packages/engine/src/params/state/types.ts#StateTaxParams',
+    ],
+  },
+
   'sc-form1040-line-o-railroad-benefits-not-modeled': {
     title: 'South Carolina’s 2025 SC1040 line o reaches federally taxed railroad retirement; the engine cannot certify payer or category',
     statement:
-      'The 2025 South Carolina Form SC1040 instructions direct taxpayers to enter on line o the amount of Social Security from Title 2 of the Social Security Act or railroad retirement that was taxed on the federal return. That form line is a different limb from the Social Security subtraction registered at `sc-code-12-6-1120-4-social-security-subtraction`, which rests on section 12-6-1120(4) and the pack\'s `taxesSocialSecurity: false` carrier rather than on line o. Out of scope: `incomeStreamSchema` has no railroad-retirement type, `pensionSchema.source` is only `private` or `public`, and `StateTaxParams` carries no Railroad Retirement Board payer, Title 2 versus railroad category, or federal-taxability facts — so no accepted `socialSecurity`, wages, pension, or generic ordinary income input can identify qualifying line o railroad retirement. Generic amounts entered through those channels are still priced under the pack\'s existing rules; the engine emits no law-specific refusal for this limb. This record quotes tax year 2025 form instructions only and does not extend that line to later years without a later source.',
+      'The 2025 South Carolina Form SC1040 instructions direct taxpayers to enter on line o the amount of Social Security from Title 2 of the Social Security Act or railroad retirement that was taxed on the federal return. That form line is a different limb from the Social Security subtraction registered at `sc-code-12-6-1120-4-social-security-subtraction`, which rests on section 12-6-1120(4) and the pack\'s `taxesSocialSecurity: false` carrier rather than on line o, and from the current Railroad Retirement Act annuity exemption registered at `sc-45-usc-231m-railroad-annuities-not-modeled`, which rests on 45 U.S.C. 231m rather than on return-instruction wording. This record quotes tax year 2025 form instructions only — broader line o language that reaches Social Security and railroad retirement taxed federally in one entry — and does not extend that line to later years without a later source; its `effectiveFrom`/`effectiveThrough` window is 2025 only. Out of scope: `incomeStreamSchema` has no railroad-retirement type, `pensionSchema.source` is only `private` or `public`, and `StateTaxParams` carries no Railroad Retirement Board payer, Title 2 versus railroad category, or federal-taxability facts — so no accepted `socialSecurity`, wages, pension, or generic ordinary income input can identify qualifying line o railroad retirement. Generic amounts entered through those channels are still priced under the pack\'s existing rules; the engine emits no law-specific refusal for this limb.',
     classification: 'outOfScope',
     outOfScope: {
       shape: 'inexpressibleInput',
@@ -218,7 +268,7 @@ export const southAtlanticStateRecords = {
       citation: 'South Carolina Department of Revenue, 2025 Form SC1040 instructions, line o',
       url: 'https://dor.sc.gov/sites/dor/files/forms/SC1040Instr_2025.pdf',
       quotedText:
-        'Line o: Social Security and/or railroad retirement if taxed on your federal return Enter the amount of Social Security from Title 2 of the Social Security Act or railroad retirement that was taxed on your federal return.',
+        '2025 Individual Income Tax Instructions ... Line o: Social Security and/or railroad retirement if taxed on your federal return Enter the amount of Social Security from Title 2 of the Social Security Act or railroad retirement that was taxed on your federal return.',
     }],
     volatility: 'annuallyIndexed',
     effectiveFrom: 2025,

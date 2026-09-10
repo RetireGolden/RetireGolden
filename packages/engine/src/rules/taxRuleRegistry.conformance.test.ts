@@ -962,8 +962,9 @@ const STATE_EXACT_PUBLICATION_URLS: Readonly<Partial<Record<UsStateCode, readonl
     'https://dor.sc.gov/sites/dor/files/forms/SC1040Instr_2025.pdf',
   ],
   VA: [
-    // Verified 2026-09-09: DTF Subtractions page quoted for Tier 1/2 railroad
-    // guidance; law.lis.virginia.gov remains the Code publisher.
+    // Verified 2026-09-09: Virginia Department of Taxation Subtractions page
+    // quoted for Tier 1/2 railroad guidance; law.lis.virginia.gov remains the
+    // Code publisher.
     'https://www.tax.virginia.gov/subtractions',
   ],
 }

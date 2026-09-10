@@ -1658,6 +1658,12 @@ export const midwestStateRecords = {
     jurisdiction: 'state:WI',
     authority: [{
       kind: 'formInstruction',
+      citation: '2025 Wisconsin Schedule SB Instructions, title page',
+      url: 'https://www.revenue.wi.gov/TaxForms2025/2025-ScheduleSB-Inst.pdf',
+      quotedText:
+        '2025 Schedule SB Instructions Subtractions from Income',
+    }, {
+      kind: 'formInstruction',
       citation: '2025 Wisconsin Schedule SB Instructions, Line 15',
       url: 'https://www.revenue.wi.gov/TaxForms2025/2025-ScheduleSB-Inst.pdf',
       quotedText:

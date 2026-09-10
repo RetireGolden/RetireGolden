@@ -523,7 +523,7 @@ describeRule('ny-dtf-qualified-government-pension-full-subtraction', {
     ).toBeCloseTo(readings.noPublicSubtractionCounterfactualRetainsAddedPension, 6)
   })
 
-  it('fully subtracts qualifying public pension before the standard deduction at age 70', () => {
+  it('yields zero state taxable income for pension-only public income at age 70', () => {
     const scenario = input({
       state: 'NY',
       ordinaryIncome: NY_QUALIFYING_PUBLIC_PENSION,
@@ -534,15 +534,46 @@ describeRule('ny-dtf-qualified-government-pension-full-subtraction', {
   })
 })
 
-// benefit-extension-young-main-observations.json: military eligibility is a
-// source-side caller assumption absent from the public schema. Private routing
-// is a model control, not a statutory alternate or proof of issuer liability.
+// pensionSchema.source is only private or public
+// (`ny-government-pension-issuer-qualification-not-modeled`); military
+// eligibility is not encoded by that enum. Private routing is a model control,
+// not a statutory alternate or proof of issuer liability.
 describe('ny-dtf-qualified-government-pension private routing', () => {
   it('keeps private routing as an ordinary model control outside the statutory wrapper', () => {
     const ny = pack('NY')
     const before = computeStateTaxableIncome(ny, nyBaselineAtForty)
     const control = computeStateTaxableIncome(ny, nyPrivateRoutingControlAtForty)
     expect(control - before).toBe(NY_QUALIFYING_PUBLIC_PENSION)
+  })
+})
+
+// Source-side ORP facts are caller assumptions, not typed fields: age 40;
+// $60,000 fully in federal AGI and entirely outside SUNY/CUNY/NYS Education
+// Department employment; no other exclusion claimed. Main observed $82,000 in
+// both limbs is a routing control, not the legal oracle.
+const NY_NONQUALIFYING_ORP = 60_000
+
+const nyNonqualifyingOrpAtForty = input({
+  state: 'NY',
+  ordinaryIncome: 150_000,
+  publicPensionIncome: NY_NONQUALIFYING_ORP,
+  agesAlive: [40],
+})
+
+describeRule('ny-government-pension-issuer-qualification-not-modeled', {
+  readings: {
+    acceptedAddedBaseSixtyThousand: NY_NONQUALIFYING_ORP,
+    currentProducedAddedBaseZero: 0,
+  },
+  accepted: 'acceptedAddedBaseSixtyThousand',
+  produced: 'currentProducedAddedBaseZero',
+}, ({ accepted, produced }) => {
+  it('pins the coarse public bucket that subtracts without issuer or ORP portion checks', () => {
+    const ny = pack('NY')
+    const delta = computeStateTaxableIncome(ny, nyNonqualifyingOrpAtForty)
+      - computeStateTaxableIncome(ny, nyBaselineAtForty)
+    expect(delta).toBeCloseTo(produced, 6)
+    expect(delta).not.toBeCloseTo(accepted, 6)
   })
 })
 
@@ -574,8 +605,7 @@ describeRule('sc-code-12-6-1120-4-social-security-subtraction', {
   })
 
   it('omits federally included Social Security from South Carolina gross income', () => {
-    const sc = stateParamsFor('SC', TAX_YEAR)
-    if (sc === undefined) throw new Error(`no ${TAX_YEAR} state pack for SC`)
+    const sc = pack('SC')
     expect(
       computeStateTaxableIncome(sc, withBenefits)
         - computeStateTaxableIncome(sc, withoutBenefits),
