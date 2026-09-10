@@ -1,15 +1,15 @@
 {
-  "generatedAt": "2026-09-10T12:49:46.235Z",
-  "recordCount": 470,
-  "urlCount": 371,
+  "generatedAt": "2026-09-10T18:59:10.717Z",
+  "recordCount": 471,
+  "urlCount": 372,
   "fetched": 0,
-  "cached": 371,
-  "entryCount": 1390,
+  "cached": 372,
+  "entryCount": 1394,
   "counts": {
-    "EXACT": 963,
+    "EXACT": 965,
     "PUNCTUATION": 44,
-    "PDF-WORD-LEVEL": 274,
-    "ELISION-EXACT": 91,
+    "PDF-WORD-LEVEL": 277,
+    "ELISION-EXACT": 90,
     "ELISION-PUNCTUATION": 8,
     "PDF-NOT-VERIFIABLE": 7,
     "UNFETCHABLE": 3
@@ -10249,9 +10249,19 @@
       "citation": "Conn. Gen. Stat. 12-701(a)(20)(B)(x)(III)",
       "host": "www.cga.ct.gov",
       "url": "https://www.cga.ct.gov/current/pub/chap_229.htm",
-      "quoteSha256": "393c9840eee27dd1",
-      "verdict": "ELISION-EXACT",
-      "detail": "2 elision segments, every one a literal substring",
+      "quoteSha256": "018c26e6a5e80e12",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "ct-cgs-12-701-20-b-social-security-retirement",
+      "citation": "Conn. Gen. Stat. 12-701(a)(20)(B)(x)(IV)",
+      "host": "www.cga.ct.gov",
+      "url": "https://www.cga.ct.gov/current/pub/chap_229.htm",
+      "quoteSha256": "e3be762d27e4e5ff",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -13729,6 +13739,36 @@
       "quoteSha256": "710d1f483bf50264",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "nm-nmsa-7-2-7-individual-income-tax-rates",
+      "citation": "NMSA §7-2-7 (HB 252 SECTION 5), effective period",
+      "host": "www.nmlegis.gov",
+      "url": "https://www.nmlegis.gov/Sessions/24%20Regular/final/HB0252.pdf",
+      "quoteSha256": "478e4152a5c93d6f",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "3 elision segments, all present in the extracted text",
+      "diagnosis": null
+    },
+    {
+      "id": "nm-nmsa-7-2-7-individual-income-tax-rates",
+      "citation": "NMSA §7-2-7 (HB 252 SECTION 5), Schedule A",
+      "host": "www.nmlegis.gov",
+      "url": "https://www.nmlegis.gov/Sessions/24%20Regular/final/HB0252.pdf",
+      "quoteSha256": "e8ac6dec626a3b16",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "21 elision segments, all present in the extracted text",
+      "diagnosis": null
+    },
+    {
+      "id": "nm-nmsa-7-2-7-individual-income-tax-rates",
+      "citation": "NMSA §7-2-7 (HB 252 SECTION 5), Schedule B",
+      "host": "www.nmlegis.gov",
+      "url": "https://www.nmlegis.gov/Sessions/24%20Regular/final/HB0252.pdf",
+      "quoteSha256": "e07f5038bc606080",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "21 elision segments, all present in the extracted text",
       "diagnosis": null
     },
     {

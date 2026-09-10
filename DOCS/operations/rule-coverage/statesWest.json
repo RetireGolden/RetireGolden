@@ -1069,16 +1069,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2803,
+          "line": 2858,
           "note": null,
           "tests": [
             {
               "title": "holds Hawaii taxable income unchanged when federally included Social Security is added",
-              "line": 2822
+              "line": 2877
             },
             {
               "title": "would raise the base by the IRC 86 inclusion if Social Security were taxed",
-              "line": 2830
+              "line": 2885
             }
           ]
         }
@@ -1136,12 +1136,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2751,
+          "line": 2806,
           "note": null,
           "tests": [
             {
               "title": "deducts the TY2026 standard deduction before the first bracket",
-              "line": 2763
+              "line": 2818
             }
           ]
         }
@@ -1218,12 +1218,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2838,
+          "line": 2893,
           "note": null,
           "tests": [
             {
               "title": "pins the unmodelled Hawaii private-pension exclusion",
-              "line": 2853
+              "line": 2908
             }
           ]
         }
@@ -1291,12 +1291,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2864,
+          "line": 2919,
           "note": null,
           "tests": [
             {
               "title": "deducts Idaho’s federally included Social Security amount",
-              "line": 2880
+              "line": 2935
             }
           ]
         }
@@ -1354,27 +1354,27 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3271,
+          "line": 3326,
           "note": "age-65 additional subtraction, 15-30-2120(3)(g) floor",
           "tests": [
             {
               "title": "pins the missing Montana age-65 subtraction",
-              "line": 3291
+              "line": 3346
             },
             {
               "title": "grants nothing below 65 under either reading",
-              "line": 3296
+              "line": 3351
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3314,
+          "line": 3369,
           "note": "per-taxpayer doubling for a couple both 65",
           "tests": [
             {
               "title": "pins the missing per-taxpayer doubling for a couple both 65",
-              "line": 3332
+              "line": 3387
             }
           ]
         }
@@ -1452,20 +1452,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3227,
+          "line": 3282,
           "note": null,
           "tests": [
             {
               "title": "starts Montana from federal taxable income, so federally taxable Social Security stays in",
-              "line": 3246
+              "line": 3301
             },
             {
               "title": "would drop the benefit if Montana subtracted it the way a false flag does",
-              "line": 3252
+              "line": 3307
             },
             {
               "title": "carries the federal standard deduction with it, not a frozen state figure",
-              "line": 3258
+              "line": 3313
             }
           ]
         }
@@ -1497,6 +1497,87 @@
           "kind": "stateAgencyPublication",
           "citation": "Montana Department of Revenue, Updated Montana Wage Withholding Tables and MW-4 Now Available (2026)",
           "url": "https://revenue.mt.gov/news/recent-news/2026-withholding-updates"
+        }
+      ]
+    },
+    {
+      "id": "nm-nmsa-7-2-7-individual-income-tax-rates",
+      "title": "New Mexico taxes single and joint taxable income on the HB 252 §7-2-7 rate schedules from 2025 onward",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "Schedule A and Schedule B are quoted as separate authorities. Ellipses omit PDF line numbers and page furniture only; they do not omit statutory words.",
+      "contraryReading": null,
+      "jurisdiction": "state:NM",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2025,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-10",
+      "dueOn": "2027-09-10",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "NM",
+              "line": 617
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "bracketTax",
+              "line": 29
+            },
+            {
+              "name": "computeStateTaxDetail",
+              "line": 178
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 3494,
+          "note": null,
+          "tests": [
+            {
+              "title": "prices single filers at the Schedule B top bracket threshold and first marginal dollar",
+              "line": 3525
+            },
+            {
+              "title": "prices joint filers at the Schedule A top bracket threshold and first marginal dollar",
+              "line": 3533
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "NMSA §7-2-7 (HB 252 SECTION 5), effective period",
+          "url": "https://www.nmlegis.gov/Sessions/24%20Regular/final/HB0252.pdf"
+        },
+        {
+          "kind": "statute",
+          "citation": "NMSA §7-2-7 (HB 252 SECTION 5), Schedule A",
+          "url": "https://www.nmlegis.gov/Sessions/24%20Regular/final/HB0252.pdf"
+        },
+        {
+          "kind": "statute",
+          "citation": "NMSA §7-2-7 (HB 252 SECTION 5), Schedule B",
+          "url": "https://www.nmlegis.gov/Sessions/24%20Regular/final/HB0252.pdf"
         }
       ]
     },
@@ -1553,12 +1634,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3411,
+          "line": 3466,
           "note": null,
           "tests": [
             {
               "title": "pins the high-income path where the blanket pack exclusion diverges from the source threshold",
-              "line": 3426
+              "line": 3481
             }
           ]
         }
@@ -1843,12 +1924,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3721,
+          "line": 3832,
           "note": null,
           "tests": [
             {
               "title": "subtracts federally taxable Social Security as ORS 316.054 directs",
-              "line": 3734
+              "line": 3845
             }
           ]
         }
@@ -1906,12 +1987,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3678,
+          "line": 3789,
           "note": null,
           "tests": [
             {
               "title": "applies the enacted 4.45% flat rate to ordinary income",
-              "line": 3686
+              "line": 3797
             }
           ]
         }
@@ -2037,12 +2118,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3695,
+          "line": 3806,
           "note": null,
           "tests": [
             {
               "title": "pins the unmodeled Utah Social Security benefits credit",
-              "line": 3714
+              "line": 3825
             }
           ]
         }
@@ -2110,12 +2191,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 4000,
+          "line": 4111,
           "note": null,
           "tests": [
             {
               "title": "keeps Washington out of the broad state-income-tax path",
-              "line": 4019
+              "line": 4130
             }
           ]
         }

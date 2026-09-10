@@ -519,4 +519,157 @@ describe('simulatePlan annual cash-flow portfolio and property sources', () => {
     ])
     expect(y2026.cashFlow!.reconciliation.status).toBe('reconciled')
   })
+
+  it('reports returnOfBasis on a qualified IRA annuity payment at the aggregate Form 8606 fraction', () => {
+    // Independent worksheet, year 2026, 0% growth/inflation/tax, cash buffer only:
+    //   Form 8606 Part I (2025 final; 2026 draft carries the same line 5/9/10/12
+    //   arithmetic — draft only, not for filing). Pub 590-B: an individual
+    //   retirement annuity is an IRA; annuity payments are taxed under the same
+    //   pro-rata rules as other traditional-IRA distributions.
+    //   IRA 1,000,000 with 200,000 prior basis (line 2). Qualified premium
+    //   200,000 funds ann-1 in 2026; monthly 1,000 × 12 = 12,000 payment.
+    //   Uniform Lifetime divisor at age 80 is 20.2 (Pub 590-B) → RMD 49,504.95.
+    //   Line 6 uses the engine's disclosed approximate contract value premium less
+    //   payments = 188,000 (NOT filing-grade actuarial FMV — see
+    //   iraAnnuityCharacter.approximation.test.ts,
+    //   irc-408-d-2-C-annuity-contract-close-of-year-value). With 408(d)(2)(C)
+    //   add-back, line 9 = 1,000,000, line 10 = 0.2, line 12 = 12,300.99.
+    //   Annuity payment basis share = 12,000 × 0.2 = 2,400.
+    const plan = singlePersonPlan({ dob: '1946-01-01', planningAge: 95, retirementAge: null })
+    plan.accounts = [
+      cashAccount('cash-1', 500_000),
+      {
+        type: 'traditional',
+        id: 'ira-1',
+        name: 'ira-1',
+        ownerPersonId: 'p1',
+        annualReturnPct: 0,
+        kind: 'ira',
+        balance: 1_000_000,
+        annualContribution: 0,
+        nondeductibleBasis: 200_000,
+      },
+      {
+        type: 'annuity',
+        id: 'ann-1',
+        name: 'SPIA',
+        ownerPersonId: 'p1',
+        annualReturnPct: null,
+        startAge: 80,
+        monthlyAmount: 1_000,
+        colaPct: 0,
+        taxablePct: 100,
+        purchase: {
+          year: 2026,
+          premium: 200_000,
+          fundingAccountId: 'ira-1',
+          taxQualification: 'qualified',
+        },
+      },
+    ]
+    const y2026 = yearOf(run(plan, { horizonEndYear: 2026 }), START_YEAR)
+
+    const payment = sourceById(y2026, 'source:annuityPayment:ann-1')
+    expect(payment.kind).toBe('annuityPayment')
+    expect(payment.role).toBe('spendableSource')
+    expectMoney(payment.amountPlanDollars, 12_000)
+    expect(payment.identities).toEqual([
+      { entityKind: 'annuityContract', annuityAccountId: 'ann-1' },
+      { entityKind: 'account', accountId: 'ann-1' },
+      { entityKind: 'person', personId: 'p1' },
+    ])
+    expect(payment.taxCharacter).toEqual([
+      { kind: 'returnOfBasis', amountPlanDollars: 2_400 },
+    ])
+    expect(payment.taxCharacter![0]!.amountPlanDollars).toBeGreaterThan(0)
+    expectMoney(y2026.incomes.annuity, 12_000)
+    expectMoney(y2026.rmd, 1_000_000 / 20.2)
+    const owner = y2026.ownedNonRothIraAnnualReplay!.annualReplay.ownerReplays[0]!
+    expect(owner.nextYearOpeningBasisAmount).toBe(18_769_901)
+    expect(y2026.cashFlow!.reconciliation.status).toBe('reconciled')
+  })
+
+  it('reports returnOfBasis on an owned-IRA RMD pool line at the Form 8606 fraction', () => {
+    // Independent worksheet, year 2026, 0% growth/inflation/tax, cash buffer only:
+    //   Form 8606 Part I (2025 final; 2026 draft corroborates). Pub 590-B
+    //   Uniform Lifetime divisor at age 80 is 20.2.
+    //   IRA opening 202,000, prior basis 40,400 (line 2). RMD = 202,000 / 20.2
+    //   = 10,000 (line 7). Line 6 = 192,000, line 9 = 202,000, line 10 = 0.2,
+    //   line 12 = 2,000 nontaxable, line 14 = 38,400 remaining basis.
+    const plan = singlePersonPlan({ dob: '1946-01-01', planningAge: 95, retirementAge: null })
+    plan.accounts = [
+      cashAccount('cash-1', 200_000),
+      {
+        type: 'traditional',
+        id: 'ira-rmd',
+        name: 'ira-rmd',
+        ownerPersonId: 'p1',
+        annualReturnPct: 0,
+        kind: 'ira',
+        balance: 202_000,
+        annualContribution: 0,
+        nondeductibleBasis: 40_400,
+      },
+    ]
+    const y2026 = yearOf(run(plan, { horizonEndYear: 2026 }), START_YEAR)
+
+    const rmd = sourceById(y2026, 'source:requiredMinimumDistribution:ownedIraPool:p1')
+    expect(rmd.kind).toBe('requiredMinimumDistribution')
+    expect(rmd.role).toBe('portfolioFunding')
+    expectMoney(rmd.amountPlanDollars, 10_000)
+    expect(rmd.identities).toEqual([
+      { entityKind: 'requiredDistributionPool', personId: 'p1' },
+    ])
+    expect(rmd.taxCharacter).toEqual([
+      { kind: 'returnOfBasis', amountPlanDollars: 2_000 },
+    ])
+    expect(rmd.taxCharacter![0]!.amountPlanDollars).toBeGreaterThan(0)
+    expectMoney(y2026.rmd, 10_000)
+    const owner = y2026.ownedNonRothIraAnnualReplay!.annualReplay.ownerReplays[0]!
+    expect(owner.nextYearOpeningBasisAmount).toBe(3_840_000)
+    expect(y2026.cashFlow!.reconciliation.status).toBe('reconciled')
+  })
+
+  it('reports returnOfBasis on an automatic SEPP distribution at the Form 8606 fraction', () => {
+    // Independent worksheet, year 2026, 0% growth/inflation/tax, cash buffer only:
+    //   Form 8606 Part I (2025 final; 2026 draft corroborates). IRA SEPP method
+    //   rmd at age 56: Single Life divisor 30.6 (IRS Notice 2022-6 / Pub 590-B).
+    //   IRA opening 306,000, prior basis 61,200 (line 2). SEPP = 306,000 / 30.6
+    //   = 10,000 (line 7). Line 6 = 296,000, line 9 = 306,000, line 10 = 0.2,
+    //   line 12 = 2,000 nontaxable, line 14 = 59,200 remaining basis.
+    const plan = singlePersonPlan({ dob: '1970-03-15', planningAge: 70, retirementAge: 56 })
+    plan.accounts = [
+      cashAccount('cash-1', 200_000),
+      {
+        type: 'traditional',
+        id: 'ira-sepp',
+        name: 'ira-sepp',
+        ownerPersonId: 'p1',
+        annualReturnPct: 0,
+        kind: 'ira',
+        balance: 306_000,
+        annualContribution: 0,
+        nondeductibleBasis: 61_200,
+        sepp: { startAge: 56, method: 'rmd' },
+      },
+    ]
+    const y2026 = yearOf(run(plan, { horizonEndYear: 2026 }), START_YEAR)
+
+    const sepp = sourceById(y2026, 'source:seppDistribution:ira-sepp')
+    expect(sepp.kind).toBe('seppDistribution')
+    expect(sepp.role).toBe('portfolioFunding')
+    expectMoney(sepp.amountPlanDollars, 10_000)
+    expect(sepp.identities).toEqual([
+      { entityKind: 'account', accountId: 'ira-sepp' },
+      { entityKind: 'person', personId: 'p1' },
+    ])
+    expect(sepp.taxCharacter).toEqual([
+      { kind: 'returnOfBasis', amountPlanDollars: 2_000 },
+    ])
+    expect(sepp.taxCharacter![0]!.amountPlanDollars).toBeGreaterThan(0)
+    expectMoney(y2026.sepp, 10_000)
+    const owner = y2026.ownedNonRothIraAnnualReplay!.annualReplay.ownerReplays[0]!
+    expect(owner.nextYearOpeningBasisAmount).toBe(5_920_000)
+    expect(y2026.cashFlow!.reconciliation.status).toBe('reconciled')
+  })
 })

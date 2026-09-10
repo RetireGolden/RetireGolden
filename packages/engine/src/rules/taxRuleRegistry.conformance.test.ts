@@ -645,6 +645,8 @@ const STATE_PRIMARY_PUBLISHERS: Readonly<Partial<Record<UsStateCode, readonly st
     // exemption page is the operative state publication staged for this
     // record; the statutes index itself is only an index/shell.
     'tax.newmexico.gov',
+    // Verified 2026-09-10: HB 252 enacted bill PDF for NMSA §7-2-7 rate schedules.
+    'nmlegis.gov', // New Mexico Legislature: enacted bills
   ],
   NC: [
     // Verified 2026-08-27 against the staged North Carolina General Statute.
@@ -2222,7 +2224,7 @@ describe('periodic re-verification', () => {
     const latestDueOn = taxRuleIds
       .map((ruleId) => taxRuleDueOn(ruleId))
       .reduce((latest, dueOn) => (dueOn > latest ? dueOn : latest))
-    expect(latestDueOn).toBe('2027-09-09')
+    expect(latestDueOn).toBe('2027-09-10')
     expect(taxRulesDueForVerification(latestDueOn)).toEqual([...taxRuleIds])
   })
 

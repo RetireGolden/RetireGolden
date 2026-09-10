@@ -766,7 +766,7 @@ export const individualIncomeTaxRecords = {
     contraryReading: null,
     errorDirection: 'understatesTax',
     conventionRationale:
-      'The error scales with the mortgage rather than with income: at $1.5 million of acquisition debt half the interest is disallowed, and a household paying $90,000 of interest would see $45,000 of deduction that does not exist. The grandfather in 163(h)(3)(F)(i)(IV) preserves the older $1,000,000 limit for debt incurred on or before December 15, 2017, so the engine cannot even apply a flat cap without knowing when the loan was taken out, which is why this is left unmodelled rather than approximated.',
+      'The error scales with the mortgage rather than with income: at $1.5 million of acquisition debt half the interest is disallowed, and a household paying $90,000 of interest would see $45,000 of deduction that does not exist. The grandfather in 163(h)(3)(F)(i)(IV) preserves the older $1,000,000 limit for debt incurred on or before December 15, 2017, so missing origination facts prevent applying any uniform flat-cap stand-in. Omitting the acquisition-debt limit while still deducting the supplied interest is the approximation: `itemizedTotal` emits a deduction that includes the full mortgage-interest figure rather than refusing to itemize or substituting a guessed ceiling.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
