@@ -1,14 +1,14 @@
 {
-  "generatedAt": "2026-09-09T20:46:10.235Z",
-  "recordCount": 456,
-  "urlCount": 363,
+  "generatedAt": "2026-09-10T00:48:35.094Z",
+  "recordCount": 468,
+  "urlCount": 370,
   "fetched": 0,
-  "cached": 363,
-  "entryCount": 1359,
+  "cached": 370,
+  "entryCount": 1382,
   "counts": {
-    "EXACT": 947,
-    "PUNCTUATION": 42,
-    "PDF-WORD-LEVEL": 261,
+    "EXACT": 960,
+    "PUNCTUATION": 44,
+    "PDF-WORD-LEVEL": 269,
     "ELISION-EXACT": 91,
     "ELISION-PUNCTUATION": 8,
     "PDF-NOT-VERIFIABLE": 7,
@@ -9895,11 +9895,91 @@
       "diagnosis": null
     },
     {
+      "id": "ny-dtf-qualified-government-pension-full-subtraction",
+      "citation": "New York State Department of Taxation and Finance, Information for retired persons — Pensions of New York State, local governments, and the federal government",
+      "host": "www.tax.ny.gov",
+      "url": "https://www.tax.ny.gov/pit/file/information_for_seniors.htm",
+      "quoteSha256": "305e5f4289c8e92e",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "ny-dtf-qualified-government-pension-full-subtraction",
+      "citation": "New York State Department of Taxation and Finance, Information for retired persons — federal government pensions including military",
+      "host": "www.tax.ny.gov",
+      "url": "https://www.tax.ny.gov/pit/file/information_for_seniors.htm",
+      "quoteSha256": "b823d25b1c1c0e11",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "ny-dtf-qualified-government-pension-full-subtraction",
+      "citation": "New York State Department of Taxation and Finance, Information for retired persons — Optional Retirement Program limitation",
+      "host": "www.tax.ny.gov",
+      "url": "https://www.tax.ny.gov/pit/file/information_for_seniors.htm",
+      "quoteSha256": "4e6bf34c431614f9",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "ny-government-pension-issuer-qualification-not-modeled",
+      "citation": "New York State Department of Taxation and Finance, Information for retired persons — Pensions of New York State, local governments, and the federal government",
+      "host": "www.tax.ny.gov",
+      "url": "https://www.tax.ny.gov/pit/file/information_for_seniors.htm",
+      "quoteSha256": "305e5f4289c8e92e",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "ny-government-pension-issuer-qualification-not-modeled",
+      "citation": "New York State Department of Taxation and Finance, Information for retired persons — federal government pensions including military",
+      "host": "www.tax.ny.gov",
+      "url": "https://www.tax.ny.gov/pit/file/information_for_seniors.htm",
+      "quoteSha256": "b823d25b1c1c0e11",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "ny-government-pension-issuer-qualification-not-modeled",
+      "citation": "New York State Department of Taxation and Finance, Information for retired persons — Optional Retirement Program limitation",
+      "host": "www.tax.ny.gov",
+      "url": "https://www.tax.ny.gov/pit/file/information_for_seniors.htm",
+      "quoteSha256": "4e6bf34c431614f9",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
       "id": "ny-dtf-social-security-subtraction",
       "citation": "New York State Department of Taxation and Finance, Information for retired persons — Social Security",
       "host": "www.tax.ny.gov",
       "url": "https://www.tax.ny.gov/pit/file/information_for_seniors.htm",
       "quoteSha256": "3cc44ef04dcd8983",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "ny-it225-s122-non-ss-railroad-benefits-not-modeled",
+      "citation": "New York State Department of Taxation and Finance, Information for retired persons — Railroad Retirement benefits (IT-225 code S-122)",
+      "host": "www.tax.ny.gov",
+      "url": "https://www.tax.ny.gov/pit/file/information_for_seniors.htm",
+      "quoteSha256": "a51d0ae1493aaa63",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "ny-it225-s122-non-ss-railroad-benefits-not-modeled",
+      "citation": "New York State Department of Taxation and Finance, Information for retired persons — Social Security equivalent Railroad Retirement benefits",
+      "host": "www.tax.ny.gov",
+      "url": "https://www.tax.ny.gov/pit/file/information_for_seniors.htm",
+      "quoteSha256": "cfea62d7ad7d26ed",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null
@@ -10402,6 +10482,66 @@
       "quoteSha256": "419a9d70b3574e8c",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "ri-code-44-30-12-c-11-military-pension-not-modeled",
+      "citation": "Rhode Island Division of Taxation, Retirement Income Tax Guide, Section 2: Military Service Pension Modification (Publication 2026-01, tax year 2025)",
+      "host": "tax.ri.gov",
+      "url": "https://tax.ri.gov/sites/g/files/xkgbur541/files/2026-02/PUB_2026-01_Retirement_Income_Guide.pdf",
+      "quoteSha256": "6b23fd73fca4a08c",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "ri-code-44-30-12-c-11-military-pension-not-modeled",
+      "citation": "R.I. Gen. Laws §44-30-12(c)(11)(i)(A)",
+      "host": "webserver.rilegislature.gov",
+      "url": "https://webserver.rilegislature.gov/Statutes/TITLE44/44-30/44-II/44-30-12.htm",
+      "quoteSha256": "994394669740a8af",
+      "verdict": "PUNCTUATION",
+      "detail": "matches only after: apostrophe",
+      "diagnosis": null
+    },
+    {
+      "id": "ri-code-44-30-12-c-11-military-pension-not-modeled",
+      "citation": "R.I. Gen. Laws §44-30-12(c)(11)(ii)",
+      "host": "webserver.rilegislature.gov",
+      "url": "https://webserver.rilegislature.gov/Statutes/TITLE44/44-30/44-II/44-30-12.htm",
+      "quoteSha256": "b30a07b96b6e74c0",
+      "verdict": "PUNCTUATION",
+      "detail": "matches only after: quote-marks",
+      "diagnosis": null
+    },
+    {
+      "id": "ri-code-44-30-12-c-11-military-pension-not-modeled",
+      "citation": "R.I. Gen. Laws §44-30-12(c)(11)(iii)",
+      "host": "webserver.rilegislature.gov",
+      "url": "https://webserver.rilegislature.gov/Statutes/TITLE44/44-30/44-II/44-30-12.htm",
+      "quoteSha256": "3e533183466e36d9",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "ri-schedule-m-1d-railroad-benefits-not-modeled",
+      "citation": "Rhode Island Division of Taxation, 2025 RI-1040 Resident booklet instructions, Schedule M line 1d",
+      "host": "tax.ri.gov",
+      "url": "https://tax.ri.gov/sites/g/files/xkgbur541/files/2025-12/2025%201040R%20Instructions%20122025.pdf",
+      "quoteSha256": "4fa9b9e5cb78d4ab",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "ri-schedule-m-1d-railroad-benefits-not-modeled",
+      "citation": "Rhode Island Division of Taxation, 2025 RI Schedule M, line 1d",
+      "host": "tax.ri.gov",
+      "url": "https://tax.ri.gov/sites/g/files/xkgbur541/files/2026-01/2025%20RI%20Schedule%20M_w.pdf",
+      "quoteSha256": "fae7a229b86cdc06",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
       "diagnosis": null
     },
     {
@@ -11542,6 +11682,16 @@
       "diagnosis": null
     },
     {
+      "id": "wi-schedule-sb-15-railroad-benefits-not-modeled",
+      "citation": "2025 Wisconsin Schedule SB Instructions, Line 15",
+      "host": "www.revenue.wi.gov",
+      "url": "https://www.revenue.wi.gov/TaxForms2025/2025-ScheduleSB-Inst.pdf",
+      "quoteSha256": "282b52c91dd9742d",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
       "id": "fl-const-7-5-a-income-tax-prohibited",
       "citation": "Fla. Const. art. VII, sec. 5(a)",
       "host": "www.flsenate.gov",
@@ -11652,6 +11802,26 @@
       "diagnosis": null
     },
     {
+      "id": "sc-code-12-6-1120-4-social-security-subtraction",
+      "citation": "S.C. Code 12-6-1120(4)",
+      "host": "www.scstatehouse.gov",
+      "url": "https://www.scstatehouse.gov/code/t12c006.php",
+      "quoteSha256": "dcf2dba20474dbe7",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "sc-form1040-line-o-railroad-benefits-not-modeled",
+      "citation": "South Carolina Department of Revenue, 2025 Form SC1040 instructions, line o",
+      "host": "dor.sc.gov",
+      "url": "https://dor.sc.gov/sites/dor/files/forms/SC1040Instr_2025.pdf",
+      "quoteSha256": "d91ea2931ba8729a",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
       "id": "sc-code-12-6-1170-retirement-income-deduction",
       "citation": "S.C. Code 12-6-1170(A)(1)",
       "host": "www.scstatehouse.gov",
@@ -11667,6 +11837,16 @@
       "host": "www.scstatehouse.gov",
       "url": "https://www.scstatehouse.gov/code/t12c006.php",
       "quoteSha256": "04f30d275392b09f",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "sc-code-12-6-1120-7-reserve-national-guard-pay-not-modeled",
+      "citation": "S.C. Code 12-6-1120(7)",
+      "host": "www.scstatehouse.gov",
+      "url": "https://www.scstatehouse.gov/code/t12c006.php",
+      "quoteSha256": "05b9d3c7b27fa65c",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null
@@ -11917,6 +12097,26 @@
       "host": "law.lis.virginia.gov",
       "url": "https://law.lis.virginia.gov/vacode/title58.1/chapter3/section58.1-322.03/",
       "quoteSha256": "2aa0cf93e34103d0",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "va-railroad-retirement-and-unemployment-benefits-not-modeled",
+      "citation": "Virginia Department of Taxation, Subtractions — Social Security Act and Equivalent Tier 1 Railroad Retirement Act Benefits",
+      "host": "www.tax.virginia.gov",
+      "url": "https://www.tax.virginia.gov/subtractions",
+      "quoteSha256": "b3b94cefc1383537",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "va-railroad-retirement-and-unemployment-benefits-not-modeled",
+      "citation": "Virginia Department of Taxation, Subtractions — Tier 2 and other Railroad Retirement and Railroad Unemployment Benefits",
+      "host": "www.tax.virginia.gov",
+      "url": "https://www.tax.virginia.gov/subtractions",
+      "quoteSha256": "4bcd2e99ca0464e1",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null
@@ -13549,6 +13749,36 @@
       "quoteSha256": "05ee080e5fb64671",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "or-oar-150-316-0065-railroad-benefits-not-modeled",
+      "citation": "Oregon Department of Revenue, 2025 Publication OR-17 (rev. 01-29-26), supplemental RRB benefits under OAR 150-316-0065",
+      "host": "www.oregon.gov",
+      "url": "https://www.oregon.gov/dor/forms/FormsPubs/publication-or-17_101-431_2025.pdf",
+      "quoteSha256": "d07276cb417a1a33",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "or-oar-150-316-0065-railroad-benefits-not-modeled",
+      "citation": "Oregon Department of Revenue, 2025 Publication OR-17 (rev. 01-29-26), private railroad-employer pensions",
+      "host": "www.oregon.gov",
+      "url": "https://www.oregon.gov/dor/forms/FormsPubs/publication-or-17_101-431_2025.pdf",
+      "quoteSha256": "5d1a6ba8fe303552",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "ut-code-59-10-114-2-d-railroad-benefits-not-modeled",
+      "citation": "Utah Code §59-10-114(2)(d), effective 10/14/2025",
+      "host": "le.utah.gov",
+      "url": "https://le.utah.gov/xcode/Title59/Chapter10/C59-10-S114_2025101420251206.pdf",
+      "quoteSha256": "18475ba1bcfcfef2",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
       "diagnosis": null
     },
     {

@@ -2,17 +2,17 @@
   "kind": "retiregolden.rules-coverage.manifest",
   "version": 5,
   "registry": {
-    "total": 456,
+    "total": 468,
     "byClassification": {
       "approximated": 126,
-      "outOfScope": 76,
-      "settled": 250,
+      "outOfScope": 86,
+      "settled": 252,
       "unsettled": 4
     },
     "byVolatility": {
-      "annuallyIndexed": 70,
+      "annuallyIndexed": 74,
       "awaitingGuidance": 10,
-      "staticStatute": 369,
+      "staticStatute": 377,
       "sunsetting": 7
     },
     "byJurisdiction": {
@@ -52,25 +52,25 @@
         "NJ": 2,
         "NM": 1,
         "NV": 1,
-        "NY": 2,
+        "NY": 5,
         "OH": 2,
         "OK": 1,
-        "OR": 2,
+        "OR": 3,
         "PA": 3,
-        "RI": 2,
-        "SC": 1,
+        "RI": 4,
+        "SC": 4,
         "SD": 1,
         "TN": 2,
         "TX": 2,
-        "UT": 2,
-        "VA": 1,
+        "UT": 3,
+        "VA": 2,
         "VT": 1,
         "WA": 2,
-        "WI": 2,
+        "WI": 3,
         "WV": 2,
         "WY": 1
       },
-      "stateTotal": 125
+      "stateTotal": 137
     }
   },
   "attestations": {
@@ -629,17 +629,17 @@
     {
       "module": "statesMidwest",
       "path": "rule-coverage/statesMidwest.json",
-      "ruleCount": 33
+      "ruleCount": 34
     },
     {
       "module": "statesNortheast",
       "path": "rule-coverage/statesNortheast.json",
-      "ruleCount": 17
+      "ruleCount": 22
     },
     {
       "module": "statesSouthAtlantic",
       "path": "rule-coverage/statesSouthAtlantic.json",
-      "ruleCount": 14
+      "ruleCount": 18
     },
     {
       "module": "statesSouthCentral",
@@ -649,7 +649,7 @@
     {
       "module": "statesWest",
       "path": "rule-coverage/statesWest.json",
-      "ruleCount": 27
+      "ruleCount": 29
     },
     {
       "module": "transfersAndUnmodeledRegimes",
@@ -658,17 +658,17 @@
     }
   ],
   "quoteFidelity": {
-    "generatedAt": "2026-09-09T20:46:10.235Z",
-    "entryCount": 1359,
+    "generatedAt": "2026-09-10T00:48:35.094Z",
+    "entryCount": 1382,
     "fetched": 0,
-    "cached": 363,
+    "cached": 370,
     "counts": {
       "ELISION-EXACT": 91,
       "ELISION-PUNCTUATION": 8,
-      "EXACT": 947,
+      "EXACT": 960,
       "PDF-NOT-VERIFIABLE": 7,
-      "PDF-WORD-LEVEL": 261,
-      "PUNCTUATION": 42,
+      "PDF-WORD-LEVEL": 269,
+      "PUNCTUATION": 44,
       "UNFETCHABLE": 3
     }
   }

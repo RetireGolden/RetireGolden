@@ -56,12 +56,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2306,
+          "line": 2411,
           "note": null,
           "tests": [
             {
               "title": "omits the District Social Security subtraction from the taxable base",
-              "line": 2322
+              "line": 2427
             }
           ]
         }
@@ -124,12 +124,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2531,
+          "line": 2636,
           "note": null,
           "tests": [
             {
               "title": "prices single and joint filers on the §1102(a)(14) band schedule",
-              "line": 2542
+              "line": 2647
             }
           ]
         }
@@ -196,23 +196,23 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2557,
+          "line": 2662,
           "note": "Social Security limb",
           "tests": [
             {
               "title": "subtracts Delaware Social Security included in federal AGI",
-              "line": 2575
+              "line": 2680
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2585,
+          "line": 2690,
           "note": "retirement-age limb",
           "tests": [
             {
               "title": "subtracts the $12,500 Delaware retirement cap from age 60",
-              "line": 2601
+              "line": 2706
             }
           ]
         }
@@ -456,16 +456,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 611,
+          "line": 716,
           "note": null,
           "tests": [
             {
               "title": "leaves a Florida retiree with no state base at all",
-              "line": 627
+              "line": 732
             },
             {
               "title": "would tax the same income if the imposition reached natural persons",
-              "line": 632
+              "line": 737
             }
           ]
         }
@@ -548,16 +548,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2406,
+          "line": 2511,
           "note": "age-62-through-64 retirement-income and Schedule 1 line 8 Social Security limbs",
           "tests": [
             {
               "title": "pins the missing Georgia age-63 retirement exclusion",
-              "line": 2433
+              "line": 2538
             },
             {
               "title": "subtracts federally taxable Social Security on Schedule 1 line 8 separately from the retirement limb",
-              "line": 2440
+              "line": 2545
             }
           ]
         }
@@ -625,16 +625,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2935,
+          "line": 3040,
           "note": null,
           "tests": [
             {
               "title": "keeps Social Security out of Maryland adjusted gross income",
-              "line": 2950
+              "line": 3055
             },
             {
               "title": "would add the federally taxable portion if Maryland taxed it",
-              "line": 2956
+              "line": 3061
             }
           ]
         }
@@ -796,12 +796,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3243,
+          "line": 3348,
           "note": null,
           "tests": [
             {
               "title": "subtracts Title II Social Security from North Carolina income",
-              "line": 3252
+              "line": 3357
             }
           ]
         }
@@ -813,6 +813,122 @@
           "kind": "statute",
           "citation": "N.C. Gen. Stat. §105-153.5(b)(3)",
           "url": "https://www.ncleg.gov/EnactedLegislation/Statutes/HTML/BySection/Chapter_105/GS_105-153.5.html"
+        }
+      ]
+    },
+    {
+      "id": "sc-code-12-6-1120-4-social-security-subtraction",
+      "title": "South Carolina determines gross income without Internal Revenue Code section 86 for Social Security",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:SC",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-09",
+      "dueOn": "2027-09-09",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "states.SC",
+              "line": 751
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 96
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 557,
+          "note": null,
+          "tests": [
+            {
+              "title": "omits federally included Social Security from South Carolina gross income",
+              "line": 576
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "S.C. Code 12-6-1120(4)",
+          "url": "https://www.scstatehouse.gov/code/t12c006.php"
+        }
+      ]
+    },
+    {
+      "id": "sc-code-12-6-1120-7-reserve-national-guard-pay-not-modeled",
+      "title": "South Carolina excludes limited Guard and Reserve pay under §12-6-1120(7); the engine cannot certify service or pay type",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:SC",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-08-04",
+      "dueOn": "2027-08-04",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/params/state/types.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "pensionSchema",
+              "line": 1055
+            },
+            {
+              "name": "wagesIncomeSchema",
+              "line": 1538
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/types.ts",
+          "functions": [
+            {
+              "name": "StateTaxParams",
+              "line": 40
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "S.C. Code 12-6-1120(7)",
+          "url": "https://www.scstatehouse.gov/code/t12c006.php"
         }
       ]
     },
@@ -893,6 +1009,59 @@
       ]
     },
     {
+      "id": "sc-form1040-line-o-railroad-benefits-not-modeled",
+      "title": "South Carolina’s 2025 SC1040 line o reaches federally taxed railroad retirement; the engine cannot certify payer or category",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:SC",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2025,
+      "effectiveThrough": 2025,
+      "verifiedOn": "2026-09-09",
+      "dueOn": "2027-01-07",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/params/state/types.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "incomeStreamSchema",
+              "line": 1678
+            },
+            {
+              "name": "pensionSchema",
+              "line": 1055
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/types.ts",
+          "functions": [
+            {
+              "name": "StateTaxParams",
+              "line": 40
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "formInstruction",
+          "citation": "South Carolina Department of Revenue, 2025 Form SC1040 instructions, line o",
+          "url": "https://dor.sc.gov/sites/dor/files/forms/SC1040Instr_2025.pdf"
+        }
+      ]
+    },
+    {
       "id": "va-code-58-1-322-03-age-deduction-and-social-security",
       "title": "Virginia phases the age-65 deduction out against adjusted federal AGI",
       "classification": "approximated",
@@ -939,20 +1108,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3723,
+          "line": 3828,
           "note": null,
           "tests": [
             {
               "title": "pins the high-income phase-out that the retirement-cap mapping misses",
-              "line": 3754
+              "line": 3859
             },
             {
               "title": "pins the opposite direction when an age-65 filer has wages but no modeled pension",
-              "line": 3763
+              "line": 3868
             },
             {
               "title": "pins the age deduction against adjusted FAGI after Title II Social Security",
-              "line": 3769
+              "line": 3874
             }
           ]
         }
@@ -964,6 +1133,64 @@
           "kind": "statute",
           "citation": "Va. Code §58.1-322.03(5)",
           "url": "https://law.lis.virginia.gov/vacode/title58.1/chapter3/section58.1-322.03/"
+        }
+      ]
+    },
+    {
+      "id": "va-railroad-retirement-and-unemployment-benefits-not-modeled",
+      "title": "Virginia subtracts Tier 2 and other railroad benefits included in federal AGI; the engine cannot certify benefit type",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:VA",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-09",
+      "dueOn": "2027-09-09",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/params/state/types.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "incomeStreamSchema",
+              "line": 1678
+            },
+            {
+              "name": "pensionSchema",
+              "line": 1055
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/types.ts",
+          "functions": [
+            {
+              "name": "StateTaxParams",
+              "line": 40
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Virginia Department of Taxation, Subtractions — Social Security Act and Equivalent Tier 1 Railroad Retirement Act Benefits",
+          "url": "https://www.tax.virginia.gov/subtractions"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Virginia Department of Taxation, Subtractions — Tier 2 and other Railroad Retirement and Railroad Unemployment Benefits",
+          "url": "https://www.tax.virginia.gov/subtractions"
         }
       ]
     },
@@ -1010,16 +1237,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 677,
+          "line": 782,
           "note": null,
           "tests": [
             {
               "title": "keeps every dollar of Social Security out of the West Virginia base",
-              "line": 690
+              "line": 795
             },
             {
               "title": "would add the federally taxable portion under the pre-2026 treatment",
-              "line": 695
+              "line": 800
             }
           ]
         }
@@ -1092,24 +1319,24 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 727,
+          "line": 832,
           "note": null,
           "tests": [
             {
               "title": "prices modeled single and joint filers on the §11-21-4j schedule",
-              "line": 736
+              "line": 841
             },
             {
               "title": "would over-tax on the rejected prior §11-21-4i schedule",
-              "line": 743
+              "line": 848
             },
             {
               "title": "is not a flat 5% rate cut of the prior schedule",
-              "line": 751
+              "line": 856
             },
             {
               "title": "is not what doubled MFJ break points would price at $100,000 joint",
-              "line": 761
+              "line": 866
             }
           ]
         }
