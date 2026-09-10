@@ -1,30 +1,35 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { simOptions } from '../../testing/decisionFixtures.js'
 import { singlePersonPlan } from '../../testing/planFixtures.js'
 import type { DetectorContext } from '../types.js'
+
+vi.mock('../../decisions/index.js', async (importOriginal) => {
+  const original = await importOriginal<typeof import('../../decisions/index.js')>()
+  return {
+    ...original,
+    solveMaxSustainableSpending: vi.fn(original.solveMaxSustainableSpending),
+    createDecisionContext: vi.fn(original.createDecisionContext),
+  }
+})
+
+import { createDecisionContext, solveMaxSustainableSpending } from '../../decisions/index.js'
 import { spendingHeadroom } from './spendingHeadroom.js'
 
 /**
- * Engine-local coverage for the spending-headroom detector's screen phase.
+ * Engine-local coverage for the spending-headroom detector.
  *
- * The module states the screen's condition — "it only reads the baseline
- * projection (never depleting + a large ending estate above the bequest target
- * ⇒ the plan is leaving lifestyle on the table)" — and each constant carries
- * its own sentence: "Screen only when the excess estate could fund a meaningful
- * lifestyle bump" ($250,000 of excess estate; $2,000/yr of rough headroom).
- * Both dollar gates are fixtured on both sides.
- *
- * The identity deflator keeps the fixture in today's dollars, so the excess
- * estate is stated directly rather than back-solved through an inflation path;
- * the rough headroom is then the excess spread over the remaining years, which
- * is the module's own stated reading ("what spreading it evenly over the
- * remaining years would add to annual spending").
- *
- * `evaluate()` is not exercised beyond its refusal: it runs the exact-ledger
- * sustainable-spending solver, whose own coverage lives with the solver, and
- * driving it from here would make this suite a slow second copy of that.
+ * Screen gates ($250,000 excess estate, $2,000/yr rough headroom, depletion,
+ * ABW refusal) are fixtured on both sides. `evaluate()` boundary coverage
+ * stubs only the sustainable-spending solver — the detector's own
+ * MIN_SOLVED_SLACK_PER_YEAR gate and patch wiring are asserted through the
+ * real `evaluate()` entry point, not a second copy of solver arithmetic.
  */
 const START_YEAR = 2026
+const CURRENT_BASE_ANNUAL = 60_000
+
+const mockedSolver = vi.mocked(solveMaxSustainableSpending)
+const mockedCreateDecisionContext = vi.mocked(createDecisionContext)
 
 function context(
   opts: {
@@ -36,7 +41,7 @@ function context(
   } = {},
 ): DetectorContext {
   const plan = singlePersonPlan({ dob: '1961-01-01' })
-  plan.expenses.baseAnnual = 60_000
+  plan.expenses.baseAnnual = CURRENT_BASE_ANNUAL
   if (opts.bequestTargetDollars !== undefined) plan.expenses.bequestTargetDollars = opts.bequestTargetDollars
   if (opts.spendingPolicyMode !== undefined) {
     plan.expenses.spendingPolicy = { mode: opts.spendingPolicyMode } as never
@@ -56,7 +61,22 @@ function context(
   } as unknown as DetectorContext
 }
 
+function screenEligibleContext(): DetectorContext {
+  return context({ endingAfterTaxEstate: 1_000_000 })
+}
+
 describe('spendingHeadroom', () => {
+  beforeEach(() => {
+    mockedSolver.mockReset()
+    mockedCreateDecisionContext.mockReset()
+    mockedCreateDecisionContext.mockReturnValue({
+      plan: {} as never,
+      baselineResult: {} as never,
+      baselineSummary: {} as never,
+      simulateOptions: simOptions(),
+    })
+  })
+
   it('fires on a never-depleting plan whose ending estate clears the bequest target', () => {
     const card = spendingHeadroom.screen(context({ endingAfterTaxEstate: 1_000_000 }))
     expect(card?.id).toBe('spending-headroom')
@@ -118,5 +138,40 @@ describe('spendingHeadroom', () => {
 
   it('evaluate() refuses a plan the screen already rejected', () => {
     expect(() => spendingHeadroom.evaluate!(context({ depletionYear: 2050 }))).toThrow(/not eligible/i)
+  })
+
+  it('evaluate() refuses when solved slack is below the $1,000/yr gate', () => {
+    mockedSolver.mockReturnValue({
+      maxBaseAnnual: 60_999,
+      spendingSlackDollars: 999,
+      bestEvaluation: null,
+      converged: true,
+      limitingConstraint: null,
+      simulationCount: 1,
+      diagnostics: [],
+    })
+
+    expect(() => spendingHeadroom.evaluate!(screenEligibleContext())).toThrow(/no meaningful headroom/i)
+    expect(mockedSolver).toHaveBeenCalledOnce()
+  })
+
+  it('evaluate() returns the solved spending patch when slack clears the $1,000/yr gate', () => {
+    mockedSolver.mockReturnValue({
+      maxBaseAnnual: 61_000,
+      spendingSlackDollars: 1_000,
+      bestEvaluation: null,
+      converged: true,
+      limitingConstraint: null,
+      simulationCount: 1,
+      diagnostics: [],
+    })
+
+    const result = spendingHeadroom.evaluate!(screenEligibleContext())
+    expect(result.action.kind).toBe('preview-scenario')
+    if (result.action.kind !== 'preview-scenario') throw new Error('expected a preview scenario')
+    expect(result.action.patch).toEqual({ expenses: { baseAnnual: 61_000 } })
+    if (!result.impact) throw new Error('expected evaluate() to publish impact')
+    expect(result.impact.qualitative).toContain('$1,000/yr above your current level')
+    expect(mockedSolver).toHaveBeenCalledOnce()
   })
 })
