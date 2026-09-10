@@ -13,7 +13,7 @@ Tax year: 2025. (Completed example — already in `year2026.ts`.)
 - Broad individual income tax: **yes** (graduated, 4%–10.9%)
 - Taxes Social Security benefits: no (fully exempt)
 - Long-term capital gains: taxed as ordinary income
-- Retirement income: government/military pensions fully exempt; private pension & IRA/401(k) excluded up to $20,000 per person at 59½+
+- Retirement income: qualifying NY/local/federal-government and military pensions fully exempt through a coarse `{ kind: 'full' }` public bucket; private pension & IRA/401(k) excluded up to $20,000 per person at 59½+
 
 ## Proposed StateTaxParams (2025)
 - code: "NY"
@@ -41,17 +41,25 @@ Tax year: 2025. (Completed example — already in `year2026.ts`.)
 - retirement: { kind: "capped", capPerPerson: 20000, minAge: 59 }
 
 ## Retirement-income detail
-NY fully exempts Social Security and NY/federal government and military
-pensions. Private pensions and IRA/401(k) distributions are excluded up to
-**$20,000 per person** once the recipient is 59½+. Modeled as `kind: "capped"`,
-`capPerPerson: 20000`, `minAge: 59`. Top brackets above ~$1.08M (5M MFJ tiers
-at 10.3%/10.9%) are omitted as out-of-range for the planner's audience.
+NY fully exempts Social Security. Qualifying New York State, local, and
+federal-government pensions — including military pensions under the United
+States or its agencies — are subtracted in full when correctly routed to
+`publicPensionIncome`; see [Information for retired persons](https://www.tax.ny.gov/pit/file/information_for_seniors.htm).
+The pack models that path as `retirementPublic: { kind: 'full' }` through
+`PUBLIC_PENSION_OVERRIDES`, without issuer or Optional Retirement Program
+employment-attributable portion checks
+(`ny-government-pension-issuer-qualification-not-modeled`). Private pensions
+and IRA/401(k) distributions are excluded up to **$20,000 per person** once
+the recipient is 59½+; modeled as `kind: "capped"`, `capPerPerson: 20000`,
+`minAge: 59`. Top brackets above ~$1.08M (5M MFJ tiers at 10.3%/10.9%) are
+omitted as out-of-range for the planner's audience.
 
 ## Simplifications / not modeled
-- Full exemption of government/military pensions approximated by the $20k private cap (conservative for those retirees).
+- Coarse `{ kind: 'full' }` public bucket subtracts every routed `publicPensionIncome` dollar without validating governmental issuer or ORP employment-attributable portion; understates tax when a routed amount is not qualifying or includes non-qualifying ORP excess — not a claim that every out-of-state public pension is taxable.
+- Private $20,000 cap uses integer age 59 rather than 59½ (`ny-tax-612-c-3-a-pension-annuity-exclusion`).
 - NYC/Yonkers local income taxes not modeled.
 - Top 10.3%/10.9% millionaire brackets omitted; tax-benefit recapture omitted.
 
 ## Citations
-- https://www.tax.ny.gov/ — 2024 brackets, $20,000 pension/annuity exclusion, SS exempt.
+- https://www.tax.ny.gov/pit/file/information_for_seniors.htm — governmental pension subtraction, Optional Retirement Program limitation, Social Security exempt.
 - Tax Foundation, State Individual Income Tax Rates and Brackets 2025 — NY.

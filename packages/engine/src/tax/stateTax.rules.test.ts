@@ -479,9 +479,144 @@ describeRule('ny-dtf-social-security-subtraction', {
   })
 })
 
+const NY_QUALIFYING_PUBLIC_PENSION = 60_000
+
+const nyBaselineAtForty = input({
+  state: 'NY',
+  ordinaryIncome: 90_000,
+  agesAlive: [40],
+})
+const nyPrivateRoutingControlAtForty = input({
+  state: 'NY',
+  ordinaryIncome: 150_000,
+  privateRetirementIncome: NY_QUALIFYING_PUBLIC_PENSION,
+  agesAlive: [40],
+})
+
+describeRule('ny-dtf-qualified-government-pension-full-subtraction', {
+  readings: {
+    qualifyingPublicAddedPensionBaseDeltaAtAgeForty: 0,
+    noPublicSubtractionCounterfactualRetainsAddedPension: NY_QUALIFYING_PUBLIC_PENSION,
+  },
+  accepted: 'qualifyingPublicAddedPensionBaseDeltaAtAgeForty',
+}, ({ readings, accepted }) => {
+  const qualifyingPublicAtForty = input({
+    state: 'NY',
+    ordinaryIncome: 150_000,
+    publicPensionIncome: NY_QUALIFYING_PUBLIC_PENSION,
+    agesAlive: [40],
+  })
+
+  it('subtracts the full qualifying public pension without the private age gate', () => {
+    const ny = pack('NY')
+    const before = computeStateTaxableIncome(ny, nyBaselineAtForty)
+    const after = computeStateTaxableIncome(ny, qualifyingPublicAtForty)
+    expect(after - before).toBeCloseTo(accepted, 6)
+    expect(after).toBe(before)
+    const noPublicSubtraction: StateTaxParams = {
+      ...ny,
+      retirementPublic: { kind: 'none' as const },
+    }
+    expect(
+      computeStateTaxableIncome(noPublicSubtraction, qualifyingPublicAtForty)
+        - computeStateTaxableIncome(noPublicSubtraction, nyBaselineAtForty),
+    ).toBeCloseTo(readings.noPublicSubtractionCounterfactualRetainsAddedPension, 6)
+  })
+
+  it('yields zero state taxable income for pension-only public income at age 70', () => {
+    const scenario = input({
+      state: 'NY',
+      ordinaryIncome: NY_QUALIFYING_PUBLIC_PENSION,
+      publicPensionIncome: NY_QUALIFYING_PUBLIC_PENSION,
+      agesAlive: [70],
+    })
+    expect(computeStateTaxableIncome(pack('NY'), scenario)).toBe(0)
+  })
+})
+
+// pensionSchema.source is only private or public
+// (`ny-government-pension-issuer-qualification-not-modeled`); military
+// eligibility is not encoded by that enum. Private routing is a model control,
+// not a statutory alternate or proof of issuer liability.
+describe('ny-dtf-qualified-government-pension private routing', () => {
+  it('keeps private routing as an ordinary model control outside the statutory wrapper', () => {
+    const ny = pack('NY')
+    const before = computeStateTaxableIncome(ny, nyBaselineAtForty)
+    const control = computeStateTaxableIncome(ny, nyPrivateRoutingControlAtForty)
+    expect(control - before).toBe(NY_QUALIFYING_PUBLIC_PENSION)
+  })
+})
+
+// Source-side ORP facts are caller assumptions, not typed fields: age 40;
+// $60,000 fully in federal AGI and entirely outside SUNY/CUNY/NYS Education
+// Department employment; no other exclusion claimed. Main observed $82,000 in
+// both limbs is a routing control, not the legal oracle.
+const NY_NONQUALIFYING_ORP = 60_000
+
+const nyNonqualifyingOrpAtForty = input({
+  state: 'NY',
+  ordinaryIncome: 150_000,
+  publicPensionIncome: NY_NONQUALIFYING_ORP,
+  agesAlive: [40],
+})
+
+describeRule('ny-government-pension-issuer-qualification-not-modeled', {
+  readings: {
+    acceptedAddedBaseSixtyThousand: NY_NONQUALIFYING_ORP,
+    currentProducedAddedBaseZero: 0,
+  },
+  accepted: 'acceptedAddedBaseSixtyThousand',
+  produced: 'currentProducedAddedBaseZero',
+}, ({ accepted, produced }) => {
+  it('pins the coarse public bucket that subtracts without issuer or ORP portion checks', () => {
+    const ny = pack('NY')
+    const delta = computeStateTaxableIncome(ny, nyNonqualifyingOrpAtForty)
+      - computeStateTaxableIncome(ny, nyBaselineAtForty)
+    expect(delta).toBeCloseTo(produced, 6)
+    expect(delta).not.toBeCloseTo(accepted, 6)
+  })
+})
+
 const PA_SS_OTHER_INCOME = 90_000
 const PA_SS_BENEFITS = 40_000
 const PA_SS_FEDERALLY_TAXABLE = 34_000
+
+const SC_SS_OTHER_INCOME = 90_000
+const SC_SS_BENEFITS = 40_000
+const SC_SS_FEDERALLY_TAXABLE = 34_000
+
+describeRule('sc-code-12-6-1120-4-social-security-subtraction', {
+  readings: {
+    baseDeltaWithAndWithoutBenefits: 0,
+    counterfactualAddsThirtyFourThousandToTheBase: SC_SS_FEDERALLY_TAXABLE,
+  },
+  accepted: 'baseDeltaWithAndWithoutBenefits',
+}, ({ readings }) => {
+  const withBenefits = input({
+    state: 'SC',
+    ordinaryIncome: SC_SS_OTHER_INCOME,
+    ssBenefits: SC_SS_BENEFITS,
+    agesAlive: [70],
+  })
+  const withoutBenefits = input({
+    state: 'SC',
+    ordinaryIncome: SC_SS_OTHER_INCOME,
+    agesAlive: [70],
+  })
+
+  it('omits federally included Social Security from South Carolina gross income', () => {
+    const sc = pack('SC')
+    expect(
+      computeStateTaxableIncome(sc, withBenefits)
+        - computeStateTaxableIncome(sc, withoutBenefits),
+    ).toBeCloseTo(readings.baseDeltaWithAndWithoutBenefits, 6)
+    const taxing = { ...sc, taxesSocialSecurity: true }
+    expect(
+      computeStateTaxableIncome(taxing, withBenefits)
+        - computeStateTaxableIncome(sc, withBenefits),
+    ).toBeCloseTo(readings.counterfactualAddsThirtyFourThousandToTheBase, 6)
+  })
+})
 
 describeRule('pa-pit-social-security-not-compensation', {
   readings: {

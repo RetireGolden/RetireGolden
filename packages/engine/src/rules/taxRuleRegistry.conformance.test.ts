@@ -949,8 +949,23 @@ const STATE_EXACT_PUBLICATION_URLS: Readonly<Partial<Record<UsStateCode, readonl
   NJ: [
     'https://www.nj.gov/treasury/taxation/njit12.shtml',
   ],
+  OR: [
+    // Verified 2026-09-09: 2025 Publication OR-17 TY2025 railroad-benefits
+    // section on oregon.gov/dor; bare oregon.gov stays out of STATE_PRIMARY_PUBLISHERS.
+    'https://www.oregon.gov/dor/forms/FormsPubs/publication-or-17_101-431_2025.pdf',
+  ],
   PA: [
     'https://www.pa.gov/agencies/revenue/forms-and-publications/pa-personal-income-tax-guide/gross-compensation',
+  ],
+  SC: [
+    // Verified TY2025 SC1040 instructions, line o; admit only this publication.
+    'https://dor.sc.gov/sites/dor/files/forms/SC1040Instr_2025.pdf',
+  ],
+  VA: [
+    // Verified 2026-09-09: Virginia Department of Taxation Subtractions page
+    // quoted for Tier 1/2 railroad guidance; law.lis.virginia.gov remains the
+    // Code publisher.
+    'https://www.tax.virginia.gov/subtractions',
   ],
 }
 
@@ -1743,17 +1758,42 @@ describe('tax rule registry conformance', () => {
     }]])).toEqual([])
   })
 
-  it('admits verified NJ and PA agency-publication pages by exact URL only', () => {
-    // Verified 2026-09-09: NJIT-12 and the PA gross-compensation guide are
-    // served from executive-branch portals too broad to list as publishers.
-    // Admission is the exact checked URL, not `nj.gov` or `pa.gov`.
+  it('admits the verified SC1040 publication without admitting neighboring resources', () => {
+    const url = 'https://dor.sc.gov/sites/dor/files/forms/SC1040Instr_2025.pdf'
+    const authority = { citation: '2025 SC1040 instructions, line o', url }
+    expect(offSourceAuthorities([['sc-fictional', {
+      jurisdiction: 'state:SC', authority: [authority],
+    }]])).toEqual([])
+    expect(stateRulesMissingStateAuthority([['sc-fictional', {
+      jurisdiction: 'state:SC', authority: [authority],
+    }]])).toEqual([])
+    for (const unverifiedUrl of [url.replace('2025', '2024'), `${url}?download=1`]) {
+      expect(offSourceAuthorities([['sc-fictional', {
+        jurisdiction: 'state:SC', authority: [{ ...authority, url: unverifiedUrl }],
+      }]])).toHaveLength(1)
+    }
+  })
+
+  it('admits verified NJ, OR, PA, and VA agency-publication pages by exact URL only', () => {
+    // Verified 2026-09-09: NJIT-12, OR-17 TY2025, the PA gross-compensation
+    // guide, and the Virginia Subtractions page are served from executive-branch
+    // portals too broad to list as publishers. Admission is the exact checked URL,
+    // not `nj.gov`, `oregon.gov`, `pa.gov`, or `tax.virginia.gov` as a host tier.
     const njNjit12 = {
       citation: 'New Jersey Division of Taxation, Exempt (Nontaxable) Income',
       url: 'https://www.nj.gov/treasury/taxation/njit12.shtml',
     }
+    const orOr17 = {
+      citation: 'Oregon Department of Revenue, 2025 Publication OR-17 (rev. 01-29-26), supplemental RRB benefits under OAR 150-316-0065',
+      url: 'https://www.oregon.gov/dor/forms/FormsPubs/publication-or-17_101-431_2025.pdf',
+    }
     const paGrossComp = {
       citation: 'Pennsylvania Department of Revenue, Personal Income Tax Guide — Gross Compensation, Income Items Never Taxable as PA Compensation',
       url: 'https://www.pa.gov/agencies/revenue/forms-and-publications/pa-personal-income-tax-guide/gross-compensation',
+    }
+    const vaSubtractions = {
+      citation: 'Virginia Department of Taxation, Subtractions — Tier 2 and other Railroad Retirement and Railroad Unemployment Benefits',
+      url: 'https://www.tax.virginia.gov/subtractions',
     }
     expect(offSourceAuthorities([['nj-fictional', {
       jurisdiction: 'state:NJ',
@@ -1771,6 +1811,22 @@ describe('tax rule registry conformance', () => {
       jurisdiction: 'state:PA',
       authority: [paGrossComp],
     }]])).toEqual([])
+    expect(offSourceAuthorities([['or-fictional', {
+      jurisdiction: 'state:OR',
+      authority: [orOr17],
+    }]])).toEqual([])
+    expect(stateRulesMissingStateAuthority([['or-fictional', {
+      jurisdiction: 'state:OR',
+      authority: [orOr17],
+    }]])).toEqual([])
+    expect(offSourceAuthorities([['va-fictional', {
+      jurisdiction: 'state:VA',
+      authority: [vaSubtractions],
+    }]])).toEqual([])
+    expect(stateRulesMissingStateAuthority([['va-fictional', {
+      jurisdiction: 'state:VA',
+      authority: [vaSubtractions],
+    }]])).toEqual([])
     expect(offSourceAuthorities([['pa-fictional', {
       jurisdiction: 'state:PA',
       authority: [njNjit12],
@@ -1787,6 +1843,14 @@ describe('tax rule registry conformance', () => {
       jurisdiction: 'federal',
       authority: [paGrossComp],
     }]])).toEqual(['irc-fictional-federal:Pennsylvania Department of Revenue, Personal Income Tax Guide — Gross Compensation, Income Items Never Taxable as PA Compensation:www.pa.gov'])
+    expect(offSourceAuthorities([['or-fictional', {
+      jurisdiction: 'state:OR',
+      authority: [vaSubtractions],
+    }]])).toEqual(['or-fictional:Virginia Department of Taxation, Subtractions — Tier 2 and other Railroad Retirement and Railroad Unemployment Benefits:www.tax.virginia.gov'])
+    expect(offSourceAuthorities([['va-fictional', {
+      jurisdiction: 'state:VA',
+      authority: [orOr17],
+    }]])).toEqual(['va-fictional:Oregon Department of Revenue, 2025 Publication OR-17 (rev. 01-29-26), supplemental RRB benefits under OAR 150-316-0065:www.oregon.gov'])
     expect(offSourceAuthorities([['nj-fictional', {
       jurisdiction: 'state:NJ',
       authority: [{
@@ -1815,6 +1879,34 @@ describe('tax rule registry conformance', () => {
         url: 'https://www.pa.gov/agencies/revenue/forms-and-publications/pa-personal-income-tax-guide/gross-compensation/',
       }],
     }]])).toEqual(['pa-fictional:Gross compensation with trailing slash:www.pa.gov'])
+    expect(offSourceAuthorities([['or-fictional', {
+      jurisdiction: 'state:OR',
+      authority: [{
+        citation: 'OR-17 neighboring publication path',
+        url: 'https://www.oregon.gov/dor/forms/FormsPubs/publication-or-17_101-431_2024.pdf',
+      }],
+    }]])).toEqual(['or-fictional:OR-17 neighboring publication path:www.oregon.gov'])
+    expect(offSourceAuthorities([['or-fictional', {
+      jurisdiction: 'state:OR',
+      authority: [{
+        citation: 'OR-17 with query suffix',
+        url: 'https://www.oregon.gov/dor/forms/FormsPubs/publication-or-17_101-431_2025.pdf?download=1',
+      }],
+    }]])).toEqual(['or-fictional:OR-17 with query suffix:www.oregon.gov'])
+    expect(offSourceAuthorities([['va-fictional', {
+      jurisdiction: 'state:VA',
+      authority: [{
+        citation: 'Subtractions with trailing slash',
+        url: 'https://www.tax.virginia.gov/subtractions/',
+      }],
+    }]])).toEqual(['va-fictional:Subtractions with trailing slash:www.tax.virginia.gov'])
+    expect(offSourceAuthorities([['va-fictional', {
+      jurisdiction: 'state:VA',
+      authority: [{
+        citation: 'Credential-smuggled Subtractions page',
+        url: 'https://www.tax.virginia.gov@evil.example/subtractions',
+      }],
+    }]])).toEqual(['va-fictional:Credential-smuggled Subtractions page:evil.example'])
     expect(offSourceAuthorities([['nj-fictional', {
       jurisdiction: 'state:NJ',
       authority: [{

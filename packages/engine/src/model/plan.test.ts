@@ -6,11 +6,17 @@ import {
   accountUnionSchema,
   equityCompAccountSchema,
   hsaAccountSchema,
+  incomeStreamSchema,
+  oneTimeIncomeSchema,
   parsePlan,
+  pensionSchema,
+  recurringIncomeSchema,
   rothAccountSchema,
+  socialSecurityIncomeSchema,
   stateForYear,
   stateResidencySegmentsForYear,
   traditionalAccountSchema,
+  wagesIncomeSchema,
   type Account,
   type InheritedAccount,
   type Plan,
@@ -2990,5 +2996,108 @@ describe('annualFederalTaxFacts', () => {
       },
     ]
     expect(parsePlan(plan).ok).toBe(true)
+  })
+})
+
+describe('benefit provenance schema vocabulary', () => {
+  const absentBenefitProvenanceFacts = [
+    'issuer',
+    'benefitSource',
+    'qualifyingPortion',
+    'railroad',
+    'militaryService',
+    'governmentPlan',
+    'payer',
+  ] as const
+
+  it('exposes only private/public pension source and the four income-stream types', () => {
+    expect(pensionSchema.shape.source.unwrap().options).toEqual(['private', 'public'])
+    expect(pensionSchema.shape.source.safeParse('private').success).toBe(true)
+    expect(pensionSchema.shape.source.safeParse('public').success).toBe(true)
+    expect(pensionSchema.shape.source.safeParse('federal').success).toBe(false)
+    expect(incomeStreamSchema.options.map((schema) => schema.shape.type.value)).toEqual([
+      'wages',
+      'socialSecurity',
+      'recurring',
+      'oneTime',
+    ])
+    for (const field of absentBenefitProvenanceFacts) {
+      expect(field in pensionSchema.shape).toBe(false)
+      for (const schema of incomeStreamSchema.options) {
+        expect(field in schema.shape).toBe(false)
+      }
+    }
+  })
+
+  it('parses complete control shapes without benefit-provenance fields', () => {
+    const plan = validCouplePlan()
+    plan.accounts.push({
+      type: 'pension',
+      id: 'pen-public',
+      name: 'Public pension',
+      ownerPersonId: 'p1',
+      annualReturnPct: null,
+      balance: 0,
+      startAge: 65,
+      monthlyAmount: 5_000,
+      colaPct: 0,
+      survivorPct: 0,
+      source: 'public',
+    } as Plan['accounts'][number])
+    plan.accounts.push({
+      type: 'pension',
+      id: 'pen-private',
+      name: 'Private pension',
+      ownerPersonId: 'p2',
+      annualReturnPct: null,
+      balance: 0,
+      startAge: 65,
+      monthlyAmount: 4_000,
+      colaPct: 0,
+      survivorPct: 0,
+      source: 'private',
+    } as Plan['accounts'][number])
+    plan.incomes = [
+      {
+        type: 'wages',
+        id: 'w1',
+        personId: 'p1',
+        annualGross: 80_000,
+        endAge: null,
+        realGrowthPct: 0,
+      },
+      {
+        type: 'socialSecurity',
+        id: 'ss1',
+        personId: 'p1',
+        piaMonthly: 2_500,
+        earnings: null,
+        claimAge: { years: 67, months: 0 },
+      },
+      {
+        type: 'recurring',
+        id: 'r1',
+        label: 'Consulting',
+        annualAmount: 12_000,
+        startYear: null,
+        endYear: null,
+        inflationAdjusted: false,
+        taxTreatment: 'ordinary',
+      },
+      {
+        type: 'oneTime',
+        id: 'o1',
+        label: 'Bonus',
+        year: 2027,
+        inflationAdjusted: false,
+        amount: 5_000,
+        taxTreatment: 'ordinary',
+      },
+    ]
+    expect(parsePlan(plan).ok).toBe(true)
+    expect(wagesIncomeSchema.safeParse(plan.incomes[0]).success).toBe(true)
+    expect(socialSecurityIncomeSchema.safeParse(plan.incomes[1]).success).toBe(true)
+    expect(recurringIncomeSchema.safeParse(plan.incomes[2]).success).toBe(true)
+    expect(oneTimeIncomeSchema.safeParse(plan.incomes[3]).success).toBe(true)
   })
 })

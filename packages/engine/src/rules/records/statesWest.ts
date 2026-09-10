@@ -1044,6 +1044,100 @@ export const westStateRecords = {
     ],
   },
 
+  'or-oar-150-316-0065-railroad-benefits-not-modeled': {
+    title: 'Oregon subtracts RRB-administered supplemental railroad benefits; the engine cannot certify payer or benefit type',
+    statement:
+      '2025 Publication OR-17 (rev. 01-29-26) for tax year 2025 states that administrative rule extended Oregon\'s railroad-benefit subtraction to supplemental Railroad Retirement Board benefits including Tier 2, windfall, vested dual, supplemental annuities, unemployment, and sickness under OAR 150-316-0065, and that there is no Oregon subtraction for retirement benefits paid by private railroad employers. Title II Social Security and tier 1 railroad retirement included under Internal Revenue Code section 86 remain at `or-stat-316-054-social-security-exclusion`. Out of scope: `incomeStreamSchema` has no railroad-retirement type, `pensionSchema` carries only a private-or-public `source` enum, and `StateTaxParams` / `StateRetirementExclusion` carry no Railroad Retirement Board payer or supplemental-benefit category — so no accepted ordinary, wages, pension, or `ssBenefits` input can identify RRB-administered Tier 2, windfall, vested-dual, supplemental-annuity, unemployment, or sickness dollars versus a private railroad-employer pension. Generic amounts entered through those channels are still priced under the pack\'s existing rules; the engine emits no law-specific refusal for this limb. This record quotes tax year 2025 Publication OR-17 only and does not extend that treatment to later years without a later source.',
+    classification: 'outOfScope',
+    outOfScope: {
+      shape: 'inexpressibleInput',
+      missingInputFacts: [
+        'a railroad-retirement income stream: incomeStreamSchema has no railroad-retirement type',
+        'U.S. Railroad Retirement Board payer or RRA Tier 2, windfall, vested-dual, supplemental-annuity, unemployment, or sickness category on pensionSchema, whose `source` enum is only private or public',
+      ],
+    },
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:OR',
+    authority: [{
+      kind: 'formInstruction',
+      citation: 'Oregon Department of Revenue, 2025 Publication OR-17 (rev. 01-29-26), title page',
+      url: 'https://www.oregon.gov/dor/forms/FormsPubs/publication-or-17_101-431_2025.pdf',
+      quotedText:
+        '2025 Publication OR-17 ... 150-101-431 (Rev. 01-29-26)',
+    }, {
+      kind: 'formInstruction',
+      citation: 'Oregon Department of Revenue, 2025 Publication OR-17 (rev. 01-29-26), supplemental RRB benefits under OAR 150-316-0065',
+      url: 'https://www.oregon.gov/dor/forms/FormsPubs/publication-or-17_101-431_2025.pdf',
+      quotedText:
+        'The subtraction has been extended by administrative rule to the other supplemental RRB benefits including Tier 2, windfall, vested dual, supplemental annuities, unemployment, and sickness (OAR 150-316-0065).',
+    }, {
+      kind: 'formInstruction',
+      citation: 'Oregon Department of Revenue, 2025 Publication OR-17 (rev. 01-29-26), private railroad-employer pensions',
+      url: 'https://www.oregon.gov/dor/forms/FormsPubs/publication-or-17_101-431_2025.pdf',
+      quotedText:
+        'There is no Oregon subtraction for retirement benefits paid by private railroad employers.',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2025,
+    effectiveThrough: 2025,
+    verifiedOn: '2026-09-09',
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/params/state/types.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#incomeStreamSchema',
+      'packages/engine/src/model/plan.ts#pensionSchema',
+      'packages/engine/src/params/state/types.ts#StateTaxParams',
+    ],
+  },
+
+  'ut-code-59-10-114-2-d-railroad-benefits-not-modeled': {
+    title: 'Utah subtracts qualifying Railroad Retirement Act of 1974 benefits included in federal AGI; the engine cannot identify them',
+    statement:
+      'The quoted Utah Code §59-10-114(2)(d) version effective October 14, 2025 subtracts from adjusted gross income the amount of a railroad retirement benefit paid in accordance with the Railroad Retirement Act of 1974 to a resident or nonresident individual for the taxable year, to the extent that benefit is included in adjusted gross income on the individual\'s federal return for that year. That October 14 date is the quoted edition\'s effective date, not the original enactment of the railroad exclusion. That subtraction is distinct from the Social Security benefits credit registered at `ut-code-59-10-114-social-security-tax-credit`. Out of scope: `incomeStreamSchema` has no railroad-retirement type, `pensionSchema` does not carry RRA 1974 payer or federal-AGI inclusion facts, and `StateTaxParams` / `StateRetirementExclusion` carry no railroad-retirement provenance — so no accepted ordinary, wages, public or private pension, or `ssBenefits` input can identify the qualifying railroad retirement subtraction. Generic amounts entered through those channels are still priced under the pack\'s existing rules; the engine emits no law-specific refusal for this limb.',
+    classification: 'outOfScope',
+    outOfScope: {
+      shape: 'inexpressibleInput',
+      missingInputFacts: [
+        'a railroad retirement benefit paid under the Railroad Retirement Act of 1974 to the extent included in federal adjusted gross income: incomeStreamSchema has no railroad-retirement type',
+        'RRA 1974 payer or federal-AGI inclusion facts on pensionSchema, whose `source` enum is only private or public',
+      ],
+    },
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:UT',
+    authority: [{
+      kind: 'statute',
+      citation: 'Utah Code §59-10-114, edition effective 10/14/2025',
+      url: 'https://le.utah.gov/xcode/Title59/Chapter10/C59-10-S114_2025101420251206.pdf',
+      quotedText:
+        'Effective 10/14/2025 59-10-114 Additions to and subtractions from adjusted gross income of an individual.',
+    }, {
+      kind: 'statute',
+      citation: 'Utah Code §59-10-114(2)(d)',
+      url: 'https://le.utah.gov/xcode/Title59/Chapter10/C59-10-S114_2025101420251206.pdf',
+      quotedText:
+        '(d) the amount of a railroad retirement benefit: (i) paid: (A) in accordance with The Railroad Retirement Act of 1974, 45 U.S.C. Sec. 231 et seq.; (B) to a resident or nonresident individual; and (C) for the taxable year; and (ii) to the extent that railroad retirement benefit is included in adjusted gross income on that resident or nonresident individual\'s federal individual income tax return for that taxable year;',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2025,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-09',
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/params/state/types.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#incomeStreamSchema',
+      'packages/engine/src/model/plan.ts#pensionSchema',
+      'packages/engine/src/params/state/types.ts#StateTaxParams',
+    ],
+  },
+
   'ut-code-59-10-104-2026-individual-rate': {
     title: 'Utah taxes resident individuals at 4.45% for tax years beginning in 2026',
     statement:

@@ -56,16 +56,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2479,
+          "line": 2614,
           "note": null,
           "tests": [
             {
               "title": "pins the pack’s failure to subtract the low-income federally taxable benefit",
-              "line": 2506
+              "line": 2641
             },
             {
               "title": "pins the pack’s unconditional pension exclusion above the statutory schedule",
-              "line": 2519
+              "line": 2654
             }
           ]
         }
@@ -208,16 +208,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2970,
+          "line": 3105,
           "note": null,
           "tests": [
             {
               "title": "deducts Social Security included in federal gross income",
-              "line": 2984
+              "line": 3119
             },
             {
               "title": "would leave the federally taxable share in if the deduction were dropped",
-              "line": 2989
+              "line": 3124
             }
           ]
         }
@@ -284,12 +284,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 1123,
+          "line": 1258,
           "note": null,
           "tests": [
             {
               "title": "pins the current flat cap against gross Social Security offset and agesAlive doubling the pack still omits",
-              "line": 1217
+              "line": 1352
             }
           ]
         }
@@ -402,16 +402,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 952,
+          "line": 1087,
           "note": null,
           "tests": [
             {
               "title": "subtracts Maine published basic plus the IRC 63(c)(3) age-65 addition",
-              "line": 1048
+              "line": 1183
             },
             {
               "title": "holds Maine’s basic deduction still as the federal figure is projected upward",
-              "line": 1099
+              "line": 1234
             }
           ]
         }
@@ -602,16 +602,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3187,
+          "line": 3322,
           "note": null,
           "tests": [
             {
               "title": "leaves a New Hampshire retiree with no state base at all",
-              "line": 3208
+              "line": 3343
             },
             {
               "title": "would build a base if Chapter 77 were still in force",
-              "line": 3213
+              "line": 3348
             }
           ]
         }
@@ -790,6 +790,91 @@
       ]
     },
     {
+      "id": "ny-dtf-qualified-government-pension-full-subtraction",
+      "title": "DTF allows a full subtraction for qualifying New York State, local, or federal-government pension when correctly routed",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:NY",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-09",
+      "dueOn": "2027-09-09",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "PUBLIC_PENSION_OVERRIDES",
+              "line": 64
+            },
+            {
+              "name": "states.NY",
+              "line": 632
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 96
+            },
+            {
+              "name": "retirementExclusion",
+              "line": 47
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 496,
+          "note": null,
+          "tests": [
+            {
+              "title": "subtracts the full qualifying public pension without the private age gate",
+              "line": 510
+            },
+            {
+              "title": "yields zero state taxable income for pension-only public income at age 70",
+              "line": 526
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "New York State Department of Taxation and Finance, Information for retired persons — Pensions of New York State, local governments, and the federal government",
+          "url": "https://www.tax.ny.gov/pit/file/information_for_seniors.htm"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "New York State Department of Taxation and Finance, Information for retired persons — federal government pensions including military",
+          "url": "https://www.tax.ny.gov/pit/file/information_for_seniors.htm"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "New York State Department of Taxation and Finance, Information for retired persons — Optional Retirement Program limitation",
+          "url": "https://www.tax.ny.gov/pit/file/information_for_seniors.htm"
+        }
+      ]
+    },
+    {
       "id": "ny-dtf-social-security-subtraction",
       "title": "DTF allows federally included Social Security to be subtracted in New York adjusted gross income",
       "classification": "settled",
@@ -848,6 +933,167 @@
         {
           "kind": "stateAgencyPublication",
           "citation": "New York State Department of Taxation and Finance, Information for retired persons — Social Security",
+          "url": "https://www.tax.ny.gov/pit/file/information_for_seniors.htm"
+        }
+      ]
+    },
+    {
+      "id": "ny-government-pension-issuer-qualification-not-modeled",
+      "title": "New York subtracts qualifying governmental pensions only, but the coarse public bucket removes every `publicPensionIncome` dollar",
+      "classification": "approximated",
+      "errorDirection": "understatesTax",
+      "conventionRationale": "The public bucket is one `{ kind: 'full' }` flag because `pensionSchema.source` carries no issuer, plan, or ORP portion facts and `annualPensionAndAnnuityIncome` routes explicit `source: 'public'` to `publicPensionIncome` without validating them. The pin uses the 2026 observed model window — baseline ordinary income $90,000 at age 40, scenario ordinary income $150,000 with $60,000 routed `publicPensionIncome` — not a new enactment. Absolute totals of $82,000 in both limbs on main are a routing observation, not the legal oracle.",
+      "contraryReading": "Department guidance ties the full subtraction to qualifying New York State, local, or federal-government issuers and, for Optional Retirement Program members, to the employment-attributable portion only. A $60,000 ORP distribution fully included in federal adjusted gross income but entirely outside SUNY, CUNY, or New York State Education Department employment adds $60,000 to New York adjusted gross income relative to the same household without that distribution; age 40 keeps the private $20,000 exclusion from applying.",
+      "jurisdiction": "state:NY",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-09",
+      "dueOn": "2027-09-09",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/params/state/types.ts",
+        "packages/engine/src/projection/internal/annualPensionAndAnnuityIncome.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "pensionSchema",
+              "line": 1055
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "PUBLIC_PENSION_OVERRIDES",
+              "line": 64
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/types.ts",
+          "functions": [
+            {
+              "name": "StateRetirementExclusion",
+              "line": 32
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/internal/annualPensionAndAnnuityIncome.ts",
+          "functions": [
+            {
+              "name": "annualPensionAndAnnuityIncome",
+              "line": 126
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "retirementExclusion",
+              "line": 47
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 563,
+          "note": null,
+          "tests": [
+            {
+              "title": "pins the coarse public bucket that subtracts without issuer or ORP portion checks",
+              "line": 571
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "New York State Department of Taxation and Finance, Information for retired persons — Pensions of New York State, local governments, and the federal government",
+          "url": "https://www.tax.ny.gov/pit/file/information_for_seniors.htm"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "New York State Department of Taxation and Finance, Information for retired persons — federal government pensions including military",
+          "url": "https://www.tax.ny.gov/pit/file/information_for_seniors.htm"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "New York State Department of Taxation and Finance, Information for retired persons — Optional Retirement Program limitation",
+          "url": "https://www.tax.ny.gov/pit/file/information_for_seniors.htm"
+        }
+      ]
+    },
+    {
+      "id": "ny-it225-s122-non-ss-railroad-benefits-not-modeled",
+      "title": "New York subtracts non-Tier-1 railroad benefits on IT-225 S-122; the engine cannot identify them",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:NY",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-09",
+      "dueOn": "2027-09-09",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/params/state/types.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "incomeStreamSchema",
+              "line": 1678
+            },
+            {
+              "name": "pensionSchema",
+              "line": 1055
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/types.ts",
+          "functions": [
+            {
+              "name": "StateTaxParams",
+              "line": 40
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "New York State Department of Taxation and Finance, Information for retired persons — Railroad Retirement benefits (IT-225 code S-122)",
+          "url": "https://www.tax.ny.gov/pit/file/information_for_seniors.htm"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "New York State Department of Taxation and Finance, Information for retired persons — Social Security equivalent Railroad Retirement benefits",
           "url": "https://www.tax.ny.gov/pit/file/information_for_seniors.htm"
         }
       ]
@@ -1128,12 +1374,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 486,
+          "line": 621,
           "note": null,
           "tests": [
             {
               "title": "never taxes Social Security payments as Pennsylvania compensation",
-              "line": 505
+              "line": 640
             }
           ]
         }
@@ -1145,6 +1391,74 @@
           "kind": "stateAgencyPublication",
           "citation": "Pennsylvania Department of Revenue, Personal Income Tax Guide — Gross Compensation, Income Items Never Taxable as PA Compensation",
           "url": "https://www.pa.gov/agencies/revenue/forms-and-publications/pa-personal-income-tax-guide/gross-compensation"
+        }
+      ]
+    },
+    {
+      "id": "ri-code-44-30-12-c-11-military-pension-not-modeled",
+      "title": "Rhode Island exempts qualifying military-service pensions under §44-30-12(c)(11); the engine cannot certify military source or portion",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:RI",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2023,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-09",
+      "dueOn": "2027-09-09",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/params/state/types.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "incomeStreamSchema",
+              "line": 1678
+            },
+            {
+              "name": "pensionSchema",
+              "line": 1055
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/types.ts",
+          "functions": [
+            {
+              "name": "StateTaxParams",
+              "line": 40
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Rhode Island Division of Taxation, Retirement Income Tax Guide, Section 2: Military Service Pension Modification (Publication 2026-01, tax year 2025)",
+          "url": "https://tax.ri.gov/sites/g/files/xkgbur541/files/2026-02/PUB_2026-01_Retirement_Income_Guide.pdf"
+        },
+        {
+          "kind": "statute",
+          "citation": "R.I. Gen. Laws §44-30-12(c)(11)(i)(A)",
+          "url": "https://webserver.rilegislature.gov/Statutes/TITLE44/44-30/44-II/44-30-12.htm"
+        },
+        {
+          "kind": "statute",
+          "citation": "R.I. Gen. Laws §44-30-12(c)(11)(ii)",
+          "url": "https://webserver.rilegislature.gov/Statutes/TITLE44/44-30/44-II/44-30-12.htm"
+        },
+        {
+          "kind": "statute",
+          "citation": "R.I. Gen. Laws §44-30-12(c)(11)(iii)",
+          "url": "https://webserver.rilegislature.gov/Statutes/TITLE44/44-30/44-II/44-30-12.htm"
         }
       ]
     },
@@ -1195,12 +1509,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3525,
+          "line": 3660,
           "note": null,
           "tests": [
             {
               "title": "prices single and joint filers on the TY2026 deduction and schedule",
-              "line": 3540
+              "line": 3675
             }
           ]
         }
@@ -1277,34 +1591,34 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3552,
+          "line": 3687,
           "note": "Social Security AGI threshold limb",
           "tests": [
             {
               "title": "pins the low-AGI age-qualified Social Security modification",
-              "line": 3567
+              "line": 3702
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3574,
+          "line": 3709,
           "note": "pension ceiling limb",
           "tests": [
             {
               "title": "pins the current pension ceiling rather than the stale pack cap",
-              "line": 3593
+              "line": 3728
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3600,
+          "line": 3735,
           "note": "pension AGI-threshold limb",
           "tests": [
             {
               "title": "pins the opposite direction when the pension AGI test disallows any modification",
-              "line": 3620
+              "line": 3755
             }
           ]
         }
@@ -1341,6 +1655,69 @@
           "kind": "statute",
           "citation": "R.I. Gen. Laws §44-30-12(c)(9)(i)(B)",
           "url": "https://webserver.rilegislature.gov/Statutes/TITLE44/44-30/44-II/44-30-12.htm"
+        }
+      ]
+    },
+    {
+      "id": "ri-schedule-m-1d-railroad-benefits-not-modeled",
+      "title": "Rhode Island exempts federally included 1974 Railroad Retirement benefits on Schedule M line 1d; the engine cannot identify them",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:RI",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2025,
+      "effectiveThrough": 2025,
+      "verifiedOn": "2026-09-09",
+      "dueOn": "2027-01-07",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/params/state/types.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "incomeStreamSchema",
+              "line": 1678
+            },
+            {
+              "name": "pensionSchema",
+              "line": 1055
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/types.ts",
+          "functions": [
+            {
+              "name": "StateTaxParams",
+              "line": 40
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "formInstruction",
+          "citation": "Rhode Island Division of Taxation, 2025 RI-1040 Resident booklet instructions, title page",
+          "url": "https://tax.ri.gov/sites/g/files/xkgbur541/files/2025-12/2025%201040R%20Instructions%20122025.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "Rhode Island Division of Taxation, 2025 RI-1040 Resident booklet instructions, Schedule M line 1d",
+          "url": "https://tax.ri.gov/sites/g/files/xkgbur541/files/2025-12/2025%201040R%20Instructions%20122025.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "Rhode Island Division of Taxation, 2025 RI Schedule M, line 1d",
+          "url": "https://tax.ri.gov/sites/g/files/xkgbur541/files/2026-01/2025%20RI%20Schedule%20M_w.pdf"
         }
       ]
     },
@@ -1387,20 +1764,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3653,
+          "line": 3788,
           "note": null,
           "tests": [
             {
               "title": "pins Vermont's complete low-AGI Social Security exclusion",
-              "line": 3678
+              "line": 3813
             },
             {
               "title": "pins the single mid-band proportional Social Security exclusion",
-              "line": 3687
+              "line": 3822
             },
             {
               "title": "pins the joint mid-band proportional Social Security exclusion",
-              "line": 3693
+              "line": 3828
             }
           ]
         }

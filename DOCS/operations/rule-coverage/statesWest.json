@@ -46,16 +46,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 1283,
+          "line": 1418,
           "note": null,
           "tests": [
             {
               "title": "leaves an Alaska individual outside the chapter that does impose a tax",
-              "line": 1305
+              "line": 1440
             },
             {
               "title": "would carry the whole of it if the exclusion in 43.20.012(a) were not there",
-              "line": 1310
+              "line": 1445
             }
           ]
         }
@@ -118,16 +118,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 1714,
+          "line": 1849,
           "note": null,
           "tests": [
             {
               "title": "charges one rate on the whole Arizona base",
-              "line": 1728
+              "line": 1863
             },
             {
               "title": "applies the same rate to a joint return, since the paragraph is status-blind",
-              "line": 1733
+              "line": 1868
             }
           ]
         }
@@ -195,16 +195,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 1790,
+          "line": 1925,
           "note": null,
           "tests": [
             {
               "title": "leaves a high-income Arizonan’s Social Security out of the state base",
-              "line": 1805
+              "line": 1940
             },
             {
               "title": "would pull the federally taxable share in if Arizona taxed it",
-              "line": 1809
+              "line": 1944
             }
           ]
         }
@@ -455,16 +455,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 1819,
+          "line": 1954,
           "note": null,
           "tests": [
             {
               "title": "takes the whole military pension out of an Arizona base",
-              "line": 1833
+              "line": 1968
             },
             {
               "title": "would tax all 45,000 of it if the public bucket carried no exclusion",
-              "line": 1838
+              "line": 1973
             }
           ]
         }
@@ -531,16 +531,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 1844,
+          "line": 1979,
           "note": null,
           "tests": [
             {
               "title": "taxes an Arizona IRA or private pension distribution in full",
-              "line": 1860
+              "line": 1995
             },
             {
               "title": "does not let the public bucket’s exclusion spill onto it",
-              "line": 1865
+              "line": 2000
             }
           ]
         }
@@ -700,16 +700,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 1744,
+          "line": 1879,
           "note": null,
           "tests": [
             {
               "title": "deducts Arizona’s published amount and adds no federal age-65 amount",
-              "line": 1762
+              "line": 1897
             },
             {
               "title": "would take the federal figure and the federal age-65 addition if it were tagged",
-              "line": 1770
+              "line": 1905
             }
           ]
         }
@@ -782,12 +782,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2206,
+          "line": 2341,
           "note": null,
           "tests": [
             {
               "title": "maps the supported single and MFJ deduction cells to California taxable income",
-              "line": 2215
+              "line": 2350
             }
           ]
         }
@@ -845,12 +845,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2232,
+          "line": 2367,
           "note": null,
           "tests": [
             {
               "title": "omits California Social Security from the taxable base",
-              "line": 2248
+              "line": 2383
             }
           ]
         }
@@ -928,12 +928,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2337,
+          "line": 2472,
           "note": "age-55-through-64 pension-and-annuity limb",
           "tests": [
             {
               "title": "pins the missing Colorado age-60 retirement subtraction",
-              "line": 2354
+              "line": 2489
             }
           ]
         }
@@ -1006,12 +1006,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2369,
+          "line": 2504,
           "note": "age-65 Social Security limb",
           "tests": [
             {
               "title": "pins the Colorado age-65 Social Security subtraction the pack misses",
-              "line": 2386
+              "line": 2521
             }
           ]
         }
@@ -1069,12 +1069,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2618,
+          "line": 2753,
           "note": null,
           "tests": [
             {
               "title": "deducts the TY2026 standard deduction before the first bracket",
-              "line": 2630
+              "line": 2765
             }
           ]
         }
@@ -1151,12 +1151,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2648,
+          "line": 2783,
           "note": null,
           "tests": [
             {
               "title": "pins the unmodelled Hawaii private-pension exclusion",
-              "line": 2663
+              "line": 2798
             }
           ]
         }
@@ -1224,12 +1224,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2674,
+          "line": 2809,
           "note": null,
           "tests": [
             {
               "title": "deducts Idaho’s federally included Social Security amount",
-              "line": 2690
+              "line": 2825
             }
           ]
         }
@@ -1287,27 +1287,27 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3081,
+          "line": 3216,
           "note": "age-65 additional subtraction, 15-30-2120(3)(g) floor",
           "tests": [
             {
               "title": "pins the missing Montana age-65 subtraction",
-              "line": 3101
+              "line": 3236
             },
             {
               "title": "grants nothing below 65 under either reading",
-              "line": 3106
+              "line": 3241
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3124,
+          "line": 3259,
           "note": "per-taxpayer doubling for a couple both 65",
           "tests": [
             {
               "title": "pins the missing per-taxpayer doubling for a couple both 65",
-              "line": 3142
+              "line": 3277
             }
           ]
         }
@@ -1385,20 +1385,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3037,
+          "line": 3172,
           "note": null,
           "tests": [
             {
               "title": "starts Montana from federal taxable income, so federally taxable Social Security stays in",
-              "line": 3056
+              "line": 3191
             },
             {
               "title": "would drop the benefit if Montana subtracted it the way a false flag does",
-              "line": 3062
+              "line": 3197
             },
             {
               "title": "carries the federal standard deduction with it, not a frozen state figure",
-              "line": 3068
+              "line": 3203
             }
           ]
         }
@@ -1486,12 +1486,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3221,
+          "line": 3356,
           "note": null,
           "tests": [
             {
               "title": "pins the high-income path where the blanket pack exclusion diverges from the source threshold",
-              "line": 3236
+              "line": 3371
             }
           ]
         }
@@ -1549,16 +1549,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 525,
+          "line": 660,
           "note": null,
           "tests": [
             {
               "title": "leaves a Nevada retiree with no state base at all",
-              "line": 542
+              "line": 677
             },
             {
               "title": "would carry the pension and IRA income under the narrower reading",
-              "line": 547
+              "line": 682
             }
           ]
         }
@@ -1671,6 +1671,69 @@
       ]
     },
     {
+      "id": "or-oar-150-316-0065-railroad-benefits-not-modeled",
+      "title": "Oregon subtracts RRB-administered supplemental railroad benefits; the engine cannot certify payer or benefit type",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:OR",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2025,
+      "effectiveThrough": 2025,
+      "verifiedOn": "2026-09-09",
+      "dueOn": "2027-01-07",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/params/state/types.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "incomeStreamSchema",
+              "line": 1678
+            },
+            {
+              "name": "pensionSchema",
+              "line": 1055
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/types.ts",
+          "functions": [
+            {
+              "name": "StateTaxParams",
+              "line": 40
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "formInstruction",
+          "citation": "Oregon Department of Revenue, 2025 Publication OR-17 (rev. 01-29-26), title page",
+          "url": "https://www.oregon.gov/dor/forms/FormsPubs/publication-or-17_101-431_2025.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "Oregon Department of Revenue, 2025 Publication OR-17 (rev. 01-29-26), supplemental RRB benefits under OAR 150-316-0065",
+          "url": "https://www.oregon.gov/dor/forms/FormsPubs/publication-or-17_101-431_2025.pdf"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "Oregon Department of Revenue, 2025 Publication OR-17 (rev. 01-29-26), private railroad-employer pensions",
+          "url": "https://www.oregon.gov/dor/forms/FormsPubs/publication-or-17_101-431_2025.pdf"
+        }
+      ]
+    },
+    {
       "id": "or-stat-316-054-social-security-exclusion",
       "title": "Oregon subtracts federally taxable Social Security from federal taxable income",
       "classification": "settled",
@@ -1713,12 +1776,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3499,
+          "line": 3634,
           "note": null,
           "tests": [
             {
               "title": "subtracts federally taxable Social Security as ORS 316.054 directs",
-              "line": 3512
+              "line": 3647
             }
           ]
         }
@@ -1776,12 +1839,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3456,
+          "line": 3591,
           "note": null,
           "tests": [
             {
               "title": "applies the enacted 4.45% flat rate to ordinary income",
-              "line": 3464
+              "line": 3599
             }
           ]
         }
@@ -1803,6 +1866,64 @@
           "kind": "statute",
           "citation": "2026 Utah S.B. 60, enrolled, §§4-5",
           "url": "https://le.utah.gov/~2026/bills/sbillenr/SB0060.pdf"
+        }
+      ]
+    },
+    {
+      "id": "ut-code-59-10-114-2-d-railroad-benefits-not-modeled",
+      "title": "Utah subtracts qualifying Railroad Retirement Act of 1974 benefits included in federal AGI; the engine cannot identify them",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:UT",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2025,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-09",
+      "dueOn": "2027-09-09",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/params/state/types.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "incomeStreamSchema",
+              "line": 1678
+            },
+            {
+              "name": "pensionSchema",
+              "line": 1055
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/state/types.ts",
+          "functions": [
+            {
+              "name": "StateTaxParams",
+              "line": 40
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "Utah Code §59-10-114, edition effective 10/14/2025",
+          "url": "https://le.utah.gov/xcode/Title59/Chapter10/C59-10-S114_2025101420251206.pdf"
+        },
+        {
+          "kind": "statute",
+          "citation": "Utah Code §59-10-114(2)(d)",
+          "url": "https://le.utah.gov/xcode/Title59/Chapter10/C59-10-S114_2025101420251206.pdf"
         }
       ]
     },
@@ -1849,12 +1970,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3473,
+          "line": 3608,
           "note": null,
           "tests": [
             {
               "title": "pins the unmodeled Utah Social Security benefits credit",
-              "line": 3492
+              "line": 3627
             }
           ]
         }
@@ -1922,12 +2043,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3778,
+          "line": 3913,
           "note": null,
           "tests": [
             {
               "title": "keeps Washington out of the broad state-income-tax path",
-              "line": 3797
+              "line": 3932
             }
           ]
         }
@@ -2074,16 +2195,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 1406,
+          "line": 1541,
           "note": null,
           "tests": [
             {
               "title": "leaves a Wyoming retiree with no state base at all",
-              "line": 1425
+              "line": 1560
             },
             {
               "title": "would build a base if chapter 12 imposed as well as preempted",
-              "line": 1430
+              "line": 1565
             }
           ]
         }
