@@ -64,7 +64,7 @@ GitHub Actions builds production on pushes to `main`; the Azure preview workflow
 | `lint` | Root `pnpm install --frozen-lockfile` + `pnpm lint` (engine, planner-ui, and app) |
 | `test engine`, `test planner-ui`, `test web` → `test` | Independent workspace coverage jobs run in parallel; the fail-closed aggregate keeps the required `test` context |
 | `e2e` | Playwright browser smoke/layout specs (`pnpm test:e2e` in `app/`) |
-| `build` | Runs with lint/tests/e2e after authorization; `pnpm build` → `app/dist/` (artifact retained 1 day) |
+| `build` | Runs with lint/tests/e2e after authorization; `pnpm build` → `app/dist/`, then Playwright against that build (`pnpm test:e2e:dist`); artifact retained 1 day |
 | `deploy` | Uploads `app/dist` to **Azure Static Web Apps** (`skip_app_build: true`) only after every authorized prerequisite passes |
 | `dast` | PR previews only — calls the ZAP workflow against the deployed preview URL |
 | `close_pull_request` | Tears down the SWA preview environment when a PR is closed |

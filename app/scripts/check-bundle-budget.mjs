@@ -32,6 +32,7 @@ import {
   evaluateBudget,
   parseLandingScripts,
   parsePrecacheUrls,
+  staticImportCycles,
   workerEntryImporters,
 } from './bundleBudget.mjs'
 
@@ -104,14 +105,27 @@ for (const row of result.rows) {
   console.log(`  ${row.size.toFixed(1).padStart(8)} / ${String(row.max).padStart(5)}  ${pct.padStart(4)}%  ${row.label}${name}`)
 }
 
-const workerGraph = workerEntryImporters(
-  listAssets()
-    .filter((asset) => asset.name.endsWith('.js'))
-    .map((asset) => ({
-      name: asset.name,
-      source: readFileSync(join(assetsDir, asset.name), 'utf8'),
-    })),
-)
+const jsChunks = listAssets()
+  .filter((asset) => asset.name.endsWith('.js'))
+  .map((asset) => ({
+    name: asset.name,
+    source: readFileSync(join(assetsDir, asset.name), 'utf8'),
+  }))
+
+// Any static import cycle among emitted chunks, app or worker graph. A cycle
+// evaluates one chunk's top level before the chunk it imports from has run;
+// whether that throws (the worker, #672) or silently reads `undefined` (the
+// app graph's funding phase tolerance) depends on how Rolldown lowered the
+// binding, so neither form is allowed.
+const chunkCycles = staticImportCycles(jsChunks)
+for (const cycle of chunkCycles) {
+  result.failures.push(
+    `chunk import cycle: ${cycle.join(' <-> ')} (a chunk in a cycle can evaluate before the chunk it imports from — ` +
+      'drop the explicit-only codeSplitting group that created it; see DOCS/operations/bundle-budget.md)',
+  )
+}
+
+const workerGraph = workerEntryImporters(jsChunks)
 if (workerGraph.importers === null) {
   result.failures.push(
     'could not find planner.worker-*.js in dist/assets, so the worker import cycle is unmeasured',
@@ -139,6 +153,9 @@ if (result.failures.length > 0) {
   for (const failure of result.failures) console.log(`  - ${failure}`)
 } else {
   console.log('bundle budget OK')
+  if (chunkCycles.length === 0) {
+    console.log(`chunk graph: no static import cycle among ${jsChunks.length} chunks`)
+  }
   if (workerGraph.importers !== null && workerGraph.importers.length === 0) {
     console.log('worker graph: no isolated chunk imports the worker entry')
   }

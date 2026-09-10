@@ -41,7 +41,8 @@ app/
 ├── index.html
 ├── scripts/               local Node/Vite-backed tooling (`cases.mjs`, `owl-parity.mjs`, `check-bundle-budget.mjs` + `bundleBudget.mjs`, `check-css-clamp.mjs` + `cssClamp.mjs` (post-build: the plan-card name clamp survived CSS minification, #533), sitemap generator + `sitemapRoutes.mjs`, license notices; the three Vite-SSR scripts share `viteSsr.mjs`)
 ├── public/                staticwebapp.config.json (SPA fallback), import-feature.json (no-store file-import incident switch), PWA manifest/icons
-├── e2e/                   Playwright browser specs
+├── e2e/                   Playwright browser specs (dev server; playwright.config.ts)
+├── e2e-dist/              Playwright specs against `vite preview` of a built `dist/` (playwright.dist.config.ts; `pnpm test:e2e:dist`)
 └── src/                   host source (below)
 ```
 
@@ -228,5 +229,5 @@ text-extraction accuracy report (per-field precision/recall over a hand-built sy
 [features/document-parsing-spike.md](features/document-parsing-spike.md); the extractor's design record is
 [features/document-text-extraction.md](features/document-text-extraction.md).
 
-App-only (run from `app/`): `pnpm test:e2e` (Playwright specs in `e2e/`), `pnpm preview`
+App-only (run from `app/`): `pnpm test:e2e` (Playwright specs in `e2e/` against the dev server), `pnpm test:e2e:dist` (Playwright specs in `e2e-dist/` against `vite preview` of an existing build), `pnpm preview`
 (serve the built `dist/`), `pnpm run licenses`.

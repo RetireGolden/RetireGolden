@@ -19,8 +19,20 @@ const plannerUiSrc = fileURLToPath(new URL('../packages/planner-ui/src', import.
 // right below, turns that into a loud config-load failure; app/scripts/viteChunkModules.test.mjs
 // re-checks the same bare filenames against disk from source text, so a
 // rename also fails `pnpm test`, without needing a build.
-const ANNUAL_PROJECTION_SETTLEMENT_MODULE_NAME = 'annualOwnedNonRothIraSettlementPhase.ts'
-const ANNUAL_PROJECTION_FUNDING_CLOSE_MODULE_NAME = 'annualFundingApplicationAndClosePhase.ts'
+//
+// Only pure kernels and the publication coordinator are split out. The
+// funding/year-close and owned-IRA settlement coordinators used to have
+// explicit-only chunks (`includeDependenciesRecursively: false`) in the app
+// graph; that put them in a static import cycle with the `useProjection`
+// core chunk, and Rolldown lowers top-level `const` to `var`, so a
+// module-level alias of an imported constant evaluated to `undefined`
+// before the core chunk ran — no crash, just every tolerance comparison in
+// the funding phase reading false in production (spurious "could not
+// reconcile" notes, gross ACA premium, and no depletion year on the Results
+// page). The worker graph had already dropped them for the same cycle
+// (#672, a TDZ crash there). Both graphs now share one group list, and
+// scripts/check-bundle-budget.mjs fails the build on any static import
+// cycle among dist/assets chunks.
 const ANNUAL_PROJECTION_PUBLICATION_MODULE_NAME = 'annualAcaResultPublication.ts'
 const ANNUAL_PROJECTION_KERNEL_MODULE_NAMES = [
   'annualFundingFixedPoint.ts',
@@ -37,8 +49,6 @@ const ANNUAL_PROJECTION_KERNEL_MODULE_NAMES = [
 ] as const
 
 const PROJECTION_INTERNAL_CHUNK_MODULE_NAMES: readonly string[] = [
-  ANNUAL_PROJECTION_SETTLEMENT_MODULE_NAME,
-  ANNUAL_PROJECTION_FUNDING_CLOSE_MODULE_NAME,
   ANNUAL_PROJECTION_PUBLICATION_MODULE_NAME,
   ...ANNUAL_PROJECTION_KERNEL_MODULE_NAMES,
 ]
@@ -60,9 +70,6 @@ function assertProjectionInternalChunkModulesExist(): void {
   }
 }
 assertProjectionInternalChunkModulesExist()
-
-const annualProjectionSettlementModule = projectionInternalModulePath(ANNUAL_PROJECTION_SETTLEMENT_MODULE_NAME)
-const annualProjectionFundingCloseModule = projectionInternalModulePath(ANNUAL_PROJECTION_FUNDING_CLOSE_MODULE_NAME)
 
 const annualProjectionCoordinatorChunk = (id: string): string | null => {
   if (id.endsWith(projectionInternalModulePath(ANNUAL_PROJECTION_PUBLICATION_MODULE_NAME))) {
@@ -87,36 +94,12 @@ type ViteCodeSplitting = Exclude<
   boolean
 >
 
+// Shared by the app and worker graphs. Kernels and publications carry their
+// dependency graphs with them (`includeDependenciesRecursively: true`), so
+// they never import the chunk that imports them. Explicit-only groups for
+// mid-graph coordinators are what created the cycle described above; do not
+// add one back without a cycle-free build to show for it.
 const annualProjectionCodeSplitting = {
-  groups: [
-    {
-      name: 'annualProjectionFundingClose',
-      test: (id: string) => id.endsWith(annualProjectionFundingCloseModule),
-      priority: 1,
-      includeDependenciesRecursively: false,
-    },
-    {
-      name: 'annualProjectionSettlement',
-      test: (id: string) => id.endsWith(annualProjectionSettlementModule),
-      priority: 1,
-      includeDependenciesRecursively: false,
-    },
-    {
-      name: annualProjectionCoordinatorChunk,
-      includeDependenciesRecursively: true,
-    },
-  ],
-} satisfies ViteCodeSplitting
-
-// The worker graph cannot use the two isolated coordinator groups above.
-// Those files (`includeDependenciesRecursively: false`) keep their remaining
-// value imports in the worker entry, then import the entry — a circular ES
-// module graph. Production minifies one of those live bindings to `oe` and
-// TDZ-crashes on first spawn: "Cannot access 'oe' before initialization"
-// (#672, Design QA on Monte Carlo and both Optimize-rail routes:
-// /plan/:id/monte-carlo, /plan/:id/spending-solver, /plan/:id/optimize).
-// Kernels and publications stay split: they do not import the worker entry.
-const workerAnnualProjectionCodeSplitting = {
   groups: [
     {
       name: annualProjectionCoordinatorChunk,
@@ -162,12 +145,11 @@ export default defineConfig({
   worker: {
     // The sole worker is already spawned as `type: 'module'`. ES output lets
     // kernels and publications stay small static chunks, matching the app
-    // graph. Isolated funding/settlement coordinators stay in the worker
-    // entry — see workerAnnualProjectionCodeSplitting.
+    // graph. Same group list as the app graph — see annualProjectionCodeSplitting.
     format: 'es',
     rolldownOptions: {
       output: {
-        codeSplitting: workerAnnualProjectionCodeSplitting,
+        codeSplitting: annualProjectionCodeSplitting,
       },
     },
   },

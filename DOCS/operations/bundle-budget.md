@@ -38,7 +38,7 @@ the parse cost that dominates on a low-end device is paid on the decompressed by
 | Class | Limit | Measured when set | What it protects |
 |---|---|---|---|
 | planner Web Worker, and **exactly one of them** | 1000 KiB | 903 KiB | The engine simulation core, shipped once |
-| engine simulation core (`useProjection`) | 640 KiB | 572 KiB | The deterministic ledger the analysis pages share |
+| engine simulation core (`useProjection`) | 700 KiB | 665 KiB | The deterministic ledger the analysis pages share |
 | Learning Center registry | 150 KiB | 124 KiB | Article *metadata* — bodies load per article |
 | chart vendor (`CartesianChart`) | 380 KiB | 331 KiB | Recharts and its d3 slices |
 | plan route group (`PlanRoutes`), and **exactly one of them** | 300 KiB | 267 KiB | The lazy plan-route boundary staying route-sized |
@@ -58,7 +58,7 @@ uneven — read the table, not an average:
   sized so the entry and the registry could each grow into their own limits and still fit. The precache
   row is the one with almost nothing left, and "Raising the precache row" below says exactly what its
   46 KiB is reserved for; the all-JS row (4356 → 4400) is nearly as tight and has no such reservation.
-- The **per-class chunk** rows sit near 11–21% (worker 903 → 1000, `useProjection` 572 → 640,
+- The **per-class chunk** rows sit near 5–21% (worker 903 → 1000, `useProjection` 665 → 700,
   `learningRegistry` 124 → 150, Recharts 331 → 380, `PlanRoutes` 267 → 300): enough for a feature
   landing in a known chunk.
   `learningRegistry` now holds only metadata, about 0.9 KiB per article, so its 26 KiB of slack is
@@ -82,30 +82,58 @@ published tarball must emit exactly one worker chunk.
 
 The worker is emitted as an ES-module graph because its one spawn site already uses
 `{ type: 'module' }`. Publication coordinators and the pure annual calculation kernels stay small
-static chunks in both the app and worker graphs so their measured ownership remains visible. The
-final funding/year-close and owned-IRA settlement coordinators have explicit-only chunks **in the
-app graph only**: they are effectful orchestration boundaries rather than pure kernels, and
-excluding their dependency graphs prevents extraction-only file moves from inflating the shared
-`useProjection` chunk.
+static chunks in both the app and worker graphs so their measured ownership remains visible. Both
+graphs use the same group list (`annualProjectionCodeSplitting`). Nothing else in the projection is
+split out, and in particular the final funding/year-close and owned-IRA settlement coordinators are
+**not**: they live in the `useProjection` core in the app graph and in the entry in the worker graph.
 
-The worker graph cannot isolate those two coordinators. With
-`includeDependenciesRecursively: false`, their remaining value imports land in the worker entry,
-and the coordinator chunks then import the entry — a circular ES module graph. Production
-minifies one of those live bindings to `oe` and TDZ-crashes on first spawn
-(`Cannot access 'oe' before initialization`; #672, Monte Carlo and both
-Optimize-rail surfaces: How much can I spend? and Roth & Tax Optimizer). The worker
-therefore keeps those coordinators in the entry and only splits kernels and publications. The
-bundle-budget CLI fails the build if any other `dist/assets` chunk statically imports
-`planner.worker-*.js`, matching the entry by basename so a `../`, `/assets/`,
-nested, or query-string specifier cannot fail open.
+They used to have explicit-only chunks (`includeDependenciesRecursively: false`) in the app graph,
+on the theory that excluding their dependency graphs would keep extraction-only file moves from
+inflating `useProjection`. An explicit-only chunk for a module the core imports is a static import
+cycle: the core chunk imports the coordinator chunk, and the coordinator chunk imports the core
+back for everything it was not allowed to carry. A chunk in a cycle can evaluate its top level
+before the chunk it imports from has run, and what happens then depends on how Rolldown lowered the
+binding, not on anything the source says:
 
-The kernel, publication, and (in the app graph) coordinator chunks stay
-precached; the split changes parsing and chunk ownership, not the offline
-guarantee or the one-worker-entry invariant.
+- In the worker graph it threw. The worker entry was the "core", and production minified one of
+  the live bindings to `oe` and TDZ-crashed on first spawn (`Cannot access 'oe' before
+  initialization`; #672, Monte Carlo and both Optimize-rail surfaces: How much can I spend? and
+  Roth & Tax Optimizer). That graph dropped the two groups first.
+- In the app graph it did not throw. Rolldown emits top-level `const` as `var`, so the funding
+  phase's module-level alias `const EPSILON = ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS` became
+  `var u=a` and read `undefined` before the core's `var Un=.005` had run. Every `<= undefined` and
+  `> undefined` in that phase was false: one "Tax and withdrawal funding could not reconcile within
+  half a cent … differs by $0.00" note per plan year, ACA years funded at gross premium, the
+  coordinated HECM draw always 0, and — because the depletion check is the same comparison —
+  `depletionYear` never set, so a plan with six-figure shortfalls every year still read "Your money
+  lasts the full plan" while Monte Carlo (the worker, correct graph) said 0%. Every unit test and
+  dev-server e2e stayed green: neither loads the production chunk graph.
+
+Three things now hold that shape closed. The bundle-budget CLI fails the build on **any** static
+import cycle among `dist/assets` chunks (`staticImportCycles`, Tarjan over `from "…"` and
+side-effect `import "…"` specifiers matched by basename; dynamic `import()` is not an edge), and
+still fails it if any other chunk statically imports `planner.worker-*.js`. The engine's funding
+phase reads the tolerance at call time rather than aliasing it at module level, so a future cycle
+through *that* module could not turn it into `undefined` — read that as one module's habit, not a
+class-wide guarantee: `annualWithdrawalPlanning.ts`, `annualHealthcareExpenses.ts`,
+`annualAggregateRothConversionPhase.ts`, and `annualAggregateRothConversionTargetPlan.ts` still
+hold `const EPSILON = ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS` at module level, so the cycle gate,
+not the call-time read, is what keeps the class closed. And [`e2e-dist/`](../../app/e2e-dist) runs Playwright
+against `vite preview` of the built `dist/` (`pnpm test:e2e:dist`, in the `build` CI job after the
+budget gate): it opens the example couple, requires neither spurious note, then sets baseline
+spending to $600,000 — one fixed value, well past what that plan can fund, not an iterative
+search — and requires the Results page to report a depletion year. If a coordinator ever
+needs its own chunk again, it needs a cycle-free build to show for it, which means carrying its
+dependencies with it.
+
+The `useProjection` row went 640 → 700 KiB when the two coordinators folded back in
+(27.9 + 3.4 KiB, measured 634.6 KiB before the fold): the same bytes, now counted where they
+execute. Not the same slack, though — 634.6 under 640 was 0.8%, an unusually tight row; 665.2
+under 700 is 5.0%, which is where the per-class band above starts. The kernel and publication chunks stay precached; the split changes parsing and chunk
+ownership, not the offline guarantee or the one-worker-entry invariant.
 
 The groups match those engine modules by **exact bare filename**
-(`ANNUAL_PROJECTION_SETTLEMENT_MODULE_NAME`, `ANNUAL_PROJECTION_FUNDING_CLOSE_MODULE_NAME`,
-`ANNUAL_PROJECTION_PUBLICATION_MODULE_NAME`, `ANNUAL_PROJECTION_KERNEL_MODULE_NAMES` — all in
+(`ANNUAL_PROJECTION_PUBLICATION_MODULE_NAME` and `ANNUAL_PROJECTION_KERNEL_MODULE_NAMES` — both in
 [`app/vite.config.ts`](../../app/vite.config.ts)), not a directory glob or a naming convention: a
 convention regex was considered and rejected because it could not be made to reproduce this exact table.
 Renaming or moving one of those files under `packages/engine/src/projection/internal/` does not fail the
