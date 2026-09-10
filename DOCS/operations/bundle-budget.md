@@ -120,8 +120,9 @@ class-wide guarantee: `annualWithdrawalPlanning.ts`, `annualHealthcareExpenses.t
 hold `const EPSILON = ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS` at module level, so the cycle gate,
 not the call-time read, is what keeps the class closed. And [`e2e-dist/`](../../app/e2e-dist) runs Playwright
 against `vite preview` of the built `dist/` (`pnpm test:e2e:dist`, in the `build` CI job after the
-budget gate): it opens the example couple, requires neither spurious note, then raises baseline
-spending until the plan depletes and requires the Results page to say so. If a coordinator ever
+budget gate): it opens the example couple, requires neither spurious note, then sets baseline
+spending to $600,000 — one fixed value, well past what that plan can fund, not an iterative
+search — and requires the Results page to report a depletion year. If a coordinator ever
 needs its own chunk again, it needs a cycle-free build to show for it, which means carrying its
 dependencies with it.
 
