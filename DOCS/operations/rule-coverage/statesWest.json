@@ -1027,6 +1027,73 @@
       ]
     },
     {
+      "id": "hi-hrs-235-2-3-social-security-subtraction",
+      "title": "Hawaii makes IRC section 86 nonoperative for federally included Social Security",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The Hawaii Department of Taxation's unofficial HRS compilation is labeled as of 2025-12-31; the quoted lead-in and paragraph (3) are nevertheless explicit. Later conformity changes beyond that compilation are not certified here.",
+      "contraryReading": null,
+      "jurisdiction": "state:HI",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-09",
+      "dueOn": "2027-09-09",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "states.HI",
+              "line": 323
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 96
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 2786,
+          "note": null,
+          "tests": [
+            {
+              "title": "holds Hawaii taxable income unchanged when federally included Social Security is added",
+              "line": 2805
+            },
+            {
+              "title": "would raise the base by the IRC 86 inclusion if Social Security were taxed",
+              "line": 2813
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "Haw. Rev. Stat. §235-2.3(b)(3)",
+          "url": "https://files.hawaii.gov/tax/legal/hrs/hrs_235.pdf"
+        }
+      ]
+    },
+    {
       "id": "hi-hrs-235-2-4-a-2-f-2026-standard-deduction",
       "title": "Hawaii’s TY2026 standard deduction is $8,000 single and $16,000 joint",
       "classification": "settled",
@@ -1069,12 +1136,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2753,
+          "line": 2751,
           "note": null,
           "tests": [
             {
               "title": "deducts the TY2026 standard deduction before the first bracket",
-              "line": 2765
+              "line": 2763
             }
           ]
         }
@@ -1151,12 +1218,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2783,
+          "line": 2821,
           "note": null,
           "tests": [
             {
               "title": "pins the unmodelled Hawaii private-pension exclusion",
-              "line": 2798
+              "line": 2836
             }
           ]
         }
@@ -1224,12 +1291,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2809,
+          "line": 2847,
           "note": null,
           "tests": [
             {
               "title": "deducts Idaho’s federally included Social Security amount",
-              "line": 2825
+              "line": 2863
             }
           ]
         }
@@ -1287,27 +1354,27 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3216,
+          "line": 3254,
           "note": "age-65 additional subtraction, 15-30-2120(3)(g) floor",
           "tests": [
             {
               "title": "pins the missing Montana age-65 subtraction",
-              "line": 3236
+              "line": 3274
             },
             {
               "title": "grants nothing below 65 under either reading",
-              "line": 3241
+              "line": 3279
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3259,
+          "line": 3297,
           "note": "per-taxpayer doubling for a couple both 65",
           "tests": [
             {
               "title": "pins the missing per-taxpayer doubling for a couple both 65",
-              "line": 3277
+              "line": 3315
             }
           ]
         }
@@ -1385,20 +1452,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3172,
+          "line": 3210,
           "note": null,
           "tests": [
             {
               "title": "starts Montana from federal taxable income, so federally taxable Social Security stays in",
-              "line": 3191
+              "line": 3229
             },
             {
               "title": "would drop the benefit if Montana subtracted it the way a false flag does",
-              "line": 3197
+              "line": 3235
             },
             {
               "title": "carries the federal standard deduction with it, not a frozen state figure",
-              "line": 3203
+              "line": 3241
             }
           ]
         }
@@ -1486,12 +1553,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3356,
+          "line": 3394,
           "note": null,
           "tests": [
             {
               "title": "pins the high-income path where the blanket pack exclusion diverges from the source threshold",
-              "line": 3371
+              "line": 3409
             }
           ]
         }
@@ -1776,12 +1843,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3634,
+          "line": 3704,
           "note": null,
           "tests": [
             {
               "title": "subtracts federally taxable Social Security as ORS 316.054 directs",
-              "line": 3647
+              "line": 3717
             }
           ]
         }
@@ -1839,12 +1906,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3591,
+          "line": 3661,
           "note": null,
           "tests": [
             {
               "title": "applies the enacted 4.45% flat rate to ordinary income",
-              "line": 3599
+              "line": 3669
             }
           ]
         }
@@ -1970,12 +2037,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3608,
+          "line": 3678,
           "note": null,
           "tests": [
             {
               "title": "pins the unmodeled Utah Social Security benefits credit",
-              "line": 3627
+              "line": 3697
             }
           ]
         }
@@ -2043,12 +2110,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3913,
+          "line": 3983,
           "note": null,
           "tests": [
             {
               "title": "keeps Washington out of the broad state-income-tax path",
-              "line": 3932
+              "line": 4002
             }
           ]
         }

@@ -940,12 +940,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2866,
+          "line": 2904,
           "note": null,
           "tests": [
             {
               "title": "pins the overbroad Kansas public-pension override",
-              "line": 2882
+              "line": 2920
             }
           ]
         }
@@ -1023,12 +1023,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2836,
+          "line": 2874,
           "note": null,
           "tests": [
             {
               "title": "subtracts all post-2023 federally taxable Kansas Social Security",
-              "line": 2852
+              "line": 2890
             }
           ]
         }
@@ -1086,16 +1086,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3137,
+          "line": 3175,
           "note": null,
           "tests": [
             {
               "title": "deducts Social Security from Michigan taxable income",
-              "line": 3151
+              "line": 3189
             },
             {
               "title": "would add the federally taxable share if Michigan taxed it",
-              "line": 3156
+              "line": 3194
             }
           ]
         }
@@ -2246,16 +2246,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3292,
+          "line": 3330,
           "note": null,
           "tests": [
             {
               "title": "subtracts every federally included Social Security dollar from 2024",
-              "line": 3308
+              "line": 3346
             },
             {
               "title": "would tax 85% of the benefit under the shopping-list reading",
-              "line": 3314
+              "line": 3352
             }
           ]
         }
@@ -2327,23 +2327,23 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3395,
+          "line": 3433,
           "note": "public-pension deduction limb",
           "tests": [
             {
               "title": "pins the over-broad full public-pension override",
-              "line": 3414
+              "line": 3452
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3421,
+          "line": 3459,
           "note": "retirement-income credit limb",
           "tests": [
             {
               "title": "pins the omitted Ohio retirement-income credit",
-              "line": 3435
+              "line": 3473
             }
           ]
         }
@@ -2411,16 +2411,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3465,
+          "line": 3503,
           "note": null,
           "tests": [
             {
               "title": "prices the TY2026 nonbusiness schedule at the statutory breakpoints",
-              "line": 3476
+              "line": 3514
             },
             {
               "title": "rejects the IT 1040 ES upper band and baseTax add-on semantics via hybridWorksheetUpperBandOnEnactedLowerBand",
-              "line": 3488
+              "line": 3526
             }
           ]
         }
@@ -2623,12 +2623,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3950,
+          "line": 4020,
           "note": "30% long-term capital-gain subtraction",
           "tests": [
             {
               "title": "pins Wisconsin's unrepresented long-term capital-gain exclusion",
-              "line": 3964
+              "line": 4034
             }
           ]
         }
@@ -2695,20 +2695,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3971,
+          "line": 4041,
           "note": "age-67 retirement attribution and election limbs",
           "tests": [
             {
               "title": "shelters retirement dollars received by the under-67 spouse",
-              "line": 3995
+              "line": 4065
             },
             {
               "title": "matches the pooled $48,000 cap when both spouses are 67",
-              "line": 4004
+              "line": 4074
             },
             {
               "title": "grants a 65-year-old nothing where Line 17 would allow $5,000",
-              "line": 4017
+              "line": 4087
             }
           ]
         }
