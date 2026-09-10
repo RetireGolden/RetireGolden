@@ -21,6 +21,7 @@ import {
   parseLandingScripts,
   parsePrecacheUrls,
   parseStaticRelativeImports,
+  staticImportCycles,
   workerEntryImporters,
 } from './bundleBudget.mjs'
 
@@ -99,8 +100,9 @@ describe('parsePrecacheUrls', () => {
 
   it('keeps parsePrecacheUrls JSDoc on that export', () => {
     const text = readFileSync(fileURLToPath(new URL('./bundleBudget.mjs', import.meta.url)), 'utf8')
+    // `\r?` so a CRLF checkout (Windows, core.autocrlf) reads the same source.
     expect(text).toMatch(
-      /quietly drop\n \* the precache row[\s\S]{0,80}export function parsePrecacheUrls/,
+      /quietly drop\r?\n \* the precache row[\s\S]{0,80}export function parsePrecacheUrls/,
     )
   })
 })
@@ -254,6 +256,77 @@ describe('worker entry import cycle (#672, Monte Carlo and both Optimize-rail ch
     expect(budget.match.test('planner.worker-aaa.js')).toBe(true)
     expect(workerEntryImporters([{ name: 'planner.worker-aaa.js', source: '' }]).workerNames).toEqual([
       'planner.worker-aaa.js',
+    ])
+  })
+})
+
+describe('static import cycles among emitted chunks (the app-graph `undefined` tolerance)', () => {
+  // The shape production shipped: the core chunk imports two explicit-only
+  // coordinator chunks, and each of them imports the core back.
+  const core = 'useProjection-aaa.js'
+  const fundingClose = 'annualProjectionFundingClose-bbb.js'
+  const settlement = 'annualProjectionSettlement-ccc.js'
+  const kernels = 'annualProjectionKernels-ddd.js'
+
+  it('reports the core/coordinator cycle as one component, sorted by name', () => {
+    const cycles = staticImportCycles([
+      { name: core, source: `import{a}from"./${kernels}";import{b}from"./${fundingClose}";import{c}from"./${settlement}";` },
+      { name: fundingClose, source: `import{x}from"./${kernels}";import{y}from"./${core}";var u=y;` },
+      { name: settlement, source: `import{z}from"./${core}";` },
+      { name: kernels, source: 'export const k=1;' },
+    ])
+    expect(cycles).toEqual([[fundingClose, settlement, core]])
+  })
+
+  it('is empty for a tree, which is what the shared group list produces', () => {
+    const cycles = staticImportCycles([
+      { name: core, source: `import{a}from"./${kernels}";import{p}from"./annualProjectionPublications-eee.js";` },
+      { name: kernels, source: 'export const k=1;' },
+      { name: 'annualProjectionPublications-eee.js', source: 'export const p=1;' },
+      { name: 'planner.worker-fff.js', source: `import{a}from"./${kernels}";` },
+    ])
+    expect(cycles).toEqual([])
+  })
+
+  it('sees a cycle through a side-effect import and a non-relative specifier form', () => {
+    const cycles = staticImportCycles([
+      { name: core, source: `import "/assets/${fundingClose}";` },
+      { name: fundingClose, source: `import{y}from"../${core}?v=1";` },
+    ])
+    expect(cycles).toEqual([[fundingClose, core]])
+  })
+
+  it('does not count a dynamic import() as an edge', () => {
+    const cycles = staticImportCycles([
+      { name: core, source: `const lazy=()=>import("./${fundingClose}");` },
+      { name: fundingClose, source: `import{y}from"./${core}";` },
+    ])
+    expect(cycles).toEqual([])
+  })
+
+  it('ignores specifiers that are not emitted chunks', () => {
+    const cycles = staticImportCycles([
+      { name: core, source: 'import{r}from"react";import{s}from"https://cdn.example/x.js";' },
+    ])
+    expect(cycles).toEqual([])
+  })
+
+  it('reports a chunk that imports itself', () => {
+    const cycles = staticImportCycles([{ name: core, source: `import{self}from"./${core}";` }])
+    expect(cycles).toEqual([[core]])
+  })
+
+  it('reports two independent cycles separately', () => {
+    const cycles = staticImportCycles([
+      { name: 'b-1.js', source: 'import{x}from"./b-2.js";' },
+      { name: 'b-2.js', source: 'import{x}from"./b-1.js";' },
+      { name: 'a-1.js', source: 'import{x}from"./a-2.js";' },
+      { name: 'a-2.js', source: 'import{x}from"./a-1.js";' },
+      { name: 'leaf.js', source: 'export const l=1;' },
+    ])
+    expect(cycles).toEqual([
+      ['a-1.js', 'a-2.js'],
+      ['b-1.js', 'b-2.js'],
     ])
   })
 })

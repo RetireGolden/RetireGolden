@@ -26,5 +26,5 @@
     "noFallthroughCasesInSwitch": true,
     "strict": true
   },
-  "include": ["e2e", "playwright.config.ts", "pwa-assets.config.ts"]
+  "include": ["e2e", "e2e-dist", "playwright.config.ts", "playwright.dist.config.ts", "pwa-assets.config.ts"]
 }

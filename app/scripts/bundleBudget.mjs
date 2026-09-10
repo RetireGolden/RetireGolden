@@ -36,7 +36,13 @@ export const CHUNK_BUDGETS = [
   {
     label: 'engine simulation core (useProjection)',
     match: /^useProjection-[^/]*\.js$/,
-    maxKiB: 640,
+    // Raised 640 -> 700 when the funding/year-close (27.9 KiB) and owned-IRA
+    // settlement (3.4 KiB) coordinators folded back into this chunk: their
+    // explicit-only chunks sat in a static import cycle with it, which is
+    // the hazard staticImportCycles() below now fails the build on. Measured
+    // 634.6 KiB before the fold, so the row is the same headroom for the
+    // same bytes, now counted where they execute.
+    maxKiB: 700,
   },
   {
     label: 'Learning Center registry',
@@ -197,6 +203,77 @@ export function workerEntryImporters(chunks) {
     if (imports.some((name) => workerSet.has(name))) importers.push(chunk.name)
   }
   return { workerNames, importers }
+}
+
+/**
+ * Every static import cycle among the emitted chunks, as strongly connected
+ * components of the chunk graph (Tarjan), each sorted by name. A chunk that
+ * imports itself is a one-member cycle.
+ *
+ * `chunks` is `{ name, source }[]`. Specifiers that do not name another
+ * emitted chunk (bare package ids, absolute URLs) are ignored: they cannot
+ * take part in a cycle inside `dist/assets`.
+ *
+ * Why the whole graph and not just the worker entry: a cycle does not have
+ * to crash. When an explicit-only coordinator group put
+ * `annualProjectionFundingClose` in a cycle with the `useProjection` core,
+ * Rolldown emitted the funding phase's `const EPSILON = <imported constant>`
+ * as `var u=a`, evaluated before the core chunk's body had run. `u` was
+ * `undefined`, every `<= undefined` / `> undefined` in the phase read
+ * false, and production shipped spurious "could not reconcile" notes,
+ * gross ACA premium, and a Results page that never reported a depletion
+ * year — while every unit test and dev-server e2e stayed green, because
+ * neither loads the production chunk graph. The worker graph, with the same
+ * shape, threw a TDZ error instead (#672). Structure, not luck, decides
+ * which: so no cycle at all.
+ */
+export function staticImportCycles(chunks) {
+  const names = new Set(chunks.map((chunk) => chunk.name))
+  const edges = new Map(
+    chunks.map((chunk) => [
+      chunk.name,
+      parseStaticRelativeImports(chunk.source).filter((target) => names.has(target)),
+    ]),
+  )
+
+  let counter = 0
+  const index = new Map()
+  const lowLink = new Map()
+  const onStack = new Set()
+  const stack = []
+  const cycles = []
+
+  const visit = (node) => {
+    index.set(node, counter)
+    lowLink.set(node, counter)
+    counter += 1
+    stack.push(node)
+    onStack.add(node)
+    for (const target of edges.get(node)) {
+      if (!index.has(target)) {
+        visit(target)
+        lowLink.set(node, Math.min(lowLink.get(node), lowLink.get(target)))
+      } else if (onStack.has(target)) {
+        lowLink.set(node, Math.min(lowLink.get(node), index.get(target)))
+      }
+    }
+    if (lowLink.get(node) !== index.get(node)) return
+    const component = []
+    let member
+    do {
+      member = stack.pop()
+      onStack.delete(member)
+      component.push(member)
+    } while (member !== node)
+    if (component.length > 1 || edges.get(node).includes(node)) {
+      cycles.push(component.sort())
+    }
+  }
+
+  for (const chunk of chunks) {
+    if (!index.has(chunk.name)) visit(chunk.name)
+  }
+  return cycles.sort((a, b) => a[0].localeCompare(b[0]))
 }
 
 /**

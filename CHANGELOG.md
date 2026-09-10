@@ -4,6 +4,24 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## Unreleased
 
+- **Production build: funding tolerance read as `undefined` (Results page, main thread):**
+  the app graph's explicit-only chunk for `annualFundingApplicationAndClosePhase.ts` sat in
+  a static import cycle with the `useProjection` core chunk, so its module-level alias of
+  `ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS` evaluated before the core had run and read
+  `undefined` (Rolldown emits top-level `const` as `var`). Every comparison against it was
+  false in the deployed app only: one "Tax and withdrawal funding could not reconcile within
+  half a cent … differs by $0.00" note per plan year, ACA years funded at gross premium, the
+  coordinated HECM draw always 0, and `depletionYear` never set — a depleting plan still read
+  "Your money lasts the full plan" while Monte Carlo (worker graph) reported 0%. Unit tests
+  and the dev-server e2e never load the production chunk graph and stayed green. Fixed by
+  giving both graphs the same `codeSplitting` group list (no explicit-only coordinator chunks;
+  `useProjection` row 640 → 700 KiB for the folded 31 KiB), reading the tolerance at call time
+  in the funding phase, failing the bundle budget on any static import cycle among
+  `dist/assets` chunks (`staticImportCycles`), and adding `app/e2e-dist` — Playwright against
+  `vite preview` of the built `dist` (`pnpm test:e2e:dist`, in the `build` CI job) that
+  requires neither spurious note on the example couple and a reported depletion year once its
+  spending exceeds what the plan can fund. Present in production since #587 (2026-09-02).
+
 - **Louisiana TY2026 standard deduction:** corrected `states.LA.standardDeduction` to
   $12,875 single and $25,750 MFJ per La. R.S. 47:294 CPI-U indexing and LDR 2026 Form
   IT-540ESi (`la-ldr-it540es-2026-standard-deduction`). Retirement cap CPI indexing,

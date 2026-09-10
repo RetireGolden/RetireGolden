@@ -208,6 +208,16 @@ jobs:
         run: node packages/engine/scripts/pack-smoke.mjs
       - name: Smoke test the packed planner-ui artifact
         run: node packages/planner-ui/scripts/pack-smoke.mjs
+      # The dev-server e2e job cannot see the production chunk graph. This
+      # runs the built dist through `vite preview` and pins the funding
+      # fixed point and depletion reporting on the Results page
+      # (app/e2e-dist, app/playwright.dist.config.ts).
+      - name: Install Playwright browser
+        working-directory: app
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Browser tests against the production build
+        working-directory: app
+        run: pnpm test:e2e:dist
       - name: Upload build output
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:

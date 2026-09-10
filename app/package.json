@@ -15,6 +15,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:e2e": "playwright test",
+    "test:e2e:dist": "playwright test -c playwright.dist.config.ts",
     "test:coverage": "vitest run --coverage",
     "cases": "node scripts/cases.mjs",
     "cases:diff": "node scripts/cases.mjs diff",

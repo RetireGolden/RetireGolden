@@ -228,5 +228,5 @@ text-extraction accuracy report (per-field precision/recall over a hand-built sy
 [features/document-parsing-spike.md](features/document-parsing-spike.md); the extractor's design record is
 [features/document-text-extraction.md](features/document-text-extraction.md).
 
-App-only (run from `app/`): `pnpm test:e2e` (Playwright specs in `e2e/`), `pnpm preview`
+App-only (run from `app/`): `pnpm test:e2e` (Playwright specs in `e2e/` against the dev server), `pnpm test:e2e:dist` (Playwright specs in `e2e-dist/` against `vite preview` of an existing build), `pnpm preview`
 (serve the built `dist/`), `pnpm run licenses`.

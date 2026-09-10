@@ -122,7 +122,6 @@ type Form8606ConsequentialChannel =
   | 'conversions'
   | 'annuityPayments'
 
-const EPSILON = ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS
 
 interface AnnualFundingApplicationAndClosePhaseFacts {
   readonly year: number
@@ -941,7 +940,7 @@ export function annualFundingApplicationAndClosePhase(
         parameterPack: pack,
         spendingAndContributions: expenses.total + contributions,
         rmdShortfallExciseTax,
-        tolerancePlanDollars: EPSILON,
+        tolerancePlanDollars: ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS,
       })
     const evaluateWithdrawalNeed = (
       request: AnnualFundingFixedPointEvaluationRequest,
@@ -978,7 +977,7 @@ export function annualFundingApplicationAndClosePhase(
       acaActive,
       acaGrossEnrollmentPremium,
       acaInitialSupportCodeCount: acaInitialSupportCodes.length,
-      tolerancePlanDollars: EPSILON,
+      tolerancePlanDollars: ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS,
       evaluate: evaluateWithdrawalNeed,
     })
     const cashInflows = fundingFixedPoint.acceptedCashInflows
@@ -1141,10 +1140,10 @@ export function annualFundingApplicationAndClosePhase(
         }
       }
     }
-    if (withdrawalPlan.reserveUsed > EPSILON) {
+    if (withdrawalPlan.reserveUsed > ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS) {
       warnings.add('Spending needs dipped into the taxable safety-net floor after all other accounts were exhausted.')
     }
-    if (hsaEffectFinal.taxableOrdinary > EPSILON) {
+    if (hsaEffectFinal.taxableOrdinary > ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS) {
       warnings.add(
         'Some HSA withdrawals exceeded modeled qualified medical expenses; the excess was taxed as ordinary income (and penalized before 65).',
       )
@@ -1235,7 +1234,7 @@ export function annualFundingApplicationAndClosePhase(
     }
     const federalDetail = computeFederalTax(advisoryFederalTaxInput)
     const ltcgZeroHeadroom = federalDetail.zeroRateLtcgHeadroom
-    if (federalDetail.alternativeMinimumTax > EPSILON) {
+    if (federalDetail.alternativeMinimumTax > ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS) {
       warnings.add('The planning-grade AMT screen bound in at least one year; tax includes the AMT excess.')
     }
 
@@ -1788,7 +1787,7 @@ export function annualFundingApplicationAndClosePhase(
     }
     deposit(surplus)
 
-    if (shortfallAfterHecm > EPSILON && depletionYear === null) depletionYear = year
+    if (shortfallAfterHecm > ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS && depletionYear === null) depletionYear = year
 
     // --- property events + growth, then permanent-life transitions ---------
     // Both are application loops over a sibling phase rows, they deposit into

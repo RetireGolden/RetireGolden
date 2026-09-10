@@ -29,13 +29,13 @@ const engineProjectionInternalDir = fileURLToPath(
   new URL('../../packages/engine/src/projection/internal', import.meta.url),
 )
 
-// Scoped to the four ANNUAL_PROJECTION_*_MODULE_NAME(S) declarations the
+// Scoped to the two ANNUAL_PROJECTION_*_MODULE_NAME(S) declarations the
 // codeSplitting groups actually match against, not the whole file, so a
 // bare '*.ts' string anywhere else in vite.config.ts (a comment, an
 // unrelated literal) can't be mistaken for a chunk-grouped module and a
 // stray leftover reference can't mask a real removal.
 const CHUNK_MODULE_CONST_NAMES =
-  /const ANNUAL_PROJECTION_(?:SETTLEMENT_MODULE_NAME|FUNDING_CLOSE_MODULE_NAME|PUBLICATION_MODULE_NAME|KERNEL_MODULE_NAMES)\s*=\s*(\[[^\]]*\]|'[^']*')/g
+  /const ANNUAL_PROJECTION_(?:PUBLICATION_MODULE_NAME|KERNEL_MODULE_NAMES)\s*=\s*(\[[^\]]*\]|'[^']*')/g
 
 function chunkModuleNames() {
   const names = []
@@ -51,7 +51,7 @@ function chunkModuleNames() {
 // reviewed. Not a magic number to preserve for its own sake — a drop below
 // it means a module left the code-splitting groups, which is worth a
 // second look even when every remaining name still resolves.
-const KNOWN_CHUNK_MODULE_COUNT = 14
+const KNOWN_CHUNK_MODULE_COUNT = 12
 
 describe('vite.config.ts projection/internal chunk module list', () => {
   it('names at least the currently chunk-grouped modules — a shrinking list is worth a second look', () => {
@@ -66,16 +66,22 @@ describe('vite.config.ts projection/internal chunk module list', () => {
     expect(missing, `missing under packages/engine/src/projection/internal/: ${missing.join(', ')}`).toEqual([])
   })
 
-  it('does not isolate fundingClose/settlement in the worker graph (circular TDZ, #672, Monte Carlo and both Optimize-rail channels)', () => {
-    expect(viteConfigText).toMatch(/codeSplitting:\s*workerAnnualProjectionCodeSplitting/)
-    const workerGroups = viteConfigText.match(
-      /const workerAnnualProjectionCodeSplitting\s*=\s*\{[\s\S]*?\}\s*satisfies ViteCodeSplitting/,
+  it('isolates no mid-graph coordinator in either graph (chunk cycle: #672 worker TDZ, and the silent app-graph `undefined` tolerance)', () => {
+    // One shared group list, wired into both the app and the worker output.
+    const uses = viteConfigText.match(/codeSplitting:\s*annualProjectionCodeSplitting/g) ?? []
+    expect(uses).toHaveLength(2)
+    expect(viteConfigText).not.toMatch(/workerAnnualProjectionCodeSplitting/)
+
+    const groups = viteConfigText.match(
+      /const annualProjectionCodeSplitting\s*=\s*\{[\s\S]*?\}\s*satisfies ViteCodeSplitting/,
     )
-    expect(workerGroups, 'workerAnnualProjectionCodeSplitting must stay a named constant').toBeTruthy()
-    expect(workerGroups[0]).not.toContain('annualProjectionFundingClose')
-    expect(workerGroups[0]).not.toContain('annualProjectionSettlement')
-    // The app build still isolates those coordinators; only the worker drops them.
-    expect(viteConfigText).toMatch(/name:\s*'annualProjectionFundingClose'/)
-    expect(viteConfigText).toMatch(/name:\s*'annualProjectionSettlement'/)
+    expect(groups, 'annualProjectionCodeSplitting must stay a named constant').toBeTruthy()
+    // An explicit-only group (`includeDependenciesRecursively: false`) for a
+    // module that the core chunk imports puts the two chunks in a static
+    // import cycle. The worker crashed on it (TDZ); the app graph read an
+    // imported constant as `undefined` instead. Neither name may come back.
+    expect(groups[0]).not.toContain('includeDependenciesRecursively: false')
+    expect(groups[0]).not.toContain('annualProjectionFundingClose')
+    expect(groups[0]).not.toContain('annualProjectionSettlement')
   })
 })

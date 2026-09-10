@@ -8,7 +8,7 @@ import { defineConfig, globalIgnores } from 'eslint/config'
 export default defineConfig([
   globalIgnores(['dist', 'coverage', '.cache', 'artifacts']),
   {
-    files: ['playwright.config.ts'],
+    files: ['playwright.config.ts', 'playwright.dist.config.ts'],
     languageOptions: {
       globals: globals.node,
     },
