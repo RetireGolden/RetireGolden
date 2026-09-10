@@ -1118,7 +1118,7 @@ export const contributionAndDeferralLimitRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The contribution allocator prevents modeled requests from exceeding its aggregate ceiling; it is not a record of an actual excess or a corrective distribution. actions/contract.test.ts gates the request and persisted action unions against a correction kind, while model/plan.test.ts gates the missing correction facts.',
+      'The contribution allocator prevents modeled requests from exceeding its aggregate ceiling; it is not a record of an actual excess or a corrective distribution. actions/contract.test.ts gates the request and persisted action unions against a correction kind. The correction facts are absent from model/plan.ts; the current model/plan.test.ts membership list does not separately assert those correction facts.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -1283,7 +1283,7 @@ export const contributionAndDeferralLimitRecords = {
   'irc-402-g-7-403b-15-year-catch-up': {
     title: 'The special 403(b) 15-year catch-up has independent eligibility and caps',
     statement:
-      'For a qualified employee of a qualified organization, section 402(g)(7) increases the 402(g)(1) limit by the least of 3,000 dollars, the remaining 15,000-dollar cumulative amount, or the service-based amount. The regulation requires a qualifying employee to have at least 15 years of service and treats a contribution eligible for both this special catch-up and an age-50 catch-up first as the special catch-up. Not modelled: the Plan has no qualified-organization status, plan-document election, years-of-service record, prior special-catch-up history, or ordering election.',
+      'For a qualified employee of a qualified organization, section 402(g)(7) increases the 402(g)(1) limit by the least of 3,000 dollars, the remaining 15,000-dollar cumulative amount, or the service-based amount. The regulation requires a qualifying employee to have at least 15 years of service and treats a contribution eligible for both this special catch-up and an age-50 catch-up first as the special catch-up. Not modelled: the Plan has no qualified-organization status, plan-document election, years-of-service record, prior special-catch-up history, or contribution labeling for the mandatory ordering rule.',
     classification: 'outOfScope',
     outOfScope: {
       shape: 'inexpressibleInput',
@@ -1292,7 +1292,7 @@ export const contributionAndDeferralLimitRecords = {
       'the plan-document election to offer the special catch-up',
       'the participant\'s years of service with that organization',
       'prior special-catch-up amounts already used against the 15,000-dollar cumulative cap',
-      'the ordering election between the special catch-up and the age-50 catch-up',
+      'the labeling of contributions as special 403(b) catch-up versus age-50 catch-up for the mandatory ordering rule',
       ],
     },
     contraryReading: null,
@@ -1526,7 +1526,7 @@ export const contributionAndDeferralLimitRecords = {
     contraryReading: null,
     errorDirection: 'bothDirections',
     conventionRationale:
-      'DEFECT — no behavior change in this registration slice. actions/execution.ts emits fullyTaxableCompensationAtExecution with ordinaryIncomeAmount equal to the whole executed amount. One fixture drives the alreadyVested path and derives a zero section 83(a) compensation amount in the later execution year while the engine classifies the whole 75-dollar execution as ordinary income (overstates tax). A second fixture drives a zero-basis cliff vesting 100 dollars in the execution year with only 75 executed: section 83(a) includes the full 100 of vested value, but the executor reports ordinary income only on the executed 75 (understates tax). Both signs are pinned until a separately authorized implementation fix changes them.',
+      'DEFECT — no behavior change in this registration slice. actions/execution.ts emits fullyTaxableCompensationAtExecution with ordinaryIncomeAmount equal to the whole executed amount. One structured fixture drives both alreadyVested and sameYearCliff readings, exercised by two preserved observation tests. The alreadyVested test derives a zero section 83(a) compensation amount in the later execution year while the engine classifies the whole 75-dollar execution as ordinary income (overstates tax). The sameYearCliff test stipulates a zero-basis cliff vesting 100 dollars in the execution year with only 75 executed: section 83(a) includes the full 100 of vested value, but the executor reports ordinary income only on the executed 75 (understates tax). Both signs are pinned until a separately authorized implementation fix changes them.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',

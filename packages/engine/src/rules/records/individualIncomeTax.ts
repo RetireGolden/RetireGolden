@@ -137,7 +137,7 @@ export const individualIncomeTaxRecords = {
     verifiedOn: '2026-08-07',
     implementedBy: ['packages/engine/src/tax/federalTax.ts'],
     implementedByFunctions: [
-      'packages/engine/src/tax/federalTax.ts#amtPreferenceItems',
+      'packages/engine/src/tax/federalTax.ts#computeFederalTax',
     ],
   },
 

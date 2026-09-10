@@ -432,7 +432,7 @@
       "authorities": [
         {
           "kind": "regulation",
-          "citation": "20 CFR 404.313(b)(1), (b)(2)",
+          "citation": "20 CFR 404.313(a), (b)(2)",
           "url": "https://www.law.cornell.edu/cfr/text/20/404.313"
         }
       ]
@@ -1367,12 +1367,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/socialSecurity/claimFactor.test.ts",
-          "line": 128,
+          "line": 129,
           "note": null,
           "tests": [
             {
               "title": "holds spousal at FRA with no delayed credits and brackets the current-spouse half-PIA comparator",
-              "line": 149
+              "line": 150
             }
           ]
         }
@@ -2283,12 +2283,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/socialSecurity/claimFactor.test.ts",
-          "line": 219,
+          "line": 220,
           "note": "claim ages outside 62y0m-70y0m are refused, not priced",
           "tests": [
             {
               "title": "refuses one month below the floor and one month above the ceiling",
-              "line": 227
+              "line": 228
+            },
+            {
+              "title": "refuses completed claim ages outside 62-70 via retirementBenefitPiaFactor",
+              "line": 244
             }
           ]
         }

@@ -504,9 +504,9 @@ describe('parameter pack provenance', () => {
     })
   })
 
-  // Section 86 states four dollar figures and no cost-of-living provision. The
-  // joint amounts are not double the unmarried ones, which is the habit the
-  // standard deduction teaches and this rule has to survive.
+  // Section 86(c) states four dollar figures without an indexing clause in that
+  // subsection. The joint amounts are not double the unmarried ones, which is
+  // the habit the standard deduction teaches and this rule has to survive.
   describeRule('irc-86-c-provisional-income-thresholds', {
     readings: { statuteJointIsNotDouble: 44_000, jointDoublesLikeTheStandardDeduction: 68_000 },
     accepted: 'statuteJointIsNotDouble',

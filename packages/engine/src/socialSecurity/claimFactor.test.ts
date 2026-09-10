@@ -5,6 +5,7 @@ import type { DetectorContext } from '../insights/types.js'
 import { describeRule } from '../rules/describeRule.js'
 import { singlePersonPlan } from '../testing/planFixtures.js'
 
+import { retirementBenefitPiaFactor } from './benefitFactor.js'
 import { claimFactor, spousalBenefitFactor } from './claimFactor.js'
 
 // Born June 1960 -> SSA effective birth year 1960 -> FRA 67y0m.
@@ -238,6 +239,21 @@ describe('worker claim window', () => {
         .toBeGreaterThan(beyondFloor)
       expect(claimFactor(dob.y, dob.m, dob.d, { years: 70, months: 0 }))
         .toBeLessThan(beyondCeiling)
+    })
+
+    it('refuses completed claim ages outside 62-70 via retirementBenefitPiaFactor', () => {
+      const fra67 = { years: 67, extraMonths: 0 }
+      const below = () => retirementBenefitPiaFactor(61, fra67)
+      const above = () => retirementBenefitPiaFactor(71, fra67)
+      expect(below).toThrow(RangeError)
+      expect(above).toThrow(RangeError)
+      let name = ''
+      try { below() } catch (err) { name = (err as Error).constructor.name }
+      expect(name).toBe(accepted)
+      // Endpoint controls at FRA 67: 60 months early is 36×5/9% + 24×5/12% =
+      // 30% reduction -> 0.7; 36 DRC months at 2/3%/mo = 24% -> 1.24.
+      expect(retirementBenefitPiaFactor(62, fra67)).toBeCloseTo(0.7, 10)
+      expect(retirementBenefitPiaFactor(70, fra67)).toBeCloseTo(1.24, 10)
     })
   })
 })

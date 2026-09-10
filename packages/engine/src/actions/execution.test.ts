@@ -1786,20 +1786,34 @@ describe('ordinary-withdrawal execution', () => {
 // whole $75 execution as ordinary income.
 const producedSection83OrdinaryAtExecution = 75
 
+// Zero-basis cliff vesting $100 in the execution year; only $75 is executed.
+// Section 83(a) includes the excess of FMV over amount paid when the property
+// first becomes transferable / free of substantial risk of forfeiture — the
+// full vested $100 — while the executor reports ordinary income only on the
+// executed $75.
+// Observed produced pin (fixture run 2026-08-26): executor reports ordinary
+// income only on the executed $75 of a same-year $100 cliff vest.
+const producedSection83PartialCliffOrdinary = 75
+
 describeRule('irc-83-a-equity-compensation-execution-character', {
   readings: {
-    // Section 83(a) includes compensation at the earlier transferability/no-
-    // forfeiture year. This final account has the executor's own alreadyVested
-    // evidence before its 2030 execution, so its section 83 compensation at
-    // execution is $0. The $75 sale may have other character, but it is not a
-    // fresh section 83(a) compensation inclusion.
-    statuteHasNoNewSection83CompensationAtExecution: 0,
-    engineClassifiesTheWholeExecutionAsOrdinary:
-      producedSection83OrdinaryAtExecution,
+    acceptedReading: {
+      // Section 83(a) includes compensation at the earlier transferability/no-
+      // forfeiture year. This final account has the executor's own alreadyVested
+      // evidence before its 2030 execution, so its section 83 compensation at
+      // execution is $0. The $75 sale may have other character, but it is not a
+      // fresh section 83(a) compensation inclusion.
+      alreadyVested: 0,
+      sameYearCliff: 100,
+    },
+    producedReading: {
+      alreadyVested: producedSection83OrdinaryAtExecution,
+      sameYearCliff: producedSection83PartialCliffOrdinary,
+    },
   },
-  accepted: 'statuteHasNoNewSection83CompensationAtExecution',
-  produced: 'engineClassifiesTheWholeExecutionAsOrdinary',
-  note: 'already-vested equity execution',
+  accepted: 'acceptedReading',
+  produced: 'producedReading',
+  note: 'already-vested and same-year cliff partial execution',
 }, ({ accepted, produced }) => {
   it('classifies an already-vested equity execution as ordinary income anyway', () => {
     const request = withdrawal({
@@ -1818,29 +1832,10 @@ describeRule('irc-83-a-equity-compensation-execution-character', {
     const character = evidence.taxCharacter[0]
     if (character?.kind !== 'ordinaryIncome') throw new Error('expected ordinary-income character')
 
-    expect(character.amount).toBe(produced)
-    expect(character.amount).not.toBe(accepted)
+    expect(character.amount).toBe(produced.alreadyVested)
+    expect(character.amount).not.toBe(accepted.alreadyVested)
   })
-})
 
-// Zero-basis cliff vesting $100 in the execution year; only $75 is executed.
-// Section 83(a) includes the excess of FMV over amount paid when the property
-// first becomes transferable / free of substantial risk of forfeiture — the
-// full vested $100 — while the executor reports ordinary income only on the
-// executed $75.
-// Observed produced pin (fixture run 2026-08-26): executor reports ordinary
-// income only on the executed $75 of a same-year $100 cliff vest.
-const producedSection83PartialCliffOrdinary = 75
-
-describeRule('irc-83-a-equity-compensation-execution-character', {
-  readings: {
-    statuteIncludesFullVestedValueAtCliff: 100,
-    engineReportsOrdinaryOnlyOnExecutedAmount: producedSection83PartialCliffOrdinary,
-  },
-  accepted: 'statuteIncludesFullVestedValueAtCliff',
-  produced: 'engineReportsOrdinaryOnlyOnExecutedAmount',
-  note: 'partial-execution cliff vest',
-}, ({ accepted, produced }) => {
   it('reports ordinary income only on the executed part of a same-year cliff vest', () => {
     const request = withdrawal({
       actionId: 'section-83-partial-cliff',
@@ -1861,8 +1856,8 @@ describeRule('irc-83-a-equity-compensation-execution-character', {
     const character = evidence.taxCharacter[0]
     if (character?.kind !== 'ordinaryIncome') throw new Error('expected ordinary-income character')
 
-    expect(character.amount).toBe(produced)
-    expect(character.amount).not.toBe(accepted)
+    expect(character.amount).toBe(produced.sameYearCliff)
+    expect(character.amount).not.toBe(accepted.sameYearCliff)
   })
 })
 
