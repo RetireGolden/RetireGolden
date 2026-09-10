@@ -218,12 +218,25 @@ jobs:
       - name: Browser tests against the production build
         working-directory: app
         run: pnpm test:e2e:dist
+      # Uploaded even when the dist spec (or a step after the build) fails:
+      # the built chunk graph is the evidence for exactly that failure. `deploy`
+      # still requires this job to succeed, so a failed run never ships.
       - name: Upload build output
+        if: ${{ !cancelled() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: dist
           path: app/dist
+          if-no-files-found: ignore
           retention-days: 1
+      - name: Upload production-build Playwright traces
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: playwright-dist-results
+          path: app/test-results
+          if-no-files-found: ignore
+          retention-days: 7
 
   deploy:
     if: >-
