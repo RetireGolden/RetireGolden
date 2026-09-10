@@ -61,6 +61,12 @@ type NonPackNumericClaim = Readonly<{
   id: string
   claim: string
   ownership: string
+  clauses: readonly FigureClause[]
+}>
+
+type NonPackDisplayContract = Readonly<{
+  id: string
+  clauses: readonly FigureClause[]
 }>
 
 function usd(amount: number): string {
@@ -133,7 +139,12 @@ function byId(id: string) {
 }
 
 function figuresMatchClauses(figures: string, clauses: readonly FigureClause[]): boolean {
-  return clauses.every(({ clause }) => figuresContainsClause(figures, clause))
+  if (!figures || clauses.length === 0) {
+    return false
+  }
+  return clauses.every(
+    ({ clause }) => clause.length > 0 && figuresContainsClause(figures, clause),
+  )
 }
 
 function assertFiguresClauses(
@@ -141,7 +152,10 @@ function assertFiguresClauses(
   clauses: readonly FigureClause[],
   id: string,
 ): void {
+  expect(figures.length, `${id} figures`).toBeGreaterThan(0)
+  expect(clauses.length, `${id} clauses`).toBeGreaterThan(0)
   for (const { clause, label } of clauses) {
+    expect(clause.length, `${id}: ${label} clause text`).toBeGreaterThan(0)
     expect(figures, `${id}: ${label}`).toMatch(clauseLiteralPattern(clause))
   }
 }
@@ -553,60 +567,97 @@ const NON_PACK_NUMERIC_CLAIMS: NonPackNumericClaim[] = [
     claim: '50% and 85% benefit-tax inclusion rates',
     ownership:
       'IRC §86 fixed statutory inclusion tiers; thresholds are pack-backed in ssBenefitTaxationClauses.',
+    clauses: [
+      { label: '50% inclusion tier', clause: 'up to 50% taxable' },
+      { label: '85% inclusion tier', clause: 'up to 85% above' },
+    ],
   },
   {
     id: 'contribution-limits',
     claim: 'catch-up eligibility ages 50+, 60–63, and 55+',
     ownership:
-      'IRC §414(v), §408(d), and §223 catch-up age rules cited in IRS news-release prose; dollar amounts are pack-backed.',
+      'IRC §414(v) employer-plan catch-up ages, §219(b)(5)(B) IRA catch-up age, and §223(b)(3) HSA catch-up age (contributionAndDeferralLimits and healthSavingsAccounts rule records); dollar amounts are pack-backed in contributionLimitsClauses.',
+    clauses: [
+      { label: '401(k) age-50 catch-up', clause: 'at 50+' },
+      { label: '401(k) ages 60–63 super catch-up', clause: 'ages 60–63' },
+      { label: 'HSA age-55 catch-up', clause: 'at 55+' },
+    ],
   },
   {
     id: 'hecm-plf',
     claim: '0.5% annual MIP increment',
     ownership:
-      'HUD HECM annual mortgage-insurance premium increment documented in year2026 hecm commentary; asserted via HECM_ANNUAL_MIP_RATE_PCT in hecmPlfClauses.',
+      'HUD annual MIP increment bound in hecmPlfClauses via HECM_ANNUAL_MIP_RATE_PCT and provenance "(rate + 0.5% MIP)" prose.',
+    clauses: [{ label: 'annual MIP increment', clause: '(rate + 0.5% MIP)' }],
   },
   {
     id: 'rmd-qcd',
     claim: 'IRS Uniform Lifetime Table (Pub 590-B, 2022+)',
     ownership:
-      'pack.rmd.uniformLifetimeTable enforces divisors; start ages are bound via rmdStartAgeForBirthYear in rmdQcdClauses.',
+      'pack.rmd.uniformLifetimeTable enforces divisors; "IRS Uniform Lifetime Table (Pub 590-B, 2022+)" is bound in rmd-qcd figures; start ages via rmdStartAgeForBirthYear in rmdQcdClauses.',
+    clauses: [
+      {
+        label: 'Pub 590-B uniform lifetime table citation',
+        clause: 'IRS Uniform Lifetime Table (Pub 590-B, 2022+)',
+      },
+    ],
   },
   {
     id: 'annuity-purchase',
     claim: 'IRS Pub 939 Table V expected-return multiples',
     ownership:
-      'pack.annuities.expectedReturnMultiples; provenance cites the table qualitatively while QLAC cap is pack-backed.',
+      'pack.annuities.expectedReturnMultiples; "IRS Pub 939 Table V expected-return multiples" is bound in annuity-purchase figures; QLAC cap is pack-backed in annuityPurchaseClauses.',
+    clauses: [
+      {
+        label: 'Pub 939 Table V citation',
+        clause: 'IRS Pub 939 Table V expected-return multiples',
+      },
+    ],
   },
 ]
 
-/**
- * Provenance ids whose figures include prose, historic dates, or modeling notes
- * without a single pack scalar — not asserted here.
- */
-const UNMAPPED_FIGURE_HOLDS: Array<{ id: string; rationale: string }> = [
+/** Non-pack prose the provenance panel must keep displaying alongside pack-backed numerics. */
+const NON_PACK_DISPLAY_CONTRACTS: NonPackDisplayContract[] = [
   {
     id: 'section-121-exclusion',
-    rationale: '"May 6, 1997" and "statutory since 1997, never indexed" are historic statutory prose without pack representation.',
+    clauses: [
+      { label: '1997 statutory indexing prose', clause: 'statutory since 1997, never indexed' },
+      { label: 'May 6 1997 depreciation cutoff', clause: 'May 6, 1997' },
+    ],
   },
   {
     id: 'hecm-plf',
-    rationale:
-      'Intermediate ages between 62 and 90 and the "planning default; a lender quote always wins" disclaimer are prose without per-age pack pins in the figures string.',
+    clauses: [
+      {
+        label: 'HECM planning-default disclaimer',
+        clause: 'planning default; a lender quote always wins',
+      },
+    ],
   },
   {
     id: 'federal-poverty-line',
-    rationale: '"2025 HHS guideline … applied to the 2026 ACA coverage year" is coverage-year prose; only the contiguous-dollar amounts are pack-backed.',
+    clauses: [
+      { label: '2025 HHS guideline coverage-year prose', clause: '2025 HHS guideline' },
+      { label: '2026 ACA coverage year application', clause: 'applied to the 2026 ACA coverage year' },
+    ],
   },
   {
     id: 'aca-ptc',
-    rationale:
-      'Rev. Proc. citation, intermediate breakpoint ladder between 133% and 300%, and "enhanced credits expired 12/31/2025" are statutory/procedural prose without one-line pack scalars.',
+    clauses: [
+      { label: 'Rev. Proc. citation', clause: 'Rev. Proc. 2025-25' },
+      { label: 'enhanced-credit expiry', clause: 'enhanced credits expired 12/31/2025' },
+    ],
   },
   {
     id: 'state-income-tax',
-    rationale:
-      'Modeling disclaimers, statute citations, FTB/LRO/DOR oracle notes, calendar-year expiry prose, and unmodeled-input lists have no pack scalar; only the cited TY2026 display numerics are pack-backed above.',
+    clauses: [
+      { label: 'FTB table-oracle disclaimer', clause: 'not FTB table oracle' },
+      { label: 'unmodeled Oregon inputs', clause: 'HOH/credits/unmodeled inputs unsupported' },
+      {
+        label: 'calendar-year record expiry stand-in',
+        clause: 'calendar-year records expire after 2026',
+      },
+    ],
   },
 ]
 
@@ -648,12 +699,21 @@ describe('parameter provenance', () => {
 
   it('maps every provenance id to pack-backed figure clauses', () => {
     expect(PACK_MAPPED_IDS.sort()).toEqual(PARAMETER_PROVENANCE.map((source) => source.id).sort())
+    for (const [id, clauseBuilder] of Object.entries(PACK_FIGURE_CLAUSES)) {
+      const clauses = clauseBuilder()
+      expect(clauses.length, `${id} pack clause builder`).toBeGreaterThan(0)
+      for (const { clause } of clauses) {
+        expect(clause.length, `${id} pack clause text`).toBeGreaterThan(0)
+      }
+    }
   })
 
   it('figures strings track the current 2026 parameter pack via labelled clauses', () => {
     for (const [id, clauseBuilder] of Object.entries(PACK_FIGURE_CLAUSES)) {
       const entry = byId(id)
-      assertFiguresClauses(entry.figures, clauseBuilder(), id)
+      const clauses = clauseBuilder()
+      assertFiguresClauses(entry.figures, clauses, id)
+      expect(figuresMatchClauses(entry.figures, []), `${id} empty clause list`).toBe(false)
     }
   })
 
@@ -727,17 +787,36 @@ describe('parameter provenance', () => {
     expect(figuresMatchClauses(commaExtensionQcd, rmdClauses)).toBe(false)
   })
 
-  it('documents prose-only figure clauses that have no single pack scalar', () => {
-    for (const hold of UNMAPPED_FIGURE_HOLDS) {
-      expect(PARAMETER_PROVENANCE.some((source) => source.id === hold.id), hold.id).toBe(true)
-      expect(hold.rationale.length).toBeGreaterThan(0)
+  it('pins non-pack display-contract prose in provenance figures', () => {
+    for (const contract of NON_PACK_DISPLAY_CONTRACTS) {
+      const entry = byId(contract.id)
+      assertFiguresClauses(entry.figures, contract.clauses, contract.id)
+      expect(figuresMatchClauses(entry.figures, []), `${contract.id} empty clause list`).toBe(false)
+      for (const { clause, label } of contract.clauses) {
+        const withoutClause = entry.figures.replace(clause, '')
+        expect(
+          figuresMatchClauses(withoutClause, contract.clauses),
+          `${contract.id}: ${label} omission`,
+        ).toBe(false)
+      }
     }
   })
 
-  it('inventories non-pack numeric claims with explicit ownership', () => {
+  it('binds non-pack numeric claims to provenance figures with explicit ownership', () => {
     for (const claim of NON_PACK_NUMERIC_CLAIMS) {
       expect(PARAMETER_PROVENANCE.some((source) => source.id === claim.id), claim.id).toBe(true)
       expect(claim.ownership.length).toBeGreaterThan(0)
+      expect(claim.clauses.length, `${claim.id} claim clauses`).toBeGreaterThan(0)
+      const entry = byId(claim.id)
+      assertFiguresClauses(entry.figures, claim.clauses, claim.id)
+      expect(figuresMatchClauses(entry.figures, []), `${claim.id} empty clause list`).toBe(false)
+      for (const { clause, label } of claim.clauses) {
+        const withoutClause = entry.figures.replace(clause, '')
+        expect(
+          figuresMatchClauses(withoutClause, claim.clauses),
+          `${claim.id}: ${label} omission`,
+        ).toBe(false)
+      }
     }
   })
 })

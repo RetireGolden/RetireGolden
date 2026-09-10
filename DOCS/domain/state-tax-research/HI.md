@@ -56,7 +56,11 @@ Act 46, SLH 2024 doubled the 2025 standard deduction to $4,400 / $8,800 and wide
 ## Retirement-income detail
 Hawaii has a 12-bracket graduated tax from 1.4% to 11.0%. Brackets were **substantially widened for 2025** by Act 46, SLH 2024 (single 1.4% bracket now runs to $9,600; 11% top rate starts at $325,000). MFJ brackets are exactly **2×** the single brackets (verified).
 
-Social Security is fully exempt. Hawaii fully exempts **employer-funded pension** distributions (public and private) where the employee did not contribute. However, distributions from traditional **IRAs and 401(k)/deferred-compensation** plans are treated as a return on individual investment and are **fully taxable**. Because the common modern retiree's IRA/401(k) income is taxed, this maps to `retirement: { kind: "none" }` (conservative for those with a true non-contributory employer pension). The private-pension distinction is **not modeled** in the current pack.
+Hawaii fully exempts **employer-funded pension** distributions (public and private) where the employee did not contribute. However, distributions from traditional **IRAs and 401(k)/deferred-compensation** plans are treated as a return on individual investment and are **fully taxable**. Because the common modern retiree's IRA/401(k) income is taxed, this maps to `retirement: { kind: "none" }` (conservative for those with a true non-contributory employer pension). The private-pension distinction is **not modeled** in the current pack.
+
+## Social Security
+
+Hawaii lists IRC section 86 among the Internal Revenue Code provisions that are **not operative** for Hawaii income-tax purposes (Haw. Rev. Stat. § 235-2.3(b)(3)). The quoted paragraph names tier 1 railroad retirement alongside Social Security, but the settled fixture at `hi-hrs-235-2-3-social-security-subtraction` exercises only the Social Security `ssBenefits` path; tier 1 railroad eligibility typing is not certified by that fixture, and there is no separate railroad-retirement registered record. Social Security benefits included in federal adjusted gross income therefore do not enter the Hawaii base. Employer-funded pension exclusions under § 235-7 are registered separately at `hi-hrs-235-7-pension-and-social-security`.
 
 ## Simplifications / not modeled
 - Fully-employer-funded pension exemption not modeled (`none` overstates tax for retirees with a traditional non-contributory pension). The model targets the dominant IRA/401(k) case, which Hawaii taxes.
@@ -66,6 +70,7 @@ Social Security is fully exempt. Hawaii fully exempts **employer-funded pension*
 - Head-of-household, MFS, and surviving-spouse standard-deduction amounts not modeled.
 
 ## Citations
+- https://files.hawaii.gov/tax/legal/hrs/hrs_235.pdf — Haw. Rev. Stat. § 235-2.3(b)(3) (IRC § 86 nonoperative; Social Security exclusion).
 - https://files.hawaii.gov/tax/legal/hrs/hrs_235.pdf — Haw. Rev. Stat. § 235-2.4(a)(2)(F) (2026–2027 standard deduction phase).
 - https://files.hawaii.gov/tax/news/announce/ann24-03.pdf — Hawaii DOTAX Announcement 2024-03: Act 46 bracket/standard-deduction changes effective 1/1/2025.
-- https://support.taxslayer.com/hc/en-us/articles/360029385331-Is-my-retirement-income-taxable-to-Hawaii — employer pensions exempt; IRA/401(k) taxable; SS exempt.
+- https://support.taxslayer.com/hc/en-us/articles/360029385331-Is-my-retirement-income-taxable-to-Hawaii — secondary aggregator: employer pensions exempt; IRA/401(k) taxable (retirement-income limb only).

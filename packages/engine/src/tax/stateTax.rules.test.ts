@@ -2780,7 +2780,24 @@ const HI_PRIVATE_PENSION = 40_000
 
 const HI_SS_OTHER_INCOME = 90_000
 const HI_SS_BENEFITS = 40_000
-const HI_FEDERALLY_TAXABLE_SS = 34_000
+// IRC §86 federal discriminator (single filer, $90,000 non-SS ordinary income,
+// $40,000 Social Security) — Haw. Rev. Stat. §235-2.3(b)(3) makes §86
+// inoperative in Hawaii; this worksheet pins the counterfactual inclusion only.
+//   provisional income = $90,000 + 0.5×$40,000 = $110,000 — IRC §86(b)
+//   single thresholds: $25,000 lower / $34,000 upper — IRC §86(c)
+//   lower-band add-on = min(50%×($34,000−$25,000), 50%×benefits) = $4,500 — IRC §86(a)(1)
+//   high-tier uncapped = 0.85×($110,000−$34,000) + $4,500 = $69,100 — IRC §86(a)(2)
+//   federally taxable = min($69,100, 0.85×$40,000) = $34,000 — IRC §86(a)(2) cap
+const HI_SS_PROVISIONAL_INCOME = HI_SS_OTHER_INCOME + 0.5 * HI_SS_BENEFITS
+const HI_IRC86_LOWER_THRESHOLD_SINGLE = 25_000
+const HI_IRC86_UPPER_THRESHOLD_SINGLE = 34_000
+const HI_IRC86_LOWER_BAND_ADDON = Math.min(
+  0.5 * (HI_IRC86_UPPER_THRESHOLD_SINGLE - HI_IRC86_LOWER_THRESHOLD_SINGLE),
+  0.5 * HI_SS_BENEFITS,
+)
+const HI_IRC86_HIGH_TIER_UNCAPPED =
+  0.85 * (HI_SS_PROVISIONAL_INCOME - HI_IRC86_UPPER_THRESHOLD_SINGLE) + HI_IRC86_LOWER_BAND_ADDON
+const HI_FEDERALLY_TAXABLE_SS = Math.min(HI_IRC86_HIGH_TIER_UNCAPPED, 0.85 * HI_SS_BENEFITS)
 const HI_DEDUCTION_SINGLE = 8_000 // HRS §235-2.4(a)(2)(F) TY2026 single amount
 
 describeRule('hi-hrs-235-2-3-social-security-subtraction', {
@@ -3627,7 +3644,7 @@ describeRule('ok-stat-68-2358-retirement-and-social-security', {
     expect(taxable).not.toBe(OK_CAP_NO_EXCLUSION_TAXABLE)
   })
 
-  it('fully excludes qualifying CSRS-in-lieu benefits on Schedule 511-A line 3', () => {
+  it('pins the missing qualifying CSRS-in-lieu exclusion on Schedule 511-A line 3', () => {
     // Source-side assumptions: $15,000 Federal CSRS paid in lieu of Social Security
     // and fully included in federal AGI, with qualifying CSA/CSF 1099-R documentation.
     // High $90,000 background ordinary income keeps clamps and deductions identical

@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { cashAccount, singlePersonPlan } from '../../testing/planFixtures.js'
+import type { Plan } from '../../model/plan.js'
 import type { DetectorContext } from '../types.js'
 
 vi.mock('../../projection/relocation.js', async (importOriginal) => {
@@ -11,7 +12,11 @@ vi.mock('../../projection/relocation.js', async (importOriginal) => {
   }
 })
 
-import { compareRelocationCandidates } from '../../projection/relocation.js'
+import {
+  compareRelocationCandidates,
+  relocationScenarioPatch,
+  type RelocationComparison,
+} from '../../projection/relocation.js'
 import { stateRelocation } from './stateRelocation.js'
 
 /**
@@ -23,9 +28,16 @@ import { stateRelocation } from './stateRelocation.js'
  *
  * `evaluate()` coverage stubs only the relocation-compare producer; savings
  * are hand-summed from the controlled per-year state-tax rows and inflation
- * deflator, not recomputed from state statutes.
+ * deflator, not recomputed from state statutes. Compare-call wiring (plan
+ * identity, FL/TX/WA shortlist move years, `{ startYear }`) and the
+ * ranking-to-patch path are pinned independently of the screen placeholder.
  */
 const START_YEAR = 2026
+const ZERO_TAX_SHORTLIST_CANDIDATES = [
+  { state: 'FL', moveYear: START_YEAR },
+  { state: 'TX', moveYear: START_YEAR },
+  { state: 'WA', moveYear: START_YEAR },
+] as const
 
 const mockedCompare = vi.mocked(compareRelocationCandidates)
 
@@ -50,6 +62,14 @@ function context(
       deflate: opts.deflate ?? ((_year: number, amount: number) => amount),
     },
   } as unknown as DetectorContext
+}
+
+function expectCompareWiring(plan: Plan): void {
+  expect(mockedCompare).toHaveBeenCalledWith(
+    plan,
+    [...ZERO_TAX_SHORTLIST_CANDIDATES],
+    { startYear: START_YEAR },
+  )
 }
 
 describe('stateRelocation', () => {
@@ -233,17 +253,16 @@ describe('stateRelocation', () => {
         },
       ],
       monteCarlo: null,
+    } satisfies RelocationComparison)
+
+    const eligibleCtx = context({
+      state: 'KY',
+      deflate: (year, amount) => (year === 2027 ? amount * 0.5 : amount),
     })
+    const screenCard = stateRelocation.screen(eligibleCtx)
+    const result = stateRelocation.evaluate!(eligibleCtx)
 
-    const screenCard = stateRelocation.screen(context({ state: 'KY' }))
-    const result = stateRelocation.evaluate!(
-      context({
-        state: 'KY',
-        deflate: (year, amount) => (year === 2027 ? amount * 0.5 : amount),
-      }),
-    )
-
-    expect(mockedCompare).toHaveBeenCalledOnce()
+    expectCompareWiring(eligibleCtx.plan)
     expect(result.action.kind).toBe('preview-scenario')
     if (result.action.kind !== 'preview-scenario') throw new Error('expected a preview scenario')
     // FL is selected even though TX has lower state/local tax — selection follows
@@ -251,12 +270,160 @@ describe('stateRelocation', () => {
     expect(result.action.scenarioName).toBe('Relocate to FL (illustrative)')
     if (!screenCard) throw new Error('expected screen card')
     if (screenCard.action.kind !== 'preview-scenario') throw new Error('expected screen preview scenario')
-    expect(result.action.patch).toEqual(screenCard.action.patch)
+    const flWinnerPatch = relocationScenarioPatch(
+      eligibleCtx.plan,
+      { state: 'FL', moveYear: START_YEAR },
+      START_YEAR,
+    )
+    const txAlternatePatch = relocationScenarioPatch(
+      eligibleCtx.plan,
+      { state: 'TX', moveYear: START_YEAR },
+      START_YEAR,
+    )
+    expect(result.action.patch).toEqual(flWinnerPatch)
+    expect(result.action.patch).not.toEqual(txAlternatePatch)
     if (!result.impact) throw new Error('expected evaluate() to publish impact')
     expect(result.impact.qualitative).toContain('$3,200')
     expect(result.impact.qualitative).toContain('vs FL')
     expect(result.impact.qualitative).not.toContain('$4,000')
     expect(result.impact.qualitative).not.toBe(screenCard.impact.qualitative)
+  })
+
+  it('evaluate() previews the winning destination patch instead of the screen placeholder', () => {
+    // Worksheet (today's dollars) against the nominal winner TX:
+    //   2026 delta: 3,500 - 5,000 = -1,500; deflator 1.0 -> -1,500
+    //   2027 delta: 4,200 - 6,000 = -1,800; deflator 0.5 -> -900
+    //   lifetimeStateTaxDeltaToday = -2,400; savings = max(0, 2,400) = 2,400
+    // FL has lower state/local tax (5,500 vs 7,700) but loses on lifetime total.
+    const baselineTaxes = [
+      { year: 2026, tax: 5_000 },
+      { year: 2027, tax: 6_000 },
+    ]
+    const flTaxes = [
+      { year: 2026, tax: 2_500 },
+      { year: 2027, tax: 3_000 },
+    ]
+    const txTaxes = [
+      { year: 2026, tax: 3_500 },
+      { year: 2027, tax: 4_200 },
+    ]
+    const flLifetimeStateLocalTax = 5_500
+    const txLifetimeStateLocalTax = 7_700
+    const flLifetimeTaxesAndPenalties = 450_000
+    const txLifetimeTaxesAndPenalties = 350_000
+
+    expect(flLifetimeStateLocalTax).toBeLessThan(txLifetimeStateLocalTax)
+    expect(txLifetimeTaxesAndPenalties).toBeLessThan(flLifetimeTaxesAndPenalties)
+
+    mockedCompare.mockReturnValue({
+      startYear: START_YEAR,
+      rows: [
+        {
+          id: 'baseline',
+          label: 'Stay in KY',
+          candidate: null,
+          error: null,
+          destinationState: 'KY',
+          modeled: true,
+          lifetimeStateLocalTax: 11_000,
+          lifetimeTaxesAndPenalties: 500_000,
+          endingAfterTaxEstate: 800_000,
+          endingNetWorth: 800_000,
+          depletionYear: null,
+          endYear: START_YEAR + 30,
+          successRate: null,
+          drivers: null,
+          stateTaxByYear: baselineTaxes,
+          warnings: [],
+        },
+        {
+          id: 'candidate-0',
+          label: 'Move to FL',
+          candidate: { state: 'FL', moveYear: START_YEAR },
+          error: null,
+          destinationState: 'FL',
+          modeled: true,
+          lifetimeStateLocalTax: flLifetimeStateLocalTax,
+          lifetimeTaxesAndPenalties: flLifetimeTaxesAndPenalties,
+          endingAfterTaxEstate: 840_000,
+          endingNetWorth: 840_000,
+          depletionYear: null,
+          endYear: START_YEAR + 30,
+          successRate: null,
+          drivers: null,
+          stateTaxByYear: flTaxes,
+          warnings: [],
+        },
+        {
+          id: 'candidate-1',
+          label: 'Move to TX',
+          candidate: { state: 'TX', moveYear: START_YEAR },
+          error: null,
+          destinationState: 'TX',
+          modeled: true,
+          lifetimeStateLocalTax: txLifetimeStateLocalTax,
+          lifetimeTaxesAndPenalties: txLifetimeTaxesAndPenalties,
+          endingAfterTaxEstate: 850_000,
+          endingNetWorth: 850_000,
+          depletionYear: null,
+          endYear: START_YEAR + 30,
+          successRate: null,
+          drivers: null,
+          stateTaxByYear: txTaxes,
+          warnings: [],
+        },
+        {
+          id: 'candidate-2',
+          label: 'Move to WA',
+          candidate: { state: 'WA', moveYear: START_YEAR },
+          error: 'invalid candidate',
+          destinationState: 'WA',
+          modeled: false,
+          lifetimeStateLocalTax: 0,
+          lifetimeTaxesAndPenalties: 0,
+          endingAfterTaxEstate: 0,
+          endingNetWorth: 0,
+          depletionYear: null,
+          endYear: START_YEAR,
+          successRate: null,
+          drivers: null,
+          stateTaxByYear: [],
+          warnings: [],
+        },
+      ],
+      monteCarlo: null,
+    } satisfies RelocationComparison)
+
+    const eligibleCtx = context({
+      state: 'KY',
+      deflate: (year, amount) => (year === 2027 ? amount * 0.5 : amount),
+    })
+    const screenCard = stateRelocation.screen(eligibleCtx)
+    const result = stateRelocation.evaluate!(eligibleCtx)
+
+    expectCompareWiring(eligibleCtx.plan)
+    expect(result.action.kind).toBe('preview-scenario')
+    if (result.action.kind !== 'preview-scenario') throw new Error('expected a preview scenario')
+    expect(result.action.scenarioName).toBe('Relocate to TX (illustrative)')
+    if (!screenCard) throw new Error('expected screen card')
+    if (screenCard.action.kind !== 'preview-scenario') throw new Error('expected screen preview scenario')
+    const txWinnerPatch = relocationScenarioPatch(
+      eligibleCtx.plan,
+      { state: 'TX', moveYear: START_YEAR },
+      START_YEAR,
+    )
+    const flScreenPlaceholderPatch = screenCard.action.patch
+    expect(result.action.patch).toEqual(txWinnerPatch)
+    expect(result.action.patch).not.toEqual(flScreenPlaceholderPatch)
+    expect(result.action.patch).toMatchObject({
+      household: { stateMoves: [{ state: 'TX' }] },
+    })
+    expect(flScreenPlaceholderPatch).toMatchObject({
+      household: { stateMoves: [{ state: 'FL' }] },
+    })
+    if (!result.impact) throw new Error('expected evaluate() to publish impact')
+    expect(result.impact.qualitative).toContain('$2,400')
+    expect(result.impact.qualitative).toContain('vs TX')
   })
 
   it('evaluate() clamps reported savings at zero when the best candidate costs more state tax', () => {
@@ -301,9 +468,11 @@ describe('stateRelocation', () => {
         },
       ],
       monteCarlo: null,
-    })
+    } satisfies RelocationComparison)
 
-    const result = stateRelocation.evaluate!(context({ state: 'KY' }))
+    const eligibleCtx = context({ state: 'KY' })
+    const result = stateRelocation.evaluate!(eligibleCtx)
+    expectCompareWiring(eligibleCtx.plan)
     if (!result.impact) throw new Error('expected evaluate() to publish impact')
     expect(result.impact.qualitative).toContain('$0')
   })

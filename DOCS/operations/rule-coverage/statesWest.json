@@ -1069,16 +1069,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2786,
+          "line": 2803,
           "note": null,
           "tests": [
             {
               "title": "holds Hawaii taxable income unchanged when federally included Social Security is added",
-              "line": 2805
+              "line": 2822
             },
             {
               "title": "would raise the base by the IRC 86 inclusion if Social Security were taxed",
-              "line": 2813
+              "line": 2830
             }
           ]
         }
@@ -1218,12 +1218,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2821,
+          "line": 2838,
           "note": null,
           "tests": [
             {
               "title": "pins the unmodelled Hawaii private-pension exclusion",
-              "line": 2836
+              "line": 2853
             }
           ]
         }
@@ -1291,12 +1291,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2847,
+          "line": 2864,
           "note": null,
           "tests": [
             {
               "title": "deducts Idaho’s federally included Social Security amount",
-              "line": 2863
+              "line": 2880
             }
           ]
         }
@@ -1354,27 +1354,27 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3254,
+          "line": 3271,
           "note": "age-65 additional subtraction, 15-30-2120(3)(g) floor",
           "tests": [
             {
               "title": "pins the missing Montana age-65 subtraction",
-              "line": 3274
+              "line": 3291
             },
             {
               "title": "grants nothing below 65 under either reading",
-              "line": 3279
+              "line": 3296
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3297,
+          "line": 3314,
           "note": "per-taxpayer doubling for a couple both 65",
           "tests": [
             {
               "title": "pins the missing per-taxpayer doubling for a couple both 65",
-              "line": 3315
+              "line": 3332
             }
           ]
         }
@@ -1452,20 +1452,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3210,
+          "line": 3227,
           "note": null,
           "tests": [
             {
               "title": "starts Montana from federal taxable income, so federally taxable Social Security stays in",
-              "line": 3229
+              "line": 3246
             },
             {
               "title": "would drop the benefit if Montana subtracted it the way a false flag does",
-              "line": 3235
+              "line": 3252
             },
             {
               "title": "carries the federal standard deduction with it, not a frozen state figure",
-              "line": 3241
+              "line": 3258
             }
           ]
         }
@@ -1553,12 +1553,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3394,
+          "line": 3411,
           "note": null,
           "tests": [
             {
               "title": "pins the high-income path where the blanket pack exclusion diverges from the source threshold",
-              "line": 3409
+              "line": 3426
             }
           ]
         }
@@ -1843,12 +1843,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3704,
+          "line": 3721,
           "note": null,
           "tests": [
             {
               "title": "subtracts federally taxable Social Security as ORS 316.054 directs",
-              "line": 3717
+              "line": 3734
             }
           ]
         }
@@ -1906,12 +1906,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3661,
+          "line": 3678,
           "note": null,
           "tests": [
             {
               "title": "applies the enacted 4.45% flat rate to ordinary income",
-              "line": 3669
+              "line": 3686
             }
           ]
         }
@@ -2037,12 +2037,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3678,
+          "line": 3695,
           "note": null,
           "tests": [
             {
               "title": "pins the unmodeled Utah Social Security benefits credit",
-              "line": 3697
+              "line": 3714
             }
           ]
         }
@@ -2110,12 +2110,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3983,
+          "line": 4000,
           "note": null,
           "tests": [
             {
               "title": "keeps Washington out of the broad state-income-tax path",
-              "line": 4002
+              "line": 4019
             }
           ]
         }
