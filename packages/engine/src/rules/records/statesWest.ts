@@ -978,6 +978,50 @@ export const westStateRecords = {
     ],
   },
 
+  'nm-nmsa-7-2-7-individual-income-tax-rates': {
+    title: 'New Mexico taxes single and joint taxable income on the HB 252 §7-2-7 rate schedules from 2025 onward',
+    statement:
+      'NMSA §7-2-7, as amended by HB 252 SECTION 5, assigns graduated rates for any taxable year beginning on or after January 1, 2025: Schedule A for married individuals filing joint returns, heads of household, and surviving spouses, and Schedule B for single individuals and for estates and trusts. The pack\'s `brackets` carry those single and married-filing-jointly thresholds and rates; `bracketTax` applies them to modeled taxable income. Settled only for those supported filing statuses and schedule cells; estates, trusts, head-of-household, surviving-spouse, married-filing-separate, and whole-return accuracy are outside this record. Social Security exemption remains at `nm-stat-7-2-5-14-social-security-and-federal-standard`.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:NM',
+    // Schedule A and Schedule B are quoted as separate authorities. Ellipses omit PDF line numbers and page furniture only; they do not omit statutory words.
+    authority: [{
+      kind: 'statute',
+      citation: 'NMSA §7-2-7 (HB 252 SECTION 5), effective period',
+      url: 'https://www.nmlegis.gov/Sessions/24%20Regular/final/HB0252.pdf',
+      quotedText:
+        '7-2-7. INDIVIDUAL INCOME TAX RATES.--The tax imposed … by Section 7-2-3 NMSA 1978 shall be at the following rates … for any taxable year beginning on or after January 1, 2025:',
+    }, {
+      kind: 'statute',
+      citation: 'NMSA §7-2-7 (HB 252 SECTION 5), Schedule A',
+      url: 'https://www.nmlegis.gov/Sessions/24%20Regular/final/HB0252.pdf',
+      quotedText:
+        'A. For married individuals filing joint returns, \u2026 heads of household and surviving spouses: \u2026 For taxable income: \u2026 The tax shall be: \u2026 Not over $8,000 \u2026 1.5% of taxable income \u2026 Over $8,000 but not over $25,000 \u2026 $120 plus 3.2% of \u2026 excess over $8,000 \u2026 Over $25,000 but not over $50,000 \u2026 $664 plus 4.3% of \u2026 excess over $25,000 \u2026 Over $50,000 but not over $100,000 \u2026 $1,739 plus 4.7% of \u2026 excess over $50,000 \u2026 Over $100,000 but not over $315,000 \u2026 $4,089 plus 4.9% of \u2026 excess over $100,000 \u2026 Over $315,000 \u2026 $14,624 plus 5.9% of \u2026 excess over $315,000.',
+    }, {
+      kind: 'statute',
+      citation: 'NMSA §7-2-7 (HB 252 SECTION 5), Schedule B',
+      url: 'https://www.nmlegis.gov/Sessions/24%20Regular/final/HB0252.pdf',
+      quotedText:
+        'B. For single individuals and for estates and \u2026 trusts: \u2026 For taxable income: \u2026 The tax shall be: \u2026 Not over $5,500 \u2026 1.5% of taxable income \u2026 Over $5,500 but not over $16,500 \u2026 $82.50 plus 3.2% of \u2026 excess over $5,500 \u2026 Over $16,500 but not over $33,500 \u2026 $434.50 plus 4.3% of \u2026 excess over $16,500 \u2026 Over $33,500 but not over $66,500 \u2026 $1,165.50 plus 4.7% of \u2026 excess over $33,500 \u2026 Over $66,500 but not over $210,000 \u2026 $2,716.50 plus 4.9% of \u2026 excess over $66,500 \u2026 Over $210,000 \u2026 $9,748 plus 5.9% of \u2026 excess over $210,000.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2025,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-10',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#NM',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxDetail',
+      'packages/engine/src/tax/stateTax.ts#bracketTax',
+    ],
+  },
+
   'or-lro-2026-rate-schedule-and-standard-deduction': {
     title: 'Oregon publishes TY2026 indexed brackets and basic deductions represented by continuous marginal breakpoints',
     statement:

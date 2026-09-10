@@ -2,17 +2,17 @@
   "kind": "retiregolden.rules-coverage.manifest",
   "version": 5,
   "registry": {
-    "total": 470,
+    "total": 471,
     "byClassification": {
       "approximated": 127,
       "outOfScope": 86,
-      "settled": 253,
+      "settled": 254,
       "unsettled": 4
     },
     "byVolatility": {
       "annuallyIndexed": 74,
       "awaitingGuidance": 10,
-      "staticStatute": 379,
+      "staticStatute": 380,
       "sunsetting": 7
     },
     "byJurisdiction": {
@@ -50,7 +50,7 @@
         "NE": 2,
         "NH": 1,
         "NJ": 2,
-        "NM": 1,
+        "NM": 2,
         "NV": 1,
         "NY": 5,
         "OH": 2,
@@ -70,7 +70,7 @@
         "WV": 2,
         "WY": 1
       },
-      "stateTotal": 139
+      "stateTotal": 140
     }
   },
   "attestations": {
@@ -649,7 +649,7 @@
     {
       "module": "statesWest",
       "path": "rule-coverage/statesWest.json",
-      "ruleCount": 30
+      "ruleCount": 31
     },
     {
       "module": "transfersAndUnmodeledRegimes",
@@ -658,16 +658,16 @@
     }
   ],
   "quoteFidelity": {
-    "generatedAt": "2026-09-10T12:49:46.235Z",
-    "entryCount": 1390,
+    "generatedAt": "2026-09-10T18:59:10.717Z",
+    "entryCount": 1394,
     "fetched": 0,
-    "cached": 371,
+    "cached": 372,
     "counts": {
-      "ELISION-EXACT": 91,
+      "ELISION-EXACT": 90,
       "ELISION-PUNCTUATION": 8,
-      "EXACT": 963,
+      "EXACT": 965,
       "PDF-NOT-VERIFIABLE": 7,
-      "PDF-WORD-LEVEL": 274,
+      "PDF-WORD-LEVEL": 277,
       "PUNCTUATION": 44,
       "UNFETCHABLE": 3
     }

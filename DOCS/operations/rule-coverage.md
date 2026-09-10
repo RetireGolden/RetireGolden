@@ -11,17 +11,17 @@ The registry is the machine-checked chain from a rule to its implementation and 
 
 | Metric | Count |
 | --- | ---: |
-| Total rules | 470 |
+| Total rules | 471 |
 | Classification: approximated | 127 |
 | Classification: outOfScope | 86 |
-| Classification: settled | 253 |
+| Classification: settled | 254 |
 | Classification: unsettled | 4 |
 | Volatility: annuallyIndexed | 74 |
 | Volatility: awaitingGuidance | 10 |
-| Volatility: staticStatute | 379 |
+| Volatility: staticStatute | 380 |
 | Volatility: sunsetting | 7 |
 | Federal jurisdiction | 331 |
-| State jurisdiction total | 139 |
+| State jurisdiction total | 140 |
 
 | State jurisdiction | Count |
 | --- | ---: |
@@ -57,7 +57,7 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | NE | 2 |
 | NH | 1 |
 | NJ | 2 |
-| NM | 1 |
+| NM | 2 |
 | NV | 1 |
 | NY | 5 |
 | OH | 2 |
@@ -207,12 +207,12 @@ Per-rule payloads are sharded one file per record module under `DOCS/operations/
 | rule-coverage/statesNortheast.json | 22 |
 | rule-coverage/statesSouthAtlantic.json | 19 |
 | rule-coverage/statesSouthCentral.json | 34 |
-| rule-coverage/statesWest.json | 30 |
+| rule-coverage/statesWest.json | 31 |
 | rule-coverage/transfersAndUnmodeledRegimes.json | 6 |
 
 ## Re-verification due dates
 
-The 25 earliest due dates are shown below (470 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
+The 25 earliest due dates are shown below (471 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
 
 | Rule | Volatility | Verified on | Due on |
 | --- | --- | --- | --- |
@@ -252,18 +252,18 @@ Version 5 is a breaking discriminator for strict version checks: manifest.rules 
 
 ## Quote fidelity
 
-Committed ledger generated at 2026-09-10T12:49:46.235Z over 1390 authority entries (0 fetched live, 371 from cache).
+Committed ledger generated at 2026-09-10T18:59:10.717Z over 1394 authority entries (0 fetched live, 372 from cache).
 
-3 serious, 59 advisory, 1328 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
+3 serious, 59 advisory, 1332 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
 not treated as a CI gate; how to read each verdict: DOCS/operations/quote-fidelity.md.
 
 | Verdict | Class | Count |
 | --- | --- | ---: |
-| ELISION-EXACT | ok | 91 |
+| ELISION-EXACT | ok | 90 |
 | ELISION-PUNCTUATION | advisory | 8 |
-| EXACT | ok | 963 |
+| EXACT | ok | 965 |
 | PDF-NOT-VERIFIABLE | advisory | 7 |
-| PDF-WORD-LEVEL | ok | 274 |
+| PDF-WORD-LEVEL | ok | 277 |
 | PUNCTUATION | advisory | 44 |
 | UNFETCHABLE | serious | 3 |
 

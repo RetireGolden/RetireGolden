@@ -22,7 +22,7 @@ import { packForYear } from '../params/index.js'
 import { conformStateStandardDeduction, stateParamsFor } from '../params/state/index.js'
 import type { StateTaxParams } from '../params/state/types.js'
 import type { TaxYearInput } from '../projection/types.js'
-import { computeStateTax, computeStateTaxableIncome, computeStateTaxYearTotal } from './stateTax.js'
+import { computeStateTax, computeStateTaxDetail, computeStateTaxableIncome, computeStateTaxYearTotal } from './stateTax.js'
 
 const TAX_YEAR = 2026
 
@@ -2603,7 +2603,14 @@ describeRule('ga-code-48-7-27-retirement-and-social-security-exclusion', {
 // subtract all $26,600, leaving exactly the $40,000 non-Social-Security base.
 const CT_SS_OTHER_INCOME = 40_000
 const CT_SS_BENEFITS = 40_000
-const CT_FEDERALLY_TAXABLE_SS = 26_600
+const CT_IRC86_LOWER = 25_000
+const CT_IRC86_UPPER = 34_000
+const CT_IRC86_BASE_ADDON = 4_500
+const CT_SS_PROVISIONAL = CT_SS_OTHER_INCOME + 0.5 * CT_SS_BENEFITS
+const CT_FEDERALLY_TAXABLE_SS = Math.min(
+  0.85 * CT_SS_BENEFITS,
+  0.85 * (CT_SS_PROVISIONAL - CT_IRC86_UPPER) + CT_IRC86_BASE_ADDON,
+)
 
 // Table 32 is 0% at federal AGI of $100,000 and over. This source pension is
 // $50,000 of a $100,000 AGI, so the statutory base keeps all $100,000; the
@@ -2611,15 +2618,72 @@ const CT_FEDERALLY_TAXABLE_SS = 26_600
 const CT_HIGH_AGI_PENSION = 50_000
 const CT_HIGH_AGI_TOTAL = 100_000
 
+// Above the §12-701(a)(20)(B)(x)(IV) $75,000 single gate: ordinary $90,000,
+// $40,000 benefits, provisional income $110,000, IRC §86 federally taxable
+// share derived from the statutory thresholds, federal AGI $124,000. Connecticut
+// retains min(0.25 × benefits, 0.25 × (provisional − $25,000)) in the base, so
+// the statutory intermediate Connecticut base is ordinary plus retained share.
+// The pack keeps the full federally taxable share instead. A contrary
+// full-exclusion reading would leave only the ordinary income.
+const CT_ABOVE_THRESHOLD_ORDINARY = 90_000
+const CT_ABOVE_THRESHOLD_SS = 40_000
+const CT_ABOVE_THRESHOLD_PROVISIONAL = CT_ABOVE_THRESHOLD_ORDINARY + 0.5 * CT_ABOVE_THRESHOLD_SS
+const CT_ABOVE_THRESHOLD_FEDERAL_TAXABLE_SS = Math.min(
+  0.85 * CT_ABOVE_THRESHOLD_SS,
+  0.85 * (CT_ABOVE_THRESHOLD_PROVISIONAL - CT_IRC86_UPPER) + CT_IRC86_BASE_ADDON,
+)
+const CT_ABOVE_THRESHOLD_RETAINED_IN_BASE = Math.min(
+  0.25 * CT_ABOVE_THRESHOLD_SS,
+  0.25 * (CT_ABOVE_THRESHOLD_PROVISIONAL - CT_IRC86_LOWER),
+)
+const CT_ABOVE_THRESHOLD_ACCEPTED_BASE = CT_ABOVE_THRESHOLD_ORDINARY + CT_ABOVE_THRESHOLD_RETAINED_IN_BASE
+const CT_ABOVE_THRESHOLD_OBSERVED_BASE = CT_ABOVE_THRESHOLD_ORDINARY + CT_ABOVE_THRESHOLD_FEDERAL_TAXABLE_SS
+const CT_ABOVE_THRESHOLD_FULL_EXCLUSION_BASE = CT_ABOVE_THRESHOLD_ORDINARY
+// Second above-threshold fixture: ordinary $40,000, $100,000 benefits,
+// provisional income $90,000. IRC §86 federally taxable share $52,100; federal
+// AGI $92,100 clears the §701(x)(IV) $75,000 gate. The §86(b)(1) excess limb
+// (25% × ($90,000 − $25,000) = $16,250) binds below the 25%-of-benefits limb
+// ($25,000), so Connecticut retains $16,250 — not the full federally taxable
+// share the pack keeps, and not the contrary flat-25%-of-benefits reading.
+const CT_SECOND_ABOVE_THRESHOLD_ORDINARY = 40_000
+const CT_SECOND_ABOVE_THRESHOLD_SS = 100_000
+const CT_SECOND_ABOVE_THRESHOLD_PROVISIONAL =
+  CT_SECOND_ABOVE_THRESHOLD_ORDINARY + 0.5 * CT_SECOND_ABOVE_THRESHOLD_SS
+const CT_SECOND_ABOVE_THRESHOLD_FEDERAL_TAXABLE_SS = Math.min(
+  0.85 * CT_SECOND_ABOVE_THRESHOLD_SS,
+  0.85 * (CT_SECOND_ABOVE_THRESHOLD_PROVISIONAL - CT_IRC86_UPPER) + CT_IRC86_BASE_ADDON,
+)
+const CT_SECOND_ABOVE_THRESHOLD_FEDERAL_AGI =
+  CT_SECOND_ABOVE_THRESHOLD_ORDINARY + CT_SECOND_ABOVE_THRESHOLD_FEDERAL_TAXABLE_SS
+const CT_SECOND_ABOVE_THRESHOLD_BENEFITS_LIMB = 0.25 * CT_SECOND_ABOVE_THRESHOLD_SS
+const CT_SECOND_ABOVE_THRESHOLD_EXCESS_LIMB =
+  0.25 * (CT_SECOND_ABOVE_THRESHOLD_PROVISIONAL - CT_IRC86_LOWER)
+const CT_SECOND_ABOVE_THRESHOLD_RETAINED_IN_BASE = Math.min(
+  CT_SECOND_ABOVE_THRESHOLD_BENEFITS_LIMB,
+  CT_SECOND_ABOVE_THRESHOLD_EXCESS_LIMB,
+)
+const CT_SECOND_ABOVE_THRESHOLD_ACCEPTED_BASE =
+  CT_SECOND_ABOVE_THRESHOLD_ORDINARY + CT_SECOND_ABOVE_THRESHOLD_RETAINED_IN_BASE
+const CT_SECOND_ABOVE_THRESHOLD_OBSERVED_BASE =
+  CT_SECOND_ABOVE_THRESHOLD_ORDINARY + CT_SECOND_ABOVE_THRESHOLD_FEDERAL_TAXABLE_SS
+const CT_SECOND_ABOVE_THRESHOLD_FLAT_BENEFITS_BASE =
+  CT_SECOND_ABOVE_THRESHOLD_ORDINARY + CT_SECOND_ABOVE_THRESHOLD_BENEFITS_LIMB
+const CT_SECOND_ABOVE_THRESHOLD_FULL_EXCLUSION_BASE = CT_SECOND_ABOVE_THRESHOLD_ORDINARY
+const CT_INTERMEDIATE_BASE_OPTS = { standardDeductionAllowedOverride: 0 } as const
+
 describeRule('ct-cgs-12-701-20-b-social-security-retirement', {
   readings: {
     statutoryTable32AndSection701SS: {
       lowIncomeSocialSecurityTaxable: CT_SS_OTHER_INCOME,
       highIncomePensionTaxable: CT_HIGH_AGI_TOTAL,
+      aboveThresholdPartialSubtractionBase: CT_ABOVE_THRESHOLD_ACCEPTED_BASE,
+      secondAboveThresholdExcessLimbBase: CT_SECOND_ABOVE_THRESHOLD_ACCEPTED_BASE,
     },
     packUnconditionalRetirementAndTaxableSS: {
-      lowIncomeSocialSecurityTaxable: 66_600,
-      highIncomePensionTaxable: 50_000,
+      lowIncomeSocialSecurityTaxable: CT_SS_OTHER_INCOME + CT_FEDERALLY_TAXABLE_SS,
+      highIncomePensionTaxable: CT_HIGH_AGI_TOTAL - CT_HIGH_AGI_PENSION,
+      aboveThresholdPartialSubtractionBase: CT_ABOVE_THRESHOLD_OBSERVED_BASE,
+      secondAboveThresholdExcessLimbBase: CT_SECOND_ABOVE_THRESHOLD_OBSERVED_BASE,
     },
   },
   accepted: 'statutoryTable32AndSection701SS',
@@ -2655,6 +2719,57 @@ describeRule('ct-cgs-12-701-20-b-social-security-retirement', {
     const observed = computeStateTaxableIncome(pack('CT'), highIncomePension)
     expect(observed).toBeCloseTo(produced.highIncomePensionTaxable, 6)
     expect(observed).not.toBeCloseTo(accepted.highIncomePensionTaxable, 6)
+  })
+
+  it('pins the pack’s omission of the above-threshold partial Social Security subtraction', () => {
+    const aboveThresholdSocialSecurity = input({
+      state: 'CT',
+      ordinaryIncome: CT_ABOVE_THRESHOLD_ORDINARY,
+      ssBenefits: CT_ABOVE_THRESHOLD_SS,
+      agesAlive: [70],
+    })
+    const observed = computeStateTaxableIncome(
+      pack('CT'),
+      aboveThresholdSocialSecurity,
+      CT_INTERMEDIATE_BASE_OPTS,
+    )
+    expect(observed).toBeCloseTo(produced.aboveThresholdPartialSubtractionBase, 6)
+    expect(observed).not.toBeCloseTo(accepted.aboveThresholdPartialSubtractionBase, 6)
+    expect(observed).not.toBeCloseTo(CT_ABOVE_THRESHOLD_FULL_EXCLUSION_BASE, 6)
+    // Worksheet: provisional income → IRC 86 federally taxable share minus the
+    // §701(x)(IV) partial subtraction leaves ordinary income plus retained share.
+    expect(CT_ABOVE_THRESHOLD_ORDINARY + CT_ABOVE_THRESHOLD_RETAINED_IN_BASE)
+      .toBe(accepted.aboveThresholdPartialSubtractionBase)
+    expect(CT_ABOVE_THRESHOLD_ORDINARY + CT_ABOVE_THRESHOLD_FEDERAL_TAXABLE_SS)
+      .toBe(produced.aboveThresholdPartialSubtractionBase)
+  })
+
+  it('pins the pack’s omission when the §86(b)(1) excess limb binds below 25% of benefits', () => {
+    const secondAboveThresholdSocialSecurity = input({
+      state: 'CT',
+      ordinaryIncome: CT_SECOND_ABOVE_THRESHOLD_ORDINARY,
+      ssBenefits: CT_SECOND_ABOVE_THRESHOLD_SS,
+      agesAlive: [70],
+    })
+    const observed = computeStateTaxableIncome(
+      pack('CT'),
+      secondAboveThresholdSocialSecurity,
+      CT_INTERMEDIATE_BASE_OPTS,
+    )
+    expect(observed).toBeCloseTo(produced.secondAboveThresholdExcessLimbBase, 6)
+    expect(observed).not.toBeCloseTo(accepted.secondAboveThresholdExcessLimbBase, 6)
+    expect(observed).not.toBeCloseTo(CT_SECOND_ABOVE_THRESHOLD_FLAT_BENEFITS_BASE, 6)
+    expect(observed).not.toBeCloseTo(CT_SECOND_ABOVE_THRESHOLD_FULL_EXCLUSION_BASE, 6)
+    expect(CT_SECOND_ABOVE_THRESHOLD_EXCESS_LIMB).toBeLessThan(CT_SECOND_ABOVE_THRESHOLD_BENEFITS_LIMB)
+    expect(CT_SECOND_ABOVE_THRESHOLD_FEDERAL_AGI).toBeGreaterThan(75_000)
+    expect(accepted.secondAboveThresholdExcessLimbBase)
+      .toBe(CT_SECOND_ABOVE_THRESHOLD_ORDINARY + CT_SECOND_ABOVE_THRESHOLD_EXCESS_LIMB)
+    expect(accepted.secondAboveThresholdExcessLimbBase)
+      .not.toBe(CT_SECOND_ABOVE_THRESHOLD_FLAT_BENEFITS_BASE)
+    expect(accepted.secondAboveThresholdExcessLimbBase)
+      .not.toBe(CT_SECOND_ABOVE_THRESHOLD_FULL_EXCLUSION_BASE)
+    expect(CT_SECOND_ABOVE_THRESHOLD_ORDINARY + CT_SECOND_ABOVE_THRESHOLD_FEDERAL_TAXABLE_SS)
+      .toBe(produced.secondAboveThresholdExcessLimbBase)
   })
 })
 
@@ -3427,6 +3542,62 @@ describeRule('nm-stat-7-2-5-14-social-security-and-federal-standard', {
     const taxable = computeStateTaxableIncome(pack('NM'), scenario)
     expect(taxable).toBe(produced)
     expect(taxable).not.toBe(accepted)
+  })
+})
+
+// NMSA §7-2-7 statutory top-row bases from HB 252 SECTION 5 Schedule A/B.
+const NM_SINGLE_TOP_ROW_BASE = 9_748
+const NM_MFJ_TOP_ROW_BASE = 14_624
+const NM_TOP_MARGINAL_RATE = 0.059
+const NM_CONTRARY_TOP_MARGINAL_RATE = 0.049
+
+describeRule('nm-nmsa-7-2-7-individual-income-tax-rates', {
+  readings: {
+    sourceSchedule: {
+      thresholdSingle: NM_SINGLE_TOP_ROW_BASE,
+      oneDollarSingle: NM_SINGLE_TOP_ROW_BASE + NM_TOP_MARGINAL_RATE,
+      thresholdMFJ: NM_MFJ_TOP_ROW_BASE,
+      oneDollarMFJ: NM_MFJ_TOP_ROW_BASE + NM_TOP_MARGINAL_RATE,
+    },
+    contraryLowerMarginalRate: {
+      thresholdSingle: NM_SINGLE_TOP_ROW_BASE,
+      oneDollarSingle: NM_SINGLE_TOP_ROW_BASE + NM_CONTRARY_TOP_MARGINAL_RATE,
+      thresholdMFJ: NM_MFJ_TOP_ROW_BASE,
+      oneDollarMFJ: NM_MFJ_TOP_ROW_BASE + NM_CONTRARY_TOP_MARGINAL_RATE,
+    },
+  },
+  accepted: 'sourceSchedule',
+}, ({ accepted, readings }) => {
+  const nmScheduleTax = (
+    ordinaryIncome: number,
+    filingStatus: 'single' | 'marriedFilingJointly' = 'single',
+  ) => computeStateTaxDetail(
+    pack('NM'),
+    input({
+      state: 'NM',
+      filingStatus,
+      ordinaryIncome,
+      agesAlive: filingStatus === 'marriedFilingJointly' ? [70, 70] : [70],
+    }),
+    { standardDeductionAllowedOverride: 0 },
+  ).stateTax
+
+  it('prices single filers at the Schedule B top bracket threshold and first marginal dollar', () => {
+    expect(nmScheduleTax(210_000)).toBeCloseTo(accepted.thresholdSingle, 6)
+    // 5,500×1.5% + 11,000×3.2% + 17,000×4.3% + 33,000×4.7% + 143,500×4.9%
+    // = 9,748 at exactly $210,000 taxable.
+    expect(nmScheduleTax(210_001)).toBeCloseTo(accepted.oneDollarSingle, 6)
+    expect(nmScheduleTax(210_001)).not.toBeCloseTo(readings.contraryLowerMarginalRate.oneDollarSingle, 6)
+  })
+
+  it('prices joint filers at the Schedule A top bracket threshold and first marginal dollar', () => {
+    expect(nmScheduleTax(315_000, 'marriedFilingJointly')).toBeCloseTo(accepted.thresholdMFJ, 6)
+    // 8,000×1.5% + 17,000×3.2% + 25,000×4.3% + 50,000×4.7% + 215,000×4.9%
+    // = 14,624 at exactly $315,000 taxable.
+    expect(nmScheduleTax(315_001, 'marriedFilingJointly'))
+      .toBeCloseTo(accepted.oneDollarMFJ, 6)
+    expect(nmScheduleTax(315_001, 'marriedFilingJointly'))
+      .not.toBeCloseTo(readings.contraryLowerMarginalRate.oneDollarMFJ, 6)
   })
 })
 

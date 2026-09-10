@@ -809,16 +809,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 4188,
+          "line": 4359,
           "note": null,
           "tests": [
             {
               "title": "prices Alabama single brackets rather than the joint schedule",
-              "line": 4204
+              "line": 4375
             },
             {
               "title": "prices the joint schedule on a joint return, distinct from the single breaks",
-              "line": 4211
+              "line": 4382
             }
           ]
         }
@@ -895,36 +895,36 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 4226,
+          "line": 4397,
           "note": "settled: enacted and form authority support $6,000 per taxpayer at age 65",
           "tests": [
             {
               "title": "implements the enacted $6,000 reading and discriminates source-error counterfactuals",
-              "line": 4256
+              "line": 4427
             },
             {
               "title": "withholds the exclusion below age 65",
-              "line": 4265
+              "line": 4436
             },
             {
               "title": "doubles the cap on a joint return when both spouses are 65",
-              "line": 4277
+              "line": 4448
             },
             {
               "title": "grants only one $6,000 cap when one spouse is below 65",
-              "line": 4291
+              "line": 4462
             },
             {
               "title": "reaches the no-exclusion counterfactual once the cap is withheld",
-              "line": 4305
+              "line": 4476
             },
             {
               "title": "reaches the doubled-cap counterfactual under a doubled cap",
-              "line": 4313
+              "line": 4484
             },
             {
               "title": "reaches the no-age-gate counterfactual once minAge is dropped",
-              "line": 4321
+              "line": 4492
             }
           ]
         }
@@ -1155,12 +1155,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 4158,
+          "line": 4329,
           "note": null,
           "tests": [
             {
               "title": "keeps a taxable IRA distribution in the Alabama base",
-              "line": 4174
+              "line": 4345
             }
           ]
         }
@@ -1355,12 +1355,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 4130,
+          "line": 4301,
           "note": null,
           "tests": [
             {
               "title": "omits federally taxable Social Security from the Alabama base",
-              "line": 4147
+              "line": 4318
             }
           ]
         }
@@ -1503,46 +1503,46 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2967,
+          "line": 3082,
           "note": "Social Security limb",
           "tests": [
             {
               "title": "keeps Social Security out of Kentucky adjusted gross income",
-              "line": 2983
+              "line": 3098
             },
             {
               "title": "would pull the federally taxable share in if Kentucky taxed it",
-              "line": 2989
+              "line": 3104
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2998,
+          "line": 3113,
           "note": "retirement-distribution limb",
           "tests": [
             {
               "title": "excludes $31,110 of a private IRA distribution with no age gate",
-              "line": 3017
+              "line": 3132
             },
             {
               "title": "would charge more if private retirement were left in the base",
-              "line": 3023
+              "line": 3138
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3034,
+          "line": 3149,
           "note": "flat-rate limb",
           "tests": [
             {
               "title": "taxes net income at three and one-half percent for 2026",
-              "line": 3049
+              "line": 3164
             },
             {
               "title": "would charge more at the former four percent rate",
-              "line": 3053
+              "line": 3168
             }
           ]
         }
@@ -1782,20 +1782,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3076,
+          "line": 3191,
           "note": null,
           "tests": [
             {
               "title": "keeps Social Security out of the Louisiana base",
-              "line": 3090
+              "line": 3205
             },
             {
               "title": "would pull the federally taxable share in if Louisiana taxed it",
-              "line": 3096
+              "line": 3211
             },
             {
               "title": "also exempts a United States Government retirement annuity in the public bucket",
-              "line": 3102
+              "line": 3217
             }
           ]
         }
@@ -2476,24 +2476,24 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3578,
+          "line": 3749,
           "note": null,
           "tests": [
             {
               "title": "pins the military exception the generic retirement bucket cannot express",
-              "line": 3615
+              "line": 3786
             },
             {
               "title": "subtracts federally taxable Social Security to the extent included under IRC 86",
-              "line": 3624
+              "line": 3795
             },
             {
               "title": "caps ordinary qualifying retirement at Schedule 511-A line 6 $10,000",
-              "line": 3635
+              "line": 3806
             },
             {
               "title": "pins the missing qualifying CSRS-in-lieu exclusion on Schedule 511-A line 3",
-              "line": 3647
+              "line": 3818
             }
           ]
         }

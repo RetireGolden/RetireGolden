@@ -564,7 +564,7 @@ export const northeastStateRecords = {
   'ct-cgs-12-701-20-b-social-security-retirement': {
     title: 'Connecticut’s Social Security and pension subtractions are income-tested',
     statement:
-      'Connecticut subtracts all federally taxable Social Security for a single filer with federal adjusted gross income below $75,000, but reduces the subtraction above that threshold. Its pension and annuity schedule likewise allows 100 percent below $75,000 and zero at $100,000 and over for a single filer. Approximated in both directions: the pack always taxes federally taxable Social Security, overstating tax for the low-income limb, while its unconditional `{ kind: \'full\' }` retirement exclusion removes a high-income pension that the schedule taxes, understating tax. The engine has no state AGI-band or retirement-subtraction-percentage field, so it cannot select either schedule from an accepted input.',
+      'Connecticut subtracts all federally taxable Social Security for a single filer with federal adjusted gross income below $75,000, but above that threshold subtracts only the difference between the federally includable amount and the lesser of twenty-five percent of benefits received or twenty-five percent of the IRC §86(b)(1) excess — so a high-AGI filer retains part of the federally taxable share in Connecticut adjusted gross income rather than receiving a full exclusion or keeping the entire federally taxable amount. Its pension and annuity schedule likewise allows 100 percent below $75,000 and zero at $100,000 and over for a single filer. Approximated in both directions: the pack always taxes federally taxable Social Security without the above-threshold partial subtraction, overstating tax relative to the statutory partial-exclusion limb and also overstating tax for the low-income full-subtraction limb; its unconditional `{ kind: \'full\' }` retirement exclusion removes a high-income pension that the schedule taxes, understating tax. The engine has no state AGI-band or retirement-subtraction-percentage field, so it cannot select either schedule from an accepted input.',
     classification: 'approximated',
     contraryReading: null,
     errorDirection: 'bothDirections',
@@ -575,7 +575,13 @@ export const northeastStateRecords = {
       citation: 'Conn. Gen. Stat. 12-701(a)(20)(B)(x)(III)',
       url: 'https://www.cga.ct.gov/current/pub/chap_229.htm',
       quotedText:
-        'For the taxable year commencing January 1, 2019, and each taxable year thereafter, … an amount equal to the Social Security benefits includable for federal income tax purposes; and',
+        'For the taxable year commencing January 1, 2019, and each taxable year thereafter, for a person who files a return under the federal income tax as an unmarried individual whose federal adjusted gross income for such taxable year is less than seventy-five thousand dollars, or as a married individual filing separately whose federal adjusted gross income for such taxable year is less than seventy-five thousand dollars, or for a husband and wife who file a return under the federal income tax as married individuals filing jointly whose federal adjusted gross income for such taxable year is less than one hundred thousand dollars or a person who files a return under the federal income tax as a head of household whose federal adjusted gross income for such taxable year is less than one hundred thousand dollars, an amount equal to the Social Security benefits includable for federal income tax purposes; and',
+    }, {
+      kind: 'statute',
+      citation: 'Conn. Gen. Stat. 12-701(a)(20)(B)(x)(IV)',
+      url: 'https://www.cga.ct.gov/current/pub/chap_229.htm',
+      quotedText:
+        'For the taxable year commencing January 1, 2019, and each taxable year thereafter, for a person who files a return under the federal income tax as an unmarried individual whose federal adjusted gross income for such taxable year is seventy-five thousand dollars or more, or as a married individual filing separately whose federal adjusted gross income for such taxable year is seventy-five thousand dollars or more, or for a husband and wife who file a return under the federal income tax as married individuals filing jointly whose federal adjusted gross income from such taxable year is one hundred thousand dollars or more or for a person who files a return under the federal income tax as a head of household whose federal adjusted gross income for such taxable year is one hundred thousand dollars or more, an amount equal to the difference between the amount of Social Security benefits includable for federal income tax purposes and the lesser of twenty-five per cent of the Social Security benefits received during the taxable year, or twenty-five per cent of the excess described in Section 86(b)(1) of the Internal Revenue Code;',
     }, {
       kind: 'statute',
       citation: 'Conn. Gen. Stat. 12-701(a)(20)(B)(xxi), table 32',
@@ -586,7 +592,7 @@ export const northeastStateRecords = {
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-27',
+    verifiedOn: '2026-09-10',
     implementedBy: [
       'packages/engine/src/tax/stateTax.ts',
       'packages/engine/src/params/state/data/year2026.ts',
