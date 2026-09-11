@@ -1,4 +1,4 @@
-import { defineConfig } from 'vitest/config'
+import { coverageConfigDefaults, defineConfig } from 'vitest/config'
 
 export default defineConfig({
   test: {
@@ -17,6 +17,9 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       include: ['src/**'],
+      // Vitest 5 coverage `include` globs also pick up markdown under `src/**`
+      // (`insights/GOVERNANCE.md`) and then fail to parse it.
+      exclude: [...coverageConfigDefaults.exclude, 'src/**/*.md'],
       thresholds: {
         'src/socialSecurity/**': {
           statements: 88,

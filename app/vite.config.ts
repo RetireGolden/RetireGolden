@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import type { BuildEnvironmentOptions } from 'vite'
-import { defineConfig } from 'vitest/config'
+import { coverageConfigDefaults, defineConfig } from 'vitest/config'
 
 // Workspace package sources, as posix paths for Vite's resolver.
 const engineSrc = fileURLToPath(new URL('../packages/engine/src', import.meta.url)).replaceAll('\\', '/')
@@ -268,6 +268,9 @@ export default defineConfig({
       // the report. The socialSecurity/data floors moved to
       // packages/planner-ui/vite.config.ts with the code they guard.
       include: ['src/**'],
+      // Vitest 5 coverage `include` globs also pick up non-JS under `src/**`
+      // (the OpenRouter producer Python fixture) and then fail to parse it.
+      exclude: [...coverageConfigDefaults.exclude, 'src/**/*.py'],
     },
   },
 })

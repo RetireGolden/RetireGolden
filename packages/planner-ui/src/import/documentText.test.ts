@@ -15,6 +15,14 @@ import {
 } from './documentText'
 import { buildSyntheticPdf } from './pdfFixtures'
 
+/**
+ * Vitest 5 forbids `vi.doMock` factories that close over `it`-local lets, and
+ * a leftover factory of that shape leaked the browser-path mock into later
+ * tests (`pdfjs_worker_unavailable` with a hoist error). The counter lives here
+ * so the factory stays legal and `doUnmock` can actually drop it.
+ */
+const pdfjsBareImport = vi.hoisted(() => ({ attempts: 0 }))
+
 /** Narrow to the success arm, failing loudly (with the reason) when it isn't. */
 function expectOk(result: Awaited<ReturnType<typeof extractDocumentText>>) {
   if (!result.ok) throw new Error(`expected success, got ${result.reason}: ${result.message}`)
@@ -772,9 +780,9 @@ describe('extractDocumentText — the host supplies pdfjs (the browser path)', (
     // Both specifiers are mocked to fail the way a browser fails them, and the
     // import is counted: with a module supplied, this module must not attempt
     // either import at all — reaching for one is what breaks in the browser.
-    let importsAttempted = 0
+    pdfjsBareImport.attempts = 0
     const unresolvable = (): never => {
-      importsAttempted += 1
+      pdfjsBareImport.attempts += 1
       throw new Error("Failed to resolve module specifier 'pdfjs-dist'")
     }
     vi.resetModules()
@@ -790,13 +798,13 @@ describe('extractDocumentText — the host supplies pdfjs (the browser path)', (
     expect(result.pages[0]!.text).toBe('read through the host-supplied build')
     expect(result.pages[1]!.imageOnly).toBe(true)
     expect(result.summary.totalPages).toBe(2)
-    expect(importsAttempted).toBe(0)
+    expect(pdfjsBareImport.attempts).toBe(0)
 
     // …and the same host, on the same bundle, without passing it: the honest
     // failure, not a throw.
     const without = expectFailed(await extract(REAL_PDF_BYTES))
     expect(without.reason).toBe('pdfjs_unavailable')
-    expect(importsAttempted).toBeGreaterThan(0)
+    expect(pdfjsBareImport.attempts).toBeGreaterThan(0)
   })
 
   it('blames the host build, not the document, for a supplied module of the wrong shape', async () => {
@@ -821,7 +829,13 @@ describe('extractDocumentText — the host supplies pdfjs (the browser path)', (
     // The convenience half of the design: in Node, SSR, and an Electron main
     // process a bare specifier DOES resolve, and this repo's own tests and
     // benchmark depend on it. Injection must not have become mandatory.
-    const ok = expectOk(await extractDocumentText(buildSyntheticPdf({ pages: [{ text: 'no injection needed' }] })))
+    // Drop the sibling test's doMock before the real specifier import; Vitest 5
+    // does not always clear a previous factory in time for the next `it`.
+    vi.doUnmock('pdfjs-dist/legacy/build/pdf.mjs')
+    vi.doUnmock('pdfjs-dist/legacy/build/pdf.worker.mjs')
+    vi.resetModules()
+    const { extractDocumentText: extract } = await import('./documentText')
+    const ok = expectOk(await extract(buildSyntheticPdf({ pages: [{ text: 'no injection needed' }] })))
     expect(ok.pages[0]!.text).toBe('no injection needed')
   })
 
