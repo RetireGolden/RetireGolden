@@ -4417,13 +4417,9 @@ export const planJsonSchema: JsonSchemaDocument = {
                   ]
                 },
                 "targetValue": {
-                  "anyOf": [
-                    {
-                      "type": "number"
-                    },
-                    {
-                      "type": "null"
-                    }
+                  "type": [
+                    "number",
+                    "null"
                   ]
                 },
                 "startYear": {

@@ -6,7 +6,7 @@ production dependency tree (direct + transitive, excluding TypeScript-only
 @types/* packages that never reach the runtime bundle).
 
 Source:      pnpm list --prod --depth Infinity (workspace root)
-Attributed:  38 packages, sha256 4d6965704318f8785013d0004ba2fcdf4c70cc8d5cbe487ac81dad8adb476b8a
+Attributed:  38 packages, sha256 a10fd270364004b80ef6df588ed765b6f81a1a912c03dbc716ebea66e5b5a266
 
 ================================================================================
 
@@ -715,7 +715,7 @@ SOFTWARE.
 
 --------------------------------------------------------------------------------
 
-react-router (8.3.0)
+react-router (8.3.1)
 License: MIT
 Author: Remix Software <hello@remix.run>
 Homepage: https://github.com/remix-run/react-router
@@ -954,7 +954,7 @@ Homepage: https://commerce.nearform.com/open-source/victory
 
 --------------------------------------------------------------------------------
 
-zod (4.4.3)
+zod (4.5.4)
 License: MIT
 Author: Colin McDonnell <zod@colinhacks.com>
 Homepage: https://zod.dev
