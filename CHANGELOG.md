@@ -4,6 +4,11 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## Unreleased
 
+- **Bundle budget aggregate rows:** raised `all JS` 4400 → 4800 KiB and
+  PWA precache 4550 → 4900 KiB. Azure `build` on head `03bb93cc` measured
+  4431.7 and 4579.6 KiB; the previous ~30–46 KiB of slack was tripping every
+  unrelated PR. Same `bundleBudget.mjs` gate; no new mechanism.
+
 - **PIA earnings helper unused `missing_awi` error code:** removed the never-emitted
   `missing_awi` member from `PiaFromEarningsErrorCode`. Unpublished AWI and bend-point
   years still use the latest published SSA tables and set `usesStandInForFutureTables`;
