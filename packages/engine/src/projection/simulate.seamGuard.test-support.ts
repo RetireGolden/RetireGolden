@@ -17,7 +17,7 @@
  * **What is shared and what cannot be.** Vitest hoists every `vi.mock` call
  * above the file's imports and needs the module specifier resolvable at that
  * point, so the specifier stays a literal in each spec. A `vi.hoisted`
- * variable does work as the argument (verified against Vitest 4.1), but the
+ * variable does work as the argument (verified against Vitest 5), but the
  * literal has to be written in the spec anyway because it resolves relative to
  * the spec file, so nothing is gained by moving it. A statically imported
  * helper is NOT callable inside `vi.hoisted` (temporal dead zone), which is

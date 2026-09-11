@@ -34,7 +34,13 @@ export default defineConfig({
       // them as 0%-covered modules dilutes the directory thresholds below.
       // Spread the defaults: a bare `exclude` would replace them and pull
       // test files into the report.
-      exclude: [...coverageConfigDefaults.exclude, 'src/**/*.fixture.json'],
+      exclude: [
+        ...coverageConfigDefaults.exclude,
+        'src/**/*.fixture.json',
+        // Vitest 5 coverage `include` globs also pick up non-JS under `src/**`
+        // (report HTML goldens) and then fail to parse them.
+        'src/**/*.html',
+      ],
       thresholds: {
         // Carried over from app/vite.config.ts when the planner UI moved
         // here — see that file's history for how the floors were derived.
