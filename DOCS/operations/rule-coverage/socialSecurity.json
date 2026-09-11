@@ -2698,7 +2698,7 @@
           "functions": [
             {
               "name": "piaMonthlyFromAime",
-              "line": 103
+              "line": 102
             }
           ]
         },
@@ -2718,12 +2718,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/socialSecurity/piaFromEarnings.test.ts",
-          "line": 27,
+          "line": 33,
           "note": null,
           "tests": [
             {
               "title": "applies each rate only to the earnings inside its own band",
-              "line": 31
+              "line": 37
             }
           ]
         }
@@ -2760,7 +2760,7 @@
           "functions": [
             {
               "name": "computePiaFromEarnings",
-              "line": 137
+              "line": 136
             }
           ]
         }
@@ -2883,7 +2883,7 @@
           "functions": [
             {
               "name": "computePiaFromEarnings",
-              "line": 137
+              "line": 136
             }
           ]
         }

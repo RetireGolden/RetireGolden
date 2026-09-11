@@ -4,6 +4,12 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## Unreleased
 
+- **PIA earnings helper unused `missing_awi` error code:** removed the never-emitted
+  `missing_awi` member from `PiaFromEarningsErrorCode`. Unpublished AWI and bend-point
+  years still use the latest published SSA tables and set `usesStandInForFutureTables`;
+  that stand-in is a planning convention, not a filing-grade refusal. No PIA dollar
+  change.
+
 - **Production build: funding tolerance read as `undefined` (Results page, main thread):**
   the app graph's explicit-only chunk for `annualFundingApplicationAndClosePhase.ts` sat in
   a static import cycle with the `useProjection` core chunk, so its module-level alias of
