@@ -1,7 +1,6 @@
 import type {
   OrdinaryWithdrawalRequest,
 } from '../actions/contract.js'
-import { persistedRetirementActionRequestSchema } from '../actions/contract.js'
 import {
   allocateRetirementActionCandidateIdentity,
   type OrdinaryWithdrawalCandidateIdentityIntent,
@@ -10,6 +9,7 @@ import {
   type RetirementActionCandidateIdentityIssue,
 } from '../actions/retirementActionCandidateIdentityAllocator.js'
 import type { Plan } from '../model/plan.js'
+import { inspectCompleteRetirementActionCandidateSchedule } from './retirementActionCandidateSchedule.js'
 import type { DecisionCandidate } from './types.js'
 
 export interface OrdinaryWithdrawalGeneratorCandidateDescriptor {
@@ -60,12 +60,6 @@ export type OrdinaryWithdrawalGeneratorCandidateAdaptationResult =
   | AdaptedOrdinaryWithdrawalGeneratorCandidate
   | BlockedOrdinaryWithdrawalGeneratorCandidate
 
-const CURRENT_RETIREMENT_ACTION_KINDS = new Set([
-  'ordinaryWithdrawal',
-  'rothConversion',
-  'qcd',
-])
-
 const DECISION_SOURCES = new Set<DecisionCandidate['source']>([
   'milp',
   'detector',
@@ -111,24 +105,6 @@ function validDescriptor(
   }
 }
 
-function blockedSchedule(
-  detail: string,
-  kind: OrdinaryWithdrawalCandidateScheduleIssue['kind'] =
-    'nonCurrentRetirementActionSchedule',
-  field = 'plan.strategies.retirementActions',
-): BlockedOrdinaryWithdrawalGeneratorCandidate {
-  return {
-    status: 'blocked',
-    candidate: null,
-    issues: [{
-      kind,
-      field,
-      reason: null,
-      detail,
-    }],
-  }
-}
-
 function blockedInput(detail: string): BlockedOrdinaryWithdrawalGeneratorCandidate {
   return {
     status: 'blocked',
@@ -171,79 +147,6 @@ function snapshotAdapterInputs(
   }
 }
 
-type PlanRetirementAction = Plan['strategies']['retirementActions'][number]
-
-function completeCurrentSchedule(
-  plan: Readonly<Plan>,
-):
-  | { ok: true; actions: readonly PlanRetirementAction[] }
-  | { ok: false; result: BlockedOrdinaryWithdrawalGeneratorCandidate } {
-  try {
-    const actions = (plan as Plan | null | undefined)?.strategies
-      ?.retirementActions as unknown
-    if (!Array.isArray(actions)) {
-      return {
-        ok: false,
-        result: blockedSchedule(
-          'The Plan retirement-action schedule must be a complete array before a request can be appended.',
-          'invalidRetirementActionSchedule',
-        ),
-      }
-    }
-
-    const actionIds = new Set<string>()
-    for (const [index, action] of actions.entries()) {
-      const field = `plan.strategies.retirementActions.${index}`
-      const parsed = persistedRetirementActionRequestSchema.safeParse(action)
-      if (!parsed.success) {
-        return {
-          ok: false,
-          result: blockedSchedule(
-            'The preserved retirement-action schedule contains an incomplete or invalid request.',
-            'invalidRetirementActionSchedule',
-            field,
-          ),
-        }
-      }
-      if (!CURRENT_RETIREMENT_ACTION_KINDS.has(parsed.data.kind)) {
-        return {
-          ok: false,
-          result: blockedSchedule(
-            `The preserved retirement-action schedule contains non-current action kind "${parsed.data.kind}"; ` +
-            'legacy aggregate actions must be reviewed and sourced before an identity-complete candidate can be built.',
-            'nonCurrentRetirementActionSchedule',
-            field,
-          ),
-        }
-      }
-      if (actionIds.has(parsed.data.actionId)) {
-        return {
-          ok: false,
-          result: blockedSchedule(
-            `The preserved retirement-action schedule repeats action ID "${parsed.data.actionId}"; ` +
-            'identity-complete readiness requires one unique ID per current action.',
-            'invalidRetirementActionSchedule',
-            `${field}.actionId`,
-          ),
-        }
-      }
-      actionIds.add(parsed.data.actionId)
-    }
-    return {
-      ok: true,
-      actions: actions as PlanRetirementAction[],
-    }
-  } catch {
-    return {
-      ok: false,
-      result: blockedSchedule(
-        'The Plan retirement-action schedule could not be inspected losslessly.',
-        'invalidRetirementActionSchedule',
-      ),
-    }
-  }
-}
-
 /**
  * Adapt one explicit ordinary-withdrawal intent into an identity-complete
  * decision candidate. The adapter appends to the Plan's complete current-kind
@@ -263,8 +166,23 @@ export function adaptOrdinaryWithdrawalGeneratorCandidate(
     )
   }
 
-  const schedule = completeCurrentSchedule(snapshot.plan)
-  if (!schedule.ok) return schedule.result
+  let schedule: ReturnType<typeof inspectCompleteRetirementActionCandidateSchedule>
+  try {
+    schedule = inspectCompleteRetirementActionCandidateSchedule(
+      (snapshot.plan as Plan | null | undefined)?.strategies?.retirementActions,
+    )
+  } catch {
+    return blockedInput(
+      'The Plan retirement-action schedule could not be inspected losslessly.',
+    )
+  }
+  if (!schedule.ok) {
+    return {
+      status: 'blocked',
+      candidate: null,
+      issues: [schedule.issue],
+    }
+  }
 
   let allocation: RetirementActionCandidateIdentityAllocationResult
   try {

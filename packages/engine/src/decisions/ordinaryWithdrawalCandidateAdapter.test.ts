@@ -262,6 +262,7 @@ describe('ordinary-withdrawal candidate adapter', () => {
     ]
     const currentOrdinary = allocateRetirementActionCandidateIdentity(plan, intent({
       year: 2028,
+      executionDate: '2028-06-15',
       executionSequence: 1,
       requestedAmount: asPositiveUsdCents(10_000),
       sourceAllocations: [{
@@ -387,6 +388,24 @@ describe('ordinary-withdrawal candidate adapter', () => {
     expect(plan.strategies.retirementActions).toEqual(before)
   })
 
+  it('fails closed for absent plan strategies without throwing', () => {
+    const plan = singlePersonPlan()
+    plan.accounts = [ownedCash('cash-a')]
+    ;(plan as unknown as { strategies: null }).strategies = null
+
+    const result = adaptOrdinaryWithdrawalGeneratorCandidate(
+      plan,
+      descriptor(),
+      intent(),
+    )
+
+    expect(result).toMatchObject({
+      status: 'blocked',
+      candidate: null,
+      issues: [{ kind: 'invalidRetirementActionSchedule' }],
+    })
+  })
+
   it.each([
     ['non-array', null],
     ['null request', [null]],
@@ -415,6 +434,7 @@ describe('ordinary-withdrawal candidate adapter', () => {
     plan.accounts = [ownedCash('cash-a')]
     const current = allocateRetirementActionCandidateIdentity(plan, intent({
       year: 2028,
+      executionDate: '2028-06-15',
       provenance: { source: 'manual' },
       purpose: { kind: 'spending' },
     }))
@@ -438,11 +458,163 @@ describe('ordinary-withdrawal candidate adapter', () => {
     })
   })
 
+  it.each([
+    [
+      'undated preserved Roth conversion',
+      (plan: Plan) => {
+        const allocated = allocateRetirementActionCandidateIdentity(
+          plan,
+          { ...conversionIntent(), executionDate: undefined },
+        )
+        expect(allocated.status).toBe('allocated')
+        if (allocated.status !== 'allocated') throw new Error('expected allocated conversion')
+        return [allocated.request]
+      },
+      'plan.strategies.retirementActions.0.executionDate',
+    ],
+    [
+      'undated preserved QCD',
+      () => {
+        return [{ ...qcdRequest(), executionDate: undefined }]
+      },
+      'plan.strategies.retirementActions.0.executionDate',
+    ],
+    [
+      'wrong-year preserved Roth conversion',
+      (plan: Plan) => {
+        const allocated = allocateRetirementActionCandidateIdentity(plan, conversionIntent())
+        expect(allocated.status).toBe('allocated')
+        if (allocated.status !== 'allocated') throw new Error('expected allocated conversion')
+        return [{
+          ...allocated.request,
+          executionDate: '2028-01-01',
+        }]
+      },
+      'plan.strategies.retirementActions.0.executionDate',
+    ],
+    [
+      'wrong-year preserved QCD',
+      () => [{
+        ...qcdRequest(),
+        executionDate: '2028-10-01',
+      }],
+      'plan.strategies.retirementActions.0.executionDate',
+    ],
+    [
+      'dated ordinary withdrawal outside its action year',
+      (plan: Plan) => {
+        const allocated = allocateRetirementActionCandidateIdentity(plan, intent({
+          year: 2028,
+          executionDate: '2029-06-15',
+          provenance: { source: 'manual' },
+          purpose: { kind: 'spending' },
+        }))
+        expect(allocated.status).toBe('allocated')
+        if (allocated.status !== 'allocated') throw new Error('expected allocated withdrawal')
+        return [allocated.request]
+      },
+      'plan.strategies.retirementActions.0.executionDate',
+    ],
+    [
+      'impossible civil date on a preserved conversion',
+      (plan: Plan) => {
+        const allocated = allocateRetirementActionCandidateIdentity(plan, conversionIntent())
+        expect(allocated.status).toBe('allocated')
+        if (allocated.status !== 'allocated') throw new Error('expected allocated conversion')
+        return [{
+          ...allocated.request,
+          executionDate: '2029-02-30',
+        }]
+      },
+      'plan.strategies.retirementActions.0.executionDate',
+    ],
+  ])('blocks a preserved schedule with %s', (_label, buildSchedule, field) => {
+    const plan = singlePersonPlan()
+    plan.accounts = [
+      ownedCash('cash-a'),
+      traditionalAccount('trad-a', 100_000),
+      ownedRoth('roth-a'),
+    ]
+    plan.strategies.retirementActions = buildSchedule(plan)
+
+    const result = adaptOrdinaryWithdrawalGeneratorCandidate(
+      plan,
+      descriptor(),
+      intent(),
+    )
+
+    expect(result).toMatchObject({
+      status: 'blocked',
+      candidate: null,
+      issues: [{
+        kind: 'invalidRetirementActionSchedule',
+        field,
+        reason: null,
+      }],
+    })
+  })
+
+  it('keeps undated preserved ordinary withdrawals appendable alongside dated current actions', () => {
+    const plan = singlePersonPlan()
+    plan.accounts = [
+      ownedCash('cash-current'),
+      ownedCash('cash-a'),
+      traditionalAccount('trad-a', 100_000),
+      ownedRoth('roth-a'),
+    ]
+    const undatedOrdinary = allocateRetirementActionCandidateIdentity(plan, intent({
+      year: 2028,
+      executionDate: undefined,
+      executionSequence: 1,
+      requestedAmount: asPositiveUsdCents(10_000),
+      sourceAllocations: [{
+        sourceAccountId: asAccountId('cash-current'),
+        requestedAmount: asPositiveUsdCents(10_000),
+      }],
+      provenance: { source: 'manual' },
+      purpose: { kind: 'spending' },
+    }))
+    const currentConversion = allocateRetirementActionCandidateIdentity(
+      plan,
+      conversionIntent(),
+    )
+    expect(undatedOrdinary.status).toBe('allocated')
+    expect(currentConversion.status).toBe('allocated')
+    if (undatedOrdinary.status !== 'allocated' || currentConversion.status !== 'allocated') return
+    plan.strategies.retirementActions = [
+      undatedOrdinary.request,
+      currentConversion.request,
+      qcdRequest(),
+    ]
+
+    const result = adaptOrdinaryWithdrawalGeneratorCandidate(
+      plan,
+      descriptor(),
+      intent(),
+    )
+
+    expect(result.status).toBe('adapted')
+    if (result.status !== 'adapted') return
+    const schedule = candidateSchedule(result)
+    expect(schedule.map((action) => action.kind)).toEqual([
+      'ordinaryWithdrawal',
+      'rothConversion',
+      'qcd',
+      'ordinaryWithdrawal',
+    ])
+    expect(schedule[0]).toMatchObject({
+      kind: 'ordinaryWithdrawal',
+      year: 2028,
+    })
+    expect(schedule[0]).not.toHaveProperty('executionDate')
+  })
+
   it('snapshots stateful schedule, descriptor, and intent getters once before adapting', () => {
     const plan = singlePersonPlan()
     plan.accounts = [ownedCash('cash-current'), ownedCash('cash-a')]
     const current = allocateRetirementActionCandidateIdentity(plan, intent({
       year: 2028,
+      executionDate: '2028-06-15',
       executionSequence: 1,
       requestedAmount: asPositiveUsdCents(10_000),
       sourceAllocations: [{
