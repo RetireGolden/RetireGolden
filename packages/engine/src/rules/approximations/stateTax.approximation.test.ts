@@ -1152,6 +1152,14 @@ describeRule('mo-dor-2026-rate-schedule-and-standard-deduction', {
     expect(computeStateTaxableIncome(pack('MO'), zeroBandTop)).toBeCloseTo(1348, 6)
     expect(computeStateTax(pack('MO'), zeroBandTop)).toBe(0)
     expect(missouriChartTax(1348)).toBe(0)
+    const mfjZeroBandTop = input({
+      state: 'MO',
+      filingStatus: 'marriedFilingJointly',
+      ordinaryIncome: 1348 + MO_SD_JOINT,
+      agesAlive: [60, 60],
+    })
+    expect(computeStateTaxableIncome(pack('MO'), mfjZeroBandTop)).toBeCloseTo(1348, 6)
+    expect(computeStateTax(pack('MO'), mfjZeroBandTop)).toBe(0)
   })
 
   it('prices the $2,696 second-band ceiling at the chart formula before pre-return drift', () => {
@@ -1161,7 +1169,7 @@ describeRule('mo-dor-2026-rate-schedule-and-standard-deduction', {
     expect(readings.chartPreReturnAt2696).toBeCloseTo(26.96, 6)
   })
 
-  it('preserves chart-vs-continuous gaps at the top 4.5% band and first 4.7% dollar', () => {
+  it('preserves chart-vs-continuous gaps at the 4.5% band ceiling and at $10,000 in the 4.7% band', () => {
     expect(computeStateTaxableIncome(pack('MO'), at9436)).toBeCloseTo(9436, 6)
     expect(missouriChartTax(9436)).toBeCloseTo(accepted, 6)
     expect(computeStateTax(pack('MO'), at9436)).toBeCloseTo(produced, 6)
@@ -1172,6 +1180,19 @@ describeRule('mo-dor-2026-rate-schedule-and-standard-deduction', {
     expect(computeStateTax(pack('MO'), at10000))
       .toBeCloseTo(readings.continuousEngineAt10000, 6)
     expect(readings.continuousEngineAt10000).toBeLessThan(readings.chartPreReturnAt10000)
+    const mfjAt10000 = input({
+      state: 'MO',
+      filingStatus: 'marriedFilingJointly',
+      ordinaryIncome: 10_000 + MO_SD_JOINT,
+      agesAlive: [60, 60],
+    })
+    expect(computeStateTaxableIncome(pack('MO'), mfjAt10000)).toBeCloseTo(10_000, 6)
+    expect(computeStateTax(pack('MO'), mfjAt10000))
+      .toBeCloseTo(readings.continuousEngineAt10000, 6)
+    expect(missouriChartTax(10_000)).toBeCloseTo(readings.chartPreReturnAt10000, 6)
+    // MFJ needs $32,200 ordinary subtraction to reach the same taxable income
+    // single reaches with $16,100 — deduction cells, not rounding, split status.
+    expect(10_000 + MO_SD_JOINT).not.toBe(10_000 + MO_SD_SINGLE)
     expect(produced).not.toBe(PRODUCED_TBD)
   })
 })

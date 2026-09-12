@@ -16,9 +16,9 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | Classification: outOfScope | 86 |
 | Classification: settled | 258 |
 | Classification: unsettled | 4 |
-| Volatility: annuallyIndexed | 77 |
+| Volatility: annuallyIndexed | 78 |
 | Volatility: awaitingGuidance | 10 |
-| Volatility: staticStatute | 382 |
+| Volatility: staticStatute | 381 |
 | Volatility: sunsetting | 7 |
 | Federal jurisdiction | 331 |
 | State jurisdiction total | 145 |
@@ -252,18 +252,18 @@ Version 5 is a breaking discriminator for strict version checks: manifest.rules 
 
 ## Quote fidelity
 
-Committed ledger generated at 2026-09-12T14:38:53.411Z over 1427 authority entries (0 fetched live, 377 from cache).
+Committed ledger generated at 2026-09-12T15:23:23.483Z over 1431 authority entries (0 fetched live, 379 from cache).
 
-3 serious, 60 advisory, 1364 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
+3 serious, 59 advisory, 1369 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
 not treated as a CI gate; how to read each verdict: DOCS/operations/quote-fidelity.md.
 
 | Verdict | Class | Count |
 | --- | --- | ---: |
-| ELISION-EXACT | ok | 90 |
-| ELISION-PUNCTUATION | advisory | 9 |
-| EXACT | ok | 973 |
+| ELISION-EXACT | ok | 91 |
+| ELISION-PUNCTUATION | advisory | 8 |
+| EXACT | ok | 974 |
 | PDF-NOT-VERIFIABLE | advisory | 7 |
-| PDF-WORD-LEVEL | ok | 301 |
+| PDF-WORD-LEVEL | ok | 304 |
 | PUNCTUATION | advisory | 44 |
 | UNFETCHABLE | serious | 3 |
 

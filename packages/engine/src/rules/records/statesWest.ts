@@ -983,6 +983,7 @@ export const westStateRecords = {
     ],
     implementedByFunctions: [
       'packages/engine/src/params/state/data/year2026.ts#MT',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
       'packages/engine/src/tax/stateTax.ts#bracketTax',
     ],
   },

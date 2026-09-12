@@ -56,12 +56,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2475,
+          "line": 2573,
           "note": null,
           "tests": [
             {
               "title": "omits the District Social Security subtraction from the taxable base",
-              "line": 2491
+              "line": 2589
             }
           ]
         }
@@ -124,12 +124,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2815,
+          "line": 2913,
           "note": null,
           "tests": [
             {
               "title": "prices single and joint filers on the §1102(a)(14) band schedule",
-              "line": 2826
+              "line": 2924
             }
           ]
         }
@@ -196,16 +196,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2844,
+          "line": 2942,
           "note": "Social Security and age-60 retirement limbs",
           "tests": [
             {
               "title": "subtracts Delaware Social Security included in federal AGI",
-              "line": 2875
+              "line": 2973
             },
             {
               "title": "subtracts the $12,500 Delaware retirement cap from age 60",
-              "line": 2882
+              "line": 2980
             }
           ]
         }
@@ -449,16 +449,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 746,
+          "line": 745,
           "note": null,
           "tests": [
             {
               "title": "leaves a Florida retiree with no state base at all",
-              "line": 762
+              "line": 761
             },
             {
               "title": "would tax the same income if the imposition reached natural persons",
-              "line": 767
+              "line": 766
             }
           ]
         }
@@ -541,16 +541,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2575,
+          "line": 2673,
           "note": "age-62-through-64 retirement-income and Schedule 1 line 8 Social Security limbs",
           "tests": [
             {
               "title": "pins the missing Georgia age-63 retirement exclusion",
-              "line": 2602
+              "line": 2700
             },
             {
               "title": "subtracts federally taxable Social Security on Schedule 1 line 8 separately from the retirement limb",
-              "line": 2609
+              "line": 2707
             }
           ]
         }
@@ -618,16 +618,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3274,
+          "line": 3372,
           "note": null,
           "tests": [
             {
               "title": "keeps Social Security out of Maryland adjusted gross income",
-              "line": 3289
+              "line": 3387
             },
             {
               "title": "would add the federally taxable portion if Maryland taxed it",
-              "line": 3295
+              "line": 3393
             }
           ]
         }
@@ -694,24 +694,24 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
-          "line": 1350,
+          "line": 1371,
           "note": "IRA eligibility and gross Social Security cap reduction",
           "tests": [
             {
               "title": "grants a 65-year-old $41,200 of IRA exclusion the statute withholds",
-              "line": 1380
+              "line": 1401
             },
             {
               "title": "reaches the statute once the cap is withheld from the IRA",
-              "line": 1386
+              "line": 1407
             },
             {
               "title": "also withholds the cap at 64, which is the age the statute names",
-              "line": 1394
+              "line": 1415
             },
             {
               "title": "does not reduce the pack pension cap when gross Social Security rises by $10,000",
-              "line": 1404
+              "line": 1425
             }
           ]
         }
@@ -789,12 +789,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3809,
+          "line": 3973,
           "note": null,
           "tests": [
             {
               "title": "subtracts Title II Social Security from North Carolina income",
-              "line": 3818
+              "line": 3982
             }
           ]
         }
@@ -856,16 +856,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3689,
+          "line": 3822,
           "note": null,
           "tests": [
             {
               "title": "prices TY2026 wages at 3.99% after the supported single standard deduction",
-              "line": 3703
+              "line": 3836
             },
             {
               "title": "prices TY2026 MFJ wages on the same 3.99% flat bracket",
-              "line": 3715
+              "line": 3848
+            },
+            {
+              "title": "leaves the North Carolina standard deduction unchanged by age",
+              "line": 3863
             }
           ]
         }
@@ -892,6 +896,16 @@
           "kind": "statute",
           "citation": "N.C. Gen. Stat. §105-153.5(a)(1), standard deduction table",
           "url": "https://www.ncleg.gov/EnactedLegislation/Statutes/HTML/BySection/Chapter_105/GS_105-153.5.html"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "North Carolina DOR, Form NC-40 2026, worksheet Line 6 standard deduction instruction",
+          "url": "https://www.ncdor.gov/individual-estimated-income-tax/open"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "North Carolina DOR, Form NC-40 2026, worksheet page 2 standard deduction table",
+          "url": "https://www.ncdor.gov/individual-estimated-income-tax/open"
         }
       ]
     },
@@ -1001,12 +1015,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 588,
+          "line": 587,
           "note": null,
           "tests": [
             {
               "title": "omits federally included Social Security from South Carolina gross income",
-              "line": 607
+              "line": 606
             }
           ]
         }
@@ -1250,20 +1264,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 4321,
+          "line": 4485,
           "note": null,
           "tests": [
             {
               "title": "pins the high-income phase-out that the retirement-cap mapping misses",
-              "line": 4352
+              "line": 4516
             },
             {
               "title": "pins the opposite direction when an age-65 filer has wages but no modeled pension",
-              "line": 4361
+              "line": 4525
             },
             {
               "title": "pins the age deduction against adjusted FAGI after Title II Social Security",
-              "line": 4367
+              "line": 4531
             }
           ]
         }
@@ -1379,16 +1393,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 812,
+          "line": 811,
           "note": null,
           "tests": [
             {
               "title": "keeps every dollar of Social Security out of the West Virginia base",
-              "line": 825
+              "line": 824
             },
             {
               "title": "would add the federally taxable portion under the pre-2026 treatment",
-              "line": 830
+              "line": 829
             }
           ]
         }
@@ -1461,24 +1475,24 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 862,
+          "line": 861,
           "note": null,
           "tests": [
             {
               "title": "prices modeled single and joint filers on the §11-21-4j schedule",
-              "line": 871
+              "line": 870
             },
             {
               "title": "would over-tax on the rejected prior §11-21-4i schedule",
-              "line": 878
+              "line": 877
             },
             {
               "title": "is not a flat 5% rate cut of the prior schedule",
-              "line": 886
+              "line": 885
             },
             {
               "title": "is not what doubled MFJ break points would price at $100,000 joint",
-              "line": 896
+              "line": 895
             }
           ]
         }

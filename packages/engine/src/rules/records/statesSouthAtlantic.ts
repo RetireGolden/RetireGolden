@@ -740,7 +740,7 @@ export const southAtlanticStateRecords = {
   'ncgs-105-153-7-2026-flat-rate-and-standard-deduction': {
     title: 'North Carolina taxes TY2026 ordinary income at 3.99% after supported single/MFJ standard deductions',
     statement:
-      'For taxable years beginning after calendar 2025, N.C. Gen. Stat. §105-153.7(a) imposes a flat 3.99% tax on North Carolina taxable income. Section 105-153.7(a1)\'s revenue-trigger rate reductions apply only from taxable years beginning in 2027 onward and are outside this record. Section 105-153.5(a)(1) sets standard deductions of $12,750 single and $25,500 married filing jointly/surviving spouse. The pack stores those deduction cells and a single 3.99% bracket for both supported filing statuses. Settled only for that TY2026 flat ordinary rate and supported single/MFJ standard-deduction mapping; head-of-household, married-filing-separate, itemization, child-deduction schedules, Bailey and military limbs, and whole-return accuracy are outside this record.',
+      'For taxable years beginning after calendar 2025, N.C. Gen. Stat. §105-153.7(a) imposes a flat 3.99% tax on North Carolina taxable income. Section 105-153.7(a1)\'s revenue-trigger rate reductions apply only from taxable years beginning in 2027 onward and are outside this record. Section 105-153.5(a)(1) sets fixed standard-deduction amounts by filing status: $12,750 single and $25,500 married filing jointly/surviving spouse. The statute has no annual indexing formula; NCDOR\'s 2026 NC-40 worksheet republishes the same cells under a "For Tax Years Beginning on or after January 1, 2026" footer. The pack stores those deduction cells and a single 3.99% bracket for both supported filing statuses. North Carolina does not import the federal age-65 standard-deduction addition; the state amount is filing-status based only. Settled only for that TY2026 flat ordinary rate and supported single/MFJ standard-deduction mapping; head-of-household, married-filing-separate, itemization, child-deduction schedules, Bailey and military limbs, and whole-return accuracy are outside this record. The record is bounded to TY2026 even though the current statutory table continues until amended.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -769,7 +769,19 @@ export const southAtlanticStateRecords = {
       citation: 'N.C. Gen. Stat. §105-153.5(a)(1), standard deduction table',
       url: 'https://www.ncleg.gov/EnactedLegislation/Statutes/HTML/BySection/Chapter_105/GS_105-153.5.html',
       quotedText:
-        'The standard deduction amount is equal to the amount listed in the table below based on the taxpayer\'s filing status: … Filing Status Standard Deduction Married, filing jointly/surviving spouse $25,500 Head of Household 19,125 Single 12,750 Married, filing separately 12,750.',
+        'The standard deduction amount is zero for a person who is not eligible for a standard deduction under section 63 of the Code. For all other taxpayers, the standard deduction amount is equal to the amount listed in the table below based on the taxpayer\'s filing status: … Filing Status Standard Deduction Married, filing jointly/surviving spouse $25,500 Head of Household 19,125 Single 12,750 Married, filing separately 12,750.',
+    }, {
+      kind: 'formInstruction',
+      citation: 'North Carolina DOR, Form NC-40 2026, worksheet Line 6 standard deduction instruction',
+      url: 'https://www.ncdor.gov/individual-estimated-income-tax/open',
+      quotedText:
+        'If you plan to claim the N.C. standard deduction, use the amount shown below for your filing status.',
+    }, {
+      kind: 'formInstruction',
+      citation: 'North Carolina DOR, Form NC-40 2026, worksheet page 2 standard deduction table',
+      url: 'https://www.ncdor.gov/individual-estimated-income-tax/open',
+      quotedText:
+        'If you plan to claim the N.C. standard deduction, use the amount shown below for your filing status. … Married, filing jointly/surviving spouse $ 25,500 … Single $ 12,750 … For Tax Years Beginning on or after January 1, 2026',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,

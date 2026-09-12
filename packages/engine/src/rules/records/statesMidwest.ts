@@ -183,7 +183,7 @@ export const midwestStateRecords = {
   'mo-dor-2026-rate-schedule-and-standard-deduction': {
     title: 'Missouri publishes TY2026 whole-dollar chart bands and supported single/MFJ standard deductions',
     statement:
-      'Form MO-1040ES (2026) lists Missouri standard deductions of $16,100 single and $32,200 married filing jointly (and combined Missouri), and a whole-dollar tax-rate chart with a $0 band through $1,348, graduated bands in $1,348 steps through 4.5% at $9,436, and $263 plus 4.7% of excess over $9,436 above that. The pack stores those deduction cells and represents the chart as continuous marginal breakpoints at the band edges. Approximated: DOR publishes accumulated-tax constants at each band boundary (for example $202 at $8,088 and $263 at $9,436) while bracketTax composes marginal slices continuously, so pre-return tax can differ in either direction from the chart before whole-dollar Line 10 rounding — which this record does not model. At taxable $9,436 the chart arithmetic is $202 + 4.5% × ($9,436 − $8,088) = $262.66 versus the pack\'s continuous $262.86; at $10,000 it is $263 + 4.7% × $564 = $289.508 versus $289.368. Settled only for the supported single/MFJ standard-deduction cells; head-of-household $24,150, married-filing-separate paths, combined-return per-spouse allocation, retirement exemptions, and return-level whole-dollar rounding are outside this record.',
+      'Form MO-1040ES (2026) publishes TY2026 federal basic standard-deduction cells of $16,100 single and $32,200 married filing jointly (and combined Missouri). Those are the basic amounts under Rev. Proc. 2025-32 section 4.14, not the full allowable federal standard deduction. RSMo §143.131(2) provides that the Missouri standard deduction is the allowable federal standard deduction; under the federal sibling record `irc-63-c-7-B-ii-conformed-state-deduction-tracks-federal`, that allowable amount is the basic amount plus each IRC §63(f) additional amount for age 65 or older. The pack\'s `standardDeductionConformity: \'federal\'` therefore applies $18,150 for a single age-65 filer and $33,850 or $35,500 for an MFJ household with one or two age-65 people on top of these basic cells. Settled only for those supported single/MFJ basic deduction cells and the age relief represented by `peopleAged65Plus`; blindness, dependent-filer limitations, head-of-household $24,150, married-filing-separate paths, combined-return per-spouse allocation, and itemization are outside this record. The form also lists a whole-dollar tax-rate chart with a $0 band through $1,348, graduated bands in $1,348 steps through 4.5% at $9,436, and $263 plus 4.7% of excess over $9,436 above that. The pack stores those bracket cells and represents the chart as continuous marginal breakpoints at the band edges. Approximated: DOR publishes accumulated-tax constants at each band boundary (for example $202 at $8,088 and $263 at $9,436) while bracketTax composes marginal slices continuously, so pre-return tax can differ in either direction from the chart before whole-dollar Line 10 rounding — which this record does not model. At taxable $9,436 the chart arithmetic is $202 + 4.5% × ($9,436 − $8,088) = $262.66 versus the pack\'s continuous $262.86; at $10,000 it is $263 + 4.7% × $564 = $289.508 versus $289.368. Retirement exemptions and return-level whole-dollar rounding remain outside this record.',
     classification: 'approximated',
     contraryReading: null,
     errorDirection: 'bothDirections',
@@ -191,67 +191,79 @@ export const midwestStateRecords = {
       'The MO-1040ES chart quotes accumulated tax at band floors; bracketTax applies continuous marginal rates between breakpoints. Intermediate chart comparison is therefore stated at pre-return precision with whole-dollar return rounding omitted. The signed gaps at the pinned taxable-income coordinates are preserved rather than closed by parameter edits.',
     jurisdiction: 'state:MO',
     authority: [{
-      kind: 'stateAgencyPublication',
+      kind: 'formInstruction',
       citation: 'Missouri DOR, Form MO-1040ES (2026), form year header',
       url: 'https://dor.mo.gov/forms/MO-1040ES_2026.pdf',
       quotedText:
         'Form MO-1040ES 2026 Declaration of Estimated Tax for Individuals',
     }, {
-      kind: 'stateAgencyPublication',
-      citation: 'Missouri DOR, Form MO-1040ES (2026), worksheet Line 6 standard deduction',
+      kind: 'formInstruction',
+      citation: 'Missouri DOR, Form MO-1040ES (2026), worksheet Line 6 basic standard deduction',
       url: 'https://dor.mo.gov/forms/MO-1040ES_2026.pdf',
       quotedText:
         'Missouri standard deductions are: (1) Single - $16,100 (2) Head of household - $24,150; (3) Married filing joint federal and combined Missouri or Qualifying widow(er) with dependent child - $32,200; (4) Married filing separate returns $16,100.',
     }, {
-      kind: 'stateAgencyPublication',
+      kind: 'statute',
+      citation: 'RSMo §143.131(2)',
+      url: 'https://revisor.mo.gov/main/OneSection.aspx?section=143.131',
+      quotedText:
+        'The Missouri standard deduction shall be the allowable federal standard deduction.',
+    }, {
+      kind: 'irsNotice',
+      citation: 'Rev. Proc. 2025-32, section 4.14, 2026 standard deduction',
+      url: 'https://www.irs.gov/pub/irs-drop/rp-25-32.pdf',
+      quotedText:
+        'In general. For taxable years beginning in 2026, the standard deduction amounts under § 63(c)(2) are as follows: … Married Individuals Filing Joint Returns and Surviving Spouses (§ 1(j)(2)(A)) $32,200 … Unmarried Individuals (other than Surviving Spouses and Heads of Households) (§ 1(j)(2)(C)) $16,100 … Aged or blind. For taxable years beginning in 2026, the additional standard deduction amount under § 63(f) for the aged or the blind is $1,650. The additional standard deduction amount is increased to $2,050 if the individual is also unmarried and not a surviving spouse.',
+    }, {
+      kind: 'formInstruction',
       citation: 'Missouri DOR, Form MO-1040ES (2026), tax rate chart zero band',
       url: 'https://dor.mo.gov/forms/MO-1040ES_2026.pdf',
       quotedText:
         '$0 to $1,348                                             $0',
     }, {
-      kind: 'stateAgencyPublication',
+      kind: 'formInstruction',
       citation: 'Missouri DOR, Form MO-1040ES (2026), tax rate chart 2.0% band',
       url: 'https://dor.mo.gov/forms/MO-1040ES_2026.pdf',
       quotedText:
         'Over $1,348 but not over $2,696                          2.0% of excess over $1,348',
     }, {
-      kind: 'stateAgencyPublication',
+      kind: 'formInstruction',
       citation: 'Missouri DOR, Form MO-1040ES (2026), tax rate chart 2.5% band',
       url: 'https://dor.mo.gov/forms/MO-1040ES_2026.pdf',
       quotedText:
         'Over $2,696 but not over $4,044                          $27 plus 2.5% of excess over $2,696',
     }, {
-      kind: 'stateAgencyPublication',
+      kind: 'formInstruction',
       citation: 'Missouri DOR, Form MO-1040ES (2026), tax rate chart 3.0% band',
       url: 'https://dor.mo.gov/forms/MO-1040ES_2026.pdf',
       quotedText:
         'Over $4,044 but not over $5,392                          $61 plus 3.0% of excess over $4,044',
     }, {
-      kind: 'stateAgencyPublication',
+      kind: 'formInstruction',
       citation: 'Missouri DOR, Form MO-1040ES (2026), tax rate chart 3.5% band',
       url: 'https://dor.mo.gov/forms/MO-1040ES_2026.pdf',
       quotedText:
         'Over $5,392 but not over $6,740                          $101 plus 3.5% of excess over $5,392',
     }, {
-      kind: 'stateAgencyPublication',
+      kind: 'formInstruction',
       citation: 'Missouri DOR, Form MO-1040ES (2026), tax rate chart 4.0% band',
       url: 'https://dor.mo.gov/forms/MO-1040ES_2026.pdf',
       quotedText:
         'Over $6,740 but not over $8,088                          $148 plus 4.0% of excess over $6,740',
     }, {
-      kind: 'stateAgencyPublication',
+      kind: 'formInstruction',
       citation: 'Missouri DOR, Form MO-1040ES (2026), tax rate chart 4.5% band',
       url: 'https://dor.mo.gov/forms/MO-1040ES_2026.pdf',
       quotedText:
         'Over $8,088 but not over $9,436                          $202 plus 4.5% of excess over $8,088',
     }, {
-      kind: 'stateAgencyPublication',
+      kind: 'formInstruction',
       citation: 'Missouri DOR, Form MO-1040ES (2026), tax rate chart 4.7% top band',
       url: 'https://dor.mo.gov/forms/MO-1040ES_2026.pdf',
       quotedText:
         'Over $9,436 ................................             $263 plus 4.7% of excess over $9,436',
     }, {
-      kind: 'stateAgencyPublication',
+      kind: 'formInstruction',
       citation: 'Missouri DOR, Form MO-1040ES (2026), tax rate chart whole-dollar example',
       url: 'https://dor.mo.gov/forms/MO-1040ES_2026.pdf',
       quotedText:
@@ -1397,7 +1409,7 @@ export const midwestStateRecords = {
   'mn-dor-seniors-resident-pension-inclusion': {
     title: 'Minnesota taxes resident pension income by default before listed subtractions',
     statement:
-      'Minnesota Department of Revenue guidance for seniors states that pensions, including federal pensions, received while a Minnesota resident are taxable by Minnesota regardless of where the pension was earned. Military retirement pay is addressed separately on the same page and is outside this record, as are qualified public-pension subtractions, Social Security subtraction schedules, and distinctions among IRA, 401(k), annuity, and private-employer plan sourcing that the input model cannot express. The pack\'s resolved `retirementPrivate: { kind: \'none\' }` therefore matches the agency\'s default inclusion of ordinary resident private-employer pension distributions in the Minnesota base before the TY2026 standard deduction. Settled only for that narrow resident private-employer pension inclusion limb; rate schedules, Social Security subtraction, military and public limbs, and whole-return accuracy remain in separate records. The record\'s `effectiveFrom`/`effectiveThrough` of 2026 is the supported product year window for this guidance claim, not a statutory start or sunset date.',
+      'Minnesota Department of Revenue guidance for seniors states that pensions, including federal pensions, received while a Minnesota resident are taxable by Minnesota regardless of where the pension was earned. Military retirement pay is addressed separately on the same page and is outside this record, as are qualified public-pension subtractions, Social Security subtraction schedules, and distinctions among IRA, 401(k), annuity, and private-employer plan sourcing that the input model cannot express. The pack\'s resolved `retirementPrivate: { kind: \'none\' }` therefore matches the agency\'s default inclusion of ordinary resident private-employer pension distributions in the Minnesota base before the TY2026 standard deduction. Settled only for that narrow resident private-employer pension inclusion limb; rate schedules, Social Security subtraction, military and public limbs, and whole-return accuracy remain in separate records. The record\'s `effectiveFrom`/`effectiveThrough` of 2026 is the supported product year window for this guidance claim, not a statutory start or sunset date. The authority is a versionless DOR web page, so `annuallyIndexed` applies the registry\'s conservative 120-day re-verification budget rather than treating the page like enacted statutory text.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -1416,7 +1428,7 @@ export const midwestStateRecords = {
       quotedText:
         'Military retirement pay (including pensions) is not taxable in Minnesota.',
     }],
-    volatility: 'staticStatute',
+    volatility: 'annuallyIndexed',
     effectiveFrom: 2026,
     effectiveThrough: 2026,
     verifiedOn: '2026-09-12',
@@ -1551,61 +1563,61 @@ export const midwestStateRecords = {
       'The form\'s estimated schedule uses accumulated chart constants at band floors; bracketTax composes the same marginal rates continuously. At the pinned single third-bracket ceiling the chart constant and continuous composition agree to cents; this record does not claim exact parity at every interior coordinate or beyond cents tolerance.',
     jurisdiction: 'state:NE',
     authority: [{
-      kind: 'stateAgencyPublication',
+      kind: 'formInstruction',
       citation: 'Nebraska DOR, Form 1040N-ES (2026), worksheet Line 5 standard deduction',
       url: 'https://revenue.nebraska.gov/sites/default/files/doc/tax-forms/2025/f_1040N-ES.pdf',
       quotedText:
         '5 Nebraska standard deduction:\n			 Single $8,850;',
     }, {
-      kind: 'stateAgencyPublication',
+      kind: 'formInstruction',
       citation: 'Nebraska DOR, Form 1040N-ES (2026), worksheet Line 5 MFJ standard deduction',
       url: 'https://revenue.nebraska.gov/sites/default/files/doc/tax-forms/2025/f_1040N-ES.pdf',
       quotedText:
         'Married, Filing Jointly $17,700;\n			 Head of Household $12,950;',
     }, {
-      kind: 'stateAgencyPublication',
+      kind: 'formInstruction',
       citation: 'Nebraska DOR, Form 1040N-ES (2026), estimated rate schedule scope',
       url: 'https://revenue.nebraska.gov/sites/default/files/doc/tax-forms/2025/f_1040N-ES.pdf',
       quotedText:
         '2026 Nebraska Estimated Income Tax Rate Schedule',
     }, {
-      kind: 'stateAgencyPublication',
+      kind: 'formInstruction',
       citation: 'Nebraska DOR, Form 1040N-ES (2026), single rate schedule first bracket',
       url: 'https://revenue.nebraska.gov/sites/default/files/doc/tax-forms/2025/f_1040N-ES.pdf',
       quotedText:
         '$        0        $    4,130                         2.46% of the income',
     }, {
-      kind: 'stateAgencyPublication',
+      kind: 'formInstruction',
       citation: 'Nebraska DOR, Form 1040N-ES (2026), single rate schedule second bracket',
       url: 'https://revenue.nebraska.gov/sites/default/files/doc/tax-forms/2025/f_1040N-ES.pdf',
       quotedText:
         '4,130                24,760          $ 101.60 + 3.51% of the excess over $ 4,130',
     }, {
-      kind: 'stateAgencyPublication',
+      kind: 'formInstruction',
       citation: 'Nebraska DOR, Form 1040N-ES (2026), single rate schedule third bracket',
       url: 'https://revenue.nebraska.gov/sites/default/files/doc/tax-forms/2025/f_1040N-ES.pdf',
       quotedText:
         '24,760               39,900            825.71 + 4.55% of the excess over $24,760',
     }, {
-      kind: 'stateAgencyPublication',
+      kind: 'formInstruction',
       citation: 'Nebraska DOR, Form 1040N-ES (2026), single rate schedule fourth bracket',
       url: 'https://revenue.nebraska.gov/sites/default/files/doc/tax-forms/2025/f_1040N-ES.pdf',
       quotedText:
         '39,900                   ——            1,514.58 +4.55% of the excess over $39,900',
     }, {
-      kind: 'stateAgencyPublication',
+      kind: 'formInstruction',
       citation: 'Nebraska DOR, Form 1040N-ES (2026), MFJ rate schedule heading',
       url: 'https://revenue.nebraska.gov/sites/default/files/doc/tax-forms/2025/f_1040N-ES.pdf',
       quotedText:
         'Married, Filing Jointly and Surviving Spouses',
     }, {
-      kind: 'stateAgencyPublication',
+      kind: 'formInstruction',
       citation: 'Nebraska DOR, Form 1040N-ES (2026), MFJ rate schedule first bracket',
       url: 'https://revenue.nebraska.gov/sites/default/files/doc/tax-forms/2025/f_1040N-ES.pdf',
       quotedText:
         '$        0        $    8,250                         2.46% of the income',
     }, {
-      kind: 'stateAgencyPublication',
+      kind: 'formInstruction',
       citation: 'Nebraska DOR, Form 1040N-ES (2026), MFJ rate schedule second bracket',
       url: 'https://revenue.nebraska.gov/sites/default/files/doc/tax-forms/2025/f_1040N-ES.pdf',
       // Text layer drops the but-not-over $49,530 cell on this row (column interleave
@@ -1615,19 +1627,19 @@ export const midwestStateRecords = {
       quotedText:
         '8,250 … $ 202.95 + 3.51% of the excess over $ 8,250',
     }, {
-      kind: 'stateAgencyPublication',
+      kind: 'formInstruction',
       citation: 'Nebraska DOR, Form 1040N-ES (2026), MFJ rate schedule third bracket',
       url: 'https://revenue.nebraska.gov/sites/default/files/doc/tax-forms/2025/f_1040N-ES.pdf',
       quotedText:
         '49,530                79,800         1,651.88 + 4.55% of the excess over $49,530',
     }, {
-      kind: 'stateAgencyPublication',
+      kind: 'formInstruction',
       citation: 'Nebraska DOR, Form 1040N-ES (2026), MFJ rate schedule fourth bracket',
       url: 'https://revenue.nebraska.gov/sites/default/files/doc/tax-forms/2025/f_1040N-ES.pdf',
       quotedText:
         '79,800                   ——            3,029.16 + 4.55% of the excess over $79,800',
     }, {
-      kind: 'stateAgencyPublication',
+      kind: 'formInstruction',
       citation: 'Nebraska DOR, Form 1040N-ES (2026), TY2026 third/fourth bracket rate note',
       url: 'https://revenue.nebraska.gov/sites/default/files/doc/tax-forms/2025/f_1040N-ES.pdf',
       quotedText:

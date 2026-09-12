@@ -56,13 +56,12 @@ const INFLATION_SCALE = 1.1
 
 /**
  * The federal age-65 addition the conformity helper takes, sourced the way
- * production sources it rather than restated as a literal. It contributes
- * nothing to any assertion below, but not for the reason a reader might guess:
- * several scenarios do set `agesAlive: [70]`. What keeps the addition out is
- * `peopleAged65Plus: 0` in the `input()` helper, which is the field the
- * addition is actually counted against — `agesAlive` drives the retirement
- * exclusions' minimum-age gates and nothing else here. A fixture that wanted
- * to exercise the addition would have to raise the count, not the ages.
+ * production sources it rather than restated as a literal. Most fixtures keep
+ * `peopleAged65Plus: 0` from the `input()` helper, even when `agesAlive`
+ * contains an older person. The count controls the federal age addition;
+ * `agesAlive` controls the retirement exclusions' minimum-age gates. The
+ * Missouri conformity fixtures deliberately set both fields to exercise the
+ * addition for each eligible person.
  *
  * It still has to be the real value rather than a stand-in, because a stand-in
  * would make the test agree with itself instead of with the pack.
@@ -1012,6 +1011,102 @@ describeRule('mo-rsmo-143-121-capital-gain-deduction', {
   it('would tax it like every other income-tax state in the pack', () => {
     const ordinaryGains = { ...pack('MO'), capitalGainsAsOrdinary: true }
     expect(computeStateTax(ordinaryGains, scenario)).toBeCloseTo(readings.gainTaxedAsOrdinaryIncome, 6)
+  })
+})
+
+const MO_BASIC_SINGLE = 16_100
+const MO_BASIC_JOINT = 32_200
+const MO_WAGES_SINGLE = 30_000
+const MO_WAGES_MFJ = 50_000
+
+/** Rev. Proc. 2025-32 §4.14 — IRC §63(f) additional standard deduction (TY2026). */
+const MO_REV_PROC_2025_32_AGE65_SINGLE = 2_050
+const MO_REV_PROC_2025_32_AGE65_MFJ = 1_650
+
+// RSMo §143.131(2); Rev. Proc. 2025-32 §4.14. Supplemental worksheet for the
+// Missouri basic standard deduction and federal age-65 addition limb only —
+// chart-vs-continuous competing readings stay on the same MO record in
+// stateTax.approximation.test.ts.
+const MO_DOR_2026_BASIC_AND_AGE_WORKSHEET = {
+  singleAge64Ti: MO_WAGES_SINGLE - MO_BASIC_SINGLE,
+  singleAge65Ti: MO_WAGES_SINGLE - MO_BASIC_SINGLE - MO_REV_PROC_2025_32_AGE65_SINGLE,
+  singleAge64Tax: missouriTax(MO_WAGES_SINGLE - MO_BASIC_SINGLE),
+  singleAge65Tax: missouriTax(MO_WAGES_SINGLE - MO_BASIC_SINGLE - MO_REV_PROC_2025_32_AGE65_SINGLE),
+  mfj0Ti: MO_WAGES_MFJ - MO_BASIC_JOINT,
+  mfj1Ti: MO_WAGES_MFJ - MO_BASIC_JOINT - MO_REV_PROC_2025_32_AGE65_MFJ,
+  mfj2Ti: MO_WAGES_MFJ - MO_BASIC_JOINT - 2 * MO_REV_PROC_2025_32_AGE65_MFJ,
+  mfj0Tax: missouriTax(MO_WAGES_MFJ - MO_BASIC_JOINT),
+  mfj1Tax: missouriTax(MO_WAGES_MFJ - MO_BASIC_JOINT - MO_REV_PROC_2025_32_AGE65_MFJ),
+  mfj2Tax: missouriTax(MO_WAGES_MFJ - MO_BASIC_JOINT - 2 * MO_REV_PROC_2025_32_AGE65_MFJ),
+} as const
+
+function conformedMoParams(): StateTaxParams {
+  return conformStateStandardDeduction(pack('MO'), FEDERAL_AGE65_ADDITION, 1)
+}
+
+describe('mo-dor-2026-rate-schedule-and-standard-deduction basic and age-65 addition', () => {
+  it('applies TY2026 basic cells plus federal age-65 additions through conformity', () => {
+    const raw = pack('MO')
+    expect(raw.standardDeductionConformity).toBe('federal')
+    expect(raw.standardDeduction.single).toBe(MO_BASIC_SINGLE)
+    expect(raw.standardDeduction.marriedFilingJointly).toBe(MO_BASIC_JOINT)
+
+    const conformed = conformedMoParams()
+    expect(conformed.standardDeduction.single).toBe(MO_BASIC_SINGLE)
+    expect(conformed.standardDeduction.marriedFilingJointly).toBe(MO_BASIC_JOINT)
+    expect(conformed.standardDeductionAge65Addition?.single).toBe(FEDERAL_AGE65_ADDITION.single)
+    expect(conformed.standardDeductionAge65Addition?.marriedFilingJointly)
+      .toBe(FEDERAL_AGE65_ADDITION.marriedFilingJointly)
+
+    const singleAge64 = input({
+      state: 'MO',
+      ordinaryIncome: MO_WAGES_SINGLE,
+      agesAlive: [64],
+      peopleAged65Plus: 0,
+    })
+    const singleAge65 = input({
+      state: 'MO',
+      ordinaryIncome: MO_WAGES_SINGLE,
+      agesAlive: [65],
+      peopleAged65Plus: 1,
+    })
+    expect(computeStateTaxableIncome(conformed, singleAge64)).toBeCloseTo(MO_DOR_2026_BASIC_AND_AGE_WORKSHEET.singleAge64Ti, 6)
+    expect(computeStateTaxableIncome(conformed, singleAge65)).toBeCloseTo(MO_DOR_2026_BASIC_AND_AGE_WORKSHEET.singleAge65Ti, 6)
+    expect(computeStateTaxYearTotal(singleAge64)).toBeCloseTo(MO_DOR_2026_BASIC_AND_AGE_WORKSHEET.singleAge64Tax, 6)
+    expect(computeStateTaxYearTotal(singleAge64)).toBeCloseTo(472.668, 6)
+    expect(computeStateTaxYearTotal(singleAge65)).toBeCloseTo(MO_DOR_2026_BASIC_AND_AGE_WORKSHEET.singleAge65Tax, 6)
+    expect(computeStateTaxYearTotal(singleAge65)).toBeCloseTo(376.318, 6)
+
+    const mfj0 = input({
+      state: 'MO',
+      filingStatus: 'marriedFilingJointly',
+      ordinaryIncome: MO_WAGES_MFJ,
+      agesAlive: [64, 64],
+      peopleAged65Plus: 0,
+    })
+    const mfj1 = input({
+      state: 'MO',
+      filingStatus: 'marriedFilingJointly',
+      ordinaryIncome: MO_WAGES_MFJ,
+      agesAlive: [65, 64],
+      peopleAged65Plus: 1,
+    })
+    const mfj2 = input({
+      state: 'MO',
+      filingStatus: 'marriedFilingJointly',
+      ordinaryIncome: MO_WAGES_MFJ,
+      agesAlive: [65, 65],
+      peopleAged65Plus: 2,
+    })
+    expect(computeStateTaxableIncome(conformed, mfj0)).toBeCloseTo(MO_DOR_2026_BASIC_AND_AGE_WORKSHEET.mfj0Ti, 6)
+    expect(computeStateTaxableIncome(conformed, mfj1)).toBeCloseTo(MO_DOR_2026_BASIC_AND_AGE_WORKSHEET.mfj1Ti, 6)
+    expect(computeStateTaxableIncome(conformed, mfj2)).toBeCloseTo(MO_DOR_2026_BASIC_AND_AGE_WORKSHEET.mfj2Ti, 6)
+    expect(computeStateTaxYearTotal(mfj0)).toBeCloseTo(MO_DOR_2026_BASIC_AND_AGE_WORKSHEET.mfj0Tax, 6)
+    expect(computeStateTaxYearTotal(mfj0)).toBeCloseTo(655.968, 6)
+    expect(computeStateTaxYearTotal(mfj1)).toBeCloseTo(MO_DOR_2026_BASIC_AND_AGE_WORKSHEET.mfj1Tax, 6)
+    expect(computeStateTaxYearTotal(mfj1)).toBeCloseTo(578.418, 6)
+    expect(computeStateTaxYearTotal(mfj2)).toBeCloseTo(MO_DOR_2026_BASIC_AND_AGE_WORKSHEET.mfj2Tax, 6)
+    expect(computeStateTaxYearTotal(mfj2)).toBeCloseTo(500.868, 6)
   })
 })
 
@@ -2402,10 +2497,12 @@ describeRule('mn-dor-seniors-resident-pension-inclusion', {
   },
   accepted: 'residentPensionStaysInBase',
 }, ({ accepted, readings }) => {
-  // DOR seniors guidance: resident pensions stay in the Minnesota base. Age 64
-  // deliberately — below Schedule M1R and other age-keyed subtractions this
-  // record excludes. privateRetirementIncome is a subset of ordinaryIncome, so
-  // both lines at $30,000 price one $30,000 FAGI stream.
+  // DOR seniors guidance: resident private-employer pensions stay in the
+  // Minnesota base. Age 64 deliberately — below Schedule M1R and other age-keyed
+  // subtractions this record excludes. Scope is a stipulated private-employer
+  // pension only; the quoted guidance does not settle IRA, public, or other
+  // retirement categories. privateRetirementIncome is a subset of ordinaryIncome,
+  // not an addition — both at $30,000 price one $30,000 FAGI stream.
   const scenario = input({
     state: 'MN',
     ordinaryIncome: MN_PRIVATE_PENSION,
@@ -2414,6 +2511,7 @@ describeRule('mn-dor-seniors-resident-pension-inclusion', {
   })
 
   it('taxes resident private pension before the TY2026 standard deduction', () => {
+    expect(pack('MN').retirementPrivate).toEqual({ kind: 'none' })
     expect(computeStateTaxableIncome(pack('MN'), scenario)).toBeCloseTo(accepted, 6)
     expect(computeStateTaxableIncome(pack('MN'), scenario))
       .not.toBeCloseTo(readings.fullExclusionReading, 6)
@@ -3508,11 +3606,21 @@ const NE_OFFICIAL_SINGLE_BRACKETS = [
 const NE_OFFICIAL_MFJ_BRACKETS = [
   { lowerBound: 0, ratePct: 2.46 }, { lowerBound: 8250, ratePct: 3.51 }, { lowerBound: 49_530, ratePct: 4.55 },
 ] as const
+const NE_SD_MFJ = 17_700
+const NE_MFJ_BRACKET_CEILING = 49_530
+const NE_MFJ_ORDINARY = NE_MFJ_BRACKET_CEILING + NE_SD_MFJ
+
+const neMfjContinuousTax = (taxable: number) => bandedTax(
+  [[0, 8250, 2.46], [8250, NE_MFJ_BRACKET_CEILING, 3.51], [NE_MFJ_BRACKET_CEILING, Infinity, 4.55]],
+  taxable,
+)
 
 describeRule('ne-dor-2026-rate-schedule-and-standard-deduction', {
   readings: {
     chartConstantAtThirdBracketCeiling: neChartSingleTax(NE_CHART_TAXABLE),
     flatBottomRateOnAllIncome: NE_CHART_TAXABLE * (NE_BOTTOM_RATE / 100),
+    mfjContinuousAtBracketCeiling: neMfjContinuousTax(NE_MFJ_BRACKET_CEILING),
+    mfjPublishedCentAtBracketCeiling: 1651.88,
   },
   accepted: 'chartConstantAtThirdBracketCeiling',
 }, ({ accepted, readings }) => {
@@ -3521,10 +3629,16 @@ describeRule('ne-dor-2026-rate-schedule-and-standard-deduction', {
     ordinaryIncome: NE_CHART_TAXABLE + NE_SD_SINGLE,
     agesAlive: [60],
   })
+  const mfjScenario = input({
+    state: 'NE',
+    filingStatus: 'marriedFilingJointly',
+    ordinaryIncome: NE_MFJ_ORDINARY,
+    agesAlive: [60, 60],
+  })
 
   it('prices the TY2026 schedule and supported single standard deduction to cents', () => {
     expect(pack('NE').standardDeduction.single).toBe(NE_SD_SINGLE)
-    expect(pack('NE').standardDeduction.marriedFilingJointly).toBe(17_700)
+    expect(pack('NE').standardDeduction.marriedFilingJointly).toBe(NE_SD_MFJ)
     expect(pack('NE').brackets.single).toEqual(NE_OFFICIAL_SINGLE_BRACKETS)
     expect(pack('NE').brackets.marriedFilingJointly).toEqual(NE_OFFICIAL_MFJ_BRACKETS)
     expect(computeStateTaxableIncome(pack('NE'), scenario)).toBeCloseTo(NE_CHART_TAXABLE, 6)
@@ -3533,6 +3647,25 @@ describeRule('ne-dor-2026-rate-schedule-and-standard-deduction', {
     expect(Math.round(tax * 100) / 100).toBe(accepted)
     expect(readings.flatBottomRateOnAllIncome).toBe(981.54)
     expect(tax).not.toBeCloseTo(readings.flatBottomRateOnAllIncome, 1)
+  })
+
+  it('prices MFJ on the $17,700 deduction and $8,250 / $49,530 bracket cells', () => {
+    expect(computeStateTaxableIncome(pack('NE'), mfjScenario)).toBeCloseTo(NE_MFJ_BRACKET_CEILING, 6)
+    const mfjTax = computeStateTax(pack('NE'), mfjScenario)
+    expect(mfjTax).toBeCloseTo(readings.mfjContinuousAtBracketCeiling, 3)
+    expect(readings.mfjContinuousAtBracketCeiling).toBeCloseTo(1651.878, 3)
+    expect(Math.round(mfjTax * 100) / 100).toBe(readings.mfjPublishedCentAtBracketCeiling)
+    // Same ordinary income yields a higher single taxable base — MFJ deduction
+    // and bracket array, not one-cent rounding, drive the filing-status split.
+    const sameOrdinarySingle = input({
+      state: 'NE',
+      ordinaryIncome: NE_MFJ_ORDINARY,
+      agesAlive: [60],
+    })
+    expect(computeStateTaxableIncome(pack('NE'), sameOrdinarySingle))
+      .toBeCloseTo(NE_MFJ_ORDINARY - NE_SD_SINGLE, 6)
+    expect(computeStateTaxableIncome(pack('NE'), sameOrdinarySingle))
+      .not.toBeCloseTo(NE_MFJ_BRACKET_CEILING, 6)
   })
 })
 
@@ -3725,6 +3858,37 @@ describeRule('ncgs-105-153-7-2026-flat-rate-and-standard-deduction', {
     expect(computeStateTax(pack('NC'), mfj)).toBeCloseTo(3770.55, 6)
     expect(computeStateTax(pack('NC'), mfj))
       .not.toBeCloseTo(mfjTaxable * NC_STALE_RATE, 6)
+  })
+
+  it('leaves the North Carolina standard deduction unchanged by age', () => {
+    const singleAge64 = input({
+      state: 'NC',
+      ordinaryIncome: NC_WAGES,
+      agesAlive: [64],
+      peopleAged65Plus: 0,
+    })
+    const singleAge65 = input({
+      state: 'NC',
+      ordinaryIncome: NC_WAGES,
+      agesAlive: [65],
+      peopleAged65Plus: 1,
+    })
+    expect(computeStateTaxableIncome(pack('NC'), singleAge64)).toBeCloseTo(NC_WAGES - NC_SD_SINGLE, 6)
+    expect(computeStateTaxableIncome(pack('NC'), singleAge65)).toBeCloseTo(NC_WAGES - NC_SD_SINGLE, 6)
+    expect(computeStateTax(pack('NC'), singleAge64)).toBeCloseTo(2683.275, 6)
+    expect(computeStateTax(pack('NC'), singleAge65)).toBeCloseTo(2683.275, 6)
+
+    for (const peopleAged65Plus of [0, 1, 2] as const) {
+      const mfjAged = input({
+        state: 'NC',
+        filingStatus: 'marriedFilingJointly',
+        ordinaryIncome: NC_MFJ_WAGES,
+        agesAlive: peopleAged65Plus === 2 ? [65, 65] : peopleAged65Plus === 1 ? [65, 64] : [64, 64],
+        peopleAged65Plus,
+      })
+      expect(computeStateTaxableIncome(pack('NC'), mfjAged)).toBeCloseTo(NC_MFJ_WAGES - NC_SD_MFJ, 6)
+      expect(computeStateTax(pack('NC'), mfjAged)).toBeCloseTo(3770.55, 6)
+    }
   })
 })
 

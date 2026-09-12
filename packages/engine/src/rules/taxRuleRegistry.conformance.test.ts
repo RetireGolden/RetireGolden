@@ -992,6 +992,11 @@ const STATE_EXACT_PUBLICATION_URLS: Readonly<Partial<Record<UsStateCode, readonl
     // rate schedule; revenue.nebraska.gov stays out of STATE_PRIMARY_PUBLISHERS.
     'https://revenue.nebraska.gov/sites/default/files/doc/tax-forms/2025/f_1040N-ES.pdf',
   ],
+  NC: [
+    // Verified 2026-09-12: Form NC-40 2026 worksheet page 2 standard deduction
+    // table and TY2026 footer; ncdor.gov stays out of STATE_PRIMARY_PUBLISHERS.
+    'https://www.ncdor.gov/individual-estimated-income-tax/open',
+  ],
 }
 
 function isExactStatePublicationAdmitted(stateCode: UsStateCode, url: string): boolean {
@@ -2089,6 +2094,49 @@ describe('tax rule registry conformance', () => {
         url: 'https://revenue.nebraska.gov/tax-forms',
       }],
     }]])).toEqual(['ne-fictional'])
+  })
+
+  it('admits verified NC-40 open page by exact URL only', () => {
+    // Verified 2026-09-12: Form NC-40 2026 worksheet page 2 standard deduction
+    // table; admission is the exact checked URL, not ncdor.gov as a host tier.
+    const nc40Open = {
+      citation: 'North Carolina DOR, Form NC-40 2026, worksheet page 2 standard deduction table',
+      url: 'https://www.ncdor.gov/individual-estimated-income-tax/open',
+    }
+    expect(offSourceAuthorities([['nc-fictional', {
+      jurisdiction: 'state:NC',
+      authority: [nc40Open],
+    }]])).toEqual([])
+    expect(stateRulesMissingStateAuthority([['nc-fictional', {
+      jurisdiction: 'state:NC',
+      authority: [nc40Open],
+    }]])).toEqual([])
+    expect(offSourceAuthorities([['sc-fictional', {
+      jurisdiction: 'state:SC',
+      authority: [nc40Open],
+    }]])).toEqual(['sc-fictional:North Carolina DOR, Form NC-40 2026, worksheet page 2 standard deduction table:www.ncdor.gov'])
+    expect(offSourceAuthorities([['nc-fictional', {
+      jurisdiction: 'state:NC',
+      authority: [{
+        citation: 'NCDOR estimated-tax index',
+        url: 'https://www.ncdor.gov/individual-estimated-income-tax',
+      }],
+    }]])).toEqual(['nc-fictional:NCDOR estimated-tax index:www.ncdor.gov'])
+    expect(offSourceAuthorities([['nc-fictional', {
+      jurisdiction: 'state:NC',
+      authority: [{
+        citation: 'NC-40 with query suffix',
+        url: 'https://www.ncdor.gov/individual-estimated-income-tax/open?download=1',
+      }],
+    }]])).toEqual(['nc-fictional:NC-40 with query suffix:www.ncdor.gov'])
+    expect(offSourceAuthorities([['irc-fictional-federal', {
+      jurisdiction: 'federal',
+      authority: [nc40Open],
+    }]])).toEqual(['irc-fictional-federal:North Carolina DOR, Form NC-40 2026, worksheet page 2 standard deduction table:www.ncdor.gov'])
+    expect(stateRulesMissingStateAuthority([['sc-fictional', {
+      jurisdiction: 'state:SC',
+      authority: [nc40Open],
+    }]])).toEqual(['sc-fictional'])
   })
 
   it('admits tax.ny.gov only for a New York rule', () => {

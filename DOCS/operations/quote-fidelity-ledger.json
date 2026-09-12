@@ -1,16 +1,16 @@
 {
-  "generatedAt": "2026-09-12T14:38:53.411Z",
+  "generatedAt": "2026-09-12T15:23:23.483Z",
   "recordCount": 476,
-  "urlCount": 377,
+  "urlCount": 379,
   "fetched": 0,
-  "cached": 377,
-  "entryCount": 1427,
+  "cached": 379,
+  "entryCount": 1431,
   "counts": {
-    "EXACT": 973,
+    "EXACT": 974,
     "PUNCTUATION": 44,
-    "PDF-WORD-LEVEL": 301,
-    "ELISION-EXACT": 90,
-    "ELISION-PUNCTUATION": 9,
+    "PDF-WORD-LEVEL": 304,
+    "ELISION-EXACT": 91,
+    "ELISION-PUNCTUATION": 8,
     "PDF-NOT-VERIFIABLE": 7,
     "UNFETCHABLE": 3
   },
@@ -10746,12 +10746,32 @@
     },
     {
       "id": "mo-dor-2026-rate-schedule-and-standard-deduction",
-      "citation": "Missouri DOR, Form MO-1040ES (2026), worksheet Line 6 standard deduction",
+      "citation": "Missouri DOR, Form MO-1040ES (2026), worksheet Line 6 basic standard deduction",
       "host": "dor.mo.gov",
       "url": "https://dor.mo.gov/forms/MO-1040ES_2026.pdf",
       "quoteSha256": "27ac453c9c3dae28",
       "verdict": "PDF-WORD-LEVEL",
       "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "mo-dor-2026-rate-schedule-and-standard-deduction",
+      "citation": "RSMo §143.131(2)",
+      "host": "revisor.mo.gov",
+      "url": "https://revisor.mo.gov/main/OneSection.aspx?section=143.131",
+      "quoteSha256": "747a4009d91f52fa",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source (matched on a page below the shell-length threshold)",
+      "diagnosis": null
+    },
+    {
+      "id": "mo-dor-2026-rate-schedule-and-standard-deduction",
+      "citation": "Rev. Proc. 2025-32, section 4.14, 2026 standard deduction",
+      "host": "www.irs.gov",
+      "url": "https://www.irs.gov/pub/irs-drop/rp-25-32.pdf",
+      "quoteSha256": "1016956da11bde68",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "4 elision segments, all present in the extracted text",
       "diagnosis": null
     },
     {
@@ -12446,9 +12466,29 @@
       "citation": "N.C. Gen. Stat. §105-153.5(a)(1), standard deduction table",
       "host": "www.ncleg.gov",
       "url": "https://www.ncleg.gov/EnactedLegislation/Statutes/HTML/BySection/Chapter_105/GS_105-153.5.html",
-      "quoteSha256": "d76640430401da46",
-      "verdict": "ELISION-PUNCTUATION",
-      "detail": "matches only after: case",
+      "quoteSha256": "e735c98140ae6f8c",
+      "verdict": "ELISION-EXACT",
+      "detail": "2 elision segments, every one a literal substring",
+      "diagnosis": null
+    },
+    {
+      "id": "ncgs-105-153-7-2026-flat-rate-and-standard-deduction",
+      "citation": "North Carolina DOR, Form NC-40 2026, worksheet Line 6 standard deduction instruction",
+      "host": "www.ncdor.gov",
+      "url": "https://www.ncdor.gov/individual-estimated-income-tax/open",
+      "quoteSha256": "8145ffcb84c8415c",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "ncgs-105-153-7-2026-flat-rate-and-standard-deduction",
+      "citation": "North Carolina DOR, Form NC-40 2026, worksheet page 2 standard deduction table",
+      "host": "www.ncdor.gov",
+      "url": "https://www.ncdor.gov/individual-estimated-income-tax/open",
+      "quoteSha256": "fbfdc4ed95b93f74",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "4 elision segments, all present in the extracted text",
       "diagnosis": null
     },
     {
