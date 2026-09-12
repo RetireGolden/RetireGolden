@@ -15,7 +15,6 @@ import {
 
 export type PiaFromEarningsErrorCode =
   | 'eligibility_before_1979'
-  | 'missing_awi'
   | 'missing_bend_points'
   | 'no_computation_years'
   | 'last_earnings_year_out_of_range'

@@ -41,7 +41,8 @@ Methodology that matters for accuracy:
   Each indexed year is floored to a whole dollar rather than rounded to the nearer penny
   (`cfr-20-404-211-d-3-indexed-earnings-nearer-penny`). If a required AWI or bend-point year is not in
   the published tables the engine uses the latest published figure as a stand-in and sets
-  `usesStandInForFutureTables`; the `missing_awi` error code is unused.
+  `usesStandInForFutureTables`. The error union has no `missing_awi` member;
+  unpublished AWI years are not refused.
 - **Early-retirement projection:** future years between the last earnings year and the declared retirement
   age are projected at an assumed salary (default: most recent year, wage-indexed/capped), then zeroed,
   but only inside the same age-22-through-year-before-62 window. Stopping at 62 and working through FRA

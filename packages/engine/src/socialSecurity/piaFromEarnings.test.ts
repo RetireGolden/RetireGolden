@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, expectTypeOf, it } from 'vitest'
 
 import { describeRule } from '../rules/describeRule.js'
 import {
@@ -9,8 +9,14 @@ import {
   piaInputFromEarnings,
   piaMonthlyFromAime,
   resolveEarningsProjection,
+  type PiaFromEarningsErrorCode,
   type PiaFromEarningsResult,
 } from './piaFromEarnings.js'
+import {
+  AWI_BY_YEAR,
+  awiForYear,
+  LATEST_PUBLISHED_AWI_YEAR,
+} from './ssaWageData.js'
 
 describe('PIA bend point formula', () => {
   // 42 U.S.C. 415(a)(1)(A) applies each rate only to the earnings inside its
@@ -277,7 +283,18 @@ describe('computePiaFromEarnings', () => {
     expect(reuseRecent.aime).toBe(explicit90k.aime)
   })
 
+  // 20 CFR 404.211(d) indexes using AWI for the second year before eligibility.
+  // Eligibility 2045 → indexing year 2043. The encoded SSA AWI series in
+  // ssaWageData.ts (https://www.ssa.gov/oact/COLA/awiseries.html, cited on
+  // cfr-20-404-211-d-3-indexed-earnings-nearer-penny) currently ends at 2024,
+  // so 2043 has no published cell. A fail-closed reading would return missing_awi.
+  // Documented product convention: latest-table stand-in
+  // (DOCS/domain/domain-rules-reference/04-social-security-program-parameters-2026.md).
   it('uses latest published AWI and bend points when eligibility is far in the future (young workers)', () => {
+    // expectTypeOf is erased by vitest/oxc; tsc --noEmit enforces the union.
+    type MissingAwiStillInUnion = 'missing_awi' extends PiaFromEarningsErrorCode ? true : false
+    expectTypeOf<MissingAwiStillInUnion>().toEqualTypeOf<false>()
+
     const r = computePiaFromEarnings({
       dobYear: 1983,
       dobMonth: 3,
@@ -286,10 +303,13 @@ describe('computePiaFromEarnings', () => {
       lastEarningsYear: 2024,
     })
     expect(isPiaFromEarningsError(r)).toBe(false)
-    if (!isPiaFromEarningsError(r)) {
-      expect(r.eligibilityYear).toBe(2045)
-      expect(r.usesStandInForFutureTables).toBe(true)
-      expect(r.piaMonthly).toBeGreaterThan(0)
-    }
+    if (isPiaFromEarningsError(r)) return
+
+    expect(r.eligibilityYear).toBe(2045)
+    const indexingYear = r.eligibilityYear - 2
+    expect(awiForYear(indexingYear)).toBeUndefined()
+    expect(r.usesStandInForFutureTables).toBe(true)
+    expect(r.indexingYearAwi).toBe(AWI_BY_YEAR[LATEST_PUBLISHED_AWI_YEAR])
+    expect(r.piaMonthly).toBeGreaterThan(0)
   })
 })

@@ -25,11 +25,11 @@
           "functions": [
             {
               "name": "computePiaFromEarnings",
-              "line": 137
+              "line": 136
             },
             {
               "name": "indexCoveredEarnings",
-              "line": 126
+              "line": 125
             }
           ]
         }
@@ -107,7 +107,7 @@
           "functions": [
             {
               "name": "computePiaFromEarnings",
-              "line": 137
+              "line": 136
             }
           ]
         }
@@ -185,11 +185,11 @@
           "functions": [
             {
               "name": "computePiaFromEarnings",
-              "line": 137
+              "line": 136
             },
             {
               "name": "piaInputFromEarnings",
-              "line": 272
+              "line": 271
             }
           ]
         }

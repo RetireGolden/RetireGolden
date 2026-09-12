@@ -44,20 +44,23 @@ the parse cost that dominates on a low-end device is paid on the decompressed by
 | plan route group (`PlanRoutes`), and **exactly one of them** | 300 KiB | 267 KiB | The lazy plan-route boundary staying route-sized |
 | app entry (the script `index.html` loads) | 300 KiB | 248 KiB | The chunk a cold visit blocks on first |
 | every other JS chunk | 260 KiB | 96 KiB (`ResultsPage`) | Route and page chunks staying route-sized |
-| all JS together | 4400 KiB | 4049 KiB | "Many new chunks", not just one fat one |
+| all JS together | 4800 KiB | 4431.7 KiB (4049 when the row landed) | "Many new chunks", not just one fat one |
 | one stylesheet / all CSS | 64 / 80 KiB | 45 / 52 KiB | The token layer |
 | landing critical path | 700 KiB | 596 KiB | Entry + every `modulepreload`: what a cold visit blocks on |
-| PWA precache | 4550 KiB | 4504 KiB (4179 when the row landed) | Install cost, and the offline guarantee's price |
+| PWA precache | 4900 KiB | 4579.6 KiB (4179 when the row landed) | Install cost, and the offline guarantee's price |
 
 Each limit is the size measured when the budget landed plus headroom, and the headroom is deliberately
 uneven — read the table, not an average:
 
-- The **aggregate** rows are tight, ~1–17%: the precache (4504 → 4550) and the landing critical path
-  (596 → 700). These are the two numbers a reader actually pays, and they are the ones that drifted, so
-  they get the least slack. Expect to justify growth here, not absorb it. The landing row's slack is
-  sized so the entry and the registry could each grow into their own limits and still fit. The precache
-  row is the one with almost nothing left, and "Raising the precache row" below says exactly what its
-  46 KiB is reserved for; the all-JS row (4356 → 4400) is nearly as tight and has no such reservation.
+- The **aggregate** rows used to be the tightest. The landing critical path
+  (596 → 700) still is: that is what a cold visit blocks on. `all JS` and the
+  PWA precache were equally tight (4356 → 4400, 4504 → 4550) until that
+  ~30–46 KiB of slack started failing every unrelated PR; they are now 4431.7 →
+  4800 and 4579.6 → 4900, round hundreds with a few hundred KiB of operator-
+  requested headroom. Landing still expects growth to be justified. The two
+  sum rows are meant to stop absorbing ordinary feature work without a note,
+  not to fail CI on noise. "Raising the precache row" below is the 4550
+  worked example; the 4800 / 4900 raise is the paragraph after it.
 - The **per-class chunk** rows sit near 5–21% (worker 903 → 1000, `useProjection` 665 → 700,
   `learningRegistry` 124 → 150, Recharts 331 → 380, `PlanRoutes` 267 → 300): enough for a feature
   landing in a known chunk.
@@ -270,6 +273,19 @@ to whoever owns install size, not to this file.
 One number this raise does *not* address: all JS is 4356.2 against 4400, 99% of its row, and it drifted
 there the same way. Nothing on this branch was withheld from it, but the next change that adds JS will
 likely hit that row first.
+
+## Raising the aggregate rows: 4400 → 4800 and 4550 → 4900
+
+Azure `build` on PR 707 head `03bb93cc` (a calc-audit test-comment change that does not ship in `dist/`)
+measured **all JS 4431.7 / 4400** and **PWA precache 4579.6 / 4550**. That is the prediction in the
+paragraph above coming true: the 44 and 46 KiB peek-overs failed on ordinary `main` drift, not on the
+PR's own bytes.
+
+The operator asked to stop that recurring fail. The limits in
+[`bundleBudget.mjs`](../../app/scripts/bundleBudget.mjs) moved to round hundreds **4800** and **4900**
+(~370 and ~320 KiB above those measured sizes). Same gate, same parsers, same fail-closed unmeasured
+paths. A later feature that actually grows the payload still has to say why in the same commit; this
+raise is only so CI is not red on every PR that does not.
 
 ## The Learn content split
 
