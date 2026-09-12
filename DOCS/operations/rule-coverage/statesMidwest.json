@@ -940,12 +940,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3036,
+          "line": 3070,
           "note": null,
           "tests": [
             {
               "title": "pins the overbroad Kansas public-pension override",
-              "line": 3052
+              "line": 3086
             }
           ]
         }
@@ -1023,12 +1023,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3006,
+          "line": 3040,
           "note": null,
           "tests": [
             {
               "title": "subtracts all post-2023 federally taxable Kansas Social Security",
-              "line": 3022
+              "line": 3056
             }
           ]
         }
@@ -1086,16 +1086,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3307,
+          "line": 3341,
           "note": null,
           "tests": [
             {
               "title": "deducts Social Security from Michigan taxable income",
-              "line": 3321
+              "line": 3355
             },
             {
               "title": "would add the federally taxable share if Michigan taxed it",
-              "line": 3326
+              "line": 3360
             }
           ]
         }
@@ -1259,12 +1259,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2395,
+          "line": 2429,
           "note": null,
           "tests": [
             {
               "title": "prices single and joint filers on the DOR TY2026 deduction and schedule",
-              "line": 2409
+              "line": 2443
             }
           ]
         }
@@ -1291,6 +1291,82 @@
           "kind": "stateAgencyPublication",
           "citation": "Minnesota DOR, Tax Year 2026 Inflation-Adjusted Amounts, publication scope",
           "url": "https://www.revenue.state.mn.us/sites/default/files/2025-12/inflation-adjusted-amounts-2026.pdf"
+        }
+      ]
+    },
+    {
+      "id": "mn-dor-seniors-resident-pension-inclusion",
+      "title": "Minnesota taxes resident pension income by default before listed subtractions",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:MN",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": 2026,
+      "verifiedOn": "2026-09-12",
+      "dueOn": "2027-09-12",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "MN",
+              "line": 482
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 96
+            },
+            {
+              "name": "retirementExclusion",
+              "line": 47
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 2398,
+          "note": null,
+          "tests": [
+            {
+              "title": "taxes resident private pension before the TY2026 standard deduction",
+              "line": 2416
+            },
+            {
+              "title": "would drop the pension only under a counterfactual full exclusion",
+              "line": 2422
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Minnesota DOR, Seniors — Pension Income",
+          "url": "https://www.revenue.state.mn.us/seniors"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Minnesota DOR, Seniors — military carve-out scope (excluded limb)",
+          "url": "https://www.revenue.state.mn.us/seniors"
         }
       ]
     },
@@ -1337,12 +1413,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
-          "line": 1087,
+          "line": 1179,
           "note": null,
           "tests": [
             {
               "title": "overstates Minnesota tax while the pack taxes federally taxable Social Security with no subtraction",
-              "line": 1102
+              "line": 1194
             }
           ]
         }
@@ -1384,6 +1460,131 @@
           "kind": "stateAgencyPublication",
           "citation": "Minnesota DOR, Tax Year 2026 Inflation-Adjusted Amounts, section 290.0132 subd. 26 alternate maxima",
           "url": "https://www.revenue.state.mn.us/sites/default/files/2025-12/inflation-adjusted-amounts-2026.pdf"
+        }
+      ]
+    },
+    {
+      "id": "mo-dor-2026-rate-schedule-and-standard-deduction",
+      "title": "Missouri publishes TY2026 whole-dollar chart bands and supported single/MFJ standard deductions",
+      "classification": "approximated",
+      "errorDirection": "bothDirections",
+      "conventionRationale": "The MO-1040ES chart quotes accumulated tax at band floors; bracketTax applies continuous marginal rates between breakpoints. Intermediate chart comparison is therefore stated at pre-return precision with whole-dollar return rounding omitted. The signed gaps at the pinned taxable-income coordinates are preserved rather than closed by parameter edits.",
+      "contraryReading": null,
+      "jurisdiction": "state:MO",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": 2026,
+      "verifiedOn": "2026-09-12",
+      "dueOn": "2027-01-10",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "MO",
+              "line": 537
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "bracketTax",
+              "line": 29
+            },
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 96
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/rules/approximations/stateTax.approximation.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
+          "line": 1114,
+          "note": "chart accumulated constants vs continuous bracketTax",
+          "tests": [
+            {
+              "title": "pins supported standard deductions, official single/MFJ marginal arrays, and the zero band",
+              "line": 1147
+            },
+            {
+              "title": "prices the $2,696 second-band ceiling at the chart formula before pre-return drift",
+              "line": 1157
+            },
+            {
+              "title": "preserves chart-vs-continuous gaps at the top 4.5% band and first 4.7% dollar",
+              "line": 1164
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Missouri DOR, Form MO-1040ES (2026), form year header",
+          "url": "https://dor.mo.gov/forms/MO-1040ES_2026.pdf"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Missouri DOR, Form MO-1040ES (2026), worksheet Line 6 standard deduction",
+          "url": "https://dor.mo.gov/forms/MO-1040ES_2026.pdf"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Missouri DOR, Form MO-1040ES (2026), tax rate chart zero band",
+          "url": "https://dor.mo.gov/forms/MO-1040ES_2026.pdf"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Missouri DOR, Form MO-1040ES (2026), tax rate chart 2.0% band",
+          "url": "https://dor.mo.gov/forms/MO-1040ES_2026.pdf"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Missouri DOR, Form MO-1040ES (2026), tax rate chart 2.5% band",
+          "url": "https://dor.mo.gov/forms/MO-1040ES_2026.pdf"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Missouri DOR, Form MO-1040ES (2026), tax rate chart 3.0% band",
+          "url": "https://dor.mo.gov/forms/MO-1040ES_2026.pdf"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Missouri DOR, Form MO-1040ES (2026), tax rate chart 3.5% band",
+          "url": "https://dor.mo.gov/forms/MO-1040ES_2026.pdf"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Missouri DOR, Form MO-1040ES (2026), tax rate chart 4.0% band",
+          "url": "https://dor.mo.gov/forms/MO-1040ES_2026.pdf"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Missouri DOR, Form MO-1040ES (2026), tax rate chart 4.5% band",
+          "url": "https://dor.mo.gov/forms/MO-1040ES_2026.pdf"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Missouri DOR, Form MO-1040ES (2026), tax rate chart 4.7% top band",
+          "url": "https://dor.mo.gov/forms/MO-1040ES_2026.pdf"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Missouri DOR, Form MO-1040ES (2026), tax rate chart whole-dollar example",
+          "url": "https://dor.mo.gov/forms/MO-1040ES_2026.pdf"
         }
       ]
     },
@@ -2119,6 +2320,133 @@
       ]
     },
     {
+      "id": "ne-dor-2026-rate-schedule-and-standard-deduction",
+      "title": "Nebraska publishes TY2026 estimated-tax brackets and supported single/MFJ standard deductions",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The form's estimated schedule uses accumulated chart constants at band floors; bracketTax composes the same marginal rates continuously. At the pinned single third-bracket ceiling the chart constant and continuous composition agree to cents; this record does not claim exact parity at every interior coordinate or beyond cents tolerance.",
+      "contraryReading": null,
+      "jurisdiction": "state:NE",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": 2026,
+      "verifiedOn": "2026-09-12",
+      "dueOn": "2027-01-10",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "states.NE",
+              "line": 572
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "bracketTax",
+              "line": 29
+            },
+            {
+              "name": "computeStateTaxableIncome",
+              "line": 96
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateTax.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateTax.rules.test.ts",
+          "line": 3512,
+          "note": null,
+          "tests": [
+            {
+              "title": "prices the TY2026 schedule and supported single standard deduction to cents",
+              "line": 3525
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Nebraska DOR, Form 1040N-ES (2026), worksheet Line 5 standard deduction",
+          "url": "https://revenue.nebraska.gov/sites/default/files/doc/tax-forms/2025/f_1040N-ES.pdf"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Nebraska DOR, Form 1040N-ES (2026), worksheet Line 5 MFJ standard deduction",
+          "url": "https://revenue.nebraska.gov/sites/default/files/doc/tax-forms/2025/f_1040N-ES.pdf"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Nebraska DOR, Form 1040N-ES (2026), estimated rate schedule scope",
+          "url": "https://revenue.nebraska.gov/sites/default/files/doc/tax-forms/2025/f_1040N-ES.pdf"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Nebraska DOR, Form 1040N-ES (2026), single rate schedule first bracket",
+          "url": "https://revenue.nebraska.gov/sites/default/files/doc/tax-forms/2025/f_1040N-ES.pdf"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Nebraska DOR, Form 1040N-ES (2026), single rate schedule second bracket",
+          "url": "https://revenue.nebraska.gov/sites/default/files/doc/tax-forms/2025/f_1040N-ES.pdf"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Nebraska DOR, Form 1040N-ES (2026), single rate schedule third bracket",
+          "url": "https://revenue.nebraska.gov/sites/default/files/doc/tax-forms/2025/f_1040N-ES.pdf"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Nebraska DOR, Form 1040N-ES (2026), single rate schedule fourth bracket",
+          "url": "https://revenue.nebraska.gov/sites/default/files/doc/tax-forms/2025/f_1040N-ES.pdf"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Nebraska DOR, Form 1040N-ES (2026), MFJ rate schedule heading",
+          "url": "https://revenue.nebraska.gov/sites/default/files/doc/tax-forms/2025/f_1040N-ES.pdf"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Nebraska DOR, Form 1040N-ES (2026), MFJ rate schedule first bracket",
+          "url": "https://revenue.nebraska.gov/sites/default/files/doc/tax-forms/2025/f_1040N-ES.pdf"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Nebraska DOR, Form 1040N-ES (2026), MFJ rate schedule second bracket",
+          "url": "https://revenue.nebraska.gov/sites/default/files/doc/tax-forms/2025/f_1040N-ES.pdf"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Nebraska DOR, Form 1040N-ES (2026), MFJ rate schedule third bracket",
+          "url": "https://revenue.nebraska.gov/sites/default/files/doc/tax-forms/2025/f_1040N-ES.pdf"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Nebraska DOR, Form 1040N-ES (2026), MFJ rate schedule fourth bracket",
+          "url": "https://revenue.nebraska.gov/sites/default/files/doc/tax-forms/2025/f_1040N-ES.pdf"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Nebraska DOR, Form 1040N-ES (2026), TY2026 third/fourth bracket rate note",
+          "url": "https://revenue.nebraska.gov/sites/default/files/doc/tax-forms/2025/f_1040N-ES.pdf"
+        }
+      ]
+    },
+    {
       "id": "ne-stat-77-2716-public-pension-exemption",
       "title": "Nebraska's public-pension override is military and CSRS, not every public pension",
       "classification": "approximated",
@@ -2165,20 +2493,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
-          "line": 1141,
+          "line": 1233,
           "note": null,
           "tests": [
             {
               "title": "exempts a school-retirement annuity the closed list does not name",
-              "line": 1158
+              "line": 1250
             },
             {
               "title": "taxes a private IRA of the same amount, which is the other bucket",
-              "line": 1164
+              "line": 1256
             },
             {
               "title": "reaches the statute once the public override is dropped",
-              "line": 1174
+              "line": 1266
             }
           ]
         }
@@ -2246,16 +2574,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3462,
+          "line": 3539,
           "note": null,
           "tests": [
             {
               "title": "subtracts every federally included Social Security dollar from 2024",
-              "line": 3478
+              "line": 3555
             },
             {
               "title": "would tax 85% of the benefit under the shopping-list reading",
-              "line": 3484
+              "line": 3561
             }
           ]
         }
@@ -2327,23 +2655,23 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3621,
+          "line": 3826,
           "note": "public-pension deduction limb",
           "tests": [
             {
               "title": "pins the over-broad full public-pension override",
-              "line": 3640
+              "line": 3845
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3647,
+          "line": 3852,
           "note": "retirement-income credit limb",
           "tests": [
             {
               "title": "pins the omitted Ohio retirement-income credit",
-              "line": 3661
+              "line": 3866
             }
           ]
         }
@@ -2411,16 +2739,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3691,
+          "line": 3896,
           "note": null,
           "tests": [
             {
               "title": "prices the TY2026 nonbusiness schedule at the statutory breakpoints",
-              "line": 3702
+              "line": 3907
             },
             {
               "title": "rejects the IT 1040 ES upper band and baseTax add-on semantics via hybridWorksheetUpperBandOnEnactedLowerBand",
-              "line": 3714
+              "line": 3919
             }
           ]
         }
@@ -2623,12 +2951,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 4208,
+          "line": 4413,
           "note": "30% long-term capital-gain subtraction",
           "tests": [
             {
               "title": "pins Wisconsin's unrepresented long-term capital-gain exclusion",
-              "line": 4222
+              "line": 4427
             }
           ]
         }
@@ -2695,20 +3023,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 4229,
+          "line": 4434,
           "note": "age-67 retirement attribution and election limbs",
           "tests": [
             {
               "title": "shelters retirement dollars received by the under-67 spouse",
-              "line": 4253
+              "line": 4458
             },
             {
               "title": "matches the pooled $48,000 cap when both spouses are 67",
-              "line": 4262
+              "line": 4467
             },
             {
               "title": "grants a 65-year-old nothing where Line 17 would allow $5,000",
-              "line": 4275
+              "line": 4480
             }
           ]
         }

@@ -11,17 +11,17 @@ The registry is the machine-checked chain from a rule to its implementation and 
 
 | Metric | Count |
 | --- | ---: |
-| Total rules | 471 |
-| Classification: approximated | 127 |
+| Total rules | 476 |
+| Classification: approximated | 128 |
 | Classification: outOfScope | 86 |
-| Classification: settled | 254 |
+| Classification: settled | 258 |
 | Classification: unsettled | 4 |
-| Volatility: annuallyIndexed | 74 |
+| Volatility: annuallyIndexed | 77 |
 | Volatility: awaitingGuidance | 10 |
-| Volatility: staticStatute | 380 |
+| Volatility: staticStatute | 382 |
 | Volatility: sunsetting | 7 |
 | Federal jurisdiction | 331 |
-| State jurisdiction total | 140 |
+| State jurisdiction total | 145 |
 
 | State jurisdiction | Count |
 | --- | ---: |
@@ -48,13 +48,13 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | MD | 2 |
 | ME | 3 |
 | MI | 2 |
-| MN | 2 |
-| MO | 1 |
+| MN | 3 |
+| MO | 2 |
 | MS | 7 |
-| MT | 2 |
-| NC | 1 |
+| MT | 3 |
+| NC | 2 |
 | ND | 8 |
-| NE | 2 |
+| NE | 3 |
 | NH | 1 |
 | NJ | 2 |
 | NM | 2 |
@@ -203,16 +203,16 @@ Per-rule payloads are sharded one file per record module under `DOCS/operations/
 | rule-coverage/socialSecurity.json | 49 |
 | rule-coverage/socialSecurityEarnings.json | 3 |
 | rule-coverage/socialSecurityMaritalEligibility.json | 6 |
-| rule-coverage/statesMidwest.json | 34 |
+| rule-coverage/statesMidwest.json | 37 |
 | rule-coverage/statesNortheast.json | 22 |
-| rule-coverage/statesSouthAtlantic.json | 19 |
+| rule-coverage/statesSouthAtlantic.json | 20 |
 | rule-coverage/statesSouthCentral.json | 34 |
-| rule-coverage/statesWest.json | 31 |
+| rule-coverage/statesWest.json | 32 |
 | rule-coverage/transfersAndUnmodeledRegimes.json | 6 |
 
 ## Re-verification due dates
 
-The 25 earliest due dates are shown below (471 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
+The 25 earliest due dates are shown below (476 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
 
 | Rule | Volatility | Verified on | Due on |
 | --- | --- | --- | --- |
@@ -252,18 +252,18 @@ Version 5 is a breaking discriminator for strict version checks: manifest.rules 
 
 ## Quote fidelity
 
-Committed ledger generated at 2026-09-10T18:59:10.717Z over 1394 authority entries (0 fetched live, 372 from cache).
+Committed ledger generated at 2026-09-12T14:38:53.411Z over 1427 authority entries (0 fetched live, 377 from cache).
 
-3 serious, 59 advisory, 1332 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
+3 serious, 60 advisory, 1364 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
 not treated as a CI gate; how to read each verdict: DOCS/operations/quote-fidelity.md.
 
 | Verdict | Class | Count |
 | --- | --- | ---: |
 | ELISION-EXACT | ok | 90 |
-| ELISION-PUNCTUATION | advisory | 8 |
-| EXACT | ok | 965 |
+| ELISION-PUNCTUATION | advisory | 9 |
+| EXACT | ok | 973 |
 | PDF-NOT-VERIFIABLE | advisory | 7 |
-| PDF-WORD-LEVEL | ok | 277 |
+| PDF-WORD-LEVEL | ok | 301 |
 | PUNCTUATION | advisory | 44 |
 | UNFETCHABLE | serious | 3 |
 

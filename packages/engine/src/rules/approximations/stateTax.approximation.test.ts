@@ -1084,6 +1084,98 @@ const MN_SS_SCENARIOS = [
 ] as const
 const MN_SS_PRODUCED_TAXABLE = [68_700, 74_700]
 
+function missouriChartTax(taxable: number): number {
+  if (taxable <= 1348) return 0
+  if (taxable <= 2696) return (taxable - 1348) * 0.02
+  if (taxable <= 4044) return 27 + (taxable - 2696) * 0.025
+  if (taxable <= 5392) return 61 + (taxable - 4044) * 0.03
+  if (taxable <= 6740) return 101 + (taxable - 5392) * 0.035
+  if (taxable <= 8088) return 148 + (taxable - 6740) * 0.04
+  if (taxable <= 9436) return 202 + (taxable - 8088) * 0.045
+  return 263 + (taxable - 9436) * 0.047
+}
+
+const MO_SD_SINGLE = 16_100
+const MO_SD_JOINT = 32_200
+const MO_CHART_2696 = 26.96
+const MO_CHART_9436 = 262.66
+const MO_CHART_10000 = 289.508
+const MO_OFFICIAL_SINGLE_BRACKETS = [
+  { lowerBound: 0, ratePct: 0 }, { lowerBound: 1348, ratePct: 2 }, { lowerBound: 2696, ratePct: 2.5 },
+  { lowerBound: 4044, ratePct: 3 }, { lowerBound: 5392, ratePct: 3.5 }, { lowerBound: 6740, ratePct: 4 },
+  { lowerBound: 8088, ratePct: 4.5 }, { lowerBound: 9436, ratePct: 4.7 },
+] as const
+const MO_OFFICIAL_JOINT_BRACKETS = [
+  { lowerBound: 0, ratePct: 0 }, { lowerBound: 1348, ratePct: 2 }, { lowerBound: 2696, ratePct: 2.5 },
+  { lowerBound: 4044, ratePct: 3 }, { lowerBound: 5392, ratePct: 3.5 }, { lowerBound: 6740, ratePct: 4 },
+  { lowerBound: 8088, ratePct: 4.5 }, { lowerBound: 9436, ratePct: 4.7 },
+] as const
+
+describeRule('mo-dor-2026-rate-schedule-and-standard-deduction', {
+  readings: {
+    chartPreReturnAt2696: MO_CHART_2696,
+    chartPreReturnAt9436: MO_CHART_9436,
+    chartPreReturnAt10000: MO_CHART_10000,
+    continuousEngineAt9436: 262.86,
+    continuousEngineAt10000: 289.368,
+  },
+  accepted: 'chartPreReturnAt9436',
+  produced: 'continuousEngineAt9436',
+  note: 'chart accumulated constants vs continuous bracketTax',
+}, ({ accepted, produced, readings }) => {
+  const at9436 = input({
+    state: 'MO',
+    ordinaryIncome: 9436 + MO_SD_SINGLE,
+    agesAlive: [60],
+  })
+  const at10000 = input({
+    state: 'MO',
+    ordinaryIncome: 10_000 + MO_SD_SINGLE,
+    agesAlive: [60],
+  })
+  const zeroBandTop = input({
+    state: 'MO',
+    ordinaryIncome: 1348 + MO_SD_SINGLE,
+    agesAlive: [60],
+  })
+  const at2696 = input({
+    state: 'MO',
+    ordinaryIncome: 2696 + MO_SD_SINGLE,
+    agesAlive: [60],
+  })
+
+  it('pins supported standard deductions, official single/MFJ marginal arrays, and the zero band', () => {
+    expect(pack('MO').standardDeduction.single).toBe(MO_SD_SINGLE)
+    expect(pack('MO').standardDeduction.marriedFilingJointly).toBe(MO_SD_JOINT)
+    expect(pack('MO').brackets.single).toEqual(MO_OFFICIAL_SINGLE_BRACKETS)
+    expect(pack('MO').brackets.marriedFilingJointly).toEqual(MO_OFFICIAL_JOINT_BRACKETS)
+    expect(computeStateTaxableIncome(pack('MO'), zeroBandTop)).toBeCloseTo(1348, 6)
+    expect(computeStateTax(pack('MO'), zeroBandTop)).toBe(0)
+    expect(missouriChartTax(1348)).toBe(0)
+  })
+
+  it('prices the $2,696 second-band ceiling at the chart formula before pre-return drift', () => {
+    expect(computeStateTaxableIncome(pack('MO'), at2696)).toBeCloseTo(2696, 6)
+    expect(missouriChartTax(2696)).toBeCloseTo(readings.chartPreReturnAt2696, 6)
+    expect(computeStateTax(pack('MO'), at2696)).toBeCloseTo(readings.chartPreReturnAt2696, 6)
+    expect(readings.chartPreReturnAt2696).toBeCloseTo(26.96, 6)
+  })
+
+  it('preserves chart-vs-continuous gaps at the top 4.5% band and first 4.7% dollar', () => {
+    expect(computeStateTaxableIncome(pack('MO'), at9436)).toBeCloseTo(9436, 6)
+    expect(missouriChartTax(9436)).toBeCloseTo(accepted, 6)
+    expect(computeStateTax(pack('MO'), at9436)).toBeCloseTo(produced, 6)
+    expect(produced).toBeGreaterThan(accepted)
+
+    expect(computeStateTaxableIncome(pack('MO'), at10000)).toBeCloseTo(10_000, 6)
+    expect(missouriChartTax(10_000)).toBeCloseTo(readings.chartPreReturnAt10000, 6)
+    expect(computeStateTax(pack('MO'), at10000))
+      .toBeCloseTo(readings.continuousEngineAt10000, 6)
+    expect(readings.continuousEngineAt10000).toBeLessThan(readings.chartPreReturnAt10000)
+    expect(produced).not.toBe(PRODUCED_TBD)
+  })
+})
+
 describeRule('mn-stat-290-0132-subd-26-social-security-inclusion', {
   readings: {
     // Independent authority worksheets on TY2026 DOR bands: FAGI $84,000 full
