@@ -1,3 +1,4 @@
+import { coordinateInheritedDeadlineAnnualRuntime } from './beneficiaryTraditionalIraAnnualRuntimeCoordinator.js'
 import { describe, expect, it } from 'vitest'
 
 import type { AnnualIraBasisAllocationEntryInput } from './annualIraBasisAllocation.js'
@@ -571,5 +572,45 @@ describe('beneficiary traditional IRA annual runtime coordinator', () => {
     const extra = validInput()
     ;(extra.attestation.members[0] as unknown as Record<string, unknown>).x = true
     expectUnsupported(extra)
+  })
+})
+
+// IRC 401(a)(9)(B)(ii): death in 2021 requires emptying by 2026.
+// 54.4974-1(e): 2027 obligation is remaining benefit, not original balance.
+// IRC 4974(a),(e): a $2,000 shortfall costs $500, or $200 after qualifying correction.
+describe('confirmed five-year annual runtime and excise routing', () => {
+  const input = {
+    facts: { ownerDeathDate: '2021-06-15', ownerDeathYear: 2021,
+      beneficiaryClassification: 'nonDesignatedConfirmed' as const,
+      deathBeforeRequiredBeginningDate: true, classificationProvenance: 'confirmed estate instrument' },
+    taxYear: 2026, openingBenefit: 10000, distributedByDeadline: 8000,
+    obligationId: 'estate-2026',
+    applicablePlan: { kind: 'inheritedIraAccount' as const, payeePersonId: 'beneficiary', accountId: 'ira' },
+  }
+  it('has zero minimum in year four and exactly one full-benefit obligation in year five', () => {
+    expect(coordinateInheritedDeadlineAnnualRuntime({ ...input, taxYear: 2025 })).toMatchObject({ requiredAmount: 0 })
+    const result = coordinateInheritedDeadlineAnnualRuntime(input)
+    expect(result).toMatchObject({ status: 'coordinated', requiredAmount: 10000,
+      remainingDistribution: 2000, excise: { shortfall: 2000, tax: 500 } })
+  })
+  it('uses subsequent opening benefit once and preserves correction and granted-waiver facts', () => {
+    const next = { ...input, taxYear: 2027, openingBenefit: 3000, distributedByDeadline: 1000 }
+    expect(coordinateInheritedDeadlineAnnualRuntime(next)).toMatchObject({ requiredAmount: 3000,
+      excise: { shortfall: 2000, tax: 500 }, obligation: { requirementKind: 'inheritedPostDeadlineRemainingBenefit' } })
+    expect(coordinateInheritedDeadlineAnnualRuntime({ ...next, relief: {
+      obligationId: input.obligationId, correctiveDistribution: { amount: 2000,
+        receivedOn: '2028-03-01', sourceApplicablePlan: input.applicablePlan,
+        form5329FiledOn: '2028-04-01', returnReflectsReducedTax: true },
+    } })).toMatchObject({ excise: { tax: 200 } })
+    expect(coordinateInheritedDeadlineAnnualRuntime({ ...next, relief: {
+      obligationId: input.obligationId, discretionaryWaiver: 'granted',
+    } })).toMatchObject({ excise: { tax: 0 } })
+  })
+  it('does not turn unknown trust, missing opening balance, or post-RBD classification into a number', () => {
+    expect(coordinateInheritedDeadlineAnnualRuntime({ ...input, facts: { ...input.facts,
+      beneficiaryClassification: 'unknownTrustOrEntity' } }).status).toBe('refusal')
+    expect(coordinateInheritedDeadlineAnnualRuntime({ ...input, openingBenefit: 'unknown' }).status).toBe('refusal')
+    expect(coordinateInheritedDeadlineAnnualRuntime({ ...input, facts: { ...input.facts,
+      deathBeforeRequiredBeginningDate: false } }).status).toBe('refusal')
   })
 })

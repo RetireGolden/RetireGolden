@@ -1,12 +1,15 @@
+import { stateRetirementEventsFromAccountAmounts } from './annualStateRetirementEvents.js'
 import type { Account, Person, Plan } from '../../model/plan.js'
 import type { ParameterPack } from '../../params/types.js'
 import type { IraProRataYear } from '../../strategies/iraBasis.js'
+import { characterizeStateConversionCandidate } from './stateConversionCandidateCharacter.js'
 import type { SimulatorAnnualRetirementRuntimeOccurrence } from '../annualRetirementRuntimeJournal.js'
 import type {
   PersonYearState,
   ProjectedFilingStatus,
   SimulatorRetirementRuntimeApplication,
   TaxCalculator,
+  TaxYearInput,
 } from '../types.js'
 
 import { stateForYear, stateResidencySegmentsForYear } from '../../model/plan.js'
@@ -19,6 +22,11 @@ import {
 } from '../../strategies/accountEligibility.js'
 import { applyCapitalLossCarryforward } from '../../tax/federalTax.js'
 import { stateParamsFor } from '../../params/state/index.js'
+import {
+  householdFactsForYear,
+  hsaAccountYearFactsForYear,
+  njIraOwnerPoolsForYear,
+} from './stateRetirementFactsAdapter.js'
 import {
   AGGREGATE_ROTH_CONVERSION_EPSILON_PLAN_DOLLARS,
   ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS,
@@ -94,6 +102,13 @@ interface AnnualAggregateRothConversionPhaseFacts {
   readonly planHasTaxExemptYieldAttestation: boolean
   readonly assumedEffects: readonly Readonly<OwnedNonRothIraAnnualSettlementEffect>[]
   readonly inflFactorFrom: (packYear: number, projectionYear: number) => number
+  readonly stateRetirementDistributions?: TaxYearInput['stateRetirementDistributions']
+  readonly stateHouseholdFacts?: TaxYearInput['stateHouseholdFacts']
+  readonly stateHsaAccountYearFacts?: TaxYearInput['stateHsaAccountYearFacts']
+  readonly stateHsaYearFacts?: TaxYearInput['stateHsaYearFacts']
+  readonly stateQcdEventFacts?: TaxYearInput['stateQcdEventFacts']
+  readonly stateQcdYearFacts?: TaxYearInput['stateQcdYearFacts']
+  readonly stateNjIraOwnerPools?: TaxYearInput['stateNjIraOwnerPools']
 }
 
 interface AnnualAggregateRothConversionPhaseLedger {
@@ -167,6 +182,7 @@ export interface AnnualAggregateRothConversionPhaseInput {
 }
 
 export interface AnnualAggregateRothConversionPhaseResult {
+  readonly stateRetirementDistributionFacts: NonNullable<TaxYearInput['stateRetirementDistributions']>
   readonly incomeBeforeConversion: number
   readonly itemizedDeductions:
   | { stateAndLocalTaxes: number; mortgageInterest: number; charitable: number }
@@ -201,6 +217,8 @@ export function annualAggregateRothConversionPhase(
   input: AnnualAggregateRothConversionPhaseInput,
 ): AnnualAggregateRothConversionPhaseResult {
   const { facts, prior, ledger, callbacks, capture } = input
+  const stateConversionTaxableByAccount = new Map<string, number>()
+  const stateConversionGrossByAccount = new Map<string, number>()
   const {
     year,
     pack,
@@ -321,7 +339,7 @@ export function annualAggregateRothConversionPhase(
 
   // State-tax inputs (resolved once per year, before conversions so the
   // safety-net trim below can price a conversion's full tax bill).
-  // Retirement-income base = pension/annuity + taxable RMD/SEPP/inherited −
+  // Retirement-income base = pension/annuity + taxable RMD/SEPP/inherited âˆ’
   // QCD; traditional spending withdrawals are added per iteration below.
   // Roth conversions are excluded (not exclusion-eligible).
   const residenceState = stateForYear(plan.household, year)
@@ -506,6 +524,29 @@ export function annualAggregateRothConversionPhase(
         totalExpenses: expensesTotal,
         contributions,
         computeTaxForTaxableConversion: (extraOrdinary: number) => {
+          // Price the same owner/source allocation as execution. The sizing
+          // callback speaks taxable dollars; recover its gross proposal using
+          // the current accepted Form 8606 fractions without mutating pools.
+          const proposedFacts = (gross: number) => {
+            const planned = annualAggregateRothConversionPlan({ balances: annualIdKeyedBalances,
+              iraRmdUnsatisfiedByOwner, desiredPlanDollars: gross, primaryPersonId: primary.id,
+              fundingTolerancePlanDollars: EPSILON, sourceContextForOwner: conversionSourceContextForOwner })
+            const character = characterizeStateConversionCandidate(
+              planned.allocation.status === 'refused' ? [] : planned.allocation.draws.map((draw) => ({
+                accountId:draw.sourceAccount.id, ownerPersonId:draw.ownerPersonId,
+                amount:draw.amountPlanDollars, aggregatedIra:isAggregatedIra(draw.sourceAccount),
+              })), iraProRata, ownedIraConversionTaxableFraction)
+            return { taxableTotal: character.taxableTotal,
+              facts: stateRetirementEventsFromAccountAmounts(plan, year, character.taxable, 'conversion-probe', character.grossAmounts) }
+          }
+          let low = 0
+          let high = annualIdKeyedBalances.reduce((sum, state) => sum + (yearConvertibleToRoth(state.account) ? Math.max(0, state.balance) : 0), 0)
+          for (let iteration = 0; iteration < 40 && high - low > .005; iteration++) {
+            const middle = (low + high) / 2
+            if (proposedFacts(middle).taxableTotal < extraOrdinary) low = middle
+            else high = middle
+          }
+          const conversionStateFacts = extraOrdinary > 0 ? proposedFacts(high).facts : []
           const netted = applyCapitalLossCarryforward(
             capitalLossPool,
             Math.max(0, incomeBeforeConversion + extraOrdinary),
@@ -535,6 +576,41 @@ export function annualAggregateRothConversionPhase(
             publicPensionIncome: publicPensionBase,
             agesAlive,
             itemizedDeductions,
+            ...(facts.stateRetirementDistributions === undefined
+              ? {}
+              : {
+                  stateRetirementDistributions:
+                    [...facts.stateRetirementDistributions, ...conversionStateFacts],
+                }),
+            ...(() => {
+              const household =
+                facts.stateHouseholdFacts ?? householdFactsForYear(plan, year)
+              return household === undefined
+                ? {}
+                : { stateHouseholdFacts: household }
+            })(),
+            ...(() => {
+              const hsa =
+                facts.stateHsaAccountYearFacts ??
+                hsaAccountYearFactsForYear(plan, year, residenceState)
+              return hsa === undefined ? {} : { stateHsaAccountYearFacts: hsa }
+            })(),
+            ...(() => {
+              const pools =
+                facts.stateNjIraOwnerPools ?? njIraOwnerPoolsForYear(plan, year)
+              return pools === undefined ? {} : { stateNjIraOwnerPools: pools }
+            })(),
+            ...(facts.stateQcdEventFacts === undefined
+              ? {}
+              : { stateQcdEventFacts: facts.stateQcdEventFacts.map((event) => ({
+                  ...event,
+                  residency: event.residency === 'unknown' &&
+                    (stateResidency?.length === 1 && stateResidency[0]!.months === 12)
+                    ? 'fullYearResident' as const : event.residency,
+                })) }),
+            ...(facts.stateQcdYearFacts === undefined
+              ? {}
+              : { stateQcdYearFacts: facts.stateQcdYearFacts }),
           })
         },
       }),
@@ -701,6 +777,8 @@ export function annualAggregateRothConversionPhase(
             noteForm8606Taxable(ownerId, take, 'conversions')
           }
         }
+        stateConversionGrossByAccount.set(sourceAccount.id, (stateConversionGrossByAccount.get(sourceAccount.id) ?? 0) + take)
+        stateConversionTaxableByAccount.set(sourceAccount.id, (stateConversionTaxableByAccount.get(sourceAccount.id) ?? 0) + take - drawNontaxable)
         if (publishCashFlow) {
           aggregateConversionDraws!.push({
             sourceAccountId: sourceAccount.id,
@@ -817,6 +895,7 @@ export function annualAggregateRothConversionPhase(
     (rothConversion - conversionNontaxable) +
     (namedRothConversionExecuted - namedRothConversionNontaxable)
   return {
+    stateRetirementDistributionFacts: stateRetirementEventsFromAccountAmounts(plan, year, stateConversionTaxableByAccount, 'conversion', stateConversionGrossByAccount),
     incomeBeforeConversion,
     itemizedDeductions,
     residenceState,

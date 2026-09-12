@@ -51,6 +51,18 @@ published amounts in its supported single/MFJ deduction cells. Bracket arrays
 remain the **2025** Schedule X/Y rate schedules carried in `year2026.ts`; a final
 TY2026 resident-return schedule was not established in this delivery.
 
+## HSA nonconformity (Schedule CA)
+California does not conform to IRC §223. The leaf helper
+`californiaHsaAccountAdjustment` / pack `hsaConformity: 'nonconformingCalifornia'`:
+- Adds the federal HSA deduction and federally excluded employer contribution.
+- Includes current interest, dividends, and realized gains.
+- Subtracts the federally included nonqualified HSA distribution present in the
+  ordinary-income starting point (Schedule CA line 8f).
+- Does **not** treat a qualified cash withdrawal as a new subtraction that can
+  create negative income, and does **not** apply the Archer MSA 12.5% line 8e
+  penalty path to ordinary HSA withdrawals.
+Money facts distinguish known zero from unknown; unknown fails closed.
+
 ## Simplifications / not modeled
 - FTB directs filers to the **tax table through $100,000** of taxable income while
   the engine uses **continuous** Schedule X/Y breakpoints at all incomes. Lower-income
@@ -66,3 +78,9 @@ TY2026 resident-return schedule was not established in this delivery.
 - https://www.ftb.ca.gov/forms/2026/2026-540-es-instructions.html — 2026 Form 540-ES estimated-tax worksheet line 2b: $5,706 / $11,412 standard deduction.
 - https://www.ftb.ca.gov/forms/2025/2025-540-tax-rate-schedules.pdf — retained 2025 Schedule X/Y bracket thresholds and rates 1%–12.3%.
 - https://www.ftb.ca.gov/forms/2025/2025-540-instructions.html — Social Security exempt; tax table through $100,000.
+
+## California taxes HSA contributions and current earnings without taxing basis twice (verified 2026-09-12)
+
+California reverses the federal HSA deduction and excluded employer contributions and includes current HSA interest, dividends and realized gains. Federally taxable nonqualified HSA withdrawals are removed from that federal starting component; qualified cash withdrawals are not a second deduction. Separate state basis and disposition facts prevent taxing principal twice. Unknown annual activity or basis is incomplete, not known zero. State basis must remain keyed by owner/account and be committed only for an accepted annual result.
+
+Registered as `ca-hsa-state-basis-nonconformity`. Authority: [FTB 2025 Schedule CA, HSA earnings](https://www.ftb.ca.gov/forms/2025/2025-540-ca-instructions.html), [California R&TC 17201(d)](https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?sectionNum=17201.&lawCode=RTC).

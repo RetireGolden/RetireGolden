@@ -25,10 +25,15 @@ import {
   type StateTaxParams,
 } from '../params/state/index.js'
 import { combineTaxCalculators, createFederalTaxCalculator } from '../tax/federalTax.js'
-import { computeStateTaxYearTotal, createStateTaxCalculator } from '../tax/stateTax.js'
+import { createStateTaxCalculator } from '../tax/stateTax.js'
 import { summarizeProjection } from './compare.js'
 import { simulatePlan } from './simulate.js'
-import type { TaxCalculator, TaxYearInput } from './types.js'
+import {
+  normalizeTaxComputation,
+  type TaxCalculator,
+  type TaxComputationResult,
+  type TaxYearInput,
+} from './types.js'
 
 /** Hard cap on candidate states per sweep (each one is a full plan run + Monte Carlo). */
 export const MAX_RELOCATION_CANDIDATES = 5
@@ -187,6 +192,7 @@ export interface RelocationCompareOptions {
 interface RecordedYear {
   input: TaxYearInput
   tax: number
+  computation: TaxComputationResult
 }
 
 /** The app-standard per-plan tax stack, with the state side recorded per year. */
@@ -198,12 +204,24 @@ function recordingTaxStack(plan: Plan): { taxCalculator: TaxCalculator; lines: M
   })
   const recordingState: TaxCalculator = {
     compute(input) {
-      const tax = stateCalculator.compute(input)
-      // The ledger converges tax iteratively within each year and never
-      // revisits a finished year, so the last computation per year is the
-      // ledger's final state-tax line.
-      lines.set(input.year, { input, tax })
-      return tax
+      const computation = normalizeTaxComputation(stateCalculator, input)
+      // Probe recordings are provisional. `runRow` overwrites each year from
+      // the funding fixed-point's accepted TaxYearInput after simulatePlan.
+      lines.set(input.year, {
+        input,
+        tax: computation.amount,
+        computation,
+      })
+      return computation.amount
+    },
+    computeResult(input) {
+      const computation = normalizeTaxComputation(stateCalculator, input)
+      lines.set(input.year, {
+        input,
+        tax: computation.amount,
+        computation,
+      })
+      return computation
     },
   }
   return { taxCalculator: combineTaxCalculators(createFederalTaxCalculator(), recordingState), lines }
@@ -266,24 +284,42 @@ function computeDrivers(
     }
   }
 
-  const facts = driverFacts(destinationState, startYear)
-  const sumVariant = (map: ((p: StateTaxParams) => StateTaxParams) | undefined): number => {
-    let sum = 0
-    for (const { input } of lines.values()) {
-      sum += computeStateTaxYearTotal(input, map ? { ...opts, mapParams: forState(destinationState, map) } : opts)
+  for (const { computation, input } of lines.values()) {
+    if (computation.status === 'incomplete') {
+      warnings.push(
+        `Driver attribution suppressed for ${input.year}: state tax computation was incomplete.`,
+      )
+      return {
+        facts: null,
+        totalStateLocalTax: total,
+        ssTreatmentSavings: 0,
+        retirementExclusionSavings: 0,
+        publicPensionExclusionSavings: 0,
+        capitalGainsTreatmentSavings: 0,
+      }
     }
-    return sum
   }
 
-  // Acceptance guard: re-pricing every recorded year unmodified must equal the
-  // ledger's state-tax lines — the drivers below are only meaningful if it does.
-  const reconciled = sumVariant(undefined)
-  if (Math.abs(reconciled - total) > 0.01) {
-    warnings.push(
-      'Driver attribution could not reconcile with the ledger state-tax lines; drill-down figures were suppressed.',
-    )
-    // facts: null keeps the UI on its "attribution unavailable" message
-    // instead of rendering a drivers table of misleading $0 rows.
+  const facts = driverFacts(destinationState, startYear)
+  const sumVariant = (
+    map: ((p: StateTaxParams) => StateTaxParams) | undefined,
+  ): { readonly incomplete: boolean; readonly sum: number } => {
+    let sum = 0
+    const baseCalculator = createStateTaxCalculator(map ? { ...opts, mapParams: forState(destinationState, map) } : opts)
+    for (const { input } of lines.values()) {
+      // Exactness follows the recorded TaxYearInput facts; mapParams only
+      // neutralizes modeled features and must not hide incomplete evidence.
+      const computation = normalizeTaxComputation(baseCalculator, input)
+      if (computation.status === 'incomplete') {
+        return { incomplete: true, sum: 0 }
+      }
+      sum += computation.amount
+    }
+    return { incomplete: false, sum }
+  }
+
+  const suppressDrivers = (message: string): RelocationDrivers => {
+    warnings.push(message)
     return {
       facts: null,
       totalStateLocalTax: total,
@@ -292,6 +328,20 @@ function computeDrivers(
       publicPensionExclusionSavings: 0,
       capitalGainsTreatmentSavings: 0,
     }
+  }
+
+  // Acceptance guard: re-pricing every recorded year unmodified must equal the
+  // ledger's state-tax lines — the drivers below are only meaningful if it does.
+  const reconciled = sumVariant(undefined)
+  if (reconciled.incomplete) {
+    return suppressDrivers(
+      'Driver attribution suppressed: replaying recorded tax inputs produced an incomplete state-tax result.',
+    )
+  }
+  if (Math.abs(reconciled.sum - total) > 0.01) {
+    return suppressDrivers(
+      'Driver attribution could not reconcile with the ledger state-tax lines; drill-down figures were suppressed.',
+    )
   }
 
   if (!facts) {
@@ -307,29 +357,42 @@ function computeDrivers(
 
   const noExclusion: StateRetirementExclusion = { kind: 'none' }
   // "Savings" = tax with the feature neutralized − tax as modeled.
-  const ssTreatmentSavings = facts.taxesSocialSecurity
-    ? 0
-    : sumVariant((p) => ({ ...p, taxesSocialSecurity: true })) - total
-  const retirementExclusionSavings =
-    sumVariant((p) => ({ ...p, retirementPrivate: noExclusion, retirementPublic: noExclusion })) - total
-  const publicPensionExclusionSavings = facts.retirementRuleShared
-    ? 0
-    : sumVariant((p) => ({ ...p, retirementPublic: noExclusion })) - total
-  const capitalGainsTreatmentSavings =
-    sumVariant((p) => ({
-      ...p,
-      capitalGainsAsOrdinary: true,
-      capitalGainsTaxablePct: 100,
-      capitalLossCarryforwardConformity: 'federal',
-    })) - total
+  // Any incomplete variant replay suppresses the whole driver table.
+  const ssVariant = facts.taxesSocialSecurity
+    ? { incomplete: false, sum: total }
+    : sumVariant((p) => ({ ...p, taxesSocialSecurity: true }))
+  const retirementVariant = sumVariant((p) => ({
+    ...p,
+    retirementPrivate: noExclusion,
+    retirementPublic: noExclusion,
+  }))
+  const publicVariant = facts.retirementRuleShared
+    ? { incomplete: false, sum: total }
+    : sumVariant((p) => ({ ...p, retirementPublic: noExclusion }))
+  const capitalGainsVariant = sumVariant((p) => ({
+    ...p,
+    capitalGainsAsOrdinary: true,
+    capitalGainsTaxablePct: 100,
+    capitalLossCarryforwardConformity: 'federal',
+  }))
+  if (
+    ssVariant.incomplete ||
+    retirementVariant.incomplete ||
+    publicVariant.incomplete ||
+    capitalGainsVariant.incomplete
+  ) {
+    return suppressDrivers(
+      'Driver attribution suppressed: a neutralized-feature variant produced an incomplete state-tax result.',
+    )
+  }
 
   return {
     facts,
     totalStateLocalTax: total,
-    ssTreatmentSavings,
-    retirementExclusionSavings,
-    publicPensionExclusionSavings,
-    capitalGainsTreatmentSavings,
+    ssTreatmentSavings: ssVariant.sum - total,
+    retirementExclusionSavings: retirementVariant.sum - total,
+    publicPensionExclusionSavings: publicVariant.sum - total,
+    capitalGainsTreatmentSavings: capitalGainsVariant.sum - total,
   }
 }
 
@@ -378,6 +441,36 @@ function runRow(
   const result = simulatePlan(plan, { startYear, taxCalculator })
   const summary = summarizeProjection(plan, result)
 
+  // Commit only the funding fixed-point's accepted tax input/state computation.
+  // Funding probes call the calculator many times per year; last-call-wins can
+  // disagree with the ACA basin/endpoint that was actually accepted.
+  const stateCalculator = createStateTaxCalculator({
+    overridePct: plan.assumptions.stateEffectiveTaxPct,
+    localPct: plan.assumptions.localIncomeTaxPct,
+  })
+  for (const yearRow of result.years) {
+    if (yearRow.acceptedTaxInput === undefined) continue
+    const stateComputation = normalizeTaxComputation(
+      stateCalculator,
+      yearRow.acceptedTaxInput,
+    )
+    // Prefer composed-year incomplete status when present; state amount still
+    // comes from replaying the accepted input through the state calculator.
+    const computation =
+      yearRow.taxComputation !== undefined
+        ? {
+            amount: stateComputation.amount,
+            status: yearRow.taxComputation.status,
+            issues: yearRow.taxComputation.issues,
+          }
+        : stateComputation
+    lines.set(yearRow.year, {
+      input: yearRow.acceptedTaxInput,
+      tax: stateComputation.amount,
+      computation,
+    })
+  }
+
   // The state the drill-down attributes: the plan's ACTUAL final residence.
   // For a candidate whose move year falls beyond the horizon the ledger never
   // relocates, so labeling the requested state would misattribute a baseline
@@ -394,14 +487,34 @@ function runRow(
   // Modeled = every residence year priced through a modeled pack (or a flat
   // override deliberately in charge). An unmodeled state contributes $0 and
   // the ledger already warns about it; surface that as modeled:false.
+  // Incomplete taxComputation years are also not exact rankings.
   const overrideActive = plan.assumptions.stateEffectiveTaxPct > 0
   let allModeled = true
+  let anyIncompleteTax = false
   if (!overrideActive) {
     for (const y of result.years) {
       if (!stateParamsFor(stateForYear(plan.household, y.year), y.year)) {
         allModeled = false
         break
       }
+    }
+  }
+  for (const { computation } of lines.values()) {
+    if (computation.status === 'incomplete') {
+      anyIncompleteTax = true
+      warnings.push(
+        'One or more years produced an incomplete state-tax result; this row is not ranked as exact.',
+      )
+      break
+    }
+  }
+  for (const y of result.years) {
+    if (y.taxComputation?.status === 'incomplete') {
+      anyIncompleteTax = true
+      warnings.push(
+        `Year ${y.year} taxComputation is incomplete; this row is not ranked as exact.`,
+      )
+      break
     }
   }
 
@@ -417,7 +530,7 @@ function runRow(
       candidate,
       error: null,
       destinationState,
-      modeled: allModeled && !overrideActive,
+      modeled: allModeled && !overrideActive && !anyIncompleteTax,
       lifetimeStateLocalTax: drivers.totalStateLocalTax,
       lifetimeTaxesAndPenalties: summary.lifetimeTaxesAndPenalties,
       endingAfterTaxEstate: summary.endingAfterTaxEstate,

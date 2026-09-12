@@ -6,6 +6,7 @@ import { describeRule } from '../rules/describeRule.js'
 import { createFederalTaxCalculator } from '../tax/federalTax.js'
 import { createFlatTaxCalculator } from '../testing/flatTax.js'
 import {
+  additionalRothCatchUpRequiredAfterPrior,
   allocateEmployerElectiveDeferrals,
   employerMatchElectiveBase,
   highEarnerRothCatchUpMandated,
@@ -611,5 +612,156 @@ describe('employerMatchElectiveBase', () => {
       redirectedCatchUpBySource: redirected,
       catchUpRothAccountId: 'roth',
     })).toBe(0)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Prior designated Roth offset — T.D. 10033 §1.414(v)-2(b)(1)/(d)(6) Example 6
+// ---------------------------------------------------------------------------
+
+describeRule('irc-414-v-2-d-6-prior-designated-roth-offset', { readings: { priorRothCounts: 1250, ignoresPriorRoth: 5000 }, accepted: 'priorRothCounts' }, ({ accepted }) => {
+  // Official Example 6 (stipulated $25,000 base / $30,000 total): prior Roth
+  // $3,750 leaves $1,250 unmet of $5,000 catch-up.
+  it('matches T.D. 10033 Example 6 remaining Roth catch-up', () => {
+    expect(
+      additionalRothCatchUpRequiredAfterPrior({
+        annualTotalElectiveDeferrals: 30_000,
+        baseLimit: 25_000,
+        catchUpLimit: 5_000,
+        priorDesignatedRothElectiveDeferrals: 3_750,
+      }),
+    ).toBe(accepted)
+  })
+
+  // 2026 stipulated base $24,500, age-50 catch-up $8,000: prior $8,000 Roth plus
+  // new $24,500 pre-tax totals $32,500 and requires no additional Roth.
+  it('requires no additional Roth when prior Roth already covers the catch-up slice', () => {
+    expect(
+      additionalRothCatchUpRequiredAfterPrior({
+        annualTotalElectiveDeferrals: 32_500,
+        baseLimit: 24_500,
+        catchUpLimit: 8_000,
+        priorDesignatedRothElectiveDeferrals: 8_000,
+      }),
+    ).toBe(0)
+  })
+
+  it('leaves $4,000 required Roth when prior Roth is $4,000 and annual total is $32,500', () => {
+    expect(
+      additionalRothCatchUpRequiredAfterPrior({
+        annualTotalElectiveDeferrals: 32_500,
+        baseLimit: 24_500,
+        catchUpLimit: 8_000,
+        priorDesignatedRothElectiveDeferrals: 4_000,
+      }),
+    ).toBe(4_000)
+  })
+})
+
+describe('allocateEmployerElectiveDeferrals prior contributions', () => {
+  it('treats unknown history as distinct from known zero', () => {
+    const unknown = allocateEmployerElectiveDeferrals(
+      [request('traditional', BASE_402G + CATCH_UP_50, FICA_ONE_CENT_OVER, 'trad')],
+      {
+        ...limits(CATCH_UP_50),
+        priorContributions: { status: 'unknown' },
+      },
+    )
+    expect(unknown.priorContributionsStatus).toBe('unknown')
+    expect(unknown.additionalRothCatchUpStillRequired).toBeNull()
+
+    const knownZero = allocateEmployerElectiveDeferrals(
+      [
+        request('traditional', BASE_402G + CATCH_UP_50, FICA_ONE_CENT_OVER, 'trad'),
+        request('roth', 0, FICA_ONE_CENT_OVER, 'roth'),
+      ],
+      {
+        ...limits(CATCH_UP_50),
+        priorContributions: {
+          status: 'known',
+          designatedRothElectiveDeferrals: 0,
+          totalElectiveDeferrals: 0,
+          asOfDate: '2026-06-01',
+        },
+      },
+    )
+    expect(knownZero.priorContributionsStatus).toBe('known')
+    expect(knownZero.additionalRothCatchUpStillRequired).toBe(0)
+  })
+
+  it('does not change aggregate when incremental request order permutes', () => {
+    const prior = {
+      status: 'known' as const,
+      designatedRothElectiveDeferrals: 4_000,
+      totalElectiveDeferrals: 4_000,
+      asOfDate: '2026-06-01',
+    }
+    const a = allocateEmployerElectiveDeferrals(
+      [
+        request('traditional', 20_500, FICA_ONE_CENT_OVER, 'trad'),
+        request('roth', 0, FICA_ONE_CENT_OVER, 'roth'),
+      ],
+      { ...limits(CATCH_UP_50), priorContributions: prior },
+    )
+    const b = allocateEmployerElectiveDeferrals(
+      [
+        request('roth', 0, FICA_ONE_CENT_OVER, 'roth'),
+        request('traditional', 20_500, FICA_ONE_CENT_OVER, 'trad'),
+      ],
+      { ...limits(CATCH_UP_50), priorContributions: prior },
+    )
+    const sum = (alloc: typeof a): number =>
+      [...alloc.allowed.values()].reduce((s, n) => s + n, 0)
+    expect(sum(a)).toBe(sum(b))
+    expect(a.additionalRothCatchUpStillRequired).toBe(b.additionalRothCatchUpStillRequired)
+  })
+
+  it('counts prior Roth toward the mandate so prior $8,000 + new $24,500 pretax needs no more Roth', () => {
+    // Annual total = 8,000 prior + 24,500 new = 32,500; catch-up slice = 8,000
+    // already covered by prior Roth — not "prior 8,000 plus a new 32,500".
+    const result = allocateEmployerElectiveDeferrals(
+      [
+        request('traditional', BASE_402G, FICA_ONE_CENT_OVER, 'trad'),
+        request('roth', 0, FICA_ONE_CENT_OVER, 'roth'),
+      ],
+      {
+        ...limits(CATCH_UP_50),
+        priorContributions: {
+          status: 'known',
+          designatedRothElectiveDeferrals: 8_000,
+          totalElectiveDeferrals: 8_000,
+          asOfDate: '2026-06-01',
+        },
+      },
+    )
+    expect(result.allowed.get('trad')).toBe(BASE_402G)
+    expect(result.additionalRothCatchUpStillRequired).toBe(0)
+    expect(result.designatedRothCatchUp).toBe(8_000)
+  })
+
+  it('does not infer compensation from prior Roth when low current compensation binds', () => {
+    // Independent §414(v)(2)(A)(ii) worksheet: annual compensation = $30,000;
+    // prior actual Roth deferrals = $8,000; so only $22,000 remains for a new
+    // request. The annual total is $30,000, whose $5,500 catch-up slice is
+    // already covered by the documented $8,000 prior Roth amount.
+    const result = allocateEmployerElectiveDeferrals(
+      [
+        request('traditional', BASE_402G, FICA_ONE_CENT_OVER, 'trad'),
+        request('roth', 0, FICA_ONE_CENT_OVER, 'roth'),
+      ],
+      {
+        ...limits(CATCH_UP_50, 30_000),
+        priorContributions: {
+          status: 'known',
+          designatedRothElectiveDeferrals: 8_000,
+          totalElectiveDeferrals: 8_000,
+          asOfDate: '2026-06-01',
+        },
+      },
+    )
+    expect(result.allowed.get('trad')).toBe(22_000)
+    expect(result.allowed.get('roth')).toBe(0)
+    expect(result.designatedRothCatchUp).toBe(8_000)
+    expect(result.additionalRothCatchUpStillRequired).toBe(0)
   })
 })

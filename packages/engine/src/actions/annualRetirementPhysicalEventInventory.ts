@@ -1,3 +1,4 @@
+import type { AnnualOwnerTreatmentRouting } from '../strategies/accountEligibility.js'
 import { z } from 'zod'
 
 import {
@@ -237,6 +238,7 @@ export type AnnualRetirementRuntimeInventoryRecord =
   | Readonly<UnresolvedAnnualRetirementPhysicalActivityRecord>
 
 export interface BuildAnnualRetirementPhysicalEventInventoryInput {
+  readonly ownerTreatmentRouting?: AnnualOwnerTreatmentRouting
   plan: unknown
   taxYear: number
   runtimeInventoryAttestation:
@@ -779,10 +781,10 @@ function expectedOrigin(
  * the election year, when the account is the spouse's own for owner RMD and
  * Form 8606 categorization even though the plan still carries the inherited block.
  */
-function isOwnedIra(account: TraditionalAccount, taxYear: number): boolean {
+function isOwnedIra(account: TraditionalAccount, taxYear: number, ownerTreatmentRouting?: AnnualOwnerTreatmentRouting): boolean {
   if (account.kind !== 'ira') return false
   if (account.inherited === undefined) return true
-  return isTreatAsOwnEffective(account, taxYear)
+  return isTreatAsOwnEffective(account, taxYear, ownerTreatmentRouting)
 }
 
 function categoryFor(
@@ -813,6 +815,7 @@ function resolvedSourceKindValid(
   plan: Plan,
   taxYear: number,
   ownerPersonId: PersonId,
+  ownerTreatmentRouting?: AnnualOwnerTreatmentRouting,
 ): boolean {
   // This boundary checks only Plan-local necessary source/route conditions.
   // Dynamic producer state (including shared contribution-limit usage and
@@ -847,7 +850,7 @@ function resolvedSourceKindValid(
     // except the same-year flip (election year = death year), when the
     // decedent's unsatisfied year-of-death RMD still executes as inherited
     // (Treas. Reg. §1.408-8(c)(3)).
-    if (isTreatAsOwnEffective(account, taxYear)) {
+    if (isTreatAsOwnEffective(account, taxYear, ownerTreatmentRouting)) {
       if (taxYear !== inherited.ownerDeathYear) return false
       // Fall through: structural test must accept the YOD row the ledger emits.
     }
@@ -981,7 +984,7 @@ function resolvedSourceKindValid(
     legacyRothConversionRequested
 
   if (kind === 'ownedIraRmd') {
-    return isOwnedIra(account, taxYear) && ownerRmdActive && ownerModeledAlive
+    return isOwnedIra(account, taxYear, ownerTreatmentRouting) && ownerRmdActive && ownerModeledAlive
   }
   if (kind === 'employerPlanRmd') {
     return account.kind === 'employer' &&
@@ -1029,7 +1032,7 @@ function resolvedSourceKindValid(
         activity.sourceAccountId === account.id &&
         activity.actionTaxYear === taxYear,
     )
-    return isOwnedIra(account, taxYear) && ownerModeledAlive &&
+    return isOwnedIra(account, taxYear, ownerTreatmentRouting) && ownerModeledAlive &&
       classifications.length === 1 &&
       (classifications[0]!.subtype === 'sep' ||
         classifications[0]!.subtype === 'simple') &&
@@ -1134,6 +1137,7 @@ function canonicalPlanEvents(
   taxYear: number,
   accountById: ReadonlyMap<string, Plan['accounts'][number]>,
   issues: AnnualRetirementInventoryIssue[],
+  ownerTreatmentRouting?: AnnualOwnerTreatmentRouting,
 ): PlanAnnualRetirementPhysicalEvent[] {
   const events: PlanAnnualRetirementPhysicalEvent[] = []
   for (const action of plan.strategies.retirementActions) {
@@ -1184,7 +1188,7 @@ function canonicalPlanEvents(
       const sourceInheritanceStatus = account.inherited === undefined
         ? 'owned'
         : 'inherited'
-      const form8606Category = categoryFor(action.kind, isOwnedIra(account, taxYear))
+      const form8606Category = categoryFor(action.kind, isOwnedIra(account, taxYear, ownerTreatmentRouting))
       const eventId = deriveActionStructuralId(
         'annual-retirement-plan-event',
         [
@@ -1235,9 +1239,10 @@ function canonicalPlanEvents(
 function canonicalRuntimeEvent(
   record: CanonicalResolvedRecord,
   account: InheritedCapableAccount,
+  ownerTreatmentRouting?: AnnualOwnerTreatmentRouting,
 ): RuntimeAnnualRetirementPhysicalEvent {
   const ownedIra = account.type === 'traditional' &&
-    isOwnedIra(account, record.taxYear)
+    isOwnedIra(account, record.taxYear, ownerTreatmentRouting)
   return {
     eventId: record.eventId,
     planId: record.planId,
@@ -1400,6 +1405,7 @@ export function buildAnnualRetirementPhysicalEventInventory(
   if (stableIdIssues.length > 0) return incomplete(stableIdIssues)
   const planId = planIdSchema.parse(plan.id)
   const taxYear = input.taxYear
+  const ownerTreatmentRouting = input.ownerTreatmentRouting
   const attestation: CanonicalAttestation = parsedAttestation.data
   const inventoryIssues: AnnualRetirementInventoryIssue[] = []
   if (
@@ -1632,6 +1638,7 @@ export function buildAnnualRetirementPhysicalEventInventory(
         plan,
         taxYear,
         record.ownerPersonId,
+        ownerTreatmentRouting,
       )) {
         inventoryIssues.push(issue(
           'sourceKindMismatch',
@@ -1639,7 +1646,7 @@ export function buildAnnualRetirementPhysicalEventInventory(
           { recordId: record.eventId, sourceAccountId: record.sourceAccountId },
         ))
       }
-      runtimeEvents.push(canonicalRuntimeEvent(record, account))
+      runtimeEvents.push(canonicalRuntimeEvent(record, account, ownerTreatmentRouting))
     }
   }
 
@@ -1688,7 +1695,7 @@ export function buildAnnualRetirementPhysicalEventInventory(
     ))
   }
 
-  const planEvents = canonicalPlanEvents(plan, taxYear, accountById, inventoryIssues)
+  const planEvents = canonicalPlanEvents(plan, taxYear, accountById, inventoryIssues, ownerTreatmentRouting)
   for (const actionId of sortedUnique(
     planEvents.map((event) => event.actionId),
   )) {
@@ -1763,7 +1770,7 @@ export function buildAnnualRetirementPhysicalEventInventory(
   )
   if (typeof inventoryTotal !== 'number') return incomplete([inventoryTotal])
   const ownedAccounts = [...traditionalById.values()]
-    .filter((account) => isOwnedIra(account, taxYear))
+    .filter((account) => isOwnedIra(account, taxYear, ownerTreatmentRouting))
   const sourceAccountIdsByOwner = new Map<string, AccountId[]>()
   const ownedIraOwnerByAccountId = new Map<AccountId, string>()
   for (const account of ownedAccounts) {
@@ -1861,7 +1868,7 @@ export function buildAnnualRetirementPhysicalEventInventory(
         : planAction.allocations.length
       return actionEvents.length === allocationCount && actionEvents.every((event) => {
         const account = traditionalById.get(event.sourceAccountId)
-        return account !== undefined && isOwnedIra(account, taxYear)
+        return account !== undefined && isOwnedIra(account, taxYear, ownerTreatmentRouting)
       })
     })
     .sort(compareUtf16CodeUnits)

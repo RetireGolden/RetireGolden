@@ -40,6 +40,7 @@ const OPTIONAL_PUBLICATION_KEYS = [
   'qcdActionPrerequisites',
   'qcdActionExecution',
   'aca',
+  'taxComputation',
   'cashFlow',
 ] as const
 
@@ -565,6 +566,11 @@ describe('annualYearResultAssembly', () => {
       NonNullable<YearResult['rothConversionActionExecution']>
     const aca = Object.freeze({ marker: 'aca-only' }) as unknown as
       NonNullable<YearResult['aca']>
+    const taxComputation = Object.freeze({
+      amount: 31,
+      status: 'incomplete',
+      issues: [{ code: 'unknown-state-qcd-policy', message: 'policy unknown' }],
+    }) as unknown as NonNullable<YearResult['taxComputation']>
     const cashFlowInput = Object.freeze({ marker: 'cash-only' }) as unknown as
       AssembleYearCashFlowInput
     const cases: ReadonlyArray<{
@@ -646,6 +652,11 @@ describe('annualYearResultAssembly', () => {
         key: 'aca',
         expected: aca,
         input: { ...base, tax: { ...base.tax, aca } },
+      },
+      {
+        key: 'taxComputation',
+        expected: taxComputation,
+        input: { ...base, tax: { ...base.tax, taxComputation } },
       },
       {
         key: 'cashFlow',

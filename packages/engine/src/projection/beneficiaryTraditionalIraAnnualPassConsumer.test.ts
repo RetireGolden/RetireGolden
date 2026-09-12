@@ -278,7 +278,7 @@ function state(): { bindings: SimulatorAnnualPassStateBindings; scalars: Scalars
       ],
       retirementRuntimeOccurrences: [], retirementRuntimeApplications: [],
       nextRetirementRuntimeMutationOrdinal: binding(scalars, 'next'),
-      iraProRata: new Map(), iraBasisByOwner: new Map(), rothBasis: new Map(),
+      iraProRata: new Map(), iraBasisByOwner: new Map(), inheritedRothPools: new Map(), rothBasis: new Map(),
       rothAssumedContributionRemaining: new Map(),
       rothCounterfactualFreeCoverConsumed: new Map(),
       propertyValues: new Map(), hecmStates: new Map(),

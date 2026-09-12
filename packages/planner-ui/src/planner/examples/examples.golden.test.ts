@@ -22,6 +22,16 @@ function round2(n: number): number {
 }
 
 const EXPECTED: Record<string, { depletionYear: number | null; endingInvestable: number; lifetimeTax: number; lifetimeRoth: number }> = {
+  // Re-baselined 2026-09-12 (NEW BASELINE — example-couple and coast-fire only).
+  // KY MFJ now carries one joint standard deduction ($3,360, not $6,720); rich
+  // state facts count actual conversion/withdrawal sources under per-owner
+  // $31,110 retirement caps with no unused-spouse transfer. CO adds high-AGI
+  // federal-deduction addback, age 55-64 IRA subtraction, and 65+ taxable-SS
+  // consumption of the pension cap; withdrawal and federal-tax funding feedback
+  // compound the horizon. Legal authority: stateRichAnnual.rules.test.ts and
+  // exampleCoupleStateOwnerCaps.test.ts. Observed long-horizon characterization
+  // snapshots only — not new law or future parameter certification.
+  //
   // Reviewed 2026-09-08: CA TY2026 standard deduction corrected 5,540 -> 5,706
   // (ca-ftb-2026-540-es-standard-deduction; DOCS/operations/ca-mn-parameter-
   // correction-2026-09-08.md). Five single-filer CA examples move: lower lifetime
@@ -114,7 +124,9 @@ const EXPECTED: Record<string, { depletionYear: number | null; endingInvestable:
   // which is why ending investable rises 451,989.99 -- the year-by-year tax
   // delta compounded at the portfolio's realized rate, near 6.7% rather than
   // the 5.5% default because these accounts follow a glidepath.
-  'example-couple': { depletionYear: null, endingInvestable: 2_724_918.11, lifetimeTax: 431_348.91, lifetimeRoth: 1_014_366.37 },
+  // NEW BASELINE 2026-09-12: pins above superseded; see header note for KY/CO
+  // drivers and stateRichAnnual.rules / exampleCoupleStateOwnerCaps authority.
+  'example-couple': { depletionYear: null, endingInvestable: 2_729_452.99, lifetimeTax: 433_212.27, lifetimeRoth: 1_017_094.47 },
   'under-saved-single': { depletionYear: 2046, endingInvestable: 0, lifetimeTax: 183_713.99, lifetimeRoth: 0 },
   // bracket-fill-roth: Morgan holds a 700k IRA and the only Roth, Riley a 400k
   // IRA and none. 2026 is the arithmetic in the open: the same 183,448.24
@@ -184,7 +196,9 @@ const EXPECTED: Record<string, { depletionYear: number | null; endingInvestable:
   // Ending investable RISES $25,629.07 (8,082,086.14 -> 8,107,715.21): $9,221 of
   // tax not paid, left in accounts returning 6-7.5% for the balance of a horizon
   // that runs 25 more years past the first of those savings.
-  'coast-fire': { depletionYear: null, endingInvestable: 8_107_715.21, lifetimeTax: 1_707_504.36, lifetimeRoth: 0 },
+  // NEW BASELINE 2026-09-12: pins above superseded; see header note for CO
+  // high-income addback, age 55-64 IRA subtraction, and 65+ SS cap paths.
+  'coast-fire': { depletionYear: null, endingInvestable: 8_332_919.94, lifetimeTax: 1_634_909.14, lifetimeRoth: 0 },
   // Reviewed 2026-09-09: Oregon TY2026 LRO Report #1-26 standard deduction $2,835 -> $2,910
   // and indexed breakpoints single $4,050/$10,200 -> $4,550/$11,400 (`or-lro-2026-rate-
   // schedule-and-standard-deduction`). barista-fire is the only curated OR example.

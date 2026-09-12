@@ -450,14 +450,14 @@ describe('parsePlan', () => {
   })
 
   it('does not expose employer-plan vocabulary for in-plan Roth transfers or employee after-tax basis', () => {
-    // Bind the schema vocabulary itself, not one made-up object shape. Both
-    // retirement schemas need the same-plan link, plan feature, retained
-    // distribution restriction, and employer-plan employee-basis facts before
-    // an in-plan or mega-backdoor Roth movement could be represented.
+    // Bind the schema vocabulary itself, not one made-up object shape.
+    // `employerPlanId` is intentionally present for §414(v)(7) prior-deferral
+    // grouping; mega-backdoor / in-plan Roth movement facts remain absent.
     const traditionalFields = new Set(Object.keys(traditionalAccountSchema.shape))
     const rothFields = new Set(Object.keys(rothAccountSchema.shape))
+    expect(traditionalFields.has('employerPlanId')).toBe(true)
+    expect(rothFields.has('employerPlanId')).toBe(true)
     const absentFromBoth = [
-      'employerPlanId',
       'inPlanRothTransferAllowed',
       'sourceDistributionRestriction',
     ]
@@ -3010,10 +3010,28 @@ describe('benefit provenance schema vocabulary', () => {
     'payer',
   ] as const
 
-  it('exposes only private/public pension source and the four income-stream types', () => {
-    expect(pensionSchema.shape.source.unwrap().options).toEqual(['private', 'public'])
+  it('exposes expanded pension source vocabulary and the four income-stream types', () => {
+    expect(pensionSchema.shape.source.unwrap().options).toEqual([
+      'private',
+      'public',
+      'ordinaryPrivatePension',
+      'ira',
+      'employerPlan',
+      'militaryRetirement',
+      'militarySurvivor',
+      'federalCivilService',
+      'stateLocalPublic',
+      'railroadTier1',
+      'railroadTier2',
+      'railroadRetirementAct',
+      'governmentSurvivor',
+      'unknownPublic',
+      'unknownPrivate',
+    ])
     expect(pensionSchema.shape.source.safeParse('private').success).toBe(true)
     expect(pensionSchema.shape.source.safeParse('public').success).toBe(true)
+    expect(pensionSchema.shape.source.safeParse('militaryRetirement').success).toBe(true)
+    expect(pensionSchema.shape.source.safeParse('railroadRetirementAct').success).toBe(true)
     expect(pensionSchema.shape.source.safeParse('federal').success).toBe(false)
     expect(incomeStreamSchema.options.map((schema) => schema.shape.type.value)).toEqual([
       'wages',
@@ -3099,5 +3117,122 @@ describe('benefit provenance schema vocabulary', () => {
     expect(socialSecurityIncomeSchema.safeParse(plan.incomes[1]).success).toBe(true)
     expect(recurringIncomeSchema.safeParse(plan.incomes[2]).success).toBe(true)
     expect(oneTimeIncomeSchema.safeParse(plan.incomes[3]).success).toBe(true)
+  })
+
+  describe('audit-phase additive Plan facts', () => {
+    it('parses expanded pension source and stateEligibility without a schema bump', () => {
+      const plan = validCouplePlan()
+      plan.accounts.push({
+        type: 'pension',
+        id: 'mil1',
+        name: 'Military',
+        ownerPersonId: 'p1',
+        annualReturnPct: null,
+        source: 'militaryRetirement',
+        stateEligibility: {
+          planSystemCode: 'US-MIL',
+          distributionReason: 'ordinary',
+          earlyDistributionDisqualifier: 'false',
+        },
+        startAge: 60,
+        monthlyAmount: 2_000,
+        colaPct: 0,
+        survivorPct: 50,
+      })
+      const parsed = parsePlan(plan)
+      expect(parsed.ok).toBe(true)
+      if (!parsed.ok) return
+      expect(parsed.plan.schemaVersion).toBe(5)
+      const pension = parsed.plan.accounts.find((a) => a.id === 'mil1')
+      expect(pension).toMatchObject({
+        type: 'pension',
+        source: 'militaryRetirement',
+        stateEligibility: expect.objectContaining({ planSystemCode: 'US-MIL' }),
+      })
+    })
+
+    it('rejects hudValidated HECM without verified PLF provenance', () => {
+      const plan = validCouplePlan()
+      plan.accounts.push({
+        type: 'property',
+        id: 'home1',
+        name: 'Home',
+        ownerPersonId: 'p1',
+        annualReturnPct: null,
+        value: 500_000,
+        plannedSaleYear: null,
+        expectedNetProceeds: null,
+        primaryResidence: true,
+        hecm: {
+          openYear: 2026,
+          growthRatePct: 7,
+          drawPolicy: 'lastResort',
+          calculationMode: 'hudValidated',
+          caseAssignmentDate: '2026-03-01',
+          closingDate: '2026-03-15',
+          hudTransactionKind: 'ordinaryOrigination',
+          appraisedValue: 500_000,
+          verifiedPrincipalLimitFactorPct: 50,
+        },
+      } as Plan['accounts'][number])
+      expect(parsePlan(plan).ok).toBe(false)
+    })
+
+    it('requires a verified HECM transaction kind instead of defaulting HUD mode to ordinary origination', () => {
+      const plan = validCouplePlan()
+      plan.accounts.push({
+        type: 'property',
+        id: 'hud-home',
+        name: 'HUD Home',
+        ownerPersonId: 'p1',
+        annualReturnPct: null,
+        value: 500_000,
+        plannedSaleYear: null,
+        expectedNetProceeds: null,
+        primaryResidence: true,
+        hecm: {
+          openYear: 2026,
+          growthRatePct: 7,
+          drawPolicy: 'lastResort',
+          calculationMode: 'hudValidated',
+          caseAssignmentDate: '2026-03-01',
+          closingDate: '2026-03-15',
+          appraisedValue: 500_000,
+          verifiedPrincipalLimitFactorPct: 50,
+          principalLimitFactorProvenance: {
+            source: 'lender-issued HUD principal-limit disclosure',
+            asOf: '2026-03-01',
+          },
+        },
+      } as Plan['accounts'][number])
+      expect(parsePlan(plan).ok).toBe(false)
+
+      const home = plan.accounts.find((account) => account.id === 'hud-home')!
+      if (home.type !== 'property' || home.hecm === undefined) return
+      home.hecm.hudTransactionKind = 'ordinaryOrigination'
+      expect(parsePlan(plan).ok).toBe(true)
+
+      home.hecm.hudTransactionKind = 'refinance'
+      expect(parsePlan(plan).ok).toBe(true)
+    })
+
+    it('treats absent inheritedRothTaxCharacterPools as empty, not zero basis', () => {
+      const plan = validCouplePlan()
+      const parsed = parsePlan(plan)
+      expect(parsed.ok).toBe(true)
+      if (!parsed.ok) return
+      expect(parsed.plan.inheritedRothTaxCharacterPools).toEqual([])
+      expect(parsed.plan.employerElectiveDeferralHistory).toEqual([])
+      expect(parsed.plan.stateTaxFacts.hsaYearEvidence).toEqual([])
+    })
+
+    it('does not persist QCD policy overrides on Plan', () => {
+      // QCD conformity belongs on versioned state parameters, never as a
+      // user-supplied Plan policy/citation override.
+      const plan = createEmptyPlan({ newId: testIds, now: fixedNow })
+      expect('stateQcdPolicy' in plan).toBe(false)
+      expect('qcdPolicyOverride' in plan).toBe(false)
+      expect('stateTaxFacts' in plan).toBe(true)
+    })
   })
 })

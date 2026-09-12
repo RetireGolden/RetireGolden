@@ -1,56 +1,26 @@
 # District of Columbia (DC) — state income tax for retirement planning
 
-Tax year: 2025. Researched 2026-06-13.
+Tax year: 2026. Authority reconciliation: 2026-09-12.
 
-## Summary
-- Broad individual income tax: **yes** (graduated, 4%–10.75%; same brackets for all filing statuses)
-- Taxes Social Security benefits: no (fully exempt)
-- Long-term capital gains: taxed as ordinary income
-- Retirement income (pension, IRA, 401k): generally taxed; only a small $3,000 exclusion for government-pension retirees age 62+
+## Current calculation contract
 
-## Proposed StateTaxParams (2025)
-- code: "DC"
-- name: "District of Columbia"
-- hasIncomeTax: true
-- taxesSocialSecurity: false
-- capitalGainsAsOrdinary: true
-- standardDeduction: { single: 15000, marriedFilingJointly: 30000 }
-- brackets.single:
-  - { lowerBound: 0, ratePct: 4.0 }
-  - { lowerBound: 10000, ratePct: 6.0 }
-  - { lowerBound: 40000, ratePct: 6.5 }
-  - { lowerBound: 60000, ratePct: 8.5 }
-  - { lowerBound: 250000, ratePct: 9.25 }
-  - { lowerBound: 500000, ratePct: 9.75 }
-  - { lowerBound: 1000000, ratePct: 10.75 }
-- brackets.marriedFilingJointly:
-  - { lowerBound: 0, ratePct: 4.0 }
-  - { lowerBound: 10000, ratePct: 6.0 }
-  - { lowerBound: 40000, ratePct: 6.5 }
-  - { lowerBound: 60000, ratePct: 8.5 }
-  - { lowerBound: 250000, ratePct: 9.25 }
-  - { lowerBound: 500000, ratePct: 9.75 }
-  - { lowerBound: 1000000, ratePct: 10.75 }
-- retirement: { kind: "none" }
+The following source-specific contracts supersede older aggregate assumptions. A rule record identifies the calculator boundary; it does not certify that a projection fixture or a release gate has passed. Missing eligibility, source, allocation or state-basis facts must remain visible as incomplete.
 
-## Retirement-income detail
-DC has a graduated tax from 4% to 10.75%. Bracket **thresholds are the same for
-all filing statuses** (DC does not double them for joint filers). The standard
-deduction conforms to the federal amount: **$15,000 (single) / $30,000 (MFJ)** for
-2025.
+### District government survivor exclusion remains after the old pension exclusion expires
 
-DC fully exempts Social Security. Private pensions and traditional IRA/401(k)
-distributions are **fully taxable**; DC offers only a narrow exclusion of up to
-**$3,000** of military or DC/federal government pension income for retirees age
-62+. Because there is no broad private-pension/IRA exclusion, this maps to
-`retirement: { kind: "none" }`.
+Record: `dc-code-47-1803-03-government-survivor-exclusion`. Classification: `settled`.
 
-## Simplifications / not modeled
-- The small $3,000 government-pension exclusion (age 62+) is not modeled — `none` slightly overstates tax for government retirees.
-- DC's $1,675 personal exemption (phasing out at high income) not modeled.
-- Brackets shown are the schedule effective for tax years after 12/31/2021; DC's published rates have not changed for 2025.
+Section 47-1803.02(a)(2)(N)(ii) excludes District or federal government survivor benefits received by a person age 62 or older at year end. It is separate from the $3,000 government-pension provision in (N)(i), which applies only before 2015. The eligible amount must be included in the federal base; ordinary pensions, nonqualifying issuers, Social Security survivor benefits and unknown issuer/age cannot establish this subtraction.
 
-## Citations
+Authority: [D.C. Code §47-1803.02(a)(2)(N)(ii)](https://code.dccouncil.gov/us/dc/council/code/sections/47-1803.02).
+
+> Survivor benefits received from the District of Columbia or the federal government by persons who are 62 years of age or older by the end of the taxable year.
+
+## Validation boundary
+
+Source records above require discriminating positive and negative fixtures through the state calculation entry point, followed by actual `simulatePlan` event/basis integration. The source record alone does not establish those results. Annual parameters and generated rule/quote ledgers must be refreshed by the integration owner.
+
+## Additional source history
 - https://otr.cfo.dc.gov/page/dc-individual-and-fiduciary-income-tax-rates — DC individual income tax brackets 4%–10.75% (current schedule).
 - https://smartasset.com/retirement/district-of-columbia-retirement-taxes — SS exempt; private pension/IRA/401(k) taxable; standard deduction $15,000/$30,000.
 - https://taxfoundation.org/data/all/state/state-income-tax-rates/ — Tax Foundation 2025 cross-check (DC 4%–10.75%, std deduction $15,000/$30,000).

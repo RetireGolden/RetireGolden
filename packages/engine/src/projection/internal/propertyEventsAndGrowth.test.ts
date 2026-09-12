@@ -126,6 +126,7 @@ describe('propertyEventsAndGrowth — the legacy sale', () => {
     expect(row.deposit).toBe(100_000 * 1.1 - 40_000)
     // The closed line does not then compound.
     expect(row.hecmGrowth).toBeNull()
+    expect(row.hecmHudMipAccrual).toBeNull()
   })
 
   it('never repays more than the sale nets', () => {
@@ -171,14 +172,17 @@ describe('propertyEventsAndGrowth — the HECM accrual', () => {
       hecmStates: new Map([['home', { principalLimit: 60_000, loanBalance: 40_000 }]]),
     })
     expect(row!.hecmGrowth).toBe(1 + 7.5 / 100)
+    expect(row!.hecmHudMipAccrual).toBeNull()
   })
 
   it('reports no growth without a line, and none without a hecm block', () => {
     expect(call([property('home', {}, {})])[0]!.hecmGrowth).toBeNull()
+    expect(call([property('home', {}, {})])[0]!.hecmHudMipAccrual).toBeNull()
     const noBlock = call([property('home')], {
       hecmStates: new Map([['home', { principalLimit: 1, loanBalance: 1 }]]),
     })
     expect(noBlock[0]!.hecmGrowth).toBeNull()
+    expect(noBlock[0]!.hecmHudMipAccrual).toBeNull()
   })
 })
 

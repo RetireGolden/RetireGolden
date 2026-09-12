@@ -26,7 +26,7 @@
           "functions": [
             {
               "name": "annualFundingApplicationAndClosePhase",
-              "line": 412
+              "line": 435
             }
           ]
         },
@@ -35,7 +35,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         }
@@ -72,11 +72,121 @@
       ]
     },
     {
+      "id": "irc-401-a-9-B-ii-confirmed-non-designated-five-year-schedule",
+      "title": "Confirmed pre-RBD non-designated five-year emptying schedule",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "Verified classification is an explicit Plan input; the engine does not classify trusts. simulatePlan routes confirmed facts through classifyInheritedRegime, annualInheritedIraDistributions and coordinateInheritedDeadlineAnnualRuntime. simulate.inheritedRegimeExecution.test.ts covers the annual zeros before the deadline, the complete deadline sweep, unknown-trust refusal and rejection of contradictory post-RBD facts. Historical unsupported facts remain refused.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-12",
+      "dueOn": "2027-09-12",
+      "implementedBy": [
+        "packages/engine/src/actions/beneficiaryTraditionalIraAnnualRuntimeCoordinator.ts",
+        "packages/engine/src/projection/internal/annualInheritedIraDistributions.ts",
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/strategies/inheritedFiveYearAndPostDeadline.ts",
+        "packages/engine/src/strategies/inheritedIra.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/beneficiaryTraditionalIraAnnualRuntimeCoordinator.ts",
+          "functions": [
+            {
+              "name": "coordinateInheritedDeadlineAnnualRuntime",
+              "line": 558
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/internal/annualInheritedIraDistributions.ts",
+          "functions": [
+            {
+              "name": "annualInheritedIraDistributions",
+              "line": 172
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 392
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/strategies/inheritedFiveYearAndPostDeadline.ts",
+          "functions": [
+            {
+              "name": "fiveYearEmptyingRequirement",
+              "line": 66
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/strategies/inheritedIra.ts",
+          "functions": [
+            {
+              "name": "classifyInheritedRegime",
+              "line": 555
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/strategies/inheritedFiveYearAndPostDeadline.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/strategies/inheritedFiveYearAndPostDeadline.test.ts",
+          "line": 22,
+          "note": null,
+          "tests": [
+            {
+              "title": "requires $0 annually 2027-2030 and full $50,000 by 2031-12-31 for a 2026 pre-RBD death",
+              "line": 24
+            },
+            {
+              "title": "refuses unknown trust classification and rejects post-RBD on this pathway",
+              "line": 43
+            },
+            {
+              "title": "refuses tax years before death, invalid civil dates, year mismatches, and blank provenance",
+              "line": 68
+            },
+            {
+              "title": "routes deadline-plus-one to the post-deadline leaf without a second dollar requirement",
+              "line": 102
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 401(a)(9)(B)(ii)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section401&num=0&edition=prelim"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 54.4974-1(c)(2)",
+          "url": "https://www.ecfr.gov/current/title-26/section-54.4974-1"
+        }
+      ]
+    },
+    {
       "id": "irc-401-a-9-B-ii-non-designated-beneficiary-five-year-rule",
       "title": "Non-designated beneficiary uses the five-year rule before the RBD",
       "classification": "outOfScope",
       "errorDirection": null,
-      "conventionRationale": "The plan schema records the non-individual category but has no facts to establish a qualifying trust or to calculate its separate five-year distribution schedule. The inherited classifier therefore emits its typed X3 refusal; projection still routes that refusal through the registered inheritedForcedAmount fallback so a plan that parsed still projects. inheritedRegime.test.ts covers the classification refusal on the driven path.",
+      "conventionRationale": "Unknown classification remains a typed refusal. Confirmed non-designated pre-RBD facts use the sibling settled schedule helper; do not pretend every trust is non-designated. inheritedRegime.test.ts and inheritedFiveYearAndPostDeadline.test.ts cover both limbs.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -96,7 +206,7 @@
           "functions": [
             {
               "name": "inheritedBeneficiarySchema",
-              "line": 478
+              "line": 508
             }
           ]
         },
@@ -105,7 +215,7 @@
           "functions": [
             {
               "name": "annualInheritedIraDistributions",
-              "line": 110
+              "line": 172
             }
           ]
         },
@@ -114,7 +224,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         },
@@ -123,7 +233,7 @@
           "functions": [
             {
               "name": "classifyInheritedRegime",
-              "line": 539
+              "line": 555
             }
           ]
         }
@@ -136,16 +246,16 @@
       "refusalFixtures": [
         {
           "path": "packages/engine/src/strategies/inheritedRegime.test.ts",
-          "line": 1034,
+          "line": 853,
           "note": "the non-designated-beneficiary classification itself",
           "tests": [
             {
               "title": "refuses a see-through trust alike, because the regime and not the trust test is unimplemented",
-              "line": 1061
+              "line": 880
             },
             {
               "title": "classifies the same death for a designated individual, so the refusal is the beneficiary class",
-              "line": 1077
+              "line": 896
             }
           ]
         }
@@ -198,7 +308,7 @@
           "functions": [
             {
               "name": "personSchema",
-              "line": 163
+              "line": 193
             }
           ]
         },
@@ -216,7 +326,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         },
@@ -225,7 +335,7 @@
           "functions": [
             {
               "name": "followsOwnerRmds",
-              "line": 1381
+              "line": 1351
             }
           ]
         }
@@ -293,7 +403,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         }
@@ -367,7 +477,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         },
@@ -536,12 +646,12 @@
         },
         {
           "path": "packages/engine/src/params/params.test.ts",
-          "line": 105,
+          "line": 145,
           "note": null,
           "tests": [
             {
               "title": "sends the first post-window cohort straight to 75",
-              "line": 109
+              "line": 149
             }
           ]
         }
@@ -580,7 +690,7 @@
           "functions": [
             {
               "name": "annualInheritedIraDistributions",
-              "line": 110
+              "line": 172
             }
           ]
         },
@@ -589,7 +699,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         },
@@ -598,11 +708,11 @@
           "functions": [
             {
               "name": "classifyInheritedRegime",
-              "line": 539
+              "line": 555
             },
             {
               "name": "inheritedRequirementForYear",
-              "line": 1133
+              "line": 1167
             }
           ]
         }
@@ -672,7 +782,7 @@
           "functions": [
             {
               "name": "annualInheritedIraDistributions",
-              "line": 110
+              "line": 172
             }
           ]
         },
@@ -681,7 +791,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         },
@@ -690,7 +800,7 @@
           "functions": [
             {
               "name": "followsOwnerRmds",
-              "line": 1381
+              "line": 1351
             }
           ]
         },
@@ -699,7 +809,7 @@
           "functions": [
             {
               "name": "inheritedTenYearDeadline",
-              "line": 50
+              "line": 65
             }
           ]
         }
@@ -710,20 +820,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/strategies/accountEligibility.test.ts",
-          "line": 1570,
+          "line": 1572,
           "note": null,
           "tests": [
             {
               "title": "keeps an inherited account off the owner RMD schedule entirely",
-              "line": 1588
+              "line": 1590
             },
             {
               "title": "sweeps the balance in the tenth year after the death and not the fifth",
-              "line": 1593
+              "line": 1595
             },
             {
               "title": "forces nothing in the interim years when the decedent had not begun distributions",
-              "line": 1599
+              "line": 1601
             }
           ]
         }
@@ -777,7 +887,7 @@
           "functions": [
             {
               "name": "annualInheritedIraDistributions",
-              "line": 110
+              "line": 172
             }
           ]
         },
@@ -786,7 +896,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         },
@@ -795,15 +905,15 @@
           "functions": [
             {
               "name": "classifyInheritedRegime",
-              "line": 539
+              "line": 555
             },
             {
               "name": "inheritedForcedAmount",
-              "line": 109
+              "line": 124
             },
             {
               "name": "inheritedRequirementForYear",
-              "line": 1133
+              "line": 1167
             }
           ]
         }
@@ -814,16 +924,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/strategies/inheritedIra.test.ts",
-          "line": 113,
+          "line": 115,
           "note": null,
           "tests": [
             {
               "title": "requires an annual distribution in every window year after a post-RBD death",
-              "line": 117
+              "line": 119
             },
             {
               "title": "requires none in the window when the decedent died before that date",
-              "line": 121
+              "line": 123
             }
           ]
         }
@@ -871,7 +981,7 @@
           "functions": [
             {
               "name": "annualInheritedIraDistributions",
-              "line": 110
+              "line": 172
             }
           ]
         },
@@ -880,7 +990,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         }
@@ -893,12 +1003,12 @@
       "refusalFixtures": [
         {
           "path": "packages/engine/src/projection/internal/annualInheritedIraDistributions.test.ts",
-          "line": 624,
+          "line": 673,
           "note": null,
           "tests": [
             {
               "title": "refuses successor schedules once an eligible designated beneficiary dies in horizon",
-              "line": 632
+              "line": 681
             }
           ]
         }
@@ -950,7 +1060,7 @@
           "functions": [
             {
               "name": "pensionSchema",
-              "line": 1055
+              "line": 1204
             }
           ]
         },
@@ -968,7 +1078,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         }
@@ -1042,7 +1152,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         },
@@ -1051,7 +1161,7 @@
           "functions": [
             {
               "name": "followsOwnerRmds",
-              "line": 1381
+              "line": 1351
             }
           ]
         }
@@ -1119,7 +1229,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         }
@@ -1176,7 +1286,7 @@
           "functions": [
             {
               "name": "annualInheritedIraDistributions",
-              "line": 110
+              "line": 172
             }
           ]
         },
@@ -1194,7 +1304,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         },
@@ -1212,7 +1322,7 @@
           "functions": [
             {
               "name": "computeRmdShortfallExcise",
-              "line": 311
+              "line": 313
             }
           ]
         }
@@ -1349,7 +1459,7 @@
           "functions": [
             {
               "name": "annualInheritedIraDistributions",
-              "line": 110
+              "line": 172
             }
           ]
         },
@@ -1358,7 +1468,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         },
@@ -1367,7 +1477,7 @@
           "functions": [
             {
               "name": "inheritedRequirementForYear",
-              "line": 1133
+              "line": 1167
             }
           ]
         }
@@ -1378,12 +1488,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/strategies/inheritedRegime.test.ts",
-          "line": 74,
+          "line": 83,
           "note": "annual R1 amount after the 2024 relief year",
           "tests": [
             {
               "title": "stops marking a post-RBD ten-year annual amount as notice-waived in 2025",
-              "line": 90
+              "line": 99
             }
           ]
         }
@@ -1450,7 +1560,7 @@
           "functions": [
             {
               "name": "isTreatAsOwnEffective",
-              "line": 1231
+              "line": 1232
             }
           ]
         }
@@ -1461,16 +1571,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/strategies/accountEligibility.test.ts",
-          "line": 227,
+          "line": 229,
           "note": null,
           "tests": [
             {
               "title": "refuses treat-as-own for pre-2020 owner death despite otherwise valid spouse election facts",
-              "line": 244
+              "line": 246
             },
             {
               "title": "permits treat-as-own at the election year once owner death is not before 2020",
-              "line": 261
+              "line": 263
             }
           ]
         }
@@ -1665,12 +1775,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/params/params.test.ts",
-          "line": 196,
+          "line": 236,
           "note": null,
           "tests": [
             {
               "title": "fixes owner RMD at 73 and refuses inherited comparison only when contested candidates disagree",
-              "line": 249
+              "line": 289
             }
           ]
         }
@@ -1821,7 +1931,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         },
@@ -1906,7 +2016,7 @@
           "functions": [
             {
               "name": "inheritedAccountSchema",
-              "line": 770
+              "line": 817
             }
           ]
         },
@@ -1915,7 +2025,7 @@
           "functions": [
             {
               "name": "annualInheritedIraDistributions",
-              "line": 110
+              "line": 172
             }
           ]
         },
@@ -1924,7 +2034,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         },
@@ -1942,7 +2052,7 @@
           "functions": [
             {
               "name": "inheritedRequirementForYear",
-              "line": 1133
+              "line": 1167
             }
           ]
         }
@@ -2010,7 +2120,7 @@
           "functions": [
             {
               "name": "beneficiaryRemainingLifeExpectancy",
-              "line": 73
+              "line": 88
             }
           ]
         }
@@ -2021,39 +2131,39 @@
       "fixtures": [
         {
           "path": "packages/engine/src/strategies/inheritedIra.test.ts",
-          "line": 140,
+          "line": 142,
           "note": "which table supplies the expectancy",
           "tests": [
             {
               "title": "sizes the annual amount from the Single Life Table, not the SSA period table",
-              "line": 162
+              "line": 164
             },
             {
               "title": "carries the published divisor, not an approximation of it",
-              "line": 167
+              "line": 169
             },
             {
               "title": "is unisex, so no SSA column can be recovered from the amount",
-              "line": 175
+              "line": 177
             }
           ]
         },
         {
           "path": "packages/engine/src/strategies/inheritedIra.test.ts",
-          "line": 185,
+          "line": 187,
           "note": "fixed at the first distribution year or redetermined each year",
           "tests": [
             {
               "title": "reduces the initial expectancy by one a year rather than re-reading the table",
-              "line": 211
+              "line": 213
             },
             {
               "title": "reads the table once, at the age reached in the year after death",
-              "line": 216
+              "line": 218
             },
             {
               "title": "does not turn on the age the beneficiary happens to be now",
-              "line": 231
+              "line": 233
             }
           ]
         }
@@ -2191,7 +2301,7 @@
           "functions": [
             {
               "name": "latestNonQlacQualifiedAnnuityStartAge",
-              "line": 71
+              "line": 101
             }
           ]
         },
@@ -2218,7 +2328,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         }
@@ -2321,7 +2431,7 @@
           "functions": [
             {
               "name": "latestQlacAnnuityStartAge",
-              "line": 123
+              "line": 153
             }
           ]
         },
@@ -2348,7 +2458,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         }
@@ -2447,7 +2557,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         }
@@ -2539,7 +2649,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         }
@@ -2550,12 +2660,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/params/params.test.ts",
-          "line": 567,
+          "line": 607,
           "note": null,
           "tests": [
             {
               "title": "carries the published cap on a ten-thousand-dollar step",
-              "line": 571
+              "line": 611
             }
           ]
         }
@@ -2600,7 +2710,7 @@
           "functions": [
             {
               "name": "inheritedAccountSchema",
-              "line": 770
+              "line": 817
             }
           ]
         },
@@ -2609,7 +2719,7 @@
           "functions": [
             {
               "name": "annualInheritedIraDistributions",
-              "line": 110
+              "line": 172
             }
           ]
         },
@@ -2618,7 +2728,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         },
@@ -2627,7 +2737,7 @@
           "functions": [
             {
               "name": "classifyInheritedRegime",
-              "line": 539
+              "line": 555
             }
           ]
         }
@@ -2640,20 +2750,20 @@
       "refusalFixtures": [
         {
           "path": "packages/engine/src/strategies/inheritedRegime.test.ts",
-          "line": 1085,
+          "line": 904,
           "note": null,
           "tests": [
             {
               "title": "refuses multiple beneficiaries rather than inferring a timely separate account",
-              "line": 1092
+              "line": 911
             },
             {
               "title": "refuses the post-deadline case the quoted rule governs the same way as any other",
-              "line": 1101
+              "line": 920
             },
             {
               "title": "classifies the same account for a sole beneficiary, so the refusal is the missing separate-account fact",
-              "line": 1112
+              "line": 931
             }
           ]
         }
@@ -2778,7 +2888,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         },
@@ -2832,6 +2942,103 @@
       ]
     },
     {
+      "id": "treas-reg-1-402-c-2-j-4-surviving-spouse-catch-up-recurrence",
+      "title": "Surviving-spouse late-election catch-up uses one adjusted current reference balance",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "The Uniform Lifetime values come from the versioned RMD parameter pack. The 1959 applicable-age conflict remains a typed incomplete result rather than choosing a proposed clarification as current law. The production beneficiarySpousalElectionGateAdapter maps dated Plan facts to this calculation and gate; simulatePlan consumes the opening result. A current-year event is distinct from completed prior-year observation.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2025,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-12",
+      "dueOn": "2027-09-12",
+      "implementedBy": [
+        "packages/engine/src/actions/beneficiarySpousalElectionAnnualGate.ts",
+        "packages/engine/src/params/index.ts",
+        "packages/engine/src/projection/internal/beneficiarySpousalElectionGateAdapter.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/beneficiarySpousalElectionAnnualGate.ts",
+          "functions": [
+            {
+              "name": "determineSection402c2j4CatchUp",
+              "line": 267
+            },
+            {
+              "name": "gateBeneficiarySpousalElectionForAnnualCoordinator",
+              "line": 583
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/index.ts",
+          "functions": [
+            {
+              "name": "uniformLifetimeDivisor",
+              "line": 143
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/internal/beneficiarySpousalElectionGateAdapter.ts",
+          "functions": [
+            {
+              "name": "gateSpousalElectionFromInheritedAccount",
+              "line": 35
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 392
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/actions/beneficiarySpousalElectionAnnualGate.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/actions/beneficiarySpousalElectionAnnualGate.test.ts",
+          "line": 81,
+          "note": null,
+          "tests": [
+            {
+              "title": "exposes the regulated recurrence rather than an asserted catch-up worksheet",
+              "line": 89
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.402(c)-2(j)(4)(ii)-(iv) (2025 CFR)",
+          "url": "https://www.govinfo.gov/content/pkg/CFR-2025-title26-vol6/pdf/CFR-2025-title26-vol6-sec1-402c-2.pdf"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.408-8(c)(1)(iii)-(iv)",
+          "url": "https://www.law.cornell.edu/cfr/text/26/1.408-8"
+        },
+        {
+          "kind": "agencyGuidance",
+          "citation": "IRS, Internal Revenue Bulletin 2024-33, proposed worked example",
+          "url": "https://www.irs.gov/irb/2024-33_IRB"
+        }
+      ]
+    },
+    {
       "id": "treas-reg-1-408-8-b-2-prior-december-31-balance",
       "title": "RMD numerator is the prior December 31 balance",
       "classification": "settled",
@@ -2856,7 +3063,7 @@
           "functions": [
             {
               "name": "annualInheritedIraDistributions",
-              "line": 110
+              "line": 172
             }
           ]
         },
@@ -2874,7 +3081,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         },
@@ -2992,7 +3199,7 @@
       "title": "Spousal deemed election on an undistributed post-death-year amount",
       "classification": "settled",
       "errorDirection": null,
-      "conventionRationale": "The standalone evaluator refuses an unobserved calendar year rather than assuming the deemed-election trigger is absent. The annual projection does not call this evaluator or infer a deemed election from required-distribution or contribution history; it uses an explicit treatAsOwnElectionYear Plan fact. That missing production integration remains open, so this record must not be read as end-to-end product enforcement of the deemed-election trigger.",
+      "conventionRationale": "The standalone evaluator refuses an unobserved calendar year rather than assuming the deemed-election trigger is absent. Its annual gate accepts opening-of-year history only through the preceding year and requires a row-level as-of date and provenance, so a projected current-year shortfall cannot become completed evidence. simulatePlan supplies observed Plan history to the opening gate, whose result controls owner routing; simulate.inheritedRegimeExecution.test.ts covers deemed election without a legacy election flag and the sole-beneficiary negative. The year-end gate also reports newly observed events; a planner recommendation is not completed evidence. annualFundingApplicationAndClosePhase publishes a typed incomplete annual tax result for election-year mixed chronology; the mid-year election case in simulate.inheritedRegimeExecution.test.ts covers that publication instead of certifying the opening-beneficiary estimate as exact.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -3001,15 +3208,45 @@
       "verifiedOn": "2026-08-04",
       "dueOn": "2027-08-04",
       "implementedBy": [
-        "packages/engine/src/actions/beneficiarySpousalElectionStatus.ts"
+        "packages/engine/src/actions/beneficiarySpousalElectionAnnualGate.ts",
+        "packages/engine/src/actions/beneficiarySpousalElectionStatus.ts",
+        "packages/engine/src/projection/internal/beneficiarySpousalElectionGateAdapter.ts",
+        "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
+        {
+          "path": "packages/engine/src/actions/beneficiarySpousalElectionAnnualGate.ts",
+          "functions": [
+            {
+              "name": "gateBeneficiarySpousalElectionForAnnualCoordinator",
+              "line": 583
+            }
+          ]
+        },
         {
           "path": "packages/engine/src/actions/beneficiarySpousalElectionStatus.ts",
           "functions": [
             {
               "name": "evaluateBeneficiarySpousalElection",
-              "line": 113
+              "line": 117
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/internal/beneficiarySpousalElectionGateAdapter.ts",
+          "functions": [
+            {
+              "name": "gateSpousalElectionFromInheritedAccount",
+              "line": 35
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 392
             }
           ]
         }
@@ -3077,7 +3314,7 @@
           "functions": [
             {
               "name": "annualInheritedIraDistributions",
-              "line": 110
+              "line": 172
             }
           ]
         },
@@ -3086,7 +3323,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         },
@@ -3095,7 +3332,7 @@
           "functions": [
             {
               "name": "isTreatAsOwnEffective",
-              "line": 1231
+              "line": 1232
             }
           ]
         },
@@ -3104,7 +3341,7 @@
           "functions": [
             {
               "name": "classifyInheritedRegime",
-              "line": 539
+              "line": 555
             }
           ]
         }
@@ -3115,52 +3352,64 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.inheritedRegimeExecution.test.ts",
-          "line": 230,
+          "line": 259,
           "note": "same-calendar-year treat-as-own election",
           "tests": [
             {
               "title": "E6b S2 same-year flip: keeps the decedent year-of-death RMD and suppresses owner RMD",
-              "line": 246
+              "line": 275
             },
             {
               "title": "S2 post-election: SEPP distributes from the flipped account",
-              "line": 286
+              "line": 316
             },
             {
               "title": "blocks scheduled contributions to an inherited Roth",
-              "line": 311
+              "line": 342
             },
             {
-              "title": "E7: falls back to the legacy schedule for an estate and labels the refusal",
-              "line": 340
+              "title": "E7: refuses an unestablished estate schedule without a fabricated legacy distribution",
+              "line": 371
             },
             {
               "title": "E8: keeps voluntary inherited-traditional draws out of the forced-only distribution total",
-              "line": 367
-            },
-            {
-              "title": "E9: preserves the two-field legacy amounts at three annual Single Life walk-back points",
-              "line": 385
-            },
-            {
-              "title": "E10: enters owner RMD rules at the S2 identity flip after a synthetic refusal",
               "line": 399
             },
             {
+              "title": "E9: preserves the two-field legacy amounts at three annual Single Life walk-back points",
+              "line": 417
+            },
+            {
+              "title": "E10: enters owner RMD rules at the S2 identity flip after a synthetic refusal",
+              "line": 431
+            },
+            {
               "title": "E11 K1: voluntary inherited Roth draws stay outside the beneficiary owned-Roth ordering pool",
-              "line": 420
+              "line": 453
             },
             {
               "title": "P5: emits successor-scope evidence and stops forcing after the beneficiary dies",
-              "line": 449
+              "line": 489
             },
             {
               "title": "P6: marks the R1 relief-year amount notice-waived for non-execution",
-              "line": 478
+              "line": 518
             },
             {
               "title": "P7: stamps pre-horizon year-of-death RMD limitation on the legacy refusal path",
-              "line": 520
+              "line": 560
+            },
+            {
+              "title": "consumes one shared 60 basis across two 100 mandatory draws and survives annual replay",
+              "line": 600
+            },
+            {
+              "title": "mandatory and voluntary inherited Roth withdrawals consume the same annual basis pool",
+              "line": 619
+            },
+            {
+              "title": "preserves known qualified clocks with unknown basis without inventing ordinary income",
+              "line": 632
             }
           ]
         }
@@ -3200,7 +3449,7 @@
           "functions": [
             {
               "name": "evaluateBeneficiarySpousalElection",
-              "line": 113
+              "line": 117
             }
           ]
         },
@@ -3218,7 +3467,7 @@
           "functions": [
             {
               "name": "annualInheritedIraDistributions",
-              "line": 110
+              "line": 172
             }
           ]
         },
@@ -3227,7 +3476,7 @@
           "functions": [
             {
               "name": "annualSeppDistributions",
-              "line": 87
+              "line": 89
             }
           ]
         }
@@ -3319,7 +3568,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         }
@@ -3452,7 +3701,7 @@
           "functions": [
             {
               "name": "annualForcedDistributionQcdAndRetirementActionsPhase",
-              "line": 310
+              "line": 328
             }
           ]
         },
@@ -3470,7 +3719,7 @@
           "functions": [
             {
               "name": "annualSeppDistributions",
-              "line": 87
+              "line": 89
             }
           ]
         },
@@ -3578,7 +3827,7 @@
           "functions": [
             {
               "name": "validateOwnedNonRothIraRuntimeSourceSeries",
-              "line": 3239
+              "line": 3249
             }
           ]
         },
@@ -3605,7 +3854,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         },
@@ -3614,7 +3863,7 @@
           "functions": [
             {
               "name": "resolveOwnerIraRmdSatisfaction",
-              "line": 247
+              "line": 246
             }
           ]
         }
@@ -3672,11 +3921,174 @@
       ]
     },
     {
+      "id": "treas-reg-1-408A-6-inherited-roth-nonqualified-earnings",
+      "title": "Inherited Roth nonqualified earnings are ordinary income; death exception removes the 10% tax",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "Replaces disclosure-only residual once facts are supplied. Legacy plans without facts retain an explicit unsupported tax-character result.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-12",
+      "dueOn": "2027-09-12",
+      "implementedBy": [
+        "packages/engine/src/projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
+        "packages/engine/src/projection/internal/annualFundingApplicationAndClosePhase.ts",
+        "packages/engine/src/projection/internal/annualFundingCandidateEvaluation.ts",
+        "packages/engine/src/projection/internal/annualInheritedIraDistributions.ts",
+        "packages/engine/src/projection/internal/inheritedRothTaxCharacter.ts",
+        "packages/engine/src/projection/internal/inheritedRothTaxCharacterPoolState.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
+          "functions": [
+            {
+              "name": "annualForcedDistributionQcdAndRetirementActionsPhase",
+              "line": 328
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/internal/annualFundingApplicationAndClosePhase.ts",
+          "functions": [
+            {
+              "name": "annualFundingApplicationAndClosePhase",
+              "line": 435
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/internal/annualFundingCandidateEvaluation.ts",
+          "functions": [
+            {
+              "name": "annualFundingCandidateEvaluation",
+              "line": 187
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/internal/annualInheritedIraDistributions.ts",
+          "functions": [
+            {
+              "name": "annualInheritedIraDistributions",
+              "line": 172
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/internal/inheritedRothTaxCharacter.ts",
+          "functions": [
+            {
+              "name": "evaluateInheritedRothDistributionTaxCharacter",
+              "line": 204
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/internal/inheritedRothTaxCharacterPoolState.ts",
+          "functions": [
+            {
+              "name": "applyInheritedRothDistributionToPool",
+              "line": 99
+            },
+            {
+              "name": "initializeInheritedRothPoolState",
+              "line": 35
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 392
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/internal/inheritedRothTaxCharacter.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/projection/internal/inheritedRothTaxCharacter.test.ts",
+          "line": 26,
+          "note": null,
+          "tests": [
+            {
+              "title": "taxes only earnings on a nonqualified $50,000 distribution with $40,000 basis",
+              "line": 29
+            },
+            {
+              "title": "produces $0 ordinary income once the inherited five-tax-year clock is met",
+              "line": 44
+            },
+            {
+              "title": "consumes conversion layers FIFO after regular basis",
+              "line": 62
+            },
+            {
+              "title": "consumes taxable conversion dollars first and preserves that remainder for spouse owner handoff",
+              "line": 86
+            },
+            {
+              "title": "fails closed on unknown clock or basis rather than silent tax-free",
+              "line": 130
+            },
+            {
+              "title": "establishes zero ordinary income from a known completed clock without inventing unknown basis",
+              "line": 143
+            },
+            {
+              "title": "rejects invalid basis evidence rather than normalizing it",
+              "line": 162
+            },
+            {
+              "title": "applies sequential depletion across two positive withdrawals from returned facts",
+              "line": 176
+            },
+            {
+              "title": "hands remaining conversion layers to owner Roth basis on spouse owner treatment",
+              "line": 207
+            },
+            {
+              "title": "refuses unknown regular basis or conversion layers before owner-basis mapping",
+              "line": 236
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.408A-6 A-8(a)",
+          "url": "https://www.govinfo.gov/content/pkg/CFR-2025-title26-vol6/pdf/CFR-2025-title26-vol6-sec1-408A-6.pdf"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 1.408A-6 A-11",
+          "url": "https://www.govinfo.gov/content/pkg/CFR-2025-title26-vol6/pdf/CFR-2025-title26-vol6-sec1-408A-6.pdf"
+        },
+        {
+          "kind": "agencyGuidance",
+          "citation": "Publication 590-B (2025), What Are Qualified Distributions?",
+          "url": "https://www.irs.gov/publications/p590b"
+        }
+      ]
+    },
+    {
       "id": "treas-reg-54-4974-1-c-five-year-deadline-rmd",
       "title": "Five-year deadline carries the remaining interest as its RMD",
       "classification": "outOfScope",
       "errorDirection": null,
-      "conventionRationale": "This is the deadline-year limb of irc-401-a-9-B-ii-non-designated-beneficiary-five-year-rule. The same unmodeled estate/trust/entity facts make a numeric five-year fixture unavailable; inheritedRegime.test.ts exercises the classification refusal, and projection still routes that refusal through the registered inheritedForcedAmount fallback.",
+      "conventionRationale": "Deadline-year limb for unknown-classification refusals. Confirmed schedules and post-deadline remaining-benefit enforcement are sibling settled helpers; do not levy 100% excise on the original deadline balance.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -3696,7 +4108,7 @@
           "functions": [
             {
               "name": "inheritedBeneficiarySchema",
-              "line": 478
+              "line": 508
             }
           ]
         },
@@ -3705,7 +4117,7 @@
           "functions": [
             {
               "name": "annualInheritedIraDistributions",
-              "line": 110
+              "line": 172
             }
           ]
         },
@@ -3714,7 +4126,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         },
@@ -3723,7 +4135,7 @@
           "functions": [
             {
               "name": "classifyInheritedRegime",
-              "line": 539
+              "line": 555
             }
           ]
         }
@@ -3736,16 +4148,16 @@
       "refusalFixtures": [
         {
           "path": "packages/engine/src/strategies/inheritedRegime.test.ts",
-          "line": 1120,
+          "line": 939,
           "note": "the five-year deadline amount, not the modeled ten-year sweep",
           "tests": [
             {
               "title": "never reaches a five-year deadline, because the classes that would use it are refused",
-              "line": 1128
+              "line": 947
             },
             {
               "title": "produces the ten-year deadline, and only the ten-year deadline, for the class it does model",
-              "line": 1143
+              "line": 962
             }
           ]
         }
@@ -3765,6 +4177,116 @@
           "kind": "statute",
           "citation": "IRC 401(a)(9)(B)(ii)",
           "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section401&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "treas-reg-54-4974-1-e-post-deadline-remaining-benefit",
+      "title": "Post-deadline RMD is the entire remaining benefit, with ordinary 25%/10% excise on shortfall",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "Separate from irc-4974-rmd-shortfall-excise-tax percentage authority. Do not reuse the original deadline balance after it has been distributed. simulatePlan passes the inherited account completedDeadlineObservation through annualForcedDistributionQcdAndRetirementActionsPhase to annualInheritedIraDistributions and coordinateInheritedDeadlineAnnualRuntime. Completed observations produce the existing correction/waiver-aware excise obligation without replaying observed cash or ordinary income. simulate.inheritedRegimeExecution.test.ts distinguishes $2,500 ordinary excise from $1,000 after qualifying correction, and unknown or premature observations remain incomplete.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-12",
+      "dueOn": "2027-09-12",
+      "implementedBy": [
+        "packages/engine/src/actions/beneficiaryTraditionalIraAnnualRuntimeCoordinator.ts",
+        "packages/engine/src/projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
+        "packages/engine/src/projection/internal/annualInheritedIraDistributions.ts",
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/strategies/inheritedFiveYearAndPostDeadline.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/actions/beneficiaryTraditionalIraAnnualRuntimeCoordinator.ts",
+          "functions": [
+            {
+              "name": "coordinateInheritedDeadlineAnnualRuntime",
+              "line": 558
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
+          "functions": [
+            {
+              "name": "annualForcedDistributionQcdAndRetirementActionsPhase",
+              "line": 328
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/internal/annualInheritedIraDistributions.ts",
+          "functions": [
+            {
+              "name": "annualInheritedIraDistributions",
+              "line": 172
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 392
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/strategies/inheritedFiveYearAndPostDeadline.ts",
+          "functions": [
+            {
+              "name": "postDeadlineRemainingBenefitObligation",
+              "line": 179
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/strategies/inheritedFiveYearAndPostDeadline.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/strategies/inheritedFiveYearAndPostDeadline.test.ts",
+          "line": 124,
+          "note": null,
+          "tests": [
+            {
+              "title": "returns a $10,000 entire-remaining-benefit obligation with no distribution",
+              "line": 127
+            },
+            {
+              "title": "does not invent an obligation on an emptied opening balance after the deadline",
+              "line": 143
+            },
+            {
+              "title": "refuses negative or nonfinite history instead of coercing to zero",
+              "line": 157
+            },
+            {
+              "title": "prices shortfall through computeRmdShortfallExcise at 25% and 10% with complete facts",
+              "line": 180
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 54.4974-1(e)",
+          "url": "https://www.govinfo.gov/content/pkg/CFR-2025-title26-vol19/pdf/CFR-2025-title26-vol19-sec54-4974-1.pdf"
+        },
+        {
+          "kind": "regulation",
+          "citation": "Treas. Reg. 54.4974-1(a)",
+          "url": "https://www.govinfo.gov/content/pkg/CFR-2025-title26-vol19/pdf/CFR-2025-title26-vol19-sec54-4974-1.pdf"
         }
       ]
     },
@@ -3854,7 +4376,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         },
@@ -3863,7 +4385,7 @@
           "functions": [
             {
               "name": "automaticWaiverReason",
-              "line": 259
+              "line": 261
             }
           ]
         }
@@ -3917,7 +4439,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         },
@@ -3926,7 +4448,7 @@
           "functions": [
             {
               "name": "automaticWaiverReason",
-              "line": 259
+              "line": 261
             }
           ]
         }

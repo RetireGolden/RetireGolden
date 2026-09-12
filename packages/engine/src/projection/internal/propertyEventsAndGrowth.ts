@@ -103,12 +103,16 @@
  * `simulatePlan` against the same `Plan` object.
  */
 import type { Account } from '../../model/plan.js'
+import { priceHecmHudMipAssessmentYear } from './hecmHudValidatedOpeningAdapter.js'
 import type { YearCashFlowTransferEndpoint } from './types/cashFlow.js'
 
-/** The two numbers an open HECM line carries into this phase. */
+/** The numbers an open HECM line carries into this phase. */
 export interface PropertyEventHecmLine {
   readonly principalLimit: number
   readonly loanBalance: number
+  /** When set, loan balance accrues HUD monthly MIP instead of legacy growth×MIP blend. */
+  readonly annualMipRate?: number
+  readonly calculationMode?: 'legacyQuoteEstimate' | 'hudValidated'
 }
 
 /** The ledger payload for a legacy tax-free property sale. */
@@ -162,6 +166,13 @@ export interface PropertyEventRow {
   readonly closesHecmForAccountId: string | null
   /** The multiplier for a line still open and not yet accrued this year, or null. */
   readonly hecmGrowth: number | null
+  /**
+   * HUD monthly MIP dollars to add to loanBalance after principal-limit growth.
+   * Null for legacy quote-estimate lines (growth already embeds rate+MIP blend).
+   */
+  readonly hecmHudMipAccrual: number | null
+  readonly hecmHudEndingLoanBalance: number | null
+  readonly hecmHudMipIncompleteReason: string | null
   /** The ledger row to publish, or null. Built only on the publish path. */
   readonly record: LegacyPropertySaleDeposit | null
 }
@@ -169,6 +180,8 @@ export interface PropertyEventRow {
 interface MutableHecmLine {
   principalLimit: number
   loanBalance: number
+  annualMipRate?: number
+  calculationMode?: 'legacyQuoteEstimate' | 'hudValidated'
 }
 
 /** One row per property account, in `accounts` order. */
@@ -190,7 +203,16 @@ export function propertyEventsAndGrowth(
     if (shadowLines.has(accountId)) return shadowLines.get(accountId) ?? null
     const live = hecmStates.get(accountId)
     const seeded: MutableHecmLine | null = live
-      ? { principalLimit: live.principalLimit, loanBalance: live.loanBalance }
+      ? {
+          principalLimit: live.principalLimit,
+          loanBalance: live.loanBalance,
+          ...(live.annualMipRate !== undefined
+            ? { annualMipRate: live.annualMipRate }
+            : {}),
+          ...(live.calculationMode !== undefined
+            ? { calculationMode: live.calculationMode }
+            : {}),
+        }
       : null
     shadowLines.set(accountId, seeded)
     return seeded
@@ -226,13 +248,42 @@ export function propertyEventsAndGrowth(
     shadowValues.set(accountId, value)
     const openLine = lineFor(accountId)
     let hecmGrowth: number | null = null
+    let hecmHudMipAccrual: number | null = null
+    let hecmHudEndingLoanBalance: number | null = null
+    let hecmHudMipIncompleteReason: string | null = null
     if (openLine && account.hecm && !accruedLineIds.has(accountId)) {
       hecmGrowth = 1 + account.hecm.growthRatePct / 100
       openLine.principalLimit *= hecmGrowth
-      openLine.loanBalance *= hecmGrowth
+      if (
+        openLine.calculationMode === 'hudValidated' &&
+        openLine.annualMipRate !== undefined
+      ) {
+        const mip = priceHecmHudMipAssessmentYear({
+          line: account.hecm, year, annualMipRate: openLine.annualMipRate,
+        })
+        if (mip.status === 'complete') {
+          hecmHudMipAccrual = mip.totalMipAccrued
+          hecmHudEndingLoanBalance = mip.endingLoanBalance
+          openLine.loanBalance = mip.endingLoanBalance
+        } else {
+          hecmHudMipIncompleteReason = mip.reason
+        }
+      } else {
+        openLine.loanBalance *= hecmGrowth
+      }
       accruedLineIds.add(accountId)
     }
-    rows.push({ propertyAccountId: accountId, value, deposit, closesHecmForAccountId, hecmGrowth, record })
+    rows.push({
+      propertyAccountId: accountId,
+      value,
+      deposit,
+      closesHecmForAccountId,
+      hecmGrowth,
+      hecmHudMipAccrual,
+      hecmHudEndingLoanBalance,
+      hecmHudMipIncompleteReason,
+      record,
+    })
   }
   return rows
 }

@@ -1,63 +1,26 @@
 # Connecticut (CT) — state income tax for retirement planning
 
-Tax year: 2025. Researched 2026-06-13.
+Tax year: 2026. Authority reconciliation: 2026-09-12.
 
-## Summary
-- Broad individual income tax: **yes** (graduated, 2%–6.99%)
-- Taxes Social Security benefits: **yes** in statute, but fully exempt below AGI $75,000 single / $100,000 MFJ — modeled as taxed, flagged below
-- Long-term capital gains: taxed as ordinary income
-- Retirement income (pension, IRA, 401k): pension/annuity 100% exempt below the AGI thresholds; IRA 75% exempt in 2025 (100% from 2026)
+## Current calculation contract
 
-## Proposed StateTaxParams (2025)
-- code: "CT"
-- name: "Connecticut"
-- hasIncomeTax: true
-- taxesSocialSecurity: true
-- capitalGainsAsOrdinary: true
-- standardDeduction: { single: 0, marriedFilingJointly: 0 }
-- brackets.single:
-  - { lowerBound: 0, ratePct: 2.0 }
-  - { lowerBound: 10000, ratePct: 4.5 }
-  - { lowerBound: 50000, ratePct: 5.5 }
-  - { lowerBound: 100000, ratePct: 6.0 }
-  - { lowerBound: 200000, ratePct: 6.5 }
-  - { lowerBound: 250000, ratePct: 6.9 }
-  - { lowerBound: 500000, ratePct: 6.99 }
-- brackets.marriedFilingJointly:
-  - { lowerBound: 0, ratePct: 2.0 }
-  - { lowerBound: 20000, ratePct: 4.5 }
-  - { lowerBound: 100000, ratePct: 5.5 }
-  - { lowerBound: 200000, ratePct: 6.0 }
-  - { lowerBound: 400000, ratePct: 6.5 }
-  - { lowerBound: 500000, ratePct: 6.9 }
-  - { lowerBound: 1000000, ratePct: 6.99 }
-- retirement: { kind: "full" }
+The following source-specific contracts supersede older aggregate assumptions. A rule record identifies the calculator boundary; it does not certify that a projection fixture or a release gate has passed. Missing eligibility, source, allocation or state-basis facts must remain visible as incomplete.
 
-## Retirement-income detail
-Connecticut has a graduated tax from 2% to 6.99%. MFJ brackets are exactly **2×**
-the single brackets (verified, not assumed). Connecticut has **no standard
-deduction** (it uses personal exemptions/credits instead), so set to 0.
+### Connecticut personal exemption uses Connecticut AGI and discrete steps
 
-For retirees, Connecticut exempts **100% of pension and annuity income** when
-federal AGI is below **$75,000 (single)** / **$100,000 (MFJ)**, phasing out above
-those thresholds. Traditional **IRA** distributions are 75% exempt for 2025 under
-the same income limits, rising to **100% in 2026**. Since this research feeds
-`year2026.ts`, the 2026 state of the law fully exempts both pension/annuity and
-IRA income for below-threshold retirees, so this is mapped to
-`retirement: { kind: "full" }` (no age gate in statute).
+Record: `ct-personal-exemption-and-ct-agi-schedule`. Classification: `settled`.
 
-Social Security: fully exempt below AGI $75,000 (single) / $100,000 (MFJ); above
-that, up to 25% of benefits are taxable. Because the big-levers model has a single
-boolean, `taxesSocialSecurity` is set **true** (SS is taxable above the
-thresholds), which overstates tax for below-threshold retirees — flagged below.
+The exemption uses Connecticut adjusted gross income, not federal AGI. Each $1,000 or fraction above the filing-status threshold removes $1,000 of exemption, floored at zero. The state schedule distinguishes single, MFS, HOH, and MFJ/qualifying surviving spouse. Unknown Connecticut AGI or status cannot establish an exemption. This record covers the personal-exemption worksheet, not rate-recapture or property-tax credits.
 
-## Simplifications / not modeled
-- Pension/IRA exemption and SS exemption are **income-tested** (full below $75k single / $100k MFJ, phasing out above). Modeled as a flat full exemption (`kind: "full"`) while `taxesSocialSecurity: true`; this overstates SS tax and understates pension tax for higher-income retirees. A future enhancement could add the AGI phase-out.
-- 2025-only nuance: IRA income is 75% exempt in 2025 (vs 100% pension); modeled at the 2026 full-exemption state since the data lands in `year2026.ts`.
-- CT personal exemptions, the 3% tax-rate phase-out (benefit recapture), and the property-tax credit not modeled.
-- No standard deduction; set to 0.
+Authority: [§12-702(a)(2)(I), (b), (c)](https://www.cga.ct.gov/current/pub/chap_229.htm).
 
-## Citations
+> For taxable years commencing on or after January 1, 2016, fifteen thousand dollars. In the case of any such taxpayer whose Connecticut adjusted gross income for the taxable year exceeds thirty thousand dollars, the exemption amount shall be reduced by one thousand dollars for each one thousand dollars, or fraction thereof, by which the taxpayer's Connecticut adjusted gross income for the taxable year exceeds thirty thousand dollars. In no event shall the reduction exceed one hundred per cent of the exemption. … Any husband and wife subject to tax under this chapter for any taxable year who file a return under the federal income tax for such taxable year as married individuals filing a joint return or any person who files a return for such taxable year as a surviving spouse ... shall be entitled to a single personal exemption of twenty-four thousand dollars... … In the case of any such taxpayer whose Connecticut adjusted gross income for the taxable year exceeds forty-eight thousand dollars, the exemption amount shall be reduced by one thousand dollars for each one thousand dollars, or fraction thereof, by which the taxpayer's Connecticut adjusted gross income for the taxable year exceeds the said amount. In no event shall the reduction exceed one hundred per cent of the exemption.
+
+## Validation boundary
+
+Source records above require discriminating positive and negative fixtures through the state calculation entry point, followed by actual `simulatePlan` event/basis integration. The source record alone does not establish those results. Annual parameters and generated rule/quote ledgers must be refreshed by the integration owner.
+
+## Additional source history
 - https://www.incometaxpro.com/tax-rates/connecticut.htm — 2025 single and MFJ brackets (2%–6.99%); MFJ = 2× single thresholds.
 - https://cga.ct.gov/2024/rpt/pdf/2024-R-0130.pdf — CT OLR "A Guide to Connecticut's Personal Income Tax" (brackets, no standard deduction).
 - https://www.cga.ct.gov/2025/rpt/pdf/2025-R-0152.pdf — IRA deduction phase-in (75% in 2025, 100% in 2026); pension/annuity & SS AGI thresholds $75k/$100k.

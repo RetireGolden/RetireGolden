@@ -110,7 +110,11 @@ const PUBLIC_PENSION_OVERRIDES: Record<string, StateRetirementExclusion> = {
   NE: { kind: 'full' },
   NY: { kind: 'full' },
   OH: { kind: 'full' },
-  SC: { kind: 'full' },
+  // South Carolina is deliberately NOT here. S.C. Code §12-6-1171 fully
+  // deducts qualifying military retirement only; ordinary public pensions
+  // remain in the §12-6-1170 $3,000/$10,000 source pool. A blanket public
+  // `{ kind: 'full' }` override overstated nonmilitary public pensions.
+  // Characterized military facts route through the §1171 leaf helper.
 }
 
 function splitRetirementBuckets(raw: RawStateTaxPack): StateTaxPack {
@@ -215,6 +219,18 @@ const rawStateYear2026 = {
         ],
       },
       retirement: { kind: 'capped', capPerPerson: 6000 },
+      // Act 155 (2017) adopts IRC 406–416 as of 1 Jan 2017, including §408(d)(8)
+      // QCD at the adopted-era $100,000 annual ceiling — not the later federal
+      // indexed ceiling.
+      directQcdPolicy: {
+        kind: 'conformsWithAdoptedCap',
+        annualCap: 100_000,
+        citation: '2017 Ark. Acts, Act 155 §18 adopting IRC 406–416 as of 2017-01-01',
+        adoptionCutoff: '2017-01-01',
+        effectiveTaxYears: { from: 2017 },
+        supportedTransactionKinds: ['directIraToCharity'],
+        authoritySourceIds: ['AR2017', 'AR2025', 'IRS2016'],
+      },
     },
     CA: {
       code: 'CA', name: 'California', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
@@ -237,14 +253,20 @@ const rawStateYear2026 = {
         ],
       },
       retirement: { kind: 'none' },
+      hsaConformity: 'nonconformingCalifornia',
+      directQcdPolicy: { kind: 'unknown' },
     },
     CO: {
+      coloradoRetirement: { age55Cap: 20_000, age65Cap: 24_000, ssAgiNonjoint: 75_000, ssAgiJoint: 95_000 },
       // Flat 4.4% on federal taxable income; no separate state deduction, so the
       // standard deduction is the federal-equivalent to convert gross→taxable.
       code: 'CO', name: 'Colorado', hasIncomeTax: true, taxesSocialSecurity: true, capitalGainsAsOrdinary: true,
       standardDeduction: { single: 16100, marriedFilingJointly: 32200 }, standardDeductionConformity: 'federal',
       brackets: { single: [{ lowerBound: 0, ratePct: 4.4 }], marriedFilingJointly: [{ lowerBound: 0, ratePct: 4.4 }] },
       retirement: { kind: 'capped', capPerPerson: 24000, minAge: 65 },
+      // §39-22-104(3)(p.7) TY2026: when federal AGI >= $300,000, add back the
+      // federal deduction used above $1,000 single / $2,000 joint.
+      highAgiFederalDeductionAddback: { agiTrigger: 300_000, retainSingle: 1_000, retainJoint: 2_000 },
     },
     CT: {
       code: 'CT', name: 'Connecticut', hasIncomeTax: true, taxesSocialSecurity: true, capitalGainsAsOrdinary: true,
@@ -262,6 +284,13 @@ const rawStateYear2026 = {
         ],
       },
       retirement: { kind: 'full' }, // pension/IRA reach full exemption by 2026
+      connecticutPersonalExemption: {
+        single: { maximum: 15000, phaseoutStart: 30000, phaseoutStep: 1000, reductionPerStep: 1000 },
+        marriedFilingSeparately: { maximum: 12000, phaseoutStart: 24000, phaseoutStep: 1000, reductionPerStep: 1000 },
+        headOfHousehold: { maximum: 19000, phaseoutStart: 38000, phaseoutStep: 1000, reductionPerStep: 1000 },
+        marriedFilingJointly: { maximum: 24000, phaseoutStart: 48000, phaseoutStep: 1000, reductionPerStep: 1000 },
+        qualifyingSurvivingSpouse: { maximum: 24000, phaseoutStart: 48000, phaseoutStep: 1000, reductionPerStep: 1000 },
+      },
     },
     DE: {
       // 30 Del. C. § 1108(a)(3): $3,250 single / $6,500 MFJ basic standard
@@ -286,6 +315,7 @@ const rawStateYear2026 = {
         ],
       },
       retirement: { kind: 'capped', capPerPerson: 12500, minAge: 60 },
+      delawareUnder60Pension: { ordinaryCap: 2000, militaryCap: 12500 },
     },
     DC: {
       code: 'DC', name: 'District of Columbia', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
@@ -340,7 +370,18 @@ const rawStateYear2026 = {
           { lowerBound: 450000, ratePct: 9 }, { lowerBound: 550000, ratePct: 10 }, { lowerBound: 650000, ratePct: 11 },
         ],
       },
+      // Distinct HOH schedule — must not reuse MFJ breakpoints.
+      bracketsHeadOfHousehold: [
+        { lowerBound: 0, ratePct: 1.4 }, { lowerBound: 14400, ratePct: 3.2 }, { lowerBound: 21600, ratePct: 5.5 },
+        { lowerBound: 28800, ratePct: 6.4 }, { lowerBound: 36000, ratePct: 6.8 }, { lowerBound: 54000, ratePct: 7.2 },
+        { lowerBound: 72000, ratePct: 7.6 }, { lowerBound: 187500, ratePct: 7.9 }, { lowerBound: 262500, ratePct: 8.25 },
+        { lowerBound: 337500, ratePct: 9 }, { lowerBound: 412500, ratePct: 10 }, { lowerBound: 487500, ratePct: 11 },
+      ],
       retirement: { kind: 'none' },
+      directQcdPolicy: {
+        kind: 'conforms',
+        citation: 'Hawaii adopts current IRC; direct QCD federal exclusion flows through absent a Hawaii addition',
+      },
     },
     ID: {
       code: 'ID', name: 'Idaho', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
@@ -350,12 +391,19 @@ const rawStateYear2026 = {
         marriedFilingJointly: [{ lowerBound: 0, ratePct: 0 }, { lowerBound: 9622, ratePct: 5.3 }],
       },
       retirement: { kind: 'none' },
+      idahoQualifiedRetirementCaps: { single: 49824, joint: 74736 },
     },
     IL: {
       code: 'IL', name: 'Illinois', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
       standardDeduction: { single: 0, marriedFilingJointly: 0 },
       brackets: { single: [{ lowerBound: 0, ratePct: 4.95 }], marriedFilingJointly: [{ lowerBound: 0, ratePct: 4.95 }] },
       retirement: { kind: 'full' },
+      illinoisPersonalExemption: {
+        basicAllowance: 2925,
+        age65Addition: 1000,
+        agiCutoffNonjoint: 250000,
+        agiCutoffJoint: 500000,
+      },
     },
     IN: {
       // Legislated ramp, and Indiana's is statutory rather than published:
@@ -394,6 +442,7 @@ const rawStateYear2026 = {
     },
     IA: {
       code: 'IA', name: 'Iowa', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
+      iowaAlternateTax: { singleThreshold: 9_000, jointThreshold: 13_500, seniorSingleThreshold: 24_000, seniorJointThreshold: 32_000, alternateRate: 0.043 },
       standardDeduction: { single: 16100, marriedFilingJointly: 32200 }, standardDeductionConformity: 'federal',
       brackets: { single: [{ lowerBound: 0, ratePct: 3.8 }], marriedFilingJointly: [{ lowerBound: 0, ratePct: 3.8 }] },
       retirement: { kind: 'full', minAge: 55 },
@@ -406,18 +455,28 @@ const rawStateYear2026 = {
         marriedFilingJointly: [{ lowerBound: 0, ratePct: 5.2 }, { lowerBound: 46000, ratePct: 5.58 }],
       },
       retirement: { kind: 'none' },
+      directQcdPolicy: {
+        kind: 'conforms',
+        citation: 'Kansas federal-AGI starting point; covered charitable-credit modifications are separately added back.',
+        charitableCreditAdjustment: 'coveredCreditAddback',
+      },
+      kansasNamedPlanCodes: ['KPERS', 'KP&F', 'KSRS', 'US-CSRS', 'US-FERS', 'US-MILITARY', 'RRB', 'KS-13-14-106-CITY', 'KS-BPU', 'KS-WASHBURN', 'KS-OVERLAND-PARK-POLICE-FIRE'],
     },
     KY: {
+      // Kentucky standard deduction is $3,360 once per return. MFJ is one joint
+      // return and receives one deduction, not a doubled spouse count.
       code: 'KY', name: 'Kentucky', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
-      standardDeduction: { single: 3360, marriedFilingJointly: 6720 },
+      standardDeduction: { single: 3360, marriedFilingJointly: 3360 },
       brackets: { single: [{ lowerBound: 0, ratePct: 3.5 }], marriedFilingJointly: [{ lowerBound: 0, ratePct: 3.5 }] },
       retirement: { kind: 'capped', capPerPerson: 31110 },
     },
     LA: {
+      // La. R.S. 47:44.1(A): $12,000 base indexed by prior-calendar-year CPI-U.
+      // TY2026: $12,000 × 2.7% (BLS Dec-2024→Dec-2025) = $12,324.
       code: 'LA', name: 'Louisiana', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
       standardDeduction: { single: 12875, marriedFilingJointly: 25750 },
       brackets: { single: [{ lowerBound: 0, ratePct: 3 }], marriedFilingJointly: [{ lowerBound: 0, ratePct: 3 }] },
-      retirement: { kind: 'capped', capPerPerson: 12000, minAge: 65 },
+      retirement: { kind: 'capped', capPerPerson: 12324, minAge: 65 },
     },
     ME: {
       // 2026 per MRS revised schedule (2026-05-20): ME publishes its own basic
@@ -465,13 +524,24 @@ const rawStateYear2026 = {
           { lowerBound: 1200000, ratePct: 6.5 },
         ],
       },
-      retirement: { kind: 'capped', capPerPerson: 41200, minAge: 65 },
+      // Comptroller maximum annual Social Security benefit for TY2026 pension
+      // exclusion is $40,600 (not the prior-year $41,200 stand-in).
+      retirement: { kind: 'capped', capPerPerson: 40600, minAge: 65 },
     },
     MA: {
       code: 'MA', name: 'Massachusetts', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
       standardDeduction: { single: 0, marriedFilingJointly: 0 },
       brackets: { single: [{ lowerBound: 0, ratePct: 5 }], marriedFilingJointly: [{ lowerBound: 0, ratePct: 5 }] },
       retirement: { kind: 'none' },
+      massachusettsRates: {
+        baseRate: 0.05,
+        surtaxRate: 0.04,
+        surtaxThreshold: 1107750,
+        personalExemptionSingle: 4400,
+        personalExemptionJoint: 8800,
+        personalExemptionHoh: 6800,
+        ageBlindAddition: 700,
+      },
     },
     MI: {
       code: 'MI', name: 'Michigan', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
@@ -557,6 +627,13 @@ const rawStateYear2026 = {
         ],
       },
       retirement: { kind: 'capped', capPerPerson: 6000 },
+      missouriRetirement: {
+        privateCap: 6000,
+        privatePhaseoutSingle: 25000,
+        privatePhaseoutJoint: 32000,
+        privatePhaseoutMfs: 16000,
+        publicMaxSocialSecurityBenefit: 48967,
+      },
     },
     MT: {
       // HB 337 (2025): 2026 = 4.7%/5.65% at 47,500/95,000; 2027 steps again to
@@ -567,7 +644,16 @@ const rawStateYear2026 = {
         single: [{ lowerBound: 0, ratePct: 4.7 }, { lowerBound: 47500, ratePct: 5.65 }],
         marriedFilingJointly: [{ lowerBound: 0, ratePct: 4.7 }, { lowerBound: 95000, ratePct: 5.65 }],
       },
+      bracketsHeadOfHousehold: [{ lowerBound: 0, ratePct: 4.7 }, { lowerBound: 71250, ratePct: 5.65 }],
+      bracketsMarriedFilingSeparately: [{ lowerBound: 0, ratePct: 4.7 }, { lowerBound: 47500, ratePct: 5.65 }],
       retirement: { kind: 'none' },
+      montanaLtcg: {
+        lowerRate: 0.03,
+        upperRate: 0.041,
+        thresholdSingle: 47500,
+        thresholdHoh: 71250,
+        thresholdJoint: 95000,
+      },
     },
     NE: {
       // LB 754 ramp: top 5.2% (2025) -> 4.55% (2026, brackets consolidated to
@@ -613,6 +699,11 @@ const rawStateYear2026 = {
         ],
       },
       retirement: { kind: 'capped', capPerPerson: 50000, minAge: 62 },
+      hsaConformity: 'newJerseyCategories',
+      directQcdPolicy: {
+        kind: 'noGeneralFederalExclusion',
+        citation: 'N.J.S.A. 54A:5-1 closed categories; reconstruct NJ taxable IRA earnings (GIT-1/2)',
+      },
     },
     NM: {
       code: 'NM', name: 'New Mexico', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
@@ -726,6 +817,13 @@ const rawStateYear2026 = {
         ],
       },
       retirement: { kind: 'none' },
+      oregonRetirementIncomeCredit: {
+        rate: 0.09,
+        pensionCeilingSingle: 7500,
+        pensionCeilingJoint: 15000,
+        incomeThresholdSingle: 15000,
+        incomeThresholdJoint: 30000,
+      },
     },
     PA: {
       code: 'PA', name: 'Pennsylvania', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
@@ -750,17 +848,36 @@ const rawStateYear2026 = {
     },
     SC: {
       // H.4216 (signed 2026-03-30) rewrote TY2026: SCIAD deduction of
-      // $15,000/$30,000 replaces the federal deduction (its AGI phase-out is
-      // not modeled), and "5.21% minus $966 at/above $30,000" is exactly the
-      // graduated pair below (1.99% x 30,000 gap = 966). Revenue-triggered
-      // further cuts are legislated — re-verify annually via SCDOR news.
+      // $15,000/$30,000 replaces the federal deduction (Act 110 phase-out is
+      // modeled in the SCIAD leaf helper, not as this coarse field), and
+      // "5.21% minus $966 at/above $30,000" is exactly the graduated pair below
+      // (1.99% x 30,000 gap = 966). Revenue-triggered further cuts are
+      // legislated — re-verify annually via SCDOR news.
+      //
+      // §12-6-1170(A) tiers: $3,000 under 65 / $10,000 at 65+. Military full
+      // deduction is §12-6-1171 via characterized facts, not a public override.
       code: 'SC', name: 'South Carolina', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
       standardDeduction: { single: 15000, marriedFilingJointly: 30000 },
       brackets: {
         single: [{ lowerBound: 0, ratePct: 1.99 }, { lowerBound: 30000, ratePct: 5.21 }],
         marriedFilingJointly: [{ lowerBound: 0, ratePct: 1.99 }, { lowerBound: 30000, ratePct: 5.21 }],
       },
-      retirement: { kind: 'capped', capPerPerson: 10000, minAge: 65 },
+      retirement: {
+        kind: 'capped',
+        capPerPerson: 10000,
+        minAge: 65,
+        tierByAge: [
+          { minAge: null, cap: 3000 },
+          { minAge: 65, cap: 10000 },
+        ],
+      },
+      southCarolinaSciad: {
+        single: { base: 15000, phaseoutStart: 40000, phaseoutRange: 55000, reductionIncrement: 10 },
+        marriedFilingSeparately: { base: 15000, phaseoutStart: 40000, phaseoutRange: 55000, reductionIncrement: 10 },
+        headOfHousehold: { base: 22500, phaseoutStart: 60000, phaseoutRange: 82500, reductionIncrement: 10 },
+        marriedFilingJointly: { base: 30000, phaseoutStart: 80000, phaseoutRange: 110000, reductionIncrement: 10 },
+        qualifyingSurvivingSpouse: { base: 30000, phaseoutStart: 80000, phaseoutRange: 110000, reductionIncrement: 10 },
+      },
     },
     SD: {
       code: 'SD', name: 'South Dakota', hasIncomeTax: false, taxesSocialSecurity: false, capitalGainsAsOrdinary: false,
@@ -785,19 +902,69 @@ const rawStateYear2026 = {
       standardDeduction: { single: 0, marriedFilingJointly: 0 },
       brackets: { single: [{ lowerBound: 0, ratePct: 4.45 }], marriedFilingJointly: [{ lowerBound: 0, ratePct: 4.45 }] },
       retirement: { kind: 'none' },
+      utahRetirementCredits: {
+        taxRate: 0.0445,
+        phaseoutRate: 0.025,
+        socialSecurityThresholds: {
+          marriedFilingSeparately: 45000,
+          single: 54000,
+          headOfHousehold: 90000,
+          marriedFilingJointly: 90000,
+          qualifyingSurvivingSpouse: 90000,
+        },
+        retirementThresholds: {
+          marriedFilingSeparately: 16000,
+          single: 25000,
+          headOfHousehold: 32000,
+          marriedFilingJointly: 32000,
+          qualifyingSurvivingSpouse: 32000,
+        },
+        retirementCreditPerEligibleClaimant: 450,
+        latestEligibleBirthDate: '1952-12-31',
+      },
     },
     VT: {
+      // TY2026 derived from Act 11 bases + BLS CUUR0000SA0 CPI-U method
+      // (see vt-supplement). IN-114 remains preliminary corroboration only.
       code: 'VT', name: 'Vermont', hasIncomeTax: true, taxesSocialSecurity: true, capitalGainsAsOrdinary: true,
-      standardDeduction: { single: 7400, marriedFilingJointly: 14850 },
+      standardDeduction: { single: 7850, marriedFilingJointly: 15700 },
       brackets: {
         single: [
-          { lowerBound: 0, ratePct: 3.35 }, { lowerBound: 47900, ratePct: 6.6 }, { lowerBound: 116000, ratePct: 7.6 },
-          { lowerBound: 242000, ratePct: 8.75 },
+          { lowerBound: 0, ratePct: 3.35 }, { lowerBound: 50750, ratePct: 6.6 }, { lowerBound: 122850, ratePct: 7.6 },
+          { lowerBound: 256300, ratePct: 8.75 },
         ],
         marriedFilingJointly: [
-          { lowerBound: 0, ratePct: 3.35 }, { lowerBound: 79950, ratePct: 6.6 }, { lowerBound: 193300, ratePct: 7.6 },
-          { lowerBound: 294600, ratePct: 8.75 },
+          { lowerBound: 0, ratePct: 3.35 }, { lowerBound: 84700, ratePct: 6.6 }, { lowerBound: 204750, ratePct: 7.6 },
+          { lowerBound: 312050, ratePct: 8.75 },
         ],
+      },
+      bracketsHeadOfHousehold: [
+        { lowerBound: 0, ratePct: 3.35 }, { lowerBound: 68000, ratePct: 6.6 }, { lowerBound: 175500, ratePct: 7.6 },
+        { lowerBound: 284150, ratePct: 8.75 },
+      ],
+      bracketsMarriedFilingSeparately: [
+        { lowerBound: 0, ratePct: 3.35 }, { lowerBound: 42350, ratePct: 6.6 }, { lowerBound: 102375, ratePct: 7.6 },
+        { lowerBound: 156025, ratePct: 8.75 },
+      ],
+      vermontExtras: {
+        minimumTaxAgiThreshold: 150000,
+        minimumTaxRate: 0.03,
+        personalExemption: 5400,
+        additional63f: 1300,
+        civilServiceCap: 10000,
+        civilServiceFullThroughNonjoint: 55000,
+        civilServiceZeroAtNonjoint: 65000,
+        civilServiceFullThroughJoint: 70000,
+        civilServiceZeroAtJoint: 80000,
+        militaryFullThrough: 125000,
+        militaryZeroAt: 175000,
+        standardDeductionByStatus: {
+          single: 7850,
+          marriedFilingSeparately: 7850,
+          headOfHousehold: 11800,
+          marriedFilingJointly: 15700,
+          qualifyingSurvivingSpouse: 15700,
+        },
       },
       retirement: { kind: 'none' },
     },
@@ -815,6 +982,7 @@ const rawStateYear2026 = {
         ],
       },
       retirement: { kind: 'capped', capPerPerson: 12000, minAge: 65 },
+      virginiaMilitarySubtractionCap: 40000,
     },
     WA: {
       // No broad income tax; a 7% tax on large long-term gains is out of scope.
@@ -838,19 +1006,50 @@ const rawStateYear2026 = {
         ],
       },
       retirement: { kind: 'capped', capPerPerson: 8000, minAge: 65 },
+      westVirginiaSocialSecurity: { nonjointAgiThreshold: 50_000, jointAgiThreshold: 100_000, aboveThresholdFractionByYear: { 2024: 0.35, 2025: 0.65 }, fullExclusionFrom: 2026 },
+      westVirginiaExemptions: {
+        qualifyingFederalSystemCodes: ['CSRS', 'FERS', 'FEDERAL-4-USC-111'],
+        perExemption: 2000,
+        zeroExemptionIrc151d2: 500,
+        survivingSpouseAdditional: 2000,
+        age65ResidualCap: 8000,
+        namedPublicCombinedCapPerPerson: 2000,
+      },
     },
     WI: {
+      // TY2026 Form 1-ES: max SD in standardDeduction; wisconsinStandardDeduction
+      // carries the exact income-tested phase-down. HOH shares the single rate
+      // schedule; MFS is half of MFJ thresholds (Form 1-ES rate schedules).
       code: 'WI', name: 'Wisconsin', hasIncomeTax: true, taxesSocialSecurity: false, capitalGainsAsOrdinary: true,
-      standardDeduction: { single: 13560, marriedFilingJointly: 25110 },
+      standardDeduction: { single: 13960, marriedFilingJointly: 25840 },
       brackets: {
         single: [
-          { lowerBound: 0, ratePct: 3.5 }, { lowerBound: 14680, ratePct: 4.4 }, { lowerBound: 50480, ratePct: 5.3 },
-          { lowerBound: 323290, ratePct: 7.65 },
+          { lowerBound: 0, ratePct: 3.5 }, { lowerBound: 15110, ratePct: 4.4 }, { lowerBound: 51950, ratePct: 5.3 },
+          { lowerBound: 332720, ratePct: 7.65 },
         ],
         marriedFilingJointly: [
-          { lowerBound: 0, ratePct: 3.5 }, { lowerBound: 19580, ratePct: 4.4 }, { lowerBound: 67300, ratePct: 5.3 },
-          { lowerBound: 431060, ratePct: 7.65 },
+          { lowerBound: 0, ratePct: 3.5 }, { lowerBound: 20150, ratePct: 4.4 }, { lowerBound: 69260, ratePct: 5.3 },
+          { lowerBound: 443630, ratePct: 7.65 },
         ],
+      },
+      bracketsHeadOfHousehold: [
+        { lowerBound: 0, ratePct: 3.5 }, { lowerBound: 15110, ratePct: 4.4 }, { lowerBound: 51950, ratePct: 5.3 },
+        { lowerBound: 332720, ratePct: 7.65 },
+      ],
+      bracketsMarriedFilingSeparately: [
+        { lowerBound: 0, ratePct: 3.5 }, { lowerBound: 10080, ratePct: 4.4 }, { lowerBound: 34630, ratePct: 5.3 },
+        { lowerBound: 221820, ratePct: 7.65 },
+      ],
+      wisconsinStandardDeduction: {
+        single: { maximum: 13960, fullThrough: 20119, phaseStart: 20120, phaseRate: 0.12, zeroAt: 136453 },
+        marriedFilingJointly: { maximum: 25840, fullThrough: 29039, phaseStart: 29040, phaseRate: 0.19778, zeroAt: 159690 },
+        marriedFilingSeparately: { maximum: 12280, fullThrough: 13779, phaseStart: 13780, phaseRate: 0.19778, zeroAt: 75869 },
+        headOfHousehold: {
+          maximum: 18030, fullThrough: 20119, phaseStart: 20120, phaseRate: 0.22515,
+          secondSegmentStart: 58827, zeroAt: 136453,
+        },
+        exemptionPerPerson: 700,
+        age65Addition: 250,
       },
       retirement: { kind: 'capped', capPerPerson: 24000, minAge: 67 },
     },

@@ -1,3 +1,4 @@
+import type { MutableInheritedRothTaxCharacterPool } from './internal/inheritedRothTaxCharacterPoolState.js'
 import type { AssetAllocationPolicy } from '../model/plan.js'
 import type { RothBasisState } from '../strategies/rothBasis.js'
 import type { IraProRataYear } from '../strategies/iraBasis.js'
@@ -72,6 +73,7 @@ export interface SimulatorAnnualPassStateBindings {
   iraProRata: Map<string, IraProRataYear>
   iraBasisByOwner: Map<string, number>
   rothBasis: Map<string, RothBasisState>
+  inheritedRothPools: Map<string, MutableInheritedRothTaxCharacterPool>
   /**
    * Observation-only remaining assumed Roth contribution seed by pool key.
    * Mutated at the same withdrawal commit as `rothBasis`; must roll back with

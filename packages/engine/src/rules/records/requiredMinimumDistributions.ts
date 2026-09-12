@@ -61,7 +61,7 @@ export const requiredMinimumDistributionRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The standalone evaluator refuses an unobserved calendar year rather than assuming the deemed-election trigger is absent. The annual projection does not call this evaluator or infer a deemed election from required-distribution or contribution history; it uses an explicit treatAsOwnElectionYear Plan fact. That missing production integration remains open, so this record must not be read as end-to-end product enforcement of the deemed-election trigger.',
+      'The standalone evaluator refuses an unobserved calendar year rather than assuming the deemed-election trigger is absent. Its annual gate accepts opening-of-year history only through the preceding year and requires a row-level as-of date and provenance, so a projected current-year shortfall cannot become completed evidence. simulatePlan supplies observed Plan history to the opening gate, whose result controls owner routing; simulate.inheritedRegimeExecution.test.ts covers deemed election without a legacy election flag and the sole-beneficiary negative. The year-end gate also reports newly observed events; a planner recommendation is not completed evidence. annualFundingApplicationAndClosePhase publishes a typed incomplete annual tax result for election-year mixed chronology; the mid-year election case in simulate.inheritedRegimeExecution.test.ts covers that publication instead of certifying the opening-beneficiary estimate as exact.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'regulation',
@@ -74,9 +74,65 @@ export const requiredMinimumDistributionRecords = {
     effectiveFrom: 2026,
     effectiveThrough: null,
     verifiedOn: '2026-08-04',
-    implementedBy: ['packages/engine/src/actions/beneficiarySpousalElectionStatus.ts'],
+    implementedBy: [
+      'packages/engine/src/projection/internal/beneficiarySpousalElectionGateAdapter.ts',
+      'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/actions/beneficiarySpousalElectionStatus.ts',
+      'packages/engine/src/actions/beneficiarySpousalElectionAnnualGate.ts',
+    ],
     implementedByFunctions: [
+      'packages/engine/src/projection/internal/beneficiarySpousalElectionGateAdapter.ts#gateSpousalElectionFromInheritedAccount',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/actions/beneficiarySpousalElectionStatus.ts#evaluateBeneficiarySpousalElection',
+      'packages/engine/src/actions/beneficiarySpousalElectionAnnualGate.ts#gateBeneficiarySpousalElectionForAnnualCoordinator',
+    ],
+  },
+
+  'treas-reg-1-402-c-2-j-4-surviving-spouse-catch-up-recurrence': {
+    title: 'Surviving-spouse late-election catch-up uses one adjusted current reference balance',
+    statement:
+      'For a ten-year-rule surviving spouse at or after the spouse\'s applicable-age year, the portion of an own-plan rollover or affirmative treat-as-own redesignation distribution that is an RMD is the excess of hypothetical RMDs for the catch-up period over actual distributions in earlier catch-up years. Each hypothetical RMD uses the spouse-age Uniform Lifetime denominator and an adjusted balance: the current distribution year\'s otherwise-applicable RMD balance reduced by the positive prior hypothetical-RMD deficit. The leaf rounds each annual hypothetical to cents before it becomes a later deficit, requires actual distributions for every prior catch-up year, and never accepts caller-supplied hypothetical amounts or prior year-end balances. An affirmative redesignation invokes the 1.408-8(c)(1)(iii) direct-distribution counterfactual without a fictional actual rollover; a beneficiary-destination rollover is not this arm. A Roth IRA treated as the spouse\'s own has no lifetime RMD, so the positive catch-up branch is non-applicable. The final regulation is current law for 2025-and-later distributions; Treasury\'s 2024 proposed example is only a worked illustration of the final recurrence, not a claim that a proposed paragraph is final.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'The Uniform Lifetime values come from the versioned RMD parameter pack. The 1959 applicable-age conflict remains a typed incomplete result rather than choosing a proposed clarification as current law. The production beneficiarySpousalElectionGateAdapter maps dated Plan facts to this calculation and gate; simulatePlan consumes the opening result. A current-year event is distinct from completed prior-year observation.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.402(c)-2(j)(4)(ii)-(iv) (2025 CFR)',
+      url: 'https://www.govinfo.gov/content/pkg/CFR-2025-title26-vol6/pdf/CFR-2025-title26-vol6-sec1-402c-2.pdf',
+      quotedText:
+        'The adjusted account balance for a determination year is calculated by reducing the account balance that would otherwise be used to determine the required minimum distribution for the calendar year in which the distribution is made by the excess (if any) of— (A) The sum of the hypothetical required minimum distributions determined under this paragraph (j)(4)(iii) beginning with the first applicable year and ending with the calendar year preceding the determination year; over (B) The actual distributions made to the surviving spouse during those calendar years.',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.408-8(c)(1)(iii)-(iv)',
+      url: 'https://www.law.cornell.edu/cfr/text/26/1.408-8',
+      quotedText:
+        'Thus, the election can be made in a calendar year only after the amounts treated as required minimum distributions under § 1.402(c)-2(j)(4)(ii) for that calendar year have been distributed from the IRA.',
+    }, {
+      kind: 'agencyGuidance',
+      citation: 'IRS, Internal Revenue Bulletin 2024-33, proposed worked example',
+      url: 'https://www.irs.gov/irb/2024-33_IRB',
+      quotedText:
+        'For 2032 (the year in which B reaches age 74), the adjusted account balance is calculated by reducing the $100,000.00 account balance by the excess of the hypothetical required minimum distribution for the first applicable year over the actual distributions made to the surviving spouse in that calendar year, which is $2,773.58 ($3,773.58-$1,000.00). In this case, for the second determination year, the adjusted account balance is $97,226.42 ($100,000.00-$2,773.58) and the hypothetical required minimum distribution for 2032 is $3,812.80 ($97,226.42/25.5). ... Accordingly, the portion of the $103,000 distribution that is treated as a required minimum distribution is $10,383.68.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2025,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-12',
+    implementedBy: [
+      'packages/engine/src/projection/internal/beneficiarySpousalElectionGateAdapter.ts',
+      'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/actions/beneficiarySpousalElectionAnnualGate.ts',
+      'packages/engine/src/params/index.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/internal/beneficiarySpousalElectionGateAdapter.ts#gateSpousalElectionFromInheritedAccount',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/actions/beneficiarySpousalElectionAnnualGate.ts#determineSection402c2j4CatchUp',
+      'packages/engine/src/actions/beneficiarySpousalElectionAnnualGate.ts#gateBeneficiarySpousalElectionForAnnualCoordinator',
+      'packages/engine/src/params/index.ts#uniformLifetimeDivisor',
     ],
   },
 
@@ -1508,13 +1564,13 @@ export const requiredMinimumDistributionRecords = {
   'irc-401-a-9-B-ii-non-designated-beneficiary-five-year-rule': {
     title: 'Non-designated beneficiary uses the five-year rule before the RBD',
     statement:
-      'A beneficiary that is not a designated beneficiary remains under the five-year rule when the employee dies before distributions begin: the entire interest must be distributed within five years. For an individual account, the §4974 required amount is the amount §1.401(a)(9)-5 requires for that calendar year. Classification refuses every estate, trust, and entity beneficiary class alike (X3) — including a see-through trust that would qualify under Treas. Reg. 1.401(a)(9)-4(f) — because the five-year/non-designated regime itself is not implemented. Projection then falls back to the separately registered legacy planning approximation in treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy and irc-401-a-9-E-ii-eligible-designated-beneficiary (inheritedForcedAmount), and the refusal reason rides the evidence rows so no consumer can read the schedule as compliant.',
+      'A beneficiary that is not a designated beneficiary remains under the five-year rule when the employee dies before distributions begin: the entire interest must be distributed within five years. For an individual account, the §4974 required amount is the amount §1.401(a)(9)-5 requires for that calendar year. Unknown trust/entity classification still refuses (X3) — including an unverified see-through trust — because the engine does not classify trusts. When the Plan supplies an independently confirmed non-designated pre-RBD classification, the supported schedule is registered at irc-401-a-9-B-ii-confirmed-non-designated-five-year-schedule (fiveYearEmptyingRequirement). Confirmed Plan facts now route through classifyInheritedRegime and the annual inherited-account coordinator. Unclassified entity rows retain their X3 refusal rather than receiving a confirmed five-year schedule.',
     classification: 'outOfScope',
     outOfScope: { shape: 'typedRefusal' },
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The plan schema records the non-individual category but has no facts to establish a qualifying trust or to calculate its separate five-year distribution schedule. The inherited classifier therefore emits its typed X3 refusal; projection still routes that refusal through the registered inheritedForcedAmount fallback so a plan that parsed still projects. inheritedRegime.test.ts covers the classification refusal on the driven path.',
+      'Unknown classification remains a typed refusal. Confirmed non-designated pre-RBD facts use the sibling settled schedule helper; do not pretend every trust is non-designated. inheritedRegime.test.ts and inheritedFiveYearAndPostDeadline.test.ts cover both limbs.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -1604,13 +1660,13 @@ export const requiredMinimumDistributionRecords = {
   'treas-reg-54-4974-1-c-five-year-deadline-rmd': {
     title: 'Five-year deadline carries the remaining interest as its RMD',
     statement:
-      'For an individual account, the §4974 required amount for a calendar year is the amount §1.401(a)(9)-5 requires. Where the five-year rule applies after a pre-RBD death, there is no required minimum distribution until the fifth-anniversary calendar year, and the required amount due in that year is the employee\'s entire interest. The unmodeled claim here is only that five-year application: the tenth-year entire-interest emptying is already modeled on the inheritedFinalSweep path and registered as irc-401-a-9-H-designated-beneficiary-ten-year-rule. Classification refuses every estate, trust, and entity beneficiary class alike (X3) for the five-year regime; projection then falls back to the separately registered legacy planning approximation in treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy and irc-401-a-9-E-ii-eligible-designated-beneficiary (inheritedForcedAmount), and the refusal reason rides the evidence rows so no consumer can read the schedule as compliant.',
+      'For an individual account, the §4974 required amount for a calendar year is the amount §1.401(a)(9)-5 requires. Where the five-year rule applies after a pre-RBD death, there is no required minimum distribution until the fifth-anniversary calendar year, and the required amount due in that year is the employee\'s entire interest. Confirmed pre-RBD non-designated schedules are implemented by fiveYearEmptyingRequirement (sibling settled record). Unknown trust/entity classification remains refused (X3). Post-deadline years require the entire remaining benefit under treas-reg-54-4974-1-e-post-deadline-remaining-benefit — a distribution obligation, not a 100% excise rate.',
     classification: 'outOfScope',
     outOfScope: { shape: 'typedRefusal' },
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'This is the deadline-year limb of irc-401-a-9-B-ii-non-designated-beneficiary-five-year-rule. The same unmodeled estate/trust/entity facts make a numeric five-year fixture unavailable; inheritedRegime.test.ts exercises the classification refusal, and projection still routes that refusal through the registered inheritedForcedAmount fallback.',
+      'Deadline-year limb for unknown-classification refusals. Confirmed schedules and post-deadline remaining-benefit enforcement are sibling settled helpers; do not levy 100% excise on the original deadline balance.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'regulation',
@@ -1646,6 +1702,146 @@ export const requiredMinimumDistributionRecords = {
       'packages/engine/src/model/plan.ts#inheritedBeneficiarySchema',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/strategies/inheritedIra.ts#classifyInheritedRegime',
+    ],
+  },
+
+  'irc-401-a-9-B-ii-confirmed-non-designated-five-year-schedule': {
+    title: 'Confirmed pre-RBD non-designated five-year emptying schedule',
+    statement:
+      'When beneficiary classification is independently confirmed as non-designated and the owner died before the required beginning date, there is no annual minimum before the deadline year, and the entire remaining interest is due by the end of deathYear+5. fiveYearEmptyingRequirement implements that schedule. Unknown trust classification remains refused on the sibling outOfScope record; post-RBD non-designated cases are not this pathway. After the deadline year, treas-reg-54-4974-1-e-post-deadline-remaining-benefit requires the entire remaining benefit each year.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'Verified classification is an explicit Plan input; the engine does not classify trusts. simulatePlan routes confirmed facts through classifyInheritedRegime, annualInheritedIraDistributions and coordinateInheritedDeadlineAnnualRuntime. simulate.inheritedRegimeExecution.test.ts covers the annual zeros before the deadline, the complete deadline sweep, unknown-trust refusal and rejection of contradictory post-RBD facts. Historical unsupported facts remain refused.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 401(a)(9)(B)(ii)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section401&num=0&edition=prelim',
+      quotedText:
+        'A trust shall not constitute a qualified trust under this section unless the plan provides that, if an employee dies before the distribution of the employee\'s interest has begun in accordance with subparagraph (A)(ii), the entire interest of the employee will be distributed within 5 years after the death of such employee.',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 54.4974-1(c)(2)',
+      url: 'https://www.ecfr.gov/current/title-26/section-54.4974-1',
+      quotedText:
+        'If an employee dies before the required beginning date and either § 1.401(a)(9)-3(c)(2) or (3) applies to the employee\'s beneficiary, there is no required minimum distribution until the end of the calendar year described in whichever of those paragraphs applies to the beneficiary (that is, the calendar year that includes the fifth anniversary or the tenth anniversary of the date of the employee\'s death, as applicable). The required minimum distribution due in that fifth or tenth calendar year is the employee\'s entire interest in the plan.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-12',
+    implementedBy: [
+      'packages/engine/src/actions/beneficiaryTraditionalIraAnnualRuntimeCoordinator.ts',
+      'packages/engine/src/projection/internal/annualInheritedIraDistributions.ts',
+      'packages/engine/src/strategies/inheritedIra.ts',
+      'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/strategies/inheritedFiveYearAndPostDeadline.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/beneficiaryTraditionalIraAnnualRuntimeCoordinator.ts#coordinateInheritedDeadlineAnnualRuntime',
+      'packages/engine/src/projection/internal/annualInheritedIraDistributions.ts#annualInheritedIraDistributions',
+      'packages/engine/src/strategies/inheritedIra.ts#classifyInheritedRegime',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/strategies/inheritedFiveYearAndPostDeadline.ts#fiveYearEmptyingRequirement',
+    ],
+  },
+
+  'treas-reg-54-4974-1-e-post-deadline-remaining-benefit': {
+    title: 'Post-deadline RMD is the entire remaining benefit, with ordinary 25%/10% excise on shortfall',
+    statement:
+      'Treas. Reg. 54.4974-1(e) provides that if any remaining benefit exists after the calendar year in which the entire remaining benefit was required to be distributed, the required minimum distribution for each subsequent calendar year is the entire remaining benefit. That language is a distribution obligation, not a 100% excise rate. postDeadlineRemainingBenefitObligation returns only the typed obligation (requiredAmount / distributedByDeadline / shortfall). Ordinary 25 percent, qualifying 10 percent, and waiver results remain the existing computeRmdShortfallExcise path with complete correction/filing/waiver facts — never a boolean shortcut. Unknown or invalid historical distributions prevent a definitive historical tax.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'Separate from irc-4974-rmd-shortfall-excise-tax percentage authority. Do not reuse the original deadline balance after it has been distributed. simulatePlan passes the inherited account completedDeadlineObservation through annualForcedDistributionQcdAndRetirementActionsPhase to annualInheritedIraDistributions and coordinateInheritedDeadlineAnnualRuntime. Completed observations produce the existing correction/waiver-aware excise obligation without replaying observed cash or ordinary income. simulate.inheritedRegimeExecution.test.ts distinguishes $2,500 ordinary excise from $1,000 after qualifying correction, and unknown or premature observations remain incomplete.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'regulation',
+      citation: 'Treas. Reg. 54.4974-1(e)',
+      url: 'https://www.govinfo.gov/content/pkg/CFR-2025-title26-vol19/pdf/CFR-2025-title26-vol19-sec54-4974-1.pdf',
+      quotedText:
+        'If there is any remaining benefit with respect to an employee (or IRA owner) after the calendar year in which the entire remaining benefit is required to be distributed, the required minimum distribution for each calendar year subsequent to that calendar year is the entire remaining benefit.',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 54.4974-1(a)',
+      url: 'https://www.govinfo.gov/content/pkg/CFR-2025-title26-vol19/pdf/CFR-2025-title26-vol19-sec54-4974-1.pdf',
+      quotedText:
+        'If the amount distributed to a payee under any qualified retirement plan or any eligible deferred compensation plan (as defined in section 457(b)) for a calendar year is less than the required minimum distribution for that year, section 4974 imposes an excise tax on the payee for the taxable year beginning with or within the calendar year during which the amount is required to be distributed. Except as provided in paragraph (a)(2) of this section, the tax is equal to 25 percent of the amount by which the required minimum distribution for a calendar year exceeds the actual amount distributed during the calendar year.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-12',
+    implementedBy: [
+      'packages/engine/src/actions/beneficiaryTraditionalIraAnnualRuntimeCoordinator.ts',
+      'packages/engine/src/projection/internal/annualInheritedIraDistributions.ts',
+      'packages/engine/src/projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts',
+      'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/strategies/inheritedFiveYearAndPostDeadline.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/actions/beneficiaryTraditionalIraAnnualRuntimeCoordinator.ts#coordinateInheritedDeadlineAnnualRuntime',
+      'packages/engine/src/projection/internal/annualInheritedIraDistributions.ts#annualInheritedIraDistributions',
+      'packages/engine/src/projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts#annualForcedDistributionQcdAndRetirementActionsPhase',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/strategies/inheritedFiveYearAndPostDeadline.ts#postDeadlineRemainingBenefitObligation',
+    ],
+  },
+
+  'treas-reg-1-408A-6-inherited-roth-nonqualified-earnings': {
+    title: 'Inherited Roth nonqualified earnings are ordinary income; death exception removes the 10% tax',
+    statement:
+      'Under Treas. Reg. 1.408A-6, whether an inherited Roth distribution is qualified is independent of the RMD schedule. Nonqualified distributions consume remaining regular contribution basis and then conversion layers FIFO, consuming taxable conversion dollars before nontaxable dollars within a conversion layer; only earnings are ordinary income. The death-distribution exception removes the ordinary early-distribution additional tax. One tax-character pool per beneficiary/decedent; duplicate or mixed snapshots are refused rather than summed. An unknown clock fails closed; before qualification unknown basis does too, while a known completed clock establishes zero ordinary income without fabricating unknown basis. simulatePlan initializes beneficiary/decedent pools from Plan facts. Mandatory distributions and voluntary funding candidates use evaluateInheritedRothDistributionTaxCharacter against sequential pool state; accepted balance operations commit the remaining basis once. Taxable earnings enter ordinary income and the annual MAGI calculation, while rejected candidates do not deplete the accepted pool. Spouse owner-treatment elections transfer remaining layers into owner Roth basis shape.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'Replaces disclosure-only residual once facts are supplied. Legacy plans without facts retain an explicit unsupported tax-character result.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.408A-6 A-8(a)',
+      url: 'https://www.govinfo.gov/content/pkg/CFR-2025-title26-vol6/pdf/CFR-2025-title26-vol6-sec1-408A-6.pdf',
+      quotedText:
+        'Any amount distributed from an individual\'s Roth IRA is treated as made in the following order (determined as of the end of a taxable year and exhausting each category before moving to the following category)— (1) From regular contributions; (2) From conversion contributions, on a first-in-first-out basis; and (3) From earnings.',
+    }, {
+      kind: 'regulation',
+      citation: 'Treas. Reg. 1.408A-6 A-11',
+      url: 'https://www.govinfo.gov/content/pkg/CFR-2025-title26-vol6/pdf/CFR-2025-title26-vol6-sec1-408A-6.pdf',
+      quotedText:
+        'A beneficiary\'s inherited Roth IRA may not be aggregated with any other Roth IRA maintained by such beneficiary (except for other Roth IRAs the beneficiary inherited from the same decedent), unless the beneficiary, as the spouse of the decedent and sole beneficiary of the Roth IRA, elects to treat the Roth IRA as his or her own (see A–7 and A–14 of this section).',
+    }, {
+      kind: 'agencyGuidance',
+      citation: 'Publication 590-B (2025), What Are Qualified Distributions?',
+      url: 'https://www.irs.gov/publications/p590b',
+      quotedText:
+        'A qualified distribution is any payment or distribution from your Roth IRA that meets the following requirements. It is made after the 5-year period beginning with the first tax year for which a contribution was made to a Roth IRA set up for your benefit. The payment or distribution is: ... Made to a beneficiary or to your estate after your death, or ...',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-12',
+    implementedBy: [
+      'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/projection/internal/inheritedRothTaxCharacterPoolState.ts',
+      'packages/engine/src/projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts',
+      'packages/engine/src/projection/internal/annualFundingCandidateEvaluation.ts',
+      'packages/engine/src/projection/internal/annualFundingApplicationAndClosePhase.ts',
+      'packages/engine/src/projection/internal/inheritedRothTaxCharacter.ts',
+      'packages/engine/src/projection/internal/annualInheritedIraDistributions.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts#annualForcedDistributionQcdAndRetirementActionsPhase',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/internal/inheritedRothTaxCharacterPoolState.ts#initializeInheritedRothPoolState',
+      'packages/engine/src/projection/internal/inheritedRothTaxCharacterPoolState.ts#applyInheritedRothDistributionToPool',
+      'packages/engine/src/projection/internal/annualFundingCandidateEvaluation.ts#annualFundingCandidateEvaluation',
+      'packages/engine/src/projection/internal/annualFundingApplicationAndClosePhase.ts#annualFundingApplicationAndClosePhase',
+      'packages/engine/src/projection/internal/annualInheritedIraDistributions.ts#annualInheritedIraDistributions',
+      'packages/engine/src/projection/internal/inheritedRothTaxCharacter.ts#evaluateInheritedRothDistributionTaxCharacter',
     ],
   },
 

@@ -55,6 +55,14 @@ the recipient is 59½+; modeled as `kind: "capped"`, `capPerPerson: 20000`,
 omitted as out-of-range for the planner's audience.
 
 ## Simplifications / not modeled
+The characterized retirement calculation applies the private cap and modeled
+age gate separately to each recipient's distributions. A spouse's unused cap
+or older age cannot establish the other recipient's exclusion. Missing
+ownership or missing or conflicting age eligibility produces an incomplete
+disclosure and no exclusion for the affected recipient. Legacy aggregate
+inputs do not prove recipient attribution. Governmental source qualification
+and the half-year age issue remain separate limitations below.
+
 - Coarse `{ kind: 'full' }` public bucket subtracts every routed `publicPensionIncome` dollar without validating governmental issuer or ORP employment-attributable portion; understates tax when a routed amount is not qualifying or includes non-qualifying ORP excess — not a claim that every out-of-state public pension is taxable.
 - Private $20,000 cap uses integer age 59 rather than 59½ (`ny-tax-612-c-3-a-pension-annuity-exclusion`).
 - NYC/Yonkers local income taxes not modeled.

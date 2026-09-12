@@ -66,15 +66,18 @@ export interface AnnualPropertyAndInsuranceClosePhaseInput {
     destination: YearCashFlowTransferEndpoint
   }[] | null
   readonly surplusDestination: YearCashFlowTransferEndpoint | null
+  readonly warnings: Set<string>
 }
 
 export interface AnnualPropertyAndInsuranceClosePhaseResult {
+  readonly hecmComputation: { status: 'complete' | 'incomplete'; issues: readonly string[] }
   readonly deathBenefitPaid: number
 }
 
 export function annualPropertyAndInsuranceClosePhase(
   input: AnnualPropertyAndInsuranceClosePhaseInput,
 ): AnnualPropertyAndInsuranceClosePhaseResult {
+  const hecmIssues: string[] = []
   const {
     year,
     propertyValues,
@@ -87,6 +90,7 @@ export function annualPropertyAndInsuranceClosePhase(
     legacyPropertySaleDeposits,
     deathBenefits,
     surplusDestination,
+    warnings,
   } = input
 
   // --- property events + growth ------------------------------------------
@@ -115,11 +119,26 @@ export function annualPropertyAndInsuranceClosePhase(
     if (row.closesHecmForAccountId !== null) hecmStates.delete(row.closesHecmForAccountId)
     if (row.deposit !== null) deposit(row.deposit)
     if (row.record !== null) legacyPropertySaleDeposits?.push(row.record)
+    if (row.hecmHudMipIncompleteReason !== null) {
+      warnings.add(row.hecmHudMipIncompleteReason)
+      hecmIssues.push(row.hecmHudMipIncompleteReason)
+    }
     propertyValues.set(row.propertyAccountId, row.value)
-    if (row.hecmGrowth !== null) {
+    if (row.hecmGrowth !== null || row.hecmHudMipAccrual !== null) {
       const line = hecmStates.get(row.propertyAccountId)!
-      line.principalLimit *= row.hecmGrowth
-      line.loanBalance *= row.hecmGrowth
+      if (row.hecmGrowth !== null) {
+        line.principalLimit *= row.hecmGrowth
+        if (
+          row.hecmHudMipAccrual === null &&
+          row.hecmHudMipIncompleteReason === null
+        ) {
+          line.loanBalance *= row.hecmGrowth
+        }
+      }
+      if (row.hecmHudMipAccrual !== null) {
+        // HUD monthly MIP capitalization delta — do not also apply growth×MIP.
+        line.loanBalance = row.hecmHudEndingLoanBalance!
+      }
     }
   }
 
@@ -153,5 +172,5 @@ export function annualPropertyAndInsuranceClosePhase(
     insuranceCashValues.set(transition.policyId, transition.cashValue)
   }
 
-  return { deathBenefitPaid }
+  return { deathBenefitPaid, hecmComputation: { status: hecmIssues.length === 0 ? 'complete' : 'incomplete', issues: hecmIssues } }
 }

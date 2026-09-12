@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { createEmptyPlan, parsePlan, type Account, type Plan } from '../model/plan.js'
+import { rmdShortfallObligationId, type RmdApplicablePlan } from '../rmd/rmdShortfallExcise.js'
 import { packForYear } from '../params/index.js'
 import { describeRule } from '../rules/describeRule.js'
 import { createFlatTaxCalculator } from '../testing/flatTax.js'
@@ -50,6 +51,32 @@ function inherited(
   } as Account)
 }
 
+/** Dated custodian evidence supplements a coarse strategy election year. */
+function observedElection(plan: Plan, date: string, deathDate: string, priorYears: number[] = []) {
+  const account = plan.accounts.find((row) => row.id === 'inherited') as Extract<Account, {type:'traditional'}>
+  const inherited = account.inherited!
+  inherited.decedentId = 'spouse-decedent'
+  inherited.ownerDeathDate = deathDate
+  inherited.annualDistributionHistory = priorYears.map((taxYear) => ({
+    taxYear, requiredAmount: inherited.decedentHadStartedRmds ? 1000 : 0, distributedAmount: inherited.decedentHadStartedRmds ? 1000 : 0, observedAsOfDate: `${taxYear}-12-31`,
+    legalDistributionDeadline: `${taxYear}-12-31`,
+    provenance: {source:'Custodian completed statutory distribution record', asOf:`${taxYear}-12-31`},
+  }))
+  inherited.beneficiary!.spousalElectionFacts = {
+    directSpouseNamedOnIra: 'verifiedYes', affirmativeElectionDate: date,
+    affirmativeElectionYear: Number(date.slice(0,4)), nonRolloverContributionYears: [], lateElectionCatchUp:null,
+    preElectionDistributionMethod: 'lifeExpectancyRule',
+    section402c2j4Inputs: {
+      transaction:'affirmativeTreatAsOwnElection', spouseBirthDate:plan.household.people[0]!.dob,
+      decedentBirthDate:`${inherited.beneficiary!.ownerBirthYear}-01-01`,
+      distributionYear:Number(date.slice(0,4)), currentYearRmdReferenceBalance:0,
+      actualPriorYearDistributions:[], actualPreElectionDistributionsCurrentYear:0,
+      currentDistributionOrRemainingInterest:0, provenance:{source:'Custodian life-expectancy method evidence',asOf:date},
+    },
+    provenance:{source:'Executed custodian owner redesignation',asOf:date},
+  }
+}
+
 function cashAccount(plan: Plan): Extract<Account, { type: 'cash' }> {
   const account = plan.accounts.find((candidate): candidate is Extract<Account, { type: 'cash' }> => candidate.type === 'cash')
   if (!account) throw new Error('missing cash account')
@@ -68,12 +95,13 @@ function runCapturingOrdinaryIncome(plan: Plan, horizonEndYear?: number) {
   expect(parsed.ok, parsed.ok ? '' : parsed.issues.join('\n')).toBe(true)
   if (!parsed.ok) throw new Error(parsed.issues.join('; '))
   const ordinaryIncome: number[] = []
+  const taxInputs: TaxYearInput[] = []
   const result = simulatePlan(parsed.plan, {
     startYear: 2026,
     horizonEndYear,
-    taxCalculator: { compute(input: TaxYearInput) { ordinaryIncome.push(input.ordinaryIncome); return 0 } },
+    taxCalculator: { compute(input: TaxYearInput) { ordinaryIncome.push(input.ordinaryIncome); taxInputs.push(input); return 0 } },
   })
-  return { result, ordinaryIncome }
+  return { result, ordinaryIncome, taxInputs }
 }
 
 function year(result: ReturnType<typeof run>, value: number) {
@@ -219,6 +247,7 @@ describe('WS4 inherited-regime execution fixtures', () => {
       ownerDeathYear: 2024, decedentHadStartedRmds: true,
       beneficiary: facts({ beneficiaryBirthYear: 1947, ownerBirthYear: 1945, edbCategory: 'surviving-spouse', election: 'treat-as-own', spouseUnlimitedWithdrawalRight: true, treatAsOwnElectionYear: 2028, ownerYearOfDeathRmdSatisfied: true }),
     })
+    observedElection(plan, '2027-12-31', '2024-06-01', [2025])
     const result = run(plan, 2028)
     expect(evidence(result, 2026).executedRequiredAmount).toBeCloseTo(300_000 / 11.9, 2)
     expect(evidence(result, 2027).executedRequiredAmount).toBeCloseTo(year(result, 2026).balances.inherited! / 11.2, 2)
@@ -263,11 +292,12 @@ describe('WS4 inherited-regime execution fixtures', () => {
           // ownerYearOfDeathRmdSatisfied omitted → unsatisfied.
         }),
       }, 300_000)
+      observedElection(plan, '2026-12-31', '2026-06-01')
       const result = run(plan, 2027)
       const y2026 = year(result, 2026)
       const e2026 = evidence(result, 2026)
-      expect(e2026.regime).toBe('spouse-treat-as-own-transition')
-      expect(e2026.matrixRow).toBe('S2')
+      expect(e2026.regime).toBe('spouse-remain-beneficiary')
+      expect(e2026.matrixRow).toBe('S0')
       expect(e2026.requirementKind).toBe('year-of-death-rmd')
       expect(e2026.divisor).toBe(19.4)
       expect(e2026.executedRequiredAmount).toBeCloseTo(accepted.decedentRmd, 2)
@@ -300,6 +330,7 @@ describe('WS4 inherited-regime execution fixtures', () => {
     }, 500_000)
     const account = plan.accounts.find((candidate) => candidate.id === 'inherited')
     if (account?.type !== 'traditional') throw new Error('fixture drift')
+    observedElection(plan, '2027-12-31', '2024-06-01', [2025])
     account.sepp = { startAge: 56, method: 'rmd' }
     const result = run(plan, 2028)
     // Pre-election: inherited gate still bars SEPP on the inherited block.
@@ -337,7 +368,7 @@ describe('WS4 inherited-regime execution fixtures', () => {
     expect(year(result, 2026).balances.inherited).toBe(100_000)
   })
 
-  it('E7: falls back to the legacy schedule for an estate and labels the refusal', () => {
+  it('E7: refuses an unestablished estate schedule without a fabricated legacy distribution', () => {
     const plan = planFor(1995)
     inherited(plan, 'traditional', {
       ownerDeathYear: 2022, decedentHadStartedRmds: true,
@@ -345,10 +376,11 @@ describe('WS4 inherited-regime execution fixtures', () => {
     })
     const result = run(plan, 2026)
     const e = evidence(result, 2026)
-    expect(e.requirementKind).toBe('legacy')
+    expect(e.requirementKind).toBe('none')
     expect(e.refusalReason).toMatch(/estate|unsupported/i)
     expect(e.refusalCode).toBe('entity-beneficiary')
-    expect(e.executedRequiredAmount).toBeGreaterThan(0)
+    expect(e.executedRequiredAmount).toBe(0)
+    expect(e.limitation).toBe('non-designated-schedule-not-established')
   })
 
   it.each(['E1', 'E3', 'E6'] as const)('E8 %s: evidence exactly reconciles each inherited distribution', (fixture) => {
@@ -402,6 +434,7 @@ describe('WS4 inherited-regime execution fixtures', () => {
       ownerDeathYear: 2020, decedentHadStartedRmds: false,
       beneficiary: facts({ beneficiaryBirthYear: 1950, ownerBirthYear: 1959, edbCategory: 'surviving-spouse', election: 'treat-as-own', spouseUnlimitedWithdrawalRight: true, treatAsOwnElectionYear: 2030 }),
     })
+    observedElection(plan, '2029-12-31', '2020-06-01', [2021,2022,2023,2024,2025,2026,2027,2028,2029])
     const result = run(plan, 2030)
     for (let calendarYear = 2026; calendarYear < 2030; calendarYear++) {
       const e = evidence(result, calendarYear)
@@ -425,8 +458,15 @@ describe('WS4 inherited-regime execution fixtures', () => {
       if (withInherited) {
         inherited(plan, 'roth', {
           ownerDeathYear: 2022, decedentHadStartedRmds: false,
+          decedentId: 'qualified-decedent',
           beneficiary: facts({ beneficiaryBirthYear: 1980, roth5YearStartYear: 2010 }),
         }, 100_000)
+        plan.inheritedRothTaxCharacterPools = [{
+          beneficiaryPersonId: 'beneficiary', decedentId: 'qualified-decedent',
+          firstRothContributionTaxYear: 2010, remainingRegularContributionBasis: 'unknown',
+          conversionLayers: 'unknown', priorDistributionsConsumedAmount: 0,
+          provenance: { source: 'Decedent Roth opening statement', asOf: '2026-01-01' },
+        }]
       }
       plan.accounts.push({
         type: 'roth', id: 'owned-roth', name: 'Owned Roth IRA', ownerPersonId: 'beneficiary', annualReturnPct: null,
@@ -532,5 +572,242 @@ describe('WS4 inherited-regime execution fixtures', () => {
     const row = evidence(result, 2026)
     expect(row.regime).toBe('legacy-planning-approximation')
     expect(row.limitation).toBe('pre-horizon-year-of-death-rmd-unresolved')
+  })
+})
+
+
+describe('inherited Roth shared annual production ledger', () => {
+  function sharedPoolPlan() {
+    const plan = planFor(1965)
+    const inheritedFacts = {
+      ownerDeathYear: 2024, ownerDeathDate: '2024-06-01', decedentId: 'decedent',
+      decedentHadStartedRmds: false,
+      beneficiary: facts({ beneficiaryBirthYear: 1965, ownerBirthYear: 1960,
+        edbCategory: 'disabled' }),
+    }
+    inherited(plan, 'roth', inheritedFacts, 2610, 0)
+    const first = plan.accounts[1]!
+    plan.accounts.push({ ...first, id: 'inherited-two' } as Account)
+    plan.inheritedRothTaxCharacterPools = [{
+      beneficiaryPersonId: 'beneficiary', decedentId: 'decedent',
+      firstRothContributionTaxYear: 2024, remainingRegularContributionBasis: 60,
+      conversionLayers: [], priorDistributionsConsumedAmount: 0,
+      provenance: { source: 'Complete decedent Roth records', asOf: '2026-01-01' },
+    }]
+    return plan
+  }
+
+  it('consumes one shared 60 basis across two 100 mandatory draws and survives annual replay', () => {
+    // 26 CFR 1.401(a)(9)-9 Single Life Table: age60=27.1 in 2025,
+    // reduced once to26.1 in2026 =>2610/26.1=100 each. Pub590-B inherited
+    // Roth ordering consumes regular contributions first:200-60=140 ordinary.
+    const plan = sharedPoolPlan()
+    const first = runCapturingOrdinaryIncome(plan, 2026)
+    expect(year(first.result, 2026).inheritedDistribution).toBeCloseTo(200, 8)
+    expect(first.ordinaryIncome.at(-1)).toBeCloseTo(140, 8)
+    expect(year(first.result, 2026).magi).toBeCloseTo(140, 8)
+    expect(year(first.result, 2026).balances.inherited).toBeCloseTo(2510, 8)
+    expect(year(first.result, 2026).balances['inherited-two']).toBeCloseTo(2510, 8)
+    expect(year(first.result, 2026).taxComputation?.status).toBe('complete')
+    expect(first.taxInputs.at(-1)?.stateRetirementDistributions?.reduce((sum, row) => sum + row.federallyIncludedAmount, 0)).toBeCloseTo(140, 8)
+    expect(year(first.result, 2026).penalties).toBe(0)
+    const replay = runCapturingOrdinaryIncome(plan, 2026)
+    expect(replay.ordinaryIncome.at(-1)).toBeCloseTo(140, 8)
+    expect(plan.inheritedRothTaxCharacterPools[0]!.remainingRegularContributionBasis).toBe(60)
+  })
+
+  it('mandatory and voluntary inherited Roth withdrawals consume the same annual basis pool', () => {
+    // Same worksheet as above; 200 mandatory plus100 spending shortfall is300
+    // gross. Pub590-B ordering leaves300-60=240 earnings included in AGI.
+    const plan = sharedPoolPlan()
+    cashAccount(plan).balance = 0
+    plan.expenses.baseAnnual = 300
+    const result = runCapturingOrdinaryIncome(plan, 2026)
+    expect(year(result.result, 2026).withdrawals.roth).toBeCloseTo(300, 8)
+    expect(result.ordinaryIncome.at(-1)).toBeCloseTo(240, 8)
+    expect(year(result.result, 2026).magi).toBeCloseTo(240, 8)
+    expect(year(result.result, 2026).penalties).toBe(0)
+  })
+
+  it('preserves known qualified clocks with unknown basis without inventing ordinary income', () => {
+    const plan = sharedPoolPlan()
+    plan.inheritedRothTaxCharacterPools[0]!.firstRothContributionTaxYear = 2020
+    plan.inheritedRothTaxCharacterPools[0]!.remainingRegularContributionBasis = 'unknown'
+    plan.inheritedRothTaxCharacterPools[0]!.conversionLayers = 'unknown'
+    const result = runCapturingOrdinaryIncome(plan, 2026)
+    expect(year(result.result, 2026).inheritedDistribution).toBeCloseTo(200, 8)
+    expect(result.ordinaryIncome.at(-1)).toBe(0)
+  })
+})
+
+
+describe('Verified non-designated five-year production routing', () => {
+  for (const startYear of [2026, 2027]) {
+    it(`sweeps the remaining benefit in ${startYear} under the single deadline obligation`, () => {
+      // IRC 401(a)(9)(B)(ii), Treasury 1.401(a)(9)-3: a pre-RBD
+      // non-designated beneficiary exhausts the benefit by death year + 5;
+      // a balance remaining after that deadline remains fully distributable.
+      const plan = planFor(1966)
+      inherited(plan, 'traditional', {
+        ownerDeathYear: 2021, ownerDeathDate: '2021-06-01',
+        decedentHadStartedRmds: false,
+        beneficiary: facts({ beneficiaryClass: 'estate', ownerBirthYear: 1960 }),
+        verifiedNonDesignatedRegime: {
+          classification: 'non-designated-beneficiary', schedule: 'five-year',
+          provenance: { source: 'Custodian verified estate beneficiary and pre-RBD death', asOf: '2026-01-01' },
+        },
+      }, 1000)
+      const parsed = parsePlan(plan)
+      expect(parsed.ok).toBe(true)
+      if (!parsed.ok) return
+      const result = simulatePlan(parsed.plan, { startYear, horizonEndYear: startYear, taxCalculator: noTax })
+      const row = result.years[0]!
+      const inheritedRow = row.inheritedAccounts?.find((item) => item.accountId === 'inherited')
+      expect(inheritedRow).toMatchObject({ regime: 'non-designated-five-year', requiredAmount: 1000, executedRequiredAmount: 1000 })
+      expect(row.rmdShortfallExciseTax ?? 0).toBe(0)
+      expect(result.endingInvestable).toBe(1_001_000)
+    })
+  }
+})
+
+
+describe('annual inherited gate production discriminators', () => {
+  it('routes an observed deemed shortfall to ownership without a legacy affirmative election', () => {
+    const plan = planFor(1947)
+    inherited(plan, 'traditional', { ownerDeathYear: 2024, decedentHadStartedRmds: true,
+      beneficiary: facts({ beneficiaryBirthYear: 1947, ownerBirthYear: 1945,
+        edbCategory: 'surviving-spouse', election: 'none', spouseUnlimitedWithdrawalRight: true,
+        ownerYearOfDeathRmdSatisfied: true }) }, 100000)
+    observedElection(plan, '2025-12-31', '2024-06-01', [2025])
+    const account = plan.accounts.find(row => row.id === 'inherited') as Extract<Account, {type:'traditional'}>
+    const spouse = account.inherited!.beneficiary!
+    delete spouse.spousalElectionFacts!.affirmativeElectionDate
+    spouse.spousalElectionFacts!.affirmativeElectionYear = null
+    account.inherited!.annualDistributionHistory![0]!.requiredAmount = 5000
+    account.inherited!.annualDistributionHistory![0]!.distributedAmount = 4000
+    for (const eligible of [true, false]) {
+      spouse.soleBeneficiary = eligible
+      const result = run(plan, 2026)
+      if (eligible) {
+        expect(year(result, 2026).spousalOwnerTreatment).toContainEqual({ accountId: 'inherited', ownerTreatment: true })
+        expect(evidence(result, 2026)).toMatchObject({ matrixRow: 'S2', requiredAmount: 0, executedRequiredAmount: 0 })
+        expect(year(result, 2026).inheritedDistribution).toBe(0)
+        expect(year(result, 2026).rmd).toBeGreaterThan(0)
+      } else {
+        expect(year(result, 2026).spousalOwnerTreatment).toContainEqual({ accountId: 'inherited', ownerTreatment: false })
+        expect(year(result, 2026).rmd).toBe(0)
+      }
+    }
+  })
+  it('keeps confirmed five-year annual minima zero before the full deadline sweep', () => {
+    const plan = planFor(1966)
+    inherited(plan, 'traditional', { ownerDeathYear: 2026, ownerDeathDate: '2026-06-01',
+      decedentHadStartedRmds: false,
+      beneficiary: facts({ beneficiaryClass: 'estate', ownerBirthYear: 1960 }),
+      verifiedNonDesignatedRegime: { classification: 'non-designated-beneficiary', schedule: 'five-year',
+        provenance: { source: 'Verified estate and pre-RBD death', asOf: '2026-12-31' } } }, 10000)
+    const result = run(plan, 2031)
+    for (const calendarYear of [2027, 2028, 2029, 2030]) {
+      expect(evidence(result, calendarYear)).toMatchObject({ regime: 'non-designated-five-year',
+        requiredAmount: 0, executedRequiredAmount: 0 })
+      expect(year(result, calendarYear).inheritedDistribution).toBe(0)
+    }
+    expect(evidence(result, 2031)).toMatchObject({ requiredAmount: 10000, executedRequiredAmount: 10000 })
+  })
+  it('refuses an unknown trust and contradictory post-RBD five-year assertion without a fabricated schedule', () => {
+    for (const verified of [false, true]) {
+      const plan = planFor(1966)
+      inherited(plan, 'traditional', { ownerDeathYear: 2021, ownerDeathDate: '2021-06-01',
+        decedentHadStartedRmds: verified,
+        beneficiary: facts({ beneficiaryClass: 'trust', ownerBirthYear: 1940 }),
+        ...(verified ? { verifiedNonDesignatedRegime: { classification: 'non-designated-beneficiary' as const,
+          schedule: 'five-year' as const, provenance: { source: 'Asserted regime contradicts post-RBD death', asOf: '2026-01-01' } } } : {}) }, 10000)
+      if (verified) {
+        const parsed = parsePlan(plan)
+        expect(parsed.ok).toBe(false)
+        if (!parsed.ok) expect(parsed.issues.join(' ')).toMatch(/pre-RBD|decedentHadStartedRmds/)
+        continue
+      }
+      const result = run(plan, 2026)
+      expect(evidence(result, 2026)).toMatchObject({ matrixRow: 'X3', requirementKind: 'none',
+        executedRequiredAmount: 0, limitation: 'non-designated-schedule-not-established' })
+      expect(evidence(result, 2026).refusalReason).toBeDefined()
+      expect(year(result, 2026).inheritedDistribution).toBe(0)
+    }
+  })
+})
+
+
+it('publishes a midyear executed spouse redesignation through the year-end gate while preserving opening cash routing', () => {
+  const plan = planFor(1947)
+  inherited(plan, 'traditional', { ownerDeathYear: 2024, decedentHadStartedRmds: true,
+    beneficiary: facts({ beneficiaryBirthYear: 1947, ownerBirthYear: 1945,
+      edbCategory: 'surviving-spouse', election: 'none', spouseUnlimitedWithdrawalRight: true,
+      ownerYearOfDeathRmdSatisfied: true }) }, 100000)
+  observedElection(plan, '2026-06-30', '2024-06-01', [2025])
+  const result = run(plan, 2027)
+  expect(year(result, 2026).spousalOwnerTreatment).toContainEqual({ accountId: 'inherited', ownerTreatment: false })
+  expect(year(result, 2026).inheritedDistribution).toBeGreaterThan(0)
+  expect(year(result, 2026).spousalElectionAtYearEnd).toContainEqual(expect.objectContaining({
+    accountId: 'inherited', status: 'evaluated', ownerTreatment: true,
+  }))
+  // Section1.408-8(c)(3): annual opening cash alone cannot certify the
+  // election-year owner's RMD once a later executed act changes treatment.
+  expect(year(result, 2026).taxComputation?.status).toBe('incomplete')
+  expect(year(result, 2026).taxComputation?.issues).toContainEqual(expect.objectContaining({
+    code: 'incomplete-spousal-election-mixed-year', year: 2026,
+  }))
+  expect(result.warnings).toContainEqual(expect.stringContaining(
+    'inherited: ownership became effective during the year; the annual opening-beneficiary cash schedule does not resolve election-year owner RMD and tax ordering.',
+  ))
+  expect(year(result, 2027).spousalOwnerTreatment).toContainEqual({ accountId: 'inherited', ownerTreatment: true })
+  expect(year(result, 2027).inheritedDistribution).toBe(0)
+})
+
+
+describe('asserted completed-deadline Plan evidence reaches the annual tax ledger', () => {
+  function completedPlan(openingBenefit: number | 'unknown' = 10000, observedAsOfDate = '2027-12-31') {
+    const plan = planFor(1966)
+    inherited(plan, 'traditional', { ownerDeathYear: 2021, ownerDeathDate: '2021-06-01',
+      decedentHadStartedRmds: false,
+      beneficiary: facts({ beneficiaryClass: 'estate', ownerBirthYear: 1960 }),
+      verifiedNonDesignatedRegime: { classification: 'non-designated-beneficiary', schedule: 'five-year',
+        provenance: { source: 'Verified estate designation and pre-RBD owner death', asOf: '2027-12-31' } },
+      completedDeadlineObservation: { taxYear: 2027, openingBenefit, distributedByDeadline: 0,
+        legalDistributionDeadline: '2027-12-31', observedAsOfDate,
+        provenance: { source: 'Custodian completed-year statement:10000 retained, no distribution', asOf: '2027-12-31' } },
+    }, 10000)
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(true)
+    if (!parsed.ok) throw new Error(parsed.issues.join('; '))
+    return parsed.plan
+  }
+  it('assesses2500 or1000 after legal correction without replaying cash or ordinary income', () => {
+    const applicablePlan: RmdApplicablePlan = { kind: 'inheritedIraAccount', payeePersonId: 'beneficiary', accountId: 'inherited' }
+    const obligationId = rmdShortfallObligationId(applicablePlan, 2027)
+    for (const corrected of [false, true]) {
+      const taxInputs: TaxYearInput[] = []
+      const result = simulatePlan(completedPlan(), { startYear: 2027, horizonEndYear: 2027,
+        taxCalculator: { compute(input) { taxInputs.push(input); return 0 } },
+        ...(corrected ? { rmdShortfallReliefElections: [{ obligationId, correctiveDistribution: {
+          amount: 10000, receivedOn: '2028-03-01', sourceApplicablePlan: applicablePlan,
+          form5329FiledOn: '2028-04-01', returnReflectsReducedTax: true,
+        } }] } : {}),
+      })
+      const annual = year(result, 2027)
+      expect(annual.inheritedDistribution).toBe(0)
+      expect(annual.withdrawals.traditional).toBe(0)
+      expect(annual.rmdShortfallExciseTax).toBe(corrected ? 1000 : 2500)
+      expect(taxInputs.at(-1)?.ordinaryIncome).toBe(0)
+      expect(annual.balances.inherited).toBe(10000)
+    }
+  })
+  it('publishes incomplete history instead of certifying an unknown or premature observation', () => {
+    for (const plan of [completedPlan('unknown'), completedPlan(10000, '2027-12-30')]) {
+      const result = simulatePlan(plan, { startYear: 2027, horizonEndYear: 2027, taxCalculator: noTax })
+      expect(year(result, 2027).inheritedDistribution).toBe(0)
+      expect(evidence(result, 2027).limitation).toBeDefined()
+      expect(result.warnings.join(' ')).toMatch(/deadline|AnnualHistory|observation/i)
+    }
   })
 })

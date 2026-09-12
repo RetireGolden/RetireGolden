@@ -82,6 +82,19 @@ describe('hecmLineOpenings — the five guards', () => {
     expect(call([cash('c'), property('plain', null)])).toEqual([])
   })
 
+  it('does not price a HUD-validated line through the legacy quote-estimate path', () => {
+    const hud = property('hud', {
+      calculationMode: 'hudValidated',
+      principalLimitPct: 40,
+      caseAssignmentDate: '2026-03-01',
+      appraisedValue: 500_000,
+      verifiedPrincipalLimitFactorPct: 50,
+      principalLimitFactorProvenance: { source: 'lender disclosure', asOf: '2026-03-01' },
+      hudTransactionKind: 'ordinaryOrigination',
+    })
+    expect(call([hud])).toEqual([])
+  })
+
   it('opens in max(openYear, startYear): before, at, and after the projection opens', () => {
     const before = property('home', { openYear: START_YEAR - 4, principalLimitPct: 40 })
     // A line dated before the projection opens IN the first projected year.

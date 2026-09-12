@@ -1,3 +1,5 @@
+import { fiveYearEmptyingRequirement, postDeadlineRemainingBenefitObligation, type FiveYearScheduleFacts } from '../strategies/inheritedFiveYearAndPostDeadline.js'
+import { computeRmdShortfallExcise, type RmdApplicablePlan, type RmdShortfallReliefElection } from '../rmd/rmdShortfallExcise.js'
 import { formatCivilDate, parseCivilIsoDate } from './civilDate.js'
 import {
   finalizeBeneficiaryTraditionalIraAnnualEvidence,
@@ -546,5 +548,62 @@ export function coordinateBeneficiaryTraditionalIraAnnualRuntime(
     })
   } catch {
     return unsupported()
+  }
+}
+
+/** One annual obligation: section 401(a)(9)(B)(ii), then 54.4974-1(e).
+ * Amounts are dollars, matching the excise engine, not action-ledger cents.
+ * Opening benefit must precede this year's qualifying distributions.
+ */
+export function coordinateInheritedDeadlineAnnualRuntime(input: {
+  facts: Readonly<FiveYearScheduleFacts>
+  taxYear: number
+  openingBenefit: number | 'unknown'
+  distributedByDeadline: number | 'unknown'
+  obligationId: string
+  applicablePlan: RmdApplicablePlan
+  relief?: RmdShortfallReliefElection
+}) {
+  const refuse = (reason: string) => ({ status: 'refusal' as const, reason })
+  if (!Number.isSafeInteger(input.taxYear) || input.taxYear < 1 || input.taxYear > 9998 ||
+      !input.obligationId.trim() || input.openingBenefit === 'unknown' ||
+      input.distributedByDeadline === 'unknown') return refuse('missingAnnualHistory')
+  if (!Number.isFinite(input.distributedByDeadline) || input.distributedByDeadline < 0) {
+    return refuse('invalidAnnualDistributions')
+  }
+  if (input.facts.ownerDeathYear < 2020) return refuse('historicalFiveYearSuspensionNotModeled')
+  const schedule = fiveYearEmptyingRequirement({
+    facts: input.facts, taxYear: input.taxYear, remainingInterest: input.openingBenefit,
+  })
+  if (schedule.status === 'refusal') return refuse(schedule.reason ?? 'unresolvedFiveYearFacts')
+  const afterDeadline = schedule.status === 'notThisPathway' &&
+    schedule.reason === 'postDeadlineRemainingBenefitPathway'
+  if (schedule.status !== 'supported' && !afterDeadline) {
+    return refuse(schedule.reason ?? 'notFiveYearPathway')
+  }
+  let requiredAmount = schedule.requiredMinimumForTaxYear ?? 0
+  if (afterDeadline) {
+    const residual = postDeadlineRemainingBenefitObligation({
+      deadlineYear: input.facts.ownerDeathYear + 5, taxYear: input.taxYear,
+      remainingBenefitBeforeCurrentYearDistributions: input.openingBenefit,
+      qualifyingDistributionsThisYear: input.distributedByDeadline,
+    })
+    if (residual.status !== 'obligation') return refuse(residual.status)
+    requiredAmount = residual.requiredAmount
+  }
+  const obligation = {
+    obligationId: input.obligationId, distributionCalendarYear: input.taxYear,
+    taxYear: input.taxYear, taxImposedOn: `${input.taxYear}-12-31`,
+    applicablePlan: input.applicablePlan,
+    requirementKind: afterDeadline ? 'inheritedPostDeadlineRemainingBenefit' as const : 'inheritedFinalSweep' as const,
+    requiredAmount, distributedByDeadline: input.distributedByDeadline,
+  }
+  return {
+    status: 'coordinated' as const,
+    deadlineYear: input.facts.ownerDeathYear + 5,
+    requiredAmount,
+    remainingDistribution: Math.max(0, requiredAmount - input.distributedByDeadline),
+    obligation,
+    excise: computeRmdShortfallExcise(obligation, input.relief),
   }
 }

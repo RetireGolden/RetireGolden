@@ -115,12 +115,15 @@ vi.mock(
           })
           const base = (input.year - 2025) * 100 + ordinal
           output = {
+            deadlineObservationIssues: [], completedDeadlineAssessments: [],
             totals: {
               inherited: traditionalExecuted + rothExecuted,
               ordinaryIncome: traditionalExecuted,
               rothForced: rothExecuted,
             },
             rows,
+            rothTaxCharacterOperations: [],
+            rothTaxCharacterStatus: 'complete',
             rmdShortfallObligations: [{
               obligationId:
                 `rmd-shortfall:["inherited-iras","p1","sentinel-${base}","traditional"]:${input.year}:tax-${input.year}`,

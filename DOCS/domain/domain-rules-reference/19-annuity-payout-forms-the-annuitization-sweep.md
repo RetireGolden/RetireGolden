@@ -48,6 +48,20 @@ byte-identical projection.
   tradeoffs, never advice. The `pensionLumpSumGenerator` scenario pair and the
   `pension-election-pending` insight price the same mechanics on the exact ledger. Survivor rule matches
   the ledger: no survivor benefit if the owner dies before the start age.
+- **HECM HUD MCA / MIP pins (2026).** Mortgagee Letter 2025-22 sets the national maximum claim amount at
+  **$1,249,125** for 2026 case assignments; ML 2017-12 sets **initial MIP 2% of MCA** and **annual MIP
+  0.50% of outstanding balance** (`ParameterPack.hecm.maximumClaimAmount` / `initialMipPct` /
+  `annualMipPct`; registry `hud-hecm-mca-mip-limits`). HUD-validated openings use
+  `computeHecmHudValidatedOpening` with a verified/quoted PLF and verified `transactionKind` (only ordinary
+  origination is supported; purchase, refinance, and unknown refuse closed). Case-assignment year selects
+  the MCA while a separate verified `closingDate` starts MIP accrual. Opening debt includes IMIP, other
+  financed closing costs, and a verified closing-day borrower advance. Handbook 4000.1 Update 18 requires
+  monthly one-twelfth-of-0.50%-of-balance MIP and remittance capitalization. Monthly MIP pricing uses dated
+  loan-ledger assessment balances via `priceHecmMonthlyMipFromOutstandingBalances`; it returns timing
+  evidence incomplete rather than guessing advance, interest, fee, repayment, or intramonth-proration order.
+  A simple annual rate×starting-balance helper is a disclosed pre-timing check.
+  Legacy quote-estimate openings remain planning defaults.
+  Case-assignment year owns the ceiling — unpublished years fail closed.
 - **HECM line of credit (buffer asset).** `hecm` on a primary-residence property models Pfau's strategy:
   - **Line size:** the user's lender-quoted `principalLimitPct`, else the pack's published principal-limit
     factors (HUD PLF tables at a 5.875% expected rate, 2026: 35.1% of value at 62 → 61.4% at 90, youngest

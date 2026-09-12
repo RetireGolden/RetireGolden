@@ -22,7 +22,8 @@ import { packForYear } from '../params/index.js'
 import { conformStateStandardDeduction, stateParamsFor } from '../params/state/index.js'
 import type { StateTaxParams } from '../params/state/types.js'
 import type { TaxYearInput } from '../projection/types.js'
-import { computeStateTax, computeStateTaxDetail, computeStateTaxableIncome, computeStateTaxYearTotal } from './stateTax.js'
+import { computeStateTax, computeStateTaxDetail, computeStateTaxableIncome, computeStateTaxYearTotal, computeStateTaxYearResult } from './stateTax.js'
+import { scMilitaryDeduction } from './stateSouthCarolinaRetirement.js'
 
 const TAX_YEAR = 2026
 
@@ -2601,7 +2602,10 @@ const CO_PRE65_RETIREMENT_INCOME = 40_000
 const CO_PRE65_RETIREMENT_CAP = 20_000
 const CO_DEDUCTION_SINGLE = 16_100
 
-describeRule('co-crs-39-22-104-federal-base-and-pension-cap', {
+// Legacy aggregate-input characterization; the source-typed production
+// fixture for this law lives in stateCluster47.production.rules.test.ts.
+describe('legacy aggregate co-crs-39-22-104-federal-base-and-pension-cap', () => {
+  const legacy = {
   readings: {
     ageSixtyTakesTheTwentyThousandDollarColoradoSubtraction:
       CO_PRE65_RETIREMENT_INCOME - CO_PRE65_RETIREMENT_CAP - CO_DEDUCTION_SINGLE,
@@ -2610,7 +2614,10 @@ describeRule('co-crs-39-22-104-federal-base-and-pension-cap', {
   accepted: 'ageSixtyTakesTheTwentyThousandDollarColoradoSubtraction',
   produced: 'packWaitsUntilAgeSixtyFive',
   note: 'age-55-through-64 pension-and-annuity limb',
-}, ({ accepted, produced }) => {
+  } as const
+  const accepted = legacy.readings[legacy.accepted]
+  const produced = legacy.readings[legacy.produced]
+
   const scenario = input({
     state: 'CO',
     ordinaryIncome: CO_PRE65_RETIREMENT_INCOME,
@@ -2633,7 +2640,10 @@ const CO_SS_OTHER_INCOME = 40_000
 const CO_SS_BENEFITS = 40_000
 const CO_FEDERALLY_TAXABLE_SS = 26_600
 
-describeRule('co-crs-39-22-104-social-security-inclusion', {
+// Legacy aggregate-input characterization; the source-typed production
+// fixture for this law lives in stateCluster47.production.rules.test.ts.
+describe('legacy aggregate co-crs-39-22-104-social-security-inclusion', () => {
+  const legacy = {
   readings: {
     ageSixtyFiveSubtractsAllFederallyTaxableSocialSecurity:
       CO_SS_OTHER_INCOME - CO_DEDUCTION_SINGLE,
@@ -2642,7 +2652,11 @@ describeRule('co-crs-39-22-104-social-security-inclusion', {
   accepted: 'ageSixtyFiveSubtractsAllFederallyTaxableSocialSecurity',
   produced: 'packLeavesFederallyTaxableSocialSecurityInTheColoradoBase',
   note: 'age-65 Social Security limb',
-}, ({ accepted, produced, readings }) => {
+  } as const
+  const accepted = legacy.readings[legacy.accepted]
+  const produced = legacy.readings[legacy.produced]
+  const readings = legacy.readings
+
   const scenario = input({
     state: 'CO',
     ordinaryIncome: CO_SS_OTHER_INCOME,
@@ -2939,7 +2953,10 @@ const DE_DEDUCTION_SINGLE = 3_250 // 30 Del. C. § 1108(a)(3) basic amount (2026
 const DE_RETIREMENT_INCOME = 40_000
 const DE_RETIREMENT_CAP = 12_500
 
-describeRule('de-code-30-1106-social-security-retirement-subtractions', {
+// Legacy aggregate-input characterization; the source-typed production
+// fixture for this law lives in stateCluster47.production.rules.test.ts.
+describe('legacy aggregate de-code-30-1106-social-security-retirement-subtractions', () => {
+  const legacy = {
   readings: {
     accepted: {
       socialSecurityTaxableIncome: DE_SS_OTHER_INCOME - DE_DEDUCTION_SINGLE,
@@ -2954,7 +2971,10 @@ describeRule('de-code-30-1106-social-security-retirement-subtractions', {
   },
   accepted: 'accepted',
   note: 'Social Security and age-60 retirement limbs',
-}, ({ accepted, readings }) => {
+  } as const
+  const accepted = legacy.readings[legacy.accepted]
+  const readings = legacy.readings
+
   // Age 64 with the helper's default `peopleAged65Plus: 0` isolates the Social
   // Security subtraction limb; age 70 would contradict that household fact.
   const socialSecurityScenario = input({
@@ -3165,7 +3185,10 @@ describeRule('ks-stat-79-32-117-social-security-exclusion', {
 // that produced output without guessing it here.
 const KS_UNLISTED_PUBLIC_PENSION = 60_000
 
-describeRule('ks-stat-79-32-117-public-pension-exclusion', {
+// Legacy aggregate-input characterization; the source-typed production
+// fixture for this law lives in stateCluster47.production.rules.test.ts.
+describe('legacy aggregate ks-stat-79-32-117-public-pension-exclusion', () => {
+  const legacy = {
   readings: {
     unlistedPublicPensionRemainsTaxable:
       KS_UNLISTED_PUBLIC_PENSION - KS_DEDUCTION_SINGLE,
@@ -3173,7 +3196,10 @@ describeRule('ks-stat-79-32-117-public-pension-exclusion', {
   },
   accepted: 'unlistedPublicPensionRemainsTaxable',
   produced: 'packExemptsEveryPublicPension',
-}, ({ accepted, produced }) => {
+  } as const
+  const accepted = legacy.readings[legacy.accepted]
+  const produced = legacy.readings[legacy.produced]
+
   const scenario = input({
     state: 'KS',
     ordinaryIncome: KS_UNLISTED_PUBLIC_PENSION,
@@ -4233,28 +4259,19 @@ describeRule('ut-code-59-10-104-2026-individual-rate', {
 })
 
 describeRule('ut-code-59-10-114-social-security-tax-credit', {
-  readings: {
-    // §59-10-1042(2): credit = benefit × §59-10-104(2) rate; §1042(4) adds no
-    // reduction below the $54,000 single threshold. Source tax after credit:
-    // 30,000 × 4.45% = 1,335. Pack omits the credit and taxes the full modeled
-    // base including federally taxable Social Security: 48,100 × 4.45% = 2,140.45.
-    sourceAppliesTheSocialSecurityBenefitsCredit: (30_000 + 18_100) * 0.0445 - 18_100 * 0.0445,
-    packOmitsTheSocialSecurityBenefitsCredit: 2_140.45,
-  },
-  accepted: 'sourceAppliesTheSocialSecurityBenefitsCredit',
-  produced: 'packOmitsTheSocialSecurityBenefitsCredit',
-}, ({ accepted, produced }) => {
-  // At $30,000 of other income and $40,000 of benefits, federal section 86
-  // makes $18,100 taxable. Utah's single-filer AGI threshold is $54,000, so
-  // the 2.5% reduction is zero and the credit is 18,100 × 4.45% = 805.45
-  // before the ordinary-income tax of 30,000 × 4.45% = 1,335. The pack reports
-  // the unmodeled-credit subtotal 48,100 × 4.45% = 2,140.45 instead.
-  const scenario = input({ state: 'UT', ordinaryIncome: 30_000, ssBenefits: 40_000 })
-
-  it('pins the unmodeled Utah Social Security benefits credit', () => {
-    const taxable = computeStateTax(pack('UT'), scenario)
-    expect(taxable).toBeCloseTo(produced, 2)
-    expect(taxable).not.toBeCloseTo(accepted, 2)
+  readings: { sourceAppliesCredit: 1_335, omitsCredit: 2_140.45 },
+  accepted: 'sourceAppliesCredit',
+}, ({ accepted, readings }) => {
+  // IRC86:30000 otherincome+40000benefits yields18100 federalinclusion.
+  // Utah1042:48100*.0445 -18100*.0445=1335; MAGI48100 isbelow54000.
+  it('applies the statutory Social Security credit through the annual state resolver', () => {
+    const result = computeStateTaxYearResult(input({ state: 'UT', ordinaryIncome: 30_000, ssBenefits: 40_000 }), {
+      retirementDistributions: [],
+      householdFacts: { stateFilingStatus: 'single', federalAgi: 48_100, interestExcludedFromFederalAgi: 0, utahSection59_10_114Additions: 0, socialSecurityIncludedInUtahTaxableIncome: 18_100, claimantDatesOfBirth: ['1953-01-01'] },
+    })
+    expect(result.totalTax).toBeCloseTo(accepted, 8)
+    expect(result.totalTax).not.toBeCloseTo(readings.omitsCredit, 8)
+    expect(result.status).toBe('complete')
   })
 })
 
@@ -4386,12 +4403,13 @@ describeRule('ri-gen-laws-44-30-12-social-security-and-pension-modification', {
   })
 })
 
-const VT_STD_SINGLE = 7_400
-const VT_STD_JOINT = 14_850
+// TY2026 derived standard deductions (Act 11 CPI method / vt-supplement).
+const VT_STD_SINGLE = 7_850
+const VT_STD_JOINT = 15_700
 // Single mid-band: ordinary $40,000 + SS $30,000 → IRC 86 federally taxable
 // SS $22,350; federal AGI $62,350. §5830e(a)(1)(B) excludes
 // $22,350 × ($65,000 − $62,350) / ($65,000 − $55,000) = $5,922.75, leaving
-// $16,427.25 in the Vermont base → $49,027.25 before brackets.
+// $16,427.25 in the Vermont base before the standard deduction.
 const VT_SINGLE_MID_FED_TAXABLE_SS = 22_350
 const VT_SINGLE_MID_AGI = 40_000 + VT_SINGLE_MID_FED_TAXABLE_SS
 const VT_SINGLE_MID_EXCLUDED_SS = VT_SINGLE_MID_FED_TAXABLE_SS
@@ -4402,8 +4420,7 @@ const VT_SINGLE_MID_PRODUCED = 40_000 + VT_SINGLE_MID_FED_TAXABLE_SS - VT_STD_SI
 // Joint mid-band: ordinary $50,000 + SS $35,000 → provisional income $67,500;
 // IRC 86 federally taxable SS min($29,750, $6,000 + 85% × ($67,500 − $44,000))
 // = $25,975; federal AGI $75,975. §5830e(a)(2)(B) excludes
-// $25,975 × ($80,000 − $75,975) / ($80,000 − $70,000) = $10,454.9375 →
-// $50,670.0625 Vermont taxable income.
+// $25,975 × ($80,000 − $75,975) / ($80,000 − $70,000) = $10,454.9375.
 const VT_JOINT_MID_FED_TAXABLE_SS = 25_975
 const VT_JOINT_MID_AGI = 50_000 + VT_JOINT_MID_FED_TAXABLE_SS
 const VT_JOINT_MID_EXCLUDED_SS = VT_JOINT_MID_FED_TAXABLE_SS
@@ -4411,6 +4428,9 @@ const VT_JOINT_MID_EXCLUDED_SS = VT_JOINT_MID_FED_TAXABLE_SS
 const VT_JOINT_MID_ACCEPTED = 50_000 + (VT_JOINT_MID_FED_TAXABLE_SS - VT_JOINT_MID_EXCLUDED_SS)
   - VT_STD_JOINT
 const VT_JOINT_MID_PRODUCED = 50_000 + VT_JOINT_MID_FED_TAXABLE_SS - VT_STD_JOINT
+// Low-AGI pack path still includes federally taxable SS ($9,600) before SD.
+const VT_LOW_AGI_FED_TAXABLE_SS = 9_600
+const VT_LOW_AGI_PRODUCED = 20_000 + VT_LOW_AGI_FED_TAXABLE_SS - VT_STD_SINGLE
 
 describeRule('vt-stat-32-5830e-social-security-inclusion', {
   readings: {
@@ -4420,7 +4440,7 @@ describeRule('vt-stat-32-5830e-social-security-inclusion', {
       jointMidBandProportionalTaxable: VT_JOINT_MID_ACCEPTED,
     },
     packIncludesAllFederalTaxableSS: {
-      lowAgiFullExclusionTaxable: 22_200,
+      lowAgiFullExclusionTaxable: VT_LOW_AGI_PRODUCED,
       singleMidBandProportionalTaxable: VT_SINGLE_MID_PRODUCED,
       jointMidBandProportionalTaxable: VT_JOINT_MID_PRODUCED,
     },
@@ -4440,7 +4460,8 @@ describeRule('vt-stat-32-5830e-social-security-inclusion', {
   it('pins Vermont\'s complete low-AGI Social Security exclusion', () => {
     // Worksheet: ordinary $20,000 + SS $40,000 → IRC 86 federally taxable SS
     // $9,600; federal AGI $29,600 ≤ $55,000, so §5830e(a)(1)(A) excludes all
-    // $9,600. Vermont taxable income = $20,000 − $7,400 = $12,600.
+    // $9,600. Accepted Vermont taxable income = $20,000 − $7,850 = $12,150.
+    // Pack still leaves the federally taxable share in base → $21,750.
     const taxable = computeStateTaxableIncome(pack('VT'), lowAgi)
     expect(taxable).toBe(produced.lowAgiFullExclusionTaxable)
     expect(taxable).not.toBeCloseTo(accepted.lowAgiFullExclusionTaxable, 6)
@@ -4574,18 +4595,22 @@ describeRule('wa-dor-no-broad-individual-income-tax', {
   })
 })
 
+// TY2026 Form 1-ES Wisconsin SD phase-down (authority worksheet).
+const WI_STD_SINGLE_AT_14K = 13_960
+const WI_STD_SINGLE_AT_140K = 0 // income at/above 136,453 zeroes the deduction
+const WI_STD_JOINT_AT_84K = 25_840 - 0.19778 * (84_000 - 29_040)
+
 describeRule('wi-schedule-sb-line-5-long-term-capital-gain-exclusion', {
   readings: {
-    sourceSubtractsThirtyPercentOfTheLongTermGain: 40_000 + 70_000 - 13_560,
-    packTaxesTheWholeGainAsOrdinaryIncome: 126_440,
+    sourceSubtractsThirtyPercentOfTheLongTermGain: 40_000 + 70_000 - WI_STD_SINGLE_AT_140K,
+    packTaxesTheWholeGainAsOrdinaryIncome: 40_000 + 100_000 - WI_STD_SINGLE_AT_140K,
   },
   accepted: 'sourceSubtractsThirtyPercentOfTheLongTermGain',
   produced: 'packTaxesTheWholeGainAsOrdinaryIncome',
   note: '30% long-term capital-gain subtraction',
 }, ({ accepted, produced }) => {
-  // The source subtracts 30% of a qualifying long-term gain. The pack has only
-  // the undifferentiated ordinary-gain path, so it leaves all $100,000 in base
-  // (40,000 + 100,000 - 13,560 = 126,440).
+  // At $140,000 Wisconsin income the Form 1-ES single SD is $0. The pack still
+  // taxes the whole $100,000 gain as ordinary (no 30% Schedule SB line 5 limb).
   const scenario = input({ state: 'WI', ordinaryIncome: 40_000, capitalGains: 100_000 })
 
   it('pins Wisconsin\'s unrepresented long-term capital-gain exclusion', () => {
@@ -4599,12 +4624,12 @@ describeRule('wi-stat-71-05-retirement-income-subtraction', {
   readings: {
     // Line 16 subtracts only retirement income the 67-or-older individual
     // received. With the couple's $30,000 of IRA income received entirely by
-    // the 60-year-old spouse, no dollar qualifies (84,000 - 25,110 = 58,890).
-    perRecipientAttributionWithholdsTheSubtraction: 84_000 - 25_110,
+    // the 60-year-old spouse, no dollar qualifies.
+    perRecipientAttributionWithholdsTheSubtraction: 84_000 - WI_STD_JOINT_AT_84K,
     // Pack min(household retirement income, $24,000 × members 67+) has no
     // attribution, so the 67-year-old's presence shelters the other spouse's
-    // dollars (84,000 - 24,000 - 25,110 = 34,890).
-    packCapsPooledHouseholdIncome: 84_000 - 24_000 - 25_110,
+    // dollars.
+    packCapsPooledHouseholdIncome: 84_000 - 24_000 - WI_STD_JOINT_AT_84K,
   },
   accepted: 'perRecipientAttributionWithholdsTheSubtraction',
   produced: 'packCapsPooledHouseholdIncome',
@@ -4621,11 +4646,11 @@ describeRule('wi-stat-71-05-retirement-income-subtraction', {
 
   it('shelters retirement dollars received by the under-67 spouse', () => {
     const taxable = computeStateTaxableIncome(pack('WI'), mixedAgeCouple)
-    expect(taxable).toBe(produced)
+    expect(taxable).toBeCloseTo(produced, 6)
     expect(taxable).toBeLessThan(accepted)
     // Social Security stays out on both sides; only attribution differs.
-    expect(produced).toBe(34_890)
-    expect(accepted).toBe(58_890)
+    expect(produced).toBeCloseTo(45_029.9888, 4)
+    expect(accepted).toBeCloseTo(69_029.9888, 4)
   })
 
   it('matches the pooled $48,000 cap when both spouses are 67', () => {
@@ -4638,7 +4663,10 @@ describeRule('wi-stat-71-05-retirement-income-subtraction', {
     })
     // 'regardless of how much retirement income each spouse received' — the
     // pooled min(income, 24,000 × 2) is exact for a both-67 couple.
-    expect(computeStateTaxableIncome(pack('WI'), bothSixtySeven)).toBe(84_000 - 48_000 - 25_110)
+    expect(computeStateTaxableIncome(pack('WI'), bothSixtySeven)).toBeCloseTo(
+      84_000 - 48_000 - WI_STD_JOINT_AT_84K,
+      6,
+    )
   })
 
   it('grants a 65-year-old nothing where Line 17 would allow $5,000', () => {
@@ -4649,8 +4677,8 @@ describeRule('wi-stat-71-05-retirement-income-subtraction', {
       agesAlive: [65],
     })
     // Line 17 (AGI under $15,000 single) would leave
-    // max(0, 14,000 - 5,000 - 13,560) = 0; the pack's minAge-67 cap leaves 440.
-    expect(computeStateTaxableIncome(pack('WI'), lowAgiSixtyFive)).toBe(14_000 - 13_560)
+    // max(0, 14,000 - 5,000 - 13,960) = 0; the pack's minAge-67 cap leaves 40.
+    expect(computeStateTaxableIncome(pack('WI'), lowAgiSixtyFive)).toBe(14_000 - WI_STD_SINGLE_AT_14K)
   })
 })
 
@@ -4887,5 +4915,84 @@ describeRule('al-form40-age-65-retirement-exclusion-cap', {
     ]) {
       expect(stateParamsFor(code, TAX_YEAR), code).toBeDefined()
     }
+  })
+})
+
+const LA_RETIREMENT_40K = 40_000
+const LA_INDEXED_EXEMPTION_2026 = 12_324
+const LA_STD = 12_875
+const laFlat = (taxable: number) => Math.max(0, taxable) * 0.03
+
+describeRule('la-rs-47-44-1-retirement-exemption', {
+  readings: {
+    // $12,000 × 1.027 = $12,324 (BLS Dec-2024→Dec-2025 CPI-U 2.7%).
+    indexedTwelveThousandThreeHundredTwentyFour: laFlat(LA_RETIREMENT_40K - LA_INDEXED_EXEMPTION_2026 - LA_STD),
+    heldForwardUnindexedTwelveThousand: laFlat(LA_RETIREMENT_40K - 12_000 - LA_STD),
+  },
+  accepted: 'indexedTwelveThousandThreeHundredTwentyFour',
+}, ({ accepted, readings }) => {
+  const scenario = input({
+    state: 'LA',
+    ordinaryIncome: LA_RETIREMENT_40K,
+    privateRetirementIncome: LA_RETIREMENT_40K,
+    agesAlive: [65],
+  })
+
+  it('applies the TY2026 indexed $12,324 exemption', () => {
+    expect(computeStateTax(pack('LA'), scenario)).toBeCloseTo(accepted, 6)
+    expect(computeStateTaxableIncome(pack('LA'), scenario))
+      .toBeCloseTo(LA_RETIREMENT_40K - LA_INDEXED_EXEMPTION_2026 - LA_STD, 6)
+  })
+
+  it('would under-exempt at the frozen $12,000 starting amount', () => {
+    expect(readings.heldForwardUnindexedTwelveThousand).toBeGreaterThan(accepted)
+  })
+})
+
+describeRule('sc-code-12-6-1171-military-retirement', {
+  readings: {
+    fullMilitaryDeduction: 60_000,
+    treatedAsOrdinaryPublicCap: 3_000,
+  },
+  accepted: 'fullMilitaryDeduction',
+}, ({ accepted, readings }) => {
+  it('deducts all federally included military retirement', () => {
+    // S.C. Code §12-6-1171(A): all military retirement included in SC taxable income.
+    const result = scMilitaryDeduction([{
+      ownerPersonId: 'p1',
+      sourceKind: 'militaryRetirement',
+      federallyIncludedAmount: 60_000,
+      recipientAgeYears: 50,
+      cause: 'ordinary',
+      earlyDistributionDisqualifier: 'false',
+    }])
+    expect(-result.taxableIncomeDelta).toBe(accepted)
+  })
+
+  it('rejects routing nonmilitary public through the military full deduction', () => {
+    expect(readings.treatedAsOrdinaryPublicCap).toBe(3_000)
+    expect(readings.treatedAsOrdinaryPublicCap).not.toBe(accepted)
+  })
+})
+
+describeRule('ky-dor-2026-standard-deduction-once-per-return', {
+  readings: {
+    oncePerReturn: 3_360,
+    doubledSpouseCount: 6_720,
+  },
+  accepted: 'oncePerReturn',
+}, ({ accepted, readings }) => {
+  it('applies $3,360 once on an MFJ return', () => {
+    const taxable = computeStateTaxableIncome(
+      pack('KY'),
+      input({ state: 'KY', filingStatus: 'marriedFilingJointly', ordinaryIncome: 10_000 }),
+    )
+    expect(taxable).toBe(10_000 - accepted)
+    expect(pack('KY').standardDeduction.marriedFilingJointly).toBe(accepted)
+  })
+
+  it('rejects doubling the deduction for two spouses on one joint return', () => {
+    expect(readings.doubledSpouseCount).not.toBe(accepted)
+    expect(pack('KY').standardDeduction.marriedFilingJointly).not.toBe(readings.doubledSpouseCount)
   })
 })

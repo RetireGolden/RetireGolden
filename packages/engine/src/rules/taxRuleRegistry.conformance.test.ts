@@ -425,6 +425,9 @@ const FEDERAL_PRIMARY_PUBLISHERS: readonly string[] = [
   // the subdomain rule above rather than folded into the bare host.
   'secure.ssa.gov', // POMS
   'jct.gov', // Joint Committee on Taxation
+  'hud.gov', // HUD Mortgagee Letters and Handbook 4000.1, HECM MCA and MIP
+  'cms.gov', // CMS Part D redesign instructions
+  'federalregister.gov', // Office of the Federal Register, Treasury final regulations
 ]
 
 /**
@@ -721,6 +724,7 @@ const STATE_PRIMARY_PUBLISHERS: Readonly<Partial<Record<UsStateCode, readonly st
     // deliberately: this table strips only a leading `www.`, so the apex
     // `legislature.ky.gov` would admit nothing that was checked.
     'apps.legislature.ky.gov', // Kentucky Legislative Research Commission, KRS
+    'revenue.ky.gov', // Kentucky DOR: 2026 deduction announcement and Form 740 instructions
   ],
   // Verified 2026-08-27 from the staged WS4d-B fetches. Bare `legis.la.gov`:
   // every usable Law.aspx URL carries `www.legis.la.gov`, and
@@ -956,7 +960,18 @@ const STATE_PRIMARY_PUBLISHERS: Readonly<Partial<Record<UsStateCode, readonly st
  * into the authority string must not widen what was checked.
  */
 const STATE_EXACT_PUBLICATION_URLS: Readonly<Partial<Record<UsStateCode, readonly string[]>>> = {
+  IA: [
+    // Audit research packet: Iowa DOR Line 05 married-filing-separately proration.
+    // Admit only the cited instructions, not the entire agency host.
+    'https://revenue.iowa.gov/taxes/tax-guidance/individual-income-tax/1040-expanded-instructions/iowa-tax',
+  ],
   NJ: [
+    // Audit research packet: exact enacted-law/department publications; no portal-wide admission.
+    'https://www.nj.gov/treasury/taxation/military/taxinformation.shtml',
+    'https://www.nj.gov/treasury/taxation/pdf/pubs/stn/summer10.pdf',
+    'https://www.nj.gov/treasury/taxation/individuals/obbba.shtml',
+    'https://www.nj.gov/treasury/taxation/whatsnewarc/august2010.shtml',
+    'https://www.nj.gov/treasury/taxation/pdf/pubs/tgi-ee/git1%262.pdf',
     'https://www.nj.gov/treasury/taxation/njit12.shtml',
   ],
   OR: [
@@ -978,6 +993,8 @@ const STATE_EXACT_PUBLICATION_URLS: Readonly<Partial<Record<UsStateCode, readonl
     'https://www.tax.virginia.gov/subtractions',
   ],
   MO: [
+    // Audit research packet: exact enacted-law/department publications; no portal-wide admission.
+    'https://dor.mo.gov/faq/taxation/individual/pension.html',
     // Verified 2026-09-12: Form MO-1040ES (2026) rate schedule and standard
     // deduction; dor.mo.gov stays out of STATE_PRIMARY_PUBLISHERS.
     'https://dor.mo.gov/forms/MO-1040ES_2026.pdf',
@@ -996,6 +1013,27 @@ const STATE_EXACT_PUBLICATION_URLS: Readonly<Partial<Record<UsStateCode, readonl
     // Verified 2026-09-12: Form NC-40 2026 worksheet page 2 standard deduction
     // table and TY2026 footer; ncdor.gov stays out of STATE_PRIMARY_PUBLISHERS.
     'https://www.ncdor.gov/individual-estimated-income-tax/open',
+  ],
+  HI: [
+    // Audit research packet: exact enacted-law/department publications; no portal-wide admission.
+    'https://data.capitol.hawaii.gov/sessions/session2026/bills/GM1135_.PDF',
+  ],
+  IL: [
+    // Audit research packet: exact enacted-law/department publications; no portal-wide admission.
+    'https://tax.illinois.gov/research/publications/bulletins/fy-2026-15.html',
+  ],
+  KS: [
+    // Audit research packet: exact enacted-law/department publications; no portal-wide admission.
+    'https://www.sos.ks.gov/publications/sessionlaws/2026/Chapter-154-SB-300.html',
+  ],
+  MA: [
+    // Audit research packet: exact enacted-law/department publications; no portal-wide admission.
+    'https://www.mass.gov/info-details/massachusetts-tax-rates',
+    'https://www.mass.gov/info-details/tax-treatment-of-government-pensions-in-massachusetts',
+  ],
+  MD: [
+    // Audit research packet: exact enacted-law/department publications; no portal-wide admission.
+    'https://services.marylandcomptroller.gov/taxes/en/maryland-pension-exclusion?id=kb_article_view&sysparm_article=KB0010012',
   ],
 }
 
@@ -1700,6 +1738,46 @@ describe('tax rule registry conformance', () => {
 
   it('sources every federal authority from a federal primary publisher', () => {
     expect(offSourceAuthorities(registryEntries)).toEqual([])
+  })
+
+  it.each(['hud.gov', 'cms.gov', 'federalregister.gov'])(
+    'admits the exact federal publisher %s but not lookalike or arbitrary subdomains',
+    (publisher) => {
+      expect(offSourceAuthorities([['federal-audit-source', {
+        jurisdiction: 'federal',
+        authority: [{ citation: 'Primary publication', url: `https://www.${publisher}/publication` }],
+      }]])).toEqual([])
+      for (const host of [`${publisher}.example.com`, `unverified.${publisher}`]) {
+        expect(offSourceAuthorities([['federal-audit-source', {
+          jurisdiction: 'federal',
+          authority: [{ citation: 'Primary publication', url: `https://${host}/publication` }],
+        }]])).toEqual([`federal-audit-source:Primary publication:${host}`])
+      }
+    },
+  )
+
+  it('admits Kentucky DOR only for Kentucky rules', () => {
+    const authority = [{ citation: 'Kentucky DOR deduction announcement',
+      url: 'https://revenue.ky.gov/News/Pages/Kentucky-DOR-Announces-2026-Standard-Deduction.aspx' }]
+    expect(offSourceAuthorities([['ky-audit-source', { jurisdiction: 'state:KY', authority }]])).toEqual([])
+    expect(offSourceAuthorities([['federal-audit-source', { jurisdiction: 'federal', authority }]]))
+      .toEqual(['federal-audit-source:Kentucky DOR deduction announcement:revenue.ky.gov'])
+    expect(offSourceAuthorities([['oh-audit-source', { jurisdiction: 'state:OH', authority }]]))
+      .toEqual(['oh-audit-source:Kentucky DOR deduction announcement:revenue.ky.gov'])
+  })
+
+  it('keeps audit state-publication admissions exact and within their sovereign tier', () => {
+    for (const state of ['HI', 'IA', 'IL', 'KS', 'MA', 'MD', 'MO', 'NJ'] as const) {
+      for (const url of STATE_EXACT_PUBLICATION_URLS[state] ?? []) {
+        const authority = [{ citation: 'State audit publication', url }]
+        expect(offSourceAuthorities([['state-audit', { jurisdiction: `state:${state}`, authority }]])).toEqual([])
+        expect(stateRulesMissingStateAuthority([['state-audit', { jurisdiction: `state:${state}`, authority }]])).toEqual([])
+        expect(offSourceAuthorities([['federal-audit', { jurisdiction: 'federal', authority }]])).toHaveLength(1)
+        expect(isExactStatePublicationAdmitted(state, `${url}#unreviewed`)).toBe(false)
+        expect(isExactStatePublicationAdmitted(state, `${url}/unreviewed`)).toBe(false)
+        expect(isExactStatePublicationAdmitted('AK', url)).toBe(false)
+      }
+    }
   })
 
   it('refuses a state host as authority for a federal rule', () => {

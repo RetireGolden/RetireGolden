@@ -229,3 +229,10 @@ registered in `packages/engine/src/rules/records/statesMidwest.ts` under
 | `ndcc-57-38-30-3-2-t-retired-peace-officer-exclusion` | settled |
 | `ndcc-57-38-30-3-2-closed-subtraction-list` | approximated (understates tax) |
 | `ndcc-57-38-30-3-2-d-2-qualified-dividend-exclusion` | approximated (overstates tax) |
+
+## Characterized retirement and evidence scope (2026-09-12)
+
+The no-general-private-retirement-subtraction conclusion rests on the complete N.D.C.C. 57-38-30.3(2)(a)–(t) list, now quoted in its record, together with subsection (1) limiting adjustments to those specifically provided. Military, qualified law-enforcement, Social Security and federally protected RRB exceptions are explicit; the conclusion is not that all retirement is taxable.
+
+
+Evidence completion (2026-09-12): The closed-list source record now additionally quotes ND-1 lines9,14,15, including peace-officer service/disability limits, military survivor/dual-status technicians, and the SS/TierI allocation ratio. Line1b itself describes federal-taxable-income entry mechanics and does not literally state that private pensions are taxable. That bounded pension-base conclusion is an inference from the federal-taxable-income definition plus the complete statutory adjustment enumeration, not a fabricated DOR sentence.

@@ -1,3 +1,6 @@
+import { qcdEventFactsForYear, retirementDistributionFactsForYear } from './stateRetirementFactsAdapter.js'
+import { stateRetirementEventsFromAccountAmounts } from './annualStateRetirementEvents.js'
+import type { StateRetirementDistributionFactInput, StateQcdEventFactsInput } from '../types.js'
 import type { Account, Person, Plan } from '../../model/plan.js'
 import type { ParameterPack } from '../../params/types.js'
 import type { IraProRataYear } from '../../strategies/iraBasis.js'
@@ -56,6 +59,13 @@ import type { AnnualConversionLinkedWithdrawalRelease }
   from './annualConversionLinkedWithdrawalFunding.js'
 import type { PhysicalBalanceState } from './annualLogicalBalanceLedger.js'
 import { annualRothBasisPoolKey } from './annualRothBasisPoolKey.js'
+import {
+  applyInheritedRothDistributionToPool,
+  cloneInheritedRothPoolState,
+  characterizeLegacyQualifiedInheritedRoth,
+  inheritedRothPoolKey,
+  type MutableInheritedRothTaxCharacterPool,
+} from './inheritedRothTaxCharacterPoolState.js'
 
 type TreatAsOwnAccount = Parameters<typeof isTreatAsOwnEffective>[0]
 type SimulatorRetirementRuntimeApplicationWithoutOrdinal =
@@ -108,6 +118,8 @@ interface AnnualForcedDistributionQcdAndRetirementActionsPhaseLedger {
   readonly namedQcdOffsetConsumedByDonor: Map<string, number>
   readonly namedQcdOffsetHistoryUnprovable: Set<string>
   readonly rothBasis: Map<string, RothBasisState>
+  /** Live actual-run pools; never passed to a counterfactual evaluator. */
+  readonly inheritedRothPools: Map<string, MutableInheritedRothTaxCharacterPool>
   readonly warnings: Set<string>
   readonly annuityContractDistributions: readonly Readonly<{
     readonly poolOwnerPersonId: string
@@ -131,6 +143,7 @@ interface AnnualForcedDistributionQcdAndRetirementActionsPhaseCallbacks {
   ) => RmdApplicablePlan
   readonly startOfYearBalance: ReadonlyMap<string, number>
   readonly inheritedClassCache: ReadonlyMap<string, AnnualInheritedIraClassCacheEntry>
+  readonly spousalOwnerTreatmentForYear: (accountId: string) => boolean
   readonly rmdReliefElectionFor: (
     obligationId: string,
   ) => RmdShortfallReliefElection | undefined
@@ -225,6 +238,8 @@ export interface AnnualForcedDistributionQcdAndRetirementActionsPhaseInput {
 }
 
 export interface AnnualForcedDistributionQcdAndRetirementActionsPhaseResult {
+  readonly stateQcdEventFacts: readonly StateQcdEventFactsInput[] | undefined
+  readonly stateRetirementDistributionFacts: readonly StateRetirementDistributionFactInput[]
   readonly rmdTotal: number
   readonly rmdNontaxable: number
   readonly ownedIraRmdTotal: number
@@ -233,6 +248,8 @@ export interface AnnualForcedDistributionQcdAndRetirementActionsPhaseResult {
   readonly inheritedTotal: number
   readonly inheritedOrdinaryIncome: number
   readonly inheritedRothForced: number
+  readonly inheritedDeadlineObservationIssues?: readonly {accountId: string; reason: string}[]
+  readonly inheritedRothTaxCharacterIncomplete: boolean
   readonly inheritedYearEvidenceDraft: InheritedAccountYearEvidence[]
   readonly rmdShortfallObligations: RmdShortfallObligation[]
   readonly rmdShortfallExciseResults: RmdShortfallExciseResult[]
@@ -247,6 +264,7 @@ export interface AnnualForcedDistributionQcdAndRetirementActionsPhaseResult {
   readonly namedQcdRmdSatisfied: number
   readonly namedQcdIncomeOffset: number
   readonly annuityPaymentNontaxable: number
+  readonly annuityStateBasisReturnByAccount?: ReadonlyMap<string, number>
   readonly retirementActionExecution:
   AnnualOrdinaryWithdrawalBoundaryResult['execution'] | undefined
   readonly retirementActionCash: number
@@ -364,14 +382,14 @@ export function annualForcedDistributionQcdAndRetirementActionsPhase(
   } = callbacks
   const publishCashFlow = capture !== null
   const seppByAccountId = capture?.seppByAccountId ?? null
-  const rmdNontaxableByOwner = capture?.rmdNontaxableByOwner ?? null
+  const rmdNontaxableByOwner = capture?.rmdNontaxableByOwner ?? new Map<string, number>()
   const seppNontaxableByAccountId = capture?.seppNontaxableByAccountId ?? null
-  const qcdExclusionFromRmdByOwner = capture?.qcdExclusionFromRmdByOwner ?? null
-  const qcdExclusionBeyondRmdByOwner = capture?.qcdExclusionBeyondRmdByOwner ?? null
-  const qcdOrdinaryBeyondRmdByOwner = capture?.qcdOrdinaryBeyondRmdByOwner ?? null
+  const qcdExclusionFromRmdByOwner = capture?.qcdExclusionFromRmdByOwner ?? new Map<string, number>()
+  const qcdExclusionBeyondRmdByOwner = capture?.qcdExclusionBeyondRmdByOwner ?? new Map<string, number>()
+  const qcdOrdinaryBeyondRmdByOwner = capture?.qcdOrdinaryBeyondRmdByOwner ?? new Map<string, number>()
   const qcdBeyondRmdCharacterByOccurrence = capture?.qcdBeyondRmdCharacterByOccurrence ?? null
-  const qcdOrdinaryFromRmdByOwner = capture?.qcdOrdinaryFromRmdByOwner ?? null
-  const qcdBasisFromRmdByOwner = capture?.qcdBasisFromRmdByOwner ?? null
+  const qcdOrdinaryFromRmdByOwner = capture?.qcdOrdinaryFromRmdByOwner ?? new Map<string, number>()
+  const qcdBasisFromRmdByOwner = capture?.qcdBasisFromRmdByOwner ?? new Map<string, number>()
   const annuityBasisReturnByAccountId = capture?.annuityBasisReturnByAccountId ?? null
   let rmdNontaxable = ledger.initialRmdNontaxable
   let seppNontaxable = ledger.initialSeppNontaxable
@@ -704,6 +722,7 @@ export function annualForcedDistributionQcdAndRetirementActionsPhase(
   // need-based withdrawal flow, so it never attracts the early-withdrawal
   // penalty — and is taxable ordinary income that also supplies spending cash.
   const seppPlan = annualSeppDistributions({
+      ownerTreatmentRouting: new Map(rmdBalances.map((state) => [state.account.id, isTreatAsOwnEffective(state.account, year)])),
     balances: rmdBalances,
     year,
     primaryPersonId: primary.id,
@@ -773,6 +792,13 @@ export function annualForcedDistributionQcdAndRetirementActionsPhase(
   // balance. This keeps compatible duplicate physical rows behind one
   // aggregate distribution, evidence row, runtime occurrence, and §4974
   // application while the logical ledger commits the debit pro rata.
+  // Every mandatory inherited-Roth operation is priced against one mutable
+  // *planning* clone.  Calling the leaf with commit:false against the same
+  // live pool for each account would let two accounts claim the same basis.
+  // The clone is promoted only after every balance operation has validated.
+  const inheritedRothPlanningPools = cloneInheritedRothPoolState(
+    input.ledger.inheritedRothPools,
+  )
   const inheritedPlan = immutablePlainSnapshot(
     annualInheritedIraDistributions({
       year,
@@ -780,16 +806,73 @@ export function annualForcedDistributionQcdAndRetirementActionsPhase(
       pack,
       primaryPersonId: primary.id,
       balances: rmdBalances,
+      completedDeadlineObservations: new Map(rmdBalances.flatMap(({ account }) => {
+        if (account.type !== 'traditional' && account.type !== 'roth') return []
+        const observation = account.inherited?.completedDeadlineObservation
+        return observation?.taxYear === year ? [[account.id, observation] as const] : []
+      })),
       startOfYearBalance,
       classCache: inheritedClassCache,
       beneficiaryState: (personId) => stateOf(personId),
+      isTreatAsOwnEffectiveForYear: (account) =>
+        input.callbacks.spousalOwnerTreatmentForYear(account.id),
+      characterizeInheritedRothDistribution: ({
+        accountId,
+        beneficiaryPersonId,
+        decedentId,
+        distributionCalendarYear,
+        distributionAmount,
+      }) => {
+        const account = rmdBalances.find((row) => row.account.id === accountId)?.account
+        if (account?.type === 'roth' && (decedentId === null || !inheritedRothPlanningPools.has(inheritedRothPoolKey(beneficiaryPersonId, decedentId)))) {
+          const legacy = characterizeLegacyQualifiedInheritedRoth({
+            firstContributionYear: account.inherited?.beneficiary?.roth5YearStartYear,
+            evidenceAsOfDate: account.inherited?.beneficiary?.provenance?.asOf,
+            distributionYear: distributionCalendarYear, distributionAmount,
+          })
+          if (legacy !== null) return legacy
+        }
+        // A missing decedent identity cannot be repaired by account-level
+        // guessing.  Price conservatively as ordinary income and disclose it
+        // rather than asserting a qualified inherited-Roth result.
+        if (decedentId === null) {
+          return {
+            ordinaryIncome: distributionAmount,
+            status: 'incomplete' as const,
+            reason: 'missing-inherited-roth-decedent-identity',
+          }
+        }
+        const result = applyInheritedRothDistributionToPool({
+          pools: inheritedRothPlanningPools,
+          beneficiaryPersonId,
+          decedentId,
+          distributionCalendarYear,
+          distributionAmount,
+          spouseOwnerTreatmentBegun: false,
+          commit: true,
+        })
+        if (result.status !== 'characterized') {
+          return {
+            ordinaryIncome: distributionAmount,
+            status: 'incomplete' as const,
+            reason: `inherited-roth-${result.reason}`,
+          }
+        }
+        return {
+          ordinaryIncome: result.ordinaryIncome,
+          status: 'characterized' as const,
+        }
+      },
     }),
   )
   const inheritedOperations = inheritedPlan.rows.flatMap((row) =>
     row.distribution === null ? [] : [row.distribution])
+  for (const issue of inheritedPlan.deadlineObservationIssues) warnings.add(`Inherited deadline evidence for ${issue.accountId} is incomplete: ${issue.reason}`)
   const inheritedTotal = inheritedPlan.totals.inherited
   const inheritedOrdinaryIncome = inheritedPlan.totals.ordinaryIncome
   const inheritedRothForced = inheritedPlan.totals.rothForced
+  const inheritedRothTaxCharacterIncomplete =
+    inheritedPlan.rothTaxCharacterStatus === 'incomplete'
   const inheritedYearEvidenceDraft: InheritedAccountYearEvidence[] =
     inheritedPlan.rows.map((row) => row.evidence)
   const inheritedRmdShortfallObligations =
@@ -839,6 +922,21 @@ export function annualForcedDistributionQcdAndRetirementActionsPhase(
       executionSequence: null,
       movementAuthorityId: null,
     })
+  }
+  // Atomically promote the already-consumed planning ledger only after every
+  // matching balance debit has validated and applied.  Replaying individual
+  // operations against live state here is not atomic: a later failed replay
+  // can leave prior accounts and the shared pool out of sync.
+  for (const operation of inheritedPlan.rothTaxCharacterOperations) {
+    if (operation.status !== 'characterized' || operation.decedentId === null) {
+      input.ledger.warnings.add(
+        `Inherited Roth distribution from ${operation.accountId} was priced conservatively because tax-character evidence was incomplete${operation.reason === undefined ? '' : ` (${operation.reason})`}.`,
+      )
+    }
+  }
+  input.ledger.inheritedRothPools.clear()
+  for (const [key, pool] of inheritedRothPlanningPools) {
+    input.ledger.inheritedRothPools.set(key, pool)
   }
   rmdShortfallObligations.push(...inheritedRmdShortfallObligations)
   const rmdShortfallExciseResults: RmdShortfallExciseResult[] =
@@ -1140,7 +1238,7 @@ export function annualForcedDistributionQcdAndRetirementActionsPhase(
         qcdSection219ByDonor,
         qcdOffsetConsumedByDonor: namedQcdOffsetConsumedByDonor,
         preProjectionQcdOffsetUnprovable,
-        publishCashFlow,
+        publishCashFlow: true,
       }),
       [...expectedQcdOwnerIds],
     )
@@ -1261,6 +1359,7 @@ export function annualForcedDistributionQcdAndRetirementActionsPhase(
    * it a second time.
    */
   let annuityPaymentNontaxable = 0
+  const annuityStateBasisReturnByAccount = new Map<string, number>()
   for (const payment of annuityContractDistributions) {
     const assumed = resolveAssumedCharacter({
       ownerPersonId: payment.poolOwnerPersonId,
@@ -1286,6 +1385,7 @@ export function annualForcedDistributionQcdAndRetirementActionsPhase(
     )
     if (assumed.basisReturn <= 0) continue
     annuityPaymentNontaxable += assumed.basisReturn
+    annuityStateBasisReturnByAccount.set(payment.annuityAccountId, (annuityStateBasisReturnByAccount.get(payment.annuityAccountId) ?? 0) + assumed.basisReturn)
     if (publishCashFlow) {
       annuityBasisReturnByAccountId!.set(
         payment.annuityAccountId,
@@ -1302,13 +1402,30 @@ export function annualForcedDistributionQcdAndRetirementActionsPhase(
     }
   }
   const qcdNonQualifiedFromRmdRemaining = new Map<string, number>()
-  if (publishCashFlow) {
+  {
     for (const [ownerId, fromRmd] of qcdFromRmdByOwner) {
       if (fromRmd <= 0) continue
       const nq = Math.max(0, fromRmd - (qcdQualifiedFromRmdByOwner.get(ownerId) ?? 0))
       if (nq > 0) qcdNonQualifiedFromRmdRemaining.set(ownerId, nq)
     }
   }
+  const stateQcdEvents: StateQcdEventFactsInput[] = []
+  const stateForcedTaxableByAccount = new Map<string, number>()
+  const recordStateForcedTaxable = (accountId: string, taxable: number) => {
+    stateForcedTaxableByAccount.set(accountId, (stateForcedTaxableByAccount.get(accountId) ?? 0) + taxable)
+  }
+  // Employer-plan RMDs have no Form 8606 IRA basis channel.
+  for (const state of rmdBalances) {
+    if (state.account.type === 'traditional' && state.account.kind !== 'ira') {
+      recordStateForcedTaxable(state.account.id, rmdTakeByAccount.get(state.account.id) ?? 0)
+    }
+  }
+  for (const row of inheritedPlan.rows) {
+    if (row.distribution === null) continue
+    const account = rmdBalances[row.balanceIndex]!.account
+    if (account.type === 'traditional') recordStateForcedTaxable(account.id, row.distribution.executed)
+  }
+  for (const operation of inheritedPlan.rothTaxCharacterOperations) recordStateForcedTaxable(operation.accountId, operation.ordinaryIncome)
   const commitDeferredForcedDistributions = (
     entries: readonly DeferredForcedIraDistribution[],
     carveByOwner: Map<string, number>,
@@ -1322,7 +1439,7 @@ export function annualForcedDistributionQcdAndRetirementActionsPhase(
       const line7Gross = entry.amount - carve
       const proRata = iraProRata.get(entry.ownerId)
       if (line7Gross <= 0) continue
-      const nqThis = publishCashFlow && entry.occurrenceKind === 'ownedIraRmd'
+      const nqThis = entry.occurrenceKind === 'ownedIraRmd'
         ? Math.min(qcdNonQualifiedFromRmdRemaining.get(entry.ownerId) ?? 0, line7Gross)
         : 0
       if (nqThis > 0) {
@@ -1333,7 +1450,7 @@ export function annualForcedDistributionQcdAndRetirementActionsPhase(
       }
       const nqShare = nqThis === 0 ? 0 : nqThis / line7Gross
       const snapshotFromRmdSplit = (taxable: number, nontaxable: number): void => {
-        if (!publishCashFlow || entry.occurrenceKind !== 'ownedIraRmd') return
+        if (entry.occurrenceKind !== 'ownedIraRmd') return
         const nqTaxable = taxable * nqShare
         const nqBasis = nontaxable * nqShare
         if (nqTaxable > 0) {
@@ -1358,6 +1475,7 @@ export function annualForcedDistributionQcdAndRetirementActionsPhase(
       }
       if (proRata === undefined) {
         // Zero aggregate basis: entire line-7 gross is ordinary income.
+        recordStateForcedTaxable(entry.sourceAccountId, line7Gross * (1 - nqShare))
         noteForm8606Taxable(entry.ownerId, line7Gross, 'distributions')
         snapshotFromRmdSplit(line7Gross, 0)
         continue
@@ -1370,12 +1488,12 @@ export function annualForcedDistributionQcdAndRetirementActionsPhase(
         sourceAccountId: entry.sourceAccountId,
         mutationOrdinal: entry.mutationOrdinal,
       })
+      recordStateForcedTaxable(entry.sourceAccountId, split.taxable * (1 - nqShare))
       iraProRata.set(entry.ownerId, split.next)
       credit(split.nontaxable)
+      if (entry.occurrenceKind === 'ownedIraRmd') snapshotFromRmdSplit(split.taxable, split.nontaxable)
       if (publishCashFlow) {
-        if (entry.occurrenceKind === 'ownedIraRmd') {
-          snapshotFromRmdSplit(split.taxable, split.nontaxable)
-        } else if (entry.occurrenceKind === 'automaticSeppDistribution') {
+        if (entry.occurrenceKind === 'automaticSeppDistribution') {
           seppNontaxableByAccountId!.set(
             entry.sourceAccountId,
             (seppNontaxableByAccountId!.get(entry.sourceAccountId) ?? 0) +
@@ -1395,6 +1513,22 @@ export function annualForcedDistributionQcdAndRetirementActionsPhase(
     new Map<string, number>(),
     (nontaxable) => { seppNontaxable += nontaxable },
   )
+  const qcdFromRmdLeft = new Map(qcdFromRmdByOwner)
+  for (const entry of deferredRmdDistributions) {
+    const gross = Math.min(entry.amount, qcdFromRmdLeft.get(entry.ownerId) ?? 0)
+    if (gross <= 0) continue
+    qcdFromRmdLeft.set(entry.ownerId, (qcdFromRmdLeft.get(entry.ownerId) ?? 0) - gross)
+    const fraction = gross / qcdFromRmdByOwner.get(entry.ownerId)!
+    const excluded = (qcdExclusionFromRmdByOwner.get(entry.ownerId) ?? 0) * fraction
+    const basis = (qcdBasisFromRmdByOwner.get(entry.ownerId) ?? 0) * fraction
+    stateQcdEvents.push({
+      eventId: `qcd-routed:${entry.producerOccurrenceKey}`, accountId: entry.sourceAccountId,
+      ownerPersonId: entry.ownerId, grossIraDistribution: gross, directCharityTransfer: gross,
+      federalExcludedAmount: excluded, federalBasisAllocated: basis,
+      federalTaxableAmount: Math.max(0, gross - excluded - basis),
+      residency: 'unknown', splitInterest: false, directTransfer: true,
+    })
+  }
   // The beyond-RMD excess, last, because the gift moves after both forced
   // distributions.
   //
@@ -1435,12 +1569,8 @@ export function annualForcedDistributionQcdAndRetirementActionsPhase(
   // post-offset remainder. Charged onto each draw after the statutory
   // excess, in this same order, so the cash-flow transfer matches the
   // ledger instead of re-deriving exclusion-first from owner totals.
-  const legacyQcdLeftoverRemainingForCapture = publishCashFlow
-    ? new Map(qcdOrdinaryBeyondRmdByOwner)
-    : null
-  const legacyQcdExclusionRemainingForCapture = publishCashFlow
-    ? new Map(qcdExclusionBeyondRmdByOwner)
-    : null
+  const legacyQcdLeftoverRemainingForCapture = new Map(qcdOrdinaryBeyondRmdByOwner)
+  const legacyQcdExclusionRemainingForCapture = new Map(qcdExclusionBeyondRmdByOwner)
   for (const entry of deferredLegacyQcdDistributions) {
     const remainingExcess = Math.max(
       0, legacyQcdExcessByOwner.get(entry.ownerId) ?? 0,
@@ -1475,7 +1605,7 @@ export function annualForcedDistributionQcdAndRetirementActionsPhase(
           sourceAccountId: entry.sourceAccountId,
           mutationOrdinal: entry.mutationOrdinal,
         })
-        iraProRata.set(entry.ownerId, split.next)
+      iraProRata.set(entry.ownerId, split.next)
         qcdNonQualifiedOrdinaryIncome += split.taxable
         if (publishCashFlow && split.taxable > 0) {
           qcdOrdinaryBeyondRmdByOwner!.set(
@@ -1486,7 +1616,7 @@ export function annualForcedDistributionQcdAndRetirementActionsPhase(
         taxableFromExcess = split.taxable
       }
     }
-    if (publishCashFlow && entry.amount > 0) {
+    if (entry.amount > 0) {
       const leftoverRemaining = Math.max(
         0, legacyQcdLeftoverRemainingForCapture!.get(entry.ownerId) ?? 0,
       )
@@ -1504,7 +1634,15 @@ export function annualForcedDistributionQcdAndRetirementActionsPhase(
       legacyQcdExclusionRemainingForCapture!.set(
         entry.ownerId, exclusionRemaining - exclusionTake,
       )
-      qcdBeyondRmdCharacterByOccurrence!.push({
+      stateQcdEvents.push({
+        eventId: entry.producerOccurrenceKey, accountId: entry.sourceAccountId,
+        ownerPersonId: entry.ownerId, grossIraDistribution: entry.amount,
+        directCharityTransfer: entry.amount, federalExcludedAmount: exclusionTake,
+        federalTaxableAmount: leftoverTake + taxableFromExcess,
+        federalBasisAllocated: nonQualified - taxableFromExcess,
+        residency: 'unknown', splitInterest: false, directTransfer: true,
+      })
+      qcdBeyondRmdCharacterByOccurrence?.push({
         ownerId: entry.ownerId,
         sourceAccountId: entry.sourceAccountId,
         exclusion: exclusionTake,
@@ -1717,6 +1855,18 @@ export function annualForcedDistributionQcdAndRetirementActionsPhase(
         // section 72, so it returns no basis and leaves the year's Form 8606
         // ratio for the other distributions -- which is exactly why the
         // commit gate only admits gifts that stayed inside the pool.
+        stateQcdEvents.push({
+          eventId: producerOccurrenceKey, accountId: String(entry.sourceAccountId),
+          ...(entry.executedDate === null ? {} : { transferDate: entry.executedDate }),
+          transactionKind: 'directQcd',
+          ownerPersonId: String(entry.donorPersonId), grossIraDistribution: amount,
+          directCharityTransfer: amount,
+          federalExcludedAmount: ledgerCentsToPlanDollars(entry.derivedFacts.excludableQcdAmount),
+          federalTaxableAmount: ledgerCentsToPlanDollars(entry.derivedFacts.taxableQcdAmount),
+          federalBasisAllocated: 0, residency: 'unknown', splitInterest: false,
+          otherwiseTaxableAmount: ledgerCentsToPlanDollars(entry.derivedFacts.otherwiseTaxableAmountUsed),
+          directTransfer: true,
+        })
         namedQcdExecuted += amount
       }
       for (const entry of qcdActionExecution.evidence) {
@@ -1772,6 +1922,7 @@ export function annualForcedDistributionQcdAndRetirementActionsPhase(
    * different authorities and reconciled against different evidence; they are
    * summed only where the year publishes one conversion figure.
    */
+  const stateNamedConversionGrossByAccount = new Map<string, number>()
   let namedRothConversionExecuted = 0
   /**
    * The Form 8606 line-8 basis return riding on those dollars. It is the
@@ -1925,6 +2076,8 @@ export function annualForcedDistributionQcdAndRetirementActionsPhase(
         if (state === undefined) {
           throw new Error('Committed conversion source left the balance ledger')
         }
+        stateNamedConversionGrossByAccount.set(state.account.id, (stateNamedConversionGrossByAccount.get(state.account.id) ?? 0) + move.amount)
+        recordStateForcedTaxable(state.account.id, move.amount)
         const kind = 'namedRothConversion' as const
         // Five members. The action and allocation are what make this key
         // incapable of colliding with an aggregate conversion that merely
@@ -2012,6 +2165,7 @@ export function annualForcedDistributionQcdAndRetirementActionsPhase(
               iraProRata.set(ownerId, split.next)
               committedAction.nontaxableAmountPlanDollars += split.nontaxable
               namedRothConversionNontaxable += split.nontaxable
+              recordStateForcedTaxable(state.account.id, -split.nontaxable)
             } else {
               noteForm8606Taxable(ownerId, move.amount, 'conversions')
             }
@@ -2066,7 +2220,32 @@ export function annualForcedDistributionQcdAndRetirementActionsPhase(
       }
     }
   }
+  const stateForcedGrossByAccount = new Map(rmdTakeByAccount)
+  for (const [accountId, gross] of stateNamedConversionGrossByAccount) stateForcedGrossByAccount.set(accountId, (stateForcedGrossByAccount.get(accountId) ?? 0) + gross)
+  for (const entry of deferredSeppDistributions) stateForcedGrossByAccount.set(entry.sourceAccountId,
+    (stateForcedGrossByAccount.get(entry.sourceAccountId) ?? 0) + entry.amount)
+  for (const row of inheritedPlan.rows) if (row.distribution !== null) {
+    stateForcedGrossByAccount.set(row.accountId, (stateForcedGrossByAccount.get(row.accountId) ?? 0) + row.distribution.executed)
+  }
+  for (const event of stateQcdEvents) if (event.eventId.startsWith('qcd-routed:')) {
+    stateForcedGrossByAccount.set(event.accountId,
+      Math.max(0, (stateForcedGrossByAccount.get(event.accountId) ?? 0) - event.grossIraDistribution))
+  }
+  for (const accountId of stateForcedGrossByAccount.keys()) if (!stateForcedTaxableByAccount.has(accountId)) {
+    stateForcedTaxableByAccount.set(accountId, 0)
+  }
   return {
+    stateQcdEventFacts: qcdEventFactsForYear(plan, year, stateQcdEvents),
+    stateRetirementDistributionFacts: [
+      ...stateRetirementEventsFromAccountAmounts(plan, year, stateForcedTaxableByAccount, 'forced', stateForcedGrossByAccount),
+      ...stateQcdEvents.flatMap((event) => retirementDistributionFactsForYear(plan, year, [{
+        eventId: event.eventId, accountId: event.accountId,
+        sourceOwnerPersonId: event.ownerPersonId, recipientPersonId: event.ownerPersonId,
+        source: 'ira', federallyIncludedAmount: event.federalTaxableAmount,
+        ...(event.transferDate === undefined ? {} : { distributionDate: event.transferDate }),
+      }]).map((fact) => ({ ...fact, grossDistribution: event.grossIraDistribution,
+        accountTaxTreatment: 'traditional' as const }))),
+    ],
     rmdTotal,
     rmdNontaxable,
     ownedIraRmdTotal,
@@ -2075,6 +2254,8 @@ export function annualForcedDistributionQcdAndRetirementActionsPhase(
     inheritedTotal,
     inheritedOrdinaryIncome,
     inheritedRothForced,
+    inheritedRothTaxCharacterIncomplete,
+    inheritedDeadlineObservationIssues: inheritedPlan.deadlineObservationIssues,
     inheritedYearEvidenceDraft,
     rmdShortfallObligations,
     rmdShortfallExciseResults,
@@ -2089,6 +2270,7 @@ export function annualForcedDistributionQcdAndRetirementActionsPhase(
     namedQcdRmdSatisfied,
     namedQcdIncomeOffset,
     annuityPaymentNontaxable,
+    annuityStateBasisReturnByAccount,
     retirementActionExecution,
     retirementActionCash,
     retirementActionEquityCompensation,

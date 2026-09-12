@@ -7,138 +7,279 @@
       "id": "AL.helper.strategy",
       "label": "configured proportional-mode test",
       "file": "projection/internal/annualWithdrawalPlanning.ts",
-      "lines": [91, 92],
+      "lines": [
+        91,
+        92
+      ],
       "anchors": [
-        { "line": 91, "text": "const configured = input.withdrawalOrder" },
-        { "line": 92, "text": "if (configured.mode === 'proportional') {" }
+        {
+          "line": 91,
+          "text": "const configured = input.withdrawalOrder"
+        },
+        {
+          "line": 92,
+          "text": "if (configured.mode === 'proportional') {"
+        }
       ]
     },
     {
       "id": "AL.helper.sequentialStrategy",
       "label": "configured sequential routing before optional bracket sizing",
       "file": "projection/internal/annualWithdrawalPlanning.ts",
-      "lines": [95, 97],
+      "lines": [
+        95,
+        97
+      ],
       "anchors": [
-        { "line": 95, "text": "if (configured.mode !== 'bracketTargeted') {" }
+        {
+          "line": 95,
+          "text": "if (configured.mode !== 'bracketTargeted') {"
+        }
       ]
     },
     {
       "id": "AL.helper.setupAndReserve",
       "label": "private result and spendable-availability snapshots plus reserve gate",
       "file": "projection/internal/annualWithdrawalPlanning.ts",
-      "lines": [142, 164],
+      "lines": [
+        142,
+        164
+      ],
       "anchors": [
-        { "line": 142, "text": "const byCategory: YearWithdrawals = {" },
-        { "line": 155, "text": "const available = new Map(" },
-        { "line": 164, "text": "if (liquidReserve > 0) {" }
+        {
+          "line": 142,
+          "text": "const byCategory: YearWithdrawals = {"
+        },
+        {
+          "line": 155,
+          "text": "const available = new Map("
+        },
+        {
+          "line": 164,
+          "text": "if (liquidReserve > 0) {"
+        }
       ]
     },
     {
       "id": "AL.helper.take",
       "label": "candidate debit sizing and exact-cent discharge guard",
       "file": "projection/internal/annualWithdrawalPlanning.ts",
-      "lines": [182, 196],
+      "lines": [
+        182,
+        196
+      ],
       "anchors": [
-        { "line": 182, "text": "const takeFrom = (state: PhysicalBalanceState, wanted: number): number => {" },
-        { "line": 193, "text": "if (" },
-        { "line": 195, "text": "planDollarsMoveNoLedgerCent(take)" }
+        {
+          "line": 182,
+          "text": "const takeFrom = (state: PhysicalBalanceState, wanted: number): number => {"
+        },
+        {
+          "line": 193,
+          "text": "if ("
+        },
+        {
+          "line": 195,
+          "text": "planDollarsMoveNoLedgerCent(take)"
+        }
       ]
     },
     {
       "id": "AL.helper.takeResult",
       "label": "equity basis character and candidate result-map updates",
       "file": "projection/internal/annualWithdrawalPlanning.ts",
-      "lines": [204, 223],
+      "lines": [
+        204,
+        223
+      ],
       "anchors": [
-        { "line": 204, "text": "if (state.account.type === 'equityComp' && state.balance > 0) {" },
-        { "line": 213, "text": "byAccountId.set(" },
-        { "line": 221, "text": "remaining -= take" }
+        {
+          "line": 204,
+          "text": "if (state.account.type === 'equityComp' && state.balance > 0) {"
+        },
+        {
+          "line": 213,
+          "text": "byAccountId.set("
+        },
+        {
+          "line": 221,
+          "text": "remaining -= take"
+        }
       ]
     },
     {
       "id": "AL.helper.order",
       "label": "category-drain primitive and configured-order branch",
       "file": "projection/internal/annualWithdrawalPlanning.ts",
-      "lines": [225, 237],
+      "lines": [
+        225,
+        237
+      ],
       "anchors": [
-        { "line": 225, "text": "const drainCategory = (" },
-        { "line": 230, "text": "for (const state of states) {" },
-        { "line": 233, "text": "capLeft -= takeFrom(state, capLeft)" },
-        { "line": 237, "text": "if (strategy.mode === 'proportional') {" }
+        {
+          "line": 225,
+          "text": "const drainCategory = ("
+        },
+        {
+          "line": 230,
+          "text": "for (const state of states) {"
+        },
+        {
+          "line": 233,
+          "text": "capLeft -= takeFrom(state, capLeft)"
+        },
+        {
+          "line": 237,
+          "text": "if (strategy.mode === 'proportional') {"
+        }
       ]
     },
     {
       "id": "AL.helper.sequentialOrder",
       "label": "ordered default category drain",
       "file": "projection/internal/annualWithdrawalPlanning.ts",
-      "lines": [270, 271],
+      "lines": [
+        270,
+        271
+      ],
       "anchors": [
-        { "line": 270, "text": "for (const category of SEQUENTIAL_ORDER) drainCategory(category)" }
+        {
+          "line": 270,
+          "text": "for (const category of SEQUENTIAL_ORDER) drainCategory(category)"
+        }
       ]
     },
     {
       "id": "AL.helper.basis",
       "label": "one aggregate taxable sale per account",
       "file": "projection/internal/annualWithdrawalPlanning.ts",
-      "lines": [286, 302],
+      "lines": [
+        286,
+        302
+      ],
       "anchors": [
-        { "line": 290, "text": "for (const state of states) {" },
-        { "line": 296, "text": "const sale = aggregateBasisSale({" },
-        { "line": 302, "text": "realizedGains += sale.realizedCapitalGainOrLoss" }
+        {
+          "line": 290,
+          "text": "for (const state of states) {"
+        },
+        {
+          "line": 296,
+          "text": "const sale = aggregateBasisSale({"
+        },
+        {
+          "line": 302,
+          "text": "realizedGains += sale.realizedCapitalGainOrLoss"
+        }
       ]
     },
     {
       "id": "AL.helper.result",
       "label": "complete candidate category, identity, basis, shortfall, and reserve result",
       "file": "projection/internal/annualWithdrawalPlanning.ts",
-      "lines": [305, 318],
+      "lines": [
+        305,
+        318
+      ],
       "anchors": [
-        { "line": 305, "text": "byCategory.total =" },
-        { "line": 311, "text": "return {" },
-        { "line": 316, "text": "shortfall: Math.max(0, remaining)," },
-        { "line": 317, "text": "reserveUsed," }
+        {
+          "line": 305,
+          "text": "byCategory.total ="
+        },
+        {
+          "line": 311,
+          "text": "return {"
+        },
+        {
+          "line": 316,
+          "text": "shortfall: Math.max(0, remaining),"
+        },
+        {
+          "line": 317,
+          "text": "reserveUsed,"
+        }
       ]
     },
     {
       "id": "AL.callsite.strategy",
       "label": "frozen annual strategy contract and lazy sizing callback handoff",
       "file": "projection/internal/annualFundingApplicationAndClosePhase.ts",
-      "lines": [691, 694],
+      "lines": [
+        714,
+        717
+      ],
       "anchors": [
-        { "line": 691, "text": "const withdrawalStrategyResult = annualWithdrawalStrategy(Object.freeze({" },
-        { "line": 694, "text": "readSizing: () => Object.freeze({" }
+        {
+          "line": 714,
+          "text": "const withdrawalStrategyResult = annualWithdrawalStrategy(Object.freeze({"
+        },
+        {
+          "line": 717,
+          "text": "readSizing: () => Object.freeze({"
+        }
       ]
     },
     {
       "id": "AL.callsite.strategyResult",
       "label": "optional warning gate and resolved strategy handoff",
       "file": "projection/internal/annualFundingApplicationAndClosePhase.ts",
-      "lines": [709, 710],
+      "lines": [
+        732,
+        733
+      ],
       "anchors": [
-        { "line": 709, "text": "}))" },
-        { "line": 710, "text": "if (withdrawalStrategyResult.warning !== null) {" }
+        {
+          "line": 732,
+          "text": "}))"
+        },
+        {
+          "line": 733,
+          "text": "if (withdrawalStrategyResult.warning !== null) {"
+        }
       ]
     },
     {
       "id": "AL.callsite.resolvedStrategy",
       "label": "resolved strategy selected for candidate planning",
       "file": "projection/internal/annualFundingApplicationAndClosePhase.ts",
-      "lines": [713, 713],
+      "lines": [
+        736,
+        736
+      ],
       "anchors": [
-        { "line": 713, "text": "const withdrawalStrategy = withdrawalStrategyResult.strategy" }
+        {
+          "line": 736,
+          "text": "const withdrawalStrategy = withdrawalStrategyResult.strategy"
+        }
       ]
     },
     {
       "id": "AL.callsite.plan",
       "label": "fixed-point request delegation and Form 8606 handoff by exact plan identity",
       "file": "projection/internal/annualFundingApplicationAndClosePhase.ts",
-      "lines": [949, 965],
+      "lines": [
+        1025,
+        1041
+      ],
       "anchors": [
-        { "line": 949, "text": "const withdrawalPlan = annualWithdrawalPlan(Object.freeze({" },
-        { "line": 951, "text": "states: Object.freeze([...rmdBalances])," },
-        { "line": 956, "text": "const iraCharacterProbe = needBasedOwnedIraCharacter(" },
-        { "line": 959, "text": "const evaluation = annualFundingCandidateEvaluation(Object.freeze({" },
-        { "line": 963, "text": "iraCharacter: iraCharacterProbe," }
+        {
+          "line": 1025,
+          "text": "const withdrawalPlan = annualWithdrawalPlan(Object.freeze({"
+        },
+        {
+          "line": 1027,
+          "text": "states: Object.freeze([...rmdBalances]),"
+        },
+        {
+          "line": 1032,
+          "text": "const iraCharacterProbe = needBasedOwnedIraCharacter("
+        },
+        {
+          "line": 1035,
+          "text": "const evaluation = annualFundingCandidateEvaluation(Object.freeze({"
+        },
+        {
+          "line": 1039,
+          "text": "iraCharacter: iraCharacterProbe,"
+        }
       ]
     }
   ],

@@ -118,10 +118,20 @@ paste it into receives all of it under your own account and that provider's term
 
 A plan is the complete household model: `household` (people, filing status, state, moves),
 `accounts`, `insurance`, `careEvents`, `incomes`, `expenses`, `strategies`, `assumptions`,
-`annualFederalTaxFacts`, and `scenarios`. The single source of truth for every field is the Zod schema in
+`annualFederalTaxFacts`, `stateTaxFacts`, `inheritedRothTaxCharacterPools`,
+`employerElectiveDeferralHistory`, and `scenarios`. The single source of truth for every field is the Zod schema in
 [`packages/engine/src/model/plan.ts`](../../packages/engine/src/model/plan.ts) — the same schema validates
 IndexedDB reads, JSON imports, and migration output, so there is no separate (drifting) file spec.
 Field-level semantics are documented inline on the schema as doc comments.
+
+Additive audit-phase collections (`stateTaxFacts`, `inheritedRothTaxCharacterPools`,
+`employerElectiveDeferralHistory`) default to empty arrays/objects so existing schemaVersion **5**
+files stay valid without a version bump. QCD conformity policy is **not** a Plan field — it
+resolves from versioned state parameters. HECM `calculationMode` defaults to `legacyQuoteEstimate`
+when omitted. A `hudValidated` HECM additionally requires a verified `hudTransactionKind`;
+only `ordinaryOrigination` is currently modeled, while purchase, refinance, and unknown facts
+are refused rather than defaulted to ordinary origination. Absence of optional inherited-account history / spousal-election / Roth-pool facts
+means unknown, never false or zero.
 
 `schemaVersion` is currently **5**. Plan v3 added the optional
 `retirementActionEligibilityFacts` root for explicitly authored IRA

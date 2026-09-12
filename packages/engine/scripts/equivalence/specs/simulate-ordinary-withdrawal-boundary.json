@@ -8,20 +8,20 @@
       "label": "ordinary source selection and opening-balance snapshots",
       "file": "projection/internal/annualOrdinaryWithdrawalBoundary.ts",
       "lines": [
-        104,
-        123
+        105,
+        124
       ],
       "anchors": [
         {
-          "line": 104,
+          "line": 105,
           "text": "let execution: ExecuteOrdinaryWithdrawalsResult | undefined"
         },
         {
-          "line": 111,
+          "line": 112,
           "text": "if (input.executionRequests.length > 0) {"
         },
         {
-          "line": 117,
+          "line": 118,
           "text": "let openingBalances = [...input.balances]"
         }
       ]
@@ -31,20 +31,20 @@
       "label": "lossless opening-balance adaptation and omission",
       "file": "projection/internal/annualOrdinaryWithdrawalBoundary.ts",
       "lines": [
-        126,
-        137
+        127,
+        138
       ],
       "anchors": [
         {
-          "line": 126,
+          "line": 127,
           "text": ".flatMap((state) => {"
         },
         {
-          "line": 130,
+          "line": 131,
           "text": "openingBalance: planDollarsToLedgerCents(state.balance),"
         },
         {
-          "line": 136,
+          "line": 137,
           "text": "return []"
         }
       ]
@@ -54,20 +54,20 @@
       "label": "taxable source and tax-unit selection",
       "file": "projection/internal/annualOrdinaryWithdrawalBoundary.ts",
       "lines": [
-        157,
-        167
+        158,
+        168
       ],
       "anchors": [
         {
-          "line": 157,
+          "line": 158,
           "text": ": [...input.balances]"
         },
         {
-          "line": 164,
+          "line": 165,
           "text": "ordinarySourceAccountIds.has(state.account.id) &&"
         },
         {
-          "line": 166,
+          "line": 167,
           "text": "state.account.ownerPersonId !== null,"
         }
       ],
@@ -78,24 +78,24 @@
       "label": "taxable opening-basis, ownership, tax-unit, and person evidence",
       "file": "projection/internal/annualOrdinaryWithdrawalBoundary.ts",
       "lines": [
-        175,
-        240
+        176,
+        241
       ],
       "anchors": [
         {
-          "line": 175,
+          "line": 176,
           "text": ".flatMap((state) => {"
         },
         {
-          "line": 182,
+          "line": 183,
           "text": "openingCostBasis: planDollarsToLedgerCents(state.costBasis),"
         },
         {
-          "line": 223,
+          "line": 224,
           "text": "const personAliveEvidence = input.executionRequests.flatMap("
         },
         {
-          "line": 234,
+          "line": 235,
           "text": "return [input.actionPersonAliveEvidence("
         }
       ],
@@ -106,24 +106,24 @@
       "label": "exact-cent execution, aggregate totals, and fact-removal retries",
       "file": "projection/internal/annualOrdinaryWithdrawalBoundary.ts",
       "lines": [
-        242,
-        303
+        243,
+        304
       ],
       "anchors": [
         {
-          "line": 242,
+          "line": 243,
           "text": "while (true) {"
         },
         {
-          "line": 243,
+          "line": 244,
           "text": "execution = executeOrdinaryWithdrawals({"
         },
         {
-          "line": 255,
+          "line": 256,
           "text": "const boundary = assessOrdinaryWithdrawalPlanBoundary(execution)"
         },
         {
-          "line": 288,
+          "line": 289,
           "text": "const unavailableBalanceAccountIds = new Set(["
         }
       ],
@@ -134,20 +134,20 @@
       "label": "committed closing-balance and taxable-basis maps",
       "file": "projection/internal/annualOrdinaryWithdrawalBoundary.ts",
       "lines": [
-        306,
-        318
+        307,
+        319
       ],
       "anchors": [
         {
-          "line": 306,
+          "line": 307,
           "text": "const committedBalances = execution?.committed ? execution.balances : []"
         },
         {
-          "line": 308,
+          "line": 309,
           "text": "const closingCentsByAccountId = new Map("
         },
         {
-          "line": 313,
+          "line": 314,
           "text": "const closingTaxableBasisCentsByAccountId = new Map("
         }
       ]
@@ -157,20 +157,20 @@
       "label": "positional none/write operation derivation",
       "file": "projection/internal/annualOrdinaryWithdrawalBoundary.ts",
       "lines": [
-        319,
-        328
+        320,
+        329
       ],
       "anchors": [
         {
-          "line": 319,
+          "line": 320,
           "text": "const balanceOperations = input.balances.map("
         },
         {
-          "line": 322,
+          "line": 323,
           "text": "if (closingCents === undefined) return { kind: 'none' }"
         },
         {
-          "line": 326,
+          "line": 327,
           "text": "if (state.account.type === 'taxable') {"
         }
       ],
@@ -181,24 +181,24 @@
       "label": "taxable/equity basis writes and complete boundary result",
       "file": "projection/internal/annualOrdinaryWithdrawalBoundary.ts",
       "lines": [
-        332,
-        360
+        333,
+        361
       ],
       "anchors": [
         {
-          "line": 332,
+          "line": 333,
           "text": "closingCostBasis = ledgerCentsToPlanDollars(closingBasisCents)"
         },
         {
-          "line": 333,
+          "line": 334,
           "text": "} else if (state.account.type === 'equityComp' && state.balance > 0) {"
         },
         {
-          "line": 341,
+          "line": 342,
           "text": "return {"
         },
         {
-          "line": 350,
+          "line": 351,
           "text": "return {"
         }
       ]
@@ -208,24 +208,24 @@
       "label": "no-action defaults, guarded boundary invocation, and scalar consumption",
       "file": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
       "lines": [
-        1791,
-        1818
+        1942,
+        1969
       ],
       "anchors": [
         {
-          "line": 1791,
+          "line": 1942,
           "text": "let retirementActionExecution:"
         },
         {
-          "line": 1798,
+          "line": 1949,
           "text": "if (currentYearOrdinaryExecutionActions.length > 0) {"
         },
         {
-          "line": 1799,
+          "line": 1950,
           "text": "const ordinaryWithdrawalBoundary = annualOrdinaryWithdrawalBoundary({"
         },
         {
-          "line": 1818,
+          "line": 1969,
           "text": "if (ordinaryWithdrawalBoundary.balanceOperations.length !== balances.length) {"
         }
       ],
@@ -236,20 +236,20 @@
       "label": "ordinary-withdrawal positional operation selection",
       "file": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
       "lines": [
-        1821,
-        1825
+        1972,
+        1976
       ],
       "anchors": [
         {
-          "line": 1821,
+          "line": 1972,
           "text": "for (const [index, operation] of"
         },
         {
-          "line": 1823,
+          "line": 1974,
           "text": "if (operation.kind === 'none') continue"
         },
         {
-          "line": 1825,
+          "line": 1976,
           "text": "if (state === undefined || state.account.id !== operation.accountId) {"
         }
       ],
@@ -260,20 +260,20 @@
       "label": "ordinary-withdrawal basis and balance mutation",
       "file": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
       "lines": [
-        1828,
-        1831
+        1979,
+        1982
       ],
       "anchors": [
         {
-          "line": 1828,
+          "line": 1979,
           "text": "if (operation.closingCostBasis !== null) {"
         },
         {
-          "line": 1829,
+          "line": 1980,
           "text": "state.costBasis = operation.closingCostBasis"
         },
         {
-          "line": 1831,
+          "line": 1982,
           "text": "state.balance = operation.closingBalance"
         }
       ]

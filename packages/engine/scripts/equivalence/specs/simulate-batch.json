@@ -166,20 +166,20 @@
       "label": "B: the aggregated-IRA credit application, applied at the call site",
       "file": "projection/simulate.ts",
       "lines": [
-        1436,
-        1446
+        1464,
+        1474
       ],
       "anchors": [
         {
-          "line": 1436,
+          "line": 1464,
           "text": "if (row.runtime.creditsAggregatedIra) {"
         },
         {
-          "line": 1437,
+          "line": 1465,
           "text": "recordAnnualRetirementRuntimeApplication({"
         },
         {
-          "line": 1446,
+          "line": 1474,
           "text": "})"
         }
       ],
@@ -190,21 +190,21 @@
       "label": "HECM line open",
       "file": "projection/internal/hecmLineOpenings.ts",
       "lines": [
-        149,
-        170
+        151,
+        176
       ],
       "note": "a member's count here is LOOP-HEADER iterations, not phase work: V8 attributes straight-line code after a conditional `continue` to the enclosing block, so this range reports every plan the loop iterates over at all. Read the sub-entries and the cold regions for what the phase body actually did.",
       "anchors": [
         {
-          "line": 149,
+          "line": 151,
           "text": "for (const account of accounts) {"
         },
         {
-          "line": 159,
+          "line": 165,
           "text": ": null"
         },
         {
-          "line": 170,
+          "line": 176,
           "text": "}"
         }
       ]
@@ -214,20 +214,20 @@
       "label": "C: the under-62 borrower warning",
       "file": "projection/internal/hecmLineOpenings.ts",
       "lines": [
-        156,
-        159
+        162,
+        165
       ],
       "anchors": [
         {
-          "line": 156,
+          "line": 162,
           "text": "const warning ="
         },
         {
-          "line": 157,
+          "line": 163,
           "text": "youngestAge < 62"
         },
         {
-          "line": 159,
+          "line": 165,
           "text": ": null"
         }
       ]
@@ -237,21 +237,21 @@
       "label": "C: the principal-limit / loan-balance computation and the row",
       "file": "projection/internal/hecmLineOpenings.ts",
       "lines": [
-        160,
-        169
+        166,
+        175
       ],
       "note": "SAME ARTIFACT AS BEFORE: this range follows four `continue` statements carrying the five guards, and carries no brace of its own, so its count is the enclosing loop count. Members that genuinely open a line are the blocks:c* members plus any example with a HECM (there are none).",
       "anchors": [
         {
-          "line": 160,
+          "line": 166,
           "text": "const plfPct = account.hecm.principalLimitPct ?? hecmPrincipalLimitFactorPct(pack, youngestAge)"
         },
         {
-          "line": 164,
+          "line": 170,
           "text": "state: {"
         },
         {
-          "line": 169,
+          "line": 175,
           "text": "})"
         }
       ]
@@ -261,22 +261,22 @@
       "label": "property events + growth",
       "file": "projection/internal/propertyEventsAndGrowth.ts",
       "lines": [
-        199,
-        235
+        221,
+        286
       ],
       "note": "a member's count here is LOOP-HEADER iterations, not phase work: V8 attributes straight-line code after a conditional `continue` to the enclosing block, so this range reports every plan the loop iterates over at all. Read the sub-entries and the cold regions for what the phase body actually did.",
       "anchors": [
         {
-          "line": 199,
+          "line": 221,
           "text": "for (const account of accounts) {"
         },
         {
-          "line": 217,
+          "line": 239,
           "text": "}"
         },
         {
-          "line": 235,
-          "text": "rows.push({ propertyAccountId: accountId, value, deposit, closesHecmForAccountId, hecmGrowth, record })"
+          "line": 283,
+          "text": "hecmHudEndingLoanBalance,"
         }
       ]
     },
@@ -285,20 +285,20 @@
       "label": "E: the planned-sale-year branch (post-growth value above zero)",
       "file": "projection/internal/propertyEventsAndGrowth.ts",
       "lines": [
-        209,
-        225
+        231,
+        247
       ],
       "anchors": [
         {
-          "line": 209,
+          "line": 231,
           "text": "if (account.plannedSaleYear === year && value > 0) {"
         },
         {
-          "line": 217,
+          "line": 239,
           "text": "}"
         },
         {
-          "line": 225,
+          "line": 247,
           "text": "}"
         }
       ]
@@ -308,20 +308,20 @@
       "label": "E: the legacy tax-free expectedNetProceeds path (no cost basis)",
       "file": "projection/internal/propertyEventsAndGrowth.ts",
       "lines": [
-        210,
-        223
+        232,
+        245
       ],
       "anchors": [
         {
-          "line": 210,
+          "line": 232,
           "text": "if (account.costBasis === undefined) {"
         },
         {
-          "line": 216,
+          "line": 238,
           "text": "closesHecmForAccountId = accountId"
         },
         {
-          "line": 223,
+          "line": 245,
           "text": "}"
         }
       ]
@@ -331,44 +331,44 @@
       "label": "E: the legacy-sale ledger payload (cashFlow modes only)",
       "file": "projection/internal/propertyEventsAndGrowth.ts",
       "lines": [
-        220,
-        222
+        242,
+        244
       ],
       "note": "unlike A.ledger, this one is STILL cashFlow-only: the payload is gated on a non-null surplusDestination, and the call site passes that field only when the ledger array the payload feeds is itself non-null - the same condition the inlined phase gated its object literal on.",
       "anchors": [
         {
-          "line": 220,
+          "line": 242,
           "text": "if (amount > 0 && surplusDestination !== null) {"
         },
         {
-          "line": 221,
+          "line": 243,
           "text": "record = { propertyAccountId: accountId, amount, destination: surplusDestination }"
         },
         {
-          "line": 222,
+          "line": 244,
           "text": "}"
         }
       ]
     },
     {
       "id": "E.hecmGrowth",
-      "label": "E: an open line compounding at its own growth rate",
+      "label": "open-line principal-limit growth and mode-specific loan balance accrual",
       "file": "projection/internal/propertyEventsAndGrowth.ts",
       "lines": [
-        229,
-        233
+        254,
+        274
       ],
       "anchors": [
         {
-          "line": 229,
+          "line": 254,
           "text": "if (openLine && account.hecm && !accruedLineIds.has(accountId)) {"
         },
         {
-          "line": 231,
+          "line": 256,
           "text": "openLine.principalLimit *= hecmGrowth"
         },
         {
-          "line": 233,
+          "line": 274,
           "text": "accruedLineIds.add(accountId)"
         }
       ]

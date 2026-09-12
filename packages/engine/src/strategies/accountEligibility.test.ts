@@ -1,3 +1,4 @@
+import { annualOwnerTreatmentRoutingFromRows } from './accountEligibility.js'
 import { describe, expect, it } from 'vitest'
 
 import {
@@ -152,8 +153,8 @@ describe('contributions / convertibility / RMD eligibility', () => {
     expect(acceptsContributions(inheritedRoth)).toBe(false)
   })
 
-  it('isTreatAsOwnEffective requires the classifier S2 structural preconditions', () => {
-    // Election alone is not enough — missing sole/unlimited/edb never flips.
+  it('isTreatAsOwnEffective requires accepted annual ownership routing', () => {
+    // A scheduled election alone does not establish annual ownership.
     expect(isTreatAsOwnEffective({
       inherited: {
         beneficiary: {
@@ -163,6 +164,7 @@ describe('contributions / convertibility / RMD eligibility', () => {
       },
     }, 2026)).toBe(false)
     expect(isTreatAsOwnEffective({
+      id: 'accepted-spouse',
       kind: 'ira',
       inherited: {
         ownerDeathYear: 2024,
@@ -174,7 +176,7 @@ describe('contributions / convertibility / RMD eligibility', () => {
           spouseUnlimitedWithdrawalRight: true,
         },
       },
-    }, 2026)).toBe(true)
+    }, 2026, new Map([['accepted-spouse', true]]))).toBe(true)
     expect(isTreatAsOwnEffective({
       kind: 'ira',
       inherited: {
@@ -243,29 +245,29 @@ describe('contributions / convertibility / RMD eligibility', () => {
 
     it('refuses treat-as-own for pre-2020 owner death despite otherwise valid spouse election facts', () => {
       expect(isTreatAsOwnEffective({
-        kind: 'ira',
+        id: 's2', kind: 'ira',
         inherited: {
           ownerDeathYear: 2019,
           beneficiary: spouseElectionFacts,
         },
-      }, electionYear)).toBe(produced)
+      }, electionYear, new Map([['s2', true]]))).toBe(produced)
       expect(isTreatAsOwnEffective({
-        kind: 'ira',
+        id: 's2', kind: 'ira',
         inherited: {
           ownerDeathYear: 2019,
           beneficiary: spouseElectionFacts,
         },
-      }, electionYear)).not.toBe(accepted)
+      }, electionYear, new Map([['s2', true]]))).not.toBe(accepted)
     })
 
     it('permits treat-as-own at the election year once owner death is not before 2020', () => {
       expect(isTreatAsOwnEffective({
-        kind: 'ira',
+        id: 's2', kind: 'ira',
         inherited: {
           ownerDeathYear: 2020,
           beneficiary: spouseElectionFacts,
         },
-      }, electionYear)).toBe(accepted)
+      }, electionYear, new Map([['s2', true]]))).toBe(accepted)
     })
   })
 
@@ -1973,7 +1975,7 @@ describe('outOfScope refusals reached through evaluateRetirementActionEligibilit
           },
         },
       })
-      expect(isTreatAsOwnEffective(effectiveTreatAsOwnInheritedIra, 2026)).toBe(true)
+      expect(isTreatAsOwnEffective(effectiveTreatAsOwnInheritedIra, 2026, new Map([[effectiveTreatAsOwnInheritedIra.id, true]]))).toBe(true)
 
       const eligibility = refuse(qcdRequest(), [effectiveTreatAsOwnInheritedIra])
       expect(eligibility.status).not.toBe('accepted')
@@ -2013,5 +2015,29 @@ describe('outOfScope refusals reached through evaluateRetirementActionEligibilit
     it('accepts the same request once the donor is past 70½, which is also past 59½', () => {
       expect(refuse(qcdRequest(), [ownedIra()])).toEqual({ status: 'accepted', codes: [] })
     })
+  })
+})
+
+// 1.408-8(c): an asserted intended election year is not execution; an
+// accepted annual gate (including deemed-election triggers) determines routing.
+describe('accepted annual owner-treatment routing', () => {
+  const account = { id: 's2', kind: 'ira', inherited: { ownerDeathYear: 2025,
+    beneficiary: { election: 'treat-as-own', treatAsOwnElectionYear: 2026 } } }
+  it('fails closed on proposed years and accepts only the named annual route', () => {
+    expect(isTreatAsOwnEffective(account, 2026)).toBe(false)
+    expect(isTreatAsOwnEffective(account, 2026, new Map([['other', true]]))).toBe(false)
+    expect(isTreatAsOwnEffective(account, 2026, new Map([['s2', false]]))).toBe(false)
+    expect(isTreatAsOwnEffective(account, 2026, new Map([['s2', true]]))).toBe(true)
+  })
+  it('accepts a deemed gate without legacy affirmative flags, retaining the death-year boundary', () => {
+    const deemed = { id: 's2', kind: 'ira', inherited: { ownerDeathYear: 2025 } }
+    const route = new Map([['s2', true]])
+    expect(isTreatAsOwnEffective(deemed, 2026, route)).toBe(true)
+    expect(isTreatAsOwnEffective(deemed, 2025, route)).toBe(false)
+  })
+  it('does not let duplicate published identities certify ownership', () => {
+    const route = annualOwnerTreatmentRoutingFromRows([{ accountId: 's2', ownerTreatment: true },
+      { accountId: 's2', ownerTreatment: true }])
+    expect(isTreatAsOwnEffective(account, 2026, route)).toBe(false)
   })
 })

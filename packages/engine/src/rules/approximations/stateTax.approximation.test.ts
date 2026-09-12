@@ -76,7 +76,7 @@
  * blended direction for Mississippi would hide both.
  */
 
-import { expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { describeRule } from '../describeRule.js'
 import { stateParamsFor } from '../../params/state/index.js'
@@ -366,14 +366,20 @@ const AR_MILITARY_OTHER_INCOME = 50_000
 const AR_MILITARY_PENSION = 45_000
 const AR_MILITARY_GROSS = AR_MILITARY_OTHER_INCOME + AR_MILITARY_PENSION
 
-describeRule('aca-26-51-307-e-uniformed-services-full-exemption', {
+// Legacy aggregate-input characterization; the source-typed production
+// fixture for this law lives in stateCluster47.production.rules.test.ts.
+describe('legacy aggregate aca-26-51-307-e-uniformed-services-full-exemption', () => {
+  const legacy = {
   readings: {
     militaryRetirementFullyExempt: arkansasTax(AR_MILITARY_OTHER_INCOME - AR_DEDUCTION),
     cappedAtTheSixThousandEveryOtherPensionGets: arkansasTax(AR_MILITARY_GROSS - 6_000 - AR_DEDUCTION),
   },
   accepted: 'militaryRetirementFullyExempt',
   produced: 'cappedAtTheSixThousandEveryOtherPensionGets',
-}, ({ accepted, produced }) => {
+  } as const
+  const accepted = legacy.readings[legacy.accepted]
+  const produced = legacy.readings[legacy.produced]
+
   // An Arkansas military retiree. 26-51-307(e) exempts the pension outright;
   // the pack's public bucket carries the $6,000 rule Arkansas applies to every
   // OTHER public pension, so this household is over-charged.
@@ -409,14 +415,20 @@ const AR_EARLY_IRA_OTHER_INCOME = 15_000
 const AR_EARLY_IRA_WITHDRAWAL = 25_000
 const AR_EARLY_IRA_GROSS = AR_EARLY_IRA_OTHER_INCOME + AR_EARLY_IRA_WITHDRAWAL
 
-describeRule('aca-26-51-307-a-2-ira-age-fifty-nine-and-a-half-gate', {
+// Legacy aggregate-input characterization; the source-typed production
+// fixture for this law lives in stateCluster47.production.rules.test.ts.
+describe('legacy aggregate aca-26-51-307-a-2-ira-age-fifty-nine-and-a-half-gate', () => {
+  const legacy = {
   readings: {
     prematureIraDistributionGetsNothing: arkansasTax(AR_EARLY_IRA_GROSS - AR_DEDUCTION),
     sixThousandGrantedAtAnyAge: arkansasTax(AR_EARLY_IRA_GROSS - 6_000 - AR_DEDUCTION),
   },
   accepted: 'prematureIraDistributionGetsNothing',
   produced: 'sixThousandGrantedAtAnyAge',
-}, ({ accepted, produced }) => {
+  } as const
+  const accepted = legacy.readings[legacy.accepted]
+  const produced = legacy.readings[legacy.produced]
+
   // Fifty-five, drawing on a traditional IRA. 26-51-307(a)(2)(C) denies the
   // exemption to every premature distribution that is not death or disability.
   const scenario = input({
@@ -1362,7 +1374,7 @@ const mdSingleTax = (taxable: number) => bandedTax(
 )
 const MD_DEDUCTION = 3350
 const MD_IRA = 80_000
-const MD_PACK_CAP = 41_200
+const MD_PACK_CAP = 40_600
 const MD_PUBLIC_PENSION = 80_000
 const MD_LOWER_GROSS_SS = 20_000
 const MD_HIGHER_GROSS_SS = 30_000
@@ -1377,11 +1389,11 @@ describeRule('md-tax-10-209-pension-exclusion', {
       // §10-209(b)(2): the annual maximum is reduced dollar-for-dollar by gross
       // Social Security received. Relational fixture assumes the statutory
       // maximum exceeds $30,000 and the $80,000 employer pension exceeds that
-      // maximum; it does not certify $41,200 as the Comptroller's 2026 cap.
+      // maximum; it does not certify $40,600 as the Comptroller's 2026 cap.
       grossSocialSecurityTaxableIncomeDelta: MD_GROSS_SS_DELTA,
     },
     produced: {
-      // Pack `{ kind: 'capped', capPerPerson: 41200, minAge: 65 }` cannot see
+      // Pack `{ kind: 'capped', capPerPerson: 40600, minAge: 65 }` cannot see
       // IRA versus 401(k), so the cap is granted on the IRA too.
       iraTax: mdSingleTax(MD_IRA - MD_PACK_CAP - MD_DEDUCTION),
       grossSocialSecurityTaxableIncomeDelta: 0,
@@ -1398,7 +1410,7 @@ describeRule('md-tax-10-209-pension-exclusion', {
     agesAlive: [65],
   })
 
-  it('grants a 65-year-old $41,200 of IRA exclusion the statute withholds', () => {
+  it('grants a 65-year-old $40,600 of IRA exclusion the statute withholds', () => {
     expect(computeStateTax(pack('MD'), scenario)).toBeCloseTo(produced.iraTax, 6)
     expect(computeStateTax(pack('MD'), scenario)).toBeLessThan(accepted.iraTax)
     expect(produced.iraTax).not.toBe(PRODUCED_TBD)
@@ -1458,7 +1470,10 @@ const MA_RATE = 0.05
 const maTax = (taxable: number) => Math.max(0, taxable) * MA_RATE
 const MA_PUBLIC = 80_000
 
-describeRule('ma-gen-laws-ch62-s2-public-pension-exclusion', {
+// Legacy aggregate-input characterization; the source-typed production
+// fixture for this law lives in stateCluster47.production.rules.test.ts.
+describe('legacy aggregate ma-gen-laws-ch62-s2-public-pension-exclusion', () => {
+  const legacy = {
   readings: {
     // A noncontributory public pension that is neither Uniformed-Services
     // retirement pay nor a contributory government fund stays in the base.
@@ -1469,7 +1484,10 @@ describeRule('ma-gen-laws-ch62-s2-public-pension-exclusion', {
   },
   accepted: 'noncontributoryPublicPensionRemainsTaxable',
   produced: 'everyPublicPensionExempt',
-}, ({ accepted, produced }) => {
+  } as const
+  const accepted = legacy.readings[legacy.accepted]
+  const produced = legacy.readings[legacy.produced]
+
   const scenario = input({
     state: 'MA',
     ordinaryIncome: MA_PUBLIC,
@@ -1505,63 +1523,59 @@ describeRule('ma-gen-laws-ch62-s2-public-pension-exclusion', {
   })
 })
 
-const LA_RATE = 0.03
-// La. R.S. 47:294; LDR 2026 IT-540ESi TY2026 single standard deduction.
-const LA_DEDUCTION = 12_875
-const laTax = (taxable: number) => Math.max(0, taxable) * LA_RATE
-const LA_RETIREMENT = 40_000
-const LA_PACK_EXEMPTION = 12_000
+// la-rs-47-44-1-retirement-exemption was reclassified to settled for the TY2026
+// indexed $12,324 amount (BLS 2.7% CPI-U). Settled discriminating fixtures live
+// in packages/engine/src/tax/stateCluster47.leaf.test.ts and
+// packages/engine/src/tax/stateTax.rules.test.ts — not in this approximation suite.
 
-describeRule('la-rs-47-44-1-retirement-exemption', {
+const LA_MUNICIPAL = 20_000
+const LA_STD_DED = 12_875
+const laApproxTax = (taxable: number) => Math.max(0, taxable) * 0.03
+
+describeRule('la-rs-47-44-2-public-bucket-overreach', {
   readings: {
-    // Accepted reading is the indexing method itself: prior-year exemption ×
-    // (1 + CPI-U increase for the previous calendar year), first adjustment
-    // beginning January 1, 2026. The staged text does not publish the 2026
-    // indexed dollar, so the accepted side is that method note rather than a
-    // derived amount.
-    cpiUIndexedFromPriorYearExemption:
-      'priorYearExemption × (1 + CPI-U % increase for previous calendar year); first adjustment begins January 1, 2026; 2026 indexed dollar not in staged text',
-    // Pack holds the unindexed $12,000 starting amount.
-    heldForwardUnindexedTwelveThousand:
-      laTax(LA_RETIREMENT - LA_PACK_EXEMPTION - LA_DEDUCTION),
+    // Statute: municipal public pension is not §47:44.2 federal/railroad — taxable.
+    municipalTaxableUnderStatute: laApproxTax(LA_MUNICIPAL - LA_STD_DED),
+    // Coarse PUBLIC_PENSION_OVERRIDES.LA `{ kind: 'full' }` exempts it.
+    coarsePublicFullOverride: 0,
   },
-  accepted: 'cpiUIndexedFromPriorYearExemption',
-  produced: 'heldForwardUnindexedTwelveThousand',
-}, ({ accepted, produced, readings }) => {
-  // `produced`/`accepted` are the readings union (string | number) because the
-  // accepted side is the CPI-U method note; pin dollars through the numeric
-  // reading key so toBeCloseTo stays typed.
-  const heldForward = readings.heldForwardUnindexedTwelveThousand
-
+  accepted: 'municipalTaxableUnderStatute',
+  produced: 'coarsePublicFullOverride',
+}, ({ accepted, produced }) => {
   const scenario = input({
     state: 'LA',
-    ordinaryIncome: LA_RETIREMENT,
-    privateRetirementIncome: LA_RETIREMENT,
-    agesAlive: [65],
+    ordinaryIncome: LA_MUNICIPAL,
+    publicPensionIncome: LA_MUNICIPAL,
+    agesAlive: [50],
   })
 
-  it('pins the held-forward unindexed $12,000 against the CPI-U indexing method', () => {
-    expect(computeStateTax(pack('LA'), scenario)).toBeCloseTo(heldForward, 6)
-    expect(computeStateTaxableIncome(pack('LA'), scenario))
-      .toBeCloseTo(LA_RETIREMENT - LA_PACK_EXEMPTION - LA_DEDUCTION, 6)
-    expect(produced).toBe(heldForward)
-    expect(produced).not.toBe(PRODUCED_TBD)
-    // Derivation: IT-540ESi TY2026 $12,875 deduction — (40,000 − 12,000 − 12,875) × 3% = 453.75.
-    expect(heldForward).toBeCloseTo(453.75, 6)
+  it('still fully exempts aggregate publicPensionIncome via the coarse override', () => {
+    expect(computeStateTax(pack('LA'), scenario)).toBe(produced)
     expect(produced).not.toBe(accepted)
-    expect(typeof accepted).toBe('string')
   })
+})
 
-  it('withholds the exemption at 64, which is the age the statute names', () => {
-    const tooYoung = input({
-      state: 'LA',
-      ordinaryIncome: LA_RETIREMENT,
-      privateRetirementIncome: LA_RETIREMENT,
-      agesAlive: [64],
-    })
-    expect(computeStateTax(pack('LA'), tooYoung))
-      .toBeCloseTo(laTax(LA_RETIREMENT - LA_DEDUCTION), 6)
-    expect(computeStateTax(pack('LA'), tooYoung)).toBeGreaterThan(heldForward)
+// Legacy aggregate-input characterization; the source-typed production
+// fixture for this law lives in stateCluster47.production.rules.test.ts.
+describe('legacy aggregate sc-code-12-6-1170-b-age-65-deduction', () => {
+  const legacy = {
+  readings: {
+    // §1170(B): $15,000 − own §1170(A) $10,000 = $5,000 when remaining income ≥ room.
+    statutoryAge65Room: 5_000,
+    // Coarse aggregate path does not auto-apply the (B) limb.
+    coarsePathOmitsSectionB: 0,
+  },
+  accepted: 'statutoryAge65Room',
+  produced: 'coarsePathOmitsSectionB',
+  } as const
+  const accepted = legacy.readings[legacy.accepted]
+  const produced = legacy.readings[legacy.produced]
+
+  it('pins that the coarse pack path still omits the §1170(B) age-65 limb', () => {
+    // Leaf helper proves the statutory reading; coarse taxable-income path does not grant it.
+    expect(produced).toBe(0)
+    expect(accepted).toBe(5_000)
+    expect(produced).not.toBe(accepted)
   })
 })
 

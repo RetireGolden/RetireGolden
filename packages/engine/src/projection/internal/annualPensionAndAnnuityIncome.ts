@@ -6,7 +6,7 @@
  * exclusion-state writes, contract-value debits, runtime journal rows and
  * cash-flow records at the phase's original orchestration point.
  */
-import type { Account, Person } from '../../model/plan.js'
+import type { Account, PensionSourceKind, Person } from '../../model/plan.js'
 import type { ParameterPack } from '../../params/types.js'
 import { socialSecurityDobParts } from '../../socialSecurity/annualTiming.js'
 import type { SimulatorAnnualRetirementRuntimeOccurrence } from '../annualRetirementRuntimeJournal.js'
@@ -19,7 +19,13 @@ import type {
   PersonYearState,
   QualifiedAnnuityPaymentActivity,
   SimulatorRetirementRuntimeApplication,
+  StateRetirementDistributionFactInput,
 } from '../types.js'
+import {
+  characterizePensionDistribution,
+  isPublicPensionSourceKind,
+  type AnnualPensionDistributionCharacterization,
+} from './stateRetirementFactsAdapter.js'
 
 type RetirementRuntimeApplicationWithoutOrdinal =
   SimulatorRetirementRuntimeApplication extends infer Application
@@ -37,7 +43,7 @@ export interface AnnualPensionCashFlowRecord {
   readonly accountId: string
   readonly payeePersonId: string
   readonly amount: number
-  readonly source: 'private' | 'public'
+  readonly source: PensionSourceKind
 }
 
 export interface AnnualAnnuityCashFlowRecord {
@@ -116,6 +122,15 @@ export interface AnnualPensionAndAnnuityIncomeResult {
   readonly publicPensionOrdinary: number
   readonly qualifiedAnnuityPayments: readonly QualifiedAnnuityPaymentActivity[]
   readonly rows: readonly AnnualPensionAndAnnuityIncomeRow[]
+  /**
+   * Characterized pension distributions for state tax adapters. Present whenever
+   * any pension payment was recognized this year. Empty when none paid.
+   * Authoritative for source identity when present; legacy private/public
+   * aggregates remain for feature-off / uncharacterized plans.
+   */
+  readonly characterizedRetirementDistributions: readonly AnnualPensionDistributionCharacterization[]
+  /** Flat leaf-shaped facts derived from `characterizedRetirementDistributions`. */
+  readonly stateRetirementDistributionFacts: readonly StateRetirementDistributionFactInput[]
 }
 
 function dobYear(person: Readonly<Person>): number {
@@ -133,6 +148,8 @@ export function annualPensionAndAnnuityIncome(
   let publicPensionOrdinary = input.opening.publicPensionOrdinary
   const qualifiedAnnuityPayments: QualifiedAnnuityPaymentActivity[] = []
   const rows: AnnualPensionAndAnnuityIncomeRow[] = []
+  const characterizedRetirementDistributions: AnnualPensionDistributionCharacterization[] = []
+  const annuityStateFacts: StateRetirementDistributionFactInput[] = []
   if (!input.accounts.some(
     (account) => account.type === 'pension' || account.type === 'annuity',
   )) {
@@ -144,6 +161,8 @@ export function annualPensionAndAnnuityIncome(
       publicPensionOrdinary,
       qualifiedAnnuityPayments,
       rows,
+      characterizedRetirementDistributions,
+      stateRetirementDistributionFacts: [],
     }
   }
   // These private shadows preserve ordered duplicate-account consumption even
@@ -209,8 +228,18 @@ export function annualPensionAndAnnuityIncome(
       pensionIncome += amount
       ordinaryIncome += amount
       const source = account.source ?? 'private'
-      if (source === 'public') publicPensionOrdinary += amount
+      if (isPublicPensionSourceKind(source)) publicPensionOrdinary += amount
       else privateRetirementOrdinary += amount
+      const recipientAgeYears = input.peopleStates.find((state) => state.personId === payeePersonId)?.ageAttained ?? 0
+      characterizedRetirementDistributions.push(
+        characterizePensionDistribution({
+          account,
+          sourceOwnerPersonId: ownerId,
+          payeePersonId,
+          federallyIncludedAmount: amount,
+          recipientAgeYears,
+        }),
+      )
       rows.push({
         kind: 'pension',
         accountId: account.id,
@@ -335,6 +364,23 @@ export function annualPensionAndAnnuityIncome(
       : input.peopleStates.find(
           (state) => state.personId !== ownerId && state.alive,
         )?.personId
+    if (recipientPersonId !== undefined && paid > 0) {
+      const recipient = input.personById.get(recipientPersonId)
+      const qualified = account.purchase?.taxQualification === 'qualified'
+      annuityStateFacts.push({
+        accountId: account.id,
+        sourceOwnerPersonId: qualified ? input.annuityContractPoolOwner.get(account.id) ?? ownerId : ownerId,
+        ownerPersonId: recipientPersonId,
+        sourceKind: qualified ? 'ira' : 'ordinaryPrivatePension',
+        ...(qualified ? { accountTaxTreatment: 'traditional' as const, qualifiedPlanType: 'ira' as const } : {}),
+        grossDistribution: paid,
+        federallyIncludedAmount: annuityTaxable,
+        recipientAgeYears: input.peopleStates.find((state) => state.personId === recipientPersonId)?.ageAttained ?? 0,
+        recipientAgeKnown: recipient !== undefined,
+        cause: ownerState.alive ? 'ordinary' : 'death',
+        earlyDistributionDisqualifier: 'unknown',
+      })
+    }
     rows.push({
       kind: 'annuity',
       accountId: account.id,
@@ -363,5 +409,9 @@ export function annualPensionAndAnnuityIncome(
     publicPensionOrdinary,
     qualifiedAnnuityPayments,
     rows,
+    characterizedRetirementDistributions,
+    stateRetirementDistributionFacts: [...characterizedRetirementDistributions.map(
+      (row) => row.fact,
+    ), ...annuityStateFacts],
   }
 }

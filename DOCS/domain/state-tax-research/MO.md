@@ -65,7 +65,7 @@ The pack models this as `retirement: { kind: "capped", capPerPerson: 6000 }`,
 with no age gate.
 
 ## Simplifications / not modeled
-- Public-pension deduction (~$48,000, 2025) not modeled — `capPerPerson: 6000`
+- Characterized retirement facts distinguish Missouri public, private, military, and railroad treatment. The pack-level retirement cap remains a coarse fallback when those identities and household-income facts are unavailable.
   overstates tax for government retirees.
 - The $6,000 private exclusion is **income-phased-out** above $25k/$32k MAGI;
   not modeled (the cap is generous for higher-income retirees who would actually
@@ -77,3 +77,9 @@ with no age gate.
 - https://callnewspapers.com/social-security-benefits-exempt-from-state-income-tax-in-missouri/ — SS fully exempt all ages from 2024 (SB 190).
 - https://smartasset.com/retirement/missouri-retirement-taxes — public-pension deduction (~$48k) vs $6,000 private exclusion with $25k/$32k MAGI phase-out; private IRA/401(k) taxable.
 - https://revisor.mo.gov/main/OneSection.aspx?section=143.124 — current private-retirement deduction, $6,000 cap, and income limits.
+
+## Missouri separates public, private, military and railroad retirement (verified 2026-09-12)
+
+TY2026 public retirement is limited to the $48,967 maximum Social Security benefit less the applicable Social Security subtraction, without the pre-2024 AGI gate. Private retirement is capped at $6,000 per taxpayer and reduced by excess Missouri AGI above $25,000 single/HOH/QSS, $32,000 joint or $16,000 MFS. Military and qualifying Railroad Retirement benefits have separate full-subtraction treatment. Survivor Benefit Plan annuities belong to public pension treatment, not the military subtraction. Characterized source, owner and income facts are required.
+
+Registered as `mo-retirement-income-deduction`. Authority: [Missouri DOR pension FAQ, private maximum and TY2026 public ceiling](https://dor.mo.gov/faq/taxation/individual/pension.html), [RSMo 143.124.5](https://revisor.mo.gov/main/OneSection.aspx?section=143.124).

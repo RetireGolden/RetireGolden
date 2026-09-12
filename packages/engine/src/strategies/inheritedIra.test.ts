@@ -1,3 +1,5 @@
+import { classifyInheritedRegime, inheritedRequirementForYear } from './inheritedIra.js'
+import type { InheritedAccount } from '../model/plan.js'
 import { describe, expect, it } from 'vitest'
 
 import { describeRule } from '../rules/describeRule.js'
@@ -259,5 +261,35 @@ describe('unmodelled: the greater-of test of Treas. Reg. 1.401(a)(9)-5(d)(1)(ii)
     expect(inheritedForcedAmount({ ...base, year: 2023, beneficiaryAge: 81 }))
       .toBeCloseTo(300_000 / 10.5, 6)
     expect(pack.rmd.singleLifeTable[81]).toBe(10.5)
+  })
+})
+
+// IRC 401(a)(9)(B)(ii): confirmed estate, before-RBD death in 2021,
+// no annual minimum in 2025; entire remaining benefit due in 2026.
+describe('confirmed non-designated five-year strategy', () => {
+  const inherited: InheritedAccount = {
+    ownerDeathYear: 2021, decedentHadStartedRmds: false,
+    ownerDeathDate: '2021-06-15',
+    beneficiary: { beneficiaryClass: 'estate', edbCategory: 'none', election: 'none',
+      provenance: { source: 'estate classification reviewed', asOf: '2026-01-01' } },
+    verifiedNonDesignatedRegime: { classification: 'non-designated-beneficiary', schedule: 'five-year',
+      provenance: { source: 'estate classification reviewed', asOf: '2026-01-01' } },
+  }
+  it('routes confirmed facts to the five-year schedule rather than legacy ten-year approximation', () => {
+    const classification = classifyInheritedRegime({ accountType: 'traditional', accountKind: 'ira', inherited })
+    expect(classification).toMatchObject({ kind: 'regime', regime: 'non-designated-five-year', finalDeadlineYear: 2026 })
+    if (classification.kind !== 'regime') return
+    expect(inheritedRequirementForYear({ pack, classification, inherited, year: 2025,
+      priorYearEndBalance: 10000 }).requiredAmount).toBe(0)
+    expect(inheritedRequirementForYear({ pack, classification, inherited, year: 2026,
+      priorYearEndBalance: 10000 }).requiredAmount).toBe(10000)
+    expect(inheritedRequirementForYear({ pack, classification, inherited, year: 2027,
+      priorYearEndBalance: 2000 }).requiredAmount).toBe(2000)
+  })
+  it('refuses uncertain entity classification and contradictions', () => {
+    expect(classifyInheritedRegime({ accountType: 'traditional', accountKind: 'ira',
+      inherited: { ...inherited, ownerDeathDate: undefined } }).kind).toBe('refusal')
+    expect(classifyInheritedRegime({ accountType: 'traditional', accountKind: 'ira',
+      inherited: { ...inherited, decedentHadStartedRmds: true } }).kind).toBe('refusal')
   })
 })

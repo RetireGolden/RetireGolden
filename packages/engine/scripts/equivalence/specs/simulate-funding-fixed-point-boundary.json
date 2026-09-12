@@ -7,7 +7,10 @@
       "id": "AD.helper.root",
       "label": "bounded funding-root setup, direct iteration, and accepted-root identity",
       "file": "projection/internal/annualFundingFixedPoint.ts",
-      "lines": [105, 126],
+      "lines": [
+        105,
+        126
+      ],
       "anchors": [
         {
           "line": 105,
@@ -27,7 +30,10 @@
       "id": "AD.helper.bracket",
       "label": "finite-portfolio bracket setup and bounded upper expansion",
       "file": "projection/internal/annualFundingFixedPoint.ts",
-      "lines": [129, 148],
+      "lines": [
+        129,
+        148
+      ],
       "anchors": [
         {
           "line": 129,
@@ -47,7 +53,10 @@
       "id": "AD.helper.bisection",
       "label": "sign-change bisection and closest bracket updates",
       "file": "projection/internal/annualFundingFixedPoint.ts",
-      "lines": [165, 193],
+      "lines": [
+        165,
+        193
+      ],
       "anchors": [
         {
           "line": 165,
@@ -67,7 +76,10 @@
       "id": "AD.helper.hecm",
       "label": "coordinated-HECM outer probes and accepted cash-input reset",
       "file": "projection/internal/annualFundingFixedPoint.ts",
-      "lines": [206, 257],
+      "lines": [
+        206,
+        257
+      ],
       "anchors": [
         {
           "line": 206,
@@ -87,7 +99,10 @@
       "id": "AD.helper.acceptedRoot",
       "label": "final accepted funding root before caller-owned commits",
       "file": "projection/internal/annualFundingFixedPoint.ts",
-      "lines": [259, 265],
+      "lines": [
+        259,
+        265
+      ],
       "anchors": [
         {
           "line": 259,
@@ -103,18 +118,21 @@
       "id": "AD.callsite.inputs",
       "label": "settled annual funding facts grouped at the coordinator callsite",
       "file": "projection/internal/annualFundingApplicationAndClosePhase.ts",
-      "lines": [973, 983],
+      "lines": [
+        1049,
+        1059
+      ],
       "anchors": [
         {
-          "line": 973,
+          "line": 1049,
           "text": "const fundingFixedPoint = annualFundingFixedPoint({"
         },
         {
-          "line": 974,
+          "line": 1050,
           "text": "spendingUsesBeforeTax: expenses.total + contributions,"
         },
         {
-          "line": 982,
+          "line": 1058,
           "text": "evaluate: evaluateWithdrawalNeed,"
         }
       ]
@@ -123,18 +141,21 @@
       "id": "AD.callsite.outputs",
       "label": "accepted cash, HECM, evaluation, and convergence handoff",
       "file": "projection/internal/annualFundingApplicationAndClosePhase.ts",
-      "lines": [984, 993],
+      "lines": [
+        1060,
+        1069
+      ],
       "anchors": [
         {
-          "line": 984,
+          "line": 1060,
           "text": "const cashInflows = fundingFixedPoint.acceptedCashInflows"
         },
         {
-          "line": 985,
+          "line": 1061,
           "text": "hecmDraw = fundingFixedPoint.acceptedCoordinatedHecmDraw"
         },
         {
-          "line": 991,
+          "line": 1067,
           "text": "evaluationCount: acaEvaluationCount,"
         }
       ]

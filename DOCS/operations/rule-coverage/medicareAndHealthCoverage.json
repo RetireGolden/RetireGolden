@@ -14,8 +14,8 @@
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-27",
-      "dueOn": "2027-08-27",
+      "verifiedOn": "2026-09-12",
+      "dueOn": "2027-09-12",
       "implementedBy": [
         "packages/engine/src/model/plan.ts",
         "packages/engine/src/projection/internal/annualHealthcareExpenses.ts",
@@ -28,7 +28,7 @@
           "functions": [
             {
               "name": "healthcareConfigSchema",
-              "line": 1832
+              "line": 2093
             }
           ]
         },
@@ -46,7 +46,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         },
@@ -79,6 +79,11 @@
           "kind": "agencyGuidance",
           "citation": "POMS HI 01120.000, New Initial Determinations Using Beneficiary Information, table of contents",
           "url": "https://secure.ssa.gov/poms.nsf/lnx/0601120000"
+        },
+        {
+          "kind": "agencyGuidance",
+          "citation": "POMS HI 01120.005 A",
+          "url": "https://secure.ssa.gov/poms.nsf/lnx/0601120005"
         }
       ]
     },
@@ -105,7 +110,7 @@
           "functions": [
             {
               "name": "acaYearContractSchema",
-              "line": 1746
+              "line": 2007
             }
           ]
         },
@@ -114,7 +119,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         }
@@ -177,7 +182,7 @@
           "functions": [
             {
               "name": "itemizedDeductionsSchema",
-              "line": 2028
+              "line": 2289
             }
           ]
         },
@@ -186,7 +191,7 @@
           "functions": [
             {
               "name": "itemizedTotal",
-              "line": 140
+              "line": 149
             }
           ]
         }
@@ -291,7 +296,7 @@
           "functions": [
             {
               "name": "itemizedDeductionsSchema",
-              "line": 2028
+              "line": 2289
             }
           ]
         },
@@ -300,7 +305,7 @@
           "functions": [
             {
               "name": "itemizedTotal",
-              "line": 140
+              "line": 149
             }
           ]
         }
@@ -525,7 +530,7 @@
           "functions": [
             {
               "name": "healthcareConfigSchema",
-              "line": 1832
+              "line": 2093
             }
           ]
         },
@@ -543,7 +548,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         }
@@ -623,12 +628,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/params/params.test.ts",
-          "line": 437,
+          "line": 477,
           "note": "The twenty cents between them is the repayment amount, which the promulgated figure carries and a re-derivation from the actuarial rate drops.",
           "tests": [
             {
               "title": "carries the promulgated premium rather than half the actuarial rate",
-              "line": 444
+              "line": 484
             }
           ]
         }
@@ -674,7 +679,7 @@
           "functions": [
             {
               "name": "healthcareConfigSchema",
-              "line": 1832
+              "line": 2093
             }
           ]
         },
@@ -701,7 +706,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         },
@@ -826,7 +831,7 @@
           "functions": [
             {
               "name": "annualFundingApplicationAndClosePhase",
-              "line": 412
+              "line": 435
             }
           ]
         },
@@ -835,7 +840,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         }
@@ -889,7 +894,7 @@
           "functions": [
             {
               "name": "annualFundingApplicationAndClosePhase",
-              "line": 412
+              "line": 435
             }
           ]
         },
@@ -898,7 +903,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         }
@@ -966,7 +971,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         }
@@ -1054,7 +1059,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         },
@@ -1074,36 +1079,36 @@
       "fixtures": [
         {
           "path": "packages/engine/src/params/params.test.ts",
-          "line": 330,
+          "line": 370,
           "note": "Values are the top-tier MAGI floor for a single filer in a 2032 premium year at 2 percent inflation.",
           "tests": [
             {
               "title": "resumes indexing after 2027 from a base one year behind the general one",
-              "line": 345
+              "line": 385
             },
             {
               "title": "separates the three readings by the tier a household lands in",
-              "line": 356
+              "line": 396
             },
             {
               "title": "holds the top tier still for every premium year through 2027",
-              "line": 363
+              "line": 403
             },
             {
               "title": "never stops indexing the rows beneath the top one",
-              "line": 371
+              "line": 411
             },
             {
               "title": "carves out the 150 percent joint figure with the individual one",
-              "line": 382
+              "line": 422
             },
             {
               "title": "keeps rounding the top row once a post-freeze pack carries it forward",
-              "line": 400
+              "line": 440
             },
             {
               "title": "refuses a pack year that cannot measure from the August 2026 base",
-              "line": 417
+              "line": 457
             }
           ]
         }
@@ -1284,16 +1289,17 @@
       "title": "Part D late-enrollment and drug-cost rules are not modeled",
       "classification": "outOfScope",
       "errorDirection": null,
-      "conventionRationale": "healthcareConfigSchema admits a generic medicareExtrasMonthlyPerPerson amount, but it is a user-entered aggregate expense rather than a Part D result. model/plan.ts and params/types.ts have no accepted fields for uncovered months, a national base beneficiary premium, a PDP or MA-PD plan, drug claims, a covered insulin product, negotiated or maximum-fair prices, or incurred cost sharing; simulate.ts consequently cannot derive a late penalty, annual threshold, or product-level copayment. The annual-index formula cannot by itself establish the 2026 dollar amount without the missing annual percentage determination, while the 2026 insulin ceiling is fully stated in the enacted text.",
+      "conventionRationale": "healthcareConfigSchema admits a generic medicareExtrasMonthlyPerPerson amount, but it is a user-entered aggregate expense rather than a Part D result. model/plan.ts has no accepted fields for uncovered months, a national base beneficiary premium, a PDP or MA-PD plan, drug claims, a covered insulin product, negotiated or maximum fair prices, or incurred cost sharing; simulate.ts consequently cannot derive a late penalty or product-level copayment. The CY 2026 $2,100 out-of-pocket threshold is a pack parameter sourced from CMS final instructions; runtime benefit design remains out of scope without claim inputs.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "annuallyIndexed",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-29",
-      "dueOn": "2026-12-27",
+      "verifiedOn": "2026-09-12",
+      "dueOn": "2027-01-10",
       "implementedBy": [
         "packages/engine/src/model/plan.ts",
+        "packages/engine/src/params/data/year2026.ts",
         "packages/engine/src/params/types.ts",
         "packages/engine/src/projection/internal/annualHealthcareExpenses.ts",
         "packages/engine/src/projection/simulate.ts"
@@ -1304,7 +1310,16 @@
           "functions": [
             {
               "name": "healthcareConfigSchema",
-              "line": 1832
+              "line": 2093
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/data/year2026.ts",
+          "functions": [
+            {
+              "name": "year2026",
+              "line": 16
             }
           ]
         },
@@ -1331,7 +1346,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         }
@@ -1362,9 +1377,9 @@
           "url": "https://www.govinfo.gov/content/pkg/PLAW-117publ169/pdf/PLAW-117publ169.pdf"
         },
         {
-          "kind": "statute",
-          "citation": "P.L. 117-169, section 11406(a), adding 1860D-2(b)(9)(B)(ii)",
-          "url": "https://www.govinfo.gov/content/pkg/PLAW-117publ169/pdf/PLAW-117publ169.pdf"
+          "kind": "agencyGuidance",
+          "citation": "CMS Final CY 2026 Part D Redesign Program Instructions, section 10 and appendix section 100",
+          "url": "https://www.cms.gov/files/document/final-cy-2026-part-d-redesign-program-instruction.pdf"
         },
         {
           "kind": "statute",

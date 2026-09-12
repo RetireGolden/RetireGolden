@@ -20,6 +20,7 @@ export declare function verdictFor(
   entry: { readonly quotedText: string },
   source: QuoteVerdictSource,
 ): { readonly verdict: string; readonly detail: string }
+export declare function decodeHtmlBody(body: Buffer, contentType?: string): string
 export declare function htmlVariants(html: string): string[]
 export declare function fallbackEligible(host: string, status: number): boolean
 /**

@@ -1,3 +1,14 @@
+import type { InheritedAccountYearEvidence } from './types.js'
+import { deriveAnnualStateRailroadBenefits } from './internal/annualStateRailroadFacts.js'
+import { applyAcceptedPensionBasisToYearFacts, commitAcceptedPensionBasis, type AcceptedStatePensionBasisSnapshot } from './internal/statePensionBasisLifecycle.js'
+import { applyAcceptedNjIraBasisToYearFacts, commitAcceptedNjIraBasis, type AcceptedStateNjIraBasisSnapshot } from './internal/stateNjIraBasisLifecycle.js'
+import type { SpousalElectionSimulationContext } from '../actions/beneficiarySpousalElectionAnnualGate.js'
+import { asUsdCents } from '../actions/money.js'
+import { computeFederalTax } from '../tax/federalTax.js'
+import { normalizeTaxComputation } from './types.js'
+import { buildAnnualStateHouseholdFacts } from './internal/annualStateHouseholdFacts.js'
+import { applyAcceptedHsaBasisToYearFacts, commitAcceptedHsaBasis, type AcceptedStateHsaBasisSnapshot } from './internal/stateHsaBasisLifecycle.js'
+import { inheritedRothFactsToOwnerRothBasis } from './internal/inheritedRothTaxCharacter.js'
 /**
  * Deterministic annual-ledger simulation (roadmap V1).
  *
@@ -86,7 +97,7 @@ import {
   type SimulatorRetirementRuntimeApplicationWithoutOrdinal,
 } from './internal/annualContributionReconciliationPhase.js'
 import { annualPensionAndAnnuityIncome } from './internal/annualPensionAndAnnuityIncome.js'
-import { hecmLineOpenings } from './internal/hecmLineOpenings.js'
+import { hecmLineOpeningsWithHudValidation } from './internal/hecmHudValidatedOpeningAdapter.js'
 import { pensionLumpSumRollovers } from './internal/pensionLumpSumRollovers.js'
 import { tipsLadderAnnualCashFlows, type TipsLadderState } from './internal/tipsLadderAnnualCashFlow.js'
 import { tipsLadderPurchaseFunding } from './internal/tipsLadderPurchaseFunding.js'
@@ -101,6 +112,12 @@ import {
   rmdApplicablePlanForAccount as identifyRmdApplicablePlan,
 } from '../rmd/rmdApplicablePlanForAccount.js'
 import { type RothBasisState } from '../strategies/rothBasis.js'
+import {
+  initializeInheritedRothPoolState,
+  inheritedRothPoolKey,
+} from './internal/inheritedRothTaxCharacterPoolState.js'
+import { gateSpousalElectionFromInheritedAccount } from './internal/beneficiarySpousalElectionGateAdapter.js'
+
 import {
   classifyInheritedRegime,
   inheritedIraRefusalCode,
@@ -745,6 +762,17 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     account: Extract<Account, { type: 'roth' }>,
   ): boolean => account.inherited !== undefined
   const rothBasis = new Map<string, RothBasisState>()
+  // Inherited Roth tax-character pools — attempt-scoped; clone for counterfactuals.
+  const inheritedRothPools = initializeInheritedRothPoolState(plan)
+  const modeledSpousalHistory = new Map<string, SpousalElectionSimulationContext['requiredDistributionHistory']>()
+  let acceptedStateNjIraBasis: readonly AcceptedStateNjIraBasisSnapshot[] = []
+  const completedSpousalRothBasisHandoffs = new Set<string>()
+  let acceptedStatePensionBasis: readonly AcceptedStatePensionBasisSnapshot[] = []
+  let acceptedStateHsaBasis: readonly AcceptedStateHsaBasisSnapshot[] = []
+  // Preserve a pristine clone for optimizer/fixed-point re-entry without shared mutation.
+
+  // Live pool map is read by inherited-distribution character wiring below.
+
   /**
    * Observation-only: remaining contribution basis that exists only because
    * `contributionBasis` was omitted (seeded as the account balance). Depletes
@@ -1458,18 +1486,24 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // the map write interleave in ONE loop here, exactly as they did inline,
     // because `warnings` is a Set spread into the result and `hecmStates` is
     // insertion-ordered, so both positions are observable.
-    for (const row of hecmLineOpenings({
-      accounts: plan.accounts,
-      year,
-      startYear,
-      propertyValues,
-      openHecmLines: hecmStates,
-      people,
-      dobYear,
-      pack,
-    })) {
-      if (row.warning !== null) warnings.add(row.warning)
-      hecmStates.set(row.propertyAccountId, row.state)
+    const annualHecmOpeningIssues: string[] = []
+    {
+      const hecmOpen = hecmLineOpeningsWithHudValidation({
+        accounts: plan.accounts,
+        year,
+        startYear,
+        propertyValues,
+        openHecmLines: hecmStates,
+        people,
+        dobYear,
+        pack,
+      })
+      for (const warning of hecmOpen.warnings) { warnings.add(warning); annualHecmOpeningIssues.push(warning) }
+      for (const row of hecmOpen.rows) {
+        if (row.warning !== null) warnings.add(row.warning)
+        hecmStates.set(row.propertyAccountId, row.state)
+        if ((row.borrowerAdvanceCashReceipt ?? 0) > 0) deposit(row.borrowerAdvanceCashReceipt!)
+      }
     }
 
     // --- TIPS-ladder purchase funding ---------------------------------------
@@ -1672,6 +1706,42 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     ordinaryIncome = pensionAndAnnuity.ordinaryIncome
     privateRetirementOrdinary = pensionAndAnnuity.privateRetirementOrdinary
     publicPensionOrdinary = pensionAndAnnuity.publicPensionOrdinary
+    const stateRetirementDistributions =
+      pensionAndAnnuity.stateRetirementDistributionFacts
+    const enrichAnnualStateFacts = (input: Parameters<TaxCalculator['compute']>[0]) => {
+      const federal = computeFederalTax(input)
+      const household = buildAnnualStateHouseholdFacts({
+        plan, taxYear: year, socialSecurityStreams,
+        federal: { agi: federal.agi, deductionUsed: federal.deduction,
+          taxableIncome: federal.taxableIncome, taxableSocialSecurity: federal.taxableSocialSecurity,
+          taxExemptInterest: input.taxExemptInterest ?? 0 },
+        railroadBenefits: deriveAnnualStateRailroadBenefits(pensionAndAnnuity),
+        claimantPersonIds: people.filter((person) => stateOf(person.id).alive).map((person) => person.id),
+      })
+      return { ...input, stateHouseholdFacts: { ...input.stateHouseholdFacts, ...household.householdFacts },
+        stateNjIraOwnerPools: applyAcceptedNjIraBasisToYearFacts(input.stateNjIraOwnerPools, year, acceptedStateNjIraBasis,
+          people.map((person) => {
+            const rows = plan.stateTaxFacts.iraBasisYearEvidence.filter((row) => row.taxYear === year && row.state === 'NJ' && row.ownerPersonId === person.id)
+            const complete = rows.length > 0 && rows.every((row) => row.postYearContributionsThroughFilingDeadline !== undefined)
+            return { ownerPersonId: person.id, amount: complete
+              ? { known: true as const, amount: (stateNjTaxedContributions.get(person.id) ?? 0) + rows.reduce((sum,row) => sum + row.postYearContributionsThroughFilingDeadline!, 0) }
+              : { known: false as const } }
+          })),
+        stateRetirementDistributions: applyAcceptedPensionBasisToYearFacts(input.stateRetirementDistributions, input.state ?? plan.household.state, year, acceptedStatePensionBasis),
+        stateHsaAccountYearFacts: applyAcceptedHsaBasisToYearFacts(input.stateHsaAccountYearFacts,
+          input.state ?? plan.household.state, year, acceptedStateHsaBasis),
+      }
+    }
+    const annualSpousalElectionIssues: string[] = []
+    const annualTaxCalculator: TaxCalculator = {
+      prepareInput: enrichAnnualStateFacts,
+      compute: (input) => taxCalculator.compute(enrichAnnualStateFacts(input)),
+      computeResult: (input) => {
+        const result = normalizeTaxComputation(taxCalculator, enrichAnnualStateFacts(input))
+        return annualSpousalElectionIssues.length === 0 ? result : { ...result, status: 'incomplete',
+          issues: [...result.issues, ...annualSpousalElectionIssues.map((message) => ({code: 'incomplete-spousal-owner-treatment', year, message}))] }
+      },
+    }
     const qualifiedAnnuityPayments = pensionAndAnnuity.qualifiedAnnuityPayments
     for (const row of pensionAndAnnuity.rows) {
       if (row.kind === 'pension') {
@@ -1877,6 +1947,38 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     // reconciliation, the seven exact totals, and the apply pass that commits
     // balances, bases, Roth pools, section 219 offsets, journal rows, warnings
     // and cash-flow records, in that order.
+    const employerPriorElectiveByPlanKey = new Map<
+      string,
+      | { readonly status: 'unknown' }
+      | {
+          readonly status: 'known'
+          readonly designatedRothElectiveDeferrals: number
+          readonly totalElectiveDeferrals: number
+          readonly asOfDate: string
+        }
+    >()
+    for (const row of plan.employerElectiveDeferralHistory) {
+      if (row.contributionYear !== year) continue
+      const key = `${row.ownerPersonId}\0${row.employerPlanId}`
+      // Mixed/duplicate snapshots for the same key fail closed to unknown.
+      if (employerPriorElectiveByPlanKey.has(key)) {
+        employerPriorElectiveByPlanKey.set(key, { status: 'unknown' })
+        warnings.add(
+          `Employer elective deferral history for ${row.ownerPersonId}/${row.employerPlanId} in ${year} has mixed snapshots; prior contributions treated as unknown.`,
+        )
+        continue
+      }
+      employerPriorElectiveByPlanKey.set(key, {
+        status: 'known',
+        designatedRothElectiveDeferrals: row.designatedRothElectiveDeferrals,
+        totalElectiveDeferrals: row.totalElectiveDeferrals,
+        asOfDate: row.asOf,
+      })
+    }
+    const iraBeforeContribution = new Map(balances.filter((row) => row.account.type === 'traditional' && row.account.kind === 'ira')
+      .map((row) => [row.account.id, row.balance]))
+    const hsaBeforeContribution = new Map(balances.filter((row) => row.account.type === 'hsa')
+      .map((row) => [row.account.id, row.balance]))
     const contributionReconciliation = annualContributionReconciliationPhase({
       balances,
       year,
@@ -1897,6 +1999,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       runtimeOccurrenceKey,
       indexWithStatutoryRounding,
       pack,
+      employerPriorElectiveByPlanKey,
       warnings,
       rothBasis,
       qcdSection219ByDonor,
@@ -1904,6 +2007,15 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       recordAnnualRetirementRuntimeApplication,
       yearSites,
     })
+    const stateNjTaxedContributions = new Map<string, number>()
+    for (const row of balances) {
+      if (row.account.type !== 'traditional' || row.account.kind !== 'ira') continue
+      const owner = row.account.ownerPersonId ?? primary.id
+      stateNjTaxedContributions.set(owner, (stateNjTaxedContributions.get(owner) ?? 0) +
+        row.balance - (iraBeforeContribution.get(row.account.id) ?? row.balance))
+    }
+    const stateHsaContributions = new Map(balances.filter((row) => row.account.type === 'hsa')
+      .map((row) => [row.account.id, row.balance - (hsaBeforeContribution.get(row.account.id) ?? row.balance)]))
     const contributions = contributionReconciliation.contributions
     const ownedNonRothIraContributions =
       contributionReconciliation.ownedNonRothIraContributions
@@ -1999,6 +2111,81 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           (value) => { ownedNonRothIraSettlementRolledBackHousehold = value },
         ),
       }
+
+    // Resolve spouse treatment at each annual opening from observed facts and committed simulation history.
+    // This deliberately does not cache a startup routing decision or feed this
+    // year's planned distribution back as historical evidence.
+    const spousalOwnerTreatmentAccountIds = new Set<string>()
+    for (const state of annualIdKeyedBalances) {
+      if (
+        (state.account.type !== 'traditional' && state.account.type !== 'roth') ||
+        state.account.inherited?.beneficiary?.edbCategory !== 'surviving-spouse'
+      ) continue
+      const gate = gateSpousalElectionFromInheritedAccount({
+        account: state.account,
+        taxYear: year,
+        simulationContext: modeledSpousalHistory.has(state.account.id) ? {
+          simulationId: plan.id, committedThroughTaxYear: year - 1,
+          requiredDistributionHistory: modeledSpousalHistory.get(state.account.id)!,
+          nonRolloverContributions: [],
+        } : undefined,
+      })
+      if (gate !== null && gate?.status !== 'evaluated' &&
+        state.account.inherited.beneficiary?.election === 'treat-as-own' &&
+        year >= (state.account.inherited.beneficiary.treatAsOwnElectionYear ?? year)) {
+        const message = `Spousal owner treatment for ${state.account.id} requires complete dated election and distribution history.`
+        annualSpousalElectionIssues.push(message)
+        warnings.add(message)
+      }
+      if (gate?.status === 'evaluated' && gate.routeToOwnerTreatment && year > state.account.inherited.ownerDeathYear) {
+        if (state.account.type === 'roth' && state.account.inherited.decedentId === undefined) {
+          warnings.add('Spousal Roth owner treatment requires the inherited decedent basis identity.')
+              annualSpousalElectionIssues.push('Spousal Roth owner treatment requires the inherited decedent basis identity.')
+          continue
+        }
+        if (state.account.type === 'roth' && state.account.inherited?.decedentId !== undefined) {
+          const key = inheritedRothPoolKey(state.account.ownerPersonId ?? primary.id, state.account.inherited.decedentId)
+          const pool = inheritedRothPools.get(key)
+          if (pool === undefined && !completedSpousalRothBasisHandoffs.has(key)) {
+            warnings.add('Spousal Roth owner treatment requires a verified inherited contribution and conversion basis pool.')
+              annualSpousalElectionIssues.push('Spousal Roth owner treatment requires a verified inherited contribution and conversion basis pool.')
+            continue
+          }
+          if (pool !== undefined) {
+            const handoff = inheritedRothFactsToOwnerRothBasis({
+              beneficiaryId: pool.beneficiaryPersonId, decedentId: pool.decedentId,
+              decedentFirstRothContributionTaxYear: pool.firstRothContributionTaxYear,
+              remainingRegularContributionBasis: pool.remainingRegularContributionBasis,
+              conversionLayers: pool.conversionLayers,
+              priorDistributionsConsumedAmount: pool.priorDistributionsConsumedAmount,
+              basisAsOfDate: pool.basisAsOfDate,
+            })
+            if ('status' in handoff) {
+              warnings.add('Spousal Roth owner treatment requires known inherited contribution and conversion basis.')
+              annualSpousalElectionIssues.push('Spousal Roth owner treatment requires known inherited contribution and conversion basis.')
+              continue
+            }
+            const ownerKey = rothPoolKey(state.account)
+            const prior = rothBasis.get(ownerKey)
+            rothBasis.set(ownerKey, {
+              contributionBasis: (prior?.contributionBasis ?? 0) + handoff.contributionBasis,
+              conversionLayers: [...(prior?.conversionLayers ?? []), ...handoff.conversionLayers]
+                .sort((a, b) => a.year - b.year),
+            })
+            inheritedRothPools.delete(key)
+            completedSpousalRothBasisHandoffs.add(key)
+          }
+        }
+        spousalOwnerTreatmentAccountIds.add(state.account.id)
+      }
+    }
+
+    const ownerTreatmentRouting = new Map(plan.accounts.filter((account) =>
+      (account.type === 'traditional' || account.type === 'roth') && account.inherited !== undefined
+    ).map((account) => [account.id, spousalOwnerTreatmentAccountIds.has(account.id) &&
+      (account.type === 'traditional' || account.type === 'roth') && year > account.inherited!.ownerDeathYear]))
+    const annualOwnerTreatment: typeof isTreatAsOwnEffective = (account, calendarYear) =>
+      isTreatAsOwnEffective(account, calendarYear, ownerTreatmentRouting)
 
     const runPostContributionAnnualPass = (
       assumedEffects:
@@ -2235,6 +2422,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           namedQcdOffsetConsumedByDonor,
           namedQcdOffsetHistoryUnprovable,
           rothBasis,
+          inheritedRothPools,
           warnings,
           annuityContractDistributions,
           initialRmdNontaxable: rmdNontaxable,
@@ -2242,10 +2430,12 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         },
         callbacks: Object.freeze({
           stateOf,
-          isTreatAsOwnEffective,
+          isTreatAsOwnEffective: annualOwnerTreatment,
           rmdApplicablePlanForAccount,
           startOfYearBalance,
           inheritedClassCache,
+          spousalOwnerTreatmentForYear: (accountId: string) =>
+            ownerTreatmentRouting.get(accountId) === true,
           rmdReliefElectionFor,
           splitWithAssumedCharacter,
           resolveAssumedCharacter,
@@ -2287,7 +2477,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         taxFilingStatusForYear,
         filingStatusForYear,
         safetyNetFloorToday,
-        taxCalculator,
+        taxCalculator: annualTaxCalculator,
         ordinaryIncome,
         preTaxContributions,
         oneTimeGains,
@@ -2307,6 +2497,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         planHasTaxExemptYieldAttestation,
         assumedEffects,
         inflFactorFrom,
+        stateRetirementDistributions: [...stateRetirementDistributions.map((fact) => ({ ...fact, federallyIncludedAmount: Math.max(0, fact.federallyIncludedAmount - (forcedDistributionPhase.annuityStateBasisReturnByAccount?.get(fact.accountId ?? '') ?? 0)) })), ...forcedDistributionPhase.stateRetirementDistributionFacts],
+        stateQcdEventFacts: forcedDistributionPhase.stateQcdEventFacts,
       }),
       prior: forcedDistributionPhase,
       ledger: {
@@ -2337,6 +2529,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       iraProRata,
       iraBasisByOwner,
       rothBasis,
+      inheritedRothPools,
       rothAssumedContributionRemaining,
       rothCounterfactualFreeCoverConsumed,
       form8606ConsequentialByOwner,
@@ -2373,7 +2566,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         taxFilingStatusForYear,
         filingStatusForYear,
         safetyNetFloorToday,
-        taxCalculator,
+        taxCalculator: annualTaxCalculator,
         contributions,
         traditionalInflow,
         otherInflow,
@@ -2450,6 +2643,11 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         lifeAgeOf,
         ssa44ActiveInYear,
         canonicalRuntimeOccurrenceOrder,
+        stateHsaContributions,
+        stateRetirementDistributions: [...stateRetirementDistributions.map((fact) => ({ ...fact, federallyIncludedAmount: Math.max(0, fact.federallyIncludedAmount - (forcedDistributionPhase.annuityStateBasisReturnByAccount?.get(fact.accountId ?? '') ?? 0)) })), ...forcedDistributionPhase.stateRetirementDistributionFacts, ...aggregateRothPhase.stateRetirementDistributionFacts],
+        spousalOwnerTreatment: [...ownerTreatmentRouting].map(([accountId, ownerTreatment]) => ({accountId, ownerTreatment})),
+        hecmOpeningIssues: annualHecmOpeningIssues,
+        stateQcdEventFacts: forcedDistributionPhase.stateQcdEventFacts,
       }),
       prior: Object.freeze({
         forcedDistribution: forcedDistributionPhase,
@@ -2458,8 +2656,28 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       ledger: fundingCloseLedger,
       callbacks: Object.freeze({
         stateOf,
-        isTreatAsOwnEffective,
-        isInheritedRothOutsideOwnedPool,
+        isTreatAsOwnEffective: annualOwnerTreatment,
+        evaluateSpousalElectionAtYearEnd: (rows: readonly InheritedAccountYearEvidence[]) => annualIdKeyedBalances.flatMap((state) => {
+          if ((state.account.type !== 'traditional' && state.account.type !== 'roth') ||
+            state.account.inherited?.beneficiary?.edbCategory !== 'surviving-spouse') return []
+          const account = state.account
+          const inherited = account.inherited!
+          const row = rows.find((candidate) => candidate.accountId === account.id)
+          const prior = modeledSpousalHistory.get(account.id) ?? []
+          const current = row !== undefined && year > inherited.ownerDeathYear &&
+            ownerTreatmentRouting.get(account.id) !== true && row.refusalCode === undefined && row.limitation === undefined &&
+            !(inherited.annualDistributionHistory ?? []).some((item) => item.taxYear === year)
+            ? [{ taxYear:year, requiredAmount:asUsdCents(Math.round(row.requiredAmount*100)),
+                distributedAmount:asUsdCents(Math.round((row.executedRequiredAmount+row.voluntaryAmount)*100)),
+                legalDeadline:`${year}-12-31`,commitId:`${plan.id}:${account.id}:${year}:committed` }] : []
+          const gate = gateSpousalElectionFromInheritedAccount({ account,taxYear:year,determinationStage:'endOfTaxYear',
+            simulationContext:{simulationId:plan.id,committedThroughTaxYear:year,
+              requiredDistributionHistory:[...prior,...current],nonRolloverContributions:[]} })
+          return gate === null ? [] : [{ accountId:account.id,status:gate.status,
+            ...(gate.status === 'evaluated' ? {ownerTreatment:gate.routeToOwnerTreatment,
+              evaluationContext:gate.evaluationContext,simulationId:gate.simulationId} : {}) }]
+        }),
+        isInheritedRothOutsideOwnedPool: (account: Extract<Account, { type: 'roth' }>) => account.inherited !== undefined && !spousalOwnerTreatmentAccountIds.has(account.id),
         rothPoolKey,
         splitAnnualIraDistribution,
         resolveAssumedCharacter,
@@ -2516,6 +2734,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       iraProRata,
       iraBasisByOwner,
       rothBasis,
+      inheritedRothPools,
       rothAssumedContributionRemaining,
       rothCounterfactualFreeCoverConsumed,
       propertyValues,
@@ -2570,12 +2789,33 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       state: annualPassState,
       ledger: settlementLedger,
       callbacks: Object.freeze({
-        isTreatAsOwnEffective,
+        isTreatAsOwnEffective: annualOwnerTreatment,
         ownedNonRothIraSettlementEnabled,
         ownedNonRothIraSettlementOwnerEnabled,
         runPostContributionAnnualPass,
       }),
     }))
+    for (const row of settledAnnualPass.yearResult.inheritedAccounts ?? []) {
+      const account = plan.accounts.find((candidate) => candidate.id === row.accountId)
+      if (account?.type !== 'traditional' && account?.type !== 'roth') continue
+      if (account.inherited?.beneficiary?.edbCategory !== 'surviving-spouse') continue
+      if (year <= account.inherited.ownerDeathYear || ownerTreatmentRouting.get(account.id) === true) continue
+      // Only committed projection output, separately labeled, becomes modeled
+      // history. A recommendation or rejected annual pass never enters it.
+      const observedYears = new Set((account.inherited.annualDistributionHistory ?? []).map((item) => item.taxYear))
+      if (observedYears.has(year) || row.refusalCode !== undefined || row.limitation !== undefined) continue
+      const previous = modeledSpousalHistory.get(account.id) ?? []
+      modeledSpousalHistory.set(account.id, [...previous, {
+        taxYear: year, requiredAmount: asUsdCents(Math.round(row.requiredAmount * 100)),
+        distributedAmount: asUsdCents(Math.round((row.executedRequiredAmount + row.voluntaryAmount) * 100)),
+        legalDeadline: `${year}-12-31`, commitId: `${plan.id}:${account.id}:${year}:committed`,
+      }])
+    }
+    if (settledAnnualPass.yearResult.taxComputation !== undefined) {
+      acceptedStateNjIraBasis = commitAcceptedNjIraBasis(year, settledAnnualPass.yearResult.taxComputation, acceptedStateNjIraBasis)
+      acceptedStatePensionBasis = commitAcceptedPensionBasis(year, settledAnnualPass.yearResult.taxComputation, acceptedStatePensionBasis)
+      acceptedStateHsaBasis = commitAcceptedHsaBasis(year, settledAnnualPass.yearResult.taxComputation, acceptedStateHsaBasis)
+    }
     years.push(settledAnnualPass.yearResult)
     if (settledAnnualPass.optimizerProbe !== null) {
       opts.captureOptimizerInputs?.(settledAnnualPass.optimizerProbe)
@@ -2596,7 +2836,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       if (state.account.type !== 'traditional' || state.account.kind !== 'ira') continue
       if (
         state.account.inherited !== undefined &&
-        !isTreatAsOwnEffective(state.account, endYear)
+        !isTreatAsOwnEffective(state.account, endYear, new Map(last?.spousalOwnerTreatment?.map((row) => [row.accountId, row.ownerTreatment]) ?? []))
       ) continue
       if ((state.account.ownerPersonId ?? primary.id) !== ownerId) continue
       ownerIraBalance += state.balance

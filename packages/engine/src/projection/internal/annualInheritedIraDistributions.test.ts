@@ -9,6 +9,7 @@ import type {
 } from '../../model/plan.js'
 import { packForYear } from '../../params/index.js'
 import { computeRmdShortfallExcise } from '../../rmd/rmdShortfallExcise.js'
+import { isTreatAsOwnEffective, type AnnualOwnerTreatmentRouting } from '../../strategies/accountEligibility.js'
 import { classifyInheritedRegime } from '../../strategies/inheritedIra.js'
 import {
   annualInheritedIraDistributions,
@@ -142,16 +143,24 @@ function classEntry(
 }
 
 function run(input: {
+  completedDeadlineObservations?: Parameters<typeof annualInheritedIraDistributions>[0]['completedDeadlineObservations']
   year?: number
+  ownerTreatmentRouting?: AnnualOwnerTreatmentRouting
   startYear?: number
   balances: readonly { account: Readonly<Account>; balance: number }[]
   classEntries: readonly AnnualInheritedIraClassCacheEntry[]
   startOfYear?: readonly (readonly [string, number])[]
   alive?: boolean
+  characterizeInheritedRothDistribution?: Parameters<
+    typeof annualInheritedIraDistributions
+  >[0]['characterizeInheritedRothDistribution']
 }) {
   const year = input.year ?? YEAR
   return annualInheritedIraDistributions({
     year,
+    completedDeadlineObservations: input.completedDeadlineObservations,
+    isTreatAsOwnEffectiveForYear: (account) =>
+      isTreatAsOwnEffective(account, year, input.ownerTreatmentRouting),
     startYear: input.startYear ?? YEAR,
     pack: packForYear(year).pack,
     primaryPersonId: 'beneficiary',
@@ -163,6 +172,9 @@ function run(input: {
       alive: input.alive ?? true,
       ageAttained: year - 1965,
     }),
+    ...(input.characterizeInheritedRothDistribution === undefined
+      ? {}
+      : { characterizeInheritedRothDistribution: input.characterizeInheritedRothDistribution }),
   })
 }
 
@@ -490,6 +502,43 @@ describe('annualInheritedIraDistributions', () => {
     })
   })
 
+  it('threads a mandatory inherited-Roth final sweep through the shared pool character seam', () => {
+    const facts = inherited(2022, false, beneficiary({
+      beneficiaryBirthYear: 1980,
+      roth5YearStartYear: 2030,
+    }), 'roth-decedent')
+    const inheritedRoth = account('roth-final', 'roth', facts, 100)
+    const calls: Array<{ accountId: string; amount: number; decedentId: string | null }> = []
+    const result = run({
+      year: 2032,
+      startYear: 2026,
+      balances: [{ account: inheritedRoth, balance: 100 }],
+      classEntries: [classEntry(inheritedRoth)],
+      startOfYear: [['roth-final', 100]],
+      characterizeInheritedRothDistribution: ({ accountId, decedentId, distributionAmount }) => {
+        calls.push({ accountId, amount: distributionAmount, decedentId })
+        // Independent test fixture: $60 contribution/conversion basis leaves
+        // $40 earnings in a non-qualified inherited Roth distribution.
+        return { ordinaryIncome: 40, status: 'characterized' }
+      },
+    })
+
+    expect(calls).toEqual([{ accountId: 'roth-final', amount: 100, decedentId: 'roth-decedent' }])
+    expect(result.totals).toEqual({
+      inherited: 100,
+      ordinaryIncome: 40,
+      rothForced: 100,
+    })
+    expect(result.rothTaxCharacterOperations).toEqual([{
+      accountId: 'roth-final',
+      beneficiaryPersonId: 'beneficiary',
+      decedentId: 'roth-decedent',
+      distributionAmount: 100,
+      ordinaryIncome: 40,
+      status: 'characterized',
+    }])
+  })
+
   it('keeps three zero-cent account residues as an aggregate plan shortfall', () => {
     const facts = inherited(2022, false, beneficiary({
       beneficiaryBirthYear: 1980,
@@ -694,7 +743,9 @@ describe('annualInheritedIraDistributions', () => {
     })
 
     expect(result.rows[0]?.evidence).toMatchObject({
-      matrixRow: 'S2',
+      // Section1.408-8(c)(3): decedent obligation survives the spouse act;
+      // the opening beneficiary schedule is S0 until accepted owner routing.
+      matrixRow: 'S0',
       requirementKind: 'year-of-death-rmd',
       classification: 'settled',
       divisor: 26.6,
@@ -707,6 +758,7 @@ describe('annualInheritedIraDistributions', () => {
 
     const followingYear = run({
       year: 2027,
+      ownerTreatmentRouting: new Map([['same-year-spouse', true]]),
       balances: [{ account: spouse, balance: 100_000 }],
       classEntries: [classEntry(spouse)],
     })
@@ -718,5 +770,49 @@ describe('annualInheritedIraDistributions', () => {
     })
     expect(followingYear.rows[0]?.distribution).toBeNull()
     expect(followingYear.rmdShortfallObligations).toEqual([])
+  })
+})
+
+
+describe('completed post-deadline annual observation reconciliation', () => {
+  const estate = account('estate', 'traditional', {
+    ownerDeathYear: 2021, ownerDeathDate: '2021-06-01', decedentHadStartedRmds: false,
+    beneficiary: beneficiary({ beneficiaryClass: 'estate', ownerBirthYear: 1960 }),
+    verifiedNonDesignatedRegime: { classification: 'non-designated-beneficiary', schedule: 'five-year',
+      provenance: { source: 'Verified estate instrument', asOf: '2027-12-31' } },
+  }, 10000)
+  const observed = { taxYear: 2027, openingBenefit: 10000, distributedByDeadline: 0,
+    legalDistributionDeadline: '2027-12-31', observedAsOfDate: '2027-12-31',
+    provenance: { source: 'Custodian completed-year balance and distributions statement', asOf: '2027-12-31' } }
+  const execute = (observation: Parameters<typeof annualInheritedIraDistributions>[0]['completedDeadlineObservations']) => run({
+    year: 2027, balances: [{ account: estate, balance: 10000 }], classEntries: [classEntry(estate)],
+    completedDeadlineObservations: observation,
+  })
+  it('assesses 2500 without replaying historical cash or inventing ordinary income, and prices a qualifying correction at1000', () => {
+    const ordinary = execute(new Map([['estate', observed]]))
+    expect(ordinary.totals).toEqual({ inherited: 0, ordinaryIncome: 0, rothForced: 0 })
+    expect(ordinary.rows[0]?.distribution).toBeNull()
+    expect(ordinary.rmdShortfallObligations).toHaveLength(1)
+    expect(ordinary.completedDeadlineAssessments[0]?.excise).toMatchObject({ shortfall: 10000, tax: 2500 })
+    const obligation = ordinary.rmdShortfallObligations[0]!
+    const corrected = execute(new Map([['estate', { ...observed, relief: {
+      obligationId: obligation.obligationId, correctiveDistribution: { amount: 10000,
+        receivedOn: '2028-03-01', sourceApplicablePlan: obligation.applicablePlan,
+        form5329FiledOn: '2028-04-01', returnReflectsReducedTax: true },
+    } }]]))
+    expect(corrected.completedDeadlineAssessments[0]?.excise).toMatchObject({ shortfall: 10000, tax: 1000 })
+    expect(corrected.rmdShortfallObligations).toHaveLength(1)
+    expect(corrected.totals).toEqual(ordinary.totals)
+    expect(corrected.rows[0]?.distribution).toBeNull()
+  })
+  it('refuses unknown history or a premature observation instead of certifying zero excise', () => {
+    for (const observation of [{ ...observed, openingBenefit: 'unknown' as const },
+      { ...observed, observedAsOfDate: '2027-12-30' }]) {
+      const result = execute(new Map([['estate', observation]]))
+      expect(result.deadlineObservationIssues).toHaveLength(1)
+      expect(result.completedDeadlineAssessments).toEqual([])
+      expect(result.rows[0]?.evidence.limitation).toBeDefined()
+      expect(result.rows[0]?.distribution).toBeNull()
+    }
   })
 })

@@ -176,6 +176,7 @@ describe('annualWithdrawalApplyFlowPlan', () => {
     ]
     const result = annualWithdrawalApplyFlowPlan({
       year: 2026,
+      ownerTreatmentRouting: new Map([['duplicate', true]]),
       balances,
       inheritedEvidence: [
         { accountId: 'missing' },

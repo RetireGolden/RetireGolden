@@ -78,7 +78,7 @@
           "functions": [
             {
               "name": "taxableAccountSchema",
-              "line": 412
+              "line": 442
             }
           ]
         }
@@ -127,7 +127,7 @@
           "functions": [
             {
               "name": "capitalGainsTaxStacked",
-              "line": 377
+              "line": 386
             }
           ]
         }
@@ -191,7 +191,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         },
@@ -276,11 +276,11 @@
           "functions": [
             {
               "name": "capitalGainsTaxStacked",
-              "line": 377
+              "line": 386
             },
             {
               "name": "computeFederalTax",
-              "line": 486
+              "line": 495
             }
           ]
         }
@@ -291,12 +291,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 1914,
+          "line": 1945,
           "note": null,
           "tests": [
             {
               "title": "runs qualified dividends through the preferential stack",
-              "line": 1918
+              "line": 1949
             }
           ]
         }
@@ -353,7 +353,7 @@
           "functions": [
             {
               "name": "capitalGainsTaxStacked",
-              "line": 377
+              "line": 386
             }
           ]
         }
@@ -406,11 +406,11 @@
           "functions": [
             {
               "name": "LP_LTCG_RATE",
-              "line": 76
+              "line": 83
             },
             {
               "name": "buildOptimizerInput",
-              "line": 483
+              "line": 490
             }
           ]
         }
@@ -476,7 +476,7 @@
           "functions": [
             {
               "name": "taxableAccountSchema",
-              "line": 412
+              "line": 442
             }
           ]
         },
@@ -494,7 +494,7 @@
           "functions": [
             {
               "name": "BalanceState",
-              "line": 373
+              "line": 390
             }
           ]
         }
@@ -563,7 +563,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         },
@@ -572,7 +572,7 @@
           "functions": [
             {
               "name": "computeFederalTax",
-              "line": 486
+              "line": 495
             }
           ]
         }
@@ -631,7 +631,7 @@
           "functions": [
             {
               "name": "taxableAccountSchema",
-              "line": 412
+              "line": 442
             }
           ]
         },
@@ -649,7 +649,7 @@
           "functions": [
             {
               "name": "applyCapitalLossCarryforward",
-              "line": 459
+              "line": 468
             }
           ]
         }
@@ -718,7 +718,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         },
@@ -913,7 +913,7 @@
           "functions": [
             {
               "name": "applyCapitalLossCarryforward",
-              "line": 459
+              "line": 468
             }
           ]
         }
@@ -966,7 +966,7 @@
           "functions": [
             {
               "name": "applyCapitalLossCarryforward",
-              "line": 459
+              "line": 468
             }
           ]
         }
@@ -1026,7 +1026,7 @@
           "functions": [
             {
               "name": "annualFundingApplicationAndClosePhase",
-              "line": 412
+              "line": 435
             }
           ]
         },
@@ -1035,7 +1035,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         },
@@ -1044,7 +1044,7 @@
           "functions": [
             {
               "name": "applyCapitalLossCarryforward",
-              "line": 459
+              "line": 468
             }
           ]
         }
@@ -1098,7 +1098,7 @@
           "functions": [
             {
               "name": "taxableAccountSchema",
-              "line": 412
+              "line": 442
             }
           ]
         },
@@ -1107,7 +1107,7 @@
           "functions": [
             {
               "name": "computeFederalTax",
-              "line": 486
+              "line": 495
             }
           ]
         }
@@ -1161,7 +1161,7 @@
           "functions": [
             {
               "name": "taxableAccountSchema",
-              "line": 412
+              "line": 442
             }
           ]
         }
@@ -1235,7 +1235,7 @@
           "functions": [
             {
               "name": "computeFederalTax",
-              "line": 486
+              "line": 495
             }
           ]
         }
@@ -1298,7 +1298,7 @@
           "functions": [
             {
               "name": "computeFederalTax",
-              "line": 486
+              "line": 495
             }
           ]
         }
@@ -1309,12 +1309,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 2136,
+          "line": 2167,
           "note": null,
           "tests": [
             {
               "title": "leaves plan distributions out of net investment income but not out of modified AGI",
-              "line": 2140
+              "line": 2171
             }
           ]
         }
@@ -1356,7 +1356,7 @@
           "functions": [
             {
               "name": "computeFederalTax",
-              "line": 486
+              "line": 495
             }
           ]
         }
@@ -1429,7 +1429,7 @@
           "functions": [
             {
               "name": "computeFederalTax",
-              "line": 486
+              "line": 495
             }
           ]
         }
@@ -1556,7 +1556,7 @@
           "functions": [
             {
               "name": "tipsLadderSchema",
-              "line": 1494
+              "line": 1755
             }
           ]
         },
@@ -1565,7 +1565,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         }
@@ -1621,7 +1621,7 @@
           "functions": [
             {
               "name": "taxableAccountSchema",
-              "line": 412
+              "line": 442
             }
           ]
         },
@@ -1639,7 +1639,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         }
@@ -1688,7 +1688,7 @@
           "functions": [
             {
               "name": "taxableAccountSchema",
-              "line": 412
+              "line": 442
             }
           ]
         }
@@ -1844,7 +1844,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         }
@@ -1855,12 +1855,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 2402,
+          "line": 2433,
           "note": "2027 positive indexation is a phantom OID character",
           "tests": [
             {
               "title": "records positive inflation accretion as OID in the cash-flow ledger",
-              "line": 2410
+              "line": 2441
             }
           ]
         }
@@ -1924,7 +1924,7 @@
           "functions": [
             {
               "name": "tipsLadderSchema",
-              "line": 1494
+              "line": 1755
             }
           ]
         },
@@ -1942,7 +1942,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         }
@@ -1953,12 +1953,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 2470,
+          "line": 2501,
           "note": "paired positive-inflation then deflation path; 2027 non-maturity",
           "tests": [
             {
               "title": "pins the engine output while distinguishing the deflation reading",
-              "line": 2479
+              "line": 2510
             }
           ]
         }
@@ -2007,7 +2007,7 @@
           "functions": [
             {
               "name": "tipsLadderSchema",
-              "line": 1494
+              "line": 1755
             }
           ]
         },
@@ -2025,7 +2025,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         }
@@ -2075,7 +2075,7 @@
           "functions": [
             {
               "name": "tipsLadderSchema",
-              "line": 1494
+              "line": 1755
             }
           ]
         },
@@ -2084,7 +2084,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         }
@@ -2123,7 +2123,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 96
+              "line": 1033
             }
           ]
         }
@@ -2134,12 +2134,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.test.ts",
-          "line": 109,
+          "line": 110,
           "note": null,
           "tests": [
             {
               "title": "keeps federal obligation interest out of the state base",
-              "line": 113
+              "line": 114
             }
           ]
         }

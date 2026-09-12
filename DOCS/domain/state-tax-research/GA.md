@@ -35,6 +35,14 @@ exclude up to **$35,000 per person**. Modeled as `kind: "capped"`,
 `capPerPerson: 65000`, `minAge: 65` (the dominant retiree case).
 
 ## Simplifications / not modeled
+The characterized retirement calculation applies the modeled cap and age gate
+to each recipient's distributions separately. A spouse's unused cap or older
+age cannot establish the other recipient's exclusion. Missing ownership or
+missing or conflicting age eligibility produces an incomplete disclosure and
+no exclusion for the affected recipient. Legacy aggregate inputs do not prove
+recipient attribution. This repair does not expand the modeled income scope or
+add the omitted eligibility tiers below.
+
 - The 62–64 tier ($35,000 per person) is not modeled separately; only the 65+ ($65,000) tier is captured via `minAge: 65`.
 - The exclusion covers broad investment income and up to $4,000 of earned income, not just pension/IRA; modeled narrowly as the pension/IRA cap.
 - GA's flat rate is on a legislated annual ramp — do **not** hold it forward at refresh time; re-read the DOR updates page each year (the 2025→2026 hold-forward went stale mid-year).

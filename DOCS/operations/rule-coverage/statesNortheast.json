@@ -27,7 +27,7 @@
           "functions": [
             {
               "name": "CT",
-              "line": 249
+              "line": 271
             }
           ]
         },
@@ -36,7 +36,7 @@
           "functions": [
             {
               "name": "StateRetirementExclusion",
-              "line": 32
+              "line": 36
             }
           ]
         },
@@ -45,7 +45,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 96
+              "line": 1033
             }
           ]
         }
@@ -56,24 +56,24 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 2806,
+          "line": 2820,
           "note": null,
           "tests": [
             {
               "title": "pins the pack’s failure to subtract the low-income federally taxable benefit",
-              "line": 2837
+              "line": 2851
             },
             {
               "title": "pins the pack’s unconditional pension exclusion above the statutory schedule",
-              "line": 2850
+              "line": 2864
             },
             {
               "title": "pins the pack’s omission of the above-threshold partial Social Security subtraction",
-              "line": 2856
+              "line": 2870
             },
             {
               "title": "pins the pack’s omission when the §86(b)(1) excess limb binds below 25% of benefits",
-              "line": 2879
+              "line": 2893
             }
           ]
         }
@@ -99,20 +99,21 @@
       ]
     },
     {
-      "id": "ma-gen-laws-ch62-s2-public-pension-exclusion",
-      "title": "Massachusetts deducts contributory public and uniformed-services retirement, not every public pension",
-      "classification": "approximated",
-      "errorDirection": "understatesTax",
+      "id": "ct-personal-exemption-and-ct-agi-schedule",
+      "title": "Connecticut personal exemption uses Connecticut AGI and discrete steps",
+      "classification": "settled",
+      "errorDirection": null,
       "conventionRationale": null,
       "contraryReading": null,
-      "jurisdiction": "state:MA",
+      "jurisdiction": "state:CT",
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-27",
-      "dueOn": "2027-08-27",
+      "verifiedOn": "2026-09-12",
+      "dueOn": "2027-09-12",
       "implementedBy": [
         "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateNortheastExtras.ts",
         "packages/engine/src/tax/stateTax.ts"
       ],
       "implementations": [
@@ -120,8 +121,17 @@
           "path": "packages/engine/src/params/state/data/year2026.ts",
           "functions": [
             {
-              "name": "PUBLIC_PENSION_OVERRIDES",
-              "line": 64
+              "name": "CT",
+              "line": 271
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateNortheastExtras.ts",
+          "functions": [
+            {
+              "name": "connecticutPersonalExemption",
+              "line": 86
             }
           ]
         },
@@ -129,36 +139,32 @@
           "path": "packages/engine/src/tax/stateTax.ts",
           "functions": [
             {
-              "name": "computeStateTaxableIncome",
-              "line": 96
+              "name": "computeStateTaxDetailResult",
+              "line": 1055
             },
             {
-              "name": "retirementExclusion",
-              "line": 47
+              "name": "computeStateTaxableIncomeResult",
+              "line": 763
             }
           ]
         }
       ],
       "fixtureFiles": [
-        "packages/engine/src/rules/approximations/stateTax.approximation.test.ts"
+        "packages/engine/src/tax/stateCluster47.production.rules.test.ts"
       ],
       "fixtures": [
         {
-          "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
-          "line": 1461,
+          "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
+          "line": 352,
           "note": null,
           "tests": [
             {
-              "title": "exempts a noncontributory public pension the statute leaves in",
-              "line": 1480
+              "title": "uses Connecticut AGI, and a dollar into the next thousand removes $1,000",
+              "line": 353
             },
             {
-              "title": "taxes a private IRA of the same amount, which is the other bucket",
-              "line": 1489
-            },
-            {
-              "title": "reaches the statute once the public override is dropped",
-              "line": 1499
+              "title": "does not use known federal AGI as a substitute for unknown Connecticut AGI",
+              "line": 366
             }
           ]
         }
@@ -168,13 +174,105 @@
       "authorities": [
         {
           "kind": "statute",
-          "citation": "Mass. Gen. Laws ch. 62, §2(a)(2)",
+          "citation": "§12-702(a)(1), married filing separately",
+          "url": "https://www.cga.ct.gov/current/pub/chap_229.htm"
+        },
+        {
+          "kind": "statute",
+          "citation": "§12-702(a)(2) introductory provision and (I), single",
+          "url": "https://www.cga.ct.gov/current/pub/chap_229.htm"
+        },
+        {
+          "kind": "statute",
+          "citation": "§12-702(b), head of household",
+          "url": "https://www.cga.ct.gov/current/pub/chap_229.htm"
+        },
+        {
+          "kind": "statute",
+          "citation": "§12-702(c)(1) first sentence and (2), joint and surviving spouse",
+          "url": "https://www.cga.ct.gov/current/pub/chap_229.htm"
+        }
+      ]
+    },
+    {
+      "id": "ma-gen-laws-ch62-s2-public-pension-exclusion",
+      "title": "Massachusetts contributory public-pension source boundary",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:MA",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-12",
+      "dueOn": "2027-09-12",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateNortheastExtras.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "states.MA",
+              "line": 531
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateNortheastExtras.ts",
+          "functions": [
+            {
+              "name": "massachusettsRetirementAdjustment",
+              "line": 224
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxDetailResult",
+              "line": 1055
+            },
+            {
+              "name": "computeStateTaxableIncomeResult",
+              "line": 763
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateCluster47.production.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
+          "line": 825,
+          "note": null,
+          "tests": [
+            {
+              "title": "selects proved contributory Massachusetts income",
+              "line": 826
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "Mass. Gen. Laws ch.62 §2(a)(2)(E)",
           "url": "https://malegislature.gov/Laws/GeneralLaws/PartI/TitleIX/Chapter62/Section2"
         },
         {
           "kind": "statute",
-          "citation": "Mass. Gen. Laws ch. 62, §2(a)(2)(E)",
-          "url": "https://malegislature.gov/Laws/GeneralLaws/PartI/TitleIX/Chapter62/Section2"
+          "citation": "Mass. Gen. Laws ch.62 §3B(a)(4), reciprocal contributory public pensions",
+          "url": "https://malegislature.gov/Laws/GeneralLaws/PartI/TitleIX/Chapter62/Section3"
         }
       ]
     },
@@ -201,7 +299,7 @@
           "functions": [
             {
               "name": "states.MA",
-              "line": 470
+              "line": 531
             }
           ]
         },
@@ -210,7 +308,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 96
+              "line": 1033
             }
           ]
         }
@@ -221,16 +319,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3407,
+          "line": 3433,
           "note": null,
           "tests": [
             {
               "title": "deducts Social Security included in federal gross income",
-              "line": 3421
+              "line": 3447
             },
             {
               "title": "would leave the federally taxable share in if the deduction were dropped",
-              "line": 3426
+              "line": 3452
             }
           ]
         }
@@ -247,6 +345,252 @@
           "kind": "statute",
           "citation": "Mass. Gen. Laws ch. 62, §2(a)(2)",
           "url": "https://malegislature.gov/Laws/GeneralLaws/PartI/TitleIX/Chapter62/Section2"
+        }
+      ]
+    },
+    {
+      "id": "ma-personal-exemptions-and-surtax",
+      "title": "Massachusetts personal exemptions and TY2026 surtax threshold",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:MA",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-12",
+      "dueOn": "2027-01-10",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateNortheastExtras.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "states.MA",
+              "line": 531
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateNortheastExtras.ts",
+          "functions": [
+            {
+              "name": "massachusettsPersonalExemption",
+              "line": 164
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxDetailResult",
+              "line": 1055
+            },
+            {
+              "name": "computeStateTaxableIncomeResult",
+              "line": 763
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateCluster47.production.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
+          "line": 443,
+          "note": null,
+          "tests": [
+            {
+              "title": "adds 4% only to $1.2m minus the $1,107,750 threshold",
+              "line": 444
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Massachusetts DOR, tax rates, tax year 2026",
+          "url": "https://www.mass.gov/info-details/massachusetts-tax-rates"
+        },
+        {
+          "kind": "statute",
+          "citation": "Mass. Gen. Laws ch.62 §3(b)(1)-(3)",
+          "url": "https://malegislature.gov/Laws/GeneralLaws/PartI/TitleIX/Chapter62/Section3"
+        }
+      ]
+    },
+    {
+      "id": "ma-private-pension-basis-recovery",
+      "title": "Massachusetts previously taxed contributions are recovered once",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:MA",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-12",
+      "dueOn": "2027-09-12",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateNortheastExtras.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "states.MA",
+              "line": 531
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateNortheastExtras.ts",
+          "functions": [
+            {
+              "name": "massachusettsPrivateBasisTaxable",
+              "line": 189
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxDetailResult",
+              "line": 1055
+            },
+            {
+              "name": "computeStateTaxableIncomeResult",
+              "line": 763
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateCluster47.production.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
+          "line": 452,
+          "note": null,
+          "tests": [
+            {
+              "title": "recovers known Massachusetts basis once across two distributions",
+              "line": 453
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "Mass. Gen. Laws ch.62 §2(a)(2)(F)",
+          "url": "https://malegislature.gov/Laws/GeneralLaws/PartI/TitleIX/Chapter62/Section2"
+        }
+      ]
+    },
+    {
+      "id": "ma-rrb-and-public-pension-exclusions",
+      "title": "Massachusetts source-specific public, military and railroad exclusions",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:MA",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-12",
+      "dueOn": "2027-09-12",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateNortheastExtras.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "states.MA",
+              "line": 531
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateNortheastExtras.ts",
+          "functions": [
+            {
+              "name": "massachusettsRetirementAdjustment",
+              "line": 224
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxDetailResult",
+              "line": 1055
+            },
+            {
+              "name": "computeStateTaxableIncomeResult",
+              "line": 763
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateCluster47.production.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
+          "line": 460,
+          "note": null,
+          "tests": [
+            {
+              "title": "requires contributory in-state or reciprocal public-system proof",
+              "line": 461
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "Mass. Gen. Laws ch.62 §2(a)(2)(E)",
+          "url": "https://malegislature.gov/Laws/GeneralLaws/PartI/TitleIX/Chapter62/Section2"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "Massachusetts DOR, railroad retirement benefits",
+          "url": "https://www.mass.gov/info-details/tax-treatment-of-government-pensions-in-massachusetts"
+        },
+        {
+          "kind": "statute",
+          "citation": "Mass. Gen. Laws ch.62 §3B(a)(4), reciprocal contributory public pensions",
+          "url": "https://malegislature.gov/Laws/GeneralLaws/PartI/TitleIX/Chapter62/Section3"
         }
       ]
     },
@@ -273,7 +617,7 @@
           "functions": [
             {
               "name": "ME",
-              "line": 422
+              "line": 481
             }
           ]
         },
@@ -282,11 +626,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 96
+              "line": 1033
             },
             {
               "name": "retirementExclusion",
-              "line": 47
+              "line": 131
             }
           ]
         }
@@ -297,12 +641,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 1353,
+          "line": 1354,
           "note": null,
           "tests": [
             {
               "title": "pins the current flat cap against gross Social Security offset and agesAlive doubling the pack still omits",
-              "line": 1447
+              "line": 1448
             }
           ]
         }
@@ -386,7 +730,7 @@
           "functions": [
             {
               "name": "ME",
-              "line": 422
+              "line": 481
             }
           ]
         },
@@ -404,7 +748,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 96
+              "line": 1033
             }
           ]
         }
@@ -415,16 +759,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 1182,
+          "line": 1183,
           "note": null,
           "tests": [
             {
               "title": "subtracts Maine published basic plus the IRC 63(c)(3) age-65 addition",
-              "line": 1278
+              "line": 1279
             },
             {
               "title": "holds Maine’s basic deduction still as the federal figure is projected upward",
-              "line": 1329
+              "line": 1330
             }
           ]
         }
@@ -502,7 +846,7 @@
           "functions": [
             {
               "name": "ME",
-              "line": 422
+              "line": 481
             }
           ]
         },
@@ -595,7 +939,7 @@
           "functions": [
             {
               "name": "NH",
-              "line": 592
+              "line": 678
             }
           ]
         },
@@ -604,7 +948,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 96
+              "line": 1033
             }
           ]
         }
@@ -615,16 +959,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 3702,
+          "line": 3728,
           "note": null,
           "tests": [
             {
               "title": "leaves a New Hampshire retiree with no state base at all",
-              "line": 3723
+              "line": 3749
             },
             {
               "title": "would build a base if Chapter 77 were still in force",
-              "line": 3728
+              "line": 3754
             }
           ]
         }
@@ -641,6 +985,177 @@
           "kind": "statute",
           "citation": "N.H. Rev. Stat. Ann. ch. 77 (repealed), compiler’s note",
           "url": "https://www.gencourt.state.nh.us/rsa/html/V/77/77-mrg.htm"
+        }
+      ]
+    },
+    {
+      "id": "nj-direct-qcd-ira-basis-treatment",
+      "title": "New Jersey direct charitable IRA transfers retain the state IRA basis calculation",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:NJ",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-12",
+      "dueOn": "2027-09-12",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateQcdHsa.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "NJ",
+              "line": 684
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateQcdHsa.ts",
+          "functions": [
+            {
+              "name": "newJerseyWorksheetCTaxableAmount",
+              "line": 65
+            },
+            {
+              "name": "stateDirectQcdCollectionAdjustment",
+              "line": 263
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxYearResult",
+              "line": 1569
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateCluster47.production.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
+          "line": 246,
+          "note": null,
+          "tests": [
+            {
+              "title": "taxes $32,000 of a $40,000 full liquidation after recovering $8,000 NJ basis",
+              "line": 247
+            },
+            {
+              "title": "uses NJ basis for a full liquidation and conserves recovery across events",
+              "line": 257
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "formInstruction",
+          "citation": "NJ Division of Taxation, GIT-1 & 2, January 2026, Reporting Taxable and Excludable Retirement Income and Worksheet C",
+          "url": "https://www.nj.gov/treasury/taxation/pdf/pubs/tgi-ee/git1%262.pdf"
+        }
+      ]
+    },
+    {
+      "id": "nj-hsa-state-basis-nonconformity",
+      "title": "New Jersey HSA contributions and ordinary account categories require separate state accounting",
+      "classification": "unsettled",
+      "errorDirection": null,
+      "conventionRationale": "Apply the enumerated ordinary income categories with separate state basis and no automatic second cash-withdrawal inclusion; unknown classification remains incomplete. The official August 19, 2010 archive index (https://www.nj.gov/treasury/taxation/whatsnewarc/august2010.shtml) authenticates the preserved Summer 2010 publication; its headline is not operative tax authority. The original summer10.pdf URL returned HTTP 404 during the September 12, 2026 research check, so the historical quoted answer is retained with that fetch limitation rather than represented as a fresh successful download.",
+      "contraryReading": "A future HSA-specific Division ruling could classify distributions independently of underlying ordinary category income.",
+      "jurisdiction": "state:NJ",
+      "volatility": "awaitingGuidance",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-12",
+      "dueOn": "2026-12-11",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateQcdHsa.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "NJ",
+              "line": 684
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateQcdHsa.ts",
+          "functions": [
+            {
+              "name": "newJerseyHsaAccountAdjustment",
+              "line": 477
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxDetailResult",
+              "line": 1055
+            },
+            {
+              "name": "computeStateTaxableIncomeResult",
+              "line": 763
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateCluster47.production.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
+          "line": 203,
+          "note": null,
+          "tests": [
+            {
+              "title": "taxes a $1,000 sale with $800 NJ lot basis, not the cash withdrawal again",
+              "line": 206
+            },
+            {
+              "title": "includes $600 of interest dividends and realized gain while ignoring $500 unrealized appreciation",
+              "line": 210
+            },
+            {
+              "title": "does not re-add contributions already included in NJ wages",
+              "line": 217
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "New Jersey State Tax News, Summer 2010, p.4, Contributions to Health Savings Accounts; official archive index authenticates the preserved publication",
+          "url": "https://www.nj.gov/treasury/taxation/pdf/pubs/stn/summer10.pdf"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "NJ Division of Taxation, OBBBA and the New Jersey Gross Income Tax",
+          "url": "https://www.nj.gov/treasury/taxation/individuals/obbba.shtml"
         }
       ]
     },
@@ -667,7 +1182,7 @@
           "functions": [
             {
               "name": "states.NJ",
-              "line": 598
+              "line": 684
             }
           ]
         },
@@ -676,7 +1191,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 96
+              "line": 1033
             }
           ]
         }
@@ -687,12 +1202,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 413,
+          "line": 414,
           "note": null,
           "tests": [
             {
               "title": "omits Social Security from the New Jersey return base",
-              "line": 432
+              "line": 433
             }
           ]
         }
@@ -730,7 +1245,7 @@
           "functions": [
             {
               "name": "NJ",
-              "line": 598
+              "line": 684
             }
           ]
         },
@@ -739,11 +1254,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 96
+              "line": 1033
             },
             {
               "name": "retirementExclusion",
-              "line": 47
+              "line": 131
             }
           ]
         }
@@ -754,20 +1269,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/stateTax.approximation.test.ts",
-          "line": 1308,
+          "line": 1320,
           "note": null,
           "tests": [
             {
               "title": "grants a $50,000 subtraction to a household over the $150,000 AGI ceiling",
-              "line": 1325
+              "line": 1337
             },
             {
               "title": "reaches the statute once the cap is withheld",
-              "line": 1331
+              "line": 1343
             },
             {
               "title": "under-excludes a single filer below $100,000 of income, in the other direction",
-              "line": 1339
+              "line": 1351
             }
           ]
         }
@@ -803,6 +1318,88 @@
       ]
     },
     {
+      "id": "nj-stat-54a-6-26-military-pension-exclusion",
+      "title": "New Jersey excludes U.S. military pension and survivor payments",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:NJ",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-12",
+      "dueOn": "2027-09-12",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateNortheastExtras.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "NJ",
+              "line": 684
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateNortheastExtras.ts",
+          "functions": [
+            {
+              "name": "newJerseyMilitaryExemption",
+              "line": 126
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxDetailResult",
+              "line": 1055
+            },
+            {
+              "name": "computeStateTaxableIncomeResult",
+              "line": 763
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateCluster47.production.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
+          "line": 470,
+          "note": null,
+          "tests": [
+            {
+              "title": "excludes military at age50 while OPM remains taxable",
+              "line": 471
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "N.J.S.A.54A:6-26; P.L.2001 c.84 §1",
+          "url": "https://pub.njleg.gov/bills/2000/PL01/84_.PDF"
+        },
+        {
+          "kind": "stateAgencyPublication",
+          "citation": "NJ Division of Taxation, military pension and survivor payments",
+          "url": "https://www.nj.gov/treasury/taxation/military/taxinformation.shtml"
+        }
+      ]
+    },
+    {
       "id": "ny-dtf-qualified-government-pension-full-subtraction",
       "title": "DTF allows a full subtraction for qualifying New York State, local, or federal-government pension when correctly routed",
       "classification": "settled",
@@ -829,7 +1426,7 @@
             },
             {
               "name": "states.NY",
-              "line": 632
+              "line": 723
             }
           ]
         },
@@ -838,11 +1435,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 96
+              "line": 1033
             },
             {
               "name": "retirementExclusion",
-              "line": 47
+              "line": 131
             }
           ]
         }
@@ -853,16 +1450,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 495,
+          "line": 496,
           "note": null,
           "tests": [
             {
               "title": "subtracts the full qualifying public pension without the private age gate",
-              "line": 509
+              "line": 510
             },
             {
               "title": "yields zero state taxable income for pension-only public income at age 70",
-              "line": 525
+              "line": 526
             }
           ]
         }
@@ -910,7 +1507,7 @@
           "functions": [
             {
               "name": "states.NY",
-              "line": 632
+              "line": 723
             }
           ]
         },
@@ -919,7 +1516,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 96
+              "line": 1033
             }
           ]
         }
@@ -930,12 +1527,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 449,
+          "line": 450,
           "note": null,
           "tests": [
             {
               "title": "subtracts federally included Social Security when computing New York adjusted gross income",
-              "line": 468
+              "line": 469
             }
           ]
         }
@@ -976,7 +1573,7 @@
           "functions": [
             {
               "name": "pensionSchema",
-              "line": 1055
+              "line": 1204
             }
           ]
         },
@@ -994,7 +1591,7 @@
           "functions": [
             {
               "name": "StateRetirementExclusion",
-              "line": 32
+              "line": 36
             }
           ]
         },
@@ -1003,7 +1600,7 @@
           "functions": [
             {
               "name": "annualPensionAndAnnuityIncome",
-              "line": 126
+              "line": 141
             }
           ]
         },
@@ -1012,7 +1609,7 @@
           "functions": [
             {
               "name": "retirementExclusion",
-              "line": 47
+              "line": 131
             }
           ]
         }
@@ -1023,12 +1620,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 562,
+          "line": 563,
           "note": null,
           "tests": [
             {
               "title": "pins the coarse public bucket that subtracts without issuer or ORP portion checks",
-              "line": 570
+              "line": 571
             }
           ]
         }
@@ -1076,11 +1673,11 @@
           "functions": [
             {
               "name": "incomeStreamSchema",
-              "line": 1678
+              "line": 1939
             },
             {
               "name": "pensionSchema",
-              "line": 1055
+              "line": 1204
             }
           ]
         },
@@ -1089,7 +1686,7 @@
           "functions": [
             {
               "name": "StateTaxParams",
-              "line": 40
+              "line": 50
             }
           ]
         }
@@ -1134,7 +1731,7 @@
           "functions": [
             {
               "name": "states.NY",
-              "line": 632
+              "line": 723
             }
           ]
         },
@@ -1143,11 +1740,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 96
+              "line": 1033
             },
             {
               "name": "retirementExclusion",
-              "line": 47
+              "line": 131
             }
           ]
         }
@@ -1215,7 +1812,7 @@
           "functions": [
             {
               "name": "PA",
-              "line": 730
+              "line": 828
             }
           ]
         },
@@ -1224,7 +1821,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 96
+              "line": 1033
             }
           ]
         }
@@ -1235,16 +1832,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 366,
+          "line": 367,
           "note": null,
           "tests": [
             {
               "title": "taxes the realized gain and ignores the prior-year carryforward",
-              "line": 390
+              "line": 391
             },
             {
               "title": "would tax only the netted gain under federal conformity",
-              "line": 394
+              "line": 395
             }
           ]
         }
@@ -1287,7 +1884,7 @@
           "functions": [
             {
               "name": "PA",
-              "line": 730
+              "line": 828
             }
           ]
         },
@@ -1296,11 +1893,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 96
+              "line": 1033
             },
             {
               "name": "retirementExclusion",
-              "line": 47
+              "line": 131
             }
           ]
         }
@@ -1367,7 +1964,7 @@
           "functions": [
             {
               "name": "states.PA",
-              "line": 730
+              "line": 828
             }
           ]
         },
@@ -1376,7 +1973,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 96
+              "line": 1033
             }
           ]
         }
@@ -1387,12 +1984,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 620,
+          "line": 621,
           "note": null,
           "tests": [
             {
               "title": "never taxes Social Security payments as Pennsylvania compensation",
-              "line": 639
+              "line": 640
             }
           ]
         }
@@ -1430,11 +2027,11 @@
           "functions": [
             {
               "name": "incomeStreamSchema",
-              "line": 1678
+              "line": 1939
             },
             {
               "name": "pensionSchema",
-              "line": 1055
+              "line": 1204
             }
           ]
         },
@@ -1443,7 +2040,7 @@
           "functions": [
             {
               "name": "StateTaxParams",
-              "line": 40
+              "line": 50
             }
           ]
         }
@@ -1498,7 +2095,7 @@
           "functions": [
             {
               "name": "RI",
-              "line": 739
+              "line": 837
             }
           ]
         },
@@ -1507,11 +2104,11 @@
           "functions": [
             {
               "name": "bracketTax",
-              "line": 29
+              "line": 113
             },
             {
               "name": "computeStateTaxableIncome",
-              "line": 96
+              "line": 1033
             }
           ]
         }
@@ -1522,12 +2119,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 4287,
+          "line": 4304,
           "note": null,
           "tests": [
             {
               "title": "prices single and joint filers on the TY2026 deduction and schedule",
-              "line": 4302
+              "line": 4319
             }
           ]
         }
@@ -1580,7 +2177,7 @@
           "functions": [
             {
               "name": "RI",
-              "line": 739
+              "line": 837
             }
           ]
         },
@@ -1589,11 +2186,11 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 96
+              "line": 1033
             },
             {
               "name": "retirementExclusion",
-              "line": 47
+              "line": 131
             }
           ]
         }
@@ -1604,34 +2201,34 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 4314,
+          "line": 4331,
           "note": "Social Security AGI threshold limb",
           "tests": [
             {
               "title": "pins the low-AGI age-qualified Social Security modification",
-              "line": 4329
+              "line": 4346
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 4336,
+          "line": 4353,
           "note": "pension ceiling limb",
           "tests": [
             {
               "title": "pins the current pension ceiling rather than the stale pack cap",
-              "line": 4355
+              "line": 4372
             }
           ]
         },
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 4362,
+          "line": 4379,
           "note": "pension AGI-threshold limb",
           "tests": [
             {
               "title": "pins the opposite direction when the pension AGI test disallows any modification",
-              "line": 4382
+              "line": 4399
             }
           ]
         }
@@ -1694,11 +2291,11 @@
           "functions": [
             {
               "name": "incomeStreamSchema",
-              "line": 1678
+              "line": 1939
             },
             {
               "name": "pensionSchema",
-              "line": 1055
+              "line": 1204
             }
           ]
         },
@@ -1707,7 +2304,7 @@
           "functions": [
             {
               "name": "StateTaxParams",
-              "line": 40
+              "line": 50
             }
           ]
         }
@@ -1735,6 +2332,396 @@
       ]
     },
     {
+      "id": "vt-2026-rates-standard-deduction-minimum-tax",
+      "title": "Vermont TY2026 indexed rates and deduction inputs derive from enacted CPI formulas",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:VT",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-12",
+      "dueOn": "2027-01-10",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "VT",
+              "line": 926
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxDetailResult",
+              "line": 1055
+            },
+            {
+              "name": "computeStateTaxableIncomeResult",
+              "line": 763
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateCluster47.production.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
+          "line": 675,
+          "note": null,
+          "tests": [
+            {
+              "title": "uses the exact marginal arithmetic at the joint top threshold",
+              "line": 676
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "32 V.S.A. section 5811(21)(C)(i)-(iii), (D)",
+          "url": "https://legislature.vermont.gov/statutes/section/32/151/05811"
+        },
+        {
+          "kind": "statute",
+          "citation": "32 V.S.A. section 5822(a)(1)-(4), (b)(2)",
+          "url": "https://legislature.vermont.gov/statutes/section/32/151/05822"
+        },
+        {
+          "kind": "statute",
+          "citation": "26 U.S.C. section 1(f)(3)-(7)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
+      "id": "vt-32-5822-a-6-minimum-tax",
+      "title": "Vermont minimum tax compares ordinary tax with the adjusted 3% floor",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:VT",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-12",
+      "dueOn": "2027-09-12",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts",
+        "packages/engine/src/tax/stateWestExtras.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "VT",
+              "line": 926
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxDetailResult",
+              "line": 1055
+            },
+            {
+              "name": "computeStateTaxableIncomeResult",
+              "line": 763
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateWestExtras.ts",
+          "functions": [
+            {
+              "name": "vermontMinimumTaxComparison",
+              "line": 440
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateCluster47.production.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
+          "line": 683,
+          "note": null,
+          "tests": [
+            {
+              "title": "compares rather than adds the floor and supports the U.S.-obligation adjustment",
+              "line": 684
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "32 V.S.A. §5822(a)(6)",
+          "url": "https://legislature.vermont.gov/statutes/section/32/151/05822"
+        }
+      ]
+    },
+    {
+      "id": "vt-32-5823-railroad-exclusion",
+      "title": "Vermont excludes federally protected railroad income once",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:VT",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-12",
+      "dueOn": "2027-09-12",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts",
+        "packages/engine/src/tax/stateWestExtras.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "VT",
+              "line": 926
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxDetailResult",
+              "line": 1055
+            },
+            {
+              "name": "computeStateTaxableIncomeResult",
+              "line": 763
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateWestExtras.ts",
+          "functions": [
+            {
+              "name": "vermontRailroadExclusion",
+              "line": 518
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateCluster47.production.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
+          "line": 710,
+          "note": null,
+          "tests": [
+            {
+              "title": "subtracts both included tiers without requiring a Social Security election",
+              "line": 711
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "32 V.S.A. §5823(a)(1)",
+          "url": "https://legislature.vermont.gov/statutes/section/32/151/05823"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "2025 Schedule IN-112 instructions, page 4, line 14, railroad retirement",
+          "url": "https://tax.vermont.gov/sites/tax/files/documents/IN-112-Instr-2025.pdf"
+        }
+      ]
+    },
+    {
+      "id": "vt-32-5830e-d-military-survivor",
+      "title": "Vermont military and survivor exclusion can coexist with the civil/SS election",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:VT",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-12",
+      "dueOn": "2027-09-12",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts",
+        "packages/engine/src/tax/stateWestExtras.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "VT",
+              "line": 926
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxDetailResult",
+              "line": 1055
+            },
+            {
+              "name": "computeStateTaxableIncomeResult",
+              "line": 763
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateWestExtras.ts",
+          "functions": [
+            {
+              "name": "vermontMilitaryExclusion",
+              "line": 504
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateCluster47.production.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
+          "line": 702,
+          "note": null,
+          "tests": [
+            {
+              "title": "phases military at$150k and preserves the independent election",
+              "line": 703
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "32 V.S.A. §5830e(d),(e)",
+          "url": "https://legislature.vermont.gov/statutes/section/32/151/05830e"
+        }
+      ]
+    },
+    {
+      "id": "vt-32-5830e-retirement-election",
+      "title": "Vermont civil-service and contributory exclusion is elected against Social Security",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "state:VT",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-12",
+      "dueOn": "2027-09-12",
+      "implementedBy": [
+        "packages/engine/src/params/state/data/year2026.ts",
+        "packages/engine/src/tax/stateTax.ts",
+        "packages/engine/src/tax/stateWestExtras.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/state/data/year2026.ts",
+          "functions": [
+            {
+              "name": "VT",
+              "line": 926
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateTax.ts",
+          "functions": [
+            {
+              "name": "computeStateTaxDetailResult",
+              "line": 1055
+            },
+            {
+              "name": "computeStateTaxableIncomeResult",
+              "line": 763
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/stateWestExtras.ts",
+          "functions": [
+            {
+              "name": "vermontCivilServiceExclusion",
+              "line": 480
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/stateCluster47.production.rules.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/stateCluster47.production.rules.test.ts",
+          "line": 693,
+          "note": null,
+          "tests": [
+            {
+              "title": "phases CSRS at$60k and makes the civil/SS election exclusive",
+              "line": 694
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "32 V.S.A. §5830e(b),(c),(e)",
+          "url": "https://legislature.vermont.gov/statutes/section/32/151/05830e"
+        }
+      ]
+    },
+    {
       "id": "vt-stat-32-5830e-social-security-inclusion",
       "title": "Vermont excludes federally taxable Social Security only below AGI thresholds",
       "classification": "approximated",
@@ -1757,7 +2744,7 @@
           "functions": [
             {
               "name": "VT",
-              "line": 789
+              "line": 926
             }
           ]
         },
@@ -1766,7 +2753,7 @@
           "functions": [
             {
               "name": "computeStateTaxableIncome",
-              "line": 96
+              "line": 1033
             }
           ]
         }
@@ -1777,20 +2764,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/stateTax.rules.test.ts",
-          "line": 4415,
+          "line": 4435,
           "note": null,
           "tests": [
             {
               "title": "pins Vermont's complete low-AGI Social Security exclusion",
-              "line": 4440
+              "line": 4460
             },
             {
               "title": "pins the single mid-band proportional Social Security exclusion",
-              "line": 4449
+              "line": 4470
             },
             {
               "title": "pins the joint mid-band proportional Social Security exclusion",
-              "line": 4455
+              "line": 4476
             }
           ]
         }
