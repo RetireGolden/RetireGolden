@@ -392,6 +392,7 @@ describe('simulator owned non-Roth IRA exact annual settlement', () => {
       },
     ]
 
+    addExecutedSpouseElectionFixture(plan, '2027-01-01', '2024-06-15', [2025])
     const result = project(plan, 2028)
     const replay = replayOwnedNonRothIraContiguousYears(
       validatePlan(plan), TAX_YEAR, result.years,
@@ -454,6 +455,7 @@ describe('simulator owned non-Roth IRA exact annual settlement', () => {
       },
     ]
 
+    addExecutedSpouseElectionFixture(plan, `${TAX_YEAR}-12-31`, `${TAX_YEAR}-06-15`, [])
     const result = project(plan, TAX_YEAR + 1)
     for (const [calendarYear, expectS2InOwnerRmd] of [
       [TAX_YEAR, false],
@@ -528,3 +530,45 @@ describe('simulator owned non-Roth IRA exact annual settlement', () => {
     expect(years[0]!.retirementRuntimeSource).toBeDefined()
   })
 })
+
+/**
+ * Stipulated executed-event evidence for these historical projection fixtures.
+ * Prior custodian rows explicitly certify a $1,000 requirement and $1,000 paid;
+ * they are inputs, not amounts inferred from the projection under test. Years
+ * within the simulation are supplied by its committed modeled-history channel.
+ * Life-expectancy method makes j(4)'s ten-year catch-up inapplicable.
+ */
+function addExecutedSpouseElectionFixture(
+  plan: Plan, executedOn: string, deathDate: string, observedPriorYears: number[],
+): void {
+  const account = plan.accounts.find(candidate =>
+    (candidate.type === 'traditional' || candidate.type === 'roth') &&
+    candidate.inherited?.beneficiary?.edbCategory === 'surviving-spouse')
+  if (account?.type !== 'traditional' && account?.type !== 'roth') throw new Error('missing spouse fixture account')
+  const inherited = account.inherited!
+  const beneficiary = inherited.beneficiary!
+  inherited.decedentId = 'fixture-spouse-decedent'
+  inherited.ownerDeathDate = deathDate
+  inherited.annualDistributionHistory = observedPriorYears.map(taxYear => ({
+    taxYear, requiredAmount: 1000, distributedAmount: 1000,
+    observedAsOfDate: `${taxYear}-12-31`, legalDistributionDeadline: `${taxYear}-12-31`,
+    provenance: { source: 'Stipulated completed custodian requirement and payment', asOf: `${taxYear}-12-31` },
+  }))
+  beneficiary.spousalElectionFacts = {
+    directSpouseNamedOnIra: 'verifiedYes', affirmativeElectionDate: executedOn,
+    affirmativeElectionYear: Number(executedOn.slice(0, 4)),
+    nonRolloverContributionYears: [], lateElectionCatchUp: null,
+    preElectionDistributionMethod: 'lifeExpectancyRule',
+    section402c2j4Inputs: {
+      transaction: 'affirmativeTreatAsOwnElection',
+      spouseBirthDate: plan.household.people.find(person => person.id === account.ownerPersonId)!.dob,
+      decedentBirthDate: `${beneficiary.ownerBirthYear}-01-01`,
+      distributionYear: Number(executedOn.slice(0, 4)),
+      currentYearRmdReferenceBalance: account.balance,
+      actualPriorYearDistributions: [], actualPreElectionDistributionsCurrentYear: 0,
+      currentDistributionOrRemainingInterest: account.balance,
+      provenance: { source: 'Stipulated life-expectancy distribution method', asOf: executedOn },
+    },
+    provenance: { source: 'Stipulated executed custodian owner redesignation', asOf: executedOn },
+  }
+}

@@ -653,6 +653,7 @@ export const INHERITED_REQUIREMENT_KIND_LABELS: Record<
   'annual-rmd': 'Annual RMD',
   none: 'No required distribution',
   'final-sweep': 'Final distribution (deadline year)',
+  'post-deadline-remaining-benefit': 'Entire remaining benefit (after deadline year)',
   legacy: 'Planning estimate',
 }
 

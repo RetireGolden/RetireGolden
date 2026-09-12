@@ -377,6 +377,191 @@ const DIAGNOSIS_RUNG = LADDER.findIndex((rung) => rung.name === 'case')
 
 // ─── HTML and PDF text extraction ────────────────────────────────────────────
 /**
+ * Decode an HTML body using BOM, HTTP `charset`, or a bounded `<meta>` prescan;
+ * UTF-8 when nothing is declared. Oregon ORS pages declare windows-1252 and
+ * carry cp1252 smart-quote bytes — decoding as UTF-8 yields U+FFFD and false
+ * ABSENT verdicts for otherwise exact quotes.
+ *
+ * @param {Buffer} body
+ * @param {string} [contentType]
+ * @returns {string}
+ */
+export function decodeHtmlBody(body, contentType = '') {
+  const label = htmlEncodingLabel(body, contentType)
+  try {
+    return new TextDecoder(label, { fatal: false }).decode(body)
+  } catch {
+    // Unknown label: preserve the prior UTF-8 default rather than abort the run.
+    return body.toString('utf8')
+  }
+}
+
+/**
+ * @param {Buffer} body
+ * @param {string} contentType
+ * @returns {string}
+ */
+function htmlEncodingLabel(body, contentType) {
+  const bom = bomEncodingLabel(body)
+  if (bom) return bom
+  const header = charsetFromContentType(contentType)
+  if (header) return header
+  const meta = charsetFromHtmlMeta(body)
+  if (meta) return meta
+  return 'utf-8'
+}
+
+/** @param {Buffer} body @returns {string | null} */
+function bomEncodingLabel(body) {
+  if (body.length >= 3 && body[0] === 0xef && body[1] === 0xbb && body[2] === 0xbf) return 'utf-8'
+  if (body.length >= 2 && body[0] === 0xfe && body[1] === 0xff) return 'utf-16be'
+  if (body.length >= 2 && body[0] === 0xff && body[1] === 0xfe) return 'utf-16le'
+  return null
+}
+
+/**
+ * Normalise a charset token to a `TextDecoder` label. HTML maps iso-8859-1 to
+ * windows-1252; unknown tokens return null so the caller can keep sniffing.
+ *
+ * @param {string} raw
+ * @returns {string | null}
+ */
+function normaliseCharsetLabel(raw) {
+  const label = raw.trim().replace(/^['"]|['"]$/g, '').toLowerCase()
+  if (label === 'utf8' || label === 'utf-8') return 'utf-8'
+  if (label === 'utf-16le' || label === 'utf-16be') return label
+  if (label === 'cp1252' || label === 'windows-1252' || label === 'x-cp1252') return 'windows-1252'
+  if (label === 'iso-8859-1' || label === 'iso8859-1' || label === 'latin1' || label === 'latin-1') {
+    return 'windows-1252'
+  }
+  return null
+}
+
+/** @param {string} contentType @returns {string | null} */
+function charsetFromContentType(contentType) {
+  const match = /;\s*charset\s*=\s*("([^"]+)"|([^;\s]+))/i.exec(contentType)
+  return match ? normaliseCharsetLabel(match[2] ?? match[3]) : null
+}
+
+/**
+ * @param {string} tagInner attribute text after the `<meta` token
+ * @returns {Map<string, string>}
+ */
+function parseMetaAttributes(tagInner) {
+  const attrs = new Map()
+  let i = 0
+  while (i < tagInner.length) {
+    while (i < tagInner.length && /[\t\n\f\r /]/.test(tagInner[i])) i += 1
+    if (i >= tagInner.length) break
+
+    const nameStart = i
+    while (i < tagInner.length && !/[\t\n\f\r /=]/.test(tagInner[i])) i += 1
+    const name = tagInner.slice(nameStart, i).toLowerCase()
+    if (!name) break
+
+    while (i < tagInner.length && /[\t\n\f\r /]/.test(tagInner[i])) i += 1
+    if (i >= tagInner.length) break
+    if (tagInner[i] !== '=') {
+      i += 1
+      continue
+    }
+
+    i += 1
+    while (i < tagInner.length && /[\t\n\f\r /]/.test(tagInner[i])) i += 1
+    if (i >= tagInner.length) break
+
+    const quote = tagInner[i]
+    let value
+    if (quote === '"' || quote === "'") {
+      i += 1
+      const valueStart = i
+      while (i < tagInner.length && tagInner[i] !== quote) i += 1
+      value = tagInner.slice(valueStart, i)
+      if (i < tagInner.length) i += 1
+    } else {
+      const valueStart = i
+      while (i < tagInner.length && !/[\t\n\f\r />]/.test(tagInner[i])) i += 1
+      value = tagInner.slice(valueStart, i)
+    }
+    attrs.set(name, value)
+  }
+  return attrs
+}
+
+/**
+ * @param {Map<string, string>} attrs
+ * @returns {string | null | undefined} label, `undefined` when not an encoding tag
+ */
+function charsetLabelFromMetaAttributes(attrs) {
+  if (attrs.has('charset')) {
+    return normaliseCharsetLabel(attrs.get('charset') ?? '')
+  }
+  const httpEquiv = attrs.get('http-equiv')?.trim()
+  if (httpEquiv && /^content-type$/i.test(httpEquiv) && attrs.has('content')) {
+    return charsetFromContentType(attrs.get('content') ?? '')
+  }
+  return undefined
+}
+
+/**
+ * Bounded, document-order prescan of the document head. Skips HTML comments,
+ * parses `<meta>` attributes, and accepts only a real `charset` attribute or a
+ * `content` MIME value on the same tag as `http-equiv=content-type`. Latin-1
+ * preserves byte values 0x80–0xFF so a windows-1252 declaration is readable
+ * before the body is decoded.
+ *
+ * @param {Buffer} body
+ * @returns {string | null}
+ */
+function charsetFromHtmlMeta(body) {
+  const head = body.subarray(0, Math.min(body.length, 8192)).toString('latin1')
+  let pos = 0
+  while (pos < head.length) {
+    if (head.startsWith('<!--', pos)) {
+      const commentEnd = head.indexOf('-->', pos + 4)
+      pos = commentEnd === -1 ? head.length : commentEnd + 3
+      continue
+    }
+
+    if (head[pos] !== '<') {
+      pos += 1
+      continue
+    }
+
+    // Locate the end of this markup token while respecting quoted values.
+    // This prevents tag-looking text inside an attribute from becoming a
+    // separate candidate and allows `>` inside a quoted attribute value.
+    let quote = ''
+    let tagEnd = pos + 1
+    for (; tagEnd < head.length; tagEnd += 1) {
+      const ch = head[tagEnd]
+      if (quote) {
+        if (ch === quote) quote = ''
+      } else if (ch === '"' || ch === "'") {
+        quote = ch
+      } else if (ch === '>') {
+        break
+      }
+    }
+
+    const nameStart = pos + 1
+    let nameEnd = nameStart
+    while (nameEnd < head.length && /[A-Za-z0-9]/.test(head[nameEnd])) nameEnd += 1
+    const tagName = head.slice(nameStart, nameEnd).toLowerCase()
+    const afterName = head[nameEnd] ?? ''
+    if (tagEnd < head.length && tagName === 'meta' && /[\t\n\f\r />]/.test(afterName)) {
+      const attrs = parseMetaAttributes(head.slice(nameEnd, tagEnd))
+      const label = charsetLabelFromMetaAttributes(attrs)
+      if (label) return label
+    }
+
+    // An unterminated tag cannot contain a later valid tag in the prescan.
+    pos = tagEnd < head.length ? tagEnd + 1 : head.length
+  }
+  return null
+}
+
+/**
  * Named entities that appear in these publishers' statutory text.
  *
  * Space and dash values are written as escapes rather than literals. A literal
@@ -861,7 +1046,7 @@ async function loadSource(url, opts) {
     return { ...base, isPdf: true, ok: true, variants }
   }
 
-  const text = body.toString('utf8')
+  const text = decodeHtmlBody(body, contentType)
   if (BLOCK_MARKERS.test(text)) {
     return { ...base, ok: false, problem: 'bot challenge or block page returned instead of the document' }
   }

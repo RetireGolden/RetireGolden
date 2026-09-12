@@ -960,12 +960,511 @@
                           "source",
                           "asOf"
                         ]
+                      },
+                      "spousalElectionFacts": {
+                        "type": "object",
+                        "properties": {
+                          "directSpouseNamedOnIra": {
+                            "type": "string",
+                            "enum": [
+                              "verifiedYes",
+                              "verifiedNo",
+                              "unknown"
+                            ]
+                          },
+                          "affirmativeElectionDate": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "nonRolloverContributionEvents": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "executionDate": {
+                                  "type": "string",
+                                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                                },
+                                "observedAsOfDate": {
+                                  "type": "string",
+                                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                                },
+                                "provenance": {
+                                  "type": "object",
+                                  "properties": {
+                                    "source": {
+                                      "type": "string"
+                                    },
+                                    "asOf": {
+                                      "type": "string",
+                                      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                                    }
+                                  },
+                                  "required": [
+                                    "source",
+                                    "asOf"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "executionDate",
+                                "observedAsOfDate",
+                                "provenance"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "section402c2j4Inputs": {
+                            "type": "object",
+                            "properties": {
+                              "transaction": {
+                                "type": "string",
+                                "enum": [
+                                  "actualOwnPlanRollover",
+                                  "affirmativeTreatAsOwnElection",
+                                  "beneficiaryDestinationRollover"
+                                ]
+                              },
+                              "spouseBirthDate": {
+                                "type": "string",
+                                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                              },
+                              "decedentBirthDate": {
+                                "type": "string",
+                                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                              },
+                              "distributionYear": {
+                                "type": "integer",
+                                "minimum": 1900,
+                                "maximum": 2200
+                              },
+                              "currentYearRmdReferenceBalance": {
+                                "anyOf": [
+                                  {
+                                    "type": "number",
+                                    "minimum": 0
+                                  },
+                                  {
+                                    "type": "string",
+                                    "const": "unknown"
+                                  }
+                                ]
+                              },
+                              "actualPriorYearDistributions": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "taxYear": {
+                                      "type": "integer",
+                                      "minimum": 1900,
+                                      "maximum": 2200
+                                    },
+                                    "amount": {
+                                      "type": "number",
+                                      "minimum": 0
+                                    }
+                                  },
+                                  "required": [
+                                    "taxYear",
+                                    "amount"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "actualPreElectionDistributionsCurrentYear": {
+                                "type": "number",
+                                "minimum": 0
+                              },
+                              "currentDistributionOrRemainingInterest": {
+                                "type": "number",
+                                "minimum": 0
+                              },
+                              "provenance": {
+                                "type": "object",
+                                "properties": {
+                                  "source": {
+                                    "type": "string"
+                                  },
+                                  "asOf": {
+                                    "type": "string",
+                                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                                  }
+                                },
+                                "required": [
+                                  "source",
+                                  "asOf"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "transaction",
+                              "spouseBirthDate",
+                              "decedentBirthDate",
+                              "distributionYear",
+                              "currentYearRmdReferenceBalance",
+                              "actualPriorYearDistributions",
+                              "actualPreElectionDistributionsCurrentYear",
+                              "currentDistributionOrRemainingInterest",
+                              "provenance"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "preElectionDistributionMethod": {
+                            "type": "string",
+                            "enum": [
+                              "tenYearRule",
+                              "lifeExpectancyRule",
+                              "unknown"
+                            ]
+                          },
+                          "affirmativeElectionYear": {
+                            "anyOf": [
+                              {
+                                "type": "integer",
+                                "minimum": 1900,
+                                "maximum": 2200
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "nonRolloverContributionYears": {
+                            "type": "array",
+                            "items": {
+                              "type": "integer",
+                              "minimum": 1900,
+                              "maximum": 2200
+                            }
+                          },
+                          "lateElectionCatchUp": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "requiredAmount": {
+                                    "type": "number",
+                                    "minimum": 0
+                                  },
+                                  "distributedAmount": {
+                                    "type": "number",
+                                    "minimum": 0
+                                  },
+                                  "completedOn": {
+                                    "type": "string",
+                                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                                  }
+                                },
+                                "required": [
+                                  "requiredAmount",
+                                  "distributedAmount"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "section402c2j4": {
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "status": {
+                                    "type": "string",
+                                    "const": "notApplicable"
+                                  },
+                                  "factsAsOfDate": {
+                                    "type": "string",
+                                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                                  },
+                                  "provenance": {
+                                    "type": "object",
+                                    "properties": {
+                                      "source": {
+                                        "type": "string"
+                                      },
+                                      "asOf": {
+                                        "type": "string",
+                                        "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                                      }
+                                    },
+                                    "required": [
+                                      "source",
+                                      "asOf"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "status",
+                                  "factsAsOfDate",
+                                  "provenance"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "status": {
+                                    "type": "string",
+                                    "const": "applicable"
+                                  },
+                                  "distributionTaxYear": {
+                                    "type": "integer",
+                                    "minimum": 1900,
+                                    "maximum": 2200
+                                  },
+                                  "amountTreatedAsCurrentDistributionRmd": {
+                                    "type": "number",
+                                    "minimum": 0
+                                  },
+                                  "amountActuallyDistributed": {
+                                    "type": "number",
+                                    "minimum": 0
+                                  },
+                                  "factsAsOfDate": {
+                                    "type": "string",
+                                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                                  },
+                                  "provenance": {
+                                    "type": "object",
+                                    "properties": {
+                                      "source": {
+                                        "type": "string"
+                                      },
+                                      "asOf": {
+                                        "type": "string",
+                                        "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                                      }
+                                    },
+                                    "required": [
+                                      "source",
+                                      "asOf"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "status",
+                                  "distributionTaxYear",
+                                  "amountTreatedAsCurrentDistributionRmd",
+                                  "amountActuallyDistributed",
+                                  "factsAsOfDate",
+                                  "provenance"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "status": {
+                                    "type": "string",
+                                    "const": "unknown"
+                                  }
+                                },
+                                "required": [
+                                  "status"
+                                ],
+                                "additionalProperties": false
+                              }
+                            ]
+                          },
+                          "provenance": {
+                            "type": "object",
+                            "properties": {
+                              "source": {
+                                "type": "string"
+                              },
+                              "asOf": {
+                                "type": "string",
+                                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                              }
+                            },
+                            "required": [
+                              "source",
+                              "asOf"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "provenance"
+                        ],
+                        "additionalProperties": false
                       }
                     },
                     "required": [
                       "beneficiaryClass",
                       "provenance"
                     ]
+                  },
+                  "ownerDeathDate": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  },
+                  "annualDistributionHistory": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "taxYear": {
+                          "type": "integer",
+                          "minimum": 1900,
+                          "maximum": 2200
+                        },
+                        "requiredAmount": {
+                          "type": "number",
+                          "minimum": 0
+                        },
+                        "distributedAmount": {
+                          "type": "number",
+                          "minimum": 0
+                        },
+                        "remainingBenefitAtYearEnd": {
+                          "type": "number",
+                          "minimum": 0
+                        },
+                        "observedAsOfDate": {
+                          "type": "string",
+                          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                        },
+                        "legalDistributionDeadline": {
+                          "type": "string",
+                          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                        },
+                        "provenance": {
+                          "type": "object",
+                          "properties": {
+                            "source": {
+                              "type": "string"
+                            },
+                            "asOf": {
+                              "type": "string",
+                              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                            }
+                          },
+                          "required": [
+                            "source",
+                            "asOf"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "taxYear",
+                        "requiredAmount",
+                        "distributedAmount",
+                        "provenance"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "completedDeadlineObservation": {
+                    "type": "object",
+                    "properties": {
+                      "taxYear": {
+                        "type": "integer",
+                        "minimum": 1900,
+                        "maximum": 2200
+                      },
+                      "openingBenefit": {
+                        "anyOf": [
+                          {
+                            "type": "number",
+                            "minimum": 0
+                          },
+                          {
+                            "type": "string",
+                            "const": "unknown"
+                          }
+                        ]
+                      },
+                      "distributedByDeadline": {
+                        "anyOf": [
+                          {
+                            "type": "number",
+                            "minimum": 0
+                          },
+                          {
+                            "type": "string",
+                            "const": "unknown"
+                          }
+                        ]
+                      },
+                      "legalDistributionDeadline": {
+                        "type": "string",
+                        "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                      },
+                      "observedAsOfDate": {
+                        "type": "string",
+                        "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                      },
+                      "provenance": {
+                        "type": "object",
+                        "properties": {
+                          "source": {
+                            "type": "string"
+                          },
+                          "asOf": {
+                            "type": "string",
+                            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                          }
+                        },
+                        "required": [
+                          "source",
+                          "asOf"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "taxYear",
+                      "openingBenefit",
+                      "distributedByDeadline",
+                      "legalDistributionDeadline",
+                      "observedAsOfDate",
+                      "provenance"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "verifiedNonDesignatedRegime": {
+                    "type": "object",
+                    "properties": {
+                      "classification": {
+                        "type": "string",
+                        "const": "non-designated-beneficiary"
+                      },
+                      "schedule": {
+                        "type": "string",
+                        "const": "five-year"
+                      },
+                      "provenance": {
+                        "type": "object",
+                        "properties": {
+                          "source": {
+                            "type": "string"
+                          },
+                          "asOf": {
+                            "type": "string",
+                            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                          }
+                        },
+                        "required": [
+                          "source",
+                          "asOf"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "classification",
+                      "schedule",
+                      "provenance"
+                    ],
+                    "additionalProperties": false
                   }
                 },
                 "required": [
@@ -1070,6 +1569,10 @@
               "priorCalendarYearFicaWages": {
                 "type": "number",
                 "minimum": 0
+              },
+              "employerPlanId": {
+                "type": "string",
+                "minLength": 1
               },
               "allocation": {
                 "oneOf": [
@@ -1545,12 +2048,511 @@
                           "source",
                           "asOf"
                         ]
+                      },
+                      "spousalElectionFacts": {
+                        "type": "object",
+                        "properties": {
+                          "directSpouseNamedOnIra": {
+                            "type": "string",
+                            "enum": [
+                              "verifiedYes",
+                              "verifiedNo",
+                              "unknown"
+                            ]
+                          },
+                          "affirmativeElectionDate": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "nonRolloverContributionEvents": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "executionDate": {
+                                  "type": "string",
+                                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                                },
+                                "observedAsOfDate": {
+                                  "type": "string",
+                                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                                },
+                                "provenance": {
+                                  "type": "object",
+                                  "properties": {
+                                    "source": {
+                                      "type": "string"
+                                    },
+                                    "asOf": {
+                                      "type": "string",
+                                      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                                    }
+                                  },
+                                  "required": [
+                                    "source",
+                                    "asOf"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "executionDate",
+                                "observedAsOfDate",
+                                "provenance"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "section402c2j4Inputs": {
+                            "type": "object",
+                            "properties": {
+                              "transaction": {
+                                "type": "string",
+                                "enum": [
+                                  "actualOwnPlanRollover",
+                                  "affirmativeTreatAsOwnElection",
+                                  "beneficiaryDestinationRollover"
+                                ]
+                              },
+                              "spouseBirthDate": {
+                                "type": "string",
+                                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                              },
+                              "decedentBirthDate": {
+                                "type": "string",
+                                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                              },
+                              "distributionYear": {
+                                "type": "integer",
+                                "minimum": 1900,
+                                "maximum": 2200
+                              },
+                              "currentYearRmdReferenceBalance": {
+                                "anyOf": [
+                                  {
+                                    "type": "number",
+                                    "minimum": 0
+                                  },
+                                  {
+                                    "type": "string",
+                                    "const": "unknown"
+                                  }
+                                ]
+                              },
+                              "actualPriorYearDistributions": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "taxYear": {
+                                      "type": "integer",
+                                      "minimum": 1900,
+                                      "maximum": 2200
+                                    },
+                                    "amount": {
+                                      "type": "number",
+                                      "minimum": 0
+                                    }
+                                  },
+                                  "required": [
+                                    "taxYear",
+                                    "amount"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "actualPreElectionDistributionsCurrentYear": {
+                                "type": "number",
+                                "minimum": 0
+                              },
+                              "currentDistributionOrRemainingInterest": {
+                                "type": "number",
+                                "minimum": 0
+                              },
+                              "provenance": {
+                                "type": "object",
+                                "properties": {
+                                  "source": {
+                                    "type": "string"
+                                  },
+                                  "asOf": {
+                                    "type": "string",
+                                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                                  }
+                                },
+                                "required": [
+                                  "source",
+                                  "asOf"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "transaction",
+                              "spouseBirthDate",
+                              "decedentBirthDate",
+                              "distributionYear",
+                              "currentYearRmdReferenceBalance",
+                              "actualPriorYearDistributions",
+                              "actualPreElectionDistributionsCurrentYear",
+                              "currentDistributionOrRemainingInterest",
+                              "provenance"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "preElectionDistributionMethod": {
+                            "type": "string",
+                            "enum": [
+                              "tenYearRule",
+                              "lifeExpectancyRule",
+                              "unknown"
+                            ]
+                          },
+                          "affirmativeElectionYear": {
+                            "anyOf": [
+                              {
+                                "type": "integer",
+                                "minimum": 1900,
+                                "maximum": 2200
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "nonRolloverContributionYears": {
+                            "type": "array",
+                            "items": {
+                              "type": "integer",
+                              "minimum": 1900,
+                              "maximum": 2200
+                            }
+                          },
+                          "lateElectionCatchUp": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "requiredAmount": {
+                                    "type": "number",
+                                    "minimum": 0
+                                  },
+                                  "distributedAmount": {
+                                    "type": "number",
+                                    "minimum": 0
+                                  },
+                                  "completedOn": {
+                                    "type": "string",
+                                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                                  }
+                                },
+                                "required": [
+                                  "requiredAmount",
+                                  "distributedAmount"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "section402c2j4": {
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "status": {
+                                    "type": "string",
+                                    "const": "notApplicable"
+                                  },
+                                  "factsAsOfDate": {
+                                    "type": "string",
+                                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                                  },
+                                  "provenance": {
+                                    "type": "object",
+                                    "properties": {
+                                      "source": {
+                                        "type": "string"
+                                      },
+                                      "asOf": {
+                                        "type": "string",
+                                        "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                                      }
+                                    },
+                                    "required": [
+                                      "source",
+                                      "asOf"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "status",
+                                  "factsAsOfDate",
+                                  "provenance"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "status": {
+                                    "type": "string",
+                                    "const": "applicable"
+                                  },
+                                  "distributionTaxYear": {
+                                    "type": "integer",
+                                    "minimum": 1900,
+                                    "maximum": 2200
+                                  },
+                                  "amountTreatedAsCurrentDistributionRmd": {
+                                    "type": "number",
+                                    "minimum": 0
+                                  },
+                                  "amountActuallyDistributed": {
+                                    "type": "number",
+                                    "minimum": 0
+                                  },
+                                  "factsAsOfDate": {
+                                    "type": "string",
+                                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                                  },
+                                  "provenance": {
+                                    "type": "object",
+                                    "properties": {
+                                      "source": {
+                                        "type": "string"
+                                      },
+                                      "asOf": {
+                                        "type": "string",
+                                        "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                                      }
+                                    },
+                                    "required": [
+                                      "source",
+                                      "asOf"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "status",
+                                  "distributionTaxYear",
+                                  "amountTreatedAsCurrentDistributionRmd",
+                                  "amountActuallyDistributed",
+                                  "factsAsOfDate",
+                                  "provenance"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "status": {
+                                    "type": "string",
+                                    "const": "unknown"
+                                  }
+                                },
+                                "required": [
+                                  "status"
+                                ],
+                                "additionalProperties": false
+                              }
+                            ]
+                          },
+                          "provenance": {
+                            "type": "object",
+                            "properties": {
+                              "source": {
+                                "type": "string"
+                              },
+                              "asOf": {
+                                "type": "string",
+                                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                              }
+                            },
+                            "required": [
+                              "source",
+                              "asOf"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "provenance"
+                        ],
+                        "additionalProperties": false
                       }
                     },
                     "required": [
                       "beneficiaryClass",
                       "provenance"
                     ]
+                  },
+                  "ownerDeathDate": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  },
+                  "annualDistributionHistory": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "taxYear": {
+                          "type": "integer",
+                          "minimum": 1900,
+                          "maximum": 2200
+                        },
+                        "requiredAmount": {
+                          "type": "number",
+                          "minimum": 0
+                        },
+                        "distributedAmount": {
+                          "type": "number",
+                          "minimum": 0
+                        },
+                        "remainingBenefitAtYearEnd": {
+                          "type": "number",
+                          "minimum": 0
+                        },
+                        "observedAsOfDate": {
+                          "type": "string",
+                          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                        },
+                        "legalDistributionDeadline": {
+                          "type": "string",
+                          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                        },
+                        "provenance": {
+                          "type": "object",
+                          "properties": {
+                            "source": {
+                              "type": "string"
+                            },
+                            "asOf": {
+                              "type": "string",
+                              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                            }
+                          },
+                          "required": [
+                            "source",
+                            "asOf"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "taxYear",
+                        "requiredAmount",
+                        "distributedAmount",
+                        "provenance"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "completedDeadlineObservation": {
+                    "type": "object",
+                    "properties": {
+                      "taxYear": {
+                        "type": "integer",
+                        "minimum": 1900,
+                        "maximum": 2200
+                      },
+                      "openingBenefit": {
+                        "anyOf": [
+                          {
+                            "type": "number",
+                            "minimum": 0
+                          },
+                          {
+                            "type": "string",
+                            "const": "unknown"
+                          }
+                        ]
+                      },
+                      "distributedByDeadline": {
+                        "anyOf": [
+                          {
+                            "type": "number",
+                            "minimum": 0
+                          },
+                          {
+                            "type": "string",
+                            "const": "unknown"
+                          }
+                        ]
+                      },
+                      "legalDistributionDeadline": {
+                        "type": "string",
+                        "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                      },
+                      "observedAsOfDate": {
+                        "type": "string",
+                        "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                      },
+                      "provenance": {
+                        "type": "object",
+                        "properties": {
+                          "source": {
+                            "type": "string"
+                          },
+                          "asOf": {
+                            "type": "string",
+                            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                          }
+                        },
+                        "required": [
+                          "source",
+                          "asOf"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "taxYear",
+                      "openingBenefit",
+                      "distributedByDeadline",
+                      "legalDistributionDeadline",
+                      "observedAsOfDate",
+                      "provenance"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "verifiedNonDesignatedRegime": {
+                    "type": "object",
+                    "properties": {
+                      "classification": {
+                        "type": "string",
+                        "const": "non-designated-beneficiary"
+                      },
+                      "schedule": {
+                        "type": "string",
+                        "const": "five-year"
+                      },
+                      "provenance": {
+                        "type": "object",
+                        "properties": {
+                          "source": {
+                            "type": "string"
+                          },
+                          "asOf": {
+                            "type": "string",
+                            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                          }
+                        },
+                        "required": [
+                          "source",
+                          "asOf"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "classification",
+                      "schedule",
+                      "provenance"
+                    ],
+                    "additionalProperties": false
                   }
                 },
                 "required": [
@@ -1627,6 +2629,10 @@
               "priorCalendarYearFicaWages": {
                 "type": "number",
                 "minimum": 0
+              },
+              "employerPlanId": {
+                "type": "string",
+                "minLength": 1
               },
               "allocation": {
                 "oneOf": [
@@ -2534,8 +3540,151 @@
                 "type": "string",
                 "enum": [
                   "private",
-                  "public"
+                  "public",
+                  "ordinaryPrivatePension",
+                  "ira",
+                  "employerPlan",
+                  "militaryRetirement",
+                  "militarySurvivor",
+                  "federalCivilService",
+                  "stateLocalPublic",
+                  "railroadTier1",
+                  "railroadTier2",
+                  "railroadRetirementAct",
+                  "governmentSurvivor",
+                  "unknownPublic",
+                  "unknownPrivate"
                 ]
+              },
+              "stateEligibility": {
+                "type": "object",
+                "properties": {
+                  "planSystemCode": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "qualifiedPlanType": {
+                    "type": "string",
+                    "enum": [
+                      "401a",
+                      "401k",
+                      "403b",
+                      "457b",
+                      "ira",
+                      "other",
+                      "unknown"
+                    ]
+                  },
+                  "distributionCode": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "survivorSpouse": {
+                    "type": "boolean"
+                  },
+                  "deathOrDisabilitySurvivorUnder55": {
+                    "type": "boolean"
+                  },
+                  "planJurisdiction": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 2
+                  },
+                  "railroadBenefitKind": {
+                    "type": "string",
+                    "enum": [
+                      "tier1",
+                      "tier2",
+                      "lumpSum",
+                      "unemployment",
+                      "sickness",
+                      "otherRra"
+                    ]
+                  },
+                  "distributionReason": {
+                    "type": "string",
+                    "enum": [
+                      "ordinary",
+                      "disability",
+                      "death",
+                      "earlyDistributionCode1",
+                      "unknown"
+                    ]
+                  },
+                  "contributoryStatus": {
+                    "type": "string",
+                    "enum": [
+                      "contributory",
+                      "noncontributory",
+                      "unknown"
+                    ]
+                  },
+                  "recipientDisabled": {
+                    "type": "boolean"
+                  },
+                  "idahoEmploymentRequiresFederalReturn": {
+                    "type": "boolean"
+                  },
+                  "earningsNotCoveredBySocialSecurity": {
+                    "type": "boolean"
+                  },
+                  "decedentWouldQualify": {
+                    "type": "boolean"
+                  },
+                  "decedentAgeYears": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "survivorInsurableInterest": {
+                    "type": "boolean"
+                  },
+                  "survivorIssuer": {
+                    "type": "string",
+                    "enum": [
+                      "dc",
+                      "federal",
+                      "other",
+                      "unknown"
+                    ]
+                  },
+                  "reciprocitySatisfied": {
+                    "type": "boolean"
+                  },
+                  "knownPreviouslyTaxedBasis": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "priorTaxState": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 2
+                  },
+                  "earlyDistributionDisqualifier": {
+                    "type": "string",
+                    "enum": [
+                      "true",
+                      "false",
+                      "unknown"
+                    ]
+                  },
+                  "provenance": {
+                    "type": "object",
+                    "properties": {
+                      "source": {
+                        "type": "string"
+                      },
+                      "asOf": {
+                        "type": "string",
+                        "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                      }
+                    },
+                    "required": [
+                      "source",
+                      "asOf"
+                    ]
+                  }
+                },
+                "additionalProperties": false
               },
               "startAge": {
                 "type": "integer",
@@ -2914,6 +4063,158 @@
                     "enum": [
                       "coordinated",
                       "lastResort"
+                    ]
+                  },
+                  "calculationMode": {
+                    "type": "string",
+                    "enum": [
+                      "legacyQuoteEstimate",
+                      "hudValidated"
+                    ]
+                  },
+                  "hudTransactionKind": {
+                    "type": "string",
+                    "enum": [
+                      "ordinaryOrigination",
+                      "purchase",
+                      "refinance",
+                      "unknown"
+                    ]
+                  },
+                  "caseAssignmentDate": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  },
+                  "closingDate": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  },
+                  "outstandingBalanceAtMipAssessmentByMonth": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "assessmentDate": {
+                          "type": "string",
+                          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                        },
+                        "outstandingBalanceBeforeMip": {
+                          "type": "number",
+                          "minimum": 0
+                        },
+                        "provenance": {
+                          "type": "object",
+                          "properties": {
+                            "source": {
+                              "type": "string"
+                            },
+                            "asOf": {
+                              "type": "string",
+                              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                            }
+                          },
+                          "required": [
+                            "source",
+                            "asOf"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "assessmentDate",
+                        "outstandingBalanceBeforeMip",
+                        "provenance"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "mipAssessmentLedgerEvidence": {
+                    "type": "object",
+                    "properties": {
+                      "completeThroughDate": {
+                        "type": "string",
+                        "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                      },
+                      "noUnrepresentedTransactionsAfterLastAssessment": {
+                        "type": "boolean"
+                      },
+                      "provenance": {
+                        "type": "object",
+                        "properties": {
+                          "source": {
+                            "type": "string"
+                          },
+                          "asOf": {
+                            "type": "string",
+                            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                          }
+                        },
+                        "required": [
+                          "source",
+                          "asOf"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "completeThroughDate",
+                      "noUnrepresentedTransactionsAfterLastAssessment",
+                      "provenance"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "firstMipPeriodConvention": {
+                    "type": "string",
+                    "enum": [
+                      "fullCalendarMonths",
+                      "unknown"
+                    ]
+                  },
+                  "appraisedValue": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "verifiedPrincipalLimitFactorPct": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 100
+                  },
+                  "principalLimitFactorProvenance": {
+                    "type": "object",
+                    "properties": {
+                      "source": {
+                        "type": "string"
+                      },
+                      "asOf": {
+                        "type": "string",
+                        "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                      },
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "quoted",
+                          "hudTableVerified",
+                          "unverified"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "source",
+                      "asOf"
+                    ]
+                  },
+                  "otherClosingCosts": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "closingDayBorrowerAdvance": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "closingDayBorrowerAdvanceTreatment": {
+                    "type": "string",
+                    "enum": [
+                      "alreadyIncludedInStartingCash",
+                      "disburseAtModeledClosing",
+                      "unknown"
                     ]
                   }
                 },
@@ -6328,6 +7629,1272 @@
         "foreignIncomeAdjustments"
       ],
       "additionalProperties": false
+    },
+    "stateTaxFacts": {
+      "default": {
+        "householdYearFacts": [],
+        "hsaYearEvidence": [],
+        "iraBasisYearEvidence": []
+      },
+      "type": "object",
+      "properties": {
+        "householdYearFacts": {
+          "default": [],
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "year": {
+                "type": "integer",
+                "minimum": 1900,
+                "maximum": 2200
+              },
+              "stateFilingStatus": {
+                "type": "string",
+                "enum": [
+                  "single",
+                  "marriedFilingJointly",
+                  "marriedFilingSeparately",
+                  "headOfHousehold",
+                  "qualifyingSurvivingSpouse"
+                ]
+              },
+              "exemptionTaxpayerCount": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "exemptionDependentCount": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "age65EligibleCount": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "section63fQualificationCount": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "federalExemptionCount": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "known": {
+                        "type": "boolean",
+                        "const": true
+                      },
+                      "value": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      }
+                    },
+                    "required": [
+                      "known",
+                      "value"
+                    ]
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "known": {
+                        "type": "boolean",
+                        "const": false
+                      }
+                    },
+                    "required": [
+                      "known"
+                    ]
+                  }
+                ]
+              },
+              "zeroFederalExemptionReason": {
+                "type": "string",
+                "enum": [
+                  "irc151d2",
+                  "other",
+                  "unknown"
+                ]
+              },
+              "survivingSpouseQualification": {
+                "type": "object",
+                "properties": {
+                  "deathYear": {
+                    "type": "integer",
+                    "minimum": 1900,
+                    "maximum": 2200
+                  },
+                  "remarried": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "deathYear",
+                  "remarried"
+                ]
+              },
+              "utahCreditElection": {
+                "type": "string",
+                "enum": [
+                  "military",
+                  "retirement",
+                  "larger",
+                  "socialSecurityAndMilitary",
+                  "auto"
+                ]
+              },
+              "connecticutAgi": {
+                "type": "number"
+              },
+              "missouriIncome": {
+                "type": "number"
+              },
+              "oregonHouseholdIncome": {
+                "type": "number"
+              },
+              "montanaNetTaxableLtcg": {
+                "type": "number"
+              },
+              "wisconsinIncomeForStandardDeduction": {
+                "type": "number"
+              },
+              "vermontUsObligationAdjustment": {
+                "type": "number"
+              },
+              "vermontRetirementElection": {
+                "type": "string",
+                "enum": [
+                  "civilService",
+                  "socialSecurity"
+                ]
+              },
+              "claimedAsDependent": {
+                "type": "boolean"
+              },
+              "claimantDatesOfBirth": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                }
+              },
+              "southCarolinaAgi": {
+                "type": "number"
+              },
+              "iowaAlternateTaxFactsComplete": {
+                "type": "boolean"
+              },
+              "iowaAlternateTaxEligible": {
+                "type": "boolean"
+              },
+              "stateBaseFactsComplete": {
+                "type": "boolean"
+              },
+              "idahoSpouseOwnershipComplete": {
+                "type": "boolean"
+              },
+              "taxpayerEligibility": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "personId": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "blind": {
+                      "type": "boolean"
+                    },
+                    "claimedAsDependent": {
+                      "type": "boolean"
+                    },
+                    "exemptionEligible": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "personId"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "oregonCreditClaimantPersonId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "arkansasRetirementElections": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "ownerPersonId": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "election": {
+                      "type": "string",
+                      "enum": [
+                        "military",
+                        "ordinary",
+                        "larger"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "ownerPersonId",
+                    "election"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "recipientSocialSecurity": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "ownerPersonId": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "grossSocialSecurity": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "federallyIncludedSocialSecurity": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "grossRailroadTier1": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "federallyIncludedRailroadTier1": {
+                      "type": "number",
+                      "minimum": 0
+                    }
+                  },
+                  "required": [
+                    "ownerPersonId",
+                    "grossSocialSecurity",
+                    "federallyIncludedSocialSecurity",
+                    "grossRailroadTier1",
+                    "federallyIncludedRailroadTier1"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "interestExcludedFromFederalAgi": {
+                "type": "number"
+              },
+              "utahSection59_10_114Additions": {
+                "type": "number"
+              },
+              "socialSecurityIncludedInUtahTaxableIncome": {
+                "type": "number"
+              },
+              "railroadRetirementActBenefitsPaid": {
+                "type": "number"
+              },
+              "railroadRetirementActBenefitsIncludedInFederalAgi": {
+                "type": "number"
+              },
+              "railroadRetirementSocialSecurityOverlapIncludedInUtahTaxableIncome": {
+                "type": "number",
+                "minimum": 0
+              },
+              "utahCreditApportionment": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "ownerStateTaxFacts": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "ownerPersonId": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "remainingScIncome": {
+                      "type": "number"
+                    },
+                    "westVirginiaEligibleAge65OrDisabled": {
+                      "type": "boolean"
+                    },
+                    "westVirginiaSurvivorEligible": {
+                      "type": "boolean"
+                    },
+                    "westVirginiaRemainingFederalAgiIncome": {
+                      "type": "number"
+                    },
+                    "westVirginiaPriorNamedModifications": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "ownerPersonId"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "iowaTestNetIncome": {
+                "type": "number"
+              },
+              "iowaCombinedSpouseTestNetIncome": {
+                "type": "number"
+              },
+              "iowaSpouseTaxableIncome": {
+                "type": "number"
+              },
+              "iowaSpouseNolCarryElection": {
+                "type": "boolean"
+              },
+              "iowaClaimedAsDependent": {
+                "type": "boolean"
+              },
+              "iowaClaimantTestNetIncome": {
+                "type": "number"
+              },
+              "iowaClaimantJointThreshold": {
+                "type": "boolean"
+              },
+              "iowaSeniorForThreshold": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "year"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "hsaYearEvidence": {
+          "default": [],
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "taxYear": {
+                "type": "integer",
+                "minimum": 1900,
+                "maximum": 2200
+              },
+              "accountId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "ownerPersonId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "state": {
+                "type": "string",
+                "minLength": 2,
+                "maxLength": 2
+              },
+              "employeePayrollContributions": {
+                "type": "number",
+                "minimum": 0
+              },
+              "employeeDirectContributions": {
+                "type": "number",
+                "minimum": 0
+              },
+              "afterTaxContributionsAlreadyInStateIncome": {
+                "type": "number",
+                "minimum": 0
+              },
+              "grossDistributions": {
+                "type": "number",
+                "minimum": 0
+              },
+              "nonqualifiedCashWithdrawals": {
+                "type": "number",
+                "minimum": 0
+              },
+              "stateBasisConsumed": {
+                "type": "number",
+                "minimum": 0
+              },
+              "stateBasisAfterYear": {
+                "type": "number",
+                "minimum": 0
+              },
+              "activityCategoriesComplete": {
+                "type": "object",
+                "properties": {
+                  "contributions": {
+                    "type": "boolean"
+                  },
+                  "earnings": {
+                    "type": "boolean"
+                  },
+                  "dispositions": {
+                    "type": "boolean"
+                  },
+                  "distributions": {
+                    "type": "boolean"
+                  },
+                  "basis": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "contributions",
+                  "earnings",
+                  "dispositions",
+                  "distributions",
+                  "basis"
+                ],
+                "additionalProperties": false
+              },
+              "federalHsaDeduction": {
+                "type": "number",
+                "minimum": 0
+              },
+              "employerContributionExcludedFederally": {
+                "type": "number",
+                "minimum": 0
+              },
+              "employerContributionAlreadyInStateWages": {
+                "type": "number",
+                "minimum": 0
+              },
+              "interest": {
+                "type": "number",
+                "minimum": 0
+              },
+              "dividends": {
+                "type": "number",
+                "minimum": 0
+              },
+              "realizedGains": {
+                "type": "number"
+              },
+              "unrealizedAppreciation": {
+                "type": "number",
+                "minimum": 0
+              },
+              "qualifiedCashWithdrawals": {
+                "type": "number",
+                "minimum": 0
+              },
+              "nonqualifiedDistributionFederalAmount": {
+                "type": "number",
+                "minimum": 0
+              },
+              "stateBasisBeforeYear": {
+                "type": "number",
+                "minimum": 0
+              },
+              "documentedOtherStateTaxed401aBasis": {
+                "type": "number",
+                "minimum": 0
+              },
+              "njAssetDispositions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "proceeds": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "njLotBasis": {
+                      "type": "number",
+                      "minimum": 0
+                    }
+                  },
+                  "required": [
+                    "proceeds",
+                    "njLotBasis"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "californiaAssetDispositions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "proceeds": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "californiaLotBasis": {
+                      "type": "number",
+                      "minimum": 0
+                    }
+                  },
+                  "required": [
+                    "proceeds",
+                    "californiaLotBasis"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "annualActivityComplete": {
+                "type": "boolean"
+              },
+              "provenance": {
+                "type": "object",
+                "properties": {
+                  "source": {
+                    "type": "string"
+                  },
+                  "asOf": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  }
+                },
+                "required": [
+                  "source",
+                  "asOf"
+                ]
+              }
+            },
+            "required": [
+              "taxYear",
+              "accountId",
+              "ownerPersonId",
+              "state",
+              "provenance"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "iraBasisYearEvidence": {
+          "default": [],
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "taxYear": {
+                "type": "integer",
+                "minimum": 1900,
+                "maximum": 2200
+              },
+              "ownerPersonId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "state": {
+                "type": "string",
+                "minLength": 2,
+                "maxLength": 2
+              },
+              "accountId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "unrecoveredStateBasis": {
+                "type": "number",
+                "minimum": 0
+              },
+              "annualDistributionsComplete": {
+                "type": "boolean"
+              },
+              "fullLiquidation": {
+                "type": "boolean"
+              },
+              "yearEndAccountValue": {
+                "type": "number",
+                "minimum": 0
+              },
+              "distributionsDuringYear": {
+                "type": "number",
+                "minimum": 0
+              },
+              "postYearContributionsThroughFilingDeadline": {
+                "type": "number",
+                "minimum": 0
+              },
+              "exemptObligationAdjustment": {
+                "type": "number"
+              },
+              "provenance": {
+                "type": "object",
+                "properties": {
+                  "source": {
+                    "type": "string"
+                  },
+                  "asOf": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  }
+                },
+                "required": [
+                  "source",
+                  "asOf"
+                ]
+              }
+            },
+            "required": [
+              "taxYear",
+              "ownerPersonId",
+              "state",
+              "provenance"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "annualEvidenceCompleteness": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "taxYear": {
+                "type": "integer",
+                "minimum": 1900,
+                "maximum": 2200
+              },
+              "state": {
+                "type": "string",
+                "minLength": 2,
+                "maxLength": 2
+              },
+              "hsa": {
+                "type": "string",
+                "enum": [
+                  "complete",
+                  "unknown"
+                ]
+              },
+              "qcd": {
+                "type": "string",
+                "enum": [
+                  "complete",
+                  "unknown"
+                ]
+              },
+              "iraBasis": {
+                "type": "string",
+                "enum": [
+                  "complete",
+                  "unknown"
+                ]
+              },
+              "provenance": {
+                "type": "object",
+                "properties": {
+                  "source": {
+                    "type": "string"
+                  },
+                  "asOf": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  }
+                },
+                "required": [
+                  "source",
+                  "asOf"
+                ]
+              }
+            },
+            "required": [
+              "taxYear",
+              "state",
+              "provenance"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "retirementDistributionEvidence": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "eventId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "taxYear": {
+                "type": "integer",
+                "minimum": 1900,
+                "maximum": 2200
+              },
+              "accountId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "sourceOwnerPersonId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "recipientPersonId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "distributionDate": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              },
+              "source": {
+                "type": "string",
+                "enum": [
+                  "private",
+                  "public",
+                  "ordinaryPrivatePension",
+                  "ira",
+                  "employerPlan",
+                  "militaryRetirement",
+                  "militarySurvivor",
+                  "federalCivilService",
+                  "stateLocalPublic",
+                  "railroadTier1",
+                  "railroadTier2",
+                  "railroadRetirementAct",
+                  "governmentSurvivor",
+                  "unknownPublic",
+                  "unknownPrivate"
+                ]
+              },
+              "federallyIncludedAmount": {
+                "type": "number",
+                "minimum": 0
+              },
+              "eligibility": {
+                "type": "object",
+                "properties": {
+                  "planSystemCode": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "qualifiedPlanType": {
+                    "type": "string",
+                    "enum": [
+                      "401a",
+                      "401k",
+                      "403b",
+                      "457b",
+                      "ira",
+                      "other",
+                      "unknown"
+                    ]
+                  },
+                  "distributionCode": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "survivorSpouse": {
+                    "type": "boolean"
+                  },
+                  "deathOrDisabilitySurvivorUnder55": {
+                    "type": "boolean"
+                  },
+                  "planJurisdiction": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 2
+                  },
+                  "railroadBenefitKind": {
+                    "type": "string",
+                    "enum": [
+                      "tier1",
+                      "tier2",
+                      "lumpSum",
+                      "unemployment",
+                      "sickness",
+                      "otherRra"
+                    ]
+                  },
+                  "distributionReason": {
+                    "type": "string",
+                    "enum": [
+                      "ordinary",
+                      "disability",
+                      "death",
+                      "earlyDistributionCode1",
+                      "unknown"
+                    ]
+                  },
+                  "contributoryStatus": {
+                    "type": "string",
+                    "enum": [
+                      "contributory",
+                      "noncontributory",
+                      "unknown"
+                    ]
+                  },
+                  "recipientDisabled": {
+                    "type": "boolean"
+                  },
+                  "idahoEmploymentRequiresFederalReturn": {
+                    "type": "boolean"
+                  },
+                  "earningsNotCoveredBySocialSecurity": {
+                    "type": "boolean"
+                  },
+                  "decedentWouldQualify": {
+                    "type": "boolean"
+                  },
+                  "decedentAgeYears": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "survivorInsurableInterest": {
+                    "type": "boolean"
+                  },
+                  "survivorIssuer": {
+                    "type": "string",
+                    "enum": [
+                      "dc",
+                      "federal",
+                      "other",
+                      "unknown"
+                    ]
+                  },
+                  "reciprocitySatisfied": {
+                    "type": "boolean"
+                  },
+                  "knownPreviouslyTaxedBasis": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "priorTaxState": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 2
+                  },
+                  "earlyDistributionDisqualifier": {
+                    "type": "string",
+                    "enum": [
+                      "true",
+                      "false",
+                      "unknown"
+                    ]
+                  },
+                  "provenance": {
+                    "type": "object",
+                    "properties": {
+                      "source": {
+                        "type": "string"
+                      },
+                      "asOf": {
+                        "type": "string",
+                        "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                      }
+                    },
+                    "required": [
+                      "source",
+                      "asOf"
+                    ]
+                  }
+                },
+                "additionalProperties": false
+              },
+              "stateAllocation": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "state": {
+                      "type": "string",
+                      "minLength": 2,
+                      "maxLength": 2
+                    },
+                    "fraction": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    }
+                  },
+                  "required": [
+                    "state",
+                    "fraction"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "provenance": {
+                "type": "object",
+                "properties": {
+                  "source": {
+                    "type": "string"
+                  },
+                  "asOf": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  }
+                },
+                "required": [
+                  "source",
+                  "asOf"
+                ]
+              }
+            },
+            "required": [
+              "eventId",
+              "taxYear",
+              "accountId",
+              "sourceOwnerPersonId",
+              "recipientPersonId",
+              "source",
+              "federallyIncludedAmount",
+              "provenance"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "qcdEventEvidence": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "eventId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "taxYear": {
+                "type": "integer",
+                "minimum": 1900,
+                "maximum": 2200
+              },
+              "accountId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "ownerPersonId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "transferDate": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              },
+              "transactionKind": {
+                "type": "string",
+                "enum": [
+                  "directQcd",
+                  "splitInterest",
+                  "other",
+                  "unknown"
+                ]
+              },
+              "grossIraDistribution": {
+                "type": "number",
+                "minimum": 0
+              },
+              "directCharityTransfer": {
+                "type": "number",
+                "minimum": 0
+              },
+              "federalExcludedAmount": {
+                "type": "number",
+                "minimum": 0
+              },
+              "federalTaxableAmount": {
+                "type": "number",
+                "minimum": 0
+              },
+              "federalBasisAllocated": {
+                "type": "number",
+                "minimum": 0
+              },
+              "residency": {
+                "type": "string",
+                "enum": [
+                  "fullYearResident",
+                  "fullYearNonresident",
+                  "partYear",
+                  "unknown"
+                ]
+              },
+              "directTransfer": {
+                "type": "boolean"
+              },
+              "kansasCoveredCharitableCreditClaimed": {
+                "type": "boolean"
+              },
+              "stateAllocation": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "state": {
+                      "type": "string",
+                      "minLength": 2,
+                      "maxLength": 2
+                    },
+                    "fraction": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    }
+                  },
+                  "required": [
+                    "state",
+                    "fraction"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "provenance": {
+                "type": "object",
+                "properties": {
+                  "source": {
+                    "type": "string"
+                  },
+                  "asOf": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  }
+                },
+                "required": [
+                  "source",
+                  "asOf"
+                ]
+              }
+            },
+            "required": [
+              "eventId",
+              "taxYear",
+              "accountId",
+              "ownerPersonId",
+              "transactionKind",
+              "grossIraDistribution",
+              "directCharityTransfer",
+              "federalExcludedAmount",
+              "federalTaxableAmount",
+              "federalBasisAllocated",
+              "residency",
+              "directTransfer",
+              "provenance"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "basisPoolEvidence": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "taxYear": {
+                "type": "integer",
+                "minimum": 1900,
+                "maximum": 2200
+              },
+              "state": {
+                "type": "string",
+                "minLength": 2,
+                "maxLength": 2
+              },
+              "accountId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "ownerPersonId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "pension",
+                  "eligiblePlan",
+                  "otherState401a",
+                  "hsa",
+                  "njIra"
+                ]
+              },
+              "openingBasis": {
+                "type": "number",
+                "minimum": 0
+              },
+              "additions": {
+                "type": "number",
+                "minimum": 0
+              },
+              "provenance": {
+                "type": "object",
+                "properties": {
+                  "source": {
+                    "type": "string"
+                  },
+                  "asOf": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  }
+                },
+                "required": [
+                  "source",
+                  "asOf"
+                ]
+              }
+            },
+            "required": [
+              "taxYear",
+              "state",
+              "accountId",
+              "ownerPersonId",
+              "kind",
+              "provenance"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "inheritedRothTaxCharacterPools": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "beneficiaryPersonId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "decedentId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "firstRothContributionTaxYear": {
+            "type": "integer",
+            "minimum": 1900,
+            "maximum": 2200
+          },
+          "remainingRegularContributionBasis": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0
+              },
+              {
+                "type": "string",
+                "const": "unknown"
+              }
+            ]
+          },
+          "conversionLayers": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "conversionTaxYear": {
+                      "type": "integer",
+                      "minimum": 1900,
+                      "maximum": 2200
+                    },
+                    "remainingAmount": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "taxableAmount": {
+                      "type": "number",
+                      "minimum": 0
+                    }
+                  },
+                  "required": [
+                    "conversionTaxYear",
+                    "remainingAmount",
+                    "taxableAmount"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              {
+                "type": "string",
+                "const": "unknown"
+              }
+            ]
+          },
+          "priorDistributionsConsumedAmount": {
+            "type": "number",
+            "minimum": 0
+          },
+          "provenance": {
+            "type": "object",
+            "properties": {
+              "source": {
+                "type": "string"
+              },
+              "asOf": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              }
+            },
+            "required": [
+              "source",
+              "asOf"
+            ]
+          }
+        },
+        "required": [
+          "beneficiaryPersonId",
+          "decedentId",
+          "firstRothContributionTaxYear",
+          "remainingRegularContributionBasis",
+          "conversionLayers",
+          "priorDistributionsConsumedAmount",
+          "provenance"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "employerElectiveDeferralHistory": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "ownerPersonId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "employerPlanId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "contributionYear": {
+            "type": "integer",
+            "minimum": 1900,
+            "maximum": 2200
+          },
+          "totalElectiveDeferrals": {
+            "type": "number",
+            "minimum": 0
+          },
+          "designatedRothElectiveDeferrals": {
+            "type": "number",
+            "minimum": 0
+          },
+          "asOf": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "provenance": {
+            "type": "object",
+            "properties": {
+              "source": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "source"
+            ]
+          }
+        },
+        "required": [
+          "ownerPersonId",
+          "employerPlanId",
+          "contributionYear",
+          "totalElectiveDeferrals",
+          "designatedRothElectiveDeferrals",
+          "asOf",
+          "provenance"
+        ],
+        "additionalProperties": false
+      }
     },
     "scenarios": {
       "type": "array",

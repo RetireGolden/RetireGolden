@@ -55,20 +55,20 @@
       "label": "annual balance snapshot",
       "file": "projection/internal/annualSnapshot.ts",
       "lines": [
-        70,
-        119
+        77,
+        126
       ],
       "anchors": [
         {
-          "line": 70,
+          "line": 77,
           "text": "const {"
         },
         {
-          "line": 95,
+          "line": 102,
           "text": "balanceEntries.push([id, value])"
         },
         {
-          "line": 119,
+          "line": 126,
           "text": "}"
         }
       ]

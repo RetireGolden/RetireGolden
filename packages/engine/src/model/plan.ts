@@ -17,6 +17,20 @@ import { parseCivilIsoDate } from '../actions/civilDate.js'
 import { usdCentsSchema } from '../actions/money.js'
 import { retirementActionAnnualTaxFactsSchema } from './retirementActionAnnualTaxFacts.js'
 import { annualFederalTaxFactsSchema } from './annualFederalTaxFacts.js'
+import { assertedFactProvenanceSchema } from './assertedFactProvenance.js'
+import {
+  employerElectiveDeferralHistoryRowSchema,
+  inheritedAnnualDistributionHistoryRowSchema,
+  completedInheritedDeadlineObservationSchema,
+  inheritedRothTaxCharacterPoolSchema,
+  spousalElectionFactsSchema,
+  verifiedNonDesignatedRegimeSchema,
+} from './federalAuditPlanFacts.js'
+import {
+  pensionSourceKindSchema,
+  pensionStateEligibilitySchema,
+  stateTaxPlanFactsSchema,
+} from './stateTaxPlanFacts.js'
 import { runPlanCrossFieldChecks } from './planCrossFieldChecks.js'
 export type { RetirementActionAnnualTaxFacts } from './retirementActionAnnualTaxFacts.js'
 export type {
@@ -25,6 +39,22 @@ export type {
   BroadAnnualAmount,
   NiitAnnualAmount,
 } from './annualFederalTaxFacts.js'
+export type { AssertedFactProvenance } from './assertedFactProvenance.js'
+export type {
+  EmployerElectiveDeferralHistoryRow,
+  InheritedAnnualDistributionHistoryRow,
+  InheritedRothTaxCharacterPool,
+  SpousalElectionFacts,
+  VerifiedNonDesignatedRegime,
+} from './federalAuditPlanFacts.js'
+export type {
+  PensionSourceKind,
+  PensionStateEligibility,
+  StateHsaYearEvidence,
+  StateIraBasisYearEvidence,
+  StateTaxPlanFacts,
+  StateTaxYearHouseholdFacts,
+} from './stateTaxPlanFacts.js'
 
 export const CURRENT_PLAN_SCHEMA_VERSION = 5
 
@@ -584,18 +614,13 @@ export const inheritedBeneficiarySchema = z
      * Provenance for the facts above: who/what asserted them and as-of which
      * ISO calendar date (review workflows).
      */
-    provenance: z.object({
-      source: z.string().refine((value) => value.trim().length > 0, {
-        message: 'provenance.source must be non-blank after trimming; provide the asserting source',
-      }),
-      asOf: z
-        .string()
-        .regex(isoDateRe, 'provenance.asOf must be an ISO date (YYYY-MM-DD)')
-        .refine(
-          (value) => parseCivilIsoDate(value) !== null,
-          'provenance.asOf must be a real calendar date (YYYY-MM-DD)',
-        ),
-    }),
+    provenance: assertedFactProvenanceSchema,
+    /**
+     * Surviving-spouse §1.408-8(c) election history. Optional. Absence is
+     * unknown; present null/empty members are verified none. Eligibility still
+     * comes from `soleBeneficiary` and `spouseUnlimitedWithdrawalRight`.
+     */
+    spousalElectionFacts: spousalElectionFactsSchema.optional(),
   })
   .superRefine((beneficiary, ctx) => {
     if (
@@ -738,6 +763,28 @@ export const inheritedBeneficiarySchema = z
       })
     }
 
+    if (beneficiary.spousalElectionFacts !== undefined) {
+      if (
+        beneficiary.beneficiaryClass !== 'designated-individual' ||
+        beneficiary.edbCategory !== 'surviving-spouse'
+      ) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['spousalElectionFacts'],
+          message:
+            "spousalElectionFacts applies only when beneficiaryClass is 'designated-individual' and edbCategory is 'surviving-spouse'",
+        })
+      }
+      const contributionYears = beneficiary.spousalElectionFacts.nonRolloverContributionYears
+      if (contributionYears !== undefined && new Set(contributionYears).size !== contributionYears.length) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['spousalElectionFacts', 'nonRolloverContributionYears'],
+          message: 'nonRolloverContributionYears must be unique',
+        })
+      }
+    }
+
     // Year-arithmetic contradiction only: the reg measures birth-date to
     // birth-date (§1.401(a)(9)-4(e)(6)), so a boundary-year tie (exactly 10
     // years by year subtraction) is NOT rejected here.
@@ -794,8 +841,98 @@ export const inheritedAccountSchema = z
      * on Roth inherited accounts (see Roth refinements on accountSchema).
      */
     beneficiary: inheritedBeneficiarySchema.optional(),
+    /**
+     * Civil death date when known. Year must equal `ownerDeathYear`. Required
+     * for verified five-year non-designated classification.
+     */
+    ownerDeathDate: isoDate.optional(),
+    /**
+     * Observed post-death required/distributed amounts. Gaps remain incomplete;
+     * parsing never fills them. Unique ascending tax years; none before death year.
+     */
+    annualDistributionHistory: z.array(inheritedAnnualDistributionHistoryRowSchema).optional(),
+    /** Completed legal-year reconciliation; never replay its historical cash. */
+    completedDeadlineObservation: completedInheritedDeadlineObservationSchema.optional(),
+    /**
+     * Asserted non-designated five-year regime. Allowed only for estate/trust/
+     * entity beneficiaries when decedentHadStartedRmds is false and
+     * ownerDeathDate is present. Not a trust-law classifier.
+     */
+    verifiedNonDesignatedRegime: verifiedNonDesignatedRegimeSchema.optional(),
   })
   .superRefine((inherited, ctx) => {
+    if (inherited.ownerDeathDate !== undefined) {
+      const deathYear = Number(inherited.ownerDeathDate.slice(0, 4))
+      if (deathYear !== inherited.ownerDeathYear) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['ownerDeathDate'],
+          message: 'ownerDeathDate year must equal ownerDeathYear',
+        })
+      }
+    }
+
+    if (inherited.annualDistributionHistory !== undefined) {
+      const years = inherited.annualDistributionHistory.map((row) => row.taxYear)
+      if (new Set(years).size !== years.length) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['annualDistributionHistory'],
+          message: 'annualDistributionHistory taxYear values must be unique',
+        })
+      }
+      for (let i = 1; i < years.length; i++) {
+        if ((years[i] ?? 0) < (years[i - 1] ?? 0)) {
+          ctx.addIssue({
+            code: 'custom',
+            path: ['annualDistributionHistory', i, 'taxYear'],
+            message: 'annualDistributionHistory must be in ascending taxYear order',
+          })
+          break
+        }
+      }
+      for (const [index, row] of inherited.annualDistributionHistory.entries()) {
+        if (row.taxYear < inherited.ownerDeathYear) {
+          ctx.addIssue({
+            code: 'custom',
+            path: ['annualDistributionHistory', index, 'taxYear'],
+            message: 'annualDistributionHistory taxYear cannot precede ownerDeathYear',
+          })
+        }
+      }
+    }
+
+    if (inherited.verifiedNonDesignatedRegime !== undefined) {
+      const beneficiaryClass = inherited.beneficiary?.beneficiaryClass
+      if (
+        beneficiaryClass !== 'estate' &&
+        beneficiaryClass !== 'trust' &&
+        beneficiaryClass !== 'entity'
+      ) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['verifiedNonDesignatedRegime'],
+          message:
+            "verifiedNonDesignatedRegime requires beneficiaryClass 'estate', 'trust', or 'entity'",
+        })
+      }
+      if (inherited.decedentHadStartedRmds !== false) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['verifiedNonDesignatedRegime'],
+          message:
+            'verifiedNonDesignatedRegime requires decedentHadStartedRmds false (pre-RBD five-year schedule)',
+        })
+      }
+      if (inherited.ownerDeathDate === undefined) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['verifiedNonDesignatedRegime'],
+          message: 'verifiedNonDesignatedRegime requires ownerDeathDate',
+        })
+      }
+    }
+
     const beneficiary = inherited.beneficiary
     if (beneficiary === undefined) return
 
@@ -943,6 +1080,12 @@ export const traditionalAccountSchema = z.object({
    * Not MAGI and not the HCE test. Additive — no schema-version bump.
    */
   priorCalendarYearFicaWages: nonNegative.optional(),
+  /**
+   * Stable sponsoring-plan id linking pretax and designated-Roth siblings for
+   * §414(v)(7) prior-deferral history. Omitted accounts keep owner-wide legacy
+   * allocation; the verified prior-history path requires an explicit id.
+   */
+  employerPlanId: idSchema.optional(),
   /** Opt-in class allocation; supersedes annualReturnPct. Rebalancing here is tax-free. */
   allocation: assetAllocationPolicySchema.optional(),
 })
@@ -979,6 +1122,12 @@ export const rothAccountSchema = z.object({
    * Not MAGI and not the HCE test. Additive — no schema-version bump.
    */
   priorCalendarYearFicaWages: nonNegative.optional(),
+  /**
+   * Stable sponsoring-plan id linking pretax and designated-Roth siblings for
+   * §414(v)(7) prior-deferral history. Omitted accounts keep owner-wide legacy
+   * allocation; the verified prior-history path requires an explicit id.
+   */
+  employerPlanId: idSchema.optional(),
   /** Opt-in class allocation; supersedes annualReturnPct. Rebalancing here is tax-free. */
   allocation: assetAllocationPolicySchema.optional(),
 })
@@ -1055,8 +1204,14 @@ export const pensionLumpSumElectionSchema = z.object({
 export const pensionSchema = z.object({
   ...accountBase,
   type: z.literal('pension'),
-  /** Drives state tax treatment in states with public-pension exemptions. */
-  source: z.enum(['private', 'public']).optional(),
+  /**
+   * Characterized retirement source for state tax. Legacy `private` / `public`
+   * remain valid; named military/public/railroad kinds are additive. Coarse
+   * `public` without `stateEligibility` is incomplete for named-system limbs.
+   */
+  source: pensionSourceKindSchema.optional(),
+  /** Optional state eligibility / basis facts for the payee limb. */
+  stateEligibility: pensionStateEligibilitySchema.optional(),
   /** Owner's age when payments start. */
   startAge: z.number().int().min(PENSION_MIN_START_AGE).max(PENSION_MAX_START_AGE),
   monthlyAmount: nonNegative,
@@ -1160,30 +1315,136 @@ export const annuitySchema = z.object({
  * non-recourse (never more than the home's value). Absent = no HECM — plans
  * without one are unchanged.
  */
-export const hecmLineOfCreditSchema = z.object({
-  /** Calendar year the line is opened (youngest borrower should be 62+). */
-  openYear: calendarYear,
-  /**
-   * Principal limit as a percent of the home's value at open. Enter the
-   * lender-quoted figure; omitted = the parameter pack's published
-   * principal-limit-factor approximation by borrower age.
-   */
-  principalLimitPct: z.number().min(5).max(75).optional(),
-  /**
-   * Annual growth applied to BOTH the principal limit and the loan balance
-   * (note rate + 0.5% MIP; ~7–8% at 2026 rates). The unused line grows at
-   * this rate regardless of home value — the core of the buffer strategy.
-   */
-  growthRatePct: z.number().min(0).max(15),
-  /** Upfront costs (origination, closing, initial MIP) financed into the loan at open, % of home value. */
-  upfrontCostPct: z.number().min(0).max(10).optional(),
-  /**
-   * 'coordinated' (Pfau): draw for spending in years following a negative
-   * market return, letting the portfolio recover; 'lastResort': draw only
-   * when the portfolio cannot cover spending.
-   */
-  drawPolicy: z.enum(['coordinated', 'lastResort']),
-})
+export const hecmLineOfCreditSchema = z
+  .object({
+    /** Calendar year the line is opened (youngest borrower should be 62+). */
+    openYear: calendarYear,
+    /**
+     * Principal limit as a percent of the home's value at open. Enter the
+     * lender-quoted figure; omitted = the parameter pack's published
+     * principal-limit-factor approximation by borrower age.
+     * Used by `legacyQuoteEstimate` mode only.
+     */
+    principalLimitPct: z.number().min(5).max(75).optional(),
+    /**
+     * Annual growth applied to BOTH the principal limit and the loan balance
+     * (note rate + 0.5% MIP; ~7–8% at 2026 rates). The unused line grows at
+     * this rate regardless of home value — the core of the buffer strategy.
+     */
+    growthRatePct: z.number().min(0).max(15),
+    /** Upfront costs (origination, closing, initial MIP) financed into the loan at open, % of home value. */
+    upfrontCostPct: z.number().min(0).max(10).optional(),
+    /**
+     * 'coordinated' (Pfau): draw for spending in years following a negative
+     * market return, letting the portfolio recover; 'lastResort': draw only
+     * when the portfolio cannot cover spending.
+     */
+    drawPolicy: z.enum(['coordinated', 'lastResort']),
+    /**
+     * Calculation mode. Omitted = `legacyQuoteEstimate` (byte-compatible with
+     * pre-existing plans). `hudValidated` requires case date, appraised value,
+     * and a verified principal-limit factor — never the approximate age table.
+     */
+    calculationMode: z.enum(['legacyQuoteEstimate', 'hudValidated']).optional(),
+    /**
+     * Observed HECM transaction form. HUD validation is presently bounded to
+     * ordinary originations; absent/unknown must not silently price a purchase
+     * or refinance as one.
+     */
+    hudTransactionKind: z.enum([
+      'ordinaryOrigination',
+      'purchase',
+      'refinance',
+      'unknown',
+    ]).optional(),
+    /** Case-assignment civil date for HUD-validated mode (selects case-year pack). */
+    caseAssignmentDate: isoDate.optional(),
+    /** Closing date starts HUD monthly MIP accrual; it is not the case date. */
+    closingDate: isoDate.optional(),
+    /**
+     * Complete, ordered outstanding balances observed at each monthly HUD MIP
+     * assessment.  An omitted collection never authorizes an assumed intramonth
+     * advance/interest/fee ordering.
+     */
+    outstandingBalanceAtMipAssessmentByMonth: z.array(
+      z.object({
+        assessmentDate: isoDate,
+        outstandingBalanceBeforeMip: nonNegative,
+        provenance: assertedFactProvenanceSchema,
+      }).strict(),
+    ).optional(),
+    /** Evidence that the monthly assessment ledger is complete through year end. */
+    mipAssessmentLedgerEvidence: z.object({
+      completeThroughDate: isoDate,
+      noUnrepresentedTransactionsAfterLastAssessment: z.boolean(),
+      provenance: assertedFactProvenanceSchema,
+    }).strict().optional(),
+    /** Partial first-period amounts require a separately supported convention. */
+    firstMipPeriodConvention: z.enum(['fullCalendarMonths', 'unknown']).optional(),
+    /** Appraised property value for HUD-validated MCA; omit to refuse HUD mode. */
+    appraisedValue: nonNegative.optional(),
+    /** Verified HUD principal-limit factor percent (not the approximate age table). */
+    verifiedPrincipalLimitFactorPct: z.number().min(0).max(100).optional(),
+    /** Source text does not establish verification: explicitly distinguish a
+     * lender quote from a verified HUD table lookup. Absent kind is unknown. */
+    principalLimitFactorProvenance: assertedFactProvenanceSchema.extend({
+      kind: z.enum(['quoted', 'hudTableVerified', 'unverified']).optional(),
+    }).optional(),
+    /** Other closing costs financed into the loan at open (HUD mode; dollars). */
+    otherClosingCosts: nonNegative.optional(),
+    /** Borrower advance disbursed at closing and therefore already outstanding. */
+    closingDayBorrowerAdvance: nonNegative.optional(),
+    /** Whether the advance is already in starting cash or is a new projection receipt. */
+    closingDayBorrowerAdvanceTreatment: z.enum([
+      'alreadyIncludedInStartingCash', 'disburseAtModeledClosing', 'unknown',
+    ]).optional(),
+  })
+  .superRefine((hecm, ctx) => {
+    const mode = hecm.calculationMode ?? 'legacyQuoteEstimate'
+    if (mode !== 'hudValidated') return
+    if (hecm.caseAssignmentDate === undefined) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['caseAssignmentDate'],
+        message: 'hudValidated HECM requires caseAssignmentDate',
+      })
+    }
+    if (hecm.closingDate === undefined) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['closingDate'],
+        message: 'hudValidated HECM requires closingDate for monthly MIP timing',
+      })
+    }
+    if (hecm.hudTransactionKind === undefined || hecm.hudTransactionKind === 'unknown') {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['hudTransactionKind'],
+        message: 'hudValidated HECM requires a verified transaction kind',
+      })
+    }
+    if (hecm.appraisedValue === undefined) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['appraisedValue'],
+        message: 'hudValidated HECM requires appraisedValue',
+      })
+    }
+    if (hecm.verifiedPrincipalLimitFactorPct === undefined) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['verifiedPrincipalLimitFactorPct'],
+        message: 'hudValidated HECM requires verifiedPrincipalLimitFactorPct',
+      })
+    }
+    if (hecm.principalLimitFactorProvenance === undefined) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['principalLimitFactorProvenance'],
+        message: 'hudValidated HECM requires principalLimitFactorProvenance',
+      })
+    }
+  })
 export type HecmLineOfCredit = z.infer<typeof hecmLineOfCreditSchema>
 
 export const propertySchema = z.object({
@@ -2290,6 +2551,30 @@ const planObjectSchema = z
     annualFederalTaxFacts: annualFederalTaxFactsSchema.default({
       foreignIncomeAdjustments: [],
     }),
+    /**
+     * Optional characterized state-tax household / HSA / IRA-basis evidence.
+     * Default empty collections keep pre-existing plans valid without a
+     * schema-version bump. QCD policy is never persisted here.
+     */
+    stateTaxFacts: stateTaxPlanFactsSchema.default({
+      householdYearFacts: [],
+      hsaYearEvidence: [],
+      iraBasisYearEvidence: [],
+    }),
+    /**
+     * Inherited Roth tax-character pools keyed by (beneficiary, decedent).
+     * Absence retains the inherited-Roth taxability limitation.
+     */
+    inheritedRothTaxCharacterPools: z
+      .array(inheritedRothTaxCharacterPoolSchema)
+      .default([]),
+    /**
+     * Verified same-year employer elective deferral history snapshots.
+     * Absence is unknown (legacy allocation); present zero is known zero.
+     */
+    employerElectiveDeferralHistory: z
+      .array(employerElectiveDeferralHistoryRowSchema)
+      .default([]),
     scenarios: z.array(scenarioSchema),
   })
 export type PlanDocument = z.infer<typeof planObjectSchema>
@@ -2449,6 +2734,13 @@ export function createEmptyPlan(opts: CreatePlanOptions = {}): Plan {
       safeWithdrawalRatePct: 4,
     },
     annualFederalTaxFacts: { foreignIncomeAdjustments: [] },
+    stateTaxFacts: {
+      householdYearFacts: [],
+      hsaYearEvidence: [],
+      iraBasisYearEvidence: [],
+    },
+    inheritedRothTaxCharacterPools: [],
+    employerElectiveDeferralHistory: [],
     scenarios: [],
   }
 }

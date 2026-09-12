@@ -8,20 +8,20 @@
       "label": "ordered account selection and annual opening-state folds",
       "file": "projection/internal/annualPensionAndAnnuityIncome.ts",
       "lines": [
-        129,
-        192
+        144,
+        211
       ],
       "anchors": [
         {
-          "line": 134,
+          "line": 149,
           "text": "const qualifiedAnnuityPayments: QualifiedAnnuityPaymentActivity[] = []"
         },
         {
-          "line": 161,
+          "line": 180,
           "text": "for (const account of input.accounts) {"
         },
         {
-          "line": 177,
+          "line": 196,
           "text": "const startCalendarYear = dobYear(owner) + account.startAge"
         }
       ]
@@ -31,20 +31,20 @@
       "label": "living/survivor pension selection and ordered state-tax folds",
       "file": "projection/internal/annualPensionAndAnnuityIncome.ts",
       "lines": [
-        193,
-        227
+        212,
+        256
       ],
       "anchors": [
         {
-          "line": 193,
+          "line": 212,
           "text": "if (account.type === 'pension') {"
         },
         {
-          "line": 209,
+          "line": 228,
           "text": "pensionIncome += amount"
         },
         {
-          "line": 214,
+          "line": 243,
           "text": "rows.push({"
         }
       ]
@@ -54,24 +54,24 @@
       "label": "payout form, tax character, exclusion carry and qualified contract-debit plans",
       "file": "projection/internal/annualPensionAndAnnuityIncome.ts",
       "lines": [
-        229,
-        338
+        258,
+        384
       ],
       "anchors": [
         {
-          "line": 232,
+          "line": 261,
           "text": "const paidFraction = annuityPayoutFraction(annuityPayoutForm(account), {"
         },
         {
-          "line": 250,
+          "line": 279,
           "text": "if (account.purchase?.taxQualification === 'qualified') {"
         },
         {
-          "line": 303,
+          "line": 332,
           "text": "} else if (account.purchase) {"
         },
         {
-          "line": 338,
+          "line": 384,
           "text": "rows.push({"
         }
       ]
@@ -81,20 +81,20 @@
       "label": "annuity cash-flow record and ordered commit-row publication",
       "file": "projection/internal/annualPensionAndAnnuityIncome.ts",
       "lines": [
-        338,
-        355
+        384,
+        401
       ],
       "anchors": [
         {
-          "line": 343,
+          "line": 389,
           "text": ": {"
         },
         {
-          "line": 349,
+          "line": 395,
           "text": "account.purchase?.taxQualification === 'qualified',"
         },
         {
-          "line": 355,
+          "line": 401,
           "text": "})"
         }
       ]
@@ -104,16 +104,16 @@
       "label": "explicit final folds, publications and ordered commit rows",
       "file": "projection/internal/annualPensionAndAnnuityIncome.ts",
       "lines": [
-        358,
-        366
+        404,
+        416
       ],
       "anchors": [
         {
-          "line": 358,
+          "line": 404,
           "text": "return {"
         },
         {
-          "line": 365,
+          "line": 411,
           "text": "rows,"
         }
       ]
@@ -123,28 +123,28 @@
       "label": "annual invocation, scalar selection and ordered caller-owned commits",
       "file": "projection/simulate.ts",
       "lines": [
-        1646,
-        1706
+        1680,
+        1776
       ],
       "anchors": [
         {
-          "line": 1646,
+          "line": 1680,
           "text": "const pensionAndAnnuity = annualPensionAndAnnuityIncome({"
         },
         {
-          "line": 1670,
+          "line": 1704,
           "text": "incomes.annuity = pensionAndAnnuity.annuityIncome"
         },
         {
-          "line": 1676,
+          "line": 1746,
           "text": "for (const row of pensionAndAnnuity.rows) {"
         },
         {
-          "line": 1689,
+          "line": 1759,
           "text": "recordAnnualRetirementRuntimeOccurrence(distribution.occurrence)"
         },
         {
-          "line": 1706,
+          "line": 1776,
           "text": "if (row.record !== null) yearSites?.recordAnnuityPayment(row.record)"
         }
       ]

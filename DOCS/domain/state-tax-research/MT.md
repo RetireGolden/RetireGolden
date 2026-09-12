@@ -73,13 +73,23 @@ there is no broad pension/IRA exclusion, mapped to `retirement: { kind: "none" }
 
 ## Simplifications / not modeled
 - Income-based **SS subtraction** simplified to "fully taxed" (`taxesSocialSecurity: true`) — overstates tax for low/moderate-income retirees.
-- $5,500 (single) / $11,000 (MFJ, both 65+) **age-65 subtraction** not modeled (`none` is conservative — overstates tax for seniors).
-- **Capital gains preference**: Montana taxes net long-term capital gains at lower rates (3.0% on the first ~$21,100, 4.1% above) rather than the 4.7%/5.9% ordinary rates. We set `capitalGainsAsOrdinary: true` (no preference) — overstates tax on LTCG.
+- The state leaf separately applies the age-65 subtraction and Montana long-term-capital-gain stack only when state-specific income and household facts are available; the coarse pack does not certify a full return.
+- **Capital gains preference**: TY2026 uses a separate LTCG schedule at 3.0% / 4.1%
+  with status thresholds $47,500 single/MFS, $71,250 HOH, $95,000 MFJ. When
+  `householdFacts.montanaNetTaxableLtcg` is supplied, `montanaLtcgTax` stacks
+  ordinary income into the lower band first. Without that fact the pack still
+  taxes gains as ordinary and overstates LTCG tax.
 - Standard deduction source conflict: some references list MT's own $14,600/$29,200 amounts; we use the federal-conformed $15,750/$31,500 — re-verify against the final 2025 Form 2 instructions.
-- Bracket thresholds inflation-adjusted annually; 2025 values held forward.
+- TY2026 ordinary and LTCG bands use the enacted HB337 thresholds; later projected years require refreshed packs.
 
 ## Citations
 - https://www.taxcompare.org/state/montana/brackets — 2025 brackets 4.7% (to $20,500 single / $41,000 MFJ) and 5.9%.
 - https://accountinginsights.org/does-montana-tax-social-security-benefits/ — SS starts from federally taxable amount; income-based subtraction tiers ($25k/$32k full; partial above).
 - https://americantaxservice.org/senior-tax-deductions-in-montana/ — 2025 repeal of partial pension/IRA subtraction; new $5,500/$11,000 age-65 subtraction.
 - https://nationaltaxreports.com/montana-tax-on-capital-gains/ — preferential net long-term capital-gains rates (3.0% / 4.1%).
+
+## Montana stacks long-term gains above ordinary taxable income (verified 2026-09-12)
+
+TY2026 net long-term capital gains use 3.0% and 4.1%, with the rate boundary shared with ordinary income: $47,500 single/MFS, $71,250 HOH and $95,000 joint/QSS. Ordinary taxable income consumes the lower band first. A return cannot apply the full lower capital-gain band again independently of ordinary income.
+
+Registered as `mt-long-term-capital-gain-schedule`. Authority: [Montana DOR HB337 notice](https://revenuefiles.mt.gov/news/recent-news/HB-337).

@@ -536,3 +536,19 @@ describe('simulator owned non-Roth IRA annual observation', () => {
     expect(result.observation.aggregateYearEndApplicableBalanceAmount).toBe(0)
   })
 })
+
+// An inherited source joins the owner aggregate only on accepted annual routing,
+// including a deemed election; its unchanged persisted identity is insufficient.
+describe('annual observation accepted ownership map', () => {
+  it('keeps inherited funds outside the pool without routing and admits the same source when accepted', () => {
+    const base = input()
+    const withInheritedBalance = { ...base, yearEndBalances: [...base.yearEndBalances,
+      { sourceAccountId: 'inherited-ira', balance: 500 }] }
+    expect(buildSimulatorOwnedNonRothIraAnnualObservation(withInheritedBalance).status)
+      .toBe('annualObservationBlocked')
+    const accepted = built({ ...withInheritedBalance,
+      ownerTreatmentRouting: new Map([['inherited-ira', true]]) })
+    expect(accepted.observation.aggregateYearEndApplicableBalanceAmount).toBe(59001)
+    expect(built(base).observation.aggregateYearEndApplicableBalanceAmount).toBe(9001)
+  })
+})

@@ -31,6 +31,13 @@ export interface AnnualSnapshotBalance {
 /** The structural slice of an open HECM line needed by the snapshot. */
 export interface AnnualSnapshotHecmLine {
   readonly loanBalance: number
+  /** Optional HUD-validated evidence fields when the opening leaf publishes them. */
+  readonly calculationMode?: 'legacyQuoteEstimate' | 'hudValidated'
+  readonly maximumClaimAmount?: number
+  readonly initialMip?: number
+  readonly annualMipAccrued?: number
+  readonly caseParameterYear?: number
+  readonly principalLimit?: number
 }
 
 /** The year-scoped state read by the snapshot phase. */

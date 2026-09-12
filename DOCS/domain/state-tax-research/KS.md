@@ -36,7 +36,7 @@ distributions are taxed as ordinary income, so the common private retiree gets
 no exclusion → `retirement: { kind: "none" }`.
 
 ## Simplifications / not modeled
-- Exemption of public/government/KPERS/military/railroad pensions not modeled — `none` is conservative (overstates tax for those retirees).
+- Characterized retirement facts distinguish the statutory named public-plan list from private or unclassified public income. Aggregate public-pension income is not proof of a listed plan.
 - Kansas personal exemption ($9,160 single / $18,320 MFJ plus $2,320/dependent, 2025) not modeled — only the standard deduction is captured, which understates total deductions/exemptions and overstates tax.
 - Age-65 additional standard deduction add-ons not modeled.
 
@@ -45,3 +45,13 @@ no exclusion → `retirement: { kind: "none" }`.
 - https://www.ksrevenue.gov/incomebook25.html — Kansas DOR 2025 income tax booklet (rates, standard deduction).
 - https://legalclarity.org/kansas-social-security-taxation-rules-exemptions-and-changes/ — SS fully exempt for tax years after 12/31/2023 (SB 1 removed $75k cap).
 - Tax Foundation, State Individual Income Tax Rates and Brackets 2025 — KS 5.2%/5.58%.
+
+## Kansas preserves direct QCD exclusion and separately tests charitable-credit modifications (verified 2026-09-12)
+
+Kansas begins with federal AGI and lists its additions. There is no general direct-QCD addition in the reviewed current enactment, so an eligible federally excluded direct QCD flows through without another subtraction. Covered charitable-credit additions are separate and require actual claimed-credit facts; unknown credit facts produce incomplete status. This bounded inference is not blanket conformity for all transaction types or a presumption that credits were not claimed.
+
+Registered as `ks-direct-qcd-conformity`. Authority: [Kansas 2026 chapter 154, section 2, 79-32,117(a),(b)(vii)](https://www.sos.ks.gov/publications/sessionlaws/2026/Chapter-154-SB-300.html).
+
+## Characterized retirement and evidence scope (2026-09-12)
+
+Named statutory plans, including KPERS, federal service, qualifying city/public-utility systems, Washburn and Overland Park police/fire, are distinguished by plan identity. An unlisted public plan does not become eligible simply because it is public. Unknown identity is incomplete.

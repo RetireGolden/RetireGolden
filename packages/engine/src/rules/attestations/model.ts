@@ -18,4 +18,7 @@ export const modelAttestations: Readonly<Record<string, CoverageAttestation>> = 
     sweptOn: '2026-09-06',
     note: 'strict persistence/provenance schema and source-quality labels for user-supplied annual facts; validates shape, ranges and duplicate years but computes no statutory amount, tax, entitlement or action',
   }),
+  'model/assertedFactProvenance.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-09-12', note: 'Source and real-date validation only; no entitlement or statutory amount.' }),
+  'model/federalAuditPlanFacts.ts': Object.freeze({ status: 'partial', sweptOn: '2026-09-12', note: 'Dated spouse execution/history and beneficiary classification persistence gates; inherited Roth layer and employer prior-contribution consistency constraints require rule-trail reconciliation.' }),
+  'model/stateTaxPlanFacts.ts': Object.freeze({ status: 'partial', sweptOn: '2026-09-12', note: 'Source-system eligibility vocabulary, state basis and HSA activity completeness contracts; not independent proof of state eligibility or basis recovery.' }),
 })

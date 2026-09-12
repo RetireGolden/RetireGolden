@@ -343,3 +343,7 @@ Every lever above is registered in
   levy's universality): https://www.in.gov/dor/files/ib26.pdf
 - Income Tax Information Bulletin #27, June 2025 (military personnel and
   spouses): https://www.in.gov/dor/files/ib27.pdf
+
+## Characterized retirement and evidence scope (2026-09-12)
+
+The current DOR deductions page includes targeted civil-service, military and disability deductions; it provides no general public or private pension deduction. Its complete displayed deduction headings and IB26 taxable-pension language are preserved in the source record. A specific qualifying exception still controls.

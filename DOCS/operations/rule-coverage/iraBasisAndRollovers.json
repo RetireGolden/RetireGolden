@@ -163,7 +163,7 @@
           "functions": [
             {
               "name": "buildAnnualRetirementPhysicalEventInventory",
-              "line": 1343
+              "line": 1348
             }
           ]
         },
@@ -251,7 +251,7 @@
           "functions": [
             {
               "name": "validateOwnedNonRothIraRuntimeSourceSeries",
-              "line": 3239
+              "line": 3249
             }
           ]
         },
@@ -269,7 +269,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         }
@@ -380,7 +380,7 @@
           "functions": [
             {
               "name": "replayOwnedNonRothIraContiguousYears",
-              "line": 410
+              "line": 414
             }
           ]
         },
@@ -389,7 +389,7 @@
           "functions": [
             {
               "name": "validateOwnedNonRothIraRuntimeSourceSeries",
-              "line": 3239
+              "line": 3249
             }
           ]
         },
@@ -398,7 +398,7 @@
           "functions": [
             {
               "name": "annualPensionAndAnnuityIncome",
-              "line": 126
+              "line": 141
             }
           ]
         },
@@ -407,7 +407,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         },
@@ -416,7 +416,7 @@
           "functions": [
             {
               "name": "isAggregatedIra",
-              "line": 1391
+              "line": 1361
             }
           ]
         }
@@ -552,7 +552,7 @@
           "functions": [
             {
               "name": "ownedIraSourceIds",
-              "line": 384
+              "line": 386
             }
           ]
         }
@@ -635,7 +635,7 @@
           "functions": [
             {
               "name": "replayOwnedNonRothIraContiguousYears",
-              "line": 410
+              "line": 414
             }
           ]
         },
@@ -644,7 +644,7 @@
           "functions": [
             {
               "name": "validateOwnedNonRothIraRuntimeSourceSeries",
-              "line": 3239
+              "line": 3249
             }
           ]
         },
@@ -653,7 +653,7 @@
           "functions": [
             {
               "name": "annualPensionAndAnnuityIncome",
-              "line": 126
+              "line": 141
             }
           ]
         },
@@ -662,7 +662,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         }
@@ -751,7 +751,7 @@
           "functions": [
             {
               "name": "replayOwnedNonRothIraContiguousYears",
-              "line": 410
+              "line": 414
             }
           ]
         },
@@ -760,7 +760,7 @@
           "functions": [
             {
               "name": "validateOwnedNonRothIraRuntimeSourceSeries",
-              "line": 3239
+              "line": 3249
             }
           ]
         },
@@ -778,7 +778,7 @@
           "functions": [
             {
               "name": "annualPensionAndAnnuityIncome",
-              "line": 126
+              "line": 141
             }
           ]
         },
@@ -787,7 +787,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         }
@@ -885,7 +885,7 @@
           "functions": [
             {
               "name": "replayOwnedNonRothIraContiguousYears",
-              "line": 410
+              "line": 414
             }
           ]
         },
@@ -894,7 +894,7 @@
           "functions": [
             {
               "name": "validateOwnedNonRothIraRuntimeSourceSeries",
-              "line": 3239
+              "line": 3249
             }
           ]
         },
@@ -903,7 +903,7 @@
           "functions": [
             {
               "name": "annualFundingApplicationAndClosePhase",
-              "line": 412
+              "line": 435
             }
           ]
         },
@@ -921,7 +921,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         },
@@ -1209,7 +1209,7 @@
           "functions": [
             {
               "name": "validateOwnedNonRothIraRuntimeSourceSeries",
-              "line": 3239
+              "line": 3249
             }
           ]
         },
@@ -1236,7 +1236,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         }
@@ -1355,7 +1355,7 @@
           "functions": [
             {
               "name": "validateOwnedNonRothIraRuntimeSourceSeries",
-              "line": 3239
+              "line": 3249
             }
           ]
         },
@@ -1364,11 +1364,11 @@
           "functions": [
             {
               "name": "evaluateConversion",
-              "line": 647
+              "line": 646
             },
             {
               "name": "isConvertibleToRoth",
-              "line": 1359
+              "line": 1329
             }
           ]
         }
@@ -1381,16 +1381,16 @@
       "refusalFixtures": [
         {
           "path": "packages/engine/src/strategies/accountEligibility.test.ts",
-          "line": 1773,
+          "line": 1775,
           "note": null,
           "tests": [
             {
               "title": "refuses an inherited source instead of computing a conversion",
-              "line": 1778
+              "line": 1780
             },
             {
               "title": "accepts the same request from an owned IRA, so the refusal is the inherited fact and not the shape of the fixture",
-              "line": 1784
+              "line": 1786
             }
           ]
         }
@@ -1424,18 +1424,28 @@
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-03",
-      "dueOn": "2027-08-03",
+      "verifiedOn": "2026-09-12",
+      "dueOn": "2027-09-12",
       "implementedBy": [
+        "packages/engine/src/actions/beneficiarySpousalElectionAnnualGate.ts",
         "packages/engine/src/actions/beneficiarySpousalElectionStatus.ts"
       ],
       "implementations": [
+        {
+          "path": "packages/engine/src/actions/beneficiarySpousalElectionAnnualGate.ts",
+          "functions": [
+            {
+              "name": "gateBeneficiarySpousalElectionForAnnualCoordinator",
+              "line": 583
+            }
+          ]
+        },
         {
           "path": "packages/engine/src/actions/beneficiarySpousalElectionStatus.ts",
           "functions": [
             {
               "name": "evaluateBeneficiarySpousalElection",
-              "line": 113
+              "line": 117
             }
           ]
         }
@@ -1492,7 +1502,7 @@
           "functions": [
             {
               "name": "evaluateConversion",
-              "line": 647
+              "line": 646
             }
           ]
         }
@@ -1503,20 +1513,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/strategies/accountEligibility.test.ts",
-          "line": 1517,
+          "line": 1519,
           "note": null,
           "tests": [
             {
               "title": "refuses the conversion outright inside the two-year period",
-              "line": 1545
+              "line": 1547
             },
             {
               "title": "lifts the bar on the 24-month anniversary itself",
-              "line": 1552
+              "line": 1554
             },
             {
               "title": "does not reach an ordinary traditional IRA of the same owner",
-              "line": 1558
+              "line": 1560
             }
           ]
         }

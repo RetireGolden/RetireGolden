@@ -26,7 +26,11 @@ export const CHUNK_BUDGETS = [
   {
     label: 'planner Web Worker',
     match: /^planner\.worker-[^/]*\.js$/,
-    maxKiB: 1000,
+    // Raised 1000 -> 1150 for the authorized 60-item calculation audit: measured
+    // 1058.4 KiB (903 KiB baseline). Parallel growth with useProjection (+162 KiB)
+    // is engine projection/tax runtime in the worker graph, not a second worker
+    // entry — the exactCount guard still passes at one chunk.
+    maxKiB: 1150,
     // The load-bearing one. Bundlers build every worker ENTRY separately, so
     // they cannot share a chunk: a second worker entry means a second copy of
     // the ~740 KiB engine simulation core in dist/ and in the precache. That
@@ -46,7 +50,10 @@ export const CHUNK_BUDGETS = [
     // rows are documented to sit in (DOCS/operations/bundle-budget.md).
     // That is a row set the way the others are, not allowance to spend:
     // growth here still has to be justified.
-    maxKiB: 700,
+    // Raised 700 -> 900 for the authorized 60-item calculation audit: measured
+    // 827.0 KiB (665 KiB baseline). Federal params, state tax packs, rules
+    // records, and projection settlement paths landed in the simulation core.
+    maxKiB: 900,
   },
   {
     label: 'Learning Center registry',
@@ -90,7 +97,10 @@ export const CHUNK_BUDGETS = [
  * happens to have an `index.js` internal entry, and then the exact-count rule
  * would fail every build on a chunk that was never the entry.
  */
-export const ENTRY_KIB = 300
+// Raised 300 -> 420 for the authorized 60-item calculation audit: measured
+// 384.4 KiB (248 KiB baseline). The app entry's static graph now carries more
+// of the params/state/rules surface the shell initializes before lazy routes.
+export const ENTRY_KIB = 420
 /** Every other JS chunk: route chunks, page chunks, shared vendor slices. */
 export const DEFAULT_CHUNK_KIB = 260
 /**
@@ -101,8 +111,13 @@ export const DEFAULT_CHUNK_KIB = 260
  * calc-audit test-only change). The previous 44 KiB of slack (4356 -> 4400)
  * was a peek-over, not headroom. 4800 is a round hundred ~370 KiB above the
  * current measured size so ordinary feature PRs stop tripping this row.
+ *
+ * Raised again 4800 -> 5100 for the authorized 60-item calculation audit:
+ * measured 4824.2 KiB (4431.7 KiB baseline). The delta tracks the worker and
+ * useProjection engine growth plus the entry params surface, not new chunks
+ * or duplicate worker entries.
  */
-export const TOTAL_JS_KIB = 4800
+export const TOTAL_JS_KIB = 5100
 /** One stylesheet, and all of them. */
 export const MAX_CSS_KIB = 64
 export const TOTAL_CSS_KIB = 80
@@ -128,8 +143,12 @@ export const LANDING_PATH_KIB = 700
  * previous 46 KiB of slack was a peek-over. 4900 is a round hundred ~320 KiB
  * above the current measured size so ordinary feature PRs stop tripping
  * this row. Same gate, same parser; only the limit moved.
+ *
+ * Raised again 4900 -> 5250 for the authorized 60-item calculation audit:
+ * measured 4971.8 KiB (4579.6 KiB baseline). Precache entry count stayed at
+ * 200; the overshoot is the same engine bytes the per-chunk rows above count.
  */
-export const PRECACHE_KIB = 4900
+export const PRECACHE_KIB = 5250
 
 export const kib = (bytes) => bytes / 1024
 export const fmt = (n) => `${n.toFixed(1)} KiB`

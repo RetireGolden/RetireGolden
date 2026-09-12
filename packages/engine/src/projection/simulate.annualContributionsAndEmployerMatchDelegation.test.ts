@@ -275,6 +275,7 @@ vi.mock(
                   taxableInflow: 300,
                 },
                 employerAllocationByOwner: new Map(),
+                employerAllocationByGroupKey: new Map(),
               }
             : {
                 operations: [],
@@ -291,6 +292,7 @@ vi.mock(
                   taxableInflow: 0,
                 },
                 employerAllocationByOwner: new Map(),
+                employerAllocationByGroupKey: new Map(),
               }
         if (input.year === 2026 && hostile.fault !== null) {
           if (hostile.fault === 'lateIterator') {

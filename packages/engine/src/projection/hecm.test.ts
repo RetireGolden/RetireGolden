@@ -8,8 +8,14 @@
 import { describe, expect, it } from 'vitest'
 
 import { createEmptyPlan, parsePlan, type Account, type Plan } from '../model/plan.js'
+import { packForYear } from '../params/index.js'
 import { setAcaYearContract } from '../testing/planFixtures.js'
 import { createFlatTaxCalculator } from '../testing/flatTax.js'
+import {
+  accrueHecmAnnualMip,
+  computeHecmHudValidatedOpening,
+  hecmCaseYearLimitsFromPack,
+} from './hecm.js'
 import { simulatePlan, type SimulateOptions } from './simulate.js'
 
 let counter = 0
@@ -65,6 +71,33 @@ function validate(plan: Plan): Plan {
 
 const run = (plan: Plan, opts: Partial<SimulateOptions> = {}) =>
   simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax, ...opts })
+
+describe('HUD-validated MCA / MIP leaf arithmetic', () => {
+  // Mortgagee Letter 2025-22 / Handbook 4000.1 — pack pins + helper.
+  it('exposes 2026 pack MCA and MIP rates used by hudValidated openings', () => {
+    const { pack } = packForYear(2026)
+    expect(pack.hecm.maximumClaimAmount).toBe(1_249_125)
+    expect(pack.hecm.initialMipPct).toBe(2)
+    expect(pack.hecm.annualMipPct).toBe(0.5)
+    const limits = new Map([[2026, hecmCaseYearLimitsFromPack(pack)]])
+    const opened = computeHecmHudValidatedOpening({
+      calculationMode: 'hudValidated',
+      transactionKind: 'ordinaryOrigination',
+      caseAssignmentYear: 2026,
+      closingDate: '2026-01-01',
+      appraisedValue: 2_000_000,
+      principalLimitFactor: { value: 0.5, provenance: 'quoted' },
+      limitsByCaseYear: limits,
+    })
+    expect(opened).toMatchObject({
+      status: 'hudValidated',
+      maximumClaimAmount: 1_249_125,
+      initialPrincipalLimit: 624_562.5,
+      initialMip: 24_982.5,
+    })
+    expect(accrueHecmAnnualMip({ outstandingLoanBalance: 100_000, annualMipRate: 0.005 })).toEqual({ status: 'ok', amount: 500 })
+  })
+})
 
 describe('guarded default', () => {
   it('plans without a HECM report zero draws and loan balances', () => {

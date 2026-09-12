@@ -1805,3 +1805,22 @@ describe('buildAnnualRetirementPhysicalEventInventory', () => {
     }))
   })
 })
+
+// 1.408-8(c): physical event characterization follows accepted annual ownership,
+// not the mere presence of an inherited block or a recommended election year.
+describe('physical inventory accepted owner-treatment routing', () => {
+  it('rejects an owner RMD without acceptance, then categorizes the same accepted source in Form8606', () => {
+    const value = input(basePlan(), [resolved({ sourceAccountId: inheritedId })])
+    expect(issueKinds(value)).toContain('sourceKindMismatch')
+    const accepted = built({ ...value, ownerTreatmentRouting: new Map([[inheritedId, true]]) })
+    expect(accepted.events.find(event => event.eventId === 'runtime-rmd-event'))
+      .toMatchObject({ sourceAccountId: inheritedId, form8606Category: 'line7DistributionCandidate' })
+  })
+  it('rejects inherited RMD routing after the same accepted owner transition', () => {
+    const value = input(basePlan(), [resolved({ sourceAccountId: inheritedId, kind: 'inheritedIraRmd' })])
+    expect(built(value).events.find(event => event.eventId === 'runtime-rmd-event'))
+      .toMatchObject({ form8606Category: 'nonForm8606OrForeignPoolEvent' })
+    expect(issueKinds({ ...value, ownerTreatmentRouting: new Map([[inheritedId, true]]) }))
+      .toContain('sourceKindMismatch')
+  })
+})

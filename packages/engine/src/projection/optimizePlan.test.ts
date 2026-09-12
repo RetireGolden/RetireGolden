@@ -697,6 +697,7 @@ describe('buildOptimizerInput', () => {
         annualContribution: 0,
       },
     ]
+    addExecutedSpouseElectionFixture(plan, '2028-01-01', '2024-06-15', [2025])
     const validated = validate(plan)
     const probes: OptimizerYearProbe[] = []
     const ledger = simulatePlan(validated, {
@@ -803,6 +804,7 @@ describe('buildOptimizerInput', () => {
         annualContribution: 0,
       },
     ]
+    addExecutedSpouseElectionFixture(plan, '2025-12-31', '2024-06-15', [2025])
     const validated = validate(plan)
     const probes: OptimizerYearProbe[] = []
     const ledger = simulatePlan(validated, {
@@ -3612,5 +3614,115 @@ describe('objective-mode tournament (sustainable-spending plan, Step 5)', () => 
       expect(winner.lifetimeTaxDelta).toBeLessThan(0)
       expect(winner.afterTaxEstateDelta).toBeGreaterThanOrEqual(-1)
     }
+  })
+})
+
+/**
+ * Stipulated executed-event evidence for these historical projection fixtures.
+ * Prior custodian rows explicitly certify a $1,000 requirement and $1,000 paid;
+ * they are inputs, not amounts inferred from the projection under test. Years
+ * within the simulation are supplied by its committed modeled-history channel.
+ * Life-expectancy method makes j(4)'s ten-year catch-up inapplicable.
+ */
+function addExecutedSpouseElectionFixture(
+  plan: Plan, executedOn: string, deathDate: string, observedPriorYears: number[],
+): void {
+  const account = plan.accounts.find(candidate =>
+    (candidate.type === 'traditional' || candidate.type === 'roth') &&
+    candidate.inherited?.beneficiary?.edbCategory === 'surviving-spouse')
+  if (account?.type !== 'traditional' && account?.type !== 'roth') throw new Error('missing spouse fixture account')
+  const inherited = account.inherited!
+  const beneficiary = inherited.beneficiary!
+  inherited.decedentId = 'fixture-spouse-decedent'
+  inherited.ownerDeathDate = deathDate
+  inherited.annualDistributionHistory = observedPriorYears.map(taxYear => ({
+    taxYear, requiredAmount: 1000, distributedAmount: 1000,
+    observedAsOfDate: `${taxYear}-12-31`, legalDistributionDeadline: `${taxYear}-12-31`,
+    provenance: { source: 'Stipulated completed custodian requirement and payment', asOf: `${taxYear}-12-31` },
+  }))
+  beneficiary.spousalElectionFacts = {
+    directSpouseNamedOnIra: 'verifiedYes', affirmativeElectionDate: executedOn,
+    affirmativeElectionYear: Number(executedOn.slice(0, 4)),
+    nonRolloverContributionYears: [], lateElectionCatchUp: null,
+    preElectionDistributionMethod: 'lifeExpectancyRule',
+    section402c2j4Inputs: {
+      transaction: 'affirmativeTreatAsOwnElection',
+      spouseBirthDate: plan.household.people.find(person => person.id === account.ownerPersonId)!.dob,
+      decedentBirthDate: `${beneficiary.ownerBirthYear}-01-01`,
+      distributionYear: Number(executedOn.slice(0, 4)),
+      currentYearRmdReferenceBalance: account.balance,
+      actualPriorYearDistributions: [], actualPreElectionDistributionsCurrentYear: 0,
+      currentDistributionOrRemainingInterest: account.balance,
+      provenance: { source: 'Stipulated life-expectancy distribution method', asOf: executedOn },
+    },
+    provenance: { source: 'Stipulated executed custodian owner redesignation', asOf: executedOn },
+  }
+}
+
+describe('optimizer incomplete annual valuation boundary', () => {
+  // Shared calculation-audit contract: finite numbers from incomplete tax or
+  // HECM evidence are informational and must not establish an exact winner.
+  const opts = { startYear: 2026, taxCalculator: createFederalTaxCalculator() }
+
+  it.each(['baseline', 'candidate'] as const)('withholds validation when the %s HECM valuation is incomplete', (side) => {
+    const plan = tradHeavyPlan()
+    const baseline = simulatePlan(plan, opts)
+    const conversions = [{ year: 2026, amount: 50_000 }]
+    const candidate = simulatePlan(withOptimizedConversions(plan, conversions), opts)
+    const complete = evaluateExactLedgerSchedule(plan, conversions, baseline, candidate)
+    const incomplete = structuredClone(side === 'baseline' ? baseline : candidate)
+    incomplete.years[0]!.hecmComputation = { status: 'incomplete', issues: ['Missing dated MIP assessment balance.'] }
+    const result = evaluateExactLedgerSchedule(plan, conversions,
+      side === 'baseline' ? incomplete : baseline, side === 'candidate' ? incomplete : candidate)
+    expect(result.recommendationState).toBe('unexecutable')
+    expect(result.incompleteComputationYears).toEqual([2026])
+    expect(result.afterTaxEstateDelta).toBe(complete.afterTaxEstateDelta)
+    expect(result.candidate).toEqual(complete.candidate)
+  })
+
+  it.each(['estate', 'tax-policy'] as const)('does not rank forced incomplete candidate taxes under %s', (policy) => {
+    const plan = tradHeavyPlan()
+    const baseline = simulatePlan(plan, opts)
+    const federal = createFederalTaxCalculator()
+    const incompleteCalculator = {
+      compute: federal.compute,
+      computeResult: (input: Parameters<typeof federal.compute>[0]) => ({
+        amount: federal.compute(input), status: 'incomplete' as const,
+        issues: [{ code: 'missing-state-basis', year: input.year, message: 'State basis evidence is unavailable.' }],
+      }),
+    }
+    const tournament = runExactLedgerTournament(plan, baseline, null,
+      { ...opts, taxCalculator: incompleteCalculator },
+      policy === 'estate' ? {} : { policy: minimizeLifetimeTaxWithEstateFloor })
+    expect(tournament.candidates.some((row) => row.afterTaxEstateDelta > 1)).toBe(true)
+    expect(tournament.candidates.every((row) => row.incompleteComputationYears?.includes(2026))).toBe(true)
+    expect(tournament.winnerSource).toBe('none')
+    expect(tournament.winnerConversions).toEqual([])
+    expect(tournament.winnerValidation).toBeNull()
+    expect(tournament.incompleteComputationYears).toContain(2026)
+    if (policy === 'estate') {
+      // Informational benchmark consumers still receive the priced aggregate
+      // schedule and the real identity-promotion refusal, without Apply data.
+      const veto = tournament.retirementActionReadinessVeto
+      expect(veto).not.toBeNull()
+      expect(veto!.vetoedConversions.length).toBeGreaterThan(0)
+      expect(veto!.vetoedValidation.recommendationState).toBe('unexecutable')
+      expect(veto!.vetoedValidation.incompleteComputationYears).toContain(2026)
+      expect(tournament.retirementActionPromotion?.outcome).toBe('notComparable')
+      expect(tournament.winnerConversions).not.toEqual(veto!.vetoedConversions)
+    }
+  })
+
+  it('does not recommend an incomplete baseline incumbent or a post-processed schedule', () => {
+    const plan = withOptimizedConversions(tradHeavyPlan(), [{ year: 2026, amount: 50_000 }])
+    const baseline = simulatePlan(plan, opts)
+    baseline.years[0]!.taxComputation = { amount: baseline.years[0]!.tax, status: 'incomplete', issues: [{ code: 'unknown-basis', year: 2026, message: 'Missing inherited account basis.' }] }
+    const processed = postProcessExactLedgerSchedule(plan, fakeSchedule([{ year: 2026, amount: 70_000 }]), baseline, opts, { maxPruneIterations: 0 })
+    expect(processed.cleanedValidation.recommendationState).toBe('unexecutable')
+    expect(processed.recommendationSchedule).toBe('none')
+    const tournament = runExactLedgerTournament(plan, baseline, processed, opts)
+    expect(tournament.winnerSource).toBe('none')
+    expect(tournament.winnerConversions).toEqual([])
+    expect(tournament.incompleteComputationYears).toContain(2026)
   })
 })

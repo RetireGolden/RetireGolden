@@ -167,7 +167,7 @@
           "functions": [
             {
               "name": "annualForcedDistributionQcdAndRetirementActionsPhase",
-              "line": 310
+              "line": 328
             }
           ]
         },
@@ -326,7 +326,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         }
@@ -464,7 +464,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         }
@@ -582,7 +582,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         }
@@ -698,7 +698,7 @@
           "functions": [
             {
               "name": "evaluateQcd",
-              "line": 823
+              "line": 822
             }
           ]
         }
@@ -770,7 +770,7 @@
           "functions": [
             {
               "name": "evaluateQcd",
-              "line": 823
+              "line": 822
             }
           ]
         }
@@ -879,7 +879,7 @@
           "functions": [
             {
               "name": "personSchema",
-              "line": 163
+              "line": 193
             }
           ]
         },
@@ -888,7 +888,7 @@
           "functions": [
             {
               "name": "evaluateQcd",
-              "line": 823
+              "line": 822
             }
           ]
         }
@@ -972,7 +972,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         }
@@ -1070,7 +1070,7 @@
           "functions": [
             {
               "name": "evaluateQcd",
-              "line": 823
+              "line": 822
             }
           ]
         }
@@ -1170,7 +1170,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         }
@@ -1270,7 +1270,7 @@
           "functions": [
             {
               "name": "validateOwnedNonRothIraRuntimeSourceSeries",
-              "line": 3239
+              "line": 3249
             }
           ]
         }
@@ -1435,7 +1435,7 @@
           "functions": [
             {
               "name": "evaluateQcd",
-              "line": 823
+              "line": 822
             }
           ]
         }
@@ -1448,20 +1448,20 @@
       "refusalFixtures": [
         {
           "path": "packages/engine/src/strategies/accountEligibility.test.ts",
-          "line": 1875,
+          "line": 1877,
           "note": "the direct-payment limb, not the missing attestation",
           "tests": [
             {
               "title": "refuses a direct trustee payment to a split-interest entity",
-              "line": 1901
+              "line": 1903
             },
             {
               "title": "does not let the direct-payment attestation buy the entity class back",
-              "line": 1907
+              "line": 1909
             },
             {
               "title": "accepts the same transfer to an ordinary public charity, so the refusal is the entity class",
-              "line": 1915
+              "line": 1917
             }
           ]
         }
@@ -1526,7 +1526,7 @@
           "functions": [
             {
               "name": "evaluateQcd",
-              "line": 823
+              "line": 822
             }
           ]
         }
@@ -1539,20 +1539,20 @@
       "refusalFixtures": [
         {
           "path": "packages/engine/src/strategies/accountEligibility.test.ts",
-          "line": 1830,
+          "line": 1832,
           "note": null,
           "tests": [
             {
               "title": "requires the affirmative not-a-split-interest attestation the record describes",
-              "line": 1836
+              "line": 1838
             },
             {
               "title": "refuses a destination the request itself names as a split-interest entity",
-              "line": 1854
+              "line": 1856
             },
             {
               "title": "stays quiet on an ordinary public charity with the attestation given",
-              "line": 1870
+              "line": 1872
             }
           ]
         }
@@ -1623,7 +1623,7 @@
           "functions": [
             {
               "name": "validateOwnedNonRothIraRuntimeSourceSeries",
-              "line": 3239
+              "line": 3249
             }
           ]
         },
@@ -1632,7 +1632,7 @@
           "functions": [
             {
               "name": "evaluateQcd",
-              "line": 823
+              "line": 822
             }
           ]
         }
@@ -1645,28 +1645,28 @@
       "refusalFixtures": [
         {
           "path": "packages/engine/src/strategies/accountEligibility.test.ts",
-          "line": 1920,
+          "line": 1922,
           "note": null,
           "tests": [
             {
               "title": "refuses an inherited source rather than borrowing the donor own-IRA basis pool",
-              "line": 1926
+              "line": 1928
             },
             {
               "title": "does not mistake the inherited IRA for a non-IRA source",
-              "line": 1932
+              "line": 1934
             },
             {
               "title": "accepts the same request from the donor own IRA, so the refusal is the inherited fact",
-              "line": 1939
+              "line": 1941
             },
             {
               "title": "allocates an owned traditional IRA and blocks an inherited source as qcd-inherited-basis-unsupported",
-              "line": 1943
+              "line": 1945
             },
             {
               "title": "refuses an effective spouse treat-as-own inherited IRA at eligibility and identity allocation",
-              "line": 1960
+              "line": 1962
             }
           ]
         }
@@ -1810,7 +1810,7 @@
           "functions": [
             {
               "name": "validateOwnedNonRothIraRuntimeSourceSeries",
-              "line": 3239
+              "line": 3249
             }
           ]
         },
@@ -1819,7 +1819,7 @@
           "functions": [
             {
               "name": "evaluateQcd",
-              "line": 823
+              "line": 822
             }
           ]
         }
@@ -1832,20 +1832,20 @@
       "refusalFixtures": [
         {
           "path": "packages/engine/src/strategies/accountEligibility.test.ts",
-          "line": 1792,
+          "line": 1794,
           "note": null,
           "tests": [
             {
               "title": "refuses a Roth source instead of proving how much would otherwise be includible",
-              "line": 1797
+              "line": 1799
             },
             {
               "title": "does not confuse the Roth source with the generic not-an-IRA refusal",
-              "line": 1803
+              "line": 1805
             },
             {
               "title": "allocates an owned traditional IRA and blocks a Roth source as qcd-source-not-ira",
-              "line": 1813
+              "line": 1815
             }
           ]
         }
@@ -1905,7 +1905,7 @@
           "functions": [
             {
               "name": "evaluateQcd",
-              "line": 823
+              "line": 822
             }
           ]
         }
@@ -1918,16 +1918,16 @@
       "refusalFixtures": [
         {
           "path": "packages/engine/src/strategies/accountEligibility.test.ts",
-          "line": 1996,
+          "line": 1998,
           "note": null,
           "tests": [
             {
               "title": "refuses a QCD below age 70½ instead of pricing an early distribution",
-              "line": 2007
+              "line": 2009
             },
             {
               "title": "accepts the same request once the donor is past 70½, which is also past 59½",
-              "line": 2013
+              "line": 2015
             }
           ]
         }
@@ -1987,7 +1987,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         }

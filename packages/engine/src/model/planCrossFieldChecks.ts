@@ -1345,6 +1345,288 @@ export function checkOneTimeGoalWindows(
 }
 
 /**
+ * Unique (beneficiary, decedent) Roth tax-character pools and employer
+ * elective-history keys; referenced people/accounts must exist.
+ */
+export function checkFederalAuditPlanFacts(
+  plan: PlanDocument,
+  ctx: z.RefinementCtx,
+): void {
+  const personIds = new Set(plan.household.people.map((person) => person.id))
+  for (const [index, account] of plan.accounts.entries()) {
+    if (
+      (account.type === 'traditional' || account.type === 'roth') &&
+      account.kind === 'ira' &&
+      'employerPlanId' in account &&
+      account.employerPlanId !== undefined
+    ) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['accounts', index, 'employerPlanId'],
+        message: 'employerPlanId is valid only on employer-plan accounts',
+      })
+    }
+  }
+  const poolKeys = new Set<string>()
+  for (const [index, pool] of plan.inheritedRothTaxCharacterPools.entries()) {
+    const key = `${pool.beneficiaryPersonId}\0${pool.decedentId}`
+    if (poolKeys.has(key)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['inheritedRothTaxCharacterPools', index],
+        message:
+          'inheritedRothTaxCharacterPools must be unique by (beneficiaryPersonId, decedentId)',
+      })
+    }
+    poolKeys.add(key)
+    if (!personIds.has(pool.beneficiaryPersonId)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['inheritedRothTaxCharacterPools', index, 'beneficiaryPersonId'],
+        message: 'beneficiaryPersonId must reference a household person',
+      })
+    }
+    const matchingInheritedRoth = plan.accounts.find(
+      (account): account is Extract<(typeof plan.accounts)[number], { type: 'roth' }> =>
+        account.type === 'roth' &&
+        account.inherited !== undefined &&
+        account.inherited.decedentId === pool.decedentId &&
+        (account.ownerPersonId ?? null) === pool.beneficiaryPersonId,
+    )
+    if (matchingInheritedRoth === undefined) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['inheritedRothTaxCharacterPools', index],
+        message:
+          'inheritedRothTaxCharacterPools entry requires a matching inherited Roth account for the beneficiary and decedentId',
+      })
+    } else if (
+      pool.firstRothContributionTaxYear > matchingInheritedRoth.inherited!.ownerDeathYear
+    ) {
+      ctx.addIssue({
+        code: 'custom',
+        path: [
+          'inheritedRothTaxCharacterPools',
+          index,
+          'firstRothContributionTaxYear',
+        ],
+        message:
+          'firstRothContributionTaxYear cannot be after the decedent ownerDeathYear',
+      })
+    }
+    if (pool.conversionLayers !== 'unknown') {
+      const layerYears = pool.conversionLayers.map((layer) => layer.conversionTaxYear)
+      if (new Set(layerYears).size !== layerYears.length) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['inheritedRothTaxCharacterPools', index, 'conversionLayers'],
+          message: 'conversionLayers must not duplicate conversionTaxYear',
+        })
+      }
+    }
+  }
+
+  const historyKeys = new Set<string>()
+  for (const [index, row] of plan.employerElectiveDeferralHistory.entries()) {
+    const key = `${row.ownerPersonId}\0${row.employerPlanId}\0${row.contributionYear}`
+    if (historyKeys.has(key)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['employerElectiveDeferralHistory', index],
+        message:
+          'employerElectiveDeferralHistory must be unique by (ownerPersonId, employerPlanId, contributionYear)',
+      })
+    }
+    historyKeys.add(key)
+    if (!personIds.has(row.ownerPersonId)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['employerElectiveDeferralHistory', index, 'ownerPersonId'],
+        message: 'ownerPersonId must reference a household person',
+      })
+    }
+    const resolves = plan.accounts.some(
+      (account) =>
+        (account.type === 'traditional' || account.type === 'roth') &&
+        account.kind === 'employer' &&
+        account.employerPlanId === row.employerPlanId &&
+        (account.ownerPersonId ?? null) === row.ownerPersonId,
+    )
+    if (!resolves) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['employerElectiveDeferralHistory', index, 'employerPlanId'],
+        message:
+          'employerPlanId must resolve to at least one employer account owned by ownerPersonId',
+      })
+    }
+  }
+
+  for (const [accountIndex, account] of plan.accounts.entries()) {
+    if (
+      (account.type !== 'traditional' && account.type !== 'roth') ||
+      account.inherited === undefined
+    ) {
+      continue
+    }
+    const facts = account.inherited.beneficiary?.spousalElectionFacts
+    if (facts === undefined) continue
+    const deathYear = account.inherited.ownerDeathYear
+    for (const [yearIndex, year] of (facts.nonRolloverContributionYears ?? []).entries()) {
+      if (year < deathYear) {
+        ctx.addIssue({
+          code: 'custom',
+          path: [
+            'accounts',
+            accountIndex,
+            'inherited',
+            'beneficiary',
+            'spousalElectionFacts',
+            'nonRolloverContributionYears',
+            yearIndex,
+          ],
+          message: 'nonRolloverContributionYears cannot precede ownerDeathYear',
+        })
+      }
+      const asOfYear = Number(facts.provenance.asOf.slice(0, 4))
+      if (Number.isFinite(asOfYear) && year > asOfYear) {
+        ctx.addIssue({
+          code: 'custom',
+          path: [
+            'accounts',
+            accountIndex,
+            'inherited',
+            'beneficiary',
+            'spousalElectionFacts',
+            'nonRolloverContributionYears',
+            yearIndex,
+          ],
+          message: 'nonRolloverContributionYears cannot be after provenance.asOf year',
+        })
+      }
+    }
+    if (
+      facts.affirmativeElectionYear != null &&
+      facts.affirmativeElectionYear < deathYear
+    ) {
+      ctx.addIssue({
+        code: 'custom',
+        path: [
+          'accounts',
+          accountIndex,
+          'inherited',
+          'beneficiary',
+          'spousalElectionFacts',
+          'affirmativeElectionYear',
+        ],
+        message: 'affirmativeElectionYear cannot precede ownerDeathYear',
+      })
+    }
+  }
+}
+
+/** State tax evidence rows must reference known people/accounts and unique years. */
+export function checkStateTaxPlanFacts(
+  plan: PlanDocument,
+  ctx: z.RefinementCtx,
+): void {
+  const personIds = new Set(plan.household.people.map((person) => person.id))
+  const accountsById = new Map(plan.accounts.map((account) => [account.id, account]))
+  const householdYears = new Set<number>()
+  for (const [index, row] of plan.stateTaxFacts.householdYearFacts.entries()) {
+    if (householdYears.has(row.year)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['stateTaxFacts', 'householdYearFacts', index, 'year'],
+        message: 'householdYearFacts year values must be unique',
+      })
+    }
+    householdYears.add(row.year)
+  }
+  const hsaEvidenceKeys = new Set<string>()
+  for (const [index, row] of plan.stateTaxFacts.hsaYearEvidence.entries()) {
+    const key = `${row.taxYear}\0${row.accountId}\0${row.state.toUpperCase()}`
+    if (hsaEvidenceKeys.has(key)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['stateTaxFacts', 'hsaYearEvidence', index],
+        message:
+          'hsaYearEvidence must be unique by (taxYear, accountId, state)',
+      })
+    }
+    hsaEvidenceKeys.add(key)
+    if (!personIds.has(row.ownerPersonId)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['stateTaxFacts', 'hsaYearEvidence', index, 'ownerPersonId'],
+        message: 'ownerPersonId must reference a household person',
+      })
+    }
+    const account = accountsById.get(row.accountId)
+    if (account === undefined) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['stateTaxFacts', 'hsaYearEvidence', index, 'accountId'],
+        message: 'accountId must reference a plan account',
+      })
+    } else if (account.type !== 'hsa') {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['stateTaxFacts', 'hsaYearEvidence', index, 'accountId'],
+        message: 'hsaYearEvidence.accountId must reference an HSA account',
+      })
+    } else if ((account.ownerPersonId ?? null) !== row.ownerPersonId) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['stateTaxFacts', 'hsaYearEvidence', index, 'ownerPersonId'],
+        message: 'hsaYearEvidence.ownerPersonId must match the HSA account owner',
+      })
+    }
+  }
+  const iraBasisKeys = new Set<string>()
+  for (const [index, row] of plan.stateTaxFacts.iraBasisYearEvidence.entries()) {
+    const key = `${row.taxYear}\0${row.ownerPersonId}\0${row.state.toUpperCase()}\0${row.accountId ?? ''}`
+    if (iraBasisKeys.has(key)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['stateTaxFacts', 'iraBasisYearEvidence', index],
+        message:
+          'iraBasisYearEvidence must be unique by (taxYear, ownerPersonId, state, accountId)',
+      })
+    }
+    iraBasisKeys.add(key)
+    if (!personIds.has(row.ownerPersonId)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['stateTaxFacts', 'iraBasisYearEvidence', index, 'ownerPersonId'],
+        message: 'ownerPersonId must reference a household person',
+      })
+    }
+    if (row.accountId !== undefined) {
+      const account = accountsById.get(row.accountId)
+      if (account === undefined) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['stateTaxFacts', 'iraBasisYearEvidence', index, 'accountId'],
+          message: 'accountId must reference a plan account',
+        })
+      } else if (
+        !(
+          (account.type === 'traditional' || account.type === 'roth') &&
+          account.kind === 'ira'
+        )
+      ) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['stateTaxFacts', 'iraBasisYearEvidence', index, 'accountId'],
+          message: 'iraBasisYearEvidence.accountId must reference an IRA account',
+        })
+      }
+    }
+  }
+}
+
+/**
  * Runs every cross-field check in the order the inline `superRefine` body ran
  * them, so the issues a Plan produces stay identical in path, message, and
  * sequence.
@@ -1378,4 +1660,6 @@ export function runPlanCrossFieldChecks(plan: PlanDocument, ctx: z.RefinementCtx
   checkRothConversionFillToTarget(plan, ctx)
   checkRequiredSpendingFloor(plan, ctx)
   checkOneTimeGoalWindows(plan, ctx)
+  checkFederalAuditPlanFacts(plan, ctx)
+  checkStateTaxPlanFacts(plan, ctx)
 }

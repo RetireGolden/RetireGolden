@@ -47,7 +47,14 @@ export interface InheritedAccountYearEvidence {
    * the prose and no code.
    */
   refusalCode?: InheritedIraRefusalCode
-  requirementKind: 'year-of-death-rmd' | 'annual-rmd' | 'none' | 'final-sweep' | 'legacy'
+  requirementKind:
+    | 'year-of-death-rmd'
+    | 'annual-rmd'
+    | 'none'
+    | 'final-sweep'
+    | 'legacy'
+    /** Post five-year-deadline remaining-benefit obligation (100% distribution, not a tax rate). */
+    | 'post-deadline-remaining-benefit'
   /** Evidence amount on the real prior-Dec-31 balance (0 on the legacy path when forced is 0). */
   requiredAmount: number
   /** What the ledger actually forced (≤ live balance; entire balance on final-sweep). */
@@ -61,6 +68,17 @@ export interface InheritedAccountYearEvidence {
   finalDeadlineYear?: number
   disclosures: string[]
   citations: string[]
+  /**
+   * Inherited Roth tax-character outcome for the year's mandatory/voluntary
+   * distributions when pool facts are present. Absence retains the prior
+   * unsupported-missing-facts limitation path.
+   */
+  taxCharacterStatus?: 'qualified' | 'nonqualified' | 'unsupported-missing-facts'
+  basisAmount?: number
+  earningsAmount?: number
+  ordinaryIncomeAmount?: number
+  /** Spousal §1.408-8(c) gate/evaluator status when produced for the year. */
+  spousalElectionStatus?: string
 }
 
 /**

@@ -230,6 +230,12 @@ It is deliberately **not** an oracle. Per [the expected-value rule](#the-expecte
 its own oracle; this tool can say "nothing moved" and can never say "this is right". Keep that wording in
 commit messages and PR bodies.
 
+For correctness changes, byte equality can be the wrong expected outcome. The
+[2026-09-12 calculation-audit comparison policy](operations/calculation-audit-equivalence-policy.md)
+records the intentional inherited-Roth missing-evidence change, the controls that
+remain, and how to retain and explain strict corpus differences. It does not waive
+comparison failures or permit silently changing the baseline corpus.
+
 The workflow is four commands, run from the repository root:
 
 ```

@@ -61,7 +61,6 @@ import {
   type UnsupportedActionReasonCode,
 } from '../actions/reasons.js'
 import type { Account, Person, Plan } from '../model/plan.js'
-import { deriveRbdComparison } from '../rmd/applicableAge.js'
 import { compareUtf16CodeUnits } from '../actions/structuralId.js'
 
 export type TraditionalAccount = Extract<Account, { type: 'traditional' }>
@@ -1172,6 +1171,7 @@ export const TRADITIONAL_EARLY_PENALTY_RATE = 0.1
 export const HSA_NON_QUALIFIED_PENALTY_RATE = 0.2
 
 type TreatAsOwnElectionAccount = Readonly<{
+  id?: string | undefined
   kind?: string | undefined
   inherited?: Readonly<{
     ownerDeathYear?: number | undefined
@@ -1210,63 +1210,33 @@ export function hasSpouseTreatAsOwnElection(
   )
 }
 
+/** Accepted annual routing, produced by the evaluated election gate. */
+export type AnnualOwnerTreatmentRouting = ReadonlyMap<string, boolean>
+
+/** Rehydrate published accepted annual routes. Duplicate identities fail closed. */
+export function annualOwnerTreatmentRoutingFromRows(
+  rows: readonly Readonly<{ accountId: string; ownerTreatment: boolean }>[] | undefined,
+): AnnualOwnerTreatmentRouting {
+  const routing = new Map<string, boolean>()
+  for (const row of rows ?? []) {
+    routing.set(row.accountId, routing.has(row.accountId) ? false : row.ownerTreatment === true)
+  }
+  return routing
+}
+
 /**
- * Whether a spouse's explicit treat-as-own election has taken effect for an
- * account in a calendar year. Mirrors the classifier's S2 structural gate
- * (`classifyInheritedRegime` in strategies/inheritedIra.ts): IRA kind only,
- * ownerDeathYear on or after 2020 (engine SECURE-date approximation reused
- * from Pub. L. 116-94 section 401(b)(1) — pre-2020 deaths are refused here
- * and independently in classifyInheritedRegime/spouseTreatAsOwnCatchUp, not
- * because federal law barred the election), edbCategory
- * `'surviving-spouse'`, soleBeneficiary true, spouseUnlimitedWithdrawalRight
- * true, election `'treat-as-own'`, and a defined `treatAsOwnElectionYear` with
- * `year >=` it. After those gates, runs the classifier's RBD screen
- * (`deriveRbdComparison` on ownerDeathYear, decedentHadStartedRmds, and
- * beneficiary owner birth facts) rather than mirroring piecemeal — a fact set
- * the classifier refuses on RBD consistency/precision never flips (the S2 row
- * itself is RBD-side-agnostic, so a resolved derivation of either side passes).
- * This intentionally does not rewire the static eligibility predicates below;
- * contribution/conversion validators stay pre-transition (WS5 residual).
+ * Ownership comes only from the evaluated annual gate, never a proposed
+ * election year. The death year retains the decedent's RMD/beneficiary pool;
+ * owned-IRA aggregation starts the following year for a death-year election.
  */
 export function isTreatAsOwnEffective(
   account: TreatAsOwnElectionAccount,
   year: number,
+  routing?: AnnualOwnerTreatmentRouting,
 ): boolean {
-  const inherited = account.inherited
-  const beneficiary = inherited?.beneficiary
-  if (
-    account.kind !== 'ira' ||
-    inherited === undefined ||
-    inherited.ownerDeathYear === undefined ||
-    inherited.ownerDeathYear < 2020 ||
-    beneficiary?.election !== 'treat-as-own' ||
-    beneficiary.edbCategory !== 'surviving-spouse' ||
-    beneficiary.soleBeneficiary !== true ||
-    beneficiary.spouseUnlimitedWithdrawalRight !== true ||
-    beneficiary.treatAsOwnElectionYear === undefined
-  ) {
-    return false
-  }
-  const rbdDerivation = deriveRbdComparison({
-    ownerDeathYear: inherited.ownerDeathYear,
-    decedentHadStartedRmds: inherited.decedentHadStartedRmds ?? false,
-    ownerBirthYear: beneficiary.ownerBirthYear,
-    ownerBirthMonth: beneficiary.ownerBirthMonth,
-    ownerBirthDay: beneficiary.ownerBirthDay,
-  })
-  if (rbdDerivation.kind === 'needs-review') {
-    return false
-  }
-  // A death-year election leaves the death year itself to the decedent's own
-  // RMD (§1.408-8(c)(3): the spouse owes no owner RMD that year and takes the
-  // decedent's unsatisfied amount instead); owner treatment begins the
-  // following calendar year. Every consumer — ledger, settlement, replay,
-  // inventory — takes this one boundary from here.
-  const effectiveFromYear =
-    beneficiary.treatAsOwnElectionYear === inherited.ownerDeathYear
-      ? beneficiary.treatAsOwnElectionYear + 1
-      : beneficiary.treatAsOwnElectionYear
-  return year >= effectiveFromYear
+  return account.kind === 'ira' && account.inherited !== undefined &&
+    account.id !== undefined && account.inherited.ownerDeathYear !== undefined &&
+    account.inherited.ownerDeathYear >= 2020 && year > account.inherited.ownerDeathYear && routing?.get(account.id) === true
 }
 
 /**

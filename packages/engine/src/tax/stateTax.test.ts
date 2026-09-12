@@ -51,7 +51,8 @@ describe('computeStateTax — code paths', () => {
 
   it('caps scale with the number of eligible people (MFJ)', () => {
     const ky = pack('KY')
-    // Couple, 50k retirement income, cap 31,110 each -> 62,220 > 50k -> fully excluded; std ded 6,720 -> taxable 0.
+    // Couple, 50k retirement income, cap 31,110 each -> 62,220 > 50k -> fully excluded;
+    // KY standard deduction is $3,360 once per return (including MFJ) -> taxable 0.
     const tax = computeStateTax(ky, input({ filingStatus: 'marriedFilingJointly', ordinaryIncome: 50_000, retirementIncome: 50_000, agesAlive: [70, 68] }))
     expect(tax).toBe(0)
   })

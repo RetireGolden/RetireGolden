@@ -49,7 +49,16 @@
 
 import { indexFederalTaxPack, packForYear, standardDeduction } from '../params/index.js'
 import type { FilingStatus, ParameterPack, TaxBracket } from '../params/types.js'
-import { taxParameterFilingStatus, type TaxCalculator, type TaxYearInput } from '../projection/types.js'
+import {
+  taxParameterFilingStatus,
+  type TaxCalculator,
+  type TaxComputationIssue,
+  type TaxComputationResult,
+  type StateHsaBasisPoolComputationResult,
+  type StateNjIraBasisPoolComputationResult,
+  type StatePensionBasisPoolComputationResult,
+  type TaxYearInput,
+} from '../projection/types.js'
 import {
   annualCharitableDeductionParameters,
   type AnnualCharitableDeductionParameters2026,
@@ -645,7 +654,59 @@ export function createFederalTaxCalculator(): TaxCalculator {
 }
 
 export function combineTaxCalculators(...calculators: TaxCalculator[]): TaxCalculator {
+  const withDerivedHouseholdFacts = (input: TaxYearInput): TaxYearInput => {
+    const federal = computeFederalTax(input)
+    return {
+      ...input,
+      stateHouseholdFacts: {
+        ...input.stateHouseholdFacts,
+        federalAgi: federal.agi,
+        federalDeductionUsed:
+          federal.deduction,
+        federalTaxableIncome:
+          federal.taxableIncome,
+        federallyIncludedSocialSecurity:
+          federal.taxableSocialSecurity,
+      },
+    }
+  }
   return {
-    compute: (input) => calculators.reduce((sum, c) => sum + c.compute(input), 0),
+    compute: (input) => {
+      const enriched = withDerivedHouseholdFacts(input)
+      return calculators.reduce((sum, c) => sum + c.compute(enriched), 0)
+    },
+    computeResult: (input) => {
+      const enriched = withDerivedHouseholdFacts(input)
+      let amount = 0
+      let incomplete = false
+      const issues: TaxComputationIssue[] = []
+      const hsaBasisPools: StateHsaBasisPoolComputationResult[] = []
+      const njIraBasisPools: StateNjIraBasisPoolComputationResult[] = []
+      const pensionBasisPools: StatePensionBasisPoolComputationResult[] = []
+      for (const calculator of calculators) {
+        const result: TaxComputationResult =
+          calculator.computeResult !== undefined
+            ? calculator.computeResult(enriched)
+            : {
+                amount: calculator.compute(enriched),
+                status: 'complete' as const,
+                issues: [],
+              }
+        amount += result.amount
+        if (result.status === 'incomplete') incomplete = true
+        issues.push(...result.issues)
+        if (result.hsaBasisPools !== undefined) hsaBasisPools.push(...result.hsaBasisPools)
+        if (result.njIraBasisPools !== undefined) njIraBasisPools.push(...result.njIraBasisPools)
+        if (result.pensionBasisPools !== undefined) pensionBasisPools.push(...result.pensionBasisPools)
+      }
+      return {
+        amount,
+        status: incomplete ? 'incomplete' : 'complete',
+        issues,
+        ...(hsaBasisPools.length === 0 ? {} : { hsaBasisPools }),
+        ...(njIraBasisPools.length === 0 ? {} : { njIraBasisPools }),
+        ...(pensionBasisPools.length === 0 ? {} : { pensionBasisPools }),
+      }
+    },
   }
 }

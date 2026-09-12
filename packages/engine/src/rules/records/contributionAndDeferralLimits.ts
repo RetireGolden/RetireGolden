@@ -598,12 +598,12 @@ export const contributionAndDeferralLimitRecords = {
   'irc-414-v-7-A-high-earner-roth-catch-up-mandate': {
     title: 'High-earner employer-plan catch-up must be designated Roth in 2026 and later',
     statement:
-      'For contribution years beginning after December 31, 2025, a participant in an applicable employer plan other than a SEP or SIMPLE IRA whose section 3121(a) wages from the employer sponsoring the plan for the preceding calendar year exceed the 414(v)(7)(A) threshold — 150,000 for 2026 per Notice 2025-67 — may make additional elective deferrals under 414(v)(1) only as designated Roth contributions. Exactly 150,000 does not exceed. A participant with no such FICA wages is not subject. If the plan has no qualified Roth contribution program, the high earner\'s catch-up maximum is 0 rather than a pre-tax catch-up. The ages 60-63 super catch-up is the same 414(v) additional elective deferral and is Roth-mandated when the wage test is met. IRA catch-up under 219(b)(5) is outside 414(v). T.D. 10033 generally applies to contributions in years beginning after December 31, 2026, but that regulatory applicability date does not postpone the statutory mandate; 2026 is statute plus reasonable good-faith after Notice 2023-62\'s administrative transition expired December 31, 2025.',
+      'For contribution years beginning after December 31, 2025, a participant in an applicable employer plan other than a SEP or SIMPLE IRA whose section 3121(a) wages from the employer sponsoring the plan for the preceding calendar year exceed the 414(v)(7)(A) threshold — 150,000 for 2026 per Notice 2025-67 — may make additional elective deferrals under 414(v)(1) only as designated Roth contributions. Exactly 150,000 does not exceed. A participant with no such FICA wages is not subject. If the plan has no qualified Roth contribution program, the high earner\'s catch-up maximum is 0 rather than a pre-tax catch-up. The ages 60-63 super catch-up is the same 414(v) additional elective deferral and is Roth-mandated when the wage test is met. IRA catch-up under 219(b)(5) is outside 414(v). T.D. 10033 generally applies to contributions in years beginning after December 31, 2026, but that regulatory applicability date does not postpone the statutory mandate; 2026 is statute plus reasonable good-faith after Notice 2023-62\'s administrative transition expired December 31, 2025. Previously made designated Roth deferrals within the same contribution year offset the remaining Roth catch-up requirement under irc-414-v-2-d-6-prior-designated-roth-offset.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The wage figure the engine compares to the threshold is a user-entered prior-calendar-year FICA amount on the employer account, not a Form W-2 Box 3 retrieved per sponsoring employer; that input gap is registered separately at irc-414-v-7-A-prior-year-fica-wage-proxy. Roth capability is inferred from the presence of a Roth employer account for the same owner, because the plan model has no employer identity and no qualified-Roth-contribution-program flag. Catch-up redirected onto that sibling remains elective deferral of the source plan for employer match. SEP and SIMPLE IRA are the IRA kind and never enter this allocator. Regular (non-catch-up) elective deferrals keep the account type the plan already states. Named-arm RMD coordination and the age-70½ proxy are outside this record.',
+      'The wage figure the engine compares to the threshold is a user-entered prior-calendar-year FICA amount on the employer account, not a Form W-2 Box 3 retrieved per sponsoring employer; that input gap is registered separately at irc-414-v-7-A-prior-year-fica-wage-proxy. Roth capability is inferred from the presence of a Roth employer account for the same owner, because the plan model has no employer identity and no qualified-Roth-contribution-program flag. Catch-up redirected onto that sibling remains elective deferral of the source plan for employer match. SEP and SIMPLE IRA are the IRA kind and never enter this allocator. Regular (non-catch-up) elective deferrals keep the account type the plan already states. Named-arm RMD coordination and the age-70½ proxy are outside this record. Desired incremental requests are not historical evidence — prior YTD amounts are the sibling prior-offset record.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -632,7 +632,7 @@ export const contributionAndDeferralLimitRecords = {
     }, {
       kind: 'regulation',
       citation: 'T.D. 10033, 26 CFR 1.414(v)-2(b)(2)',
-      url: 'https://www.govinfo.gov/content/pkg/FR-2025-09-16/html/2025-17865.htm',
+      url: 'https://www.irs.gov/irb/2025-40_IRB',
       quotedText:
         'if an applicable employer plan does not include a qualified Roth contribution program (within the meaning of section 402A(b)), then, for a catch-up eligible participant who is subject to the Roth catch-up requirement under paragraph (a)(2) of this section, the maximum amount of catch-up contributions permitted under section 414(v) is $0.',
     }, {
@@ -666,6 +666,47 @@ export const contributionAndDeferralLimitRecords = {
       'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts#annualContributionsAndEmployerMatch',
     ],
   },
+
+  'irc-414-v-2-d-6-prior-designated-roth-offset': {
+    title: 'Prior designated Roth elective deferrals offset the §414(v)(7) Roth catch-up requirement',
+    statement:
+      'T.D. 10033 §1.414(v)-2(b)(1) and (d)(6) provide that previously made designated Roth deferrals within the same contribution year satisfy the Roth catch-up requirement. Required additional Roth equals max(0, catch-up actually required for the resulting annual total minus eligible designated Roth already made). Official Example 6 (stipulated $25,000 base / $30,000 total) leaves $1,250 unmet after prior Roth $3,750 of a $5,000 catch-up. Desired incremental requests are not historical evidence; unknown history differs from known zero; request-order permutation of a complete incremental set does not change the aggregate. 2026 remains statute/good-faith transition distinct from generally 2027 regulatory applicability — do not copy hypothetical 2027 example limits into 2026 parameters.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'allocateEmployerElectiveDeferrals accepts an explicit priorContributions snapshot and treats catch-up as the excess of the annual elective-deferral total over the §402(g) base (not a chronological first-in assignment of prior dollars). Prior designated Roth credits the mandate even when deferred before the base was exhausted. Callers must supply verified YTD amounts; omitting the field remains known-zero for backward compatibility, while status unknown leaves additionalRothCatchUpStillRequired null. simulatePlan maps employerElectiveDeferralHistory by contribution year, owner and employer plan into annualContributionReconciliationPhase. Duplicate snapshots become unknown with a warning; verified prior amounts are passed into the allocator, and the reconciliation publishes the remaining Roth requirement and prior-contribution status.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'regulation',
+      citation: 'T.D. 10033; 26 CFR 1.414(v)-2(b)(1)',
+      url: 'https://www.federalregister.gov/documents/2025/09/16/2025-17865/catch-up-contributions',
+      quotedText:
+        'For a participant who is subject to the Roth catch-up requirement under paragraph (a)(2) of this section for a plan year, an elective deferral that, in accordance with § 1.414(v)-1(c)(3), is treated as a catch-up contribution at the time of deferral (for example, an elective deferral that is a catch-up contribution because it exceeds the section 401(a)(30) limit on elective deferrals) is required to be a designated Roth contribution only to the extent the participant has not previously made elective deferrals that are designated Roth contributions during the taxable year equal to the applicable dollar catch-up limit under § 1.414(v)-1(c)(2).',
+    }, {
+      kind: 'regulation',
+      citation: 'T.D. 10033; 26 CFR 1.414(v)-2(d)(6) Example 6',
+      url: 'https://www.federalregister.gov/documents/2025/09/16/2025-17865/catch-up-contributions',
+      quotedText:
+        'In accordance with paragraph (b)(1) of this section, the $3,750 in elective deferrals that are designated Roth contributions that Participant D made at the beginning of 2027 can be taken into account for purposes of satisfying Participant D\'s Roth catch-up requirement under section 414(v)(7). Thus, the portion of Participant D\'s pre-tax elective deferrals that are required to be corrected is $1,250 ($5,000 of elective deferrals that are in excess of the section 401(a)(30) limit, minus $3,750 of elective deferrals that were made as designated Roth contributions within the taxable year), and Employer H must correct the section 414(v)(7) failure with respect to only $1,250 of Participant D\'s pre-tax elective deferrals.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-12',
+    implementedBy: [
+      'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/projection/internal/annualContributionReconciliationPhase.ts',
+      'packages/engine/src/projection/employerRothCatchUp.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/internal/annualContributionReconciliationPhase.ts#annualContributionReconciliationPhase',
+      'packages/engine/src/projection/employerRothCatchUp.ts#additionalRothCatchUpRequiredAfterPrior',
+      'packages/engine/src/projection/employerRothCatchUp.ts#allocateEmployerElectiveDeferrals',
+    ],
+  },
+
   'irc-414-v-7-A-prior-year-fica-wage-proxy': {
     title: 'The 414(v)(7) wage test uses a user-entered Box 3 proxy, and omission fails closed',
     statement:

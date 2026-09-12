@@ -232,17 +232,17 @@
       "label": "annual SEPP selection through amortization-cache branch",
       "file": "projection/internal/annualSeppDistributions.ts",
       "lines": [
-        90,
-        131
+        92,
+        133
       ],
       "note": "The corpus reaches owned IRA and employer-plan rows, inherited S2 pre/post-election gating, active and inactive series, accepted and refused separation boundaries, and RMD/amortization selection. Line 132's same-call duplicate shadow-hit arm is excluded because simulatePlan supplies one grouped state per ID; focused helper tests retain that defensive direct-input contract.",
       "anchors": [
         {
-          "line": 90,
+          "line": 92,
           "text": "const operations: AnnualSeppOperation[] = []"
         },
         {
-          "line": 131,
+          "line": 133,
           "text": "let fixed = shadowAmortizationAmounts.has(state.account.id)"
         }
       ]
@@ -252,21 +252,21 @@
       "label": "annual SEPP amount, cache write, distribution and return planning",
       "file": "projection/internal/annualSeppDistributions.ts",
       "lines": [
-        133,
-        184
+        135,
+        186
       ],
       "note": "The corpus reaches new and prior-year amortization cache values, RMD amounts, distribution and sub-cent suppression paths, and deferred IRA character. Ownerless-account and defensive fallback operands remain reported as sub-line regions and are covered directly by helper tests.",
       "anchors": [
         {
-          "line": 133,
+          "line": 135,
           "text": ": input.amortizationAmountByAccountId.get(state.account.id)"
         },
         {
-          "line": 137,
+          "line": 139,
           "text": "'amortization',"
         },
         {
-          "line": 184,
+          "line": 186,
           "text": "return { operations, total }"
         }
       ]
@@ -276,32 +276,32 @@
       "label": "SEPP operation application and effect publication",
       "file": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
       "lines": [
-        706,
-        769
+        724,
+        788
       ],
       "anchors": [
         {
-          "line": 706,
+          "line": 724,
           "text": "const seppPlan = annualSeppDistributions({"
         },
         {
-          "line": 717,
+          "line": 736,
           "text": "const seppTotal = seppPlan.total"
         },
         {
-          "line": 718,
+          "line": 737,
           "text": "for (const operation of seppPlan.operations) {"
         },
         {
-          "line": 728,
+          "line": 747,
           "text": "recordAnnualRetirementRuntimeOccurrence({"
         },
         {
-          "line": 760,
+          "line": 779,
           "text": "deferredSeppDistributions.push({"
         },
         {
-          "line": 768,
+          "line": 787,
           "text": "}"
         }
       ],

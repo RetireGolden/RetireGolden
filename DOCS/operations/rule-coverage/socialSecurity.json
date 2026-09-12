@@ -46,7 +46,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         },
@@ -66,16 +66,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/params/params.test.ts",
-          "line": 290,
+          "line": 330,
           "note": "Values are the annual gate the projection uses, twelve times the published monthly amount.",
           "tests": [
             {
               "title": "derives the monthly amount from the wage index the regulation names",
-              "line": 295
+              "line": 335
             },
             {
               "title": "gates SSDI on the 2026 substantial gainful activity amount",
-              "line": 304
+              "line": 344
             }
           ]
         }
@@ -119,7 +119,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1594
+              "line": 1855
             }
           ]
         },
@@ -137,7 +137,7 @@
           "functions": [
             {
               "name": "sgaMonthlyNonBlind",
-              "line": 222
+              "line": 249
             }
           ]
         }
@@ -184,7 +184,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1594
+              "line": 1855
             }
           ]
         },
@@ -202,7 +202,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         },
@@ -272,7 +272,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1594
+              "line": 1855
             }
           ]
         },
@@ -290,7 +290,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         },
@@ -357,7 +357,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1594
+              "line": 1855
             }
           ]
         }
@@ -592,11 +592,11 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1594
+              "line": 1855
             },
             {
               "name": "wagesIncomeSchema",
-              "line": 1538
+              "line": 1799
             }
           ]
         },
@@ -614,7 +614,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         }
@@ -682,7 +682,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1594
+              "line": 1855
             }
           ]
         }
@@ -762,12 +762,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/params/params.test.ts",
-          "line": 581,
+          "line": 621,
           "note": null,
           "tests": [
             {
               "title": "carries the employee side rather than the combined rate",
-              "line": 585
+              "line": 625
             }
           ]
         }
@@ -804,7 +804,7 @@
           "functions": [
             {
               "name": "taxableSocialSecurity",
-              "line": 330
+              "line": 339
             }
           ]
         }
@@ -872,7 +872,7 @@
           "functions": [
             {
               "name": "taxableSocialSecurity",
-              "line": 330
+              "line": 339
             }
           ]
         }
@@ -883,16 +883,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 1955,
+          "line": 1986,
           "note": null,
           "tests": [
             {
               "title": "counts tax-exempt interest in provisional income",
-              "line": 1963
+              "line": 1994
             },
             {
               "title": "includes a foreign exclusion in provisional income without taxing the exclusion itself",
-              "line": 1974
+              "line": 2005
             }
           ]
         }
@@ -944,7 +944,7 @@
           "functions": [
             {
               "name": "taxableSocialSecurity",
-              "line": 330
+              "line": 339
             }
           ]
         }
@@ -955,16 +955,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/params/params.test.ts",
-          "line": 510,
+          "line": 550,
           "note": "Values are the joint adjusted base amount, above which up to 85 percent of the benefit is included.",
           "tests": [
             {
               "title": "keeps the joint amounts at the figures the statute states",
-              "line": 515
+              "line": 555
             },
             {
               "title": "is the opposite of the standard deduction, which does double",
-              "line": 524
+              "line": 564
             }
           ]
         }
@@ -1001,7 +1001,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1594
+              "line": 1855
             }
           ]
         }
@@ -1129,7 +1129,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         },
@@ -1217,12 +1217,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/params/params.test.ts",
-          "line": 599,
+          "line": 639,
           "note": null,
           "tests": [
             {
               "title": "defaults to the combined-OASDI depletion projection",
-              "line": 606
+              "line": 646
             }
           ]
         }
@@ -1338,7 +1338,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         },
@@ -1425,7 +1425,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         },
@@ -1501,7 +1501,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1594
+              "line": 1855
             }
           ]
         }
@@ -1545,7 +1545,7 @@
           "functions": [
             {
               "name": "householdSchema",
-              "line": 210
+              "line": 240
             }
           ]
         }
@@ -1589,7 +1589,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1594
+              "line": 1855
             }
           ]
         }
@@ -1648,7 +1648,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1594
+              "line": 1855
             }
           ]
         }
@@ -1813,7 +1813,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1594
+              "line": 1855
             }
           ]
         }
@@ -1867,7 +1867,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         }
@@ -2093,7 +2093,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1594
+              "line": 1855
             }
           ]
         },
@@ -2111,7 +2111,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         }
@@ -2185,7 +2185,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1594
+              "line": 1855
             }
           ]
         },
@@ -2203,7 +2203,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         }
@@ -2408,7 +2408,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         },
@@ -2484,7 +2484,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         }
@@ -2557,7 +2557,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         }
@@ -2635,7 +2635,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         }
@@ -2646,16 +2646,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/params/params.test.ts",
-          "line": 476,
+          "line": 516,
           "note": "Values are the lower annual exempt amount, twelve times the monthly one.",
           "tests": [
             {
               "title": "derives the lower exempt amount from the wage index rather than from prices",
-              "line": 481
+              "line": 521
             },
             {
               "title": "derives the higher exempt amount from its own base and reference year",
-              "line": 494
+              "line": 534
             }
           ]
         }
@@ -2874,7 +2874,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         },
@@ -3118,7 +3118,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1594
+              "line": 1855
             }
           ]
         },
@@ -3136,7 +3136,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         }
@@ -3210,7 +3210,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         },
@@ -3304,7 +3304,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 392
             }
           ]
         },
@@ -3354,14 +3354,14 @@
       "title": "Disabled-worker Medicare continuation after trial work is not modeled",
       "classification": "outOfScope",
       "errorDirection": null,
-      "conventionRationale": "This is an input and result boundary. socialSecurityIncomeSchema carries only disability.onsetAge, and disability.ts/annualSocialSecurity.ts use it to price an annual SSDI stream; neither accepts a trial-work ending date, subsequent termination, continuing impairment, counterfactual inability to engage in substantial gainful activity, or Part A coverage. A generic healthcare expense cannot turn those absent facts into an entitlement interval. The 78-month cap and the substituted 15-month rule are quoted exactly; no CMS guidance establishing the queue's 93-month formulation was staged.",
+      "conventionRationale": "This is an input and result boundary, not a cash-benefit TWP/EPE trim. socialSecurityIncomeSchema carries only disability.onsetAge; annualSocialSecurity.ts prices an annual SSDI cash stream. disability.ts#inSsdiWindow and ssdiSuspendedBySga remain cash-benefit enforcers and are not Medicare-continuation determinations. assertSsdiMedicareContinuationNotDeterminedFromCashBenefitFacts enumerates the missing Part A facts and the 93-month authority floor. A generic healthcare expense cannot invent an entitlement interval. Do not add 36 months of EPE to another 93.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-27",
-      "dueOn": "2027-08-27",
+      "verifiedOn": "2026-09-12",
+      "dueOn": "2027-09-12",
       "implementedBy": [
         "packages/engine/src/model/plan.ts",
         "packages/engine/src/socialSecurity/disability.ts"
@@ -3372,7 +3372,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1594
+              "line": 1855
             }
           ]
         },
@@ -3380,8 +3380,8 @@
           "path": "packages/engine/src/socialSecurity/disability.ts",
           "functions": [
             {
-              "name": "inSsdiWindow",
-              "line": 50
+              "name": "assertSsdiMedicareContinuationNotDeterminedFromCashBenefitFacts",
+              "line": 86
             }
           ]
         }
@@ -3395,6 +3395,21 @@
           "kind": "statute",
           "citation": "42 U.S.C. 426(b)",
           "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section426&num=0&edition=prelim"
+        },
+        {
+          "kind": "agencyGuidance",
+          "citation": "SSA POMS DI 28055.001",
+          "url": "https://secure.ssa.gov/apps10/poms.nsf/lnx/0428055001"
+        },
+        {
+          "kind": "agencyGuidance",
+          "citation": "SSA Red Book, Extended Medicare Coverage (SSDI only)",
+          "url": "https://www.ssa.gov/redbook/eng/extended-medicare-coverage.htm"
+        },
+        {
+          "kind": "agencyGuidance",
+          "citation": "SSA Red Book, Extended Medicare Coverage (SSDI only), When does this start?",
+          "url": "https://www.ssa.gov/redbook/eng/extended-medicare-coverage.htm"
         }
       ]
     },
@@ -3441,12 +3456,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/params/params.test.ts",
-          "line": 455,
+          "line": 495,
           "note": "The price reading takes the 2025 base of 176,100 and the benefit increase the same notice announces for 2026.",
           "tests": [
             {
               "title": "derives the base from the wage index rather than from prices",
-              "line": 460
+              "line": 500
             }
           ]
         }

@@ -175,10 +175,18 @@ export const year2026: ParameterPack = {
     // Note rate near the 2026 expected rate + 0.5% annual MIP — the "~7–8%
     // growth at 2026 rates" planning figure (Pfau's buffer-asset articles).
     defaultGrowthRatePct: 7.5,
+    // Mortgagee Letter 2025-22: 2026 case-assignment MCA (including special
+    // exception areas). HUD-validated openings only.
+    maximumClaimAmount: 1_249_125,
+    // ML 2017-12 / Handbook 4000.1 II.B: initial MIP 2% of MCA; annual 0.50%.
+    initialMipPct: 2,
+    annualMipPct: 0.5,
   },
 
   medicare: {
     partBStandardMonthly: 202.9,
+    // CMS Final CY 2026 Part D Redesign Program Instructions §§10/100: $2,100.
+    partDAnnualOutOfPocketThreshold: 2_100,
     irmaaTiers: [
       // CMS 2026 Part D IRMAA surcharges by income tier.
       {
@@ -250,5 +258,13 @@ export const year2026: ParameterPack = {
       { fplPct: 400, applicablePct: 9.96 },
     ],
     maxFplPctForCredit: 400,
+  },
+
+  transferTax: {
+    // Rev. Proc. 2025-32 §4.42(1): calendar-year 2026 present-interest annual
+    // gift exclusion $19,000 per donee. Chapter 12 not computed at runtime.
+    annualGiftExclusionPerDonee: 19_000,
+    // IRC 2010(c)(3)(A) / IRS gift-tax FAQ: 2026 basic exclusion $15,000,000.
+    basicExclusionAmount: 15_000_000,
   },
 }

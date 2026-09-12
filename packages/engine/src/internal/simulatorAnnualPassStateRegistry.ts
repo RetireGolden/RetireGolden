@@ -257,6 +257,7 @@ export const SIMULATOR_ANNUAL_PASS_STATE_REGISTRY: SimulatorAnnualPassStateRegis
   iraProRata: clonedMapEntry(cloneIraProRata),
   iraBasisByOwner: mapEntry(),
   rothBasis: clonedMapEntry(cloneRothBasis),
+  inheritedRothPools: clonedMapEntry((pool) => structuredClone(pool)),
   rothAssumedContributionRemaining: mapEntry(),
   rothCounterfactualFreeCoverConsumed: mapEntry(),
   propertyValues: mapEntry(),

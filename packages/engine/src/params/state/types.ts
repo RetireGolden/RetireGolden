@@ -28,6 +28,10 @@ export interface StateTaxBracket {
  *  - none:   the state taxes retirement income like other ordinary income.
  *  - full:   retirement income is entirely exempt (subject to minAge if set).
  *  - capped: each age-eligible person excludes up to capPerPerson.
+ *
+ * Optional `tierByAge` (South Carolina §12-6-1170) selects the applicable cap
+ * from the recipient's age when characterized facts are present. Legacy
+ * `capPerPerson`/`minAge` remain the coarse path when tiers are absent.
  */
 export interface StateRetirementExclusion {
   kind: 'none' | 'full' | 'capped'
@@ -35,6 +39,12 @@ export interface StateRetirementExclusion {
   capPerPerson?: number
   /** Exclusion applies only to people at or above this age. */
   minAge?: number
+  /**
+   * Age-tiered caps for a single statutory retirement deduction (lowest
+   * matching `minAge` wins; a null/undefined minAge row is the under-age tier).
+   * Amounts are pack-year dollars.
+   */
+  tierByAge?: ReadonlyArray<{ minAge: number | null; cap: number }>
 }
 
 export interface StateTaxParams {
@@ -136,6 +146,18 @@ export interface StateTaxParams {
     range: PerStatus<number>
   }
   brackets: PerStatus<StateTaxBracket[]>
+  /**
+   * Optional head-of-household bracket schedule when the state publishes one
+   * distinct from single/MFJ (Hawaii). Absent ⇒ callers must not invent HOH
+   * by mapping to MFJ for exact HOH pricing; use the leaf helper instead.
+   */
+  bracketsHeadOfHousehold?: StateTaxBracket[]
+  /**
+   * Optional married-filing-separately bracket schedule when distinct from
+   * single (Vermont and others). Absent ⇒ MFS uses single when the statute
+   * so provides, otherwise leaf helpers require explicit status facts.
+   */
+  bracketsMarriedFilingSeparately?: StateTaxBracket[]
   /** Private pensions, annuities, traditional IRA/401(k), RMD, SEPP, and inherited distributions. */
   retirementPrivate: StateRetirementExclusion
   /** Public civil-service / military pensions, where state law separates them. */
@@ -146,6 +168,186 @@ export interface StateTaxParams {
    * the combined retirement income, never once per bucket.
    */
   retirementRuleShared?: boolean
+  /**
+   * Direct QCD conformity metadata. `unknown` fails closed for exact state QCD
+   * results; never infer addback from silence. Pack policy is authoritative.
+   */
+  directQcdPolicy?:
+    | {
+        kind: 'conforms'
+        citation: string
+        effectiveTaxYears?: { from: number; to?: number }
+        authoritySourceIds?: readonly string[]
+        supportedTransactionKinds?: readonly string[]
+        charitableCreditAdjustment?: 'none' | 'coveredCreditAddback'
+      }
+    | {
+        kind: 'conformsWithAdoptedCap'
+        annualCap: number
+        citation: string
+        adoptionCutoff?: string
+        effectiveTaxYears?: { from: number; to?: number }
+        authoritySourceIds?: readonly string[]
+        supportedTransactionKinds?: readonly string[]
+        charitableCreditAdjustment?: 'none' | 'coveredCreditAddback'
+      }
+    | {
+        kind: 'noGeneralFederalExclusion'
+        citation: string
+        effectiveTaxYears?: { from: number; to?: number }
+        authoritySourceIds?: readonly string[]
+        supportedTransactionKinds?: readonly string[]
+        charitableCreditAdjustment?: 'none' | 'coveredCreditAddback'
+      }
+    | { kind: 'unknown' }
+  /**
+   * HSA state conformity. California is nonconforming; New Jersey uses GIT
+   * category treatment with incomplete exactness when category facts are missing.
+   */
+  hsaConformity?: 'federal' | 'nonconformingCalifornia' | 'newJerseyCategories' | 'unknown'
+  /**
+   * Colorado §39-22-104(3)(p.7) high-AGI federal deduction addback parameters.
+   */
+  iowaAlternateTax?: { singleThreshold: number; jointThreshold: number; seniorSingleThreshold: number; seniorJointThreshold: number; alternateRate: number }
+  highAgiFederalDeductionAddback?: {
+    agiTrigger: number
+    retainSingle: number
+    retainJoint: number
+  }
+  /** Illinois personal-exemption allowance dollars and AGI cutoffs. */
+  illinoisPersonalExemption?: {
+    basicAllowance: number
+    age65Addition: number
+    agiCutoffNonjoint: number
+    agiCutoffJoint: number
+  }
+  /** Delaware under-60 pension greater-of caps (ordinary vs military). */
+  delawareUnder60Pension?: {
+    ordinaryCap: number
+    militaryCap: number
+  }
+  /** Connecticut WS personal-exemption schedule by extended filing status. */
+  connecticutPersonalExemption?: Record<
+    'single' | 'marriedFilingJointly' | 'marriedFilingSeparately' | 'headOfHousehold' | 'qualifyingSurvivingSpouse',
+    { maximum: number; phaseoutStart: number; phaseoutStep: number; reductionPerStep: number }
+  >
+  /** South Carolina TY2026 SCIAD standard-deduction phaseout schedule. */
+  southCarolinaSciad?: Record<
+    'single' | 'marriedFilingJointly' | 'marriedFilingSeparately' | 'headOfHousehold' | 'qualifyingSurvivingSpouse',
+    { base: number; phaseoutStart: number; phaseoutRange: number; reductionIncrement: number }
+  >
+  /** Massachusetts Part B rate + surtax threshold. */
+  massachusettsRates?: {
+    baseRate: number
+    surtaxRate: number
+    surtaxThreshold: number
+    personalExemptionSingle: number
+    personalExemptionJoint: number
+    personalExemptionHoh: number
+    ageBlindAddition: number
+  }
+  /** Idaho §63-3022A status caps. */
+  idahoQualifiedRetirementCaps?: {
+    single: number
+    joint: number
+  }
+  /** Montana long-term capital-gain schedule (rates + status thresholds). */
+  montanaLtcg?: {
+    lowerRate: number
+    upperRate: number
+    thresholdSingle: number
+    thresholdHoh: number
+    thresholdJoint: number
+  }
+  /** Oregon ORS 316.157 retirement income credit parameters. */
+  oregonRetirementIncomeCredit?: {
+    rate: number
+    pensionCeilingSingle: number
+    pensionCeilingJoint: number
+    incomeThresholdSingle: number
+    incomeThresholdJoint: number
+  }
+  /** Utah credit/subtraction rates for military and related limbs. */
+  utahRetirementCredits?: {
+    taxRate: number
+    phaseoutRate: number
+    socialSecurityThresholds: Record<'single' | 'marriedFilingJointly' | 'marriedFilingSeparately' | 'headOfHousehold' | 'qualifyingSurvivingSpouse', number>
+    retirementThresholds: Record<'single' | 'marriedFilingJointly' | 'marriedFilingSeparately' | 'headOfHousehold' | 'qualifyingSurvivingSpouse', number>
+    retirementCreditPerEligibleClaimant: number
+    latestEligibleBirthDate: string
+  }
+  /** Virginia military retirement subtraction cap per recipient. */
+  virginiaMilitarySubtractionCap?: number
+  /** Missouri private/public retirement parameters. */
+  missouriRetirement?: {
+    privateCap: number
+    privatePhaseoutSingle: number
+    privatePhaseoutJoint: number
+    privatePhaseoutMfs: number
+    publicMaxSocialSecurityBenefit: number
+  }
+  /** Wisconsin income-tested standard deduction (Form 1-ES) + exemptions. */
+  wisconsinStandardDeduction?: {
+    single: {
+      maximum: number
+      fullThrough: number
+      phaseStart: number
+      phaseRate: number
+      zeroAt: number
+    }
+    marriedFilingJointly: {
+      maximum: number
+      fullThrough: number
+      phaseStart: number
+      phaseRate: number
+      zeroAt: number
+    }
+    marriedFilingSeparately: {
+      maximum: number
+      fullThrough: number
+      phaseStart: number
+      phaseRate: number
+      zeroAt: number
+    }
+    headOfHousehold: {
+      maximum: number
+      fullThrough: number
+      phaseStart: number
+      phaseRate: number
+      secondSegmentStart: number
+      zeroAt: number
+    }
+    exemptionPerPerson: number
+    age65Addition: number
+  }
+  /** West Virginia exemption and named-system dollars. */
+  coloradoRetirement?: { age55Cap: number; age65Cap: number; ssAgiNonjoint: number; ssAgiJoint: number }
+  westVirginiaSocialSecurity?: { nonjointAgiThreshold: number; jointAgiThreshold: number; aboveThresholdFractionByYear: Readonly<Record<number, number>>; fullExclusionFrom: number }
+  westVirginiaExemptions?: {
+    qualifyingFederalSystemCodes?: readonly string[]
+    perExemption: number
+    zeroExemptionIrc151d2: number
+    survivingSpouseAdditional: number
+    age65ResidualCap: number
+    namedPublicCombinedCapPerPerson: number
+  }
+  /** Vermont derived annual amounts beyond brackets/SD (minimum tax, retirement). */
+  vermontExtras?: {
+    minimumTaxAgiThreshold: number
+    minimumTaxRate: number
+    personalExemption: number
+    additional63f: number
+    civilServiceCap: number
+    civilServiceFullThroughNonjoint: number
+    civilServiceZeroAtNonjoint: number
+    civilServiceFullThroughJoint: number
+    civilServiceZeroAtJoint: number
+    militaryFullThrough: number
+    militaryZeroAt: number
+    standardDeductionByStatus?: Record<'single' | 'marriedFilingJointly' | 'marriedFilingSeparately' | 'headOfHousehold' | 'qualifyingSurvivingSpouse', number>
+  }
+  /** Kansas named statutory plan codes for the public-pension allowlist. */
+  kansasNamedPlanCodes?: readonly string[]
   /** Citation / modeled simplifications for the data-refresh workstream. */
   notes?: string
 }

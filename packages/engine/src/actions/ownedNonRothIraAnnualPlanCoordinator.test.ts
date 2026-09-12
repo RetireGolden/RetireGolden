@@ -458,6 +458,7 @@ describe('Plan-owned non-Roth IRA annual coordinator', () => {
 
       const observation = buildSimulatorOwnedNonRothIraAnnualObservation({
         plan: observationPlan,
+        ownerTreatmentRouting: new Map([['ira-treated-as-own', true]]),
         ownerPersonId,
         taxYear: 2030,
         ledgerRunId: 'pool-selector-observation-2030',
@@ -478,6 +479,7 @@ describe('Plan-owned non-Roth IRA annual coordinator', () => {
 
       const missingSibling = buildSimulatorOwnedNonRothIraAnnualObservation({
         plan: observationPlan,
+        ownerTreatmentRouting: new Map([['ira-treated-as-own', true]]),
         ownerPersonId,
         taxYear: 2030,
         ledgerRunId: 'pool-selector-observation-2030',

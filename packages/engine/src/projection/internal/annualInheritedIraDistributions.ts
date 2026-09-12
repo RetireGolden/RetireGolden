@@ -1,3 +1,6 @@
+import { parseCivilIsoDate } from '../../actions/civilDate.js'
+import type { RmdShortfallReliefElection } from '../../rmd/rmdShortfallExcise.js'
+import { coordinateInheritedDeadlineAnnualRuntime } from '../../actions/beneficiaryTraditionalIraAnnualRuntimeCoordinator.js'
 /**
  * Plan one year's inherited-account required distributions without mutating
  * simulator state. Classification remains simulation-scoped; this boundary
@@ -14,6 +17,7 @@ import {
 import { rmdApplicablePlanForAccount } from '../../rmd/rmdApplicablePlanForAccount.js'
 import {
   inheritedForcedAmount,
+  inheritedFiveYearFacts,
   inheritedRequirementForYear,
   type InheritedIraRefusalCode,
   type InheritedRegimeClassification,
@@ -65,6 +69,22 @@ export interface AnnualInheritedIraRow {
   readonly evidence: InheritedAccountYearEvidence
 }
 
+/**
+ * A pure inherited-Roth characterization observed while planning a required
+ * distribution.  The caller commits its matching pool only after the balance
+ * debit has passed validation.  This keeps fixed-point/counterfactual work
+ * from consuming the live beneficiary/decedent pool.
+ */
+export interface AnnualInheritedIraRothTaxCharacterOperation {
+  readonly accountId: string
+  readonly beneficiaryPersonId: string
+  readonly decedentId: string | null
+  readonly distributionAmount: number
+  readonly ordinaryIncome: number
+  readonly status: 'characterized' | 'incomplete'
+  readonly reason?: string
+}
+
 type RmdShortfallObligation = Readonly<{
   obligationId: string
   distributionCalendarYear: number
@@ -75,14 +95,27 @@ type RmdShortfallObligation = Readonly<{
     | 'inheritedAnnualLifeExpectancy'
     | 'inheritedYearOfDeath'
     | 'inheritedFinalSweep'
+    | 'inheritedPostDeadlineRemainingBenefit'
     | 'inheritedLegacy'
     | 'mixedInheritedRequirements'
   requiredAmount: number
   distributedByDeadline: number
 }>
 
+/** Completed legal-year observation, not authorization to replay historical cash. */
+export interface CompletedInheritedDeadlineObservation {
+  readonly taxYear: number
+  readonly openingBenefit: number | 'unknown'
+  readonly distributedByDeadline: number | 'unknown'
+  readonly legalDistributionDeadline: string
+  readonly observedAsOfDate: string
+  readonly provenance: { readonly source: string; readonly asOf: string }
+  readonly relief?: RmdShortfallReliefElection
+}
+
 export interface AnnualInheritedIraDistributionsInput {
   readonly year: number
+  readonly completedDeadlineObservations?: ReadonlyMap<string, CompletedInheritedDeadlineObservation>
   readonly startYear: number
   readonly pack: ParameterPack
   readonly primaryPersonId: string
@@ -95,6 +128,25 @@ export interface AnnualInheritedIraDistributionsInput {
     alive: boolean
     ageAttained: number
   }>
+  /** Annual opening gate may establish owner treatment from observed facts. */
+  readonly isTreatAsOwnEffectiveForYear?: (
+    account: Readonly<Extract<Account, { type: 'traditional' | 'roth' }>>,
+  ) => boolean
+  /**
+   * Characterizes an inherited-Roth draw against a snapshot of its shared
+   * beneficiary/decedent pool.  It must not mutate that pool.
+   */
+  readonly characterizeInheritedRothDistribution?: (input: Readonly<{
+    accountId: string
+    beneficiaryPersonId: string
+    decedentId: string | null
+    distributionCalendarYear: number
+    distributionAmount: number
+  }>) => Readonly<{
+    ordinaryIncome: number
+    status: 'characterized' | 'incomplete'
+    reason?: string
+  }>
 }
 
 export interface AnnualInheritedIraDistributionsResult {
@@ -104,12 +156,25 @@ export interface AnnualInheritedIraDistributionsResult {
     rothForced: number
   }>
   readonly rows: readonly AnnualInheritedIraRow[]
+  readonly rothTaxCharacterOperations:
+    readonly AnnualInheritedIraRothTaxCharacterOperation[]
+  /**
+   * The numeric ordinary-income total may include a conservative full-draw
+   * estimate when a Roth pool is uncharacterized.  Consumers must carry this
+   * status rather than presenting that estimate as an established tax result.
+   */
+  readonly rothTaxCharacterStatus: 'complete' | 'incomplete'
   readonly rmdShortfallObligations: readonly RmdShortfallObligation[]
+  readonly deadlineObservationIssues: readonly { accountId: string; reason: string }[]
+  readonly completedDeadlineAssessments: readonly Extract<ReturnType<typeof coordinateInheritedDeadlineAnnualRuntime>, { status: 'coordinated' }>[]
 }
 
 export function annualInheritedIraDistributions(
   input: AnnualInheritedIraDistributionsInput,
 ): AnnualInheritedIraDistributionsResult {
+  const deadlineObservationIssues: { accountId: string; reason: string }[] = []
+  const completedDeadlineAssessments: Extract<ReturnType<typeof coordinateInheritedDeadlineAnnualRuntime>, { status: 'coordinated' }>[] = []
+  const completedDeadlineAccountIds = new Set<string>()
   const logicalIds = new Set<string>()
   for (const state of input.balances) {
     if (logicalIds.has(state.account.id)) {
@@ -134,7 +199,9 @@ export function annualInheritedIraDistributions(
   let inherited = 0
   let ordinaryIncome = 0
   let rothForced = 0
+  let rothTaxCharacterStatus: 'complete' | 'incomplete' = 'complete'
   const rows: AnnualInheritedIraRow[] = []
+  const rothTaxCharacterOperations: AnnualInheritedIraRothTaxCharacterOperation[] = []
 
   const addRow = (
     balanceIndex: number,
@@ -153,8 +220,37 @@ export function annualInheritedIraDistributions(
         sourceBalanceAfter,
         executed,
       }
-      if (state.account.type === 'roth') rothForced += executed
-      else ordinaryIncome += executed
+      if (state.account.type === 'roth') {
+        rothForced += executed
+        const beneficiaryPersonId = state.account.ownerPersonId ?? input.primaryPersonId
+        const characterized = input.characterizeInheritedRothDistribution?.({
+          accountId: state.account.id,
+          beneficiaryPersonId,
+          decedentId: state.account.inherited?.decedentId ?? null,
+          distributionCalendarYear: input.year,
+          distributionAmount: executed,
+        })
+        if (characterized !== undefined) {
+          if (!Number.isFinite(characterized.ordinaryIncome) || characterized.ordinaryIncome < 0) {
+            throw new Error(
+              `inherited-Roth tax character for account id "${state.account.id}" must return finite nonnegative ordinary income`,
+            )
+          }
+          ordinaryIncome += characterized.ordinaryIncome
+          if (characterized.status === 'incomplete') {
+            rothTaxCharacterStatus = 'incomplete'
+          }
+          rothTaxCharacterOperations.push({
+            accountId: state.account.id,
+            beneficiaryPersonId,
+            decedentId: state.account.inherited?.decedentId ?? null,
+            distributionAmount: executed,
+            ordinaryIncome: characterized.ordinaryIncome,
+            status: characterized.status,
+            ...(characterized.reason === undefined ? {} : { reason: characterized.reason }),
+          })
+        }
+      } else ordinaryIncome += executed
       inherited += executed
     }
     rows.push({
@@ -187,12 +283,8 @@ export function annualInheritedIraDistributions(
       addRow(balanceIndex, state, {
         accountId: state.account.id,
         ownerPersonId: cache.ownerPersonId,
-        regime: primaryClass?.regime ??
-          (cache.primary.kind === 'refusal'
-            ? cache.primary.refusal
-            : 'unsupported'),
-        matrixRow: primaryClass?.row ??
-          (cache.primary.kind === 'refusal' ? cache.primary.row : 'X2'),
+        regime: primaryClass?.regime ?? (cache.primary.kind === 'refusal' ? cache.primary.refusal : 'needs-review'),
+        matrixRow: primaryClass?.row ?? (cache.primary.kind === 'refusal' ? cache.primary.row : 'X2'),
         ...(primaryClass !== undefined
           ? { classification: primaryClass.classification }
           : {}),
@@ -214,7 +306,10 @@ export function annualInheritedIraDistributions(
       continue
     }
 
-    if (isTreatAsOwnEffective(state.account, input.year)) {
+    if (
+      input.isTreatAsOwnEffectiveForYear?.(state.account) ??
+      isTreatAsOwnEffective(state.account, input.year)
+    ) {
       // A death-year election becomes effective the following year, so its
       // unsatisfied year-of-death RMD stays on the schedule path below.
       const primaryClass =
@@ -227,12 +322,8 @@ export function annualInheritedIraDistributions(
       addRow(balanceIndex, state, {
         accountId: state.account.id,
         ownerPersonId: cache.ownerPersonId,
-        regime: primaryClass?.regime ??
-          (cache.primary.kind === 'refusal'
-            ? cache.primary.refusal
-            : 'spouse-treat-as-own-transition'),
-        matrixRow: primaryClass?.row ??
-          (cache.primary.kind === 'refusal' ? cache.primary.row : 'S2'),
+        regime: 'spouse-treat-as-own-transition',
+        matrixRow: 'S2',
         ...(primaryClass !== undefined
           ? { classification: primaryClass.classification }
           : {}),
@@ -246,6 +337,47 @@ export function annualInheritedIraDistributions(
         disclosures: primaryClass?.disclosures ?? [],
         citations: primaryClass?.citations ??
           (cache.primary.kind === 'refusal' ? cache.primary.citations : []),
+      }, 0)
+      continue
+    }
+
+    const completed = input.completedDeadlineObservations?.get(state.account.id)
+    if (completed !== undefined) {
+      completedDeadlineAccountIds.add(state.account.id)
+      const deadline = `${input.year}-12-31`
+      const valid = completed.taxYear === input.year && completed.legalDistributionDeadline === deadline &&
+        parseCivilIsoDate(completed.observedAsOfDate) !== null && completed.observedAsOfDate >= deadline &&
+        parseCivilIsoDate(completed.provenance.asOf) !== null && completed.provenance.asOf >= completed.observedAsOfDate &&
+        completed.provenance.source.trim().length > 0
+      const facts = inheritedFiveYearFacts(state.account.inherited)
+      const applicablePlan = rmdApplicablePlanForAccount(state.account, input.primaryPersonId)
+      const coordinated = valid && facts !== undefined
+        ? coordinateInheritedDeadlineAnnualRuntime({ facts, taxYear: input.year,
+            openingBenefit: completed.openingBenefit, distributedByDeadline: completed.distributedByDeadline,
+            obligationId: rmdShortfallObligationId(applicablePlan, input.year), applicablePlan, relief: completed.relief })
+        : { status: 'refusal' as const, reason: 'completedDeadlineObservationIncomplete' }
+      if (coordinated.status === 'coordinated') completedDeadlineAssessments.push(coordinated)
+      else deadlineObservationIssues.push({ accountId: state.account.id, reason: coordinated.reason })
+      addRow(balanceIndex, state, {
+        accountId: state.account.id, ownerPersonId: cache.ownerPersonId,
+        regime: 'non-designated-five-year', matrixRow: 'X3',
+        requirementKind: 'none', requiredAmount: coordinated.status === 'coordinated' ? coordinated.requiredAmount : 0,
+        executedRequiredAmount: 0, voluntaryAmount: 0,
+        ...(coordinated.status === 'coordinated' ? {} : { limitation: coordinated.reason }),
+        disclosures: ['completed-deadline-observation-no-cash-replay'],
+        citations: ['26 CFR 54.4974-1(e)', 'IRC 4974(a), (e)'],
+      }, 0)
+      continue
+    }
+
+    if (cache.primary.kind === 'refusal' && cache.primary.row === 'X3') {
+      addRow(balanceIndex, state, {
+        accountId: state.account.id, ownerPersonId: cache.ownerPersonId,
+        regime: cache.primary.refusal, matrixRow: 'X3', requirementKind: 'none',
+        requiredAmount: 0, executedRequiredAmount: 0, voluntaryAmount: 0,
+        refusalReason: cache.primary.reason,
+        ...(cache.refusalCode === undefined ? {} : { refusalCode: cache.refusalCode }),
+        limitation: 'non-designated-schedule-not-established', disclosures: [], citations: cache.primary.citations,
       }, 0)
       continue
     }
@@ -332,21 +464,6 @@ export function annualInheritedIraDistributions(
       finalDeadlineYear = scheduleClass.finalDeadlineYear
     }
 
-    const beneficiaryForIdentity = state.account.inherited.beneficiary
-    if (
-      cache.isS2 &&
-      cache.primary.kind === 'regime' &&
-      beneficiaryForIdentity?.election === 'treat-as-own' &&
-      beneficiaryForIdentity.treatAsOwnElectionYear ===
-        state.account.inherited.ownerDeathYear &&
-      input.year === state.account.inherited.ownerDeathYear
-    ) {
-      regime = cache.primary.regime
-      matrixRow = cache.primary.row
-      classification = cache.primary.classification
-      disclosures = [...cache.primary.disclosures]
-    }
-
     if (
       input.year === input.startYear &&
       cache.preHorizonYearOfDeathRmdUnresolved === true
@@ -385,7 +502,9 @@ export function annualInheritedIraDistributions(
     Set<RmdShortfallObligation['requirementKind']>
   >()
   const applicablePlanByKey = new Map<string, RmdApplicablePlan>()
+  const deadlineObligations: RmdShortfallObligation[] = completedDeadlineAssessments.map((row) => row.obligation)
   for (const { evidence, balanceIndex } of rows) {
+    if (completedDeadlineAccountIds.has(evidence.accountId)) continue
     if (evidence.requiredAmount <= 0 || evidence.noticeWaived === true) continue
     const account = input.balances[balanceIndex]?.account
     if (
@@ -397,6 +516,22 @@ export function annualInheritedIraDistributions(
       account,
       input.primaryPersonId,
     )
+    if (evidence.regime === 'non-designated-five-year') {
+      const facts = inheritedFiveYearFacts(account.inherited)
+      if (facts !== undefined) {
+        const coordinated = coordinateInheritedDeadlineAnnualRuntime({
+          facts, taxYear: input.year,
+          openingBenefit: input.startOfYearBalance.get(account.id) ?? input.balances[balanceIndex]!.balance,
+          distributedByDeadline: evidence.executedRequiredAmount,
+          obligationId: rmdShortfallObligationId(applicablePlan, input.year), applicablePlan,
+        })
+        if (coordinated.status === 'coordinated') deadlineObligations.push(coordinated.obligation)
+        else {
+          deadlineObservationIssues.push({ accountId: account.id, reason: coordinated.reason })
+        }
+      } else deadlineObservationIssues.push({ accountId: account.id, reason: 'fiveYearFactsMissing' })
+      continue
+    }
     const applicablePlanKey = rmdApplicablePlanKey(applicablePlan)
     applicablePlanByKey.set(applicablePlanKey, applicablePlan)
     requiredByApplicablePlan.set(
@@ -422,7 +557,7 @@ export function annualInheritedIraDistributions(
     requirementKindsByApplicablePlan.set(applicablePlanKey, kinds)
   }
 
-  const rmdShortfallObligations: RmdShortfallObligation[] = []
+  const rmdShortfallObligations: RmdShortfallObligation[] = [...deadlineObligations]
   for (const [applicablePlanKey, requiredAmount] of requiredByApplicablePlan) {
     const applicablePlan = applicablePlanByKey.get(applicablePlanKey)!
     const requirementKinds =
@@ -446,6 +581,10 @@ export function annualInheritedIraDistributions(
   return {
     totals: { inherited, ordinaryIncome, rothForced },
     rows,
+    rothTaxCharacterOperations,
+    rothTaxCharacterStatus,
     rmdShortfallObligations,
+    deadlineObservationIssues,
+    completedDeadlineAssessments,
   }
 }

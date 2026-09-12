@@ -1,3 +1,4 @@
+import type { AnnualOwnerTreatmentRouting } from '../../strategies/accountEligibility.js'
 /**
  * Pure annual 72(t) SEPP distribution planning.
  *
@@ -36,6 +37,7 @@ export interface AnnualSeppOwnerState {
 }
 
 export interface AnnualSeppDistributionsInput {
+  readonly ownerTreatmentRouting?: AnnualOwnerTreatmentRouting
   /** Live annual-pass balance rows in plan order, viewed without mutation. */
   readonly balances: readonly Readonly<AnnualSeppBalanceView>[]
   readonly year: number
@@ -98,7 +100,7 @@ export function annualSeppDistributions(
     // the beneficiary path; once effective, its active series can distribute.
     if (
       state.account.inherited !== undefined &&
-      !isTreatAsOwnEffective(state.account, input.year)
+      !isTreatAsOwnEffective(state.account, input.year, input.ownerTreatmentRouting)
     ) continue
 
     const ownerPersonId = state.account.ownerPersonId ?? input.primaryPersonId

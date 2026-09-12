@@ -26,7 +26,27 @@ export interface RecordedPension {
   readonly accountId: string
   readonly payeePersonId: string
   readonly amount: number
-  readonly source: 'public' | 'private'
+  /**
+   * Persisted pension source vocabulary (legacy private/public plus expanded
+   * characterized kinds). Cash-flow capture preserves the stated source; tax
+   * adapters map coarse private/public buckets when needed.
+   */
+  readonly source:
+    | 'private'
+    | 'public'
+    | 'ordinaryPrivatePension'
+    | 'ira'
+    | 'employerPlan'
+    | 'militaryRetirement'
+    | 'militarySurvivor'
+    | 'federalCivilService'
+    | 'stateLocalPublic'
+    | 'railroadTier1'
+    | 'railroadTier2'
+    | 'railroadRetirementAct'
+    | 'governmentSurvivor'
+    | 'unknownPublic'
+    | 'unknownPrivate'
 }
 export interface RecordedAnnuityPayment {
   readonly accountId: string

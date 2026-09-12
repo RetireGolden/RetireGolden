@@ -121,6 +121,8 @@ export interface HecmLineOpeningYearInput {
 
 /** One property account's HECM open for one year. */
 export interface HecmLineOpeningRow {
+  /** New cash disbursed at this modeled opening, absent for already-observed cash. */
+  readonly borrowerAdvanceCashReceipt?: number
   readonly propertyAccountId: string
   /**
    * The line state to store, BY REFERENCE and deliberately mutable — the caller
@@ -148,6 +150,10 @@ export function hecmLineOpenings(
   const opened = new Set<string>()
   for (const account of accounts) {
     if (account.type !== 'property' || !account.hecm) continue
+    // HUD-validated lines have a different, fact-bound opening calculation.
+    // Never let a direct legacy helper call turn an omitted/unknown transaction
+    // form into a quote-estimate ordinary origination.
+    if (account.hecm.calculationMode === 'hudValidated') continue
     if (year !== Math.max(account.hecm.openYear, startYear)) continue
     if (openHecmLines.has(account.id) || opened.has(account.id)) continue
     const value = propertyValues.get(account.id) ?? 0

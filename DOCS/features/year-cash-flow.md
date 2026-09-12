@@ -23,7 +23,7 @@ did not fund that decision. Tax character with no physical line to attach to is 
 |------|------------------|
 | `spendableSource` | External or off-ledger cash available to the household during the funding solve. |
 | `portfolioFunding` | Cash delivered from a portfolio account to the household by a forced, committed, or need-based distribution. |
-| `loanProceeds` | HECM cash, paired economically with an increase in HECM debt and never treated as income. |
+| `loanProceeds` | HECM cash, paired economically with an increase in HECM debt and never treated as income. HUD-validated openings pin MCA / initial MIP from case-year pack parameters (`hud-hecm-mca-mip-limits`), keep case assignment separate from the verified closing date, and include a closing-day borrower advance in opening debt. Monthly MIP is priced only from dated production-loan-ledger assessment balances; unknown closing/assessment timing is typed incomplete, while a simple annual rate×starting-balance figure is only a disclosed pre-timing check. Legacy quote estimates remain disclosed planning defaults. |
 | `fundedUse` | The funded part of a requested household use. Only this amount routes through the cash hub. |
 | `unfundedUse` | The part of a requested use that did not happen. It is never drawn as cash. |
 | `transfer` | A paired debit and credit that bypasses, or follows, the household-cash stage. |

@@ -129,6 +129,7 @@ describe('annualSeppDistributions — guards and identities', () => {
 
     const after = distributions(call([balance(inherited)], {
       year: 2028,
+      ownerTreatmentRouting: new Map([['inherited', true]]),
       resolveOwnerState: () => ({ alive: true, ageAttained: 58 }),
     }))[0]!
     expect(after.take).toBeGreaterThan(0)
@@ -221,6 +222,7 @@ describe('annualSeppDistributions — annual separation and numeric order', () =
     })
     const acceptedFirstSeparatedYear = call([balance(firstSeparatedYearEmployer)], {
       year: 2028,
+      ownerTreatmentRouting: new Map([['inherited', true]]),
       resolveOwnerState: () => ({ alive: true, ageAttained: 58 }),
       resolveOwnerRetirementAge: () => 57.5,
     })

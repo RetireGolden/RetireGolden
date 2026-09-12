@@ -1,3 +1,4 @@
+import { stateRetirementEventsFromAccountAmounts } from './annualStateRetirementEvents.js'
 /**
  * Execute the post-action annual funding, application, and close sequence.
  *
@@ -22,11 +23,19 @@ import type {
   ProjectedFilingStatus,
   SimulatorRetirementRuntimeApplication,
   SocialSecurityStreamActivity,
+  StateQcdYearFactsInput,
+  StateRetirementDistributionFactInput,
   TaxCalculator,
+  TaxComputationResult,
   TaxYearInput,
   YearResult,
   YearCashFlowTransferEndpoint,
 } from '../types.js'
+import {
+  householdFactsForYear,
+  hsaAccountYearFactsForYear,
+  njIraOwnerPoolsForYear,
+} from './stateRetirementFactsAdapter.js'
 import type { AnnualCashFlowPenaltySnapshot } from '../annualCashFlowCapture.js'
 import type { AnnualCashFlowYearSites } from '../annualCashFlowYearSites.js'
 import type { EmployerElectiveAllocation } from '../employerRothCatchUp.js'
@@ -34,6 +43,7 @@ import type { AssetAllocationPolicy } from '../../model/plan.js'
 import type { AnnualLiabilityRunTaxInput } from '../../actions/annualLiabilityRunIdentity.js'
 import type { ConversionTaxFundingTaxUnitEvidence } from '../../actions/conversionTaxFundingEvidence.js'
 import type { ConversionLinkedWithdrawalGroupLiabilityRun } from '../../actions/index.js'
+import type { MutableInheritedRothTaxCharacterPool } from './inheritedRothTaxCharacterPoolState.js'
 
 import {
   hasSpouseTreatAsOwnElection,
@@ -75,8 +85,8 @@ import {
   type AnnualFundingFixedPointEvaluationRequest,
 } from './annualFundingFixedPoint.js'
 import {
-  annualFundingWithdrawalEffects,
   type AnnualFundingWithdrawalEffectAccount,
+  type AnnualFundingWithdrawalEffectsResult,
   type AnnualHsaWithdrawalEffectAccount,
 } from './annualFundingWithdrawalEffects.js'
 import {
@@ -179,6 +189,17 @@ interface AnnualFundingApplicationAndClosePhaseFacts {
   readonly irmaaNextTierThreshold: number | null
   readonly ssEarningsTestWithheld: number
   readonly ssdiPaid: number
+  /**
+   * Characterized retirement distributions for state tax. When present (even
+   * empty), they are authoritative for source identity; legacy aggregates remain
+   * as fallback for uncharacterized plans.
+   */
+  readonly stateHsaContributions?: ReadonlyMap<string, number>
+  readonly spousalOwnerTreatment?: readonly {accountId: string; ownerTreatment: boolean}[]
+  readonly hecmOpeningIssues?: readonly string[]
+  readonly stateRetirementDistributions?: readonly StateRetirementDistributionFactInput[]
+  readonly stateQcdEventFacts?: TaxYearInput['stateQcdEventFacts']
+  readonly stateQcdYearFacts?: readonly StateQcdYearFactsInput[]
   readonly skippedRequiredNominal: number
   readonly skippedTargetNominal: number
   readonly skippedIdealNominal: number
@@ -240,6 +261,7 @@ interface AnnualFundingApplicationAndClosePhaseLedger {
   iraProRata: Map<string, IraProRataYear>
   iraBasisByOwner: Map<string, number>
   rothBasis: Map<string, RothBasisState>
+  inheritedRothPools: Map<string, MutableInheritedRothTaxCharacterPool>
   rothAssumedContributionRemaining: Map<string, number>
   rothCounterfactualFreeCoverConsumed: Map<string, number>
   ownedRothAssumedBasisConsequentialByOwner: Map<string, number>
@@ -291,6 +313,7 @@ export interface AnnualFundingApplicationAndClosePhaseScalars {
 }
 
 interface AnnualFundingApplicationAndClosePhaseCallbacks {
+  readonly evaluateSpousalElectionAtYearEnd?: (rows: readonly InheritedAccountYearEvidence[]) => YearResult['spousalElectionAtYearEnd']
   readonly stateOf: (personId: string) => Readonly<PersonYearState>
   readonly isTreatAsOwnEffective: (
     account: Readonly<TreatAsOwnAccount>,
@@ -513,6 +536,7 @@ export function annualFundingApplicationAndClosePhase(
     inheritedTotal,
     inheritedOrdinaryIncome,
     inheritedRothForced,
+    inheritedRothTaxCharacterIncomplete,
     rmdShortfallExciseResults,
     rmdShortfallExciseTax,
     qcd,
@@ -576,6 +600,7 @@ export function annualFundingApplicationAndClosePhase(
     iraProRata,
     iraBasisByOwner,
     rothBasis,
+    inheritedRothPools,
     rothAssumedContributionRemaining,
     rothCounterfactualFreeCoverConsumed,
     ownedRothAssumedBasisConsequentialByOwner,
@@ -842,6 +867,17 @@ export function annualFundingApplicationAndClosePhase(
               ? null
               : rothPoolKey(state.account),
             ownerAgeAttained: stateOf(ownerId).ageAttained,
+            ...(state.account.inherited === undefined ||
+                isTreatAsOwnEffective(state.account, year)
+              ? {}
+              : {
+                  inheritedRothPool: {
+                    beneficiaryPersonId: ownerId,
+                    decedentId: state.account.inherited.decedentId ?? null,
+                    legacyFirstContributionYear: state.account.inherited.beneficiary?.roth5YearStartYear,
+                    legacyClockEvidenceAsOfDate: state.account.inherited.beneficiary?.provenance?.asOf,
+                  },
+                }),
           })]
         }
         if (state.account.type === 'hsa') {
@@ -889,9 +925,23 @@ export function annualFundingApplicationAndClosePhase(
       : null
     const fundingCandidateEvaluationContext:
       AnnualFundingCandidateEvaluationContext = Object.freeze({
+        characterizeStateHsaWithdrawals: (rows: AnnualFundingWithdrawalEffectsResult['hsa']['rows']) =>
+          hsaAccountYearFactsForYear(plan, year, residenceState, plan.accounts.flatMap((account) => {
+            if (account.type !== 'hsa') return []
+            const withdrawal = rows.find((row) => row.sourceAccountId === account.id)
+            return [{ accountId: account.id, ownerPersonId: account.ownerPersonId ?? primary.id,
+              federalHsaDeduction: facts.stateHsaContributions?.get(account.id) ?? 0,
+              grossDistributions: withdrawal?.taken ?? 0,
+              qualifiedCashWithdrawals: withdrawal?.qualified ?? 0,
+              nonqualifiedDistributionFederalAmount: withdrawal?.taxableOrdinary ?? 0,
+              nonqualifiedCashWithdrawals: withdrawal?.nonQualified ?? 0,
+            }]
+          })),
+        characterizeStateWithdrawals: (amounts: ReadonlyMap<string, number>, grossAmounts: ReadonlyMap<string, number>) => stateRetirementEventsFromAccountAmounts(plan, year, amounts, 'voluntary', grossAmounts),
         withdrawalEffectAccounts: fundingWithdrawalEffectAccounts,
         hsaEffectAccounts: fundingHsaEffectAccounts,
         rothBasisByPool: rothBasis,
+        inheritedRothPools,
         taxCalculator,
         taxInputBase: Object.freeze({
           year,
@@ -910,6 +960,34 @@ export function annualFundingApplicationAndClosePhase(
           publicPensionIncome: publicPensionBase,
           agesAlive,
           itemizedDeductions,
+          ...(facts.stateRetirementDistributions === undefined
+            ? {}
+            : {
+                stateRetirementDistributions: facts.stateRetirementDistributions,
+              }),
+          ...(() => {
+            const household = householdFactsForYear(plan, year)
+            return household === undefined ? {} : { stateHouseholdFacts: household }
+          })(),
+          ...(() => {
+            const hsa = hsaAccountYearFactsForYear(plan, year, residenceState)
+            return hsa === undefined ? {} : { stateHsaAccountYearFacts: hsa }
+          })(),
+          ...(() => {
+            const pools = njIraOwnerPoolsForYear(plan, year)
+            return pools === undefined ? {} : { stateNjIraOwnerPools: pools }
+          })(),
+          ...(facts.stateQcdEventFacts === undefined
+            ? {}
+            : { stateQcdEventFacts: facts.stateQcdEventFacts.map((event) => ({
+                ...event,
+                residency: event.residency === 'unknown' &&
+                  (stateResidency?.length === 1 && stateResidency[0]!.months === 12)
+                  ? 'fullYearResident' as const : event.residency,
+              })) }),
+          ...(facts.stateQcdYearFacts === undefined
+            ? {}
+            : { stateQcdYearFacts: facts.stateQcdYearFacts }),
         }),
         ordinaryIncomeBase: ordinaryBase,
         privateRetirementIncomeBase: privateRetirementBase,
@@ -1018,7 +1096,49 @@ export function annualFundingApplicationAndClosePhase(
       expenses.intendedSpending += healthcareDelta
       expenses.total += healthcareDelta
     }
-    const { withdrawalPlan, tax, penalties } = evaluation
+    const {
+      withdrawalPlan,
+      tax,
+      taxComputation: evaluatedTaxComputation,
+      taxInput: acceptedTaxInput,
+      penalties,
+      inheritedRothPoolsAfterWithdrawal,
+      withdrawalEffects: acceptedWithdrawalEffects,
+    } = evaluation
+    let taxComputation: TaxComputationResult =
+      inheritedRothTaxCharacterIncomplete
+        ? {
+            ...evaluatedTaxComputation,
+            status: 'incomplete',
+            issues: [
+              ...evaluatedTaxComputation.issues,
+              {
+                code: 'incomplete-inherited-roth-tax-character',
+                year,
+                message:
+                  'Inherited Roth tax-character evidence was incomplete; the displayed ordinary-income estimate is not certified.',
+              },
+            ],
+          }
+        : evaluatedTaxComputation
+    if ((forcedDistributionPhase.inheritedDeadlineObservationIssues?.length ?? 0) > 0) {
+      taxComputation = { ...taxComputation, status: 'incomplete', issues: [...taxComputation.issues,
+        ...forcedDistributionPhase.inheritedDeadlineObservationIssues!.map((issue) => ({code: 'incomplete-inherited-deadline', year, message: `${issue.accountId}: ${issue.reason}`}))] }
+    }
+    if (taxComputation.status === 'incomplete') {
+      for (const issue of taxComputation.issues) {
+        warnings.add(
+          issue.message.length > 0
+            ? issue.message
+            : `Tax computation incomplete (${issue.code}).`,
+        )
+      }
+      if (taxComputation.issues.length === 0) {
+        warnings.add(
+          `Tax computation for ${year} is incomplete because required state facts were missing.`,
+        )
+      }
+    }
     // Commit only the coordinated draw accepted by the converged ACA/tax
     // funding solve. Capacity was measured before probing and no line balance
     // has changed since, so allocation is deterministic across multiple lines.
@@ -1063,15 +1183,7 @@ export function annualFundingApplicationAndClosePhase(
     const iraCharacterFinal = needBasedOwnedIraCharacter(
       withdrawalPlan.byAccountId,
     )
-    const withdrawalEffectsFinal = annualFundingWithdrawalEffects({
-      accounts: fundingWithdrawalEffectAccounts,
-      withdrawalsByAccountId: withdrawalPlan.byAccountId,
-      traditionalTaxableByAccountId:
-        iraCharacterFinal.taxableBySourceAccountId,
-      rothBasisByPool: rothBasis,
-      year,
-      hsaQualifiedCap,
-    })
+    const withdrawalEffectsFinal = acceptedWithdrawalEffects
     const rothEffectFinal = withdrawalEffectsFinal.roth
     const hsaEffectFinal = withdrawalEffectsFinal.hsa
     const iraNontaxableFinal = iraCharacterFinal.nontaxable
@@ -1503,6 +1615,7 @@ export function annualFundingApplicationAndClosePhase(
     // the inherited schedule). The helper builds the last-wins account lookup
     // once per year so evidence rows do not scan every balance.
     const withdrawalApplyFlowPlan = annualWithdrawalApplyFlowPlan({
+      ownerTreatmentRouting: new Map(annualIdKeyedBalances.map((state) => [state.account.id, isTreatAsOwnEffective(state.account, year)])),
       year,
       balances: annualIdKeyedBalances,
       inheritedEvidence: inheritedYearEvidenceDraft,
@@ -1588,6 +1701,13 @@ export function annualFundingApplicationAndClosePhase(
           sourceBalanceAfterPlanDollars: state.balance,
         })
       }
+    }
+    // The accepted fixed-point candidate consumed one clone across all
+    // voluntary inherited-Roth rows.  Promote that frozen ledger only after
+    // every corresponding balance write has completed.
+    inheritedRothPools.clear()
+    for (const [key, pool] of inheritedRothPoolsAfterWithdrawal) {
+      inheritedRothPools.set(key, pool)
     }
     // Commit the Roth basis ordering (contributions → conversions → earnings) once
     // per pool, so next year's seasoning + earnings are correct across the owner's
@@ -1691,7 +1811,7 @@ export function annualFundingApplicationAndClosePhase(
             )
           const consequentialSpill = Math.max(cfOverLive, liveOverCf)
           // CF-extra principal outstanding = prior extra + CF principal this
-          // draw consumed − live conversion principal this draw (split figure).
+          // draw consumed âˆ’ live conversion principal this draw (split figure).
           // Equivalent to seed-only debt when CF still has residual for the
           // shared conversion; reduces when live catch-up exceeds new CF spend.
           const nextCfConversionExtra = Math.max(
@@ -1810,6 +1930,7 @@ export function annualFundingApplicationAndClosePhase(
       legacyPropertySaleDeposits,
       deathBenefits,
       surplusDestination,
+      warnings,
     })
     const deathBenefitPaid = propertyAndInsurance.deathBenefitPaid
 
@@ -1951,6 +2072,19 @@ export function annualFundingApplicationAndClosePhase(
     // This is the core annual-pass record. The outer owned non-Roth IRA
     // settlement may later clone it solely to attach its committed replay;
     // simulatePlan retains final result-array publication after that boundary.
+    const spousalElectionAtYearEnd = input.callbacks.evaluateSpousalElectionAtYearEnd?.(inheritedYearEvidenceDraft)
+    const mixedYearOwnerTransitions = spousalElectionAtYearEnd?.filter((row) =>
+      row.ownerTreatment === true &&
+      facts.spousalOwnerTreatment?.find((opening) => opening.accountId === row.accountId)?.ownerTreatment !== true,
+    ) ?? []
+    if (mixedYearOwnerTransitions.length > 0) {
+      const issues = mixedYearOwnerTransitions.map((row) => ({
+        code: 'incomplete-spousal-election-mixed-year', year,
+        message: `${row.accountId}: ownership became effective during the year; the annual opening-beneficiary cash schedule does not resolve election-year owner RMD and tax ordering.`,
+      }))
+      taxComputation = { ...taxComputation, status: 'incomplete', issues: [...taxComputation.issues, ...issues] }
+      for (const issue of issues) warnings.add(issue.message)
+    }
     const yearResult = annualYearResultAssembly({
       chronology: {
         year,
@@ -2012,6 +2146,11 @@ export function annualFundingApplicationAndClosePhase(
         ssEarningsTestWithheld,
         ssdiPaid,
         tax,
+        spousalOwnerTreatment: facts.spousalOwnerTreatment,
+        spousalElectionAtYearEnd,
+        hecmComputation: (facts.hecmOpeningIssues?.length ?? 0) > 0 ? { status: 'incomplete', issues: [...facts.hecmOpeningIssues!, ...propertyAndInsurance.hecmComputation.issues] } : propertyAndInsurance.hecmComputation,
+        taxComputation,
+        acceptedTaxInput,
       },
       funding: {
         withdrawals: reportedWithdrawals,

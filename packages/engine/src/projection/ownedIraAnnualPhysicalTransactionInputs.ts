@@ -1,3 +1,4 @@
+import type { AnnualOwnerTreatmentRouting } from '../strategies/accountEligibility.js'
 import {
   buildAnnualRetirementPhysicalEventInventory,
   type AnnualRetirementPhysicalEvent,
@@ -104,6 +105,7 @@ export interface OwnedIraAnnualPhysicalTransactionInputsIssue {
 }
 
 export interface BuildOwnedIraAnnualPhysicalTransactionInputsInput {
+  readonly ownerTreatmentRouting?: AnnualOwnerTreatmentRouting
   readonly plan: unknown
   readonly taxYear: number
   readonly runtimeInventoryAttestation:
@@ -309,6 +311,7 @@ export function buildOwnedIraAnnualPhysicalTransactionInputs(
   input: Readonly<BuildOwnedIraAnnualPhysicalTransactionInputsInput>,
 ): Readonly<BuildOwnedIraAnnualPhysicalTransactionInputsResult> {
   const inventoryInput = {
+    ownerTreatmentRouting: input.ownerTreatmentRouting,
     plan: input.plan,
     taxYear: input.taxYear,
     runtimeInventoryAttestation: input.runtimeInventoryAttestation,

@@ -131,7 +131,7 @@ function bindings(): SimulatorAnnualPassStateBindings {
       valueBinding(scalars, 'nextRetirementRuntimeMutationOrdinal'),
     iraProRata: new Map([['p1', { basis: 900, nontaxableFraction: 0.3 }]]),
     iraBasisByOwner: new Map([['p1', 900]]),
-    rothBasis: new Map([['p1', {
+    inheritedRothPools: new Map(), rothBasis: new Map([['p1', {
       contributionBasis: 600,
       conversionLayers: [{ year: 2025, amount: 400, taxableAmount: 350 }],
     }]]),
@@ -225,6 +225,14 @@ function mutateEverything(state: SimulatorAnnualPassStateBindings): void {
   state.rothBasis.get('p1')!.conversionLayers.push(
     { year: 2026, amount: 5, taxableAmount: 5 },
   )
+  // This pool is independently checkpointed from owned-Roth basis. Mutate a
+  // genuine inherited beneficiary/decedent pool so the rollback proof observes it.
+  state.inheritedRothPools.set('p1\0decedent', {
+    beneficiaryPersonId: 'p1', decedentId: 'decedent',
+    firstRothContributionTaxYear: 2024, remainingRegularContributionBasis: 60,
+    conversionLayers: [{ conversionTaxYear: 2025, remainingAmount: 40, taxableAmount: 30 }],
+    priorDistributionsConsumedAmount: 5, basisAsOfDate: '2026-01-01',
+  })
   state.rothAssumedContributionRemaining.set('p1', 1)
   state.rothCounterfactualFreeCoverConsumed.set('p1', 2)
   state.propertyValues.set('home', 1)

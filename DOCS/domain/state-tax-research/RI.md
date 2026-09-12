@@ -47,6 +47,14 @@ Social Security: RI **does tax** federally taxable Social Security, but exempts 
 Pension/IRA/401(k): an income-limited modification excludes up to **$20,000 per person** ($40,000 joint) of qualifying pension/annuity income for taxpayers at full retirement age, subject to AGI ceilings. Modeled as `kind: "capped"`, `capPerPerson: 20000`, `minAge: 67`. The income-tested retirement and Social Security modifications remain **approximated**; this parameter correction does not close that gap.
 
 ## Simplifications / not modeled
+The characterized retirement calculation applies the modeled cap and age gate
+separately to each recipient's distributions; the joint maximum requires two
+eligible recipients with income. A spouse's unused cap or older age cannot
+establish the other recipient's exclusion. Missing ownership or missing or
+conflicting age eligibility produces an incomplete disclosure and no exclusion
+for the affected recipient. Legacy aggregate inputs do not prove recipient
+attribution. The income-test and full-retirement-age approximations remain.
+
 - SS taxation and the $20,000 pension exclusion are both phased off by a federal-AGI ceiling and require full retirement age; the model applies the cap unconditionally and taxes SS unconditionally. Net effect: overstates tax for retirees under the AGI ceiling, understates SS handling nuance for those above.
 - Standard deduction phases out at high income ($261,000–$290,800 for 2026); not modeled.
 - Personal exemptions not modeled.

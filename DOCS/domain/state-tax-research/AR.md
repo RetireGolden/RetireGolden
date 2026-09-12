@@ -142,20 +142,10 @@ multiplies it by fifty percent. **Net short-term capital gain gets no exclusion*
 and is added back in full at line 11.
 
 ## Simplifications / not modeled
-- **Uniformed-services retirement.** The pack's public bucket is one flag, and
-  in Arkansas it is dominated by civil-service pensions the state exempts only
-  to $6,000, so the bucket carries the capped rule and a military pension is
-  over-charged above $6,000. **Overstates tax**, deliberately: the alternative —
-  `{ kind: 'full' }`, which the pack carried until 2026-08-05 — is exact for the
-  military retiree and exempts every teacher, trooper and state employee's
-  pension in Arkansas along with them. Registered as
-  `aca-26-51-307-e-uniformed-services-full-exemption`.
-- **The 59½ condition on IRA distributions.** `minAge` gates the whole bucket
-  and cannot see whether the income came from an IRA or an employer plan, so
-  setting 59.5 would deny the exemption to an under-59½ Arkansan drawing an
-  employer pension, which Arkansas allows. Left unset. **Understates tax** on a
-  premature IRA withdrawal. Registered as
-  `aca-26-51-307-a-2-ira-age-fifty-nine-and-a-half-gate`.
+- **Uniformed-services retirement:** the characterized annual calculation exempts eligible military benefits fully. For TY2023 onward, subsection (f)(2) allows qualifying ordinary retirement to use the difference between the owner’s military/survivor exemption and $6,000 when the military/survivor amount is below $6,000. At $6,000 or above no ordinary capacity remains. It requires source identity and preserves IRA eligibility.
+
+- **IRA source gate:** the characterized distribution path tests age 59½, death or disability separately from employer benefits, with one $6,000 owner cap. Unknown required facts are incomplete.
+
 - **The $10,000,000 capital-gain exemption.** `capitalGainsTaxablePct` is one
   share with no ceiling above which it falls to zero. **Overstates tax**, for a
   population this engine will essentially never see. Registered as
@@ -166,10 +156,8 @@ and is added back in full at line 11.
   registered: the engine's `capitalGains` input is modeled as long-term
   throughout, so this is a property of the input model rather than of the
   Arkansas entry.
-- **The $6,000 is per taxpayer, and the engine pools.** `capPerPerson` is
-  multiplied by the household's head count and applied to combined retirement
-  income, so a couple where one spouse has all the retirement income gets
-  $12,000 where Arkansas gives $6,000. **Understates tax** for that household.
+- **The $6,000 is per taxpayer:** characterized events share one cap per owner, across accounts. A spouse with no qualifying retirement does not supply unused capacity to the other spouse.
+
 - **Filing status 4** ("Married Filing Separately on the Same Return") gives each
   spouse a separate bracket run and a separate $2,470 deduction, and Arkansas
   taxpayers choose freely between it and status 2. The pack models status 2.
@@ -285,6 +273,18 @@ Every lever above is registered in
 | `aca-26-51-307-a-1-public-pension-inside-the-six-thousand` | settled |
 | `aca-26-51-404-b-6-social-security-exclusion` | settled |
 | `aca-26-51-815-b-2-fifty-percent-capital-gain-exclusion` | settled |
-| `aca-26-51-307-e-uniformed-services-full-exemption` | approximated (overstates tax) |
-| `aca-26-51-307-a-2-ira-age-fifty-nine-and-a-half-gate` | approximated (understates tax) |
+| `aca-26-51-307-e-uniformed-services-full-exemption` | settled on characterized per-owner events |
+| `aca-26-51-307-a-2-ira-age-fifty-nine-and-a-half-gate` | settled on characterized per-owner events |
 | `aca-26-51-815-b-3-ten-million-dollar-gain-exemption` | approximated (overstates tax) |
+
+## Direct QCD policies depend on the state adoption and IRA basis rules (verified 2026-09-12)
+
+This cross-state rule covers AR, HI, KS and NJ direct IRA-to-charity distributions only. Arkansas adopts IRC 406–416 as of January 1, 2017, so the direct-QCD annual ceiling is the adopted $100,000, not the current federal indexed ceiling. Hawaii Act 35 (2026) adopts the December 31, 2025 Code for 2026 subject to its enumerated exceptions. Kansas starts from federal AGI; separate covered-charitable-credit additions require their actual facts. These conformity conclusions are statutory inferences, not claims of a 2026 QCD-specific agency ruling. New Jersey independently determines taxable IRA earnings under its annual Worksheet C basis allocation; gross transfers are not automatically taxable earnings. Unknown policy, basis, direct-transfer, residency or charitable-credit facts produce incomplete status. Split-interest transactions retain their separate refusal. Federal QCD and state retirement exclusions must not be applied twice.
+
+Registered as `state-direct-qcd-conformity-policies`. Authority: [2017 Arkansas Act 155 section 18](https://www.arkleg.state.ar.us/Home/FTPDocument?path=%2FACTS%2F2017R%2FPublic%2FACT155.pdf), [Hawaii Act 35 (2026), section 2](https://data.capitol.hawaii.gov/sessions/session2026/bills/GM1135_.PDF), [Kansas 2026 chapter 154, section 2, 79-32,117(a)](https://www.sos.ks.gov/publications/sessionlaws/2026/Chapter-154-SB-300.html), [New Jersey GIT-1 and 2, January 2026 Worksheet C](https://www.nj.gov/treasury/taxation/pdf/pubs/tgi-ee/git1%262.pdf).
+
+## Direct QCDs (TY2026)
+
+Arkansas adopts the January 1, 2017 federal retirement provisions under [Act 155 section 18](https://www.arkleg.state.ar.us/Home/FTPDocument?path=%2FACTS%2F2017R%2FPublic%2FACT155.pdf). Eligible direct QCDs use the adopted $100,000 per-owner annual ceiling, not a blanket addback. The state-only excess is evaluated before other supported retirement exclusions; unsupported transaction types and missing facts remain incomplete.
+
+The residual ordinary exemption is enacted by [2023 Arkansas Act 358 sections 1–2](https://arkleg.state.ar.us/Home/FTPDocument?path=%2FACTS%2F2023R%2FPublic%2FACT358.pdf), effective for tax years beginning January 1, 2023. For example, $2,000 military plus $10,000 qualifying ordinary retirement excludes $6,000 total; $7,000 military plus $10,000 ordinary excludes $7,000. The original military exemption remains effective from 2018.

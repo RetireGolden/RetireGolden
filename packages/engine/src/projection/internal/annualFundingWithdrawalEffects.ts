@@ -26,6 +26,13 @@ export type AnnualFundingWithdrawalEffectAccount =
       /** Null keeps inherited Roth outside the owned/employer Roth basis pools. */
       poolKey: string | null
       ownerAgeAttained: number
+      /** Present only for an inherited Roth that remains beneficiary property. */
+      inheritedRothPool?: Readonly<{
+        beneficiaryPersonId: string
+        decedentId: string | null
+        legacyFirstContributionYear?: number
+        legacyClockEvidenceAsOfDate?: string
+      }>
     }>
   | Readonly<{
       kind: 'hsa'
@@ -49,6 +56,17 @@ export interface AnnualFundingWithdrawalEffectsInput {
   /** Form 8606 taxable share for owned-IRA rows; absent rows remain fully taxable. */
   readonly traditionalTaxableByAccountId: ReadonlyMap<string, number>
   readonly rothBasisByPool: ReadonlyMap<string, RothBasisState>
+  /** Sequential, candidate-scoped inherited-Roth characterization. */
+  readonly characterizeInheritedRothWithdrawal?: (input: Readonly<{
+    sourceAccountId: string
+    beneficiaryPersonId: string
+    decedentId: string | null
+    distributionAmount: number
+  }>) => Readonly<{
+    ordinaryIncome: number
+    status: 'characterized' | 'incomplete'
+    reason?: string
+  }>
   readonly year: number
   readonly hsaQualifiedCap: number
 }
@@ -92,6 +110,14 @@ export interface AnnualRothPoolWithdrawalEffectRow {
   readonly split: RothWithdrawalSplit | null
 }
 
+export interface AnnualInheritedRothWithdrawalEffectRow {
+  readonly sourceAccountId: string
+  readonly taken: number
+  readonly ordinaryIncome: number
+  readonly status: 'characterized' | 'incomplete'
+  readonly reason?: string
+}
+
 export interface AnnualFundingWithdrawalEffectsResult {
   readonly traditional: Readonly<{
     rows: readonly AnnualTraditionalWithdrawalPenaltyRow[]
@@ -100,8 +126,10 @@ export interface AnnualFundingWithdrawalEffectsResult {
   readonly hsa: Readonly<AnnualHsaWithdrawalEffectsResult>
   readonly roth: Readonly<{
     rows: readonly AnnualRothPoolWithdrawalEffectRow[]
+    inheritedRows: readonly AnnualInheritedRothWithdrawalEffectRow[]
     taxableOrdinary: number
     penalty: number
+    taxCharacterIncomplete: boolean
   }>
   readonly penaltyExcludingRmdShortfallExcise: number
 }
@@ -206,6 +234,9 @@ export function annualFundingWithdrawalEffects(
     taken: number
     ownerAgeAttained: number
   }>()
+  const inheritedRothRows: AnnualInheritedRothWithdrawalEffectRow[] = []
+  let inheritedRothOrdinary = 0
+  let inheritedRothTaxCharacterIncomplete = false
 
   for (const row of input.accounts) {
     const taken = input.withdrawalsByAccountId.get(row.sourceAccountId) ?? 0
@@ -235,7 +266,29 @@ export function annualFundingWithdrawalEffects(
       continue
     }
 
-    if (row.poolKey === null) continue
+    if (row.poolKey === null) {
+      if (row.inheritedRothPool === undefined) continue
+      const characterized = input.characterizeInheritedRothWithdrawal?.({
+        sourceAccountId: row.sourceAccountId,
+        beneficiaryPersonId: row.inheritedRothPool.beneficiaryPersonId,
+        decedentId: row.inheritedRothPool.decedentId,
+        distributionAmount: taken,
+      }) ?? {
+        ordinaryIncome: taken,
+        status: 'incomplete' as const,
+        reason: 'missing-inherited-roth-characterizer',
+      }
+      inheritedRothOrdinary += characterized.ordinaryIncome
+      inheritedRothTaxCharacterIncomplete ||= characterized.status === 'incomplete'
+      inheritedRothRows.push({
+        sourceAccountId: row.sourceAccountId,
+        taken,
+        ordinaryIncome: characterized.ordinaryIncome,
+        status: characterized.status,
+        ...(characterized.reason === undefined ? {} : { reason: characterized.reason }),
+      })
+      continue
+    }
     const pool = rothPools.get(row.poolKey)
     if (pool) {
       pool.taken += taken
@@ -278,8 +331,10 @@ export function annualFundingWithdrawalEffects(
     hsa,
     roth: {
       rows: rothRows,
-      taxableOrdinary: rothTaxableOrdinary,
+      inheritedRows: inheritedRothRows,
+      taxableOrdinary: rothTaxableOrdinary + inheritedRothOrdinary,
       penalty: rothPenalty,
+      taxCharacterIncomplete: inheritedRothTaxCharacterIncomplete,
     },
     penaltyExcludingRmdShortfallExcise:
       traditionalPenalty + rothPenalty + hsa.penalty,

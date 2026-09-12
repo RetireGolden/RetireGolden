@@ -42,3 +42,9 @@ qualifying retirement source).
 - https://tax.illinois.gov/research/publications/bulletins/fy-2025-16.html — Illinois DOR "What's New for Illinois Income Taxes" (rate, exemption).
 - https://tax.illinois.gov/questionsandanswers/answer.851.html — $2,850 personal exemption 2025; no standard deduction.
 - Tax Foundation, State Individual Income Tax Rates and Brackets 2025 — IL flat 4.95%.
+
+## Illinois applies the 2026 exemption and AGI eligibility limits (verified 2026-09-12)
+
+The TY2026 basic allowance is $2,925 per eligible exemption, with a separate $1,000 age-65 addition. The allowance is unavailable above $250,000 federal AGI for nonjoint returns or $500,000 joint. Return exemption/dependency and age counts are required independently of retirement subtraction eligibility.
+
+Registered as `il-personal-exemption-2026`. Authority: [Illinois FY 2026-15, 2026 personal exemption](https://tax.illinois.gov/research/publications/bulletins/fy-2026-15.html), [35 ILCS 5/204(b), (d)](https://www.ilga.gov/documents/legislation/ilcs/documents/003500050K204.htm).

@@ -1505,6 +1505,37 @@ describe('calculators', () => {
     const i = input({ ordinaryIncome: 100_000 })
     expect(combined.compute(i)).toBeCloseTo(computeFederalTax(i).totalTax + 5_000, 6)
   })
+
+  it('combined computeResult unions incomplete child issues without changing numeric sum', () => {
+    // Authority-independent composition contract: amount is the sum of child
+    // amounts; incomplete status propagates when any child is incomplete.
+    const exact: TaxCalculator = {
+      compute: () => 100,
+      computeResult: () => ({ amount: 100, status: 'complete', issues: [] }),
+    }
+    const incomplete: TaxCalculator = {
+      compute: () => 40,
+      computeResult: () => ({
+        amount: 40,
+        status: 'incomplete',
+        issues: [
+          {
+            code: 'unknown-state-qcd-policy',
+            message: 'QCD policy unknown for NJ',
+            missingFacts: ['stateQcdPolicy'],
+          },
+        ],
+      }),
+    }
+    const combined = combineTaxCalculators(exact, incomplete)
+    const result = combined.computeResult!(input({ ordinaryIncome: 1 }))
+    expect(result.amount).toBe(140)
+    expect(result.status).toBe('incomplete')
+    expect(result.issues).toEqual([
+      expect.objectContaining({ code: 'unknown-state-qcd-policy' }),
+    ])
+    expect(combined.compute(input({ ordinaryIncome: 1 }))).toBe(140)
+  })
 })
 
 describe('itemized deductions (2026)', () => {

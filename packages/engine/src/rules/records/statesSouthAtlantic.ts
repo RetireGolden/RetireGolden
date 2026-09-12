@@ -285,41 +285,97 @@ export const southAtlanticStateRecords = {
     ],
   },
 
-  'sc-code-12-6-1170-retirement-income-deduction': {
-    title: 'South Carolina’s retirement deduction has a tier below age 65',
-    statement:
-      'South Carolina allows the original owner of a qualified retirement account a deduction of up to three thousand dollars of retirement income, rising to ten thousand dollars beginning in the year the taxpayer reaches sixty-five. Approximated: the pack models the upper tier only, as `{ kind: \'capped\', capPerPerson: 10000, minAge: 65 }`, so a South Carolinian under sixty-five is given no deduction at all and is charged tax on three thousand dollars the statute reaches. The separate section (B) deduction of up to fifteen thousand dollars at sixty-five, net of the (A) amount, is likewise unmodelled and errs the same way.',
-    classification: 'approximated',
-    contraryReading: null,
-    errorDirection: 'overstatesTax',
-    conventionRationale: null,
-    jurisdiction: 'state:SC',
-    authority: [{
-      kind: 'statute',
-      citation: 'S.C. Code 12-6-1170(A)(1)',
-      url: 'https://www.scstatehouse.gov/code/t12c006.php',
-      quotedText:
-        'An individual taxpayer who is the original owner of a qualified retirement account is allowed an annual deduction from South Carolina taxable income of not more than three thousand dollars of retirement income received. Beginning in the year in which the taxpayer reaches age sixty-five, the taxpayer may deduct not more than ten thousand dollars of retirement income that is included in South Carolina taxable income.',
-    }, {
-      kind: 'statute',
-      citation: 'S.C. Code 12-6-1170(B)',
-      url: 'https://www.scstatehouse.gov/code/t12c006.php',
-      quotedText:
-        'Beginning for the taxable year during which a resident individual taxpayer attains the age of sixty-five years, the resident individual taxpayer is allowed a deduction from South Carolina taxable income received in an amount not to exceed fifteen thousand dollars reduced by any amount the taxpayer deducts pursuant to subsection (A) not including amounts deducted as a surviving spouse.',
-    }],
-    volatility: 'staticStatute',
-    effectiveFrom: 2026,
-    effectiveThrough: null,
-    verifiedOn: '2026-08-04',
-    implementedBy: [
-      'packages/engine/src/tax/stateTax.ts',
-      'packages/engine/src/params/state/data/year2026.ts',
+  "sc-code-12-6-1170-retirement-income-deduction": {
+    "title": "South Carolina ordinary retirement deduction has owner, age and penalty gates",
+    "statement": "An original account owner may deduct up to $3,000 of qualifying included retirement income, increasing to $10,000 in the year the owner turns 65. Premature-penalty distributions do not qualify. Surviving-spouse income attributable to the decedent retains its separate statutory treatment. Ordinary nonmilitary public income belongs in this capped pool, not the full military exclusion. Legacy aggregate classification remains approximate when source and penalty facts are unavailable.",
+    "classification": "approximated",
+    "contraryReading": null,
+    "errorDirection": "bothDirections",
+    "conventionRationale": null,
+    "jurisdiction": "state:SC",
+    "authority": [
+      {
+        "kind": "statute",
+        "citation": "S.C. Code §12-6-1170(A)(1)-(4)",
+        "url": "https://www.scstatehouse.gov/code/t12c006.php",
+        "quotedText": "(A)(1) An individual taxpayer who is the original owner of a qualified retirement account is allowed an annual deduction from South Carolina taxable income of not more than three thousand dollars of retirement income received. Beginning in the year in which the taxpayer reaches age sixty-five, the taxpayer may deduct not more than ten thousand dollars of retirement income that is included in South Carolina taxable income. (2) The term \"retirement income\", as used in this subsection, means the total of all otherwise taxable income not subject to a penalty for premature distribution received by the taxpayer or the taxpayer's surviving spouse in a taxable year from qualified retirement plans which include those plans defined in Internal Revenue Code Sections 401, 403, 408, and 457, and all public employee retirement plans of the federal, state, and local governments, including military retirement. (3) A surviving spouse receiving retirement income that is attributable to the deceased spouse shall apply this deduction in the same manner that the deduction applied to the deceased spouse. If the surviving spouse also has another retirement income, an additional retirement exclusion is allowed."
+      }
     ],
-    implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#states.SC',
-      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
-      'packages/engine/src/tax/stateTax.ts#retirementExclusion',
+    "volatility": "staticStatute",
+    "effectiveFrom": 2026,
+    "effectiveThrough": null,
+    "verifiedOn": "2026-09-12",
+    "implementedBy": [
+      "packages/engine/src/tax/stateTax.ts",
+      "packages/engine/src/params/state/data/year2026.ts"
     ],
+    "implementedByFunctions": [
+      "packages/engine/src/params/state/data/year2026.ts#SC",
+      "packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult",
+      "packages/engine/src/tax/stateTax.ts#computeStateTaxDetailResult"
+    ]
+  },
+
+  "sc-code-12-6-1171-military-retirement": {
+    "title": "South Carolina fully deducts qualifying military retirement",
+    "statement": "Qualifying included military retirement and qualifying military survivor benefits are deductible in full under §1171. Ordinary public pensions are not military retirement. Premature-distribution and survivor definitions remain operative. Inactive-duty National Guard/reserve compensation under §1120(7) is a separate rule and is not silently treated as military retirement.",
+    "classification": "settled",
+    "contraryReading": null,
+    "errorDirection": null,
+    "conventionRationale": null,
+    "jurisdiction": "state:SC",
+    "authority": [
+      {
+        "kind": "statute",
+        "citation": "S.C. Code §12-6-1171(A)-(D)",
+        "url": "https://www.scstatehouse.gov/code/t12c006.php",
+        "quotedText": "(A) An individual taxpayer may deduct all military retirement income that is included in South Carolina taxable income. (B) The term \"retirement income\", as used in this section, means the total of all otherwise taxable income not subject to a penalty for premature distribution received by the taxpayer or the taxpayer's surviving spouse in a taxable year from a qualified military retirement plan. For purposes of a surviving spouse, \"retirement income\" also includes a retirement benefit plan and dependent indemnity compensation related to the deceased spouse's military service. (C) A surviving spouse receiving military retirement income that is attributable to the deceased spouse shall apply this deduction in the same manner that the deduction applied to the deceased spouse. If the surviving spouse also has another retirement income, an additional retirement exclusion is allowed."
+      }
+    ],
+    "volatility": "staticStatute",
+    "effectiveFrom": 2026,
+    "effectiveThrough": null,
+    "verifiedOn": "2026-09-12",
+    "implementedBy": [
+      "packages/engine/src/tax/stateTax.ts",
+      "packages/engine/src/params/state/data/year2026.ts"
+    ],
+    "implementedByFunctions": [
+      "packages/engine/src/params/state/data/year2026.ts#SC",
+      "packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult",
+      "packages/engine/src/tax/stateTax.ts#computeStateTaxDetailResult"
+    ]
+  },
+
+  "sc-code-12-6-1170-b-age-65-deduction": {
+    "title": "South Carolina age-65 deduction follows each owner’s retirement deductions",
+    "statement": "Beginning in the year a resident reaches 65, up to $15,000 of that owner’s remaining South Carolina income is deductible. Reduce the limit by that owner’s §1170(A) and §1171 deductions, except deductions claimed as a surviving spouse. Two eligible spouses have separate $15,000 limits; one owner cannot consume the other’s remaining income. Unknown owner-attributed remaining income produces incomplete results.",
+    "classification": "settled",
+    "contraryReading": null,
+    "errorDirection": null,
+    "conventionRationale": null,
+    "jurisdiction": "state:SC",
+    "authority": [
+      {
+        "kind": "statute",
+        "citation": "S.C. Code §12-6-1170(B)-(C)",
+        "url": "https://www.scstatehouse.gov/code/t12c006.php",
+        "quotedText": "Beginning for the taxable year during which a resident individual taxpayer attains the age of sixty-five years, the resident individual taxpayer is allowed a deduction from South Carolina taxable income received in an amount not to exceed fifteen thousand dollars reduced by any amount the taxpayer deducts pursuant to subsection (A) not including amounts deducted as a surviving spouse. If married taxpayers eligible for this deduction file a joint federal income tax return, then the maximum deduction allowed is fifteen thousand dollars in the case when only one spouse has attained the age of sixty-five years and thirty thousand dollars when both spouses have attained such age. … Notwithstanding any other provision of this section, if a taxpayer claims a deduction pursuant to Section 12-6-1171, then the deduction allowed by this section must be reduced by the amount the taxpayer deducts pursuant to Section 12-6-1171; however, this subsection does not apply if the deduction claimed pursuant to Section 12-6-1171 is claimed by a surviving spouse."
+      }
+    ],
+    "volatility": "staticStatute",
+    "effectiveFrom": 2026,
+    "effectiveThrough": null,
+    "verifiedOn": "2026-09-12",
+    "implementedBy": [
+      "packages/engine/src/tax/stateTax.ts",
+      "packages/engine/src/params/state/data/year2026.ts"
+    ],
+    "implementedByFunctions": [
+      "packages/engine/src/params/state/data/year2026.ts#SC",
+      "packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult",
+      "packages/engine/src/tax/stateTax.ts#computeStateTaxDetailResult"
+    ]
   },
 
   'sc-code-12-6-1120-7-reserve-national-guard-pay-not-modeled': {
@@ -444,41 +500,37 @@ export const southAtlanticStateRecords = {
     ],
   },
 
-  'de-code-30-1106-social-security-retirement-subtractions': {
-    title: 'Delaware subtracts federally taxable Social Security and up to $12,500 of retirement income at age 60',
-    statement:
-      'Delaware subtracts Social Security included in federal adjusted gross income and permits a single $12,500 retirement-income subtraction for a person age 60 or older. The statute’s shared per-person ceiling reaches pensions from employers and eligible retirement income, and the pack therefore applies its capped rule once to combined private and public retirement income through `retirementRuleShared`, rather than once per bucket. Its separate `taxesSocialSecurity: false` removes exactly the federally included benefit amount.',
-    classification: 'settled',
-    contraryReading: null,
-    errorDirection: null,
-    conventionRationale: null,
-    jurisdiction: 'state:DE',
-    authority: [{
-      kind: 'statute',
-      citation: 'Del. Code tit. 30, 1106(b)(3)(b)(2)',
-      url: 'https://delcode.delaware.gov/title30/c011/sc02/index.html',
-      quotedText:
-        'For persons age 60 or older, amounts received, not to exceed $12,500, as pensions from employers, the United States, this State, or any subdivision of this State, or as eligible retirement income.',
-    }, {
-      kind: 'statute',
-      citation: 'Del. Code tit. 30, 1106(b)(4)',
-      url: 'https://delcode.delaware.gov/title30/c011/sc02/index.html',
-      quotedText:
-        'Social Security benefits paid by the United States and all payments received under the Railroad Retirement Act of 1974 [45 U.S.C. §§ 231-231[v]] to the extent included in federal adjusted gross income;',
-    }],
-    volatility: 'staticStatute',
-    effectiveFrom: 2026,
-    effectiveThrough: null,
-    verifiedOn: '2026-08-27',
-    implementedBy: [
-      'packages/engine/src/tax/stateTax.ts',
-      'packages/engine/src/params/state/data/year2026.ts',
+  "de-code-30-1106-social-security-retirement-subtractions": {
+    "title": "Delaware pension exclusions distinguish age, source and tax year",
+    "statement": "For TY2026, each recipient under 60 takes the greater of qualifying ordinary pension capped at $2,000 or U.S. military pension capped at $12,500; the two amounts are not added. At 60 or older, the $12,500 pension/eligible-retirement-income cap applies separately to each owner. Source, age, and early-distribution facts must establish eligibility. SB219 (85 Del. Laws ch.426), signed August 17, 2026, increases future military tiers beginning in 2027; it does not increase the 2026 cap. The broad aggregate retirement path remains an approximation of qualifying source and owner allocation.",
+    "classification": "approximated",
+    "contraryReading": null,
+    "errorDirection": "bothDirections",
+    "conventionRationale": null,
+    "jurisdiction": "state:DE",
+    "authority": [
+      {
+        "kind": "statute",
+        "citation": "30 Del. C. §1106(b)(3)b-c",
+        "url": "https://delcode.delaware.gov/title30/c011/sc02/index.html",
+        "quotedText": "For persons age 60 or older, amounts received, not to exceed $12,500, as pensions from employers, the United States, this State, or any subdivision of this State, or as eligible retirement income. … Amounts received, not to exceed $2,000, as pensions from employers, the United States, this State, or any subdivision of this State; or … Amounts received, not to exceed $12,500, as a United States military pension."
+      }
     ],
-    implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#DE',
-      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
-      'packages/engine/src/tax/stateTax.ts#retirementExclusion',
+    "volatility": "staticStatute",
+    "effectiveFrom": 2026,
+    "effectiveThrough": null,
+    "verifiedOn": "2026-09-12",
+    "implementedBy": [
+      "packages/engine/src/tax/stateTax.ts",
+      "packages/engine/src/params/state/data/year2026.ts",
+      "packages/engine/src/tax/stateNortheastExtras.ts"
     ],
+    "implementedByFunctions": [
+      "packages/engine/src/params/state/data/year2026.ts#DE",
+      "packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult",
+      "packages/engine/src/tax/stateTax.ts#computeStateTaxDetailResult",
+      "packages/engine/src/tax/stateNortheastExtras.ts#delawareUnder60PensionDeduction"
+    ]
   },
 
   'de-code-30-1102-a-14-rate-schedule': {
@@ -619,7 +671,7 @@ export const southAtlanticStateRecords = {
   'md-tax-10-207-social-security-exclusion': {
     title: 'Maryland subtracts Social Security and railroad-retirement payments',
     statement:
-      'Maryland adjusted gross income subtracts a payment received under Title II of the Social Security Act or as a benefit under the Railroad Retirement Act, to the extent the payment was included in federal adjusted gross income. That is what `taxesSocialSecurity: false` encodes: no federally taxable Social Security survives into the Maryland base. The $41,200 pension exclusion the pack also carries is not in this section — §10-207(mm) points at §10-209 for "employee retirement system" — and is registered separately at md-tax-10-209-pension-exclusion.',
+      'Maryland adjusted gross income subtracts a payment received under Title II of the Social Security Act or as a benefit under the Railroad Retirement Act, to the extent the payment was included in federal adjusted gross income. That is what `taxesSocialSecurity: false` encodes: no federally taxable Social Security survives into the Maryland base. The $40,600 pension exclusion the pack also carries is not in this section — §10-207(mm) points at §10-209 for "employee retirement system" — and is registered separately at md-tax-10-209-pension-exclusion.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -652,59 +704,41 @@ export const southAtlanticStateRecords = {
     ],
   },
 
-  'md-tax-10-209-pension-exclusion': {
-    title: 'Maryland’s pension subtraction is not a flat $41,200 of all retirement',
-    statement:
-      'Maryland subtracts the lesser of (1) annuity, pension or endowment income from an "employee retirement system" included in federal AGI and (2) the Comptroller’s maximum annual Social Security benefit for an individual who retired at 65 in the prior calendar year, reduced by Social Security and railroad-retirement payments received. An employee retirement system is a §401(a), §403 or §457(b) employer plan; it does not include an IRA, a Roth IRA, a rollover IRA, a SEP or a §457(f) plan. The age gate is 65, or total disability, or a 55-year-old retired forest, park or wildlife ranger. Approximated: the pack encodes `{ kind: \'capped\', capPerPerson: 41200, minAge: 65 }` on the shared retirement buckets, so an IRA distribution of a 65-year-old is excluded up to $41,200 the statute withholds, and a Social Security recipient keeps the full cap the statute reduces dollar-for-dollar. Both of those flatter the taxpayer. The other way: a disabled resident or a 55-year-old ranger who is not 65 is granted nothing, and the Comptroller’s unpublished 2026 maximum may sit above or below the pack’s $41,200 — that figure is not in §10-209, and neither is the shopping-list $30,000. Social Security itself is a different section and is registered separately at md-tax-10-207-social-security-exclusion.',
-    classification: 'approximated',
-    contraryReading: null,
-    errorDirection: 'bothDirections',
-    conventionRationale: null,
-    jurisdiction: 'state:MD',
-    authority: [{
-      kind: 'statute',
-      citation: 'Md. Tax-General 10-209(a)(1)',
-      url: 'https://mgaleg.maryland.gov/mgawebsite/Laws/StatuteText?article=gtg&section=10-209&enactments=false',
-      quotedText:
-        '“employee retirement system” means a plan: (i) established and maintained by an employer for the benefit of its employees; and (ii) qualified under § 401(a), § 403, or § 457(b) of the Internal Revenue Code',
-    }, {
-      kind: 'statute',
-      citation: 'Md. Tax-General 10-209(a)(2)(i)',
-      url: 'https://mgaleg.maryland.gov/mgawebsite/Laws/StatuteText?article=gtg&section=10-209&enactments=false',
-      quotedText:
-        '“employee retirement system” does not include: (i) an individual retirement account or annuity under § 408 of the Internal Revenue Code;',
-    }, {
-      kind: 'statute',
-      citation: 'Md. Tax-General 10-209(b)',
-      url: 'https://mgaleg.maryland.gov/mgawebsite/Laws/StatuteText?article=gtg&section=10-209&enactments=false',
-      quotedText:
-        'Subject to subsections (d) and (e) of this section, to determine Maryland adjusted gross income, if, on the last day of the taxable year, a resident is at least 65 years old or is totally disabled or the resident’s spouse is totally disabled, or the resident is 55 years old and is a retired forest ranger, park ranger, or wildlife ranger of the United States, the State, or a political subdivision of the State, an amount is subtracted from federal adjusted gross income equal to the lesser of:',
-    }, {
-      kind: 'statute',
-      citation: 'Md. Tax-General 10-209(b)(1)–(2)',
-      url: 'https://mgaleg.maryland.gov/mgawebsite/Laws/StatuteText?article=gtg&section=10-209&enactments=false',
-      quotedText:
-        '(1) the cumulative or total annuity, pension, or endowment income from an employee retirement system included in federal adjusted gross income; or (2) the maximum annual benefit under the Social Security Act computed under subsection (c) of this section, less any payment received as old age, survivors, or disability benefits under the Social Security Act, the Railroad Retirement Act, or both.',
-    }, {
-      kind: 'statute',
-      citation: 'Md. Tax-General 10-209(c)',
-      url: 'https://mgaleg.maryland.gov/mgawebsite/Laws/StatuteText?article=gtg&section=10-209&enactments=false',
-      quotedText:
-        'the Comptroller: (1) shall determine the maximum annual benefit under the Social Security Act allowed for an individual who retired at age 65 for the prior calendar year; and (2) may allow the subtraction to the nearest $100.',
-    }],
-    volatility: 'annuallyIndexed',
-    effectiveFrom: 2026,
-    effectiveThrough: null,
-    verifiedOn: '2026-08-27',
-    implementedBy: [
-      'packages/engine/src/tax/stateTax.ts',
-      'packages/engine/src/params/state/data/year2026.ts',
+  "md-tax-10-209-pension-exclusion": {
+    "title": "Maryland TY2026 pension maximum is $40,600 before the benefit offset",
+    "statement": "For TY2026 the published maximum is $40,600 per qualifying recipient. Section 10-209 permits the lesser of included qualifying employee-plan income and the maximum less all Social Security/Railroad Retirement benefits received, including nontaxable benefits. IRAs, Roth IRAs, rollover IRAs, SEPs and ineligible deferred compensation do not qualify. Age 65, total disability, or a totally disabled spouse supplies the ordinary eligibility gate. The current coarse cap does not establish source eligibility, disability or the recipient-specific gross-benefit offset and remains approximated; $50,000 qualifying pension and $20,000 benefits require $20,600, not $40,600.",
+    "classification": "approximated",
+    "contraryReading": null,
+    "errorDirection": "understatesTax",
+    "conventionRationale": null,
+    "jurisdiction": "state:MD",
+    "authority": [
+      {
+        "kind": "stateAgencyPublication",
+        "citation": "Maryland Comptroller, Pension Exclusion, calendar 2026 maximum",
+        "url": "https://services.marylandcomptroller.gov/taxes/en/maryland-pension-exclusion?id=kb_article_view&sysparm_article=KB0010012",
+        "quotedText": "For calendar year 2025. For calendar year 2026, the maximum pension exclusion is $40,600."
+      },
+      {
+        "kind": "statute",
+        "citation": "Md. Tax-General §10-209(a)-(e)",
+        "url": "https://mgaleg.maryland.gov/2026RS/Statute_Web/gtg/10-209.pdf",
+        "quotedText": "(a) In this section: (1) “employee retirement system” means a plan: (i) established and maintained by an employer for the benefit of its employees; and (ii) qualified under § 401(a), § 403, or § 457(b) of the Internal Revenue Code; and (2) “employee retirement system” does not include: (i) an individual retirement account or annuity under § 408 of the Internal Revenue Code; (ii) a Roth individual retirement account under § 408A of the Internal Revenue Code; (iii) a rollover individual retirement account; (iv) a simplified employee pension under Internal Revenue Code § 408(k); or (v) an ineligible deferred compensation plan under § 457(f) of the Internal Revenue Code. (b) Subject to subsections (d) and (e) of this section, to determine Maryland adjusted gross income, if, on the last day of the taxable year, a resident is at least 65 years old or is totally disabled or the resident’s spouse is totally disabled, or the resident is 55 years old and is a retired forest ranger, park ranger, or wildlife ranger of the United States, the State, or a political subdivision of the State, an amount is subtracted from federal adjusted gross income equal to the lesser of: (1) the cumulative or total annuity, pension, or endowment income from an employee retirement system included in federal adjusted gross income; or (2) the maximum annual benefit under the Social Security Act computed under subsection (c) of this section, less any payment received as old age, … survivors, or disability benefits under the Social Security Act, the Railroad Retirement Act, or both. (c) For purposes of subsection (b)(2) of this section, the Comptroller: (1) shall determine the maximum annual benefit under the Social Security Act allowed for an individual who retired at age 65 for the prior calendar year; and (2) may allow the subtraction to the nearest $100. (d) (1) Military retirement income that is included in the subtraction under § 10–207(q) of this subtitle may not be taken into account for purposes of the subtraction under this section. (2) Public safety employee retirement income that is included in the subtraction under § 10–207(mm) of this subtitle may not be taken into account for purposes of the subtraction under this section. (e) In the case of a retired forest ranger, park ranger, or wildlife ranger of the United States, the State, or a political subdivision of the State, the amount included under subsection (b)(1) of this section is limited to the first $15,000 of retirement income that is attributable to the resident’s employment as a forest ranger, park ranger, or wildlife ranger of the United States, the State, or a political subdivision of the State unless: (1) the resident is at least 65 years old or is totally disabled; or (2) the resident’s spouse is totally disabled."
+      }
     ],
-    implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#MD',
-      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
-      'packages/engine/src/tax/stateTax.ts#retirementExclusion',
+    "volatility": "annuallyIndexed",
+    "effectiveFrom": 2026,
+    "effectiveThrough": null,
+    "verifiedOn": "2026-09-12",
+    "implementedBy": [
+      "packages/engine/src/tax/stateTax.ts",
+      "packages/engine/src/params/state/data/year2026.ts"
     ],
+    "implementedByFunctions": [
+      "packages/engine/src/params/state/data/year2026.ts#MD",
+      "packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult",
+      "packages/engine/src/tax/stateTax.ts#computeStateTaxDetailResult"
+    ]
   },
 
   'ncgs-105-153-5-social-security-exclusion': {
@@ -872,4 +906,402 @@ export const southAtlanticStateRecords = {
       'packages/engine/src/params/state/types.ts#StateTaxParams',
     ],
   },
+  "de-early-distribution-gate": {
+    "title": "Delaware early-distribution gate applies before pension exclusions",
+    "statement": "An early distribution with Form 1099-R Box 7 code 1 or a federal premature-distribution penalty does not qualify for the pension exclusion, including the age-60-plus branch. Unknown classification is incomplete, not eligibility. The latest final TY2025 instructions are carried forward for TY2026 because enacted SB219 does not change this classification; final TY2026 instructions must be checked when published.",
+    "classification": "unsettled",
+    "contraryReading": "Final TY2026 administrative instructions may clarify or revise the carried-forward classification.",
+    "errorDirection": null,
+    "conventionRationale": "Use the latest final administrative classification without treating future instructions as published.",
+    "jurisdiction": "state:DE",
+    "authority": [
+      {
+        "kind": "formInstruction",
+        "citation": "2025 PIT-RES instructions, p.6, Line 6 pension exclusion",
+        "url": "https://revenuefiles.delaware.gov/2025/PITForms_Instructions/Instructions/PIT-RES_Instructions_2025-01.pdf",
+        "quotedText": "An early distribution from an IRA or pension fund for emergency reasons or following a separation from employment does not qualify for the pension exclusion. If the distribution code listed in Box 7 of your 1099 R is a 1 (one), or if you were assessed an early withdrawal penalty on federal 1040, Schedule 2, Line 8 for the distribution, then that distribution DOES NOT qualify for the pension exclusion."
+      }
+    ],
+    "volatility": "awaitingGuidance",
+    "effectiveFrom": 2026,
+    "effectiveThrough": null,
+    "verifiedOn": "2026-09-12",
+    "implementedBy": [
+      "packages/engine/src/tax/stateTax.ts",
+      "packages/engine/src/params/state/data/year2026.ts",
+      "packages/engine/src/tax/stateNortheastExtras.ts"
+    ],
+    "implementedByFunctions": [
+      "packages/engine/src/params/state/data/year2026.ts#DE",
+      "packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult",
+      "packages/engine/src/tax/stateTax.ts#computeStateTaxDetailResult",
+      "packages/engine/src/tax/stateNortheastExtras.ts#delawareUnder60PensionDeduction"
+    ]
+  },
+
+  "dc-code-47-1803-03-government-survivor-exclusion": {
+    "title": "District government survivor exclusion remains after the old pension exclusion expires",
+    "statement": "Section 47-1803.02(a)(2)(N)(ii) excludes District or federal government survivor benefits received by a person age 62 or older at year end. It is separate from the $3,000 government-pension provision in (N)(i), which applies only before 2015. The eligible amount must be included in the federal base; ordinary pensions, nonqualifying issuers, Social Security survivor benefits and unknown issuer/age cannot establish this subtraction.",
+    "classification": "settled",
+    "contraryReading": null,
+    "errorDirection": null,
+    "conventionRationale": null,
+    "jurisdiction": "state:DC",
+    "authority": [
+      {
+        "kind": "statute",
+        "citation": "D.C. Code §47-1803.02(a)(2)(N)(ii)",
+        "url": "https://code.dccouncil.gov/us/dc/council/code/sections/47-1803.02",
+        "quotedText": "Survivor benefits received from the District of Columbia or the federal government by persons who are 62 years of age or older by the end of the taxable year."
+      }
+    ],
+    "volatility": "staticStatute",
+    "effectiveFrom": 2026,
+    "effectiveThrough": null,
+    "verifiedOn": "2026-09-12",
+    "implementedBy": [
+      "packages/engine/src/tax/stateTax.ts",
+      "packages/engine/src/params/state/data/year2026.ts",
+      "packages/engine/src/tax/stateNortheastExtras.ts"
+    ],
+    "implementedByFunctions": [
+      "packages/engine/src/params/state/data/year2026.ts#DC",
+      "packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult",
+      "packages/engine/src/tax/stateTax.ts#computeStateTaxDetailResult",
+      "packages/engine/src/tax/stateNortheastExtras.ts#dcGovernmentSurvivorExclusion"
+    ]
+  },
+
+  "sc-sciad-act-110-retirement-income-deduction": {
+    "title": "South Carolina SCIAD replaces the federal deduction for TY2026",
+    "statement": "Act 110 establishes SCIAD of $15,000 single/MFS, $22,500 HOH, and $30,000 joint/surviving spouse. The phaseout uses federal AGI and status-specific start/width values in the 2026 pack, with zero deduction at or beyond the endpoint. It is a general return deduction, not a pension-only allowance. The rate schedule and SCIAD first apply after 2025.",
+    "classification": "settled",
+    "contraryReading": null,
+    "errorDirection": null,
+    "conventionRationale": null,
+    "jurisdiction": "state:SC",
+    "authority": [
+      {
+        "kind": "statute",
+        "citation": "2026 Act 110, H.4216, SCIAD and effective date",
+        "url": "https://www.scstatehouse.gov/sess126_2025-2026/bills/4216.htm",
+        "quotedText": "a South Carolina Income Adjusted Deduction (SCIAD) equal to: (i) fifteen thousand dollars for taxpayers who file as single or married filing separately; (ii) twenty-two thousand five hundred dollars for taxpayers who file as head of household; and (iii) thirty thousand dollars for taxpayers who file as married filing jointly or as a surviving spouse. … The deduction set forth in subitem (a)(i) is subject to being reduced by a fraction whereby the numerator is the amount the taxpayer's federal adjusted gross income exceeds forty thousand dollars and the denominator is fifty-five thousand. … If the fraction calculated by this subitem is equal to or exceeds one, then the deduction is not allowed. If the fraction is zero, then the deduction is not subject to being reduced. If the fraction is between zero and one, then the deduction must be reduced by the corresponding fraction. … This act takes effect upon approval by the Governor and first applies to tax years beginning after 2025."
+      }
+    ],
+    "volatility": "staticStatute",
+    "effectiveFrom": 2026,
+    "effectiveThrough": null,
+    "verifiedOn": "2026-09-12",
+    "implementedBy": [
+      "packages/engine/src/tax/stateTax.ts",
+      "packages/engine/src/params/state/data/year2026.ts"
+    ],
+    "implementedByFunctions": [
+      "packages/engine/src/params/state/data/year2026.ts#SC",
+      "packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult",
+      "packages/engine/src/tax/stateTax.ts#computeStateTaxDetailResult"
+    ]
+  },
+
+  "va-code-58-1-322-02-28-military-retirement-subtraction": {
+    "title": "Virginia military subtraction is $40,000 per recipient from TY2025",
+    "statement": "Section 58.1-322.02(18)(c) permits up to $40,000 of qualifying military benefits for TY2025 and later, at any age. Qualifying survivor benefits are included. OPM civil-service income and amounts already excluded or deducted under another provision do not enter this pool. Each recipient has a separate cap. The stable record ID retains its earlier suffix; the operative current paragraph is (18), not (28).",
+    "classification": "settled",
+    "contraryReading": null,
+    "errorDirection": null,
+    "conventionRationale": null,
+    "jurisdiction": "state:VA",
+    "authority": [
+      {
+        "kind": "statute",
+        "citation": "Va. Code §58.1-322.02(18)(c)",
+        "url": "https://law.lis.virginia.gov/vacode/title58.1/chapter3/section58.1-322.02/",
+        "quotedText": "For taxable years beginning on and after January 1, 2024, but before January 1, 2025, up to $30,000 of military benefits; and for taxable years beginning on and after January 1, 2025, up to $40,000 of military benefits. … For purposes of subdivisions b and c, \"military benefits\" means any (i) military retirement income received for service in the Armed Forces of the United States, (ii) qualified military benefits received pursuant to § 134 of the Internal Revenue Code, (iii) benefits paid to the surviving spouse of a veteran of the Armed Forces of the United States under the Survivor Benefit Plan program established by the U.S. Department of Defense, and (iv) military benefits paid to the surviving spouse of a veteran of the Armed Forces of the United States. The subtraction allowed by subdivision b shall be allowed only for military benefits received by an individual age 55 or older. The subtraction allowed by subdivision c shall be allowed for military benefits received by an individual of any age. No subtraction shall be allowed pursuant to subdivisions b and c if a credit, exemption, subtraction, or deduction is claimed for the same income pursuant to subdivision a or any other provision of Virginia or federal law."
+      }
+    ],
+    "volatility": "staticStatute",
+    "effectiveFrom": 2026,
+    "effectiveThrough": null,
+    "verifiedOn": "2026-09-12",
+    "implementedBy": [
+      "packages/engine/src/tax/stateTax.ts",
+      "packages/engine/src/params/state/data/year2026.ts",
+      "packages/engine/src/tax/stateWestExtras.ts"
+    ],
+    "implementedByFunctions": [
+      "packages/engine/src/params/state/data/year2026.ts#VA",
+      "packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult",
+      "packages/engine/src/tax/stateTax.ts#computeStateTaxDetailResult",
+      "packages/engine/src/tax/stateWestExtras.ts#virginiaMilitarySubtraction"
+    ]
+  },
+
+  "va-code-58-1-322-02-3-ss-tier1": {
+    "title": "Virginia paragraph (3) subtracts included Social Security and Tier I",
+    "statement": "Paragraph (3) subtracts benefits taxable solely under IRC §86, including included Social Security and Tier I Railroad Retirement. Do not subtract Social Security again when already removed from the state base. Tier II and ordinary annuities are outside this paragraph; separate federal-protection authority may govern other railroad benefits.",
+    "classification": "settled",
+    "contraryReading": null,
+    "errorDirection": null,
+    "conventionRationale": null,
+    "jurisdiction": "state:VA",
+    "authority": [
+      {
+        "kind": "statute",
+        "citation": "Va. Code §58.1-322.02(3)",
+        "url": "https://law.lis.virginia.gov/vacode/title58.1/chapter3/section58.1-322.02/",
+        "quotedText": "Benefits received under Title II of the Social Security Act and other benefits subject to federal income taxation solely pursuant to § 86 of the Internal Revenue Code."
+      }
+    ],
+    "volatility": "staticStatute",
+    "effectiveFrom": 2026,
+    "effectiveThrough": null,
+    "verifiedOn": "2026-09-12",
+    "implementedBy": [
+      "packages/engine/src/tax/stateTax.ts",
+      "packages/engine/src/params/state/data/year2026.ts",
+      "packages/engine/src/tax/stateWestExtras.ts"
+    ],
+    "implementedByFunctions": [
+      "packages/engine/src/params/state/data/year2026.ts#VA",
+      "packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult",
+      "packages/engine/src/tax/stateTax.ts#computeStateTaxDetailResult",
+      "packages/engine/src/tax/stateWestExtras.ts#virginiaSsTier1Subtraction"
+    ]
+  },
+
+  "va-code-58-1-322-02-11-basis": {
+    "title": "Virginia recovers contributions previously taxed by another state",
+    "statement": "The subtraction covers included distributions from the enumerated §401, §408, §457 and federal retirement arrangements only to the extent contributions were federally deductible but taxed by another state. A Virginia-only contribution history is not sufficient. Require the prior taxing jurisdiction, qualifying plan and remaining unrecovered contribution basis; reduce the basis ledger only by accepted recovery.",
+    "classification": "settled",
+    "contraryReading": null,
+    "errorDirection": null,
+    "conventionRationale": null,
+    "jurisdiction": "state:VA",
+    "authority": [
+      {
+        "kind": "statute",
+        "citation": "Va. Code §58.1-322.02(11)",
+        "url": "https://law.lis.virginia.gov/vacode/title58.1/chapter3/section58.1-322.02/",
+        "quotedText": "Any income received during the taxable year derived from a qualified pension, profit-sharing, or stock bonus plan as described by § 401 of the Internal Revenue Code, an individual retirement account or annuity established under § 408 of the Internal Revenue Code, a deferred compensation plan as defined by § 457 of the Internal Revenue Code, or any federal government retirement program, the contributions to which were deductible from the taxpayer's federal adjusted gross income, but only to the extent the contributions to such plan or program were subject to taxation under the income tax in another state."
+      }
+    ],
+    "volatility": "staticStatute",
+    "effectiveFrom": 2026,
+    "effectiveThrough": null,
+    "verifiedOn": "2026-09-12",
+    "implementedBy": [
+      "packages/engine/src/tax/stateTax.ts",
+      "packages/engine/src/params/state/data/year2026.ts",
+      "packages/engine/src/tax/stateWestExtras.ts"
+    ],
+    "implementedByFunctions": [
+      "packages/engine/src/params/state/data/year2026.ts#VA",
+      "packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult",
+      "packages/engine/src/tax/stateTax.ts#computeStateTaxDetailResult",
+      "packages/engine/src/tax/stateWestExtras.ts#virginiaPriorStateBasisSubtraction"
+    ]
+  },
+
+  "wv-code-11-21-exemptions-retirement-public-ss": {
+    "title": "West Virginia personal and surviving-spouse exemptions",
+    "statement": "The personal exemption is $2,000 per qualifying exemption. The $500 alternative applies specifically to the IRC §151(d)(2) dependency reason, not every zero federal exemption. An unremarried surviving spouse receives the additional $2,000 in each of the two tax years after death. Unknown exemption count, zero-exemption reason or survivor conditions cannot establish an allowance. Retirement modifications and historical Social Security have separate records.",
+    "classification": "settled",
+    "contraryReading": null,
+    "errorDirection": null,
+    "conventionRationale": null,
+    "jurisdiction": "state:WV",
+    "authority": [
+      {
+        "kind": "statute",
+        "citation": "W. Va. Code §11-21-16(a),(c),(d)",
+        "url": "https://code.wvlegislature.gov/11-21-16/",
+        "quotedText": "With respect to any taxable year beginning on or after January 1, 1987, said exemption shall be $2,000. … For taxable years beginning after December 31, 1986, a surviving spouse shall be allowed one additional exemption of $2,000 for the two taxable years beginning after the year of death of the deceased spouse."
+      },
+      {
+        "kind": "statute",
+        "citation": "W. Va. Code §11-21-16(d)",
+        "url": "https://code.wvlegislature.gov/11-21-16/",
+        "quotedText": "Notwithstanding any provisions in this section, for taxable years beginning after December 31, 1986, a resident individual whose exemption amount for federal tax purposes is zero by virtue of section 151(d)(2) of the Internal Revenue Code of 1986, shall be allowed a single West Virginia exemption in the amount of $500."
+      }
+    ],
+    "volatility": "staticStatute",
+    "effectiveFrom": 2026,
+    "effectiveThrough": null,
+    "verifiedOn": "2026-09-12",
+    "implementedBy": [
+      "packages/engine/src/tax/stateTax.ts",
+      "packages/engine/src/params/state/data/year2026.ts",
+      "packages/engine/src/tax/stateMidwestExtras.ts"
+    ],
+    "implementedByFunctions": [
+      "packages/engine/src/params/state/data/year2026.ts#WV",
+      "packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult",
+      "packages/engine/src/tax/stateTax.ts#computeStateTaxDetailResult",
+      "packages/engine/src/tax/stateMidwestExtras.ts#westVirginiaExemptions"
+    ]
+  },
+
+  "wv-code-11-21-12-c9-age-disability-residual": {
+    "title": "West Virginia $8,000 age/disability modification uses the owner’s residual limit",
+    "statement": "An owner age 65 at year end or properly certified permanently and totally disabled may deduct no more than $8,000 of included income less that owner’s modifications under (c)(1),(2),(5),(6),(7),(8). The total cannot exceed remaining included income. Apply the prior-modification ledger per person, not a new household $8,000 allowance. Unknown certification or prior modifications is incomplete.",
+    "classification": "settled",
+    "contraryReading": null,
+    "errorDirection": null,
+    "conventionRationale": null,
+    "jurisdiction": "state:WV",
+    "authority": [
+      {
+        "kind": "statute",
+        "citation": "W. Va. Code §11-21-12(c)(9)(i)-(ii)",
+        "url": "https://code.wvlegislature.gov/11-21-12/",
+        "quotedText": "(9) Federal adjusted gross income in the amount of $8,000 received from any source after December 31, 1986, by any person who has attained the age of 65 on or before the last day of the taxable year, or by any person certified by proper authority as permanently and totally disabled, regardless of age, on or before the last day of the taxable year, to the extent includable in federal adjusted gross income for federal tax purposes: Provided, That if a person has a medical certification from a prior year and he or she is still permanently and totally disabled, a copy of the original certificate is acceptable as proof of disability. A copy of the form filed for the federal disability income tax exclusion is acceptable: Provided, however, That: (i) Where the total modification under subdivisions (1), (2), (5), (6), (7), and (8) of this subsection is $8,000 per person or more, no deduction shall be allowed under this subdivision; and (ii) Where the total modification under subdivisions (1), (2), (5), (6), (7), and (8) of this subsection is less than $8,000 per person, the total modification allowed under this subdivision for all gross income received by that person shall be limited to the difference between $8,000 and the sum of modifications under subdivisions (1), (2), (5), (6), (7), and (8) of this subsection;"
+      }
+    ],
+    "volatility": "staticStatute",
+    "effectiveFrom": 2026,
+    "effectiveThrough": null,
+    "verifiedOn": "2026-09-12",
+    "implementedBy": [
+      "packages/engine/src/tax/stateTax.ts",
+      "packages/engine/src/params/state/data/year2026.ts",
+      "packages/engine/src/tax/stateMidwestExtras.ts"
+    ],
+    "implementedByFunctions": [
+      "packages/engine/src/params/state/data/year2026.ts#WV",
+      "packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult",
+      "packages/engine/src/tax/stateTax.ts#computeStateTaxDetailResult",
+      "packages/engine/src/tax/stateMidwestExtras.ts#westVirginiaAge65Modification"
+    ]
+  },
+
+  "wv-code-11-21-12-c5-c6-public-retirement": {
+    "title": "West Virginia distinguishes the combined $2,000 public bucket from full police/fire exclusions",
+    "statement": "PERS, Teachers and qualifying federal retirement systems share a $2,000 limit per recipient; they do not each create a new cap. Named West Virginia police/fire systems have a separate full exclusion. A generic public or federalCivilService label without statutory-system proof does not establish the appropriate bucket.",
+    "classification": "settled",
+    "contraryReading": null,
+    "errorDirection": null,
+    "conventionRationale": null,
+    "jurisdiction": "state:WV",
+    "authority": [
+      {
+        "kind": "statute",
+        "citation": "W. Va. Code §11-21-12(c)(5)-(6)",
+        "url": "https://code.wvlegislature.gov/11-21-12/",
+        "quotedText": "(5) Annuities, retirement allowances, returns of contributions and any other benefit received under the West Virginia Public Employees Retirement System, and the West Virginia State Teachers Retirement System, including any survivorship annuities derived therefrom, to the extent includable in gross income for federal income tax purposes: Provided, That notwithstanding any provisions in this code to the contrary this modification shall be limited to the first $2,000 of benefits received under the West Virginia Public Employees Retirement System, the West Virginia State Teachers Retirement System and, including any survivorship annuities derived therefrom, to the extent includable in gross income for federal income tax purposes for taxable years beginning after December 31, 1986; and the first $2,000 of benefits received under any federal retirement system to which 4 U.S.C. § 111 applies: Provided, however, That the total modification under this paragraph shall not exceed $2,000 per person receiving retirement benefits and this limitation shall apply to all returns or amended returns filed after December 31, 1988; (6) Retirement income received in the form of pensions and annuities after December 31, 1979, under any West Virginia police, West Virginia Firemen’s Retirement System or the West Virginia State Police Death, Disability and Retirement Fund, the West Virginia State Police Retirement System or the West Virginia Deputy Sheriff Retirement System, including any survivorship annuities derived from any of these programs, to the extent includable in gross income for federal income tax purposes;"
+      }
+    ],
+    "volatility": "staticStatute",
+    "effectiveFrom": 2026,
+    "effectiveThrough": null,
+    "verifiedOn": "2026-09-12",
+    "implementedBy": [
+      "packages/engine/src/tax/stateTax.ts",
+      "packages/engine/src/params/state/data/year2026.ts",
+      "packages/engine/src/tax/stateMidwestExtras.ts"
+    ],
+    "implementedByFunctions": [
+      "packages/engine/src/params/state/data/year2026.ts#WV",
+      "packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult",
+      "packages/engine/src/tax/stateTax.ts#computeStateTaxDetailResult",
+      "packages/engine/src/tax/stateMidwestExtras.ts#westVirginiaPublicMilitary"
+    ]
+  },
+
+  "wv-code-11-21-12-c7-military": {
+    "title": "West Virginia qualifying uniformed-services retirement and survivors are fully excluded",
+    "statement": "The current military/uniformed-services provisions exclude the included qualifying retirement and survivor amount without the older $20,000 cap. The named military, reserve, Guard, PHS and NOAA source definitions matter; private and unclassified public pensions do not qualify.",
+    "classification": "settled",
+    "contraryReading": null,
+    "errorDirection": null,
+    "conventionRationale": null,
+    "jurisdiction": "state:WV",
+    "authority": [
+      {
+        "kind": "statute",
+        "citation": "W. Va. Code §11-21-12(c)(7)(C)",
+        "url": "https://code.wvlegislature.gov/11-21-12/",
+        "quotedText": "For taxable years beginning after December 31, 2017, military retirement income, including retirement income from the regular Armed Forces, Reserves and National Guard paid by the United States or by this state after December 31, 2017, including any survivorship annuities, to the extent included in federal adjusted gross income for the taxable year. … For taxable years beginning after December 31, 2018, retirement income from the uniformed services, including the Army, Navy, Marines, Air Force, Space Force, Coast Guard, Public Health Service, National Oceanic Atmospheric Administration, reserves, and National Guard, paid by the United States or by this state after December 31, 2018, including any survivorship annuities, to the extent included in federal adjusted gross income for the taxable year."
+      }
+    ],
+    "volatility": "staticStatute",
+    "effectiveFrom": 2026,
+    "effectiveThrough": null,
+    "verifiedOn": "2026-09-12",
+    "implementedBy": [
+      "packages/engine/src/tax/stateTax.ts",
+      "packages/engine/src/params/state/data/year2026.ts",
+      "packages/engine/src/tax/stateMidwestExtras.ts"
+    ],
+    "implementedByFunctions": [
+      "packages/engine/src/params/state/data/year2026.ts#WV",
+      "packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult",
+      "packages/engine/src/tax/stateTax.ts#computeStateTaxDetailResult",
+      "packages/engine/src/tax/stateMidwestExtras.ts#westVirginiaPublicMilitary"
+    ]
+  },
+
+  "wv-code-11-21-12-c12-railroad": {
+    "title": "West Virginia subtracts federally protected Tier I income",
+    "statement": "Included Tier I Railroad Retirement is protected by (c)(12). Do not subtract gross benefits exceeding the amount in federal AGI or claim a second subtraction for an already removed amount. Ordinary pensions are outside this category.",
+    "classification": "settled",
+    "contraryReading": null,
+    "errorDirection": null,
+    "conventionRationale": null,
+    "jurisdiction": "state:WV",
+    "authority": [
+      {
+        "kind": "statute",
+        "citation": "W. Va. Code §11-21-12(c)(12)",
+        "url": "https://code.wvlegislature.gov/11-21-12/",
+        "quotedText": "Any other income which this state is prohibited from taxing under the laws of the United States including, but not limited to, tier I retirement benefits as defined in Section 86(d)(4) of the Internal Revenue Code."
+      }
+    ],
+    "volatility": "staticStatute",
+    "effectiveFrom": 2026,
+    "effectiveThrough": null,
+    "verifiedOn": "2026-09-12",
+    "implementedBy": [
+      "packages/engine/src/tax/stateTax.ts",
+      "packages/engine/src/params/state/data/year2026.ts"
+    ],
+    "implementedByFunctions": [
+      "packages/engine/src/params/state/data/year2026.ts#WV",
+      "packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult",
+      "packages/engine/src/tax/stateTax.ts#computeStateTaxDetailResult"
+    ]
+  },
+
+  "wv-code-11-21-12-c8-social-security-phase-in": {
+    "title": "West Virginia historical Social Security phase-in depends on AGI and year",
+    "statement": "At or below $50,000 AGI ($100,000 joint), 100% of federally included Social Security is subtracted since 2022. Above that threshold the subtraction is 35% in 2024, 65% in 2025 and 100% from 2026. The year-specific rule applies only to the federally included amount; the 2026 no-SS-tax base must not subtract it twice. Unsupported historical years must not inherit a guessed percentage.",
+    "classification": "settled",
+    "contraryReading": null,
+    "errorDirection": null,
+    "conventionRationale": null,
+    "jurisdiction": "state:WV",
+    "authority": [
+      {
+        "kind": "statute",
+        "citation": "W. Va. Code §11-21-12(c)(8)(A)-(F)",
+        "url": "https://code.wvlegislature.gov/11-21-12/",
+        "quotedText": "(A) For taxable years beginning on or after January 1, 2022, 100 percent of the social security benefits received pursuant to Chapter 7 of Title 42 of the United States Code, including, but not limited to, social security benefits paid by the Social Security Administration as Old Age, Survivors and Disability Insurance Benefits as provided in 42 U.S.C. § 401 et. seq. or as Supplemental Security Income for the Aged, Blind, and Disabled as provided in 42 U.S.C. § 1381 et. seq., included in federal adjusted gross income for the taxable year shall be allowed as a decreasing modification from federal adjusted gross income when determining West Virginia taxable income subject to the tax imposed by this article, subject to the limitation in §11-21-12(c)(8)(B) of this code. (B) The deduction allowed by §11-21-12(c)(8)(A) of this code are allowable only when the federal adjusted gross income of a married couple filing a joint return does not exceed $100,000, or $50,000 in the case of a single individual or a married individual filing a separate return. (C) For taxable years beginning on and after January 1, 2024, 35 percent of the amount of social security benefits received pursuant to Chapter 7 of Title 42 of the United States Code, including, but not limited to, social security benefits paid by the Social Security Administration as Old Age, Survivors and Disability Insurance Benefits as provided in 42 U.S.C. § 401 et. seq. or as Supplemental Security Income for the Aged, Blind, and Disabled as provided in 42 U.S.C. § 1381 et. seq., included in federal adjusted gross income for the taxable year shall be allowed as a decreasing modification from federal adjusted gross income when determining West Virginia taxable income subject to the tax imposed by this article, subject to the limitation in §11-21-12(c)(8)(F) of this code. (D) For taxable years beginning on or after January 1, 2025, 65 percent of the social security benefits received pursuant to Chapter 7 of Title 42 of the United States Code, including, but not limited to, social security benefits paid by the Social Security Administration as Old Age, Survivors and Disability Insurance Benefits as provided in 42 U.S.C. § 401 et. seq. or as Supplemental Security Income for the Aged, Blind, and Disabled as provided in 42 U.S.C. § 1381 et. seq., included in federal adjusted gross income for the taxable year shall be allowed as a decreasing modification from federal adjusted gross income when determining West Virginia taxable income subject to the tax imposed by this article, subject to the limitation in §11-21-12(c)(8)(F) of this code. (E) For taxable years beginning on or after January 1, 2026, 100 percent of the social security benefits received pursuant to Chapter 7 of Title 42 of the United States Code, including, but not limited to, social security benefits paid by the Social Security Administration as Old Age, Survivors and Disability Insurance Benefits as provided in 42 U.S.C. § 401 et. seq. or as Supplemental Security Income for the Aged, Blind, and Disabled as provided in 42 U.S.C. 1381 et. seq., included in federal adjusted gross income for the taxable year shall be allowed as a decreasing modification from federal adjusted gross income when determining West Virginia taxable income subject to the tax imposed by this article, subject to the limitation in §11-21-12(c)(8)(F) of this code. (F) The deduction allowed by §11-21-12(c)(8)(C), §11-21-12(c)(8)(D), and §11-21-12(c)(8)(E) of this code are allowable only when the federal adjusted gross income of a married couple filing a joint return exceeds $100,000, or $50,000 in the case of a single individual or a married individual filing a separate return."
+      }
+    ],
+    "volatility": "staticStatute",
+    "effectiveFrom": 2022,
+    "effectiveThrough": null,
+    "verifiedOn": "2026-09-12",
+    "implementedBy": [
+      "packages/engine/src/tax/stateTax.ts",
+      "packages/engine/src/params/state/data/year2026.ts",
+      "packages/engine/src/tax/stateMidwestExtras.ts"
+    ],
+    "implementedByFunctions": [
+      "packages/engine/src/params/state/data/year2026.ts#WV",
+      "packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult",
+      "packages/engine/src/tax/stateTax.ts#computeStateTaxDetailResult",
+      "packages/engine/src/tax/stateMidwestExtras.ts#westVirginiaSocialSecuritySubtraction"
+    ]
+  },
+
 } satisfies Record<string, TaxRuleRecord>

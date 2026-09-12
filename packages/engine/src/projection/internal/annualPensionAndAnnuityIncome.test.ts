@@ -123,6 +123,8 @@ describe('annualPensionAndAnnuityIncome', () => {
       publicPensionOrdinary: 505,
       qualifiedAnnuityPayments: [],
       rows: [],
+      characterizedRetirementDistributions: [],
+      stateRetirementDistributionFacts: [],
     })
   })
 
@@ -192,6 +194,20 @@ describe('annualPensionAndAnnuityIncome', () => {
     expect(living.ordinaryIncome).toBe(18_000)
     expect(living.privateRetirementOrdinary).toBe(12_000)
     expect(living.publicPensionOrdinary).toBe(6_000)
+    expect(living.stateRetirementDistributionFacts).toEqual([
+      expect.objectContaining({
+        ownerPersonId: 'p1',
+        sourceKind: 'unknownPrivate',
+        federallyIncludedAmount: 12_000,
+        cause: 'ordinary',
+      }),
+      expect.objectContaining({
+        ownerPersonId: 'p1',
+        sourceKind: 'unknownPublic',
+        federallyIncludedAmount: 6_000,
+        cause: 'ordinary',
+      }),
+    ])
     expect(living.rows).toEqual([
       {
         kind: 'pension',
@@ -432,4 +448,26 @@ describe('annualPensionAndAnnuityIncome', () => {
     }))
     expect(result.qualifiedAnnuityPayments).toHaveLength(1)
   })
+})
+
+
+it('emits qualified annuity gross/taxable source facts with capture off and actual attained age', () => {
+  const result = annualPensionAndAnnuityIncome({ ...annualInput([annuity('qualified')]),
+    recordCashFlow: false, annuityContractPoolOwner: new Map([['annuity', 'p1']]) })
+  expect(result.stateRetirementDistributionFacts).toContainEqual(expect.objectContaining({
+    accountId: 'annuity', sourceOwnerPersonId: 'p1', ownerPersonId: 'p1', sourceKind: 'ira',
+    grossDistribution: 10000, federallyIncludedAmount: 10000, recipientAgeYears: 60,
+    accountTaxTreatment: 'traditional',
+  }))
+  expect(result.ordinaryIncome).toBe(10000)
+})
+
+it('emits only the taxable portion of a nonqualified annuity without labeling it an IRA', () => {
+  const account = { ...annuity('nonQualified'), purchase: undefined, taxablePct: 40 }
+  const result = annualPensionAndAnnuityIncome({ ...annualInput([account]), recordCashFlow: false })
+  expect(result.stateRetirementDistributionFacts).toContainEqual(expect.objectContaining({
+    sourceKind: 'ordinaryPrivatePension', grossDistribution: 10000, federallyIncludedAmount: 4000,
+  }))
+  expect(result.stateRetirementDistributionFacts[0]?.accountTaxTreatment).toBeUndefined()
+  expect(result.ordinaryIncome).toBe(4000)
 })

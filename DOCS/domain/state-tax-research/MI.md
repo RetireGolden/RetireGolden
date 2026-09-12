@@ -97,3 +97,12 @@ items, certain 457 amounts, employee-contribution-only 401(k) amounts, specified
 - https://www.michigan.gov/taxes/rep-legal/rab/2026-revenue-administrative-bulletins/revenue-administrative-bulletin-2026-1 — RAB 2026-1: 2026-and-later combined public/private maximum regardless of birth year; pre-1946 public exception; elective (9)/(10)/(11).
 - https://www.legislature.mi.gov/mileg.aspx?objectName=mcl-206-30&page=getObject — MCL 206.30(10)(d) and (1)(f) retirement / Social Security limbs.
 - Historical 2025 phase-in (not current): https://www.michigan.gov/taxes/iit/tax-guidance/tax-situations/retirement-and-pension-benefits/2025/2025-tier-iii — 2025 75%-of-max middle tier ($49,423 / $98,846).
+
+## Michigan permits both deductions in the 2026–2028 window (verified 2026-09-12)
+
+The subsection (9)(e) treatment allows affected taxpayers both federally included Social Security and the full standard deduction during 2026–2028. It does not make the permanent Social Security subtraction expire and is an evidence constraint, not an assertion that all Michigan retirement elections are calculated.
+
+Evidence limb of `mi-mcl-206-30-f-iii-social-security`; not a separate claim to compute the elective standard retirement deduction. Authority: [Michigan Treasury RAB 2026-1 Issue 11](https://www.michigan.gov/taxes/rep-legal/rab/2026-revenue-administrative-bulletins/revenue-administrative-bulletin-2026-1).
+
+
+Evidence completion (2026-09-12): The separate mi-mcl-206-30-9-e-nonconditioning evidence record is bounded to TY2026–2028 and taxpayers born after1952 reaching67. Full Issue11 source also preserves the pre2026/post2028 reduction rule and the remaining personal-exemption/railroad/military reductions. Elective subsection(9) standard-deduction calculation is explicitly out of scope; permanent Social Security remains indefinite.
