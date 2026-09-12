@@ -9,7 +9,10 @@ import {
   type RetirementActionCandidateIdentityIssue,
 } from '../actions/retirementActionCandidateIdentityAllocator.js'
 import type { Plan } from '../model/plan.js'
-import { inspectCompleteRetirementActionCandidateSchedule } from './retirementActionCandidateSchedule.js'
+import {
+  inspectCompleteRetirementActionCandidateSchedule,
+  type RetirementActionCandidateScheduleIssue,
+} from './retirementActionCandidateSchedule.js'
 import type { DecisionCandidate } from './types.js'
 
 export interface OrdinaryWithdrawalGeneratorCandidateDescriptor {
@@ -20,14 +23,8 @@ export interface OrdinaryWithdrawalGeneratorCandidateDescriptor {
   metadata?: DecisionCandidate['metadata']
 }
 
-export interface OrdinaryWithdrawalCandidateScheduleIssue {
-  kind:
-    | 'invalidRetirementActionSchedule'
-    | 'nonCurrentRetirementActionSchedule'
-  field: string
-  reason: null
-  detail: string
-}
+export type OrdinaryWithdrawalCandidateScheduleIssue =
+  RetirementActionCandidateScheduleIssue
 
 export interface OrdinaryWithdrawalCandidateInputIssue {
   kind: 'invalidAdapterInput'
@@ -166,16 +163,9 @@ export function adaptOrdinaryWithdrawalGeneratorCandidate(
     )
   }
 
-  let schedule: ReturnType<typeof inspectCompleteRetirementActionCandidateSchedule>
-  try {
-    schedule = inspectCompleteRetirementActionCandidateSchedule(
-      (snapshot.plan as Plan | null | undefined)?.strategies?.retirementActions,
-    )
-  } catch {
-    return blockedInput(
-      'The Plan retirement-action schedule could not be inspected losslessly.',
-    )
-  }
+  const schedule = inspectCompleteRetirementActionCandidateSchedule(
+    (snapshot.plan as Plan | null | undefined)?.strategies?.retirementActions,
+  )
   if (!schedule.ok) {
     return {
       status: 'blocked',
@@ -209,10 +199,18 @@ export function adaptOrdinaryWithdrawalGeneratorCandidate(
   }
 
   const request: OrdinaryWithdrawalRequest = allocation.request
-  const retirementActions = [
+  const appendedSchedule = inspectCompleteRetirementActionCandidateSchedule([
     ...schedule.actions,
     request,
-  ]
+  ])
+  if (!appendedSchedule.ok) {
+    return {
+      status: 'blocked',
+      candidate: null,
+      issues: [appendedSchedule.issue],
+    }
+  }
+  const retirementActions = appendedSchedule.actions
   const candidate: DecisionCandidate = {
     id: snapshot.descriptor.id,
     source: snapshot.descriptor.source,

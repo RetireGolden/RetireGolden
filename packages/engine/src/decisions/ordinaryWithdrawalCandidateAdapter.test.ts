@@ -33,6 +33,7 @@ import {
   adaptOrdinaryWithdrawalGeneratorCandidate,
   type OrdinaryWithdrawalGeneratorCandidateDescriptor,
 } from './ordinaryWithdrawalCandidateAdapter.js'
+import { inspectCompleteRetirementActionCandidateSchedule } from './retirementActionCandidateSchedule.js'
 
 function ownedCash(id: string, ownerPersonId = 'p1'): Account {
   return { ...cashAccount(id, 100_000), ownerPersonId }
@@ -143,6 +144,17 @@ function candidateSchedule(result: ReturnType<typeof adaptOrdinaryWithdrawalGene
     retirementActions: RetirementActionRequest[]
   }
   return strategies.retirementActions
+}
+
+function expectAdaptedScheduleAdmissible(
+  result: ReturnType<typeof adaptOrdinaryWithdrawalGeneratorCandidate>,
+) {
+  const schedule = candidateSchedule(result)
+  const inspected = inspectCompleteRetirementActionCandidateSchedule(schedule)
+  expect(inspected.ok).toBe(true)
+  if (inspected.ok) {
+    expect(inspected.actions).toEqual(schedule)
+  }
 }
 
 describe('ordinary-withdrawal candidate adapter', () => {
@@ -429,6 +441,41 @@ describe('ordinary-withdrawal candidate adapter', () => {
     })
   })
 
+  it('reports execution-date defects before duplicate action IDs in a combined schedule', () => {
+    const plan = singlePersonPlan()
+    plan.accounts = [ownedCash('cash-a')]
+    const current = allocateRetirementActionCandidateIdentity(plan, intent({
+      year: 2028,
+      executionDate: '2028-06-15',
+      provenance: { source: 'manual' },
+      purpose: { kind: 'spending' },
+    }))
+    expect(current.status).toBe('allocated')
+    if (current.status !== 'allocated') return
+    plan.strategies.retirementActions = [
+      {
+        ...current.request,
+        executionDate: '2029-06-15',
+      },
+      current.request,
+    ]
+
+    const result = adaptOrdinaryWithdrawalGeneratorCandidate(
+      plan,
+      descriptor(),
+      intent(),
+    )
+
+    expect(result).toMatchObject({
+      status: 'blocked',
+      candidate: null,
+      issues: [{
+        kind: 'invalidRetirementActionSchedule',
+        field: 'plan.strategies.retirementActions.0.executionDate',
+      }],
+    })
+  })
+
   it('blocks duplicate IDs in an otherwise current-kind schedule', () => {
     const plan = singlePersonPlan()
     plan.accounts = [ownedCash('cash-a')]
@@ -528,6 +575,42 @@ describe('ordinary-withdrawal candidate adapter', () => {
       },
       'plan.strategies.retirementActions.0.executionDate',
     ],
+    [
+      'non-canonical non-padded preserved ordinary withdrawal date',
+      (plan: Plan) => {
+        const allocated = allocateRetirementActionCandidateIdentity(plan, intent({
+          year: 2028,
+          executionDate: '2028-06-15',
+          provenance: { source: 'manual' },
+          purpose: { kind: 'spending' },
+        }))
+        expect(allocated.status).toBe('allocated')
+        if (allocated.status !== 'allocated') throw new Error('expected allocated withdrawal')
+        return [{
+          ...allocated.request,
+          executionDate: '2028-6-15',
+        }]
+      },
+      'plan.strategies.retirementActions.0.executionDate',
+    ],
+    [
+      'timestamped preserved ordinary withdrawal date',
+      (plan: Plan) => {
+        const allocated = allocateRetirementActionCandidateIdentity(plan, intent({
+          year: 2028,
+          executionDate: '2028-06-15',
+          provenance: { source: 'manual' },
+          purpose: { kind: 'spending' },
+        }))
+        expect(allocated.status).toBe('allocated')
+        if (allocated.status !== 'allocated') throw new Error('expected allocated withdrawal')
+        return [{
+          ...allocated.request,
+          executionDate: '2028-06-15T00:00:00',
+        }]
+      },
+      'plan.strategies.retirementActions.0.executionDate',
+    ],
   ])('blocks a preserved schedule with %s', (_label, buildSchedule, field) => {
     const plan = singlePersonPlan()
     plan.accounts = [
@@ -543,6 +626,70 @@ describe('ordinary-withdrawal candidate adapter', () => {
       intent(),
     )
 
+    expect(result).toMatchObject({
+      status: 'blocked',
+      candidate: null,
+      issues: [{
+        kind: 'invalidRetirementActionSchedule',
+        field,
+        reason: null,
+      }],
+    })
+  })
+
+  it.each([
+    [
+      'undated appended intent',
+      { executionDate: undefined },
+      'adapted',
+      undefined,
+    ],
+    [
+      'canonical dated appended intent',
+      { year: 2030, executionDate: '2030-06-15' },
+      'adapted',
+      undefined,
+    ],
+    [
+      'wrong-year appended intent',
+      { year: 2028, executionDate: '2029-06-15' },
+      'blocked',
+      'plan.strategies.retirementActions.0.executionDate',
+    ],
+    [
+      'impossible civil date on appended intent',
+      { year: 2028, executionDate: '2028-02-30' },
+      'blocked',
+      'plan.strategies.retirementActions.0.executionDate',
+    ],
+    [
+      'non-canonical non-padded appended intent date',
+      { year: 2028, executionDate: '2028-6-15' },
+      'blocked',
+      'plan.strategies.retirementActions.0.executionDate',
+    ],
+    [
+      'timestamped appended intent date',
+      { year: 2028, executionDate: '2028-06-15T00:00:00' },
+      'blocked',
+      'plan.strategies.retirementActions.0.executionDate',
+    ],
+  ])('%s on an empty preserved schedule', (_label, intentOverrides, status, field) => {
+    const plan = singlePersonPlan()
+    plan.accounts = [ownedCash('cash-a')]
+    plan.strategies.retirementActions = []
+
+    const result = adaptOrdinaryWithdrawalGeneratorCandidate(
+      plan,
+      descriptor(),
+      intent(intentOverrides),
+    )
+
+    expect(result.status).toBe(status)
+    if (status === 'adapted') {
+      expectAdaptedScheduleAdmissible(result)
+      return
+    }
     expect(result).toMatchObject({
       status: 'blocked',
       candidate: null,
@@ -607,6 +754,7 @@ describe('ordinary-withdrawal candidate adapter', () => {
       year: 2028,
     })
     expect(schedule[0]).not.toHaveProperty('executionDate')
+    expectAdaptedScheduleAdmissible(result)
   })
 
   it('snapshots stateful schedule, descriptor, and intent getters once before adapting', () => {
