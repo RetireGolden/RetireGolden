@@ -2,17 +2,17 @@
   "kind": "retiregolden.rules-coverage.manifest",
   "version": 5,
   "registry": {
-    "total": 471,
+    "total": 476,
     "byClassification": {
-      "approximated": 127,
+      "approximated": 128,
       "outOfScope": 86,
-      "settled": 254,
+      "settled": 258,
       "unsettled": 4
     },
     "byVolatility": {
-      "annuallyIndexed": 74,
+      "annuallyIndexed": 78,
       "awaitingGuidance": 10,
-      "staticStatute": 380,
+      "staticStatute": 381,
       "sunsetting": 7
     },
     "byJurisdiction": {
@@ -41,13 +41,13 @@
         "MD": 2,
         "ME": 3,
         "MI": 2,
-        "MN": 2,
-        "MO": 1,
+        "MN": 3,
+        "MO": 2,
         "MS": 7,
-        "MT": 2,
-        "NC": 1,
+        "MT": 3,
+        "NC": 2,
         "ND": 8,
-        "NE": 2,
+        "NE": 3,
         "NH": 1,
         "NJ": 2,
         "NM": 2,
@@ -70,7 +70,7 @@
         "WV": 2,
         "WY": 1
       },
-      "stateTotal": 140
+      "stateTotal": 145
     }
   },
   "attestations": {
@@ -629,7 +629,7 @@
     {
       "module": "statesMidwest",
       "path": "rule-coverage/statesMidwest.json",
-      "ruleCount": 34
+      "ruleCount": 37
     },
     {
       "module": "statesNortheast",
@@ -639,7 +639,7 @@
     {
       "module": "statesSouthAtlantic",
       "path": "rule-coverage/statesSouthAtlantic.json",
-      "ruleCount": 19
+      "ruleCount": 20
     },
     {
       "module": "statesSouthCentral",
@@ -649,7 +649,7 @@
     {
       "module": "statesWest",
       "path": "rule-coverage/statesWest.json",
-      "ruleCount": 31
+      "ruleCount": 32
     },
     {
       "module": "transfersAndUnmodeledRegimes",
@@ -658,16 +658,16 @@
     }
   ],
   "quoteFidelity": {
-    "generatedAt": "2026-09-10T18:59:10.717Z",
-    "entryCount": 1394,
+    "generatedAt": "2026-09-12T15:23:23.483Z",
+    "entryCount": 1431,
     "fetched": 0,
-    "cached": 372,
+    "cached": 379,
     "counts": {
-      "ELISION-EXACT": 90,
+      "ELISION-EXACT": 91,
       "ELISION-PUNCTUATION": 8,
-      "EXACT": 965,
+      "EXACT": 974,
       "PDF-NOT-VERIFIABLE": 7,
-      "PDF-WORD-LEVEL": 277,
+      "PDF-WORD-LEVEL": 304,
       "PUNCTUATION": 44,
       "UNFETCHABLE": 3
     }

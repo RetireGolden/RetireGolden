@@ -774,11 +774,17 @@ const STATE_PRIMARY_PUBLISHERS: Readonly<Partial<Record<UsStateCode, readonly st
     // apex would admit nothing that was checked.
     'mca.legmt.gov', // Montana Legislative Services, current Montana Code Annotated
     'revenue.mt.gov', // Montana Department of Revenue
+    // Verified 2026-09-12: HB 337 TY2026 ordinary brackets are admitted by
+    // exact URL in `STATE_EXACT_PUBLICATION_URLS` below; bare
+    // `revenuefiles.mt.gov` stays out.
   ],
   NE: [
     // Verified 2026-08-27. Bare `nebraskalegislature.gov`: usable statute
     // URLs carry `www.nebraskalegislature.gov`.
     'nebraskalegislature.gov', // Nebraska Legislature, Nebraska Revised Statutes
+    // Verified 2026-09-12: Form 1040N-ES (2026) is admitted by exact URL in
+    // `STATE_EXACT_PUBLICATION_URLS` below; bare `revenue.nebraska.gov` stays
+    // out.
   ],
   NH: [
     // Verified 2026-08-27 from the staged RSA Chapter 77 repeal page. The
@@ -813,6 +819,8 @@ const STATE_PRIMARY_PUBLISHERS: Readonly<Partial<Record<UsStateCode, readonly st
   ],
   MO: [
     'revisor.mo.gov', // Missouri Revisor of Statutes
+    // Verified 2026-09-12: Form MO-1040ES (2026) is admitted by exact URL in
+    // `STATE_EXACT_PUBLICATION_URLS` below; bare `dor.mo.gov` stays out.
   ],
   MS: [
     // Verified 2026-08-05. Mississippi is the second state, after Arkansas,
@@ -968,6 +976,26 @@ const STATE_EXACT_PUBLICATION_URLS: Readonly<Partial<Record<UsStateCode, readonl
     // quoted for Tier 1/2 railroad guidance; law.lis.virginia.gov remains the
     // Code publisher.
     'https://www.tax.virginia.gov/subtractions',
+  ],
+  MO: [
+    // Verified 2026-09-12: Form MO-1040ES (2026) rate schedule and standard
+    // deduction; dor.mo.gov stays out of STATE_PRIMARY_PUBLISHERS.
+    'https://dor.mo.gov/forms/MO-1040ES_2026.pdf',
+  ],
+  MT: [
+    // Verified 2026-09-12: HB 337 TY2026 ordinary income tax brackets;
+    // revenuefiles.mt.gov stays out of STATE_PRIMARY_PUBLISHERS.
+    'https://revenuefiles.mt.gov/news/recent-news/HB-337',
+  ],
+  NE: [
+    // Verified 2026-09-12: Form 1040N-ES (2026) estimated-tax worksheet and
+    // rate schedule; revenue.nebraska.gov stays out of STATE_PRIMARY_PUBLISHERS.
+    'https://revenue.nebraska.gov/sites/default/files/doc/tax-forms/2025/f_1040N-ES.pdf',
+  ],
+  NC: [
+    // Verified 2026-09-12: Form NC-40 2026 worksheet page 2 standard deduction
+    // table and TY2026 footer; ncdor.gov stays out of STATE_PRIMARY_PUBLISHERS.
+    'https://www.ncdor.gov/individual-estimated-income-tax/open',
   ],
 }
 
@@ -1925,6 +1953,192 @@ describe('tax rule registry conformance', () => {
     }]])).toEqual(['nj-fictional'])
   })
 
+  it('admits verified MO, MT, and NE agency-publication paths by exact URL only', () => {
+    // Verified 2026-09-12: MO-1040ES (2026), HB 337, and Form 1040N-ES (2026)
+    // are served from department hosts too broad to list as publishers. Admission
+    // is the exact checked URL, not `dor.mo.gov`, `revenuefiles.mt.gov`, or
+    // `revenue.nebraska.gov` as a host tier.
+    const mo1040Es = {
+      citation: 'Missouri DOR, Form MO-1040ES (2026), worksheet Line 6 standard deduction',
+      url: 'https://dor.mo.gov/forms/MO-1040ES_2026.pdf',
+    }
+    const mtHb337 = {
+      citation: 'Montana DOR, HB337 — Tax Year 2026 Income Tax Brackets, scope heading',
+      url: 'https://revenuefiles.mt.gov/news/recent-news/HB-337',
+    }
+    const ne1040nEs = {
+      citation: 'Nebraska DOR, Form 1040N-ES (2026), worksheet Line 5 standard deduction',
+      url: 'https://revenue.nebraska.gov/sites/default/files/doc/tax-forms/2025/f_1040N-ES.pdf',
+    }
+    expect(offSourceAuthorities([['mo-fictional', {
+      jurisdiction: 'state:MO',
+      authority: [mo1040Es],
+    }]])).toEqual([])
+    expect(stateRulesMissingStateAuthority([['mo-fictional', {
+      jurisdiction: 'state:MO',
+      authority: [mo1040Es],
+    }]])).toEqual([])
+    expect(offSourceAuthorities([['mt-fictional', {
+      jurisdiction: 'state:MT',
+      authority: [mtHb337],
+    }]])).toEqual([])
+    expect(stateRulesMissingStateAuthority([['mt-fictional', {
+      jurisdiction: 'state:MT',
+      authority: [mtHb337],
+    }]])).toEqual([])
+    expect(offSourceAuthorities([['ne-fictional', {
+      jurisdiction: 'state:NE',
+      authority: [ne1040nEs],
+    }]])).toEqual([])
+    expect(stateRulesMissingStateAuthority([['ne-fictional', {
+      jurisdiction: 'state:NE',
+      authority: [ne1040nEs],
+    }]])).toEqual([])
+    expect(offSourceAuthorities([['ks-fictional', {
+      jurisdiction: 'state:KS',
+      authority: [mo1040Es],
+    }]])).toEqual(['ks-fictional:Missouri DOR, Form MO-1040ES (2026), worksheet Line 6 standard deduction:dor.mo.gov'])
+    expect(offSourceAuthorities([['mo-fictional', {
+      jurisdiction: 'state:MO',
+      authority: [mtHb337],
+    }]])).toEqual(['mo-fictional:Montana DOR, HB337 — Tax Year 2026 Income Tax Brackets, scope heading:revenuefiles.mt.gov'])
+    expect(offSourceAuthorities([['ne-fictional', {
+      jurisdiction: 'state:NE',
+      authority: [mo1040Es],
+    }]])).toEqual(['ne-fictional:Missouri DOR, Form MO-1040ES (2026), worksheet Line 6 standard deduction:dor.mo.gov'])
+    expect(offSourceAuthorities([['irc-fictional-federal', {
+      jurisdiction: 'federal',
+      authority: [ne1040nEs],
+    }]])).toEqual(['irc-fictional-federal:Nebraska DOR, Form 1040N-ES (2026), worksheet Line 5 standard deduction:revenue.nebraska.gov'])
+    expect(offSourceAuthorities([['mo-fictional', {
+      jurisdiction: 'state:MO',
+      authority: [{
+        citation: 'MO DOR forms index',
+        url: 'https://dor.mo.gov/forms/',
+      }],
+    }]])).toEqual(['mo-fictional:MO DOR forms index:dor.mo.gov'])
+    expect(offSourceAuthorities([['mo-fictional', {
+      jurisdiction: 'state:MO',
+      authority: [{
+        citation: 'MO-1040ES prior-year form',
+        url: 'https://dor.mo.gov/forms/MO-1040ES_2025.pdf',
+      }],
+    }]])).toEqual(['mo-fictional:MO-1040ES prior-year form:dor.mo.gov'])
+    expect(offSourceAuthorities([['mo-fictional', {
+      jurisdiction: 'state:MO',
+      authority: [{
+        citation: 'MO-1040ES with query suffix',
+        url: 'https://dor.mo.gov/forms/MO-1040ES_2026.pdf?download=1',
+      }],
+    }]])).toEqual(['mo-fictional:MO-1040ES with query suffix:dor.mo.gov'])
+    expect(offSourceAuthorities([['mo-fictional', {
+      jurisdiction: 'state:MO',
+      authority: [{
+        citation: 'Credential-smuggled MO-1040ES',
+        url: 'https://dor.mo.gov@evil.example/forms/MO-1040ES_2026.pdf',
+      }],
+    }]])).toEqual(['mo-fictional:Credential-smuggled MO-1040ES:evil.example'])
+    expect(offSourceAuthorities([['mt-fictional', {
+      jurisdiction: 'state:MT',
+      authority: [{
+        citation: 'HB 337 neighboring news path',
+        url: 'https://revenuefiles.mt.gov/news/recent-news/HB-336',
+      }],
+    }]])).toEqual(['mt-fictional:HB 337 neighboring news path:revenuefiles.mt.gov'])
+    expect(offSourceAuthorities([['mt-fictional', {
+      jurisdiction: 'state:MT',
+      authority: [{
+        citation: 'HB 337 with trailing slash',
+        url: 'https://revenuefiles.mt.gov/news/recent-news/HB-337/',
+      }],
+    }]])).toEqual(['mt-fictional:HB 337 with trailing slash:revenuefiles.mt.gov'])
+    expect(offSourceAuthorities([['mt-fictional', {
+      jurisdiction: 'state:MT',
+      authority: [{
+        citation: 'revenue.mt.gov withholding notice (host tier only)',
+        url: 'https://revenue.mt.gov/taxes/individual-income-tax/withholding-tax',
+      }],
+    }]])).toEqual([])
+    expect(offSourceAuthorities([['ne-fictional', {
+      jurisdiction: 'state:NE',
+      authority: [{
+        citation: 'Nebraska DOR tax-forms index',
+        url: 'https://revenue.nebraska.gov/tax-forms',
+      }],
+    }]])).toEqual(['ne-fictional:Nebraska DOR tax-forms index:revenue.nebraska.gov'])
+    expect(offSourceAuthorities([['ne-fictional', {
+      jurisdiction: 'state:NE',
+      authority: [{
+        citation: '1040N-ES neighboring folder year',
+        url: 'https://revenue.nebraska.gov/sites/default/files/doc/tax-forms/2024/f_1040N-ES.pdf',
+      }],
+    }]])).toEqual(['ne-fictional:1040N-ES neighboring folder year:revenue.nebraska.gov'])
+    expect(offSourceAuthorities([['ne-fictional', {
+      jurisdiction: 'state:NE',
+      authority: [{
+        citation: '1040N-ES with query suffix',
+        url: 'https://revenue.nebraska.gov/sites/default/files/doc/tax-forms/2025/f_1040N-ES.pdf?download=1',
+      }],
+    }]])).toEqual(['ne-fictional:1040N-ES with query suffix:revenue.nebraska.gov'])
+    expect(stateRulesMissingStateAuthority([['mo-fictional', {
+      jurisdiction: 'state:MO',
+      authority: [{
+        citation: 'MO DOR forms index',
+        url: 'https://dor.mo.gov/forms/',
+      }],
+    }]])).toEqual(['mo-fictional'])
+    expect(stateRulesMissingStateAuthority([['ne-fictional', {
+      jurisdiction: 'state:NE',
+      authority: [{
+        citation: 'Nebraska DOR tax-forms index',
+        url: 'https://revenue.nebraska.gov/tax-forms',
+      }],
+    }]])).toEqual(['ne-fictional'])
+  })
+
+  it('admits verified NC-40 open page by exact URL only', () => {
+    // Verified 2026-09-12: Form NC-40 2026 worksheet page 2 standard deduction
+    // table; admission is the exact checked URL, not ncdor.gov as a host tier.
+    const nc40Open = {
+      citation: 'North Carolina DOR, Form NC-40 2026, worksheet page 2 standard deduction table',
+      url: 'https://www.ncdor.gov/individual-estimated-income-tax/open',
+    }
+    expect(offSourceAuthorities([['nc-fictional', {
+      jurisdiction: 'state:NC',
+      authority: [nc40Open],
+    }]])).toEqual([])
+    expect(stateRulesMissingStateAuthority([['nc-fictional', {
+      jurisdiction: 'state:NC',
+      authority: [nc40Open],
+    }]])).toEqual([])
+    expect(offSourceAuthorities([['sc-fictional', {
+      jurisdiction: 'state:SC',
+      authority: [nc40Open],
+    }]])).toEqual(['sc-fictional:North Carolina DOR, Form NC-40 2026, worksheet page 2 standard deduction table:www.ncdor.gov'])
+    expect(offSourceAuthorities([['nc-fictional', {
+      jurisdiction: 'state:NC',
+      authority: [{
+        citation: 'NCDOR estimated-tax index',
+        url: 'https://www.ncdor.gov/individual-estimated-income-tax',
+      }],
+    }]])).toEqual(['nc-fictional:NCDOR estimated-tax index:www.ncdor.gov'])
+    expect(offSourceAuthorities([['nc-fictional', {
+      jurisdiction: 'state:NC',
+      authority: [{
+        citation: 'NC-40 with query suffix',
+        url: 'https://www.ncdor.gov/individual-estimated-income-tax/open?download=1',
+      }],
+    }]])).toEqual(['nc-fictional:NC-40 with query suffix:www.ncdor.gov'])
+    expect(offSourceAuthorities([['irc-fictional-federal', {
+      jurisdiction: 'federal',
+      authority: [nc40Open],
+    }]])).toEqual(['irc-fictional-federal:North Carolina DOR, Form NC-40 2026, worksheet page 2 standard deduction table:www.ncdor.gov'])
+    expect(stateRulesMissingStateAuthority([['sc-fictional', {
+      jurisdiction: 'state:SC',
+      authority: [nc40Open],
+    }]])).toEqual(['sc-fictional'])
+  })
+
   it('admits tax.ny.gov only for a New York rule', () => {
     // Verified 2026-09-09: DTF seniors guidance for
     // ny-dtf-social-security-subtraction.
@@ -2000,6 +2214,27 @@ describe('tax rule registry conformance', () => {
       authority: [{
         citation: 'Minnesota Department of Revenue, 2026 rate schedule',
         url: 'https://www.revenue.state.mn.us/tax-individual-income-tax/rates',
+      }],
+    }]])).toEqual([])
+    expect(offSourceAuthorities([['mo-fictional', {
+      jurisdiction: 'state:MO',
+      authority: [{
+        citation: 'Missouri DOR, Form MO-1040ES (2026)',
+        url: 'https://dor.mo.gov/forms/MO-1040ES_2026.pdf',
+      }],
+    }]])).toEqual([])
+    expect(offSourceAuthorities([['mt-fictional', {
+      jurisdiction: 'state:MT',
+      authority: [{
+        citation: 'Montana DOR, HB337 — Tax Year 2026 Income Tax Brackets',
+        url: 'https://revenuefiles.mt.gov/news/recent-news/HB-337',
+      }],
+    }]])).toEqual([])
+    expect(offSourceAuthorities([['ne-fictional', {
+      jurisdiction: 'state:NE',
+      authority: [{
+        citation: 'Nebraska DOR, Form 1040N-ES (2026)',
+        url: 'https://revenue.nebraska.gov/sites/default/files/doc/tax-forms/2025/f_1040N-ES.pdf',
       }],
     }]])).toEqual([])
   })
@@ -2224,7 +2459,7 @@ describe('periodic re-verification', () => {
     const latestDueOn = taxRuleIds
       .map((ruleId) => taxRuleDueOn(ruleId))
       .reduce((latest, dueOn) => (dueOn > latest ? dueOn : latest))
-    expect(latestDueOn).toBe('2027-09-10')
+    expect(latestDueOn).toBe('2027-09-12')
     expect(taxRulesDueForVerification(latestDueOn)).toEqual([...taxRuleIds])
   })
 

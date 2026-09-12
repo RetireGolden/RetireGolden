@@ -737,6 +737,67 @@ export const southAtlanticStateRecords = {
     ],
   },
 
+  'ncgs-105-153-7-2026-flat-rate-and-standard-deduction': {
+    title: 'North Carolina taxes TY2026 ordinary income at 3.99% after supported single/MFJ standard deductions',
+    statement:
+      'For taxable years beginning after calendar 2025, N.C. Gen. Stat. §105-153.7(a) imposes a flat 3.99% tax on North Carolina taxable income. Section 105-153.7(a1)\'s revenue-trigger rate reductions apply only from taxable years beginning in 2027 onward and are outside this record. Section 105-153.5(a)(1) sets fixed standard-deduction amounts by filing status: $12,750 single and $25,500 married filing jointly/surviving spouse. The statute has no annual indexing formula; NCDOR\'s 2026 NC-40 worksheet republishes the same cells under a "For Tax Years Beginning on or after January 1, 2026" footer. The pack stores those deduction cells and a single 3.99% bracket for both supported filing statuses. North Carolina does not import the federal age-65 standard-deduction addition; the state amount is filing-status based only. Settled only for that TY2026 flat ordinary rate and supported single/MFJ standard-deduction mapping; head-of-household, married-filing-separate, itemization, child-deduction schedules, Bailey and military limbs, and whole-return accuracy are outside this record. The record is bounded to TY2026 even though the current statutory table continues until amended.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:NC',
+    authority: [{
+      kind: 'statute',
+      citation: 'N.C. Gen. Stat. §105-153.7(a)',
+      url: 'https://www.ncleg.gov/EnactedLegislation/Statutes/HTML/BySection/Chapter_105/GS_105-153.7.html',
+      quotedText:
+        'Except as otherwise provided in subsection (a1) of this section, the tax is a percentage of the taxpayer\'s North Carolina taxable income computed as follows:',
+    }, {
+      kind: 'statute',
+      citation: 'N.C. Gen. Stat. §105-153.7(a), TY2026 flat rate',
+      url: 'https://www.ncleg.gov/EnactedLegislation/Statutes/HTML/BySection/Chapter_105/GS_105-153.7.html',
+      quotedText:
+        'Taxable Years Beginning	Tax\nIn 2022	4.99%\nIn 2023	4.75%\nIn 2024	4.5%\nIn 2025	4.25%\nAfter 2025	3.99%.',
+    }, {
+      kind: 'statute',
+      citation: 'N.C. Gen. Stat. §105-153.7(a1) (trigger scope)',
+      url: 'https://www.ncleg.gov/EnactedLegislation/Statutes/HTML/BySection/Chapter_105/GS_105-153.7.html',
+      quotedText:
+        'Notwithstanding the tax rates set out in subsection (a) of this section, if total General Fund revenue in a fiscal year set out below exceeds the trigger amount indicated for that fiscal year, then the applicable tax rate for the indicated and subsequent tax years shall be equal to the greater of (i) the prior taxable year\'s rate decreased by one-half percentage point (0.50%) or (ii) two and forty-nine hundredths percent (2.49%). For purposes of this subsection, total General Fund revenue is the amount stated in the final accounting of total General Fund Reverting Net Tax and Non-Tax Revenues for the fiscal year, as reported by the Office of State Controller in August following the end of the fiscal year.\nFiscal Year	Trigger Amount	Taxable Year Beginning\nFY 2025-2026	$33,042,000,000	In 2027',
+    }, {
+      kind: 'statute',
+      citation: 'N.C. Gen. Stat. §105-153.5(a)(1), standard deduction table',
+      url: 'https://www.ncleg.gov/EnactedLegislation/Statutes/HTML/BySection/Chapter_105/GS_105-153.5.html',
+      quotedText:
+        'The standard deduction amount is zero for a person who is not eligible for a standard deduction under section 63 of the Code. For all other taxpayers, the standard deduction amount is equal to the amount listed in the table below based on the taxpayer\'s filing status: … Filing Status Standard Deduction Married, filing jointly/surviving spouse $25,500 Head of Household 19,125 Single 12,750 Married, filing separately 12,750.',
+    }, {
+      kind: 'formInstruction',
+      citation: 'North Carolina DOR, Form NC-40 2026, worksheet Line 6 standard deduction instruction',
+      url: 'https://www.ncdor.gov/individual-estimated-income-tax/open',
+      quotedText:
+        'If you plan to claim the N.C. standard deduction, use the amount shown below for your filing status.',
+    }, {
+      kind: 'formInstruction',
+      citation: 'North Carolina DOR, Form NC-40 2026, worksheet page 2 standard deduction table',
+      url: 'https://www.ncdor.gov/individual-estimated-income-tax/open',
+      quotedText:
+        'If you plan to claim the N.C. standard deduction, use the amount shown below for your filing status. … Married, filing jointly/surviving spouse $ 25,500 … Single $ 12,750 … For Tax Years Beginning on or after January 1, 2026',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: 2026,
+    verifiedOn: '2026-09-12',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#NC',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+      'packages/engine/src/tax/stateTax.ts#bracketTax',
+    ],
+  },
+
   'va-code-58-1-322-03-age-deduction-and-social-security': {
     title: 'Virginia phases the age-65 deduction out against adjusted federal AGI',
     statement:

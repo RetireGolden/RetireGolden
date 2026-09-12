@@ -945,6 +945,49 @@ export const westStateRecords = {
     ],
   },
 
+  'mt-hb337-2026-ordinary-rate-schedule': {
+    title: 'Montana HB 337 publishes TY2026 ordinary two-bracket rates for supported single and MFJ filers',
+    statement:
+      'Montana Department of Revenue guidance on HB 337 lists Tax Year 2026 ordinary income tax brackets of 4.7% on taxable income from $0 to $47,500 single (and married filing separately) and $0 to $95,000 married filing jointly, and 5.65% above those thresholds. The pack stores those breakpoints and rates for single and married filing jointly. Federal-conformed standard deductions flow through `mt-mca-15-30-2120-federal-taxable-income-base` and are not re-quoted here. Settled only for that TY2026 ordinary two-bracket schedule on supported single and MFJ cells; the separate long-term capital gains table, Tax Year 2027 brackets, head-of-household, married-filing-separate, age-65 subtractions, and whole-return accuracy are outside this record.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'state:MT',
+    authority: [{
+      kind: 'stateAgencyPublication',
+      citation: 'Montana DOR, HB337 effective year scope',
+      url: 'https://revenuefiles.mt.gov/news/recent-news/HB-337',
+      quotedText:
+        'House Bill 337 (HB337) changes income taxes for individuals by expanding the bracket for the lower rate and reducing the upper rate. These changes apply to tax years 2026 and 2027, as shown below:',
+    }, {
+      kind: 'stateAgencyPublication',
+      citation: 'Montana DOR, HB337 — Tax Year 2026 Income Tax Brackets table',
+      url: 'https://revenuefiles.mt.gov/news/recent-news/HB-337',
+      quotedText:
+        'Tax Year 2026 Income Tax Brackets\nTax Year 2026 – Montana Individual Income Tax Rates\nTax rate on taxable income*\nMarried filing Jointly and Surviving Spouse\nHead of Household\nSingle and Married filing Separately\n4.7% on taxable income*\n$0.00 to $95,000\n$0.00 to $71,250\n$0.00 to $47,500\n5.65% on taxable income*\nover $95,000\nover $71,250\nover $47,500',
+    }, {
+      kind: 'stateAgencyPublication',
+      citation: 'Montana DOR, HB337 — ordinary-income scope note',
+      url: 'https://revenuefiles.mt.gov/news/recent-news/HB-337',
+      quotedText:
+        '*taxable income does not include long-term capital gains',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: 2026,
+    verifiedOn: '2026-09-12',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#MT',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+      'packages/engine/src/tax/stateTax.ts#bracketTax',
+    ],
+  },
+
   // Batch C state records — verified against the staged sources on 2026-08-27.
   'nm-stat-7-2-5-14-social-security-and-federal-standard': {
     title: 'New Mexico applies an income-tested Social Security exemption',

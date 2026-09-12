@@ -1,15 +1,15 @@
 {
-  "generatedAt": "2026-09-10T18:59:10.717Z",
-  "recordCount": 471,
-  "urlCount": 372,
+  "generatedAt": "2026-09-12T15:23:23.483Z",
+  "recordCount": 476,
+  "urlCount": 379,
   "fetched": 0,
-  "cached": 372,
-  "entryCount": 1394,
+  "cached": 379,
+  "entryCount": 1431,
   "counts": {
-    "EXACT": 965,
+    "EXACT": 974,
     "PUNCTUATION": 44,
-    "PDF-WORD-LEVEL": 277,
-    "ELISION-EXACT": 90,
+    "PDF-WORD-LEVEL": 304,
+    "ELISION-EXACT": 91,
     "ELISION-PUNCTUATION": 8,
     "PDF-NOT-VERIFIABLE": 7,
     "UNFETCHABLE": 3
@@ -10735,6 +10735,136 @@
       "diagnosis": null
     },
     {
+      "id": "mo-dor-2026-rate-schedule-and-standard-deduction",
+      "citation": "Missouri DOR, Form MO-1040ES (2026), form year header",
+      "host": "dor.mo.gov",
+      "url": "https://dor.mo.gov/forms/MO-1040ES_2026.pdf",
+      "quoteSha256": "f507371ee9119c1f",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "mo-dor-2026-rate-schedule-and-standard-deduction",
+      "citation": "Missouri DOR, Form MO-1040ES (2026), worksheet Line 6 basic standard deduction",
+      "host": "dor.mo.gov",
+      "url": "https://dor.mo.gov/forms/MO-1040ES_2026.pdf",
+      "quoteSha256": "27ac453c9c3dae28",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "mo-dor-2026-rate-schedule-and-standard-deduction",
+      "citation": "RSMo §143.131(2)",
+      "host": "revisor.mo.gov",
+      "url": "https://revisor.mo.gov/main/OneSection.aspx?section=143.131",
+      "quoteSha256": "747a4009d91f52fa",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source (matched on a page below the shell-length threshold)",
+      "diagnosis": null
+    },
+    {
+      "id": "mo-dor-2026-rate-schedule-and-standard-deduction",
+      "citation": "Rev. Proc. 2025-32, section 4.14, 2026 standard deduction",
+      "host": "www.irs.gov",
+      "url": "https://www.irs.gov/pub/irs-drop/rp-25-32.pdf",
+      "quoteSha256": "1016956da11bde68",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "4 elision segments, all present in the extracted text",
+      "diagnosis": null
+    },
+    {
+      "id": "mo-dor-2026-rate-schedule-and-standard-deduction",
+      "citation": "Missouri DOR, Form MO-1040ES (2026), tax rate chart zero band",
+      "host": "dor.mo.gov",
+      "url": "https://dor.mo.gov/forms/MO-1040ES_2026.pdf",
+      "quoteSha256": "7a74c61770308058",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "mo-dor-2026-rate-schedule-and-standard-deduction",
+      "citation": "Missouri DOR, Form MO-1040ES (2026), tax rate chart 2.0% band",
+      "host": "dor.mo.gov",
+      "url": "https://dor.mo.gov/forms/MO-1040ES_2026.pdf",
+      "quoteSha256": "e8113709a3ff40b7",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "mo-dor-2026-rate-schedule-and-standard-deduction",
+      "citation": "Missouri DOR, Form MO-1040ES (2026), tax rate chart 2.5% band",
+      "host": "dor.mo.gov",
+      "url": "https://dor.mo.gov/forms/MO-1040ES_2026.pdf",
+      "quoteSha256": "689e650bcf8db29b",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "mo-dor-2026-rate-schedule-and-standard-deduction",
+      "citation": "Missouri DOR, Form MO-1040ES (2026), tax rate chart 3.0% band",
+      "host": "dor.mo.gov",
+      "url": "https://dor.mo.gov/forms/MO-1040ES_2026.pdf",
+      "quoteSha256": "b4b9017bd91d5c0e",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "mo-dor-2026-rate-schedule-and-standard-deduction",
+      "citation": "Missouri DOR, Form MO-1040ES (2026), tax rate chart 3.5% band",
+      "host": "dor.mo.gov",
+      "url": "https://dor.mo.gov/forms/MO-1040ES_2026.pdf",
+      "quoteSha256": "ca47531ee22fd00f",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "mo-dor-2026-rate-schedule-and-standard-deduction",
+      "citation": "Missouri DOR, Form MO-1040ES (2026), tax rate chart 4.0% band",
+      "host": "dor.mo.gov",
+      "url": "https://dor.mo.gov/forms/MO-1040ES_2026.pdf",
+      "quoteSha256": "e938bfe738670b83",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "mo-dor-2026-rate-schedule-and-standard-deduction",
+      "citation": "Missouri DOR, Form MO-1040ES (2026), tax rate chart 4.5% band",
+      "host": "dor.mo.gov",
+      "url": "https://dor.mo.gov/forms/MO-1040ES_2026.pdf",
+      "quoteSha256": "2471a219c6458766",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "mo-dor-2026-rate-schedule-and-standard-deduction",
+      "citation": "Missouri DOR, Form MO-1040ES (2026), tax rate chart 4.7% top band",
+      "host": "dor.mo.gov",
+      "url": "https://dor.mo.gov/forms/MO-1040ES_2026.pdf",
+      "quoteSha256": "61173768d91f82fc",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "2 elision segments, all present in the extracted text",
+      "diagnosis": null
+    },
+    {
+      "id": "mo-dor-2026-rate-schedule-and-standard-deduction",
+      "citation": "Missouri DOR, Form MO-1040ES (2026), tax rate chart whole-dollar example",
+      "host": "dor.mo.gov",
+      "url": "https://dor.mo.gov/forms/MO-1040ES_2026.pdf",
+      "quoteSha256": "ba37197f70c76180",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
       "id": "mo-rsmo-143-121-capital-gain-deduction",
       "citation": "Mo. Rev. Stat. 143.121.3(14)(a)",
       "host": "revisor.mo.gov",
@@ -11432,6 +11562,26 @@
       "diagnosis": null
     },
     {
+      "id": "mn-dor-seniors-resident-pension-inclusion",
+      "citation": "Minnesota DOR, Seniors — Pension Income",
+      "host": "www.revenue.state.mn.us",
+      "url": "https://www.revenue.state.mn.us/seniors",
+      "quoteSha256": "b2fa43244c1790d0",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "mn-dor-seniors-resident-pension-inclusion",
+      "citation": "Minnesota DOR, Seniors — military carve-out scope (excluded limb)",
+      "host": "www.revenue.state.mn.us",
+      "url": "https://www.revenue.state.mn.us/seniors",
+      "quoteSha256": "0d815463ce2481d9",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
       "id": "mn-stat-290-0132-subd-26-social-security-inclusion",
       "citation": "Minn. Stat. 290.0132, subd. 26(a)",
       "host": "www.revisor.mn.gov",
@@ -11529,6 +11679,136 @@
       "quoteSha256": "ace65e7f90078f85",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "ne-dor-2026-rate-schedule-and-standard-deduction",
+      "citation": "Nebraska DOR, Form 1040N-ES (2026), worksheet Line 5 standard deduction",
+      "host": "revenue.nebraska.gov",
+      "url": "https://revenue.nebraska.gov/sites/default/files/doc/tax-forms/2025/f_1040N-ES.pdf",
+      "quoteSha256": "53cb919d6be398e5",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "ne-dor-2026-rate-schedule-and-standard-deduction",
+      "citation": "Nebraska DOR, Form 1040N-ES (2026), worksheet Line 5 MFJ standard deduction",
+      "host": "revenue.nebraska.gov",
+      "url": "https://revenue.nebraska.gov/sites/default/files/doc/tax-forms/2025/f_1040N-ES.pdf",
+      "quoteSha256": "deccae7876f40d84",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "ne-dor-2026-rate-schedule-and-standard-deduction",
+      "citation": "Nebraska DOR, Form 1040N-ES (2026), estimated rate schedule scope",
+      "host": "revenue.nebraska.gov",
+      "url": "https://revenue.nebraska.gov/sites/default/files/doc/tax-forms/2025/f_1040N-ES.pdf",
+      "quoteSha256": "a14838eb85ea44ad",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "ne-dor-2026-rate-schedule-and-standard-deduction",
+      "citation": "Nebraska DOR, Form 1040N-ES (2026), single rate schedule first bracket",
+      "host": "revenue.nebraska.gov",
+      "url": "https://revenue.nebraska.gov/sites/default/files/doc/tax-forms/2025/f_1040N-ES.pdf",
+      "quoteSha256": "3552e4dd8d6e18c4",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "ne-dor-2026-rate-schedule-and-standard-deduction",
+      "citation": "Nebraska DOR, Form 1040N-ES (2026), single rate schedule second bracket",
+      "host": "revenue.nebraska.gov",
+      "url": "https://revenue.nebraska.gov/sites/default/files/doc/tax-forms/2025/f_1040N-ES.pdf",
+      "quoteSha256": "0bbdf3823babc249",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "ne-dor-2026-rate-schedule-and-standard-deduction",
+      "citation": "Nebraska DOR, Form 1040N-ES (2026), single rate schedule third bracket",
+      "host": "revenue.nebraska.gov",
+      "url": "https://revenue.nebraska.gov/sites/default/files/doc/tax-forms/2025/f_1040N-ES.pdf",
+      "quoteSha256": "a10c2845c7163276",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "ne-dor-2026-rate-schedule-and-standard-deduction",
+      "citation": "Nebraska DOR, Form 1040N-ES (2026), single rate schedule fourth bracket",
+      "host": "revenue.nebraska.gov",
+      "url": "https://revenue.nebraska.gov/sites/default/files/doc/tax-forms/2025/f_1040N-ES.pdf",
+      "quoteSha256": "6306f72f6bfd6607",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "ne-dor-2026-rate-schedule-and-standard-deduction",
+      "citation": "Nebraska DOR, Form 1040N-ES (2026), MFJ rate schedule heading",
+      "host": "revenue.nebraska.gov",
+      "url": "https://revenue.nebraska.gov/sites/default/files/doc/tax-forms/2025/f_1040N-ES.pdf",
+      "quoteSha256": "14ddd4429e162aa6",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "ne-dor-2026-rate-schedule-and-standard-deduction",
+      "citation": "Nebraska DOR, Form 1040N-ES (2026), MFJ rate schedule first bracket",
+      "host": "revenue.nebraska.gov",
+      "url": "https://revenue.nebraska.gov/sites/default/files/doc/tax-forms/2025/f_1040N-ES.pdf",
+      "quoteSha256": "115698509fdf71a8",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "ne-dor-2026-rate-schedule-and-standard-deduction",
+      "citation": "Nebraska DOR, Form 1040N-ES (2026), MFJ rate schedule second bracket",
+      "host": "revenue.nebraska.gov",
+      "url": "https://revenue.nebraska.gov/sites/default/files/doc/tax-forms/2025/f_1040N-ES.pdf",
+      "quoteSha256": "934a9e8d1e285182",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "2 elision segments, all present in the extracted text",
+      "diagnosis": null
+    },
+    {
+      "id": "ne-dor-2026-rate-schedule-and-standard-deduction",
+      "citation": "Nebraska DOR, Form 1040N-ES (2026), MFJ rate schedule third bracket",
+      "host": "revenue.nebraska.gov",
+      "url": "https://revenue.nebraska.gov/sites/default/files/doc/tax-forms/2025/f_1040N-ES.pdf",
+      "quoteSha256": "dc74fa176cf8046d",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "ne-dor-2026-rate-schedule-and-standard-deduction",
+      "citation": "Nebraska DOR, Form 1040N-ES (2026), MFJ rate schedule fourth bracket",
+      "host": "revenue.nebraska.gov",
+      "url": "https://revenue.nebraska.gov/sites/default/files/doc/tax-forms/2025/f_1040N-ES.pdf",
+      "quoteSha256": "4b7d963d56721240",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "ne-dor-2026-rate-schedule-and-standard-deduction",
+      "citation": "Nebraska DOR, Form 1040N-ES (2026), TY2026 third/fourth bracket rate note",
+      "host": "revenue.nebraska.gov",
+      "url": "https://revenue.nebraska.gov/sites/default/files/doc/tax-forms/2025/f_1040N-ES.pdf",
+      "quoteSha256": "6579d49aaa3d8d2e",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
       "diagnosis": null
     },
     {
@@ -12149,6 +12429,66 @@
       "quoteSha256": "ae9f1f3aaae1197a",
       "verdict": "ELISION-EXACT",
       "detail": "2 elision segments, every one a literal substring",
+      "diagnosis": null
+    },
+    {
+      "id": "ncgs-105-153-7-2026-flat-rate-and-standard-deduction",
+      "citation": "N.C. Gen. Stat. §105-153.7(a)",
+      "host": "www.ncleg.gov",
+      "url": "https://www.ncleg.gov/EnactedLegislation/Statutes/HTML/BySection/Chapter_105/GS_105-153.7.html",
+      "quoteSha256": "29c2291351c94083",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "ncgs-105-153-7-2026-flat-rate-and-standard-deduction",
+      "citation": "N.C. Gen. Stat. §105-153.7(a), TY2026 flat rate",
+      "host": "www.ncleg.gov",
+      "url": "https://www.ncleg.gov/EnactedLegislation/Statutes/HTML/BySection/Chapter_105/GS_105-153.7.html",
+      "quoteSha256": "f35416bf7ec91d44",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "ncgs-105-153-7-2026-flat-rate-and-standard-deduction",
+      "citation": "N.C. Gen. Stat. §105-153.7(a1) (trigger scope)",
+      "host": "www.ncleg.gov",
+      "url": "https://www.ncleg.gov/EnactedLegislation/Statutes/HTML/BySection/Chapter_105/GS_105-153.7.html",
+      "quoteSha256": "ebec672cca776303",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "ncgs-105-153-7-2026-flat-rate-and-standard-deduction",
+      "citation": "N.C. Gen. Stat. §105-153.5(a)(1), standard deduction table",
+      "host": "www.ncleg.gov",
+      "url": "https://www.ncleg.gov/EnactedLegislation/Statutes/HTML/BySection/Chapter_105/GS_105-153.5.html",
+      "quoteSha256": "e735c98140ae6f8c",
+      "verdict": "ELISION-EXACT",
+      "detail": "2 elision segments, every one a literal substring",
+      "diagnosis": null
+    },
+    {
+      "id": "ncgs-105-153-7-2026-flat-rate-and-standard-deduction",
+      "citation": "North Carolina DOR, Form NC-40 2026, worksheet Line 6 standard deduction instruction",
+      "host": "www.ncdor.gov",
+      "url": "https://www.ncdor.gov/individual-estimated-income-tax/open",
+      "quoteSha256": "8145ffcb84c8415c",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "ncgs-105-153-7-2026-flat-rate-and-standard-deduction",
+      "citation": "North Carolina DOR, Form NC-40 2026, worksheet page 2 standard deduction table",
+      "host": "www.ncdor.gov",
+      "url": "https://www.ncdor.gov/individual-estimated-income-tax/open",
+      "quoteSha256": "fbfdc4ed95b93f74",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "4 elision segments, all present in the extracted text",
       "diagnosis": null
     },
     {
@@ -13727,6 +14067,36 @@
       "host": "mca.legmt.gov",
       "url": "https://mca.legmt.gov/bills/mca/title_0150/chapter_0300/part_0210/section_0200/0150-0300-0210-0200.html",
       "quoteSha256": "df74bfe4061dac04",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "mt-hb337-2026-ordinary-rate-schedule",
+      "citation": "Montana DOR, HB337 effective year scope",
+      "host": "revenuefiles.mt.gov",
+      "url": "https://revenuefiles.mt.gov/news/recent-news/HB-337",
+      "quoteSha256": "de25499ebed0956d",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "mt-hb337-2026-ordinary-rate-schedule",
+      "citation": "Montana DOR, HB337 — Tax Year 2026 Income Tax Brackets table",
+      "host": "revenuefiles.mt.gov",
+      "url": "https://revenuefiles.mt.gov/news/recent-news/HB-337",
+      "quoteSha256": "24ec3e483188d2c4",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "mt-hb337-2026-ordinary-rate-schedule",
+      "citation": "Montana DOR, HB337 — ordinary-income scope note",
+      "host": "revenuefiles.mt.gov",
+      "url": "https://revenuefiles.mt.gov/news/recent-news/HB-337",
+      "quoteSha256": "1ab1140d3db1112e",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null
