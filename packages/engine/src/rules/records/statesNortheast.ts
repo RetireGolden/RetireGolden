@@ -605,41 +605,43 @@ export const northeastStateRecords = {
     ],
   },
 
-  'ma-gen-laws-ch62-s2-public-pension-exclusion': {
-    title: 'Massachusetts deducts contributory public and uniformed-services retirement, not every public pension',
-    statement:
-      'Massachusetts gross income deducts income from any contributory annuity, pension, endowment or retirement fund of the United States government, the commonwealth, or any political subdivision thereof to which the employee has contributed, and United States government retirement pay for a retired member of the Uniformed Services. Approximated: the pack encodes the public bucket as `{ kind: \'full\' }`, but `publicPensionIncome` carries no contributory or system identity, so a noncontributory public pension the statute leaves in the base is removed the same way a contributory Commonwealth or Uniformed-Services annuity is. The engine understates tax on every public-pension dollar the subparagraph does not reach. Private IRA, 401(k) and similar distributions stay `{ kind: \'none\' }`, which matches the absence of those sources from this subparagraph.',
-    classification: 'approximated',
-    contraryReading: null,
-    errorDirection: 'understatesTax',
-    conventionRationale: null,
-    jurisdiction: 'state:MA',
-    authority: [{
-      kind: 'statute',
-      citation: 'Mass. Gen. Laws ch. 62, §2(a)(2)',
-      url: 'https://malegislature.gov/Laws/GeneralLaws/PartI/TitleIX/Chapter62/Section2',
-      quotedText:
-        'The items to be deducted therefrom are:--',
-    }, {
-      kind: 'statute',
-      citation: 'Mass. Gen. Laws ch. 62, §2(a)(2)(E)',
-      url: 'https://malegislature.gov/Laws/GeneralLaws/PartI/TitleIX/Chapter62/Section2',
-      quotedText:
-        'Income from any contributory annuity, pension, endowment or retirement fund of the United States government or the commonwealth or any political subdivision thereof including the optional retirement system established by section forty of chapter fifteen A, to which the employee has contributed, or any income received from the United States government as retirement pay for a retired member of the Uniformed Services of the United States, as defined in 10 U.S.C. section 1072, regardless of whether the retiree contributed to the retirement system, or any income received from the United States government as survivorship benefits under 10 U.S.C. sections 1431 to 1460, inclusive.',
-    }],
-    volatility: 'staticStatute',
-    effectiveFrom: 2026,
-    effectiveThrough: null,
-    verifiedOn: '2026-08-27',
-    implementedBy: [
-      'packages/engine/src/tax/stateTax.ts',
-      'packages/engine/src/params/state/data/year2026.ts',
+  "ma-gen-laws-ch62-s2-public-pension-exclusion": {
+    "title": "Massachusetts contributory public-pension source boundary",
+    "statement": "Section 2(a)(2)(E) excludes qualifying contributory U.S. and Massachusetts public pensions and specified military benefits. Other-state public plans require established reciprocity. A generic public-pension aggregate cannot prove these conditions. The characterized retirement path evaluates the source facts; unknown source or reciprocity produces an incomplete disclosure. A full public-pension shortcut is not statutory authority.",
+    "classification": "settled",
+    "contraryReading": null,
+    "errorDirection": null,
+    "conventionRationale": null,
+    "jurisdiction": "state:MA",
+    "authority": [
+      {
+        "kind": "statute",
+        "citation": "Mass. Gen. Laws ch.62 §2(a)(2)(E)",
+        "url": "https://malegislature.gov/Laws/GeneralLaws/PartI/TitleIX/Chapter62/Section2",
+        "quotedText": "Income from any contributory annuity, pension, endowment or retirement fund of the United States government or the commonwealth or any political subdivision thereof including the optional retirement system established by section forty of chapter fifteen A, to which the employee has contributed, or any income received from the United States government as retirement pay for a retired member of the Uniformed Services of the United States, as defined in 10 U.S.C. section 1072, regardless of whether the retiree contributed to the retirement system, or any income received from the United States government as survivorship benefits under 10 U.S.C. sections 1431 to 1460, inclusive."
+      },
+      {
+        "kind": "statute",
+        "citation": "Mass. Gen. Laws ch.62 §3B(a)(4), reciprocal contributory public pensions",
+        "url": "https://malegislature.gov/Laws/GeneralLaws/PartI/TitleIX/Chapter62/Section3",
+        "quotedText": "any income from a contributory annuity, pension, endowment or retirement fund of any other state or any political subdivision thereof, to the extent that income from any such similar fund established under the laws of the commonwealth is not subject to taxation in such other state or political subdivision."
+      }
     ],
-    implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#PUBLIC_PENSION_OVERRIDES',
-      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
-      'packages/engine/src/tax/stateTax.ts#retirementExclusion',
+    "volatility": "staticStatute",
+    "effectiveFrom": 2026,
+    "effectiveThrough": null,
+    "verifiedOn": "2026-09-12",
+    "implementedBy": [
+      "packages/engine/src/tax/stateTax.ts",
+      "packages/engine/src/params/state/data/year2026.ts",
+      "packages/engine/src/tax/stateNortheastExtras.ts"
     ],
+    "implementedByFunctions": [
+      "packages/engine/src/params/state/data/year2026.ts#states.MA",
+      "packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult",
+      "packages/engine/src/tax/stateTax.ts#computeStateTaxDetailResult",
+      "packages/engine/src/tax/stateNortheastExtras.ts#massachusettsRetirementAdjustment"
+    ]
   },
 
   'ma-gen-laws-ch62-s2-social-security': {
@@ -1105,4 +1107,463 @@ export const northeastStateRecords = {
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
     ],
   },
+  "ct-personal-exemption-and-ct-agi-schedule": {
+    "title": "Connecticut personal exemption uses Connecticut AGI and discrete steps",
+    "statement": "The exemption uses Connecticut adjusted gross income, not federal AGI. Each $1,000 or fraction above the filing-status threshold removes $1,000 of exemption, floored at zero. The state schedule distinguishes single, MFS, HOH, and MFJ/qualifying surviving spouse. Unknown Connecticut AGI or status cannot establish an exemption. This record covers the personal-exemption worksheet, not rate-recapture or property-tax credits.",
+    "classification": "settled",
+    "contraryReading": null,
+    "errorDirection": null,
+    "conventionRationale": null,
+    "jurisdiction": "state:CT",
+    "authority": [
+      {
+        "kind": "statute",
+        "citation": "§12-702(a)(1), married filing separately",
+        "url": "https://www.cga.ct.gov/current/pub/chap_229.htm",
+        "quotedText": "(a)(1)(A) Any person, other than a trust or estate, subject to the tax under this chapter for any taxable year who files under the federal income tax for such taxable year as a married individual filing separately or, for taxable years commencing prior to January 1, 2000, who files income tax for such taxable year as an unmarried individual shall be entitled to a personal exemption of twelve thousand dollars in determining Connecticut taxable income for purposes of this chapter. (B) In the case of any such taxpayer whose Connecticut adjusted gross income for the taxable year exceeds twentyfour thousand dollars, the exemption amount shall be reduced by one thousand dollars for each one thousand dollars, or fraction thereof, by which the taxpayer's Connecticut adjusted gross income for the taxable year exceeds said amount. In no event shall the reduction exceed one hundred per cent of the exemption."
+      },
+      {
+        "kind": "statute",
+        "citation": "§12-702(a)(2) introductory provision and (I), single",
+        "url": "https://www.cga.ct.gov/current/pub/chap_229.htm",
+        "quotedText": "(2) For taxable years commencing on or after January 1, 2000, any person, other than a trust or estate, subject to the tax under this chapter for any taxable year who files under the federal income tax for such taxable year as an unmarried individual shall be entitled to a personal exemption in determining Connecticut taxable income for purposes of this chapter as follows: ... (I) For taxable years commencing on or after January 1, 2016, fifteen thousand dollars. In the case of any such taxpayer whose Connecticut adjusted gross income for the taxable year exceeds thirty thousand dollars, the exemption amount shall be reduced by one thousand dollars for each one thousand dollars, or fraction thereof, by which the taxpayer's Connecticut adjusted gross income for the taxable year exceeds said amount. In no event shall the reduction exceed one hundred per cent of the exemption."
+      },
+      {
+        "kind": "statute",
+        "citation": "§12-702(b), head of household",
+        "url": "https://www.cga.ct.gov/current/pub/chap_229.htm",
+        "quotedText": "(b) (1) Any person subject to tax under this chapter who files a return under the federal income tax for such taxable year as a head of household, as defined in Section 2(b) of the Internal Revenue Code, shall be entitled to a personal exemption of nineteen thousand dollars in determining Connecticut taxable income for purposes of this chapter. (2) In the case of any such taxpayer whose Connecticut adjusted gross income for the taxable year exceeds thirty-eight thousand dollars, the exemption amount shall be reduced by one thousand dollars for each one thousand dollars, or fraction thereof, by which the taxpayer's Connecticut adjusted gross income for the taxable year exceeds the said amount. In no event shall the reduction exceed one hundred per cent of the exemption."
+      },
+      {
+        "kind": "statute",
+        "citation": "§12-702(c)(1) first sentence and (2), joint and surviving spouse",
+        "url": "https://www.cga.ct.gov/current/pub/chap_229.htm",
+        "quotedText": "(c) (1) Any husband and wife subject to tax under this chapter for any taxable year who file a return under the federal income tax for such taxable year as married individuals filing a joint return or any person who files a return for such taxable year as a surviving spouse, as defined in Section 2(a) of the Internal Revenue Code, shall be entitled to a single personal exemption of twentyfour thousand dollars in determining Connecticut taxable income for purposes of this chapter. ... (2) In the case of any such taxpayer whose Connecticut adjusted gross income for the taxable year exceeds forty-eight thousand dollars, the exemption amount shall be reduced by one thousand dollars for each one thousand dollars, or fraction thereof, by which the taxpayer's Connecticut adjusted gross income for the taxable year exceeds the said amount. In no event shall the reduction exceed one hundred per cent of the exemption."
+      }
+    ],
+    "volatility": "staticStatute",
+    "effectiveFrom": 2026,
+    "effectiveThrough": null,
+    "verifiedOn": "2026-09-12",
+    "implementedBy": [
+      "packages/engine/src/tax/stateTax.ts",
+      "packages/engine/src/params/state/data/year2026.ts",
+      "packages/engine/src/tax/stateNortheastExtras.ts"
+    ],
+    "implementedByFunctions": [
+      "packages/engine/src/params/state/data/year2026.ts#CT",
+      "packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult",
+      "packages/engine/src/tax/stateTax.ts#computeStateTaxDetailResult",
+      "packages/engine/src/tax/stateNortheastExtras.ts#connecticutPersonalExemption"
+    ]
+  },
+
+  "ma-personal-exemptions-and-surtax": {
+    "title": "Massachusetts personal exemptions and TY2026 surtax threshold",
+    "statement": "The 2026 surtax adds 4% only to taxable income above $1,107,750. Personal exemptions are $4,400 single/MFS, $6,800 HOH and $8,800 joint, plus $700 for each qualifying age-65 taxpayer. These are personal exemptions, not a standard deduction. Full filing status and eligible-person counts are required. Short-term capital gain classification is a separate issue from this ordinary/LTCG computation.",
+    "classification": "settled",
+    "contraryReading": null,
+    "errorDirection": null,
+    "conventionRationale": null,
+    "jurisdiction": "state:MA",
+    "authority": [
+      {
+        "kind": "stateAgencyPublication",
+        "citation": "Massachusetts DOR, tax rates, tax year 2026",
+        "url": "https://www.mass.gov/info-details/massachusetts-tax-rates",
+        "quotedText": "5.00% Tax year 2026: For income exceeding $1,107,750, there is an additional surtax of 4%."
+      },
+      {
+        "kind": "statute",
+        "citation": "Mass. Gen. Laws ch.62 §3(b)(1)-(3)",
+        "url": "https://malegislature.gov/Laws/GeneralLaws/PartI/TitleIX/Chapter62/Section3",
+        "quotedText": "an additional exemption of seven hundred dollars if the taxpayer had attained the age of sixty-five before the close of his taxable year."
+      }
+    ],
+    "volatility": "annuallyIndexed",
+    "effectiveFrom": 2026,
+    "effectiveThrough": null,
+    "verifiedOn": "2026-09-12",
+    "implementedBy": [
+      "packages/engine/src/tax/stateTax.ts",
+      "packages/engine/src/params/state/data/year2026.ts",
+      "packages/engine/src/tax/stateNortheastExtras.ts"
+    ],
+    "implementedByFunctions": [
+      "packages/engine/src/params/state/data/year2026.ts#states.MA",
+      "packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult",
+      "packages/engine/src/tax/stateTax.ts#computeStateTaxDetailResult",
+      "packages/engine/src/tax/stateNortheastExtras.ts#massachusettsPersonalExemption"
+    ]
+  },
+
+  "ma-private-pension-basis-recovery": {
+    "title": "Massachusetts previously taxed contributions are recovered once",
+    "statement": "For covered private retirement arrangements, Massachusetts excludes distributions until previously Massachusetts-taxed contributions have been recovered. Federal basis is not a substitute for Massachusetts basis. Opening basis, covered plan type, actual distribution and prior recoveries must be known. Account/owner basis must decrease by accepted recovery so a later year cannot recover it again.",
+    "classification": "settled",
+    "contraryReading": null,
+    "errorDirection": null,
+    "conventionRationale": null,
+    "jurisdiction": "state:MA",
+    "authority": [
+      {
+        "kind": "statute",
+        "citation": "Mass. Gen. Laws ch.62 §2(a)(2)(F)",
+        "url": "https://malegislature.gov/Laws/GeneralLaws/PartI/TitleIX/Chapter62/Section2",
+        "quotedText": "Income from annuity, stock bonus, pension, profit-sharing, annuity or deferred-payment plans or contracts described in sections four hundred and three (b) or four hundred and four of the Code or individual retirement accounts, individual retirement annuities or retirement bonds described in sections four hundred and eight or four hundred and nine of the Code, until an aggregate amount of such income has been deducted under this subparagraph equal to the aggregate of all amounts previously subjected to taxation under this chapter; provided, that this subparagraph shall not apply to income from the optional retirement system established by section forty of chapter fifteen A."
+      }
+    ],
+    "volatility": "staticStatute",
+    "effectiveFrom": 2026,
+    "effectiveThrough": null,
+    "verifiedOn": "2026-09-12",
+    "implementedBy": [
+      "packages/engine/src/tax/stateTax.ts",
+      "packages/engine/src/params/state/data/year2026.ts",
+      "packages/engine/src/tax/stateNortheastExtras.ts"
+    ],
+    "implementedByFunctions": [
+      "packages/engine/src/params/state/data/year2026.ts#states.MA",
+      "packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult",
+      "packages/engine/src/tax/stateTax.ts#computeStateTaxDetailResult",
+      "packages/engine/src/tax/stateNortheastExtras.ts#massachusettsPrivateBasisTaxable"
+    ]
+  },
+
+  "ma-rrb-and-public-pension-exclusions": {
+    "title": "Massachusetts source-specific public, military and railroad exclusions",
+    "statement": "The public-pension exclusion requires a contributory U.S./Massachusetts public system or established out-of-state reciprocal treatment. Missing jurisdiction does not prove an in-state system; noncontributory public pensions are not covered merely because they are public. Uniformed-services retired pay and qualifying survivor benefits have their own exclusion. Tier I, Tier II and specified railroad lump sums are exempt. Only federally included amounts can be removed from the federal base.",
+    "classification": "settled",
+    "contraryReading": null,
+    "errorDirection": null,
+    "conventionRationale": null,
+    "jurisdiction": "state:MA",
+    "authority": [
+      {
+        "kind": "statute",
+        "citation": "Mass. Gen. Laws ch.62 §2(a)(2)(E)",
+        "url": "https://malegislature.gov/Laws/GeneralLaws/PartI/TitleIX/Chapter62/Section2",
+        "quotedText": "Income from any contributory annuity, pension, endowment or retirement fund of the United States government or the commonwealth or any political subdivision thereof including the optional retirement system established by section forty of chapter fifteen A, to which the employee has contributed, or any income received from the United States government as retirement pay for a retired member of the Uniformed Services of the United States, as defined in 10 U.S.C. section 1072, regardless of whether the retiree contributed to the retirement system, or any income received from the United States government as survivorship benefits under 10 U.S.C. sections 1431 to 1460, inclusive."
+      },
+      {
+        "kind": "stateAgencyPublication",
+        "citation": "Massachusetts DOR, railroad retirement benefits",
+        "url": "https://www.mass.gov/info-details/tax-treatment-of-government-pensions-in-massachusetts",
+        "quotedText": "Tier I or Tier II railroad retirement benefits are exempt from Massachusetts taxation. Railroad retirement lump-sum payments, commonly known as the insurance lump-sum payment and the residual payment, are exempt from Massachusetts taxation."
+      },
+      {
+        "kind": "statute",
+        "citation": "Mass. Gen. Laws ch.62 §3B(a)(4), reciprocal contributory public pensions",
+        "url": "https://malegislature.gov/Laws/GeneralLaws/PartI/TitleIX/Chapter62/Section3",
+        "quotedText": "any income from a contributory annuity, pension, endowment or retirement fund of any other state or any political subdivision thereof, to the extent that income from any such similar fund established under the laws of the commonwealth is not subject to taxation in such other state or political subdivision."
+      }
+    ],
+    "volatility": "staticStatute",
+    "effectiveFrom": 2026,
+    "effectiveThrough": null,
+    "verifiedOn": "2026-09-12",
+    "implementedBy": [
+      "packages/engine/src/tax/stateTax.ts",
+      "packages/engine/src/params/state/data/year2026.ts",
+      "packages/engine/src/tax/stateNortheastExtras.ts"
+    ],
+    "implementedByFunctions": [
+      "packages/engine/src/params/state/data/year2026.ts#states.MA",
+      "packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult",
+      "packages/engine/src/tax/stateTax.ts#computeStateTaxDetailResult",
+      "packages/engine/src/tax/stateNortheastExtras.ts#massachusettsRetirementAdjustment"
+    ]
+  },
+
+  "nj-stat-54a-6-26-military-pension-exclusion": {
+    "title": "New Jersey excludes U.S. military pension and survivor payments",
+    "statement": "Qualifying U.S. military pension and military survivor benefits are excluded without an age or income cap. OPM civil-service pensions remain taxable even when military service earns pension credit. This military exclusion is separate from the income-tested ordinary pension exclusion, and the same payment must not consume both pools.",
+    "classification": "settled",
+    "contraryReading": null,
+    "errorDirection": null,
+    "conventionRationale": null,
+    "jurisdiction": "state:NJ",
+    "authority": [
+      {
+        "kind": "statute",
+        "citation": "N.J.S.A.54A:6-26; P.L.2001 c.84 §1",
+        "url": "https://pub.njleg.gov/bills/2000/PL01/84_.PDF",
+        "quotedText": "Gross income shall not include military pension payments or military survivor's benefit payments paid to individuals by the United States with respect to service in the Armed Forces of the United States."
+      },
+      {
+        "kind": "stateAgencyPublication",
+        "citation": "NJ Division of Taxation, military pension and survivor payments",
+        "url": "https://www.nj.gov/treasury/taxation/military/taxinformation.shtml",
+        "quotedText": "Federal civil service pensions or annuities issued by the U.S. Office of Personnel Management are taxable in New Jersey, even if the pension or annuity is based on credit for military service."
+      }
+    ],
+    "volatility": "staticStatute",
+    "effectiveFrom": 2026,
+    "effectiveThrough": null,
+    "verifiedOn": "2026-09-12",
+    "implementedBy": [
+      "packages/engine/src/tax/stateTax.ts",
+      "packages/engine/src/params/state/data/year2026.ts",
+      "packages/engine/src/tax/stateNortheastExtras.ts"
+    ],
+    "implementedByFunctions": [
+      "packages/engine/src/params/state/data/year2026.ts#NJ",
+      "packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult",
+      "packages/engine/src/tax/stateTax.ts#computeStateTaxDetailResult",
+      "packages/engine/src/tax/stateNortheastExtras.ts#newJerseyMilitaryExemption"
+    ]
+  },
+
+  "vt-2026-rates-standard-deduction-minimum-tax": {
+    "title": "Vermont TY2026 indexed rates and deduction inputs derive from enacted CPI formulas",
+    "statement": "The enacted CPI-U adjustment and completed September 2024–August 2025 window establish 2026 amounts; the final return booklet is corroboration, not a prerequisite. Standard deductions are $7,850 single/MFS, $11,800 HOH and $15,700 joint/QSS, with $5,400 per personal exemption and $1,300 per §63(f) qualification. Four full filing-status schedules retain rates 3.35%, 6.60%, 7.60% and 8.75%. Use continuous marginal arithmetic, including $18,915.55 at the MFJ top threshold. IN-114 remains explicitly preliminary. The minimum-tax comparison has its own sibling record.",
+    "classification": "settled",
+    "contraryReading": null,
+    "errorDirection": null,
+    "conventionRationale": null,
+    "jurisdiction": "state:VT",
+    "authority": [
+      {
+        "kind": "statute",
+        "citation": "32 V.S.A. section 5811(21)(C)(i)-(iii), (D)",
+        "url": "https://legislature.vermont.gov/statutes/section/32/151/05811",
+        "quotedText": "shall be adjusted annually for inflation ... using the Consumer Price Index and the same methodology as ... 26 U.S.C. section 1(f)(3)"
+      },
+      {
+        "kind": "statute",
+        "citation": "32 V.S.A. section 5822(a)(1)-(4), (b)(2)",
+        "url": "https://legislature.vermont.gov/statutes/section/32/151/05822",
+        "quotedText": "The amounts of taxable income shown in the tables ... shall be adjusted annually for inflation by the Commissioner of Taxes"
+      },
+      {
+        "kind": "statute",
+        "citation": "26 U.S.C. section 1(f)(3)-(7)",
+        "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1&num=0&edition=prelim",
+        "quotedText": "average ... as of the close of the 12-month period ending on August 31"
+      }
+    ],
+    "volatility": "annuallyIndexed",
+    "effectiveFrom": 2026,
+    "effectiveThrough": null,
+    "verifiedOn": "2026-09-12",
+    "implementedBy": [
+      "packages/engine/src/tax/stateTax.ts",
+      "packages/engine/src/params/state/data/year2026.ts"
+    ],
+    "implementedByFunctions": [
+      "packages/engine/src/params/state/data/year2026.ts#VT",
+      "packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult",
+      "packages/engine/src/tax/stateTax.ts#computeStateTaxDetailResult"
+    ]
+  },
+
+  "vt-32-5822-a-6-minimum-tax": {
+    "title": "Vermont minimum tax compares ordinary tax with the adjusted 3% floor",
+    "statement": "Only when federal AGI exceeds $150,000, compare ordinary income tax with 3% of federal AGI after the statutory U.S.-obligation adjustment. Exactly $150,000 does not trigger the floor. Unknown U.S.-obligation adjustment cannot be replaced by zero. Consume the year pack threshold and rate.",
+    "classification": "settled",
+    "contraryReading": null,
+    "errorDirection": null,
+    "conventionRationale": null,
+    "jurisdiction": "state:VT",
+    "authority": [
+      {
+        "kind": "statute",
+        "citation": "32 V.S.A. §5822(a)(6)",
+        "url": "https://legislature.vermont.gov/statutes/section/32/151/05822",
+        "quotedText": "If the federal adjusted gross income of the taxpayer exceeds $150,000.00, then the tax calculated under this subsection shall be the greater of the tax calculated under subdivisions (1)-(5) of this subsection or three percent of the taxpayer’s federal adjusted gross income."
+      }
+    ],
+    "volatility": "staticStatute",
+    "effectiveFrom": 2026,
+    "effectiveThrough": null,
+    "verifiedOn": "2026-09-12",
+    "implementedBy": [
+      "packages/engine/src/tax/stateTax.ts",
+      "packages/engine/src/params/state/data/year2026.ts",
+      "packages/engine/src/tax/stateWestExtras.ts"
+    ],
+    "implementedByFunctions": [
+      "packages/engine/src/params/state/data/year2026.ts#VT",
+      "packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult",
+      "packages/engine/src/tax/stateTax.ts#computeStateTaxDetailResult",
+      "packages/engine/src/tax/stateWestExtras.ts#vermontMinimumTaxComparison"
+    ]
+  },
+
+  "vt-32-5830e-retirement-election": {
+    "title": "Vermont civil-service and contributory exclusion is elected against Social Security",
+    "statement": "Eligible civil-service/contributory income receives up to $10,000, phased out over AGI $55,000–$65,000 single or $70,000–$80,000 joint. Other contributory public systems must be based on earnings not covered by Social Security. Elect only one of §5830e(a), (b), or (c). Military exclusion under (d) may coexist. Missing election or qualifying-system facts are incomplete, not an automatic best-of grant.",
+    "classification": "settled",
+    "contraryReading": null,
+    "errorDirection": null,
+    "conventionRationale": null,
+    "jurisdiction": "state:VT",
+    "authority": [
+      {
+        "kind": "statute",
+        "citation": "32 V.S.A. §5830e(b),(c),(e)",
+        "url": "https://legislature.vermont.gov/statutes/section/32/151/05830e",
+        "quotedText": "If the federal adjusted gross income of the taxpayer is less than or equal to $55,000.00, the first $10,000.00 of income received from the Civil Service Retirement System shall be excluded. … If the federal adjusted gross income of the taxpayer is less than or equal to $70,000.00, the first $10,000.00 of income received from the Civil Service Retirement System shall be excluded. … Other retirement income, except U.S. military retirement income pursuant to subsection (d) of this section, received by a taxpayer of this State shall be excluded pursuant to subsection (b) of this section as though the income were received from the Civil Service Retirement System and shall be subject to the limitations under subsection (e) of this section, provided that: … the income is received from a contributory annuity, pension, endowment, or retirement system of the U.S. government or a political subdivision or instrumentality of the U.S. government; this State or a political subdivision or instrumentality of this State; or another state or a political subdivision or instrumentality of another state; and the contributory system from which the income is received was based on earnings that were not covered by the Social Security Act. … A taxpayer of this State who is eligible during the taxable year for more than one of the exclusions under subsections (a), (b), and (c) of this section shall elect only one of the exclusions for which the taxpayer is eligible."
+      }
+    ],
+    "volatility": "staticStatute",
+    "effectiveFrom": 2026,
+    "effectiveThrough": null,
+    "verifiedOn": "2026-09-12",
+    "implementedBy": [
+      "packages/engine/src/tax/stateTax.ts",
+      "packages/engine/src/params/state/data/year2026.ts",
+      "packages/engine/src/tax/stateWestExtras.ts"
+    ],
+    "implementedByFunctions": [
+      "packages/engine/src/params/state/data/year2026.ts#VT",
+      "packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult",
+      "packages/engine/src/tax/stateTax.ts#computeStateTaxDetailResult",
+      "packages/engine/src/tax/stateWestExtras.ts#vermontCivilServiceExclusion"
+    ]
+  },
+
+  "vt-32-5830e-d-military-survivor": {
+    "title": "Vermont military and survivor exclusion can coexist with the civil/SS election",
+    "statement": "For every filing status, included U.S. military retirement/survivor benefits are fully excluded at AGI up to $125,000, proportionally reduced over $125,000–$175,000, and zero at $175,000 or more. This exclusion may coexist with the chosen Social Security or civil-service exclusion. Unknown military source is not qualifying income.",
+    "classification": "settled",
+    "contraryReading": null,
+    "errorDirection": null,
+    "conventionRationale": null,
+    "jurisdiction": "state:VT",
+    "authority": [
+      {
+        "kind": "statute",
+        "citation": "32 V.S.A. §5830e(d),(e)",
+        "url": "https://legislature.vermont.gov/statutes/section/32/151/05830e",
+        "quotedText": "If the federal adjusted gross income of the taxpayer is less than or equal to $125,000.00, all federally taxable U.S. military retirement income and survivor benefit income shall be excluded. … If the federal adjusted gross income of the taxpayer is greater than $125,000.00 but less than $175,000.00, the percentage of federally taxable U.S. military retirement income and survivor benefit income to be excluded shall be proportional to the amount of the taxpayer’s federal adjusted gross income over $125,000.00. … If the federal adjusted gross income of the taxpayer is equal to or greater than $175,000.00, no amount of the federally taxable U.S. military retirement income and survivor benefit income received shall be excluded under this section. … A taxpayer of this State who is eligible during the taxable year for the military retirement and survivor benefit exclusion under subsection (d) of this section may elect that exclusion regardless of whether the taxpayer also elects an exclusion under subsections (a)–(c) of this section."
+      }
+    ],
+    "volatility": "staticStatute",
+    "effectiveFrom": 2026,
+    "effectiveThrough": null,
+    "verifiedOn": "2026-09-12",
+    "implementedBy": [
+      "packages/engine/src/tax/stateTax.ts",
+      "packages/engine/src/params/state/data/year2026.ts",
+      "packages/engine/src/tax/stateWestExtras.ts"
+    ],
+    "implementedByFunctions": [
+      "packages/engine/src/params/state/data/year2026.ts#VT",
+      "packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult",
+      "packages/engine/src/tax/stateTax.ts#computeStateTaxDetailResult",
+      "packages/engine/src/tax/stateWestExtras.ts#vermontMilitaryExclusion"
+    ]
+  },
+
+  "vt-32-5823-railroad-exclusion": {
+    "title": "Vermont excludes federally protected railroad income once",
+    "statement": "Tier I and Tier II Railroad Retirement included in the federal base are excluded from Vermont income. Remove only the federally included amount and do not duplicate a subtraction already taken elsewhere. Ordinary nonrailroad pensions do not qualify.",
+    "classification": "settled",
+    "contraryReading": null,
+    "errorDirection": null,
+    "conventionRationale": null,
+    "jurisdiction": "state:VT",
+    "authority": [
+      {
+        "kind": "statute",
+        "citation": "32 V.S.A. §5823(a)(1)",
+        "url": "https://legislature.vermont.gov/statutes/section/32/151/05823",
+        "quotedText": "(1) income exempted from State taxation under the laws of the United States and not subtracted under subdivision 5811(21)(B)(i) of this chapter;"
+      },
+      {
+        "kind": "formInstruction",
+        "citation": "2025 Schedule IN-112 instructions, page 4, line 14, railroad retirement",
+        "url": "https://tax.vermont.gov/sites/tax/files/documents/IN-112-Instr-2025.pdf",
+        "quotedText": "Railroad Retirement. Enter the amount you received in 2025 for Regular Railroad Retirement Benefits (Tier 1) and Supplemental Railroad Annuity Payments (Tier 2). This income is taxable at the federal level, but exempt from Vermont income tax. If you receive Social Security that includes Tier 1 or Tier 2 benefits, enter only the portion included in your federal Adjusted Gross Income."
+      }
+    ],
+    "volatility": "staticStatute",
+    "effectiveFrom": 2026,
+    "effectiveThrough": null,
+    "verifiedOn": "2026-09-12",
+    "implementedBy": [
+      "packages/engine/src/tax/stateTax.ts",
+      "packages/engine/src/params/state/data/year2026.ts",
+      "packages/engine/src/tax/stateWestExtras.ts"
+    ],
+    "implementedByFunctions": [
+      "packages/engine/src/params/state/data/year2026.ts#VT",
+      "packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult",
+      "packages/engine/src/tax/stateTax.ts#computeStateTaxDetailResult",
+      "packages/engine/src/tax/stateWestExtras.ts#vermontRailroadExclusion"
+    ]
+  },
+
+  "nj-hsa-state-basis-nonconformity": {
+    "title": "New Jersey HSA contributions and ordinary account categories require separate state accounting",
+    "statement": "IRC §223 HSA contributions have no New Jersey deduction. Employer/employee contribution inclusions must not duplicate amounts already in state wages. Under the explicit ordinary-category design assumption, recognize interest, dividends and realized gains with New Jersey lot basis; unrealized appreciation is not a realized gain. A cash distribution is not automatically a second income event. Unknown cash/in-kind characterization, annual activity or basis produces incomplete results. The archived 2010 agency HSA answer settles contributions, but does not settle every distribution lifecycle; A2634 is proposed, not enacted.",
+    "classification": "unsettled",
+    "contraryReading": "A future HSA-specific Division ruling could classify distributions independently of underlying ordinary category income.",
+    "errorDirection": null,
+    "conventionRationale": "Apply the enumerated ordinary income categories with separate state basis and no automatic second cash-withdrawal inclusion; unknown classification remains incomplete. The official August 19, 2010 archive index (https://www.nj.gov/treasury/taxation/whatsnewarc/august2010.shtml) authenticates the preserved Summer 2010 publication; its headline is not operative tax authority. The original summer10.pdf URL returned HTTP 404 during the September 12, 2026 research check, so the historical quoted answer is retained with that fetch limitation rather than represented as a fresh successful download.",
+    "jurisdiction": "state:NJ",
+    "authority": [
+      {
+        "kind": "stateAgencyPublication",
+        "citation": "New Jersey State Tax News, Summer 2010, p.4, Contributions to Health Savings Accounts; official archive index authenticates the preserved publication",
+        "url": "https://www.nj.gov/treasury/taxation/pdf/pubs/stn/summer10.pdf",
+        "quotedText": "The Division replied that the New Jersey Gross Income Tax Act does not allow any deduction for contributions made to a health savings account, which refers to an account established under IRC §223."
+      },
+      {
+        "kind": "stateAgencyPublication",
+        "citation": "NJ Division of Taxation, OBBBA and the New Jersey Gross Income Tax",
+        "url": "https://www.nj.gov/treasury/taxation/individuals/obbba.shtml",
+        "quotedText": "the New Jersey Gross Income Tax (GIT) has defined categories of income and deductions and is not computed based on federal adjusted gross income."
+      }
+    ],
+    "volatility": "awaitingGuidance",
+    "effectiveFrom": 2026,
+    "effectiveThrough": null,
+    "verifiedOn": "2026-09-12",
+    "implementedBy": [
+      "packages/engine/src/tax/stateTax.ts",
+      "packages/engine/src/params/state/data/year2026.ts",
+      "packages/engine/src/tax/stateQcdHsa.ts"
+    ],
+    "implementedByFunctions": [
+      "packages/engine/src/params/state/data/year2026.ts#NJ",
+      "packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult",
+      "packages/engine/src/tax/stateTax.ts#computeStateTaxDetailResult",
+      "packages/engine/src/tax/stateQcdHsa.ts#newJerseyHsaAccountAdjustment"
+    ]
+  },
+
+  "nj-direct-qcd-ira-basis-treatment": {
+  "title": "New Jersey direct charitable IRA transfers retain the state IRA basis calculation",
+  "statement": "New Jersey independently computes the taxable portion of a traditional IRA distribution. A federal QCD exclusion is not a blanket New Jersey subtraction; the taxable transfer is determined using Worksheet C with the owner annual distribution denominator and unrecovered New Jersey contributions. Prior recoveries and all annual withdrawals must be counted once. Unknown owner basis or incomplete annual totals produce incomplete results. A1290 is proposed legislation, not a current charitable carve-out.",
+  "classification": "settled",
+  "contraryReading": null,
+  "errorDirection": null,
+  "conventionRationale": null,
+  "jurisdiction": "state:NJ",
+  "authority": [
+    {
+      "kind": "formInstruction",
+      "citation": "NJ Division of Taxation, GIT-1 & 2, January 2026, Reporting Taxable and Excludable Retirement Income and Worksheet C",
+      "url": "https://www.nj.gov/treasury/taxation/pdf/pubs/tgi-ee/git1%262.pdf",
+      "quotedText": "The excludable portion of a distribution is the amount that represents your previously taxed contributions to the plan."
+    }
+  ],
+  "volatility": "staticStatute",
+  "effectiveFrom": 2026,
+  "effectiveThrough": null,
+  "verifiedOn": "2026-09-12",
+  "implementedBy": [
+    "packages/engine/src/tax/stateQcdHsa.ts",
+    "packages/engine/src/tax/stateTax.ts",
+    "packages/engine/src/params/state/data/year2026.ts"
+  ],
+  "implementedByFunctions": [
+    "packages/engine/src/tax/stateQcdHsa.ts#stateDirectQcdCollectionAdjustment",
+    "packages/engine/src/tax/stateQcdHsa.ts#newJerseyWorksheetCTaxableAmount",
+    "packages/engine/src/tax/stateTax.ts#computeStateTaxYearResult",
+    "packages/engine/src/params/state/data/year2026.ts#NJ"
+  ]
+},
 } satisfies Record<string, TaxRuleRecord>

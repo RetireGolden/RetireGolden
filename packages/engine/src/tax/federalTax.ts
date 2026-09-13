@@ -49,7 +49,16 @@
 
 import { indexFederalTaxPack, packForYear, standardDeduction } from '../params/index.js'
 import type { FilingStatus, ParameterPack, TaxBracket } from '../params/types.js'
-import { taxParameterFilingStatus, type TaxCalculator, type TaxYearInput } from '../projection/types.js'
+import {
+  taxParameterFilingStatus,
+  type TaxCalculator,
+  type TaxComputationIssue,
+  type TaxComputationResult,
+  type StateHsaBasisPoolComputationResult,
+  type StateNjIraBasisPoolComputationResult,
+  type StatePensionBasisPoolComputationResult,
+  type TaxYearInput,
+} from '../projection/types.js'
 import {
   annualCharitableDeductionParameters,
   type AnnualCharitableDeductionParameters2026,
@@ -637,15 +646,106 @@ export function computeFederalTax(input: TaxYearInput): FederalTaxDetail {
   }
 }
 
+interface BuiltinFederalCalculatorBinding {
+  originalCompute: TaxCalculator['compute']
+  originalComputeResult?: TaxCalculator['computeResult']
+}
+
+/** Tracks factory-built federal calculators without retaining caller overrides. */
+const builtinFederalCalculatorRegistry = new WeakMap<TaxCalculator, BuiltinFederalCalculatorBinding>()
+
+function isUnmodifiedBuiltinFederalCalculator(calculator: TaxCalculator): boolean {
+  const binding = builtinFederalCalculatorRegistry.get(calculator)
+  if (binding === undefined) return false
+  return (
+    calculator.compute === binding.originalCompute &&
+    calculator.computeResult === binding.originalComputeResult
+  )
+}
+
+function deriveFederalEnrichment(input: TaxYearInput): {
+  enriched: TaxYearInput
+  federal: FederalTaxDetail
+} {
+  const federal = computeFederalTax(input)
+  return {
+    federal,
+    enriched: {
+      ...input,
+      stateHouseholdFacts: {
+        ...input.stateHouseholdFacts,
+        federalAgi: federal.agi,
+        federalDeductionUsed: federal.deduction,
+        federalTaxableIncome: federal.taxableIncome,
+        federallyIncludedSocialSecurity: federal.taxableSocialSecurity,
+      },
+    },
+  }
+}
+
+function builtinFederalComputationResult(federal: FederalTaxDetail): TaxComputationResult {
+  return {
+    amount: federal.totalTax,
+    status: 'complete',
+    issues: [],
+  }
+}
+
 /** Federal engine behind the projection's pluggable interface. */
 export function createFederalTaxCalculator(): TaxCalculator {
-  return {
-    compute: (input) => computeFederalTax(input).totalTax,
-  }
+  const compute: TaxCalculator['compute'] = (input) => computeFederalTax(input).totalTax
+  const calculator: TaxCalculator = { compute }
+  builtinFederalCalculatorRegistry.set(calculator, {
+    originalCompute: compute,
+    originalComputeResult: undefined,
+  })
+  return calculator
 }
 
 export function combineTaxCalculators(...calculators: TaxCalculator[]): TaxCalculator {
   return {
-    compute: (input) => calculators.reduce((sum, c) => sum + c.compute(input), 0),
+    compute: (input) => {
+      const { enriched, federal } = deriveFederalEnrichment(input)
+      return calculators.reduce((sum, calculator) => {
+        if (isUnmodifiedBuiltinFederalCalculator(calculator)) {
+          return sum + federal.totalTax
+        }
+        return sum + calculator.compute(enriched)
+      }, 0)
+    },
+    computeResult: (input) => {
+      const { enriched, federal } = deriveFederalEnrichment(input)
+      let amount = 0
+      let incomplete = false
+      const issues: TaxComputationIssue[] = []
+      const hsaBasisPools: StateHsaBasisPoolComputationResult[] = []
+      const njIraBasisPools: StateNjIraBasisPoolComputationResult[] = []
+      const pensionBasisPools: StatePensionBasisPoolComputationResult[] = []
+      for (const calculator of calculators) {
+        const result: TaxComputationResult = isUnmodifiedBuiltinFederalCalculator(calculator)
+          ? builtinFederalComputationResult(federal)
+          : calculator.computeResult !== undefined
+            ? calculator.computeResult(enriched)
+            : {
+                amount: calculator.compute(enriched),
+                status: 'complete' as const,
+                issues: [],
+              }
+        amount += result.amount
+        if (result.status === 'incomplete') incomplete = true
+        issues.push(...result.issues)
+        if (result.hsaBasisPools !== undefined) hsaBasisPools.push(...result.hsaBasisPools)
+        if (result.njIraBasisPools !== undefined) njIraBasisPools.push(...result.njIraBasisPools)
+        if (result.pensionBasisPools !== undefined) pensionBasisPools.push(...result.pensionBasisPools)
+      }
+      return {
+        amount,
+        status: incomplete ? 'incomplete' : 'complete',
+        issues,
+        ...(hsaBasisPools.length === 0 ? {} : { hsaBasisPools }),
+        ...(njIraBasisPools.length === 0 ? {} : { njIraBasisPools }),
+        ...(pensionBasisPools.length === 0 ? {} : { pensionBasisPools }),
+      }
+    },
   }
 }

@@ -94,6 +94,11 @@ export interface AnnualYearResultTaxPublication {
   readonly ssEarningsTestWithheld: YearResult['ssEarningsTestWithheld']
   readonly ssdiPaid: YearResult['ssdiPaid']
   readonly tax: YearResult['tax']
+  readonly spousalElectionAtYearEnd?: YearResult['spousalElectionAtYearEnd']
+  readonly spousalOwnerTreatment?: YearResult['spousalOwnerTreatment']
+  readonly hecmComputation?: YearResult['hecmComputation']
+  readonly taxComputation?: YearResult['taxComputation']
+  readonly acceptedTaxInput?: YearResult['acceptedTaxInput']
 }
 
 export interface AnnualYearResultFundingPublication {
@@ -247,6 +252,13 @@ export function annualYearResultAssembly(
     ssEarningsTestWithheld: tax.ssEarningsTestWithheld,
     ssdiPaid: tax.ssdiPaid,
     tax: tax.tax,
+    ...(tax.spousalElectionAtYearEnd === undefined ? {} : { spousalElectionAtYearEnd: tax.spousalElectionAtYearEnd }),
+    ...(tax.spousalOwnerTreatment === undefined ? {} : { spousalOwnerTreatment: tax.spousalOwnerTreatment }),
+    ...(tax.hecmComputation === undefined ? {} : { hecmComputation: tax.hecmComputation }),
+    ...(tax.taxComputation === undefined ? {} : { taxComputation: tax.taxComputation }),
+    ...(tax.acceptedTaxInput === undefined
+      ? {}
+      : { acceptedTaxInput: tax.acceptedTaxInput }),
     withdrawals: funding.withdrawals,
     realizedGains:
       funding.realizedGains.withdrawal +

@@ -67,6 +67,13 @@ function hasNonActionableAca(result: ProjectionResult): boolean {
   return result.years.some((year) => year.aca?.readiness === 'nonActionable')
 }
 
+/** Incomplete annual valuations remain informational, never exact ranking evidence. */
+function incompleteComputationYears(...results: ProjectionResult[]): number[] {
+  return [...new Set(results.flatMap((result) => result.years
+    .filter((year) => year.taxComputation?.status === 'incomplete' || year.hecmComputation?.status === 'incomplete')
+    .map((year) => year.year)))].sort((a, b) => a - b)
+}
+
 /**
  * Single preferential LTCG rate the optimizer uses to price taxable-bucket gains
  * inside the solve (Step 2). 15% is the modal federal preferential bracket for
@@ -683,6 +690,8 @@ export interface OptimizePlanResult {
 }
 
 export interface SimpleCandidateEvaluation {
+  /** Present when numeric deltas are informational and cannot support an exact recommendation. */
+  incompleteComputationYears?: number[]
   id: string
   label: string
   /** Total conversions the exact ledger executed under this candidate strategy. */
@@ -873,6 +882,8 @@ export type RetirementActionPromotion =
   }>
 
 export interface ExactLedgerTournament {
+  /** Present when numeric deltas are informational and cannot support an exact recommendation. */
+  incompleteComputationYears?: number[]
   /** Objective policy that ranked this tournament (default `max-after-tax-estate`). */
   policyId: ObjectivePolicyId
   /** All simple-candidate evaluations, in fixed generation order. */
@@ -1179,10 +1190,16 @@ function buildRichCandidates(plan: Plan, baselineResult: ProjectionResult, simul
   const ctx = decisionContext(plan, baselineResult, simulateOptions)
   return dedupeCandidates(simpleRothConversionGenerator.generate(ctx)).map((candidate) => {
     const evaluation = evaluateCandidate(ctx, candidate, allowLegacyAggregateDecisionCalculation({}))
+    const incompleteYears = incompleteComputationYears(baselineResult, evaluation.candidateResult)
+    if (incompleteYears.length > 0) {
+      evaluation.recommendationState = 'diagnostic'
+      evaluation.diagnostics.push(`Incomplete tax or HECM computation in years ${incompleteYears.join(', ')}; numeric deltas are informational.`)
+    }
     return {
       evaluation: {
         id: candidate.id,
         label: candidate.label,
+        ...(incompleteYears.length ? { incompleteComputationYears: incompleteYears } : {}),
         executedConversionTotal: evaluation.candidateResult.years.reduce((sum, year) => sum + year.rothConversion, 0),
         afterTaxEstateDelta: evaluation.deltas.endingAfterTaxEstate,
         lifetimeTaxDelta: evaluation.deltas.lifetimeTax,
@@ -1291,7 +1308,8 @@ export function runExactLedgerTournament(
   const milpRecommended =
     calculatedMilp !== null &&
     !hasNonActionableAca(baselineResult) &&
-    !hasNonActionableAca(calculatedMilp.cleanedResult)
+    !hasNonActionableAca(calculatedMilp.cleanedResult) &&
+    incompleteComputationYears(baselineResult, calculatedMilp.cleanedResult).length === 0
       ? calculatedMilp
       : null
   const milpDelta = milpRecommended ? milpRecommended.cleanedValidation.afterTaxEstateDelta : 0
@@ -1303,7 +1321,7 @@ export function runExactLedgerTournament(
   // e.g. a lower bracket fill whose refined taper beats the raw winner — and
   // coordinate descent cannot cross basins from the winner alone.
   const eligible = rich
-    .filter((candidate) => lastsThroughYear(candidate.result) >= guardrailLastsThroughYear)
+    .filter((candidate) => !candidate.evaluation.incompleteComputationYears?.length && lastsThroughYear(candidate.result) >= guardrailLastsThroughYear)
     .sort((a, b) => b.evaluation.afterTaxEstateDelta - a.evaluation.afterTaxEstateDelta)
   const best = eligible[0] ?? null
   if (best !== null && best.conversions.length > 0) {
@@ -1561,6 +1579,25 @@ export function runExactLedgerTournament(
       retirementActionPromotion: null,
     }
   }
+  // Preserve a priced, explicitly vetoed diagnostic schedule for benchmark
+  // consumers even when its incomplete annual valuation excludes it from
+  // actionable ranking. The promotion pipeline may diagnose missing identity;
+  // its outcome is recorded but never published as a winner on this path.
+  const diagnostic = rich
+    .filter((candidate) => candidate.evaluation.incompleteComputationYears?.length &&
+      candidate.conversions.length > 0 &&
+      candidate.evaluation.afterTaxEstateDelta > DECISION_NEUTRAL_TOLERANCE_DOLLARS &&
+      lastsThroughYear(candidate.result) >= lastsThroughYear(baselineResult))
+    .sort((a, b) => b.evaluation.afterTaxEstateDelta - a.evaluation.afterTaxEstateDelta)[0]
+  const diagnosticVeto = diagnostic === undefined ? null : readinessVetoFor(
+    'candidate', diagnostic.evaluation.id, diagnostic.evaluation.label,
+    diagnostic.conversions,
+    evaluateExactLedgerSchedule(plan, diagnostic.conversions, baselineResult, diagnostic.result),
+    diagnostic.result,
+  )
+  const diagnosticPromotion = diagnosticVeto === null ? null : promoteVetoedWinner(
+    plan, baselineResult, simulateOptions, diagnosticVeto, Number.POSITIVE_INFINITY,
+  ).promotion
   return fallbackTournament(
     plan,
     baselineResult,
@@ -1580,6 +1617,9 @@ export function runExactLedgerTournament(
           }
         : null,
     ),
+    diagnosticVeto,
+    { searchRefined: false, searchSimulations: 0 },
+    diagnosticPromotion,
   )
 }
 
@@ -1746,6 +1786,9 @@ function promoteVetoedWinner(
     planPatch: run.candidate.planPatch,
     years: promotionYears(run.choice.years),
   }
+  if (validation.incompleteComputationYears?.length) {
+    return { promotion: { outcome: 'notPromoted', issues: [{ kind: 'incompleteAnnualComputation', field: 'allocatedEvaluation.candidateResult.years', detail: `Tax or HECM computation is incomplete in years ${validation.incompleteComputationYears.join(', ')}; no exact comparison is published.` }] }, published: null }
+  }
   if (run.status === 'equivalent') {
     return {
       promotion: {
@@ -1794,9 +1837,12 @@ function fallbackTournament(
   },
   retirementActionPromotion: RetirementActionPromotion | null = null,
 ): ExactLedgerTournament {
-  const incumbent = incumbentExecutedConversions(plan, baselineResult)
+  const incompleteYears = [...new Set([...incompleteComputationYears(baselineResult), ...candidates.flatMap((candidate) => candidate.incompleteComputationYears ?? [])])].sort((a, b) => a - b)
+  const incompleteEvidence = incompleteYears.length ? { incompleteComputationYears: incompleteYears } : {}
+  const incumbent = incompleteComputationYears(baselineResult).length ? null : incumbentExecutedConversions(plan, baselineResult)
   if (incumbent) {
     return {
+      ...incompleteEvidence,
       policyId,
       candidates,
       winnerSource: 'incumbent',
@@ -1813,6 +1859,7 @@ function fallbackTournament(
     }
   }
   return {
+    ...incompleteEvidence,
     policyId,
     candidates,
     winnerSource: 'none',
@@ -1858,11 +1905,12 @@ function runPolicyRankedTournament(
   const milpRecommended =
     calculatedMilp !== null &&
     !hasNonActionableAca(baselineResult) &&
-    !hasNonActionableAca(calculatedMilp.cleanedResult)
+    !hasNonActionableAca(calculatedMilp.cleanedResult) &&
+    incompleteComputationYears(baselineResult, calculatedMilp.cleanedResult).length === 0
       ? calculatedMilp
       : null
 
-  const evaluations = rich.map((candidate) => candidate.fullEvaluation)
+  const evaluations = rich.filter((candidate) => !candidate.evaluation.incompleteComputationYears?.length).map((candidate) => candidate.fullEvaluation)
   let milpEvaluation: ExactDecisionEvaluation | null = null
   if (milpRecommended) {
     // Synthesize the MILP schedule's evaluation from post-processing artifacts
@@ -2005,6 +2053,8 @@ export interface ExactLedgerValidationOptions {
 }
 
 export interface ExactLedgerValidation {
+  /** Present when numeric deltas are informational and cannot support an exact recommendation. */
+  incompleteComputationYears?: number[]
   baseline: ProjectionSummary
   candidate: ProjectionSummary
   afterTaxEstateDelta: number
@@ -2138,7 +2188,9 @@ function evaluateExactLedgerScheduleCalculation(
     }),
   )
   const execution = evaluation.conversionExecution!
+  const incompleteYears = incompleteComputationYears(baselineResult, candidateResult)
   return {
+    ...(incompleteYears.length ? { incompleteComputationYears: incompleteYears } : {}),
     baseline: evaluation.baselineSummary,
     candidate: evaluation.candidateSummary,
     afterTaxEstateDelta: evaluation.deltas.endingAfterTaxEstate,
@@ -2151,7 +2203,7 @@ function evaluateExactLedgerScheduleCalculation(
     firstMateriallyUnexecutedYear: execution.firstMateriallyUnexecutedYear,
     traditionalDepletionYear: evaluation.traditionalDepletionYear,
     recommendationState:
-      evaluation.recommendationState === 'diagnostic' ? 'unexecutable' : evaluation.recommendationState,
+      incompleteYears.length > 0 || evaluation.recommendationState === 'diagnostic' ? 'unexecutable' : evaluation.recommendationState,
   }
 }
 
@@ -2489,11 +2541,12 @@ function priceExecutedSchedule(
   plan: Plan,
   requestedConversions: { year: number; amount: number }[],
   simulateOptions: SimulateOptions,
-): { estate: number; executed: { year: number; amount: number }[] } {
+): { estate: number; executed: { year: number; amount: number }[]; incompleteComputationYears: number[] } {
   const withConversions = withOptimizedConversions(plan, requestedConversions)
   const result = simulatePlan(withConversions, simulateOptions)
   return {
     estate: summarizeProjection(withConversions, result).endingAfterTaxEstate,
+    incompleteComputationYears: incompleteComputationYears(result),
     executed: result.years
       .filter((year) => year.rothConversion > 1)
       .map((year) => ({ year: year.year, amount: roundDollars(year.rothConversion) })),
@@ -2707,6 +2760,8 @@ export async function optimizePlan(plan: Plan, opts: OptimizePlanOptions): Promi
 const DEFAULT_CLAIM_SWITCH_MARGIN_DOLLARS = 1_000
 
 export interface ClaimAgeCoOptimization {
+  /** Numeric estate fields are informational when the current-claim valuation is incomplete. */
+  incompleteComputationYears?: number[]
   /** True when claim-age co-optimization actually ran. */
   enabled: boolean
   /** Claim combinations optimized, including the current claim (1 when off). */
@@ -2732,14 +2787,14 @@ export interface OptimizePlanWithClaimResult extends OptimizePlanResult {
 }
 
 /** Exact after-tax estate of a plan run with its tournament-recommended conversions installed. */
-function winnerExactEstate(plan: Plan, tournament: ExactLedgerTournament, simulateOptions: SimulateOptions): number {
+function winnerExactEstate(plan: Plan, tournament: ExactLedgerTournament, simulateOptions: SimulateOptions): ReturnType<typeof priceExecutedSchedule> {
   // Readiness withholding is a publication decision, not a valuation result.
   // Claim-age co-optimization must compare each claim combination with its
   // calculated schedule even though that aggregate schedule is not Apply-safe.
   const calculatedConversions =
     tournament.retirementActionReadinessVeto?.vetoedConversions ??
     tournament.winnerConversions
-  return priceExecutedSchedule(plan, calculatedConversions, simulateOptions).estate
+  return priceExecutedSchedule(plan, calculatedConversions, simulateOptions)
 }
 
 /**
@@ -2765,7 +2820,8 @@ export async function optimizePlanCoOptimizingClaimAge(
 
   // Current-claim optimum is the floor every claim candidate must beat.
   const baseResult = await optimizePlan(plan, opts)
-  const baseEstate = winnerExactEstate(plan, baseResult.tournament, simulateOptions)
+  const baseValuation = winnerExactEstate(plan, baseResult.tournament, simulateOptions)
+  const baseEstate = baseValuation.estate
 
   const ctx = decisionContext(plan, simulatePlan(plan, simulateOptions), simulateOptions)
   const candidates = socialSecurityClaimGenerator.generate(ctx)
@@ -2783,8 +2839,10 @@ export async function optimizePlanCoOptimizingClaimAge(
     if (!applied.ok) continue
     const patchedPlan = applied.plan
     const result = await optimizePlan(patchedPlan, opts)
-    const estate = winnerExactEstate(patchedPlan, result.tournament, simulateOptions)
+    const valuation = winnerExactEstate(patchedPlan, result.tournament, simulateOptions)
+    const estate = valuation.estate
     evaluated++
+    if (baseValuation.incompleteComputationYears.length || valuation.incompleteComputationYears.length) continue
     // A claim patch and its calculated conversion schedule are one joint
     // recommendation. Publishing only the claim change would let callers apply
     // a different plan from the pair that actually won the exact-ledger test.
@@ -2806,6 +2864,7 @@ export async function optimizePlanCoOptimizingClaimAge(
     ...bestResult,
     optimizedPlan: bestPlan,
     claimAge: {
+      ...(baseValuation.incompleteComputationYears.length ? { incompleteComputationYears: baseValuation.incompleteComputationYears } : {}),
       enabled: true,
       combinationsEvaluated: evaluated,
       winningClaimLabel: winningLabel,

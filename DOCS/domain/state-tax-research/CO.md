@@ -1,49 +1,17 @@
-# Colorado (CO) — state income tax for retirement planning
+# Colorado retirement tax rules — TY2026
 
-Tax year: 2025. Researched 2026-06-13.
+Colorado starts from federal taxable income, modified by statutory additions and subtractions, at the enacted 4.4% rate. The federal standard deduction already enters that base; no second Colorado standard deduction applies.
 
-## Summary
-- Broad individual income tax: **yes** (flat 4.4%)
-- Taxes Social Security benefits: **yes** in statute, but fully subtractable at 65+ and (income-tested) at 55–64 — modeled as taxed, flagged below
-- Long-term capital gains: taxed as ordinary income (narrow exclusions only)
-- Retirement income (pension, IRA, 401k): subtraction up to $24,000 per person at 65+ ($20,000 at 55–64)
+## Social Security and pension shared cap
 
-## Proposed StateTaxParams (2025)
-- code: "CO"
-- name: "Colorado"
-- hasIncomeTax: true
-- taxesSocialSecurity: true
-- capitalGainsAsOrdinary: true
-- standardDeduction: { single: 0, marriedFilingJointly: 0 }
-- brackets.single: [ { lowerBound: 0, ratePct: 4.4 } ]
-- brackets.marriedFilingJointly: [ { lowerBound: 0, ratePct: 4.4 } ]
-- retirement: { kind: "capped", capPerPerson: 24000, minAge: 65 }
+Each recipient has a $20,000 cap at ages 55–64 or $24,000 at 65+. Taxable Social Security consumes the cap first. At 65+, a benefit above $24,000 increases the cap to that benefit. At 55–64, a benefit above $20,000 increases the cap only if AGI is at most $75,000 individual/$95,000 joint. Otherwise the ordinary cap remains. Social Security below the ordinary cap leaves capacity for other eligible pension income. Joint taxable benefits are allocated in the gross-benefit ratio. Premature IRA amounts require statutory eligibility; death/disability and survivor facts are distinct from the ordinary age test. RRA benefits have a separate federally protected subtraction.
 
-## Retirement-income detail
-Colorado taxes income at a flat **4.4%** (2025). It starts from federal taxable
-income (i.e., the **federal** standard deduction is already baked in), so there is
-**no separate Colorado standard deduction** — set to 0 to avoid double-counting.
+Examples from the statute: age 65 with $30,000 taxable SS excludes $30,000; age 60 at AGI $75,000 with $18,000 taxable SS and $10,000 pension excludes $20,000 total. Unknown recipient/source/inclusion facts produce incomplete status.
 
-Colorado's "pension and annuity subtraction" lets taxpayers **age 65+** subtract
-up to **$24,000 per person** of combined Social Security, pension, and
-retirement-account income included in federal taxable income; ages **55–64**
-may subtract up to $20,000. Modeled as `kind: "capped"`, `capPerPerson: 24000`,
-`minAge: 65` (the dominant retiree case).
+## High-AGI deduction addback
 
-For Social Security specifically, recent law lets taxpayers **65+** subtract the
-full federally-taxable SS amount, and **55–64** subtract SS in full if AGI is
-under $75,000 (single) / $95,000 (MFJ). Because the big-levers model has a single
-`taxesSocialSecurity` boolean, it is set **true** (SS is taxable in statute), which
-overstates tax for the many retirees who qualify for the full subtraction — flagged
-below.
+Beginning in TY2026, federal AGI at least $300,000 triggers an addback of actual federal standard/itemized deductions above $1,000 single or $2,000 joint. This uses the deduction actually claimed.
 
-## Simplifications / not modeled
-- SS is effectively exempt for most retirees (full subtraction at 65+; income-tested at 55–64), but `taxesSocialSecurity: true` taxes it — overstates CO tax for typical retirees. A future enhancement could treat CO SS as exempt at 65+.
-- The $24,000/$20,000 cap is a **combined** cap across SS + pension + IRA; modeling it as a per-person pension cap while also taxing SS may double-count for those near the cap. Flagged as a known approximation.
-- Ages 55–64 use a $20,000 cap (not modeled separately).
-- No state standard deduction (federal taxable income is the base); set to 0.
+## Sources and scope
 
-## Citations
-- https://tax.colorado.gov/income-tax-topics-social-security-pensions-and-annuities — pension/annuity subtraction $24,000 (65+) / $20,000 (55–64); SS subtraction rules.
-- https://tax.colorado.gov/retirees — Colorado starts from federal taxable income; retiree subtractions.
-- https://taxfoundation.org/data/all/state/state-income-tax-rates/ — Tax Foundation 2025: CO flat 4.4%, no state standard deduction.
+[C.R.S. 39-22-104(3)(p.7), (4)(f)](https://olls.info/crs/crs2026-title-39.htm) and [Colorado DOR Social Security, pensions and annuities](https://tax.colorado.gov/sites/tax/files/documents/ITT_Social_Security_Pensions_and_Annuities_Jan_2025.pdf). Verified September 12, 2026. The characterized state calculation applies these rules; the record does not claim all Colorado credits, itemization choices or whole-return fidelity.

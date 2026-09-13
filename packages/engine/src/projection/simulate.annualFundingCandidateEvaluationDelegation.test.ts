@@ -129,10 +129,9 @@ describe('simulatePlan annual funding candidate-evaluation delegation', () => {
       call.input.withdrawalPlan.byCategory.cash === 444 &&
       call.natural.withdrawalPlan === call.input.withdrawalPlan
     )).toBe(true)
-    expect(hostile.withdrawalEffectsInputs).toHaveLength(seam.calls.length + 1)
-    expect(hostile.withdrawalEffectsInputs.at(-1)).toMatchObject({
-      hsaQualifiedCap: 70,
-    })
+    // Accepted candidate effects are committed by identity; recalculating them
+    // at close would consume the inherited Roth ordering pool twice.
+    expect(hostile.withdrawalEffectsInputs).toHaveLength(seam.calls.length)
     expect(year.tax).toBe(321)
     expect(year.penalties).toBe(123)
     expect(year.expenses.healthcare).toBe(50)

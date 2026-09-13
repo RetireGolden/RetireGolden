@@ -8,10 +8,10 @@ import type {
   SimulatorAnnualPassAllocationTrackState,
   SimulatorAnnualPassBalanceRecord,
   SimulatorAnnualPassDeferredFirstRmd,
-  SimulatorAnnualPassHecmState,
   SimulatorAnnualPassStateBindings,
   SimulatorAnnualPassValueBinding,
 } from '../projection/annualPassTransaction.js'
+import { cloneHecmLineStateForRollback } from '../projection/internal/hecmLineState.js'
 
 /**
  * The one inventory of the mutable simulator state an annual pass owns.
@@ -81,10 +81,6 @@ function cloneRothBasis(value: RothBasisState): RothBasisState {
       taxableAmount: layer.taxableAmount,
     })),
   }
-}
-
-function cloneHecmState(value: SimulatorAnnualPassHecmState): SimulatorAnnualPassHecmState {
-  return { principalLimit: value.principalLimit, loanBalance: value.loanBalance }
 }
 
 function cloneAllocationTrackState(
@@ -257,10 +253,11 @@ export const SIMULATOR_ANNUAL_PASS_STATE_REGISTRY: SimulatorAnnualPassStateRegis
   iraProRata: clonedMapEntry(cloneIraProRata),
   iraBasisByOwner: mapEntry(),
   rothBasis: clonedMapEntry(cloneRothBasis),
+  inheritedRothPools: clonedMapEntry((pool) => structuredClone(pool)),
   rothAssumedContributionRemaining: mapEntry(),
   rothCounterfactualFreeCoverConsumed: mapEntry(),
   propertyValues: mapEntry(),
-  hecmStates: clonedMapEntry(cloneHecmState),
+  hecmStates: clonedMapEntry(cloneHecmLineStateForRollback),
   insuranceCashValues: mapEntry(),
   allocationTrack: clonedMapEntry(cloneAllocationTrackState),
   seppAmortAmount: mapEntry(),

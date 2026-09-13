@@ -367,12 +367,45 @@ describe('manifest rule projection contract', () => {
       `${inheritedPlanner}#annualInheritedIraDistributions`,
     )
 
-    const linkedRecords = Object.values(TAX_RULE_REGISTRY).filter((record) =>
-      record.implementedBy.includes(inheritedPlanner))
-    expect(linkedRecords).toHaveLength(13)
+    // Pin the identities, not a count: adding Roth tax character must not
+    // replace an inherited-distribution rule with owner-only residue discharge.
+    const linkedRuleIds = Object.entries(TAX_RULE_REGISTRY)
+      .filter(([, record]) => record.implementedBy.includes(inheritedPlanner))
+      .map(([id]) => id)
+      .sort()
+    expect(linkedRuleIds).toEqual([
+      'irc-401-a-9-B-ii-confirmed-non-designated-five-year-schedule',
+      'irc-401-a-9-B-ii-non-designated-beneficiary-five-year-rule',
+      'irc-401-a-9-E-ii-eligible-designated-beneficiary',
+      'irc-401-a-9-H-designated-beneficiary-ten-year-rule',
+      'irc-401-a-9-H-ii-annual-distributions-inside-ten-year-window',
+      'irc-401-a-9-H-iii-in-horizon-beneficiary-death-successor-clock',
+      'irc-4974-rmd-shortfall-excise-tax',
+      'irs-notice-2022-53-2023-54-2024-35-inherited-rmd-transition-relief',
+      'treas-reg-1-401-a-9-5-d-1-ii-greater-of-employee-life-expectancy',
+      'treas-reg-1-401-a-9-8-a-1-ii-separate-account-deadline',
+      'treas-reg-1-408-8-b-2-prior-december-31-balance',
+      'treas-reg-1-408-8-c-3-spouse-as-own-death-year-rmd',
+      'treas-reg-1-408-8-c-3-spouse-treated-as-owner',
+      'treas-reg-1-408A-6-inherited-roth-nonqualified-earnings',
+      'treas-reg-54-4974-1-c-five-year-deadline-rmd',
+      'treas-reg-54-4974-1-e-post-deadline-remaining-benefit',
+    ].sort())
+    const publishedExcise = report.rules.find((rule) =>
+      rule.id === 'irc-4974-rmd-shortfall-excise-tax')
+    expect(publishedExcise?.fixtures.flatMap((fixture) =>
+      fixture.tests.map((test) => test.title))).toContain(
+      'requires the entire remaining benefit after the emptying year and prices the excise on the shortfall',
+    )
+    const publishedDischarge = report.rules.find((rule) =>
+      rule.id === 'treas-reg-1-408-8-projection-sub-cent-distribution-discharge')
+    expect(publishedDischarge?.fixtures.flatMap((fixture) =>
+      fixture.tests.map((test) => test.title))).not.toContain(
+      'requires the entire remaining benefit after the emptying year and prices the excise on the shortfall',
+    )
     expect(COVERAGE_ATTESTATIONS[
       'projection/internal/annualInheritedIraDistributions.ts'
-    ]?.note).toContain('Thirteen inherited-RMD records name the helper,')
+    ]?.note).toContain('Inherited shortfalls remain outside owner sub-cent discharge')
   })
 
   // Published lines are deep-link anchors on the transparency page, so each

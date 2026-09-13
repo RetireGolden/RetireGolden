@@ -1,8 +1,10 @@
 /**
  * Transfer tax and adjacent regime records: the estate and gift exclusions, DSUE
- * portability, 529-to-Roth rollovers, the section 199A deduction, and the HECM age
- * floor. Every record here is one the engine declines to model, recorded so the
- * refusal is citable.
+ * portability, 529-to-Roth / five-year gift election, the section 199A deduction,
+ * IRC 101(a)(1) life-insurance death proceeds, HECM MCA/MIP limits, and the HECM
+ * age floor. Most transfer-tax surfaces remain outOfScope; settled pins here are
+ * authority/parameter registrations (gift dollars, HECM MCA/MIP, §101 exclusion)
+ * without inventing chapter 11/12 calculators.
  *
  * One slice of the tax rule registry. `../taxRuleRegistry.ts` composes every
  * slice into `TAX_RULE_REGISTRY`; read it for what a record must carry and why.
@@ -167,20 +169,20 @@ export const transferAndUnmodeledRegimeRecords = {
   'irc-2503-b-annual-gift-exclusion-not-modeled': {
     title: 'The annual gift-tax exclusion is a transfer-tax rule the engine does not compute',
     statement:
-      'Section 2503(b) excludes the first $10,000 of present-interest gifts to each donee from the donor\'s total gifts for the calendar year, and that dollar amount is increased for inflation for gifts made after 1998, rounded down to the next lowest multiple of $1,000. The engine computes no gift tax under chapter 12. The Plan has no taxable-gifts, donee, or annual-exclusion facts, and the parameter pack has no gift-tax exclusion figure, so no accepted input produces an annual-exclusion or gift-tax result.',
+      'Section 2503(b) excludes the first $10,000 of present-interest gifts to each donee from the donor\'s total gifts for the calendar year, and that dollar amount is increased for inflation for gifts made after 1998, rounded down to the next lowest multiple of $1,000. Rev. Proc. 2025-32 §4.42(1) publishes the calendar-year 2026 present-interest annual exclusion at $19,000 per donee; IRS gift-tax guidance states the spouse-combined illustration as $38,000 only under correct gift-splitting / independent-gift distinction (not an automatic doubling). That $19,000 figure is pinned on ParameterPack.transferTax.annualGiftExclusionPerDonee. The engine still computes no gift tax under chapter 12. The Plan has no taxable-gifts, donee, or annual-exclusion election facts, so no accepted input produces a gift-tax result. Do not relabel historical 2024 $18,000/$36,000 amounts as 2026.',
     classification: 'outOfScope',
     outOfScope: {
       shape: 'inexpressibleInput',
       missingInputFacts: [
       'taxable gifts and the donees they were made to',
       'whether a gift is a present interest',
-      'an annual-exclusion figure in the ParameterPack',
+      'gift-splitting consent or independent dual-donor facts',
       ],
     },
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'This is a transfer-tax absence, not an income-tax approximation. tax/federalTax.ts computes chapter 1 income tax only. projection/compare.ts\'s heirTax is an assumed heir income-tax haircut on inherited pre-tax balances, not a chapter 12 gift tax. model/plan.ts has no gift, donee, or annual-exclusion field, and params/types.ts\'s federalTax pack has no gift-exclusion amount. The staged 2503 text still carries the statutory $10,000 base plus the 2503(b)(2) COLA; it does not publish a 2026 indexed dollar, so this record does not invent one. The 15-year / $35,000 529-to-Roth mechanics are a different Code section and live at irc-529-c-3-E-529-to-roth-rollover-not-modeled.',
+      'This is a transfer-tax absence, not an income-tax approximation. tax/federalTax.ts computes chapter 1 income tax only. projection/compare.ts\'s heirTax is an assumed heir income-tax haircut on inherited pre-tax balances, not a chapter 12 gift tax. model/plan.ts has no gift, donee, or annual-exclusion field. The 2026 $19,000 / basic-exclusion $15,000,000 pins live on ParameterPack.transferTax for authority; runtime chapter 12 computation remains out of scope. The 15-year / $35,000 529-to-Roth mechanics are a different Code section and live at irc-529-c-3-E-529-to-roth-rollover-not-modeled; the five-year 529 front-loading election is irc-529-five-year-gift-election-not-modeled.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -194,16 +196,24 @@ export const transferAndUnmodeledRegimeRecords = {
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section2503&num=0&edition=prelim',
       quotedText:
         'In the case of gifts made in a calendar year after 1998, the $10,000 amount contained in paragraph (1) shall be increased by an amount equal to- (A) $10,000, multiplied by (B) the cost-of-living adjustment determined under section 1(f)(3) for such calendar year by substituting "calendar year 1997" for "calendar year 2016" in subparagraph (A)(ii) thereof. If any amount as adjusted under the preceding sentence is not a multiple of $1,000, such amount shall be rounded to the next lowest multiple of $1,000.',
+    }, {
+      kind: 'agencyGuidance',
+      citation: 'Revenue Procedure 2025-32 section 4.42(1)',
+      url: 'https://www.irs.gov/irb/2025-45_IRB',
+      quotedText:
+        'For calendar year 2026, the first $19,000 of gifts to any person (other than gifts of future interests in property) are not included in the total amount of taxable gifts under § 2503 made during that year.',
     }],
     volatility: 'annuallyIndexed',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-27',
+    verifiedOn: '2026-09-12',
     implementedBy: [
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/params/types.ts',
+      'packages/engine/src/params/data/year2026.ts',
     ],
     implementedByFunctions: [
+      'packages/engine/src/params/data/year2026.ts#year2026',
       'packages/engine/src/model/plan.ts#planSchema',
       'packages/engine/src/params/types.ts#ParameterPack',
     ],
@@ -212,20 +222,20 @@ export const transferAndUnmodeledRegimeRecords = {
   'irc-2010-c-3-basic-exclusion-amount-not-modeled': {
     title: 'The 2026 basic exclusion amount is a chapter 11 credit base, not an income-tax deduction',
     statement:
-      'Section 2010(a) allows a credit against the section 2001 estate tax equal to the tentative tax on the applicable exclusion amount. For decedents dying and gifts made after December 31, 2025, the basic exclusion amount under section 2010(c)(3)(A) is $15,000,000; that dollar amount is increased for inflation only for decedents dying in a calendar year after 2026. The applicable exclusion amount is the sum of that basic exclusion and, for a surviving spouse, any deceased spousal unused exclusion. The engine computes no estate tax. The Plan and parameter pack have no basic-exclusion or taxable-estate facts, so no accepted input produces an estate-tax exclusion result.',
+      'Section 2010(a) allows a credit against the section 2001 estate tax equal to the tentative tax on the applicable exclusion amount. For decedents dying and gifts made after December 31, 2025, the basic exclusion amount under section 2010(c)(3)(A) is $15,000,000; that dollar amount is increased for inflation only for decedents dying in a calendar year after 2026. The applicable exclusion amount is the sum of that basic exclusion and, for a surviving spouse, any deceased spousal unused exclusion — do not promise an automatic $30,000,000 estate exclusion without applicable spouse/portability conditions. The $15,000,000 figure is pinned on ParameterPack.transferTax.basicExclusionAmount. The engine computes no estate tax. The Plan has no taxable-estate facts, so no accepted input produces an estate-tax exclusion result.',
     classification: 'outOfScope',
     outOfScope: {
       shape: 'inexpressibleInput',
       missingInputFacts: [
       'a taxable estate for the section 2001 tax to apply to',
-      'a basic-exclusion amount in the ParameterPack',
       'adjusted taxable gifts that share the applicable exclusion',
+      'a Form 706 / DSUE portability election surface',
       ],
     },
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'Transfer-tax computation, not income tax. tax/federalTax.ts returns chapter 1 income tax and never reads a basic exclusion amount. projection/compare.ts\'s heirTax and endingAfterTaxEstate discount inherited pre-tax balances at assumptions.heirTaxRatePct; that is an income-tax-basis estate metric, not the section 2001 tax or the section 2010 credit. The $15,000,000 figure is quote-carried from 2010(c)(3)(A); indexing does not begin until a decedent dying after 2026, so 2026 is the unindexed statutory year. Do not treat this record as the same tax base as irc-151-d-5-C-senior-deduction-not-indexed: that deduction is a chapter 1 subtraction of 6,000 dollars per qualified individual, and this credit is a chapter 11 exclusion. Portability of unused exclusion is a separate election and is registered at irc-2010-c-5-dsue-portability-election-not-modeled.',
+      'Transfer-tax computation, not income tax. tax/federalTax.ts returns chapter 1 income tax and never reads a basic exclusion amount. projection/compare.ts\'s heirTax and endingAfterTaxEstate discount inherited pre-tax balances at assumptions.heirTaxRatePct; that is an income-tax-basis estate metric, not the section 2001 tax or the section 2010 credit. The $15,000,000 figure is pinned on ParameterPack.transferTax.basicExclusionAmount from 2010(c)(3)(A); indexing does not begin until a decedent dying after 2026, so 2026 is the unindexed statutory year. Do not treat this record as the same tax base as irc-151-d-5-C-senior-deduction-not-indexed. Portability is registered at irc-2010-c-5-dsue-portability-election-not-modeled.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -267,12 +277,14 @@ export const transferAndUnmodeledRegimeRecords = {
     volatility: 'annuallyIndexed',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-27',
+    verifiedOn: '2026-09-12',
     implementedBy: [
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/params/types.ts',
+      'packages/engine/src/params/data/year2026.ts',
     ],
     implementedByFunctions: [
+      'packages/engine/src/params/data/year2026.ts#year2026',
       'packages/engine/src/model/plan.ts#planSchema',
       'packages/engine/src/params/types.ts#ParameterPack',
     ],
@@ -324,6 +336,162 @@ export const transferAndUnmodeledRegimeRecords = {
     ],
     implementedByFunctions: [
       'packages/engine/src/model/plan.ts#planSchema',
+    ],
+  },
+
+  'irc-529-five-year-gift-election-not-modeled': {
+    title: 'Five-year 529 front-loading uses the annual gift exclusion, which is not computed',
+    statement:
+      'A contribution to a qualified tuition program may be electively treated as made ratably over five years for gift-tax purposes, so a single $95,000 transfer in 2026 apportions $19,000 per year when the Rev. Proc. 2025-32 annual exclusion is $19,000 and no other gifts consume that year\'s exclusion. Without a valid five-year election the entire transfer is not automatically an annual-exclusion gift. Another $1,000 gift in an election year is not covered by a fresh $19,000. Gift-splitting consent is distinct from two donors making separate gifts. ParameterPack.transferTax.annualGiftExclusionPerDonee pins the 2026 $19,000 figure. The engine computes no chapter 12 gift tax and has no 529 gift-election surface, so no accepted input produces an annual-exclusion or five-year-election result.',
+    classification: 'outOfScope',
+    outOfScope: {
+      shape: 'inexpressibleInput',
+      missingInputFacts: [
+      'a qualified tuition program contribution amount and donee',
+      'a five-year gift-tax election under IRC 529(c)(2)(B)',
+      'other same-year gifts that consume the apportioned annual exclusion',
+      'gift-splitting consent facts',
+      ],
+    },
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'Authority pin only. Runtime remains unmodeled gift tax; this record does not invent a 529 gift-tax calculator. Shares the 2026 $19,000 annual amount with irc-2503-b-annual-gift-exclusion-not-modeled.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'agencyGuidance',
+      citation: 'Revenue Procedure 2025-32 section 4.42(1)',
+      url: 'https://www.irs.gov/irb/2025-45_IRB',
+      quotedText:
+        'For calendar year 2026, the first $19,000 of gifts to any person (other than gifts of future interests in property) are not included in the total amount of taxable gifts under § 2503 made during that year.',
+    }, {
+      kind: 'agencyGuidance',
+      citation: 'Instructions for Form 709 (2025), Contributions to Qualified Tuition Plans or Programs',
+      url: 'https://www.irs.gov/instructions/i709',
+      quotedText:
+        'If in 2025, you contributed more than $19,000 to a qualified tuition plan (QTP) on behalf of any one person, you may elect to treat up to $95,000 of the contribution for that person as if you had made it ratably over a 5-year period. The election allows you to apply the annual exclusion to a portion of the contribution in each of the 5 years, beginning in 2025.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 529(c)(2)(B)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section529&num=0&edition=prelim',
+      quotedText:
+        'If the aggregate amount of contributions described in subparagraph (A) during the calendar year by a donor exceeds the limitation for such year under section 2503(b), such aggregate amount shall, at the election of the donor, be taken into account for purposes of such section ratably over the 5-year period beginning with such calendar year.',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-12',
+    implementedBy: [
+      'packages/engine/src/params/types.ts',
+      'packages/engine/src/params/data/year2026.ts',
+      'packages/engine/src/model/plan.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/data/year2026.ts#year2026',
+      'packages/engine/src/params/types.ts#ParameterPack',
+      'packages/engine/src/model/plan.ts#planSchema',
+    ],
+  },
+
+  'irc-101-a-1-life-insurance-death-proceeds-exclusion': {
+    title: 'General life-insurance death proceeds are excluded from gross income',
+    statement:
+      'IRC 101(a)(1) excludes amounts received under a life insurance contract paid by reason of the death of the insured from gross income, subject to statutory exceptions. The projection\'s permanent-life death settlement deposits the face/cash-value proceeds into cash without increasing ordinary taxable income. Transfer-for-value, reportable policy sale, interest on delayed proceeds, certain legacy contracts, and employer-owned life insurance exceptions are outside supported Plan inputs and are not implied to be exempt. Section 2042 gross-estate inclusion is a separate estate-tax question and is not inferred from this income exclusion.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'Narrow registration of the practiced general death-proceeds path. annualPermanentLifeTransitions pays max(face, cash value) into the death-benefit channel; federal tax calculators do not treat that channel as ordinary income. Interest and excepted contracts remain out of scope.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 101(a)(1)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section101&num=0&edition=prelim',
+      quotedText:
+        'Except as otherwise provided in paragraphs (2) and (3), subsection (d), subsection (f), and subsection (j), gross income does not include amounts received (whether in a single sum or otherwise) under a life insurance contract, if such amounts are paid by reason of the death of the insured.',
+    }, {
+      kind: 'agencyGuidance',
+      citation: 'IRS, Are proceeds paid under a life insurance contract taxable?',
+      url: 'https://www.irs.gov/faqs/interest-dividends-other-types-of-income/life-insurance-disability-insurance-proceeds',
+      quotedText:
+        'Generally, life insurance proceeds you receive as a beneficiary due to the death of the insured person, aren\'t includable in gross income and you don\'t have to report them. However, any interest you receive is taxable and you should report it as interest received.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-12',
+    implementedBy: [
+      'packages/engine/src/projection/internal/annualPermanentLifeTransitions.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualPermanentLifeTransitions.ts#annualPermanentLifeTransitions',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+    ],
+  },
+
+  'hud-hecm-mca-mip-limits': {
+    title: 'HECM maximum claim amount and MIP rates for HUD-validated openings',
+    statement:
+      'For HECM case assignments in calendar year 2026, Mortgagee Letter 2025-22 sets the national maximum claim amount at $1,249,125 (including special exception areas). ML 2017-12 sets initial MIP at two percent of MCA and annual MIP at one-half of one percent of the outstanding mortgage balance. HUD Handbook 4000.1 Update 18 says annual MIP is payable monthly, accrues from closing, prescribes one-twelfth of 0.50 percent times the outstanding balance, and requires a remitted MIP payment to be added to that balance. HUD-validated ordinary origination MCA in this leaf is the lesser of appraised value and the published case-year amount; a required closing date remains distinct from the case-assignment year, and opening debt includes financed IMIP, other financed costs, and a verified closing-day borrower advance. Purchase, refinance, and unknown transaction kinds refuse until their extra facts are modeled. Monthly pricing takes dated pre-assessment balances from the production loan ledger and returns timing evidence incomplete when closing or assessment timing is unknown; it does not guess advance, interest, fee, repayment, or intramonth-proration ordering. Legacy quote-estimate openings remain planning estimates.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'Case-assignment year owns the ceiling — do not inflate a future unpublished year. Test PLF 0.5 is a stipulated input. Update 18 supports monthly division and remittance capitalization, not a guessed ordering of an arbitrary same-month advance. simulatePlan opens the loan through hecmLineOpeningsWithHudValidation and prices supported annual assessment evidence through priceHecmHudMipAssessmentYear. simulate.hecmHudProduction.test.ts distinguishes closing cash already received from modeled closing proceeds and verifies capitalized monthly MIP; the opening-adapter tests preserve quoted versus HUD-table-verified PLF provenance and refuse unverified inputs. Missing assessment timing or unsupported transaction facts remain incomplete rather than an exact HUD result. The hecmLineState adapter keeps servicer-observed balances separate from accepted modeled draws, so later observed balances do not erase modeled debt. The annual growth estimate for modeled draws and the estimated baseline growth when servicing timing is incomplete are simulator planning conventions outside this settled monthly-assessment claim; their presence does not establish a complete HUD servicing result.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'agencyGuidance',
+      citation: 'HUD Mortgagee Letter 2025-22, HECM Maximum Claim Amount Limits',
+      url: 'https://www.hud.gov/sites/dfiles/hudclips/documents/2025-22hsgml.pdf',
+      quotedText:
+        'For the period of January 1, 2026, through December 31, 2026, the HECM MCA will be $1,249,125 (150 percent of Federal Home Loan Mortgage Corporation’s (Freddie Mac) national conforming limit of $832,750).',
+    }, {
+      kind: 'agencyGuidance',
+      citation: 'HUD Mortgagee Letter 2017-12, Initial and Annual MIP Rates',
+      url: 'https://www.hud.gov/sites/documents/17-12ml.pdf',
+      quotedText:
+        'The initial MIP rate is changed to two percent (2.00%) of the Maximum Claim Amount (MCA). The initial MIP rate is applicable to all borrowers and is no longer associated with disbursements made to or on behalf of the borrower at closing or during the First 12-Month Disbursement Period. The annual MIP rate is changed to one-half of one percent (0.50%) of the outstanding mortgage balance.',
+    }, {
+      kind: 'agencyGuidance',
+      citation: 'HUD Handbook 4000.1 Update 18, II.A.1.b.3.b.ii, Annual Mortgage Insurance Premium',
+      url: 'https://www.hud.gov/sites/default/files/Housing/documents/40001-hsgh-Update-18.pdf',
+      quotedText:
+        'The annual MIP is payable monthly. FHA charges an annual MIP of 0.50 percent on the outstanding mortgage balance. The amount of the annual MIP will begin to accrue on the outstanding mortgage balance from the Closing Date.',
+    }, {
+      kind: 'agencyGuidance',
+      citation: 'HUD Handbook 4000.1 Update 18, III.A.2.a.v(B)(C), Calculation of Monthly Mortgage Insurance Premium',
+      url: 'https://www.hud.gov/sites/default/files/Housing/documents/40001-hsgh-Update-18.pdf',
+      quotedText:
+        'Mortgagees must use the formula of one-twelfth of 0.50 percent multiplied by the outstanding mortgage balance to calculate the monthly Mortgage Insurance Premium (MIP).',
+    }, {
+      kind: 'agencyGuidance',
+      citation: 'HUD Handbook 4000.1 Update 18, III.A.2.a.v(C)(3)(c)(ii), Standard',
+      url: 'https://www.hud.gov/sites/default/files/Housing/documents/40001-hsgh-Update-18.pdf',
+      quotedText:
+        'When payment is remitted, the Mortgagee must add the payment to the Borrower\'s outstanding balance.',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-12',
+    implementedBy: [
+      'packages/engine/src/projection/internal/hecmHudValidatedOpeningAdapter.ts',
+      'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/params/data/year2026.ts',
+      'packages/engine/src/projection/hecmHudValidated.ts',
+      'packages/engine/src/projection/hecm.ts',
+      'packages/engine/src/projection/internal/hecmLineOpenings.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/internal/hecmHudValidatedOpeningAdapter.ts#priceHecmHudMipAssessmentYear',
+      'packages/engine/src/projection/internal/hecmHudValidatedOpeningAdapter.ts#hecmLineOpeningsWithHudValidation',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/internal/hecmLineOpenings.ts#hecmLineOpenings',
+      'packages/engine/src/params/data/year2026.ts#year2026',
+      'packages/engine/src/projection/hecmHudValidated.ts#computeHecmHudValidatedOpening',
+      'packages/engine/src/projection/hecmHudValidated.ts#priceHecmMonthlyMipFromOutstandingBalances',
+      'packages/engine/src/projection/hecm.ts#accrueHecmAnnualMip',
     ],
   },
 } satisfies Record<string, TaxRuleRecord>

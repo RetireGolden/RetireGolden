@@ -55,6 +55,8 @@ export interface EvaluateBeneficiarySpousalElectionInput {
   readonly deathDate: string
   /** The year whose treatment is being resolved. */
   readonly taxYear: number
+  /** Completed distribution years; opening-of-year routing ends at taxYear-1. */
+  readonly completedThroughTaxYear?: number
   /**
    * Consecutive years from deathYear + 1 through taxYear. A gap is refused
    * rather than assumed satisfied: an unobserved year is exactly the year a
@@ -66,6 +68,8 @@ export interface EvaluateBeneficiarySpousalElectionInput {
   readonly contributionYears: readonly number[]
   /** Year of an affirmative 1.408-8(c)(1) election, when one was made. */
   readonly affirmativeElectionYear: number | null
+  /** Verified January 1 execution: no beneficiary distribution year follows that opening. */
+  readonly affirmativeElectionAtTaxYearOpening?: boolean
 }
 
 export type EvaluateBeneficiarySpousalElectionResult =
@@ -117,6 +121,9 @@ export function evaluateBeneficiarySpousalElection(
   if (death === null) return inconsistent('deathDate is not a civil ISO date')
   if (!Number.isSafeInteger(input.taxYear)) return inconsistent('taxYear is not an integer')
   if (input.taxYear < death.year) return inconsistent('taxYear precedes the year of death')
+  const completedThroughTaxYear = input.completedThroughTaxYear ?? input.taxYear
+  if (!Number.isSafeInteger(completedThroughTaxYear) || completedThroughTaxYear > input.taxYear ||
+      completedThroughTaxYear < death.year - 1) return inconsistent('completedThroughTaxYear is outside the distribution-history boundary')
 
   if (input.relationship === 'notSurvivingSpouse') {
     if (input.affirmativeElectionYear !== null) {
@@ -131,6 +138,7 @@ export function evaluateBeneficiarySpousalElection(
         input.decedentPersonId,
         input.deathDate,
         input.taxYear,
+        completedThroughTaxYear,
         null,
         null,
       ]),
@@ -150,7 +158,7 @@ export function evaluateBeneficiarySpousalElection(
     if (entry.taxYear < firstObservedYear) {
       return inconsistent('history covers a year at or before the year of death')
     }
-    if (entry.taxYear > input.taxYear) return inconsistent('history covers a year after taxYear')
+    if (entry.taxYear > completedThroughTaxYear) return inconsistent(input.completedThroughTaxYear === undefined ? 'history covers a year after taxYear' : 'history covers a year after completedThroughTaxYear')
     if (byYear.has(entry.taxYear)) return inconsistent('history repeats a year')
     if (usdCentsSchema.safeParse(entry.requiredAmount).success !== true) {
       return inconsistent('history requiredAmount is not usd cents')
@@ -161,6 +169,9 @@ export function evaluateBeneficiarySpousalElection(
     byYear.set(entry.taxYear, entry)
   }
 
+  if (input.affirmativeElectionAtTaxYearOpening === true && input.affirmativeElectionYear === null) {
+    return inconsistent('opening execution requires an affirmative election year')
+  }
   const candidates: { year: number; trigger: SpousalElectionTrigger }[] = []
   if (input.affirmativeElectionYear !== null) {
     if (input.affirmativeElectionYear < death.year) {
@@ -174,7 +185,7 @@ export function evaluateBeneficiarySpousalElection(
     candidates.push({ year, trigger: 'contributionMade' })
   }
 
-  for (let year = firstObservedYear; year <= input.taxYear; year += 1) {
+  for (let year = firstObservedYear; year <= completedThroughTaxYear; year += 1) {
     const entry = byYear.get(year)
     if (entry === undefined) {
       return { status: 'spousalElectionEvidenceIncomplete', missingTaxYear: year }
@@ -192,16 +203,24 @@ export function evaluateBeneficiarySpousalElection(
     if (earliest === null || candidate.year < earliest.year) earliest = candidate
   }
 
+  const establishedOpeningTransition = input.affirmativeElectionAtTaxYearOpening === true &&
+    earliest?.trigger === 'affirmativeElection' && earliest.year === completedThroughTaxYear + 1
+  if (completedThroughTaxYear < input.taxYear - 1 &&
+      (earliest === null || earliest.year > completedThroughTaxYear) && !establishedOpeningTransition) {
+    return inconsistent('completed history ends before the prior year without an established owner transition')
+  }
+
   if (earliest === null) {
     return {
       status: 'spousalOwnerTreatmentNotBegun',
-      evaluatedThroughTaxYear: input.taxYear,
+      evaluatedThroughTaxYear: completedThroughTaxYear,
       evidenceId: deriveActionStructuralId('beneficiarySpousalElection', [
         'spousalOwnerTreatmentNotBegun',
         input.beneficiaryPersonId,
         input.decedentPersonId,
         input.deathDate,
         input.taxYear,
+        completedThroughTaxYear,
         null,
         null,
       ]),
@@ -218,6 +237,7 @@ export function evaluateBeneficiarySpousalElection(
         input.decedentPersonId,
         input.deathDate,
         input.taxYear,
+        completedThroughTaxYear,
         earliest.trigger,
         earliest.year,
       ]),

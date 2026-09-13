@@ -1,100 +1,80 @@
 # West Virginia (WV) — state income tax for retirement planning
 
-Tax year: 2026. Researched 2026-09-05 (rates); Social Security full exemption previously verified 2026-08-04.
+Tax year: 2026. Authority reconciliation: 2026-09-12.
 
-> **2026 update (SB 392 / §11-21-4j, 2026-09-05):** During the 2026 Legislative Session, SB 392
-> delivered an across-the-board personal income tax cut. Signed **March 31, 2026**; W. Va. Code
-> **§11-21-4j** codified effective **June 12, 2026**, **retroactive to January 1, 2026** (Tax Division
-> restatement). Subsection (a) sets one five-band table for individuals other than married-filing-separately
-> filers — including joint returns — at **2.11% / 2.81% / 3.16% / 4.22% / 4.58%** with shared break points
-> **$0 / $10,000 / $25,000 / $40,000 / $60,000**. Subsection (e) applies §11-21-4j for all taxable years
-> beginning on or after January 1, 2026 in lieu of §11-21-4i. Primary:
-> [§11-21-4J](https://code.wvlegislature.gov/11-21-4J/) and
-> [Tax Division 2026 Income Tax Rate Cut](https://tax.wv.gov/Individuals/Pages/PersonalIncomeTaxReductionBill.aspx).
->
-> The sole published state pack also stands in for pre-2026 and future years under the existing pack
-> fallback. Statutory authority for these rates is **2026+**; using the pack outside 2026 is a stand-in,
-> not proof of the historical §11-21-4i table. Future enactment monitoring remains.
+## Current calculation contract
 
-## Summary
-- Broad individual income tax: **yes** (graduated, **2.11%–4.58%** for 2026 under §11-21-4j(a))
-- Taxes Social Security benefits: **no** from 2026 — full exemption at every income level
-  (`wv-code-11-21-12-social-security-full-modification`; pack `taxesSocialSecurity: false`)
-- Long-term capital gains: modeled as ordinary income (`capitalGainsAsOrdinary: true`; preferential treatment not verified in this rate review)
-- Retirement income (pension, IRA, 401k): generally taxed; age-65+ may deduct up to $8,000 per person
-  from any income (pack maps this as a capped retirement exclusion — see simplifications)
+The following source-specific contracts supersede older aggregate assumptions. A rule record identifies the calculator boundary; it does not certify that a projection fixture or a release gate has passed. Missing eligibility, source, allocation or state-basis facts must remain visible as incomplete.
 
-## Current StateTaxParams (2026)
-- code: "WV"
-- name: "West Virginia"
-- hasIncomeTax: true
-- taxesSocialSecurity: false
-- capitalGainsAsOrdinary: true
-- standardDeduction: { single: 0, marriedFilingJointly: 0 }
-- brackets.single:
-  - { lowerBound: 0, ratePct: 2.11 }
-  - { lowerBound: 10000, ratePct: 2.81 }
-  - { lowerBound: 25000, ratePct: 3.16 }
-  - { lowerBound: 40000, ratePct: 4.22 }
-  - { lowerBound: 60000, ratePct: 4.58 }
-- brackets.marriedFilingJointly:
-  - { lowerBound: 0, ratePct: 2.11 }
-  - { lowerBound: 10000, ratePct: 2.81 }
-  - { lowerBound: 25000, ratePct: 3.16 }
-  - { lowerBound: 40000, ratePct: 4.22 }
-  - { lowerBound: 60000, ratePct: 4.58 }
-- retirement: { kind: "capped", capPerPerson: 8000, minAge: 65 }
+### West Virginia personal and surviving-spouse exemptions
 
-## Historical 2025 (distinct; superseded for TY2026+)
-- Rates under prior §11-21-4i: **2.22% / 2.96% / 3.33% / 4.44% / 4.82%** at the same
-  **$0 / $10,000 / $25,000 / $40,000 / $60,000** bounds (single and MFJ shared).
-- Social Security in 2025: **partial** — 65% of federally taxable benefits exempt (35% still taxed)
-  above AGI thresholds; full exemption below $50,000 single / $100,000 MFJ, phasing to full exemption in 2026.
-- Keep 2025 figures for historical comparison only; do not treat them as current pack authority.
+Record: `wv-code-11-21-exemptions-retirement-public-ss`. Classification: `settled`.
 
-The exported selector resolves requested WV TY2025 to the sole 2026 pack, so a modeled taxable base of
-$100,000 yields **$3,782.50** under current pack rates — not the enacted 2025
-[§11-21-4i(a)](https://code.wvlegislature.gov/11-21-4I/) rate-only figure of **$3,981.50** (a **$199.00**
-understatement on rates alone; statute freshly verified in independent adjudication). The current-pack
-historical approximation remains uncorrected; exact historical pack resolution is unimplemented. Correcting
-only the rate schedule would not certify other 2025 base modifications, including partial Social Security
-taxation. No test freezes this incorrect 2025 dollar result; this paragraph does not assert a legal TY2025
-tax liability.
+The personal exemption is $2,000 per qualifying exemption. The $500 alternative applies specifically to the IRC §151(d)(2) dependency reason, not every zero federal exemption. An unremarried surviving spouse receives the additional $2,000 in each of the two tax years after death. Unknown exemption count, zero-exemption reason or survivor conditions cannot establish an allowance. Retirement modifications and historical Social Security have separate records.
 
-## Retirement-income detail
-West Virginia taxes income at graduated rates. For 2026, §11-21-4j(a) uses **2.11%–4.58%** with
-bracket thresholds **the same for single and MFJ** (not doubled). Subsection (b) publishes a separate
-married-filing-separately schedule with half-sized bounds; the engine's accepted filing-status model
-does not carry MFS, so that schedule is out of pack scope. WV has **no standard deduction**; it uses
-$2,000-per-person personal exemptions instead (set `standardDeduction: 0`, noted below).
+Authority: [W. Va. Code §11-21-16(a),(c),(d)](https://code.wvlegislature.gov/11-21-16/).
 
-**Social Security** is fully exempt from tax years beginning on or after January 1, 2026
-(§11-21-12(c)(8)(A)/(B)/(E)/(F)); the pack already ships `taxesSocialSecurity: false`.
+> With respect to any taxable year beginning on or after January 1, 1987, said exemption shall be $2,000. … For taxable years beginning after December 31, 1986, a surviving spouse shall be allowed one additional exemption of $2,000 for the two taxable years beginning after the year of death of the deceased spouse.
 
-Residents **age 65+** (or permanently disabled) may deduct **up to $8,000 per person** of income from
-any source. Mapped to `retirement: { kind: "capped", capPerPerson: 8000, minAge: 65 }`.
+Authority: [W. Va. Code §11-21-16(d)](https://code.wvlegislature.gov/11-21-16/).
 
-### Modeled tax deltas on the pack taxable base (rates only; not a full IT-140)
-Independent §11-21-4j arithmetic on the modeled taxable base (zero standard deduction, no exemptions):
+> Notwithstanding any provisions in this section, for taxable years beginning after December 31, 1986, a resident individual whose exemption amount for federal tax purposes is zero by virtue of section 151(d)(2) of the Internal Revenue Code of 1986, shall be allowed a single West Virginia exemption in the amount of $500.
 
-| Taxable base | Prior §11-21-4i | §11-21-4j (2026) | Delta |
-|-------------:|----------------:|-----------------:|------:|
-| $10,000 | $222.00 | $211.00 | −$11.00 |
-| $100,000 | $3,981.50 | $3,782.50 | −$199.00 |
+### West Virginia $8,000 age/disability modification uses the owner’s residual limit
 
-These figures are rate-schedule math only. A full Form IT-140 is **not certified**: personal exemptions,
-the senior any-income / disability modification beyond the pack's retirement-bucket mapping, and
-pension-subtype subtractions remain unmodeled.
+Record: `wv-code-11-21-12-c9-age-disability-residual`. Classification: `settled`.
 
-## Simplifications / not modeled
-- No standard deduction; **$2,000-per-person personal exemptions** not modeled (overstates tax).
-- The **$8,000 senior deduction** applies to any income source (and disability), not just pension/IRA;
-  mapping it to `retirement` is an approximation.
-- Government/military pension subtractions and other listed modifications not separately modeled.
-- Married-filing-separately §11-21-4j(b) schedule not modeled.
-- Full IT-140 reconciliation not certified.
+An owner age 65 at year end or properly certified permanently and totally disabled may deduct no more than $8,000 of included income less that owner’s modifications under (c)(1),(2),(5),(6),(7),(8). The total cannot exceed remaining included income. Apply the prior-modification ledger per person, not a new household $8,000 allowance. Unknown certification or prior modifications is incomplete.
 
-## Citations (primary only)
+Authority: [W. Va. Code §11-21-12(c)(9)(i)-(ii)](https://code.wvlegislature.gov/11-21-12/).
+
+> (9) Federal adjusted gross income in the amount of $8,000 received from any source after December 31, 1986, by any person who has attained the age of 65 on or before the last day of the taxable year, or by any person certified by proper authority as permanently and totally disabled, regardless of age, on or before the last day of the taxable year, to the extent includable in federal adjusted gross income for federal tax purposes: Provided, That if a person has a medical certification from a prior year and he or she is still permanently and totally disabled, a copy of the original certificate is acceptable as proof of disability. A copy of the form filed for the federal disability income tax exclusion is acceptable: Provided, however, That: (i) Where the total modification under subdivisions (1), (2), (5), (6), (7), and (8) of this subsection is $8,000 per person or more, no deduction shall be allowed under this subdivision; and (ii) Where the total modification under subdivisions (1), (2), (5), (6), (7), and (8) of this subsection is less than $8,000 per person, the total modification allowed under this subdivision for all gross income received by that person shall be limited to the difference between $8,000 and the sum of modifications under subdivisions (1), (2), (5), (6), (7), and (8) of this subsection;
+
+### West Virginia distinguishes the combined $2,000 public bucket from full police/fire exclusions
+
+Record: `wv-code-11-21-12-c5-c6-public-retirement`. Classification: `settled`.
+
+PERS, Teachers and qualifying federal retirement systems share a $2,000 limit per recipient; they do not each create a new cap. Named West Virginia police/fire systems have a separate full exclusion. A generic public or federalCivilService label without statutory-system proof does not establish the appropriate bucket.
+
+Authority: [W. Va. Code §11-21-12(c)(5)-(6)](https://code.wvlegislature.gov/11-21-12/).
+
+> (5) Annuities, retirement allowances, returns of contributions and any other benefit received under the West Virginia Public Employees Retirement System, and the West Virginia State Teachers Retirement System, including any survivorship annuities derived therefrom, to the extent includable in gross income for federal income tax purposes: Provided, That notwithstanding any provisions in this code to the contrary this modification shall be limited to the first $2,000 of benefits received under the West Virginia Public Employees Retirement System, the West Virginia State Teachers Retirement System and, including any survivorship annuities derived therefrom, to the extent includable in gross income for federal income tax purposes for taxable years beginning after December 31, 1986; and the first $2,000 of benefits received under any federal retirement system to which 4 U.S.C. § 111 applies: Provided, however, That the total modification under this paragraph shall not exceed $2,000 per person receiving retirement benefits and this limitation shall apply to all returns or amended returns filed after December 31, 1988; (6) Retirement income received in the form of pensions and annuities after December 31, 1979, under any West Virginia police, West Virginia Firemen’s Retirement System or the West Virginia State Police Death, Disability and Retirement Fund, the West Virginia State Police Retirement System or the West Virginia Deputy Sheriff Retirement System, including any survivorship annuities derived from any of these programs, to the extent includable in gross income for federal income tax purposes;
+
+### West Virginia qualifying uniformed-services retirement and survivors are fully excluded
+
+Record: `wv-code-11-21-12-c7-military`. Classification: `settled`.
+
+The current military/uniformed-services provisions exclude the included qualifying retirement and survivor amount without the older $20,000 cap. The named military, reserve, Guard, PHS and NOAA source definitions matter; private and unclassified public pensions do not qualify.
+
+Authority: [W. Va. Code §11-21-12(c)(7)(C)](https://code.wvlegislature.gov/11-21-12/).
+
+> For taxable years beginning after December 31, 2017, military retirement income, including retirement income from the regular Armed Forces, Reserves and National Guard paid by the United States or by this state after December 31, 2017, including any survivorship annuities, to the extent included in federal adjusted gross income for the taxable year. … For taxable years beginning after December 31, 2018, retirement income from the uniformed services, including the Army, Navy, Marines, Air Force, Space Force, Coast Guard, Public Health Service, National Oceanic Atmospheric Administration, reserves, and National Guard, paid by the United States or by this state after December 31, 2018, including any survivorship annuities, to the extent included in federal adjusted gross income for the taxable year.
+
+### West Virginia subtracts federally protected Tier I income
+
+Record: `wv-code-11-21-12-c12-railroad`. Classification: `settled`.
+
+Included Tier I Railroad Retirement is protected by (c)(12). Do not subtract gross benefits exceeding the amount in federal AGI or claim a second subtraction for an already removed amount. Ordinary pensions are outside this category.
+
+Authority: [W. Va. Code §11-21-12(c)(12)](https://code.wvlegislature.gov/11-21-12/).
+
+> Any other income which this state is prohibited from taxing under the laws of the United States including, but not limited to, tier I retirement benefits as defined in Section 86(d)(4) of the Internal Revenue Code.
+
+### West Virginia historical Social Security phase-in depends on AGI and year
+
+Record: `wv-code-11-21-12-c8-social-security-phase-in`. Classification: `settled`.
+
+At or below $50,000 AGI ($100,000 joint), 100% of federally included Social Security is subtracted since 2022. Above that threshold the subtraction is 35% in 2024, 65% in 2025 and 100% from 2026. The year-specific rule applies only to the federally included amount; the 2026 no-SS-tax base must not subtract it twice. Unsupported historical years must not inherit a guessed percentage.
+
+Authority: [W. Va. Code §11-21-12(c)(8)(A)-(F)](https://code.wvlegislature.gov/11-21-12/).
+
+> (A) For taxable years beginning on or after January 1, 2022, 100 percent of the social security benefits received pursuant to Chapter 7 of Title 42 of the United States Code, including, but not limited to, social security benefits paid by the Social Security Administration as Old Age, Survivors and Disability Insurance Benefits as provided in 42 U.S.C. § 401 et. seq. or as Supplemental Security Income for the Aged, Blind, and Disabled as provided in 42 U.S.C. § 1381 et. seq., included in federal adjusted gross income for the taxable year shall be allowed as a decreasing modification from federal adjusted gross income when determining West Virginia taxable income subject to the tax imposed by this article, subject to the limitation in §11-21-12(c)(8)(B) of this code. (B) The deduction allowed by §11-21-12(c)(8)(A) of this code are allowable only when the federal adjusted gross income of a married couple filing a joint return does not exceed $100,000, or $50,000 in the case of a single individual or a married individual filing a separate return. (C) For taxable years beginning on and after January 1, 2024, 35 percent of the amount of social security benefits received pursuant to Chapter 7 of Title 42 of the United States Code, including, but not limited to, social security benefits paid by the Social Security Administration as Old Age, Survivors and Disability Insurance Benefits as provided in 42 U.S.C. § 401 et. seq. or as Supplemental Security Income for the Aged, Blind, and Disabled as provided in 42 U.S.C. § 1381 et. seq., included in federal adjusted gross income for the taxable year shall be allowed as a decreasing modification from federal adjusted gross income when determining West Virginia taxable income subject to the tax imposed by this article, subject to the limitation in §11-21-12(c)(8)(F) of this code. (D) For taxable years beginning on or after January 1, 2025, 65 percent of the social security benefits received pursuant to Chapter 7 of Title 42 of the United States Code, including, but not limited to, social security benefits paid by the Social Security Administration as Old Age, Survivors and Disability Insurance Benefits as provided in 42 U.S.C. § 401 et. seq. or as Supplemental Security Income for the Aged, Blind, and Disabled as provided in 42 U.S.C. § 1381 et. seq., included in federal adjusted gross income for the taxable year shall be allowed as a decreasing modification from federal adjusted gross income when determining West Virginia taxable income subject to the tax imposed by this article, subject to the limitation in §11-21-12(c)(8)(F) of this code. (E) For taxable years beginning on or after January 1, 2026, 100 percent of the social security benefits received pursuant to Chapter 7 of Title 42 of the United States Code, including, but not limited to, social security benefits paid by the Social Security Administration as Old Age, Survivors and Disability Insurance Benefits as provided in 42 U.S.C. § 401 et. seq. or as Supplemental Security Income for the Aged, Blind, and Disabled as provided in 42 U.S.C. 1381 et. seq., included in federal adjusted gross income for the taxable year shall be allowed as a decreasing modification from federal adjusted gross income when determining West Virginia taxable income subject to the tax imposed by this article, subject to the limitation in §11-21-12(c)(8)(F) of this code. (F) The deduction allowed by §11-21-12(c)(8)(C), §11-21-12(c)(8)(D), and §11-21-12(c)(8)(E) of this code are allowable only when the federal adjusted gross income of a married couple filing a joint return exceeds $100,000, or $50,000 in the case of a single individual or a married individual filing a separate return.
+
+## Validation boundary
+
+Source records above require discriminating positive and negative fixtures through the state calculation entry point, followed by actual `simulatePlan` event/basis integration. The source record alone does not establish those results. Annual parameters and generated rule/quote ledgers must be refreshed by the integration owner.
+
+## Additional source history (primary only)
 - brackets — https://code.wvlegislature.gov/11-21-4J/ — W. Va. Code §11-21-4j(a)/(e): 2026 rates
   2.11%–4.58% at $0/$10k/$25k/$40k/$60k; applies in lieu of §11-21-4i for TY beginning on/after 2026-01-01.
 - brackets (Tax Division restatement) — https://tax.wv.gov/Individuals/Pages/PersonalIncomeTaxReductionBill.aspx
@@ -103,7 +83,3 @@ pension-subtype subtractions remain unmodeled.
 - standard deduction — none published; personal exemptions under §11-21-16 are unmodeled (`standardDeduction: 0`).
 - capital gains — **NOT SOURCED** for separate preferential-rate treatment in this bounded rate review — current ordinary-income treatment (`capitalGainsAsOrdinary: true`) remains an existing modeled assumption pending primary reconciliation.
 - retirement exclusion — age-65/disability modification under §11-21-12(c)(9) (pack maps capped retirement; prior citation retained).
-
-## Cross-checks (not authority)
-Aggregators may be used only as change-detectors. **Do not cite Tax Foundation (or any aggregator) as
-authority for the corrected 2026 rates** — those figures come from §11-21-4j and the Tax Division page above.

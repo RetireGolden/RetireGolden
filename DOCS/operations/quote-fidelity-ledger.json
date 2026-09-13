@@ -1,18 +1,18 @@
 {
-  "generatedAt": "2026-09-12T15:23:23.483Z",
-  "recordCount": 476,
-  "urlCount": 379,
-  "fetched": 0,
-  "cached": 379,
-  "entryCount": 1431,
+  "generatedAt": "2026-09-12T22:53:52.267Z",
+  "recordCount": 529,
+  "urlCount": 430,
+  "fetched": 14,
+  "cached": 416,
+  "entryCount": 1529,
   "counts": {
-    "EXACT": 974,
-    "PUNCTUATION": 44,
-    "PDF-WORD-LEVEL": 304,
-    "ELISION-EXACT": 91,
-    "ELISION-PUNCTUATION": 8,
+    "EXACT": 967,
+    "PUNCTUATION": 48,
+    "PDF-WORD-LEVEL": 339,
+    "ELISION-EXACT": 109,
+    "ELISION-PUNCTUATION": 9,
     "PDF-NOT-VERIFIABLE": 7,
-    "UNFETCHABLE": 3
+    "UNFETCHABLE": 50
   },
   "hostConventions": {
     "uscode.house.gov": {
@@ -1618,6 +1618,36 @@
       "diagnosis": null
     },
     {
+      "id": "treas-reg-1-402-c-2-j-4-surviving-spouse-catch-up-recurrence",
+      "citation": "Treas. Reg. 1.402(c)-2(j)(4)(ii)-(iv) (2025 CFR)",
+      "host": "www.govinfo.gov",
+      "url": "https://www.govinfo.gov/content/pkg/CFR-2025-title26-vol6/pdf/CFR-2025-title26-vol6-sec1-402c-2.pdf",
+      "quoteSha256": "e9b19a39deac0dd0",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "treas-reg-1-402-c-2-j-4-surviving-spouse-catch-up-recurrence",
+      "citation": "Treas. Reg. 1.408-8(c)(1)(iii)-(iv)",
+      "host": "www.law.cornell.edu",
+      "url": "https://www.law.cornell.edu/cfr/text/26/1.408-8",
+      "quoteSha256": "56078da905e4b4db",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "treas-reg-1-402-c-2-j-4-surviving-spouse-catch-up-recurrence",
+      "citation": "IRS, Internal Revenue Bulletin 2024-33, proposed worked example",
+      "host": "www.irs.gov",
+      "url": "https://www.irs.gov/irb/2024-33_IRB",
+      "quoteSha256": "5cf362633240c412",
+      "verdict": "ELISION-EXACT",
+      "detail": "2 elision segments, every one a literal substring",
+      "diagnosis": null
+    },
+    {
       "id": "treas-reg-1-408-8-c-3-spouse-treated-as-owner",
       "citation": "Treas. Reg. 1.408-8(c)(3)",
       "host": "www.law.cornell.edu",
@@ -2725,6 +2755,76 @@
       "quoteSha256": "c5c5940be228b0ef",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-401-a-9-B-ii-confirmed-non-designated-five-year-schedule",
+      "citation": "IRC 401(a)(9)(B)(ii)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section401&num=0&edition=prelim",
+      "quoteSha256": "c5c5940be228b0ef",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-401-a-9-B-ii-confirmed-non-designated-five-year-schedule",
+      "citation": "Treas. Reg. 54.4974-1(c)(2)",
+      "host": "www.ecfr.gov",
+      "url": "https://www.ecfr.gov/current/title-26/section-54.4974-1",
+      "quoteSha256": "40914a4f97dfab5d",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "treas-reg-54-4974-1-e-post-deadline-remaining-benefit",
+      "citation": "Treas. Reg. 54.4974-1(e)",
+      "host": "www.govinfo.gov",
+      "url": "https://www.govinfo.gov/content/pkg/CFR-2025-title26-vol19/pdf/CFR-2025-title26-vol19-sec54-4974-1.pdf",
+      "quoteSha256": "f44583a1dd795a45",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "treas-reg-54-4974-1-e-post-deadline-remaining-benefit",
+      "citation": "Treas. Reg. 54.4974-1(a)",
+      "host": "www.govinfo.gov",
+      "url": "https://www.govinfo.gov/content/pkg/CFR-2025-title26-vol19/pdf/CFR-2025-title26-vol19-sec54-4974-1.pdf",
+      "quoteSha256": "bb56a586a8962af3",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "treas-reg-1-408A-6-inherited-roth-nonqualified-earnings",
+      "citation": "Treas. Reg. 1.408A-6 A-8(a)",
+      "host": "www.govinfo.gov",
+      "url": "https://www.govinfo.gov/content/pkg/CFR-2025-title26-vol6/pdf/CFR-2025-title26-vol6-sec1-408A-6.pdf",
+      "quoteSha256": "6afa0b12e17374d4",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "treas-reg-1-408A-6-inherited-roth-nonqualified-earnings",
+      "citation": "Treas. Reg. 1.408A-6 A-11",
+      "host": "www.govinfo.gov",
+      "url": "https://www.govinfo.gov/content/pkg/CFR-2025-title26-vol6/pdf/CFR-2025-title26-vol6-sec1-408A-6.pdf",
+      "quoteSha256": "d024ee5715fc5e55",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "treas-reg-1-408A-6-inherited-roth-nonqualified-earnings",
+      "citation": "Publication 590-B (2025), What Are Qualified Distributions?",
+      "host": "www.irs.gov",
+      "url": "https://www.irs.gov/publications/p590b",
+      "quoteSha256": "209cd79338f7069e",
+      "verdict": "ELISION-EXACT",
+      "detail": "2 elision segments, every one a literal substring",
       "diagnosis": null
     },
     {
@@ -4330,8 +4430,8 @@
     {
       "id": "irc-414-v-7-A-high-earner-roth-catch-up-mandate",
       "citation": "T.D. 10033, 26 CFR 1.414(v)-2(b)(2)",
-      "host": "www.govinfo.gov",
-      "url": "https://www.govinfo.gov/content/pkg/FR-2025-09-16/html/2025-17865.htm",
+      "host": "www.irs.gov",
+      "url": "https://www.irs.gov/irb/2025-40_IRB",
       "quoteSha256": "a4d9028746103738",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
@@ -4355,6 +4455,26 @@
       "quoteSha256": "f86b390c349b0968",
       "verdict": "ELISION-EXACT",
       "detail": "3 elision segments, every one a literal substring",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-414-v-2-d-6-prior-designated-roth-offset",
+      "citation": "T.D. 10033; 26 CFR 1.414(v)-2(b)(1)",
+      "host": "www.federalregister.gov",
+      "url": "https://www.federalregister.gov/documents/2025/09/16/2025-17865/catch-up-contributions",
+      "quoteSha256": "bf24e156a8191a28",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-414-v-2-d-6-prior-designated-roth-offset",
+      "citation": "T.D. 10033; 26 CFR 1.414(v)-2(d)(6) Example 6",
+      "host": "www.federalregister.gov",
+      "url": "https://www.federalregister.gov/documents/2025/09/16/2025-17865/catch-up-contributions",
+      "quoteSha256": "4636a0f49cf1ef28",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -5589,10 +5709,10 @@
     },
     {
       "id": "usc-42-1395w-113-b-pl-117-169-part-d-penalty-and-cost-sharing",
-      "citation": "P.L. 117-169, section 11406(a), adding 1860D-2(b)(9)(B)(ii)",
-      "host": "www.govinfo.gov",
-      "url": "https://www.govinfo.gov/content/pkg/PLAW-117publ169/pdf/PLAW-117publ169.pdf",
-      "quoteSha256": "07887f6f464e68d8",
+      "citation": "CMS Final CY 2026 Part D Redesign Program Instructions, section 10 and appendix section 100",
+      "host": "www.cms.gov",
+      "url": "https://www.cms.gov/files/document/final-cy-2026-part-d-redesign-program-instruction.pdf",
+      "quoteSha256": "9697ddf2a8a887cf",
       "verdict": "PDF-WORD-LEVEL",
       "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
       "diagnosis": null
@@ -5673,6 +5793,16 @@
       "host": "secure.ssa.gov",
       "url": "https://secure.ssa.gov/poms.nsf/lnx/0601120000",
       "quoteSha256": "21da1f405eb68f62",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "cfr-20-418-1205-1230-irmaa-life-change-redetermination",
+      "citation": "POMS HI 01120.005 A",
+      "host": "secure.ssa.gov",
+      "url": "https://secure.ssa.gov/poms.nsf/lnx/0601120005",
+      "quoteSha256": "b71b61a3255f9655",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null
@@ -7426,13 +7556,35 @@
     },
     {
       "id": "usc-42-426-b-disability-trial-work-medicare-continuation",
-      "citation": "42 U.S.C. 426(b)",
-      "host": "uscode.house.gov",
-      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section426&num=0&edition=prelim",
-      "quoteSha256": "b7be8de7d0d5f4e0",
+      "citation": "SSA POMS DI 28055.001",
+      "host": "secure.ssa.gov",
+      "url": "https://secure.ssa.gov/apps10/poms.nsf/lnx/0428055001",
+      "quoteSha256": "7c0833f3c5fad250",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null
+    },
+    {
+      "id": "usc-42-426-b-disability-trial-work-medicare-continuation",
+      "citation": "SSA Red Book, Extended Medicare Coverage (SSDI only)",
+      "host": "www.ssa.gov",
+      "url": "https://www.ssa.gov/redbook/eng/extended-medicare-coverage.htm",
+      "quoteSha256": "b89efe9652c512c3",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source (matched on a page below the shell-length threshold)",
+      "diagnosis": null,
+      "fetchProfile": "browserFallback"
+    },
+    {
+      "id": "usc-42-426-b-disability-trial-work-medicare-continuation",
+      "citation": "SSA Red Book, Extended Medicare Coverage (SSDI only), When does this start?",
+      "host": "www.ssa.gov",
+      "url": "https://www.ssa.gov/redbook/eng/extended-medicare-coverage.htm",
+      "quoteSha256": "25f327714a629a67",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source (matched on a page below the shell-length threshold)",
+      "diagnosis": null,
+      "fetchProfile": "browserFallback"
     },
     {
       "id": "irc-86-b-2-provisional-income-modified-agi",
@@ -9725,6 +9877,16 @@
       "diagnosis": null
     },
     {
+      "id": "irc-2503-b-annual-gift-exclusion-not-modeled",
+      "citation": "Revenue Procedure 2025-32 section 4.42(1)",
+      "host": "www.irs.gov",
+      "url": "https://www.irs.gov/irb/2025-45_IRB",
+      "quoteSha256": "f1873564407f9e56",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
       "id": "irc-2010-c-3-basic-exclusion-amount-not-modeled",
       "citation": "IRC 2010(a)",
       "host": "uscode.house.gov",
@@ -9812,6 +9974,106 @@
       "quoteSha256": "a1955ad157e91c83",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-529-five-year-gift-election-not-modeled",
+      "citation": "Revenue Procedure 2025-32 section 4.42(1)",
+      "host": "www.irs.gov",
+      "url": "https://www.irs.gov/irb/2025-45_IRB",
+      "quoteSha256": "f1873564407f9e56",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-529-five-year-gift-election-not-modeled",
+      "citation": "Instructions for Form 709 (2025), Contributions to Qualified Tuition Plans or Programs",
+      "host": "www.irs.gov",
+      "url": "https://www.irs.gov/instructions/i709",
+      "quoteSha256": "cf0e633c3cb70d42",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-529-five-year-gift-election-not-modeled",
+      "citation": "IRC 529(c)(2)(B)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section529&num=0&edition=prelim",
+      "quoteSha256": "6e6797bd84530ce3",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-101-a-1-life-insurance-death-proceeds-exclusion",
+      "citation": "IRC 101(a)(1)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section101&num=0&edition=prelim",
+      "quoteSha256": "035515c485d004d7",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-101-a-1-life-insurance-death-proceeds-exclusion",
+      "citation": "IRS, Are proceeds paid under a life insurance contract taxable?",
+      "host": "www.irs.gov",
+      "url": "https://www.irs.gov/faqs/interest-dividends-other-types-of-income/life-insurance-disability-insurance-proceeds",
+      "quoteSha256": "5db0bf69c8013fbf",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "hud-hecm-mca-mip-limits",
+      "citation": "HUD Mortgagee Letter 2025-22, HECM Maximum Claim Amount Limits",
+      "host": "www.hud.gov",
+      "url": "https://www.hud.gov/sites/dfiles/hudclips/documents/2025-22hsgml.pdf",
+      "quoteSha256": "48810d6eba59c95c",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "hud-hecm-mca-mip-limits",
+      "citation": "HUD Mortgagee Letter 2017-12, Initial and Annual MIP Rates",
+      "host": "www.hud.gov",
+      "url": "https://www.hud.gov/sites/documents/17-12ml.pdf",
+      "quoteSha256": "9053061a35f57c1f",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "hud-hecm-mca-mip-limits",
+      "citation": "HUD Handbook 4000.1 Update 18, II.A.1.b.3.b.ii, Annual Mortgage Insurance Premium",
+      "host": "www.hud.gov",
+      "url": "https://www.hud.gov/sites/default/files/Housing/documents/40001-hsgh-Update-18.pdf",
+      "quoteSha256": "227e872d0345ba68",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "hud-hecm-mca-mip-limits",
+      "citation": "HUD Handbook 4000.1 Update 18, III.A.2.a.v(B)(C), Calculation of Monthly Mortgage Insurance Premium",
+      "host": "www.hud.gov",
+      "url": "https://www.hud.gov/sites/default/files/Housing/documents/40001-hsgh-Update-18.pdf",
+      "quoteSha256": "04999c8c1ccd57cf",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "hud-hecm-mca-mip-limits",
+      "citation": "HUD Handbook 4000.1 Update 18, III.A.2.a.v(C)(3)(c)(ii), Standard",
+      "host": "www.hud.gov",
+      "url": "https://www.hud.gov/sites/default/files/Housing/documents/40001-hsgh-Update-18.pdf",
+      "quoteSha256": "d8aad9e96b0c2e8a",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
       "diagnosis": null
     },
     {
@@ -10276,20 +10538,20 @@
     },
     {
       "id": "ma-gen-laws-ch62-s2-public-pension-exclusion",
-      "citation": "Mass. Gen. Laws ch. 62, §2(a)(2)",
+      "citation": "Mass. Gen. Laws ch.62 §2(a)(2)(E)",
       "host": "malegislature.gov",
       "url": "https://malegislature.gov/Laws/GeneralLaws/PartI/TitleIX/Chapter62/Section2",
-      "quoteSha256": "07109194c34efa78",
+      "quoteSha256": "791600ed9eb5a3f1",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
       "id": "ma-gen-laws-ch62-s2-public-pension-exclusion",
-      "citation": "Mass. Gen. Laws ch. 62, §2(a)(2)(E)",
+      "citation": "Mass. Gen. Laws ch.62 §3B(a)(4), reciprocal contributory public pensions",
       "host": "malegislature.gov",
-      "url": "https://malegislature.gov/Laws/GeneralLaws/PartI/TitleIX/Chapter62/Section2",
-      "quoteSha256": "791600ed9eb5a3f1",
+      "url": "https://malegislature.gov/Laws/GeneralLaws/PartI/TitleIX/Chapter62/Section3",
+      "quoteSha256": "db5a2c6e1947c4bb",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null
@@ -10330,8 +10592,8 @@
       "host": "www.gencourt.state.nh.us",
       "url": "https://www.gencourt.state.nh.us/rsa/html/V/77/77-mrg.htm",
       "quoteSha256": "513d7314aa5a5e34",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source (matched on a page below the shell-length threshold)",
+      "verdict": "UNFETCHABLE",
+      "detail": "only 167 characters of text — a shell or error page, not the document",
       "diagnosis": null
     },
     {
@@ -10570,8 +10832,8 @@
       "host": "legislature.vermont.gov",
       "url": "https://legislature.vermont.gov/statutes/section/32/151/05830e",
       "quoteSha256": "5a3ae08ee2db6ce7",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -10580,8 +10842,8 @@
       "host": "legislature.vermont.gov",
       "url": "https://legislature.vermont.gov/statutes/section/32/151/05830e",
       "quoteSha256": "d6441a972aec0818",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -10590,8 +10852,8 @@
       "host": "legislature.vermont.gov",
       "url": "https://legislature.vermont.gov/statutes/section/32/151/05830e",
       "quoteSha256": "d5f125fd5fc1cd0e",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -10600,8 +10862,8 @@
       "host": "legislature.vermont.gov",
       "url": "https://legislature.vermont.gov/statutes/section/32/151/05830e",
       "quoteSha256": "350006be96853b0a",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -10610,8 +10872,8 @@
       "host": "legislature.vermont.gov",
       "url": "https://legislature.vermont.gov/statutes/section/32/151/05830e",
       "quoteSha256": "a03cc26dd770942d",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -10620,8 +10882,8 @@
       "host": "legislature.vermont.gov",
       "url": "https://legislature.vermont.gov/statutes/section/32/151/05830e",
       "quoteSha256": "83bb22ff86bcfb21",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -10630,8 +10892,8 @@
       "host": "legislature.vermont.gov",
       "url": "https://legislature.vermont.gov/statutes/section/32/151/05830e",
       "quoteSha256": "519796c24f487c8f",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -10640,8 +10902,8 @@
       "host": "legislature.vermont.gov",
       "url": "https://legislature.vermont.gov/statutes/section/32/151/05830e",
       "quoteSha256": "3f0da14f2721b928",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -10650,8 +10912,8 @@
       "host": "legislature.vermont.gov",
       "url": "https://legislature.vermont.gov/statutes/section/32/151/05811",
       "quoteSha256": "f0953791a4d05667",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -10662,6 +10924,236 @@
       "quoteSha256": "0d825b500b0808a4",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "ct-personal-exemption-and-ct-agi-schedule",
+      "citation": "§12-702(a)(1), married filing separately",
+      "host": "www.cga.ct.gov",
+      "url": "https://www.cga.ct.gov/current/pub/chap_229.htm",
+      "quoteSha256": "e1d2cc1d5238d95a",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "ct-personal-exemption-and-ct-agi-schedule",
+      "citation": "§12-702(a)(2) introductory provision and (I), single",
+      "host": "www.cga.ct.gov",
+      "url": "https://www.cga.ct.gov/current/pub/chap_229.htm",
+      "quoteSha256": "caa9282114ab7f98",
+      "verdict": "ELISION-EXACT",
+      "detail": "2 elision segments, every one a literal substring",
+      "diagnosis": null
+    },
+    {
+      "id": "ct-personal-exemption-and-ct-agi-schedule",
+      "citation": "§12-702(b), head of household",
+      "host": "www.cga.ct.gov",
+      "url": "https://www.cga.ct.gov/current/pub/chap_229.htm",
+      "quoteSha256": "009c409896945652",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "ct-personal-exemption-and-ct-agi-schedule",
+      "citation": "§12-702(c)(1) first sentence and (2), joint and surviving spouse",
+      "host": "www.cga.ct.gov",
+      "url": "https://www.cga.ct.gov/current/pub/chap_229.htm",
+      "quoteSha256": "225b5e3309218144",
+      "verdict": "ELISION-EXACT",
+      "detail": "2 elision segments, every one a literal substring",
+      "diagnosis": null
+    },
+    {
+      "id": "ma-personal-exemptions-and-surtax",
+      "citation": "Massachusetts DOR, tax rates, tax year 2026",
+      "host": "www.mass.gov",
+      "url": "https://www.mass.gov/info-details/massachusetts-tax-rates",
+      "quoteSha256": "46357c7a11577849",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "ma-personal-exemptions-and-surtax",
+      "citation": "Mass. Gen. Laws ch.62 §3(b)(1)-(3)",
+      "host": "malegislature.gov",
+      "url": "https://malegislature.gov/Laws/GeneralLaws/PartI/TitleIX/Chapter62/Section3",
+      "quoteSha256": "698621e67267ba67",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "ma-private-pension-basis-recovery",
+      "citation": "Mass. Gen. Laws ch.62 §2(a)(2)(F)",
+      "host": "malegislature.gov",
+      "url": "https://malegislature.gov/Laws/GeneralLaws/PartI/TitleIX/Chapter62/Section2",
+      "quoteSha256": "b928b3d8b15cde1c",
+      "verdict": "PUNCTUATION",
+      "detail": "matches only after: whitespace",
+      "diagnosis": null
+    },
+    {
+      "id": "ma-rrb-and-public-pension-exclusions",
+      "citation": "Mass. Gen. Laws ch.62 §2(a)(2)(E)",
+      "host": "malegislature.gov",
+      "url": "https://malegislature.gov/Laws/GeneralLaws/PartI/TitleIX/Chapter62/Section2",
+      "quoteSha256": "791600ed9eb5a3f1",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "ma-rrb-and-public-pension-exclusions",
+      "citation": "Massachusetts DOR, railroad retirement benefits",
+      "host": "www.mass.gov",
+      "url": "https://www.mass.gov/info-details/tax-treatment-of-government-pensions-in-massachusetts",
+      "quoteSha256": "b54b35f541c5250f",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "ma-rrb-and-public-pension-exclusions",
+      "citation": "Mass. Gen. Laws ch.62 §3B(a)(4), reciprocal contributory public pensions",
+      "host": "malegislature.gov",
+      "url": "https://malegislature.gov/Laws/GeneralLaws/PartI/TitleIX/Chapter62/Section3",
+      "quoteSha256": "db5a2c6e1947c4bb",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "nj-stat-54a-6-26-military-pension-exclusion",
+      "citation": "N.J.S.A.54A:6-26; P.L.2001 c.84 §1",
+      "host": "pub.njleg.gov",
+      "url": "https://pub.njleg.gov/bills/2000/PL01/84_.PDF",
+      "quoteSha256": "5c00e623c8873dc8",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "nj-stat-54a-6-26-military-pension-exclusion",
+      "citation": "NJ Division of Taxation, military pension and survivor payments",
+      "host": "www.nj.gov",
+      "url": "https://www.nj.gov/treasury/taxation/military/taxinformation.shtml",
+      "quoteSha256": "7a6d123cc6e3c096",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "vt-2026-rates-standard-deduction-minimum-tax",
+      "citation": "32 V.S.A. section 5811(21)(C)(i)-(iii), (D)",
+      "host": "legislature.vermont.gov",
+      "url": "https://legislature.vermont.gov/statutes/section/32/151/05811",
+      "quoteSha256": "82c207de3742b665",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
+      "diagnosis": null
+    },
+    {
+      "id": "vt-2026-rates-standard-deduction-minimum-tax",
+      "citation": "32 V.S.A. section 5822(a)(1)-(4), (b)(2)",
+      "host": "legislature.vermont.gov",
+      "url": "https://legislature.vermont.gov/statutes/section/32/151/05822",
+      "quoteSha256": "2ae83efe4b9533e7",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
+      "diagnosis": null
+    },
+    {
+      "id": "vt-2026-rates-standard-deduction-minimum-tax",
+      "citation": "26 U.S.C. section 1(f)(3)-(7)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1&num=0&edition=prelim",
+      "quoteSha256": "44e378bfbb013eca",
+      "verdict": "ELISION-EXACT",
+      "detail": "2 elision segments, every one a literal substring",
+      "diagnosis": null
+    },
+    {
+      "id": "vt-32-5822-a-6-minimum-tax",
+      "citation": "32 V.S.A. §5822(a)(6)",
+      "host": "legislature.vermont.gov",
+      "url": "https://legislature.vermont.gov/statutes/section/32/151/05822",
+      "quoteSha256": "1ed31731dd17e065",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
+      "diagnosis": null
+    },
+    {
+      "id": "vt-32-5830e-retirement-election",
+      "citation": "32 V.S.A. §5830e(b),(c),(e)",
+      "host": "legislature.vermont.gov",
+      "url": "https://legislature.vermont.gov/statutes/section/32/151/05830e",
+      "quoteSha256": "bbe40702df18c6cf",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
+      "diagnosis": null
+    },
+    {
+      "id": "vt-32-5830e-d-military-survivor",
+      "citation": "32 V.S.A. §5830e(d),(e)",
+      "host": "legislature.vermont.gov",
+      "url": "https://legislature.vermont.gov/statutes/section/32/151/05830e",
+      "quoteSha256": "aab46ce86b677fe9",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
+      "diagnosis": null
+    },
+    {
+      "id": "vt-32-5823-railroad-exclusion",
+      "citation": "32 V.S.A. §5823(a)(1)",
+      "host": "legislature.vermont.gov",
+      "url": "https://legislature.vermont.gov/statutes/section/32/151/05823",
+      "quoteSha256": "6694d7d5bf1a4be1",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
+      "diagnosis": null
+    },
+    {
+      "id": "vt-32-5823-railroad-exclusion",
+      "citation": "2025 Schedule IN-112 instructions, page 4, line 14, railroad retirement",
+      "host": "tax.vermont.gov",
+      "url": "https://tax.vermont.gov/sites/tax/files/documents/IN-112-Instr-2025.pdf",
+      "quoteSha256": "44b5859d3e1830fe",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "nj-hsa-state-basis-nonconformity",
+      "citation": "New Jersey State Tax News, Summer 2010, p.4, Contributions to Health Savings Accounts; official archive index authenticates the preserved publication",
+      "host": "www.nj.gov",
+      "url": "https://www.nj.gov/treasury/taxation/pdf/pubs/stn/summer10.pdf",
+      "quoteSha256": "43ed92195632ee9d",
+      "verdict": "UNFETCHABLE",
+      "detail": "HTTP 404",
+      "diagnosis": null
+    },
+    {
+      "id": "nj-hsa-state-basis-nonconformity",
+      "citation": "NJ Division of Taxation, OBBBA and the New Jersey Gross Income Tax",
+      "host": "www.nj.gov",
+      "url": "https://www.nj.gov/treasury/taxation/individuals/obbba.shtml",
+      "quoteSha256": "a898ac2a8e83a65b",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "nj-direct-qcd-ira-basis-treatment",
+      "citation": "NJ Division of Taxation, GIT-1 & 2, January 2026, Reporting Taxable and Excludable Retirement Income and Worksheet C",
+      "host": "www.nj.gov",
+      "url": "https://www.nj.gov/treasury/taxation/pdf/pubs/tgi-ee/git1%262.pdf",
+      "quoteSha256": "b6798f29400852be",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
       "diagnosis": null
     },
     {
@@ -10710,8 +11202,8 @@
       "host": "www.ilga.gov",
       "url": "https://www.ilga.gov/Documents/legislation/ilcs/documents/003500050K203.htm",
       "quoteSha256": "af6ec3bd3b93c85a",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -10720,8 +11212,8 @@
       "host": "www.ilga.gov",
       "url": "https://www.ilga.gov/Documents/legislation/ilcs/documents/003500050K203.htm",
       "quoteSha256": "b20aa287a892d09c",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -10730,8 +11222,8 @@
       "host": "www.ilga.gov",
       "url": "https://www.ilga.gov/Documents/legislation/ilcs/documents/003500050K203.htm",
       "quoteSha256": "11744da307c87047",
-      "verdict": "ELISION-EXACT",
-      "detail": "2 elision segments, every one a literal substring",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -11055,6 +11547,76 @@
       "diagnosis": null
     },
     {
+      "id": "ndcc-57-38-30-3-2-closed-subtraction-list",
+      "citation": "N.D.C.C. 57-38-30.3(1)",
+      "host": "ndlegis.gov",
+      "url": "https://ndlegis.gov/cencode/t57c38.pdf",
+      "quoteSha256": "aec680ef99b3014b",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "ndcc-57-38-30-3-2-closed-subtraction-list",
+      "citation": "2025 Form ND-1 booklet, p. 11, line 1b",
+      "host": "www.tax.nd.gov",
+      "url": "https://www.tax.nd.gov/sites/www/files/documents/forms/individual/2025-iit/2025-individual-income-tax-booklet.pdf",
+      "quoteSha256": "6bd060f88cb542f8",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "ndcc-57-38-30-3-2-closed-subtraction-list",
+      "citation": "N.D.C.C. 57-38-30.3(2)(r)",
+      "host": "ndlegis.gov",
+      "url": "https://ndlegis.gov/cencode/t57c38.pdf",
+      "quoteSha256": "4f02f86dd13ad2dd",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "ndcc-57-38-30-3-2-closed-subtraction-list",
+      "citation": "N.D.C.C. 57-38-30.3(2)(a)–(t), complete enumeration",
+      "host": "ndlegis.gov",
+      "url": "https://ndlegis.gov/cencode/t57c38.pdf",
+      "quoteSha256": "5233ff120e1b18d5",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "3 elision segments, all present in the extracted text",
+      "diagnosis": null
+    },
+    {
+      "id": "ndcc-57-38-30-3-2-closed-subtraction-list",
+      "citation": "2025 Form ND-1 instructions, Line 9, licensed peace officer retirement",
+      "host": "www.tax.nd.gov",
+      "url": "https://www.tax.nd.gov/sites/www/files/documents/forms/individual/2025-iit/2025-individual-income-tax-booklet.pdf",
+      "quoteSha256": "51c9cd396ec009d9",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "ndcc-57-38-30-3-2-closed-subtraction-list",
+      "citation": "2025 Form ND-1 instructions, Line 14, military retirement",
+      "host": "www.tax.nd.gov",
+      "url": "https://www.tax.nd.gov/sites/www/files/documents/forms/individual/2025-iit/2025-individual-income-tax-booklet.pdf",
+      "quoteSha256": "a21e290dc1dcf91e",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "44 elision segments, all present in the extracted text",
+      "diagnosis": null
+    },
+    {
+      "id": "ndcc-57-38-30-3-2-closed-subtraction-list",
+      "citation": "2025 Form ND-1 instructions, Line 15, Social Security and Tier I allocation",
+      "host": "www.tax.nd.gov",
+      "url": "https://www.tax.nd.gov/sites/www/files/documents/forms/individual/2025-iit/2025-individual-income-tax-booklet.pdf",
+      "quoteSha256": "b9eac84c667c5698",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
       "id": "ndcc-57-38-30-3-2-d-2-qualified-dividend-exclusion",
       "citation": "N.D.C.C. 57-38-30.3(2)(d)(2)",
       "host": "ndlegis.gov",
@@ -11176,12 +11738,32 @@
     },
     {
       "id": "ic-6-3-2-no-general-retirement-deduction",
-      "citation": "Indiana DOR, Income Tax Information Bulletin #26 (January 2023)",
+      "citation": "Indiana DOR, Income Tax Information Bulletin #26 (January 2023), pension and annuity income",
       "host": "www.in.gov",
       "url": "https://www.in.gov/dor/files/ib26.pdf",
       "quoteSha256": "349177a332a46dd1",
       "verdict": "PDF-WORD-LEVEL",
       "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "ic-6-3-2-no-general-retirement-deduction",
+      "citation": "Indiana DOR, Income Tax Information Bulletin #26 (January 2023), Taxable Versus Nontaxable Income",
+      "host": "www.in.gov",
+      "url": "https://www.in.gov/dor/files/ib26.pdf",
+      "quoteSha256": "7c2952d7f350c540",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "3 elision segments, all present in the extracted text",
+      "diagnosis": null
+    },
+    {
+      "id": "ic-6-3-2-no-general-retirement-deduction",
+      "citation": "Indiana DOR current deductions, complete displayed headings, retrieved September 12, 2026",
+      "host": "www.in.gov",
+      "url": "https://www.in.gov/dor/i-am-a/individual/deductions/",
+      "quoteSha256": "4232133985332b36",
+      "verdict": "ELISION-EXACT",
+      "detail": "31 elision segments, every one a literal substring",
       "diagnosis": null
     },
     {
@@ -11408,21 +11990,43 @@
       "id": "mi-mcl-206-30-f-iii-social-security",
       "citation": "Mich. Comp. Laws 206.30(1)(f)",
       "host": "www.legislature.mi.gov",
-      "url": "https://www.legislature.mi.gov/mileg.aspx?objectName=mcl-206-30&page=getObject",
+      "url": "https://www.legislature.mi.gov/Laws/MCL?objectName=mcl-206-30",
       "quoteSha256": "721b0be19f491006",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
       "id": "mi-mcl-206-30-f-iii-social-security",
       "citation": "Mich. Comp. Laws 206.30(1)(f)(iii)",
       "host": "www.legislature.mi.gov",
-      "url": "https://www.legislature.mi.gov/mileg.aspx?objectName=mcl-206-30&page=getObject",
+      "url": "https://www.legislature.mi.gov/Laws/MCL?objectName=mcl-206-30",
       "quoteSha256": "3f28fa756c891268",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
+      "diagnosis": null
+    },
+    {
+      "id": "mi-mcl-206-30-f-iii-social-security",
+      "citation": "Michigan Treasury RAB 2026-1 Issue 11",
+      "host": "www.michigan.gov",
+      "url": "https://www.michigan.gov/taxes/rep-legal/rab/2026-revenue-administrative-bulletins/revenue-administrative-bulletin-2026-1",
+      "quoteSha256": "3acdbe03c8d330b9",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
-      "diagnosis": null
+      "diagnosis": null,
+      "fetchProfile": "browserFallback"
+    },
+    {
+      "id": "mi-mcl-206-30-9-e-nonconditioning",
+      "citation": "Michigan Treasury RAB 2026-1 Issue 11, Tier 3 cohort and temporary subsection (9) reduction relief",
+      "host": "www.michigan.gov",
+      "url": "https://www.michigan.gov/taxes/rep-legal/rab/2026-revenue-administrative-bulletins/revenue-administrative-bulletin-2026-1",
+      "quoteSha256": "5d12d4daaa7e0b0d",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null,
+      "fetchProfile": "browserFallback"
     },
     {
       "id": "mi-mcl-206-30-retirement-and-ss",
@@ -11430,8 +12034,8 @@
       "host": "www.legislature.mi.gov",
       "url": "https://www.legislature.mi.gov/mileg.aspx?objectName=mcl-206-30&page=getObject",
       "quoteSha256": "95b094a95c0660b9",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -11440,8 +12044,8 @@
       "host": "www.legislature.mi.gov",
       "url": "https://www.legislature.mi.gov/mileg.aspx?objectName=mcl-206-30&page=getObject",
       "quoteSha256": "fc789983f53168fb",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -11897,8 +12501,8 @@
       "host": "www.lsc.ohio.gov",
       "url": "https://www.lsc.ohio.gov/assets/legislation/136/hb96/en0/files/hb96-tax-greenbook-as-enacted-136th-general-assembly.pdf",
       "quoteSha256": "9887f6988c168da5",
-      "verdict": "PDF-WORD-LEVEL",
-      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -11999,6 +12603,106 @@
       "quoteSha256": "282b52c91dd9742d",
       "verdict": "PDF-WORD-LEVEL",
       "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "iowa-code-422-5-alternate-minimum-tax",
+      "citation": "Iowa Code 422.5(2)(a), minimum retention and household limitations",
+      "host": "www.legis.iowa.gov",
+      "url": "https://www.legis.iowa.gov/docs/code/422.5.pdf",
+      "quoteSha256": "d64c3aedd09cc1f7",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "iowa-code-422-5-alternate-minimum-tax",
+      "citation": "Iowa Code 422.5(2)(b), alternate tax and spouse NOL election",
+      "host": "www.legis.iowa.gov",
+      "url": "https://www.legis.iowa.gov/docs/code/422.5.pdf",
+      "quoteSha256": "be0a10760653e24d",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "iowa-code-422-5-alternate-minimum-tax",
+      "citation": "Iowa Code 422.5(3)(a)–(c), age-65 thresholds and limitations",
+      "host": "www.legis.iowa.gov",
+      "url": "https://www.legis.iowa.gov/docs/code/422.5.pdf",
+      "quoteSha256": "8f050eb17a4c0b89",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "iowa-code-422-5-alternate-minimum-tax",
+      "citation": "Iowa DOR, 2025 Line 05 Iowa Tax, married-filing-separately proration instructions",
+      "host": "revenue.iowa.gov",
+      "url": "https://revenue.iowa.gov/taxes/tax-guidance/individual-income-tax/1040-expanded-instructions/iowa-tax",
+      "quoteSha256": "89cd9c68ea9c7f7c",
+      "verdict": "ELISION-EXACT",
+      "detail": "2 elision segments, every one a literal substring",
+      "diagnosis": null
+    },
+    {
+      "id": "il-personal-exemption-2026",
+      "citation": "Illinois FY 2026-15",
+      "host": "tax.illinois.gov",
+      "url": "https://tax.illinois.gov/research/publications/bulletins/fy-2026-15.html",
+      "quoteSha256": "e501fe9fe72dc0d2",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "il-personal-exemption-2026",
+      "citation": "35 ILCS 5/204(d), (g)",
+      "host": "www.ilga.gov",
+      "url": "https://www.ilga.gov/documents/legislation/ilcs/documents/003500050K204.htm",
+      "quoteSha256": "a3e1c630b05a55bd",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
+      "diagnosis": null
+    },
+    {
+      "id": "mo-retirement-income-deduction",
+      "citation": "Missouri DOR pension FAQ",
+      "host": "dor.mo.gov",
+      "url": "https://dor.mo.gov/faq/taxation/individual/pension.html",
+      "quoteSha256": "16026064fe5eae61",
+      "verdict": "ELISION-EXACT",
+      "detail": "3 elision segments, every one a literal substring",
+      "diagnosis": null
+    },
+    {
+      "id": "mo-retirement-income-deduction",
+      "citation": "RSMo 143.124.5, .7",
+      "host": "revisor.mo.gov",
+      "url": "https://revisor.mo.gov/main/OneSection.aspx?section=143.124",
+      "quoteSha256": "396c9a1252fad85b",
+      "verdict": "ELISION-EXACT",
+      "detail": "2 elision segments, every one a literal substring",
+      "diagnosis": null
+    },
+    {
+      "id": "wi-2026-rates-standard-deduction-exemptions",
+      "citation": "Wisconsin 2026 Form 1-ES, pages 2–3",
+      "host": "www.revenue.wi.gov",
+      "url": "https://www.revenue.wi.gov/TaxForms2026/2026-Form1-ES-Inst.pdf",
+      "quoteSha256": "f9fb072638e00652",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "ks-direct-qcd-conformity",
+      "citation": "Kansas 2026 chapter 154, section 2, 79-32,117(a),(b)(vii)",
+      "host": "www.sos.ks.gov",
+      "url": "https://www.sos.ks.gov/publications/sessionlaws/2026/Chapter-154-SB-300.html",
+      "quoteSha256": "995e3cff5cd5563c",
+      "verdict": "ELISION-EXACT",
+      "detail": "2 elision segments, every one a literal substring",
       "diagnosis": null
     },
     {
@@ -12163,22 +12867,32 @@
     },
     {
       "id": "sc-code-12-6-1170-retirement-income-deduction",
-      "citation": "S.C. Code 12-6-1170(A)(1)",
+      "citation": "S.C. Code §12-6-1170(A)(1)-(4)",
       "host": "www.scstatehouse.gov",
       "url": "https://www.scstatehouse.gov/code/t12c006.php",
-      "quoteSha256": "6dae95d7a9dfdfd5",
+      "quoteSha256": "102c48741c946a91",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
-      "id": "sc-code-12-6-1170-retirement-income-deduction",
-      "citation": "S.C. Code 12-6-1170(B)",
+      "id": "sc-code-12-6-1171-military-retirement",
+      "citation": "S.C. Code §12-6-1171(A)-(D)",
       "host": "www.scstatehouse.gov",
       "url": "https://www.scstatehouse.gov/code/t12c006.php",
-      "quoteSha256": "04f30d275392b09f",
+      "quoteSha256": "07e2c431ebda8a60",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "sc-code-12-6-1170-b-age-65-deduction",
+      "citation": "S.C. Code §12-6-1170(B)-(C)",
+      "host": "www.scstatehouse.gov",
+      "url": "https://www.scstatehouse.gov/code/t12c006.php",
+      "quoteSha256": "986357896fb0d607",
+      "verdict": "ELISION-EXACT",
+      "detail": "2 elision segments, every one a literal substring",
       "diagnosis": null
     },
     {
@@ -12243,22 +12957,12 @@
     },
     {
       "id": "de-code-30-1106-social-security-retirement-subtractions",
-      "citation": "Del. Code tit. 30, 1106(b)(3)(b)(2)",
+      "citation": "30 Del. C. §1106(b)(3)b-c",
       "host": "delcode.delaware.gov",
       "url": "https://delcode.delaware.gov/title30/c011/sc02/index.html",
-      "quoteSha256": "3d435608b7af576b",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
-      "diagnosis": null
-    },
-    {
-      "id": "de-code-30-1106-social-security-retirement-subtractions",
-      "citation": "Del. Code tit. 30, 1106(b)(4)",
-      "host": "delcode.delaware.gov",
-      "url": "https://delcode.delaware.gov/title30/c011/sc02/index.html",
-      "quoteSha256": "2a37662f94f6fb43",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "quoteSha256": "93943b9107c5b0f8",
+      "verdict": "ELISION-EXACT",
+      "detail": "3 elision segments, every one a literal substring",
       "diagnosis": null
     },
     {
@@ -12373,52 +13077,22 @@
     },
     {
       "id": "md-tax-10-209-pension-exclusion",
-      "citation": "Md. Tax-General 10-209(a)(1)",
-      "host": "mgaleg.maryland.gov",
-      "url": "https://mgaleg.maryland.gov/mgawebsite/Laws/StatuteText?article=gtg&section=10-209&enactments=false",
-      "quoteSha256": "96fdaa5ee009dfe8",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "citation": "Maryland Comptroller, Pension Exclusion, calendar 2026 maximum",
+      "host": "services.marylandcomptroller.gov",
+      "url": "https://services.marylandcomptroller.gov/taxes/en/maryland-pension-exclusion?id=kb_article_view&sysparm_article=KB0010012",
+      "quoteSha256": "eca0780ccc2c509a",
+      "verdict": "UNFETCHABLE",
+      "detail": "only 114 characters of text — a shell or error page, not the document",
       "diagnosis": null
     },
     {
       "id": "md-tax-10-209-pension-exclusion",
-      "citation": "Md. Tax-General 10-209(a)(2)(i)",
+      "citation": "Md. Tax-General §10-209(a)-(e)",
       "host": "mgaleg.maryland.gov",
-      "url": "https://mgaleg.maryland.gov/mgawebsite/Laws/StatuteText?article=gtg&section=10-209&enactments=false",
-      "quoteSha256": "08d1cda6ca14f8b8",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
-      "diagnosis": null
-    },
-    {
-      "id": "md-tax-10-209-pension-exclusion",
-      "citation": "Md. Tax-General 10-209(b)",
-      "host": "mgaleg.maryland.gov",
-      "url": "https://mgaleg.maryland.gov/mgawebsite/Laws/StatuteText?article=gtg&section=10-209&enactments=false",
-      "quoteSha256": "153b582a5e427160",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
-      "diagnosis": null
-    },
-    {
-      "id": "md-tax-10-209-pension-exclusion",
-      "citation": "Md. Tax-General 10-209(b)(1)–(2)",
-      "host": "mgaleg.maryland.gov",
-      "url": "https://mgaleg.maryland.gov/mgawebsite/Laws/StatuteText?article=gtg&section=10-209&enactments=false",
-      "quoteSha256": "6c9b88a8b28e4821",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
-      "diagnosis": null
-    },
-    {
-      "id": "md-tax-10-209-pension-exclusion",
-      "citation": "Md. Tax-General 10-209(c)",
-      "host": "mgaleg.maryland.gov",
-      "url": "https://mgaleg.maryland.gov/mgawebsite/Laws/StatuteText?article=gtg&section=10-209&enactments=false",
-      "quoteSha256": "525f9080d6679cd2",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "url": "https://mgaleg.maryland.gov/2026RS/Statute_Web/gtg/10-209.pdf",
+      "quoteSha256": "c6814e4e5d723697",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "2 elision segments, all present in the extracted text",
       "diagnosis": null
     },
     {
@@ -12519,6 +13193,136 @@
       "quoteSha256": "4bcd2e99ca0464e1",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "de-early-distribution-gate",
+      "citation": "2025 PIT-RES instructions, p.6, Line 6 pension exclusion",
+      "host": "revenuefiles.delaware.gov",
+      "url": "https://revenuefiles.delaware.gov/2025/PITForms_Instructions/Instructions/PIT-RES_Instructions_2025-01.pdf",
+      "quoteSha256": "ccf574933acffb64",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "dc-code-47-1803-03-government-survivor-exclusion",
+      "citation": "D.C. Code §47-1803.02(a)(2)(N)(ii)",
+      "host": "code.dccouncil.gov",
+      "url": "https://code.dccouncil.gov/us/dc/council/code/sections/47-1803.02",
+      "quoteSha256": "f7d61af65ba64345",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "sc-sciad-act-110-retirement-income-deduction",
+      "citation": "2026 Act 110, H.4216, SCIAD and effective date",
+      "host": "www.scstatehouse.gov",
+      "url": "https://www.scstatehouse.gov/sess126_2025-2026/bills/4216.htm",
+      "quoteSha256": "a635970c181665c9",
+      "verdict": "ELISION-EXACT",
+      "detail": "4 elision segments, every one a literal substring",
+      "diagnosis": null
+    },
+    {
+      "id": "va-code-58-1-322-02-28-military-retirement-subtraction",
+      "citation": "Va. Code §58.1-322.02(18)(c)",
+      "host": "law.lis.virginia.gov",
+      "url": "https://law.lis.virginia.gov/vacode/title58.1/chapter3/section58.1-322.02/",
+      "quoteSha256": "f5c13a558db6e725",
+      "verdict": "ELISION-EXACT",
+      "detail": "2 elision segments, every one a literal substring",
+      "diagnosis": null
+    },
+    {
+      "id": "va-code-58-1-322-02-3-ss-tier1",
+      "citation": "Va. Code §58.1-322.02(3)",
+      "host": "law.lis.virginia.gov",
+      "url": "https://law.lis.virginia.gov/vacode/title58.1/chapter3/section58.1-322.02/",
+      "quoteSha256": "1352851d7da8fd06",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "va-code-58-1-322-02-11-basis",
+      "citation": "Va. Code §58.1-322.02(11)",
+      "host": "law.lis.virginia.gov",
+      "url": "https://law.lis.virginia.gov/vacode/title58.1/chapter3/section58.1-322.02/",
+      "quoteSha256": "915b5fb17716d33c",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "wv-code-11-21-exemptions-retirement-public-ss",
+      "citation": "W. Va. Code §11-21-16(a),(c),(d)",
+      "host": "code.wvlegislature.gov",
+      "url": "https://code.wvlegislature.gov/11-21-16/",
+      "quoteSha256": "ea5778ef9f6c87ef",
+      "verdict": "ELISION-PUNCTUATION",
+      "detail": "matches only after: case",
+      "diagnosis": null
+    },
+    {
+      "id": "wv-code-11-21-exemptions-retirement-public-ss",
+      "citation": "W. Va. Code §11-21-16(d)",
+      "host": "code.wvlegislature.gov",
+      "url": "https://code.wvlegislature.gov/11-21-16/",
+      "quoteSha256": "fb518b8a6c29f51c",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "wv-code-11-21-12-c9-age-disability-residual",
+      "citation": "W. Va. Code §11-21-12(c)(9)(i)-(ii)",
+      "host": "code.wvlegislature.gov",
+      "url": "https://code.wvlegislature.gov/11-21-12/",
+      "quoteSha256": "b474668ff41ff469",
+      "verdict": "PUNCTUATION",
+      "detail": "matches only after: whitespace",
+      "diagnosis": null
+    },
+    {
+      "id": "wv-code-11-21-12-c5-c6-public-retirement",
+      "citation": "W. Va. Code §11-21-12(c)(5)-(6)",
+      "host": "code.wvlegislature.gov",
+      "url": "https://code.wvlegislature.gov/11-21-12/",
+      "quoteSha256": "fd5491f267807da7",
+      "verdict": "PUNCTUATION",
+      "detail": "matches only after: whitespace",
+      "diagnosis": null
+    },
+    {
+      "id": "wv-code-11-21-12-c7-military",
+      "citation": "W. Va. Code §11-21-12(c)(7)(C)",
+      "host": "code.wvlegislature.gov",
+      "url": "https://code.wvlegislature.gov/11-21-12/",
+      "quoteSha256": "e6441e1b9a8ed791",
+      "verdict": "ELISION-EXACT",
+      "detail": "2 elision segments, every one a literal substring",
+      "diagnosis": null
+    },
+    {
+      "id": "wv-code-11-21-12-c12-railroad",
+      "citation": "W. Va. Code §11-21-12(c)(12)",
+      "host": "code.wvlegislature.gov",
+      "url": "https://code.wvlegislature.gov/11-21-12/",
+      "quoteSha256": "29dbc7866ea599c6",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "wv-code-11-21-12-c8-social-security-phase-in",
+      "citation": "W. Va. Code §11-21-12(c)(8)(A)-(F)",
+      "host": "code.wvlegislature.gov",
+      "url": "https://code.wvlegislature.gov/11-21-12/",
+      "quoteSha256": "a461367842b41c25",
+      "verdict": "PUNCTUATION",
+      "detail": "matches only after: whitespace",
       "diagnosis": null
     },
     {
@@ -12773,6 +13577,16 @@
     },
     {
       "id": "aca-26-51-307-e-uniformed-services-full-exemption",
+      "citation": "Ark. Code Ann. 26-51-307(f)(2), 2023 Act 358 sections 1–2; PDF margin labels retained",
+      "host": "arkleg.state.ar.us",
+      "url": "https://arkleg.state.ar.us/Home/FTPDocument?path=%2FACTS%2F2023R%2FPublic%2FACT358.pdf",
+      "quoteSha256": "e6532f729e623cb8",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "2 elision segments, all present in the extracted text",
+      "diagnosis": null
+    },
+    {
+      "id": "aca-26-51-307-e-uniformed-services-full-exemption",
       "citation": "2025 Form AR1000F/AR1000NR instructions, Line 17",
       "host": "www.dfa.arkansas.gov",
       "url": "https://www.dfa.arkansas.gov/wp-content/uploads/2025_AR1000F_and_AR1000NR_Instructions.pdf",
@@ -12927,8 +13741,8 @@
       "host": "billstatus.ls.state.ms.us",
       "url": "https://billstatus.ls.state.ms.us/documents/2025/html/HB/0001-0099/HB0001SG.htm",
       "quoteSha256": "903ddfe8e0a36f3a",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -12937,8 +13751,8 @@
       "host": "billstatus.ls.state.ms.us",
       "url": "https://billstatus.ls.state.ms.us/documents/2025/html/HB/0001-0099/HB0001SG.htm",
       "quoteSha256": "8bb0e85dcbf4afcb",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -12947,8 +13761,8 @@
       "host": "billstatus.ls.state.ms.us",
       "url": "https://billstatus.ls.state.ms.us/documents/2025/html/HB/0001-0099/HB0001SG.htm",
       "quoteSha256": "c195ba21097d403c",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -12957,8 +13771,8 @@
       "host": "billstatus.ls.state.ms.us",
       "url": "https://billstatus.ls.state.ms.us/documents/2025/html/HB/0001-0099/HB0001SG.htm",
       "quoteSha256": "b828568ff8aff189",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -12967,8 +13781,8 @@
       "host": "billstatus.ls.state.ms.us",
       "url": "https://billstatus.ls.state.ms.us/documents/2025/html/HB/0001-0099/HB0001SG.htm",
       "quoteSha256": "b3aba8e16ab56905",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -12987,8 +13801,8 @@
       "host": "billstatus.ls.state.ms.us",
       "url": "https://billstatus.ls.state.ms.us/documents/2025/html/HB/0001-0099/HB0001SG.htm",
       "quoteSha256": "9037d520d15efed4",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -12997,8 +13811,8 @@
       "host": "billstatus.ls.state.ms.us",
       "url": "https://billstatus.ls.state.ms.us/documents/2026/html/HB/0600-0699/HB0693IN.htm",
       "quoteSha256": "98fddfa2b9247dd9",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -13007,8 +13821,8 @@
       "host": "billstatus.ls.state.ms.us",
       "url": "https://billstatus.ls.state.ms.us/documents/2026/html/HB/0600-0699/HB0693IN.htm",
       "quoteSha256": "f7f3e9aa15161ad9",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -13017,8 +13831,8 @@
       "host": "billstatus.ls.state.ms.us",
       "url": "https://billstatus.ls.state.ms.us/documents/2026/html/HB/0600-0699/HB0693IN.htm",
       "quoteSha256": "9a4175ffc43dca42",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -13027,8 +13841,8 @@
       "host": "billstatus.ls.state.ms.us",
       "url": "https://billstatus.ls.state.ms.us/documents/2026/html/HB/0600-0699/HB0693IN.htm",
       "quoteSha256": "dc3bd21c26752811",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -13037,8 +13851,8 @@
       "host": "billstatus.ls.state.ms.us",
       "url": "https://billstatus.ls.state.ms.us/documents/2026/html/HB/0400-0499/HB0489PS.htm",
       "quoteSha256": "abb9dc8dcd0c468c",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -13067,8 +13881,8 @@
       "host": "billstatus.ls.state.ms.us",
       "url": "https://billstatus.ls.state.ms.us/documents/2026/html/HB/0600-0699/HB0693IN.htm",
       "quoteSha256": "c9ae1305c15d29b4",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -13077,8 +13891,8 @@
       "host": "billstatus.ls.state.ms.us",
       "url": "https://billstatus.ls.state.ms.us/documents/2026/html/HB/0800-0899/HB0866IN.htm",
       "quoteSha256": "812f3749eed43308",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -13087,8 +13901,8 @@
       "host": "billstatus.ls.state.ms.us",
       "url": "https://billstatus.ls.state.ms.us/documents/2026/html/HB/0800-0899/HB0866IN.htm",
       "quoteSha256": "3f137cf65421f4a3",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -13097,8 +13911,8 @@
       "host": "billstatus.ls.state.ms.us",
       "url": "https://billstatus.ls.state.ms.us/documents/2026/html/HB/1900-1999/HB1996IN.htm",
       "quoteSha256": "a577b873d06ff227",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -13107,8 +13921,8 @@
       "host": "billstatus.ls.state.ms.us",
       "url": "https://billstatus.ls.state.ms.us/documents/2026/html/HB/1900-1999/HB1996IN.htm",
       "quoteSha256": "7a4fe006f139c4a9",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -13117,8 +13931,8 @@
       "host": "billstatus.ls.state.ms.us",
       "url": "https://billstatus.ls.state.ms.us/documents/2026/html/HB/1900-1999/HB1996IN.htm",
       "quoteSha256": "2027d4a1034943c2",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -13127,8 +13941,8 @@
       "host": "billstatus.ls.state.ms.us",
       "url": "https://billstatus.ls.state.ms.us/documents/2026/html/HB/1900-1999/HB1996IN.htm",
       "quoteSha256": "871d90edb97f1ec8",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -13177,8 +13991,8 @@
       "host": "billstatus.ls.state.ms.us",
       "url": "https://billstatus.ls.state.ms.us/documents/2026/html/HB/0800-0899/HB0866IN.htm",
       "quoteSha256": "7650cd3e1b3b5717",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
+      "verdict": "UNFETCHABLE",
+      "detail": "request failed: TypeError: fetch failed",
       "diagnosis": null
     },
     {
@@ -13232,6 +14046,26 @@
       "diagnosis": null
     },
     {
+      "id": "ky-dor-2026-standard-deduction-once-per-return",
+      "citation": "Kentucky DOR, Kentucky DOR Announces 2026 Standard Deduction (2025-09-04)",
+      "host": "revenue.ky.gov",
+      "url": "https://revenue.ky.gov/News/Pages/Kentucky-DOR-Announces-2026-Standard-Deduction.aspx",
+      "quoteSha256": "8611016f8752de05",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "ky-dor-2026-standard-deduction-once-per-return",
+      "citation": "Kentucky Form 740 instructions, Line 10, historical $3,160 filing-status pattern (official URL labelled 2025; live HTTP 404)",
+      "host": "revenue.ky.gov",
+      "url": "https://revenue.ky.gov/Forms/740%20instructions%20packet%20%282025%29.pdf",
+      "quoteSha256": "3b684f153f47abec",
+      "verdict": "UNFETCHABLE",
+      "detail": "HTTP 404",
+      "diagnosis": null
+    },
+    {
       "id": "la-rs-47-44-1-retirement-exemption",
       "citation": "La. R.S. 47:44.1(A)",
       "host": "www.legis.la.gov",
@@ -13243,6 +14077,16 @@
     },
     {
       "id": "la-rs-47-44-2-social-security-federal-retirement",
+      "citation": "La. R.S. 47:44.2",
+      "host": "www.legis.la.gov",
+      "url": "https://www.legis.la.gov/legis/Law.aspx?d=102134",
+      "quoteSha256": "5cbdc46dd6903d52",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source (matched on a page below the shell-length threshold)",
+      "diagnosis": null
+    },
+    {
+      "id": "la-rs-47-44-2-public-bucket-overreach",
       "citation": "La. R.S. 47:44.2",
       "host": "www.legis.la.gov",
       "url": "https://www.legis.la.gov/legis/Law.aspx?d=102134",
@@ -13912,6 +14756,16 @@
       "diagnosis": null
     },
     {
+      "id": "co-crs-39-22-104-federal-base-and-pension-cap",
+      "citation": "C.R.S. 39-22-104(4)(f)(III)(A), (V)",
+      "host": "olls.info",
+      "url": "https://olls.info/crs/crs2026-title-39.htm",
+      "quoteSha256": "5f4be0403ea78a51",
+      "verdict": "ELISION-EXACT",
+      "detail": "2 elision segments, every one a literal substring",
+      "diagnosis": null
+    },
+    {
       "id": "co-crs-39-22-104-social-security-inclusion",
       "citation": "Colo. Rev. Stat. 39-22-104(4)(f)(III)(B)",
       "host": "olls.info",
@@ -14332,6 +15186,36 @@
       "diagnosis": null
     },
     {
+      "id": "ut-code-59-10-1019-retirement-credit",
+      "citation": "Utah Code §59-10-1019(1)(a), edition effective 03/23/2022",
+      "host": "le.utah.gov",
+      "url": "https://le.utah.gov/xcode/Title59/Chapter10/C59-10-S1019_2022032320220323.pdf",
+      "quoteSha256": "cec7c2174e69c908",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "ut-code-59-10-1019-retirement-credit",
+      "citation": "Utah Code §59-10-1019(2)–(4), edition effective 03/23/2022",
+      "host": "le.utah.gov",
+      "url": "https://le.utah.gov/xcode/Title59/Chapter10/C59-10-S1019_2022032320220323.pdf",
+      "quoteSha256": "ae2216036ec67992",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "4 elision segments, all present in the extracted text",
+      "diagnosis": null
+    },
+    {
+      "id": "ut-code-59-10-114-2-i-401a-prior-state-tax-subtraction",
+      "citation": "Utah Code §59-10-114(2)(i), edition effective 10/14/2025",
+      "host": "le.utah.gov",
+      "url": "https://le.utah.gov/xcode/Title59/Chapter10/C59-10-S114_2025101420251206.pdf",
+      "quoteSha256": "d2d9e2d62e28e59b",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
       "id": "wa-dor-no-broad-individual-income-tax",
       "citation": "Washington Department of Revenue, Capital gains tax",
       "host": "dor.wa.gov",
@@ -14389,6 +15273,106 @@
       "quoteSha256": "b0285e34be22c6bc",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "co-39-22-104-p-7-high-income-addback",
+      "citation": "C.R.S. 39-22-104(3)(p.7)",
+      "host": "olls.info",
+      "url": "https://olls.info/crs/crs2026-title-39.htm",
+      "quoteSha256": "45760298ffd18ebd",
+      "verdict": "ELISION-EXACT",
+      "detail": "3 elision segments, every one a literal substring",
+      "diagnosis": null
+    },
+    {
+      "id": "id-code-63-3022a-qualified-retirement-deduction",
+      "citation": "Idaho Code 63-3022A(1)–(3)",
+      "host": "legislature.idaho.gov",
+      "url": "https://legislature.idaho.gov/statutesrules/idstat/title63/t63ch30/sect63-3022a/",
+      "quoteSha256": "2bd527501cf55661",
+      "verdict": "ELISION-EXACT",
+      "detail": "5 elision segments, every one a literal substring",
+      "diagnosis": null
+    },
+    {
+      "id": "mt-long-term-capital-gain-schedule",
+      "citation": "Montana DOR HB337 notice",
+      "host": "revenuefiles.mt.gov",
+      "url": "https://revenuefiles.mt.gov/news/recent-news/HB-337",
+      "quoteSha256": "1da6e06bf8f38776",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "or-316-157-retirement-income-credit",
+      "citation": "ORS 316.157",
+      "host": "www.oregonlegislature.gov",
+      "url": "https://www.oregonlegislature.gov/bills_laws/ors/ors316.html",
+      "quoteSha256": "00971a9cdfb2a1c2",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "ut-code-59-10-1043-military-retirement-credit",
+      "citation": "Utah Code 59-10-1043(1)–(3)",
+      "host": "le.utah.gov",
+      "url": "https://le.utah.gov/xcode/Title59/Chapter10/C59-10-S1043_2022032320220323.pdf",
+      "quoteSha256": "62f3d2a105a7182c",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "ca-hsa-state-basis-nonconformity",
+      "citation": "FTB 2025 Schedule CA, lines 1h, 2, 8f and 13",
+      "host": "www.ftb.ca.gov",
+      "url": "https://www.ftb.ca.gov/forms/2025/2025-540-ca-instructions.html",
+      "quoteSha256": "e0ba0179efbdd7a5",
+      "verdict": "ELISION-EXACT",
+      "detail": "2 elision segments, every one a literal substring",
+      "diagnosis": null
+    },
+    {
+      "id": "hi-head-of-household-rate-schedule",
+      "citation": "HRS 235-51(b), HOH table effective after December 31, 2024",
+      "host": "files.hawaii.gov",
+      "url": "https://files.hawaii.gov/tax/legal/hrs/hrs_235.pdf",
+      "quoteSha256": "8fff9a61b9ed2703",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "state-direct-qcd-conformity-policies",
+      "citation": "Arkansas Act 155 (2017) section 18, amendment replaces 2015 with 2017",
+      "host": "www.arkleg.state.ar.us",
+      "url": "https://www.arkleg.state.ar.us/Home/FTPDocument?path=%2FACTS%2F2017R%2FPublic%2FACT155.pdf",
+      "quoteSha256": "e13a31e48d4f308b",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "2 elision segments, all present in the extracted text",
+      "diagnosis": null
+    },
+    {
+      "id": "state-direct-qcd-conformity-policies",
+      "citation": "IRS Publication 590-B (2016), adopted-era direct QCD ceiling",
+      "host": "www.irs.gov",
+      "url": "https://www.irs.gov/pub/irs-prior/p590b--2016.pdf",
+      "quoteSha256": "629662375c8f9638",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "hi-direct-qcd-conformity",
+      "citation": "Hawaii Act 35 (2026), section 2 (amended date 2025), section 7",
+      "host": "data.capitol.hawaii.gov",
+      "url": "https://data.capitol.hawaii.gov/sessions/session2026/bills/GM1135_.PDF",
+      "quoteSha256": "22193583cdce75b4",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "6 elision segments, all present in the extracted text",
       "diagnosis": null
     }
   ],

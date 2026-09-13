@@ -1,3 +1,4 @@
+import type { AnnualOwnerTreatmentRouting } from '../../strategies/accountEligibility.js'
 /**
  * Pure plan for the voluntary-withdrawal portion of the annual apply-flow
  * phase. The caller retains every live write and runtime-journal commit.
@@ -53,6 +54,7 @@ export interface AnnualWithdrawalBalanceOperation {
 }
 
 export interface AnnualWithdrawalApplyFlowPlanInput {
+  readonly ownerTreatmentRouting?: AnnualOwnerTreatmentRouting
   readonly year: number
   readonly balances: readonly AnnualWithdrawalApplyFlowBalanceState[]
   readonly inheritedEvidence: readonly AnnualWithdrawalEvidenceInput[]
@@ -82,7 +84,7 @@ export function annualWithdrawalApplyFlowPlan(
       evidenceAccount !== undefined &&
       (evidenceAccount.type === 'traditional' ||
         evidenceAccount.type === 'roth') &&
-      isTreatAsOwnEffective(evidenceAccount, input.year)
+      isTreatAsOwnEffective(evidenceAccount, input.year, input.ownerTreatmentRouting)
     ) continue
     evidenceWrites.push({
       evidenceIndex,

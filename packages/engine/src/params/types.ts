@@ -200,12 +200,39 @@ export interface ParameterPack {
     plfExpectedRatePct: number
     /** Planning default for line/loan growth (note rate + annual MIP). */
     defaultGrowthRatePct: number
+    /**
+     * National maximum claim amount for HECM case assignments in this pack
+     * year (HUD Mortgagee Letter). Used only by HUD-validated openings;
+     * keyed by case-assignment year, not every future simulation year.
+     */
+    maximumClaimAmount: number
+    /** Initial MIP as percent of MCA (HUD Handbook 4000.1 / ML 2017-12: 2). */
+    initialMipPct: number
+    /** Annual MIP as percent of outstanding balance (0.5). */
+    annualMipPct: number
   }
 
   medicare: {
     partBStandardMonthly: number
+    /**
+     * CY Part D annual out-of-pocket threshold (CMS Final Part D Redesign
+     * Program Instructions). Pinned for authority; drug-spend modeling remains
+     * out of scope without claim inputs.
+     */
+    partDAnnualOutOfPocketThreshold: number
     /** Ascending by threshold. */
     irmaaTiers: IrmaaTier[]
+  }
+
+  /**
+   * Chapter 11/12 transfer-tax dollar pins for authority and documentation.
+   * The engine does not compute gift or estate tax from these figures.
+   */
+  transferTax: {
+    /** Present-interest annual gift exclusion per donee (Rev. Proc.). */
+    annualGiftExclusionPerDonee: number
+    /** Basic exclusion amount under IRC 2010(c)(3)(A) for the pack year. */
+    basicExclusionAmount: number
   }
 
   socialSecurity: {

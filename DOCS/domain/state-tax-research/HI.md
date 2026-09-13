@@ -74,3 +74,15 @@ Hawaii lists IRC section 86 among the Internal Revenue Code provisions that are 
 - https://files.hawaii.gov/tax/legal/hrs/hrs_235.pdf — Haw. Rev. Stat. § 235-2.4(a)(2)(F) (2026–2027 standard deduction phase).
 - https://files.hawaii.gov/tax/news/announce/ann24-03.pdf — Hawaii DOTAX Announcement 2024-03: Act 46 bracket/standard-deduction changes effective 1/1/2025.
 - https://support.taxslayer.com/hc/en-us/articles/360029385331-Is-my-retirement-income-taxable-to-Hawaii — secondary aggregator: employer pensions exempt; IRA/401(k) taxable (retirement-income limb only).
+
+## Hawaii uses the head-of-household schedule (verified 2026-09-12)
+
+HRS 235-51 supplies a distinct head-of-household schedule. Its first band ends at $14,400 and is taxed at 1.4%, then 3.2% through $21,600, 5.5% through $28,800, with the remaining statutory bands in the versioned pack. HOH does not borrow single or joint bands. This record concerns the rate schedule on an established taxable-income base, not all Hawaii credits or filing eligibility.
+
+Registered as `hi-head-of-household-rate-schedule`. Authority: [HRS 235-51(b), effective after December 31, 2024](https://files.hawaii.gov/tax/legal/hrs/hrs_235.pdf).
+
+## Hawaii 2026 adopts direct QCD exclusion with the 2025 federal Code (verified 2026-09-12)
+
+Hawaii Act 35 (2026) updates the Code adoption to December 31, 2025 for taxable years after December 31, 2025, subject to enumerated exceptions. The direct IRC 408(d)(8) exclusion survives those exceptions; retaining the federal excluded amount requires no extra state subtraction. This is a statutory adoption inference. Unknown direct-transfer eligibility and unsupported split-interest transactions do not silently conform.
+
+Registered as `hi-direct-qcd-conformity`. Authority: [Hawaii Act 35 (2026), section 2 (amended date 2025), section 7](https://data.capitol.hawaii.gov/sessions/session2026/bills/GM1135_.PDF).

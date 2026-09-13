@@ -47,6 +47,7 @@ function pension(
 
 function annuity(
   taxQualification: 'qualified' | 'nonQualified',
+  fundingAccountId = 'funding',
 ): Extract<Account, { type: 'annuity' }> {
   return {
     type: 'annuity',
@@ -61,9 +62,49 @@ function annuity(
     purchase: {
       year: 2026,
       premium: 150_000,
-      fundingAccountId: 'funding',
+      fundingAccountId,
       taxQualification,
     },
+  }
+}
+
+function fundingIra(id = 'funding'): Extract<Account, { type: 'traditional' }> {
+  return {
+    type: 'traditional',
+    id,
+    name: id,
+    ownerPersonId: pat.id,
+    annualReturnPct: null,
+    kind: 'ira',
+    balance: 200_000,
+    annualContribution: 0,
+  }
+}
+
+function fundingEmployer401k(id = 'funding'): Extract<Account, { type: 'traditional' }> {
+  return {
+    type: 'traditional',
+    id,
+    name: id,
+    ownerPersonId: pat.id,
+    annualReturnPct: null,
+    kind: 'employer',
+    employerPlanType: '401k',
+    balance: 200_000,
+    annualContribution: 0,
+  }
+}
+
+function fundingEmployerWithoutSubtype(id = 'funding'): Extract<Account, { type: 'traditional' }> {
+  return {
+    type: 'traditional',
+    id,
+    name: id,
+    ownerPersonId: pat.id,
+    annualReturnPct: null,
+    kind: 'employer',
+    balance: 200_000,
+    annualContribution: 0,
   }
 }
 
@@ -123,6 +164,8 @@ describe('annualPensionAndAnnuityIncome', () => {
       publicPensionOrdinary: 505,
       qualifiedAnnuityPayments: [],
       rows: [],
+      characterizedRetirementDistributions: [],
+      stateRetirementDistributionFacts: [],
     })
   })
 
@@ -192,6 +235,22 @@ describe('annualPensionAndAnnuityIncome', () => {
     expect(living.ordinaryIncome).toBe(18_000)
     expect(living.privateRetirementOrdinary).toBe(12_000)
     expect(living.publicPensionOrdinary).toBe(6_000)
+    expect(living.stateRetirementDistributionFacts).toEqual([
+      expect.objectContaining({
+        ownerPersonId: 'p1',
+        sourceKind: 'ordinaryPrivatePension',
+        federallyIncludedAmount: 12_000,
+        cause: 'ordinary',
+        minimumAgeAtDistributionYears: 60,
+        earlyDistributionDisqualifier: 'false',
+      }),
+      expect.objectContaining({
+        ownerPersonId: 'p1',
+        sourceKind: 'unknownPublic',
+        federallyIncludedAmount: 6_000,
+        cause: 'ordinary',
+      }),
+    ])
     expect(living.rows).toEqual([
       {
         kind: 'pension',
@@ -431,5 +490,114 @@ describe('annualPensionAndAnnuityIncome', () => {
       }),
     }))
     expect(result.qualifiedAnnuityPayments).toHaveLength(1)
+  })
+
+  it('emits IRA-funded qualified annuity source facts from the funding account', () => {
+    const result = annualPensionAndAnnuityIncome({
+      ...annualInput([fundingIra(), annuity('qualified')]),
+      recordCashFlow: false,
+      annuityContractPoolOwner: new Map([['annuity', pat.id]]),
+    })
+    expect(result.stateRetirementDistributionFacts).toContainEqual(expect.objectContaining({
+      accountId: 'annuity',
+      sourceOwnerPersonId: pat.id,
+      ownerPersonId: pat.id,
+      sourceKind: 'ira',
+      grossDistribution: 10_000,
+      federallyIncludedAmount: 10_000,
+      recipientAgeYears: 60,
+      accountTaxTreatment: 'traditional',
+      qualifiedPlanType: 'ira',
+      minimumAgeAtDistributionYears: 60,
+      earlyDistributionDisqualifier: 'false',
+    }))
+    expect(result.ordinaryIncome).toBe(10_000)
+  })
+
+  it('labels a 401(k)-funded qualified annuity as employer plan, not IRA', () => {
+    const captureOff = annualPensionAndAnnuityIncome({
+      ...annualInput([fundingEmployer401k(), annuity('qualified')]),
+      recordCashFlow: false,
+    })
+    expect(captureOff.stateRetirementDistributionFacts).toContainEqual(expect.objectContaining({
+      accountId: 'annuity',
+      sourceOwnerPersonId: pat.id,
+      ownerPersonId: pat.id,
+      sourceKind: 'employerPlan',
+      qualifiedPlanType: '401k',
+      grossDistribution: 10_000,
+      federallyIncludedAmount: 10_000,
+    }))
+    expect(captureOff.qualifiedAnnuityPayments).toEqual([])
+    expect(captureOff.rows[0]?.record).toBeNull()
+
+    const captureOn = annualPensionAndAnnuityIncome({
+      ...annualInput([fundingEmployer401k(), annuity('qualified')]),
+      recordCashFlow: true,
+    })
+    expect(captureOn.rows[0]).toEqual(expect.objectContaining({
+      kind: 'annuity',
+      record: expect.objectContaining({ qualifiedIraFunded: false }),
+    }))
+  })
+
+  it('preserves employer-plan identity when the optional subtype is omitted', () => {
+    const result = annualPensionAndAnnuityIncome({
+      ...annualInput([fundingEmployerWithoutSubtype(), annuity('qualified')]),
+      recordCashFlow: false,
+    })
+    const fact = result.stateRetirementDistributionFacts.find((row) => row.accountId === 'annuity')
+    expect(fact).toEqual(expect.objectContaining({
+      sourceKind: 'employerPlan',
+      accountTaxTreatment: 'traditional',
+      grossDistribution: 10_000,
+      federallyIncludedAmount: 10_000,
+    }))
+    expect(fact).not.toHaveProperty('qualifiedPlanType')
+    expect(result.qualifiedAnnuityPayments).toEqual([])
+  })
+
+  it('keeps a qualified annuity crossing-year recipient unknown despite year-end age', () => {
+    const crossingPat = { ...pat, dob: '1967-01-01' }
+    const result = annualPensionAndAnnuityIncome({
+      ...annualInput([fundingIra(), { ...annuity('qualified'), startAge: 59 }], [
+        { personId: pat.id, ageAttained: 59, alive: true, lifeAge: 95 },
+        { personId: sam.id, ageAttained: 59, alive: true, lifeAge: 95 },
+      ]),
+      people: [crossingPat, sam],
+      personById: new Map([[crossingPat.id, crossingPat], [sam.id, sam]]),
+    })
+    const fact = result.stateRetirementDistributionFacts.find((row) => row.accountId === 'annuity')
+    expect(fact).toEqual(expect.objectContaining({
+      minimumAgeAtDistributionYears: 59,
+      earlyDistributionDisqualifier: 'unknown',
+    }))
+  })
+
+  it('does not default a qualified annuity to IRA when funding is missing', () => {
+    const result = annualPensionAndAnnuityIncome({
+      ...annualInput([annuity('qualified', 'missing-funding')]),
+      recordCashFlow: false,
+    })
+    expect(result.stateRetirementDistributionFacts).toContainEqual(expect.objectContaining({
+      accountId: 'annuity',
+      sourceKind: 'ordinaryPrivatePension',
+      grossDistribution: 10_000,
+      federallyIncludedAmount: 10_000,
+    }))
+    expect(result.stateRetirementDistributionFacts[0]?.qualifiedPlanType).toBeUndefined()
+    expect(result.stateRetirementDistributionFacts[0]?.accountTaxTreatment).toBeUndefined()
+  })
+
+  it('emits only the taxable portion of a nonqualified annuity without labeling it an IRA', () => {
+    const account = { ...annuity('nonQualified'), purchase: undefined, taxablePct: 40 }
+    const result = annualPensionAndAnnuityIncome({ ...annualInput([account]), recordCashFlow: false })
+    expect(result.stateRetirementDistributionFacts).toContainEqual(expect.objectContaining({
+      sourceKind: 'ordinaryPrivatePension',
+      grossDistribution: 10_000,
+      federallyIncludedAmount: 4_000,
+    }))
+    expect(result.stateRetirementDistributionFacts[0]?.accountTaxTreatment).toBeUndefined()
+    expect(result.ordinaryIncome).toBe(4_000)
   })
 })

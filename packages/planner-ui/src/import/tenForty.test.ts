@@ -63,9 +63,9 @@ describe('seedPlanFromTenForty', () => {
       expect(taxable.dividendYieldPct).toBeCloseTo(1.9, 2)
     }
 
-    // Pension → pension account starting at the current age.
+    // Pension → pension account starting at the current age (source unconfirmed).
     const pension = r.plan.accounts.find((a) => a.type === 'pension')!
-    expect(pension).toMatchObject({ monthlyAmount: 1500, startAge: 68, survivorPct: 50 })
+    expect(pension).toMatchObject({ monthlyAmount: 1500, startAge: 68, survivorPct: 50, source: 'unknownPrivate' })
 
     // SS benefits → benefit basis with the fixed-age-67 assumption.
     const ss = r.plan.incomes.find((i) => i.type === 'socialSecurity')!
@@ -76,6 +76,15 @@ describe('seedPlanFromTenForty', () => {
 
     // No wages line → no wages income stream.
     expect(r.plan.incomes.some((i) => i.type === 'wages')).toBe(false)
+  })
+
+  it('imports line 5b pensions with unconfirmed source and review copy pointing to Accounts', () => {
+    const r = seedPlanFromTenForty(RETIREE_1040, testIds, fixedNow)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    const line5b = r.review.find((item) => item.source.includes('line 5b'))!
+    expect(line5b.detail).toMatch(/record its characterized source/i)
+    expect(r.plan.accounts.find((a) => a.type === 'pension')).toMatchObject({ source: 'unknownPrivate' })
   })
 
   it('marks every prefilled value as from the 1040 and reports what a 1040 cannot provide', () => {

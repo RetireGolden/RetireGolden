@@ -1,3 +1,5 @@
+import { determineSection402c2j4CatchUp, type Section402c2j4CatchUpInput, type Section402c2j4Determination } from '../actions/beneficiarySpousalElectionAnnualGate.js'
+import { fiveYearEmptyingRequirement, type FiveYearScheduleFacts } from './inheritedFiveYearAndPostDeadline.js'
 /**
  * Inherited (beneficiary) IRA 10-year rule (roadmap V8, §4 tax depth) and the
  * WS3 regime engine (classifier + annual requirement calculator).
@@ -45,6 +47,19 @@ import {
   deriveRbdComparison,
 } from '../rmd/applicableAge.js'
 import { jointLifeTableDivisor } from '../rmd/jointLifeTable.js'
+
+/** Adapt the existing asserted classification; never infer that a trust is non-designated. */
+export function inheritedFiveYearFacts(inherited: InheritedAccount): FiveYearScheduleFacts | undefined {
+  const verified = inherited.verifiedNonDesignatedRegime
+  if (verified === undefined) return undefined
+  return {
+    ownerDeathDate: inherited.ownerDeathDate ?? '', ownerDeathYear: inherited.ownerDeathYear,
+    beneficiaryClassification: verified.classification === 'non-designated-beneficiary'
+      ? 'nonDesignatedConfirmed' : 'unknownTrustOrEntity',
+    deathBeforeRequiredBeginningDate: !inherited.decedentHadStartedRmds,
+    classificationProvenance: verified.provenance.source,
+  }
+}
 
 /** The account must be fully distributed by the END of this year. */
 export function inheritedTenYearDeadline(ownerDeathYear: number): number {
@@ -128,6 +143,7 @@ export function inheritedForcedAmount(input: InheritedForcedInput): number {
 // ---------------------------------------------------------------------------
 
 export type InheritedRegimeKey =
+  | 'non-designated-five-year'
   | 'ten-year-with-annual-rmds' // R1
   | 'ten-year-no-annual' // R2
   | 'edb-life-expectancy' // R3
@@ -552,6 +568,24 @@ export function classifyInheritedRegime(input: {
       'X5',
       'this matrix scopes inherited support to IRAs (DOCS/domain/inherited-ira-regime-matrix.md scope note); employer-plan beneficiary rules — plan-permitted elections, still-working RBD, §402(c)(11) transfers — are not modeled — supply an IRA account or leave the employer account on the legacy path',
     )
+  }
+
+  const fiveYearFacts = inheritedFiveYearFacts(inherited)
+  if (fiveYearFacts !== undefined) {
+    if (deathYear < 2020) return refusal('needs-review', 'X3', 'Historical five-year suspension facts before 2020 are not modeled')
+    const checked = fiveYearEmptyingRequirement({ facts: fiveYearFacts, taxYear: deathYear, remainingInterest: 0 })
+    if (fiveYearFacts.ownerDeathYear !== deathYear ||
+        (b === undefined || !['estate', 'trust', 'entity'].includes(b.beneficiaryClass)) ||
+        (accountType === 'traditional' && inherited.decedentHadStartedRmds)) {
+      return refusal('needs-review', 'X3', 'Five-year facts contradict inherited beneficiary, death year, or RBD facts')
+    }
+    if (checked.status !== 'supported') {
+      return refusal('needs-review', 'X3', checked.reason ?? 'Five-year classification is not established')
+    }
+    return { kind: 'regime', regime: 'non-designated-five-year', row: 'X3',
+      classification: 'settled', rbdComparison: 'before-rbd',
+      citations: ['IRC §401(a)(9)(B)(ii)', 'Treas. Reg. §54.4974-1(e)'],
+      disclosures: [], finalDeadlineYear: checked.deadlineYear }
   }
 
   // X1: pre-SECURE deaths (even with a full beneficiary block).
@@ -1248,6 +1282,7 @@ export function inheritedRequirementForYear(input: {
 
   // Regimes with no annual amounts during the window.
   if (
+    regime === 'non-designated-five-year' ||
     regime === 'ten-year-no-annual' ||
     regime === 'roth-ten-year-no-annual' ||
     regime === 'edb-ten-year-elected' ||
@@ -1456,196 +1491,16 @@ export function inheritedRequirementSchedule(input: {
 }
 
 /**
- * Hypothetical required minimum distributions gating a late treat-as-own
- * election (Treas. Reg. §1.408-8(c)(1)(iii)–(iv) via §1.402(c)-2(j)(4)).
- *
- * The timing bar reaches only a surviving spouse to whom the 10-year rule of
- * §1.401(a)(9)-3(c)(3) applies (§1.402(c)-2(j)(4)(i)) — a spouse under the
- * life-expectancy default owes ordinary beneficiary RMDs each year instead,
- * and missing one triggers the out-of-scope §1.408-8(c)(2)(i) deemed
- * election. The hypothetical amount for each catch-up year is the RMD that
- * would have applied had the §1.401(a)(9)-5(g)(3)(i) spouse-as-employee
- * election been in effect — the Uniform Lifetime denominator at the SPOUSE's
- * attained age (§1.402(c)-2(j)(4)(iii)) — not the spouse's Single Life
- * beneficiary amount. The catch-up period runs from the first applicable year
- * (the later of the year the spouse attains the applicable age and the year
- * the owner would have, §1.402(c)-2(j)(4)(iv)) through the election year
- * inclusive (§1.402(c)-2(j)(4)(v); §1.408-8(c)(1)(iv) permits the election
- * only after that year's amount is out).
- *
- * Evidence only: amounts are gross hypotheticals on the caller's per-year
- * balances; the §1.402(c)-2(j)(4)(ii)–(iii) netting of actual distributions
- * against adjusted balances is not performed here (the projection ledger
- * does not yet schedule the catch-up — matrix §7 residual). Traditional
- * accounts only (an inherited Roth under treat-as-own has no lifetime RMDs).
- * Throws when the (j)(4) computation cannot be settled from the supplied
- * facts — never silently computing past an ambiguity (fail closed, matrix §2).
- *
- * The plan schema records `treatAsOwnElectionYear` since WS4; this helper
- * remains evidence-only and is not wired into the ledger's S2 flip.
- *
- * `spouseWasUnderTenYearRule` is the (j)(4)(i) applicability fact: the gate
- * reaches only a spouse to whom the §1.401(a)(9)-3(c)(3) 10-year rule applied
- * before the election — for an IRA, a death-before-RBD spouse under an
- * affirmative ten-year election. The schema's single election field cannot
- * record that prior ten-year-election state alongside 'treat-as-own', so the
- * caller asserts it (see disclosure `treat-as-own-timing-gate-unverified`).
- * A spouse under the §1.401(a)(9)-3(c)(5)(i) life-expectancy default owed
- * ordinary beneficiary RMDs each year instead (the S0/S1 schedule), and a
- * missed one triggers the out-of-scope §1.408-8(c)(2)(i) deemed election —
- * no (j)(4) catch-up exists for them.
+ * Strategy entry point for the final §1.402(c)-2(j)(4) recurrence.
+ * One current-year reference balance replaces the obsolete historical-balance
+ * gross-hypothetical API. Legacy payloads fail closed; they cannot establish
+ * the actual prior-year distributions required by the final regulation.
  */
-export function spouseTreatAsOwnCatchUp(input: {
-  pack: ParameterPack
-  accountType: 'traditional' | 'roth'
-  inherited: InheritedAccount
-  electionYear: number
-  /** §1.402(c)-2(j)(4)(i): was the spouse under the 10-year rule before electing? */
-  spouseWasUnderTenYearRule: boolean
-  priorYearEndBalancesByYear: Record<number, number>
-}): InheritedRequirementEvidence[] {
-  const {
-    pack,
-    accountType,
-    inherited,
-    electionYear,
-    spouseWasUnderTenYearRule,
-    priorYearEndBalancesByYear,
-  } = input
-  const b = inherited.beneficiary
-
-  if (accountType === 'roth') {
-    throw new Error(
-      'spouse treat-as-own catch-up does not apply to inherited Roth IRAs (a spouse who treats a Roth as their own has no lifetime RMDs under Treas. Reg. §1.408-8(b)(1)(ii)); no Uniform Lifetime catch-up exists',
-    )
+export function spouseTreatAsOwnCatchUp(
+  input: Readonly<Section402c2j4CatchUpInput>,
+): Section402c2j4Determination {
+  if ('priorYearEndBalancesByYear' in input) {
+    return { status: 'incomplete', reason: 'missingCurrentYearReferenceBalance' }
   }
-
-  if (inherited.ownerDeathYear < 2020) {
-    throw new Error(
-      `spouse treat-as-own catch-up requires ownerDeathYear on or after 2020 (engine SECURE-date approximation per Pub. L. 116-94 section 401(b)(1); the §1.401(a)(9)-3(c)(3) ten-year rule is a SECURE Act regime for deaths after 12/31/2019 — ownerDeathYear ${inherited.ownerDeathYear} cannot have a spouse under it`,
-    )
-  }
-
-  if (
-    b === undefined ||
-    b.edbCategory !== 'surviving-spouse' ||
-    b.soleBeneficiary !== true
-  ) {
-    // (c)(1)(ii) is the eligibility subparagraph — sole beneficiary with an
-    // unlimited withdrawal right — verified against the eCFR text 2026-08-08.
-    throw new Error(
-      'spouse treat-as-own catch-up requires a sole surviving-spouse beneficiary (Treas. Reg. §1.408-8(c)(1)(ii)); the §1.402(c)-2(j)(4) hypothetical-RMD gate has no other addressee',
-    )
-  }
-
-  if (b.spouseUnlimitedWithdrawalRight !== true) {
-    throw new Error(
-      "spouse treat-as-own catch-up requires spouseUnlimitedWithdrawalRight true (Treas. Reg. §1.408-8(c)(1)(ii) eligibility requires the unlimited withdrawal right)",
-    )
-  }
-
-  // §1.402(c)-2(j)(4)(i): the gate reaches only a spouse under the
-  // §1.401(a)(9)-3(c)(3) 10-year rule, which exists only for a
-  // death-before-RBD spouse. The life-expectancy-default spouse owes the
-  // ordinary S0/S1 schedule instead and has no (j)(4) catch-up.
-  if (!spouseWasUnderTenYearRule) return []
-  if (inherited.decedentHadStartedRmds) {
-    throw new Error(
-      'spouseWasUnderTenYearRule contradicts decedentHadStartedRmds: the §1.401(a)(9)-3(c)(3) 10-year rule exists only for a death before the RBD, so a post-RBD-death spouse was never under it; correct one of the two facts',
-    )
-  }
-  if (b.beneficiaryBirthYear === undefined || b.ownerBirthYear === undefined) {
-    throw new Error(
-      'spouse treat-as-own catch-up requires both beneficiaryBirthYear and ownerBirthYear (the §1.402(c)-2(j)(4)(iv) first applicable year is the later of the year each would attain the applicable age)',
-    )
-  }
-
-  const rbdDerivation = deriveRbdComparison({
-    ownerDeathYear: inherited.ownerDeathYear,
-    decedentHadStartedRmds: inherited.decedentHadStartedRmds,
-    ownerBirthYear: b.ownerBirthYear,
-    ownerBirthMonth: b.ownerBirthMonth,
-    ownerBirthDay: b.ownerBirthDay,
-  })
-  if (
-    rbdDerivation.kind === 'needs-review' ||
-    (rbdDerivation.kind === 'resolved' && rbdDerivation.comparison === 'on-or-after-rbd')
-  ) {
-    const outcome =
-      rbdDerivation.kind === 'needs-review'
-        ? `needs-review (${rbdDerivation.reason})`
-        : 'on-or-after-rbd'
-    throw new Error(
-      `spouse treat-as-own catch-up requires death before the RBD under Treas. Reg. §1.401(a)(9)-3(c)(3) (the §1.402(c)-2(j)(4) gate reaches only a spouse under the 10-year rule); RBD derivation outcome: ${outcome}`,
-    )
-  }
-
-  const spouseAttainYears = applicableAgeAttainYears(b.beneficiaryBirthYear)
-  const ownerAttainYears = applicableAgeAttainYears(b.ownerBirthYear, b.ownerBirthMonth)
-  const deathClampedStart = inherited.ownerDeathYear
-  const firstApplicableCandidates = new Set(
-    spouseAttainYears.flatMap((s) =>
-      ownerAttainYears.map((o) => Math.max(s, o, deathClampedStart)),
-    ),
-  )
-  if (firstApplicableCandidates.size > 1) {
-    throw new Error(
-      'spouse treat-as-own catch-up cannot settle the §1.402(c)-2(j)(4)(iv) first applicable year (an applicable-age attain year is contested or birth-date precision is insufficient); resolve the applicable age before computing the catch-up',
-    )
-  }
-
-  const firstApplicableYear = [...firstApplicableCandidates][0]!
-
-  if (electionYear < inherited.ownerDeathYear) {
-    throw new Error(
-      'spouse treat-as-own catch-up cannot apply when electionYear precedes ownerDeathYear (a spouse cannot elect before inheriting); supply electionYear on or after the owner\'s death year',
-    )
-  }
-  // §1.408-8(c)(1)(iii): the bar exists only in years the (j)(4) rule would
-  // apply — an election before the first applicable year needs no catch-up.
-  if (electionYear < firstApplicableYear) return []
-
-  const catchUpCitations = [
-    'Treas. Reg. §1.408-8(c)(1)(iii)–(iv)',
-    'Treas. Reg. §1.402(c)-2(j)(4)(i)–(v)',
-    'Treas. Reg. §1.401(a)(9)-5(g)(3)(i)',
-  ] as const
-
-  const out: InheritedRequirementEvidence[] = []
-  for (let year = firstApplicableYear; year <= electionYear; year++) {
-    if (priorYearEndBalancesByYear[year] === undefined) {
-      throw new Error(
-        `spouse treat-as-own catch-up requires a prior-year-end balance for every year from ${firstApplicableYear} through ${electionYear} (year ${year} is missing); a missing balance must not publish a zero hypothetical`,
-      )
-    }
-    if (year < 2022) {
-      out.push({
-        year,
-        kind: 'annual-rmd',
-        requiredAmount: 0,
-        limitation: 'pre-2022-tables-not-carried',
-        citations: [...catchUpCitations, 'Treas. Reg. §1.401(a)(9)-9(f)(1)'],
-      })
-      continue
-    }
-    const balance = priorYearEndBalancesByYear[year]
-    const spouseAge = year - b.beneficiaryBirthYear
-    const divisor = uniformLifetimeDivisor(pack, spouseAge)
-    // The first applicable year is at or after the spouse attains the
-    // applicable age, so the Uniform Lifetime Table always has the row.
-    if (divisor === undefined || !(divisor > 0)) {
-      throw new RangeError(
-        `Uniform Lifetime Table has no usable divisor for age ${spouseAge} (treat-as-own catch-up year ${year})`,
-      )
-    }
-    out.push({
-      year,
-      kind: 'annual-rmd',
-      requiredAmount: amountFromDivisor(balance, divisor),
-      divisor,
-      divisorArm: 'uniform-lifetime',
-      citations: [...catchUpCitations],
-    })
-  }
-  return out
+  return determineSection402c2j4CatchUp(input)
 }

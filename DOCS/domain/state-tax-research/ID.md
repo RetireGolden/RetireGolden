@@ -41,7 +41,7 @@ exclusion for the common private-pension/IRA retiree, this is mapped to
 
 ## Simplifications / not modeled
 - Zero-rate floor ($4,811 single / $9,622 MFJ) modeled as a 0% first bracket so brackets remain monotonic.
-- Government/military pension deduction (age 65+, income-reduced by SS) not modeled — `none` is conservative for those retirees.
+- Characterized retirement facts apply the qualified-plan deduction only for named eligible systems and its age/disability, filing-status, and Social-Security conditions. Private plans, FERS, and unclassified public income do not qualify merely because a retirement amount is positive.
 - Idaho's capital-gains deduction (60% of net gain on qualifying Idaho real/tangible property) not modeled; `capitalGainsAsOrdinary: true` overstates tax for those gains.
 - Senior, grocery-credit, and tip/overtime deductions not modeled.
 
@@ -50,3 +50,9 @@ exclusion for the common private-pension/IRA retiree, this is mapped to
 - https://www.paylocity.com/resources/tax-compliance/alerts/idaho-lowers-2025-state-income-tax-rate/ — HB 40 lowered rate from 5.695% to 5.3% effective 1/1/2025.
 - https://remotelaws.com/state-income-tax/us-states/idaho/ — 5.3% flat above $4,811 single / $9,622 MFJ zero-rate floor.
 - Tax Foundation, State Individual Income Tax Rates and Brackets 2025 — ID flat 5.3%.
+
+## Idaho permits only named and individually eligible retirement benefits (verified 2026-09-12)
+
+Eligible CSRS/FSRDS and specified Idaho firefighter/police benefits require age 65 or age 62 and disability. Military has its distinct disabled/age-62/employment-filing test. Married taxpayers must file jointly. FERS and generic private or public plans are excluded. The statutory maximum is reduced by household Social Security and Railroad Retirement benefits and cannot exceed qualifying federally included income. Survivor and remarriage facts remain necessary where applicable.
+
+Registered as `id-code-63-3022a-qualified-retirement-deduction`. Authority: [Idaho Code 63-3022A(1)–(3)](https://legislature.idaho.gov/statutesrules/idstat/title63/t63ch30/sect63-3022a/).

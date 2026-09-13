@@ -134,7 +134,7 @@ function fixture(): {
       ['owner', 900],
       ['deleted-owner', 100],
     ]),
-    rothBasis: new Map([
+    inheritedRothPools: new Map(), rothBasis: new Map([
       [
         'owner',
         {
@@ -343,6 +343,7 @@ function mutateEntireAnnualPass(bindings: SimulatorAnnualPassStateBindings): voi
   roth.conversionLayers.pop()
   roth.conversionLayers.push({ year: 2032, amount: 704, taxableAmount: 705 })
   bindings.rothBasis.delete('deleted-owner')
+  bindings.inheritedRothPools.set('ben\0dec', { beneficiaryPersonId: 'ben', decedentId: 'dec', firstRothContributionTaxYear: 2024, remainingRegularContributionBasis: 60, conversionLayers: [], priorDistributionsConsumedAmount: 0, basisAsOfDate: '2026-01-01' })
   bindings.rothBasis.set('added-owner', { contributionBasis: 706, conversionLayers: [] })
   bindings.rothAssumedContributionRemaining.set('owner', 707)
   bindings.rothAssumedContributionRemaining.delete('deleted-owner')

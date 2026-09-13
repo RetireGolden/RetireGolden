@@ -50,11 +50,16 @@
  * during THIS call and treats such an id as present. The caller still performs
  * the map write; it is told which id to open, with what, and in what order.
  *
- * EACH ROW CARRIES ITS OWN, DELIBERATELY MUTABLE, STATE OBJECT. Unlike every
+ * EACH ROW CARRIES ITS OWN, DELIBERATELY MUTABLE, STATE OBJECT. HUD-validated
+ * state keeps `observedServicingBaseline` and `modeledDebt` as separate
+ * conserved components; later complete servicing ledgers replace only the
+ * observed component, while modeled draw growth remains an annual planning
+ * estimate and cannot establish complete timing evidence. Unlike every
  * other row field in this directory, `state` is not `readonly`: `simulate.ts`
  * mutates this exact object in place later in the same year — the coordinated
- * and backstop draws add to `loanBalance`, and the property-events phase
- * multiplies both fields by the line's growth rate. A helper that hoisted one
+ * and backstop draws add to the modeled component, and the property-events
+ * phase applies the split observed-ledger replacement plus modeled annual
+ * estimate. A helper that hoisted one
  * object literal and pushed it twice would alias two independent lines into
  * one. Stated in the other direction so the guard is not oversold: object
  * identity between the returned object and the map entry is NOT observable in
@@ -88,6 +93,17 @@ import type { ParameterPack } from '../../params/types.js'
 export interface HecmLineState {
   principalLimit: number
   loanBalance: number
+  /** Calculation mode and HUD debt components carried across annual passes. */
+  readonly calculationMode?: 'legacyQuoteEstimate' | 'hudValidated'
+  observedServicingBaseline?: number
+  modeledDebt?: number
+  /** HUD opening evidence retained on the live line for rollback/replay. */
+  readonly annualMipRate?: number
+  readonly maximumClaimAmount?: number
+  readonly initialMip?: number
+  readonly otherClosingCosts?: number
+  readonly caseParameterYear?: number
+  readonly principalLimitFactorProvenance?: 'quoted' | 'hudTableVerified'
 }
 
 /** The year-scoped state this phase reads. */
@@ -121,6 +137,8 @@ export interface HecmLineOpeningYearInput {
 
 /** One property account's HECM open for one year. */
 export interface HecmLineOpeningRow {
+  /** New cash disbursed at this modeled opening, absent for already-observed cash. */
+  readonly borrowerAdvanceCashReceipt?: number
   readonly propertyAccountId: string
   /**
    * The line state to store, BY REFERENCE and deliberately mutable — the caller
@@ -148,6 +166,10 @@ export function hecmLineOpenings(
   const opened = new Set<string>()
   for (const account of accounts) {
     if (account.type !== 'property' || !account.hecm) continue
+    // HUD-validated lines have a different, fact-bound opening calculation.
+    // Never let a direct legacy helper call turn an omitted/unknown transaction
+    // form into a quote-estimate ordinary origination.
+    if (account.hecm.calculationMode === 'hudValidated') continue
     if (year !== Math.max(account.hecm.openYear, startYear)) continue
     if (openHecmLines.has(account.id) || opened.has(account.id)) continue
     const value = propertyValues.get(account.id) ?? 0

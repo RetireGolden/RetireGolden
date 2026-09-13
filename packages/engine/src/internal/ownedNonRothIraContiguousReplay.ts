@@ -1,3 +1,4 @@
+import { annualOwnerTreatmentRoutingFromRows, type AnnualOwnerTreatmentRouting } from '../strategies/accountEligibility.js'
 import {
   allocateAnnualIraBasis,
   type AnnualIraBasisAllocationEntryInput,
@@ -136,6 +137,7 @@ function sum(values: readonly UsdCents[], label: string, context: {
 function pools(
   plan: Plan,
   taxYear?: number,
+  ownerTreatmentRouting?: AnnualOwnerTreatmentRouting,
 ): Map<PersonId, Extract<Account, { type: 'traditional' }>[]> {
   const result = new Map<PersonId, Extract<Account, { type: 'traditional' }>[]>()
   for (const account of plan.accounts) {
@@ -146,7 +148,7 @@ function pools(
       taxYear !== undefined &&
       account.type === 'traditional' &&
       account.kind === 'ira' &&
-      isTreatAsOwnEffective(account, taxYear)
+      isTreatAsOwnEffective(account, taxYear, ownerTreatmentRouting)
     if (!isAggregatedIra(account) && !s2Effective) continue
     if (account.type !== 'traditional') continue
     const owner = account.ownerPersonId as PersonId
@@ -241,6 +243,7 @@ function replayUnchecked(
   const annualReplays: OwnedNonRothIraAnnualReplay[] = []
   for (let yearIndex = 0; yearIndex < sourceSeries.years.length; yearIndex += 1) {
     const sourceYear = sourceSeries.years[yearIndex]!
+    const ownerTreatmentRouting = annualOwnerTreatmentRoutingFromRows(years[yearIndex]?.spousalOwnerTreatment)
     const ownerReplays: OwnedNonRothIraAnnualOwnerReplay[] = []
     for (const ownerSource of sourceYear.ownerSources) {
       const owner = ownerSource.ownerPersonId
@@ -253,6 +256,7 @@ function replayUnchecked(
       )
       const observationResult = buildSimulatorOwnedNonRothIraAnnualObservation({
         plan,
+        ownerTreatmentRouting,
         ownerPersonId: owner,
         taxYear: sourceYear.taxYear,
         ledgerRunId,
@@ -315,7 +319,7 @@ function replayUnchecked(
           denominatorMinorUnits: asPositiveUsdCents(denominator),
           intermediateArithmetic: 'bigintRational',
         }
-      const accounts = pools(plan, sourceYear.taxYear).get(owner)!
+      const accounts = pools(plan, sourceYear.taxYear, ownerTreatmentRouting).get(owner)!
       const poolId = deriveActionStructuralId(
         'projection-owned-non-roth-ira-pool',
         [plan.id, owner, accounts.map((account) => account.id)],

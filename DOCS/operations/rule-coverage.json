@@ -2,83 +2,83 @@
   "kind": "retiregolden.rules-coverage.manifest",
   "version": 5,
   "registry": {
-    "total": 476,
+    "total": 529,
     "byClassification": {
-      "approximated": 128,
-      "outOfScope": 86,
-      "settled": 258,
-      "unsettled": 4
+      "approximated": 122,
+      "outOfScope": 87,
+      "settled": 314,
+      "unsettled": 6
     },
     "byVolatility": {
-      "annuallyIndexed": 78,
-      "awaitingGuidance": 10,
-      "staticStatute": 381,
+      "annuallyIndexed": 86,
+      "awaitingGuidance": 12,
+      "staticStatute": 424,
       "sunsetting": 7
     },
     "byJurisdiction": {
-      "federal": 331,
+      "federal": 339,
       "states": {
         "AK": 1,
         "AL": 9,
-        "AR": 9,
+        "AR": 10,
         "AZ": 8,
-        "CA": 2,
-        "CO": 2,
-        "CT": 1,
-        "DC": 1,
-        "DE": 4,
+        "CA": 3,
+        "CO": 3,
+        "CT": 2,
+        "DC": 2,
+        "DE": 5,
         "FL": 1,
         "GA": 1,
-        "HI": 3,
-        "IA": 2,
-        "ID": 1,
-        "IL": 2,
+        "HI": 5,
+        "IA": 3,
+        "ID": 2,
+        "IL": 3,
         "IN": 7,
-        "KS": 2,
-        "KY": 1,
-        "LA": 3,
-        "MA": 2,
+        "KS": 3,
+        "KY": 2,
+        "LA": 4,
+        "MA": 5,
         "MD": 2,
         "ME": 3,
-        "MI": 2,
+        "MI": 3,
         "MN": 3,
-        "MO": 2,
+        "MO": 3,
         "MS": 7,
-        "MT": 3,
+        "MT": 4,
         "NC": 2,
         "ND": 8,
         "NE": 3,
         "NH": 1,
-        "NJ": 2,
+        "NJ": 5,
         "NM": 2,
         "NV": 1,
         "NY": 5,
         "OH": 2,
         "OK": 1,
-        "OR": 3,
+        "OR": 4,
         "PA": 3,
         "RI": 4,
-        "SC": 5,
+        "SC": 8,
         "SD": 1,
         "TN": 2,
         "TX": 2,
-        "UT": 3,
-        "VA": 2,
-        "VT": 1,
+        "UT": 6,
+        "VA": 5,
+        "VT": 6,
         "WA": 2,
-        "WI": 3,
-        "WV": 2,
+        "WI": 4,
+        "WV": 8,
         "WY": 1
       },
-      "stateTotal": 145
+      "stateTotal": 190
     }
   },
   "attestations": {
-    "totalFiles": 377,
+    "totalFiles": 409,
     "byStatus": {
-      "partial": 58,
-      "registered": 110,
-      "rule-free": 209,
+      "partial": 89,
+      "registered": 116,
+      "rule-free": 204,
       "unswept": 0
     },
     "sweptPct": 100,
@@ -110,6 +110,11 @@
       "path": "actions/beneficiaryTraditionalIraAnnualPlanApplication.ts",
       "sweptOn": "2026-08-24",
       "note": "Beneficiary-owned inherited traditional-IRA/death-year source gate; no record"
+    },
+    {
+      "path": "actions/beneficiaryTraditionalIraAnnualRuntimeCoordinator.ts",
+      "sweptOn": "2026-09-12",
+      "note": "The confirmed non-designated five-year schedule and post-deadline remaining-benefit coordinator are registered with explicit unknown-history refusal. The broader beneficiary/decedent annual inventory binding and evidence-finalization composition retain a residual claim-to-record sweep; inherited shortfalls do not use owner sub-cent discharge."
     },
     {
       "path": "actions/beneficiaryTraditionalIraResidualRmdActionIdentity.ts",
@@ -182,6 +187,11 @@
       "note": "TIPS OID/deflation and §171 premium absence registered (treas-reg-1-1275-7-f-1-deflation-adjustment-income, treas-reg-1-1275-7-f-2-deflation-basis-decrease-not-modeled, treas-reg-1-1275-7-f-3-tips-acquisition-premium, irc-171-tips-bond-premium-amortization); regulatory 0.125% min coupon registered at cfr-31-356-20-b-tips-minimum-coupon; par-yield-as-spot interpolation, annual coupon timing, and par pricing conventions remain"
     },
     {
+      "path": "model/federalAuditPlanFacts.ts",
+      "sweptOn": "2026-09-12",
+      "note": "Dated spouse execution/history and beneficiary classification persistence gates; inherited Roth layer and employer prior-contribution consistency constraints require rule-trail reconciliation."
+    },
+    {
       "path": "model/migrations.ts",
       "sweptOn": "2026-08-24",
       "note": "Lump-sum election load repairs; inherited qualified-annuity premium retarget/stand-down beyond annuity-start ceiling records"
@@ -200,6 +210,11 @@
       "path": "model/retirementActionAnnualTaxFacts.ts",
       "sweptOn": "2026-09-05",
       "note": "IRC 219(f)(3) designated post-year contribution window now covered via persistedPlanOwnedNonRothIraAnnualFilingSourceRecordSchema; remaining persistence contracts are opening-basis, completeness, finalization, identity, and safe-cent totals"
+    },
+    {
+      "path": "model/stateTaxPlanFacts.ts",
+      "sweptOn": "2026-09-12",
+      "note": "Source-system eligibility vocabulary, state basis and HSA activity completeness contracts; not independent proof of state eligibility or basis recovery."
     },
     {
       "path": "montecarlo/mortality.ts",
@@ -242,6 +257,11 @@
       "note": "the pure annual target coordinator composes the partially attested strategies/rothConversion.ts federal bracket, IRMAA and ACA sizing producer with caller-supplied Form 8606 taxable fractions and an annual-tax callback. It owns named-action suppression of the legacy aggregate strategy, exact ordered manual folds, taxable-to-gross source translation, the pre-existing three-pass taxable-safety-net-floor trim, and the ACA sizing envelope over the already-validated annual contract. These are projection composition, numerical and liquidity conventions rather than new filing-grade rules. internal/annualAggregateRothConversionPhase.ts retains source-context construction and lazy current-balance readers, every aggregate conversion debit/credit, Form 8606 and Roth-basis mutation, runtime-journal ordering, warning insertion, optimizer inputs, and all live aggregate-conversion commits; simulatePlan supplies the surrounding annual facts and consumes the typed phase result"
     },
     {
+      "path": "projection/internal/annualContributionReconciliationPhase.ts",
+      "sweptOn": "2026-09-12",
+      "note": "Prior designated Roth history propagation and published remaining Roth requirement are registered under irc-414-v-2-d-6-prior-designated-roth-offset. The phase snapshots owner and employer-plan allocation channels, validates cardinality, physical identity, balance preimages and ordered totals, then commits basis, section-219 offsets and runtime evidence. These reconciliation and effect-ordering contracts remain partial; the planner and elective leaf own statutory amount calculations."
+    },
+    {
       "path": "projection/internal/annualFederalTaxFacts.ts",
       "sweptOn": "2026-09-06",
       "note": "pure annual evidence resolver separates the general-federal and section-1411 source-local amounts and classifies missing, unknown and conflict support; phase one returns but does not price from the resolution, so the foreign-addback record remains approximated and no record names this helper until the pricing phase"
@@ -253,8 +273,8 @@
     },
     {
       "path": "projection/internal/annualFundingApplicationAndClosePhase.ts",
-      "sweptOn": "2026-09-02",
-      "note": "effectful post-action annual funding, application, and close sequence relocated from simulatePlan. It composes the independently attested withdrawal strategy/plan, candidate evaluation, fixed-point, withdrawal character, HECM, ACA and optimizer publication, apply-flow, post-solve growth, retirement-action settlement publication, tax, penalty, and YearResult producers. It preserves their original read/mutation/publication order while owning accepted balance, basis, debt, tax, penalty, warning, runtime-journal, cash-flow, and core YearResult commits; no calculation or chronology changed. The owned-IRA settlement coordinator supplies the attempt-local assumptions and invokes this phase through the explicit callback; simulatePlan supplies the surrounding annual facts and live ledgers, then publishes only the settled result and optional optimizer probe"
+      "sweptOn": "2026-09-12",
+      "note": "effectful post-action annual funding, application, and close sequence relocated from simulatePlan. It composes the independently attested withdrawal strategy/plan, candidate evaluation, fixed-point, withdrawal character, HECM, ACA and optimizer publication, apply-flow, post-solve growth, retirement-action settlement publication, tax, penalty, and YearResult producers. It preserves their original read/mutation/publication order while owning accepted balance, basis, debt, tax, penalty, warning, runtime-journal, cash-flow, and core YearResult commits. Accepted HECM draws are deliberately routed into modeledDebt here; the later property close commits observed-servicing and modeled components separately and publishes the timing-estimate incompleteness that withholds exact optimizer ranking. The owned-IRA settlement coordinator supplies the attempt-local assumptions and invokes this phase through the explicit callback; simulatePlan supplies the surrounding annual facts and live ledgers, then publishes only the settled result and optional optimizer probe"
     },
     {
       "path": "projection/internal/annualFundingCandidateEvaluation.ts",
@@ -268,8 +288,8 @@
     },
     {
       "path": "projection/internal/annualInheritedIraDistributions.ts",
-      "sweptOn": "2026-09-09",
-      "note": "the annual inherited-account required-distribution planner consumes one aggregate live row and prior-December-31 opening per compatible logical account id, preserving first-id order and selected last-row facts. It returns fresh ordered logical balance operations, evidence rows, source-ordered totals, and grouped section 4974 obligations without mutating live state. Before any write, the caller materializes every helper-owned result channel into one recursively frozen plain snapshot and validates all cached operations; it then commits each logical closing balance once through the pro-rata physical ledger, journals one runtime occurrence, and hands the cached grouped obligations to the excise seam. Thirteen inherited-RMD records name the helper, including irc-401-a-9-H-iii-in-horizon-beneficiary-death-successor-clock for the in-horizon beneficiary-death typed refusal; the shared dead-beneficiary branch publishes H(iii) authority prose only for post-2019 owner deaths while pre-2020 X1 legacy rows retain X1 reason and authority in the refusal disclosure. Residual rule-bearing behavior remains: inherited-Roth forced dollars use the Roth/nonordinary channel while nonqualified inherited-Roth earnings tax remains disclosure-only."
+      "sweptOn": "2026-09-12",
+      "note": "Annual inherited required-distribution planner; inherited-Roth nonqualified earnings delegate to inheritedRothTaxCharacter through the annual pool callback. Inherited shortfalls remain outside owner sub-cent discharge. Fourteen records cover distribution regimes, timing, excise and Roth character; ordered callback completeness, evidence publication and source identity remain residual integration contracts."
     },
     {
       "path": "projection/internal/annualOptimizerProbePublication.ts",
@@ -280,6 +300,16 @@
       "path": "projection/internal/annualOwnedNonRothIraSettlementPhase.ts",
       "sweptOn": "2026-09-02",
       "note": "effectful owned non-Roth IRA annual settlement driver relocated from simulatePlan and now named by the Form 8606 pro-rata measurement-instant record. It composes the separately attested settlement-attempt, counterfactual-liability, linked-withdrawal authorization, and committed-replay publication boundaries behind one explicit annual-pass callback. It owns attempt ordering, rollback authorization, household/owner retry and fallback, counterfactual observation, and optional replay attachment while preserving the original transactional sequence; the remaining control-flow is projection-composition rather than an additional statutory calculation. The funding/application/close callback retains every attempt-local economic commit, and simulatePlan retains the earlier annual phases plus final settled YearResult append and optimizer-probe publication"
+    },
+    {
+      "path": "projection/internal/annualPensionAndAnnuityIncome.ts",
+      "sweptOn": "2026-09-12",
+      "note": "The section 72 exclusion-ratio calculation, payout-form approximations, qualified IRA-annuity contract debits and Form 8606 payment staging retain their registered trails. The coordinator preserves ordered income folds, survivor payees and caller-owned state. Qualified annuity state-source labels now resolve the actual funding account as IRA or supported employer plan; missing or unsupported funding is not labeled IRA. Direct claim-to-record coverage for that funding-source classification and state eligibility adaptation remains partial; the later annual settlement still owns qualified-payment basis character."
+    },
+    {
+      "path": "projection/internal/annualPropertyAndInsuranceClosePhase.ts",
+      "sweptOn": "2026-09-12",
+      "note": "the property-events and permanent-life close sub-phase, extracted from annualFundingApplicationAndClosePhase. The property growth, legacy tax-free sale and HECM line accrual stay in independently attested propertyEventsAndGrowth.ts, and cash-value/death-benefit rules stay in annualPermanentLifeTransitions.ts. This sub-phase owns the application order - close the line, deposit, publish, write the value back, then compound what remains - plus HUD split-state commit: a complete servicing ledger replaces only observedServicingBaseline, modeledDebt is conserved, and its annual timing estimate publishes a distinct incomplete issue. The deliberate gating of the legacy-sale payload on the array it feeds and the death-benefit destination assertion remain unchanged. It mutates caller property values, HECM line states and insurance cash values in place; this is not a verbatim move because the HUD component commit and incompleteness publication are calculation behavior"
     },
     {
       "path": "projection/internal/annualQcdExecutionInput.ts",
@@ -295,6 +325,86 @@
       "path": "projection/internal/annualSocialSecurity.ts",
       "sweptOn": "2026-09-06",
       "note": "guarded ordinary simultaneous early current-spouse component arithmetic delegates to the registered currentSpouseBenefit helper. This caller supplies MFJ context, all-stream counts, selected raw stream facts, alive/payable facts and existing factors, then retains person/stream selection, resolved PIA, candidate ordering, family maximum, COLA, haircut, publication, earnings withholding and ARF bookkeeping. Former-spouse marital gates remain on socialSecurityMaritalEligibility records and maritalBenefits helpers. Other genuine Social Security surfaces remain on their existing records"
+    },
+    {
+      "path": "projection/internal/annualStateHouseholdFacts.ts",
+      "sweptOn": "2026-09-12",
+      "note": "Recipient section 86/RRB attribution and state claimant/election mapping preserve unknowns; candidate-specific allocation and state household completeness claims remain unregistered."
+    },
+    {
+      "path": "projection/internal/annualStateRailroadFacts.ts",
+      "sweptOn": "2026-09-12",
+      "note": "Derives RRA source-kind, gross and federal-inclusion facts from the pension producer or disjoint additional events; producer-specific gross equality, source attribution and missing-gross refusal remain unregistered adapter contracts."
+    },
+    {
+      "path": "projection/internal/annualStateRetirementEvents.ts",
+      "sweptOn": "2026-09-12",
+      "note": "Actual federally included distribution events are mapped by account and recipient; IRA versus employer-plan and inherited source identity mapping require rule-trail reconciliation."
+    },
+    {
+      "path": "projection/internal/beneficiarySpousalElectionGateAdapter.ts",
+      "sweptOn": "2026-09-12",
+      "note": "Delegates dated spouse eligibility to the annual gate; persisted history completeness, death-year residual and execution-year adaptation remain unregistered caller contracts."
+    },
+    {
+      "path": "projection/internal/hecmHudValidatedOpeningAdapter.ts",
+      "sweptOn": "2026-09-12",
+      "note": "Live simulatePlan opening and property-year servicing delegate through this adapter. Production regressions distinguish modeled versus observed closing cash, monthly assessment capitalization, missing timing evidence, and modeled draws retained across servicing updates. HUD leaf arithmetic is registered; producer-ledger completeness, full-month timing convention and cash/debt adaptation remain partial direct registry trails."
+    },
+    {
+      "path": "projection/internal/hecmLineOpenings.ts",
+      "sweptOn": "2026-09-12",
+      "note": "Legacy quote-estimate opening retains planning PLF/upfront-cost defaults and an age-62 disclosure rather than enforcement. The hudValidated mode exclusion here is pinned by hud-hecm-mca-mip-limits; the live annual path delegates through hecmHudValidatedOpeningAdapter to registered MCA/MIP leaves. simulate.hecmHudProduction.test.ts covers once-only closing cash, compounded monthly debt and incomplete evidence. Legacy planning defaults and direct legacy-helper source eligibility remain residual claims."
+    },
+    {
+      "path": "projection/internal/hecmLineState.ts",
+      "sweptOn": "2026-09-12",
+      "note": "HUD line bookkeeping separates observed servicing baseline from modeled draw debt, preserves both through accepted draws and rollback, and composes the registered adapter-produced MIP amounts. These helpers do not independently establish the source-backed MCA or monthly MIP rate. Growth of modeled draws and growth of the baseline when timing evidence is missing remain disclosed annual planning estimates; inventory, replacement and incomplete-ledger composition retain a direct rule/convention trail to complete."
+    },
+    {
+      "path": "projection/internal/inheritedRothTaxCharacterPoolState.ts",
+      "sweptOn": "2026-09-12",
+      "note": "Delegates inherited Roth character while maintaining beneficiary/decedent pools; aggregation, clone isolation and once-only accepted depletion remain unregistered caller contracts."
+    },
+    {
+      "path": "projection/internal/ownerEmployerElectiveAllocation.ts",
+      "sweptOn": "2026-09-12",
+      "note": "Delegates elective allocation while consuming one owner annual budget across plans; prior-history reconciliation and plan-specific Roth-offset ordering remain residual contracts."
+    },
+    {
+      "path": "projection/internal/propertyEventsAndGrowth.ts",
+      "sweptOn": "2026-09-12",
+      "note": "Ordered property growth, legacy-sale rows and duplicate-id once-only line accrual preserve caller-owned state through private shadows. HUD assessment amounts delegate to the registered MIP leaf through hecmHudValidatedOpeningAdapter. Observed servicing baseline is kept separate from modeled draw debt by hecmLineState; accepted draws are not erased by replacing observed balances. The annual modeled-debt growth estimate and missing-ledger baseline estimate are planning conventions, retain incomplete timing evidence, and are not claimed as complete HUD servicing calculations. Their direct rule/convention trail remains partial."
+    },
+    {
+      "path": "projection/internal/stateBasisPoolState.ts",
+      "sweptOn": "2026-09-12",
+      "note": "State/account/owner/kind basis opening and accepted recovery ledger; consecutive-year evidence, unknown propagation and event idempotency remain unregistered lifecycle contracts."
+    },
+    {
+      "path": "projection/internal/stateConversionCandidateCharacter.ts",
+      "sweptOn": "2026-09-12",
+      "note": "Delegates IRA splitting against a candidate-owned basis clone; annual taxable-ratio adaptation, ordered owner-basis depletion and per-account state conversion character publication remain unregistered caller contracts."
+    },
+    {
+      "path": "projection/internal/stateHsaBasisLifecycle.ts",
+      "sweptOn": "2026-09-12",
+      "note": "Accepted HSA closing replaces next-year asserted opening; intervening unknown years and duplicate transition refusal remain unregistered lifecycle contracts."
+    },
+    {
+      "path": "projection/internal/stateNjIraBasisLifecycle.ts",
+      "sweptOn": "2026-09-12",
+      "note": "NJ annual owner-pool closing-basis carryforward and characterized new contributions; intervening unknown years, duplicate transitions and accepted-only recovery remain unregistered lifecycle contracts."
+    },
+    {
+      "path": "projection/internal/statePensionBasisLifecycle.ts",
+      "sweptOn": "2026-09-12",
+      "note": "MA, VA and UT accepted pension/plan-basis carryforward keyed by state/account/owner/kind; unknown intervening years and duplicate-transition refusal remain unregistered lifecycle contracts."
+    },
+    {
+      "path": "projection/internal/stateRetirementFactsAdapter.ts",
+      "sweptOn": "2026-09-12",
+      "note": "Maps source systems, HSA facts, QCD events and state basis to tax leaves; eligibility/completeness mappings and source attribution remain residual caller contracts."
     },
     {
       "path": "projection/internal/types/tax.ts",
@@ -367,9 +477,54 @@
       "note": "Part B/IRMAA premium path and Part B late-enrollment absence registered (usc-42-1395r-*, cfr-20-418-1205-1230-*); post-pack premiumScale (healthcare-inflation stand-in) remains"
     },
     {
+      "path": "tax/stateArkansasRetirement.ts",
+      "sweptOn": "2026-09-12",
+      "note": "Owner cap, IRA age/death/disability and military remainder under Act 358 are pinned; the standalone railroad source dispatch and unknown-source classification remain residual direct trails."
+    },
+    {
+      "path": "tax/stateColoradoTax.ts",
+      "sweptOn": "2026-09-12",
+      "note": "SS/pension and high-income addback leaves now pinned; standalone railroad subtraction, flat-rate fallback and recipient-identity refusal remain without direct function trails."
+    },
+    {
+      "path": "tax/stateLouisianaRetirement.ts",
+      "sweptOn": "2026-09-12",
+      "note": "Age-65 and federal/railroad leaves are pinned; legacy-cap fallback remains outside the explicit leaf trail."
+    },
+    {
+      "path": "tax/stateMidwestExtras.ts",
+      "sweptOn": "2026-09-12",
+      "note": "IL, KS, MO, WI and WV primary exported calculations now have record pins; retained legacy default constants and fallback parameter selection remain residual coverage claims."
+    },
+    {
+      "path": "tax/stateNortheastExtras.ts",
+      "sweptOn": "2026-09-12",
+      "note": "DE, DC, CT, NJ and MA primary exclusion/exemption leaves now have record pins; standalone Massachusetts tax and railroad helpers remain without direct function trails."
+    },
+    {
+      "path": "tax/stateQcdHsa.ts",
+      "sweptOn": "2026-09-12",
+      "note": "Direct QCD collection, NJ Worksheet C and CA/NJ account calculations now have records; legacy single-event and HSA aggregate bridges, policy resolution and NJ collection entry point still lack direct function trails."
+    },
+    {
+      "path": "tax/stateRetirementFacts.ts",
+      "sweptOn": "2026-09-12",
+      "note": "Source-kind grouping, income-component mapping and legacy HSA completeness bridge carry tax-character claims beyond the type-only definitions; no direct rule trail."
+    },
+    {
+      "path": "tax/stateSouthCarolinaRetirement.ts",
+      "sweptOn": "2026-09-12",
+      "note": "Imported state records name the shared state calculator; scMilitaryDeduction, scSection1170Deduction, scAge65Deduction and scSciadDeduction still lack direct function pins in the current record snapshot."
+    },
+    {
       "path": "tax/stateTax.ts",
       "sweptOn": "2026-09-08",
       "note": "Both de-code-30-1108-standard-deduction and de-pit-est-2026-qss-standard-deduction-joint-mapper name computeStateTaxableIncome in this file and age65StandardDeductionAddition in params/index.ts; the first covers Delaware single/MFJ basic-plus-age, while the second discloses the QSS-to-joint standard-deduction approximation; other Delaware return limbs remain outside those records. oh-rev-code-5747-02-a-3-c-2026-nonbusiness-rate-schedule names bracketTax for the Ohio TY2026 cumulative base above $26,050; prorateParams scales that base under the existing model convention for part-year residency, not a legal part-year claim, and consumers do not get pins. me-mrs-36-5122-2-m2-m3-2026-pension-deduction names computeStateTaxableIncome and retirementExclusion for Maine's $49,824 TY2026 flat cap without SS offset, military separation, M-3 phaseout, or plan qualification. iowa-code-422-7-8-social-security-subtraction, il-ita-203-a-2-L-social-security-subtraction, nj-njit12-social-security-exclusion, ny-dtf-social-security-subtraction, and pa-pit-social-security-not-compensation name computeStateTaxableIncome enforcers only (with/without-benefits base-delta discriminators, not whole-return figures). ga-code-48-7-27-retirement-and-social-security-exclusion gained a Social-Security relational fixture limb here; md-tax-10-209-pension-exclusion's gross-SS relational limb remains in stateTax.approximation.test.ts. Existing law records name this file; residuals include KY aggregate MFJ deduction convention without spouse-allocation record, IA minimum-income/alternate and enhanced-senior conformity omissions, DC August emergency statutory-conformity timing unresolved, ME modeled Maine-AGI proxy / personal exemption / blindness / part-year month approximation, non-ME gaps unchanged, and stateParamsFor historical fallback: years before the earliest published pack receive that earliest pack with no validity marker so computeStateTaxYearTotal consumes a current-pack approximation without exposing whether the pack is exact"
+    },
+    {
+      "path": "tax/stateWestExtras.ts",
+      "sweptOn": "2026-09-12",
+      "note": "Primary HI, ID, MT, OR, UT, VA and VT calculations now have record pins; standalone Utah Social Security credit, Vermont bracket/tax helpers and combined military wrapper remain without direct function trails."
     },
     {
       "path": "testing/flatTax.ts",
@@ -387,11 +542,11 @@
     },
     {
       "directory": "actions",
-      "files": 78,
+      "files": 79,
       "byStatus": {
-        "partial": 13,
-        "registered": 35,
-        "rule-free": 30
+        "partial": 14,
+        "registered": 36,
+        "rule-free": 29
       }
     },
     {
@@ -446,10 +601,10 @@
     },
     {
       "directory": "model",
-      "files": 5,
+      "files": 8,
       "byStatus": {
-        "partial": 4,
-        "rule-free": 1
+        "partial": 6,
+        "rule-free": 2
       }
     },
     {
@@ -471,11 +626,11 @@
     },
     {
       "directory": "projection",
-      "files": 104,
+      "files": 121,
       "byStatus": {
-        "partial": 22,
-        "registered": 17,
-        "rule-free": 65
+        "partial": 41,
+        "registered": 20,
+        "rule-free": 60
       }
     },
     {
@@ -526,18 +681,18 @@
     },
     {
       "directory": "strategies",
-      "files": 7,
+      "files": 8,
       "byStatus": {
         "partial": 3,
-        "registered": 4
+        "registered": 5
       }
     },
     {
       "directory": "tax",
-      "files": 9,
+      "files": 19,
       "byStatus": {
-        "partial": 3,
-        "registered": 5,
+        "partial": 12,
+        "registered": 6,
         "rule-free": 1
       }
     },
@@ -569,7 +724,7 @@
     {
       "module": "contributionAndDeferralLimits",
       "path": "rule-coverage/contributionAndDeferralLimits.json",
-      "ruleCount": 38
+      "ruleCount": 39
     },
     {
       "module": "earlyDistributionsAndSepp",
@@ -604,7 +759,7 @@
     {
       "module": "requiredMinimumDistributions",
       "path": "rule-coverage/requiredMinimumDistributions.json",
-      "ruleCount": 43
+      "ruleCount": 47
     },
     {
       "module": "rothAccounts",
@@ -629,47 +784,47 @@
     {
       "module": "statesMidwest",
       "path": "rule-coverage/statesMidwest.json",
-      "ruleCount": 37
+      "ruleCount": 43
     },
     {
       "module": "statesNortheast",
       "path": "rule-coverage/statesNortheast.json",
-      "ruleCount": 22
+      "ruleCount": 34
     },
     {
       "module": "statesSouthAtlantic",
       "path": "rule-coverage/statesSouthAtlantic.json",
-      "ruleCount": 20
+      "ruleCount": 34
     },
     {
       "module": "statesSouthCentral",
       "path": "rule-coverage/statesSouthCentral.json",
-      "ruleCount": 34
+      "ruleCount": 36
     },
     {
       "module": "statesWest",
       "path": "rule-coverage/statesWest.json",
-      "ruleCount": 32
+      "ruleCount": 43
     },
     {
       "module": "transfersAndUnmodeledRegimes",
       "path": "rule-coverage/transfersAndUnmodeledRegimes.json",
-      "ruleCount": 6
+      "ruleCount": 9
     }
   ],
   "quoteFidelity": {
-    "generatedAt": "2026-09-12T15:23:23.483Z",
-    "entryCount": 1431,
-    "fetched": 0,
-    "cached": 379,
+    "generatedAt": "2026-09-12T22:53:52.267Z",
+    "entryCount": 1529,
+    "fetched": 14,
+    "cached": 416,
     "counts": {
-      "ELISION-EXACT": 91,
-      "ELISION-PUNCTUATION": 8,
-      "EXACT": 974,
+      "ELISION-EXACT": 109,
+      "ELISION-PUNCTUATION": 9,
+      "EXACT": 967,
       "PDF-NOT-VERIFIABLE": 7,
-      "PDF-WORD-LEVEL": 304,
-      "PUNCTUATION": 44,
-      "UNFETCHABLE": 3
+      "PDF-WORD-LEVEL": 339,
+      "PUNCTUATION": 48,
+      "UNFETCHABLE": 50
     }
   }
 }

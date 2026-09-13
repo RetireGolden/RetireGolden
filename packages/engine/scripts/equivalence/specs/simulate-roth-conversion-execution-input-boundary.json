@@ -7,10 +7,19 @@
       "id": "AK.helper.noRequest",
       "label": "no-request omission and shared linked-group result",
       "file": "projection/internal/annualRothConversionExecutionInput.ts",
-      "lines": [106, 110],
+      "lines": [
+        106,
+        110
+      ],
       "anchors": [
-        { "line": 106, "text": "if (input.requests.length === 0) {" },
-        { "line": 110, "text": "effectiveLinkedWithdrawalGroups: input.linkedWithdrawalGroups," }
+        {
+          "line": 106,
+          "text": "if (input.requests.length === 0) {"
+        },
+        {
+          "line": 110,
+          "text": "effectiveLinkedWithdrawalGroups: input.linkedWithdrawalGroups,"
+        }
       ],
       "note": "Most corpus members own the no-request exit; the direct contract suite owns the separate mixed-kind schedule exit."
     },
@@ -18,21 +27,42 @@
       "id": "AK.helper.accountIdentity",
       "label": "conversion source and destination identity sets",
       "file": "projection/internal/annualRothConversionExecutionInput.ts",
-      "lines": [121, 130],
+      "lines": [
+        121,
+        130
+      ],
       "anchors": [
-        { "line": 121, "text": "const conversionAccountIds = new Set<string>(" },
-        { "line": 127, "text": "const conversionSourceAccountIds = new Set<string>(" }
+        {
+          "line": 121,
+          "text": "const conversionAccountIds = new Set<string>("
+        },
+        {
+          "line": 127,
+          "text": "const conversionSourceAccountIds = new Set<string>("
+        }
       ]
     },
     {
       "id": "AK.helper.openingBalances",
       "label": "ordered floored-source and half-up-destination snapshots",
       "file": "projection/internal/annualRothConversionExecutionInput.ts",
-      "lines": [131, 145],
+      "lines": [
+        131,
+        145
+      ],
       "anchors": [
-        { "line": 131, "text": "const openingBalances = freezeRows([...input.balances]" },
-        { "line": 142, "text": "openingBalance: conversionSourceAccountIds.has(state.accountId)" },
-        { "line": 145, "text": "}]" }
+        {
+          "line": 131,
+          "text": "const openingBalances = freezeRows([...input.balances]"
+        },
+        {
+          "line": 142,
+          "text": "openingBalance: conversionSourceAccountIds.has(state.accountId)"
+        },
+        {
+          "line": 145,
+          "text": "}]"
+        }
       ],
       "note": "The corpus owns valid source and destination snapshots. Direct tests pin the two rounding directions, unrelated-account filtering, invalid-id/value omission, and deterministic UTF-16 ordering."
     },
@@ -40,32 +70,65 @@
       "id": "AK.helper.evidenceMaps",
       "label": "person, owner-RMD, and owner-basis fact maps",
       "file": "projection/internal/annualRothConversionExecutionInput.ts",
-      "lines": [152, 163],
+      "lines": [
+        152,
+        163
+      ],
       "anchors": [
-        { "line": 152, "text": "const peopleById = new Map(input.people.map((person) => [" },
-        { "line": 156, "text": "const ownerRmdById = new Map(input.ownerRmd.map((row) => [" },
-        { "line": 160, "text": "const ownerBasisById = new Map(input.ownerBasis.map((row) => [" }
+        {
+          "line": 152,
+          "text": "const peopleById = new Map(input.people.map((person) => ["
+        },
+        {
+          "line": 156,
+          "text": "const ownerRmdById = new Map(input.ownerRmd.map((row) => ["
+        },
+        {
+          "line": 160,
+          "text": "const ownerBasisById = new Map(input.ownerBasis.map((row) => ["
+        }
       ]
     },
     {
       "id": "AK.helper.aliveEvidence",
       "label": "request-keyed donor life evidence",
       "file": "projection/internal/annualRothConversionExecutionInput.ts",
-      "lines": [165, 177],
+      "lines": [
+        165,
+        177
+      ],
       "anchors": [
-        { "line": 165, "text": "const personAliveEvidence = freezeRows(input.requests.map((request) => ({" },
-        { "line": 176, "text": "alive: peopleById.get(request.personId)?.alive ?? false," }
+        {
+          "line": 165,
+          "text": "const personAliveEvidence = freezeRows(input.requests.map((request) => ({"
+        },
+        {
+          "line": 176,
+          "text": "alive: peopleById.get(request.personId)?.alive ?? false,"
+        }
       ]
     },
     {
       "id": "AK.helper.rmdEvidence",
       "label": "exact-cent annual owner-RMD satisfaction evidence",
       "file": "projection/internal/annualRothConversionExecutionInput.ts",
-      "lines": [184, 209],
+      "lines": [
+        184,
+        209
+      ],
       "anchors": [
-        { "line": 184, "text": "const ownerIraRmdSatisfactionEvidence = freezeRows(input.requests" },
-        { "line": 190, "text": "const requiredAmount = planDollarsToLedgerCents(required)" },
-        { "line": 205, "text": "distributedAmount: asUsdCents(Math.max(" }
+        {
+          "line": 184,
+          "text": "const ownerIraRmdSatisfactionEvidence = freezeRows(input.requests"
+        },
+        {
+          "line": 190,
+          "text": "const requiredAmount = planDollarsToLedgerCents(required)"
+        },
+        {
+          "line": 205,
+          "text": "distributedAmount: asUsdCents(Math.max("
+        }
       ],
       "note": "The valid exact-cent path is measured. Direct tests pin required-minus-shortfall arithmetic, absent zero facts, and omission of an unrepresentable annual fact."
     },
@@ -73,11 +136,23 @@
       "id": "AK.helper.basisEvidence",
       "label": "exact-cent aggregated-IRA basis evidence",
       "file": "projection/internal/annualRothConversionExecutionInput.ts",
-      "lines": [220, 238],
+      "lines": [
+        220,
+        238
+      ],
       "anchors": [
-        { "line": 220, "text": "const ownerAggregatedIraBasisEvidence = freezeRows(input.requests" },
-        { "line": 235, "text": "basisAmount: planDollarsToLedgerCents(" },
-        { "line": 238, "text": "}]" }
+        {
+          "line": 220,
+          "text": "const ownerAggregatedIraBasisEvidence = freezeRows(input.requests"
+        },
+        {
+          "line": 235,
+          "text": "basisAmount: planDollarsToLedgerCents("
+        },
+        {
+          "line": 238,
+          "text": "}]"
+        }
       ],
       "note": "The corpus reaches the request-keyed basis producer; direct tests own positive, absent-zero, and unrepresentable-omission outcomes."
     },
@@ -85,11 +160,23 @@
       "id": "AK.helper.linkedWithdrawalOutcome",
       "label": "actual linked-withdrawal completion and release narrowing",
       "file": "projection/internal/annualRothConversionExecutionInput.ts",
-      "lines": [256, 268],
+      "lines": [
+        256,
+        268
+      ],
       "anchors": [
-        { "line": 256, "text": "const withdrawalLegsMovedWhole = input.linkedWithdrawalGroups.groups" },
-        { "line": 259, "text": "const evidence = input.ordinaryWithdrawalEvidence.find(" },
-        { "line": 267, "text": "const effectiveLinkedWithdrawalGroups = withdrawalLegsMovedWhole" }
+        {
+          "line": 256,
+          "text": "const withdrawalLegsMovedWhole = input.linkedWithdrawalGroups.groups"
+        },
+        {
+          "line": 259,
+          "text": "const evidence = input.ordinaryWithdrawalEvidence.find("
+        },
+        {
+          "line": 267,
+          "text": "const effectiveLinkedWithdrawalGroups = withdrawalLegsMovedWhole"
+        }
       ],
       "note": "Linked-funding corpus members own the successful whole-movement route. Direct tests pin the omitted line 269 fallback: missing, refused, and partial withdrawal evidence restores the observed fail-closed verdict."
     },
@@ -97,44 +184,92 @@
       "id": "AK.helper.result",
       "label": "prepared executor and runtime-evidence result",
       "file": "projection/internal/annualRothConversionExecutionInput.ts",
-      "lines": [271, 284],
+      "lines": [
+        271,
+        284
+      ],
       "anchors": [
-        { "line": 271, "text": "return Object.freeze({" },
-        { "line": 274, "text": "executorInput: Object.freeze({" },
-        { "line": 279, "text": "runtimeEvidence: Object.freeze({" }
+        {
+          "line": 271,
+          "text": "return Object.freeze({"
+        },
+        {
+          "line": 274,
+          "text": "executorInput: Object.freeze({"
+        },
+        {
+          "line": 279,
+          "text": "runtimeEvidence: Object.freeze({"
+        }
       ]
     },
     {
       "id": "AK.callsite.contract",
       "label": "post-RMD and post-withdrawal conversion preparation snapshot",
       "file": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
-      "lines": [1836, 1871],
+      "lines": [
+        1987,
+        2022
+      ],
       "anchors": [
-        { "line": 1836, "text": "const rothConversionExecutionInput = annualRothConversionExecutionInput(Object.freeze({" },
-        { "line": 1845, "text": "balances: Object.freeze(balances.map((state) => Object.freeze({" },
-        { "line": 1849, "text": "ownerRmd: Object.freeze([...new Set(currentYearConversionActions.map((request) =>" },
-        { "line": 1856, "text": "ownerBasis: Object.freeze([...iraBasisByOwner].map(([" },
-        { "line": 1862, "text": "ordinaryWithdrawalEvidence: Object.freeze(retirementActionExecution?.evidence.map(" }
+        {
+          "line": 1987,
+          "text": "const rothConversionExecutionInput = annualRothConversionExecutionInput(Object.freeze({"
+        },
+        {
+          "line": 1996,
+          "text": "balances: Object.freeze(balances.map((state) => Object.freeze({"
+        },
+        {
+          "line": 2000,
+          "text": "ownerRmd: Object.freeze([...new Set(currentYearConversionActions.map((request) =>"
+        },
+        {
+          "line": 2007,
+          "text": "ownerBasis: Object.freeze([...iraBasisByOwner].map((["
+        },
+        {
+          "line": 2013,
+          "text": "ordinaryWithdrawalEvidence: Object.freeze(retirementActionExecution?.evidence.map("
+        }
       ]
     },
     {
       "id": "AK.callsite.effectiveGroups",
       "label": "shared narrowed linked-group verdict",
       "file": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
-      "lines": [1878, 1879],
+      "lines": [
+        2029,
+        2030
+      ],
       "anchors": [
-        { "line": 1878, "text": "const effectiveLinkedWithdrawalGroups =" },
-        { "line": 1879, "text": "rothConversionExecutionInput.effectiveLinkedWithdrawalGroups" }
+        {
+          "line": 2029,
+          "text": "const effectiveLinkedWithdrawalGroups ="
+        },
+        {
+          "line": 2030,
+          "text": "rothConversionExecutionInput.effectiveLinkedWithdrawalGroups"
+        }
       ]
     },
     {
       "id": "AK.callsite.execute",
       "label": "caller-owned named-conversion executor call",
       "file": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
-      "lines": [1880, 1882],
+      "lines": [
+        2031,
+        2033
+      ],
       "anchors": [
-        { "line": 1880, "text": "if (rothConversionExecutionInput.status === 'ready') {" },
-        { "line": 1882, "text": "rothConversionExecutionInput.executorInput," }
+        {
+          "line": 2031,
+          "text": "if (rothConversionExecutionInput.status === 'ready') {"
+        },
+        {
+          "line": 2033,
+          "text": "rothConversionExecutionInput.executorInput,"
+        }
       ]
     }
   ],

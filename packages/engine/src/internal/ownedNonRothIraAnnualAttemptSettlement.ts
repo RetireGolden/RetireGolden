@@ -316,6 +316,7 @@ type SimulatorAnnualPassInvariantSnapshot = Readonly<{
   iraProRata: readonly [string, unknown][]
   iraBasisByOwner: readonly [string, unknown][]
   rothBasis: readonly [string, unknown][]
+  inheritedRothPools: readonly [string, unknown][]
   rothAssumedContributionRemaining: readonly [string, unknown][]
   rothCounterfactualFreeCoverConsumed: readonly [string, unknown][]
   propertyValues: readonly [string, unknown][]
@@ -370,6 +371,7 @@ function snapshotInvariantState(
     iraProRata: snapshotStringMap(state.iraProRata),
     iraBasisByOwner: snapshotStringMap(state.iraBasisByOwner),
     rothBasis: snapshotStringMap(state.rothBasis),
+    inheritedRothPools: snapshotStringMap(state.inheritedRothPools),
     rothAssumedContributionRemaining:
       snapshotStringMap(state.rothAssumedContributionRemaining),
     rothCounterfactualFreeCoverConsumed:

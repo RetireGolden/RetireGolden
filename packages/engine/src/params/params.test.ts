@@ -42,6 +42,46 @@ describe('packForYear', () => {
 describe('2026 pack contents', () => {
   const pack = packForYear(2026).pack
 
+  it('pins the CMS CY 2026 Part D $2,100 OOP threshold rather than the 2025 $2,000 amount', () => {
+    // CMS Final CY 2026 Part D Redesign Program Instructions §§10/100:
+    // “the $2,000 annual out-of-pocket (OOP) threshold for CY 2025 ... should
+    // be read to be $2,100 for the purposes of CY 2026”. This is evidence only;
+    // the Plan has no Part D claims from which to calculate drug spending.
+    expect(pack.medicare.partDAnnualOutOfPocketThreshold).toBe(2_100)
+    expect(pack.medicare.partDAnnualOutOfPocketThreshold).not.toBe(2_000)
+  })
+
+  it('pins 2026 gift/estate evidence without relabeling historical amounts or inventing a gift-tax result', () => {
+    // Rev. Proc. 2025-32 §4.42(1) sets $19,000 per donee; IRC 2010(c)(3)(A)
+    // sets the 2026 basic exclusion at $15,000,000. $38,000 is two $19,000
+    // donor amounts only with the separately required gift-splitting/dual-donor facts.
+    const annual = pack.transferTax.annualGiftExclusionPerDonee
+    expect(annual).toBe(19_000)
+    expect(annual * 2).toBe(38_000)
+    expect(annual).not.toBe(18_000)
+    expect(annual * 2).not.toBe(36_000)
+    expect(pack.transferTax.basicExclusionAmount).toBe(15_000_000)
+  })
+
+  it('keeps a five-year 529 election allocation tied to the same annual exclusion', () => {
+    // IRC 529(c)(2)(B) allows an election to treat a qualifying contribution
+    // ratably over five years. $95,000 / 5 = the sourced $19,000 annual share;
+    // another $1,000 gift in that year is not a fresh exclusion.
+    const fiveYearElection = 95_000
+    const annualAllocated = fiveYearElection / 5
+    expect(annualAllocated).toBe(pack.transferTax.annualGiftExclusionPerDonee)
+    expect(annualAllocated + 1_000).toBeGreaterThan(pack.transferTax.annualGiftExclusionPerDonee)
+  })
+
+  it('distinguishes an IRMAA decrease within one band from a decrease into a lower band', () => {
+    // POMS HI 01120.005 A defines a significant reduction as one that
+    // decreases or eliminates IRMAA for a specific tax year. This checks only
+    // that reduction limb; it does not infer an LCE, request, or SSA approval.
+    expect(irmaaTierForMagi(pack, 136_000, 'single')).toBe(1)
+    expect(irmaaTierForMagi(pack, 110_000, 'single')).toBe(1)
+    expect(irmaaTierForMagi(pack, 108_999, 'single')).toBe(0)
+  })
+
   it('has seven ascending ordinary brackets per status', () => {
     for (const status of ['single', 'marriedFilingJointly'] as const) {
       const brackets = pack.federalTax.brackets[status]

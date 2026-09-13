@@ -10,7 +10,10 @@
  * it now lives in this sub-phase's own input instead.
  *
  * **What it owns and what it does not.** `propertyEventsAndGrowth` owns the
- * growth, the legacy tax-free sale and the HECM line accrual;
+ * growth, the legacy tax-free sale and the HECM line accrual. For HUD lines,
+ * its split year-end components preserve the observed-servicing replacement
+ * boundary and report a separate incomplete issue for any modeled-debt timing
+ * estimate;
  * `annualPermanentLifeTransitions` owns the cash-value and payout rules. This
  * block owns every write, applied per row in the same statement order the
  * inlined phase used — close the line, deposit, publish, write the value back,
@@ -18,9 +21,10 @@
  * ways at once: deposit order, value compounding, and whether a same-id line
  * accrues before a later row closes it.
  *
- * Move-only out of `annualFundingApplicationAndClosePhase`: every expression,
- * the statement order inside both loops, and the deliberate gating of the
- * legacy-sale payload are unchanged.
+ * The application order and deliberate gating of the legacy-sale payload stay
+ * unchanged from the extracted phase. HUD close is not a verbatim move:
+ * it commits observed and modeled debt components separately and publishes
+ * the modeled-timing incompleteness alongside any ledger issue.
  */
 import type { Account, Person } from '../../model/plan.js'
 import type {
@@ -28,9 +32,9 @@ import type {
   YearCashFlowTransferEndpoint,
 } from '../types.js'
 import { annualPermanentLifeTransitions } from './annualPermanentLifeTransitions.js'
+import { commitHudYearEndFromComputed } from './hecmLineState.js'
+import type { HecmLineState } from './hecmLineOpenings.js'
 import { propertyEventsAndGrowth } from './propertyEventsAndGrowth.js'
-
-type HecmLineState = { loanBalance: number; principalLimit: number }
 
 export interface AnnualPropertyAndInsuranceClosePhaseInput {
   readonly year: number
@@ -66,15 +70,18 @@ export interface AnnualPropertyAndInsuranceClosePhaseInput {
     destination: YearCashFlowTransferEndpoint
   }[] | null
   readonly surplusDestination: YearCashFlowTransferEndpoint | null
+  readonly warnings: Set<string>
 }
 
 export interface AnnualPropertyAndInsuranceClosePhaseResult {
+  readonly hecmComputation: { status: 'complete' | 'incomplete'; issues: readonly string[] }
   readonly deathBenefitPaid: number
 }
 
 export function annualPropertyAndInsuranceClosePhase(
   input: AnnualPropertyAndInsuranceClosePhaseInput,
 ): AnnualPropertyAndInsuranceClosePhaseResult {
+  const hecmIssues: string[] = []
   const {
     year,
     propertyValues,
@@ -87,6 +94,7 @@ export function annualPropertyAndInsuranceClosePhase(
     legacyPropertySaleDeposits,
     deathBenefits,
     surplusDestination,
+    warnings,
   } = input
 
   // --- property events + growth ------------------------------------------
@@ -115,11 +123,44 @@ export function annualPropertyAndInsuranceClosePhase(
     if (row.closesHecmForAccountId !== null) hecmStates.delete(row.closesHecmForAccountId)
     if (row.deposit !== null) deposit(row.deposit)
     if (row.record !== null) legacyPropertySaleDeposits?.push(row.record)
+    if (row.hecmHudMipIncompleteReason !== null) {
+      warnings.add(row.hecmHudMipIncompleteReason)
+      hecmIssues.push(row.hecmHudMipIncompleteReason)
+    }
+    if (row.hecmHudModeledDebtIncompleteReason !== null) {
+      warnings.add(row.hecmHudModeledDebtIncompleteReason)
+      hecmIssues.push(row.hecmHudModeledDebtIncompleteReason)
+    }
     propertyValues.set(row.propertyAccountId, row.value)
-    if (row.hecmGrowth !== null) {
+    if (
+      row.hecmHudObservedBaselineEnding !== null &&
+      row.hecmHudModeledDebtEnding !== null &&
+      row.hecmHudEndingLoanBalance !== null
+    ) {
+      commitHudYearEndFromComputed(
+        hecmStates.get(row.propertyAccountId)!,
+        row.hecmGrowth,
+        {
+          observedServicingBaseline: row.hecmHudObservedBaselineEnding,
+          modeledDebt: row.hecmHudModeledDebtEnding,
+          loanBalance: row.hecmHudEndingLoanBalance,
+        },
+      )
+    } else if (row.hecmGrowth !== null || row.hecmHudMipAccrual !== null) {
       const line = hecmStates.get(row.propertyAccountId)!
-      line.principalLimit *= row.hecmGrowth
-      line.loanBalance *= row.hecmGrowth
+      if (row.hecmGrowth !== null) {
+        line.principalLimit *= row.hecmGrowth
+        if (
+          row.hecmHudMipAccrual === null &&
+          row.hecmHudMipIncompleteReason === null
+        ) {
+          line.loanBalance *= row.hecmGrowth
+        }
+      }
+      if (row.hecmHudMipAccrual !== null) {
+        // Legacy HUD path without split components — should not occur for hudValidated.
+        line.loanBalance = row.hecmHudEndingLoanBalance!
+      }
     }
   }
 
@@ -153,5 +194,5 @@ export function annualPropertyAndInsuranceClosePhase(
     insuranceCashValues.set(transition.policyId, transition.cashValue)
   }
 
-  return { deathBenefitPaid }
+  return { deathBenefitPaid, hecmComputation: { status: hecmIssues.length === 0 ? 'complete' : 'incomplete', issues: hecmIssues } }
 }

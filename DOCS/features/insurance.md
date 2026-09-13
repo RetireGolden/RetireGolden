@@ -40,10 +40,14 @@ discriminated by `kind`. Premiums share a shape across kinds:
 - **Permanent-life cash value** is an asset that grows tax-deferred (`flatRate` compounds; `schedule`
   interpolates by age) and shows on the balance sheet / net worth. It is **held out of the optimizer as a
   drawdown source** — the optimizer won't surrender or borrow against it (see [optimizer.md](optimizer.md)).
-- **Death benefit** pays out **income-tax-free** to the beneficiary on the insured's death (an existing
-  survivor transition). It interacts with the **SS survivor analysis** — the benefit replaces part of the
-  income lost when the smaller SS check disappears at first death — so it surfaces in survivor-scenario
-  results, not just the estate total.
+- **Death benefit** pays out **income-tax-free** under the general IRC **101(a)(1)** exclusion
+  (`irc-101-a-1-life-insurance-death-proceeds-exclusion`) to the beneficiary on the insured's death
+  (an existing survivor transition / `YearResult.deathBenefit`). Cash rises by the proceeds; ordinary
+  taxable income does not. Transfer-for-value, reportable policy sale, interest on delayed proceeds, and
+  employer-owned exceptions are outside supported inputs; §2042 estate inclusion is not inferred from
+  this income exclusion. It interacts with the **SS survivor analysis** — the benefit replaces part of
+  the income lost when the smaller SS check disappears at first death — so it surfaces in
+  survivor-scenario results, not just the estate total.
 - **LTC benefit** is framed as a **de-risking lever**, not a precise actuarial product:
   - *Deterministic care episode* — user-defined start age, duration, annual cost, **additive to baseline
     spending** (housing etc. continue); the policy offsets cost up to its monthly cap after the elimination
@@ -79,7 +83,7 @@ ready articles for users who prefer browsing before editing fields.
   policy caps; no benefit-trigger ADL detail, partial benefits, or shared-care riders.
 - Cash value appears as an asset; surrender/policy-loan liquidity, loan-vs-withdrawal tax nuance, and MEC
   rules are not modeled.
-- Death benefit is income-tax-free; estate-tax treatment of large benefits is out of scope at current
-  estate sizes.
+- Death benefit is income-tax-free under general §101(a)(1); interest and statutory exceptions are
+  unmodeled. Estate-tax treatment of large benefits (§2042) is out of scope at current estate sizes.
 - Permanent-life dividends are treated as baked into the cash-value schedule; the `dividendOption` enum is
   advisory. The LTC MC shock uses an in-repo, cited incidence/duration table (no external service).

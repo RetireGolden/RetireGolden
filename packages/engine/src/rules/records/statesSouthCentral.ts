@@ -465,12 +465,11 @@ export const southCentralStateRecords = {
   },
 
   'aca-26-51-307-e-uniformed-services-full-exemption': {
-    title: 'Arkansas exempts uniformed-services retirement in full, and the pack caps it at $6,000',
-    statement:
-      'A.C.A. 26-51-307(e) exempts retirement benefits received by a member of the uniformed services, and survivor benefits funded by such retirement pay, from the Arkansas income tax entirely — no cap, no age condition, no phase-out. Under 26-51-307(f) that exemption and the $6,000 of subsection (a) are alternatives rather than additions: a taxpayer claiming the military exemption may claim the $6,000 only to the extent the military exemption falls short of it. Not modelled. The pack’s public bucket is one flag for every public pension the input model can carry, and in Arkansas that bucket is dominated by civil-service pensions the state exempts only to $6,000, so the bucket carries the capped rule and a military pension is charged Arkansas tax on everything above $6,000 that Arkansas does not charge. The direction is deliberate: the same flag set to `full` — which is what Arkansas carried until 2026-08-05 — is exact for the military retiree and exempts every teacher, trooper and state employee’s pension in Arkansas along with them, which errs the other way and by far the larger population.',
-    classification: 'approximated',
+    title: 'Arkansas exempts military retirement as an alternative to the ordinary cap',
+    statement: 'Qualifying uniformed-services retirement and funded survivor benefits are fully exempt under subsection (e), effective for the original military exemption from 2018. For tax years beginning on or after January 1, 2023, Act 358 adds subsection (f)(2): when that owner claims less than $6,000 of military/survivor exemption, qualifying subsection (a) retirement can use the remainder up to $6,000. Military/survivor exemption of $6,000 or more leaves no ordinary capacity. The characterized annual calculation groups events by owner, preserves the ordinary IRA eligibility gate, and never pools unused capacity between spouses.',
+    classification: 'settled',
     contraryReading: null,
-    errorDirection: 'overstatesTax',
+    errorDirection: null,
     conventionRationale: null,
     jurisdiction: 'state:AR',
     authority: [{
@@ -485,6 +484,11 @@ export const southCentralStateRecords = {
       url: 'https://arkleg.state.ar.us/Home/FTPDocument?path=%2FACTS%2F2023R%2FPublic%2FACT358.pdf',
       quotedText:
         '(f)(1) A Except as provided in subdivision (f)(2) of this section, a 30 taxpayer claiming an exemption under subsection (e) of this section is not 31 eligible for an exemption under subsection (a) of this section.',
+    }, {
+      kind: 'statute',
+      citation: 'Ark. Code Ann. 26-51-307(f)(2), 2023 Act 358 sections 1–2; PDF margin labels retained',
+      url: 'https://arkleg.state.ar.us/Home/FTPDocument?path=%2FACTS%2F2023R%2FPublic%2FACT358.pdf',
+      quotedText: '(2) A taxpayer claiming an exemption of less than six thousand 33 dollars ($6,000) for income from military retirement or survivor benefits 34 under subsection (e) of this section may claim as exempt additional 35 retirement benefits under subsection (a) of this section in an amount equal 36 to the difference between the exemption claimed under subsection (e) of this … 1 section and six thousand dollars ($6,000). 2 3 SECTION 2. EFFECTIVE DATE. Section 1 of this act is effective for tax 4 years beginning on or after January 1, 2023.',
     }, {
       kind: 'formInstruction',
       citation: '2025 Form AR1000F/AR1000NR instructions, Line 17',
@@ -501,26 +505,25 @@ export const southCentralStateRecords = {
     volatility: 'staticStatute',
     effectiveFrom: 2018,
     effectiveThrough: null,
-    verifiedOn: '2026-08-05',
+    verifiedOn: '2026-09-12',
     implementedBy: [
       'packages/engine/src/params/state/data/year2026.ts',
-      'packages/engine/src/params/state/types.ts',
       'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/tax/stateArkansasRetirement.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#PUBLIC_PENSION_OVERRIDES',
-      'packages/engine/src/params/state/types.ts#StateRetirementExclusion',
-      'packages/engine/src/tax/stateTax.ts#retirementExclusion',
+      'packages/engine/src/params/state/data/year2026.ts#states.AR',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxDetailResult',
+      'packages/engine/src/tax/stateArkansasRetirement.ts#arkansasRetirementExclusion',
     ],
   },
 
   'aca-26-51-307-a-2-ira-age-fifty-nine-and-a-half-gate': {
-    title: 'Arkansas’s $6,000 reaches an IRA distribution only at 59½, and the pack does not test it',
-    statement:
-      'A.C.A. 26-51-307(a)(2) admits an individual retirement account distribution to the $6,000 exemption only after the participant reaches age 59½, or on the participant’s death or disability; every other premature distribution or early withdrawal is denied it, including one taken for medical expenses, higher education or a first home. Employer-plan benefits carry no such condition — the department states expressly that the recipient need not even be retired. Not modelled. `StateRetirementExclusion` has one `minAge`, and it gates the whole bucket: setting 59.5 would deny the exemption to an under-59½ Arkansan drawing an employer pension, which Arkansas allows. Leaving it unset grants the exemption on a pre-59½ IRA withdrawal Arkansas taxes in full, so the engine under-charges a household that draws an IRA early by the Arkansas tax on up to $6,000 per person.',
-    classification: 'approximated',
+    title: 'Arkansas tests IRA age 59½ separately from employer retirement',
+    statement: 'Arkansas permits the shared $6,000 retirement exemption for an IRA distribution only after age 59½ or on account of death or disability. Employer-plan benefits have a separate source path and do not inherit the IRA age test. Characterized distribution date/age and reason apply per owner; unknown required facts are incomplete. Multiple accounts do not multiply the owner cap.',
+    classification: 'settled',
     contraryReading: null,
-    errorDirection: 'understatesTax',
+    errorDirection: null,
     conventionRationale: null,
     jurisdiction: 'state:AR',
     authority: [{
@@ -567,16 +570,17 @@ export const southCentralStateRecords = {
     volatility: 'staticStatute',
     effectiveFrom: 2018,
     effectiveThrough: null,
-    verifiedOn: '2026-08-05',
+    verifiedOn: '2026-09-12',
     implementedBy: [
       'packages/engine/src/params/state/data/year2026.ts',
-      'packages/engine/src/params/state/types.ts',
       'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/tax/stateArkansasRetirement.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/params/state/data/year2026.ts#AR',
-      'packages/engine/src/params/state/types.ts#StateRetirementExclusion',
-      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+      'packages/engine/src/params/state/data/year2026.ts#states.AR',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxDetailResult',
+      'packages/engine/src/tax/stateArkansasRetirement.ts#arkansasRetirementExclusion',
+      'packages/engine/src/tax/stateArkansasRetirement.ts#arkansasIraExclusionAmount',
     ],
   },
 
@@ -1173,14 +1177,52 @@ export const southCentralStateRecords = {
     ],
   },
 
-  'la-rs-47-44-1-retirement-exemption': {
-    title: 'Louisiana exempts retirement income from age 65, CPI-U indexed from 2026; the pack holds $12,000 flat',
+  'ky-dor-2026-standard-deduction-once-per-return': {
+    title: 'Kentucky’s TY2026 standard deduction is $3,360 once per return, including MFJ',
     statement:
-      'Louisiana exempts annual retirement income — pension and annuity income included in tax-table income — received by an individual sixty-five years of age or older. The statute states a twelve-thousand-dollar starting amount and requires that amount to be adjusted annually beginning January 1, 2026 by multiplying the prior year\'s exemption by the percentage increase in the CPI-U for the previous calendar year. Approximated: the pack encodes `{ kind: \'capped\', capPerPerson: 12000, minAge: 65 }` as a held-forward unindexed figure, so once the first CPI-U adjustment applies the engine understates the exemption and overstates Louisiana tax. The staged text states the indexing method but does not publish the 2026 indexed dollar, so the accepted reading is that method (first adjustment beginning January 1, 2026) rather than a derived amount. The separate six-thousand-dollar disability exemption in subsection B is not modelled.',
-    classification: 'approximated',
+      'Kentucky Department of Revenue publishes a $3,360 standard deduction for tax year 2026. An MFJ production scenario computes one joint Kentucky return and receives that amount once — not a doubled spouse-count figure. The latest full-year Form 740 filing-status pattern (TY2025 instructions, amount updated for 2026) allows only one standard deduction on a joint return. The pack encodes `standardDeduction: { single: 3360, marriedFilingJointly: 3360 }`.',
+    classification: 'settled',
     contraryReading: null,
-    errorDirection: 'overstatesTax',
-    conventionRationale: null,
+    errorDirection: null,
+    conventionRationale:
+      'Explicit design assumption: MFJ is one joint return. Confirm on the TY2026 Form 740 when published. Historical Form 740 quotation is preserved in the official-site search index, but its live URL returned HTTP 404 on 2026-09-12. Its $3,160 amount corresponds to TY2024, despite the URL containing 2025; it supports only the filing-status pattern, not the TY2026 amount.',
+    jurisdiction: 'state:KY',
+    authority: [{
+      kind: 'stateAgencyPublication',
+      citation: 'Kentucky DOR, Kentucky DOR Announces 2026 Standard Deduction (2025-09-04)',
+      url: 'https://revenue.ky.gov/News/Pages/Kentucky-DOR-Announces-2026-Standard-Deduction.aspx',
+      quotedText:
+        'After adjusting for inflation, the standard deduction for 2026 is $3,360, an increase of $90. This amount will be incorporated into 2026 tax forms and should be used for tax planning in the new year.',
+    }, {
+      kind: 'formInstruction',
+      citation: 'Kentucky Form 740 instructions, Line 10, historical $3,160 filing-status pattern (official URL labelled 2025; live HTTP 404)',
+      url: 'https://revenue.ky.gov/Forms/740%20instructions%20packet%20%282025%29.pdf',
+      quotedText:
+        'Nonitemizers, enter the standard deduction of $3,160. If married filing separately on a combined return, enter $3,160 in both Columns A and B. If filing a joint return, only one $3,160 standard deduction is allowed.',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: 2026,
+    verifiedOn: '2026-09-12',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#states.KY',
+      'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+    ],
+  },
+
+  'la-rs-47-44-1-retirement-exemption': {
+    title: 'Louisiana exempts retirement income from age 65; TY2026 indexed amount is $12,324',
+    statement:
+      'Louisiana exempts annual retirement income — pension and annuity income included in tax-table income — received by an individual sixty-five years of age or older. The statute states a twelve-thousand-dollar starting amount and requires that amount to be adjusted annually beginning January 1, 2026 by multiplying the prior year\'s exemption by the percentage increase in the CPI-U for the previous calendar year. For TY2026 the previous calendar year is 2025; BLS reports the U.S.-city-average all-items CPI-U twelve-month increase through December 2025 as 2.7%, so the exemption is $12,000 + ($12,000 × 0.027) = $12,324. The pack encodes `{ kind: \'capped\', capPerPerson: 12324, minAge: 65 }`. The separate six-thousand-dollar disability exemption in subsection B is not modelled.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'The statute itself commands the annual adjustment; a pending LAC amendment governing publication examples does not suspend the enacted amount. Disability subsection B remains outside this record.',
     jurisdiction: 'state:LA',
     authority: [{
       kind: 'statute',
@@ -1192,13 +1234,15 @@ export const southCentralStateRecords = {
     volatility: 'annuallyIndexed',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-27',
+    verifiedOn: '2026-09-12',
     implementedBy: [
       'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/tax/stateLouisianaRetirement.ts',
       'packages/engine/src/params/state/data/year2026.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/params/state/data/year2026.ts#states.LA',
+      'packages/engine/src/tax/stateLouisianaRetirement.ts#louisianaAge65RetirementExemption',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
       'packages/engine/src/tax/stateTax.ts#retirementExclusion',
     ],
@@ -1207,7 +1251,7 @@ export const southCentralStateRecords = {
   'la-rs-47-44-2-social-security-federal-retirement': {
     title: 'Louisiana exempts Social Security, federal retirement, and railroad retirement',
     statement:
-      'Louisiana exempts any benefit received under Chapter 7 of Title 42 of the United States Code, any income received under a retirement system for retirees of the United States Government, and any income received under the Railroad Retirement Act of 1974. That is what `taxesSocialSecurity: false` encodes, and it is the United States Government retirement the pack\'s public-pension `{ kind: \'full\' }` override carries.',
+      'Louisiana exempts any benefit received under Chapter 7 of Title 42 of the United States Code, any income received under a retirement system for retirees of the United States Government, and any income received under the Railroad Retirement Act of 1974. That is what `taxesSocialSecurity: false` encodes for Social Security, and it is the United States Government / railroad retirement the characterized leaf excludes when source kinds are `federalCivilService` or railroad. The coarse public-bucket overreach onto municipal pensions is registered separately at `la-rs-47-44-2-public-bucket-overreach`.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -1223,15 +1267,48 @@ export const southCentralStateRecords = {
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-27',
+    verifiedOn: '2026-09-12',
     implementedBy: [
       'packages/engine/src/tax/stateTax.ts',
+      'packages/engine/src/tax/stateLouisianaRetirement.ts',
       'packages/engine/src/params/state/data/year2026.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/params/state/data/year2026.ts#states.LA',
-      'packages/engine/src/params/state/data/year2026.ts#PUBLIC_PENSION_OVERRIDES.LA',
+      'packages/engine/src/tax/stateLouisianaRetirement.ts#louisianaFederalRailroadExclusion',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxableIncome',
+      'packages/engine/src/tax/stateTax.ts#retirementExclusion',
+    ],
+  },
+
+  'la-rs-47-44-2-public-bucket-overreach': {
+    title: 'Louisiana’s public `{ kind: \'full\' }` override also exempts municipal pensions §47:44.2 does not name',
+    statement:
+      'La. R.S. 47:44.2 names United States Government retirement systems and Railroad Retirement Act income. Approximated: `PUBLIC_PENSION_OVERRIDES.LA` remains `{ kind: \'full\' }` on the coarse public bucket, so an unrelated Louisiana municipal or state-local public pension riding `publicPensionIncome` is fully exempted. The characterized leaf withholds §47:44.2 relief from `stateLocalPublic` and `unknownPublic`.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'understatesTax',
+    conventionRationale: null,
+    jurisdiction: 'state:LA',
+    authority: [{
+      kind: 'statute',
+      citation: 'La. R.S. 47:44.2',
+      url: 'https://www.legis.la.gov/legis/Law.aspx?d=102134',
+      quotedText:
+        'Any benefit received by an individual pursuant to the provisions of Chapter 7 of Title 42 of the United States Code (42 U.S.C. 301 et seq.), and any income received by an individual pursuant to a retirement system for retirees of the United States Government or pursuant to the Railroad Retirement Act of 1974 (45 U.S.C. 231 et seq.) shall be exempt from the state income tax.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-12',
+    implementedBy: [
+      'packages/engine/src/params/state/data/year2026.ts',
+      'packages/engine/src/tax/stateLouisianaRetirement.ts',
+      'packages/engine/src/tax/stateTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/state/data/year2026.ts#PUBLIC_PENSION_OVERRIDES.LA',
+      'packages/engine/src/tax/stateLouisianaRetirement.ts#louisianaFederalRailroadExclusion',
       'packages/engine/src/tax/stateTax.ts#retirementExclusion',
     ],
   },

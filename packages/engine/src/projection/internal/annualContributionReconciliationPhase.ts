@@ -45,7 +45,7 @@ import type {
 import type {
   SimulatorAnnualRetirementRuntimeOccurrence,
 } from '../annualRetirementRuntimeJournal.js'
-import type { EmployerElectiveAllocation } from '../employerRothCatchUp.js'
+import type { EmployerElectiveAllocationWithPrior } from './ownerEmployerElectiveAllocation.js'
 import type {
   ProjectedFilingStatus,
   SimulatorRetirementRuntimeApplication,
@@ -56,6 +56,7 @@ import {
   type AnnualContributionAndMatchOperationIdentity,
   type AnnualContributionOwnerState,
   type AnnualContributionsAndEmployerMatchResult,
+  type AnnualEmployerPriorElectiveContributions,
 } from './annualContributionsAndEmployerMatch.js'
 import type { PhysicalBalanceState } from './annualLogicalBalanceLedger.js'
 
@@ -91,9 +92,9 @@ function snapshotStringNumberMap(
 }
 
 function snapshotEmployerElectiveAllocation(
-  source: Readonly<EmployerElectiveAllocation>,
-): Readonly<EmployerElectiveAllocation> {
-  return {
+  source: Readonly<EmployerElectiveAllocationWithPrior>,
+): Readonly<EmployerElectiveAllocationWithPrior> {
+  const snapshot: EmployerElectiveAllocationWithPrior = {
     allowed: snapshotStringNumberMap(source.allowed),
     designatedRothCatchUp: source.designatedRothCatchUp,
     refusedCatchUp: source.refusedCatchUp,
@@ -101,7 +102,11 @@ function snapshotEmployerElectiveAllocation(
       snapshotStringNumberMap(source.redirectedCatchUpBySource),
     catchUpByAccount: snapshotStringNumberMap(source.catchUpByAccount),
     catchUpRothAccountId: source.catchUpRothAccountId,
+    additionalRothCatchUpStillRequired:
+      source.additionalRothCatchUpStillRequired,
+    priorContributionsStatus: source.priorContributionsStatus,
   }
+  return snapshot
 }
 
 /**
@@ -231,13 +236,25 @@ function snapshotAnnualContributionsAndEmployerMatchResult(
   }
   const employerAllocationByOwner = new Map<
     string,
-    Readonly<EmployerElectiveAllocation>
+    Readonly<EmployerElectiveAllocationWithPrior>
   >()
   for (const entry of source.employerAllocationByOwner) {
     const ownerPersonId = entry[0]
     const allocation = entry[1]
     employerAllocationByOwner.set(
       ownerPersonId,
+      snapshotEmployerElectiveAllocation(allocation),
+    )
+  }
+  const employerAllocationByGroupKey = new Map<
+    string,
+    Readonly<EmployerElectiveAllocationWithPrior>
+  >()
+  for (const entry of source.employerAllocationByGroupKey) {
+    const groupKey = entry[0]
+    const allocation = entry[1]
+    employerAllocationByGroupKey.set(
+      groupKey,
       snapshotEmployerElectiveAllocation(allocation),
     )
   }
@@ -248,6 +265,7 @@ function snapshotAnnualContributionsAndEmployerMatchResult(
     expectedContributionBalanceIndices,
     totals,
     employerAllocationByOwner,
+    employerAllocationByGroupKey,
   }
 }
 
@@ -301,6 +319,10 @@ export interface AnnualContributionReconciliationPhaseInput {
   ) => string
   readonly indexWithStatutoryRounding: (base: number, growth: number) => number
   readonly pack: ParameterPack
+  readonly employerPriorElectiveByPlanKey?: ReadonlyMap<
+    string,
+    AnnualEmployerPriorElectiveContributions
+  >
   /** The year's warning set; a planner warning is inserted at its own row. */
   readonly warnings: Set<string>
   /** Live Roth basis pools, credited by identity as each contribution commits. */
@@ -328,7 +350,11 @@ export interface AnnualContributionReconciliationPhaseResult {
   readonly taxableInflow: number
   readonly employerAllocationByOwner: ReadonlyMap<
     string,
-    Readonly<EmployerElectiveAllocation>
+    Readonly<EmployerElectiveAllocationWithPrior>
+  >
+  readonly employerAllocationByGroupKey: ReadonlyMap<
+    string,
+    Readonly<EmployerElectiveAllocationWithPrior>
   >
 }
 
@@ -353,6 +379,7 @@ export function annualContributionReconciliationPhase(
     runtimeOccurrenceKey,
     indexWithStatutoryRounding,
     pack,
+    employerPriorElectiveByPlanKey,
     warnings,
     rothBasis,
     qcdSection219ByDonor,
@@ -380,6 +407,9 @@ export function annualContributionReconciliationPhase(
       iraHouseholdCompensationKey: IRA_HOUSEHOLD_COMPENSATION_KEY,
       indexWithStatutoryRounding,
       pack,
+      ...(employerPriorElectiveByPlanKey === undefined
+        ? {}
+        : { employerPriorElectiveByPlanKey }),
     }),
   )
 
@@ -661,6 +691,8 @@ export function annualContributionReconciliationPhase(
   } = contributionPlan.totals
   const employerAllocationByOwner =
     contributionPlan.employerAllocationByOwner
+  const employerAllocationByGroupKey =
+    contributionPlan.employerAllocationByGroupKey
   return {
     contributions,
     ownedNonRothIraContributions,
@@ -670,5 +702,6 @@ export function annualContributionReconciliationPhase(
     otherInflow,
     taxableInflow,
     employerAllocationByOwner,
+    employerAllocationByGroupKey,
   }
 }

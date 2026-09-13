@@ -1,3 +1,4 @@
+import type { AnnualOwnerTreatmentRouting } from '../strategies/accountEligibility.js'
 import {
   planSchema,
   selectedLogicalAccounts,
@@ -30,6 +31,7 @@ export interface SimulatorOwnedNonRothIraYearEndBalanceObservation {
 }
 
 export interface BuildSimulatorOwnedNonRothIraAnnualObservationInput {
+  readonly ownerTreatmentRouting?: AnnualOwnerTreatmentRouting
   plan: unknown
   ownerPersonId: string
   taxYear: number
@@ -385,12 +387,13 @@ function ownedIraSourceIds(
   plan: Plan,
   ownerPersonId: PersonId,
   taxYear: number,
+  ownerTreatmentRouting?: AnnualOwnerTreatmentRouting,
 ): AccountId[] {
   return selectedLogicalBalanceAccounts(plan.accounts)
     .filter((account) =>
       account.type === 'traditional' &&
       account.kind === 'ira' &&
-      (account.inherited === undefined || isTreatAsOwnEffective(account, taxYear)) &&
+      (account.inherited === undefined || isTreatAsOwnEffective(account, taxYear, ownerTreatmentRouting)) &&
       account.ownerPersonId === ownerPersonId)
     .map((account) => accountIdSchema.parse(account.id))
     .sort(compareUtf16CodeUnits)
@@ -474,7 +477,7 @@ function buildSimulatorOwnedNonRothIraAnnualObservationUnchecked(
       detail: 'Annual observation requires a Plan with a valid stable ID',
     }])
   }
-  const sourceAccountIds = ownedIraSourceIds(plan, ownerPersonId, taxYear)
+  const sourceAccountIds = ownedIraSourceIds(plan, ownerPersonId, taxYear, input.ownerTreatmentRouting)
   if (sourceAccountIds.length === 0) {
     issues.push({
       kind: 'ownedIraPoolEmpty',

@@ -37,7 +37,11 @@ import type {
   SimulatorAnnualRetirementRuntimeApplicationSource,
   SimulatorAnnualRetirementRuntimeSource,
 } from './retirementRuntime.js'
-import type { ProjectedFilingStatus, TaxYearInput } from './tax.js'
+import type {
+  ProjectedFilingStatus,
+  TaxComputationResult,
+  TaxYearInput,
+} from './tax.js'
 import type {
   PersonYearState,
   YearExpenses,
@@ -436,6 +440,23 @@ export interface YearResult {
   /** SSDI paid this year (included in `incomes.socialSecurity`; 0 when disability is off). */
   ssdiPaid: number
   tax: number
+  /** Accepted dated election routing, shared by live execution and replay. */
+  spousalElectionAtYearEnd?: readonly { accountId: string; status: string; ownerTreatment?: boolean; evaluationContext?: string; simulationId?: string }[]
+  spousalOwnerTreatment?: readonly { accountId: string; ownerTreatment: boolean }[]
+  hecmComputation?: { status: 'complete' | 'incomplete'; issues: readonly string[] }
+  /**
+   * Optional exactness channel for the year's composed tax computation.
+   * When present, `tax` equals `taxComputation.amount`. Incomplete status
+   * means fail-closed established facts — not an exact ranking signal.
+   * Absence preserves fixture compatibility and legacy numeric-only calculators.
+   */
+  taxComputation?: TaxComputationResult
+  /**
+   * Exact TaxYearInput accepted by the year's funding fixed-point evaluation.
+   * Relocation and counterfactual drivers must commit this input rather than
+   * inferring from the last tax-calculator probe call.
+   */
+  acceptedTaxInput?: TaxYearInput
   withdrawals: YearWithdrawals
   /** Signed capital gain-or-loss embedded in taxable withdrawals and other legacy taxable sales. */
   realizedGains: number

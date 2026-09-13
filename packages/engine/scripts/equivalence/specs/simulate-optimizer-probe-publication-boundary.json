@@ -263,24 +263,24 @@
       "label": "capture gate and detached annual traditional-account snapshots",
       "file": "projection/internal/annualFundingApplicationAndClosePhase.ts",
       "lines": [
-        1333,
-        1368
+        1450,
+        1485
       ],
       "anchors": [
         {
-          "line": 1333,
+          "line": 1450,
           "text": "let optimizerProbe: OptimizerYearProbe | null = null"
         },
         {
-          "line": 1334,
+          "line": 1451,
           "text": "if (opts.captureOptimizerInputs) {"
         },
         {
-          "line": 1335,
+          "line": 1452,
           "text": "const traditionalAccountSnapshots = Object.freeze("
         },
         {
-          "line": 1344,
+          "line": 1461,
           "text": "const remainingTaxableFraction ="
         }
       ]
@@ -290,20 +290,20 @@
       "label": "detached exact-cent ordinary-action evidence snapshot",
       "file": "projection/internal/annualFundingApplicationAndClosePhase.ts",
       "lines": [
-        1369,
-        1383
+        1486,
+        1500
       ],
       "anchors": [
         {
-          "line": 1369,
+          "line": 1486,
           "text": "const ordinaryActionSnapshot ="
         },
         {
-          "line": 1373,
+          "line": 1490,
           "text": "balances: Object.freeze("
         },
         {
-          "line": 1382,
+          "line": 1499,
           "text": ": retirementActionExecution === undefined"
         }
       ],
@@ -314,20 +314,20 @@
       "label": "minimal detached ACA publication snapshot",
       "file": "projection/internal/annualFundingApplicationAndClosePhase.ts",
       "lines": [
-        1424,
-        1432
+        1541,
+        1549
       ],
       "anchors": [
         {
-          "line": 1424,
+          "line": 1541,
           "text": "const optimizerAcaSnapshot = yearAcaResult === undefined"
         },
         {
-          "line": 1426,
+          "line": 1543,
           "text": ": Object.freeze({"
         },
         {
-          "line": 1431,
+          "line": 1548,
           "text": "cliffState: yearAcaResult.cliffState,"
         }
       ]
@@ -337,20 +337,20 @@
       "label": "detached exact-cent conversion and QCD action evidence snapshots",
       "file": "projection/internal/annualFundingApplicationAndClosePhase.ts",
       "lines": [
-        1385,
-        1423
+        1502,
+        1540
       ],
       "anchors": [
         {
-          "line": 1385,
+          "line": 1502,
           "text": "const conversionActionSnapshot ="
         },
         {
-          "line": 1410,
+          "line": 1527,
           "text": "const qcdActionSnapshot = qcdActionExecution?.committed"
         },
         {
-          "line": 1421,
+          "line": 1538,
           "text": ": qcdActionExecution === undefined"
         }
       ],
@@ -361,20 +361,20 @@
       "label": "frozen annual evidence and runtime occurrence handoff",
       "file": "projection/internal/annualFundingApplicationAndClosePhase.ts",
       "lines": [
-        1433,
-        1442
+        1550,
+        1559
       ],
       "anchors": [
         {
-          "line": 1433,
+          "line": 1550,
           "text": "optimizerProbe = annualOptimizerProbePublication(Object.freeze({"
         },
         {
-          "line": 1439,
+          "line": 1556,
           "text": "runtimeOccurrences: Object.freeze("
         },
         {
-          "line": 1442,
+          "line": 1559,
           "text": "sourceAccountId: occurrence.sourceAccountId === null"
         }
       ],
@@ -385,24 +385,24 @@
       "label": "detached runtime/debit evidence and complete scalar publication handoff",
       "file": "projection/internal/annualFundingApplicationAndClosePhase.ts",
       "lines": [
-        1444,
-        1493
+        1561,
+        1610
       ],
       "anchors": [
         {
-          "line": 1444,
+          "line": 1561,
           "text": ": String(occurrence.sourceAccountId),"
         },
         {
-          "line": 1450,
+          "line": 1567,
           "text": "exogenousStrategyDebits: Object.freeze("
         },
         {
-          "line": 1488,
+          "line": 1605,
           "text": "taxableAmountForGrossConversion: (gross: number) =>"
         },
         {
-          "line": 1493,
+          "line": 1610,
           "text": "}))"
         }
       ]

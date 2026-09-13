@@ -25,7 +25,7 @@
           "functions": [
             {
               "name": "itemizedDeductionsSchema",
-              "line": 2028
+              "line": 2296
             }
           ]
         }
@@ -152,7 +152,7 @@
           "functions": [
             {
               "name": "itemizedTotal",
-              "line": 140
+              "line": 149
             }
           ]
         }
@@ -310,7 +310,7 @@
           "functions": [
             {
               "name": "charitableAfterFloor",
-              "line": 183
+              "line": 192
             }
           ]
         }
@@ -591,7 +591,7 @@
           "functions": [
             {
               "name": "computeFederalTax",
-              "line": 486
+              "line": 495
             }
           ]
         }
@@ -732,7 +732,7 @@
           "functions": [
             {
               "name": "itemizedDeductionsSchema",
-              "line": 2028
+              "line": 2296
             }
           ]
         }
@@ -796,7 +796,7 @@
           "functions": [
             {
               "name": "planSchema",
-              "line": 2304
+              "line": 2596
             }
           ]
         }
@@ -890,7 +890,7 @@
           "functions": [
             {
               "name": "section68Reduction",
-              "line": 222
+              "line": 231
             }
           ]
         }
@@ -973,7 +973,7 @@
           "functions": [
             {
               "name": "planSchema",
-              "line": 2304
+              "line": 2596
             }
           ]
         }

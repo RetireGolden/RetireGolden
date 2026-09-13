@@ -26,7 +26,7 @@
           "functions": [
             {
               "name": "annualContributionsAndEmployerMatch",
-              "line": 184
+              "line": 213
             }
           ]
         },
@@ -35,7 +35,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 393
             }
           ]
         }
@@ -99,7 +99,7 @@
           "functions": [
             {
               "name": "annualContributionsAndEmployerMatch",
-              "line": 184
+              "line": 213
             }
           ]
         },
@@ -108,7 +108,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 393
             }
           ]
         }
@@ -119,12 +119,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/employerRothCatchUp.test.ts",
-          "line": 302,
+          "line": 303,
           "note": "an age-62 IRA has the IRA catch-up, not the employer-plan amount",
           "tests": [
             {
               "title": "does not apply the employer-plan super catch-up to an IRA",
-              "line": 310
+              "line": 311
             }
           ]
         }
@@ -187,7 +187,7 @@
           "functions": [
             {
               "name": "annualContributionsAndEmployerMatch",
-              "line": 184
+              "line": 213
             }
           ]
         },
@@ -196,7 +196,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 393
             }
           ]
         }
@@ -254,7 +254,7 @@
           "functions": [
             {
               "name": "annualContributionsAndEmployerMatch",
-              "line": 184
+              "line": 213
             }
           ]
         }
@@ -313,7 +313,7 @@
           "functions": [
             {
               "name": "annualContributionsAndEmployerMatch",
-              "line": 184
+              "line": 213
             }
           ]
         },
@@ -322,7 +322,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 393
             }
           ]
         }
@@ -459,7 +459,7 @@
           "functions": [
             {
               "name": "traditionalAccountSchema",
-              "line": 902
+              "line": 1039
             }
           ]
         },
@@ -468,7 +468,7 @@
           "functions": [
             {
               "name": "annualContributionsAndEmployerMatch",
-              "line": 184
+              "line": 213
             }
           ]
         },
@@ -477,7 +477,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 393
             }
           ]
         }
@@ -542,7 +542,7 @@
           "functions": [
             {
               "name": "employerMatchSchema",
-              "line": 388
+              "line": 418
             }
           ]
         },
@@ -551,7 +551,7 @@
           "functions": [
             {
               "name": "annualContributionsAndEmployerMatch",
-              "line": 184
+              "line": 213
             }
           ]
         },
@@ -560,7 +560,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 393
             }
           ]
         }
@@ -620,7 +620,7 @@
           "functions": [
             {
               "name": "wagesIncomeSchema",
-              "line": 1538
+              "line": 1806
             }
           ]
         },
@@ -629,7 +629,7 @@
           "functions": [
             {
               "name": "annualContributionsAndEmployerMatch",
-              "line": 184
+              "line": 213
             }
           ]
         },
@@ -638,7 +638,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 393
             }
           ]
         }
@@ -697,7 +697,7 @@
           "functions": [
             {
               "name": "traditionalAccountSchema",
-              "line": 902
+              "line": 1039
             }
           ]
         },
@@ -706,7 +706,7 @@
           "functions": [
             {
               "name": "annualContributionsAndEmployerMatch",
-              "line": 184
+              "line": 213
             }
           ]
         },
@@ -715,7 +715,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 393
             }
           ]
         }
@@ -790,7 +790,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 393
             }
           ]
         },
@@ -799,7 +799,7 @@
           "functions": [
             {
               "name": "isConvertibleToRoth",
-              "line": 1359
+              "line": 1329
             }
           ]
         }
@@ -889,7 +889,7 @@
           "functions": [
             {
               "name": "traditionalAccountSchema",
-              "line": 902
+              "line": 1039
             }
           ]
         },
@@ -898,7 +898,7 @@
           "functions": [
             {
               "name": "evaluateConversion",
-              "line": 647
+              "line": 646
             }
           ]
         }
@@ -957,7 +957,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 393
             }
           ]
         }
@@ -1030,7 +1030,7 @@
           "functions": [
             {
               "name": "traditionalAccountSchema",
-              "line": 902
+              "line": 1039
             }
           ]
         }
@@ -1091,7 +1091,7 @@
           "functions": [
             {
               "name": "allocateEmployerElectiveDeferrals",
-              "line": 104
+              "line": 170
             }
           ]
         },
@@ -1100,7 +1100,7 @@
           "functions": [
             {
               "name": "annualContributionsAndEmployerMatch",
-              "line": 184
+              "line": 213
             }
           ]
         },
@@ -1109,7 +1109,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 393
             }
           ]
         }
@@ -1177,7 +1177,7 @@
           "functions": [
             {
               "name": "traditionalAccountSchema",
-              "line": 902
+              "line": 1039
             }
           ]
         }
@@ -1233,7 +1233,7 @@
           "functions": [
             {
               "name": "traditionalAccountSchema",
-              "line": 902
+              "line": 1039
             }
           ]
         },
@@ -1242,7 +1242,7 @@
           "functions": [
             {
               "name": "annualContributionsAndEmployerMatch",
-              "line": 184
+              "line": 213
             }
           ]
         },
@@ -1251,7 +1251,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 393
             }
           ]
         }
@@ -1300,7 +1300,7 @@
           "functions": [
             {
               "name": "traditionalAccountSchema",
-              "line": 902
+              "line": 1039
             }
           ]
         }
@@ -1356,7 +1356,7 @@
           "functions": [
             {
               "name": "traditionalAccountSchema",
-              "line": 902
+              "line": 1039
             }
           ]
         },
@@ -1365,7 +1365,7 @@
           "functions": [
             {
               "name": "annualContributionsAndEmployerMatch",
-              "line": 184
+              "line": 213
             }
           ]
         },
@@ -1374,7 +1374,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 393
             }
           ]
         }
@@ -1443,7 +1443,7 @@
           "functions": [
             {
               "name": "traditionalAccountSchema",
-              "line": 902
+              "line": 1039
             }
           ]
         }
@@ -1494,11 +1494,11 @@
           "functions": [
             {
               "name": "rothAccountSchema",
-              "line": 950
+              "line": 1093
             },
             {
               "name": "traditionalAccountSchema",
-              "line": 902
+              "line": 1039
             }
           ]
         },
@@ -1507,7 +1507,7 @@
           "functions": [
             {
               "name": "annualContributionsAndEmployerMatch",
-              "line": 184
+              "line": 213
             }
           ]
         },
@@ -1516,7 +1516,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 393
             }
           ]
         }
@@ -1527,12 +1527,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/employerRothCatchUp.test.ts",
-          "line": 274,
+          "line": 275,
           "note": "a missing plan term makes the optional age-62 catch-up automatic",
           "tests": [
             {
               "title": "accepts the super catch-up even though the plan-permission fact is absent",
-              "line": 283
+              "line": 284
             }
           ]
         }
@@ -1581,7 +1581,7 @@
           "functions": [
             {
               "name": "allocateEmployerElectiveDeferrals",
-              "line": 104
+              "line": 170
             }
           ]
         },
@@ -1590,7 +1590,7 @@
           "functions": [
             {
               "name": "annualContributionsAndEmployerMatch",
-              "line": 184
+              "line": 213
             }
           ]
         },
@@ -1599,7 +1599,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 393
             }
           ]
         }
@@ -1610,12 +1610,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/employerRothCatchUp.test.ts",
-          "line": 506,
+          "line": 507,
           "note": "catch-up is limited to pay minus the 402(g) base",
           "tests": [
             {
               "title": "caps redirected catch-up at compensation minus other electives",
-              "line": 514
+              "line": 515
             }
           ]
         }
@@ -1663,7 +1663,7 @@
           "functions": [
             {
               "name": "annualContributionsAndEmployerMatch",
-              "line": 184
+              "line": 213
             }
           ]
         },
@@ -1672,7 +1672,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 393
             }
           ]
         }
@@ -1747,6 +1747,96 @@
       ]
     },
     {
+      "id": "irc-414-v-2-d-6-prior-designated-roth-offset",
+      "title": "Prior designated Roth elective deferrals offset the §414(v)(7) Roth catch-up requirement",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "allocateEmployerElectiveDeferrals accepts an explicit priorContributions snapshot and treats catch-up as the excess of the annual elective-deferral total over the §402(g) base (not a chronological first-in assignment of prior dollars). Prior designated Roth credits the mandate even when deferred before the base was exhausted. Callers must supply verified YTD amounts; omitting the field remains known-zero for backward compatibility, while status unknown leaves additionalRothCatchUpStillRequired null. simulatePlan maps employerElectiveDeferralHistory by contribution year, owner and employer plan into annualContributionReconciliationPhase. Duplicate snapshots become unknown with a warning; verified prior amounts are passed into the allocator, and the reconciliation publishes the remaining Roth requirement and prior-contribution status.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-12",
+      "dueOn": "2027-09-12",
+      "implementedBy": [
+        "packages/engine/src/projection/employerRothCatchUp.ts",
+        "packages/engine/src/projection/internal/annualContributionReconciliationPhase.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/projection/employerRothCatchUp.ts",
+          "functions": [
+            {
+              "name": "additionalRothCatchUpRequiredAfterPrior",
+              "line": 132
+            },
+            {
+              "name": "allocateEmployerElectiveDeferrals",
+              "line": 170
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/internal/annualContributionReconciliationPhase.ts",
+          "functions": [
+            {
+              "name": "annualContributionReconciliationPhase",
+              "line": 361
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 393
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/employerRothCatchUp.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/projection/employerRothCatchUp.test.ts",
+          "line": 622,
+          "note": null,
+          "tests": [
+            {
+              "title": "matches T.D. 10033 Example 6 remaining Roth catch-up",
+              "line": 625
+            },
+            {
+              "title": "requires no additional Roth when prior Roth already covers the catch-up slice",
+              "line": 638
+            },
+            {
+              "title": "leaves $4,000 required Roth when prior Roth is $4,000 and annual total is $32,500",
+              "line": 649
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "regulation",
+          "citation": "T.D. 10033; 26 CFR 1.414(v)-2(b)(1)",
+          "url": "https://www.federalregister.gov/documents/2025/09/16/2025-17865/catch-up-contributions"
+        },
+        {
+          "kind": "regulation",
+          "citation": "T.D. 10033; 26 CFR 1.414(v)-2(d)(6) Example 6",
+          "url": "https://www.federalregister.gov/documents/2025/09/16/2025-17865/catch-up-contributions"
+        }
+      ]
+    },
+    {
       "id": "irc-414-v-3-A-catch-up-excluded-from-415c",
       "title": "Section 414(v) catch-up is not an annual addition under 415(c)",
       "classification": "settled",
@@ -1770,7 +1860,7 @@
           "functions": [
             {
               "name": "allocateEmployerElectiveDeferrals",
-              "line": 104
+              "line": 170
             }
           ]
         },
@@ -1779,7 +1869,7 @@
           "functions": [
             {
               "name": "annualContributionsAndEmployerMatch",
-              "line": 184
+              "line": 213
             }
           ]
         },
@@ -1788,7 +1878,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 393
             }
           ]
         }
@@ -1799,12 +1889,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/employerRothCatchUp.test.ts",
-          "line": 536,
+          "line": 537,
           "note": "catch-up is not taken into account for match room",
           "tests": [
             {
               "title": "leaves leftover 415(c) room for match after the 402(g) base only",
-              "line": 544
+              "line": 545
             }
           ]
         }
@@ -1848,7 +1938,7 @@
           "functions": [
             {
               "name": "traditionalAccountSchema",
-              "line": 902
+              "line": 1039
             }
           ]
         },
@@ -1857,7 +1947,7 @@
           "functions": [
             {
               "name": "annualContributionsAndEmployerMatch",
-              "line": 184
+              "line": 213
             }
           ]
         },
@@ -1866,7 +1956,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 393
             }
           ]
         }
@@ -1893,7 +1983,7 @@
       "title": "High-earner employer-plan catch-up must be designated Roth in 2026 and later",
       "classification": "settled",
       "errorDirection": null,
-      "conventionRationale": "The wage figure the engine compares to the threshold is a user-entered prior-calendar-year FICA amount on the employer account, not a Form W-2 Box 3 retrieved per sponsoring employer; that input gap is registered separately at irc-414-v-7-A-prior-year-fica-wage-proxy. Roth capability is inferred from the presence of a Roth employer account for the same owner, because the plan model has no employer identity and no qualified-Roth-contribution-program flag. Catch-up redirected onto that sibling remains elective deferral of the source plan for employer match. SEP and SIMPLE IRA are the IRA kind and never enter this allocator. Regular (non-catch-up) elective deferrals keep the account type the plan already states. Named-arm RMD coordination and the age-70½ proxy are outside this record.",
+      "conventionRationale": "The wage figure the engine compares to the threshold is a user-entered prior-calendar-year FICA amount on the employer account, not a Form W-2 Box 3 retrieved per sponsoring employer; that input gap is registered separately at irc-414-v-7-A-prior-year-fica-wage-proxy. Roth capability is inferred from the presence of a Roth employer account for the same owner, because the plan model has no employer identity and no qualified-Roth-contribution-program flag. Catch-up redirected onto that sibling remains elective deferral of the source plan for employer match. SEP and SIMPLE IRA are the IRA kind and never enter this allocator. Regular (non-catch-up) elective deferrals keep the account type the plan already states. Named-arm RMD coordination and the age-70½ proxy are outside this record. Desired incremental requests are not historical evidence — prior YTD amounts are the sibling prior-offset record.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -1922,7 +2012,7 @@
           "functions": [
             {
               "name": "allocateEmployerElectiveDeferrals",
-              "line": 104
+              "line": 170
             },
             {
               "name": "highEarnerRothCatchUpMandated",
@@ -1935,7 +2025,7 @@
           "functions": [
             {
               "name": "annualContributionsAndEmployerMatch",
-              "line": 184
+              "line": 213
             }
           ]
         },
@@ -1944,7 +2034,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 393
             }
           ]
         }
@@ -1955,89 +2045,89 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/employerRothCatchUp.test.ts",
-          "line": 190,
+          "line": 191,
           "note": "exactly 150,000 is not over the threshold",
           "tests": [
             {
               "title": "leaves the catch-up pre-tax when prior-year FICA equals 150,000",
-              "line": 198
+              "line": 199
             }
           ]
         },
         {
           "path": "packages/engine/src/projection/employerRothCatchUp.test.ts",
-          "line": 217,
+          "line": 218,
           "note": "150,000.01 forces the catch-up slice into Roth",
           "tests": [
             {
               "title": "recharacterizes the age-50 catch-up as designated Roth one cent over the threshold",
-              "line": 225
+              "line": 226
             }
           ]
         },
         {
           "path": "packages/engine/src/projection/employerRothCatchUp.test.ts",
-          "line": 244,
+          "line": 245,
           "note": "ages 60-63 super catch-up is the same 414(v) dollars",
           "tests": [
             {
               "title": "Roth-mandates the 11,250 super catch-up at age 62, not only 8,000",
-              "line": 252
+              "line": 253
             }
           ]
         },
         {
           "path": "packages/engine/src/projection/employerRothCatchUp.test.ts",
-          "line": 327,
+          "line": 328,
           "note": "zero prior FICA is not subject",
           "tests": [
             {
               "title": "leaves the catch-up pre-tax when prior-year FICA is zero",
-              "line": 335
+              "line": 336
             }
           ]
         },
         {
           "path": "packages/engine/src/projection/employerRothCatchUp.test.ts",
-          "line": 353,
+          "line": 354,
           "note": "no Roth feature zeroes the high-earner catch-up",
           "tests": [
             {
               "title": "drops the catch-up rather than keeping it pre-tax when there is no Roth employer account",
-              "line": 361
+              "line": 362
             }
           ]
         },
         {
           "path": "packages/engine/src/projection/employerRothCatchUp.test.ts",
-          "line": 376,
+          "line": 377,
           "note": "2026 is statute plus good-faith, not delayed to 2027",
           "tests": [
             {
               "title": "applies the Roth mandate in 2026 rather than waiting for T.D. 10033 applicability",
-              "line": 384
+              "line": 385
             }
           ]
         },
         {
           "path": "packages/engine/src/projection/employerRothCatchUp.test.ts",
-          "line": 407,
+          "line": 408,
           "note": "IRA catch-up is not recharacterized",
           "tests": [
             {
               "title": "does not recharacterize an IRA catch-up when the employer wage test is met",
-              "line": 415
+              "line": 416
             }
           ]
         },
         {
           "path": "packages/engine/src/projection/employerRothCatchUp.test.ts",
-          "line": 569,
+          "line": 570,
           "note": "redirected catch-up stays elective deferral for match",
           "tests": [
             {
               "title": "applies the source match formula to the redirected catch-up",
-              "line": 577
+              "line": 578
             }
           ]
         }
@@ -2068,7 +2158,7 @@
         {
           "kind": "regulation",
           "citation": "T.D. 10033, 26 CFR 1.414(v)-2(b)(2)",
-          "url": "https://www.govinfo.gov/content/pkg/FR-2025-09-16/html/2025-17865.htm"
+          "url": "https://www.irs.gov/irb/2025-40_IRB"
         },
         {
           "kind": "regulation",
@@ -2107,7 +2197,7 @@
           "functions": [
             {
               "name": "traditionalAccountSchema",
-              "line": 902
+              "line": 1039
             }
           ]
         },
@@ -2125,7 +2215,7 @@
           "functions": [
             {
               "name": "annualContributionsAndEmployerMatch",
-              "line": 184
+              "line": 213
             }
           ]
         },
@@ -2134,7 +2224,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 393
             }
           ]
         }
@@ -2229,34 +2319,34 @@
       "fixtures": [
         {
           "path": "packages/engine/src/params/params.test.ts",
-          "line": 533,
+          "line": 573,
           "note": null,
           "tests": [
             {
               "title": "carries the adjusted threshold on a five-thousand-dollar step",
-              "line": 537
+              "line": 577
             }
           ]
         },
         {
           "path": "packages/engine/src/projection/employerRothCatchUp.test.ts",
-          "line": 146,
+          "line": 147,
           "note": "an increase of 4,999.99 holds the prior step",
           "tests": [
             {
               "title": "holds 150,000 when the COLA increase is 4,999.99",
-              "line": 154
+              "line": 155
             }
           ]
         },
         {
           "path": "packages/engine/src/projection/employerRothCatchUp.test.ts",
-          "line": 164,
+          "line": 165,
           "note": "an increase of 5,000 is a whole step",
           "tests": [
             {
               "title": "returns 155,000 when the COLA increase is 5,000",
-              "line": 172
+              "line": 173
             }
           ]
         }
@@ -2309,7 +2399,7 @@
           "functions": [
             {
               "name": "annualContributionsAndEmployerMatch",
-              "line": 184
+              "line": 213
             }
           ]
         },
@@ -2318,7 +2408,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 393
             }
           ]
         }
@@ -2387,7 +2477,7 @@
           "functions": [
             {
               "name": "annualContributionsAndEmployerMatch",
-              "line": 184
+              "line": 213
             }
           ]
         },
@@ -2396,7 +2486,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 393
             }
           ]
         }
@@ -2407,16 +2497,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/params/params.test.ts",
-          "line": 547,
+          "line": 587,
           "note": null,
           "tests": [
             {
               "title": "moves the annual additions limit on a thousand-dollar step",
-              "line": 551
+              "line": 591
             },
             {
               "title": "leaves every borrowing limit on the step its own provision names",
-              "line": 557
+              "line": 597
             }
           ]
         }
@@ -2460,7 +2550,7 @@
           "functions": [
             {
               "name": "traditionalAccountSchema",
-              "line": 902
+              "line": 1039
             }
           ]
         },
@@ -2469,7 +2559,7 @@
           "functions": [
             {
               "name": "annualContributionsAndEmployerMatch",
-              "line": 184
+              "line": 213
             }
           ]
         },
@@ -2478,7 +2568,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 393
             }
           ]
         }
@@ -2529,11 +2619,11 @@
           "functions": [
             {
               "name": "rothAccountSchema",
-              "line": 950
+              "line": 1093
             },
             {
               "name": "traditionalAccountSchema",
-              "line": 902
+              "line": 1039
             }
           ]
         },
@@ -2542,7 +2632,7 @@
           "functions": [
             {
               "name": "annualContributionsAndEmployerMatch",
-              "line": 184
+              "line": 213
             }
           ]
         },
@@ -2551,7 +2641,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 393
             }
           ]
         }
@@ -2715,7 +2805,7 @@
           "functions": [
             {
               "name": "planSchema",
-              "line": 2304
+              "line": 2596
             }
           ]
         }
@@ -2779,7 +2869,7 @@
           "functions": [
             {
               "name": "planSchema",
-              "line": 2304
+              "line": 2596
             }
           ]
         }
@@ -2833,7 +2923,7 @@
           "functions": [
             {
               "name": "equityCompAccountSchema",
-              "line": 446
+              "line": 476
             }
           ]
         }
@@ -2905,7 +2995,7 @@
           "functions": [
             {
               "name": "strategiesSchema",
-              "line": 2035
+              "line": 2303
             }
           ]
         }
@@ -2951,7 +3041,7 @@
           "functions": [
             {
               "name": "planSchema",
-              "line": 2304
+              "line": 2596
             }
           ]
         },
@@ -2960,7 +3050,7 @@
           "functions": [
             {
               "name": "annualContributionsAndEmployerMatch",
-              "line": 184
+              "line": 213
             }
           ]
         },
@@ -2969,7 +3059,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 375
+              "line": 393
             }
           ]
         }

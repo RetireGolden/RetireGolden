@@ -66,6 +66,8 @@ vi.mock(
                 capConsumed: 30,
               },
               roth: {
+                inheritedRows: [],
+                taxCharacterIncomplete: false,
                 rows: [{
                   poolKey: 'rothira:p1',
                   taken: 0,

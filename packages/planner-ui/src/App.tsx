@@ -10,6 +10,7 @@ import { ReportBrandingContext } from './report/brandingContext'
 import type { ReportBranding } from './report/reportHtml'
 import { ImportAvailabilityProvider } from './import/ImportAvailabilityProvider'
 import { routeTitleOf } from './routeTitles'
+import { usePlannerWorksheetNavigation } from './planner/usePlannerWorksheetNavigation'
 import './planner/planner.css'
 
 const navClass = ({ isActive }: { isActive: boolean }) =>
@@ -194,6 +195,9 @@ export function App({
       cancelled = true
     }
   }, [location.pathname, store])
+
+  // Runs after the normal route focus effect so the requested worksheet wins.
+  usePlannerWorksheetNavigation()
 
   useEffect(() => {
     const root = document.documentElement

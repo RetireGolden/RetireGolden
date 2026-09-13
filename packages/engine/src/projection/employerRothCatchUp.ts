@@ -55,9 +55,27 @@ export function highEarnerRothCatchUpMandated(opts: {
 export interface EmployerElectiveRequest {
   readonly accountId: string
   readonly type: 'traditional' | 'roth'
+  /**
+   * Incremental desired elective deferral after any verified year-to-date
+   * amounts already reflected in `EmployerElectiveLimits.priorContributions`.
+   * Desired requests are never treated as historical evidence.
+   */
   readonly desired: number
   readonly priorCalendarYearFicaWages: number
 }
+
+/**
+ * Verified same-year elective deferrals already made to this plan/employer
+ * before the incremental `desired` requests. Unknown differs from known zero.
+ */
+export type EmployerPriorElectiveContributions =
+  | { readonly status: 'unknown' }
+  | {
+      readonly status: 'known'
+      readonly designatedRothElectiveDeferrals: number
+      readonly totalElectiveDeferrals: number
+      readonly asOfDate: string
+    }
 
 export interface EmployerElectiveLimits {
   readonly contributionYear: number
@@ -69,6 +87,13 @@ export interface EmployerElectiveLimits {
    * uses current-year wages, the same proxy 415(c) already uses.
    */
   readonly compensation: number
+  /**
+   * T.D. 10033 §1.414(v)-2(b)(1)/(d)(6): previously made designated Roth
+   * deferrals within the year satisfy the Roth catch-up requirement.
+   * Omitted / undefined is treated as known-zero only when callers explicitly
+   * pass `{ status: 'known', …: 0 }`; prefer `unknown` when history is absent.
+   */
+  readonly priorContributions?: EmployerPriorElectiveContributions
 }
 
 export interface EmployerElectiveAllocation {
@@ -90,12 +115,53 @@ export interface EmployerElectiveAllocation {
   readonly catchUpByAccount: ReadonlyMap<string, number>
   /** Destination of redirected catch-up, if the owner has a Roth employer account. */
   readonly catchUpRothAccountId: string | undefined
+  /**
+   * Additional designated Roth still required after counting verified prior
+   * designated Roth deferrals toward the §414(v)(7) mandate. Null when prior
+   * history is unknown (distinct from known zero).
+   */
+  readonly additionalRothCatchUpStillRequired: number | null
+  readonly priorContributionsStatus: 'omittedAsZero' | 'known' | 'unknown'
+}
+
+/**
+ * Required additional designated Roth after counting verified prior Roth
+ * deferrals toward catch-up actually required by the resulting annual total.
+ * `max(0, catchUpRequired − priorEligibleRoth)`.
+ */
+export function additionalRothCatchUpRequiredAfterPrior(input: {
+  readonly annualTotalElectiveDeferrals: number
+  readonly baseLimit: number
+  readonly catchUpLimit: number
+  readonly priorDesignatedRothElectiveDeferrals: number
+}): number {
+  const catchUpPortionOfAnnual = Math.min(
+    Math.max(0, input.annualTotalElectiveDeferrals - input.baseLimit),
+    Math.max(0, input.catchUpLimit),
+  )
+  return Math.max(
+    0,
+    catchUpPortionOfAnnual - Math.max(0, input.priorDesignatedRothElectiveDeferrals),
+  )
+}
+
+function catchUpSliceOfTotal(
+  annualTotal: number,
+  baseLimit: number,
+  catchUpLimit: number,
+): number {
+  return Math.min(Math.max(0, annualTotal - baseLimit), Math.max(0, catchUpLimit))
 }
 
 /**
  * Split an owner's employer-plan elective deferrals into the §402(g) base
  * and the §414(v) catch-up, and force the catch-up slice into designated
  * Roth when the wage test is met.
+ *
+ * Catch-up is the excess of the year's elective-deferral total over the
+ * §402(g)/401(a)(30) base — not a chronological first-in assignment of prior
+ * dollars. Previously made designated Roth deferrals count toward the
+ * §414(v)(7) Roth catch-up requirement (T.D. 10033 §1.414(v)-2(b)(1)/(d)(6)).
  *
  * Regular (non-catch-up) deferrals keep the account type already stated.
  * A high earner with no Roth employer account loses the catch-up slice
@@ -108,39 +174,75 @@ export function allocateEmployerElectiveDeferrals(
   const allowed = new Map<string, number>()
   for (const request of requests) allowed.set(request.accountId, 0)
 
-  let usedBase = 0
-  let usedCatchUp = 0
-  let designatedRothCatchUp = 0
+  const prior = limits.priorContributions
+  const priorStatus: EmployerElectiveAllocation['priorContributionsStatus'] =
+    prior === undefined ? 'omittedAsZero' : prior.status === 'known' ? 'known' : 'unknown'
+  const priorTotal =
+    prior !== undefined && prior.status === 'known' ? prior.totalElectiveDeferrals : 0
+  const priorRoth =
+    prior !== undefined && prior.status === 'known'
+      ? prior.designatedRothElectiveDeferrals
+      : 0
+
+  if (
+    prior !== undefined &&
+    prior.status === 'known' &&
+    (prior.designatedRothElectiveDeferrals < 0 ||
+      prior.totalElectiveDeferrals < 0 ||
+      prior.designatedRothElectiveDeferrals > prior.totalElectiveDeferrals ||
+      !Number.isFinite(prior.designatedRothElectiveDeferrals) ||
+      !Number.isFinite(prior.totalElectiveDeferrals))
+  ) {
+    throw new Error(
+      'employer elective prior contributions are inconsistent (negative, nonfinite, or Roth > total)',
+    )
+  }
+
+  const maxAnnual = limits.baseLimit + limits.catchUpLimit
+  // Seed total usage from verified YTD so incremental desires are not double-counted.
+  // Do not clamp actual history to the annual limit: an already-over-limit YTD
+  // amount leaves no capacity for a new request, rather than becoming invented
+  // room for one.
+  let usedTotal = priorTotal
+  // Prior designated Roth counts toward the Roth catch-up mandate even when those
+  // dollars were deferred before the §402(g) base was exhausted.
+  let designatedRothCatchUp =
+    priorStatus === 'unknown' ? 0 : Math.min(Math.max(0, priorRoth), limits.catchUpLimit)
   let refusedCatchUp = 0
   const redirectedCatchUpBySource = new Map<string, number>()
   const catchUpByAccount = new Map<string, number>()
   const hasRothFeature = requests.some((request) => request.type === 'roth')
   const firstRothId = requests.find((request) => request.type === 'roth')?.accountId
 
-  const consume = (amount: number): { fromBase: number; fromCatchUp: number } => {
-    const fromBase = Math.min(amount, Math.max(0, limits.baseLimit - usedBase))
-    // 414(v)(2)(A)(ii): catch-up cannot exceed compensation minus other
-    // elective deferrals made without regard to subsection (v) — the base.
-    const catchUpCompensationCap = Math.max(
-      0,
-      limits.compensation - (usedBase + fromBase) - usedCatchUp,
-    )
-    const fromCatchUp = Math.min(
-      amount - fromBase,
-      Math.max(0, limits.catchUpLimit - usedCatchUp),
-      catchUpCompensationCap,
-    )
-    usedBase += fromBase
-    usedCatchUp += fromCatchUp
-    return { fromBase, fromCatchUp }
-  }
-
   const add = (accountId: string, amount: number): void => {
+    if (amount <= 0) return
     allowed.set(accountId, (allowed.get(accountId) ?? 0) + amount)
   }
   const addCatchUp = (accountId: string, amount: number): void => {
     if (amount <= 0) return
     catchUpByAccount.set(accountId, (catchUpByAccount.get(accountId) ?? 0) + amount)
+  }
+
+  const remainingCapacity = (): number => {
+    // 414(v)(2)(A)(ii) limits the annual catch-up slice to compensation less
+    // the annual elective-deferral slice determined without subsection (v).
+    // Once the §402(g) base is filled, that means total elective deferrals
+    // cannot exceed the supplied compensation. `compensation` is the caller's
+    // bounded current-year amount; prior designated Roth is actual YTD
+    // deferral evidence, not additional compensation.
+    const compensationBoundAnnualTotal = Math.min(maxAnnual, limits.compensation)
+    return Math.max(0, compensationBoundAnnualTotal - usedTotal)
+  }
+
+  const applyIncremental = (
+    amount: number,
+  ): { fromBase: number; fromCatchUp: number } => {
+    const beforeCatchUp = catchUpSliceOfTotal(usedTotal, limits.baseLimit, limits.catchUpLimit)
+    usedTotal += amount
+    const afterCatchUp = catchUpSliceOfTotal(usedTotal, limits.baseLimit, limits.catchUpLimit)
+    const fromCatchUp = afterCatchUp - beforeCatchUp
+    const fromBase = amount - fromCatchUp
+    return { fromBase, fromCatchUp }
   }
 
   for (const request of requests) {
@@ -151,53 +253,68 @@ export function allocateEmployerElectiveDeferrals(
       wageThreshold: limits.wageThreshold,
     })
 
+    const capacity = remainingCapacity()
+    if (capacity <= 0) continue
+    const take = Math.min(request.desired, capacity)
+    if (take <= 0) continue
+
     if (!mandated || request.type === 'roth') {
-      const remainingBase = Math.max(0, limits.baseLimit - usedBase)
-      const catchUpCompensationCap = Math.max(0, limits.compensation - usedBase - usedCatchUp)
-      const remainingCatchUp = Math.min(
-        Math.max(0, limits.catchUpLimit - usedCatchUp),
-        catchUpCompensationCap,
-      )
-      const take = Math.min(request.desired, remainingBase + remainingCatchUp)
-      const { fromBase, fromCatchUp } = consume(take)
-      add(request.accountId, fromBase + fromCatchUp)
+      const { fromCatchUp } = applyIncremental(take)
+      add(request.accountId, take)
       addCatchUp(request.accountId, fromCatchUp)
-      if (mandated && request.type === 'roth') designatedRothCatchUp += fromCatchUp
+      if (mandated && request.type === 'roth') {
+        // Newly landed Roth catch-up dollars count toward the mandate.
+        designatedRothCatchUp += fromCatchUp
+      }
       continue
     }
 
-    // Traditional + wage test met: only the §402(g) base may stay pre-tax.
-    const remainingBase = Math.max(0, limits.baseLimit - usedBase)
-    const baseTake = Math.min(request.desired, remainingBase)
-    consume(baseTake)
-    add(request.accountId, baseTake)
+    // Traditional + wage test met: only the unmet Roth catch-up slice must be
+    // designated Roth. Prior designated Roth already credits the mandate.
+    const projectedAnnual = usedTotal + take
+    const catchUpRequired = catchUpSliceOfTotal(
+      projectedAnnual,
+      limits.baseLimit,
+      limits.catchUpLimit,
+    )
+    const rothStillNeeded = Math.max(0, catchUpRequired - designatedRothCatchUp)
+    const rothTake = Math.min(take, rothStillNeeded)
+    const tradTake = take - rothTake
 
-    const leftover = request.desired - baseTake
-    if (leftover <= 0) continue
-    const catchUpCompensationCap = Math.max(
-      0,
-      limits.compensation - usedBase - usedCatchUp,
-    )
-    const remainingCatchUp = Math.min(
-      Math.max(0, limits.catchUpLimit - usedCatchUp),
-      catchUpCompensationCap,
-    )
-    const catchUpTake = Math.min(leftover, remainingCatchUp)
-    if (catchUpTake <= 0) continue
+    if (tradTake > 0) {
+      applyIncremental(tradTake)
+      add(request.accountId, tradTake)
+      // New traditional dollars that fill remaining base room are not §414(v)
+      // catch-up for §415(c); prior Roth already satisfies that slice when
+      // rothTake is zero.
+    }
+
+    if (rothTake <= 0) continue
 
     if (hasRothFeature && firstRothId !== undefined) {
-      consume(catchUpTake)
-      add(firstRothId, catchUpTake)
-      addCatchUp(firstRothId, catchUpTake)
-      designatedRothCatchUp += catchUpTake
+      const { fromCatchUp } = applyIncremental(rothTake)
+      add(firstRothId, rothTake)
+      addCatchUp(firstRothId, fromCatchUp)
+      designatedRothCatchUp += rothTake
       redirectedCatchUpBySource.set(
         request.accountId,
-        (redirectedCatchUpBySource.get(request.accountId) ?? 0) + catchUpTake,
+        (redirectedCatchUpBySource.get(request.accountId) ?? 0) + rothTake,
       )
     } else {
-      refusedCatchUp += catchUpTake
+      // No Roth feature: the unmet catch-up cannot be made (max catch-up $0).
+      refusedCatchUp += rothTake
     }
   }
+
+  const catchUpRequiredByAnnual = catchUpSliceOfTotal(
+    usedTotal,
+    limits.baseLimit,
+    limits.catchUpLimit,
+  )
+  const unmetAfterAllocation =
+    priorStatus === 'unknown'
+      ? null
+      : Math.max(0, catchUpRequiredByAnnual - designatedRothCatchUp)
 
   return {
     allowed,
@@ -206,6 +323,8 @@ export function allocateEmployerElectiveDeferrals(
     redirectedCatchUpBySource,
     catchUpByAccount,
     catchUpRothAccountId: firstRothId,
+    additionalRothCatchUpStillRequired: unmetAfterAllocation,
+    priorContributionsStatus: priorStatus,
   }
 }
 
