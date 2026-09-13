@@ -3,10 +3,10 @@ import { coverageConfigDefaults, defineConfig } from 'vitest/config'
 export default defineConfig({
   test: {
     environment: 'node',
-    // Vitest 5 defaults to availableParallelism - 1 workers. This suite runs
-    // CPU-heavy projections under v8 coverage; cap at 2 so local and CI share
-    // the same bounded concurrency instead of oversubscribing the runner.
-    maxWorkers: 2,
+    // Run one test file at a time. Coverage-heavy projection and nested
+    // simulation workloads should not compete with another file for CPU; local
+    // and CI use the same limit.
+    maxWorkers: 1,
     // Script tests included here must stay independent of engine-source imports:
     // only the equivalence CLI installs the configureEngineTree resolve hook.
     include: ['src/**/*.test.ts', 'scripts/**/*.test.mjs'],
