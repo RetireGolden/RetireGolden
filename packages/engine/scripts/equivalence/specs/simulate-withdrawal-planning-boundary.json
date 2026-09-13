@@ -203,16 +203,16 @@
       "label": "frozen annual strategy contract and lazy sizing callback handoff",
       "file": "projection/internal/annualFundingApplicationAndClosePhase.ts",
       "lines": [
-        714,
-        717
+        721,
+        724
       ],
       "anchors": [
         {
-          "line": 714,
+          "line": 721,
           "text": "const withdrawalStrategyResult = annualWithdrawalStrategy(Object.freeze({"
         },
         {
-          "line": 717,
+          "line": 724,
           "text": "readSizing: () => Object.freeze({"
         }
       ]
@@ -222,16 +222,16 @@
       "label": "optional warning gate and resolved strategy handoff",
       "file": "projection/internal/annualFundingApplicationAndClosePhase.ts",
       "lines": [
-        732,
-        733
+        739,
+        740
       ],
       "anchors": [
         {
-          "line": 732,
+          "line": 739,
           "text": "}))"
         },
         {
-          "line": 733,
+          "line": 740,
           "text": "if (withdrawalStrategyResult.warning !== null) {"
         }
       ]
@@ -241,12 +241,12 @@
       "label": "resolved strategy selected for candidate planning",
       "file": "projection/internal/annualFundingApplicationAndClosePhase.ts",
       "lines": [
-        736,
-        736
+        743,
+        743
       ],
       "anchors": [
         {
-          "line": 736,
+          "line": 743,
           "text": "const withdrawalStrategy = withdrawalStrategyResult.strategy"
         }
       ]
@@ -256,28 +256,28 @@
       "label": "fixed-point request delegation and Form 8606 handoff by exact plan identity",
       "file": "projection/internal/annualFundingApplicationAndClosePhase.ts",
       "lines": [
-        1025,
-        1041
+        1032,
+        1048
       ],
       "anchors": [
         {
-          "line": 1025,
+          "line": 1032,
           "text": "const withdrawalPlan = annualWithdrawalPlan(Object.freeze({"
         },
         {
-          "line": 1027,
+          "line": 1034,
           "text": "states: Object.freeze([...rmdBalances]),"
         },
         {
-          "line": 1032,
+          "line": 1039,
           "text": "const iraCharacterProbe = needBasedOwnedIraCharacter("
         },
         {
-          "line": 1035,
+          "line": 1042,
           "text": "const evaluation = annualFundingCandidateEvaluation(Object.freeze({"
         },
         {
-          "line": 1039,
+          "line": 1046,
           "text": "iraCharacter: iraCharacterProbe,"
         }
       ]

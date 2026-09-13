@@ -3,7 +3,7 @@
  *
  * Leaf helpers consume the runtime shapes in `tax/stateRetirementFacts.ts`.
  * These persisted fields are the Plan inputs adapters map into that API. QCD
- * conformity policy is never persisted here â€” it resolves from versioned state
+ * conformity policy is never persisted here — it resolves from versioned state
  * parameters.
  */
 import { z } from 'zod'
@@ -79,7 +79,7 @@ export const stateFilingStatusSchema = z.enum([
   'qualifyingSurvivingSpouse',
 ])
 
-/** Optional per-year household facts a jurisdiction may need; missing year â‡’ unknown. */
+/** Optional per-year household facts a jurisdiction may need; missing year ⇒ unknown. */
 export const stateTaxYearHouseholdFactsSchema = z
   .object({
     year: calendarYear,
@@ -155,7 +155,7 @@ export type StateTaxYearHouseholdFacts = z.infer<typeof stateTaxYearHouseholdFac
  * Optional owner/account/year HSA evidence for CA/NJ and similar limbs.
  * Known zero is explicit 0; omit a member when unknown. Never invent
  * contribution/earnings splits from `annualReturnPct`. Cash withdrawals are
- * not a New Jersey wage-like income category â€” use `njAssetDispositions` for
+ * not a New Jersey wage-like income category — use `njAssetDispositions` for
  * lot-level realized gain only.
  */
 export const stateHsaYearEvidenceSchema = z

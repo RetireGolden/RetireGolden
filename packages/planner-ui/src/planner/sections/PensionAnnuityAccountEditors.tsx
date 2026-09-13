@@ -1,11 +1,12 @@
 /** Account-type-specific fields for pensions and annuities. */
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 
 import { analyzePensionElections } from '@retiregolden/engine/decisions/pensionElection'
 import {
   ANNUITY_MAX_START_AGE,
   type Account,
+  type PensionSourceKind,
   type Plan,
 } from '@retiregolden/engine/model/plan'
 
@@ -13,8 +14,21 @@ import { ANNUITY_MIN_START_AGE } from '../../accountStartAgeBounds'
 import { CheckboxField, MoneyField, NumberField, PercentField, ReadonlyField, SelectField } from '../fields'
 import { fmtMoney } from '../format'
 import { updateAccountField } from '../eligibilityFactActions'
+import {
+  CONTRIBUTORY_STATUS_OPTIONS,
+  DISTRIBUTION_REASON_OPTIONS,
+  EARLY_DISTRIBUTION_OPTIONS,
+  isPensionSourceLegacy,
+  isPensionSourceUnconfirmed,
+  PENSION_SOURCE_OPTIONS,
+  PENSION_STATE_OPTIONS,
+  pensionSourceLabel,
+  pensionSourceNeedsEligibilityDetails,
+  QUALIFIED_PLAN_TYPE_OPTIONS,
+} from '../pensionSourceVocabulary'
 import { usePlan } from '../planContextCore'
 import { currentStartYear } from '../useProjection'
+import { TypeChip } from '../TypeChip'
 import {
   annuityStartAgeBounds,
   annuityStartAgeHelp,
@@ -22,6 +36,49 @@ import {
 } from './sectionHelpers'
 import type { CommitAccountFieldFor } from './AccountEditorTypes'
 import { ScrollRegion } from '../ScrollRegion'
+
+const ON_RECORD = 'On record'
+const NOT_ON_RECORD = 'Not on record'
+
+type OptionalBoolChoice = '' | 'true' | 'false'
+
+function optionalBoolValue(value: boolean | undefined): OptionalBoolChoice {
+  if (value === true) return 'true'
+  if (value === false) return 'false'
+  return ''
+}
+
+function parseOptionalBool(value: OptionalBoolChoice): boolean | undefined {
+  if (value === 'true') return true
+  if (value === 'false') return false
+  return undefined
+}
+
+function OptionalBooleanSelect({
+  label,
+  help,
+  value,
+  onCommit,
+}: {
+  label: string
+  help?: string
+  value: boolean | undefined
+  onCommit: (value: boolean | undefined) => void
+}) {
+  return (
+    <SelectField
+      label={label}
+      help={help}
+      value={optionalBoolValue(value)}
+      options={[
+        { value: '', label: 'Unknown' },
+        { value: 'true', label: 'Yes' },
+        { value: 'false', label: 'No' },
+      ]}
+      onCommit={(next) => onCommit(parseOptionalBool(next))}
+    />
+  )
+}
 
 /**
  * The lowest election year the engine's parse rule will accept for an elected
@@ -48,6 +105,10 @@ function canFundAnnuityPurchase(account: Account, taxQualification: 'qualified' 
     : account.type === 'cash' || account.type === 'taxable' || account.type === 'equityComp'
 }
 
+function Chip({ recorded }: { recorded: boolean }) {
+  return <TypeChip>{recorded ? ON_RECORD : NOT_ON_RECORD}</TypeChip>
+}
+
 export function PensionAccountEditor({
   account,
   index,
@@ -58,18 +119,184 @@ export function PensionAccountEditor({
   onCommit: CommitAccountFieldFor<Extract<Account, { type: 'pension' }>>
 }) {
   const { plan, update } = usePlan()
+  const recordedSource = account.source
+  const sourceConfirmed = !isPensionSourceUnconfirmed(recordedSource)
+  const [draftSource, setDraftSource] = useState<PensionSourceKind | ''>(
+    recordedSource === 'public' ? 'unknownPublic' : recordedSource ?? 'unknownPrivate',
+  )
+  const [issue, setIssue] = useState<string | null>(null)
+  const eligibility = account.stateEligibility
+  const eligibilityEditable = sourceConfirmed && draftSource === recordedSource
+
+  const confirmSource = () => {
+    if (draftSource !== '' && isPensionSourceUnconfirmed(draftSource)) {
+      setIssue('Choose a characterized source before recording. Unknown sources stay unconfirmed.')
+      return
+    }
+    setIssue(null)
+    update((draft) => {
+      updateAccountField(draft, index, 'source', draftSource === '' ? undefined : draftSource)
+    })
+  }
+
   return (
     <>
-      <SelectField
-        label="Pension source"
-        help="Used for state income tax when public civil-service or military pensions receive a different exclusion than private retirement income."
-        value={account.source ?? 'private'}
-        options={[
-          { value: 'private', label: 'Private pension' },
-          { value: 'public', label: 'Public / military pension' },
-        ]}
-        onCommit={(v) => onCommit('source', v)}
-      />
+      <div className="item-row field-span-full" data-pension-source={account.id}>
+        <div className="item-row-head">
+          <span className="item-row-title">
+            <Chip recorded={sourceConfirmed} />
+            Pension source for state tax
+          </span>
+        </div>
+        <SelectField
+          label="Pension source"
+          help="State retirement exclusions need a characterized source. A 1040 line 5b total cannot establish private, employer, IRA, or public-system identity — confirm the source from your plan documents."
+          hint={sourceConfirmed ? `On record: ${pensionSourceLabel(recordedSource)}. Source changes are saved only when you record them.` : `Source is unconfirmed: ${pensionSourceLabel(recordedSource)}. Choose and record a characterized source before editing eligibility.`}
+          value={draftSource}
+          options={[{ value: '', label: 'Unknown — clear recorded source' }, ...PENSION_SOURCE_OPTIONS]}
+          wide
+          onCommit={(value) => {
+            setDraftSource(value)
+            setIssue(null)
+          }}
+        />
+        {issue ? (
+          <div className="callout callout--warn" role="alert">
+            {issue}
+          </div>
+        ) : null}
+        <div className="add-row">
+          <button type="button" className="btn btn-primary btn-small" onClick={confirmSource}>
+            Record: {draftSource === '' ? 'Unknown (clear)' : pensionSourceLabel(draftSource)}
+          </button>
+        </div>
+      </div>
+      {pensionSourceNeedsEligibilityDetails(recordedSource) || eligibility !== undefined ? (
+        <details className="nested-form-section field-span-full" open={eligibility !== undefined}>
+          <summary>State retirement eligibility details (optional)</summary>
+          <p className="card-hint">
+            These controls cover selected state retirement facts, including Massachusetts basis and public-pension
+            treatment and Iowa survivor eligibility. They do not cover every state rule. Eligibility edits save immediately
+            for the recorded source. Leave a field blank or choose Unknown when you do not have proof.
+          </p>
+          {!eligibilityEditable ? <p className="field-hint" role="status">Record the pension source above before editing eligibility. Existing eligibility facts are preserved.</p> : null}
+          <fieldset className="editable-region form-grid" disabled={!eligibilityEditable} aria-label="Recorded pension source eligibility">
+            <SelectField
+              label="Qualified plan type"
+              value={eligibility?.qualifiedPlanType ?? ''}
+              options={[{ value: '', label: 'Unknown — not recorded' }, ...QUALIFIED_PLAN_TYPE_OPTIONS]}
+              onCommit={(value) =>
+                onCommit('stateEligibility', {
+                  ...eligibility,
+                  qualifiedPlanType:
+                    value === '' ? undefined : value,
+                })
+              }
+            />
+            <SelectField
+              label="Premature distribution disqualifier"
+              help="Whether a state exclusion is disqualified by an early-distribution penalty. Never defaults to No — choose Unknown when you do not know."
+              value={eligibility?.earlyDistributionDisqualifier ?? ''}
+              options={[{ value: '', label: 'Unknown — not recorded' }, ...EARLY_DISTRIBUTION_OPTIONS]}
+              onCommit={(value) =>
+                onCommit('stateEligibility', {
+                  ...eligibility,
+                  earlyDistributionDisqualifier:
+                    value === '' ? undefined : value,
+                })
+              }
+            />
+            <SelectField
+              label="Contributory status"
+              value={eligibility?.contributoryStatus ?? ''}
+              options={[{ value: '', label: 'Unknown — not recorded' }, ...CONTRIBUTORY_STATUS_OPTIONS]}
+              onCommit={(value) =>
+                onCommit('stateEligibility', {
+                  ...eligibility,
+                  contributoryStatus:
+                    value === '' ? undefined : value,
+                })
+              }
+            />
+            <SelectField
+              label="Distribution reason"
+              value={eligibility?.distributionReason ?? ''}
+              options={[{ value: '', label: 'Unknown — not recorded' }, ...DISTRIBUTION_REASON_OPTIONS]}
+              onCommit={(value) =>
+                onCommit('stateEligibility', {
+                  ...eligibility,
+                  distributionReason:
+                    value === '' ? undefined : value,
+                })
+              }
+            />
+            <SelectField
+              label="Plan jurisdiction (state)"
+              value={eligibility?.planJurisdiction ?? ''}
+              options={PENSION_STATE_OPTIONS}
+              onCommit={(value) =>
+                onCommit('stateEligibility', { ...eligibility, planJurisdiction: value === '' ? undefined : value })
+              }
+            />
+            <OptionalBooleanSelect
+              label="Recipient disabled"
+              value={eligibility?.recipientDisabled}
+              onCommit={(value) => onCommit('stateEligibility', { ...eligibility, recipientDisabled: value })}
+            />
+            <MoneyField
+              label="Previously taxed basis (Massachusetts)"
+              help="Previously taxed contributions supported by your Massachusetts records. Blank stays unknown; enter 0 only when you know there is no previously taxed basis."
+              value={eligibility?.knownPreviouslyTaxedBasis ?? null}
+              allowNull
+              onCommit={(value) => onCommit('stateEligibility', { ...eligibility, knownPreviouslyTaxedBasis: value === null ? undefined : value })}
+            />
+            <SelectField
+              label="Prior tax state"
+              help="State where the pension contributions were previously taxed, when established by your records."
+              value={eligibility?.priorTaxState ?? ''}
+              options={PENSION_STATE_OPTIONS}
+              onCommit={(value) => onCommit('stateEligibility', { ...eligibility, priorTaxState: value === '' ? undefined : value })}
+            />
+            <OptionalBooleanSelect
+              label="Massachusetts public-pension reciprocity satisfied"
+              value={eligibility?.reciprocitySatisfied}
+              onCommit={(value) => onCommit('stateEligibility', { ...eligibility, reciprocitySatisfied: value })}
+            />
+            <OptionalBooleanSelect
+              label="Decedent would qualify (Iowa survivor)"
+              value={eligibility?.decedentWouldQualify}
+              onCommit={(value) => onCommit('stateEligibility', { ...eligibility, decedentWouldQualify: value })}
+            />
+            <OptionalBooleanSelect
+              label="Survivor has insurable interest (Iowa)"
+              value={eligibility?.survivorInsurableInterest}
+              onCommit={(value) => onCommit('stateEligibility', { ...eligibility, survivorInsurableInterest: value })}
+            />
+            <OptionalBooleanSelect
+              label="Survivor benefit to spouse"
+              value={eligibility?.survivorSpouse}
+              onCommit={(value) => onCommit('stateEligibility', { ...eligibility, survivorSpouse: value })}
+            />
+            <OptionalBooleanSelect
+              label="Death or disability survivor under 55"
+              value={eligibility?.deathOrDisabilitySurvivorUnder55}
+              onCommit={(value) => onCommit('stateEligibility', { ...eligibility, deathOrDisabilitySurvivorUnder55: value })}
+            />
+            <OptionalBooleanSelect
+              label="Earnings not covered by Social Security"
+              help="Vermont government retirement exclusion requires proof earnings were not covered by Social Security."
+              value={eligibility?.earningsNotCoveredBySocialSecurity}
+              onCommit={(value) => onCommit('stateEligibility', { ...eligibility, earningsNotCoveredBySocialSecurity: value })}
+            />
+            {isPensionSourceLegacy(recordedSource) ? (
+              <ReadonlyField
+                label="Legacy source on record"
+                value={`${pensionSourceLabel(recordedSource)} — the engine preserves this identity until you record a characterized source above.`}
+              />
+            ) : null}
+          </fieldset>
+        </details>
+      ) : null}
       {/* No clamp on the way in: the path carries the schema's own 40–80, so an
           age outside it is flagged while typing and the plan's value comes back
           on blur (D5) — this handler only ever sees an age already inside. */}

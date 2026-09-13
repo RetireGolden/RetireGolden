@@ -26,6 +26,7 @@ import { downloadStandaloneReport } from '../report/downloadReport'
 import { useReportBranding } from '../report/brandingContext'
 import { reportEvidenceFromOptimizeResult } from '../report/reportHtml'
 import { acaVetoExplanation } from './acaVetoCopy'
+import { StateTaxIncompleteGuidancePanel } from './stateTaxIncompleteGuidance'
 import {
   OPTIMIZER_RETIREMENT_ACTION_HEADING,
   OPTIMIZER_RETIREMENT_ACTION_NEXT_STEP,
@@ -416,6 +417,13 @@ export function OptimizePage() {
       incumbentHolds,
       displayedConversionCount,
     })
+  // Worker summaries expose veto years, but not the evaluated candidates' issue
+  // evidence. Guidance keeps that absence explicit; it must not reproject the baseline.
+  const incompleteTaxYears = [...new Set([
+    ...(tournament?.incompleteComputationYears ?? []),
+    ...(presentationValidation?.incompleteComputationYears ?? []),
+    ...(validation?.incompleteComputationYears ?? []),
+  ])].sort((a, b) => a - b)
 
   const chartRows = useMemo(
     () => buildOptimizeChartRows({
@@ -675,6 +683,7 @@ export function OptimizePage() {
                 {acaVetoExplanation(tournament.acaActionabilityVeto)}
               </p>
             ) : null}
+            <StateTaxIncompleteGuidancePanel plan={plan} incompleteYears={incompleteTaxYears} />
             {postProcessed?.cleanedValidation ? (
               <p className="field-hint mt-sm">
                 Diagnostic: the solver's latest cleaned schedule would move the projected after-tax estate by{' '}
@@ -702,6 +711,7 @@ export function OptimizePage() {
                 {acaVetoExplanation(tournament.acaActionabilityVeto)}
               </p>
             ) : null}
+            <StateTaxIncompleteGuidancePanel plan={plan} incompleteYears={incompleteTaxYears} />
             <div className="mt-ms">{rerunButton()}</div>
           </div>
         ) : rawConversions < 1 &&
@@ -759,6 +769,7 @@ export function OptimizePage() {
                     {acaVetoExplanation(tournament.acaActionabilityVeto)}
                   </p>
                 ) : null}
+                <StateTaxIncompleteGuidancePanel plan={plan} incompleteYears={incompleteTaxYears} />
                 {tournament && tournament.policyId !== 'max-after-tax-estate' ? (
                   <p className="field-hint mt-sm">
                     Candidates ranked by <strong>{objectivePolicies[tournament.policyId].label}</strong>. The estate

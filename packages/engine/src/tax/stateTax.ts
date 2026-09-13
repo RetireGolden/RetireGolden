@@ -109,6 +109,7 @@ import {
   wisconsinPersonalExemption,
   wisconsinStandardDeduction,
 } from './stateMidwestExtras.js'
+import { ageOnDate } from '../projection/internal/stateRetirementFactsAdapter.js'
 
 function bracketTax(brackets: StateTaxBracket[], taxable: number): number {
   let tax = 0
@@ -136,6 +137,78 @@ function retirementExclusion(rule: StateRetirementExclusion, retirementIncome: n
   if (eligibleCount === 0) return 0
   if (r.kind === 'full') return income
   return Math.min(income, (r.capPerPerson ?? 0) * eligibleCount)
+}
+
+function derivedAge65EligibleCount(facts: StateHouseholdTaxFacts | undefined, taxYear: number): number | undefined {
+  if (facts?.age65EligibleCount !== undefined) return facts.age65EligibleCount
+  if (facts?.claimantDatesOfBirth === undefined) return undefined
+  const ages = facts.claimantDatesOfBirth.map((dob) => ageOnDate(dob, `${taxYear}-12-31`))
+  if (ages.some((age) => age === undefined)) return undefined
+  return ages.filter((age) => age !== undefined && age >= 65).length
+}
+
+function vermontCompetingBenefitsProvedZero(
+  distributions: readonly StateRetirementDistributionFact[],
+  facts: StateHouseholdTaxFacts,
+  params: StateTaxParams,
+): boolean {
+  if (facts.federalAgi === undefined || !facts.stateFilingStatus || facts.federallyIncludedSocialSecurity === undefined) {
+    return false
+  }
+  const joint =
+    facts.stateFilingStatus === 'marriedFilingJointly' ||
+    facts.stateFilingStatus === 'qualifyingSurvivingSpouse'
+  let civilIncluded = 0
+  for (const fact of distributions) {
+    if (fact.sourceKind === 'unknownPublic' || fact.sourceKind === 'unknownPrivate') return false
+    if (
+      (fact.sourceKind === 'federalCivilService' || fact.sourceKind === 'stateLocalPublic') &&
+      fact.planSystemCode !== 'CSRS' &&
+      fact.planSystemCode !== 'FERS' &&
+      fact.publicPlanContributory !== false &&
+      fact.earningsNotCoveredBySocialSecurity === undefined
+    ) {
+      return false
+    }
+    if (
+      (fact.sourceKind === 'federalCivilService' && fact.planSystemCode === 'CSRS') ||
+      ((fact.sourceKind === 'federalCivilService' || fact.sourceKind === 'stateLocalPublic') &&
+        fact.publicPlanContributory === true &&
+        fact.earningsNotCoveredBySocialSecurity === true &&
+        fact.planSystemCode !== 'FERS')
+    ) {
+      civilIncluded += Math.max(0, fact.federallyIncludedAmount)
+    }
+  }
+  const fullThrough = joint ? params.vermontExtras?.civilServiceFullThroughJoint : params.vermontExtras?.civilServiceFullThroughNonjoint
+  const zeroAt = joint ? params.vermontExtras?.civilServiceZeroAtJoint : params.vermontExtras?.civilServiceZeroAtNonjoint
+  if (fullThrough === undefined || zeroAt === undefined) return false
+  const civilExclusion = vermontCivilServiceExclusion({
+    joint,
+    federalAgi: facts.federalAgi,
+    includedAmount: civilIncluded,
+    config: params.vermontExtras,
+  })
+  const ssIncluded = Math.max(0, facts.federallyIncludedSocialSecurity)
+  const ssFactor =
+    facts.federalAgi <= fullThrough ? 1 : facts.federalAgi >= zeroAt ? 0 : (zeroAt - facts.federalAgi) / (zeroAt - fullThrough)
+  return civilExclusion === 0 && ssIncluded * ssFactor === 0
+}
+
+function oregonRetirementCreditProvedZero(
+  distributions: readonly StateRetirementDistributionFact[],
+): boolean {
+  let qualifying = 0
+  for (const row of distributions) {
+    const pension = ['ordinaryPrivatePension', 'employerPlan', 'ira', 'federalCivilService', 'stateLocalPublic', 'militaryRetirement', 'militarySurvivor', 'governmentSurvivor'].includes(row.sourceKind)
+    if (!pension) {
+      if (row.sourceKind === 'unknownPublic' || row.sourceKind === 'unknownPrivate') return false
+      continue
+    }
+    if (row.recipientAgeKnown === false) return false
+    if (row.recipientAgeYears >= 62) qualifying += Math.max(0, row.federallyIncludedAmount)
+  }
+  return qualifying === 0
 }
 
 export interface ComputeStateTaxOptions {
@@ -628,14 +701,20 @@ function characterizedRetirementDelta(
   }
 
   if (code === 'VT') {
-    if (opts.householdFacts?.federalAgi === undefined || !opts.householdFacts.stateFilingStatus || !opts.householdFacts.vermontRetirementElection) {
+    const facts = opts.householdFacts
+    if (facts?.federalAgi === undefined || !facts.stateFilingStatus) {
       warnings.push({ code: 'vt-retirement-facts-unknown', ruleId: 'vt-5830e-retirement-exclusions', message: 'Vermont retirement exclusions require AGI, filing status, and the civil-service/Social Security election.', missingFacts: ['federalAgi', 'stateFilingStatus', 'vermontRetirementElection'] })
       return { taxableIncomeDelta, taxCredit, warnings }
     }
-    const agi = opts.householdFacts.federalAgi
+    const electionImmaterial = vermontCompetingBenefitsProvedZero(distributions, facts, params)
+    if (!electionImmaterial && !facts.vermontRetirementElection) {
+      warnings.push({ code: 'vt-retirement-facts-unknown', ruleId: 'vt-5830e-retirement-exclusions', message: 'Vermont retirement exclusions require AGI, filing status, and the civil-service/Social Security election.', missingFacts: ['federalAgi', 'stateFilingStatus', 'vermontRetirementElection'] })
+      return { taxableIncomeDelta, taxCredit, warnings }
+    }
+    const agi = facts.federalAgi
     const joint =
-      opts.householdFacts.stateFilingStatus === 'marriedFilingJointly' ||
-      opts.householdFacts.stateFilingStatus === 'qualifyingSurvivingSpouse'
+      facts.stateFilingStatus === 'marriedFilingJointly' ||
+      facts.stateFilingStatus === 'qualifyingSurvivingSpouse'
     let civil = 0
     let military = 0
     for (const fact of distributions) {
@@ -649,22 +728,24 @@ function characterizedRetirementDelta(
         military += Math.max(0, fact.federallyIncludedAmount)
       }
     }
-    if (opts.householdFacts.vermontRetirementElection === 'civilService') {
+    if (!electionImmaterial && facts.vermontRetirementElection === 'civilService') {
       taxableIncomeDelta -= vermontCivilServiceExclusion({
         joint,
         federalAgi: agi,
         includedAmount: civil,
         config: params.vermontExtras,
       })
-    } else if (opts.householdFacts.federallyIncludedSocialSecurity === undefined) {
-      warnings.push({ code: 'vt-social-security-facts-unknown', ruleId: 'vt-5830e-social-security-inclusion', message: 'Vermont Social Security election requires the federally included Social Security amount.', missingFacts: ['federallyIncludedSocialSecurity'] })
-    } else {
-      const fullThrough = joint ? params.vermontExtras?.civilServiceFullThroughJoint : params.vermontExtras?.civilServiceFullThroughNonjoint
-      const zeroAt = joint ? params.vermontExtras?.civilServiceZeroAtJoint : params.vermontExtras?.civilServiceZeroAtNonjoint
-      if (fullThrough === undefined || zeroAt === undefined) warnings.push({ code: 'vt-social-security-pack-missing', ruleId: 'vt-5830e-social-security-inclusion', message: 'Vermont Social Security election requires versioned phaseout parameters.', missingFacts: ['vermontExtras'] })
-      else {
-        const factor = agi <= fullThrough ? 1 : agi >= zeroAt ? 0 : (zeroAt - agi) / (zeroAt - fullThrough)
-        taxableIncomeDelta -= Math.max(0, opts.householdFacts.federallyIncludedSocialSecurity) * factor
+    } else if (!electionImmaterial && facts.vermontRetirementElection === 'socialSecurity') {
+      if (facts.federallyIncludedSocialSecurity === undefined) {
+        warnings.push({ code: 'vt-social-security-facts-unknown', ruleId: 'vt-5830e-social-security-inclusion', message: 'Vermont Social Security election requires the federally included Social Security amount.', missingFacts: ['federallyIncludedSocialSecurity'] })
+      } else {
+        const fullThrough = joint ? params.vermontExtras?.civilServiceFullThroughJoint : params.vermontExtras?.civilServiceFullThroughNonjoint
+        const zeroAt = joint ? params.vermontExtras?.civilServiceZeroAtJoint : params.vermontExtras?.civilServiceZeroAtNonjoint
+        if (fullThrough === undefined || zeroAt === undefined) warnings.push({ code: 'vt-social-security-pack-missing', ruleId: 'vt-5830e-social-security-inclusion', message: 'Vermont Social Security election requires versioned phaseout parameters.', missingFacts: ['vermontExtras'] })
+        else {
+          const factor = agi <= fullThrough ? 1 : agi >= zeroAt ? 0 : (zeroAt - agi) / (zeroAt - fullThrough)
+          taxableIncomeDelta -= Math.max(0, facts.federallyIncludedSocialSecurity) * factor
+        }
       }
     }
     taxableIncomeDelta -= vermontMilitaryExclusion({
@@ -958,8 +1039,9 @@ export function computeStateTaxableIncomeResult(
   }
 
   let rawTotal = params.standardDeduction[taxStatus]
-  if (params.code === 'MA' && opts.householdFacts?.stateFilingStatus && opts.householdFacts.age65EligibleCount !== undefined) {
-    rawTotal += massachusettsPersonalExemption({ filingStatus: opts.householdFacts.stateFilingStatus, age65EligibleCount: opts.householdFacts.age65EligibleCount, config: params.massachusettsRates })
+  const age65EligibleCount = derivedAge65EligibleCount(opts.householdFacts, input.year)
+  if (params.code === 'MA' && opts.householdFacts?.stateFilingStatus && age65EligibleCount !== undefined) {
+    rawTotal += massachusettsPersonalExemption({ filingStatus: opts.householdFacts.stateFilingStatus, age65EligibleCount, config: params.massachusettsRates })
   } else if (params.code === 'MA') {
     acc.warnings.push({ code: 'ma-personal-exemption-incomplete', ruleId: 'ma-personal-age-exemptions', message: 'Massachusetts personal and age exemptions require filing status and age-65 count.', missingFacts: ['stateFilingStatus', 'age65EligibleCount'] })
   }
@@ -978,7 +1060,11 @@ export function computeStateTaxableIncomeResult(
     const agi = opts.householdFacts?.federalAgi
     if (!status || agi === undefined) acc.warnings.push({ code: 'sc-sciad-incomplete', ruleId: 'sc-sciad-deduction', message: 'South Carolina SCIAD deduction requires federal AGI and full filing status.', missingFacts: ['federalAgi', 'stateFilingStatus'] })
     else if (!params.southCarolinaSciad) acc.warnings.push({ code: 'sc-sciad-pack-missing', ruleId: 'sc-sciad-deduction', message: 'South Carolina SCIAD selection requires its versioned annual schedule.', missingFacts: ['southCarolinaSciad'] })
-    else rawTotal = scSciadDeduction({ filingStatus: status, federalAgi: agi, config: params.southCarolinaSciad }).deduction
+    else {
+      const sciad = scSciadDeduction({ filingStatus: status, federalAgi: agi, config: params.southCarolinaSciad })
+      acc.warnings.push(...sciad.warnings)
+      rawTotal = sciad.deduction
+    }
   }
   if (params.code === 'WI' && params.wisconsinStandardDeduction) {
     const extended =
@@ -1149,12 +1235,13 @@ export function computeStateTaxDetailResult(
     if (params.code === 'OR') {
       const facts = opts.householdFacts
       const distributions = resolvedDistributions(opts)
-      // ORS316.157(2)(f) refers to TitleII and TierI benefits; a total of
-      // all Railroad Retirement Act benefits cannot substitute for TierI.
       const tier1 = facts?.recipientSocialSecurity !== undefined
         ? facts.recipientSocialSecurity.reduce((sum, row) => sum + Math.max(0, row.grossRailroadTier1), 0)
         : facts?.householdGrossRailroadBenefits === 0 ? 0 : undefined
-      if (!facts?.stateFilingStatus || facts.oregonHouseholdIncome === undefined || facts.householdGrossSocialSecurity === undefined || tier1 === undefined || distributions === undefined) {
+      if (distributions !== undefined && oregonRetirementCreditProvedZero(distributions)) {
+        // A complete zero qualifying-pension ledger proves a zero credit without
+        // Oregon household worksheet income.
+      } else if (!facts?.stateFilingStatus || facts.oregonHouseholdIncome === undefined || facts.householdGrossSocialSecurity === undefined || tier1 === undefined || distributions === undefined) {
         warnings.push({ code: 'or-retirement-credit-incomplete', ruleId: 'or-316-157-retirement-income-credit', message: 'Oregon retirement credit requires characterized pension recipients, household income, and TitleII/TierI benefit offsets.', missingFacts: ['retirementDistributions', 'oregonHouseholdIncome', 'householdGrossSocialSecurity', 'recipientSocialSecurity.grossRailroadTier1', 'stateFilingStatus'] })
       } else {
         const eligible = distributions.filter((row) => {

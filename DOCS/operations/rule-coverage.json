@@ -74,11 +74,11 @@
     }
   },
   "attestations": {
-    "totalFiles": 408,
+    "totalFiles": 409,
     "byStatus": {
-      "partial": 85,
-      "registered": 117,
-      "rule-free": 206,
+      "partial": 89,
+      "registered": 116,
+      "rule-free": 204,
       "unswept": 0
     },
     "sweptPct": 100,
@@ -273,8 +273,8 @@
     },
     {
       "path": "projection/internal/annualFundingApplicationAndClosePhase.ts",
-      "sweptOn": "2026-09-02",
-      "note": "effectful post-action annual funding, application, and close sequence relocated from simulatePlan. It composes the independently attested withdrawal strategy/plan, candidate evaluation, fixed-point, withdrawal character, HECM, ACA and optimizer publication, apply-flow, post-solve growth, retirement-action settlement publication, tax, penalty, and YearResult producers. It preserves their original read/mutation/publication order while owning accepted balance, basis, debt, tax, penalty, warning, runtime-journal, cash-flow, and core YearResult commits; no calculation or chronology changed. The owned-IRA settlement coordinator supplies the attempt-local assumptions and invokes this phase through the explicit callback; simulatePlan supplies the surrounding annual facts and live ledgers, then publishes only the settled result and optional optimizer probe"
+      "sweptOn": "2026-09-12",
+      "note": "effectful post-action annual funding, application, and close sequence relocated from simulatePlan. It composes the independently attested withdrawal strategy/plan, candidate evaluation, fixed-point, withdrawal character, HECM, ACA and optimizer publication, apply-flow, post-solve growth, retirement-action settlement publication, tax, penalty, and YearResult producers. It preserves their original read/mutation/publication order while owning accepted balance, basis, debt, tax, penalty, warning, runtime-journal, cash-flow, and core YearResult commits. Accepted HECM draws are deliberately routed into modeledDebt here; the later property close commits observed-servicing and modeled components separately and publishes the timing-estimate incompleteness that withholds exact optimizer ranking. The owned-IRA settlement coordinator supplies the attempt-local assumptions and invokes this phase through the explicit callback; simulatePlan supplies the surrounding annual facts and live ledgers, then publishes only the settled result and optional optimizer probe"
     },
     {
       "path": "projection/internal/annualFundingCandidateEvaluation.ts",
@@ -300,6 +300,16 @@
       "path": "projection/internal/annualOwnedNonRothIraSettlementPhase.ts",
       "sweptOn": "2026-09-02",
       "note": "effectful owned non-Roth IRA annual settlement driver relocated from simulatePlan and now named by the Form 8606 pro-rata measurement-instant record. It composes the separately attested settlement-attempt, counterfactual-liability, linked-withdrawal authorization, and committed-replay publication boundaries behind one explicit annual-pass callback. It owns attempt ordering, rollback authorization, household/owner retry and fallback, counterfactual observation, and optional replay attachment while preserving the original transactional sequence; the remaining control-flow is projection-composition rather than an additional statutory calculation. The funding/application/close callback retains every attempt-local economic commit, and simulatePlan retains the earlier annual phases plus final settled YearResult append and optimizer-probe publication"
+    },
+    {
+      "path": "projection/internal/annualPensionAndAnnuityIncome.ts",
+      "sweptOn": "2026-09-12",
+      "note": "The section 72 exclusion-ratio calculation, payout-form approximations, qualified IRA-annuity contract debits and Form 8606 payment staging retain their registered trails. The coordinator preserves ordered income folds, survivor payees and caller-owned state. Qualified annuity state-source labels now resolve the actual funding account as IRA or supported employer plan; missing or unsupported funding is not labeled IRA. Direct claim-to-record coverage for that funding-source classification and state eligibility adaptation remains partial; the later annual settlement still owns qualified-payment basis character."
+    },
+    {
+      "path": "projection/internal/annualPropertyAndInsuranceClosePhase.ts",
+      "sweptOn": "2026-09-12",
+      "note": "the property-events and permanent-life close sub-phase, extracted from annualFundingApplicationAndClosePhase. The property growth, legacy tax-free sale and HECM line accrual stay in independently attested propertyEventsAndGrowth.ts, and cash-value/death-benefit rules stay in annualPermanentLifeTransitions.ts. This sub-phase owns the application order - close the line, deposit, publish, write the value back, then compound what remains - plus HUD split-state commit: a complete servicing ledger replaces only observedServicingBaseline, modeledDebt is conserved, and its annual timing estimate publishes a distinct incomplete issue. The deliberate gating of the legacy-sale payload on the array it feeds and the death-benefit destination assertion remain unchanged. It mutates caller property values, HECM line states and insurance cash values in place; this is not a verbatim move because the HUD component commit and incompleteness publication are calculation behavior"
     },
     {
       "path": "projection/internal/annualQcdExecutionInput.ts",
@@ -339,12 +349,17 @@
     {
       "path": "projection/internal/hecmHudValidatedOpeningAdapter.ts",
       "sweptOn": "2026-09-12",
-      "note": "Live simulatePlan opening and property-year servicing delegate through this adapter. simulate.hecmHudProduction.test.ts asserts once-only modeled versus observed closing cash, twelve compounded monthly assessments and incomplete missing evidence. HUD leaf arithmetic is registered; producer-ledger completeness, full-month timing convention and cash/debt adaptation remain residual direct registry trails."
+      "note": "Live simulatePlan opening and property-year servicing delegate through this adapter. Production regressions distinguish modeled versus observed closing cash, monthly assessment capitalization, missing timing evidence, and modeled draws retained across servicing updates. HUD leaf arithmetic is registered; producer-ledger completeness, full-month timing convention and cash/debt adaptation remain partial direct registry trails."
     },
     {
       "path": "projection/internal/hecmLineOpenings.ts",
       "sweptOn": "2026-09-12",
       "note": "Legacy quote-estimate opening retains planning PLF/upfront-cost defaults and an age-62 disclosure rather than enforcement. The hudValidated mode exclusion here is pinned by hud-hecm-mca-mip-limits; the live annual path delegates through hecmHudValidatedOpeningAdapter to registered MCA/MIP leaves. simulate.hecmHudProduction.test.ts covers once-only closing cash, compounded monthly debt and incomplete evidence. Legacy planning defaults and direct legacy-helper source eligibility remain residual claims."
+    },
+    {
+      "path": "projection/internal/hecmLineState.ts",
+      "sweptOn": "2026-09-12",
+      "note": "HUD line bookkeeping separates observed servicing baseline from modeled draw debt, preserves both through accepted draws and rollback, and composes the registered adapter-produced MIP amounts. These helpers do not independently establish the source-backed MCA or monthly MIP rate. Growth of modeled draws and growth of the baseline when timing evidence is missing remain disclosed annual planning estimates; inventory, replacement and incomplete-ledger composition retain a direct rule/convention trail to complete."
     },
     {
       "path": "projection/internal/inheritedRothTaxCharacterPoolState.ts",
@@ -355,6 +370,11 @@
       "path": "projection/internal/ownerEmployerElectiveAllocation.ts",
       "sweptOn": "2026-09-12",
       "note": "Delegates elective allocation while consuming one owner annual budget across plans; prior-history reconciliation and plan-specific Roth-offset ordering remain residual contracts."
+    },
+    {
+      "path": "projection/internal/propertyEventsAndGrowth.ts",
+      "sweptOn": "2026-09-12",
+      "note": "Ordered property growth, legacy-sale rows and duplicate-id once-only line accrual preserve caller-owned state through private shadows. HUD assessment amounts delegate to the registered MIP leaf through hecmHudValidatedOpeningAdapter. Observed servicing baseline is kept separate from modeled draw debt by hecmLineState; accepted draws are not erased by replacing observed balances. The annual modeled-debt growth estimate and missing-ledger baseline estimate are planning conventions, retain incomplete timing evidence, and are not claimed as complete HUD servicing calculations. Their direct rule/convention trail remains partial."
     },
     {
       "path": "projection/internal/stateBasisPoolState.ts",
@@ -606,11 +626,11 @@
     },
     {
       "directory": "projection",
-      "files": 120,
+      "files": 121,
       "byStatus": {
-        "partial": 37,
-        "registered": 21,
-        "rule-free": 62
+        "partial": 41,
+        "registered": 20,
+        "rule-free": 60
       }
     },
     {

@@ -314,7 +314,10 @@ export function seedPlanFromTenForty(
       name: 'Pension (from your 1040)',
       ownerPersonId: primary.id,
       annualReturnPct: null,
-      source: 'private',
+      // Line 5b is a taxable total only — it cannot establish private, employer,
+      // IRA, or public-system identity. Import as unconfirmed until the user
+      // records a characterized source on Accounts.
+      source: 'unknownPrivate',
       startAge,
       monthlyAmount: Math.round(inputs.pensionsAndAnnuities / 12),
       colaPct: 0,
@@ -325,7 +328,7 @@ export function seedPlanFromTenForty(
       source: 'From your 1040, line 5b (pensions & annuities)',
       detail:
         `A pension paying $${Math.round(inputs.pensionsAndAnnuities / 12).toLocaleString('en-US')} /mo starting now, with no COLA and a 50% ` +
-        'survivor benefit, check the COLA, survivor percentage, and public/private split on the Accounts screen.',
+        'survivor benefit. Line 5b does not show whether this is private, employer, IRA, or public retirement income — open the pension on the Accounts screen and record its characterized source.',
       locator: form1040('5b'),
       confidence: 'assumed',
       target: `accounts[${plan.accounts.length - 1}]`,

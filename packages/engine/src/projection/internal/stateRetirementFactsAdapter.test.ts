@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest'
 
 import { createEmptyPlan, type Account } from '../../model/plan.js'
 import {
+  ageOnDate,
   characterizePensionDistribution,
+  inferEarlyDistributionDisqualifier,
   njIraOwnerPoolsForYear,
   qcdEventFactsForYear,
   retirementDistributionFactsForYear,
@@ -14,14 +16,30 @@ import {
 } from './stateRetirementFactsAdapter.js'
 
 describe('stateRetirementFactsAdapter', () => {
-  it('maps legacy private/public to unknown kinds (incomplete eligibility)', () => {
-    expect(mapPensionSourceToStateKind('private')).toBe('unknownPrivate')
+  it('rejects impossible schema-shaped civil dates without rolling them forward', () => {
+    expect(ageOnDate('1960-02-30', '2026-12-31')).toBeUndefined()
+    expect(ageOnDate('1960-01-01', '2026-02-30')).toBeUndefined()
+    // Age uses the established calendar-month resolution, not whole years.
+    expect(ageOnDate('1960-01-01', '2026-12-31')).toBeCloseTo(66 + 11 / 12, 8)
+  })
+
+  it('maps legacy private to ordinary private pension and keeps coarse public unknown', () => {
+    expect(mapPensionSourceToStateKind('private')).toBe('ordinaryPrivatePension')
     expect(mapPensionSourceToStateKind('public')).toBe('unknownPublic')
+    expect(mapPensionSourceToStateKind('unknownPrivate')).toBe('unknownPrivate')
     expect(mapPensionSourceToStateKind('militaryRetirement')).toBe(
       'militaryRetirement',
     )
     expect(isPublicPensionSourceKind('militaryRetirement')).toBe(true)
     expect(isPublicPensionSourceKind('ordinaryPrivatePension')).toBe(false)
+  })
+
+  it('infers early-distribution clearance only from proved payment age or a Jan-1 lower bound', () => {
+    expect(inferEarlyDistributionDisqualifier({ explicit: 'true', ageAtDistributionYears: 70 })).toBe('true')
+    expect(inferEarlyDistributionDisqualifier({ ageAtDistributionYears: 59.5 })).toBe('false')
+    expect(inferEarlyDistributionDisqualifier({ ageAtDistributionYears: 59 })).toBe('unknown')
+    expect(inferEarlyDistributionDisqualifier({ minimumAgeAtDistributionYears: 59.5 })).toBe('false')
+    expect(inferEarlyDistributionDisqualifier({ minimumAgeAtDistributionYears: 59 })).toBe('unknown')
   })
 
   it('characterizes survivor payee with death cause and payee as ownerPersonId', () => {
@@ -85,6 +103,8 @@ describe('stateRetirementFactsAdapter', () => {
     expect(householdFactsForYear(plan, 2026)).toEqual({
       stateFilingStatus: 'headOfHousehold',
       exemptionTaxpayerCount: 1,
+      // Default plan DOB 1970-01-01 is age 56 at TY2026 year-end; derived, not invented.
+      age65EligibleCount: 0,
     })
     expect(householdFactsForYear(plan, 2027)).toBeUndefined()
   })
@@ -187,7 +207,7 @@ describe('state event integration boundaries', () => {
 })
 
 
-it('asserted retirement characterization does not fabricate or duplicate executed income', () => {
+it('asserted retirement characterization supplements eligibility but not coarse public source identity', () => {
   const plan = createEmptyPlan({ newId: () => 'owner', now: () => new Date('2026-01-01') })
   plan.stateTaxFacts.retirementDistributionEvidence = [{
     taxYear: 2026, eventId: 'pension', accountId: 'p', sourceOwnerPersonId: 'owner',
@@ -199,7 +219,94 @@ it('asserted retirement characterization does not fabricate or duplicate execute
     source: 'public', federallyIncludedAmount: 200,
   }])
   expect(result).toHaveLength(1)
-  expect(result[0]).toMatchObject({ sourceKind: 'militaryRetirement', federallyIncludedAmount: 200 })
+  expect(result[0]).toMatchObject({ sourceKind: 'unknownPublic', federallyIncludedAmount: 200 })
+})
+
+it('characterizes UI-shaped Delaware and South Carolina private pensions with inferred clearance', () => {
+  const plan = createEmptyPlan({ newId: () => 'owner', now: () => new Date('2026-01-01') })
+  plan.household.people[0]!.dob = '1966-01-01'
+  const account = {
+    type: 'pension',
+    id: 'pen',
+    name: 'Pension',
+    ownerPersonId: 'owner',
+    annualReturnPct: null,
+    source: 'private',
+    startAge: 60,
+    monthlyAmount: 1_000,
+    colaPct: 0,
+    survivorPct: 0,
+  } as Extract<Account, { type: 'pension' }>
+  const de = characterizePensionDistribution({
+    account,
+    sourceOwnerPersonId: 'owner',
+    payeePersonId: 'owner',
+    federallyIncludedAmount: 10_000,
+    recipientAgeYears: 60,
+  })
+  expect(de.fact).toMatchObject({ sourceKind: 'ordinaryPrivatePension', earlyDistributionDisqualifier: 'unknown' })
+  const [sc] = retirementDistributionFactsForYear(plan, 2026, [{
+    eventId: 'pen', accountId: 'pen', sourceOwnerPersonId: 'owner', recipientPersonId: 'owner',
+    source: 'private', federallyIncludedAmount: 10_000,
+  }])
+  expect(sc).toMatchObject({
+    sourceKind: 'ordinaryPrivatePension',
+    minimumAgeAtDistributionYears: 60,
+    earlyDistributionDisqualifier: 'false',
+  })
+  const explicitTrue = retirementDistributionFactsForYear(plan, 2026, [{
+    eventId: 'pen', accountId: 'pen', sourceOwnerPersonId: 'owner', recipientPersonId: 'owner',
+    source: 'private', federallyIncludedAmount: 10_000,
+    eligibility: { earlyDistributionDisqualifier: 'true' },
+  }])
+  expect(explicitTrue[0]?.earlyDistributionDisqualifier).toBe('true')
+  const crossing = createEmptyPlan({ newId: () => 'owner', now: () => new Date('2026-01-01') })
+  crossing.household.people[0]!.dob = '1967-01-01'
+  const [undated] = retirementDistributionFactsForYear(crossing, 2026, [{
+    eventId: 'pen', accountId: 'pen', sourceOwnerPersonId: 'owner', recipientPersonId: 'owner',
+    source: 'private', federallyIncludedAmount: 10_000,
+  }])
+  expect(undated).toMatchObject({ minimumAgeAtDistributionYears: 59, earlyDistributionDisqualifier: 'unknown' })
+})
+
+it('infers early-distribution clearance through characterizePensionDistribution when tax year and payee DOB are supplied', () => {
+  const account = {
+    type: 'pension',
+    id: 'pen',
+    name: 'Pension',
+    ownerPersonId: 'owner',
+    annualReturnPct: null,
+    source: 'private',
+    startAge: 60,
+    monthlyAmount: 1_000,
+    colaPct: 0,
+    survivorPct: 0,
+  } as Extract<Account, { type: 'pension' }>
+  const cleared = characterizePensionDistribution({
+    account,
+    sourceOwnerPersonId: 'owner',
+    payeePersonId: 'owner',
+    federallyIncludedAmount: 10_000,
+    recipientAgeYears: 60,
+    taxYear: 2026,
+    payeeDateOfBirth: '1966-01-01',
+  })
+  expect(cleared.fact).toMatchObject({
+    sourceKind: 'ordinaryPrivatePension',
+    minimumAgeAtDistributionYears: 60,
+    earlyDistributionDisqualifier: 'false',
+  })
+  const withoutDob = characterizePensionDistribution({
+    account,
+    sourceOwnerPersonId: 'owner',
+    payeePersonId: 'owner',
+    federallyIncludedAmount: 10_000,
+    recipientAgeYears: 60,
+  })
+  expect(withoutDob.fact).toMatchObject({
+    earlyDistributionDisqualifier: 'unknown',
+  })
+  expect(withoutDob.fact.minimumAgeAtDistributionYears).toBeUndefined()
 })
 
 
@@ -246,4 +353,19 @@ it('uses explicit return claimant ids to exclude deceased owner age deductions',
     federallyIncludedAmount: 10000, recipientAgeYears: 50,
   })
   expect(result.fact).toMatchObject({ decedentAgeYears: 62, recipientAgeYears: 50, ownerPersonId: 'survivor' })
+})
+
+it('leaves invalid claimant ages unknown instead of publishing zero', () => {
+  const plan = createEmptyPlan({ newId: () => 'p', now: () => new Date('2026-01-01') })
+  plan.household.people[0]!.dob = '1960-02-30'
+  const facts = householdFactsForYear(plan, 2026, { claimantPersonIds: ['p'] })!
+  expect(facts.ownerStateTaxFacts).toEqual([{ ownerPersonId: 'p' }])
+  expect(facts.age65EligibleCount).toBeUndefined()
+})
+
+it('preserves an explicitly supplied age-65 count despite an invalid claimant DOB', () => {
+  const plan = createEmptyPlan({ newId: () => 'p', now: () => new Date('2026-01-01') })
+  plan.household.people[0]!.dob = '1960-02-30'
+  plan.stateTaxFacts.householdYearFacts = [{ year: 2026, age65EligibleCount: 1 }]
+  expect(householdFactsForYear(plan, 2026, { claimantPersonIds: ['p'] })?.age65EligibleCount).toBe(1)
 })

@@ -510,6 +510,11 @@ function charsetLabelFromMetaAttributes(attrs) {
  * preserves byte values 0x80–0xFF so a windows-1252 declaration is readable
  * before the body is decoded.
  *
+ * Reads at most the first 8192 bytes (WHATWG-style bounded head scan). A
+ * `<meta charset>` declaration beyond that window is not detected; decoding
+ * then falls back to UTF-8 with no diagnostic distinguishing "no declaration"
+ * from "declaration beyond the prescan window".
+ *
  * @param {Buffer} body
  * @returns {string | null}
  */

@@ -256,6 +256,80 @@ describe('propertyEventsAndGrowth — the numeric shadow', () => {
   })
 })
 
+describe('propertyEventsAndGrowth — HUD validated observed vs modeled debt', () => {
+  const provenance = { source: 'Servicer worksheet', asOf: '2026-12-31' }
+  const hudHecm = {
+    openYear: YEAR,
+    growthRatePct: 6.5,
+    drawPolicy: 'lastResort',
+    calculationMode: 'hudValidated',
+    hudTransactionKind: 'ordinaryOrigination',
+    caseAssignmentDate: '2026-01-01',
+    closingDate: '2026-01-01',
+    firstMipPeriodConvention: 'fullCalendarMonths',
+    mipAssessmentLedgerEvidence: {
+      completeThroughDate: '2026-12-31',
+      noUnrepresentedTransactionsAfterLastAssessment: true,
+      provenance,
+    },
+    outstandingBalanceAtMipAssessmentByMonth: Array.from({ length: 12 }, (_, index) => ({
+      assessmentDate: `2026-${String(index + 1).padStart(2, '0')}-28`,
+      outstandingBalanceBeforeMip: 100_000 * (1 + 0.005 / 12) ** index,
+      provenance,
+    })),
+  }
+
+  it('preserves a same-year modeled draw through complete servicer replacement (r1-3)', () => {
+    const [row] = call([property('home', {}, hudHecm)], {
+      hecmStates: new Map([
+        [
+          'home',
+          {
+            principalLimit: 500_000,
+            loanBalance: 110_000,
+            observedServicingBaseline: 100_000,
+            modeledDebt: 0,
+            calculationMode: 'hudValidated',
+            annualMipRate: 0.005,
+          },
+        ],
+      ]),
+    })
+    expect(row!.hecmHudMipAccrual).toBeCloseTo(501.147426, 4)
+    expect(row!.hecmHudObservedBaselineEnding).toBeCloseTo(100_501.147426, 5)
+    expect(row!.hecmHudModeledDebtEnding).toBeCloseTo(10_650, 2)
+    expect(row!.hecmHudEndingLoanBalance).toBeCloseTo(111_151.147426, 5)
+    expect(row!.hecmHudModeledDebtIncompleteReason).toBe(
+      'Modeled HECM draw debt uses an annual planning estimate because draw/accrual timing evidence is unavailable.',
+    )
+  })
+
+  it('discloses growthRatePct estimate when the servicer ledger is incomplete (r1-4)', () => {
+    const partial = { ...hudHecm }
+    partial.outstandingBalanceAtMipAssessmentByMonth =
+      hudHecm.outstandingBalanceAtMipAssessmentByMonth!.slice(0, 1)
+    const [row] = call([property('home', {}, partial)], {
+      hecmStates: new Map([
+        [
+          'home',
+          {
+            principalLimit: 500_000,
+            loanBalance: 100_000,
+            observedServicingBaseline: 100_000,
+            modeledDebt: 0,
+            calculationMode: 'hudValidated',
+            annualMipRate: 0.005,
+          },
+        ],
+      ]),
+    })
+    expect(row!.hecmHudMipAccrual).toBeNull()
+    expect(row!.hecmHudMipIncompleteReason).not.toBeNull()
+    expect(row!.hecmHudObservedBaselineEnding).toBeCloseTo(106_500, 2)
+    expect(row!.hecmHudEndingLoanBalance).toBeCloseTo(106_500, 2)
+  })
+})
+
 describe('propertyEventsAndGrowth — purity and structure', () => {
   const ACCOUNTS = [property('home', { plannedSaleYear: YEAR }, {}), property('other', {}, {})]
   const VALUES = new Map([

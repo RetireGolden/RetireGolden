@@ -20,16 +20,10 @@ import {
   type HecmLineOpeningYearInput,
   type HecmLineState,
 } from './hecmLineOpenings.js'
+import { initializeHudObservedBaseline } from './hecmLineState.js'
 
-export type HecmLineStateWithHudEvidence = HecmLineState & {
-  readonly calculationMode?: 'legacyQuoteEstimate' | 'hudValidated'
-  readonly maximumClaimAmount?: number
-  readonly initialMip?: number
-  readonly otherClosingCosts?: number
-  readonly annualMipRate?: number
-  readonly caseParameterYear?: number
-  readonly principalLimitFactorProvenance?: 'quoted' | 'hudTableVerified'
-}
+/** HUD opening rows use the shared mutable line state, including evidence. */
+export type HecmLineStateWithHudEvidence = HecmLineState
 
 export interface HecmHudValidatedOpeningAdapterResult {
   readonly rows: readonly HecmLineOpeningRow[]
@@ -201,6 +195,7 @@ export function hecmLineOpeningsWithHudValidation(
       caseParameterYear: opening.caseParameterYear,
       principalLimitFactorProvenance: line.principalLimitFactorProvenance.kind,
     }
+    initializeHudObservedBaseline(state, opening.openingLoanBalance)
     opened.add(account.id)
     hudRows.push({
       propertyAccountId: account.id,
@@ -218,6 +213,7 @@ export function hecmLineOpeningsWithHudValidation(
 }
 
 export { accrueHecmAnnualMip } from '../hecm.js'
+export { applyHudModeledDraw, cloneHecmLineStateForRollback } from './hecmLineState.js'
 
 export type HecmAssessmentYearResult =
   | { readonly status: 'complete'; readonly totalMipAccrued: number; readonly endingLoanBalance: number }

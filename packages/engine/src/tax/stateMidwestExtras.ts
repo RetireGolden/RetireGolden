@@ -29,6 +29,10 @@ export function illinoisPersonalExemptionAllowance(args: {
   age65EligibleCount: number | undefined
   config?: StateTaxParams['illinoisPersonalExemption']
 }): StateLeafAdjustment {
+  const cfg = args.config ?? stateParamsFor('IL', 2026)?.illinoisPersonalExemption
+  if (!cfg) throw new Error('Missing versioned Illinois exemption parameters')
+  const cutoff = args.joint ? cfg.agiCutoffJoint : cfg.agiCutoffNonjoint
+  if (args.federalAgi > cutoff) return emptyLeafAdjustment()
   if (
     args.eligibleTaxpayerCount === undefined ||
     args.eligibleDependentCount === undefined ||
@@ -47,10 +51,6 @@ export function illinoisPersonalExemptionAllowance(args: {
       ],
     }
   }
-  const cfg = args.config ?? stateParamsFor('IL', 2026)?.illinoisPersonalExemption
-  if (!cfg) throw new Error('Missing versioned Illinois exemption parameters')
-  const cutoff = args.joint ? cfg.agiCutoffJoint : cfg.agiCutoffNonjoint
-  if (args.federalAgi > cutoff) return emptyLeafAdjustment()
   const allowance =
     cfg.basicAllowance * (args.eligibleTaxpayerCount + args.eligibleDependentCount) +
     cfg.age65Addition * args.age65EligibleCount

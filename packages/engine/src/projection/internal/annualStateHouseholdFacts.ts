@@ -1,4 +1,4 @@
-import { householdFactsForYear } from './stateRetirementFactsAdapter.js'
+import { ageOnDate, householdFactsForYear } from './stateRetirementFactsAdapter.js'
 /** Annual source facts, not a second state-tax calculator.
  * State household bases and eligibility are characterized inputs. Household
  * §86 inclusion cannot be allocated between recipients by an invented ratio.
@@ -100,18 +100,26 @@ export function buildAnnualStateHouseholdFacts(input: AnnualStateHouseholdFactsI
   if (storedRecipients !== undefined && !storedIncludedMatches) warnings.push('Stored recipient Social Security inclusion does not establish this candidate ledger allocation.')
   const allRailroadInclusionKnown = railroad !== undefined && railroad.every((row) => row.federallyIncludedAmount !== undefined)
   const claimantIds = input.claimantPersonIds ?? plan.household.people.map((person) => person.id)
+  const allClaimantsKnown = claimantIds.every((id) => people.has(id))
   const dates = claimantIds.flatMap((id) => {
     const person = people.get(id)
     if (person === undefined) { warnings.push(`Unknown state-return claimant ${id}.`); return [] }
     return [person.dob]
   })
   const derivedOwners = householdFactsForYear(plan, taxYear, { claimantPersonIds: claimantIds })
+  const claimantAges = dates.map((dob) => ageOnDate(dob, `${taxYear}-12-31`))
+  const validDerivedAge65Count = allClaimantsKnown && claimantAges.length === claimantIds.length && claimantAges.every((age) => age !== undefined)
+    ? claimantAges.filter((age) => age !== undefined && age >= 65).length
+    : undefined
   const householdFacts: AnnualStateHouseholdFacts = {
     ...derivedOwners,
     ...storedFacts,
     ownerStateTaxFacts: derivedOwners?.ownerStateTaxFacts,
     stateFilingStatus: stored?.stateFilingStatus ?? plan.household.filingStatus,
     claimantDatesOfBirth: stored?.claimantDatesOfBirth ?? dates,
+    ...(stored?.age65EligibleCount !== undefined
+      ? { age65EligibleCount: stored.age65EligibleCount }
+      : validDerivedAge65Count === undefined ? {} : { age65EligibleCount: validDerivedAge65Count }),
     federalAgi: federal.agi, federalTaxableIncome: federal.taxableIncome,
     federalDeductionUsed: federal.deductionUsed,
     householdGrossSocialSecurity: grossSs,

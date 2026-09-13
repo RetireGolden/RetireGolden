@@ -66,12 +66,18 @@ byte-identical projection.
   - **Line size:** the user's lender-quoted `principalLimitPct`, else the pack's published principal-limit
     factors (HUD PLF tables at a 5.875% expected rate, 2026: 35.1% of value at 62 → 61.4% at 90, youngest
     borrower's age, provenance id `hecm-plf`). A warning fires if modeled before 62.
-  - **Growth:** once per projected year, each open line's principal limit and loan balance both compound at
-    `growthRatePct` (note rate + 0.5% MIP; default 7.5%) — the unused line grows regardless of home value. `upfrontCostPct` finances
-    origination/closing/initial-MIP into the loan at open. A line state is keyed by property-account id; if
-    parse-valid duplicate rows alias that id, the first qualifying row supplies the rate and the one shared
-    line accrues only once that year. This positional property/HECM convention intentionally differs from the
-    grouped-balance RMD/QCD/Form 8606 convention; imported data should use unique account IDs.
+  - **Growth:** once per projected year, the principal limit compounds at `growthRatePct` (note rate + 0.5%
+    MIP; default 7.5%) and the unused line grows regardless of home value. Legacy quote-estimate lines also
+    compound their whole loan balance at that rate. HUD-validated lines conserve the split identity
+    `loanBalance = observedServicingBaseline + modeledDebt`: a complete, dated servicer ledger replaces only
+    the observed baseline, while modeled draw debt compounds with the annual rate as a disclosed planning
+    estimate because the plan carries no draw/accrual dates. Therefore any nonzero modeled debt publishes a
+    distinct incomplete HECM timing issue even when the observed ledger is complete; an incomplete ledger also
+    estimates the observed baseline and remains incomplete. `upfrontCostPct` finances origination/closing/
+    initial-MIP into the opening debt. A line state is keyed by property-account id; if parse-valid duplicate
+    rows alias that id, the first qualifying row supplies the rate and the one shared line accrues only once
+    that year. This positional property/HECM convention intentionally differs from the grouped-balance
+    RMD/QCD/Form 8606 convention; imported data should use unique account IDs.
   - **Draw policies:** `coordinated` draws for spending in the year after a negative market return
     (Monte Carlo / market-series behavior — deterministic runs have no down years); `lastResort` draws only
     when the portfolio cannot cover spending. Either way an open line backstops a true shortfall. Draws are

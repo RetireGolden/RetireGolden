@@ -48,36 +48,36 @@
       "label": "frozen backstop-plan handoff plus caller-owned line/map mutation and scalar consumption",
       "file": "projection/internal/annualFundingApplicationAndClosePhase.ts",
       "lines": [
-        1161,
-        1178
+        1168,
+        1185
       ],
       "anchors": [
         {
-          "line": 1161,
+          "line": 1168,
           "text": "const hecmBackstop = annualHecmBackstopPlan(Object.freeze({"
         },
         {
-          "line": 1164,
+          "line": 1171,
           "text": "portfolioShortfall: withdrawalPlan.shortfall,"
         },
         {
-          "line": 1167,
+          "line": 1174,
           "text": "for (const allocation of hecmBackstop.allocations) {"
         },
         {
-          "line": 1170,
-          "text": "line.loanBalance += allocation.amount"
-        },
-        {
-          "line": 1171,
-          "text": "hecmBackstopByProperty?.set("
-        },
-        {
-          "line": 1176,
-          "text": "const hecmShortfallDraw = hecmBackstop.draw"
+          "line": 1177,
+          "text": "applyHudModeledDraw(line, allocation.amount)"
         },
         {
           "line": 1178,
+          "text": "hecmBackstopByProperty?.set("
+        },
+        {
+          "line": 1183,
+          "text": "const hecmShortfallDraw = hecmBackstop.draw"
+        },
+        {
+          "line": 1185,
           "text": "const shortfallAfterHecm = hecmBackstop.shortfallAfterHecm"
         }
       ],

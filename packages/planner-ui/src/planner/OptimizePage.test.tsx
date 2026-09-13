@@ -17,6 +17,7 @@ import {
   positiveConversionCount,
   shouldShowRecommendedScheduleBars,
 } from './optimizePageChart'
+import { stateTaxIncompleteGuidance } from './stateTaxIncompleteGuidanceModel'
 
 function schedule(conversions: { year: number; amount: number }[]): OptimizedSchedule {
   return {
@@ -198,5 +199,12 @@ describe('OptimizePage tournament display helpers', () => {
       { year: 2026, requested: 1_000, cleaned: 5_000, executed: 5_000 },
       { year: 2027, requested: 0, cleaned: 6_000, executed: 6_000 },
     ])
+  })
+
+  it('keeps candidate-only optimizer issue details unavailable', () => {
+    const guidance = stateTaxIncompleteGuidance([2028])
+    expect(guidance?.summary).toContain('2028')
+    expect(guidance?.worksheetLinkLabel).toBeNull()
+    expect(guidance?.summary).toContain('Issue details are unavailable')
   })
 })

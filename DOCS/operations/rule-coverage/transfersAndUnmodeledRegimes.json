@@ -8,7 +8,7 @@
       "title": "HECM maximum claim amount and MIP rates for HUD-validated openings",
       "classification": "settled",
       "errorDirection": null,
-      "conventionRationale": "Case-assignment year owns the ceiling — do not inflate a future unpublished year. Test PLF 0.5 is a stipulated input. Update 18 supports monthly division and remittance capitalization, not a guessed ordering of an arbitrary same-month advance. simulatePlan opens the loan through hecmLineOpeningsWithHudValidation and prices supported annual assessment evidence through priceHecmHudMipAssessmentYear. simulate.hecmHudProduction.test.ts distinguishes closing cash already received from modeled closing proceeds and verifies capitalized monthly MIP; the opening-adapter tests preserve quoted versus HUD-table-verified PLF provenance and refuse unverified inputs. Missing assessment timing or unsupported transaction facts remain incomplete rather than an exact HUD result.",
+      "conventionRationale": "Case-assignment year owns the ceiling — do not inflate a future unpublished year. Test PLF 0.5 is a stipulated input. Update 18 supports monthly division and remittance capitalization, not a guessed ordering of an arbitrary same-month advance. simulatePlan opens the loan through hecmLineOpeningsWithHudValidation and prices supported annual assessment evidence through priceHecmHudMipAssessmentYear. simulate.hecmHudProduction.test.ts distinguishes closing cash already received from modeled closing proceeds and verifies capitalized monthly MIP; the opening-adapter tests preserve quoted versus HUD-table-verified PLF provenance and refuse unverified inputs. Missing assessment timing or unsupported transaction facts remain incomplete rather than an exact HUD result. The hecmLineState adapter keeps servicer-observed balances separate from accepted modeled draws, so later observed balances do not erase modeled debt. The annual growth estimate for modeled draws and the estimated baseline growth when servicing timing is incomplete are simulator planning conventions outside this settled monthly-assessment claim; their presence does not establish a complete HUD servicing result.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "annuallyIndexed",
@@ -61,11 +61,11 @@
           "functions": [
             {
               "name": "hecmLineOpeningsWithHudValidation",
-              "line": 83
+              "line": 77
             },
             {
               "name": "priceHecmHudMipAssessmentYear",
-              "line": 232
+              "line": 228
             }
           ]
         },
@@ -74,7 +74,7 @@
           "functions": [
             {
               "name": "hecmLineOpenings",
-              "line": 143
+              "line": 159
             }
           ]
         },
@@ -83,7 +83,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 392
+              "line": 393
             }
           ]
         }
@@ -182,7 +182,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 392
+              "line": 393
             }
           ]
         }
@@ -257,7 +257,7 @@
           "functions": [
             {
               "name": "incomeStreamSchema",
-              "line": 1939
+              "line": 1946
             }
           ]
         },
@@ -327,7 +327,7 @@
           "functions": [
             {
               "name": "planSchema",
-              "line": 2589
+              "line": 2596
             }
           ]
         },
@@ -409,7 +409,7 @@
           "functions": [
             {
               "name": "planSchema",
-              "line": 2589
+              "line": 2596
             }
           ]
         }
@@ -460,7 +460,7 @@
           "functions": [
             {
               "name": "planSchema",
-              "line": 2589
+              "line": 2596
             }
           ]
         },
@@ -537,7 +537,7 @@
           "functions": [
             {
               "name": "accountUnionSchema",
-              "line": 1512
+              "line": 1519
             }
           ]
         }
@@ -598,7 +598,7 @@
           "functions": [
             {
               "name": "planSchema",
-              "line": 2589
+              "line": 2596
             }
           ]
         },

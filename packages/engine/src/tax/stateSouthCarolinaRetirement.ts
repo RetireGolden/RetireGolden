@@ -140,11 +140,25 @@ export function scSciadDeduction(args: {
   filingStatus: 'single' | 'marriedFilingJointly' | 'marriedFilingSeparately' | 'headOfHousehold' | 'qualifyingSurvivingSpouse'
   federalAgi: number
   config?: Record<typeof args.filingStatus, { base: number; phaseoutStart: number; phaseoutRange: number; reductionIncrement: number }>
-}): { deduction: number; base: number } {
-  if (!args.config) return { deduction: 0, base: 0 }
+}): StateLeafAdjustment & { deduction: number; base: number } {
+  if (!args.config) {
+    return {
+      deduction: 0,
+      base: 0,
+      taxableIncomeDelta: 0,
+      taxCredit: 0,
+      warnings: [{
+        code: 'sc-sciad-config-missing',
+        ruleId: 'sc-sciad-deduction',
+        message: 'South Carolina SCIAD deduction requires a versioned annual schedule.',
+        missingFacts: ['southCarolinaSciad'],
+      }],
+    }
+  }
   const row = args.config[args.filingStatus]
   const fraction = Math.min(1, Math.max(0, (args.federalAgi - row.phaseoutStart) / row.phaseoutRange))
   const rawReduction = row.base * fraction
   const roundedReduction = Math.floor(rawReduction / row.reductionIncrement) * row.reductionIncrement
-  return { deduction: Math.max(0, row.base - roundedReduction), base: row.base }
+  const deduction = Math.max(0, row.base - roundedReduction)
+  return { deduction, base: row.base, taxableIncomeDelta: 0, taxCredit: 0, warnings: [] }
 }
