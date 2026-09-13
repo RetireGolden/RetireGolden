@@ -13,7 +13,7 @@ export const DEPENDABOT_LOGIN = 'dependabot[bot]'
 export const TRUSTED_REVIEW_WORKFLOW_ID = 341686683
 export const TRUSTED_OPENROUTER_CALLER_PATH = '.github/workflows/openrouter-code-review.yml'
 export const TRUSTED_RECOVERY_WORKFLOW_PATH = '.github/workflows/openrouter-review-recovery.yml'
-export const TRUSTED_RECOVERY_WORKFLOW_BLOB_SHA = '9f0e0c6ba3a26f1507c58efcfa7ebdb5c05e34e1'
+export const TRUSTED_RECOVERY_WORKFLOW_BLOB_SHA = '949f6549ac2366ed69648e36a12e80aa4ecfc5e5'
 export const TRUSTED_REUSABLE_REVIEW_WORKFLOW =
   'RetireGolden/.github/.github/workflows/openrouter-code-review.yml@a190c3d834f2e3048b4eef8129fa3c8e10891aa0'
 export const TRUSTED_REUSABLE_REVIEW_WORKFLOW_SHA = 'a190c3d834f2e3048b4eef8129fa3c8e10891aa0'

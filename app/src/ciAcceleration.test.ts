@@ -1251,7 +1251,7 @@ describe('OpenRouter CI authorization contract', () => {
     expect(brokerWorkflow).toContain(
       'workflows: [OpenRouter code review, OpenRouter profile completion, Azure Static Web Apps CI/CD]',
     )
-    expect(brokerWorkflow).toContain('actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8')
+    expect(brokerWorkflow).toContain('actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0')
     expect(brokerWorkflow).toContain('actions: write')
     expect(brokerWorkflow).toContain('issues: write')
     expect(brokerWorkflow).toContain('pull-requests: write')
