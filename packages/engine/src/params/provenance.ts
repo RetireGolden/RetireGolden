@@ -97,7 +97,7 @@ export const PARAMETER_PROVENANCE: ParameterSource[] = [
     id: 'hecm-plf',
     label: 'HECM reverse-mortgage principal limit',
     figures:
-      'Principal-limit factors at a 5.875% expected rate: 35.1% of home value at 62 rising to 61.4% at 90 (planning default; a lender quote always wins); line/loan growth default 7.5%/yr (rate + 0.5% MIP).',
+      'Principal-limit factors at a 5.875% expected rate: 35.1% of home value at 62 rising to 61.4% at 90 (planning default; a lender quote always wins); line/loan growth default 7.5%/yr (rate + 0.5% MIP). HUD-validated mode uses the applicable case-year maximum claim amount and mortgage-insurance rates, a verified principal-limit factor, closing facts, and dated outstanding balances for monthly mortgage-insurance assessments.',
     publisher: 'HUD HECM PLF tables (as summarized for 2026)',
     url: 'https://reverse.mortgage/age-requirements',
   },

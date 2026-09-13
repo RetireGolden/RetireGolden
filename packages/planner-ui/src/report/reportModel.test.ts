@@ -23,6 +23,7 @@ import {
   buildReportModel,
   chartDataCsv,
   inheritedDeadlineExplanation,
+  inheritedRequirementKindLabel,
   parseReportModel,
   serializeReportModel,
   yearLedgerCsv,
@@ -396,6 +397,14 @@ describe('table export helpers', () => {
     for (const line of csv.split('\n').slice(1)) {
       expect(line).not.toMatch(/^[=+\-@]/)
     }
+  })
+})
+
+describe('inheritedRequirementKindLabel', () => {
+  it('labels post-deadline remaining-benefit as an entire-balance distribution obligation', () => {
+    expect(inheritedRequirementKindLabel('post-deadline-remaining-benefit')).toBe(
+      'Entire remaining benefit (after deadline year)',
+    )
   })
 })
 

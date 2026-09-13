@@ -166,3 +166,41 @@ describe('evaluateBeneficiarySpousalElection', () => {
       .not.toBe((contribution as { evidenceId: string }).evidenceId)
   })
 })
+
+// Section1.408-8(c) permits a dated act at opening without a fictional
+// completed distribution-year record for the year that has just begun.
+describe('spouse election separate event year and completed history', () => {
+  it('recognizes current-year execution after validating completed prior years only', () => {
+    const result = evaluateBeneficiarySpousalElection(input({ taxYear: 2027,
+      completedThroughTaxYear: 2026, affirmativeElectionYear: 2027 }))
+    expect(result).toMatchObject({ status: 'spousalOwnerTreatmentBegun', effectiveTaxYear: 2027 })
+  })
+  it('retains a missing prior history refusal and rejects an invented completed current year', () => {
+    expect(evaluateBeneficiarySpousalElection(input({ taxYear: 2027,
+      completedThroughTaxYear: 2026, affirmativeElectionYear: 2027,
+      requiredDistributionHistory: [] }))).toMatchObject({ status: 'spousalElectionEvidenceIncomplete', missingTaxYear: 2026 })
+    expect(evaluateBeneficiarySpousalElection(input({ taxYear: 2027,
+      completedThroughTaxYear: 2026, requiredDistributionHistory: [{ taxYear: 2027,
+        requiredAmount: asUsdCents(0), distributedAmount: asUsdCents(0) }] })).status)
+      .toBe('spousalElectionEvidenceInconsistent')
+  })
+  it('allows a death-year opening event without inventing a pre-death beneficiary requirement', () => {
+    expect(evaluateBeneficiarySpousalElection(input({ taxYear: 2025,
+      deathDate: '2025-01-01', completedThroughTaxYear: 2024,
+      affirmativeElectionYear: 2025, requiredDistributionHistory: [] })))
+      .toMatchObject({ status: 'spousalOwnerTreatmentBegun', effectiveTaxYear: 2025 })
+  })
+})
+
+// A verified opening act ends beneficiary years before execution; year-only
+// evidence must still establish the execution-year distribution boundary.
+it('preserves an executed opening transition and refuses the same missing year without dated opening context', () => {
+  const facts = input({ taxYear: 2029, completedThroughTaxYear: 2026,
+    affirmativeElectionYear: 2027 })
+  expect(evaluateBeneficiarySpousalElection({ ...facts, affirmativeElectionAtTaxYearOpening: true }))
+    .toMatchObject({ status: 'spousalOwnerTreatmentBegun', effectiveTaxYear: 2027 })
+  expect(evaluateBeneficiarySpousalElection(facts).status).toBe('spousalElectionEvidenceInconsistent')
+  expect(evaluateBeneficiarySpousalElection({ ...facts, affirmativeElectionAtTaxYearOpening: true,
+    requiredDistributionHistory: [] }))
+    .toMatchObject({ status: 'spousalElectionEvidenceIncomplete', missingTaxYear: 2026 })
+})

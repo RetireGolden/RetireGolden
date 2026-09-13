@@ -13,12 +13,14 @@ import {
 } from '../../strategies/accountEligibility.js'
 import { addCalendarMonths } from '../../actions/civilDate.js'
 import {
-  allocateEmployerElectiveDeferrals,
   employerMatchElectiveBase,
   indexRothCatchUpWageThreshold,
-  type EmployerElectiveAllocation,
   type EmployerElectiveRequest,
 } from '../employerRothCatchUp.js'
+import {
+  allocateOwnerEmployerElectivesAcrossPlans,
+  type EmployerElectiveAllocationWithPrior,
+} from './ownerEmployerElectiveAllocation.js'
 import type {
   RecordedContribution,
   RecordedEmployerMatch,
@@ -54,6 +56,19 @@ export interface AnnualContributionOwnerState {
   readonly ageAttained: number
 }
 
+/**
+ * Verified same-year elective history for one (owner, employerPlanId) group.
+ * Matches `EmployerPriorElectiveContributions` on the elective-deferral leaf.
+ */
+export type AnnualEmployerPriorElectiveContributions =
+  | { readonly status: 'unknown' }
+  | {
+      readonly status: 'known'
+      readonly designatedRothElectiveDeferrals: number
+      readonly totalElectiveDeferrals: number
+      readonly asOfDate: string
+    }
+
 export interface AnnualContributionsAndEmployerMatchInput {
   readonly balances: readonly AnnualContributionBalanceView[]
   readonly year: number
@@ -81,6 +96,14 @@ export interface AnnualContributionsAndEmployerMatchInput {
     growth: number,
   ) => number
   readonly pack: ParameterPack
+  /**
+   * Optional prior elective history keyed by `${ownerPersonId}\0${employerPlanId}`.
+   * Accounts without `employerPlanId` keep the owner-wide legacy path.
+   */
+  readonly employerPriorElectiveByPlanKey?: ReadonlyMap<
+    string,
+    AnnualEmployerPriorElectiveContributions
+  >
 }
 
 export interface AnnualContributionWarningOperation {
@@ -167,7 +190,13 @@ export interface AnnualContributionsAndEmployerMatchResult {
   readonly expectedContributionBalanceIndices: readonly number[]
   readonly totals: Readonly<AnnualContributionsAndEmployerMatchTotals>
   readonly employerAllocationByOwner:
-    ReadonlyMap<string, Readonly<EmployerElectiveAllocation>>
+    ReadonlyMap<string, Readonly<EmployerElectiveAllocationWithPrior>>
+  /**
+   * Per (owner, employerPlanId) allocation. Match basis and Roth catch-up
+   * destinations must read this map — never a cross-plan owner merge.
+   */
+  readonly employerAllocationByGroupKey:
+    ReadonlyMap<string, Readonly<EmployerElectiveAllocationWithPrior>>
 }
 
 const CONTRIBUTION_LIMIT_WARNING =
@@ -209,10 +238,25 @@ export function annualContributionsAndEmployerMatch(
   let otherInflow = 0
   let taxableInflow = 0
   const groupUsed = new Map<string, number>()
+  /** §415(c) annual additions keyed by employer-plan group, not owner-wide §402(g). */
   const addition415cUsed = new Map<string, number>()
   const iraCompensationIsShared = // IRC 219(b)(1)/(c): share compensation only for living MFJ spouses.
     input.filingStatus === 'marriedFilingJointly' && input.aliveCount === 2
   const iraCompensationRemaining = new Map<string, number>()
+  const employerPlanScopeKey = (
+    ownerId: string,
+    account: ContributionAccount,
+  ): string => {
+    if (
+      (account.type === 'traditional' || account.type === 'roth') &&
+      account.kind === 'employer' &&
+      'employerPlanId' in account &&
+      typeof account.employerPlanId === 'string'
+    ) {
+      return `${ownerId}\0${account.employerPlanId}`
+    }
+    return `${ownerId}:employer`
+  }
   if (iraCompensationIsShared) {
     let combined = 0
     for (const wages of input.wagesByPerson.values()) combined += wages
@@ -292,12 +336,18 @@ export function annualContributionsAndEmployerMatch(
     },
   )
 
-  const employerAllocated = new Map<string, number>()
-  const employerAllocationByOwner =
-    new Map<string, EmployerElectiveAllocation>()
-  const employerRequestsByOwner =
-    new Map<string, EmployerElectiveRequest[]>()
+  /**
+   * Group key: owner-wide legacy (`${ownerId}`) or explicit plan group
+   * (`${ownerId}\0${employerPlanId}`). Explicit ids never mix with legacy.
+   */
+  const employerRequestsByGroup =
+    new Map<string, {
+      ownerId: string
+      employerPlanId: string | null
+      requests: EmployerElectiveRequest[]
+    }>()
   const employeeLandedByEmployerRowKey = new Map<string, number>()
+  const employerGroupKeyByRowKey = new Map<string, string>()
   for (const [balanceIndex, state] of input.balances.entries()) {
     const account = state.account
     if (
@@ -305,31 +355,84 @@ export function annualContributionsAndEmployerMatch(
       !desiredByBalanceIndex.has(balanceIndex)
     ) continue
     const ownerId = account.ownerPersonId ?? input.primaryPersonId
+    const employerPlanId =
+      'employerPlanId' in account && typeof account.employerPlanId === 'string'
+        ? account.employerPlanId
+        : null
+    const groupKey =
+      employerPlanId === null ? ownerId : `${ownerId}\0${employerPlanId}`
     const rowKey = employerRowKey(balanceIndex)
-    const list = employerRequestsByOwner.get(ownerId) ?? []
-    list.push({
+    employerGroupKeyByRowKey.set(rowKey, groupKey)
+    const group = employerRequestsByGroup.get(groupKey) ?? {
+      ownerId,
+      employerPlanId,
+      requests: [],
+    }
+    group.requests.push({
       accountId: rowKey,
       type: account.type,
       desired: desiredByBalanceIndex.get(balanceIndex) ?? 0,
       priorCalendarYearFicaWages: account.priorCalendarYearFicaWages ?? 0,
     })
-    employerRequestsByOwner.set(ownerId, list)
+    employerRequestsByGroup.set(groupKey, group)
   }
-  for (const [ownerId, requests] of employerRequestsByOwner) {
-    const age = input.resolveOwnerState(ownerId).ageAttained
-    const allocation = allocateEmployerElectiveDeferrals(requests, {
+
+  // One shared owner annual §402(g)/§414(v) budget; per-plan Roth destinations.
+  const ownerCatchUpLimitByOwner = new Map<string, number>()
+  for (const group of employerRequestsByGroup.values()) {
+    if (ownerCatchUpLimitByOwner.has(group.ownerId)) continue
+    const age = input.resolveOwnerState(group.ownerId).ageAttained
+    ownerCatchUpLimitByOwner.set(group.ownerId, employerCatchUpForAge(age))
+  }
+  const ownerWideGroups = [...employerRequestsByGroup.entries()].map(
+    ([groupKey, group]) => {
+      // Explicit employerPlanId with no history row is unknown, not known-zero.
+      // Omitted priorContributions remains only for the ungrouped legacy path.
+      let prior: AnnualEmployerPriorElectiveContributions | undefined
+      if (group.employerPlanId !== null) {
+        prior =
+          input.employerPriorElectiveByPlanKey?.get(groupKey) ??
+          { status: 'unknown' }
+      }
+      return {
+        groupKey,
+        ownerId: group.ownerId,
+        employerPlanId: group.employerPlanId,
+        requests: group.requests,
+        prior,
+      }
+    },
+  )
+  // Catch-up limit is per owner (age); when owners differ, allocate each owner's
+  // groups with that owner's catch-up. Base/wage threshold are household-year
+  // constants from the pack.
+  const employerAllocated = new Map<string, number>()
+  const employerAllocationByOwner =
+    new Map<string, EmployerElectiveAllocationWithPrior>()
+  const employerAllocationByGroupKey =
+    new Map<string, EmployerElectiveAllocationWithPrior>()
+  const owners = [...new Set(ownerWideGroups.map((group) => group.ownerId))].sort()
+  for (const ownerId of owners) {
+    const ownerGroups = ownerWideGroups.filter((group) => group.ownerId === ownerId)
+    const allocated = allocateOwnerEmployerElectivesAcrossPlans({
+      groups: ownerGroups,
       contributionYear: input.year,
       baseLimit: input.pack.contributionLimits.employee401k * input.limitGrowth,
-      catchUpLimit: employerCatchUpForAge(age),
+      catchUpLimit: ownerCatchUpLimitByOwner.get(ownerId) ?? 0,
       wageThreshold: indexRothCatchUpWageThreshold(
         input.pack.contributionLimits.rothCatchUpWageThreshold,
         input.limitGrowth,
       ),
-      compensation: input.wagesByPerson.get(ownerId) ?? 0,
+      compensationByOwner: input.wagesByPerson,
     })
-    employerAllocationByOwner.set(ownerId, allocation)
-    for (const [accountId, amount] of allocation.allowed) {
+    for (const [groupKey, allocation] of allocated.allocationByGroupKey) {
+      employerAllocationByGroupKey.set(groupKey, allocation)
+    }
+    for (const [accountId, amount] of allocated.allocatedByAccountId) {
       employerAllocated.set(accountId, amount)
+    }
+    for (const [mergedOwnerId, allocation] of allocated.allocationByOwner) {
+      employerAllocationByOwner.set(mergedOwnerId, allocation)
     }
   }
 
@@ -396,7 +499,8 @@ export function annualContributionsAndEmployerMatch(
       allowed = Math.max(0, Math.min(desired, limit - used))
     }
     // IRC 415(c)(1)-(2) charges non-catch-up deferrals first; 414(v)(3)(A) excludes catch-up from the lesser-of-dollar-or-pay cap.
-    const used415c = addition415cUsed.get(ownerId) ?? 0
+    const section415cKey = employerPlanScopeKey(ownerId, account)
+    const used415c = addition415cUsed.get(section415cKey) ?? 0
     let countableEmployee = 0
     if (isEmployerAccount) {
       const catchUp = employerAllocationByOwner.get(ownerId)
@@ -429,7 +533,10 @@ export function annualContributionsAndEmployerMatch(
       groupUsed.set(groupKey, (groupUsed.get(groupKey) ?? 0) + allowed)
     }
 
-    const catchUpAllocation = employerAllocationByOwner.get(ownerId)
+    const planGroupKey = employerGroupKeyByRowKey.get(rowKey)
+    const catchUpAllocation = planGroupKey === undefined
+      ? undefined
+      : employerAllocationByGroupKey.get(planGroupKey)
     const redirectedFromHere = catchUpAllocation
       ?.redirectedCatchUpBySource.get(rowKey) ?? 0
     const redirectedOntoHere = catchUpAllocation !== undefined &&
@@ -475,7 +582,7 @@ export function annualContributionsAndEmployerMatch(
     }
 
     if (isEmployerAccount) {
-      addition415cUsed.set(ownerId, used415c + countableEmployee)
+      addition415cUsed.set(section415cKey, used415c + countableEmployee)
     }
     const balanceAfter = balanceBefore + allowed
     shadowBalances[balanceIndex] = balanceAfter
@@ -574,10 +681,10 @@ export function annualContributionsAndEmployerMatch(
     })
   }
 
-  for (const [, requests] of employerRequestsByOwner) {
+  for (const [, group] of employerRequestsByGroup) {
     let desiredTotal = 0
     let landedTotal = 0
-    for (const request of requests) {
+    for (const request of group.requests) {
       desiredTotal += request.desired
       landedTotal += employeeLandedByEmployerRowKey.get(request.accountId) ?? 0
     }
@@ -607,7 +714,10 @@ export function annualContributionsAndEmployerMatch(
     const matchInfo = account.employerMatch
     const ownerWages = input.wagesByPerson.get(ownerId) ?? 0
     if (ownerWages <= 0) continue
-    const allocation = employerAllocationByOwner.get(ownerId)
+    const planGroupKey = employerGroupKeyByRowKey.get(rowKey)
+    const allocation = planGroupKey === undefined
+      ? undefined
+      : employerAllocationByGroupKey.get(planGroupKey)
     const electiveForMatch = allocation === undefined
       ? employeeLandedByEmployerRowKey.get(rowKey) ?? 0
       : employerMatchElectiveBase({
@@ -624,7 +734,8 @@ export function annualContributionsAndEmployerMatch(
       input.pack.contributionLimits.section415cLimit * input.limitGrowth,
       ownerWages,
     )
-    const usedSoFar = addition415cUsed.get(ownerId) ?? 0
+    const match415cKey = employerPlanScopeKey(ownerId, account)
+    const usedSoFar = addition415cUsed.get(match415cKey) ?? 0
     const remaining415cLimit = Math.max(0, limit415c - usedSoFar)
     matchVal = Math.min(matchVal, remaining415cLimit)
     if (matchVal <= 0) continue
@@ -669,7 +780,7 @@ export function annualContributionsAndEmployerMatch(
     employerMatch += matchVal
     if (account.type === 'traditional') traditionalInflow += matchVal
     else otherInflow += matchVal
-    addition415cUsed.set(ownerId, usedSoFar + matchVal)
+    addition415cUsed.set(match415cKey, usedSoFar + matchVal)
   }
 
   return {
@@ -687,5 +798,6 @@ export function annualContributionsAndEmployerMatch(
       taxableInflow,
     },
     employerAllocationByOwner,
+    employerAllocationByGroupKey,
   }
 }

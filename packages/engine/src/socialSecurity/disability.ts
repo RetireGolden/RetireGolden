@@ -50,3 +50,50 @@ export function ssdiSuspendedBySga(annualWages: number, annualSgaLimit: number):
 export function inSsdiWindow(ageAttained: number, onsetAge: number, fraYears: number): boolean {
   return ageAttained >= onsetAge && ageAttained < fraYears
 }
+
+/**
+ * Facts the Plan would need to determine disabled-worker Medicare Part A
+ * continuation after trial work (42 U.S.C. 426(b); SSA DI 28055.001 / Red Book
+ * “at least 93 consecutive months after the nine-month TWP”). Cash-benefit
+ * TWP/EPE approximation remains separate — this boundary asserts the engine
+ * does not produce a Part A entitlement interval from onset age / SGA alone.
+ */
+export const SSDI_MEDICARE_CONTINUATION_MISSING_FACTS = [
+  'trialWorkPeriodEndDate',
+  'entitlementTerminationDate',
+  'continuingImpairmentAfterTermination',
+  'substantialGainfulActivityCounterfactual',
+  'medicarePartAEntitlementInterval',
+] as const
+
+export type SsdiMedicareContinuationBoundary =
+  | {
+      readonly status: 'notAMedicareContinuationDetermination'
+      readonly missingFacts: typeof SSDI_MEDICARE_CONTINUATION_MISSING_FACTS
+      readonly partAEntitlementMonths: null
+      /**
+       * SSA formulation: at least 93 consecutive months after the nine-month
+       * TWP for qualifying continuing disability — not 36 months of EPE plus
+       * another 93.
+       */
+      readonly authorityMinimumMonthsAfterTwp: 93
+    }
+
+/**
+ * Boundary assertion for code-093/F-093-01: onset age and cash-benefit SGA
+ * suspension do not produce a Part A entitlement interval.
+ */
+export function assertSsdiMedicareContinuationNotDeterminedFromCashBenefitFacts(input: {
+  readonly onsetAge: number
+  readonly ssdiCashBenefitSuspendedBySga: boolean
+}): SsdiMedicareContinuationBoundary {
+  // This deliberately does not derive Part A coverage from these cash-benefit
+  // facts; the boundary exists specifically because they are insufficient.
+  void input
+  return {
+    status: 'notAMedicareContinuationDetermination',
+    missingFacts: SSDI_MEDICARE_CONTINUATION_MISSING_FACTS,
+    partAEntitlementMonths: null,
+    authorityMinimumMonthsAfterTwp: 93,
+  }
+}

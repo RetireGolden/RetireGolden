@@ -147,6 +147,7 @@ const EXPECTED_REACHABILITY: Readonly<Record<string, readonly string[]>> = {
     'aggregateRothConversionOwnerAllocation',
     'annualLiabilityRunIdentity',
     'annualQcdUnifiedTransactionFinalization',
+    'beneficiarySpousalElectionAnnualGate',
     'beneficiarySpousalElectionStatus',
     'beneficiaryTraditionalIraResidualRmdChronology',
     'exactCentProRata',

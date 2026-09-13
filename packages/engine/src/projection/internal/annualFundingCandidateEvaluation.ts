@@ -12,11 +12,13 @@ import {
   applyCapitalLossCarryforward,
   computeFederalTax,
 } from '../../tax/federalTax.js'
-import type {
-  AcaSupportCode,
-  TaxCalculator,
-  TaxYearInput,
-  YearWithdrawals,
+import {
+  normalizeTaxComputation,
+  type AcaSupportCode,
+  type TaxCalculator,
+  type TaxComputationResult,
+  type TaxYearInput,
+  type YearWithdrawals,
 } from '../types.js'
 import type { AnnualFundingFixedPointEvaluationRequest } from './annualFundingFixedPoint.js'
 import {
@@ -24,7 +26,15 @@ import {
   recharacterizeAnnualFundingWithdrawalHsaCap,
   type AnnualFundingWithdrawalEffectAccount,
   type AnnualHsaWithdrawalEffectAccount,
+  type AnnualFundingWithdrawalEffectsResult,
 } from './annualFundingWithdrawalEffects.js'
+import {
+  applyInheritedRothDistributionToPool,
+  cloneInheritedRothPoolState,
+  characterizeLegacyQualifiedInheritedRoth,
+  inheritedRothPoolKey,
+  type MutableInheritedRothTaxCharacterPool,
+} from './inheritedRothTaxCharacterPoolState.js'
 
 type CharacterizedAcaAmount = Readonly<
   AcaHouseholdMagiInput['taxExemptInterest']
@@ -61,6 +71,13 @@ export type AnnualFundingCandidateTaxInputBase = Readonly<
     | 'publicPensionIncome'
     | 'agesAlive'
     | 'itemizedDeductions'
+    | 'stateRetirementDistributions'
+    | 'stateHouseholdFacts'
+    | 'stateHsaAccountYearFacts'
+    | 'stateHsaYearFacts'
+    | 'stateQcdEventFacts'
+    | 'stateQcdYearFacts'
+    | 'stateNjIraOwnerPools'
   >
 >
 
@@ -96,10 +113,13 @@ export interface AnnualFundingCandidateHsaInput {
 }
 
 export interface AnnualFundingCandidateEvaluationContext {
+  readonly characterizeStateHsaWithdrawals?: (rows: AnnualFundingWithdrawalEffectsResult['hsa']['rows']) => TaxYearInput['stateHsaAccountYearFacts']
+  readonly characterizeStateWithdrawals?: (amounts: ReadonlyMap<string, number>, grossAmounts: ReadonlyMap<string, number>) => NonNullable<TaxYearInput['stateRetirementDistributions']>
   readonly withdrawalEffectAccounts:
     readonly AnnualFundingWithdrawalEffectAccount[]
   readonly hsaEffectAccounts: readonly AnnualHsaWithdrawalEffectAccount[]
   readonly rothBasisByPool: ReadonlyMap<string, RothBasisState>
+  readonly inheritedRothPools: ReadonlyMap<string, MutableInheritedRothTaxCharacterPool>
   readonly taxCalculator: TaxCalculator
   readonly taxInputBase: AnnualFundingCandidateTaxInputBase
   readonly ordinaryIncomeBase: number
@@ -130,6 +150,13 @@ export interface AnnualFundingCandidateEvaluationResult<
   /** Exact caller-owned withdrawal plan selected for this candidate. */
   readonly withdrawalPlan: WithdrawalPlan
   readonly tax: number
+  /** Frozen sequential character ledger for the accepted candidate. */
+  readonly inheritedRothPoolsAfterWithdrawal: Map<string, MutableInheritedRothTaxCharacterPool>
+  readonly withdrawalEffects: AnnualFundingWithdrawalEffectsResult
+  /** Exactness channel for the final tax input priced for this candidate. */
+  readonly taxComputation: TaxComputationResult
+  /** Exact TaxYearInput that produced `taxComputation` (accepted probe only). */
+  readonly taxInput: TaxYearInput
   readonly penalties: number
   readonly requiredNeed: number
   readonly acaMagiProbe: AcaHouseholdMagiResult | null
@@ -164,17 +191,68 @@ export function annualFundingCandidateEvaluation<
 ): AnnualFundingCandidateEvaluationResult<WithdrawalPlan> {
   const { request, withdrawalPlan, iraCharacter, aca } = input
   let candidateHsaCap = input.hsa.initialQualifiedCap
+  const inheritedRothPoolsAfterWithdrawal = cloneInheritedRothPoolState(
+    input.inheritedRothPools,
+  )
   let withdrawalEffectsProbe = annualFundingWithdrawalEffects({
     accounts: input.withdrawalEffectAccounts,
     withdrawalsByAccountId: withdrawalPlan.byAccountId,
     traditionalTaxableByAccountId:
       iraCharacter.taxableBySourceAccountId,
     rothBasisByPool: input.rothBasisByPool,
+    characterizeInheritedRothWithdrawal: ({
+      sourceAccountId,
+      beneficiaryPersonId,
+      decedentId,
+      distributionAmount,
+    }) => {
+      const account = input.withdrawalEffectAccounts.find((row) => row.sourceAccountId === sourceAccountId)
+      if (account?.kind === 'roth' && (decedentId === null || !inheritedRothPoolsAfterWithdrawal.has(inheritedRothPoolKey(beneficiaryPersonId, decedentId)))) {
+        const legacy = characterizeLegacyQualifiedInheritedRoth({
+          firstContributionYear: account.inheritedRothPool?.legacyFirstContributionYear,
+          evidenceAsOfDate: account.inheritedRothPool?.legacyClockEvidenceAsOfDate,
+          distributionYear: input.taxInputBase.year, distributionAmount,
+        })
+        if (legacy !== null) return legacy
+      }
+      if (decedentId === null) {
+        return {
+          ordinaryIncome: distributionAmount,
+          status: 'incomplete' as const,
+          reason: 'missing-inherited-roth-decedent-identity',
+        }
+      }
+      const result = applyInheritedRothDistributionToPool({
+        pools: inheritedRothPoolsAfterWithdrawal,
+        beneficiaryPersonId,
+        decedentId,
+        distributionCalendarYear: input.taxInputBase.year,
+        distributionAmount,
+        spouseOwnerTreatmentBegun: false,
+        commit: true,
+      })
+      return result.status === 'characterized'
+        ? { ordinaryIncome: result.ordinaryIncome, status: 'characterized' as const }
+        : {
+            ordinaryIncome: distributionAmount,
+            status: 'incomplete' as const,
+            reason: `inherited-roth-${result.reason}`,
+          }
+    },
     year: input.taxInputBase.year,
     hsaQualifiedCap: candidateHsaCap,
   })
 
   let tax = 0
+  let taxComputation: TaxComputationResult = { amount: 0, status: 'complete', issues: [] }
+  let acceptedTaxInput: TaxYearInput = {
+    year: input.taxInputBase.year,
+    filingStatus: input.taxInputBase.filingStatus,
+    ordinaryIncome: input.ordinaryIncomeBase,
+    capitalGains: 0,
+    ssBenefits: input.taxInputBase.ssBenefits,
+    peopleAged65Plus: input.taxInputBase.peopleAged65Plus,
+  }
   let acaMagiProbe: AcaHouseholdMagiResult | null = null
   let acaQuote: AcaResult | null = null
   let acaSupportCodes: AcaSupportCode[] = [...aca.initialSupportCodes]
@@ -198,7 +276,7 @@ export function annualFundingCandidateEvaluation<
       input.capitalLossOrdinaryOffsetLimit,
     )
     const taxInputBase = input.taxInputBase
-    const taxInput: TaxYearInput = {
+    let taxInput: TaxYearInput = {
       year: taxInputBase.year,
       filingStatus: taxInputBase.filingStatus,
       ordinaryIncome: nettedProbe.ordinaryAfter,
@@ -222,8 +300,63 @@ export function annualFundingCandidateEvaluation<
       publicPensionIncome: taxInputBase.publicPensionIncome,
       agesAlive: taxInputBase.agesAlive,
       itemizedDeductions: taxInputBase.itemizedDeductions,
+      ...(taxInputBase.stateRetirementDistributions === undefined
+        ? {}
+        : {
+            stateRetirementDistributions:
+              taxInputBase.stateRetirementDistributions,
+          }),
+      ...(taxInputBase.stateHouseholdFacts === undefined
+        ? {}
+        : { stateHouseholdFacts: taxInputBase.stateHouseholdFacts }),
+      ...(taxInputBase.stateHsaAccountYearFacts === undefined
+        ? {}
+        : { stateHsaAccountYearFacts: taxInputBase.stateHsaAccountYearFacts }),
+      ...(taxInputBase.stateHsaYearFacts === undefined
+        ? {}
+        : { stateHsaYearFacts: taxInputBase.stateHsaYearFacts }),
+      ...(taxInputBase.stateQcdEventFacts === undefined
+        ? {}
+        : { stateQcdEventFacts: taxInputBase.stateQcdEventFacts }),
+      ...(taxInputBase.stateQcdYearFacts === undefined
+        ? {}
+        : { stateQcdYearFacts: taxInputBase.stateQcdYearFacts }),
+      ...(taxInputBase.stateNjIraOwnerPools === undefined
+        ? {}
+        : { stateNjIraOwnerPools: taxInputBase.stateNjIraOwnerPools }),
     }
-    tax = input.taxCalculator.compute(taxInput)
+    if (input.characterizeStateHsaWithdrawals !== undefined) {
+      taxInput.stateHsaAccountYearFacts = input.characterizeStateHsaWithdrawals(withdrawalEffectsProbe.hsa.rows)
+    }
+    if (input.characterizeStateWithdrawals !== undefined) {
+      const taxableByAccount = new Map<string, number>()
+      for (const account of input.withdrawalEffectAccounts) {
+        if (account.kind !== 'traditional') continue
+        const taken = withdrawalPlan.byAccountId.get(account.sourceAccountId) ?? 0
+        taxableByAccount.set(account.sourceAccountId,
+          iraCharacter.taxableBySourceAccountId.get(account.sourceAccountId) ?? taken)
+      }
+      for (const row of withdrawalEffectsProbe.roth.inheritedRows) taxableByAccount.set(row.sourceAccountId, row.ordinaryIncome)
+      taxInput.stateRetirementDistributions = [
+        ...(taxInput.stateRetirementDistributions ?? []),
+        ...input.characterizeStateWithdrawals(taxableByAccount, withdrawalPlan.byAccountId),
+      ]
+    }
+    taxInput = input.taxCalculator.prepareInput?.(taxInput) ?? taxInput
+    taxComputation = normalizeTaxComputation(input.taxCalculator, taxInput)
+    if (withdrawalEffectsProbe.roth.taxCharacterIncomplete) {
+      taxComputation = {
+        ...taxComputation,
+        status: 'incomplete',
+        issues: [...taxComputation.issues, {
+          code: 'incomplete-inherited-roth-tax-character',
+          year: taxInput.year,
+          message: 'Inherited Roth tax-character evidence was incomplete; the ordinary-income estimate is not certified.',
+        }],
+      }
+    }
+    tax = taxComputation.amount
+    acceptedTaxInput = taxInput
     acaMagiProbe = null
     acaQuote = null
     acaSupportCodes = [...aca.initialSupportCodes]
@@ -327,6 +460,10 @@ export function annualFundingCandidateEvaluation<
   return {
     withdrawalPlan,
     tax,
+    inheritedRothPoolsAfterWithdrawal,
+    withdrawalEffects: withdrawalEffectsProbe,
+    taxComputation,
+    taxInput: acceptedTaxInput,
     penalties,
     requiredNeed: Math.max(
       0,

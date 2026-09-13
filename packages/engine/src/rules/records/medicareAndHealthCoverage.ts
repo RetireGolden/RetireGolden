@@ -49,7 +49,7 @@ export const medicareAndHealthCoverageRecords = {
   'usc-42-1395w-113-b-pl-117-169-part-d-penalty-and-cost-sharing': {
     title: 'Part D late-enrollment and drug-cost rules are not modeled',
     statement:
-      'The Part D late-enrollment penalty is the greater of an actuarially sound amount for each uncovered month or 1 percent of the base beneficiary premium for each such month; an uncovered month depends on the timing of enrollment and creditable coverage. The Inflation Reduction Act sets the annual out-of-pocket threshold at $2,000 for 2025 and then increases it annually, but the staged enactment contains no published 2026 annual percentage, so this record does not assert the queue row\'s $2,100 figure. For 2026 and later, the insulin-product copayment ceiling is the lesser of $35, 25 percent of the maximum fair price, or 25 percent of the negotiated price. The Plan has no Part D enrollment, creditable-coverage history, base-premium, drug-claim, product, negotiated-price, maximum-fair-price, or cost-sharing inputs, so it produces none of these rule-derived figures.',
+      'The Part D late-enrollment penalty is the greater of an actuarially sound amount for each uncovered month or 1 percent of the base beneficiary premium for each such month; an uncovered month depends on the timing of enrollment and creditable coverage. The Inflation Reduction Act set the annual out-of-pocket threshold at $2,000 for 2025; CMS Final CY 2026 Part D Redesign Program Instructions (section 10 and appendix section 100) publish the CY 2026 annual out-of-pocket threshold at $2,100, with no beneficiary cost sharing in the catastrophic phase. That $2,100 figure is pinned on ParameterPack.medicare.partDAnnualOutOfPocketThreshold (not the 2025 $2,000 amount). For 2026 and later, the insulin-product copayment ceiling is the lesser of $35, 25 percent of the maximum fair price, or 25 percent of the negotiated price. The Plan has no Part D enrollment, creditable-coverage history, base-premium, drug-claim, product, negotiated-price, maximum-fair-price, or cost-sharing inputs, so it produces none of these rule-derived runtime figures; pinning the published threshold is not drug-spend modeling.',
     classification: 'outOfScope',
     outOfScope: {
       shape: 'inexpressibleInput',
@@ -64,7 +64,7 @@ export const medicareAndHealthCoverageRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'healthcareConfigSchema admits a generic medicareExtrasMonthlyPerPerson amount, but it is a user-entered aggregate expense rather than a Part D result. model/plan.ts and params/types.ts have no accepted fields for uncovered months, a national base beneficiary premium, a PDP or MA-PD plan, drug claims, a covered insulin product, negotiated or maximum-fair prices, or incurred cost sharing; simulate.ts consequently cannot derive a late penalty, annual threshold, or product-level copayment. The annual-index formula cannot by itself establish the 2026 dollar amount without the missing annual percentage determination, while the 2026 insulin ceiling is fully stated in the enacted text.',
+      'healthcareConfigSchema admits a generic medicareExtrasMonthlyPerPerson amount, but it is a user-entered aggregate expense rather than a Part D result. model/plan.ts has no accepted fields for uncovered months, a national base beneficiary premium, a PDP or MA-PD plan, drug claims, a covered insulin product, negotiated or maximum fair prices, or incurred cost sharing; simulate.ts consequently cannot derive a late penalty or product-level copayment. The CY 2026 $2,100 out-of-pocket threshold is a pack parameter sourced from CMS final instructions; runtime benefit design remains out of scope without claim inputs.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -91,11 +91,11 @@ export const medicareAndHealthCoverageRecords = {
       quotedText:
         '``(VII) for 2025, is equal to $2,000; or ``(VIII) for a subsequent year, is equal to the amount specified in this subparagraph for the previous year, increased by the annual percentage increase described in paragraph (6) for the year involved.\'\'',
     }, {
-      kind: 'statute',
-      citation: 'P.L. 117-169, section 11406(a), adding 1860D-2(b)(9)(B)(ii)',
-      url: 'https://www.govinfo.gov/content/pkg/PLAW-117publ169/pdf/PLAW-117publ169.pdf',
+      kind: 'agencyGuidance',
+      citation: 'CMS Final CY 2026 Part D Redesign Program Instructions, section 10 and appendix section 100',
+      url: 'https://www.cms.gov/files/document/final-cy-2026-part-d-redesign-program-instruction.pdf',
       quotedText:
-        'For a plan year beginning on or after January 1, 2025, the coverage provides benefits for any covered insulin product, prior to an individual reaching the out-of-pocket threshold under paragraph (4), with cost-sharing for a month\'s supply that does not exceed the applicable copayment amount.',
+        'the $2,000 annual out-of-pocket (OOP) threshold for CY 2025 discussed in the Final CY 2025 Program Instructions should be read to be $2,100 for the purposes of CY 2026, as specified in the CY 2026 Rate Announcement.',
     }, {
       kind: 'statute',
       citation: 'P.L. 117-169, section 11406(a), adding 1860D-2(b)(9)(D)',
@@ -106,14 +106,16 @@ export const medicareAndHealthCoverageRecords = {
     volatility: 'annuallyIndexed',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-29',
+    verifiedOn: '2026-09-12',
     implementedBy: [
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/params/types.ts',
+      'packages/engine/src/params/data/year2026.ts',
       'packages/engine/src/projection/internal/annualHealthcareExpenses.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
     implementedByFunctions: [
+      'packages/engine/src/params/data/year2026.ts#year2026',
       'packages/engine/src/model/plan.ts#healthcareConfigSchema',
       'packages/engine/src/params/types.ts#ParameterPack',
       'packages/engine/src/projection/internal/annualHealthcareExpenses.ts#annualHealthcareExpenses',
@@ -222,7 +224,7 @@ export const medicareAndHealthCoverageRecords = {
   'cfr-20-418-1205-1230-irmaa-life-change-redetermination': {
     title: 'IRMAA life-changing-event evidence and redetermination request is not modeled',
     statement:
-      'The regulation recognizes a spouse\'s death, marriage, divorce or annulment, work stoppage or reduction, loss of qualifying income-producing property, an employer pension cessation/termination/reorganization, and an employer settlement as major life-changing events. It makes an initial determination based on a more recent tax year effective when modified adjusted gross income is significantly reduced as a result of one of those events; POMS lists eight leaves by naming work reduction and work stoppage separately. The staged regulation and POMS index do not define “significantly reduced” as a named IRMAA-tier crossing, so the registry does not assert that extra condition. The engine already has a planning-grade SSA-44 election surface — healthcareConfigSchema.ssa44 (survivorYears / retirementYears) and annualHealthcareExpenses\' min(year-2, year-1) lookback for the two premium years after a qualifying event, named on usc-42-1395r-i-4-b-two-year-magi-lookback. What this record registers as absent is only the 20 CFR 418.1205 / 418.1230 evidence-and-redetermination-request surface: the full qualifying-event category set, documentation, and a redetermination request that SSA adjudicates under 418.1230(a).',
+      'The regulation recognizes a spouse\'s death, marriage, divorce or annulment, work stoppage or reduction, loss of qualifying income-producing property, an employer pension cessation/termination/reorganization, and an employer settlement as major life-changing events. It makes an initial determination based on a more recent tax year effective when modified adjusted gross income is significantly reduced as a result of one of those events; POMS lists eight leaves by naming work reduction and work stoppage separately. POMS HI 01120.005 A defines a significant MAGI reduction as a decrease that reduces or eliminates IRMAA — i.e., the reduction limb requires crossing into a lower IRMAA charge band (two MAGIs in the same band are not significant under that condition alone). Qualifying LCE, beneficiary request/evidence, and SSA determination remain necessary; this is not automatic appeal approval. The engine already has a planning-grade SSA-44 election surface — healthcareConfigSchema.ssa44 (survivorYears / retirementYears) and annualHealthcareExpenses\' min(year-2, year-1) lookback for the two premium years after a qualifying event, named on usc-42-1395r-i-4-b-two-year-magi-lookback. What this record registers as absent is the 20 CFR 418.1205 / 418.1230 evidence-and-redetermination-request surface: the full qualifying-event category set, documentation, and a redetermination request that SSA adjudicates under 418.1230(a).',
     classification: 'outOfScope',
     outOfScope: {
       shape: 'inexpressibleInput',
@@ -255,11 +257,17 @@ export const medicareAndHealthCoverageRecords = {
       url: 'https://secure.ssa.gov/poms.nsf/lnx/0601120000',
       quotedText:
         'HI 01120.010 Life Changing Event (LCE) – Death of Spouse TN 3 02-09 HI 01120.015 Life Changing Event (LCE) – Marriage TN 3 02-09 HI 01120.020 Life Changing Event (LCE) – Divorce or Annulment TN 3 02-09 HI 01120.025 Life Changing Event (LCE) – Work Reduction TN 16 10-23 HI 01120.030 Life Changing Event (LCE) – Work Stoppage TN 25 01-25 HI 01120.035 Life Changing Event (LCE) – Loss of Income-Producing Property TN 24 06-24 HI 01120.040 Life Changing Event (LCE) – Reduction or Loss of Pension Income TN 21 06-24 HI 01120.043 Life Changing Event (LCE) – Employer Settlement Payment TN 23 06-24',
+    }, {
+      kind: 'agencyGuidance',
+      citation: 'POMS HI 01120.005 A',
+      url: 'https://secure.ssa.gov/poms.nsf/lnx/0601120005',
+      quotedText:
+        'A “significant” reduction in MAGI is a reduction that decreases or eliminates the income-related monthly adjustment amount (IRMAA) for a specific tax year.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-27',
+    verifiedOn: '2026-09-12',
     implementedBy: [
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/tax/medicare.ts',

@@ -1,3 +1,4 @@
+import { annualOwnerTreatmentRoutingFromRows, type AnnualOwnerTreatmentRouting } from '../strategies/accountEligibility.js'
 import { asAccountId, type AccountId, type PersonId } from '../actions/identity.js'
 import { asUsdCents, type UsdCents } from '../actions/money.js'
 import { ledgerCentsToPlanDollars, planDollarsToLedgerCents } from '../actions/planBalanceAdapter.js'
@@ -713,6 +714,7 @@ function compareOccurrences(
 function ownedPools(
   plan: Plan,
   taxYear?: number,
+  ownerTreatmentRouting?: AnnualOwnerTreatmentRouting,
 ): Map<PersonId, Extract<Account, { type: 'traditional' }>[]> {
   const pools = new Map<PersonId, Map<string, Extract<Account, { type: 'traditional' }>>>()
   for (const account of plan.accounts) {
@@ -724,7 +726,7 @@ function ownedPools(
       taxYear !== undefined &&
       account.type === 'traditional' &&
       account.kind === 'ira' &&
-      isTreatAsOwnEffective(account, taxYear)
+      isTreatAsOwnEffective(account, taxYear, ownerTreatmentRouting)
     if (!isAggregatedIra(account) && !s2Effective) continue
     if (account.type !== 'traditional') continue
     const owner = account.ownerPersonId as PersonId
@@ -744,13 +746,14 @@ function aggregateOwnedOpeningBalance(
   plan: Plan,
   accountId: string,
   taxYear?: number,
+  ownerTreatmentRouting?: AnnualOwnerTreatmentRouting,
 ): number {
   return plan.accounts.reduce((sum, account) => {
     const s2Effective =
       taxYear !== undefined &&
       account.type === 'traditional' &&
       account.kind === 'ira' &&
-      isTreatAsOwnEffective(account, taxYear)
+      isTreatAsOwnEffective(account, taxYear, ownerTreatmentRouting)
     return account.type === 'traditional' && account.id === accountId &&
       (isAggregatedIra(account) || s2Effective)
       ? sum + account.balance
@@ -774,10 +777,11 @@ function balanceBearingAccounts(plan: Plan): Array<{ account: Account; balanceIn
 function ownedPhysicalRows(
   plan: Plan,
   taxYear?: number,
+  ownerTreatmentRouting?: AnnualOwnerTreatmentRouting,
 ): Array<{ account: Extract<Account, { type: 'traditional' }>; balanceIndex: number }> {
   return balanceBearingAccounts(plan).flatMap(({ account, balanceIndex }) => {
     const s2Effective = taxYear !== undefined && account.type === 'traditional' &&
-      account.kind === 'ira' && isTreatAsOwnEffective(account, taxYear)
+      account.kind === 'ira' && isTreatAsOwnEffective(account, taxYear, ownerTreatmentRouting)
     return account.type === 'traditional' && (isAggregatedIra(account) || s2Effective)
       ? [{ account, balanceIndex }]
       : []
@@ -943,6 +947,7 @@ function sourceCompatible(
   account: Account,
   plan: Plan,
   taxYear: number,
+  ownerTreatmentRouting?: AnnualOwnerTreatmentRouting,
 ): boolean {
   // Checked before the traditional-account gate, because this is the one
   // occurrence whose source is not a traditional account at all. Section
@@ -976,7 +981,7 @@ function sourceCompatible(
     case 'ownedIraRmd':
       return (
         isAggregatedIra(account) ||
-        isTreatAsOwnEffective(account, taxYear)
+        isTreatAsOwnEffective(account, taxYear, ownerTreatmentRouting)
       )
     case 'ownedIraContribution':
     case 'ownedIraEmployerContribution': return isAggregatedIra(account)
@@ -1603,9 +1608,10 @@ function readYearSources(
   // S2 accounts become members of their beneficiary's owned-IRA aggregate
   // in the election year. Reconstruct each tax year's actual pool instead of
   // holding the projection-start inventory static across that identity flip.
-  const pools = ownedPools(plan, taxYear)
+  const ownerTreatmentRouting = annualOwnerTreatmentRoutingFromRows(yearResult.spousalOwnerTreatment)
+  const pools = ownedPools(plan, taxYear, ownerTreatmentRouting)
   const ownedAccounts = [...pools.values()].flat()
-  const physicalOwnedRows = ownedPhysicalRows(plan, taxYear)
+  const physicalOwnedRows = ownedPhysicalRows(plan, taxYear, ownerTreatmentRouting)
   const occurrenceSource = yearResult.retirementRuntimeSource
   const applicationSource = yearResult.retirementRuntimeApplicationSource
   const balanceSource = yearResult.ownedNonRothIraPostGrowthSource
@@ -1708,6 +1714,7 @@ function indexOccurrences(
   accountById: ReadonlyMap<string, Account>,
   personIds: ReadonlySet<string>,
   taxYear: number,
+  ownerTreatmentRouting?: AnnualOwnerTreatmentRouting,
 ) {
   const occurrenceByKey = new Map<string, Readonly<SimulatorAnnualRetirementRuntimeOccurrence>>()
   const occurrenceOrderId = new Map<string, string>()
@@ -1744,7 +1751,7 @@ function indexOccurrences(
       ? account.ownerPersonId ?? (plan.household.people[0]?.id ?? null)
       : account?.ownerPersonId
     if (!account || expectedOwnerPersonId !== occurrence.ownerPersonId ||
-        !sourceCompatible(occurrence, account, plan, taxYear)) {
+        !sourceCompatible(occurrence, account, plan, taxYear, ownerTreatmentRouting)) {
       fail('sourceIdentityInvalid', 'Occurrence owner/source/kind must exact-rejoin its Plan account', {
         taxYear, producerOccurrenceKey: occurrence.producerOccurrenceKey,
       })
@@ -2271,6 +2278,7 @@ function runApplicationChain(
   openingRawBalances: Map<AccountId, number>,
   openingPhysicalRawBalances: Map<string, number>,
   taxYear: number,
+  ownerTreatmentRouting?: AnnualOwnerTreatmentRouting,
 ) {
   const normalizedApplications: NormalizedOwnedNonRothIraApplication[] = []
   /**
@@ -2460,7 +2468,7 @@ function runApplicationChain(
       account !== undefined &&
       account.type === 'traditional' &&
       account.kind === 'ira' &&
-      isTreatAsOwnEffective(account, taxYear)
+      isTreatAsOwnEffective(account, taxYear, ownerTreatmentRouting)
     if (!shape || !account ||
         (!isAggregatedIra(account) && !applicationS2Effective) ||
         shape.applicationKind !== application.applicationKind || shape.simulatorPhase !== application.simulatorPhase ||
@@ -2586,6 +2594,7 @@ function requireEveryOwnedOccurrenceApplied(
   accountById: ReadonlyMap<string, Account>,
   appliedKeys: ReadonlySet<string>,
   taxYear: number,
+  ownerTreatmentRouting?: AnnualOwnerTreatmentRouting,
 ): void {
   for (const occurrence of occurrenceSource.runtimeOccurrences) {
     const account = accountById.get(occurrence.sourceAccountId!)
@@ -2595,7 +2604,7 @@ function requireEveryOwnedOccurrenceApplied(
       account !== undefined &&
       account.type === 'traditional' &&
       account.kind === 'ira' &&
-      isTreatAsOwnEffective(account, taxYear)
+      isTreatAsOwnEffective(account, taxYear, ownerTreatmentRouting)
     if (account &&
         (isAggregatedIra(account) || s2Effective) &&
         !appliedKeys.has(occurrence.producerOccurrenceKey)) {
@@ -3092,6 +3101,7 @@ export function stepYear(
     : new Map(carry.openingContractRawValues)
 
   const taxYear = yearResult.year
+  const ownerTreatmentRouting = annualOwnerTreatmentRoutingFromRows(yearResult.spousalOwnerTreatment)
   const {
     pools, ownedAccounts, physicalOwnedRows,
     occurrenceSource, applicationSource, balanceSource,
@@ -3106,7 +3116,7 @@ export function stepYear(
     occurrenceSource, applicationSource, balanceSource, plan, taxYear,
   )
   const { occurrenceByKey, occurrenceOrderId } = indexOccurrences(
-    occurrenceSource, plan, accountById, personIds, taxYear,
+    occurrenceSource, plan, accountById, personIds, taxYear, ownerTreatmentRouting,
   )
   requirePensionRolloverOccurrences(plan, accountById, occurrenceByKey, taxYear)
   const namedConversionCoverage = reconcilePublishedAnnualTotals(
@@ -3147,10 +3157,10 @@ export function stepYear(
     applicationSource, occurrenceByKey, occurrenceOrderId, accountById,
     accountOrder, contractOwnerById, contractFundingById,
     publishedContractOpenings, physicalOwnedRows, openingBalances,
-    openingRawBalances, openingPhysicalRawBalances, taxYear,
+    openingRawBalances, openingPhysicalRawBalances, taxYear, ownerTreatmentRouting,
   )
   requireEveryOwnedOccurrenceApplied(
-    occurrenceSource, accountById, appliedKeys, taxYear,
+    occurrenceSource, accountById, appliedKeys, taxYear, ownerTreatmentRouting,
   )
   requireChainRejoinsPreGrowth(
     publishedPhysicalBalancesBeforeGrowth, physicalOwnedRows, ownedAccounts,

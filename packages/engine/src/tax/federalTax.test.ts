@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { describeRule } from '../rules/describeRule.js'
 
@@ -13,7 +13,12 @@ import {
   type OptimizerInput,
   type OptimizerYear,
 } from '../strategies/optimizer.js'
-import type { TaxCalculator, TaxYearInput } from '../projection/types.js'
+import type {
+  StatePensionBasisPoolComputationResult,
+  TaxCalculator,
+  TaxYearInput,
+} from '../projection/types.js'
+import * as paramsModule from '../params/index.js'
 import {
   applyCapitalLossCarryforward,
   combineTaxCalculators,
@@ -1493,6 +1498,10 @@ describe('age-based deductions', () => {
 })
 
 describe('calculators', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
   it('federal calculator matches the detailed computation', () => {
     const calc = createFederalTaxCalculator()
     const i = input({ ordinaryIncome: 80_000, capitalGains: 10_000, ssBenefits: 20_000 })
@@ -1504,6 +1513,187 @@ describe('calculators', () => {
     const combined = combineTaxCalculators(createFederalTaxCalculator(), flat)
     const i = input({ ordinaryIncome: 100_000 })
     expect(combined.compute(i)).toBeCloseTo(computeFederalTax(i).totalTax + 5_000, 6)
+  })
+
+  it('runs one federal walk per combined compute when factory builtins are present', () => {
+    const i = input({ ordinaryIncome: 100_000 })
+    const combined = combineTaxCalculators(createFederalTaxCalculator(), {
+      compute: (enriched) => Math.max(0, enriched.ordinaryIncome) * 0.05,
+    })
+    const expected = computeFederalTax(i).totalTax + 5_000
+    const spy = vi.spyOn(paramsModule, 'packForYear')
+
+    combined.compute(i)
+    expect(spy).toHaveBeenCalledTimes(1)
+    expect(combined.compute(i)).toBeCloseTo(expected, 6)
+    expect(spy).toHaveBeenCalledTimes(2)
+  })
+
+  it('runs one federal walk per combined computeResult when factory builtins are present', () => {
+    const i = input({ ordinaryIncome: 100_000 })
+    const combined = combineTaxCalculators(createFederalTaxCalculator(), {
+      compute: () => 40,
+      computeResult: () => ({ amount: 40, status: 'complete', issues: [] }),
+    })
+    const expected = computeFederalTax(i).totalTax + 40
+    const spy = vi.spyOn(paramsModule, 'packForYear')
+
+    combined.computeResult!(i)
+    expect(spy).toHaveBeenCalledTimes(1)
+    expect(combined.computeResult!(i).amount).toBeCloseTo(expected, 6)
+    expect(spy).toHaveBeenCalledTimes(2)
+  })
+
+  it('still invokes overridden factory compute and computeResult callbacks', () => {
+    const federal = createFederalTaxCalculator()
+    const originalCompute = federal.compute
+    let computeCalls = 0
+    let computeResultCalls = 0
+    federal.compute = (enriched) => {
+      computeCalls += 1
+      return originalCompute(enriched) + 7
+    }
+    federal.computeResult = () => {
+      computeResultCalls += 1
+      return { amount: 99, status: 'complete', issues: [] }
+    }
+
+    const i = input({ ordinaryIncome: 50_000 })
+    const federalTax = computeFederalTax(i)
+    const combined = combineTaxCalculators(federal, { compute: () => 3 })
+    const spy = vi.spyOn(paramsModule, 'packForYear')
+
+    expect(combined.compute(i)).toBe(federalTax.totalTax + 7 + 3)
+    expect(combined.computeResult!(i)).toEqual({
+      amount: 99 + 3,
+      status: 'complete',
+      issues: [],
+    })
+    expect(computeCalls).toBe(1)
+    expect(computeResultCalls).toBe(1)
+    expect(spy).toHaveBeenCalledTimes(3)
+  })
+
+  it('enriches arbitrary custom calculators without reusing the builtin shortcut', () => {
+    let seen: TaxYearInput | undefined
+    const custom: TaxCalculator = {
+      compute: (enriched) => {
+        seen = enriched
+        return 12
+      },
+    }
+    const i = input({ ordinaryIncome: 80_000, ssBenefits: 10_000 })
+    const combined = combineTaxCalculators(custom)
+    const federal = computeFederalTax(i)
+    const spy = vi.spyOn(paramsModule, 'packForYear')
+
+    expect(combined.compute(i)).toBe(12)
+    expect(seen?.stateHouseholdFacts).toEqual({
+      federalAgi: federal.agi,
+      federalDeductionUsed: federal.deduction,
+      federalTaxableIncome: federal.taxableIncome,
+      federallyIncludedSocialSecurity: federal.taxableSocialSecurity,
+    })
+    expect(spy).toHaveBeenCalledTimes(1)
+  })
+
+  it('preserves duplicate factory builtins while still running one federal walk', () => {
+    const i = input({ ordinaryIncome: 75_000 })
+    const expected = computeFederalTax(i).totalTax * 2
+    const combined = combineTaxCalculators(
+      createFederalTaxCalculator(),
+      createFederalTaxCalculator(),
+    )
+    const spy = vi.spyOn(paramsModule, 'packForYear')
+
+    expect(combined.compute(i)).toBeCloseTo(expected, 6)
+    expect(spy).toHaveBeenCalledTimes(1)
+  })
+
+  it('combined computeResult unions incomplete child issues without changing numeric sum', () => {
+    // Authority-independent composition contract: amount is the sum of child
+    // amounts; incomplete status propagates when any child is incomplete.
+    const exact: TaxCalculator = {
+      compute: () => 100,
+      computeResult: () => ({ amount: 100, status: 'complete', issues: [] }),
+    }
+    const incomplete: TaxCalculator = {
+      compute: () => 40,
+      computeResult: () => ({
+        amount: 40,
+        status: 'incomplete',
+        issues: [
+          {
+            code: 'unknown-state-qcd-policy',
+            message: 'QCD policy unknown for NJ',
+            missingFacts: ['stateQcdPolicy'],
+          },
+        ],
+      }),
+    }
+    const combined = combineTaxCalculators(exact, incomplete)
+    const result = combined.computeResult!(input({ ordinaryIncome: 1 }))
+    expect(result.amount).toBe(140)
+    expect(result.status).toBe('incomplete')
+    expect(result.issues).toEqual([
+      expect.objectContaining({ code: 'unknown-state-qcd-policy' }),
+    ])
+    expect(combined.compute(input({ ordinaryIncome: 1 }))).toBe(140)
+  })
+
+  it('preserves incomplete status and basis pools when a factory builtin is composed', () => {
+    const hsaPools = [{
+      state: 'CA' as const,
+      accountId: 'hsa',
+      ownerPersonId: 'p',
+      status: 'complete' as const,
+      openingBasis: 100,
+      basisAdded: 0,
+      basisConsumed: 10,
+      closingBasis: 90,
+    }]
+    const njPools = [{
+      state: 'NJ' as const,
+      ownerPersonId: 'p',
+      status: 'complete' as const,
+      openingBasis: 200,
+      basisConsumed: 20,
+      closingBasis: 180,
+    }]
+    const pensionPools: StatePensionBasisPoolComputationResult[] = [{
+      state: 'PA',
+      accountId: 'pension',
+      ownerPersonId: 'p',
+      kind: 'pension',
+      status: 'complete',
+      openingBasis: 300,
+      basisConsumed: 30,
+      closingBasis: 270,
+    }]
+    const stateLike: TaxCalculator = {
+      compute: () => 25,
+      computeResult: () => ({
+        amount: 25,
+        status: 'incomplete',
+        issues: [{ code: 'state-pack-missing', message: 'pack missing', missingFacts: ['pack'] }],
+        hsaBasisPools: hsaPools,
+        njIraBasisPools: njPools,
+        pensionBasisPools: pensionPools,
+      }),
+    }
+    const i = input({ ordinaryIncome: 60_000 })
+    const expected = computeFederalTax(i).totalTax + 25
+    const combined = combineTaxCalculators(createFederalTaxCalculator(), stateLike)
+    const spy = vi.spyOn(paramsModule, 'packForYear')
+    const result = combined.computeResult!(i)
+
+    expect(result.amount).toBeCloseTo(expected, 6)
+    expect(result.status).toBe('incomplete')
+    expect(result.issues).toEqual([expect.objectContaining({ code: 'state-pack-missing' })])
+    expect(result.hsaBasisPools).toEqual(hsaPools)
+    expect(result.njIraBasisPools).toEqual(njPools)
+    expect(result.pensionBasisPools).toEqual(pensionPools)
+    expect(spy).toHaveBeenCalledTimes(1)
   })
 })
 

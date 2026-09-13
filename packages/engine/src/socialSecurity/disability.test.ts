@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
-import { ssdiMonthlyBenefit, ssdiSuspendedBySga, inSsdiWindow, SGA_ANNUAL_MONTHS } from './disability.js'
+import {
+  assertSsdiMedicareContinuationNotDeterminedFromCashBenefitFacts,
+  ssdiMonthlyBenefit,
+  ssdiSuspendedBySga,
+  inSsdiWindow,
+  SGA_ANNUAL_MONTHS,
+} from './disability.js'
 
 describe('ssdiMonthlyBenefit', () => {
   it('returns the PIA with no early-retirement reduction', () => {
@@ -51,5 +57,32 @@ describe('inSsdiWindow', () => {
   it('is false at/after FRA (SSDI has converted to retirement)', () => {
     expect(inSsdiWindow(67, onsetAge, fraYears)).toBe(false)
     expect(inSsdiWindow(70, onsetAge, fraYears)).toBe(false)
+  })
+})
+
+describe('assertSsdiMedicareContinuationNotDeterminedFromCashBenefitFacts', () => {
+  // SSA Red Book / DI 28055.001: at least 93 months after TWP — cash-benefit
+  // EPE (36 months) is distinct and must not be added to another 93.
+  it('does not produce a Part A interval from onset age and SGA suspension', () => {
+    const boundary = assertSsdiMedicareContinuationNotDeterminedFromCashBenefitFacts({
+      onsetAge: 58,
+      ssdiCashBenefitSuspendedBySga: true,
+    })
+    expect(boundary.status).toBe('notAMedicareContinuationDetermination')
+    expect(boundary.partAEntitlementMonths).toBeNull()
+    expect(boundary.authorityMinimumMonthsAfterTwp).toBe(93)
+    expect(boundary.missingFacts).toEqual([
+      'trialWorkPeriodEndDate',
+      'entitlementTerminationDate',
+      'continuingImpairmentAfterTermination',
+      'substantialGainfulActivityCounterfactual',
+      'medicarePartAEntitlementInterval',
+    ])
+  })
+
+  it('keeps the cash-benefit SGA enforcer registered as a negative control', () => {
+    const sgaMonthly = 1_690
+    const annual = sgaMonthly * SGA_ANNUAL_MONTHS
+    expect(ssdiSuspendedBySga(annual + 1, annual)).toBe(true)
   })
 })

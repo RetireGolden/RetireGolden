@@ -338,10 +338,14 @@ export const iraBasisAndRolloverRecords = {
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
-    implementedBy: ['packages/engine/src/actions/beneficiarySpousalElectionStatus.ts'],
+    verifiedOn: '2026-09-12',
+    implementedBy: [
+      'packages/engine/src/actions/beneficiarySpousalElectionStatus.ts',
+      'packages/engine/src/actions/beneficiarySpousalElectionAnnualGate.ts',
+    ],
     implementedByFunctions: [
       'packages/engine/src/actions/beneficiarySpousalElectionStatus.ts#evaluateBeneficiarySpousalElection',
+      'packages/engine/src/actions/beneficiarySpousalElectionAnnualGate.ts#gateBeneficiarySpousalElectionForAnnualCoordinator',
     ],
   },
 

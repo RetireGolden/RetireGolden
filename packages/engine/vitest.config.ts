@@ -3,6 +3,10 @@ import { coverageConfigDefaults, defineConfig } from 'vitest/config'
 export default defineConfig({
   test: {
     environment: 'node',
+    // Run one test file at a time. Coverage-heavy projection and nested
+    // simulation workloads should not compete with another file for CPU; local
+    // and CI use the same limit.
+    maxWorkers: 1,
     // Script tests included here must stay independent of engine-source imports:
     // only the equivalence CLI installs the configureEngineTree resolve hook.
     include: ['src/**/*.test.ts', 'scripts/**/*.test.mjs'],

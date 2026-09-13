@@ -1,3 +1,4 @@
+import type { MutableInheritedRothTaxCharacterPool } from './internal/inheritedRothTaxCharacterPoolState.js'
 import type { AssetAllocationPolicy } from '../model/plan.js'
 import type { RothBasisState } from '../strategies/rothBasis.js'
 import type { IraProRataYear } from '../strategies/iraBasis.js'
@@ -16,6 +17,7 @@ import {
   captureSimulatorAnnualPassState,
   restoreSimulatorAnnualPassState,
 } from '../internal/simulatorAnnualPassStateRegistry.js'
+import type { HecmLineStateWithComponents } from './internal/hecmLineState.js'
 
 /**
  * A simulator balance row at the post-contribution annual-pass boundary.
@@ -30,10 +32,8 @@ export interface SimulatorAnnualPassBalanceRecord {
   costBasis: number
 }
 
-export interface SimulatorAnnualPassHecmState {
-  principalLimit: number
-  loanBalance: number
-}
+/** Live HECM line in annual-pass rollback state, including optional HUD split fields. */
+export type SimulatorAnnualPassHecmState = HecmLineStateWithComponents
 
 export interface SimulatorAnnualPassAllocationTrackState {
   policy: AssetAllocationPolicy
@@ -72,6 +72,7 @@ export interface SimulatorAnnualPassStateBindings {
   iraProRata: Map<string, IraProRataYear>
   iraBasisByOwner: Map<string, number>
   rothBasis: Map<string, RothBasisState>
+  inheritedRothPools: Map<string, MutableInheritedRothTaxCharacterPool>
   /**
    * Observation-only remaining assumed Roth contribution seed by pool key.
    * Mutated at the same withdrawal commit as `rothBasis`; must roll back with

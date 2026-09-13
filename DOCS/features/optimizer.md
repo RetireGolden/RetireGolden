@@ -14,6 +14,22 @@ channel); UI in [planner/OptimizePage.tsx](../../packages/planner-ui/src/planner
 
 ## Design decisions (and why)
 
+- **Incomplete calculations withhold exact recommendations.** Incomplete tax or reverse-mortgage
+  (HECM) calculations in an evaluated candidate prevent publication of an exact conversion comparison.
+  The worker summary currently supplies affected years without candidate-specific issue details. The UI
+  explains that limitation; it does not substitute the current plan's projection or promise that a state
+  worksheet resolves a candidate's missing facts. When actual component issue evidence is available,
+  guidance can identify the relevant state worksheet or pension source controls. Worksheet links focus
+  and scroll to the section after the Assumptions page mounts, including navigation within that page.
+  Several state worksheets use bases that are not interchangeable with federal AGI or reconstructed
+  ordinary income: Connecticut personal-exemption phase-outs use Connecticut AGI, Wisconsin
+  standard-deduction bands use a dedicated Wisconsin income line, and Iowa alternate/minimum tax
+  compares regular tax to test net income with separate thresholds. The exact ledger therefore requires
+  users to author those worksheet facts when they are material. `stateWorksheetMateriality.test.ts`
+  pins that those bases stay distinct: Connecticut and Wisconsin use coherent U.S.-government-interest
+  examples where the correct worksheet fact matches the state pre-deduction base and a deliberately
+  wrong federal-AGI proxy for the same household changes tax, while missing facts stay incomplete. Iowa
+  cases are an isolated alternate-tax leaf contract only, not whole-return monetary proof.
 - **Everything runs in-app — no external services.** The solver is **HiGHS compiled to WASM** (the `highs`
   npm package), executed in a Web Worker; the ~3 MB wasm loads lazily only when Optimize is invoked, never
   in the main bundle. No network calls, no server-side solve. Correctness is validated by **in-repo tests**

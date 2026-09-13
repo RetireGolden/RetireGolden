@@ -20,6 +20,10 @@ export default defineConfig({
   plugins: [react()],
   test: {
     environment: 'node',
+    // Vitest 5 defaults to availableParallelism - 1 workers. This suite runs
+    // CPU-heavy projections under v8 coverage; cap at 2 so local and CI share
+    // the same bounded concurrency instead of oversubscribing the runner.
+    maxWorkers: 2,
     include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
     // Declares the React act environment once for the whole package. Files
     // still opt into jsdom per-file with a `@vitest-environment` pragma; this

@@ -41,7 +41,7 @@ MFJ (2× the $125,000 single threshold).
 
 ## Simplifications / not modeled
 - Federal-pension and PERS partial subtractions (service-date dependent) not modeled (`none` is conservative).
-- Oregon's Retirement Income Credit and Elderly/Disabled credit (income-tested) not modeled.
+- The retirement-income credit is modeled only through characterized return-income, claimant, pension, and pre-credit-tax facts; the elderly/disabled credit remains outside this state rule surface.
 - Extra standard deduction of $1,200 (single) / $1,000 per eligible person (joint) for age 65+/blind not modeled.
 - $256-per-exemption personal exemption credit (a credit, not a deduction) not modeled.
 - Local transit/county taxes (e.g. Portland-area Metro/Multnomah) not modeled.
@@ -61,3 +61,9 @@ unsupported.
 - https://ustax.tools/oregon-tax-brackets-2025/ — 2025 single and MFJ bracket thresholds (4.75%/6.75%/8.75%/9.9%).
 - https://nationaltaxreports.com/oregon-taxes-on-pensions-iras-and-401ks/ — pensions/IRA/401(k) generally taxable; SS exempt.
 - Tax Foundation, State Individual Income Tax Rates and Brackets 2025 — OR top rate 9.9%.
+
+## Oregon caps the age-62 retirement credit by net pension and liability (verified 2026-09-12)
+
+An eligible recipient age 62 or older receives 9% of net qualifying pension income, capped by remaining Oregon liability. Net pension is capped at $7,500 nonjoint/$15,000 joint, reduced by household Social Security/Tier-I benefits and household income above $15,000/$30,000. Only qualifying pension included in Oregon taxable income enters; a gross pension amount alone does not establish the credit.
+
+Registered as `or-316-157-retirement-income-credit`. Authority: [ORS 316.157](https://www.oregonlegislature.gov/bills_laws/ors/ors316.html).

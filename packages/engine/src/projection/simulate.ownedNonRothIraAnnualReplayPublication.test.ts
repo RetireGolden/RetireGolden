@@ -69,7 +69,7 @@ function settlementState(plan: Plan): SimulatorAnnualPassStateBindings {
     nextRetirementRuntimeMutationOrdinal: binding(1),
     iraProRata: new Map(),
     iraBasisByOwner: new Map(),
-    rothBasis: new Map(),
+    inheritedRothPools: new Map(), rothBasis: new Map(),
     rothAssumedContributionRemaining: new Map(),
     rothCounterfactualFreeCoverConsumed: new Map(),
     propertyValues: new Map(),

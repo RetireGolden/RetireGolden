@@ -37,17 +37,17 @@ the parse cost that dominates on a low-end device is paid on the decompressed by
 
 | Class | Limit | Measured when set | What it protects |
 |---|---|---|---|
-| planner Web Worker, and **exactly one of them** | 1000 KiB | 903 KiB | The engine simulation core, shipped once |
-| engine simulation core (`useProjection`) | 700 KiB | 665 KiB | The deterministic ledger the analysis pages share |
+| planner Web Worker, and **exactly one of them** | 1150 KiB | 1058.4 KiB | The engine simulation core, shipped once |
+| engine simulation core (`useProjection`) | 900 KiB | 827.0 KiB | The deterministic ledger the analysis pages share |
 | Learning Center registry | 150 KiB | 124 KiB | Article *metadata* — bodies load per article |
 | chart vendor (`CartesianChart`) | 380 KiB | 331 KiB | Recharts and its d3 slices |
 | plan route group (`PlanRoutes`), and **exactly one of them** | 300 KiB | 267 KiB | The lazy plan-route boundary staying route-sized |
-| app entry (the script `index.html` loads) | 300 KiB | 248 KiB | The chunk a cold visit blocks on first |
-| every other JS chunk | 260 KiB | 96 KiB (`ResultsPage`) | Route and page chunks staying route-sized |
-| all JS together | 4800 KiB | 4431.7 KiB (4049 when the row landed) | "Many new chunks", not just one fat one |
+| app entry (the script `index.html` loads) | 420 KiB | 384.4 KiB | The chunk a cold visit blocks on first |
+| every other JS chunk | 260 KiB | 129.2 KiB (`annualProjectionKernels`) | Route and page chunks staying route-sized |
+| all JS together | 5100 KiB | 4824.2 KiB | "Many new chunks", not just one fat one |
 | one stylesheet / all CSS | 64 / 80 KiB | 45 / 52 KiB | The token layer |
 | landing critical path | 700 KiB | 596 KiB | Entry + every `modulepreload`: what a cold visit blocks on |
-| PWA precache | 4900 KiB | 4579.6 KiB (4179 when the row landed) | Install cost, and the offline guarantee's price |
+| PWA precache | 5250 KiB | 4971.8 KiB | Install cost, and the offline guarantee's price |
 
 Each limit is the size measured when the budget landed plus headroom, and the headroom is deliberately
 uneven — read the table, not an average:
@@ -55,21 +55,23 @@ uneven — read the table, not an average:
 - The **aggregate** rows used to be the tightest. The landing critical path
   (596 → 700) still is: that is what a cold visit blocks on. `all JS` and the
   PWA precache were equally tight (4356 → 4400, 4504 → 4550) until that
-  ~30–46 KiB of slack started failing every unrelated PR; they are now 4431.7 →
-  4800 and 4579.6 → 4900, round hundreds with a few hundred KiB of operator-
-  requested headroom. Landing still expects growth to be justified. The two
-  sum rows are meant to stop absorbing ordinary feature work without a note,
-  not to fail CI on noise. "Raising the precache row" below is the 4550
-  worked example; the 4800 / 4900 raise is the paragraph after it.
-- The **per-class chunk** rows sit near 5–21% (worker 903 → 1000, `useProjection` 665 → 700,
+  ~30–46 KiB of slack started failing every unrelated PR; they moved to 4431.7 →
+  4800 and 4579.6 → 4900 (PR 707, measured), then to 4824.2 → 5100 and
+  4971.8 → 5250 for the authorized calculation audit (see below). Landing still expects growth to be
+  justified. The two sum rows are meant to stop absorbing ordinary feature work
+  without a note, not to fail CI on noise. "Raising the precache row" below is
+  the 4550 worked example; the 4800 / 4900 raise and the calc-audit raise follow it.
+- The **per-class chunk** rows sit near 5–21% (worker 1058.4 → 1150, `useProjection` 827 → 900,
   `learningRegistry` 124 → 150, Recharts 331 → 380, `PlanRoutes` 267 → 300): enough for a feature
-  landing in a known chunk.
+  landing in a known chunk. Before the calc audit they were worker 903 → 1000 and `useProjection`
+  665 → 700; those baselines are in the section below.
   `learningRegistry` now holds only metadata, about 0.9 KiB per article, so its 26 KiB of slack is
   roughly 25 more articles.
 - The **loosest** rows are the ones with the most natural variation: the per-chunk default (260 KiB)
   has to fit whatever the next route chunk turns out to weigh, and CSS (45 → 64, ~42%) is small enough
   that percentages there mean little in absolute terms. The default now sits well above the largest
-  chunk it actually governs (`ResultsPage`, 96 KiB), because `PlanRoutes` — which used to set that
+  chunk it actually governs (`annualProjectionKernels`, 129.2 KiB in the audit build; two
+  unclassified kernel chunks at 129.2 and 129.1 KiB), because `PlanRoutes` — which used to set that
   mark at 206 KiB — has its own row. Read that as room for the next route chunk, not as slack to
   spend: a chunk approaching 260 KiB is one worth naming here.
 
@@ -286,6 +288,61 @@ The operator asked to stop that recurring fail. The limits in
 (~370 and ~320 KiB above those measured sizes). Same gate, same parsers, same fail-closed unmeasured
 paths. A later feature that actually grows the payload still has to say why in the same commit; this
 raise is only so CI is not red on every PR that does not.
+
+## Raising five rows: the authorized 60-item calculation audit
+
+After the aggregate raise to 4800 / 4900, the authorized calculation audit landed federal
+params, the 50-state tax pack, rules records, projection settlement paths, and plan schema
+v5 work. A production build on that branch measured five overshoots against the limits then in
+force; the structural guards below that were exercised all passed:
+
+| Row | measured | previous limit | new limit |
+|---|---|---|---|
+| planner Web Worker | 1058.4 KiB | 1000 | 1150 |
+| engine simulation core (`useProjection`) | 827.0 KiB | 700 | 900 |
+| app entry | 384.4 KiB | 300 | 420 |
+| all JS | 4824.2 KiB | 4800 | 5100 |
+| PWA precache | 4971.8 KiB | 4900 | 5250 |
+
+Earlier documented sizes (worker 903 KiB, `useProjection` 665 KiB, entry 248 KiB, all JS
+4431.7 KiB, precache 4579.6 KiB) come from this file and prior raises — not from a
+contemporaneous pre-audit production build remeasured for this branch. Arithmetic deltas against
+those numbers are bookkeeping, not proof that every KiB between them is audit payload.
+
+**What did not fail (among guards that were exercised).** The build still emitted exactly one
+`planner.worker-*.js` chunk, reported no static import cycles among `dist/assets` chunks, kept
+the landing critical path at 681.1 KiB (under 700), left `PlanRoutes` at 270.7 KiB (under 300),
+and held every unclassified chunk under the 260 KiB default (largest: two
+`annualProjectionKernels-*.js` chunks at 129.2 and 129.1 KiB). CSS totals stayed under their
+rows. The overshoot is not a duplicate worker, a coordinator static-import cycle, or a test
+harness pulled into the entry — it is engine payload in the graphs that already carry simulation
+code.
+
+**What was not exercised.** The Learning Center registry row did not appear in the budget table:
+the audit build emitted no `learningRegistry-*.js` or `articleIndex-*.js` chunk (the row has no
+`exactCount`, so zero matches is neither a row nor a failure). Vite warns that `learningRegistry.ts`
+is both dynamically and statically imported; article-metadata slugs ride in the entry chunk. That
+does not show article-body leakage — the entry's landing closure has no per-article body chunks —
+but the 150 KiB registry guard cannot be counted among the passes above until a build again emits
+a chunk that matches it.
+
+**Where the bytes plausibly are.** The worker and `useProjection` rows grew in parallel in this
+build (~155 KiB each versus the last documented worker/`useProjection` sizes above): the same
+projection/tax runtime ships in both graphs because a worker entry cannot share chunks with the
+app graph. The app entry rose ~136 KiB versus its last documented size. The aggregate rows moved
+~392 KiB versus the 4800 / 4900 raise's documented measurements — consistent with engine and
+entry growth, not a higher chunk count (180 JS chunks, 200 precache entries). Split
+annual-projection kernel modules (`annualProjectionKernels-*.js`, ~129 KiB each) remain named
+chunks in both graphs rather than duplicate worker entries. Exact per-module byte attribution
+cannot be reconstructed from minified `dist/` without a module map; the categorical account
+(federal params, state pack, rules records, projection/settlement, plan schema v5) rests on the
+branch diff and emitted graph shape, not on a line-item audit of every KiB.
+
+**What the new headroom is for.** Round hundreds with modest slack above the measured audit build:
+~92 KiB on the worker, ~73 KiB on `useProjection`, ~36 KiB on the entry, ~276 KiB on all JS,
+~278 KiB on precache. That covers ordinary follow-on work inside the same audit stack without
+re-opening the aggregate rows on every commit. It is not a blanket disable — landing (700),
+`DEFAULT_CHUNK_KIB` (260), CSS, the single-worker rule, and the static-cycle gate are unchanged.
 
 ## The Learn content split
 

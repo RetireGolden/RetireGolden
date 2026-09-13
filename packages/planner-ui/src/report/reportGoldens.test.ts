@@ -29,6 +29,10 @@
  * engine's published $49,824 maximum and disclosed omissions. These report
  * examples have no calculation changes; the Maine numeric oracle is in the
  * engine's state-tax fixtures.
+ * 2026-09-12: HECM provenance appendix text updated (provisional federal-pack
+ * placeholder removed); example-couple and coast-fire reflect KY/CO state-tax
+ * characterization changes. Committed report snapshot bytes are regenerated
+ * separately; numeric oracles remain in engine fixtures.
  */
 import { describe, expect, it } from 'vitest'
 

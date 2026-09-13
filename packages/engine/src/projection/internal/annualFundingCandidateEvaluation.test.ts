@@ -64,6 +64,7 @@ const baseInput = (
   withdrawalEffectAccounts: [],
   hsaEffectAccounts: [],
   rothBasisByPool: new Map(),
+  inheritedRothPools: new Map(),
   taxCalculator,
   taxInputBase: {
     year: 2026,
@@ -150,6 +151,9 @@ describe('annualFundingCandidateEvaluation', () => {
 
     expect(result.withdrawalPlan).toBe(plan)
     expect(result.tax).toBe(80)
+    expect(result.taxComputation.amount).toBe(80)
+    expect(result.taxComputation.status).toBe('complete')
+    expect(result.taxInput.ordinaryIncome).toBe(90)
     expect(result.penalties).toBe(10)
     expect(result.requiredNeed).toBe(110)
     expect(result.traditionalEarlyWithdrawalPenaltyCharged).toBe(true)

@@ -53,6 +53,8 @@ export interface AnnualYearResultLedgerPublication {
 
 export interface AnnualYearResultRetirementPublication {
   readonly rmd: YearResult['rmd']
+  readonly electionYearOwnerRmdObligations?:
+    YearResult['electionYearOwnerRmdObligations']
   readonly rmdShortfallExciseTax: YearResult['rmdShortfallExciseTax']
   readonly rmdShortfallExciseDetails: YearResult['rmdShortfallExciseDetails']
   readonly sepp: YearResult['sepp']
@@ -94,6 +96,11 @@ export interface AnnualYearResultTaxPublication {
   readonly ssEarningsTestWithheld: YearResult['ssEarningsTestWithheld']
   readonly ssdiPaid: YearResult['ssdiPaid']
   readonly tax: YearResult['tax']
+  readonly spousalElectionAtYearEnd?: YearResult['spousalElectionAtYearEnd']
+  readonly spousalOwnerTreatment?: YearResult['spousalOwnerTreatment']
+  readonly hecmComputation?: YearResult['hecmComputation']
+  readonly taxComputation?: YearResult['taxComputation']
+  readonly acceptedTaxInput?: YearResult['acceptedTaxInput']
 }
 
 export interface AnnualYearResultFundingPublication {
@@ -172,6 +179,9 @@ export function annualYearResultAssembly(
     socialSecurityStreams: ledger.socialSecurityStreams,
     employerMatch: ledger.employerMatch,
     rmd: retirement.rmd,
+    ...(retirement.electionYearOwnerRmdObligations === undefined
+      ? {}
+      : { electionYearOwnerRmdObligations: retirement.electionYearOwnerRmdObligations }),
     rmdShortfallExciseTax: retirement.rmdShortfallExciseTax,
     rmdShortfallExciseDetails: retirement.rmdShortfallExciseDetails,
     sepp: retirement.sepp,
@@ -247,6 +257,13 @@ export function annualYearResultAssembly(
     ssEarningsTestWithheld: tax.ssEarningsTestWithheld,
     ssdiPaid: tax.ssdiPaid,
     tax: tax.tax,
+    ...(tax.spousalElectionAtYearEnd === undefined ? {} : { spousalElectionAtYearEnd: tax.spousalElectionAtYearEnd }),
+    ...(tax.spousalOwnerTreatment === undefined ? {} : { spousalOwnerTreatment: tax.spousalOwnerTreatment }),
+    ...(tax.hecmComputation === undefined ? {} : { hecmComputation: tax.hecmComputation }),
+    ...(tax.taxComputation === undefined ? {} : { taxComputation: tax.taxComputation }),
+    ...(tax.acceptedTaxInput === undefined
+      ? {}
+      : { acceptedTaxInput: tax.acceptedTaxInput }),
     withdrawals: funding.withdrawals,
     realizedGains:
       funding.realizedGains.withdrawal +

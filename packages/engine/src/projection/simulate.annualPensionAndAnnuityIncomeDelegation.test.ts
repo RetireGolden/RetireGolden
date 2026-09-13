@@ -65,6 +65,8 @@ vi.mock('./internal/annualPensionAndAnnuityIncome.js', async (importOriginal) =>
           payment: 1_200,
           fundingOwnerPersonId: 'p1',
         }],
+        characterizedRetirementDistributions: [],
+        stateRetirementDistributionFacts: [],
         rows: [
         {
           kind: 'pension',

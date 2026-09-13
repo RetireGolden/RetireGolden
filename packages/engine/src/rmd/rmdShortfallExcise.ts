@@ -52,6 +52,8 @@ export type RmdShortfallRequirementKind =
   | 'inheritedFinalSweep'
   | 'inheritedLegacy'
   | 'mixedInheritedRequirements'
+  /** Post five-year-deadline remaining-benefit obligation (§4974 still applies). */
+  | 'inheritedPostDeadlineRemainingBenefit'
 
 export interface RmdShortfallObligation {
   readonly obligationId: string

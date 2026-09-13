@@ -1,3 +1,4 @@
+import { describeRule } from '../rules/describeRule.js'
 import { describe, expect, it } from 'vitest'
 
 import {
@@ -140,7 +141,7 @@ describe('permanent-life cash value', () => {
   })
 })
 
-describe('death benefit', () => {
+describeRule('irc-101-a-1-life-insurance-death-proceeds-exclusion', { readings: { excludedFromIncome: 100000, taxedAt25Percent: 75000 }, accepted: 'excludedFromIncome' }, ({ accepted }) => {
   function couplePlan(): Plan {
     const plan = createEmptyPlan({ newId: testIds, now: fixedNow })
     plan.household.filingStatus = 'marriedFilingJointly'
@@ -154,9 +155,14 @@ describe('death benefit', () => {
   }
 
   it('pays the face amount on the insured death, income-tax-free', () => {
+    // IRC 101(a)(1): general death proceeds excluded from gross income.
+    // Discriminator: with a positive flat tax rate, including the $100k in
+    // ordinary income would shrink ending net worth by the tax on that amount;
+    // cash rises by the full $100k and taxable income does not.
     const plan = couplePlan()
     plan.insurance = [permLife({ insured: 'p1', beneficiary: 'estate', deathBenefit: 100_000 })]
-    const result = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: createFlatTaxCalculator(25) })
+    const tax25 = createFlatTaxCalculator(25)
+    const result = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: tax25 })
     // p1's final alive year is 2046 (age 80); the benefit settles that year.
     expect(yearOf(result, 2045).deathBenefit).toBe(0)
     expect(yearOf(result, 2046).deathBenefit).toBe(100_000)
@@ -166,9 +172,14 @@ describe('death benefit', () => {
     // Other costs (Medicare, etc.) are identical and cancel.
     const withoutBenefit = simulatePlan(
       validate({ ...plan, insurance: [permLife({ insured: 'p1', deathBenefit: 0 })] }),
-      { startYear: 2026, taxCalculator: createFlatTaxCalculator(25) },
+      { startYear: 2026, taxCalculator: tax25 },
     )
-    expect(result.endingNetWorth - withoutBenefit.endingNetWorth).toBeCloseTo(100_000, 2)
+    const nwDelta = result.endingNetWorth - withoutBenefit.endingNetWorth
+    expect(nwDelta).toBeCloseTo(accepted, 2)
+    // Counterfactual: if the $100k were taxed at 25%, the NW delta would be ~$75k.
+    expect(nwDelta).not.toBeCloseTo(75_000, 0)
+    // Death-year federal tax dollars must not rise by ~$25k solely from the proceeds.
+    expect(yearOf(result, 2046).tax - yearOf(withoutBenefit, 2046).tax).toBeLessThan(1_000)
   })
 
   it('pays a single-person plan its benefit in the final year, into the estate', () => {

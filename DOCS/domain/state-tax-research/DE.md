@@ -1,61 +1,36 @@
 # Delaware (DE) — state income tax for retirement planning
 
-Tax year: 2026. Researched 2026-09-05 (standard deduction corrected); rate schedule corrected 2026-09-07.
+Tax year: 2026. Authority reconciliation: 2026-09-12.
 
-## Summary
-- Broad individual income tax: **yes** (graduated, 0%–6.6%; same bracket thresholds for single and MFJ)
-- Taxes Social Security benefits: no (fully exempt)
-- Long-term capital gains: taxed as ordinary income
-- Retirement income (pension, IRA, 401k): exclusion up to $12,500 per person at age 60+ ($2,000 if under 60)
-- Standard deduction (2026): **$3,250 single / $6,500 MFJ**, plus **$2,500 per qualifying taxpayer or spouse age 65+** (nonblind, standard-deduction path)
+## Current calculation contract
 
-## Proposed StateTaxParams (2026)
-- code: "DE"
-- name: "Delaware"
-- hasIncomeTax: true
-- taxesSocialSecurity: false
-- capitalGainsAsOrdinary: true
-- standardDeduction: { single: 3250, marriedFilingJointly: 6500 }
-- standardDeductionAge65Addition: { single: 2500, marriedFilingJointly: 2500 }
-- brackets.single / brackets.marriedFilingJointly:
-  - { lowerBound: 0, ratePct: 0.0 }
-  - { lowerBound: 2000, ratePct: 2.2 }
-  - { lowerBound: 5000, ratePct: 3.9 }
-  - { lowerBound: 10000, ratePct: 4.8 }
-  - { lowerBound: 20000, ratePct: 5.2 }
-  - { lowerBound: 25000, ratePct: 5.55 }
-  - { lowerBound: 60000, ratePct: 6.6 }
-- retirement: { kind: "capped", capPerPerson: 12500, minAge: 60 }
+The following source-specific contracts supersede older aggregate assumptions. A rule record identifies the calculator boundary; it does not certify that a projection fixture or a release gate has passed. Missing eligibility, source, allocation or state-basis facts must remain visible as incomplete.
 
-## Standard deduction — operative law
+### Delaware pension exclusions distinguish age, source and tax year
 
-30 Del. C. § 1107 elects the standard deduction unless the resident itemizes under § 1109. Section 1108(a)(3) sets the basic amounts at **$3,250** for an individual (or each spouse filing separately) and **$6,500** for spouses filing jointly. Section 1108(b) adds **$2,500** in each enumerated circumstance, including when the taxpayer has attained age 65 before the close of the taxable year (and parallel limbs for a spouse and for blindness).
+Record: `de-code-30-1106-social-security-retirement-subtractions`. Classification: `approximated`.
 
-The [2026 Form PIT-EST instructions](https://revenuefiles.delaware.gov/2025/PITForms_Instructions/Instructions/PIT-EST_Instructions_2026-01.pdf) (line 3) repeat those figures: $3,250 for single, divorced, widow(er), or head of household; $6,500 if married filing jointly; $3,250 if married or civil-union filing separately; plus additional standard deduction allowance(s) of $2,500 for taxpayer and/or spouse age 65 or over or blind when taking the standard deduction.
+For TY2026, each recipient under 60 takes the greater of qualifying ordinary pension capped at $2,000 or U.S. military pension capped at $12,500; the two amounts are not added. At 60 or older, the $12,500 pension/eligible-retirement-income cap applies separately to each owner. Source, age, and early-distribution facts must establish eligibility. SB219 (85 Del. Laws ch.426), signed August 17, 2026, increases future military tiers beginning in 2027; it does not increase the 2026 cap. The broad aggregate retirement path remains an approximation of qualifying source and owner allocation.
 
-### Erroneous $5,700 / $11,400 figures
+Authority: [30 Del. C. §1106(b)(3)b-c](https://delcode.delaware.gov/title30/c011/sc02/index.html).
 
-An earlier pack and this note once cited **$5,700 / $11,400** while referencing the [Justia mirror](https://law.justia.com/codes/delaware/title-30/chapter-11/subchapter-ii/section-1108/) of § 1108; that mirror now displays **$3,250 / $6,500** under § 1108(a)(3). The mistaken amounts match **House Bill 89** ([BillDetail/130098](https://www.legis.delaware.gov/BillDetail/130098)), which proposed those figures for tax years after 2023 but was **never enacted** (status: “Out of Committee 5/2/23” with no chapter law or effective date). Operative law remains **$3,250 / $6,500** per the official Code and 2026 PIT-EST instructions.
+> For persons age 60 or older, amounts received, not to exceed $12,500, as pensions from employers, the United States, this State, or any subdivision of this State, or as eligible retirement income. … Amounts received, not to exceed $2,000, as pensions from employers, the United States, this State, or any subdivision of this State; or … Amounts received, not to exceed $12,500, as a United States military pension.
 
-## Bracket rate schedule — operative law
+### Delaware early-distribution gate applies before pension exclusions
 
-30 Del. C. § 1102(a)(14) applies for taxable years beginning after December 31, 2013 and assigns **5.55%** to taxable income over **$25,000** through **$60,000**. Adjacent bands remain 0%, 2.2%, 3.9%, 4.8%, 5.2%, and 6.6%. The 2026 PIT-EST rate table prints the same 5.55% band. The 2026 pack now carries 5.55% (corrected from an earlier 5.5% rounding).
+Record: `de-early-distribution-gate`. Classification: `unsettled`.
 
-## Retirement-income detail
+An early distribution with Form 1099-R Box 7 code 1 or a federal premature-distribution penalty does not qualify for the pension exclusion, including the age-60-plus branch. Unknown classification is incomplete, not eligibility. The latest final TY2025 instructions are carried forward for TY2026 because enacted SB219 does not change this classification; final TY2026 instructions must be checked when published.
 
-Delaware has a graduated tax with a $0 first bracket (first $2,000 untaxed) up to 6.6%. Bracket **thresholds are identical for single and MFJ** — verified, not assumed.
+Authority: [2025 PIT-RES instructions, p.6, Line 6 pension exclusion](https://revenuefiles.delaware.gov/2025/PITForms_Instructions/Instructions/PIT-RES_Instructions_2025-01.pdf).
 
-Delaware fully exempts Social Security. Taxpayers **age 60 or older** may exclude up to **$12,500 per person** of eligible retirement income; those under 60 may exclude up to $2,000 of pension income. Modeled as `kind: "capped"`, `capPerPerson: 12500`, `minAge: 60`.
+> An early distribution from an IRA or pension fund for emergency reasons or following a separation from employment does not qualify for the pension exclusion. If the distribution code listed in Box 7 of your 1099 R is a 1 (one), or if you were assessed an early withdrawal penalty on federal 1040, Schedule 2, Line 8 for the distribution, then that distribution DOES NOT qualify for the pension exclusion.
 
-## Simplifications / not modeled
-- The $12,500 exclusion covers a broad set of investment income, not just pension/IRA; modeled narrowly as the pension/IRA cap.
-- Under-60 $2,000 pension exclusion not modeled.
-- Blindness additional standard deduction not modeled (age count only).
-- Personal credits and other credits not modeled.
-- Itemization election (§ 1107 / § 1109) not modeled.
-- **Qualifying surviving spouse:** PIT-EST groups widow(er) with the $3,250 basic amount ($5,750 at age 65 with the $2,500 addition). The engine maps QSS to joint parameters ($6,500 / $9,000 in the 2026 pack); that reachable gap is registered as the `approximated` rule `de-pit-est-2026-qss-standard-deduction-joint-mapper`.
+## Validation boundary
 
-## Citations
+Source records above require discriminating positive and negative fixtures through the state calculation entry point, followed by actual `simulatePlan` event/basis integration. The source record alone does not establish those results. Annual parameters and generated rule/quote ledgers must be refreshed by the integration owner.
+
+## Additional source history
 - https://delcode.delaware.gov/title30/c011/sc02/index.html — 30 Del. C. §§ 1107–1108 (operative basic and age-65 amounts).
 - https://delcode.delaware.gov/title30/c011/sc01/index.html — 30 Del. C. § 1102(a)(14) (5.55% $25,000–$60,000 band).
 - https://revenuefiles.delaware.gov/2025/PITForms_Instructions/Instructions/PIT-EST_Instructions_2026-01.pdf — Delaware Division of Revenue, 2026 PIT-EST instructions, line 3 and rate table.

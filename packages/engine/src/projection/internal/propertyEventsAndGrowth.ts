@@ -14,7 +14,11 @@
  * >
  * > An open line compounds at the line's growth rate on both sides: the
  * > unused principal limit grows regardless of home value (the buffer-asset
- * > property), and the loan balance accrues rate + MIP.
+ * > property). HUD-validated lines keep the observed servicer baseline
+ * > separate from modeled draw debt; a complete ledger replaces only the
+ * > observed component, while the annual modeled-debt multiplier is a
+ * > disclosed planning estimate and leaves the HECM computation incomplete
+ * > whenever modeled debt is nonzero.
  *
  * Property value grows at GENERAL INFLATION, not at the account's
  * `annualReturnPct`. The property variant carries that field and this phase
@@ -103,13 +107,17 @@
  * `simulatePlan` against the same `Plan` object.
  */
 import type { Account } from '../../model/plan.js'
+import { priceHecmHudMipAssessmentYear } from './hecmHudValidatedOpeningAdapter.js'
+import {
+  applyHudYearEndComponents,
+  computeHudYearEndFromServicing,
+  HECM_MODELED_DEBT_TIMING_ISSUE,
+  type HecmLineStateWithComponents,
+} from './hecmLineState.js'
 import type { YearCashFlowTransferEndpoint } from './types/cashFlow.js'
 
-/** The two numbers an open HECM line carries into this phase. */
-export interface PropertyEventHecmLine {
-  readonly principalLimit: number
-  readonly loanBalance: number
-}
+/** The numbers an open HECM line carries into this phase. */
+export type PropertyEventHecmLine = HecmLineStateWithComponents
 
 /** The ledger payload for a legacy tax-free property sale. */
 export interface LegacyPropertySaleDeposit {
@@ -162,13 +170,35 @@ export interface PropertyEventRow {
   readonly closesHecmForAccountId: string | null
   /** The multiplier for a line still open and not yet accrued this year, or null. */
   readonly hecmGrowth: number | null
+  /**
+   * HUD monthly MIP dollars observed for the servicing-baseline evidence.
+   * The caller commits split observed/modeled year-end components rather than
+   * adding this scalar to the whole loan balance. Null for legacy
+   * quote-estimate lines (growth already embeds the rate+MIP blend).
+   */
+  readonly hecmHudMipAccrual: number | null
+  readonly hecmHudEndingLoanBalance: number | null
+  readonly hecmHudObservedBaselineEnding: number | null
+  readonly hecmHudModeledDebtEnding: number | null
+  readonly hecmHudMipIncompleteReason: string | null
+  readonly hecmHudModeledDebtIncompleteReason: string | null
   /** The ledger row to publish, or null. Built only on the publish path. */
   readonly record: LegacyPropertySaleDeposit | null
 }
 
-interface MutableHecmLine {
-  principalLimit: number
-  loanBalance: number
+type MutableHecmLine = HecmLineStateWithComponents
+
+function seedShadowLine(live: PropertyEventHecmLine): MutableHecmLine {
+  return {
+    principalLimit: live.principalLimit,
+    loanBalance: live.loanBalance,
+    ...(live.annualMipRate !== undefined ? { annualMipRate: live.annualMipRate } : {}),
+    ...(live.calculationMode !== undefined ? { calculationMode: live.calculationMode } : {}),
+    ...(live.observedServicingBaseline !== undefined
+      ? { observedServicingBaseline: live.observedServicingBaseline }
+      : {}),
+    ...(live.modeledDebt !== undefined ? { modeledDebt: live.modeledDebt } : {}),
+  }
 }
 
 /** One row per property account, in `accounts` order. */
@@ -189,9 +219,7 @@ export function propertyEventsAndGrowth(
   const lineFor = (accountId: string): MutableHecmLine | null => {
     if (shadowLines.has(accountId)) return shadowLines.get(accountId) ?? null
     const live = hecmStates.get(accountId)
-    const seeded: MutableHecmLine | null = live
-      ? { principalLimit: live.principalLimit, loanBalance: live.loanBalance }
-      : null
+    const seeded: MutableHecmLine | null = live ? seedShadowLine(live) : null
     shadowLines.set(accountId, seeded)
     return seeded
   }
@@ -226,13 +254,59 @@ export function propertyEventsAndGrowth(
     shadowValues.set(accountId, value)
     const openLine = lineFor(accountId)
     let hecmGrowth: number | null = null
+    let hecmHudMipAccrual: number | null = null
+    let hecmHudEndingLoanBalance: number | null = null
+    let hecmHudObservedBaselineEnding: number | null = null
+    let hecmHudModeledDebtEnding: number | null = null
+    let hecmHudMipIncompleteReason: string | null = null
+    let hecmHudModeledDebtIncompleteReason: string | null = null
     if (openLine && account.hecm && !accruedLineIds.has(accountId)) {
       hecmGrowth = 1 + account.hecm.growthRatePct / 100
-      openLine.principalLimit *= hecmGrowth
-      openLine.loanBalance *= hecmGrowth
+      if (
+        openLine.calculationMode === 'hudValidated' &&
+        openLine.annualMipRate !== undefined
+      ) {
+        const mip = priceHecmHudMipAssessmentYear({
+          line: account.hecm, year, annualMipRate: openLine.annualMipRate,
+        })
+        const yearEnd = computeHudYearEndFromServicing(openLine, hecmGrowth, mip)
+        applyHudYearEndComponents(
+          openLine,
+          hecmGrowth,
+          yearEnd.observedServicingBaseline,
+          yearEnd.modeledDebt,
+        )
+        hecmHudObservedBaselineEnding = yearEnd.observedServicingBaseline
+        hecmHudModeledDebtEnding = yearEnd.modeledDebt
+        hecmHudEndingLoanBalance = yearEnd.loanBalance
+        if (yearEnd.modeledDebt > 0) {
+          hecmHudModeledDebtIncompleteReason = HECM_MODELED_DEBT_TIMING_ISSUE
+        }
+        if (mip.status === 'complete') {
+          hecmHudMipAccrual = mip.totalMipAccrued
+        } else {
+          hecmHudMipIncompleteReason = mip.reason
+        }
+      } else {
+        openLine.principalLimit *= hecmGrowth
+        openLine.loanBalance *= hecmGrowth
+      }
       accruedLineIds.add(accountId)
     }
-    rows.push({ propertyAccountId: accountId, value, deposit, closesHecmForAccountId, hecmGrowth, record })
+    rows.push({
+      propertyAccountId: accountId,
+      value,
+      deposit,
+      closesHecmForAccountId,
+      hecmGrowth,
+      hecmHudMipAccrual,
+      hecmHudEndingLoanBalance,
+      hecmHudObservedBaselineEnding,
+      hecmHudModeledDebtEnding,
+      hecmHudMipIncompleteReason,
+      hecmHudModeledDebtIncompleteReason,
+      record,
+    })
   }
   return rows
 }

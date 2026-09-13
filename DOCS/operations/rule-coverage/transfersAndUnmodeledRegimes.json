@@ -4,6 +4,237 @@
   "module": "transfersAndUnmodeledRegimes",
   "rules": [
     {
+      "id": "hud-hecm-mca-mip-limits",
+      "title": "HECM maximum claim amount and MIP rates for HUD-validated openings",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "Case-assignment year owns the ceiling — do not inflate a future unpublished year. Test PLF 0.5 is a stipulated input. Update 18 supports monthly division and remittance capitalization, not a guessed ordering of an arbitrary same-month advance. simulatePlan opens the loan through hecmLineOpeningsWithHudValidation and prices supported annual assessment evidence through priceHecmHudMipAssessmentYear. simulate.hecmHudProduction.test.ts distinguishes closing cash already received from modeled closing proceeds and verifies capitalized monthly MIP; the opening-adapter tests preserve quoted versus HUD-table-verified PLF provenance and refuse unverified inputs. Missing assessment timing or unsupported transaction facts remain incomplete rather than an exact HUD result. The hecmLineState adapter keeps servicer-observed balances separate from accepted modeled draws, so later observed balances do not erase modeled debt. The annual growth estimate for modeled draws and the estimated baseline growth when servicing timing is incomplete are simulator planning conventions outside this settled monthly-assessment claim; their presence does not establish a complete HUD servicing result.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-12",
+      "dueOn": "2027-01-10",
+      "implementedBy": [
+        "packages/engine/src/params/data/year2026.ts",
+        "packages/engine/src/projection/hecm.ts",
+        "packages/engine/src/projection/hecmHudValidated.ts",
+        "packages/engine/src/projection/internal/hecmHudValidatedOpeningAdapter.ts",
+        "packages/engine/src/projection/internal/hecmLineOpenings.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/data/year2026.ts",
+          "functions": [
+            {
+              "name": "year2026",
+              "line": 16
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/hecm.ts",
+          "functions": [
+            {
+              "name": "accrueHecmAnnualMip",
+              "line": 42
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/hecmHudValidated.ts",
+          "functions": [
+            {
+              "name": "computeHecmHudValidatedOpening",
+              "line": 40
+            },
+            {
+              "name": "priceHecmMonthlyMipFromOutstandingBalances",
+              "line": 100
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/internal/hecmHudValidatedOpeningAdapter.ts",
+          "functions": [
+            {
+              "name": "hecmLineOpeningsWithHudValidation",
+              "line": 77
+            },
+            {
+              "name": "priceHecmHudMipAssessmentYear",
+              "line": 228
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/internal/hecmLineOpenings.ts",
+          "functions": [
+            {
+              "name": "hecmLineOpenings",
+              "line": 159
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 393
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/hecmHudValidated.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/projection/hecmHudValidated.test.ts",
+          "line": 10,
+          "note": null,
+          "tests": [
+            {
+              "title": "caps MCA at the 2026 ceiling and distinguishes case assignment from closing",
+              "line": 11
+            },
+            {
+              "title": "includes every verified closing-day financed amount in opening debt (H4)",
+              "line": 16
+            },
+            {
+              "title": "refuses to turn a case year into a missing closing date or invalid closing evidence",
+              "line": 23
+            },
+            {
+              "title": "uses appraisal below the ceiling and retains typed invalid/unsupported controls",
+              "line": 28
+            },
+            {
+              "title": "keeps simple annual pre-timing arithmetic distinct from invalid input",
+              "line": 36
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "agencyGuidance",
+          "citation": "HUD Mortgagee Letter 2025-22, HECM Maximum Claim Amount Limits",
+          "url": "https://www.hud.gov/sites/dfiles/hudclips/documents/2025-22hsgml.pdf"
+        },
+        {
+          "kind": "agencyGuidance",
+          "citation": "HUD Mortgagee Letter 2017-12, Initial and Annual MIP Rates",
+          "url": "https://www.hud.gov/sites/documents/17-12ml.pdf"
+        },
+        {
+          "kind": "agencyGuidance",
+          "citation": "HUD Handbook 4000.1 Update 18, II.A.1.b.3.b.ii, Annual Mortgage Insurance Premium",
+          "url": "https://www.hud.gov/sites/default/files/Housing/documents/40001-hsgh-Update-18.pdf"
+        },
+        {
+          "kind": "agencyGuidance",
+          "citation": "HUD Handbook 4000.1 Update 18, III.A.2.a.v(B)(C), Calculation of Monthly Mortgage Insurance Premium",
+          "url": "https://www.hud.gov/sites/default/files/Housing/documents/40001-hsgh-Update-18.pdf"
+        },
+        {
+          "kind": "agencyGuidance",
+          "citation": "HUD Handbook 4000.1 Update 18, III.A.2.a.v(C)(3)(c)(ii), Standard",
+          "url": "https://www.hud.gov/sites/default/files/Housing/documents/40001-hsgh-Update-18.pdf"
+        }
+      ]
+    },
+    {
+      "id": "irc-101-a-1-life-insurance-death-proceeds-exclusion",
+      "title": "General life-insurance death proceeds are excluded from gross income",
+      "classification": "settled",
+      "errorDirection": null,
+      "conventionRationale": "Narrow registration of the practiced general death-proceeds path. annualPermanentLifeTransitions pays max(face, cash value) into the death-benefit channel; federal tax calculators do not treat that channel as ordinary income. Interest and excepted contracts remain out of scope.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-12",
+      "dueOn": "2027-09-12",
+      "implementedBy": [
+        "packages/engine/src/projection/internal/annualPermanentLifeTransitions.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/projection/internal/annualPermanentLifeTransitions.ts",
+          "functions": [
+            {
+              "name": "annualPermanentLifeTransitions",
+              "line": 66
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 393
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/insurance.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/projection/insurance.test.ts",
+          "line": 144,
+          "note": null,
+          "tests": [
+            {
+              "title": "pays the face amount on the insured death, income-tax-free",
+              "line": 157
+            },
+            {
+              "title": "pays a single-person plan its benefit in the final year, into the estate",
+              "line": 185
+            },
+            {
+              "title": "pays the benefit on a policy held by the last survivor",
+              "line": 196
+            },
+            {
+              "title": "never pays less than the accumulated cash value",
+              "line": 203
+            },
+            {
+              "title": "pays the benefit exactly once",
+              "line": 212
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 101(a)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section101&num=0&edition=prelim"
+        },
+        {
+          "kind": "agencyGuidance",
+          "citation": "IRS, Are proceeds paid under a life insurance contract taxable?",
+          "url": "https://www.irs.gov/faqs/interest-dividends-other-types-of-income/life-insurance-disability-insurance-proceeds"
+        }
+      ]
+    },
+    {
       "id": "irc-199A-a-qualified-business-income-deduction-not-modeled",
       "title": "The section 199A qualified business income deduction is not a modeled surface",
       "classification": "outOfScope",
@@ -26,7 +257,7 @@
           "functions": [
             {
               "name": "incomeStreamSchema",
-              "line": 1678
+              "line": 1946
             }
           ]
         },
@@ -35,7 +266,7 @@
           "functions": [
             {
               "name": "section68Reduction",
-              "line": 222
+              "line": 231
             }
           ]
         }
@@ -77,16 +308,17 @@
       "title": "The 2026 basic exclusion amount is a chapter 11 credit base, not an income-tax deduction",
       "classification": "outOfScope",
       "errorDirection": null,
-      "conventionRationale": "Transfer-tax computation, not income tax. tax/federalTax.ts returns chapter 1 income tax and never reads a basic exclusion amount. projection/compare.ts's heirTax and endingAfterTaxEstate discount inherited pre-tax balances at assumptions.heirTaxRatePct; that is an income-tax-basis estate metric, not the section 2001 tax or the section 2010 credit. The $15,000,000 figure is quote-carried from 2010(c)(3)(A); indexing does not begin until a decedent dying after 2026, so 2026 is the unindexed statutory year. Do not treat this record as the same tax base as irc-151-d-5-C-senior-deduction-not-indexed: that deduction is a chapter 1 subtraction of 6,000 dollars per qualified individual, and this credit is a chapter 11 exclusion. Portability of unused exclusion is a separate election and is registered at irc-2010-c-5-dsue-portability-election-not-modeled.",
+      "conventionRationale": "Transfer-tax computation, not income tax. tax/federalTax.ts returns chapter 1 income tax and never reads a basic exclusion amount. projection/compare.ts's heirTax and endingAfterTaxEstate discount inherited pre-tax balances at assumptions.heirTaxRatePct; that is an income-tax-basis estate metric, not the section 2001 tax or the section 2010 credit. The $15,000,000 figure is pinned on ParameterPack.transferTax.basicExclusionAmount from 2010(c)(3)(A); indexing does not begin until a decedent dying after 2026, so 2026 is the unindexed statutory year. Do not treat this record as the same tax base as irc-151-d-5-C-senior-deduction-not-indexed. Portability is registered at irc-2010-c-5-dsue-portability-election-not-modeled.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "annuallyIndexed",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-27",
-      "dueOn": "2026-12-25",
+      "verifiedOn": "2026-09-12",
+      "dueOn": "2027-01-10",
       "implementedBy": [
         "packages/engine/src/model/plan.ts",
+        "packages/engine/src/params/data/year2026.ts",
         "packages/engine/src/params/types.ts"
       ],
       "implementations": [
@@ -95,7 +327,16 @@
           "functions": [
             {
               "name": "planSchema",
-              "line": 2304
+              "line": 2596
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/data/year2026.ts",
+          "functions": [
+            {
+              "name": "year2026",
+              "line": 16
             }
           ]
         },
@@ -168,7 +409,7 @@
           "functions": [
             {
               "name": "planSchema",
-              "line": 2304
+              "line": 2596
             }
           ]
         }
@@ -200,16 +441,17 @@
       "title": "The annual gift-tax exclusion is a transfer-tax rule the engine does not compute",
       "classification": "outOfScope",
       "errorDirection": null,
-      "conventionRationale": "This is a transfer-tax absence, not an income-tax approximation. tax/federalTax.ts computes chapter 1 income tax only. projection/compare.ts's heirTax is an assumed heir income-tax haircut on inherited pre-tax balances, not a chapter 12 gift tax. model/plan.ts has no gift, donee, or annual-exclusion field, and params/types.ts's federalTax pack has no gift-exclusion amount. The staged 2503 text still carries the statutory $10,000 base plus the 2503(b)(2) COLA; it does not publish a 2026 indexed dollar, so this record does not invent one. The 15-year / $35,000 529-to-Roth mechanics are a different Code section and live at irc-529-c-3-E-529-to-roth-rollover-not-modeled.",
+      "conventionRationale": "This is a transfer-tax absence, not an income-tax approximation. tax/federalTax.ts computes chapter 1 income tax only. projection/compare.ts's heirTax is an assumed heir income-tax haircut on inherited pre-tax balances, not a chapter 12 gift tax. model/plan.ts has no gift, donee, or annual-exclusion field. The 2026 $19,000 / basic-exclusion $15,000,000 pins live on ParameterPack.transferTax for authority; runtime chapter 12 computation remains out of scope. The 15-year / $35,000 529-to-Roth mechanics are a different Code section and live at irc-529-c-3-E-529-to-roth-rollover-not-modeled; the five-year 529 front-loading election is irc-529-five-year-gift-election-not-modeled.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "annuallyIndexed",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-27",
-      "dueOn": "2026-12-25",
+      "verifiedOn": "2026-09-12",
+      "dueOn": "2027-01-10",
       "implementedBy": [
         "packages/engine/src/model/plan.ts",
+        "packages/engine/src/params/data/year2026.ts",
         "packages/engine/src/params/types.ts"
       ],
       "implementations": [
@@ -218,7 +460,16 @@
           "functions": [
             {
               "name": "planSchema",
-              "line": 2304
+              "line": 2596
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/data/year2026.ts",
+          "functions": [
+            {
+              "name": "year2026",
+              "line": 16
             }
           ]
         },
@@ -246,6 +497,11 @@
           "kind": "statute",
           "citation": "IRC 2503(b)(2)",
           "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section2503&num=0&edition=prelim"
+        },
+        {
+          "kind": "agencyGuidance",
+          "citation": "Revenue Procedure 2025-32 section 4.42(1)",
+          "url": "https://www.irs.gov/irb/2025-45_IRB"
         }
       ]
     },
@@ -281,7 +537,7 @@
           "functions": [
             {
               "name": "accountUnionSchema",
-              "line": 1251
+              "line": 1519
             }
           ]
         }
@@ -315,6 +571,75 @@
           "kind": "statute",
           "citation": "P.L. 117-328, division T, title I, section 126(d)",
           "url": "https://www.govinfo.gov/content/pkg/PLAW-117publ328/pdf/PLAW-117publ328.pdf"
+        }
+      ]
+    },
+    {
+      "id": "irc-529-five-year-gift-election-not-modeled",
+      "title": "Five-year 529 front-loading uses the annual gift exclusion, which is not computed",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "conventionRationale": "Authority pin only. Runtime remains unmodeled gift tax; this record does not invent a 529 gift-tax calculator. Shares the 2026 $19,000 annual amount with irc-2503-b-annual-gift-exclusion-not-modeled.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-12",
+      "dueOn": "2027-01-10",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/params/data/year2026.ts",
+        "packages/engine/src/params/types.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "planSchema",
+              "line": 2596
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/data/year2026.ts",
+          "functions": [
+            {
+              "name": "year2026",
+              "line": 16
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/types.ts",
+          "functions": [
+            {
+              "name": "ParameterPack",
+              "line": 53
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "agencyGuidance",
+          "citation": "Revenue Procedure 2025-32 section 4.42(1)",
+          "url": "https://www.irs.gov/irb/2025-45_IRB"
+        },
+        {
+          "kind": "agencyGuidance",
+          "citation": "Instructions for Form 709 (2025), Contributions to Qualified Tuition Plans or Programs",
+          "url": "https://www.irs.gov/instructions/i709"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 529(c)(2)(B)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section529&num=0&edition=prelim"
         }
       ]
     },

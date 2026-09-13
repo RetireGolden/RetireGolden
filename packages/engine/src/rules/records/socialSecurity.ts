@@ -1928,7 +1928,7 @@ export const socialSecurityRecords = {
   'usc-42-426-b-disability-trial-work-medicare-continuation': {
     title: 'Disabled-worker Medicare continuation after trial work is not modeled',
     statement:
-      'For a disabled worker whose trial-work period has ended and whose entitlement later terminates, section 426(b) deems the worker still entitled for qualifying consecutive months, capped at 78 months; it also substitutes 15 months for the 36-month termination rule when fixing that end point. The staged statute does not state the queue row\'s standalone 93-month continuation, so the registry does not assert that number. The Plan has only an integer SSDI onset age: it cannot represent trial-work timing, termination, continuing impairment, the substantial-gainful-activity counterfactual, or a Medicare Part A entitlement interval, and the engine produces no coverage result from those facts.',
+      'For a disabled worker whose trial-work period has ended and whose entitlement later terminates, section 426(b) deems the worker still entitled for qualifying consecutive months, capped at 78 months; it also substitutes 15 months for the 36-month termination rule when fixing that end point. SSA POMS DI 28055.001 and the SSA Red Book Extended Medicare Coverage page state the operative beneficiary-facing formulation as at least 93 consecutive months after the nine-month TWP for qualifying continuing disability — not 36 months of cash-benefit EPE added to another 93. Cash-benefit TWP/EPE approximation remains separately attributed; this record does not claim a Medicare coverage engine. The Plan has only an integer SSDI onset age: it cannot represent trial-work timing, termination, continuing impairment, the substantial-gainful-activity counterfactual, or a Medicare Part A entitlement interval, and the engine produces no coverage result from those facts. assertSsdiMedicareContinuationNotDeterminedFromCashBenefitFacts pins that boundary.',
     classification: 'outOfScope',
     outOfScope: {
       shape: 'inexpressibleInput',
@@ -1943,7 +1943,7 @@ export const socialSecurityRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'This is an input and result boundary. socialSecurityIncomeSchema carries only disability.onsetAge, and disability.ts/annualSocialSecurity.ts use it to price an annual SSDI stream; neither accepts a trial-work ending date, subsequent termination, continuing impairment, counterfactual inability to engage in substantial gainful activity, or Part A coverage. A generic healthcare expense cannot turn those absent facts into an entitlement interval. The 78-month cap and the substituted 15-month rule are quoted exactly; no CMS guidance establishing the queue\'s 93-month formulation was staged.',
+      'This is an input and result boundary, not a cash-benefit TWP/EPE trim. socialSecurityIncomeSchema carries only disability.onsetAge; annualSocialSecurity.ts prices an annual SSDI cash stream. disability.ts#inSsdiWindow and ssdiSuspendedBySga remain cash-benefit enforcers and are not Medicare-continuation determinations. assertSsdiMedicareContinuationNotDeterminedFromCashBenefitFacts enumerates the missing Part A facts and the 93-month authority floor. A generic healthcare expense cannot invent an entitlement interval. Do not add 36 months of EPE to another 93.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -1952,23 +1952,35 @@ export const socialSecurityRecords = {
       quotedText:
         'For purposes of this subsection, an individual who has had a period of trial work which ended as provided in section 422(c)(4)(A) of this title, and whose entitlement to benefits or status as a qualified railroad retirement beneficiary as described in paragraph (2) has subsequently terminated, shall be deemed to be entitled to such benefits or to occupy such status (notwithstanding the termination of such entitlement or status) for the period of consecutive months throughout all of which the physical or mental impairment, on which such entitlement or status was based, continues, and throughout all of which such individual would have been entitled to monthly insurance benefits under this subchapter or as a qualified railroad retirement beneficiary had such individual been unable to engage in substantial gainful activity, but not in excess of 78 such months.',
     }, {
-      kind: 'statute',
-      citation: '42 U.S.C. 426(b)',
-      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section426&num=0&edition=prelim',
+      kind: 'agencyGuidance',
+      citation: 'SSA POMS DI 28055.001',
+      url: 'https://secure.ssa.gov/apps10/poms.nsf/lnx/0428055001',
       quotedText:
-        'In determining when an individual\'s entitlement or status terminates for purposes of the preceding sentence, the term "36 months" in the second sentence of section 423(a)(1) of this title, in section 402(d)(1)(G)(i) of this title, in the last sentence of section 402(e)(1) of this title, and in the last sentence of section 402(f)(1) of this title shall be applied as though it read "15 months".',
+        'Extended Medicare coverage, effective October 2000 provides 78 months of extended Medicare eligibility to persons whose disability ceased due to SGA and continue to have a disabling impairment. Counting the first 15 months of the EPE, this provision allows for continued premium-free hospital insurance (HI), and supplemental medical insurance, for at least 93 months after the TWP.',
+    }, {
+      kind: 'agencyGuidance',
+      citation: 'SSA Red Book, Extended Medicare Coverage (SSDI only)',
+      url: 'https://www.ssa.gov/redbook/eng/extended-medicare-coverage.htm',
+      quotedText:
+        'Most individuals with disabilities who are working will continue to receive Medicare coverage for at least 93 consecutive months (7 years and 9 months) following the 9-month Trial Work Period (TWP).',
+    }, {
+      kind: 'agencyGuidance',
+      citation: 'SSA Red Book, Extended Medicare Coverage (SSDI only), When does this start?',
+      url: 'https://www.ssa.gov/redbook/eng/extended-medicare-coverage.htm',
+      quotedText:
+        'The 93 months start the month after the last month of your TWP.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-27',
+    verifiedOn: '2026-09-12',
     implementedBy: [
       'packages/engine/src/model/plan.ts',
       'packages/engine/src/socialSecurity/disability.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/model/plan.ts#socialSecurityIncomeSchema',
-      'packages/engine/src/socialSecurity/disability.ts#inSsdiWindow',
+      'packages/engine/src/socialSecurity/disability.ts#assertSsdiMedicareContinuationNotDeterminedFromCashBenefitFacts',
     ],
   },
   'irc-86-b-2-provisional-income-modified-agi': {

@@ -38,7 +38,7 @@ function publicPension(id: string, monthlyAmount: number): Account {
     name: 'State public pension',
     ownerPersonId: 'p1',
     annualReturnPct: null,
-    source: 'public',
+    source: 'stateLocalPublic',
     startAge: 65,
     monthlyAmount,
     colaPct: 0,

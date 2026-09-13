@@ -2,6 +2,11 @@
 
 **Last source verification: 2026-08-07.**
 
+Shared projection now carries optional characterized state-retirement / HSA / QCD year facts on
+`TaxYearInput` and an optional `YearResult.taxComputation` exactness channel. Incomplete
+computations must not be ranked as exact by relocation or optimizer presentation. QCD policy still
+comes only from versioned state parameters — never from a Plan override.
+
 This inventory sets the strongest claim an implementation cockpit may make from the public
 RetireGolden engine today. It is a claim-control document, not a list of everything the tax law
 permits. A strategy can appear in a cockpit only to the extent that the shipped model, cited rule

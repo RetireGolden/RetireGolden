@@ -8,20 +8,20 @@
       "label": "chronology, ledger, entity-fact, and retirement publication",
       "file": "projection/internal/annualYearResultAssembly.ts",
       "lines": [
-        148,
-        180
+        155,
+        190
       ],
       "anchors": [
         {
-          "line": 148,
+          "line": 155,
           "text": "const { chronology, ledger, entityFacts, retirement, settlement, tax, funding } ="
         },
         {
-          "line": 152,
+          "line": 159,
           "text": "return {"
         },
         {
-          "line": 167,
+          "line": 174,
           "text": "ownedRothIraPoolActivity: entityFacts.ownedRothIraPoolActivity,"
         }
       ]
@@ -31,20 +31,20 @@
       "label": "optional inherited, action, QCD, and aggregate-conversion channels",
       "file": "projection/internal/annualYearResultAssembly.ts",
       "lines": [
-        181,
-        233
+        191,
+        243
       ],
       "anchors": [
         {
-          "line": 181,
+          "line": 191,
           "text": "...(retirement.inheritedAccounts === undefined"
         },
         {
-          "line": 203,
+          "line": 213,
           "text": "...(retirement.retirementActionExecution === undefined"
         },
         {
-          "line": 224,
+          "line": 234,
           "text": "...(settlement.qcdActionPrerequisites === undefined"
         }
       ]
@@ -54,16 +54,16 @@
       "label": "tax, ACA, IRMAA, and AMT publication",
       "file": "projection/internal/annualYearResultAssembly.ts",
       "lines": [
-        234,
-        249
+        244,
+        259
       ],
       "anchors": [
         {
-          "line": 236,
+          "line": 246,
           "text": "...(tax.aca === undefined ? {} : { aca: tax.aca }),"
         },
         {
-          "line": 245,
+          "line": 255,
           "text": "amt: tax.advisoryFederalTax.detail.alternativeMinimumTax,"
         }
       ]
@@ -73,16 +73,16 @@
       "label": "funding publication and exact realized-gain association",
       "file": "projection/internal/annualYearResultAssembly.ts",
       "lines": [
-        250,
-        269
+        267,
+        286
       ],
       "anchors": [
         {
-          "line": 251,
+          "line": 268,
           "text": "realizedGains:"
         },
         {
-          "line": 269,
+          "line": 286,
           "text": "flexibleGoals: funding.flexibleGoals,"
         }
       ]
@@ -92,20 +92,20 @@
       "label": "snapshot, exact net-worth association, and optional cash-flow assembly",
       "file": "projection/internal/annualYearResultAssembly.ts",
       "lines": [
-        270,
-        287
+        287,
+        304
       ],
       "anchors": [
         {
-          "line": 270,
+          "line": 287,
           "text": "balances: snapshot.balanceRecord,"
         },
         {
-          "line": 278,
+          "line": 295,
           "text": "netWorth:"
         },
         {
-          "line": 285,
+          "line": 302,
           "text": "...(input.cashFlowInput === undefined"
         }
       ]
@@ -115,20 +115,24 @@
       "label": "settled annual inputs grouped at the final-publication callsite",
       "file": "projection/internal/annualFundingApplicationAndClosePhase.ts",
       "lines": [
-        1956,
-        2043
+        2099,
+        2192
       ],
       "anchors": [
         {
-          "line": 1956,
+          "line": 2099,
           "text": "const yearResult = annualYearResultAssembly({"
         },
         {
-          "line": 1997,
+          "line": 2134,
+          "text": "retirementRuntimeSource,"
+        },
+        {
+          "line": 2141,
           "text": "settlement: settlementPublication,"
         },
         {
-          "line": 2038,
+          "line": 2187,
           "text": "balanceSheet: {"
         }
       ]
@@ -138,20 +142,20 @@
       "label": "cash-flow publication gate and pass-local evidence handoff",
       "file": "projection/internal/annualFundingApplicationAndClosePhase.ts",
       "lines": [
-        2044,
-        2137
+        2193,
+        2286
       ],
       "anchors": [
         {
-          "line": 2044,
+          "line": 2193,
           "text": "...(publishCashFlow"
         },
         {
-          "line": 2047,
+          "line": 2196,
           "text": "yearSites: yearSites!,"
         },
         {
-          "line": 2134,
+          "line": 2283,
           "text": "shortfallAfterHecm,"
         }
       ]
