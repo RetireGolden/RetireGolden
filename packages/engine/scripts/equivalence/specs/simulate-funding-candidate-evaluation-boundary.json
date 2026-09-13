@@ -204,28 +204,28 @@
       "label": "immutable annual tax, ACA, HSA, and withdrawal-effect context snapshot",
       "file": "projection/internal/annualFundingApplicationAndClosePhase.ts",
       "lines": [
-        909,
-        1021
+        916,
+        1028
       ],
       "anchors": [
         {
-          "line": 909,
+          "line": 916,
           "text": "const fundingCandidateAcaContract = acaContract"
         },
         {
-          "line": 926,
+          "line": 933,
           "text": "const fundingCandidateEvaluationContext:"
         },
         {
-          "line": 946,
+          "line": 953,
           "text": "taxInputBase: Object.freeze({"
         },
         {
-          "line": 998,
+          "line": 1005,
           "text": "aca: Object.freeze({"
         },
         {
-          "line": 1010,
+          "line": 1017,
           "text": "hsa: Object.freeze({"
         }
       ]
@@ -235,28 +235,28 @@
       "label": "withdrawal planning, Form 8606 character, frozen delegation, and exact result return",
       "file": "projection/internal/annualFundingApplicationAndClosePhase.ts",
       "lines": [
-        1022,
-        1046
+        1029,
+        1053
       ],
       "anchors": [
         {
-          "line": 1025,
+          "line": 1032,
           "text": "const withdrawalPlan = annualWithdrawalPlan(Object.freeze({"
         },
         {
-          "line": 1032,
+          "line": 1039,
           "text": "const iraCharacterProbe = needBasedOwnedIraCharacter("
         },
         {
-          "line": 1035,
+          "line": 1042,
           "text": "const evaluation = annualFundingCandidateEvaluation(Object.freeze({"
         },
         {
-          "line": 1041,
+          "line": 1048,
           "text": "if (evaluation.traditionalEarlyWithdrawalPenaltyCharged) {"
         },
         {
-          "line": 1046,
+          "line": 1053,
           "text": "return evaluation"
         }
       ]

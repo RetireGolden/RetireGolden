@@ -646,37 +646,75 @@ export function computeFederalTax(input: TaxYearInput): FederalTaxDetail {
   }
 }
 
-/** Federal engine behind the projection's pluggable interface. */
-export function createFederalTaxCalculator(): TaxCalculator {
-  return {
-    compute: (input) => computeFederalTax(input).totalTax,
-  }
+interface BuiltinFederalCalculatorBinding {
+  originalCompute: TaxCalculator['compute']
+  originalComputeResult?: TaxCalculator['computeResult']
 }
 
-export function combineTaxCalculators(...calculators: TaxCalculator[]): TaxCalculator {
-  const withDerivedHouseholdFacts = (input: TaxYearInput): TaxYearInput => {
-    const federal = computeFederalTax(input)
-    return {
+/** Tracks factory-built federal calculators without retaining caller overrides. */
+const builtinFederalCalculatorRegistry = new WeakMap<TaxCalculator, BuiltinFederalCalculatorBinding>()
+
+function isUnmodifiedBuiltinFederalCalculator(calculator: TaxCalculator): boolean {
+  const binding = builtinFederalCalculatorRegistry.get(calculator)
+  if (binding === undefined) return false
+  return (
+    calculator.compute === binding.originalCompute &&
+    calculator.computeResult === binding.originalComputeResult
+  )
+}
+
+function deriveFederalEnrichment(input: TaxYearInput): {
+  enriched: TaxYearInput
+  federal: FederalTaxDetail
+} {
+  const federal = computeFederalTax(input)
+  return {
+    federal,
+    enriched: {
       ...input,
       stateHouseholdFacts: {
         ...input.stateHouseholdFacts,
         federalAgi: federal.agi,
-        federalDeductionUsed:
-          federal.deduction,
-        federalTaxableIncome:
-          federal.taxableIncome,
-        federallyIncludedSocialSecurity:
-          federal.taxableSocialSecurity,
+        federalDeductionUsed: federal.deduction,
+        federalTaxableIncome: federal.taxableIncome,
+        federallyIncludedSocialSecurity: federal.taxableSocialSecurity,
       },
-    }
+    },
   }
+}
+
+function builtinFederalComputationResult(federal: FederalTaxDetail): TaxComputationResult {
+  return {
+    amount: federal.totalTax,
+    status: 'complete',
+    issues: [],
+  }
+}
+
+/** Federal engine behind the projection's pluggable interface. */
+export function createFederalTaxCalculator(): TaxCalculator {
+  const compute: TaxCalculator['compute'] = (input) => computeFederalTax(input).totalTax
+  const calculator: TaxCalculator = { compute }
+  builtinFederalCalculatorRegistry.set(calculator, {
+    originalCompute: compute,
+    originalComputeResult: undefined,
+  })
+  return calculator
+}
+
+export function combineTaxCalculators(...calculators: TaxCalculator[]): TaxCalculator {
   return {
     compute: (input) => {
-      const enriched = withDerivedHouseholdFacts(input)
-      return calculators.reduce((sum, c) => sum + c.compute(enriched), 0)
+      const { enriched, federal } = deriveFederalEnrichment(input)
+      return calculators.reduce((sum, calculator) => {
+        if (isUnmodifiedBuiltinFederalCalculator(calculator)) {
+          return sum + federal.totalTax
+        }
+        return sum + calculator.compute(enriched)
+      }, 0)
     },
     computeResult: (input) => {
-      const enriched = withDerivedHouseholdFacts(input)
+      const { enriched, federal } = deriveFederalEnrichment(input)
       let amount = 0
       let incomplete = false
       const issues: TaxComputationIssue[] = []
@@ -684,8 +722,9 @@ export function combineTaxCalculators(...calculators: TaxCalculator[]): TaxCalcu
       const njIraBasisPools: StateNjIraBasisPoolComputationResult[] = []
       const pensionBasisPools: StatePensionBasisPoolComputationResult[] = []
       for (const calculator of calculators) {
-        const result: TaxComputationResult =
-          calculator.computeResult !== undefined
+        const result: TaxComputationResult = isUnmodifiedBuiltinFederalCalculator(calculator)
+          ? builtinFederalComputationResult(federal)
+          : calculator.computeResult !== undefined
             ? calculator.computeResult(enriched)
             : {
                 amount: calculator.compute(enriched),

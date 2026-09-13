@@ -1,7 +1,7 @@
 import { createStateTaxCalculator } from '../tax/stateTax.js'
 import type { Account } from '../model/plan.js'
 import { describe, expect, it } from 'vitest'
-import { singlePersonPlan, traditionalAccount, validatePlan, recurringOrdinaryIncome, socialSecurityIncome } from '../testing/planFixtures.js'
+import { couplePlan, singlePersonPlan, traditionalAccount, validatePlan, recurringOrdinaryIncome, socialSecurityIncome } from '../testing/planFixtures.js'
 import { simulatePlan } from './simulate.js'
 import type { TaxYearInput } from './types.js'
 
@@ -21,6 +21,25 @@ function run(qcd: number, spending = 0) {
 }
 
 describe('actual annual state source facts', () => {
+  it('derives Massachusetts age count from surviving claimants after the joint return ends', () => {
+    const plan = couplePlan({
+      p1Dob: '1950-01-01', p2Dob: '1945-01-01',
+      p1PlanningAge: 76, p2PlanningAge: 90, state: 'MA',
+    })
+    const result = simulatePlan(validatePlan(plan), {
+      startYear: 2026, horizonEndYear: 2027, deathAgeByPersonId: { p1: 76, p2: 90 },
+      taxCalculator: { compute: () => 0 },
+    })
+    const jointYear = result.years.find((row) => row.year === 2026)!
+    const survivorYear = result.years.find((row) => row.year === 2027)!
+    expect(jointYear.acceptedTaxInput?.stateHouseholdFacts).toMatchObject({
+      claimantDatesOfBirth: ['1950-01-01', '1945-01-01'], age65EligibleCount: 2,
+    })
+    expect(survivorYear.acceptedTaxInput?.stateHouseholdFacts).toMatchObject({
+      claimantDatesOfBirth: ['1945-01-01'], age65EligibleCount: 1,
+    })
+  })
+
   it('emits actual voluntary IRA taxable distributions rather than pension-only facts', () => {
     // IRC408(d)(1): no after-tax basis means the100 distribution is all taxable.
     const { input } = run(0, 100)

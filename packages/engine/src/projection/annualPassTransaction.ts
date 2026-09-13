@@ -17,6 +17,7 @@ import {
   captureSimulatorAnnualPassState,
   restoreSimulatorAnnualPassState,
 } from '../internal/simulatorAnnualPassStateRegistry.js'
+import type { HecmLineStateWithComponents } from './internal/hecmLineState.js'
 
 /**
  * A simulator balance row at the post-contribution annual-pass boundary.
@@ -31,10 +32,8 @@ export interface SimulatorAnnualPassBalanceRecord {
   costBasis: number
 }
 
-export interface SimulatorAnnualPassHecmState {
-  principalLimit: number
-  loanBalance: number
-}
+/** Live HECM line in annual-pass rollback state, including optional HUD split fields. */
+export type SimulatorAnnualPassHecmState = HecmLineStateWithComponents
 
 export interface SimulatorAnnualPassAllocationTrackState {
   policy: AssetAllocationPolicy

@@ -80,6 +80,8 @@ describe('HUD closing advance cash ownership', () => {
     // HUD H4 sourced worksheet: MCA1249125*.02 +5000+100000 =129982.50.
     const modeled = opening(property('disburseAtModeledClosing'))
     expect(modeled.rows[0]?.state.loanBalance).toBe(129982.50)
+    expect(modeled.rows[0]?.state.observedServicingBaseline).toBe(129982.50)
+    expect(modeled.rows[0]?.state.modeledDebt).toBe(0)
     expect(modeled.rows[0]?.borrowerAdvanceCashReceipt).toBe(100000)
     const observed = opening(property('alreadyIncludedInStartingCash'))
     expect(observed.rows[0]?.state.loanBalance).toBe(129982.50)

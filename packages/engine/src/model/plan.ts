@@ -1310,10 +1310,14 @@ export const annuitySchema = z.object({
  * (annuity-pension-and-home-equity decisions, step 4). Models Pfau's
  * buffer-asset strategy: open the line early, let the unused credit grow, and
  * draw tax-free loan proceeds either after down market years ('coordinated')
- * or only once the portfolio is exhausted ('lastResort'). The loan balance
- * accrues at the same growth rate; payoff at sale or the end of the plan is
- * non-recourse (never more than the home's value). Absent = no HECM — plans
- * without one are unchanged.
+ * or only once the portfolio is exhausted ('lastResort'). Legacy quote
+ * estimates compound the whole loan balance. HUD-validated lines instead
+ * conserve `observedServicingBaseline + modeledDebt`: a complete servicer
+ * ledger replaces only the observed component, while modeled draw debt uses a
+ * disclosed annual planning estimate because draw/accrual timing is not part
+ * of the plan and therefore keeps the HECM computation incomplete. Payoff at
+ * sale or the end of the plan is non-recourse (never more than the home's
+ * value). Absent = no HECM — plans without one are unchanged.
  */
 export const hecmLineOfCreditSchema = z
   .object({
@@ -1327,9 +1331,12 @@ export const hecmLineOfCreditSchema = z
      */
     principalLimitPct: z.number().min(5).max(75).optional(),
     /**
-     * Annual growth applied to BOTH the principal limit and the loan balance
-     * (note rate + 0.5% MIP; ~7–8% at 2026 rates). The unused line grows at
-     * this rate regardless of home value — the core of the buffer strategy.
+     * Annual growth applied to the principal limit and to the modeled annual
+     * debt estimate (note rate + 0.5% MIP; ~7–8% at 2026 rates). The unused
+     * line grows at this rate regardless of home value — the core of the
+     * buffer strategy. In HUD-validated mode, a complete servicing ledger
+     * replaces only the observed baseline; any nonzero modeled debt remains an
+     * incomplete timing estimate rather than a complete HUD result.
      */
     growthRatePct: z.number().min(0).max(15),
     /** Upfront costs (origination, closing, initial MIP) financed into the loan at open, % of home value. */

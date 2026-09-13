@@ -14,6 +14,13 @@ channel); UI in [planner/OptimizePage.tsx](../../packages/planner-ui/src/planner
 
 ## Design decisions (and why)
 
+- **Incomplete calculations withhold exact recommendations.** Incomplete tax or reverse-mortgage
+  (HECM) calculations in an evaluated candidate prevent publication of an exact conversion comparison.
+  The worker summary currently supplies affected years without candidate-specific issue details. The UI
+  explains that limitation; it does not substitute the current plan's projection or promise that a state
+  worksheet resolves a candidate's missing facts. When actual component issue evidence is available,
+  guidance can identify the relevant state worksheet or pension source controls. Worksheet links focus
+  and scroll to the section after the Assumptions page mounts, including navigation within that page.
 - **Everything runs in-app — no external services.** The solver is **HiGHS compiled to WASM** (the `highs`
   npm package), executed in a Web Worker; the ~3 MB wasm loads lazily only when Optimize is invoked, never
   in the main bundle. No network calls, no server-side solve. Correctness is validated by **in-repo tests**

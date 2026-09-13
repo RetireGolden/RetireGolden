@@ -12,6 +12,7 @@ import { CheckboxField, MoneyField, NumberField, PercentField, SelectField } fro
 import { LearnAboutScreen } from '../../learn/LearnAboutScreen'
 import { LEARN } from '../learnLinks'
 import { Issues } from './shared'
+import { StateTaxFactsEditor } from './StateTaxFactsEditor'
 
 /**
  * Assumptions-level asset-class table: return / volatility / yield per class,
@@ -217,6 +218,8 @@ export function AssumptionsSection() {
         </div>
 
         <AssetClassAssumptions />
+
+        <StateTaxFactsEditor />
 
         <h3>Social Security trust fund</h3>
         <div className="form-grid">

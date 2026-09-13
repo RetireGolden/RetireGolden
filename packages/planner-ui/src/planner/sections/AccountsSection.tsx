@@ -36,7 +36,7 @@ function makeAccount(type: Account['type'], primaryPersonId: string): Account {
     case 'hsa':
       return { ...base, type, name: 'HSA', balance: 0, annualContribution: 0 }
     case 'pension':
-      return { ...base, type, name: 'Pension', source: 'private', startAge: 65, monthlyAmount: 0, colaPct: 0, survivorPct: 50 }
+      return { ...base, type, name: 'Pension', source: 'unknownPrivate', startAge: 65, monthlyAmount: 0, colaPct: 0, survivorPct: 50 }
     case 'annuity':
       return { ...base, type, name: 'Annuity', startAge: 65, monthlyAmount: 0, colaPct: 0, taxablePct: 100 }
     case 'property':

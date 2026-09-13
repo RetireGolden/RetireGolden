@@ -98,6 +98,7 @@ import {
 } from './internal/annualContributionReconciliationPhase.js'
 import { annualPensionAndAnnuityIncome } from './internal/annualPensionAndAnnuityIncome.js'
 import { hecmLineOpeningsWithHudValidation } from './internal/hecmHudValidatedOpeningAdapter.js'
+import type { HecmLineState } from './internal/hecmLineOpenings.js'
 import { pensionLumpSumRollovers } from './internal/pensionLumpSumRollovers.js'
 import { tipsLadderAnnualCashFlows, type TipsLadderState } from './internal/tipsLadderAnnualCashFlow.js'
 import { tipsLadderPurchaseFunding } from './internal/tipsLadderPurchaseFunding.js'
@@ -670,11 +671,15 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     )
   }
   // HECM lines of credit (annuity-pension-and-home-equity, step 4), keyed by
-  // property id. The principal limit and the loan balance both compound at the
-  // line's growth rate; available credit is their difference. A sold property
+  // property id. HUD-validated lines carry an observed servicing baseline and
+  // separately conserved modeled draw debt; a complete ledger replaces only
+  // the observed component. The annual modeled-debt multiplier is an
+  // all-in planning estimate when draw/accrual dates are unknown, so that
+  // line publishes incomplete HECM evidence whenever modeled debt is nonzero.
+  // Legacy lines retain the original whole-balance estimate. A sold property
   // repays the loan non-recourse (never more than the proceeds) and closes the
   // line, so a deleted entry means "closed", not "never opened".
-  const hecmStates = new Map<string, { principalLimit: number; loanBalance: number }>()
+  const hecmStates = new Map<string, HecmLineState>()
   // Realized wealth-weighted portfolio return applied by the previous year's
   // growth pass (percent). The coordinated HECM draw policy triggers on an
   // actual portfolio loss — not on the raw additive shock, which can be

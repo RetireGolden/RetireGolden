@@ -27,6 +27,7 @@ import { LATEST_PACK_YEAR, packForYear } from '../params/index.js'
 import { recurringOrdinaryIncome, setAcaYearContract, socialSecurityIncome } from '../testing/planFixtures.js'
 import { buildOptimizerModel, optimizeSchedule, type OptimizedSchedule } from '../strategies/optimizer.js'
 import { createFederalTaxCalculator } from '../tax/federalTax.js'
+import { HECM_MODELED_DEBT_TIMING_ISSUE } from './internal/hecmLineState.js'
 import { summarizeProjection } from './compare.js'
 import type { OptimizerYearProbe, ProjectionResult } from './types.js'
 import {
@@ -3671,7 +3672,7 @@ describe('optimizer incomplete annual valuation boundary', () => {
     const candidate = simulatePlan(withOptimizedConversions(plan, conversions), opts)
     const complete = evaluateExactLedgerSchedule(plan, conversions, baseline, candidate)
     const incomplete = structuredClone(side === 'baseline' ? baseline : candidate)
-    incomplete.years[0]!.hecmComputation = { status: 'incomplete', issues: ['Missing dated MIP assessment balance.'] }
+    incomplete.years[0]!.hecmComputation = { status: 'incomplete', issues: [HECM_MODELED_DEBT_TIMING_ISSUE] }
     const result = evaluateExactLedgerSchedule(plan, conversions,
       side === 'baseline' ? incomplete : baseline, side === 'candidate' ? incomplete : candidate)
     expect(result.recommendationState).toBe('unexecutable')

@@ -50,11 +50,16 @@
  * during THIS call and treats such an id as present. The caller still performs
  * the map write; it is told which id to open, with what, and in what order.
  *
- * EACH ROW CARRIES ITS OWN, DELIBERATELY MUTABLE, STATE OBJECT. Unlike every
+ * EACH ROW CARRIES ITS OWN, DELIBERATELY MUTABLE, STATE OBJECT. HUD-validated
+ * state keeps `observedServicingBaseline` and `modeledDebt` as separate
+ * conserved components; later complete servicing ledgers replace only the
+ * observed component, while modeled draw growth remains an annual planning
+ * estimate and cannot establish complete timing evidence. Unlike every
  * other row field in this directory, `state` is not `readonly`: `simulate.ts`
  * mutates this exact object in place later in the same year — the coordinated
- * and backstop draws add to `loanBalance`, and the property-events phase
- * multiplies both fields by the line's growth rate. A helper that hoisted one
+ * and backstop draws add to the modeled component, and the property-events
+ * phase applies the split observed-ledger replacement plus modeled annual
+ * estimate. A helper that hoisted one
  * object literal and pushed it twice would alias two independent lines into
  * one. Stated in the other direction so the guard is not oversold: object
  * identity between the returned object and the map entry is NOT observable in
@@ -88,6 +93,17 @@ import type { ParameterPack } from '../../params/types.js'
 export interface HecmLineState {
   principalLimit: number
   loanBalance: number
+  /** Calculation mode and HUD debt components carried across annual passes. */
+  readonly calculationMode?: 'legacyQuoteEstimate' | 'hudValidated'
+  observedServicingBaseline?: number
+  modeledDebt?: number
+  /** HUD opening evidence retained on the live line for rollback/replay. */
+  readonly annualMipRate?: number
+  readonly maximumClaimAmount?: number
+  readonly initialMip?: number
+  readonly otherClosingCosts?: number
+  readonly caseParameterYear?: number
+  readonly principalLimitFactorProvenance?: 'quoted' | 'hudTableVerified'
 }
 
 /** The year-scoped state this phase reads. */

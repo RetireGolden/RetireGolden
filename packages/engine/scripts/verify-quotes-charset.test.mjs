@@ -137,6 +137,18 @@ describe('decodeHtmlBody charset handling', () => {
     expect(text).not.toContain('\ufffd')
   })
 
+  it('falls back to UTF-8 when the charset meta is beyond the 8192-byte prescan window', () => {
+    const padding = 'x'.repeat(8192)
+    const body = cp1252QuotedPageWithHead(
+      `<style>${padding}</style><meta charset="windows-1252">`,
+      'Eligible individual',
+    )
+    expect(body.length).toBeGreaterThan(8192)
+    const text = decodeHtmlBody(body, 'text/html')
+    expect(text).toContain('\ufffd')
+    expect(text).not.toContain('\u201cEligible individual\u201d')
+  })
+
   it('lets a repaired ORS-style quote verify once cp1252 bytes are decoded', () => {
     const body = cp1252QuotedPage('Eligible individual')
     const source = {

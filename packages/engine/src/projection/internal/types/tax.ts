@@ -154,7 +154,7 @@ export interface TaxYearInput {
   /** @deprecated Prefer stateHsaAccountYearFacts with KnownMoney members. */
   stateHsaYearFacts?: StateHsaYearFactsInput
   /**
-   * Direct QCD events for the year. Pack policy is authoritative â€” never a
+   * Direct QCD events for the year. Pack policy is authoritative — never a
    * persisted Plan override. Missing collection means unavailable; empty means
    * no QCD events.
    */
@@ -276,7 +276,7 @@ export interface StateHouseholdTaxFactsInput {
   }[]
 }
 
-/** Known money versus unavailable â€” unknown must never become silent known-zero. */
+/** Known money versus unavailable — unknown must never become silent known-zero. */
 export type KnownMoneyInput = { known: true; amount: number } | { known: false }
 
 export interface StateHsaAccountYearFactsInput {
@@ -441,7 +441,7 @@ export interface TaxComputationResult {
 }
 
 /**
- * Pluggable tax computation, supplied by the caller â€” this package exports the
+ * Pluggable tax computation, supplied by the caller — this package exports the
  * pieces but no composed default. RetireGolden builds one by combining
  * createFederalTaxCalculator() with createStateTaxCalculator() through
  * combineTaxCalculators(); test suites inject deterministic doubles through the

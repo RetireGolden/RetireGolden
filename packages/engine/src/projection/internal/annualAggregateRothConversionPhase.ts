@@ -339,7 +339,7 @@ export function annualAggregateRothConversionPhase(
 
   // State-tax inputs (resolved once per year, before conversions so the
   // safety-net trim below can price a conversion's full tax bill).
-  // Retirement-income base = pension/annuity + taxable RMD/SEPP/inherited âˆ’
+  // Retirement-income base = pension/annuity + taxable RMD/SEPP/inherited −
   // QCD; traditional spending withdrawals are added per iteration below.
   // Roth conversions are excluded (not exclusion-eligible).
   const residenceState = stateForYear(plan.household, year)

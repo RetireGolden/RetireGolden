@@ -623,3 +623,149 @@ describe('Ohio TY2026 nonbusiness cumulative base (§5747.02(A)(3)(c))', () => {
     expect(tax).toBeCloseTo(495.3125, 6)
   })
 })
+
+describe('state tax materiality regressions', () => {
+  const calc = createStateTaxCalculator()
+
+  it('Illinois above statutory AGI cutoff proves a zero exemption before count warnings', () => {
+    const result = calc.computeResult(input({
+      state: 'IL',
+      ordinaryIncome: 300_000,
+      stateHouseholdFacts: { federalAgi: 250_001 },
+    }))
+    expect(result.amount).toBeGreaterThan(0)
+    expect(result.issues.some((issue) => issue.code === 'il-exemption-counts-unknown')).toBe(false)
+    expect(result.status).toBe('complete')
+  })
+
+  it('keeps Illinois below-cutoff missing counts materially incomplete', () => {
+    const result = calc.computeResult(input({
+      state: 'IL',
+      ordinaryIncome: 100_000,
+      stateHouseholdFacts: { federalAgi: 100_000 },
+    }))
+    expect(result.issues.some((issue) => issue.code === 'il-exemption-counts-unknown')).toBe(true)
+    expect(result.status).toBe('incomplete')
+  })
+
+  it('Vermont election is not required when competing civil-service and SS benefits are proved zero', () => {
+    const result = calc.computeResult(input({
+      state: 'VT',
+      ordinaryIncome: 180_000,
+      stateHouseholdFacts: {
+        federalAgi: 180_000,
+        stateFilingStatus: 'single',
+        federallyIncludedSocialSecurity: 0,
+        exemptionTaxpayerCount: 1,
+        section63fQualificationCount: 0,
+        // §5822(a)(6) minimum-tax comparison is separate from §5830e election materiality.
+        vermontUsObligationAdjustment: 0,
+      },
+      stateRetirementDistributions: [],
+    }))
+    expect(result.issues.some((issue) => issue.code === 'vt-retirement-facts-unknown')).toBe(false)
+    expect(result.issues.some((issue) => issue.code === 'vt-deduction-exemption-incomplete')).toBe(false)
+    expect(result.issues.some((issue) => issue.code === 'vt-minimum-tax-incomplete')).toBe(false)
+    expect(result.status).toBe('complete')
+  })
+
+  it('keeps Vermont election incomplete when an unknown pension source could matter', () => {
+    const result = calc.computeResult(input({
+      state: 'VT',
+      ordinaryIncome: 180_000,
+      stateHouseholdFacts: {
+        federalAgi: 180_000,
+        stateFilingStatus: 'single',
+        federallyIncludedSocialSecurity: 0,
+        exemptionTaxpayerCount: 1,
+        section63fQualificationCount: 0,
+        vermontUsObligationAdjustment: 0,
+      },
+      stateRetirementDistributions: [{
+        accountId: 'p',
+        ownerPersonId: 'owner',
+        sourceKind: 'unknownPrivate',
+        federallyIncludedAmount: 5_000,
+        recipientAgeYears: 70,
+        cause: 'ordinary',
+        earlyDistributionDisqualifier: 'false',
+      }],
+    }))
+    expect(result.issues.some((issue) => issue.code === 'vt-retirement-facts-unknown')).toBe(true)
+    expect(result.status).toBe('incomplete')
+  })
+
+  it('Oregon credit stays incomplete when an unknown pension source prevents a proved-zero ledger', () => {
+    const result = calc.computeResult(input({
+      state: 'OR',
+      ordinaryIncome: 50_000,
+      stateRetirementDistributions: [{
+        accountId: 'p',
+        ownerPersonId: 'owner',
+        sourceKind: 'unknownPrivate',
+        federallyIncludedAmount: 5_000,
+        recipientAgeYears: 70,
+        cause: 'ordinary',
+        earlyDistributionDisqualifier: 'false',
+      }],
+    }))
+    expect(result.issues.some((issue) => issue.code === 'or-retirement-credit-incomplete')).toBe(true)
+    expect(result.status).toBe('incomplete')
+  })
+
+  it('accepts a known-empty Oregon distribution ledger without omitted worksheet facts', () => {
+    const result = calc.computeResult(input({
+      state: 'OR',
+      ordinaryIncome: 50_000,
+      stateRetirementDistributions: [],
+    }))
+    expect(result.issues.some((issue) => issue.code === 'or-retirement-credit-incomplete')).toBe(false)
+    expect(result.status).toBe('complete')
+  })
+
+  it('Massachusetts derives age-65 exemption count from claimant birth dates', () => {
+    const result = calc.computeResult(input({
+      state: 'MA',
+      ordinaryIncome: 100_000,
+      stateHouseholdFacts: {
+        stateFilingStatus: 'single',
+        claimantDatesOfBirth: ['1960-01-01'],
+      },
+    }))
+    expect(result.issues.some((issue) => issue.code === 'ma-personal-exemption-incomplete')).toBe(false)
+    expect(result.status).toBe('complete')
+  })
+
+  it('keeps Massachusetts age exemption incomplete for an impossible schema-valid DOB', () => {
+    const result = calc.computeResult(input({
+      state: 'MA',
+      ordinaryIncome: 100_000,
+      stateHouseholdFacts: {
+        stateFilingStatus: 'single',
+        claimantDatesOfBirth: ['1960-02-30'],
+      },
+    }))
+    expect(result.issues.some((issue) => issue.code === 'ma-personal-exemption-incomplete')).toBe(true)
+    expect(result.status).toBe('incomplete')
+  })
+
+  it('unknown pension basis remains materially incomplete even when tax would otherwise be zero', () => {
+    const result = calc.computeResult(input({
+      state: 'MA',
+      ordinaryIncome: 0,
+      stateRetirementDistributions: [{
+        accountId: 'p',
+        ownerPersonId: 'owner',
+        sourceKind: 'employerPlan',
+        federallyIncludedAmount: 1_000,
+        recipientAgeYears: 70,
+        cause: 'ordinary',
+        earlyDistributionDisqualifier: 'false',
+        knownPreviouslyTaxedBasis: undefined,
+      }],
+      stateHouseholdFacts: { stateFilingStatus: 'single', claimantDatesOfBirth: ['1955-01-01'] },
+    }))
+    expect(result.status).toBe('incomplete')
+    expect(result.issues.some((issue) => issue.code === 'ma-basis-unknown')).toBe(true)
+  })
+})

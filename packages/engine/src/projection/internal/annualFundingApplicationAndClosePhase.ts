@@ -6,7 +6,10 @@ import { stateRetirementEventsFromAccountAmounts } from './annualStateRetirement
  * ledger, callbacks, and optional cash-flow capture. This coordinator owns the
  * existing fixed-point funding loop, accepted ledger applications, post-solve
  * growth, tax/penalty settlement, and core YearResult assembly in their legacy
- * order. It returns that core result plus the optional optimizer probe.
+ * order. Accepted HECM draws are committed to the HUD line's modeled-debt
+ * component here; the annual close later preserves that component beside the
+ * observed servicing baseline and publishes timing incompleteness. It returns
+ * that core result plus the optional optimizer probe.
  *
  * It does not choose or retry the owned non-Roth IRA settlement attempt, append
  * the year to the projection, or publish the optimizer probe; simulatePlan keeps
@@ -64,6 +67,10 @@ import {
   annualCoordinatedHecmEligibility,
 } from './annualCoordinatedHecm.js'
 import { annualHecmBackstopPlan } from './annualHecmBackstop.js'
+import {
+  applyHudModeledDraw,
+  type HecmLineStateWithComponents,
+} from './hecmLineState.js'
 import {
   annualAcaResultPublication,
   type AnnualAcaResultPublicationResult,
@@ -125,7 +132,7 @@ type AcaContractYear = NonNullable<
 
 type TreatAsOwnAccount = Parameters<typeof isTreatAsOwnEffective>[0]
 type RothAccount = Extract<Account, { type: 'roth' }>
-type HecmLineState = { loanBalance: number; principalLimit: number }
+type HecmLineState = HecmLineStateWithComponents
 
 type Form8606ConsequentialChannel =
   | 'distributions'
@@ -1149,7 +1156,7 @@ export function annualFundingApplicationAndClosePhase(
     })) {
       const line = hecmStates.get(allocation.propertyAccountId)
       if (!line) continue
-      line.loanBalance += allocation.amount
+      applyHudModeledDraw(line, allocation.amount)
       hecmCoordinatedByProperty?.set(
         allocation.propertyAccountId,
         allocation.amount,
@@ -1167,7 +1174,7 @@ export function annualFundingApplicationAndClosePhase(
     for (const allocation of hecmBackstop.allocations) {
       const line = hecmStates.get(allocation.propertyAccountId)
       if (!line) continue
-      line.loanBalance += allocation.amount
+      applyHudModeledDraw(line, allocation.amount)
       hecmBackstopByProperty?.set(
         allocation.propertyAccountId,
         allocation.amount,
@@ -1811,7 +1818,7 @@ export function annualFundingApplicationAndClosePhase(
             )
           const consequentialSpill = Math.max(cfOverLive, liveOverCf)
           // CF-extra principal outstanding = prior extra + CF principal this
-          // draw consumed âˆ’ live conversion principal this draw (split figure).
+          // draw consumed − live conversion principal this draw (split figure).
           // Equivalent to seed-only debt when CF still has residual for the
           // shared conversion; reduces when live catch-up exceeds new CF spend.
           const nextCfConversionExtra = Math.max(

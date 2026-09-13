@@ -221,6 +221,11 @@ describe('rule-047 / vault-054 SC military vs §1170', () => {
     // floor(($15,000 × $10,000 / $55,000) / $10) × $10 = $2,720; $15,000 − $2,720 = $12,280.
     expect(scSciadDeduction({ filingStatus: 'single', federalAgi: 50_000, config: stateParamsFor('SC', TAX_YEAR)!.southCarolinaSciad }).deduction).toBe(12_280)
   })
+
+  it('SCIAD helper fails closed when pack config is missing', () => {
+    const result = scSciadDeduction({ filingStatus: 'single', federalAgi: 50_000 })
+    expect(result).toMatchObject({ deduction: 0, base: 0, warnings: [{ code: 'sc-sciad-config-missing' }] })
+  })
 })
 
 describe('rule-050 / vault-042 F003 Louisiana', () => {

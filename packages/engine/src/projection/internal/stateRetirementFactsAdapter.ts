@@ -25,6 +25,9 @@ import type {
 
 export type StateRetirementSourceKind = StateRetirementDistributionFactInput['sourceKind']
 
+/** IRC 72(t)(2)(A)(i) inclusive boundary; calendar-month age preserves 59.5 exactly. */
+export const EARLY_DISTRIBUTION_MIN_AGE_YEARS = 59.5
+
 function knownAmount(amount: number): KnownMoneyInput {
   return { known: true, amount }
 }
@@ -37,6 +40,15 @@ function optionalKnownMoney(value: number | undefined): KnownMoneyInput {
   return value === undefined ? unknownAmount() : knownAmount(value)
 }
 
+type OwnerStateTaxFact = NonNullable<StateHouseholdTaxFactsInput['ownerStateTaxFacts']>[number]
+
+function withoutRecipientAge(owner: OwnerStateTaxFact | undefined): Partial<Omit<OwnerStateTaxFact, 'recipientAgeYears'>> {
+  if (owner === undefined) return {}
+  const rest = { ...owner }
+  delete rest.recipientAgeYears
+  return rest
+}
+
 /** Map persisted pension source to the leaf source-kind vocabulary. */
 export function mapPensionSourceToStateKind(
   source: PensionSourceKind | undefined,
@@ -44,7 +56,7 @@ export function mapPensionSourceToStateKind(
   switch (source) {
     case undefined:
     case 'private':
-      return 'unknownPrivate'
+      return 'ordinaryPrivatePension'
     case 'public':
       return 'unknownPublic'
     case 'ordinaryPrivatePension':
@@ -107,6 +119,10 @@ export function characterizePensionDistribution(input: {
   readonly federallyIncludedAmount: number
   readonly recipientAgeYears: number
   readonly causeOverride?: StateRetirementDistributionFactInput['cause']
+  /** Tax year for Jan-1 minimum distribution age when payment date is absent. */
+  readonly taxYear?: number
+  /** Payee DOB paired with taxYear; year-end recipientAgeYears never clears early distribution. */
+  readonly payeeDateOfBirth?: string
 }): AnnualPensionDistributionCharacterization {
   const source = input.account.source ?? 'private'
   const eligibility = input.account.stateEligibility
@@ -115,6 +131,10 @@ export function characterizePensionDistribution(input: {
     input.causeOverride ??
     eligibility?.distributionReason ??
     (isSurvivorPayee ? 'death' : 'ordinary')
+  const minimumAgeAtDistributionYears =
+    input.taxYear !== undefined && input.payeeDateOfBirth !== undefined
+      ? ageOnDate(input.payeeDateOfBirth, `${input.taxYear}-01-01`)
+      : undefined
   const fact: StateRetirementDistributionFactInput = {
     ...mapEligibility(eligibility),
     ownerPersonId: input.payeePersonId,
@@ -125,8 +145,13 @@ export function characterizePensionDistribution(input: {
     recipientAgeYears: input.recipientAgeYears,
     recipientAgeKnown: true,
     cause,
-    earlyDistributionDisqualifier:
-      eligibility?.earlyDistributionDisqualifier ?? 'unknown',
+    earlyDistributionDisqualifier: inferEarlyDistributionDisqualifier({
+      explicit: eligibility?.earlyDistributionDisqualifier,
+      minimumAgeAtDistributionYears,
+    }),
+    ...(minimumAgeAtDistributionYears === undefined
+      ? {}
+      : { minimumAgeAtDistributionYears }),
     ...(eligibility?.planSystemCode !== undefined
       ? { planSystemCode: eligibility.planSystemCode }
       : {}),
@@ -181,18 +206,33 @@ export function householdFactsForYear(
     | StateTaxYearHouseholdFacts
     | undefined
   if (row === undefined && projected === undefined) return undefined
-  const { year: householdYear, utahCreditElection: election, ...household } = row ?? { year }
+  const { year: householdYear, utahCreditElection: election, age65EligibleCount: storedAge65, ...household } = row ?? { year }
   void householdYear
+  const claimantIds = projected?.claimantPersonIds
+  const ownerPeople = claimantIds === undefined
+    ? plan.household.people
+    : plan.household.people.filter((person) => claimantIds.includes(person.id))
+  const allClaimantsKnown = claimantIds === undefined || claimantIds.every((id) => ownerPeople.some((person) => person.id === id))
+  const mergedOwners = projected === undefined ? undefined : ownerPeople.map((person) => {
+    const age = ageOnDate(person.dob, `${year}-12-31`)
+    const storedOwner = withoutRecipientAge(household.ownerStateTaxFacts?.find((owner) => owner.ownerPersonId === person.id))
+    const projectedOwner = withoutRecipientAge(projected.ownerStateTaxFacts?.find((owner) => owner.ownerPersonId === person.id))
+    return {
+      ...storedOwner,
+      ...projectedOwner,
+      ownerPersonId: person.id,
+      ...(age === undefined ? {} : { recipientAgeYears: age }),
+    }
+  })
+  const claimantAges = ownerPeople.map((person) => ageOnDate(person.dob, `${year}-12-31`))
+  const derivedAge65 = storedAge65 ?? (allClaimantsKnown && claimantAges.every((age) => age !== undefined)
+    ? claimantAges.filter((age) => age !== undefined && age >= 65).length
+    : undefined)
   return {
     ...household,
     ...projected,
-    ...(projected === undefined ? {} : { ownerStateTaxFacts: plan.household.people.filter((person) =>
-      projected.claimantPersonIds === undefined || projected.claimantPersonIds.includes(person.id)).map((person) => ({
-      ...household.ownerStateTaxFacts?.find((owner) => owner.ownerPersonId === person.id),
-      ...projected.ownerStateTaxFacts?.find((owner) => owner.ownerPersonId === person.id),
-      ownerPersonId: person.id,
-      recipientAgeYears: ageOnDate(person.dob, `${year}-12-31`),
-    })) }),
+    ...(projected === undefined ? {} : { ownerStateTaxFacts: mergedOwners }),
+    ...(derivedAge65 === undefined ? {} : { age65EligibleCount: derivedAge65 }),
     ...(row?.stateFilingStatus === undefined ? {} : { stateFilingStatus: row.stateFilingStatus }),
     ...(projected === undefined ? {} : { claimantDatesOfBirth: projected.claimantDatesOfBirth ?? household.claimantDatesOfBirth ?? plan.household.people.map((person) => person.dob) }),
     ...(election === undefined
@@ -210,7 +250,7 @@ export function householdFactsForYear(
 
 /**
  * Per-account HSA facts for a tax year and residence state. Missing Plan
- * evidence for that state â‡’ undefined (unavailable). Present rows keep omitted
+ * evidence for that state -> undefined (unavailable). Present rows keep omitted
  * numeric members as `{ known: false }` rather than inventing known zero. Basis
  * asserted for another state is never reused. No New Jersey cash-withdrawal
  * income category.
@@ -492,10 +532,8 @@ export function retirementDistributionFactsForYear(plan: Readonly<Plan>, year: n
     // replace the projected amount or recipient of an executed event.
     const evidence = asserted.find((row) => row.eventId === event.eventId && row.accountId === event.accountId &&
       row.sourceOwnerPersonId === event.sourceOwnerPersonId && row.recipientPersonId === event.recipientPersonId)
-    const coarse = event.source === 'private' || event.source === 'public' || event.source === 'unknownPrivate' || event.source === 'unknownPublic' || event.source === 'employerPlan'
     byId.set(event.eventId, { ...evidence, ...event,
       ...(evidence === undefined ? {} : { eligibility: { ...evidence.eligibility, ...event.eligibility } }),
-      ...(coarse && evidence !== undefined ? { source: evidence.source } : {}),
     })
   }
   return [...byId.values()].map((event) => {
@@ -503,26 +541,64 @@ export function retirementDistributionFactsForYear(plan: Readonly<Plan>, year: n
     const age = recipient === undefined ? undefined : ageOnDate(recipient.dob, `${year}-12-31`)
     const distributionAge = recipient === undefined || event.distributionDate === undefined ? undefined
       : ageOnDate(recipient.dob, event.distributionDate)
+    const minimumAgeAtDistributionYears = recipient === undefined || distributionAge !== undefined
+      ? undefined
+      : ageOnDate(recipient.dob, `${year}-01-01`)
     return {
       ...event, ...mapEligibility(event.eligibility),
       ownerPersonId: event.recipientPersonId,
       sourceKind: mapPensionSourceToStateKind(event.source),
       recipientAgeYears: age ?? 0, recipientAgeKnown: age !== undefined,
-      ...(distributionAge === undefined ? { minimumAgeAtDistributionYears: recipient === undefined ? undefined : ageOnDate(recipient.dob, `${year}-01-01`) } : { ageAtDistributionYears: distributionAge }),
+      ...(distributionAge === undefined
+        ? { minimumAgeAtDistributionYears }
+        : { ageAtDistributionYears: distributionAge }),
       cause: event.eligibility?.distributionReason ??
         (event.recipientPersonId !== event.sourceOwnerPersonId ? 'death' as const : 'unknown' as const),
-      earlyDistributionDisqualifier: event.eligibility?.earlyDistributionDisqualifier ?? 'unknown' as const,
+      earlyDistributionDisqualifier: inferEarlyDistributionDisqualifier({
+        explicit: event.eligibility?.earlyDistributionDisqualifier,
+        ageAtDistributionYears: distributionAge,
+        minimumAgeAtDistributionYears,
+      }),
     }
   })
 }
 
+/**
+ * Infer Box 7 / premature-penalty disqualification from explicit facts or a
+ * proved distribution-age lower bound. Year-end recipient age never establishes
+ * eligibility; crossing-year undated withdrawals stay unknown.
+ */
+export function inferEarlyDistributionDisqualifier(input: {
+  readonly explicit?: 'true' | 'false' | 'unknown'
+  readonly ageAtDistributionYears?: number
+  readonly minimumAgeAtDistributionYears?: number
+}): 'true' | 'false' | 'unknown' {
+  if (input.explicit === 'true') return 'true'
+  if (input.explicit === 'false') return 'false'
+  if (input.ageAtDistributionYears !== undefined) {
+    return input.ageAtDistributionYears >= EARLY_DISTRIBUTION_MIN_AGE_YEARS ? 'false' : 'unknown'
+  }
+  if (input.minimumAgeAtDistributionYears !== undefined) {
+    return input.minimumAgeAtDistributionYears >= EARLY_DISTRIBUTION_MIN_AGE_YEARS ? 'false' : 'unknown'
+  }
+  return 'unknown'
+}
+
 /** Calendar-month age preserves the 59.5 boundary without a 365.25-day proxy. */
-function ageOnDate(dob: string, date: string): number | undefined {
-  const birth = new Date(`${dob}T00:00:00Z`)
-  const at = new Date(`${date}T00:00:00Z`)
-  if (!Number.isFinite(birth.getTime()) || !Number.isFinite(at.getTime()) || at < birth) return undefined
+export function ageOnDate(dob: string, date: string): number | undefined {
+  const birth = parseCivilDate(dob)
+  const at = parseCivilDate(date)
+  if (birth === undefined || at === undefined || at < birth) return undefined
   const months = (at.getUTCFullYear() - birth.getUTCFullYear()) * 12 + at.getUTCMonth() - birth.getUTCMonth()
   return (months - (at.getUTCDate() < birth.getUTCDate() ? 1 : 0)) / 12
+}
+
+/** Parse a schema-shaped YYYY-MM-DD as a real civil date without JS rollover. */
+function parseCivilDate(value: string): Date | undefined {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return undefined
+  const parsed = new Date(`${value}T00:00:00.000Z`)
+  if (!Number.isFinite(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== value) return undefined
+  return parsed
 }
 
 export function qcdEventFactsForYear(plan: Readonly<Plan>, year: number,
