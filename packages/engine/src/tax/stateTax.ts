@@ -968,13 +968,20 @@ export function computeStateTaxableIncomeResult(
     acc.warnings.push({ code: 'co-federal-agi-unknown', ruleId: 'co-high-agi-federal-deduction-addback', message: 'Colorado high-AGI federal deduction addback requires federal AGI and deduction facts.', missingFacts: ['federalAgi', 'federalDeductionUsed'] })
   }
 
+  const preExemptionReliefBound = taxable + acc.taxableIncomeDelta
+  const standardDeductionOverrideAllowsZeroProof =
+    opts.standardDeductionAllowedOverride === undefined || opts.standardDeductionAllowedOverride >= 0
+
   if (params.code === 'CT' && opts.householdFacts?.connecticutAgi !== undefined && opts.householdFacts.stateFilingStatus) {
     taxable -= connecticutPersonalExemption({
       filingStatus: opts.householdFacts.stateFilingStatus,
       connecticutAgi: opts.householdFacts.connecticutAgi,
       schedule: params.connecticutPersonalExemption,
     })
-  } else if (params.code === 'CT') {
+  } else if (
+    params.code === 'CT' &&
+    !(preExemptionReliefBound <= 0 && standardDeductionOverrideAllowsZeroProof)
+  ) {
     acc.warnings.push({ code: 'ct-personal-exemption-incomplete', ruleId: 'ct-personal-exemption-ws4d', message: 'Connecticut personal exemption requires Connecticut AGI and full filing status.', missingFacts: ['connecticutAgi', 'stateFilingStatus'] })
   }
 
@@ -994,7 +1001,13 @@ export function computeStateTaxableIncomeResult(
     acc.warnings.push({ code: 'il-exemption-agi-unknown', ruleId: 'il-personal-exemption-allowance', message: 'Illinois personal exemption requires federal AGI and household counts.', missingFacts: ['federalAgi', 'householdFacts'] })
   }
 
-  if (params.code === 'WI' && opts.householdFacts) {
+  if (
+    params.code === 'WI' &&
+    preExemptionReliefBound <= 0 &&
+    standardDeductionOverrideAllowsZeroProof
+  ) {
+    // Nonnegative personal exemptions cannot raise taxable income above zero.
+  } else if (params.code === 'WI' && opts.householdFacts) {
     accumulateLeaf(
       acc,
       wisconsinPersonalExemption({
@@ -1079,7 +1092,11 @@ export function computeStateTaxableIncomeResult(
       opts.householdFacts?.wisconsinIncomeForStandardDeduction ??
       opts.standardDeductionPhaseoutIncomeOverride ??
       preRetirementBase
-    if (opts.householdFacts?.wisconsinIncomeForStandardDeduction === undefined && opts.standardDeductionPhaseoutIncomeOverride === undefined) {
+    if (
+      opts.householdFacts?.wisconsinIncomeForStandardDeduction === undefined &&
+      opts.standardDeductionPhaseoutIncomeOverride === undefined &&
+      taxable > 0
+    ) {
       acc.warnings.push({ code: 'wi-standard-deduction-income-unknown', ruleId: 'wi-2026-standard-deduction', message: 'Wisconsin standard deduction uses a state worksheet income line; reconstructed proxy is incomplete.', missingFacts: ['wisconsinIncomeForStandardDeduction'] })
     }
     rawTotal = wisconsinStandardDeduction({

@@ -108,6 +108,7 @@ export function iowaAlternateOrMinimumTax(args: {
   const incomplete = (...missingFacts: string[]): StateLeafAdjustment & { tax: number } => ({ ...result(ordinaryTax), warnings: [warning({ code: 'ia-alternate-tax-incomplete', message: 'Iowa relief requires complete statutory household and worksheet facts; ordinary tax retained.', missingFacts })] })
   const config = args.config ?? stateParamsFor('IA', 2026)?.iowaAlternateTax
   if (!config) return incomplete('iowaAlternateTax')
+  if (ordinaryTax === 0) return result(0)
   if (testNetIncome === undefined) return incomplete('iowaTestNetIncome')
   const facts = args.householdFacts
   if (facts?.iowaClaimedAsDependent === undefined) return incomplete('iowaClaimedAsDependent')
