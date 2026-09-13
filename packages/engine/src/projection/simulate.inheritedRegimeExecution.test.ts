@@ -247,10 +247,15 @@ describe('WS4 inherited-regime execution fixtures', () => {
       ownerDeathYear: 2024, decedentHadStartedRmds: true,
       beneficiary: facts({ beneficiaryBirthYear: 1947, ownerBirthYear: 1945, edbCategory: 'surviving-spouse', election: 'treat-as-own', spouseUnlimitedWithdrawalRight: true, treatAsOwnElectionYear: 2028, ownerYearOfDeathRmdSatisfied: true }),
     })
+    // Dated affirmative on 2027-12-31 makes 2027 the election year under
+    // §1.408-8(c)(3): owner RMD (age 80 → ULT 20.2), not the beneficiary LE arm.
     observedElection(plan, '2027-12-31', '2024-06-01', [2025])
     const result = run(plan, 2028)
     expect(evidence(result, 2026).executedRequiredAmount).toBeCloseTo(300_000 / 11.9, 2)
-    expect(evidence(result, 2027).executedRequiredAmount).toBeCloseTo(year(result, 2026).balances.inherited! / 11.2, 2)
+    const ownerRmd2027 = year(result, 2026).balances.inherited! / 20.2
+    expect(year(result, 2027).rmd).toBeCloseTo(ownerRmd2027, 2)
+    expect(year(result, 2027).inheritedDistribution).toBe(0)
+    expect(evidence(result, 2027).disclosures.some((row) => row.startsWith('election-year-owner-rmd:'))).toBe(true)
     expect(year(result, 2028).inheritedDistribution).toBe(0)
     expect(year(result, 2028).rmd).toBeCloseTo(year(result, 2027).balances.inherited! / 19.4, 2)
     expect(evidence(result, 2028).requirementKind).toBe('none')
@@ -747,18 +752,24 @@ it('publishes a midyear executed spouse redesignation through the year-end gate 
   observedElection(plan, '2026-06-30', '2024-06-01', [2025])
   const result = run(plan, 2027)
   expect(year(result, 2026).spousalOwnerTreatment).toContainEqual({ accountId: 'inherited', ownerTreatment: false })
-  expect(year(result, 2026).inheritedDistribution).toBeGreaterThan(0)
+  // §1.408-8(c)(3): known current-year effectiveness applies election-year
+  // owner RMD (age 79 Uniform Lifetime 21.1) and suppresses the beneficiary
+  // forced take while retaining the counterfactual requiredAmount.
+  const ownerRmd2026 = 100_000 / 21.1
+  expect(year(result, 2026).rmd).toBeCloseTo(ownerRmd2026, 2)
+  expect(year(result, 2026).inheritedDistribution).toBe(0)
+  expect(evidence(result, 2026).requiredAmount).toBeGreaterThan(0)
+  expect(evidence(result, 2026).disclosures).toContain(`election-year-owner-rmd:${ownerRmd2026}`)
   expect(year(result, 2026).spousalElectionAtYearEnd).toContainEqual(expect.objectContaining({
     accountId: 'inherited', status: 'evaluated', ownerTreatment: true,
   }))
-  // Section1.408-8(c)(3): annual opening cash alone cannot certify the
-  // election-year owner's RMD once a later executed act changes treatment.
+  // Dated transaction tax ordering remains unresolved even after owner RMD.
   expect(year(result, 2026).taxComputation?.status).toBe('incomplete')
   expect(year(result, 2026).taxComputation?.issues).toContainEqual(expect.objectContaining({
     code: 'incomplete-spousal-election-mixed-year', year: 2026,
   }))
   expect(result.warnings).toContainEqual(expect.stringContaining(
-    'inherited: ownership became effective during the year; the annual opening-beneficiary cash schedule does not resolve election-year owner RMD and tax ordering.',
+    'inherited: ownership became effective during the year; election-year owner RMD is applied, but dated transaction tax ordering remains unresolved.',
   ))
   expect(year(result, 2027).spousalOwnerTreatment).toContainEqual({ accountId: 'inherited', ownerTreatment: true })
   expect(year(result, 2027).inheritedDistribution).toBe(0)

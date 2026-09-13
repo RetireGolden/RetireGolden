@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import type { Account } from '../../model/plan.js'
-import { gateSpousalElectionFromInheritedAccount } from './beneficiarySpousalElectionGateAdapter.js'
+import {
+  acceptedElectionYearQualifyingDistributions,
+  gateSpousalElectionFromInheritedAccount,
+} from './beneficiarySpousalElectionGateAdapter.js'
 
 type Ira = Extract<Account, { type: 'traditional' | 'roth' }>
 function account(distributedAmount: number): Ira {
@@ -94,5 +97,35 @@ describe('adapter January1 observed execution', () => {
     facts.provenance.asOf = '2026-01-02'
     expect(gateSpousalElectionFromInheritedAccount({ account: value, taxYear: 2026 }))
       .toMatchObject({ status: 'evaluated', routeToOwnerTreatment: false })
+  })
+})
+
+describe('election-year owner-RMD accepted-distribution evidence', () => {
+  it('credits only completed, provenance-backed current-year history', () => {
+    const ira = account(5_000)
+    ira.inherited!.annualDistributionHistory!.push({
+      taxYear: 2026,
+      requiredAmount: 5_000,
+      distributedAmount: 4_000,
+      legalDistributionDeadline: '2026-12-31',
+      observedAsOfDate: '2026-12-31',
+      provenance: { source: 'Custodian completed distribution record', asOf: '2026-12-31' },
+    })
+    expect(acceptedElectionYearQualifyingDistributions({ account: ira, taxYear: 2026 }))
+      .toEqual({ amount: 4_000, evidence: 'completed-current-year-beneficiary-history' })
+  })
+
+  it('does not credit a display/history row that lacks completed observation evidence', () => {
+    const ira = account(5_000)
+    ira.inherited!.annualDistributionHistory!.push({
+      taxYear: 2026,
+      requiredAmount: 5_000,
+      distributedAmount: 4_000,
+      legalDistributionDeadline: '2026-12-31',
+      observedAsOfDate: '2026-12-30',
+      provenance: { source: 'Projected display row', asOf: '2026-12-30' },
+    })
+    expect(acceptedElectionYearQualifyingDistributions({ account: ira, taxYear: 2026 }))
+      .toEqual({ amount: 0, evidence: 'none' })
   })
 })

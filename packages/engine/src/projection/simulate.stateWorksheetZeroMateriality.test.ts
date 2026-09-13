@@ -1,7 +1,7 @@
 /**
  * Proved-zero state worksheet relief: actual simulatePlan paths shed only the
- * immaterial CT/WI/IA relief-fact warnings while positive-income and unrelated
- * diagnostics stay incomplete.
+ * immaterial CT/WI/IA/VT/IL relief-fact warnings while positive-income and
+ * unrelated diagnostics stay incomplete.
  */
 import { describe, expect, it } from 'vitest'
 import type { Account } from '../model/plan.js'
@@ -208,6 +208,80 @@ describe('simulate — Wisconsin standard deduction and personal exemption zero 
   })
 })
 
+describe('simulate — Vermont deduction and minimum-tax zero materiality', () => {
+  it('omits vt-deduction-exemption-incomplete for cash-funded zero-taxable-income plans', () => {
+    const year = simulateOneYear(cashFundedPlan('VT'))
+    expect(year.tax).toBe(0)
+    expect(stateTaxOnly(year)).toBe(0)
+    expect(issueCodes(year)).not.toContain('vt-deduction-exemption-incomplete')
+    expect(issueCodes(year)).not.toContain('vt-minimum-tax-incomplete')
+    expect(year.taxComputation?.status).toBe('complete')
+  })
+
+  it('matches monetary results when Vermont worksheet facts are later supplied', () => {
+    const bare = simulateOneYear(cashFundedPlan('VT'))
+    const plan = cashFundedPlan('VT')
+    plan.stateTaxFacts.householdYearFacts = [{
+      year: 2026,
+      exemptionTaxpayerCount: 1,
+      section63fQualificationCount: 0,
+      vermontUsObligationAdjustment: 0,
+    }]
+    const withFacts = simulateOneYear(plan)
+    expect(withFacts.tax).toBe(bare.tax)
+    expect(withFacts.netWorth).toBeCloseTo(bare.netWorth, 6)
+    expect(issueCodes(withFacts)).not.toContain('vt-deduction-exemption-incomplete')
+    expect(issueCodes(withFacts)).not.toContain('vt-minimum-tax-incomplete')
+  })
+
+  it('keeps vt-deduction-exemption-incomplete when wage income is positive below the minimum-tax AGI threshold', () => {
+    const plan = cashFundedPlan('VT', 0)
+    plan.incomes = [recurringOrdinaryIncome('wages', 50_000)]
+    const year = simulateOneYear(plan)
+    // 32 V.S.A. §5822(a)(6): $50,000 AGI is below the $150,000 minimum-tax floor.
+    expect(stateTaxOnly(year)).toBeGreaterThan(0)
+    expect(issueCodes(year)).toContain('vt-deduction-exemption-incomplete')
+    expect(issueCodes(year)).not.toContain('vt-minimum-tax-incomplete')
+    expect(year.taxComputation?.status).toBe('incomplete')
+  })
+})
+
+describe('simulate — Illinois personal exemption zero materiality', () => {
+  it('omits il-exemption-counts-unknown for cash-funded zero-taxable-income plans below the AGI cutoff', () => {
+    const year = simulateOneYear(cashFundedPlan('IL'))
+    expect(year.tax).toBe(0)
+    expect(stateTaxOnly(year)).toBe(0)
+    expect(issueCodes(year)).not.toContain('il-exemption-counts-unknown')
+    expect(year.taxComputation?.status).toBe('complete')
+  })
+
+  it('matches monetary results when Illinois exemption counts are later supplied', () => {
+    const bare = simulateOneYear(cashFundedPlan('IL'))
+    const plan = cashFundedPlan('IL')
+    plan.stateTaxFacts.householdYearFacts = [{
+      year: 2026,
+      exemptionTaxpayerCount: 1,
+      exemptionDependentCount: 0,
+      age65EligibleCount: 1,
+    }]
+    const withFacts = simulateOneYear(plan)
+    expect(withFacts.tax).toBe(bare.tax)
+    expect(withFacts.netWorth).toBeCloseTo(bare.netWorth, 6)
+    expect(issueCodes(withFacts)).not.toContain('il-exemption-counts-unknown')
+  })
+
+  it('keeps il-exemption-counts-unknown when wage income is positive below the AGI cutoff', () => {
+    const plan = cashFundedPlan('IL', 0)
+    plan.incomes = [recurringOrdinaryIncome('wages', 50_000)]
+    const year = simulateOneYear(plan)
+    // 35 ILCS 5/204(d): $50,000 AGI is below the $250,000 nonjoint cutoff.
+    // 4.95% × $50,000 = $2,475 when exemption counts remain unknown.
+    expect(stateTaxOnly(year)).toBeCloseTo(2_475, 6)
+    expect(issueCodes(year)).toContain('il-exemption-counts-unknown')
+    expect(year.taxComputation?.status).toBe('incomplete')
+  })
+})
+
 describe('simulate — Iowa alternate/minimum tax zero materiality', () => {
   it('omits ia-alternate-tax-incomplete for cash-funded zero-ordinary-tax plans', () => {
     const year = simulateOneYear(cashFundedPlan('IA'))
@@ -270,6 +344,82 @@ describe('direct-call zero-materiality controls', () => {
       standardDeductionAllowedOverride: -1,
     })
     expect(wi.warnings.some((warning) => warning.code === 'wi-exemption-facts-unknown')).toBe(true)
+  })
+
+  it('uses characterized ordinary income after Illinois retirement exclusion for the exemption bound', () => {
+    const params = stateParamsFor('IL', 2026)!
+    // 35 ILCS 5/203(a)(2)(F): federally included IRA distributions are
+    // deducted from Illinois base income. The characterized retirement
+    // distribution is part of ordinaryIncome, so the pre-relief base is zero.
+    const retirementExcludedOrdinaryIncome = computeStateTaxableIncomeResult(
+      params,
+      directInput({ state: 'IL', ordinaryIncome: 5_000, agesAlive: [70] }),
+      {
+        retirementDistributions: [{
+          accountId: 'ira',
+          ownerPersonId: 'p1',
+          sourceKind: 'ira',
+          federallyIncludedAmount: 5_000,
+          recipientAgeYears: 70,
+          cause: 'ordinary',
+          earlyDistributionDisqualifier: 'false',
+        }],
+        householdFacts: { federalAgi: 5_000 },
+      },
+    )
+    const ordinaryIncomeOnly = computeStateTaxableIncomeResult(
+      params,
+      directInput({ state: 'IL', ordinaryIncome: 5_000, agesAlive: [70] }),
+      { householdFacts: { federalAgi: 5_000 } },
+    )
+    expect(retirementExcludedOrdinaryIncome.warnings.some((warning) => warning.code === 'il-exemption-counts-unknown')).toBe(false)
+    expect(ordinaryIncomeOnly.warnings.some((warning) => warning.code === 'il-exemption-counts-unknown')).toBe(true)
+  })
+
+  it('omits Illinois below-cutoff exemption-count warnings only when the pre-relief bound is zero', () => {
+    const params = stateParamsFor('IL', 2026)!
+    const provedZero = computeStateTaxableIncomeResult(
+      params,
+      directInput({ state: 'IL', ordinaryIncome: 0 }),
+      { householdFacts: { federalAgi: 0 } },
+    )
+    const positiveWages = computeStateTaxableIncomeResult(
+      params,
+      directInput({ state: 'IL', ordinaryIncome: 50_000 }),
+      { householdFacts: { federalAgi: 50_000 } },
+    )
+    const negativeOverrideBlocksZeroProof = computeStateTaxableIncomeResult(
+      params,
+      directInput({ state: 'IL', ordinaryIncome: 0 }),
+      { householdFacts: { federalAgi: 0 }, standardDeductionAllowedOverride: -1 },
+    )
+    expect(provedZero.warnings.some((warning) => warning.code === 'il-exemption-counts-unknown')).toBe(false)
+    expect(positiveWages.warnings.some((warning) => warning.code === 'il-exemption-counts-unknown')).toBe(true)
+    expect(negativeOverrideBlocksZeroProof.warnings.some((warning) => warning.code === 'il-exemption-counts-unknown')).toBe(true)
+  })
+
+  it('retains Vermont deduction and minimum-tax warnings when relief cannot be proved immaterial', () => {
+    const vtDeduction = computeStateTaxableIncomeResult(
+      stateParamsFor('VT', 2026)!,
+      directInput({ state: 'VT', ordinaryIncome: 50_000 }),
+      { householdFacts: { federalAgi: 50_000, stateFilingStatus: 'single' } },
+    )
+    expect(vtDeduction.warnings.some((warning) => warning.code === 'vt-deduction-exemption-incomplete')).toBe(true)
+
+    const vtMinimum = calc.computeResult(directInput({
+      state: 'VT',
+      ordinaryIncome: 0,
+      stateHouseholdFacts: {
+        federalAgi: 200_000,
+        stateFilingStatus: 'single',
+        federallyIncludedSocialSecurity: 0,
+        exemptionTaxpayerCount: 1,
+        section63fQualificationCount: 0,
+      },
+    }))
+    // 32 V.S.A. §5822(a)(6): AGI above $150,000 can impose 3% minimum tax despite zero ordinary base.
+    expect(vtMinimum.issues.some((issue) => issue.code === 'vt-minimum-tax-incomplete')).toBe(true)
+    expect(vtMinimum.status).toBe('incomplete')
   })
 
   it('contract: drops ia-alternate-tax-incomplete but stays incomplete when unknown source and military exclusion net to zero bracket tax', () => {

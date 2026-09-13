@@ -392,3 +392,46 @@ describe('January1 executed spouse-election boundary', () => {
       .toMatchObject({ status: 'evaluated', routeToOwnerTreatment: false })
   })
 })
+
+describe('current-year contribution history boundary', () => {
+  function contributionInput(): GateBeneficiarySpousalElectionInput {
+    return input({
+      deathDate: '2024-06-15', determinationStage: 'endOfTaxYear',
+      electionFacts: {
+        ...input().electionFacts, factsAsOfDate: '2026-12-31',
+        nonRolloverContributions: [{ executedOn: '2026-05-01', provenance: 'Executed custodian contribution' }],
+        postDeathRequiredDistributionHistory: [completedHistory(2025)],
+      },
+    })
+  }
+
+  it('accepts a verified contribution with prior history and no current beneficiary row', () => {
+    // §1.408-8(c)(3): the completed contribution itself is the election trigger.
+    expect(gateBeneficiarySpousalElectionForAnnualCoordinator(contributionInput())).toMatchObject({
+      status: 'evaluated', routeToOwnerTreatment: true,
+      evaluator: { trigger: 'contributionMade', effectiveTaxYear: 2026 },
+    })
+  })
+
+  it('does not waive missing prior history or unproven contribution evidence', () => {
+    const missingHistory = contributionInput()
+    const missingHistoryInput = { ...missingHistory, electionFacts: { ...missingHistory.electionFacts, postDeathRequiredDistributionHistory: [] } }
+    expect(gateBeneficiarySpousalElectionForAnnualCoordinator(missingHistoryInput)).toMatchObject({ status: 'missingFacts' })
+    const unproven = contributionInput()
+    const unprovenInput = { ...unproven, electionFacts: { ...unproven.electionFacts, nonRolloverContributions: [{ executedOn: '2026-05-01', provenance: '' }] } }
+    expect(gateBeneficiarySpousalElectionForAnnualCoordinator(unprovenInput)).toMatchObject({ status: 'missingFacts' })
+    const refused = contributionInput()
+    const refusedInput: GateBeneficiarySpousalElectionInput = { ...refused, electionFacts: { ...refused.electionFacts, unlimitedWithdrawalRight: 'verifiedNo' } }
+    expect(gateBeneficiarySpousalElectionForAnnualCoordinator(refusedInput)).toMatchObject({ status: 'eligibilityNotMet' })
+  })
+
+  it('still requires completed current-year history when only a shortfall could trigger election', () => {
+    const noDatedAct = contributionInput()
+    const missingCurrent = { ...noDatedAct, electionFacts: { ...noDatedAct.electionFacts, nonRolloverContributions: [] } }
+    expect(gateBeneficiarySpousalElectionForAnnualCoordinator(missingCurrent)).toMatchObject({
+      status: 'missingFacts', missing: ['requiredDistributionHistory taxYear 2026'],
+    })
+    const completedCurrent = { ...missingCurrent, electionFacts: { ...missingCurrent.electionFacts, postDeathRequiredDistributionHistory: [completedHistory(2025), completedHistory(2026, 500_000, 400_000)] } }
+    expect(gateBeneficiarySpousalElectionForAnnualCoordinator(completedCurrent)).toMatchObject({ status: 'evaluated', routeToOwnerTreatment: true })
+  })
+})

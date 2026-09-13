@@ -159,3 +159,86 @@ export function gateSpousalElectionFromInheritedAccount(input: {
     deathYearDecedentResidualRmd: residual,
   })
 }
+
+/**
+ * Accepted qualifying distributions already on the Plan for the election year.
+ * Uses only observed current-year history and the j(4) pre-election actual
+ * field — never invents undated transaction timing.
+ */
+export interface AcceptedElectionYearQualifyingDistributions {
+  readonly amount: number
+  /** The accepted source is carried into the final owner-obligation record. */
+  readonly evidence:
+    | 'none'
+    | 'completed-current-year-beneficiary-history'
+    | 'section402c2j4-actual-pre-election-distribution'
+}
+
+export function acceptedElectionYearQualifyingDistributions(input: {
+  readonly account: Extract<Account, { type: 'traditional' | 'roth' }>
+  readonly taxYear: number
+}): AcceptedElectionYearQualifyingDistributions {
+  const inherited = input.account.inherited
+  if (inherited === undefined || inherited.beneficiary === undefined) {
+    return { amount: 0, evidence: 'none' }
+  }
+  const acceptedHistory = (inherited.annualDistributionHistory ?? [])
+    .filter((row) =>
+      row.taxYear === input.taxYear &&
+      parseCivilIsoDate(row.observedAsOfDate ?? '') !== null &&
+      parseCivilIsoDate(row.legalDistributionDeadline ?? '') !== null &&
+      parseCivilIsoDate(row.provenance.asOf) !== null &&
+      row.observedAsOfDate! >= row.legalDistributionDeadline! &&
+      row.provenance.asOf >= row.observedAsOfDate! &&
+      row.provenance.source.trim().length > 0,
+    )
+  const fromHistory = acceptedHistory
+    .reduce((sum, row) => sum + Math.max(0, row.distributedAmount), 0)
+  if (acceptedHistory.length > 0) {
+    return {
+      amount: fromHistory,
+      evidence: 'completed-current-year-beneficiary-history',
+    }
+  }
+  const electionFacts = inherited.beneficiary.spousalElectionFacts
+  const worksheet = electionFacts?.section402c2j4Inputs
+  const eventDate = electionFacts?.affirmativeElectionDate
+  const fromJ4 = worksheet !== undefined &&
+    worksheet.distributionYear === input.taxYear &&
+    parseCivilIsoDate(worksheet.provenance.asOf) !== null &&
+    worksheet.provenance.source.trim().length > 0 &&
+    (eventDate === null || eventDate === undefined || worksheet.provenance.asOf >= eventDate)
+    ? Math.max(0, worksheet.actualPreElectionDistributionsCurrentYear)
+    : 0
+  // Prefer an explicit current-year history row when present; otherwise the
+  // independently proven j(4) pre-election actual is the only accepted amount.
+  if (fromJ4 > 0) {
+    return {
+      amount: fromJ4,
+      evidence: 'section402c2j4-actual-pre-election-distribution',
+    }
+  }
+  return { amount: 0, evidence: 'none' }
+}
+
+/**
+ * Prior-Dec-31 / current-year RMD reference balance for election-year owner
+ * recalculation. Prefers the explicit j(4) reference balance when supplied so
+ * a live opening balance that already nets pre-election distributions does not
+ * silently understate the owner requirement.
+ */
+export function electionYearOwnerRmdReferenceBalance(input: {
+  readonly account: Extract<Account, { type: 'traditional' | 'roth' }>
+  readonly startOfYearBalance: number
+}): number {
+  const reference =
+    input.account.inherited?.beneficiary?.spousalElectionFacts?.section402c2j4Inputs
+      ?.currentYearRmdReferenceBalance
+  // A positive explicit reference is the prior-Dec-31 / RMD base. Zero is the
+  // life-expectancy placeholder used when j(4) is non-applicable and must not
+  // collapse the owner requirement.
+  if (typeof reference === 'number' && Number.isFinite(reference) && reference > 0) {
+    return reference
+  }
+  return Math.max(0, input.startOfYearBalance)
+}

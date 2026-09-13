@@ -49,6 +49,29 @@ import type {
   YearWithdrawals,
 } from './yearLedger.js'
 
+/**
+ * Final §1.408-8(c)(3) owner-RMD obligation for an account that changed from
+ * beneficiary treatment during this tax year.  This is deliberately separate
+ * from inherited-account evidence, whose required amount remains the immutable
+ * beneficiary/decedent trigger counterfactual.
+ */
+export interface ElectionYearOwnerRmdObligation {
+  accountId: string
+  ownerPersonId: string
+  requiredAmount: number
+  creditedAcceptedDistributionAmount: number
+  creditedDistributionEvidence:
+    | 'none'
+    | 'completed-current-year-beneficiary-history'
+    | 'section402c2j4-actual-pre-election-distribution'
+  /** Remaining after accepted actual distributions, before this pass's take. */
+  unpaidAmount: number
+  /** Actual owner-RMD cash settled by this pass. */
+  settledAmount: number
+  /** Known unsatisfied owner requirement after the actual settlement. */
+  unsatisfiedAmount: number
+}
+
 export interface YearResult {
   year: number
   /**
@@ -141,6 +164,12 @@ export interface YearResult {
   employerMatch: number
   /** Forced traditional-account distributions (included in withdrawals.traditional). */
   rmd: number
+  /**
+   * Final owner-RMD obligations for verified midyear spouse elections.  The
+   * beneficiary/decedent counterfactual remains separately in
+   * `inheritedAccounts`; consumers must not substitute it for this result.
+   */
+  electionYearOwnerRmdObligations?: readonly Readonly<ElectionYearOwnerRmdObligation>[]
   /** IRC §4974 excise included in `penalties`, never in `tax`, AGI, or MAGI. */
   rmdShortfallExciseTax?: number
   /** Per-applicable-plan required, timely-paid, shortfall, rate, and tax evidence. */
@@ -441,7 +470,7 @@ export interface YearResult {
   ssdiPaid: number
   tax: number
   /** Accepted dated election routing, shared by live execution and replay. */
-  spousalElectionAtYearEnd?: readonly { accountId: string; status: string; ownerTreatment?: boolean; evaluationContext?: string; simulationId?: string }[]
+  spousalElectionAtYearEnd?: readonly { accountId: string; status: string; ownerTreatment?: boolean; evaluationContext?: string; simulationId?: string; missingFacts?: readonly string[] }[]
   spousalOwnerTreatment?: readonly { accountId: string; ownerTreatment: boolean }[]
   hecmComputation?: { status: 'complete' | 'incomplete'; issues: readonly string[] }
   /**

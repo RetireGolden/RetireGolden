@@ -539,6 +539,7 @@ export function annualFundingApplicationAndClosePhase(
   const { forcedDistribution: forcedDistributionPhase, aggregateRoth: aggregateRothPhase } = prior
   const {
     rmdTotal,
+    electionYearOwnerRmdObligations,
     seppTotal,
     inheritedTotal,
     inheritedOrdinaryIncome,
@@ -2085,9 +2086,12 @@ export function annualFundingApplicationAndClosePhase(
       facts.spousalOwnerTreatment?.find((opening) => opening.accountId === row.accountId)?.ownerTreatment !== true,
     ) ?? []
     if (mixedYearOwnerTransitions.length > 0) {
+      // Owner RMD for the election year is computed/applied under §1.408-8(c)(3)
+      // during forced distributions. Transaction tax character still lacks
+      // dated before/after ordering, so chronology remains typed incomplete.
       const issues = mixedYearOwnerTransitions.map((row) => ({
         code: 'incomplete-spousal-election-mixed-year', year,
-        message: `${row.accountId}: ownership became effective during the year; the annual opening-beneficiary cash schedule does not resolve election-year owner RMD and tax ordering.`,
+        message: `${row.accountId}: ownership became effective during the year; election-year owner RMD is applied, but dated transaction tax ordering remains unresolved.`,
       }))
       taxComputation = { ...taxComputation, status: 'incomplete', issues: [...taxComputation.issues, ...issues] }
       for (const issue of issues) warnings.add(issue.message)
@@ -2114,6 +2118,7 @@ export function annualFundingApplicationAndClosePhase(
       entityFacts,
       retirement: {
         rmd: rmdTotal,
+        electionYearOwnerRmdObligations,
         rmdShortfallExciseTax,
         rmdShortfallExciseDetails: rmdShortfallExciseResults,
         sepp: seppTotal,

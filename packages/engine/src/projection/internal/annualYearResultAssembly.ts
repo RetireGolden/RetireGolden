@@ -53,6 +53,8 @@ export interface AnnualYearResultLedgerPublication {
 
 export interface AnnualYearResultRetirementPublication {
   readonly rmd: YearResult['rmd']
+  readonly electionYearOwnerRmdObligations?:
+    YearResult['electionYearOwnerRmdObligations']
   readonly rmdShortfallExciseTax: YearResult['rmdShortfallExciseTax']
   readonly rmdShortfallExciseDetails: YearResult['rmdShortfallExciseDetails']
   readonly sepp: YearResult['sepp']
@@ -177,6 +179,9 @@ export function annualYearResultAssembly(
     socialSecurityStreams: ledger.socialSecurityStreams,
     employerMatch: ledger.employerMatch,
     rmd: retirement.rmd,
+    ...(retirement.electionYearOwnerRmdObligations === undefined
+      ? {}
+      : { electionYearOwnerRmdObligations: retirement.electionYearOwnerRmdObligations }),
     rmdShortfallExciseTax: retirement.rmdShortfallExciseTax,
     rmdShortfallExciseDetails: retirement.rmdShortfallExciseDetails,
     sepp: retirement.sepp,

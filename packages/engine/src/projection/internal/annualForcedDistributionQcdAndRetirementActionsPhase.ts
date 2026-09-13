@@ -6,6 +6,7 @@ import type { ParameterPack } from '../../params/types.js'
 import type { IraProRataYear } from '../../strategies/iraBasis.js'
 import type { SimulatorAnnualRetirementRuntimeOccurrence } from '../annualRetirementRuntimeJournal.js'
 import type {
+  ElectionYearOwnerRmdObligation,
   InheritedAccountYearEvidence,
   PersonYearState,
   SimulatorRetirementRuntimeApplication,
@@ -17,11 +18,17 @@ import {
 } from '../../strategies/accountEligibility.js'
 import { type RothBasisState } from '../../strategies/rothBasis.js'
 import { annualOwnerRmdPlan } from './annualOwnerRmdPlan.js'
+import { planElectionYearOwnerRmdDraws } from './annualOwnedAccountDrawsPhase.js'
+import {
+  acceptedElectionYearQualifyingDistributions,
+  electionYearOwnerRmdReferenceBalance,
+} from './beneficiarySpousalElectionGateAdapter.js'
 import { annualSeppDistributions } from './annualSeppDistributions.js'
 import {
   annualInheritedIraDistributions,
   type AnnualInheritedIraClassCacheEntry,
 } from './annualInheritedIraDistributions.js'
+import { socialSecurityDobParts } from '../../socialSecurity/annualTiming.js'
 import { annualLegacyQcdGiftPlan } from './annualLegacyQcdGiftPlan.js'
 import {
   annualLegacyQcdOwnerCharacterPlan,
@@ -36,6 +43,7 @@ import {
 import { annualRothConversionExecutionInput } from './annualRothConversionExecutionInput.js'
 import {
   computeRmdShortfallExcise,
+  rmdShortfallObligationId,
   type RmdApplicablePlan,
   type RmdShortfallExciseResult,
   type RmdShortfallObligation,
@@ -144,6 +152,14 @@ interface AnnualForcedDistributionQcdAndRetirementActionsPhaseCallbacks {
   readonly startOfYearBalance: ReadonlyMap<string, number>
   readonly inheritedClassCache: ReadonlyMap<string, AnnualInheritedIraClassCacheEntry>
   readonly spousalOwnerTreatmentForYear: (accountId: string) => boolean
+  /**
+   * Accounts that open the year as beneficiary but have a verified current-year
+   * effective spousal election event. Election-year owner RMD is computed once
+   * under §1.408-8(c)(3) without feeding the revised requirement back into the
+   * beneficiary trigger. Death-year members stay in the set for publication of
+   * owner requirement 0 while the decedent residual remains on the inherited path.
+   */
+  readonly electionYearOwnerRmdAccountIds?: ReadonlySet<string>
   readonly rmdReliefElectionFor: (
     obligationId: string,
   ) => RmdShortfallReliefElection | undefined
@@ -251,6 +267,8 @@ export interface AnnualForcedDistributionQcdAndRetirementActionsPhaseResult {
   readonly inheritedDeadlineObservationIssues?: readonly {accountId: string; reason: string}[]
   readonly inheritedRothTaxCharacterIncomplete: boolean
   readonly inheritedYearEvidenceDraft: InheritedAccountYearEvidence[]
+  /** §1.408-8(c)(3) final owner requirements (mixed-year only). */
+  readonly electionYearOwnerRmdObligations?: readonly Readonly<ElectionYearOwnerRmdObligation>[]
   readonly rmdShortfallObligations: RmdShortfallObligation[]
   readonly rmdShortfallExciseResults: RmdShortfallExciseResult[]
   readonly rmdShortfallExciseTax: number
@@ -717,6 +735,149 @@ export function annualForcedDistributionQcdAndRetirementActionsPhase(
     }
   }
 
+  // --- §1.408-8(c)(3) election-year owner RMD (mixed-year transition) ------
+  // Opening treatment stayed beneficiary, but a verified current-year event
+  // makes the election-year RMD an owner calculation. Preserve the immutable
+  // beneficiary trigger/counterfactual below; reconcile unpaid owner
+  // requirement against accepted qualifying distributions once; never refund
+  // excess cash already paid; never feed the revised requirement back into
+  // trigger eligibility. Death-year rows publish owner requirement 0 and keep
+  // the decedent residual on the inherited path.
+  const electionYearOwnerRmdAccountIds =
+    callbacks.electionYearOwnerRmdAccountIds ?? new Set<string>()
+  const electionYearOwnerPlan = planElectionYearOwnerRmdDraws({
+    pack,
+    accounts: rmdBalances.flatMap((state) => {
+      if (!electionYearOwnerRmdAccountIds.has(state.account.id)) return []
+      if (state.account.type !== 'traditional' && state.account.type !== 'roth') return []
+      const inherited = state.account.inherited
+      if (inherited === undefined) return []
+      const ownerId = state.account.ownerPersonId ?? primary.id
+      const owner = personById.get(ownerId)
+      if (owner === undefined) return []
+      const ownerState = stateOf(ownerId)
+      if (!ownerState.alive) return []
+      return [{
+        accountId: state.account.id,
+        accountType: state.account.type,
+        priorYearEndBalance: electionYearOwnerRmdReferenceBalance({
+          account: state.account,
+          startOfYearBalance: startOfYearBalance.get(state.account.id) ?? 0,
+        }),
+        birthYear: socialSecurityDobParts(owner).y,
+        ageAttained: ownerState.ageAttained,
+        isDeathYear: year === inherited.ownerDeathYear,
+        alreadyDistributedQualifying: acceptedElectionYearQualifyingDistributions({
+          account: state.account,
+          taxYear: year,
+        }).amount,
+        liveBalance: state.balance,
+      }]
+    }),
+  })
+  const electionYearAcceptedDistributions = new Map(
+    rmdBalances.flatMap((state) =>
+      electionYearOwnerRmdAccountIds.has(state.account.id) &&
+      (state.account.type === 'traditional' || state.account.type === 'roth')
+        ? [[state.account.id, acceptedElectionYearQualifyingDistributions({
+            account: state.account,
+            taxYear: year,
+          })] as const]
+        : [],
+    ),
+  )
+  const electionYearOwnerRmdObligations: ElectionYearOwnerRmdObligation[] = []
+  for (const row of electionYearOwnerPlan.rows) {
+    const ownerId = rmdBalances.find((state) => state.account.id === row.accountId)?.account.ownerPersonId
+      ?? primary.id
+    const accepted = electionYearAcceptedDistributions.get(row.accountId) ?? {
+      amount: 0,
+      evidence: 'none' as const,
+    }
+    if (row.ownerRequiredAmount > 0) {
+      iraRmdRequiredByOwner.set(
+        ownerId,
+        (iraRmdRequiredByOwner.get(ownerId) ?? 0) + row.ownerRequiredAmount,
+      )
+    }
+    const unsatisfiedAmount = Math.max(0, row.unpaidAmount - row.takeAmount)
+    if (unsatisfiedAmount > 0) {
+      iraRmdUnsatisfiedByOwner.set(
+        ownerId,
+        (iraRmdUnsatisfiedByOwner.get(ownerId) ?? 0) + unsatisfiedAmount,
+      )
+    }
+    electionYearOwnerRmdObligations.push({
+      accountId: row.accountId,
+      ownerPersonId: ownerId,
+      requiredAmount: row.ownerRequiredAmount,
+      creditedAcceptedDistributionAmount: accepted.amount,
+      creditedDistributionEvidence: accepted.evidence,
+      unpaidAmount: row.unpaidAmount,
+      settledAmount: row.takeAmount,
+      unsatisfiedAmount,
+    })
+    if (row.ownerRequiredAmount > 0 && !row.suppressInheritedForcedTake) continue
+    if (row.ownerRequiredAmount <= 0) continue
+    const applicablePlan: RmdApplicablePlan = {
+      kind: 'ownedTraditionalIras',
+      payeePersonId: ownerId,
+    }
+    const obligationId = rmdShortfallObligationId(applicablePlan, year)
+    const existingIndex = rmdShortfallObligations.findIndex((obligation) =>
+      obligation.obligationId === obligationId,
+    )
+    const distributedByDeadline = accepted.amount + row.takeAmount
+    if (existingIndex >= 0) {
+      const existing = rmdShortfallObligations[existingIndex]!
+      rmdShortfallObligations[existingIndex] = {
+        ...existing,
+        requiredAmount: existing.requiredAmount + row.ownerRequiredAmount,
+        distributedByDeadline: existing.distributedByDeadline + distributedByDeadline,
+      }
+    } else {
+      rmdShortfallObligations.push({
+        obligationId,
+        distributionCalendarYear: year,
+        taxYear: year,
+        taxImposedOn: `${year}-12-31`,
+        applicablePlan,
+        requirementKind: 'ownedAnnual',
+        requiredAmount: row.ownerRequiredAmount,
+        distributedByDeadline,
+      })
+    }
+  }
+  for (const state of rmdBalances) {
+    if (state.account.type !== 'traditional') continue
+    const take = electionYearOwnerPlan.takeByAccountId.get(state.account.id) ?? 0
+    if (take <= 0 || planDollarsMoveNoLedgerCent(take)) continue
+    state.balance -= take
+    rmdTakeByAccount.set(
+      state.account.id,
+      (rmdTakeByAccount.get(state.account.id) ?? 0) + take,
+    )
+    rmdObligationByAccount.set(
+      state.account.id,
+      electionYearOwnerPlan.ownerRequiredByAccountId.get(state.account.id) ?? 0,
+    )
+    const kind = 'ownedIraRmd' as const
+    const producerOccurrenceKey = runtimeOccurrenceKey(kind, state.account.id)
+    recordAnnualRetirementRuntimeOccurrence({
+      producerOccurrenceKey,
+      kind,
+      grossAmountPlanDollars: take,
+      ownerPersonId: state.account.ownerPersonId,
+      sourceAccountId: state.account.id,
+      executionDate: null,
+      executionSequence: null,
+      movementAuthorityId: null,
+    })
+    // Mixed-year chronology remains incomplete for Form 8606 aggregation; do
+    // not claim full-year owner-pool measurement for these election-year draws.
+    rmdTotal += take
+  }
+
   // --- 72(t) SEPP: forced penalty-free early distributions (roadmap V8) ----
   // A substantially-equal periodic payment is taken like an RMD — outside the
   // need-based withdrawal flow, so it never attracts the early-withdrawal
@@ -816,6 +977,8 @@ export function annualForcedDistributionQcdAndRetirementActionsPhase(
       beneficiaryState: (personId) => stateOf(personId),
       isTreatAsOwnEffectiveForYear: (account) =>
         input.callbacks.spousalOwnerTreatmentForYear(account.id),
+      suppressForcedDistributionAccountIds:
+        electionYearOwnerPlan.suppressInheritedForcedTakeAccountIds,
       characterizeInheritedRothDistribution: ({
         accountId,
         beneficiaryPersonId,
@@ -865,18 +1028,71 @@ export function annualForcedDistributionQcdAndRetirementActionsPhase(
       },
     }),
   )
+  const suppressInheritedForcedTakeAccountIds =
+    electionYearOwnerPlan.suppressInheritedForcedTakeAccountIds
   const inheritedOperations = inheritedPlan.rows.flatMap((row) =>
-    row.distribution === null ? [] : [row.distribution])
+    row.distribution === null ||
+    suppressInheritedForcedTakeAccountIds.has(row.accountId)
+      ? []
+      : [row.distribution])
   for (const issue of inheritedPlan.deadlineObservationIssues) warnings.add(`Inherited deadline evidence for ${issue.accountId} is incomplete: ${issue.reason}`)
-  const inheritedTotal = inheritedPlan.totals.inherited
-  const inheritedOrdinaryIncome = inheritedPlan.totals.ordinaryIncome
-  const inheritedRothForced = inheritedPlan.totals.rothForced
+  // Election-year owner reconciliation suppresses beneficiary cash takes for
+  // non-death-year transitions while retaining the counterfactual required
+  // amount for trigger immutability. Adjust published totals to match applied
+  // operations only — no double settlement with the owner-RMD take above.
+  let inheritedTotal = 0
+  let inheritedOrdinaryIncome = 0
+  let inheritedRothForced = 0
+  const inheritedRothOrdinaryIncomeByAccount = new Map(
+    inheritedPlan.rothTaxCharacterOperations.map((operation) => [
+      operation.accountId,
+      operation.ordinaryIncome,
+    ] as const),
+  )
+  for (const operation of inheritedOperations) {
+    inheritedTotal += operation.executed
+    const account = rmdBalances[operation.balanceIndex]?.account
+    if (account?.type === 'roth') {
+      inheritedRothForced += operation.executed
+      inheritedOrdinaryIncome +=
+        inheritedRothOrdinaryIncomeByAccount.get(operation.accountId) ?? 0
+    }
+    else inheritedOrdinaryIncome += operation.executed
+  }
   const inheritedRothTaxCharacterIncomplete =
     inheritedPlan.rothTaxCharacterStatus === 'incomplete'
   const inheritedYearEvidenceDraft: InheritedAccountYearEvidence[] =
-    inheritedPlan.rows.map((row) => row.evidence)
+    inheritedPlan.rows.map((row) => {
+      if (!electionYearOwnerRmdAccountIds.has(row.accountId)) return row.evidence
+      const account = rmdBalances.find((state) => state.account.id === row.accountId)?.account
+      const accepted =
+        account !== undefined && (account.type === 'traditional' || account.type === 'roth')
+          ? acceptedElectionYearQualifyingDistributions({ account, taxYear: year })
+          : { amount: 0, evidence: 'none' as const }
+      const ownerTake = electionYearOwnerPlan.takeByAccountId.get(row.accountId) ?? 0
+      const ownerRequired =
+        electionYearOwnerPlan.ownerRequiredByAccountId.get(row.accountId) ?? 0
+      const suppressCash = suppressInheritedForcedTakeAccountIds.has(row.accountId)
+      // Keep beneficiary/decedent requiredAmount (immutable trigger or death-year
+      // residual base). When non-death-year cash is suppressed, publish accepted
+      // + owner-reconciled amounts as executed; never rewrite requiredAmount.
+      return {
+        ...row.evidence,
+        ...(suppressCash
+          ? { executedRequiredAmount: accepted.amount + ownerTake }
+          : {}),
+        disclosures: [
+          ...row.evidence.disclosures,
+          `election-year-owner-rmd:${ownerRequired}`,
+          `election-year-owner-rmd-unpaid:${Math.max(0, ownerRequired - accepted.amount)}`,
+        ],
+      }
+    })
   const inheritedRmdShortfallObligations =
-    inheritedPlan.rmdShortfallObligations
+    inheritedPlan.rmdShortfallObligations.filter((obligation) => {
+      if (obligation.applicablePlan.kind !== 'inheritedIraAccount') return true
+      return !suppressInheritedForcedTakeAccountIds.has(obligation.applicablePlan.accountId)
+    })
   const inheritedOperationIndexes = new Set<number>()
   for (const operation of inheritedOperations) {
     const state = rmdBalances[operation.balanceIndex]
@@ -2257,6 +2473,7 @@ export function annualForcedDistributionQcdAndRetirementActionsPhase(
     inheritedRothTaxCharacterIncomplete,
     inheritedDeadlineObservationIssues: inheritedPlan.deadlineObservationIssues,
     inheritedYearEvidenceDraft,
+    electionYearOwnerRmdObligations,
     rmdShortfallObligations,
     rmdShortfallExciseResults,
     rmdShortfallExciseTax,

@@ -61,7 +61,7 @@ export const requiredMinimumDistributionRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The standalone evaluator refuses an unobserved calendar year rather than assuming the deemed-election trigger is absent. Its annual gate accepts opening-of-year history only through the preceding year and requires a row-level as-of date and provenance, so a projected current-year shortfall cannot become completed evidence. simulatePlan supplies observed Plan history to the opening gate, whose result controls owner routing; simulate.inheritedRegimeExecution.test.ts covers deemed election without a legacy election flag and the sole-beneficiary negative. The year-end gate also reports newly observed events; a planner recommendation is not completed evidence. annualFundingApplicationAndClosePhase publishes a typed incomplete annual tax result for election-year mixed chronology; the mid-year election case in simulate.inheritedRegimeExecution.test.ts covers that publication instead of certifying the opening-beneficiary estimate as exact.',
+      'The annual gate separates completed prior-year history from current-year event evidence. A verified current-year affirmative election or non-rollover contribution can use completed history through the preceding year at the end-of-year gate; a same-year shortfall-only deemed election still needs its completed deadline, observation and provenance. A future contribution does not route owner treatment at opening, and unproven contribution evidence remains refused. simulatePlan routes a verified effective current-year event to the owner-RMD planner while retaining the beneficiary requirement as immutable trigger evidence. The forced-distribution phase suppresses the replaced beneficiary take before tax characterization and publishes a separate structured owner obligation. simulate.spousalElectionYearOwnerRmd.test.ts carries owner-treatment production discriminators, including a completed current-year 5000/4000 shortfall. Mixed-year transaction tax chronology remains typed incomplete; source linkage does not certify unresolved event sequences or full original acceptance.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'regulation',
@@ -143,7 +143,8 @@ export const requiredMinimumDistributionRecords = {
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
-    conventionRationale: null,
+    conventionRationale:
+      'The annualOwnedAccountDrawsPhase planner computes the election-year owner requirement, credits only caller-accepted actual distributions, and takes the unpaid amount within live capacity without refunding excess prior distributions. The adapter admits completed current-year beneficiary history or coherent same-year j(4) pre-election actuals; a proposed/display row is not credit. The forced-distribution coordinator publishes electionYearOwnerRmdObligations with full requirement, evidence-bearing credit, pre-settlement unpaid, settled and unsatisfied amounts, and routes remaining owner obligations through the existing RMD gate and section 4974 contract. The describeRule production suite in simulate.spousalElectionYearOwnerRmd.test.ts binds the under-age, age-75, contribution-alone with prior history only, completed-shortfall and insufficient-balance discriminators. Its Roth suppression fixture gives two same-pool Roths identical verified elections and uses a distinct-decedent non-electing Roth as the nonqualified control. Both elected balances remain unchanged with no state facts; a pass-through observer of the actual production characterization callback delegates unchanged and requires calls only for the non-electing control. The control retains its source-derived 100 distribution and 40 taxable earnings, distinguishing suppression before characterization from a later cosmetic removal. This linkage is not a test-pass or closure claim. Mixed-year Form 8606 and transaction-tax chronology remain typed incomplete.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'regulation',
@@ -163,12 +164,22 @@ export const requiredMinimumDistributionRecords = {
     effectiveThrough: null,
     verifiedOn: '2026-08-03',
     implementedBy: [
+      'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/projection/internal/beneficiarySpousalElectionGateAdapter.ts',
+      'packages/engine/src/projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts',
+      'packages/engine/src/projection/internal/annualOwnedAccountDrawsPhase.ts',
       'packages/engine/src/projection/internal/annualInheritedIraDistributions.ts',
       'packages/engine/src/actions/beneficiarySpousalElectionStatus.ts',
       'packages/engine/src/actions/beneficiaryTraditionalIraDeathPenalty.ts',
       'packages/engine/src/projection/internal/annualSeppDistributions.ts',
     ],
     implementedByFunctions: [
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/internal/beneficiarySpousalElectionGateAdapter.ts#electionYearOwnerRmdReferenceBalance',
+      'packages/engine/src/projection/internal/beneficiarySpousalElectionGateAdapter.ts#acceptedElectionYearQualifyingDistributions',
+      'packages/engine/src/projection/internal/beneficiarySpousalElectionGateAdapter.ts#gateSpousalElectionFromInheritedAccount',
+      'packages/engine/src/projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts#annualForcedDistributionQcdAndRetirementActionsPhase',
+      'packages/engine/src/projection/internal/annualOwnedAccountDrawsPhase.ts#planElectionYearOwnerRmdDraws',
       'packages/engine/src/projection/internal/annualInheritedIraDistributions.ts#annualInheritedIraDistributions',
       'packages/engine/src/actions/beneficiarySpousalElectionStatus.ts#evaluateBeneficiarySpousalElection',
       'packages/engine/src/actions/beneficiaryTraditionalIraDeathPenalty.ts#evaluateBeneficiaryTraditionalIraDeathPenalty',
@@ -2153,7 +2164,8 @@ export const requiredMinimumDistributionRecords = {
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
-    conventionRationale: null,
+    conventionRationale:
+      'The election-year owner planner emits zero spouse-owner requirement in the decedent death year and leaves beneficiary forced-distribution suppression off, preserving the unsatisfied decedent RMD. The death-year describeRule block in simulate.spousalElectionYearOwnerRmd.test.ts distinguishes the 5000 decedent residual from an incorrectly substituted spouse-owner amount. A structured zero owner obligation is distinct from the decedent requirement; chronological transaction-tax limitations remain disclosed. No validation success is asserted.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'regulation',
@@ -2167,12 +2179,16 @@ export const requiredMinimumDistributionRecords = {
     effectiveThrough: null,
     verifiedOn: '2026-08-25',
     implementedBy: [
+      'packages/engine/src/projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts',
+      'packages/engine/src/projection/internal/annualOwnedAccountDrawsPhase.ts',
       'packages/engine/src/projection/internal/annualInheritedIraDistributions.ts',
       'packages/engine/src/strategies/accountEligibility.ts',
       'packages/engine/src/strategies/inheritedIra.ts',
       'packages/engine/src/projection/simulate.ts',
     ],
     implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts#annualForcedDistributionQcdAndRetirementActionsPhase',
+      'packages/engine/src/projection/internal/annualOwnedAccountDrawsPhase.ts#planElectionYearOwnerRmdDraws',
       'packages/engine/src/projection/internal/annualInheritedIraDistributions.ts#annualInheritedIraDistributions',
       'packages/engine/src/projection/simulate.ts#simulatePlan',
       'packages/engine/src/strategies/accountEligibility.ts#isTreatAsOwnEffective',

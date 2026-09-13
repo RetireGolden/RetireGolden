@@ -986,17 +986,32 @@ export function computeStateTaxableIncomeResult(
   }
 
   if (params.code === 'IL' && opts.householdFacts?.federalAgi !== undefined) {
-    accumulateLeaf(
-      acc,
-      illinoisPersonalExemptionAllowance({
-        federalAgi: opts.householdFacts.federalAgi,
-        joint: taxStatus === 'marriedFilingJointly',
-        eligibleTaxpayerCount: opts.householdFacts.exemptionTaxpayerCount,
-        eligibleDependentCount: opts.householdFacts.exemptionDependentCount,
-        age65EligibleCount: opts.householdFacts.age65EligibleCount,
-        config: params.illinoisPersonalExemption,
-      }),
-    )
+    const ilExemption = params.illinoisPersonalExemption
+    const joint = taxStatus === 'marriedFilingJointly'
+    const belowAgiCutoff = ilExemption !== undefined &&
+      opts.householdFacts.federalAgi <= (joint ? ilExemption.agiCutoffJoint : ilExemption.agiCutoffNonjoint)
+    const ilExemptionCountsMissing =
+      opts.householdFacts.exemptionTaxpayerCount === undefined ||
+      opts.householdFacts.exemptionDependentCount === undefined ||
+      opts.householdFacts.age65EligibleCount === undefined
+    const ilExemptionProvedImmaterial =
+      belowAgiCutoff &&
+      ilExemptionCountsMissing &&
+      preExemptionReliefBound <= 0 &&
+      standardDeductionOverrideAllowsZeroProof
+    if (!ilExemptionProvedImmaterial) {
+      accumulateLeaf(
+        acc,
+        illinoisPersonalExemptionAllowance({
+          federalAgi: opts.householdFacts.federalAgi,
+          joint,
+          eligibleTaxpayerCount: opts.householdFacts.exemptionTaxpayerCount,
+          eligibleDependentCount: opts.householdFacts.exemptionDependentCount,
+          age65EligibleCount: opts.householdFacts.age65EligibleCount,
+          config: ilExemption,
+        }),
+      )
+    }
   } else if (params.code === 'IL') {
     acc.warnings.push({ code: 'il-exemption-agi-unknown', ruleId: 'il-personal-exemption-allowance', message: 'Illinois personal exemption requires federal AGI and household counts.', missingFacts: ['federalAgi', 'householdFacts'] })
   }
@@ -1060,12 +1075,21 @@ export function computeStateTaxableIncomeResult(
   }
   if (params.code === 'VT') {
     const status = opts.householdFacts?.stateFilingStatus
-    if (!status || opts.householdFacts?.exemptionTaxpayerCount === undefined || opts.householdFacts?.section63fQualificationCount === undefined) {
+    const exemptionTaxpayerCount = opts.householdFacts?.exemptionTaxpayerCount
+    const section63fQualificationCount = opts.householdFacts?.section63fQualificationCount
+    const vtDeductionCountsMissing =
+      !status ||
+      exemptionTaxpayerCount === undefined ||
+      section63fQualificationCount === undefined
+    if (
+      vtDeductionCountsMissing &&
+      !(preExemptionReliefBound <= 0 && standardDeductionOverrideAllowsZeroProof)
+    ) {
       acc.warnings.push({ code: 'vt-deduction-exemption-incomplete', ruleId: 'vt-2026-deduction-exemption', message: 'Vermont deductions require full filing status, personal-exemption count, and §63(f) qualification count.', missingFacts: ['stateFilingStatus', 'exemptionTaxpayerCount', 'section63fQualificationCount'] })
-    } else {
+    } else if (status && exemptionTaxpayerCount !== undefined && section63fQualificationCount !== undefined) {
       const extras = params.vermontExtras
       const deduction = extras?.standardDeductionByStatus?.[status] ?? (status === 'headOfHousehold' ? 11800 : status === 'marriedFilingSeparately' || status === 'single' ? 7850 : 15700)
-      rawTotal = deduction + (extras?.personalExemption ?? 5400) * opts.householdFacts.exemptionTaxpayerCount + (extras?.additional63f ?? 1300) * opts.householdFacts.section63fQualificationCount
+      rawTotal = deduction + (extras?.personalExemption ?? 5400) * exemptionTaxpayerCount + (extras?.additional63f ?? 1300) * section63fQualificationCount
     }
   }
   if (params.code === 'SC') {
@@ -1188,14 +1212,22 @@ export function computeStateTaxDetailResult(
       } else {
         stateTax = bracketTax(params.brackets[taxStatus], taxableIncome)
       }
+      const federalAgi = opts.householdFacts?.federalAgi
+      const minimumTaxThreshold = params.vermontExtras?.minimumTaxAgiThreshold
+      const minimumTaxComparisonImmaterial =
+        federalAgi !== undefined &&
+        minimumTaxThreshold !== undefined &&
+        federalAgi <= minimumTaxThreshold
       const min = vermontMinimumTaxComparison({
         config: params.vermontExtras,
         ordinaryTax: stateTax,
-        federalAgi: opts.householdFacts?.federalAgi,
+        federalAgi,
         usObligationAdjustment: opts.householdFacts?.vermontUsObligationAdjustment,
       })
       stateTax = min.tax
-      warnings.push(...min.warnings)
+      warnings.push(...(minimumTaxComparisonImmaterial
+        ? min.warnings.filter((warning) => warning.code !== 'vt-minimum-tax-incomplete')
+        : min.warnings))
     } else if (params.code === 'WI' && extendedStatus) {
       const brackets =
         extendedStatus === 'headOfHousehold'

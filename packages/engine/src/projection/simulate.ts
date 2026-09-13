@@ -2441,6 +2441,30 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
           inheritedClassCache,
           spousalOwnerTreatmentForYear: (accountId: string) =>
             ownerTreatmentRouting.get(accountId) === true,
+          electionYearOwnerRmdAccountIds: (() => {
+            const ids = new Set<string>()
+            for (const state of annualIdKeyedBalances) {
+              if (
+                (state.account.type !== 'traditional' && state.account.type !== 'roth') ||
+                state.account.inherited?.beneficiary?.edbCategory !== 'surviving-spouse'
+              ) continue
+              if (ownerTreatmentRouting.get(state.account.id) === true) continue
+              const gate = gateSpousalElectionFromInheritedAccount({
+                account: state.account,
+                taxYear: year,
+                determinationStage: 'endOfTaxYear',
+                simulationContext: modeledSpousalHistory.has(state.account.id) ? {
+                  simulationId: plan.id, committedThroughTaxYear: year - 1,
+                  requiredDistributionHistory: modeledSpousalHistory.get(state.account.id)!,
+                  nonRolloverContributions: [],
+                } : undefined,
+              })
+              if (gate?.status === 'evaluated' && gate.routeToOwnerTreatment) {
+                ids.add(state.account.id)
+              }
+            }
+            return ids
+          })(),
           rmdReliefElectionFor,
           splitWithAssumedCharacter,
           resolveAssumedCharacter,
@@ -2680,7 +2704,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
               requiredDistributionHistory:[...prior,...current],nonRolloverContributions:[]} })
           return gate === null ? [] : [{ accountId:account.id,status:gate.status,
             ...(gate.status === 'evaluated' ? {ownerTreatment:gate.routeToOwnerTreatment,
-              evaluationContext:gate.evaluationContext,simulationId:gate.simulationId} : {}) }]
+              evaluationContext:gate.evaluationContext,simulationId:gate.simulationId} : {}),
+            ...(gate.status === 'missingFacts' ? { missingFacts: gate.missing } : {}) }]
         }),
         isInheritedRothOutsideOwnedPool: (account: Extract<Account, { type: 'roth' }>) => account.inherited !== undefined && !spousalOwnerTreatmentAccountIds.has(account.id),
         rothPoolKey,

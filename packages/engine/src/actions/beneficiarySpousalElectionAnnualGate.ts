@@ -775,7 +775,24 @@ export function gateBeneficiarySpousalElectionForAnnualCoordinator(
     ...(affirmativeOccurred === true ? [parseCivilIsoDate(affirmative!.executedOn)!.year -
       (affirmativeElectionAtTaxYearOpening ? 1 : 0)] : [])]
 
-  const evaluatedThroughTaxYear = Math.min(throughYear, ...datedTriggerYears)
+  const affirmativeElectionYear = affirmativeOccurred === true
+    ? parseCivilIsoDate(affirmative!.executedOn)!.year
+    : null
+  // A verified dated redesignation or non-rollover contribution establishes
+  // owner treatment for the election-year RMD under §1.408-8(c)(3). Neither
+  // requires a fictional completed beneficiary row for that same year.
+  // contributionYears contains only accepted observed or committed modeled
+  // acts; validation above still rejects unknown/unproven evidence. A deemed
+  // election based solely on this year's shortfall still needs its completed
+  // current-year observation, and affirmative j(4) barriers remain below.
+  const datedElectionEndsCurrentBeneficiaryHistory =
+    input.determinationStage === 'endOfTaxYear' &&
+    (affirmativeElectionYear === input.taxYear || contributionYears.includes(input.taxYear))
+  const evaluatedThroughTaxYear = Math.min(
+    throughYear,
+    ...datedTriggerYears,
+    ...(datedElectionEndsCurrentBeneficiaryHistory ? [input.taxYear - 1] : []),
+  )
 
   const evaluator = evaluateBeneficiarySpousalElection({
 
@@ -787,7 +804,7 @@ export function gateBeneficiarySpousalElectionForAnnualCoordinator(
 
     requiredDistributionHistory: combinedHistory.filter(row => row.taxYear <= evaluatedThroughTaxYear),
 
-    contributionYears, affirmativeElectionYear: affirmativeOccurred === true ? parseCivilIsoDate(affirmative!.executedOn)!.year : null,
+    contributionYears, affirmativeElectionYear,
 
   })
 

@@ -74,9 +74,9 @@
     }
   },
   "attestations": {
-    "totalFiles": 409,
+    "totalFiles": 410,
     "byStatus": {
-      "partial": 89,
+      "partial": 90,
       "registered": 116,
       "rule-free": 204,
       "unswept": 0
@@ -268,8 +268,8 @@
     },
     {
       "path": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
-      "sweptOn": "2026-09-02",
-      "note": "effectful forced-distribution, QCD, SEPP, inherited-account, and named retirement-action execution phase relocated from simulatePlan. It composes the existing registered RMD/QCD/action planners and executors plus Form 8606 character callbacks, and preserves every balance, basis, obligation, warning, runtime-journal, and optional cash-flow mutation in its original sequence. simulatePlan now supplies explicit grouped facts, live ledgers, callbacks, and capture maps and passes the typed phase result to the following aggregate-conversion phase; no rule calculation or transaction order changed"
+      "sweptOn": "2026-09-12",
+      "note": "Effectful forced-distribution, QCD, SEPP, inherited-account and retirement-action phase composes the registered planners. Election-year owner-RMD reconciliation now suppresses replaced beneficiary draws before tax characterization, preserves immutable trigger evidence, applies accepted owner draws, publishes structured owner obligations and routes unsatisfied amounts to the existing RMD gate and section 4974 obligation contract. Caller-owned balance, basis, cash-flow and journal mutations retain explicit ordering. Mixed-year tax chronology and broader transactional composition remain partial; module linkage does not assert passing validation."
     },
     {
       "path": "projection/internal/annualFundingApplicationAndClosePhase.ts",
@@ -295,6 +295,11 @@
       "path": "projection/internal/annualOptimizerProbePublication.ts",
       "sweptOn": "2026-09-02",
       "note": "the pure annual optimizer-probe publication coordinator composes already-settled traditional/RMD/inherited/QCD, Form 8606, retirement-action, tax, ACA, income and contribution evidence into the optimizer input contract. It preserves the existing S2 post-flip forced-distribution remap, QCD ordinary-income/cash corrections, caller-supplied gross-to-taxable conversion callback, remaining traditional taxable fractions, exact-cent committed-action and strategy-movement aggregation, ACA headroom, and SSA-44/IRMAA publication. These are optimization-input composition and accounting conventions around independently registered rule producers, not new filing-grade calculations. The helper mutates no caller-owned value and returns fresh movement arrays and a fresh probe. annualFundingApplicationAndClosePhase retains the capture gate, recursively detached annual snapshots, and probe assembly; annualOwnedNonRothIraSettlementPhase retains later replay/fraction adjustment, while simulatePlan alone invokes the capture sink after settlement and publishes the settled probe and annual result"
+    },
+    {
+      "path": "projection/internal/annualOwnedAccountDrawsPhase.ts",
+      "sweptOn": "2026-09-12",
+      "note": "Election-year spouse-owner requirement and death-year zero requirement are pinned to the c3 owner/death-year records. The planner delegates applicable-age and Uniform Lifetime arithmetic, subtracts accepted qualifying actuals, limits cash to the live balance and preserves the beneficiary trigger independently. Caller evidence acceptance, physical settlement, structured obligation publication and mixed-year chronology belong to separate adapters/coordinators; the complete transaction and residual-discharge sweep remains partial. No passing test or full original acceptance is claimed."
     },
     {
       "path": "projection/internal/annualOwnedNonRothIraSettlementPhase.ts",
@@ -344,7 +349,7 @@
     {
       "path": "projection/internal/beneficiarySpousalElectionGateAdapter.ts",
       "sweptOn": "2026-09-12",
-      "note": "Delegates dated spouse eligibility to the annual gate; persisted history completeness, death-year residual and execution-year adaptation remain unregistered caller contracts."
+      "note": "Dated eligibility and current-year owner routing map to the spousal-election records. Accepted qualifying-distribution credit requires completed deadline/observation provenance or coherent j(4) pre-election actuals; proposed/display rows do not supply credit. The reference-balance and accepted-history adapters are pinned with the owner-RMD route. General chronological transaction-tax adaptation remains partial and no full original acceptance is claimed."
     },
     {
       "path": "projection/internal/hecmHudValidatedOpeningAdapter.ts",
@@ -519,7 +524,7 @@
     {
       "path": "tax/stateTax.ts",
       "sweptOn": "2026-09-12",
-      "note": "Both de-code-30-1108-standard-deduction and de-pit-est-2026-qss-standard-deduction-joint-mapper name computeStateTaxableIncome in this file and age65StandardDeductionAddition in params/index.ts; the first covers Delaware single/MFJ basic-plus-age, while the second discloses the QSS-to-joint standard-deduction approximation; other Delaware return limbs remain outside those records. oh-rev-code-5747-02-a-3-c-2026-nonbusiness-rate-schedule names bracketTax for the Ohio TY2026 cumulative base above $26,050; prorateParams scales that base under the existing model convention for part-year residency, not a legal part-year claim, and consumers do not get pins. me-mrs-36-5122-2-m2-m3-2026-pension-deduction names computeStateTaxableIncome and retirementExclusion for Maine's $49,824 TY2026 flat cap without SS offset, military separation, M-3 phaseout, or plan qualification. iowa-code-422-7-8-social-security-subtraction, il-ita-203-a-2-L-social-security-subtraction, nj-njit12-social-security-exclusion, ny-dtf-social-security-subtraction, and pa-pit-social-security-not-compensation name computeStateTaxableIncome enforcers only (with/without-benefits base-delta discriminators, not whole-return figures). ga-code-48-7-27-retirement-and-social-security-exclusion gained a Social-Security relational fixture limb here; md-tax-10-209-pension-exclusion's gross-SS relational limb remains in stateTax.approximation.test.ts. Existing law records name this file; residuals include KY aggregate MFJ deduction convention without spouse-allocation record, DC August emergency statutory-conformity timing unresolved, ME modeled Maine-AGI proxy / personal exemption / blindness / part-year month approximation, non-ME gaps unchanged, and stateParamsFor historical fallback: years before the earliest published pack receive that earliest pack with no validity marker so computeStateTaxYearTotal consumes a current-pack approximation without exposing whether the pack is exact. The Iowa alternate/minimum comparison is now routed to its registered leaf. Proved-zero relief bounds can omit immaterial CT/WI exemption or Iowa alternate-tax warnings; material missing worksheet bases still remain incomplete. Oregon pension-credit metadata is unnecessary only when the complete characterized ledger proves no qualifying pension. These guards preserve unrelated missing-source warnings and do not infer missing facts as zero"
+      "note": "Both de-code-30-1108-standard-deduction and de-pit-est-2026-qss-standard-deduction-joint-mapper name computeStateTaxableIncome in this file and age65StandardDeductionAddition in params/index.ts; the first covers Delaware single/MFJ basic-plus-age, while the second discloses the QSS-to-joint standard-deduction approximation; other Delaware return limbs remain outside those records. oh-rev-code-5747-02-a-3-c-2026-nonbusiness-rate-schedule names bracketTax for the Ohio TY2026 cumulative base above $26,050; prorateParams scales that base under the existing model convention for part-year residency, not a legal part-year claim, and consumers do not get pins. me-mrs-36-5122-2-m2-m3-2026-pension-deduction names computeStateTaxableIncome and retirementExclusion for Maine's $49,824 TY2026 flat cap without SS offset, military separation, M-3 phaseout, or plan qualification. iowa-code-422-7-8-social-security-subtraction, il-ita-203-a-2-L-social-security-subtraction, nj-njit12-social-security-exclusion, ny-dtf-social-security-subtraction, and pa-pit-social-security-not-compensation name computeStateTaxableIncome enforcers only (with/without-benefits base-delta discriminators, not whole-return figures). ga-code-48-7-27-retirement-and-social-security-exclusion gained a Social-Security relational fixture limb here; md-tax-10-209-pension-exclusion's gross-SS relational limb remains in stateTax.approximation.test.ts. Existing law records name this file; residuals include KY aggregate MFJ deduction convention without spouse-allocation record, DC August emergency statutory-conformity timing unresolved, ME modeled Maine-AGI proxy / personal exemption / blindness / part-year month approximation, non-ME gaps unchanged, and stateParamsFor historical fallback: years before the earliest published pack receive that earliest pack with no validity marker so computeStateTaxYearTotal consumes a current-pack approximation without exposing whether the pack is exact. The Iowa alternate/minimum comparison is now routed to its registered leaf. Proved-zero relief bounds can omit immaterial CT/WI exemption or Iowa alternate-tax warnings; material missing worksheet bases still remain incomplete. Oregon pension-credit metadata is unnecessary only when the complete characterized ledger proves no qualifying pension. Illinois missing exemption counts below the versioned AGI cutoff and Vermont missing deduction/exemption counts are likewise immaterial only under the proved-zero pre-exemption bound with an absent or nonnegative standard-deduction override. Illinois missing AGI remains disclosed. Vermont minimum-tax metadata warnings are omitted only when known federal AGI is at or below the known versioned minimum-tax threshold; unknown or above-threshold AGI retains the warning. These guards preserve unrelated missing-source warnings and do not infer missing facts as zero"
     },
     {
       "path": "tax/stateWestExtras.ts",
@@ -626,9 +631,9 @@
     },
     {
       "directory": "projection",
-      "files": 121,
+      "files": 122,
       "byStatus": {
-        "partial": 41,
+        "partial": 42,
         "registered": 20,
         "rule-free": 60
       }

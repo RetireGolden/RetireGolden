@@ -133,6 +133,13 @@ export interface AnnualInheritedIraDistributionsInput {
     account: Readonly<Extract<Account, { type: 'traditional' | 'roth' }>>,
   ) => boolean
   /**
+   * A current-year §1.408-8(c)(3) transition may replace a beneficiary
+   * forced take with a separately settled owner-RMD obligation.  Keep the
+   * beneficiary requirement/evidence for the immutable trigger, but do not
+   * plan cash or consume a shared Roth basis pool for the suppressed draw.
+   */
+  readonly suppressForcedDistributionAccountIds?: ReadonlySet<string>
+  /**
    * Characterizes an inherited-Roth draw against a snapshot of its shared
    * beneficiary/decedent pool.  It must not mutate that pool.
    */
@@ -472,6 +479,7 @@ export function annualInheritedIraDistributions(
     }
 
     const executed =
+      !input.suppressForcedDistributionAccountIds?.has(state.account.id) &&
       take > 0 && !planDollarsMoveNoLedgerCent(take) ? take : 0
     addRow(balanceIndex, state, {
       accountId: state.account.id,

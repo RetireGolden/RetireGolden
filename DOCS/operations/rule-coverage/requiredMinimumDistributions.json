@@ -106,7 +106,7 @@
           "functions": [
             {
               "name": "annualInheritedIraDistributions",
-              "line": 172
+              "line": 179
             }
           ]
         },
@@ -215,7 +215,7 @@
           "functions": [
             {
               "name": "annualInheritedIraDistributions",
-              "line": 172
+              "line": 179
             }
           ]
         },
@@ -690,7 +690,7 @@
           "functions": [
             {
               "name": "annualInheritedIraDistributions",
-              "line": 172
+              "line": 179
             }
           ]
         },
@@ -782,7 +782,7 @@
           "functions": [
             {
               "name": "annualInheritedIraDistributions",
-              "line": 172
+              "line": 179
             }
           ]
         },
@@ -887,7 +887,7 @@
           "functions": [
             {
               "name": "annualInheritedIraDistributions",
-              "line": 172
+              "line": 179
             }
           ]
         },
@@ -981,7 +981,7 @@
           "functions": [
             {
               "name": "annualInheritedIraDistributions",
-              "line": 172
+              "line": 179
             }
           ]
         },
@@ -1286,7 +1286,7 @@
           "functions": [
             {
               "name": "annualInheritedIraDistributions",
-              "line": 172
+              "line": 179
             }
           ]
         },
@@ -1459,7 +1459,7 @@
           "functions": [
             {
               "name": "annualInheritedIraDistributions",
-              "line": 172
+              "line": 179
             }
           ]
         },
@@ -2025,7 +2025,7 @@
           "functions": [
             {
               "name": "annualInheritedIraDistributions",
-              "line": 172
+              "line": 179
             }
           ]
         },
@@ -2719,7 +2719,7 @@
           "functions": [
             {
               "name": "annualInheritedIraDistributions",
-              "line": 172
+              "line": 179
             }
           ]
         },
@@ -3003,7 +3003,8 @@
         }
       ],
       "fixtureFiles": [
-        "packages/engine/src/actions/beneficiarySpousalElectionAnnualGate.test.ts"
+        "packages/engine/src/actions/beneficiarySpousalElectionAnnualGate.test.ts",
+        "packages/engine/src/projection/simulate.spousalElectionYearOwnerRmd.test.ts"
       ],
       "fixtures": [
         {
@@ -3014,6 +3015,17 @@
             {
               "title": "exposes the regulated recurrence rather than an asserted catch-up worksheet",
               "line": 89
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.spousalElectionYearOwnerRmd.test.ts",
+          "line": 446,
+          "note": "production affirmative-election catch-up gate",
+          "tests": [
+            {
+              "title": "blocks affirmative effectiveness until official j4 catch-up 10383.68 is satisfied",
+              "line": 454
             }
           ]
         }
@@ -3063,7 +3075,7 @@
           "functions": [
             {
               "name": "annualInheritedIraDistributions",
-              "line": 172
+              "line": 179
             }
           ]
         },
@@ -3199,7 +3211,7 @@
       "title": "Spousal deemed election on an undistributed post-death-year amount",
       "classification": "settled",
       "errorDirection": null,
-      "conventionRationale": "The standalone evaluator refuses an unobserved calendar year rather than assuming the deemed-election trigger is absent. Its annual gate accepts opening-of-year history only through the preceding year and requires a row-level as-of date and provenance, so a projected current-year shortfall cannot become completed evidence. simulatePlan supplies observed Plan history to the opening gate, whose result controls owner routing; simulate.inheritedRegimeExecution.test.ts covers deemed election without a legacy election flag and the sole-beneficiary negative. The year-end gate also reports newly observed events; a planner recommendation is not completed evidence. annualFundingApplicationAndClosePhase publishes a typed incomplete annual tax result for election-year mixed chronology; the mid-year election case in simulate.inheritedRegimeExecution.test.ts covers that publication instead of certifying the opening-beneficiary estimate as exact.",
+      "conventionRationale": "The annual gate separates completed prior-year history from current-year event evidence. A verified current-year affirmative election or non-rollover contribution can use completed history through the preceding year at the end-of-year gate; a same-year shortfall-only deemed election still needs its completed deadline, observation and provenance. A future contribution does not route owner treatment at opening, and unproven contribution evidence remains refused. simulatePlan routes a verified effective current-year event to the owner-RMD planner while retaining the beneficiary requirement as immutable trigger evidence. The forced-distribution phase suppresses the replaced beneficiary take before tax characterization and publishes a separate structured owner obligation. simulate.spousalElectionYearOwnerRmd.test.ts carries owner-treatment production discriminators, including a completed current-year 5000/4000 shortfall. Mixed-year transaction tax chronology remains typed incomplete; source linkage does not certify unresolved event sequences or full original acceptance.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -3294,7 +3306,7 @@
       "title": "Death-year spouse election retains the decedent’s unsatisfied RMD",
       "classification": "settled",
       "errorDirection": null,
-      "conventionRationale": null,
+      "conventionRationale": "The election-year owner planner emits zero spouse-owner requirement in the decedent death year and leaves beneficiary forced-distribution suppression off, preserving the unsatisfied decedent RMD. The death-year describeRule block in simulate.spousalElectionYearOwnerRmd.test.ts distinguishes the 5000 decedent residual from an incorrectly substituted spouse-owner amount. A structured zero owner obligation is distinct from the decedent requirement; chronological transaction-tax limitations remain disclosed. No validation success is asserted.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -3303,18 +3315,38 @@
       "verifiedOn": "2026-08-25",
       "dueOn": "2027-08-25",
       "implementedBy": [
+        "packages/engine/src/projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
         "packages/engine/src/projection/internal/annualInheritedIraDistributions.ts",
+        "packages/engine/src/projection/internal/annualOwnedAccountDrawsPhase.ts",
         "packages/engine/src/projection/simulate.ts",
         "packages/engine/src/strategies/accountEligibility.ts",
         "packages/engine/src/strategies/inheritedIra.ts"
       ],
       "implementations": [
         {
+          "path": "packages/engine/src/projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
+          "functions": [
+            {
+              "name": "annualForcedDistributionQcdAndRetirementActionsPhase",
+              "line": 346
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/internal/annualInheritedIraDistributions.ts",
           "functions": [
             {
               "name": "annualInheritedIraDistributions",
-              "line": 172
+              "line": 179
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/internal/annualOwnedAccountDrawsPhase.ts",
+          "functions": [
+            {
+              "name": "planElectionYearOwnerRmdDraws",
+              "line": 65
             }
           ]
         },
@@ -3347,69 +3379,81 @@
         }
       ],
       "fixtureFiles": [
-        "packages/engine/src/projection/simulate.inheritedRegimeExecution.test.ts"
+        "packages/engine/src/projection/simulate.inheritedRegimeExecution.test.ts",
+        "packages/engine/src/projection/simulate.spousalElectionYearOwnerRmd.test.ts"
       ],
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.inheritedRegimeExecution.test.ts",
-          "line": 259,
+          "line": 264,
           "note": "same-calendar-year treat-as-own election",
           "tests": [
             {
               "title": "E6b S2 same-year flip: keeps the decedent year-of-death RMD and suppresses owner RMD",
-              "line": 275
+              "line": 280
             },
             {
               "title": "S2 post-election: SEPP distributes from the flipped account",
-              "line": 316
+              "line": 321
             },
             {
               "title": "blocks scheduled contributions to an inherited Roth",
-              "line": 342
+              "line": 347
             },
             {
               "title": "E7: refuses an unestablished estate schedule without a fabricated legacy distribution",
-              "line": 371
+              "line": 376
             },
             {
               "title": "E8: keeps voluntary inherited-traditional draws out of the forced-only distribution total",
-              "line": 399
+              "line": 404
             },
             {
               "title": "E9: preserves the two-field legacy amounts at three annual Single Life walk-back points",
-              "line": 417
+              "line": 422
             },
             {
               "title": "E10: enters owner RMD rules at the S2 identity flip after a synthetic refusal",
-              "line": 431
+              "line": 436
             },
             {
               "title": "E11 K1: voluntary inherited Roth draws stay outside the beneficiary owned-Roth ordering pool",
-              "line": 453
+              "line": 458
             },
             {
               "title": "P5: emits successor-scope evidence and stops forcing after the beneficiary dies",
-              "line": 489
+              "line": 494
             },
             {
               "title": "P6: marks the R1 relief-year amount notice-waived for non-execution",
-              "line": 518
+              "line": 523
             },
             {
               "title": "P7: stamps pre-horizon year-of-death RMD limitation on the legacy refusal path",
-              "line": 560
+              "line": 565
             },
             {
               "title": "consumes one shared 60 basis across two 100 mandatory draws and survives annual replay",
-              "line": 600
+              "line": 605
             },
             {
               "title": "mandatory and voluntary inherited Roth withdrawals consume the same annual basis pool",
-              "line": 619
+              "line": 624
             },
             {
               "title": "preserves known qualified clocks with unknown basis without inventing ordinary income",
-              "line": 632
+              "line": 637
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.spousalElectionYearOwnerRmd.test.ts",
+          "line": 546,
+          "note": "death-year election production",
+          "tests": [
+            {
+              "title": "death-year election keeps 5000 decedent residual and publishes spouse-owner RMD 0",
+              "line": 554
             }
           ]
         }
@@ -3429,7 +3473,7 @@
       "title": "After the election the spouse is the owner for all Code purposes",
       "classification": "settled",
       "errorDirection": null,
-      "conventionRationale": null,
+      "conventionRationale": "The annualOwnedAccountDrawsPhase planner computes the election-year owner requirement, credits only caller-accepted actual distributions, and takes the unpaid amount within live capacity without refunding excess prior distributions. The adapter admits completed current-year beneficiary history or coherent same-year j(4) pre-election actuals; a proposed/display row is not credit. The forced-distribution coordinator publishes electionYearOwnerRmdObligations with full requirement, evidence-bearing credit, pre-settlement unpaid, settled and unsatisfied amounts, and routes remaining owner obligations through the existing RMD gate and section 4974 contract. The describeRule production suite in simulate.spousalElectionYearOwnerRmd.test.ts binds the under-age, age-75, contribution-alone with prior history only, completed-shortfall and insufficient-balance discriminators. Its Roth suppression fixture gives two same-pool Roths identical verified elections and uses a distinct-decedent non-electing Roth as the nonqualified control. Both elected balances remain unchanged with no state facts; a pass-through observer of the actual production characterization callback delegates unchanged and requires calls only for the non-electing control. The control retains its source-derived 100 distribution and 40 taxable earnings, distinguishing suppression before characterization from a later cosmetic removal. This linkage is not a test-pass or closure claim. Mixed-year Form 8606 and transaction-tax chronology remain typed incomplete.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -3440,8 +3484,12 @@
       "implementedBy": [
         "packages/engine/src/actions/beneficiarySpousalElectionStatus.ts",
         "packages/engine/src/actions/beneficiaryTraditionalIraDeathPenalty.ts",
+        "packages/engine/src/projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
         "packages/engine/src/projection/internal/annualInheritedIraDistributions.ts",
-        "packages/engine/src/projection/internal/annualSeppDistributions.ts"
+        "packages/engine/src/projection/internal/annualOwnedAccountDrawsPhase.ts",
+        "packages/engine/src/projection/internal/annualSeppDistributions.ts",
+        "packages/engine/src/projection/internal/beneficiarySpousalElectionGateAdapter.ts",
+        "packages/engine/src/projection/simulate.ts"
       ],
       "implementations": [
         {
@@ -3463,11 +3511,29 @@
           ]
         },
         {
+          "path": "packages/engine/src/projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
+          "functions": [
+            {
+              "name": "annualForcedDistributionQcdAndRetirementActionsPhase",
+              "line": 346
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/projection/internal/annualInheritedIraDistributions.ts",
           "functions": [
             {
               "name": "annualInheritedIraDistributions",
-              "line": 172
+              "line": 179
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/internal/annualOwnedAccountDrawsPhase.ts",
+          "functions": [
+            {
+              "name": "planElectionYearOwnerRmdDraws",
+              "line": 65
             }
           ]
         },
@@ -3479,10 +3545,37 @@
               "line": 89
             }
           ]
+        },
+        {
+          "path": "packages/engine/src/projection/internal/beneficiarySpousalElectionGateAdapter.ts",
+          "functions": [
+            {
+              "name": "acceptedElectionYearQualifyingDistributions",
+              "line": 177
+            },
+            {
+              "name": "electionYearOwnerRmdReferenceBalance",
+              "line": 230
+            },
+            {
+              "name": "gateSpousalElectionFromInheritedAccount",
+              "line": 35
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 393
+            }
+          ]
         }
       ],
       "fixtureFiles": [
-        "packages/engine/src/actions/beneficiaryTraditionalIraDeathPenalty.test.ts"
+        "packages/engine/src/actions/beneficiaryTraditionalIraDeathPenalty.test.ts",
+        "packages/engine/src/projection/simulate.spousalElectionYearOwnerRmd.test.ts"
       ],
       "fixtures": [
         {
@@ -3497,6 +3590,37 @@
             {
               "title": "still applies the death exception before any election",
               "line": 251
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.spousalElectionYearOwnerRmd.test.ts",
+          "line": 145,
+          "note": "election-year owner-RMD production",
+          "tests": [
+            {
+              "title": "uses a verified contribution alone to refinalize owner RMD without a current-year history row",
+              "line": 153
+            },
+            {
+              "title": "suppresses the elected Roth draw before shared basis consumption or state tax facts",
+              "line": 187
+            },
+            {
+              "title": "publishes owner requirement 0 under RMD age without refunding already-paid cash",
+              "line": 269
+            },
+            {
+              "title": "applies age-75 owner RMD 4065.04 and leaves 3065.04 unpaid after 1000 already paid",
+              "line": 313
+            },
+            {
+              "title": "keeps the known owner-RMD shortfall and §4974 obligation when live balance cannot settle it",
+              "line": 357
+            },
+            {
+              "title": "refinalizes a completed current-election-year 5000/4000 shortfall under owner rules without erasing its trigger",
+              "line": 388
             }
           ]
         }
@@ -3701,7 +3825,7 @@
           "functions": [
             {
               "name": "annualForcedDistributionQcdAndRetirementActionsPhase",
-              "line": 328
+              "line": 346
             }
           ]
         },
@@ -3948,7 +4072,7 @@
           "functions": [
             {
               "name": "annualForcedDistributionQcdAndRetirementActionsPhase",
-              "line": 328
+              "line": 346
             }
           ]
         },
@@ -3975,7 +4099,7 @@
           "functions": [
             {
               "name": "annualInheritedIraDistributions",
-              "line": 172
+              "line": 179
             }
           ]
         },
@@ -4117,7 +4241,7 @@
           "functions": [
             {
               "name": "annualInheritedIraDistributions",
-              "line": 172
+              "line": 179
             }
           ]
         },
@@ -4215,7 +4339,7 @@
           "functions": [
             {
               "name": "annualForcedDistributionQcdAndRetirementActionsPhase",
-              "line": 328
+              "line": 346
             }
           ]
         },
@@ -4224,7 +4348,7 @@
           "functions": [
             {
               "name": "annualInheritedIraDistributions",
-              "line": 172
+              "line": 179
             }
           ]
         },

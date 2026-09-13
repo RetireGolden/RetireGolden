@@ -235,8 +235,9 @@ fallback.
 `inheritedRequirementForYear` from `strategies/inheritedIra.ts` and never re-derives divisors or
 deadlines. Classified accounts execute R1/R2/R3/R3a (greater-of owner arm, ten-year sweeps,
 EDB life-expectancy, notice-waived annuals), S0/S1 (spouse remain-beneficiary, including annual
-redetermination), S2 window-and-flip (synthetic S0 before `treatAsOwnElectionYear`, then owner RMD
-aggregation), S3, and inherited-Roth K1/K2 (K1 ten-year sweep; K2 annual life-expectancy). Each
+redetermination), S2 window-and-flip (synthetic S0 before opening owner treatment, then owner RMD
+aggregation; a verified current-year dated election applies §1.408-8(c)(3) election-year owner RMD
+as a separate structured owner obligation while the beneficiary requirement remains immutable trigger evidence; opening treatment and mixed-year tax chronology stay distinct), S3, and inherited-Roth K1/K2 (K1 ten-year sweep; K2 annual life-expectancy). Each
 year publishes `InheritedAccountYearEvidence` with regime, matrix row, requirement kind, executed
 amounts, limitations, disclosures, and citations; scenario comparison surfaces inherited totals
 from the ledger. Schema fact `treatAsOwnElectionYear` (calendar year; parse-optional with
@@ -247,8 +248,13 @@ refusal so no consumer can call the schedule compliant. The `YearResult.inherite
 scalar is the **forced** total (its long-standing public contract); voluntary inherited draws are
 visible per account on the evidence rows' `voluntaryAmount`. `YearResult.inheritedTraditionalDistribution`
 is the traditional-character subset (ordinary income / traditional withdrawals). Named residuals out of
-scope: §1.402(c)-2(j)(4) catch-up execution (prior ten-year-election fact not representable; S2 carries
-`treat-as-own-timing-gate-unverified` because §1.408-8(c)(1)(iii)–(iv) is not consulted), non-qualified
+scope: full chronological execution of mixed-year transactions around a spousal election. The
+§1.402(c)-2(j)(4) recurrence and affirmative-election catch-up gate consume represented prior-method
+and accepted distribution evidence; unpaid catch-up blocks that election. A verified effective
+current-year event routes to the separate election-year owner-RMD obligation described above.
+These bounded paths do not certify unresolved event timing or mixed-year tax/basis chronology,
+which remains typed incomplete; they are not a full original-acceptance claim. Other residuals:
+non-qualified
 inherited-Roth earnings taxation (K3 `roth-taxability-needs-review` disclosure only), post-S2
 contribution/conversion/QCD enablement for validators that lack a year context (WS5; contributions
 remain blocked post-flip because the plan still carries the inherited block and
