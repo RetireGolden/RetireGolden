@@ -43,24 +43,24 @@
       "label": "fresh logical distribution operations and ordered character totals",
       "file": "projection/internal/annualInheritedIraDistributions.ts",
       "lines": [
-        212,
-        261
+        219,
+        268
       ],
       "anchors": [
         {
-          "line": 213,
+          "line": 220,
           "text": "if (executed > 0) {"
         },
         {
-          "line": 214,
+          "line": 221,
           "text": "const sourceBalanceAfter = state.balance - executed"
         },
         {
-          "line": 223,
+          "line": 230,
           "text": "if (state.account.type === 'roth') {"
         },
         {
-          "line": 256,
+          "line": 263,
           "text": "rows.push({"
         }
       ]
@@ -70,20 +70,20 @@
       "label": "logical account gates, cache lookup, and dead-beneficiary successor evidence",
       "file": "projection/internal/annualInheritedIraDistributions.ts",
       "lines": [
-        264,
-        284
+        271,
+        291
       ],
       "anchors": [
         {
-          "line": 264,
+          "line": 271,
           "text": "for (const [balanceIndex, state] of input.balances.entries()) {"
         },
         {
-          "line": 270,
+          "line": 277,
           "text": "const cache = input.classCache.get(state.account.id)"
         },
         {
-          "line": 276,
+          "line": 283,
           "text": "if (!beneficiaryState.alive) {"
         }
       ],
@@ -94,24 +94,24 @@
       "label": "dead-beneficiary identity, successor disclosure, and cached citations",
       "file": "projection/internal/annualInheritedIraDistributions.ts",
       "lines": [
-        287,
-        300
+        294,
+        307
       ],
       "anchors": [
         {
-          "line": 287,
+          "line": 294,
           "text": "matrixRow: primaryClass?.row ?? (cache.primary.kind === 'refusal' ? cache.primary.row : 'X2'),"
         },
         {
-          "line": 291,
+          "line": 298,
           "text": "refusalReason: successorRefusalReason,"
         },
         {
-          "line": 297,
+          "line": 304,
           "text": "disclosures: ['successor-clock-out-of-scope'],"
         },
         {
-          "line": 298,
+          "line": 305,
           "text": "citations: primaryClass?.citations ??"
         }
       ],
@@ -122,16 +122,16 @@
       "label": "dead-beneficiary row completion keeps account order",
       "file": "projection/internal/annualInheritedIraDistributions.ts",
       "lines": [
-        305,
-        306
+        312,
+        313
       ],
       "anchors": [
         {
-          "line": 305,
+          "line": 312,
           "text": "}, 0)"
         },
         {
-          "line": 306,
+          "line": 313,
           "text": "continue"
         }
       ]
@@ -141,20 +141,20 @@
       "label": "post-election S2 zero-requirement evidence and pre-horizon limitation",
       "file": "projection/internal/annualInheritedIraDistributions.ts",
       "lines": [
-        309,
-        325
+        316,
+        332
       ],
       "anchors": [
         {
-          "line": 310,
+          "line": 317,
           "text": "input.isTreatAsOwnEffectiveForYear?.(state.account) ??"
         },
         {
-          "line": 317,
+          "line": 324,
           "text": "const preHorizonLimitation ="
         },
         {
-          "line": 322,
+          "line": 329,
           "text": "addRow(balanceIndex, state, {"
         }
       ],
@@ -165,16 +165,16 @@
       "label": "effective S2 publishes the cached settled classification",
       "file": "projection/internal/annualInheritedIraDistributions.ts",
       "lines": [
-        327,
-        328
+        334,
+        335
       ],
       "anchors": [
         {
-          "line": 327,
+          "line": 334,
           "text": "...(primaryClass !== undefined"
         },
         {
-          "line": 328,
+          "line": 335,
           "text": "? { classification: primaryClass.classification }"
         }
       ]
@@ -184,20 +184,20 @@
       "label": "effective S2 has no inherited requirement and preserves limitations/disclosures",
       "file": "projection/internal/annualInheritedIraDistributions.ts",
       "lines": [
-        330,
-        338
+        337,
+        345
       ],
       "anchors": [
         {
-          "line": 330,
+          "line": 337,
           "text": "requirementKind: 'none',"
         },
         {
-          "line": 334,
+          "line": 341,
           "text": "...(preHorizonLimitation !== undefined"
         },
         {
-          "line": 337,
+          "line": 344,
           "text": "disclosures: primaryClass?.disclosures ?? [],"
         }
       ]
@@ -207,16 +207,16 @@
       "label": "effective S2 completes one ordered zero row",
       "file": "projection/internal/annualInheritedIraDistributions.ts",
       "lines": [
-        340,
-        341
+        347,
+        348
       ],
       "anchors": [
         {
-          "line": 340,
+          "line": 347,
           "text": "}, 0)"
         },
         {
-          "line": 341,
+          "line": 348,
           "text": "continue"
         }
       ]
@@ -226,28 +226,28 @@
       "label": "aggregate opening selection and labeled legacy/refusal requirement",
       "file": "projection/internal/annualInheritedIraDistributions.ts",
       "lines": [
-        385,
-        420
+        392,
+        427
       ],
       "anchors": [
         {
-          "line": 385,
+          "line": 392,
           "text": "const priorYearEndBalance ="
         },
         {
-          "line": 403,
+          "line": 410,
           "text": "if (cache.path === 'legacy' || cache.schedule === undefined) {"
         },
         {
-          "line": 404,
+          "line": 411,
           "text": "take = inheritedForcedAmount({"
         },
         {
-          "line": 415,
+          "line": 422,
           "text": "requirementKind = 'legacy'"
         },
         {
-          "line": 416,
+          "line": 423,
           "text": "if (cache.primary.kind === 'refusal') {"
         }
       ],
@@ -258,28 +258,28 @@
       "label": "classified and synthetic-S0 requirement selection including final sweep",
       "file": "projection/internal/annualInheritedIraDistributions.ts",
       "lines": [
-        428,
-        464
+        435,
+        471
       ],
       "anchors": [
         {
-          "line": 428,
+          "line": 435,
           "text": "const scheduleClass = cache.schedule"
         },
         {
-          "line": 429,
+          "line": 436,
           "text": "const inheritedForReq ="
         },
         {
-          "line": 439,
+          "line": 446,
           "text": "const req = inheritedRequirementForYear({"
         },
         {
-          "line": 452,
+          "line": 459,
           "text": "if (req.kind === 'final-sweep') {"
         },
         {
-          "line": 457,
+          "line": 464,
           "text": "take = Math.min(req.requiredAmount, state.balance)"
         }
       ]
@@ -289,28 +289,32 @@
       "label": "pre-horizon limitation, exact-cent movement suppression, and annual evidence after owner routing",
       "file": "projection/internal/annualInheritedIraDistributions.ts",
       "lines": [
-        467,
-        495
+        474,
+        503
       ],
       "anchors": [
         {
-          "line": 468,
+          "line": 475,
           "text": "input.year === input.startYear &&"
         },
         {
-          "line": 471,
+          "line": 478,
           "text": "limitation = 'pre-horizon-year-of-death-rmd-unresolved'"
         },
         {
-          "line": 474,
+          "line": 481,
           "text": "const executed ="
         },
         {
-          "line": 476,
+          "line": 484,
           "text": "addRow(balanceIndex, state, {"
         },
         {
-          "line": 495,
+          "line": 491,
+          "text": "...(refusalCode !== undefined ? { refusalCode } : {}),"
+        },
+        {
+          "line": 503,
           "text": "}, executed)"
         }
       ]
@@ -320,32 +324,32 @@
       "label": "logical-row applicable-plan grouping, actual-distribution accounting, mixed kinds, and obligations",
       "file": "projection/internal/annualInheritedIraDistributions.ts",
       "lines": [
-        498,
-        574
+        506,
+        582
       ],
       "anchors": [
         {
-          "line": 506,
+          "line": 514,
           "text": "for (const { evidence, balanceIndex } of rows) {"
         },
         {
-          "line": 515,
+          "line": 523,
           "text": "const applicablePlan = rmdApplicablePlanForAccount("
         },
         {
-          "line": 542,
+          "line": 550,
           "text": "distributedByApplicablePlan.set("
         },
         {
-          "line": 561,
+          "line": 569,
           "text": "for (const [applicablePlanKey, requiredAmount] of requiredByApplicablePlan) {"
         },
         {
-          "line": 565,
+          "line": 573,
           "text": "const actuallyDistributed ="
         },
         {
-          "line": 573,
+          "line": 581,
           "text": "requirementKind: requirementKinds.size === 1"
         }
       ],
@@ -356,24 +360,24 @@
       "label": "actual distributed amount and fresh grouped obligation/result containers",
       "file": "projection/internal/annualInheritedIraDistributions.ts",
       "lines": [
-        576,
-        586
+        584,
+        594
       ],
       "anchors": [
         {
-          "line": 576,
+          "line": 584,
           "text": "requiredAmount,"
         },
         {
-          "line": 577,
+          "line": 585,
           "text": "distributedByDeadline: actuallyDistributed,"
         },
         {
-          "line": 581,
+          "line": 589,
           "text": "return {"
         },
         {
-          "line": 586,
+          "line": 594,
           "text": "rmdShortfallObligations,"
         }
       ]
@@ -383,28 +387,28 @@
       "label": "caller-owned plain immutable snapshot materialization before annual writes",
       "file": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
       "lines": [
-        311,
-        325
+        329,
+        343
       ],
       "anchors": [
         {
-          "line": 311,
+          "line": 329,
           "text": "function immutablePlainSnapshot<T>(value: T): T {"
         },
         {
-          "line": 312,
+          "line": 330,
           "text": "const snapshot = structuredClone(value)"
         },
         {
-          "line": 319,
+          "line": 337,
           "text": "for (const child of Object.values(candidate as Record<string, unknown>)) {"
         },
         {
-          "line": 322,
+          "line": 340,
           "text": "Object.freeze(candidate)"
         },
         {
-          "line": 325,
+          "line": 343,
           "text": "return snapshot"
         }
       ],
@@ -415,40 +419,40 @@
       "label": "grouped logical input, pure planning, immutable channel capture, and complete prevalidation setup",
       "file": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
       "lines": [
-        802,
-        881
+        963,
+        1125
       ],
       "anchors": [
         {
-          "line": 802,
+          "line": 963,
           "text": "const inheritedPlan = immutablePlainSnapshot("
         },
         {
-          "line": 803,
+          "line": 964,
           "text": "annualInheritedIraDistributions({"
         },
         {
-          "line": 808,
+          "line": 969,
           "text": "balances: rmdBalances,"
         },
         {
-          "line": 868,
+          "line": 1033,
           "text": "const inheritedOperations = inheritedPlan.rows.flatMap((row) =>"
         },
         {
-          "line": 871,
-          "text": "const inheritedTotal = inheritedPlan.totals.inherited"
+          "line": 1043,
+          "text": "let inheritedTotal = 0"
         },
         {
-          "line": 876,
+          "line": 1064,
           "text": "const inheritedYearEvidenceDraft: InheritedAccountYearEvidence[] ="
         },
         {
-          "line": 878,
+          "line": 1091,
           "text": "const inheritedRmdShortfallObligations ="
         },
         {
-          "line": 881,
+          "line": 1097,
           "text": "for (const operation of inheritedOperations) {"
         }
       ],
@@ -459,28 +463,28 @@
       "label": "cached one-logical-setter write and runtime occurrence per operation plus obligation and excise handoff",
       "file": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
       "lines": [
-        910,
-        950
+        1126,
+        1167
       ],
       "anchors": [
         {
-          "line": 910,
+          "line": 1126,
           "text": "for (const operation of inheritedOperations) {"
         },
         {
-          "line": 912,
+          "line": 1128,
           "text": "state.balance = operation.sourceBalanceAfter"
         },
         {
-          "line": 915,
+          "line": 1131,
           "text": "recordAnnualRetirementRuntimeOccurrence({"
         },
         {
-          "line": 941,
+          "line": 1157,
           "text": "rmdShortfallObligations.push(...inheritedRmdShortfallObligations)"
         },
         {
-          "line": 948,
+          "line": 1164,
           "text": "const rmdShortfallExciseTax = rmdShortfallExciseResults.reduce("
         }
       ]
