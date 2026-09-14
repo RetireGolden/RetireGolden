@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest'
 import { baselineRemainingYears } from '../longevity/ssaPeriod2022.js'
-import { describeCalculation, type CalculationExample } from '../rules/describeCalculation.js'
+import { describeCalculation, withinTolerance } from '../rules/describeCalculation.js'
 import { MAX_AGE, type Sex } from './mortality.js'
 import {
   hazardForExpectancyMultiplier,
@@ -9,10 +9,6 @@ import {
   survivalProbabilityTo,
   type SurvivalPerson,
 } from './survival.js'
-
-function absToleranceOf(example: CalculationExample): number {
-  return example.tolerance === 'exact' ? 0 : (example.tolerance.abs ?? 0)
-}
 
 describeCalculation(
   'survival-probability-product',
@@ -26,7 +22,6 @@ describeCalculation(
     mutation: 'DOCS/calculations/longevity/survival-probability-product.mutation.md',
   },
   ({ example }) => {
-    const abs = absToleranceOf(example)
     const currentAge = example.inputs.currentAge as number
     const sex = example.inputs.sex as Sex
     const targetAge = example.inputs.targetAge as number
@@ -34,7 +29,11 @@ describeCalculation(
 
     it('multiplies p65 and p66 from the SSA male rows: S(67) = 0.963150477964002', () => {
       const survival = survivalProbabilityTo(currentAge, sex, targetAge, hazard)
-      expect(Math.abs(survival - (example.expected.survivalProbability as number))).toBeLessThanOrEqual(abs)
+      const expected = example.expected.survivalProbability as number
+      expect(
+        withinTolerance(survival, expected, example.tolerance),
+        `survivalProbability ${survival} is not within ${JSON.stringify(example.tolerance)} of the worksheet's ${expected}`,
+      ).toBe(true)
     })
 
     it('returns exactly 1 when the target age is not later than the current age', () => {
@@ -102,7 +101,6 @@ describeCalculation(
     mutation: 'DOCS/calculations/longevity/joint-survival-percentile-age.mutation.md',
   },
   ({ example }) => {
-    const abs = absToleranceOf(example)
     const primary = example.inputs.primary as SurvivalPerson
     const partner = example.inputs.partner as SurvivalPerson
     const pct = example.inputs.pct as number
@@ -116,7 +114,10 @@ describeCalculation(
     it('single-life survival to 69, 70, 71 matches the worksheet within 1e-9', () => {
       for (const [age, expected] of Object.entries(single)) {
         const survival = survivalProbabilityTo(primary.age, primary.sex, Number(age), primary.hazard)
-        expect(Math.abs(survival - expected)).toBeLessThanOrEqual(abs)
+        expect(
+          withinTolerance(survival, expected, example.tolerance),
+          `single-life survival to ${age} ${survival} is not within ${JSON.stringify(example.tolerance)} of the worksheet's ${expected}`,
+        ).toBe(true)
       }
     })
 
@@ -126,7 +127,11 @@ describeCalculation(
       // production walk must stop at.
       for (const [age, expected] of Object.entries(joint)) {
         const s = survivalProbabilityTo(primary.age, primary.sex, Number(age), primary.hazard)
-        expect(Math.abs(1 - (1 - s) * (1 - s) - expected)).toBeLessThanOrEqual(abs)
+        const eitherAlive = 1 - (1 - s) * (1 - s)
+        expect(
+          withinTolerance(eitherAlive, expected, example.tolerance),
+          `either-alive survival to ${age} ${eitherAlive} is not within ${JSON.stringify(example.tolerance)} of the worksheet's ${expected}`,
+        ).toBe(true)
       }
       expect(joint['70']!).toBeGreaterThanOrEqual(pct / 100)
       expect(joint['71']!).toBeLessThan(pct / 100)
@@ -152,7 +157,6 @@ describeCalculation(
     mutation: 'DOCS/calculations/longevity/survival-hazard-from-expectancy-multiplier.mutation.md',
   },
   ({ example }) => {
-    const abs = absToleranceOf(example)
     const age = example.inputs.age as number
     const sex = example.inputs.sex as Sex
     const multiplier = example.inputs.multiplier as number
@@ -163,7 +167,11 @@ describeCalculation(
 
     it('the identity multiplier m = 1 solves to hazard power 1 within 1e-6', () => {
       const hazard = hazardForExpectancyMultiplier(age, sex, multiplier)
-      expect(Math.abs(hazard - (example.expected.hazardPower as number))).toBeLessThanOrEqual(abs)
+      const expected = example.expected.hazardPower as number
+      expect(
+        withinTolerance(hazard, expected, example.tolerance),
+        `hazardPower ${hazard} is not within ${JSON.stringify(example.tolerance)} of the worksheet's ${expected}`,
+      ).toBe(true)
     })
 
     it('the adjusted expectancy at the solved power reproduces the 17.48 baseline', () => {
@@ -179,7 +187,11 @@ describeCalculation(
       for (let target = age + 1; target <= MAX_AGE + 1; target++) {
         expectancy += survivalProbabilityTo(age, sex, target, hazard)
       }
-      expect(Math.abs(expectancy - (example.expected.adjustedExpectancyYears as number))).toBeLessThanOrEqual(abs)
+      const expected = example.expected.adjustedExpectancyYears as number
+      expect(
+        withinTolerance(expectancy, expected, example.tolerance),
+        `adjustedExpectancyYears ${expectancy} is not within ${JSON.stringify(example.tolerance)} of the worksheet's ${expected}`,
+      ).toBe(true)
     })
   },
 )

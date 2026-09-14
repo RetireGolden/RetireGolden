@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import { describeCalculation } from '../rules/describeCalculation.js'
+import { describeCalculation, withinTolerance } from '../rules/describeCalculation.js'
 import {
   latestPriceDate,
   latestPriceDateIso,
@@ -22,7 +22,6 @@ describeCalculation(
     mutation: 'DOCS/calculations/ladders-and-valuation/fedinvest-csv-tips-parsing.mutation.md',
   },
   ({ example }) => {
-    const abs = example.tolerance === 'exact' ? 0 : (example.tolerance.abs ?? 0)
     const csvRow = example.inputs.csvRow as string
 
     it('parses one synthetic TIPS row: rate to percent, date to ISO, price per $100 face as-is', () => {
@@ -31,8 +30,16 @@ describeCalculation(
       const [row] = tips
       expect(row!.cusip).toBe(example.expected.cusip)
       expect(row!.maturityIso).toBe(example.expected.maturityIso)
-      expect(Math.abs(row!.ratePct - (example.expected.ratePct as number))).toBeLessThanOrEqual(abs)
-      expect(Math.abs(row!.endOfDayPrice - (example.expected.endOfDayPrice as number))).toBeLessThanOrEqual(abs)
+      const expectedRatePct = example.expected.ratePct as number
+      const expectedPrice = example.expected.endOfDayPrice as number
+      expect(
+        withinTolerance(row!.ratePct, expectedRatePct, example.tolerance),
+        `ratePct ${row!.ratePct} is not within ${JSON.stringify(example.tolerance)} of the worksheet's ${expectedRatePct}`,
+      ).toBe(true)
+      expect(
+        withinTolerance(row!.endOfDayPrice, expectedPrice, example.tolerance),
+        `endOfDayPrice ${row!.endOfDayPrice} is not within ${JSON.stringify(example.tolerance)} of the worksheet's ${expectedPrice}`,
+      ).toBe(true)
     })
 
     it('retains only TIPS: the same row typed as a note is dropped', () => {

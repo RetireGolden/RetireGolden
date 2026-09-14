@@ -1,12 +1,8 @@
 import { expect, it, vi } from 'vitest'
 import { MALE } from '../longevity/ssaPeriod2022.js'
-import { describeCalculation, type CalculationExample } from '../rules/describeCalculation.js'
+import { describeCalculation, withinTolerance } from '../rules/describeCalculation.js'
 import { annualMortality, jointLastSurvivorExpectancy, MAX_AGE, sampleDeathAge, type Sex } from './mortality.js'
 import type { Rng } from './rng.js'
-
-function absToleranceOf(example: CalculationExample): number {
-  return example.tolerance === 'exact' ? 0 : (example.tolerance.abs ?? 0)
-}
 
 /**
  * The planner-ui copy of the same identity (its `oneYearSurvival`, reached
@@ -66,7 +62,6 @@ describeCalculation(
     mutation: 'DOCS/calculations/longevity/mortality-ex-to-qx-identity.mutation.md',
   },
   ({ example }) => {
-    const abs = absToleranceOf(example)
     const sex = example.inputs.sex as Sex
     const rows = example.inputs.expectancyRows as Record<string, number>
 
@@ -79,14 +74,33 @@ describeCalculation(
     })
 
     it('derives q(65), q(66), q(67) as 1 - (e(x) - 0.5)/(e(x+1) + 0.5)', () => {
-      expect(Math.abs(annualMortality(65, sex) - (example.expected.q65 as number))).toBeLessThanOrEqual(abs)
-      expect(Math.abs(annualMortality(66, sex) - (example.expected.q66 as number))).toBeLessThanOrEqual(abs)
-      expect(Math.abs(annualMortality(67, sex) - (example.expected.q67 as number))).toBeLessThanOrEqual(abs)
+      const q65 = annualMortality(65, sex)
+      const q66 = annualMortality(66, sex)
+      const q67 = annualMortality(67, sex)
+      const expectedQ65 = example.expected.q65 as number
+      const expectedQ66 = example.expected.q66 as number
+      const expectedQ67 = example.expected.q67 as number
+      expect(
+        withinTolerance(q65, expectedQ65, example.tolerance),
+        `q(65) ${q65} is not within ${JSON.stringify(example.tolerance)} of the worksheet's ${expectedQ65}`,
+      ).toBe(true)
+      expect(
+        withinTolerance(q66, expectedQ66, example.tolerance),
+        `q(66) ${q66} is not within ${JSON.stringify(example.tolerance)} of the worksheet's ${expectedQ66}`,
+      ).toBe(true)
+      expect(
+        withinTolerance(q67, expectedQ67, example.tolerance),
+        `q(67) ${q67} is not within ${JSON.stringify(example.tolerance)} of the worksheet's ${expectedQ67}`,
+      ).toBe(true)
     })
 
     it('two-year survival (1 - q65)(1 - q66) = 0.963150477964002', () => {
       const survival = (1 - annualMortality(65, sex)) * (1 - annualMortality(66, sex))
-      expect(Math.abs(survival - (example.expected.twoYearSurvival as number))).toBeLessThanOrEqual(abs)
+      const expected = example.expected.twoYearSurvival as number
+      expect(
+        withinTolerance(survival, expected, example.tolerance),
+        `twoYearSurvival ${survival} is not within ${JSON.stringify(example.tolerance)} of the worksheet's ${expected}`,
+      ).toBe(true)
     })
 
     it('forces death at the table endpoint: q(119) = 1', () => {
@@ -105,7 +119,10 @@ describeCalculation(
       for (const age of [65, 66, 67]) {
         const uiSurvival = curve.survival(age, age + 1)
         const engineSurvival = 1 - annualMortality(age, sex)
-        expect(Math.abs(uiSurvival - engineSurvival)).toBeLessThanOrEqual(abs)
+        expect(
+          withinTolerance(uiSurvival, engineSurvival, example.tolerance),
+          `planner-ui survival(${age}, ${age + 1}) ${uiSurvival} is not within ${JSON.stringify(example.tolerance)} of the engine's ${engineSurvival}`,
+        ).toBe(true)
       }
     })
   },
@@ -144,8 +161,20 @@ describeCalculation(
       // The worksheet's two comparisons: 0.5 >= q65 (survive), 0.01 < q66 (die).
       expect(draws[0]!).toBeGreaterThanOrEqual(annualMortality(65, sex))
       expect(draws[1]!).toBeLessThan(annualMortality(66, sex))
-      expect(Math.abs(annualMortality(65, sex) - (example.inputs.q65 as number))).toBeLessThanOrEqual(1e-12)
-      expect(Math.abs(annualMortality(66, sex) - (example.inputs.q66 as number))).toBeLessThanOrEqual(1e-12)
+      // The fixture's tolerance is 'exact' for the integer death age; the
+      // worksheet's q(x) inputs are checked at the identity record's 1e-12.
+      const q65 = annualMortality(65, sex)
+      const q66 = annualMortality(66, sex)
+      const inputQ65 = example.inputs.q65 as number
+      const inputQ66 = example.inputs.q66 as number
+      expect(
+        withinTolerance(q65, inputQ65, { abs: 1e-12 }),
+        `q(65) ${q65} is not within 1e-12 of the worksheet's ${inputQ65}`,
+      ).toBe(true)
+      expect(
+        withinTolerance(q66, inputQ66, { abs: 1e-12 }),
+        `q(66) ${q66} is not within 1e-12 of the worksheet's ${inputQ66}`,
+      ).toBe(true)
     })
 
     it('at the table endpoint returns 119 without consuming a draw', () => {
@@ -169,7 +198,6 @@ describeCalculation(
     mutation: 'DOCS/calculations/longevity/mortality-joint-last-survivor-expectancy.mutation.md',
   },
   ({ example }) => {
-    const abs = absToleranceOf(example)
     const ageA = example.inputs.ageA as number
     const ageB = example.inputs.ageB as number
     const sexA = example.inputs.sexA as Sex
@@ -184,12 +212,20 @@ describeCalculation(
 
     it('two male lives at 118: 0.5 + (1 - 0.96^2) = 0.5784 years', () => {
       const expectancy = jointLastSurvivorExpectancy(ageA, sexA, ageB, sexB)
-      expect(Math.abs(expectancy - (example.expected.jointExpectancyYears as number))).toBeLessThanOrEqual(abs)
+      const expected = example.expected.jointExpectancyYears as number
+      expect(
+        withinTolerance(expectancy, expected, example.tolerance),
+        `jointExpectancyYears ${expectancy} is not within ${JSON.stringify(example.tolerance)} of the worksheet's ${expected}`,
+      ).toBe(true)
     })
 
     it('one-year survival for either life at 118 is 0.04, and the endpoint forces zero survival after', () => {
       // The worksheet's intermediate: (0.54 - 0.5)/(0.50 + 0.5) = 0.04.
-      expect(Math.abs(1 - annualMortality(ageA, sexA) - 0.04)).toBeLessThanOrEqual(abs)
+      const survivalAt118 = 1 - annualMortality(ageA, sexA)
+      expect(
+        withinTolerance(survivalAt118, 0.04, example.tolerance),
+        `one-year survival at 118 ${survivalAt118} is not within ${JSON.stringify(example.tolerance)} of the worksheet's 0.04`,
+      ).toBe(true)
       expect(annualMortality(ageA + 1, sexA)).toBe(1)
     })
 

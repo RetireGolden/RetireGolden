@@ -354,13 +354,11 @@
       ],
       "monte-carlo-ending-investable-histogram": [
         "mortality-ex-to-qx-identity",
-        "mortality-sampled-death-age",
-        "survival-probability-product"
+        "mortality-sampled-death-age"
       ],
       "monte-carlo-success-rate": [
         "mortality-ex-to-qx-identity",
-        "mortality-sampled-death-age",
-        "survival-probability-product"
+        "mortality-sampled-death-age"
       ]
     }
   },

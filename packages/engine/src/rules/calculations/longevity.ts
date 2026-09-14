@@ -131,12 +131,12 @@ export const longevityRecords = {
     title: 'Conditional survival to a target age: product of hazard-adjusted one-year survivals',
     purpose: 'The probability someone alive today is still alive at a later integer age, on the SSA table with an optional health hazard.',
     kind: 'formula',
-    // A survival product is an intermediate: the percentile ages search it for
-    // the threshold crossing, and the Monte Carlo families it was named against
-    // aggregate per-path liveness built from the same one-year survivals. No
-    // surface publishes the product itself.
+    // A survival product is an intermediate: the percentile-age searches walk
+    // it for the threshold crossing, and nothing else consumes it. The Monte
+    // Carlo reaches mortality through sampleDeathAge and the q(x) identity, not
+    // through this product. No surface publishes the product itself.
     outputs: [],
-    feeds: ['longevity-survival-percentile-age', 'monte-carlo-success-rate', 'monte-carlo-ending-investable-histogram'],
+    feeds: ['longevity-survival-percentile-age'],
     statement:
       'For current age c, target age g, sex and hazard power h (default 1): with from = floor(max(c, 0)) and to = floor(g), S = product over x = from..to-1 of (1 - q(x))^h, where the factor is 0 when q(x) >= 1. Returns 1 when to <= from, and 0 as soon as the running product reaches 0. Units: probability. Rounding: none.',
     formula: {

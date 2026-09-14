@@ -186,9 +186,7 @@
       "kind": "formula",
       "outputs": [],
       "feeds": [
-        "longevity-survival-percentile-age",
-        "monte-carlo-success-rate",
-        "monte-carlo-ending-investable-histogram"
+        "longevity-survival-percentile-age"
       ],
       "justificationKind": "derivation",
       "implementedBy": [

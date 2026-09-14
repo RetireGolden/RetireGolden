@@ -1,7 +1,7 @@
 import { expect, it } from 'vitest'
 import type { RealYieldCurve } from '../params/types.js'
 import type { YearResult } from '../projection/types.js'
-import { describeCalculation } from '../rules/describeCalculation.js'
+import { describeCalculation, withinTolerance } from '../rules/describeCalculation.js'
 import { computeFundedRatio } from './fundedRatio.js'
 
 interface WorksheetYear {
@@ -43,7 +43,6 @@ describeCalculation(
     mutation: 'DOCS/calculations/ladders-and-valuation/funded-ratio-hand-present-value.mutation.md',
   },
   ({ example }) => {
-    const abs = example.tolerance === 'exact' ? 0 : (example.tolerance.abs ?? 0)
     const startYear = example.inputs.startYear as number
     const inflationPct = example.inputs.inflationPct as number
     const discountRatePct = example.inputs.discountRatePct as number
@@ -79,18 +78,32 @@ describeCalculation(
 
     it('discounts the deflated essential flows to E = 138,700/441 with the year-0 flow undiscounted', () => {
       expect(result).not.toBeNull()
-      expect(Math.abs(result!.essentialSpendingPv - (example.expected.essentialSpendingPv as number))).toBeLessThanOrEqual(abs)
+      const expected = example.expected.essentialSpendingPv as number
+      expect(
+        withinTolerance(result!.essentialSpendingPv, expected, example.tolerance),
+        `essentialSpendingPv ${result!.essentialSpendingPv} is not within ${JSON.stringify(example.tolerance)} of the worksheet's ${expected}`,
+      ).toBe(true)
     })
 
     it('discounts the deflated guaranteed flows to G = 69,350/441', () => {
-      expect(Math.abs(result!.guaranteedIncomePv - (example.expected.guaranteedIncomePv as number))).toBeLessThanOrEqual(abs)
+      const expected = example.expected.guaranteedIncomePv as number
+      expect(
+        withinTolerance(result!.guaranteedIncomePv, expected, example.tolerance),
+        `guaranteedIncomePv ${result!.guaranteedIncomePv} is not within ${JSON.stringify(example.tolerance)} of the worksheet's ${expected}`,
+      ).toBe(true)
     })
 
     it('reports the funded ratio 100·G/E = 50% and the unfunded PV E - G', () => {
-      expect(Math.abs(result!.fundedRatioPct - (example.expected.fundedRatioPct as number))).toBeLessThanOrEqual(
-        RATIO_ABS_TOLERANCE_PCT,
-      )
-      expect(Math.abs(result!.unfundedPv - (example.expected.unfundedPv as number))).toBeLessThanOrEqual(abs)
+      const expectedRatioPct = example.expected.fundedRatioPct as number
+      const expectedUnfundedPv = example.expected.unfundedPv as number
+      expect(
+        withinTolerance(result!.fundedRatioPct, expectedRatioPct, { abs: RATIO_ABS_TOLERANCE_PCT }),
+        `fundedRatioPct ${result!.fundedRatioPct} is not within ${RATIO_ABS_TOLERANCE_PCT} of the worksheet's ${expectedRatioPct}`,
+      ).toBe(true)
+      expect(
+        withinTolerance(result!.unfundedPv, expectedUnfundedPv, example.tolerance),
+        `unfundedPv ${result!.unfundedPv} is not within ${JSON.stringify(example.tolerance)} of the worksheet's ${expectedUnfundedPv}`,
+      ).toBe(true)
     })
 
     it('returns null when no year falls in the window, because the essential PV is not positive', () => {

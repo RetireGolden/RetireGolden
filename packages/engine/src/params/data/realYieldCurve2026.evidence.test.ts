@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import { describeCalculation } from '../../rules/describeCalculation.js'
+import { describeCalculation, withinTolerance } from '../../rules/describeCalculation.js'
 import { REAL_YIELD_CURVE_2026 } from './realYieldCurve2026.js'
 
 describeCalculation(
@@ -18,7 +18,6 @@ describeCalculation(
     mutation: 'DOCS/calculations/ladders-and-valuation/treasury-real-yield-curve-2026.mutation.md',
   },
   ({ example, record }) => {
-    const abs = example.tolerance === 'exact' ? 0 : (example.tolerance.abs ?? 0)
     const maturities = example.inputs.maturityYears as number[]
     const expectedYields = example.expected.embeddedRealYieldPct as number[]
 
@@ -31,7 +30,10 @@ describeCalculation(
     it('carries the documented embedded yields 1.85/2.05/2.25/2.55/2.70 percent per year', () => {
       expect(REAL_YIELD_CURVE_2026.points).toHaveLength(expectedYields.length)
       REAL_YIELD_CURVE_2026.points.forEach((point, index) => {
-        expect(Math.abs(point.realYieldPct - expectedYields[index]!)).toBeLessThanOrEqual(abs)
+        expect(
+          withinTolerance(point.realYieldPct, expectedYields[index]!, example.tolerance),
+          `realYieldPct at ${point.maturityYears} years ${point.realYieldPct} is not within ${JSON.stringify(example.tolerance)} of the documented ${expectedYields[index]}`,
+        ).toBe(true)
       })
     })
 
