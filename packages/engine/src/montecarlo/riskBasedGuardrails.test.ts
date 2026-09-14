@@ -64,9 +64,8 @@ const opts = {
 // (vitest.config.ts) on three consecutive attempts for PR #711 on 2026-09-14 and
 // on two attempts for the audit branch on 2026-09-13, with every other file
 // passing. The cases are long, not hung, so the whole block carries a cap with
-// real headroom. The cost is slower hang detection for these eight tests, the
-// same trade simulate.inheritedRegimeExecution.test.ts already makes with its
-// 300s cap.
+// real headroom. The cost is slower hang detection for these eight tests: a
+// genuine hang now takes two minutes to fail instead of thirty seconds.
 describe('solveRiskBasedGuardrails', { timeout: 120_000 }, () => {
   it('finds dollar thresholds that reproduce the success band within tolerance', () => {
     const solution = solveRiskBasedGuardrails(basePlan(), opts)
