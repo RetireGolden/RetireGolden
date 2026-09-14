@@ -1,18 +1,19 @@
 {
-  "generatedAt": "2026-09-12T22:53:52.267Z",
+  "generatedAt": "2026-09-14T02:29:54.419Z",
   "recordCount": 529,
   "urlCount": 430,
-  "fetched": 14,
-  "cached": 416,
+  "fetched": 1,
+  "cached": 429,
   "entryCount": 1529,
   "counts": {
-    "EXACT": 967,
-    "PUNCTUATION": 48,
-    "PDF-WORD-LEVEL": 339,
-    "ELISION-EXACT": 109,
-    "ELISION-PUNCTUATION": 9,
-    "PDF-NOT-VERIFIABLE": 7,
-    "UNFETCHABLE": 50
+    "EXACT": 1045,
+    "PDF-WORD-LEVEL": 347,
+    "ELISION-EXACT": 122,
+    "PUNCTUATION": 6,
+    "ELISION-PUNCTUATION": 1,
+    "UNFETCHABLE": 5,
+    "PDF-NOT-VERIFIABLE": 1,
+    "ABSENT": 2
   },
   "hostConventions": {
     "uscode.house.gov": {
@@ -72,9 +73,9 @@
       "citation": "IRC 170, Editorial Notes, Effective Date of 2025 Amendment, Pub. L. 119-21, sec. 70425(c)",
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim",
-      "quoteSha256": "c789c139e1e80695",
-      "verdict": "PUNCTUATION",
-      "detail": "matches only after: whitespace",
+      "quoteSha256": "a2e9e06a9bfb9b25",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -92,9 +93,9 @@
       "citation": "IRC 170, Editorial Notes, Effective Date of 2025 Amendment, Pub. L. 119-21, sec. 70425(c)",
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim",
-      "quoteSha256": "c789c139e1e80695",
-      "verdict": "PUNCTUATION",
-      "detail": "matches only after: whitespace",
+      "quoteSha256": "a2e9e06a9bfb9b25",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -122,9 +123,9 @@
       "citation": "IRC 170, Editorial Notes, Effective Date of 2025 Amendment, Pub. L. 119-21, sec. 70425(c)",
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim",
-      "quoteSha256": "c789c139e1e80695",
-      "verdict": "PUNCTUATION",
-      "detail": "matches only after: whitespace",
+      "quoteSha256": "a2e9e06a9bfb9b25",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -142,9 +143,9 @@
       "citation": "IRC 170, Editorial Notes, Effective Date of 2025 Amendment, Pub. L. 119-21, sec. 70425(c)",
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim",
-      "quoteSha256": "c789c139e1e80695",
-      "verdict": "PUNCTUATION",
-      "detail": "matches only after: whitespace",
+      "quoteSha256": "a2e9e06a9bfb9b25",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -172,9 +173,9 @@
       "citation": "IRC 170(d)(1)(C)(ii)",
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim",
-      "quoteSha256": "3e049694f97bf62b",
-      "verdict": "PUNCTUATION",
-      "detail": "matches only after: dashes",
+      "quoteSha256": "a22548495e48e223",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -272,9 +273,9 @@
       "citation": "IRC 170, Editorial Notes, Effective Date of 2025 Amendment, Pub. L. 119-21, sec. 70425(c)",
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim",
-      "quoteSha256": "c789c139e1e80695",
-      "verdict": "PUNCTUATION",
-      "detail": "matches only after: whitespace",
+      "quoteSha256": "a2e9e06a9bfb9b25",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -442,9 +443,9 @@
       "citation": "IRC 170, Editorial Notes, Effective Date of 2025 Amendment, Pub. L. 119-21, sec. 70425(c)",
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim",
-      "quoteSha256": "c789c139e1e80695",
-      "verdict": "PUNCTUATION",
-      "detail": "matches only after: whitespace",
+      "quoteSha256": "a2e9e06a9bfb9b25",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -672,9 +673,9 @@
       "citation": "IRC 408(d)(8)(B)(ii)",
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim",
-      "quoteSha256": "765e2796e56748e3",
-      "verdict": "PUNCTUATION",
-      "detail": "matches only after: fractions",
+      "quoteSha256": "e971d39e54dd0e57",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -682,9 +683,9 @@
       "citation": "Treas. Reg. 1.401(a)(9)-6(g)(1)(iv) (relocated from 1.401(a)(9)-2 A-3 by T.D. 10001)",
       "host": "www.law.cornell.edu",
       "url": "https://www.law.cornell.edu/cfr/text/26/1.401(a)(9)-6",
-      "quoteSha256": "991f287a5e92db75",
-      "verdict": "PUNCTUATION",
-      "detail": "matches only after: apostrophe",
+      "quoteSha256": "5e162007d6c348ff",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -992,9 +993,9 @@
       "citation": "IRC 408(d)(8)(A), flush sentence",
       "host": "www.law.cornell.edu",
       "url": "https://www.law.cornell.edu/uscode/text/26/408",
-      "quoteSha256": "b0f8518b57d2ad98",
-      "verdict": "PUNCTUATION",
-      "detail": "matches only after: fractions",
+      "quoteSha256": "acab296a7fd60060",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -1012,7 +1013,7 @@
       "citation": "Treas. Reg. 1.401(a)(9)-6(g)(1)(iv)",
       "host": "www.ecfr.gov",
       "url": "https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-6",
-      "quoteSha256": "991f287a5e92db75",
+      "quoteSha256": "5e162007d6c348ff",
       "verdict": "PUNCTUATION",
       "detail": "matches only after: fractions",
       "diagnosis": null
@@ -1102,9 +1103,9 @@
       "citation": "IRC 408(d)(8)(A), both sentences",
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim",
-      "quoteSha256": "9dde27c2ec282373",
-      "verdict": "PUNCTUATION",
-      "detail": "matches only after: fractions",
+      "quoteSha256": "88dd0bd7101d8e73",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -1322,9 +1323,9 @@
       "citation": "IRC 408(d)(3)(C)(ii)",
       "host": "www.law.cornell.edu",
       "url": "https://www.law.cornell.edu/uscode/text/26/408",
-      "quoteSha256": "abe0036bd9c33f4b",
-      "verdict": "PUNCTUATION",
-      "detail": "matches only after: dash-spacing",
+      "quoteSha256": "f73ca6fd9d1094d3",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -1342,9 +1343,9 @@
       "citation": "IRC 408A(e)(1)(B)(i)",
       "host": "www.law.cornell.edu",
       "url": "https://www.law.cornell.edu/uscode/text/26/408A",
-      "quoteSha256": "fa3d1ed226932d2a",
-      "verdict": "ELISION-PUNCTUATION",
-      "detail": "matches only after: dashes",
+      "quoteSha256": "553bfead5eb8fd23",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -1352,9 +1353,9 @@
       "citation": "IRC 72(t)(6)(A)",
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim",
-      "quoteSha256": "95f5edaa55b8d910",
-      "verdict": "PUNCTUATION",
-      "detail": "matches only after: apostrophe",
+      "quoteSha256": "7fe6cd392202bc88",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -1892,9 +1893,9 @@
       "citation": "IRC 401(a)(9)(H)(i)",
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section401&num=0&edition=prelim",
-      "quoteSha256": "1c4cf91a658953fc",
-      "verdict": "PUNCTUATION",
-      "detail": "matches only after: apostrophe",
+      "quoteSha256": "36a44c81ac08bf82",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -1902,9 +1903,9 @@
       "citation": "IRC 401(a)(9)(B)(ii)",
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section401&num=0&edition=prelim",
-      "quoteSha256": "852be72d30eda12d",
-      "verdict": "PUNCTUATION",
-      "detail": "matches only after: apostrophe",
+      "quoteSha256": "c5c5940be228b0ef",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -1942,9 +1943,9 @@
       "citation": "Treas. Reg. 1.401(a)(9)-5(b)(1)",
       "host": "www.ecfr.gov",
       "url": "https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-5",
-      "quoteSha256": "7d8010533d9dc318",
-      "verdict": "PUNCTUATION",
-      "detail": "matches only after: apostrophe",
+      "quoteSha256": "934c7685505647e4",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -2272,9 +2273,9 @@
       "citation": "IRC 401(a)(9)(H)(ii)",
       "host": "www.law.cornell.edu",
       "url": "https://www.law.cornell.edu/uscode/text/26/401",
-      "quoteSha256": "dc68ae37f4e997b4",
-      "verdict": "PUNCTUATION",
-      "detail": "matches only after: dash-spacing",
+      "quoteSha256": "2d310bdb848b160b",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -2322,9 +2323,9 @@
       "citation": "IRC 4974(e)(1)",
       "host": "www.govinfo.gov",
       "url": "https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleD-chap43-sec4974.htm",
-      "quoteSha256": "50b78d56196c2840",
-      "verdict": "PUNCTUATION",
-      "detail": "matches only after: quote-marks",
+      "quoteSha256": "9333bb1f752b0f76",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -2422,9 +2423,9 @@
       "citation": "Treas. Reg. 1.401(a)(9)-6(q)(2)(ii), (q)(4)(ii)(A)",
       "host": "www.ecfr.gov",
       "url": "https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-6",
-      "quoteSha256": "125e3e6035fe2bca",
-      "verdict": "ELISION-PUNCTUATION",
-      "detail": "matches only after: dashes",
+      "quoteSha256": "dd3a96e1d2ee316a",
+      "verdict": "ELISION-EXACT",
+      "detail": "2 elision segments, every one a literal substring",
       "diagnosis": null
     },
     {
@@ -2542,9 +2543,9 @@
       "citation": "Treas. Reg. 1.401(a)(9)-6(q)(2)(ii), (q)(4)(ii)(A)",
       "host": "www.ecfr.gov",
       "url": "https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-6",
-      "quoteSha256": "125e3e6035fe2bca",
-      "verdict": "ELISION-PUNCTUATION",
-      "detail": "matches only after: dashes",
+      "quoteSha256": "dd3a96e1d2ee316a",
+      "verdict": "ELISION-EXACT",
+      "detail": "2 elision segments, every one a literal substring",
       "diagnosis": null
     },
     {
@@ -3012,9 +3013,9 @@
       "citation": "IRC 408A(c)(2)",
       "host": "www.law.cornell.edu",
       "url": "https://www.law.cornell.edu/uscode/text/26/408A",
-      "quoteSha256": "e4f38b50e609e734",
-      "verdict": "PUNCTUATION",
-      "detail": "matches only after: dash-spacing",
+      "quoteSha256": "ff1478ec2288935b",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -3032,9 +3033,9 @@
       "citation": "IRC 408A(d)(2)(A)",
       "host": "www.law.cornell.edu",
       "url": "https://www.law.cornell.edu/uscode/text/26/408A",
-      "quoteSha256": "4e5db5d3133b2b11",
-      "verdict": "PUNCTUATION",
-      "detail": "matches only after: dashes",
+      "quoteSha256": "a01f055a7a103e1c",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -3062,9 +3063,9 @@
       "citation": "IRC 408A(d)(3)(F)(i)",
       "host": "www.law.cornell.edu",
       "url": "https://www.law.cornell.edu/uscode/text/26/408A",
-      "quoteSha256": "bdda2962109ad3eb",
-      "verdict": "PUNCTUATION",
-      "detail": "matches only after: dashes",
+      "quoteSha256": "42fd659c775b55b4",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -3332,9 +3333,9 @@
       "citation": "P.L. 117-328, division T, title I, section 127(e)(1)",
       "host": "www.govinfo.gov",
       "url": "https://www.govinfo.gov/content/pkg/PLAW-117publ328/pdf/PLAW-117publ328.pdf",
-      "quoteSha256": "779823e955aa7fa1",
-      "verdict": "PDF-NOT-VERIFIABLE",
-      "detail": "words all present, but the character difference cannot be separated from extraction loss",
+      "quoteSha256": "9f4eaae9972d637b",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
       "diagnosis": null
     },
     {
@@ -3462,9 +3463,9 @@
       "citation": "IRC 72(t)(2)(A)(i)",
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim",
-      "quoteSha256": "e4fa84a20248fc51",
-      "verdict": "PUNCTUATION",
-      "detail": "matches only after: fractions",
+      "quoteSha256": "acde11d4273d062a",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -3492,9 +3493,9 @@
       "citation": "IRC 72(t)(4)(A)",
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim",
-      "quoteSha256": "c8a47b9d00116ebd",
-      "verdict": "PUNCTUATION",
-      "detail": "matches only after: fractions",
+      "quoteSha256": "f611c8c5bf91c7e5",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -3582,9 +3583,9 @@
       "citation": "IRC 72(t)(1)",
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim",
-      "quoteSha256": "d1b1fbad103c82c8",
-      "verdict": "PUNCTUATION",
-      "detail": "matches only after: apostrophe",
+      "quoteSha256": "2567a98fc77e75f4",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -3782,9 +3783,9 @@
       "citation": "IRC 72(t)(4)(A)",
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim",
-      "quoteSha256": "1288a9983116b0ae",
-      "verdict": "PUNCTUATION",
-      "detail": "matches only after: fractions",
+      "quoteSha256": "f611c8c5bf91c7e5",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -3902,9 +3903,9 @@
       "citation": "IRC 72(t)(4)(A)",
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim",
-      "quoteSha256": "15a3a274366c364d",
-      "verdict": "PUNCTUATION",
-      "detail": "matches only after: apostrophe",
+      "quoteSha256": "5915ecc135731d9e",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -4052,9 +4053,9 @@
       "citation": "IRC 402(c)(1)",
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402&num=0&edition=prelim",
-      "quoteSha256": "fecef88bb08cfe0b",
-      "verdict": "ELISION-PUNCTUATION",
-      "detail": "matches only after: dashes",
+      "quoteSha256": "b0a6df3c74dd4718",
+      "verdict": "ELISION-EXACT",
+      "detail": "2 elision segments, every one a literal substring",
       "diagnosis": null
     },
     {
@@ -4072,9 +4073,9 @@
       "citation": "IRC 402(c)(8)(A)-(B)(i)",
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402&num=0&edition=prelim",
-      "quoteSha256": "e8b376bf85ff8e0c",
-      "verdict": "ELISION-PUNCTUATION",
-      "detail": "matches only after: dashes",
+      "quoteSha256": "f903d5f2e12d3fe5",
+      "verdict": "ELISION-EXACT",
+      "detail": "2 elision segments, every one a literal substring",
       "diagnosis": null
     },
     {
@@ -4082,9 +4083,9 @@
       "citation": "IRC 401(a)(31)(A)",
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section401&num=0&edition=prelim",
-      "quoteSha256": "14e1db908cd7d4aa",
-      "verdict": "PUNCTUATION",
-      "detail": "matches only after: dashes",
+      "quoteSha256": "446216956fb61d26",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -4272,9 +4273,9 @@
       "citation": "IRC 219(b)(1)",
       "host": "www.law.cornell.edu",
       "url": "https://www.law.cornell.edu/uscode/text/26/219",
-      "quoteSha256": "b423fdc16826b67e",
-      "verdict": "PUNCTUATION",
-      "detail": "matches only after: dash-spacing",
+      "quoteSha256": "45869fd041ba805d",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -5062,9 +5063,9 @@
       "citation": "P.L. 117-328, division T, title I, section 103(a), (f)",
       "host": "www.govinfo.gov",
       "url": "https://www.govinfo.gov/content/pkg/PLAW-117publ328/pdf/PLAW-117publ328.pdf",
-      "quoteSha256": "9d22c7ee2a377c98",
-      "verdict": "PDF-NOT-VERIFIABLE",
-      "detail": "words all present, but the character difference cannot be separated from extraction loss",
+      "quoteSha256": "f667abcca7609257",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "2 elision segments, all present in the extracted text",
       "diagnosis": null
     },
     {
@@ -5232,9 +5233,9 @@
       "citation": "IRC 72(t)(2)(A)(i), drafting contrast",
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim",
-      "quoteSha256": "442534fb5de97500",
-      "verdict": "PUNCTUATION",
-      "detail": "matches only after: fractions",
+      "quoteSha256": "25be24a4209d9189",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -5452,9 +5453,9 @@
       "citation": "IRS Notice 2004-2, A-26",
       "host": "www.irs.gov",
       "url": "https://www.irs.gov/irb/2004-02_IRB",
-      "quoteSha256": "f7f8cd735bd518a3",
-      "verdict": "PUNCTUATION",
-      "detail": "matches only after: quote-marks",
+      "quoteSha256": "63faf34e39e0725c",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -5682,9 +5683,9 @@
       "citation": "42 U.S.C. 1395w-113(b)(3)(B)",
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section1395w-113&num=0&edition=prelim",
-      "quoteSha256": "22b8ce50b6c34af8",
-      "verdict": "PUNCTUATION",
-      "detail": "matches only after: dashes",
+      "quoteSha256": "4d236f3cc632651d",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -5722,9 +5723,9 @@
       "citation": "P.L. 117-169, section 11406(a), adding 1860D-2(b)(9)(D)",
       "host": "www.govinfo.gov",
       "url": "https://www.govinfo.gov/content/pkg/PLAW-117publ169/pdf/PLAW-117publ169.pdf",
-      "quoteSha256": "82e78cf5ed0bd0b4",
-      "verdict": "PDF-NOT-VERIFIABLE",
-      "detail": "words all present, but the character difference cannot be separated from extraction loss",
+      "quoteSha256": "da10459f411d42d8",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "3 elision segments, all present in the extracted text",
       "diagnosis": null
     },
     {
@@ -5872,9 +5873,9 @@
       "citation": "42 U.S.C. 1395r(i)(4)(A)(i)",
       "host": "www.law.cornell.edu",
       "url": "https://www.law.cornell.edu/uscode/text/42/1395r",
-      "quoteSha256": "e33bf5e5f5ad890a",
-      "verdict": "PUNCTUATION",
-      "detail": "matches only after ignoring a comma, period, semicolon or colon on which the quote and the source disagree",
+      "quoteSha256": "91f68a6131cf37c5",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -6192,9 +6193,9 @@
       "citation": "IRC 86(a)(2)",
       "host": "www.law.cornell.edu",
       "url": "https://www.law.cornell.edu/uscode/text/26/86",
-      "quoteSha256": "ef43c0b241719f01",
-      "verdict": "PUNCTUATION",
-      "detail": "matches only after: dash-spacing",
+      "quoteSha256": "0c31060f4a93a06b",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -6202,9 +6203,9 @@
       "citation": "IRC 86(b)(2)",
       "host": "www.law.cornell.edu",
       "url": "https://www.law.cornell.edu/uscode/text/26/86",
-      "quoteSha256": "e7e6330cdf529602",
-      "verdict": "PUNCTUATION",
-      "detail": "matches only after: dash-spacing",
+      "quoteSha256": "afcc6b96410c003d",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -6454,9 +6455,9 @@
       "citation": "P.L. 118-273, § 3(a)",
       "host": "www.govinfo.gov",
       "url": "https://www.govinfo.gov/content/pkg/PLAW-118publ273/pdf/PLAW-118publ273.pdf",
-      "quoteSha256": "6ed2b2fc18ee28c7",
-      "verdict": "PDF-NOT-VERIFIABLE",
-      "detail": "words all present, but the character difference cannot be separated from extraction loss",
+      "quoteSha256": "bc2e5859dc4fb109",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "1 elision segment, all present in the extracted text",
       "diagnosis": null
     },
     {
@@ -8531,9 +8532,9 @@
       "citation": "IRC 1(h)(1)",
       "host": "www.law.cornell.edu",
       "url": "https://www.law.cornell.edu/uscode/text/26/1",
-      "quoteSha256": "5987a900853ad306",
-      "verdict": "PUNCTUATION",
-      "detail": "matches only after ignoring a comma, period, semicolon or colon on which the quote and the source disagree",
+      "quoteSha256": "0746d43c4e128ac6",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -8591,9 +8592,9 @@
       "citation": "31 U.S.C. 3124(a)",
       "host": "www.law.cornell.edu",
       "url": "https://www.law.cornell.edu/uscode/text/31/3124",
-      "quoteSha256": "748dd0bc9f4218b5",
-      "verdict": "PUNCTUATION",
-      "detail": "matches only after: dash-spacing",
+      "quoteSha256": "8fd87e5843df12f5",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -9291,9 +9292,9 @@
       "citation": "IRC 56(b)(1)(D)",
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section56&num=0&edition=prelim",
-      "quoteSha256": "33abecf492852537",
-      "verdict": "PUNCTUATION",
-      "detail": "matches only after ignoring a comma, period, semicolon or colon on which the quote and the source disagree",
+      "quoteSha256": "c0d6becf8d3feb99",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -9851,9 +9852,9 @@
       "citation": "P.L. 117-328, division T, title I, section 126(d)",
       "host": "www.govinfo.gov",
       "url": "https://www.govinfo.gov/content/pkg/PLAW-117publ328/pdf/PLAW-117publ328.pdf",
-      "quoteSha256": "75c43a867ca4c954",
-      "verdict": "PDF-NOT-VERIFIABLE",
-      "detail": "words all present, but the character difference cannot be separated from extraction loss",
+      "quoteSha256": "3d50d5ae3d70a3ac",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "1 elision segment, all present in the extracted text",
       "diagnosis": null
     },
     {
@@ -10331,9 +10332,9 @@
       "citation": "36 M.R.S. 5403(2)",
       "host": "legislature.maine.gov",
       "url": "https://legislature.maine.gov/statutes/36/title36sec5403.html",
-      "quoteSha256": "40df3522071e5c39",
-      "verdict": "ELISION-PUNCTUATION",
-      "detail": "matches only after: dashes",
+      "quoteSha256": "d413cd88dd60e801",
+      "verdict": "ELISION-EXACT",
+      "detail": "2 elision segments, every one a literal substring",
       "diagnosis": null
     },
     {
@@ -10401,9 +10402,9 @@
       "citation": "36 M.R.S. 5403(4)",
       "host": "legislature.maine.gov",
       "url": "https://legislature.maine.gov/statutes/36/title36sec5403.html",
-      "quoteSha256": "9ae2cf1bea389124",
-      "verdict": "ELISION-PUNCTUATION",
-      "detail": "matches only after: dashes",
+      "quoteSha256": "cdacdb06a5c412dc",
+      "verdict": "ELISION-EXACT",
+      "detail": "2 elision segments, every one a literal substring",
       "diagnosis": null
     },
     {
@@ -10461,9 +10462,9 @@
       "citation": "36 M.R.S. §5122(2)(M-3)",
       "host": "legislature.maine.gov",
       "url": "https://legislature.maine.gov/statutes/36/title36sec5122.html",
-      "quoteSha256": "abaf36c03b17ccdc",
-      "verdict": "PUNCTUATION",
-      "detail": "matches only after: dashes",
+      "quoteSha256": "d641352c285e3e89",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -10481,9 +10482,9 @@
       "citation": "36 M.R.S. §5403(11)",
       "host": "legislature.maine.gov",
       "url": "https://legislature.maine.gov/statutes/36/title36sec5403.html",
-      "quoteSha256": "5258fa2809b00b07",
-      "verdict": "PUNCTUATION",
-      "detail": "matches only after: dashes",
+      "quoteSha256": "a7e4b267ad7f8d17",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -10591,9 +10592,9 @@
       "citation": "N.H. Rev. Stat. Ann. ch. 77 (repealed), compiler’s note",
       "host": "www.gencourt.state.nh.us",
       "url": "https://www.gencourt.state.nh.us/rsa/html/V/77/77-mrg.htm",
-      "quoteSha256": "513d7314aa5a5e34",
-      "verdict": "UNFETCHABLE",
-      "detail": "only 167 characters of text — a shell or error page, not the document",
+      "quoteSha256": "d0b82e8e53d0a28c",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source (matched on a page below the shell-length threshold)",
       "diagnosis": null
     },
     {
@@ -10771,9 +10772,9 @@
       "citation": "R.I. Gen. Laws §44-30-12(c)(11)(i)(A)",
       "host": "webserver.rilegislature.gov",
       "url": "https://webserver.rilegislature.gov/Statutes/TITLE44/44-30/44-II/44-30-12.htm",
-      "quoteSha256": "994394669740a8af",
-      "verdict": "PUNCTUATION",
-      "detail": "matches only after: apostrophe",
+      "quoteSha256": "94d32110ae7cb9ee",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -10781,9 +10782,9 @@
       "citation": "R.I. Gen. Laws §44-30-12(c)(11)(ii)",
       "host": "webserver.rilegislature.gov",
       "url": "https://webserver.rilegislature.gov/Statutes/TITLE44/44-30/44-II/44-30-12.htm",
-      "quoteSha256": "b30a07b96b6e74c0",
-      "verdict": "PUNCTUATION",
-      "detail": "matches only after: quote-marks",
+      "quoteSha256": "8f54258ed8daa87e",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -10832,8 +10833,8 @@
       "host": "legislature.vermont.gov",
       "url": "https://legislature.vermont.gov/statutes/section/32/151/05830e",
       "quoteSha256": "5a3ae08ee2db6ce7",
-      "verdict": "UNFETCHABLE",
-      "detail": "request failed: TypeError: fetch failed",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -10842,8 +10843,8 @@
       "host": "legislature.vermont.gov",
       "url": "https://legislature.vermont.gov/statutes/section/32/151/05830e",
       "quoteSha256": "d6441a972aec0818",
-      "verdict": "UNFETCHABLE",
-      "detail": "request failed: TypeError: fetch failed",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -10852,8 +10853,8 @@
       "host": "legislature.vermont.gov",
       "url": "https://legislature.vermont.gov/statutes/section/32/151/05830e",
       "quoteSha256": "d5f125fd5fc1cd0e",
-      "verdict": "UNFETCHABLE",
-      "detail": "request failed: TypeError: fetch failed",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -10862,8 +10863,8 @@
       "host": "legislature.vermont.gov",
       "url": "https://legislature.vermont.gov/statutes/section/32/151/05830e",
       "quoteSha256": "350006be96853b0a",
-      "verdict": "UNFETCHABLE",
-      "detail": "request failed: TypeError: fetch failed",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -10872,8 +10873,8 @@
       "host": "legislature.vermont.gov",
       "url": "https://legislature.vermont.gov/statutes/section/32/151/05830e",
       "quoteSha256": "a03cc26dd770942d",
-      "verdict": "UNFETCHABLE",
-      "detail": "request failed: TypeError: fetch failed",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -10882,8 +10883,8 @@
       "host": "legislature.vermont.gov",
       "url": "https://legislature.vermont.gov/statutes/section/32/151/05830e",
       "quoteSha256": "83bb22ff86bcfb21",
-      "verdict": "UNFETCHABLE",
-      "detail": "request failed: TypeError: fetch failed",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -10892,8 +10893,8 @@
       "host": "legislature.vermont.gov",
       "url": "https://legislature.vermont.gov/statutes/section/32/151/05830e",
       "quoteSha256": "519796c24f487c8f",
-      "verdict": "UNFETCHABLE",
-      "detail": "request failed: TypeError: fetch failed",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -10902,8 +10903,8 @@
       "host": "legislature.vermont.gov",
       "url": "https://legislature.vermont.gov/statutes/section/32/151/05830e",
       "quoteSha256": "3f0da14f2721b928",
-      "verdict": "UNFETCHABLE",
-      "detail": "request failed: TypeError: fetch failed",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -10912,8 +10913,8 @@
       "host": "legislature.vermont.gov",
       "url": "https://legislature.vermont.gov/statutes/section/32/151/05811",
       "quoteSha256": "f0953791a4d05667",
-      "verdict": "UNFETCHABLE",
-      "detail": "request failed: TypeError: fetch failed",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -10991,9 +10992,9 @@
       "citation": "Mass. Gen. Laws ch.62 §2(a)(2)(F)",
       "host": "malegislature.gov",
       "url": "https://malegislature.gov/Laws/GeneralLaws/PartI/TitleIX/Chapter62/Section2",
-      "quoteSha256": "b928b3d8b15cde1c",
-      "verdict": "PUNCTUATION",
-      "detail": "matches only after: whitespace",
+      "quoteSha256": "29121de648e5b2e0",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -11051,9 +11052,9 @@
       "citation": "32 V.S.A. section 5811(21)(C)(i)-(iii), (D)",
       "host": "legislature.vermont.gov",
       "url": "https://legislature.vermont.gov/statutes/section/32/151/05811",
-      "quoteSha256": "82c207de3742b665",
-      "verdict": "UNFETCHABLE",
-      "detail": "request failed: TypeError: fetch failed",
+      "quoteSha256": "469e0b983c48364f",
+      "verdict": "ELISION-EXACT",
+      "detail": "3 elision segments, every one a literal substring",
       "diagnosis": null
     },
     {
@@ -11062,8 +11063,8 @@
       "host": "legislature.vermont.gov",
       "url": "https://legislature.vermont.gov/statutes/section/32/151/05822",
       "quoteSha256": "2ae83efe4b9533e7",
-      "verdict": "UNFETCHABLE",
-      "detail": "request failed: TypeError: fetch failed",
+      "verdict": "ELISION-EXACT",
+      "detail": "2 elision segments, every one a literal substring",
       "diagnosis": null
     },
     {
@@ -11082,8 +11083,8 @@
       "host": "legislature.vermont.gov",
       "url": "https://legislature.vermont.gov/statutes/section/32/151/05822",
       "quoteSha256": "1ed31731dd17e065",
-      "verdict": "UNFETCHABLE",
-      "detail": "request failed: TypeError: fetch failed",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -11091,9 +11092,9 @@
       "citation": "32 V.S.A. §5830e(b),(c),(e)",
       "host": "legislature.vermont.gov",
       "url": "https://legislature.vermont.gov/statutes/section/32/151/05830e",
-      "quoteSha256": "bbe40702df18c6cf",
-      "verdict": "UNFETCHABLE",
-      "detail": "request failed: TypeError: fetch failed",
+      "quoteSha256": "079030500b8cec21",
+      "verdict": "ELISION-EXACT",
+      "detail": "5 elision segments, every one a literal substring",
       "diagnosis": null
     },
     {
@@ -11101,9 +11102,9 @@
       "citation": "32 V.S.A. §5830e(d),(e)",
       "host": "legislature.vermont.gov",
       "url": "https://legislature.vermont.gov/statutes/section/32/151/05830e",
-      "quoteSha256": "aab46ce86b677fe9",
-      "verdict": "UNFETCHABLE",
-      "detail": "request failed: TypeError: fetch failed",
+      "quoteSha256": "7645d9fd72b5a22c",
+      "verdict": "ELISION-EXACT",
+      "detail": "4 elision segments, every one a literal substring",
       "diagnosis": null
     },
     {
@@ -11112,8 +11113,8 @@
       "host": "legislature.vermont.gov",
       "url": "https://legislature.vermont.gov/statutes/section/32/151/05823",
       "quoteSha256": "6694d7d5bf1a4be1",
-      "verdict": "UNFETCHABLE",
-      "detail": "request failed: TypeError: fetch failed",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -11202,8 +11203,8 @@
       "host": "www.ilga.gov",
       "url": "https://www.ilga.gov/Documents/legislation/ilcs/documents/003500050K203.htm",
       "quoteSha256": "af6ec3bd3b93c85a",
-      "verdict": "UNFETCHABLE",
-      "detail": "request failed: TypeError: fetch failed",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -11212,8 +11213,8 @@
       "host": "www.ilga.gov",
       "url": "https://www.ilga.gov/Documents/legislation/ilcs/documents/003500050K203.htm",
       "quoteSha256": "b20aa287a892d09c",
-      "verdict": "UNFETCHABLE",
-      "detail": "request failed: TypeError: fetch failed",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -11222,8 +11223,8 @@
       "host": "www.ilga.gov",
       "url": "https://www.ilga.gov/Documents/legislation/ilcs/documents/003500050K203.htm",
       "quoteSha256": "11744da307c87047",
-      "verdict": "UNFETCHABLE",
-      "detail": "request failed: TypeError: fetch failed",
+      "verdict": "ELISION-EXACT",
+      "detail": "2 elision segments, every one a literal substring",
       "diagnosis": null
     },
     {
@@ -11992,8 +11993,8 @@
       "host": "www.legislature.mi.gov",
       "url": "https://www.legislature.mi.gov/Laws/MCL?objectName=mcl-206-30",
       "quoteSha256": "721b0be19f491006",
-      "verdict": "UNFETCHABLE",
-      "detail": "request failed: TypeError: fetch failed",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -12002,8 +12003,8 @@
       "host": "www.legislature.mi.gov",
       "url": "https://www.legislature.mi.gov/Laws/MCL?objectName=mcl-206-30",
       "quoteSha256": "3f28fa756c891268",
-      "verdict": "UNFETCHABLE",
-      "detail": "request failed: TypeError: fetch failed",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -12034,8 +12035,8 @@
       "host": "www.legislature.mi.gov",
       "url": "https://www.legislature.mi.gov/mileg.aspx?objectName=mcl-206-30&page=getObject",
       "quoteSha256": "95b094a95c0660b9",
-      "verdict": "UNFETCHABLE",
-      "detail": "request failed: TypeError: fetch failed",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -12044,8 +12045,8 @@
       "host": "www.legislature.mi.gov",
       "url": "https://www.legislature.mi.gov/mileg.aspx?objectName=mcl-206-30&page=getObject",
       "quoteSha256": "fc789983f53168fb",
-      "verdict": "UNFETCHABLE",
-      "detail": "request failed: TypeError: fetch failed",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -12501,8 +12502,8 @@
       "host": "www.lsc.ohio.gov",
       "url": "https://www.lsc.ohio.gov/assets/legislation/136/hb96/en0/files/hb96-tax-greenbook-as-enacted-136th-general-assembly.pdf",
       "quoteSha256": "9887f6988c168da5",
-      "verdict": "UNFETCHABLE",
-      "detail": "request failed: TypeError: fetch failed",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
       "diagnosis": null
     },
     {
@@ -12661,8 +12662,8 @@
       "host": "www.ilga.gov",
       "url": "https://www.ilga.gov/documents/legislation/ilcs/documents/003500050K204.htm",
       "quoteSha256": "a3e1c630b05a55bd",
-      "verdict": "UNFETCHABLE",
-      "detail": "request failed: TypeError: fetch failed",
+      "verdict": "ELISION-EXACT",
+      "detail": "2 elision segments, every one a literal substring",
       "diagnosis": null
     },
     {
@@ -13260,9 +13261,9 @@
       "citation": "W. Va. Code §11-21-16(a),(c),(d)",
       "host": "code.wvlegislature.gov",
       "url": "https://code.wvlegislature.gov/11-21-16/",
-      "quoteSha256": "ea5778ef9f6c87ef",
-      "verdict": "ELISION-PUNCTUATION",
-      "detail": "matches only after: case",
+      "quoteSha256": "0c51e973bf31ac22",
+      "verdict": "ELISION-EXACT",
+      "detail": "2 elision segments, every one a literal substring",
       "diagnosis": null
     },
     {
@@ -13741,8 +13742,8 @@
       "host": "billstatus.ls.state.ms.us",
       "url": "https://billstatus.ls.state.ms.us/documents/2025/html/HB/0001-0099/HB0001SG.htm",
       "quoteSha256": "903ddfe8e0a36f3a",
-      "verdict": "UNFETCHABLE",
-      "detail": "request failed: TypeError: fetch failed",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -13751,8 +13752,8 @@
       "host": "billstatus.ls.state.ms.us",
       "url": "https://billstatus.ls.state.ms.us/documents/2025/html/HB/0001-0099/HB0001SG.htm",
       "quoteSha256": "8bb0e85dcbf4afcb",
-      "verdict": "UNFETCHABLE",
-      "detail": "request failed: TypeError: fetch failed",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -13761,8 +13762,8 @@
       "host": "billstatus.ls.state.ms.us",
       "url": "https://billstatus.ls.state.ms.us/documents/2025/html/HB/0001-0099/HB0001SG.htm",
       "quoteSha256": "c195ba21097d403c",
-      "verdict": "UNFETCHABLE",
-      "detail": "request failed: TypeError: fetch failed",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -13771,8 +13772,8 @@
       "host": "billstatus.ls.state.ms.us",
       "url": "https://billstatus.ls.state.ms.us/documents/2025/html/HB/0001-0099/HB0001SG.htm",
       "quoteSha256": "b828568ff8aff189",
-      "verdict": "UNFETCHABLE",
-      "detail": "request failed: TypeError: fetch failed",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -13781,8 +13782,8 @@
       "host": "billstatus.ls.state.ms.us",
       "url": "https://billstatus.ls.state.ms.us/documents/2025/html/HB/0001-0099/HB0001SG.htm",
       "quoteSha256": "b3aba8e16ab56905",
-      "verdict": "UNFETCHABLE",
-      "detail": "request failed: TypeError: fetch failed",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -13801,8 +13802,8 @@
       "host": "billstatus.ls.state.ms.us",
       "url": "https://billstatus.ls.state.ms.us/documents/2025/html/HB/0001-0099/HB0001SG.htm",
       "quoteSha256": "9037d520d15efed4",
-      "verdict": "UNFETCHABLE",
-      "detail": "request failed: TypeError: fetch failed",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -13811,8 +13812,8 @@
       "host": "billstatus.ls.state.ms.us",
       "url": "https://billstatus.ls.state.ms.us/documents/2026/html/HB/0600-0699/HB0693IN.htm",
       "quoteSha256": "98fddfa2b9247dd9",
-      "verdict": "UNFETCHABLE",
-      "detail": "request failed: TypeError: fetch failed",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -13821,8 +13822,8 @@
       "host": "billstatus.ls.state.ms.us",
       "url": "https://billstatus.ls.state.ms.us/documents/2026/html/HB/0600-0699/HB0693IN.htm",
       "quoteSha256": "f7f3e9aa15161ad9",
-      "verdict": "UNFETCHABLE",
-      "detail": "request failed: TypeError: fetch failed",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -13831,8 +13832,8 @@
       "host": "billstatus.ls.state.ms.us",
       "url": "https://billstatus.ls.state.ms.us/documents/2026/html/HB/0600-0699/HB0693IN.htm",
       "quoteSha256": "9a4175ffc43dca42",
-      "verdict": "UNFETCHABLE",
-      "detail": "request failed: TypeError: fetch failed",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -13841,8 +13842,8 @@
       "host": "billstatus.ls.state.ms.us",
       "url": "https://billstatus.ls.state.ms.us/documents/2026/html/HB/0600-0699/HB0693IN.htm",
       "quoteSha256": "dc3bd21c26752811",
-      "verdict": "UNFETCHABLE",
-      "detail": "request failed: TypeError: fetch failed",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -13851,8 +13852,8 @@
       "host": "billstatus.ls.state.ms.us",
       "url": "https://billstatus.ls.state.ms.us/documents/2026/html/HB/0400-0499/HB0489PS.htm",
       "quoteSha256": "abb9dc8dcd0c468c",
-      "verdict": "UNFETCHABLE",
-      "detail": "request failed: TypeError: fetch failed",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -13881,8 +13882,8 @@
       "host": "billstatus.ls.state.ms.us",
       "url": "https://billstatus.ls.state.ms.us/documents/2026/html/HB/0600-0699/HB0693IN.htm",
       "quoteSha256": "c9ae1305c15d29b4",
-      "verdict": "UNFETCHABLE",
-      "detail": "request failed: TypeError: fetch failed",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -13891,8 +13892,8 @@
       "host": "billstatus.ls.state.ms.us",
       "url": "https://billstatus.ls.state.ms.us/documents/2026/html/HB/0800-0899/HB0866IN.htm",
       "quoteSha256": "812f3749eed43308",
-      "verdict": "UNFETCHABLE",
-      "detail": "request failed: TypeError: fetch failed",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -13901,8 +13902,8 @@
       "host": "billstatus.ls.state.ms.us",
       "url": "https://billstatus.ls.state.ms.us/documents/2026/html/HB/0800-0899/HB0866IN.htm",
       "quoteSha256": "3f137cf65421f4a3",
-      "verdict": "UNFETCHABLE",
-      "detail": "request failed: TypeError: fetch failed",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -13911,8 +13912,8 @@
       "host": "billstatus.ls.state.ms.us",
       "url": "https://billstatus.ls.state.ms.us/documents/2026/html/HB/1900-1999/HB1996IN.htm",
       "quoteSha256": "a577b873d06ff227",
-      "verdict": "UNFETCHABLE",
-      "detail": "request failed: TypeError: fetch failed",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -13921,8 +13922,8 @@
       "host": "billstatus.ls.state.ms.us",
       "url": "https://billstatus.ls.state.ms.us/documents/2026/html/HB/1900-1999/HB1996IN.htm",
       "quoteSha256": "7a4fe006f139c4a9",
-      "verdict": "UNFETCHABLE",
-      "detail": "request failed: TypeError: fetch failed",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -13931,8 +13932,8 @@
       "host": "billstatus.ls.state.ms.us",
       "url": "https://billstatus.ls.state.ms.us/documents/2026/html/HB/1900-1999/HB1996IN.htm",
       "quoteSha256": "2027d4a1034943c2",
-      "verdict": "UNFETCHABLE",
-      "detail": "request failed: TypeError: fetch failed",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -13941,8 +13942,8 @@
       "host": "billstatus.ls.state.ms.us",
       "url": "https://billstatus.ls.state.ms.us/documents/2026/html/HB/1900-1999/HB1996IN.htm",
       "quoteSha256": "871d90edb97f1ec8",
-      "verdict": "UNFETCHABLE",
-      "detail": "request failed: TypeError: fetch failed",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -13991,8 +13992,8 @@
       "host": "billstatus.ls.state.ms.us",
       "url": "https://billstatus.ls.state.ms.us/documents/2026/html/HB/0800-0899/HB0866IN.htm",
       "quoteSha256": "7650cd3e1b3b5717",
-      "verdict": "UNFETCHABLE",
-      "detail": "request failed: TypeError: fetch failed",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -14059,10 +14060,10 @@
       "id": "ky-dor-2026-standard-deduction-once-per-return",
       "citation": "Kentucky Form 740 instructions, Line 10, historical $3,160 filing-status pattern (official URL labelled 2025; live HTTP 404)",
       "host": "revenue.ky.gov",
-      "url": "https://revenue.ky.gov/Forms/740%20instructions%20packet%20%282025%29.pdf",
+      "url": "https://revenue.ky.gov/Forms/740%20instructions%20packet%20%282024%29.pdf",
       "quoteSha256": "3b684f153f47abec",
-      "verdict": "UNFETCHABLE",
-      "detail": "HTTP 404",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
       "diagnosis": null
     },
     {
@@ -14230,9 +14231,9 @@
       "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Examples of Income You DO NOT Report (retirement systems)",
       "host": "www.revenue.alabama.gov",
       "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf",
-      "quoteSha256": "1b8ce5fd0b8750c0",
-      "verdict": "PDF-NOT-VERIFIABLE",
-      "detail": "words all present, but the character difference cannot be separated from extraction loss",
+      "quoteSha256": "d4ebde6818287081",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "5 elision segments, all present in the extracted text",
       "diagnosis": null
     },
     {
@@ -14511,9 +14512,13 @@
       "host": "www.azleg.gov",
       "url": "https://www.azleg.gov/ars/43/01041.htm",
       "quoteSha256": "1644cfac0aab4a2e",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
-      "diagnosis": null
+      "verdict": "ABSENT",
+      "detail": "the passage does not appear on the page",
+      "diagnosis": {
+        "matchedWords": 17,
+        "totalWords": 25,
+        "continuation": "$15,750, subject to subsection h of this section. 2. in the case of a single person who is a head of a household, the standard deduction is $23,625, subject to subsection h of thi"
+      }
     },
     {
       "id": "ars-43-1041-standard-deduction-published-amount",
@@ -14531,9 +14536,13 @@
       "host": "www.azleg.gov",
       "url": "https://www.azleg.gov/ars/43/00105.htm",
       "quoteSha256": "6ce32a9c3cff7e58",
-      "verdict": "EXACT",
-      "detail": "literal substring of the source",
-      "diagnosis": null
+      "verdict": "ABSENT",
+      "detail": "the passage does not appear on the page",
+      "diagnosis": {
+        "matchedWords": 20,
+        "totalWords": 70,
+        "continuation": "2025, \"internal revenue code\" means the united states internal revenue code of 1986, as amended, in effect on january 1, 2026, including those provisions that became effective dur"
+      }
     },
     {
       "id": "ars-43-1041-standard-deduction-published-amount",
@@ -15378,22 +15387,16 @@
   ],
   "apostropheStyle": [
     {
-      "id": "treas-reg-1-408-8-g-projection-named-qcd-beyond-rmd",
-      "citation": "Treas. Reg. 1.408-8(b)(3)",
+      "id": "irc-408-d-8-B-ii-age-70-half",
+      "citation": "Treas. Reg. 1.401(a)(9)-6(g)(1)(iv) (relocated from 1.401(a)(9)-2 A-3 by T.D. 10001)",
       "host": "www.law.cornell.edu",
       "note": "quote uses U+0027 (') where this host renders U+2019 (’)"
     },
     {
-      "id": "irc-408-d-8-B-ii-projection-annual-age-proxy",
-      "citation": "Treas. Reg. 1.401(a)(9)-6(g)(1)(iv)",
-      "host": "www.ecfr.gov",
-      "note": "quote uses U+2019 (’) where this host renders U+0027 (')"
-    },
-    {
-      "id": "irc-408-d-3-G-simple-two-year-rollover-bar",
-      "citation": "IRC 72(t)(6)(A)",
-      "host": "uscode.house.gov",
-      "note": "quote uses U+2019 (’) where this host renders U+0027 (')"
+      "id": "treas-reg-1-408-8-g-projection-named-qcd-beyond-rmd",
+      "citation": "Treas. Reg. 1.408-8(b)(3)",
+      "host": "www.law.cornell.edu",
+      "note": "quote uses U+0027 (') where this host renders U+2019 (’)"
     },
     {
       "id": "treas-reg-1-408-8-b-3-rmd-first-dollars-out",
@@ -15436,24 +15439,6 @@
       "citation": "Treas. Reg. 1.408-8(b)(1)(i) (current corroboration)",
       "host": "www.law.cornell.edu",
       "note": "quote uses U+0027 (') where this host renders U+2019 (’)"
-    },
-    {
-      "id": "irc-401-a-9-H-designated-beneficiary-ten-year-rule",
-      "citation": "IRC 401(a)(9)(H)(i)",
-      "host": "uscode.house.gov",
-      "note": "quote uses U+2019 (’) where this host renders U+0027 (')"
-    },
-    {
-      "id": "irc-401-a-9-H-designated-beneficiary-ten-year-rule",
-      "citation": "IRC 401(a)(9)(B)(ii)",
-      "host": "uscode.house.gov",
-      "note": "quote uses U+2019 (’) where this host renders U+0027 (')"
-    },
-    {
-      "id": "treas-reg-1-408-8-b-2-prior-december-31-balance",
-      "citation": "Treas. Reg. 1.401(a)(9)-5(b)(1)",
-      "host": "www.ecfr.gov",
-      "note": "quote uses U+2019 (’) where this host renders U+0027 (')"
     },
     {
       "id": "treas-reg-1-401-a-9-9-c-uniform-lifetime-table",
@@ -15522,26 +15507,14 @@
       "note": "quote uses U+2019 (’) where this host renders U+0027 (')"
     },
     {
-      "id": "irc-72-t-2-A-i-age-59-half-annual-proxy",
-      "citation": "IRC 72(t)(1)",
-      "host": "uscode.house.gov",
-      "note": "quote uses U+2019 (’) where this host renders U+0027 (')"
-    },
-    {
-      "id": "irc-72-t-4-sepp-modification-proof-window",
-      "citation": "IRC 72(t)(4)(A)",
-      "host": "uscode.house.gov",
-      "note": "quote uses U+2019 (’) where this host renders U+0027 (')"
-    },
-    {
-      "id": "notice-2022-6-3-02-e-1-projection-contribution-during-series",
-      "citation": "IRC 72(t)(4)(A)",
-      "host": "uscode.house.gov",
-      "note": "quote uses U+2019 (’) where this host renders U+0027 (')"
-    },
-    {
       "id": "irc-414-v-1-plan-permitted-catch-up",
       "citation": "P.L. 117-328, division T, title I, section 109(a)(1)",
+      "host": "www.govinfo.gov",
+      "note": "quote uses U+2019 (’) where this host renders U+0027 (')"
+    },
+    {
+      "id": "usc-42-1395w-113-b-pl-117-169-part-d-penalty-and-cost-sharing",
+      "citation": "P.L. 117-169, section 11406(a), adding 1860D-2(b)(9)(D)",
       "host": "www.govinfo.gov",
       "note": "quote uses U+2019 (’) where this host renders U+0027 (')"
     }

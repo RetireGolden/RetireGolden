@@ -390,7 +390,7 @@ export const northeastStateRecords = {
       citation: '36 M.R.S. 5403(2)',
       url: 'https://legislature.maine.gov/statutes/36/title36sec5403.html',
       quotedText:
-        'On or about September 15th of each year as specified in this section, the assessor shall multiply the cost-of-living adjustment for taxable years beginning in the succeeding calendar year by the following: … Standard deductions. In 2025 and each year thereafter, by the dollar amount contained in section 5124-C, subsection 1-B, paragraph A, subparagraph (1)',
+        'On or about September 15th of each year as specified in this section, the assessor shall multiply the cost-of-living adjustment for taxable years beginning in the succeeding calendar year by the following: … Standard deductions. In 2025 and each year thereafter, by the dollar amount contained in section 5124‑C, subsection 1‑B, paragraph A, subparagraph (1)',
     }],
     volatility: 'annuallyIndexed',
     effectiveFrom: 2026,
@@ -459,7 +459,7 @@ export const northeastStateRecords = {
       citation: '36 M.R.S. 5403(4)',
       url: 'https://legislature.maine.gov/statutes/36/title36sec5403.html',
       quotedText:
-        'On or about September 15th of each year as specified in this section, the assessor shall multiply the cost-of-living adjustment for taxable years beginning in the succeeding calendar year by the following: … Individual income tax standard deduction and itemized deduction phase-out. Beginning in 2018 and each year thereafter, by the dollar amount contained in the numerator of the fraction specified in section 5124-C, subsection 2, paragraphs A, B and C',
+        'On or about September 15th of each year as specified in this section, the assessor shall multiply the cost-of-living adjustment for taxable years beginning in the succeeding calendar year by the following: … Individual income tax standard deduction and itemized deduction phase-out. Beginning in 2018 and each year thereafter, by the dollar amount contained in the numerator of the fraction specified in section 5124‑C, subsection 2, paragraphs A, B and C',
     }],
     volatility: 'annuallyIndexed',
     effectiveFrom: 2026,
@@ -520,7 +520,7 @@ export const northeastStateRecords = {
       citation: '36 M.R.S. §5122(2)(M-3)',
       url: 'https://legislature.maine.gov/statutes/36/title36sec5122.html',
       quotedText:
-        'For tax years beginning on or after January 1, 2025, the amount in paragraph M-2, subparagraph (1), division (a) must be reduced by an amount equal to the total amount in paragraph M-2, subparagraph (1), division (a) multiplied by a fraction, the numerator of which is the taxpayer\'s federal adjusted gross income less the applicable amount, except that the numerator may not be less than zero, and the denominator of which is $50,000 in the case of a married individual filing a separate return and $100,000 in all other filing cases. The fraction contained in this paragraph may not produce a result that is more than one. The applicable amount must be adjusted for inflation in accordance with section 5403, subsection 11.',
+        'For tax years beginning on or after January 1, 2025, the amount in paragraph M‑2, subparagraph (1), division (a) must be reduced by an amount equal to the total amount in paragraph M‑2, subparagraph (1), division (a) multiplied by a fraction, the numerator of which is the taxpayer\'s federal adjusted gross income less the applicable amount, except that the numerator may not be less than zero, and the denominator of which is $50,000 in the case of a married individual filing a separate return and $100,000 in all other filing cases. The fraction contained in this paragraph may not produce a result that is more than one. The applicable amount must be adjusted for inflation in accordance with section 5403, subsection 11.',
     }, {
       kind: 'statute',
       citation: '36 M.R.S. §5122(2)(M-3), applicable amount definition',
@@ -532,7 +532,7 @@ export const northeastStateRecords = {
       citation: '36 M.R.S. §5403(11)',
       url: 'https://legislature.maine.gov/statutes/36/title36sec5403.html',
       quotedText:
-        'Beginning in 2025 and each year thereafter, by the dollar amount of the applicable amounts specified in section 5122, subsection 2, paragraph M-3, except that for the purposes of this subsection, notwithstanding section 5402, subsection 1-B, the "cost-of-living adjustment" is the Chained Consumer Price Index for the 12-month period ending June 30th of the preceding calendar year divided by the Chained Consumer Price Index for the 12-month period ending June 30, 2024.',
+        'Beginning in 2025 and each year thereafter, by the dollar amount of the applicable amounts specified in section 5122, subsection 2, paragraph M‑3, except that for the purposes of this subsection, notwithstanding section 5402, subsection 1‑B, the "cost-of-living adjustment" is the Chained Consumer Price Index for the 12-month period ending June 30th of the preceding calendar year divided by the Chained Consumer Price Index for the 12-month period ending June 30, 2024.',
     }, {
       kind: 'statute',
       citation: '36 M.R.S. §5403, COLA rounding',
@@ -699,11 +699,11 @@ export const northeastStateRecords = {
       url: 'https://www.gencourt.state.nh.us/rsa/html/V/77/77-mrg.htm',
       quotedText: 'Chapter 77 Repealed \u0096 Entire Chapter was repealed',
     }, {
-      // Markup-stripped compiler’s note on the same page. 50 characters.
+      // Markup-stripped compiler’s note on the same page. 49 characters.
       kind: 'statute',
       citation: 'N.H. Rev. Stat. Ann. ch. 77 (repealed), compiler’s note',
       url: 'https://www.gencourt.state.nh.us/rsa/html/V/77/77-mrg.htm',
-      quotedText: '[Repealed by 2021, 91:189, II, eff. Jan. 1, 2025.]',
+      quotedText: '[Repealed by 2021, 91:99, II, eff. Jan. 1, 2025.]',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2025,
@@ -945,13 +945,13 @@ export const northeastStateRecords = {
       citation: 'R.I. Gen. Laws §44-30-12(c)(11)(i)(A)',
       url: 'https://webserver.rilegislature.gov/Statutes/TITLE44/44-30/44-II/44-30-12.htm',
       quotedText:
-        'For the tax years beginning on January 1, 2023, a taxpayer may subtract from federal adjusted gross income the taxpayer\'s military service pension benefits included in federal adjusted gross income;',
+        'For the tax years beginning on January 1, 2023, a taxpayer may subtract from federal adjusted gross income the taxpayer’s military service pension benefits included in federal adjusted gross income;',
     }, {
       kind: 'statute',
       citation: 'R.I. Gen. Laws §44-30-12(c)(11)(ii)',
       url: 'https://webserver.rilegislature.gov/Statutes/TITLE44/44-30/44-II/44-30-12.htm',
       quotedText:
-        'As used in this subsection, the term "military service" shall have the same meaning as set forth in 20 C.F.R. § 212.2;',
+        'As used in this subsection, the term “military service” shall have the same meaning as set forth in 20 C.F.R. § 212.2;',
     }, {
       kind: 'statute',
       citation: 'R.I. Gen. Laws §44-30-12(c)(11)(iii)',
@@ -1210,7 +1210,7 @@ export const northeastStateRecords = {
         "kind": "statute",
         "citation": "Mass. Gen. Laws ch.62 §2(a)(2)(F)",
         "url": "https://malegislature.gov/Laws/GeneralLaws/PartI/TitleIX/Chapter62/Section2",
-        "quotedText": "Income from annuity, stock bonus, pension, profit-sharing, annuity or deferred-payment plans or contracts described in sections four hundred and three (b) or four hundred and four of the Code or individual retirement accounts, individual retirement annuities or retirement bonds described in sections four hundred and eight or four hundred and nine of the Code, until an aggregate amount of such income has been deducted under this subparagraph equal to the aggregate of all amounts previously subjected to taxation under this chapter; provided, that this subparagraph shall not apply to income from the optional retirement system established by section forty of chapter fifteen A."
+        "quotedText": "Income from annuity, stock bonus, pension, profit-sharing, annuity or deferred-payment plans or contracts described in sections four hundred and three (b) or four hundred and four of the Code or individual retirement accounts, individual retirement annuities or retirement bonds described in sections four hundred and eight or four hundred and nine of the Code , until an aggregate amount of such income has been deducted under this subparagraph equal to the aggregate of all amounts previously subjected to taxation under this chapter; provided, that this subparagraph shall not apply to income from the optional retirement system established by section forty of chapter fifteen A."
       }
     ],
     "volatility": "staticStatute",
@@ -1327,7 +1327,7 @@ export const northeastStateRecords = {
         "kind": "statute",
         "citation": "32 V.S.A. section 5811(21)(C)(i)-(iii), (D)",
         "url": "https://legislature.vermont.gov/statutes/section/32/151/05811",
-        "quotedText": "shall be adjusted annually for inflation ... using the Consumer Price Index and the same methodology as ... 26 U.S.C. section 1(f)(3)"
+        "quotedText": "shall be adjusted annually for inflation ... using the Consumer Price Index and the same methodology as ... 26 U.S.C. § 1(f)(3)"
       },
       {
         "kind": "statute",
@@ -1403,7 +1403,7 @@ export const northeastStateRecords = {
         "kind": "statute",
         "citation": "32 V.S.A. §5830e(b),(c),(e)",
         "url": "https://legislature.vermont.gov/statutes/section/32/151/05830e",
-        "quotedText": "If the federal adjusted gross income of the taxpayer is less than or equal to $55,000.00, the first $10,000.00 of income received from the Civil Service Retirement System shall be excluded. … If the federal adjusted gross income of the taxpayer is less than or equal to $70,000.00, the first $10,000.00 of income received from the Civil Service Retirement System shall be excluded. … Other retirement income, except U.S. military retirement income pursuant to subsection (d) of this section, received by a taxpayer of this State shall be excluded pursuant to subsection (b) of this section as though the income were received from the Civil Service Retirement System and shall be subject to the limitations under subsection (e) of this section, provided that: … the income is received from a contributory annuity, pension, endowment, or retirement system of the U.S. government or a political subdivision or instrumentality of the U.S. government; this State or a political subdivision or instrumentality of this State; or another state or a political subdivision or instrumentality of another state; and the contributory system from which the income is received was based on earnings that were not covered by the Social Security Act. … A taxpayer of this State who is eligible during the taxable year for more than one of the exclusions under subsections (a), (b), and (c) of this section shall elect only one of the exclusions for which the taxpayer is eligible."
+        "quotedText": "If the federal adjusted gross income of the taxpayer is less than or equal to $55,000.00, the first $10,000.00 of income received from the Civil Service Retirement System shall be excluded. … If the federal adjusted gross income of the taxpayer is less than or equal to $70,000.00, the first $10,000.00 of income received from the Civil Service Retirement System shall be excluded. … Other retirement income, except U.S. military retirement income pursuant to subsection (d) of this section, received by a taxpayer of this State shall be excluded pursuant to subsection (b) of this section as though the income were received from the Civil Service Retirement System and shall be subject to the limitations under subsection (e) of this section, provided that: … the income is received from a contributory annuity, pension, endowment, or retirement system of: (A) the U.S. government or a political subdivision or instrumentality of the U.S. government; (B) this State or a political subdivision or instrumentality of this State; or (C) another state or a political subdivision or instrumentality of another state; and (2) the contributory system from which the income is received was based on earnings that were not covered by the Social Security Act. … A taxpayer of this State who is eligible during the taxable year for more than one of the exclusions under subsections (a), (b), and (c) of this section shall elect only one of the exclusions for which the taxpayer is eligible."
       }
     ],
     "volatility": "staticStatute",
@@ -1436,7 +1436,7 @@ export const northeastStateRecords = {
         "kind": "statute",
         "citation": "32 V.S.A. §5830e(d),(e)",
         "url": "https://legislature.vermont.gov/statutes/section/32/151/05830e",
-        "quotedText": "If the federal adjusted gross income of the taxpayer is less than or equal to $125,000.00, all federally taxable U.S. military retirement income and survivor benefit income shall be excluded. … If the federal adjusted gross income of the taxpayer is greater than $125,000.00 but less than $175,000.00, the percentage of federally taxable U.S. military retirement income and survivor benefit income to be excluded shall be proportional to the amount of the taxpayer’s federal adjusted gross income over $125,000.00. … If the federal adjusted gross income of the taxpayer is equal to or greater than $175,000.00, no amount of the federally taxable U.S. military retirement income and survivor benefit income received shall be excluded under this section. … A taxpayer of this State who is eligible during the taxable year for the military retirement and survivor benefit exclusion under subsection (d) of this section may elect that exclusion regardless of whether the taxpayer also elects an exclusion under subsections (a)–(c) of this section."
+        "quotedText": "If the federal adjusted gross income of the taxpayer is less than or equal to $125,000.00, all federally taxable U.S. military retirement income and survivor benefit income shall be excluded. … If the federal adjusted gross income of the taxpayer is greater than $125,000.00 but less than $175,000.00, the percentage of federally taxable U.S. military retirement income and survivor benefit income to be excluded shall be proportional to the amount of the taxpayer’s federal adjusted gross income over $125,000.00, … If the federal adjusted gross income of the taxpayer is equal to or greater than $175,000.00, no amount of the federally taxable U.S. military retirement income and survivor benefit income received shall be excluded under this section. … A taxpayer of this State who is eligible during the taxable year for the military retirement and survivor benefit exclusion under subsection (d) of this section may elect that exclusion regardless of whether the taxpayer also elects an exclusion under subsections (a)–(c) of this section."
       }
     ],
     "volatility": "staticStatute",

@@ -493,13 +493,13 @@ export const requiredMinimumDistributionRecords = {
       citation: 'IRC 401(a)(9)(H)(i)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section401&num=0&edition=prelim',
       quotedText:
-        'In the case of a defined contribution plan, if an employee dies before the distribution of the employee’s entire interest- (i) In general.-Except in the case of a beneficiary who is not a designated beneficiary, subparagraph (B)(ii)- (I) shall be applied by substituting "10 years" for "5 years", and (II) shall apply whether or not distributions of the employee’s interests have begun in accordance with subparagraph (A).',
+        'In the case of a defined contribution plan, if an employee dies before the distribution of the employee\'s entire interest- (i) In general.-Except in the case of a beneficiary who is not a designated beneficiary, subparagraph (B)(ii)- (I) shall be applied by substituting "10 years" for "5 years", and (II) shall apply whether or not distributions of the employee\'s interests have begun in accordance with subparagraph (A).',
     }, {
       kind: 'statute',
       citation: 'IRC 401(a)(9)(B)(ii)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section401&num=0&edition=prelim',
       quotedText:
-        'A trust shall not constitute a qualified trust under this section unless the plan provides that, if an employee dies before the distribution of the employee’s interest has begun in accordance with subparagraph (A)(ii), the entire interest of the employee will be distributed within 5 years after the death of such employee.',
+        'A trust shall not constitute a qualified trust under this section unless the plan provides that, if an employee dies before the distribution of the employee\'s interest has begun in accordance with subparagraph (A)(ii), the entire interest of the employee will be distributed within 5 years after the death of such employee.',
     }, {
       kind: 'statute',
       citation: 'IRC 408(a)(6)',
@@ -551,7 +551,7 @@ export const requiredMinimumDistributionRecords = {
       citation: 'Treas. Reg. 1.401(a)(9)-5(b)(1)',
       url: 'https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-5',
       quotedText:
-        'In the case of an individual account under a defined contribution plan, the benefit used in determining the required minimum distribution for a distribution calendar year is the account balance as of the last valuation date in the calendar year preceding that distribution calendar year (valuation calendar year) adjusted in accordance with this paragraph (b). For this purpose, all of an employee’s accounts under the plan are aggregated.',
+        'In the case of an individual account under a defined contribution plan, the benefit used in determining the required minimum distribution for a distribution calendar year is the account balance as of the last valuation date in the calendar year preceding that distribution calendar year (valuation calendar year) adjusted in accordance with this paragraph (b). For this purpose, all of an employee\'s accounts under the plan are aggregated.',
     }, {
       kind: 'regulation',
       citation: 'Treas. Reg. 1.401(a)(9)-5(a)(1)',
@@ -1040,7 +1040,7 @@ export const requiredMinimumDistributionRecords = {
       citation: 'IRC 401(a)(9)(H)(ii)',
       url: 'https://www.law.cornell.edu/uscode/text/26/401',
       quotedText:
-        'Exception for eligible designated beneficiaries.—Subparagraph (B)(iii) shall apply only in the case of an eligible designated beneficiary.',
+        'Exception for eligible designated beneficiaries.— Subparagraph (B)(iii) shall apply only in the case of an eligible designated beneficiary.',
     }, {
       kind: 'statute',
       citation: 'IRC 401(a)(9)(E)(iii)',
@@ -1120,7 +1120,7 @@ export const requiredMinimumDistributionRecords = {
       citation: 'IRC 4974(e)(1)',
       url: 'https://www.govinfo.gov/content/pkg/USCODE-2024-title26/html/USCODE-2024-title26-subtitleD-chap43-sec4974.htm',
       quotedText:
-        'In the case of a taxpayer who— (A) receives a distribution, during the correction window, of the amount which resulted in imposition of a tax under subsection (a) from the same plan to which such tax relates, and (B) submits a return, during the correction window, reflecting such tax (as modified by this subsection), the first sentence of subsection (a) shall be applied by substituting “10 percent” for “25 percent”.',
+        'In the case of a taxpayer who— (A) receives a distribution, during the correction window, of the amount which resulted in imposition of a tax under subsection (a) from the same plan to which such tax relates, and (B) submits a return, during the correction window, reflecting such tax (as modified by this subsection), the first sentence of subsection (a) shall be applied by substituting "10 percent" for "25 percent".',
     }, {
       kind: 'statute',
       citation: 'IRC 4974(d)',
@@ -1210,7 +1210,7 @@ export const requiredMinimumDistributionRecords = {
       citation: 'Treas. Reg. 1.401(a)(9)-6(q)(2)(ii), (q)(4)(ii)(A)',
       url: 'https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-6',
       quotedText:
-        'Dollar limitation. The dollar limitation as of a premium payment date is an amount by which $200,000 (as adjusted under paragraph (q)(4)(ii)(A) of this section), exceeds the sum of- (A) The premiums paid before that date with respect to the contract, and (B) The premiums paid on or before that date with respect to any other contract that is intended to be a QLAC and that is purchased for the employee under the plan, or any other plan, annuity, or account described in section 401(a), 403(a), 403(b), or 408 or eligible governmental plan under section 457(b). ... Dollar limitation. The $200,000 amount under paragraph (q)(2)(ii) of this section will be adjusted at the same time and in the same manner as the limits are adjusted under section 415(d), except that- (1) The base period is the calendar quarter beginning July 1, 2022; and (2) The amount of any increment to the limit that is not a multiple of $10,000 will be rounded to the next lowest multiple of $10,000.',
+        'Dollar limitation. The dollar limitation as of a premium payment date is an amount by which $200,000 (as adjusted under paragraph (q)(4)(ii)(A) of this section), exceeds the sum of— (A) The premiums paid before that date with respect to the contract, and (B) The premiums paid on or before that date with respect to any other contract that is intended to be a QLAC and that is purchased for the employee under the plan, or any other plan, annuity, or account described in section 401(a), 403(a), 403(b), or 408 or eligible governmental plan under section 457(b). ... Dollar limitation. The $200,000 amount under paragraph (q)(2)(ii) of this section will be adjusted at the same time and in the same manner as the limits are adjusted under section 415(d), except that— (1) The base period is the calendar quarter beginning July 1, 2022; and (2) The amount of any increment to the limit that is not a multiple of $10,000 will be rounded to the next lowest multiple of $10,000.',
     }, {
       kind: 'irsNotice',
       citation: 'Notice 2025-67, section on the qualifying longevity annuity contract limitation',
@@ -1430,7 +1430,7 @@ export const requiredMinimumDistributionRecords = {
       citation: 'Treas. Reg. 1.401(a)(9)-6(q)(2)(ii), (q)(4)(ii)(A)',
       url: 'https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-6',
       quotedText:
-        'Dollar limitation. The dollar limitation as of a premium payment date is an amount by which $200,000 (as adjusted under paragraph (q)(4)(ii)(A) of this section), exceeds the sum of- (A) The premiums paid before that date with respect to the contract, and (B) The premiums paid on or before that date with respect to any other contract that is intended to be a QLAC and that is purchased for the employee under the plan, or any other plan, annuity, or account described in section 401(a), 403(a), 403(b), or 408 or eligible governmental plan under section 457(b). ... Dollar limitation. The $200,000 amount under paragraph (q)(2)(ii) of this section will be adjusted at the same time and in the same manner as the limits are adjusted under section 415(d), except that- (1) The base period is the calendar quarter beginning July 1, 2022; and (2) The amount of any increment to the limit that is not a multiple of $10,000 will be rounded to the next lowest multiple of $10,000.',
+        'Dollar limitation. The dollar limitation as of a premium payment date is an amount by which $200,000 (as adjusted under paragraph (q)(4)(ii)(A) of this section), exceeds the sum of— (A) The premiums paid before that date with respect to the contract, and (B) The premiums paid on or before that date with respect to any other contract that is intended to be a QLAC and that is purchased for the employee under the plan, or any other plan, annuity, or account described in section 401(a), 403(a), 403(b), or 408 or eligible governmental plan under section 457(b). ... Dollar limitation. The $200,000 amount under paragraph (q)(2)(ii) of this section will be adjusted at the same time and in the same manner as the limits are adjusted under section 415(d), except that— (1) The base period is the calendar quarter beginning July 1, 2022; and (2) The amount of any increment to the limit that is not a multiple of $10,000 will be rounded to the next lowest multiple of $10,000.',
     }, {
       kind: 'regulation',
       citation: 'Treas. Reg. 1.401(a)(9)-5(b)(4)',

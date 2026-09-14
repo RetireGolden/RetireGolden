@@ -29,7 +29,7 @@ export const rothAccountRecords = {
       citation: 'IRC 408A(c)(2)',
       url: 'https://www.law.cornell.edu/uscode/text/26/408A',
       quotedText:
-        'The aggregate amount of contributions for any taxable year to all Roth IRAs maintained for the benefit of an individual shall not exceed the excess (if any) of - (A) the maximum amount allowable as a deduction under section 219 with respect to such individual for such taxable year (computed without regard to subsection (g) of such section), over (B) the aggregate amount of contributions for such taxable year to all other individual retirement plans (other than Roth IRAs) maintained for the benefit of the individual.',
+        'The aggregate amount of contributions for any taxable year to all Roth IRAs maintained for the benefit of an individual shall not exceed the excess (if any) of— (A) the maximum amount allowable as a deduction under section 219 with respect to such individual for such taxable year (computed without regard to subsection (g) of such section), over (B) the aggregate amount of contributions for such taxable year to all other individual retirement plans (other than Roth IRAs) maintained for the benefit of the individual.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
@@ -92,7 +92,7 @@ export const rothAccountRecords = {
       citation: 'IRC 408A(d)(2)(A)',
       url: 'https://www.law.cornell.edu/uscode/text/26/408A',
       quotedText:
-        'The term “qualified distribution” means any payment or distribution- (i) made on or after the date on which the individual attains age 59½, (ii) made to a beneficiary (or to the estate of the individual) on or after the death of the individual, (iii) attributable to the individual’s being disabled (within the meaning of section 72(m)(7)), or (iv) which is a qualified special purpose distribution.',
+        'The term “qualified distribution” means any payment or distribution— (i) made on or after the date on which the individual attains age 59½, (ii) made to a beneficiary (or to the estate of the individual) on or after the death of the individual, (iii) attributable to the individual’s being disabled (within the meaning of section 72(m)(7)), or (iv) which is a qualified special purpose distribution.',
     }, {
       kind: 'statute',
       citation: 'IRC 408A(d)(2)(B)',
@@ -132,7 +132,7 @@ export const rothAccountRecords = {
       citation: 'IRC 408A(d)(3)(F)(i)',
       url: 'https://www.law.cornell.edu/uscode/text/26/408A',
       quotedText:
-        'If- (I) any portion of a distribution from a Roth IRA is properly allocable to a qualified rollover contribution described in this paragraph; and (II) such distribution is made within the 5-taxable year period beginning with the taxable year in which such contribution was made, then section 72(t) shall be applied as if such portion were includible in gross income.',
+        'If— (I) any portion of a distribution from a Roth IRA is properly allocable to a qualified rollover contribution described in this paragraph; and (II) such distribution is made within the 5-taxable year period beginning with the taxable year in which such contribution was made, then section 72(t) shall be applied as if such portion were includible in gross income.',
     }, {
       kind: 'statute',
       citation: 'IRC 408A(d)(3)(F)(ii)',
@@ -492,7 +492,7 @@ export const rothAccountRecords = {
       citation: 'P.L. 117-328, division T, title I, section 127(e)(1)',
       url: 'https://www.govinfo.gov/content/pkg/PLAW-117publ328/pdf/PLAW-117publ328.pdf',
       quotedText:
-        'Section 402A is amended by redesignating subsection (e) as subsection (f) and by inserting after subsection (d) the following new subsection: "(e) PENSION-LINKED EMERGENCY SAVINGS ACCOUNTS.--"',
+        'Section 402A is amended by redesignating subsection (e) as subsection (f) and by inserting after subsection (d) the following new subsection: ‘‘(e) PENSION-LINKED EMERGENCY SAVINGS ACCOUNTS.—',
     }],
     volatility: 'awaitingGuidance',
     effectiveFrom: 2026,

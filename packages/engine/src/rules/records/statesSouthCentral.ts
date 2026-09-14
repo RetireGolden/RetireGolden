@@ -1196,7 +1196,7 @@ export const southCentralStateRecords = {
     }, {
       kind: 'formInstruction',
       citation: 'Kentucky Form 740 instructions, Line 10, historical $3,160 filing-status pattern (official URL labelled 2025; live HTTP 404)',
-      url: 'https://revenue.ky.gov/Forms/740%20instructions%20packet%20%282025%29.pdf',
+      url: 'https://revenue.ky.gov/Forms/740%20instructions%20packet%20%282024%29.pdf',
       quotedText:
         'Nonitemizers, enter the standard deduction of $3,160. If married filing separately on a combined return, enter $3,160 in both Columns A and B. If filing a joint return, only one $3,160 standard deduction is allowed.',
     }],
@@ -1484,7 +1484,7 @@ export const southCentralStateRecords = {
       citation: 'Alabama Department of Revenue, 2025 Form 40 booklet, Examples of Income You DO NOT Report (retirement systems)',
       url: 'https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf',
       quotedText:
-        'United States Retirement System benefits … State of Alabama Teachers Retirement System benefits … State of Alabama Employees Retirement System benefits … State of Alabama Judicial Retirement System benefits … Military retirement pay',
+        'United States Retirement System benefits … State of Alabama Teachers’ Retirement System benefits … State of Alabama Employees’ Retirement System benefits … State of Alabama Judicial Retirement System benefits … Military retirement pay',
     }, {
       kind: 'formInstruction',
       citation: 'Alabama Department of Revenue, 2025 Form 40 booklet, Pensions and Annuities — amounts not taxable',

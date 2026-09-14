@@ -333,7 +333,7 @@ export const iraBasisAndRolloverRecords = {
       citation: 'IRC 408(d)(3)(C)(ii)',
       url: 'https://www.law.cornell.edu/uscode/text/26/408',
       quotedText:
-        'An individual retirement account or individual retirement annuity shall be treated as inherited if - (I) the individual for whose benefit the account or annuity is maintained acquired such account by reason of the death of another individual, and (II) such individual was not the surviving spouse of such other individual.',
+        'An individual retirement account or individual retirement annuity shall be treated as inherited if— (I) the individual for whose benefit the account or annuity is maintained acquired such account by reason of the death of another individual, and (II) such individual was not the surviving spouse of such other individual.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
@@ -372,13 +372,13 @@ export const iraBasisAndRolloverRecords = {
       citation: 'IRC 408A(e)(1)(B)(i)',
       url: 'https://www.law.cornell.edu/uscode/text/26/408A',
       quotedText:
-        'The term “qualified rollover contribution” means a rollover contribution- (A) to a Roth IRA from another such account, (B) from an eligible retirement plan, but only if- (i) in the case of an individual retirement plan, such rollover contribution meets the requirements of section 408(d)(3), ...',
+        'The term “qualified rollover contribution” means a rollover contribution— (A) to a Roth IRA from another such account, (B) from an eligible retirement plan, but only if— (i) in the case of an individual retirement plan, such rollover contribution meets the requirements of section 408(d)(3),',
     }, {
       kind: 'statute',
       citation: 'IRC 72(t)(6)(A)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim',
       quotedText:
-        'In the case of any amount received from a simple retirement account (within the meaning of section 408(p)) during the 2-year period beginning on the date such individual first participated in any qualified salary reduction arrangement maintained by the individual’s employer under section 408(p)(2), paragraph (1) shall be applied by substituting "25 percent" for "10 percent".',
+        'In the case of any amount received from a simple retirement account (within the meaning of section 408(p)) during the 2-year period beginning on the date such individual first participated in any qualified salary reduction arrangement maintained by the individual\'s employer under section 408(p)(2), paragraph (1) shall be applied by substituting "25 percent" for "10 percent".',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,

@@ -77,7 +77,7 @@ export const medicareAndHealthCoverageRecords = {
       citation: '42 U.S.C. 1395w-113(b)(3)(B)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section1395w-113&num=0&edition=prelim',
       quotedText:
-        'For purposes of this subsection, the term "uncovered month" means, with respect to a part D eligible individual, any month beginning after the end of the initial enrollment period under section 1395w-101(b)(2) of this title unless the individual can demonstrate that the individual had creditable prescription drug coverage (as defined in paragraph (4)) for any portion of such month.',
+        'For purposes of this subsection, the term "uncovered month" means, with respect to a part D eligible individual, any month beginning after the end of the initial enrollment period under section 1395w–101(b)(2) of this title unless the individual can demonstrate that the individual had creditable prescription drug coverage (as defined in paragraph (4)) for any portion of such month.',
     }, {
       kind: 'statute',
       citation: 'P.L. 117-169, section 11201(a)(1)(A)',
@@ -101,7 +101,7 @@ export const medicareAndHealthCoverageRecords = {
       citation: 'P.L. 117-169, section 11406(a), adding 1860D-2(b)(9)(D)',
       url: 'https://www.govinfo.gov/content/pkg/PLAW-117publ169/pdf/PLAW-117publ169.pdf',
       quotedText:
-        'In this paragraph, the term `applicable copayment amount\' means, with … respect to a covered insulin product under a prescription drug plan or an … plan dispensed-- ``(i) during plan years 2023, 2024, and 2025, $35; and ``(ii) during plan year 2026 and each subsequent plan year, the lesser of-- ``(I) $35; ``(II) an amount equal to 25 percent of the maximum fair price established for the covered insulin product in accordance with part E of title XI; or ``(III) an amount equal to 25 percent of the negotiated price of the covered insulin product under the prescription drug plan or …',
+        'In this paragraph, the term ‘applicable copayment amount’ means, with … respect to a covered insulin product under a prescription drug plan or an … plan dispensed— ‘‘(i) during plan years 2023, 2024, and 2025, $35; and ‘‘(ii) during plan year 2026 and each subsequent plan year, the lesser of— ‘‘(I) $35; ‘‘(II) an amount equal to 25 percent of the maximum fair price established for the covered insulin product in accordance with part E of title XI; or ‘‘(III) an amount equal to 25 percent of the negotiated price of the covered insulin product under the prescription drug plan or …',
     }],
     volatility: 'annuallyIndexed',
     effectiveFrom: 2026,
@@ -407,7 +407,7 @@ export const medicareAndHealthCoverageRecords = {
       citation: '42 U.S.C. 1395r(i)(4)(A)(i)',
       url: 'https://www.law.cornell.edu/uscode/text/42/1395r',
       quotedText:
-        'determined without regard to sections 135, 911, 931, and 933 of such Code, and',
+        'determined without regard to sections 135, 911, 931, and 933 of such Code; and',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,

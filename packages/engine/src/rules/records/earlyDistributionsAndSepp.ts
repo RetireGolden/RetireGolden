@@ -136,7 +136,7 @@ export const earlyDistributionAndSeppRecords = {
       kind: 'statute',
       citation: 'IRC 72(t)(2)(A)(i)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim',
-      quotedText: 'Distributions which are- (i) made on or after the date on which the employee attains age 59 1/2,',
+      quotedText: 'Distributions which are- (i) made on or after the date on which the employee attains age 59½,',
     }, {
       kind: 'statute',
       citation: 'IRC 72(t)(5)',
@@ -207,7 +207,7 @@ export const earlyDistributionAndSeppRecords = {
       citation: 'IRC 72(t)(4)(A)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim',
       quotedText:
-        'If- (i) paragraph (1) does not apply to a distribution by reason of paragraph (2)(A)(iv), and (ii) the series of payments under such paragraph are subsequently modified (other than by reason of death or disability or a distribution to which paragraph (10) applies)- (I) before the close of the 5-year period beginning with the date of the first payment and after the employee attains age 59 1/2, or (II) before the employee attains age 59 1/2, the taxpayer\'s tax for the 1st taxable year in which such modification occurs shall be increased by an amount, determined under regulations, equal to the tax which (but for paragraph (2)(A)(iv)) would have been imposed, plus interest for the deferral period.',
+        'If- (i) paragraph (1) does not apply to a distribution by reason of paragraph (2)(A)(iv), and (ii) the series of payments under such paragraph are subsequently modified (other than by reason of death or disability or a distribution to which paragraph (10) applies)- (I) before the close of the 5-year period beginning with the date of the first payment and after the employee attains age 59½, or (II) before the employee attains age 59½, the taxpayer\'s tax for the 1st taxable year in which such modification occurs shall be increased by an amount, determined under regulations, equal to the tax which (but for paragraph (2)(A)(iv)) would have been imposed, plus interest for the deferral period.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
@@ -389,7 +389,7 @@ export const earlyDistributionAndSeppRecords = {
       citation: 'IRC 72(t)(1)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim',
       quotedText:
-        'If any taxpayer receives any amount from a qualified retirement plan (as defined in section 4974(c)), the taxpayer’s tax under this chapter for the taxable year in which such amount is received shall be increased by an amount equal to 10 percent of the portion of such amount which is includible in gross income.',
+        'If any taxpayer receives any amount from a qualified retirement plan (as defined in section 4974(c)), the taxpayer\'s tax under this chapter for the taxable year in which such amount is received shall be increased by an amount equal to 10 percent of the portion of such amount which is includible in gross income.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
@@ -686,7 +686,7 @@ export const earlyDistributionAndSeppRecords = {
       citation: 'IRC 72(t)(4)(A)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim',
       quotedText:
-        'If- (i) paragraph (1) does not apply to a distribution by reason of paragraph (2)(A)(iv), and (ii) the series of payments under such paragraph are subsequently modified (other than by reason of death or disability or a distribution to which paragraph (10) applies)- (I) before the close of the 5-year period beginning with the date of the first payment and after the employee attains age 59 1/2, or (II) before the employee attains age 59 1/2, the taxpayer’s tax for the 1st taxable year in which such modification occurs shall be increased by an amount, determined under regulations, equal to the tax which (but for paragraph (2)(A)(iv)) would have been imposed, plus interest for the deferral period.',
+        'If- (i) paragraph (1) does not apply to a distribution by reason of paragraph (2)(A)(iv), and (ii) the series of payments under such paragraph are subsequently modified (other than by reason of death or disability or a distribution to which paragraph (10) applies)- (I) before the close of the 5-year period beginning with the date of the first payment and after the employee attains age 59½, or (II) before the employee attains age 59½, the taxpayer\'s tax for the 1st taxable year in which such modification occurs shall be increased by an amount, determined under regulations, equal to the tax which (but for paragraph (2)(A)(iv)) would have been imposed, plus interest for the deferral period.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
@@ -945,7 +945,7 @@ export const earlyDistributionAndSeppRecords = {
       citation: 'IRC 72(t)(4)(A)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim',
       quotedText:
-        'the taxpayer’s tax for the 1st taxable year in which such modification occurs shall be increased by an amount, determined under regulations, equal to the tax which (but for paragraph (2)(A)(iv)) would have been imposed, plus interest for the deferral period.',
+        'the taxpayer\'s tax for the 1st taxable year in which such modification occurs shall be increased by an amount, determined under regulations, equal to the tax which (but for paragraph (2)(A)(iv)) would have been imposed, plus interest for the deferral period.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2023,

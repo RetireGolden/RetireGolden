@@ -150,7 +150,7 @@ export const transferAndUnmodeledRegimeRecords = {
       // The enrolled text continues immediately into section 127, so the
       // terminal U+2026 honestly discloses that omitted continuation.
       quotedText:
-        '(d) EFFECTIVE DATE.--The amendments made by this section shall apply with respect to distributions after December 31, 2023…',
+        '(d) EFFECTIVE DATE.—The amendments made by this section shall apply with respect to distributions after December 31, 2023…',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,

@@ -1115,7 +1115,7 @@ export const southAtlanticStateRecords = {
         "kind": "statute",
         "citation": "W. Va. Code §11-21-16(a),(c),(d)",
         "url": "https://code.wvlegislature.gov/11-21-16/",
-        "quotedText": "With respect to any taxable year beginning on or after January 1, 1987, said exemption shall be $2,000. … For taxable years beginning after December 31, 1986, a surviving spouse shall be allowed one additional exemption of $2,000 for the two taxable years beginning after the year of death of the deceased spouse."
+        "quotedText": "with respect to any taxable year beginning on or after January 1, 1987, said exemption shall be $2,000. … For taxable years beginning after December 31, 1986, a surviving spouse shall be allowed one additional exemption of $2,000 for the two taxable years beginning after the year of death of the deceased spouse."
       },
       {
         "kind": "statute",
