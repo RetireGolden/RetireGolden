@@ -58,7 +58,16 @@ const opts = {
   seed: 123,
 }
 
-describe('solveRiskBasedGuardrails', () => {
+// Every solving case here runs solveRiskBasedGuardrails at least once, and the
+// two-solve determinism case twice. Locally a solve takes about 3.5s; on hosted
+// CI runners under coverage the two-solve case exceeded the suite's 30s default
+// (vitest.config.ts) on three consecutive attempts for PR #711 on 2026-09-14 and
+// on two attempts for the audit branch on 2026-09-13, with every other file
+// passing. The cases are long, not hung, so the whole block carries a cap with
+// real headroom. The cost is slower hang detection for these eight tests, the
+// same trade simulate.inheritedRegimeExecution.test.ts already makes with its
+// 300s cap.
+describe('solveRiskBasedGuardrails', { timeout: 120_000 }, () => {
   it('finds dollar thresholds that reproduce the success band within tolerance', () => {
     const solution = solveRiskBasedGuardrails(basePlan(), opts)
 
@@ -81,18 +90,14 @@ describe('solveRiskBasedGuardrails', () => {
   })
 
 
-  // Two full solves back to back, and the slowest case in this file: 7s on a
-  // developer machine, 14.5s on a CI runner under coverage when first measured,
-  // and over 30s on three consecutive hosted runners on 2026-09-14 (and twice
-  // on 2026-09-13), which failed the suite's 30s default (vitest.config.ts)
-  // on pull requests that touched no Monte Carlo code. The case is legitimately
-  // long, not hung, so it carries its own cap with real headroom instead of
-  // relying on the shared default.
+  // Two full solves back to back: the slowest case in this file, and the one
+  // that timed out first when the hosted runners slowed down (see the block
+  // comment above).
   it('is deterministic for the same plan, seed, and model', () => {
     const a = solveRiskBasedGuardrails(basePlan(), opts)
     const b = solveRiskBasedGuardrails(basePlan(), opts)
     expect(b).toEqual(a)
-  }, 120_000)
+  })
 
   it('honors the band configured on the plan spending policy', () => {
     const plan = basePlan()
