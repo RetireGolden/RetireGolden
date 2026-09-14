@@ -338,7 +338,7 @@ export const contributionAndDeferralLimitRecords = {
       citation: 'IRC 219(b)(1)',
       url: 'https://www.law.cornell.edu/uscode/text/26/219',
       quotedText:
-        'shall not exceed the lesser of - (A) the deductible amount, or (B) an amount equal to the compensation includible in the individual’s gross income for such taxable year.',
+        'shall not exceed the lesser of— (A) the deductible amount, or (B) an amount equal to the compensation includible in the individual’s gross income for such taxable year.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
@@ -1631,7 +1631,7 @@ export const contributionAndDeferralLimitRecords = {
       citation: 'P.L. 117-328, division T, title I, section 103(a), (f)',
       url: 'https://www.govinfo.gov/content/pkg/PLAW-117publ328/pdf/PLAW-117publ328.pdf',
       quotedText:
-        'SEC. 103. SAVER\'S MATCH. (a) IN GENERAL.--Subchapter B of chapter 65 is amended by adding at the end the following new section: "SEC. 6433. SAVER\'S MATCH." ... The amendments made by this section shall apply to taxable years beginning after December 31, 2026.',
+        'SEC. 103. SAVER\'S MATCH. (a) IN GENERAL.—Subchapter B of chapter 65 is amended by adding at the end the following new section: ‘‘SEC. 6433. SAVER\'S MATCH. ... The amendments made by this section shall apply to taxable years beginning after December 31, 2026.',
     }, {
       kind: 'irsNotice',
       citation: 'IRS Notice 2026-48, section I',

@@ -345,7 +345,10 @@ const wordsOnly = (s) =>
     .replace(/[^a-z0-9]+/g, ' ')
     .trim()
 
-const collapse = (s) => s.replace(/\s+/gu, ' ').trim()
+// Whitespace immediately before , ; : ) is a host rendering artifact (uscode.house.gov
+// and malegislature.gov emit it when an element boundary precedes the mark), never
+// statutory content, so the baseline every rung shares removes it on both sides.
+const collapse = (s) => s.replace(/\s+/gu, ' ').replace(/ ([,;:)])/gu, '$1').trim()
 
 /** Zero-width and soft-hyphen characters, which are invisible in both texts. */
 const INVISIBLE = /\u00ad|\u200b|\u200c|\u200d|\ufeff/g

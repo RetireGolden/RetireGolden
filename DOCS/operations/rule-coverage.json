@@ -818,18 +818,18 @@
     }
   ],
   "quoteFidelity": {
-    "generatedAt": "2026-09-12T22:53:52.267Z",
+    "generatedAt": "2026-09-14T12:59:25.010Z",
     "entryCount": 1529,
-    "fetched": 14,
-    "cached": 416,
+    "fetched": 0,
+    "cached": 430,
     "counts": {
-      "ELISION-EXACT": 109,
-      "ELISION-PUNCTUATION": 9,
-      "EXACT": 967,
-      "PDF-NOT-VERIFIABLE": 7,
-      "PDF-WORD-LEVEL": 339,
-      "PUNCTUATION": 48,
-      "UNFETCHABLE": 50
+      "ELISION-EXACT": 125,
+      "ELISION-PUNCTUATION": 1,
+      "EXACT": 1046,
+      "PDF-NOT-VERIFIABLE": 1,
+      "PDF-WORD-LEVEL": 347,
+      "PUNCTUATION": 4,
+      "UNFETCHABLE": 5
     }
   }
 }

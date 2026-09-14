@@ -225,7 +225,7 @@ export const annuityRecords = {
       citation: 'IRC 402(c)(1)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402&num=0&edition=prelim',
       quotedText:
-        'If— (A) any portion of the balance to the credit of an employee in a qualified trust is paid to the employee in an eligible rollover distribution, (B) the distributee transfers any portion of the property received in such distribution to an eligible retirement plan, … then such distribution (to the extent so transferred) shall not be includible in gross income for the taxable year in which paid.',
+        'If- (A) any portion of the balance to the credit of an employee in a qualified trust is paid to the employee in an eligible rollover distribution, (B) the distributee transfers any portion of the property received in such distribution to an eligible retirement plan, … then such distribution (to the extent so transferred) shall not be includible in gross income for the taxable year in which paid.',
     }, {
       kind: 'statute',
       citation: 'IRC 402(c)(4)',
@@ -237,13 +237,13 @@ export const annuityRecords = {
       citation: 'IRC 402(c)(8)(A)-(B)(i)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section402&num=0&edition=prelim',
       quotedText:
-        'The term "qualified trust" means an employees\' trust described in section 401(a) which is exempt from tax under section 501(a). … The term "eligible retirement plan" means— (i) an individual retirement account described in section 408(a),',
+        'The term "qualified trust" means an employees\' trust described in section 401(a) which is exempt from tax under section 501(a). … The term "eligible retirement plan" means- (i) an individual retirement account described in section 408(a),',
     }, {
       kind: 'statute',
       citation: 'IRC 401(a)(31)(A)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section401&num=0&edition=prelim',
       quotedText:
-        'A trust shall not constitute a qualified trust under this section unless the plan of which such trust is a part provides that if the distributee of any eligible rollover distribution— (i) elects to have such distribution paid directly to an eligible retirement plan, and (ii) specifies the eligible retirement plan to which such distribution is to be paid (in such form and at such time as the plan administrator may prescribe), such distribution shall be made in the form of a direct trustee-to-trustee transfer to the eligible retirement plan so specified.',
+        'A trust shall not constitute a qualified trust under this section unless the plan of which such trust is a part provides that if the distributee of any eligible rollover distribution- (i) elects to have such distribution paid directly to an eligible retirement plan, and (ii) specifies the eligible retirement plan to which such distribution is to be paid (in such form and at such time as the plan administrator may prescribe), such distribution shall be made in the form of a direct trustee-to-trustee transfer to the eligible retirement plan so specified.',
     }, {
       kind: 'statute',
       citation: 'IRC 402(e)(6)',

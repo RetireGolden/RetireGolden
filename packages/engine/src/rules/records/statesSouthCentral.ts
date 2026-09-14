@@ -1180,12 +1180,12 @@ export const southCentralStateRecords = {
   'ky-dor-2026-standard-deduction-once-per-return': {
     title: 'Kentucky’s TY2026 standard deduction is $3,360 once per return, including MFJ',
     statement:
-      'Kentucky Department of Revenue publishes a $3,360 standard deduction for tax year 2026. An MFJ production scenario computes one joint Kentucky return and receives that amount once — not a doubled spouse-count figure. The latest full-year Form 740 filing-status pattern (TY2025 instructions, amount updated for 2026) allows only one standard deduction on a joint return. The pack encodes `standardDeduction: { single: 3360, marriedFilingJointly: 3360 }`.',
+      'Kentucky Department of Revenue publishes a $3,360 standard deduction for tax year 2026. An MFJ production scenario computes one joint Kentucky return and receives that amount once — not a doubled spouse-count figure. The latest published Form 740 filing-status pattern (TY2024 instructions packet, 42A740(PKT) (10-24); amount updated for 2026 from the DOR announcement) allows only one standard deduction on a joint return. The pack encodes `standardDeduction: { single: 3360, marriedFilingJointly: 3360 }`.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'Explicit design assumption: MFJ is one joint return. Confirm on the TY2026 Form 740 when published. Historical Form 740 quotation is preserved in the official-site search index, but its live URL returned HTTP 404 on 2026-09-12. Its $3,160 amount corresponds to TY2024, despite the URL containing 2025; it supports only the filing-status pattern, not the TY2026 amount.',
+      'Explicit design assumption: MFJ is one joint return. Confirm on the TY2026 Form 740 when published. The TY2024 instructions packet (42A740(PKT) (10-24)) is the latest published Form 740 instruction set as of 2026-09-14; its $3,160 amount is the TY2024 figure and supports only the filing-status pattern, not the TY2026 amount.',
     jurisdiction: 'state:KY',
     authority: [{
       kind: 'stateAgencyPublication',
@@ -1195,8 +1195,8 @@ export const southCentralStateRecords = {
         'After adjusting for inflation, the standard deduction for 2026 is $3,360, an increase of $90. This amount will be incorporated into 2026 tax forms and should be used for tax planning in the new year.',
     }, {
       kind: 'formInstruction',
-      citation: 'Kentucky Form 740 instructions, Line 10, historical $3,160 filing-status pattern (official URL labelled 2025; live HTTP 404)',
-      url: 'https://revenue.ky.gov/Forms/740%20instructions%20packet%20%282025%29.pdf',
+      citation: 'Kentucky Form 740 instructions packet, TY2024 (42A740(PKT) (10-24)), Line 10, $3,160 filing-status pattern',
+      url: 'https://revenue.ky.gov/Forms/740%20instructions%20packet%20%282024%29.pdf',
       quotedText:
         'Nonitemizers, enter the standard deduction of $3,160. If married filing separately on a combined return, enter $3,160 in both Columns A and B. If filing a joint return, only one $3,160 standard deduction is allowed.',
     }],
@@ -1484,7 +1484,7 @@ export const southCentralStateRecords = {
       citation: 'Alabama Department of Revenue, 2025 Form 40 booklet, Examples of Income You DO NOT Report (retirement systems)',
       url: 'https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf',
       quotedText:
-        'United States Retirement System benefits … State of Alabama Teachers Retirement System benefits … State of Alabama Employees Retirement System benefits … State of Alabama Judicial Retirement System benefits … Military retirement pay',
+        'United States Retirement System benefits … State of Alabama Teachers’ Retirement System benefits … State of Alabama Employees’ Retirement System benefits … State of Alabama Judicial Retirement System benefits … Military retirement pay',
     }, {
       kind: 'formInstruction',
       citation: 'Alabama Department of Revenue, 2025 Form 40 booklet, Pensions and Annuities — amounts not taxable',

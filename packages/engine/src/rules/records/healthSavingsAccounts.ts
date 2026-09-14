@@ -116,7 +116,7 @@ export const healthSavingsAccountRecords = {
       kind: 'statute',
       citation: 'IRC 72(t)(2)(A)(i), drafting contrast',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section72&num=0&edition=prelim',
-      quotedText: 'made on or after the date on which the employee attains age 59 1/2',
+      quotedText: 'made on or after the date on which the employee attains age 59½',
     }, {
       kind: 'formInstruction',
       citation: 'Instructions for Form 8889, line 17b',
@@ -440,7 +440,7 @@ export const healthSavingsAccountRecords = {
       citation: 'IRS Notice 2004-2, A-26',
       url: 'https://www.irs.gov/irb/2004-02_IRB',
       quotedText:
-        'The term "qualified medical expenses" are expenses paid by the account beneficiary, his or her spouse or dependents for medical care as defined in section 213(d) (including nonprescription drugs as described in Rev. Rul. 2003-102, 2003-38 I.R.B. 559), but only to the extent the expenses are not covered by insurance or otherwise.',
+        'The term “qualified medical expenses” are expenses paid by the account beneficiary, his or her spouse or dependents for medical care as defined in section 213(d) (including nonprescription drugs as described in Rev. Rul. 2003-102, 2003-38 I.R.B. 559), but only to the extent the expenses are not covered by insurance or otherwise.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,

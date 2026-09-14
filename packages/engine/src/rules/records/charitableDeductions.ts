@@ -188,7 +188,7 @@ export const charitableDeductionRecords = {
       citation: 'IRC 170(d)(1)(C)(ii)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim',
       quotedText:
-        'For purposes of this subparagraph, the term “carryover rule” means— (I) subparagraph (A) of this paragraph, (II) subparagraphs (C)(ii), (D)(ii), (E)(ii), and (G)(ii) of subsection (b)(1), and (III) the second sentence of subsection (b)(1)(B).',
+        'For purposes of this subparagraph, the term "carryover rule" means- (I) subparagraph (A) of this paragraph, (II) subparagraphs (C)(ii), (D)(ii), (E)(ii), and (G)(ii) of subsection (b)(1), and (III) the second sentence of subsection (b)(1)(B).',
     }],
     volatility: 'awaitingGuidance',
     effectiveFrom: 2026,

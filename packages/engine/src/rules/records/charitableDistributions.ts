@@ -233,13 +233,13 @@ export const charitableDistributionRecords = {
       citation: 'IRC 408(d)(8)(B)(ii)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim',
       quotedText:
-        'which is made on or after the date that the individual for whose benefit the plan is maintained has attained age 70 1/2.',
+        'which is made on or after the date that the individual for whose benefit the plan is maintained has attained age 70½.',
     }, {
       kind: 'regulation',
       citation: 'Treas. Reg. 1.401(a)(9)-6(g)(1)(iv) (relocated from 1.401(a)(9)-2 A-3 by T.D. 10001)',
       url: 'https://www.law.cornell.edu/cfr/text/26/1.401(a)(9)-6',
       quotedText:
-        'An employee attains age 70 1/2 as of the date six calendar months after the 70th anniversary of the employee’s birth.',
+        'An employee attains age 70 1/2 as of the date six calendar months after the 70th anniversary of the employee\'s birth.',
     }, {
       kind: 'irsPublication',
       citation: 'IRS Publication 575 (2019)',
@@ -747,7 +747,7 @@ export const charitableDistributionRecords = {
       citation: 'IRC 408(d)(8)(A), flush sentence',
       url: 'https://www.law.cornell.edu/uscode/text/26/408',
       quotedText:
-        'The amount of distributions not includible in gross income by reason of the preceding sentence for a taxable year (determined without regard to this sentence) shall be reduced (but not below zero) by an amount equal to the excess of - (i) the aggregate amount of deductions allowed to the taxpayer under section 219 for all taxable years ending on or after the date the taxpayer attains age 70 1/2, over (ii) the aggregate amount of reductions under this sentence for all taxable years preceding the current taxable year.',
+        'The amount of distributions not includible in gross income by reason of the preceding sentence for a taxable year (determined without regard to this sentence) shall be reduced (but not below zero) by an amount equal to the excess of— (i) the aggregate amount of deductions allowed to the taxpayer under section 219 for all taxable years ending on or after the date the taxpayer attains age 70½, over (ii) the aggregate amount of reductions under this sentence for all taxable years preceding the current taxable year.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
@@ -785,7 +785,7 @@ export const charitableDistributionRecords = {
       citation: 'Treas. Reg. 1.401(a)(9)-6(g)(1)(iv)',
       url: 'https://www.ecfr.gov/current/title-26/section-1.401(a)(9)-6',
       quotedText:
-        'An employee attains age 70 1/2 as of the date six calendar months after the 70th anniversary of the employee’s birth.',
+        'An employee attains age 70 1/2 as of the date six calendar months after the 70th anniversary of the employee\'s birth.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
@@ -938,7 +938,7 @@ export const charitableDistributionRecords = {
       citation: 'IRC 408(d)(8)(A), both sentences',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408&num=0&edition=prelim',
       quotedText:
-        'So much of the aggregate amount of qualified charitable distributions with respect to a taxpayer made during any taxable year which does not exceed $100,000 shall not be includible in gross income of such taxpayer for such taxable year. The amount of distributions not includible in gross income by reason of the preceding sentence for a taxable year (determined without regard to this sentence) shall be reduced (but not below zero) by an amount equal to the excess of - (i) the aggregate amount of deductions allowed to the taxpayer under section 219 for all taxable years ending on or after the date the taxpayer attains age 70 1/2, over (ii) the aggregate amount of reductions under this sentence for all taxable years preceding the current taxable year.',
+        'So much of the aggregate amount of qualified charitable distributions with respect to a taxpayer made during any taxable year which does not exceed $100,000 shall not be includible in gross income of such taxpayer for such taxable year. The amount of distributions not includible in gross income by reason of the preceding sentence for a taxable year (determined without regard to this sentence) shall be reduced (but not below zero) by an amount equal to the excess of- (i) the aggregate amount of deductions allowed to the taxpayer under section 219 for all taxable years ending on or after the date the taxpayer attains age 70½, over (ii) the aggregate amount of reductions under this sentence for all taxable years preceding the current taxable year.',
     }, {
       kind: 'statute',
       citation: 'IRC 408(d)(8)(B), flush sentence',

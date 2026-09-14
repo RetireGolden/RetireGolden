@@ -20,6 +20,12 @@ mode, with no checker, covered in [authority-sufficiency.md](authority-sufficien
 everything on this page and still be evidence for a claim the record does not make, or no evidence for the
 claim it does.
 
+PDF verdicts depend on the `pdftotext` binary on `PATH`. Git for Windows ships xpdf 4.00 under
+`mingw64/bin`, which emits `--` and backtick quotes where poppler 25.07 emits the typeset glyphs; about
+twenty PDF rows flip between `PDF-WORD-LEVEL` and `PDF-NOT-VERIFIABLE` depending on which one runs. The
+committed ledger is produced with poppler 25.07.0; run the verifier from a shell that resolves that
+binary before committing a regenerated ledger.
+
 ```bash
 pnpm verify:quotes                         # from the repo root
 pnpm --filter @retiregolden/engine verify:quotes

@@ -658,8 +658,8 @@
       "volatility": "annuallyIndexed",
       "effectiveFrom": 2020,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-05",
-      "dueOn": "2026-12-03",
+      "verifiedOn": "2026-09-14",
+      "dueOn": "2027-01-12",
       "implementedBy": [
         "packages/engine/src/params/state/data/year2026.ts",
         "packages/engine/src/params/state/index.ts",

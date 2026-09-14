@@ -376,7 +376,7 @@ export const individualIncomeTaxRecords = {
       citation: 'IRC 56(b)(1)(D)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section56&num=0&edition=prelim',
       quotedText:
-        'Standard deduction and deduction for personal exemptions not allowed. The standard deduction under section 63(c), the deduction for personal exemptions under section 151, and the deduction under section 642(b) shall not be allowed.',
+        'Standard deduction and deduction for personal exemptions not allowed … The standard deduction under section 63(c), the deduction for personal exemptions under section 151, and the deduction under section 642(b) shall not be allowed.',
     }, {
       kind: 'statute',
       citation: 'IRC 63(b)(2)',

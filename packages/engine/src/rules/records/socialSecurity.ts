@@ -36,13 +36,13 @@ export const socialSecurityRecords = {
       citation: 'IRC 86(a)(2)',
       url: 'https://www.law.cornell.edu/uscode/text/26/86',
       quotedText:
-        'the amount included in gross income under this section shall be equal to the lesser of - (A) the sum of - (i) 85 percent of such excess, plus (ii) the lesser of the amount determined under paragraph (1) or an amount equal to one-half of the difference between the adjusted base amount and the base amount of the taxpayer, or (B) 85 percent of the social security benefits received during the taxable year.',
+        'the amount included in gross income under this section shall be equal to the lesser of— (A) the sum of— (i) 85 percent of such excess, plus (ii) the lesser of the amount determined under paragraph (1) or an amount equal to one-half of the difference between the adjusted base amount and the base amount of the taxpayer, or (B) 85 percent of the social security benefits received during the taxable year.',
     }, {
       kind: 'statute',
       citation: 'IRC 86(b)(2)',
       url: 'https://www.law.cornell.edu/uscode/text/26/86',
       quotedText:
-        'adjusted gross income - (A) determined without regard to this section and sections 85(c), 135, 137, 221, 911, 931, and 933, and (B) increased by the amount of interest received or accrued by the taxpayer during the taxable year which is exempt from tax.',
+        'adjusted gross income— (A) determined without regard to this section and sections 85(c), 135, 137, 221, 911, 931, and 933, and (B) increased by the amount of interest received or accrued by the taxpayer during the taxable year which is exempt from tax.',
     }, {
       kind: 'statute',
       citation: 'IRC 86(c)',
@@ -520,7 +520,7 @@ export const socialSecurityRecords = {
       // The enrolled text continues immediately into subsection (b), so the
       // terminal U+2026 honestly discloses that omitted continuation.
       quotedText:
-        'Section 215 of the Social Security Act (42 U.S.C. 415) is amended-- (1) in subsection (a), by striking paragraph (7); (2) in subsection (d), by striking paragraph (3); and (3) in subsection (f), by striking paragraph (9)…',
+        'Section 215 of the Social Security Act (42 U.S.C. 415) is amended— (1) in subsection (a), by striking paragraph (7); (2) in subsection (d), by striking paragraph (3); and (3) in subsection (f), by striking paragraph (9)…',
     }, {
       kind: 'statute',
       citation: 'P.L. 118-273, § 4',

@@ -246,7 +246,7 @@ export const westStateRecords = {
   'ars-43-1041-standard-deduction-published-amount': {
     title: 'Arizona’s standard deduction is its own amount, indexed in the federal manner',
     statement:
-      'A.R.S. 43-1041(A) prescribes Arizona’s own standard deductions, and 43-1041(H) directs the department to adjust those amounts for inflation "in the same manner in which" the federal basic standard deduction is adjusted under IRC 63. That is a borrowed method, not an incorporated amount: no provision of Title 43 says the Arizona deduction equals the federal one, and 43-105(A) excludes from Arizona’s conformity any change to the Code enacted after January 1, 2025. The pack therefore carries Arizona’s published figures — $15,750 single and $31,500 joint for 2025, the most recent the department has published — with NO `standardDeductionConformity` tag, which is also what keeps the federal age-65 additional standard deduction off the Arizona base, since Arizona grants no such addition. Arizona was tagged `federal` until 2026-08-05; the published amounts have in fact equalled the federal basic deduction in every year checked, but that is administrative practice rather than Arizona law, and the tag was importing a federal age-65 amount alongside it.',
+      'A.R.S. 43-1041(A) prescribes Arizona’s own standard deductions, and 43-1041(H) directs the department to adjust those amounts for inflation "in the same manner in which" the federal basic standard deduction is adjusted under IRC 63. That is a borrowed method, not an incorporated amount: no provision of Title 43 says the Arizona deduction equals the federal one, and 43-105(A) excludes from Arizona’s conformity any change to the Code enacted after January 1, 2026 (for taxable years beginning after December 31, 2025). The pack therefore carries Arizona’s published figures — $15,750 single and $31,500 joint for 2025, the most recent the department has published — with NO `standardDeductionConformity` tag, which is also what keeps the federal age-65 additional standard deduction off the Arizona base, since Arizona grants no such addition. Arizona was tagged `federal` until 2026-08-05; the published amounts have in fact equalled the federal basic deduction in every year checked, but that is administrative practice rather than Arizona law, and the tag was importing a federal age-65 amount alongside it.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -257,7 +257,7 @@ export const westStateRecords = {
       citation: 'A.R.S. 43-1041(A)(1)',
       url: 'https://www.azleg.gov/ars/43/01041.htm',
       quotedText:
-        'In the case of a single person or a married person filing separately, the standard deduction is $12,200, subject to subsection H of this section.',
+        'In the case of a single person or a married person filing separately, the standard deduction is $15,750, subject to subsection H of this section.',
     }, {
       kind: 'statute',
       citation: 'A.R.S. 43-1041(H)',
@@ -269,7 +269,7 @@ export const westStateRecords = {
       citation: 'A.R.S. 43-105(A)',
       url: 'https://www.azleg.gov/ars/43/00105.htm',
       quotedText:
-        'For the purposes of computing income tax pursuant to this title, for taxable years beginning from and after December 31, 2024, "internal revenue code" means the United States internal revenue code of 1986, as amended, in effect on January 1, 2025, including those provisions that became effective during 2024 with the specific adoption of all retroactive effective dates, but excluding any changes to the code enacted after January 1, 2025.',
+        'For the purposes of computing income tax pursuant to this title, for taxable years beginning from and after December 31, 2025, "internal revenue code" means the United States internal revenue code of 1986, as amended, in effect on January 1, 2026, including those provisions that became effective during 2025 with the specific adoption of all retroactive effective dates, but excluding any changes to the code enacted after January 1, 2026.',
     }, {
       // The published dollar amounts, from the short form's own deduction line
       // rather than from the booklet's "What's New" bullet list, which reflows
@@ -286,7 +286,7 @@ export const westStateRecords = {
     volatility: 'annuallyIndexed',
     effectiveFrom: 2020,
     effectiveThrough: null,
-    verifiedOn: '2026-08-05',
+    verifiedOn: '2026-09-14',
     implementedBy: [
       'packages/engine/src/params/state/data/year2026.ts',
       'packages/engine/src/params/state/index.ts',
