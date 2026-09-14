@@ -296,7 +296,7 @@ export const iraBasisAndRolloverRecords = {
       citation: 'IRC 408A(e)(1), clause (B)(i)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section408A&num=0&edition=prelim',
       quotedText:
-        'The term "qualified rollover contribution" means a rollover contribution- (A) to a Roth IRA from another such account, (B) from an eligible retirement plan, but only if- (i) in the case of an individual retirement plan, such rollover contribution meets the requirements of section 408(d)(3),',
+        'The term "qualified rollover contribution" means a rollover contribution- (A) to a Roth IRA from another such account, (B) from an eligible retirement plan, but only if- (i) in the case of an individual retirement plan, such rollover contribution meets the requirements of section 408(d)(3), …',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
@@ -372,7 +372,7 @@ export const iraBasisAndRolloverRecords = {
       citation: 'IRC 408A(e)(1)(B)(i)',
       url: 'https://www.law.cornell.edu/uscode/text/26/408A',
       quotedText:
-        'The term “qualified rollover contribution” means a rollover contribution— (A) to a Roth IRA from another such account, (B) from an eligible retirement plan, but only if— (i) in the case of an individual retirement plan, such rollover contribution meets the requirements of section 408(d)(3),',
+        'The term “qualified rollover contribution” means a rollover contribution— (A) to a Roth IRA from another such account, (B) from an eligible retirement plan, but only if— (i) in the case of an individual retirement plan, such rollover contribution meets the requirements of section 408(d)(3), …',
     }, {
       kind: 'statute',
       citation: 'IRC 72(t)(6)(A)',

@@ -40,7 +40,7 @@ export const charitableDeductionRecords = {
       citation: 'IRC 170, Editorial Notes, Effective Date of 2025 Amendment, Pub. L. 119-21, sec. 70425(c)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim',
       quotedText:
-        'Pub. L. 119–21, title VII, §70425(c), July 4, 2025, 139 Stat. 237 , provided that: "The amendments made by this section [amending this section] shall apply to taxable years beginning after December 31, 2025."',
+        'Pub. L. 119–21, title VII, §70425(c), July 4, 2025, 139 Stat. 237, provided that: "The amendments made by this section [amending this section] shall apply to taxable years beginning after December 31, 2025."',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
@@ -78,7 +78,7 @@ export const charitableDeductionRecords = {
       citation: 'IRC 170, Editorial Notes, Effective Date of 2025 Amendment, Pub. L. 119-21, sec. 70425(c)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim',
       quotedText:
-        'Pub. L. 119–21, title VII, §70425(c), July 4, 2025, 139 Stat. 237 , provided that: "The amendments made by this section [amending this section] shall apply to taxable years beginning after December 31, 2025."',
+        'Pub. L. 119–21, title VII, §70425(c), July 4, 2025, 139 Stat. 237, provided that: "The amendments made by this section [amending this section] shall apply to taxable years beginning after December 31, 2025."',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
@@ -116,7 +116,7 @@ export const charitableDeductionRecords = {
       citation: 'IRC 170, Editorial Notes, Effective Date of 2025 Amendment, Pub. L. 119-21, sec. 70425(c)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim',
       quotedText:
-        'Pub. L. 119–21, title VII, §70425(c), July 4, 2025, 139 Stat. 237 , provided that: "The amendments made by this section [amending this section] shall apply to taxable years beginning after December 31, 2025."',
+        'Pub. L. 119–21, title VII, §70425(c), July 4, 2025, 139 Stat. 237, provided that: "The amendments made by this section [amending this section] shall apply to taxable years beginning after December 31, 2025."',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
@@ -149,7 +149,7 @@ export const charitableDeductionRecords = {
       citation: 'IRC 170, Editorial Notes, Effective Date of 2025 Amendment, Pub. L. 119-21, sec. 70425(c)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim',
       quotedText:
-        'Pub. L. 119–21, title VII, §70425(c), July 4, 2025, 139 Stat. 237 , provided that: "The amendments made by this section [amending this section] shall apply to taxable years beginning after December 31, 2025."',
+        'Pub. L. 119–21, title VII, §70425(c), July 4, 2025, 139 Stat. 237, provided that: "The amendments made by this section [amending this section] shall apply to taxable years beginning after December 31, 2025."',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
@@ -328,7 +328,7 @@ export const charitableDeductionRecords = {
       citation: 'IRC 170, Editorial Notes, Effective Date of 2025 Amendment, Pub. L. 119-21, sec. 70425(c)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim',
       quotedText:
-        'Pub. L. 119–21, title VII, §70425(c), July 4, 2025, 139 Stat. 237 , provided that: "The amendments made by this section [amending this section] shall apply to taxable years beginning after December 31, 2025."',
+        'Pub. L. 119–21, title VII, §70425(c), July 4, 2025, 139 Stat. 237, provided that: "The amendments made by this section [amending this section] shall apply to taxable years beginning after December 31, 2025."',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
@@ -554,7 +554,7 @@ export const charitableDeductionRecords = {
       citation: 'IRC 170, Editorial Notes, Effective Date of 2025 Amendment, Pub. L. 119-21, sec. 70425(c)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section170&num=0&edition=prelim',
       quotedText:
-        'Pub. L. 119–21, title VII, §70425(c), July 4, 2025, 139 Stat. 237 , provided that: "The amendments made by this section [amending this section] shall apply to taxable years beginning after December 31, 2025."',
+        'Pub. L. 119–21, title VII, §70425(c), July 4, 2025, 139 Stat. 237, provided that: "The amendments made by this section [amending this section] shall apply to taxable years beginning after December 31, 2025."',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2018,

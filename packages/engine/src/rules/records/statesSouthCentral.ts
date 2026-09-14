@@ -1185,7 +1185,7 @@ export const southCentralStateRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'Explicit design assumption: MFJ is one joint return. Confirm on the TY2026 Form 740 when published. Historical Form 740 quotation is preserved in the official-site search index, but its live URL returned HTTP 404 on 2026-09-12. Its $3,160 amount corresponds to TY2024, despite the URL containing 2025; it supports only the filing-status pattern, not the TY2026 amount.',
+      'Explicit design assumption: MFJ is one joint return. Confirm on the TY2026 Form 740 when published. The TY2024 instructions packet (42A740(PKT) (10-24)) is the latest published Form 740 instruction set as of 2026-09-14; its $3,160 amount is the TY2024 figure and supports only the filing-status pattern, not the TY2026 amount.',
     jurisdiction: 'state:KY',
     authority: [{
       kind: 'stateAgencyPublication',
@@ -1195,7 +1195,7 @@ export const southCentralStateRecords = {
         'After adjusting for inflation, the standard deduction for 2026 is $3,360, an increase of $90. This amount will be incorporated into 2026 tax forms and should be used for tax planning in the new year.',
     }, {
       kind: 'formInstruction',
-      citation: 'Kentucky Form 740 instructions, Line 10, historical $3,160 filing-status pattern (official URL labelled 2025; live HTTP 404)',
+      citation: 'Kentucky Form 740 instructions packet, TY2024 (42A740(PKT) (10-24)), Line 10, $3,160 filing-status pattern',
       url: 'https://revenue.ky.gov/Forms/740%20instructions%20packet%20%282024%29.pdf',
       quotedText:
         'Nonitemizers, enter the standard deduction of $3,160. If married filing separately on a combined return, enter $3,160 in both Columns A and B. If filing a joint return, only one $3,160 standard deduction is allowed.',
