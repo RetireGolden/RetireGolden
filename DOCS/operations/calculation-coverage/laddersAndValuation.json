@@ -7,7 +7,8 @@
       "id": "fedinvest-csv-tips-parsing",
       "title": "FedInvest security-price CSV: TIPS rows to reference records",
       "kind": "data",
-      "outputs": [
+      "outputs": [],
+      "feeds": [
         "ladder-rung-cost"
       ],
       "justificationKind": "dataset",
@@ -21,13 +22,22 @@
       },
       "fixtureFiles": [
         "packages/engine/src/ladder/fedInvest.evidence.test.ts"
-      ]
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
     },
     {
       "id": "fedinvest-latest-price-date",
       "title": "Latest FedInvest price date: previous business day in local time",
       "kind": "model",
-      "outputs": [
+      "outputs": [],
+      "feeds": [
         "ladder-rung-cost"
       ],
       "justificationKind": "derivation",
@@ -41,13 +51,22 @@
       },
       "fixtureFiles": [
         "packages/engine/src/ladder/fedInvest.evidence.test.ts"
-      ]
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
     },
     {
       "id": "fedinvest-nearest-tips-maturity",
       "title": "Nearest FedInvest TIPS for a rung year",
       "kind": "formula",
-      "outputs": [
+      "outputs": [],
+      "feeds": [
         "ladder-rung-cost"
       ],
       "justificationKind": "derivation",
@@ -61,7 +80,15 @@
       },
       "fixtureFiles": [
         "packages/engine/src/ladder/fedInvest.evidence.test.ts"
-      ]
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
     },
     {
       "id": "funded-ratio-hand-present-value",
@@ -73,6 +100,7 @@
         "funded-ratio-result-funded-ratio-pct",
         "funded-ratio-result-unfunded-pv"
       ],
+      "feeds": [],
       "justificationKind": "derivation",
       "implementedBy": [
         "packages/engine/src/ladder/fundedRatio.ts"
@@ -84,7 +112,15 @@
       },
       "fixtureFiles": [
         "packages/engine/src/ladder/fundedRatio.evidence.test.ts"
-      ]
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
     },
     {
       "id": "ladder-annual-coupon-par-pricing",
@@ -92,7 +128,9 @@
       "kind": "formula",
       "outputs": [
         "ladder-rung-cost",
-        "ladder-rung-coupon-rate-pct",
+        "ladder-rung-coupon-rate-pct"
+      ],
+      "feeds": [
         "ladder-build-total-cost"
       ],
       "justificationKind": "derivation",
@@ -106,7 +144,15 @@
       },
       "fixtureFiles": [
         "packages/engine/src/ladder/ladderMath.evidence.test.ts"
-      ]
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
     },
     {
       "id": "ladder-backward-face-construction",
@@ -118,6 +164,7 @@
         "ladder-build-total-cost",
         "ladder-build-target-annual-real-income"
       ],
+      "feeds": [],
       "justificationKind": "derivation",
       "implementedBy": [
         "packages/engine/src/ladder/ladderMath.ts"
@@ -129,13 +176,22 @@
       },
       "fixtureFiles": [
         "packages/engine/src/ladder/ladderMath.evidence.test.ts"
-      ]
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
     },
     {
       "id": "ladder-real-present-value",
       "title": "Real present value of a cash-flow stream on the TIPS curve",
       "kind": "formula",
-      "outputs": [
+      "outputs": [],
+      "feeds": [
         "funded-ratio-result-essential-spending-pv",
         "funded-ratio-result-guaranteed-income-pv",
         "funded-ratio-result-funded-ratio-pct",
@@ -153,13 +209,22 @@
       },
       "fixtureFiles": [
         "packages/engine/src/ladder/ladderMath.evidence.test.ts"
-      ]
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
     },
     {
       "id": "ladder-real-yield-interpolation",
       "title": "Par real yield at a maturity: linear interpolation with flat endpoints",
       "kind": "formula",
-      "outputs": [
+      "outputs": [],
+      "feeds": [
         "income-floor-ladder-yield-pct",
         "ladder-rung-coupon-rate-pct",
         "funded-ratio-result-essential-spending-pv",
@@ -178,7 +243,15 @@
       },
       "fixtureFiles": [
         "packages/engine/src/ladder/ladderMath.evidence.test.ts"
-      ]
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
     },
     {
       "id": "ladder-rung-flows-and-remaining-face",
@@ -186,7 +259,9 @@
       "kind": "formula",
       "outputs": [
         "ladder-real-flows-coupons",
-        "ladder-real-flows-maturing-principal",
+        "ladder-real-flows-maturing-principal"
+      ],
+      "feeds": [
         "ladder-value-annual"
       ],
       "justificationKind": "derivation",
@@ -200,13 +275,22 @@
       },
       "fixtureFiles": [
         "packages/engine/src/ladder/ladderMath.evidence.test.ts"
-      ]
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
     },
     {
       "id": "treasury-real-yield-curve-2026",
       "title": "Embedded Treasury par real-yield curve, 2026-06-30",
       "kind": "data",
-      "outputs": [
+      "outputs": [],
+      "feeds": [
         "income-floor-ladder-yield-pct",
         "ladder-rung-cost",
         "ladder-rung-coupon-rate-pct",
@@ -227,7 +311,15 @@
       },
       "fixtureFiles": [
         "packages/engine/src/params/data/realYieldCurve2026.evidence.test.ts"
-      ]
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
     }
   ]
 }

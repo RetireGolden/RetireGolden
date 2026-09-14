@@ -10,6 +10,7 @@
       "outputs": [
         "longevity-survival-percentile-age"
       ],
+      "feeds": [],
       "justificationKind": "derivation",
       "implementedBy": [
         "packages/engine/src/montecarlo/survival.ts"
@@ -21,13 +22,22 @@
       },
       "fixtureFiles": [
         "packages/engine/src/montecarlo/survival.evidence.test.ts"
-      ]
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
     },
     {
       "id": "mortality-ex-to-qx-identity",
       "title": "One-year death probability from SSA remaining life expectancy",
       "kind": "formula",
-      "outputs": [
+      "outputs": [],
+      "feeds": [
         "longevity-survival-percentile-age",
         "monte-carlo-success-rate",
         "monte-carlo-ending-investable-histogram"
@@ -43,13 +53,22 @@
       },
       "fixtureFiles": [
         "packages/engine/src/montecarlo/mortality.evidence.test.ts"
-      ]
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
     },
     {
       "id": "mortality-joint-last-survivor-expectancy",
       "title": "Joint last-survivor life expectancy of two independent lives",
       "kind": "formula",
-      "outputs": [
+      "outputs": [],
+      "feeds": [
         "income-annuity-annual"
       ],
       "justificationKind": "derivation",
@@ -63,13 +82,22 @@
       },
       "fixtureFiles": [
         "packages/engine/src/montecarlo/mortality.evidence.test.ts"
-      ]
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
     },
     {
       "id": "mortality-sampled-death-age",
       "title": "Sampled death age: inverse-Bernoulli walk over annual death probabilities",
       "kind": "model",
-      "outputs": [
+      "outputs": [],
+      "feeds": [
         "monte-carlo-success-rate",
         "monte-carlo-ending-investable-histogram"
       ],
@@ -84,13 +112,22 @@
       },
       "fixtureFiles": [
         "packages/engine/src/montecarlo/mortality.evidence.test.ts"
-      ]
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
     },
     {
       "id": "survival-hazard-from-expectancy-multiplier",
       "title": "Hazard power for a remaining-years multiplier, solved by bisection",
       "kind": "model",
-      "outputs": [
+      "outputs": [],
+      "feeds": [
         "longevity-survival-percentile-age"
       ],
       "justificationKind": "derivation",
@@ -104,7 +141,15 @@
       },
       "fixtureFiles": [
         "packages/engine/src/montecarlo/survival.evidence.test.ts"
-      ]
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
     },
     {
       "id": "survival-percentile-age",
@@ -113,6 +158,7 @@
       "outputs": [
         "longevity-survival-percentile-age"
       ],
+      "feeds": [],
       "justificationKind": "derivation",
       "implementedBy": [
         "packages/engine/src/montecarlo/survival.ts"
@@ -124,13 +170,22 @@
       },
       "fixtureFiles": [
         "packages/engine/src/montecarlo/survival.evidence.test.ts"
-      ]
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
     },
     {
       "id": "survival-probability-product",
       "title": "Conditional survival to a target age: product of hazard-adjusted one-year survivals",
       "kind": "formula",
-      "outputs": [
+      "outputs": [],
+      "feeds": [
         "longevity-survival-percentile-age",
         "monte-carlo-success-rate",
         "monte-carlo-ending-investable-histogram"
@@ -146,7 +201,15 @@
       },
       "fixtureFiles": [
         "packages/engine/src/montecarlo/survival.evidence.test.ts"
-      ]
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
     }
   ]
 }

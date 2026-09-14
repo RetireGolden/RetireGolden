@@ -16,7 +16,11 @@ export const longevityRecords = {
     purpose:
       'The annual death probability q(x) every survival curve and stochastic-longevity draw reads from the embedded SSA period table.',
     kind: 'formula',
-    outputs: ['longevity-survival-percentile-age', 'monte-carlo-success-rate', 'monte-carlo-ending-investable-histogram'],
+    // A mortality rate is an intermediate: the survival product and the
+    // percentile ages consume q(x), and the death-age draw the Monte Carlo
+    // aggregates walks it year by year. No surface publishes it.
+    outputs: [],
+    feeds: ['longevity-survival-percentile-age', 'monte-carlo-success-rate', 'monte-carlo-ending-investable-histogram'],
     statement:
       'For the embedded SSA 2022 period table of remaining life expectancy e(x) at integer ages 0..119 (male, female, or their elementwise average for sex "average") and an age a, let x = floor(a). q(x) = 1 - (e(x) - 0.5)/(e(x+1) + 0.5), clamped into [0, 1]. x < 0 returns 0; x >= 119, the last row, returns 1, forcing death at the table endpoint. Units: probability of death within one year. Rounding: none.',
     formula: {
@@ -52,7 +56,9 @@ export const longevityRecords = {
     // No family carries a death-age field; the draw decides on which paths a
     // person is alive in a year, which is what the Monte Carlo success rate
     // and the ending-balance histogram aggregate (the worksheet's Family).
-    outputs: ['monte-carlo-success-rate', 'monte-carlo-ending-investable-histogram'],
+    // The draw enters those aggregates as a per-path input; it is not their value.
+    outputs: [],
+    feeds: ['monte-carlo-success-rate', 'monte-carlo-ending-investable-histogram'],
     statement:
       'Starting at x = floor(max(currentAge, 0)): for each integer age x < 119, draw one uniform U in [0, 1) from the path RNG; if U < q(x) return x (alive through x, dead before x + 1), otherwise advance to x + 1. Reaching x = 119 returns 119 without a draw. One draw per year survived, in age order, so the result is deterministic for a fixed RNG stream. Units: integer age. Rounding: the starting age is floored.',
     formula: {
@@ -90,8 +96,10 @@ export const longevityRecords = {
     // multiple of a joint-and-survivor payout form (the registry's
     // Treas. Reg. 1.72-5(b)(2) rule pins this function), so the annuity
     // income family whose taxable split that multiple shapes is the nearest.
-    // The gross payment the family publishes does not depend on this record.
-    outputs: ['income-annuity-annual'],
+    // The gross payment the family publishes does not depend on this record,
+    // so the nearest family is fed, not output.
+    outputs: [],
+    feeds: ['income-annuity-annual'],
     statement:
       'For lives A and B at integer ages a and b with their own sex tables, e = 0.5 + sum over t = 1..120 of [1 - (1 - S_A(t))(1 - S_B(t))], where S_A(t) = product over k = 0..t-1 of (1 - q(a + k)) is A\'s probability of surviving t more years and S_B likewise. Lifetimes are independent. Because q = 1 at age 119, a life past the table contributes S = 0 and later terms add only the other life\'s survival. Units: years. Rounding: none.',
     formula: {
@@ -123,7 +131,12 @@ export const longevityRecords = {
     title: 'Conditional survival to a target age: product of hazard-adjusted one-year survivals',
     purpose: 'The probability someone alive today is still alive at a later integer age, on the SSA table with an optional health hazard.',
     kind: 'formula',
-    outputs: ['longevity-survival-percentile-age', 'monte-carlo-success-rate', 'monte-carlo-ending-investable-histogram'],
+    // A survival product is an intermediate: the percentile ages search it for
+    // the threshold crossing, and the Monte Carlo families it was named against
+    // aggregate per-path liveness built from the same one-year survivals. No
+    // surface publishes the product itself.
+    outputs: [],
+    feeds: ['longevity-survival-percentile-age', 'monte-carlo-success-rate', 'monte-carlo-ending-investable-histogram'],
     statement:
       'For current age c, target age g, sex and hazard power h (default 1): with from = floor(max(c, 0)) and to = floor(g), S = product over x = from..to-1 of (1 - q(x))^h, where the factor is 0 when q(x) >= 1. Returns 1 when to <= from, and 0 as soon as the running product reaches 0. Units: probability. Rounding: none.',
     formula: {
@@ -226,8 +239,10 @@ export const longevityRecords = {
     purpose: 'Turns the longevity questionnaire\'s remaining-years multiplier into the proportional-hazards power the percentile ages use.',
     kind: 'model',
     // The worksheet names longevity-survival-percentile-age "upstream": the
-    // solved power is the hazard the percentile pickers apply.
-    outputs: ['longevity-survival-percentile-age'],
+    // solved power is the hazard the percentile pickers apply, an input to
+    // the age they publish rather than the age itself.
+    outputs: [],
+    feeds: ['longevity-survival-percentile-age'],
     statement:
       'Given age, sex and multiplier m: target = max(0.1, m) x e_baseline(age, sex), the SSA remaining expectancy (linearly interpolated for a fractional age, averaged across sexes for "average"). E(h) = 0.5 + sum over x = from..119 of S(x), where S is the running product of (1 - q(x))^h from from = floor(max(age, 0)) and the sum stops once S <= 1e-12. E is strictly decreasing in h. If E(0.2) <= target return 0.2; if E(8) >= target return 8; otherwise bisect [0.2, 8] for 40 halvings, raising lo to the midpoint when E(mid) > target and lowering hi otherwise, and return the final midpoint. For m = 1, E(1) equals e_baseline exactly under the q(x) identity, so the root is h = 1 and the result is 1 within the final interval width 7.8/2^40. Units: dimensionless hazard power. Rounding: none.',
     formula: {

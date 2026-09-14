@@ -14,7 +14,12 @@ export const laddersAndValuationRecords = {
     title: 'Par real yield at a maturity: linear interpolation with flat endpoints',
     purpose: 'The real yield the ladder engine reads off the TIPS curve at any maturity.',
     kind: 'formula',
-    outputs: [
+    // A pure intermediate: no surface publishes the interpolated yield itself.
+    // It is the discount rate behind every funded-ratio present value, the
+    // quantity the rung coupon is floored from, and, through the rung price,
+    // an input to the income-floor ladder yield.
+    outputs: [],
+    feeds: [
       'income-floor-ladder-yield-pct',
       'ladder-rung-coupon-rate-pct',
       'funded-ratio-result-essential-spending-pv',
@@ -56,7 +61,9 @@ export const laddersAndValuationRecords = {
     purpose:
       'What one ladder rung costs today: its annual real coupons and principal discounted on the curve, with the coupon set to the yield at maturity floored at 0.125%.',
     kind: 'formula',
-    outputs: ['ladder-rung-cost', 'ladder-rung-coupon-rate-pct', 'ladder-build-total-cost'],
+    outputs: ['ladder-rung-cost', 'ladder-rung-coupon-rate-pct'],
+    // totalCost is buildLadder's sum over the rung prices; each price enters it.
+    feeds: ['ladder-build-total-cost'],
     statement:
       'For a rung of real face F maturing n whole years out, the coupon rate is c = max(0.125%, y(n)), where y(n) is the interpolated par real yield at n years. The price is the sum over k = 1..n of (F·c/100 + [k = n]·F)/(1 + y(k)/100)^k: each end-of-year cash flow discounted at the interpolated par yield for its own year treated as a spot rate. On a flat curve with a nonbinding floor c = y and the price equals F. Units: real (today\'s) dollars; percent inputs are divided by 100. Domain: F >= 0, integer n >= 1, y(k) > -100%. Rounding: none.',
     formula: {
@@ -94,7 +101,13 @@ export const laddersAndValuationRecords = {
     title: 'Real present value of a cash-flow stream on the TIPS curve',
     purpose: 'What it would cost today to defease each future real dollar with a Treasury of matching maturity.',
     kind: 'formula',
-    outputs: [
+    // The discounting step, not a published number: computeFundedRatio
+    // (funded-ratio-hand-present-value) selects the horizon, deflates and sums
+    // the flows and consumes this present value for each side of the ratio,
+    // and priceRung (ladder-annual-coupon-par-pricing) is the same discounting
+    // applied to one rung's coupons and principal.
+    outputs: [],
+    feeds: [
       'funded-ratio-result-essential-spending-pv',
       'funded-ratio-result-guaranteed-income-pv',
       'funded-ratio-result-funded-ratio-pct',
@@ -173,7 +186,10 @@ export const laddersAndValuationRecords = {
     purpose:
       'The real coupons, maturing principal and outstanding face of a rung set in one year, and the face still outstanding once that year completes.',
     kind: 'formula',
-    outputs: ['ladder-real-flows-coupons', 'ladder-real-flows-maturing-principal', 'ladder-value-annual'],
+    outputs: ['ladder-real-flows-coupons', 'ladder-real-flows-maturing-principal'],
+    // ladderValue is the ledger's product of remaining face, purchase scale and
+    // the year's inflation factor; this record pins only the remaining-face input.
+    feeds: ['ladder-value-annual'],
     statement:
       'For a rung set and an integer offset k >= 1: coupons = sum over rungs with maturity offset >= k of F·c/100; maturingPrincipal = sum of F over rungs with maturity offset = k; outstandingFace = sum of F over rungs with maturity offset >= k, the maturing rung included so it earns its last coupon and its inflation accretion. ladderRemainingFace(k) = sum of F over rungs with maturity offset > k, the face still outstanding after year k completes. Units: real (today\'s) dollars. Rounding: none.',
     formula: {
@@ -254,8 +270,10 @@ export const laddersAndValuationRecords = {
     // are not a census output. The nearest ladders-and-valuation family is
     // ladder-rung-cost, because the parsed end-of-day price per $100 face is
     // the reference the ladder quote shows beside each rung's embedded-curve
-    // cost; nothing else in the census consumes these rows.
-    outputs: ['ladder-rung-cost'],
+    // cost; nothing else in the census consumes these rows. A nearest family
+    // is fed, not output: no rung's cost is this parser's number.
+    outputs: [],
+    feeds: ['ladder-rung-cost'],
     statement:
       'Each line of the header-less FedInvest CSV is split on commas (surrounding quotes trimmed) into cusip, type, rate, maturity (MM/DD/YYYY), call, buy, sell, endOfDay. A row is kept only when it has at least eight cells, type is exactly TIPS, cusip is non-empty, the maturity is a valid calendar date, rate and end-of-day price are finite and the price is positive. Output per row: ratePct = rate × 100, maturityIso = YYYY-MM-DD, endOfDayPrice = the end-of-day price per $100 face; rows sorted ascending by maturityIso. Rounding: none.',
     formula: {
@@ -300,8 +318,10 @@ export const laddersAndValuationRecords = {
     kind: 'model',
     // "none yet" in the worksheet: the price date keys the reference-price
     // snapshot that sits beside each rung's cost, so ladder-rung-cost is the
-    // nearest ladders-and-valuation family (same reasoning as the parser card).
-    outputs: ['ladder-rung-cost'],
+    // nearest ladders-and-valuation family (same reasoning as the parser card),
+    // fed rather than output: no rung's cost is a date.
+    outputs: [],
+    feeds: ['ladder-rung-cost'],
     statement:
       'From a local timestamp now, step back one calendar day (today\'s prices are not out yet), then keep stepping back while the local weekday is Saturday or Sunday. latestPriceDateIso formats that date from local calendar components as YYYY-MM-DD, never through toISOString, which is UTC and disagrees near a timezone boundary. Domain: any valid Date. Rounding: whole civil days.',
     formula: {
@@ -336,8 +356,10 @@ export const laddersAndValuationRecords = {
     purpose: 'The reference TIPS whose maturity year is closest to a ladder rung\'s maturity year.',
     kind: 'formula',
     // "none yet" in the worksheet: the matched row is the reference price
-    // shown beside a rung's cost, so ladder-rung-cost is the nearest family.
-    outputs: ['ladder-rung-cost'],
+    // shown beside a rung's cost, so ladder-rung-cost is the nearest family,
+    // fed rather than output: the matched row labels the cost, it is not the cost.
+    outputs: [],
+    feeds: ['ladder-rung-cost'],
     statement:
       'From a list of parsed TIPS and a target calendar year, select the record minimizing |year(maturityIso) - target|, comparing calendar years only; null for an empty list. The first minimum in list order wins a tie. See limits for the one-year window the production entry also applies, which the worksheet did not derive.',
     formula: {
@@ -368,7 +390,10 @@ export const laddersAndValuationRecords = {
     title: 'Embedded Treasury par real-yield curve, 2026-06-30',
     purpose: 'The offline TIPS real-yield snapshot every ladder quote and funded ratio discounts on.',
     kind: 'data',
-    outputs: [
+    // No surface publishes the curve's own yields; every ladder quote and
+    // funded ratio reads them as its coupon and discount input.
+    outputs: [],
+    feeds: [
       'income-floor-ladder-yield-pct',
       'ladder-rung-cost',
       'ladder-rung-coupon-rate-pct',
