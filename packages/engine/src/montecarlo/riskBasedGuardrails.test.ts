@@ -81,16 +81,18 @@ describe('solveRiskBasedGuardrails', () => {
   })
 
 
-  // Two full solves back to back, and the slowest case in this file: measured
-  // at 14.5s on a CI runner under coverage, against this suite's 30s default
-  // (vitest.config.ts). It carried its own 20s cap, which pre-dated that
-  // default and left about five seconds of headroom on the very case that
-  // needed the most.
+  // Two full solves back to back, and the slowest case in this file: 7s on a
+  // developer machine, 14.5s on a CI runner under coverage when first measured,
+  // and over 30s on three consecutive hosted runners on 2026-09-14 (and twice
+  // on 2026-09-13), which failed the suite's 30s default (vitest.config.ts)
+  // on pull requests that touched no Monte Carlo code. The case is legitimately
+  // long, not hung, so it carries its own cap with real headroom instead of
+  // relying on the shared default.
   it('is deterministic for the same plan, seed, and model', () => {
     const a = solveRiskBasedGuardrails(basePlan(), opts)
     const b = solveRiskBasedGuardrails(basePlan(), opts)
     expect(b).toEqual(a)
-  })
+  }, 120_000)
 
   it('honors the band configured on the plan spending policy', () => {
     const plan = basePlan()
