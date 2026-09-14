@@ -58,7 +58,15 @@ const opts = {
   seed: 123,
 }
 
-describe('solveRiskBasedGuardrails', () => {
+// Every solving case here runs solveRiskBasedGuardrails at least once, and the
+// two-solve determinism case twice. Locally a solve takes about 3.5s; on hosted
+// CI runners under coverage the two-solve case exceeded the suite's 30s default
+// (vitest.config.ts) on three consecutive attempts for PR #711 on 2026-09-14 and
+// on two attempts for the audit branch on 2026-09-13, with every other file
+// passing. The cases are long, not hung, so the whole block carries a cap with
+// real headroom. The cost is slower hang detection for these eight tests: a
+// genuine hang now takes two minutes to fail instead of thirty seconds.
+describe('solveRiskBasedGuardrails', { timeout: 120_000 }, () => {
   it('finds dollar thresholds that reproduce the success band within tolerance', () => {
     const solution = solveRiskBasedGuardrails(basePlan(), opts)
 
@@ -81,11 +89,9 @@ describe('solveRiskBasedGuardrails', () => {
   })
 
 
-  // Two full solves back to back, and the slowest case in this file: measured
-  // at 14.5s on a CI runner under coverage, against this suite's 30s default
-  // (vitest.config.ts). It carried its own 20s cap, which pre-dated that
-  // default and left about five seconds of headroom on the very case that
-  // needed the most.
+  // Two full solves back to back: the slowest case in this file, and the one
+  // that timed out first when the hosted runners slowed down (see the block
+  // comment above).
   it('is deterministic for the same plan, seed, and model', () => {
     const a = solveRiskBasedGuardrails(basePlan(), opts)
     const b = solveRiskBasedGuardrails(basePlan(), opts)
