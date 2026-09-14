@@ -1,6 +1,6 @@
 {
   "kind": "retiregolden.calculation-coverage.shard",
-  "version": 1,
+  "version": 2,
   "group": "laddersAndValuation",
   "records": [
     {
@@ -44,8 +44,8 @@
         "The CSV carries no price date; a snapshot imported from a file has no date",
         "Cells are split on every comma; a quoted cell containing a comma is not supported"
       ],
-      "worksheet": null,
-      "mutation": null,
+      "worksheet": "DOCS/calculations/ladders-and-valuation/fedinvest-csv-tips-parsing.md",
+      "mutation": "DOCS/calculations/ladders-and-valuation/fedinvest-csv-tips-parsing.mutation.md",
       "dataset": {
         "citation": "TreasuryDirect FedInvest security price detail CSV (securityprice.csv): one row per marketable Treasury with columns cusip, security type, rate as a decimal fraction, maturity MM/DD/YYYY, call date, buy, sell, end-of-day price per $100 face; no header row",
         "url": "https://www.treasurydirect.gov/GA-FI/FedInvest/securityPriceDetail",
@@ -687,8 +687,8 @@
         "Par yields are consumed as spot rates by every ladder and funded-ratio calculation",
         "Refresh cadence is annual with the parameter packs; the opt-in FedInvest fetch never replaces this snapshot"
       ],
-      "worksheet": null,
-      "mutation": null,
+      "worksheet": "DOCS/calculations/ladders-and-valuation/treasury-real-yield-curve-2026.md",
+      "mutation": "DOCS/calculations/ladders-and-valuation/treasury-real-yield-curve-2026.mutation.md",
       "dataset": {
         "citation": "U.S. Department of the Treasury, Daily Treasury Par Real Yield Curve Rates, row dated 2026-06-30 (5-, 7-, 10-, 20- and 30-year)",
         "url": "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/TextView?field_tdr_date_value=2026&type=daily_treasury_real_yield_curve",

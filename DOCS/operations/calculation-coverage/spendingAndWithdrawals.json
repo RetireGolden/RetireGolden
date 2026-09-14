@@ -1,6 +1,6 @@
 {
   "kind": "retiregolden.calculation-coverage.shard",
-  "version": 1,
+  "version": 2,
   "group": "spendingAndWithdrawals",
   "records": [
     {
@@ -12,9 +12,9 @@
       ],
       "feeds": [],
       "purpose": "This year's ABW payment from a start-of-year balance over the remaining horizon.",
-      "statement": "Given a start-of-year balance B, an expected return r and a planned payment growth g — both in percent per year, as abwAnnualPayment takes them, so the worksheet's 10% is passed as 10 — and remaining years n including the current year, the beginning-of-period payment is P = B(1−x)/(1−x^n) where x = (1 + g/100)/(1 + r/100), or P = B/n when x = 1. Payments are withdrawn before growth. Under the ABW spending policy P is the year's base spending before guardrail adjustments: annualLifestyleLayers writes it as baseAnnualNominal, which annualExpenseSummary publishes as YearResult.expenses.baseSpending. Domain: finite B > 0 and n ≥ 1; n ≤ 1 spends the whole balance. Rounding: none — the production function returns a binary float.",
+      "statement": "Given a start-of-year balance B, an expected return r and a planned payment growth g — both in percent per year, as abwAnnualPayment takes them, so the worksheet's 10% is passed as 10 — and a remaining horizon in years including the current year, the function first truncates that horizon to whole years, n = floor(remainingYears), so a fractional horizon such as 4.5 years is amortized over 4. The beginning-of-period payment is P = B(1−x)/(1−x^n) where x = (1 + g/100)/(1 + r/100). P = B/n instead under either guard the code tests: `!Number.isFinite(x) || x <= 0` (x is not finite or not positive; r > −100 and g > −100 keep it finite and positive) and `Math.abs(x - 1) < 1e-9` (x = 1 within that tolerance). Payments are withdrawn before growth. Under the ABW spending policy P is the year's base spending before guardrail adjustments: annualLifestyleLayers writes it as baseAnnualNominal, which annualExpenseSummary publishes as YearResult.expenses.baseSpending. Domain: finite B > 0 (a non-finite or non-positive balance pays 0) and n ≥ 1; n ≤ 1 spends the whole balance. Rounding: the horizon is floored on input; the payment itself is not rounded — the production function returns a binary float.",
       "formula": {
-        "expression": "P = B(1-x)/(1-x^n), x = (1 + g/100)/(1 + r/100); P = B/n when x = 1",
+        "expression": "n = floor(remainingYears); x = (1 + g/100)/(1 + r/100); P = B(1-x)/(1-x^n), or P = B/n when x is not finite, x <= 0, or |x - 1| < 1e-9",
         "variables": [
           {
             "symbol": "P",
@@ -26,35 +26,35 @@
             "symbol": "B",
             "meaning": "Start-of-year portfolio balance",
             "unit": "usd",
-            "domain": "B > 0 and finite"
+            "domain": "B > 0 and finite (otherwise the payment is 0)"
           },
           {
             "symbol": "r",
             "meaning": "Expected return over the period, in percent (10% is 10)",
             "unit": "percent",
-            "domain": "r > -100 so that 1 + r/100 ≠ 0"
+            "domain": "r > -100, so that 1 + r/100 > 0 and x is finite and positive"
           },
           {
             "symbol": "g",
             "meaning": "Planned payment growth over the period, in percent (0% is 0)",
             "unit": "percent",
-            "domain": "g > -100 so that 1 + g/100 ≠ 0"
+            "domain": "g > -100, so that 1 + g/100 > 0 and x is positive"
           },
           {
             "symbol": "n",
-            "meaning": "Remaining periods including the current one",
+            "meaning": "Remaining periods including the current one, n = floor(remainingYears): a fractional horizon is truncated to its whole years before amortizing",
             "unit": "count",
-            "domain": "integer n ≥ 1"
+            "domain": "integer n ≥ 1 (the floored value); n ≤ 1 pays the whole balance"
           },
           {
             "symbol": "x",
             "meaning": "Payment-growth ratio (1 + g/100)/(1 + r/100)",
             "unit": "1",
-            "domain": "x > 0"
+            "domain": "finite x > 0 with |x − 1| ≥ 1e-9 for the closed form; otherwise P = B/n"
           }
         ],
         "timing": "beginning of period, annual",
-        "rounding": "none"
+        "rounding": "none on the payment, a binary float; the horizon is truncated to whole years on input, n = floor(remainingYears)"
       },
       "limits": [
         "The chosen expected return is an assumption, not proven by the identity",
