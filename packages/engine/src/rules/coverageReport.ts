@@ -3,6 +3,8 @@ import type {
   CoverageAttestationStatus,
   COVERAGE_ATTESTATIONS,
 } from './coverageAttestations.js'
+import type { CalculationRecord } from './calculationRegistry.js'
+import type { OutputFamily } from './outputFamilies.js'
 import type {
   TAX_RULE_REGISTRY,
   TaxRuleAuthority,
@@ -481,6 +483,7 @@ function lineAt(newlines: readonly number[], position: number): number {
 const CALL_PATTERNS = {
   describeRule: /describeRule\(\s*'([^']+)'/gu,
   describeRefusal: /describeRefusal\(\s*'([^']+)'/gu,
+  describeCalculation: /describeCalculation\(\s*'([^']+)'/gu,
 } as const
 
 function detailsByRule(
@@ -942,6 +945,272 @@ export function buildCoverageReport(input: CoverageReportInput): CoverageReport 
     manifest,
     rules,
     markdown: buildMarkdown(manifest, rules),
+    json: JSON.stringify(manifest, null, 2) + '\n',
+    shards,
+  }
+}
+
+export interface CalculationCoverageInput {
+  readonly registry: Readonly<Record<string, CalculationRecord>>
+  readonly recordModules: readonly (readonly [string, Readonly<Record<string, CalculationRecord>>])[]
+  readonly families: Readonly<Record<string, OutputFamily>>
+  readonly attestations: Readonly<Record<string, CoverageAttestation>>
+  readonly testSources: Readonly<Record<string, string>>
+  /** Repo-relative path → source, for every `*.external.golden.test.ts` under packages/. */
+  readonly externalGoldenSources: Readonly<Record<string, string>>
+  readonly walkthroughs: readonly { readonly id: string; readonly testName: string }[]
+  readonly symbolLineFor: (path: string, symbol: string) => number
+  readonly docTextFor: (path: string) => string | null
+}
+
+export interface CalculationCoverageRecord {
+  readonly id: string
+  readonly title: string
+  readonly kind: CalculationRecord['kind']
+  readonly outputs: readonly string[]
+  readonly justificationKind: CalculationRecord['justification']['kind']
+  readonly implementedBy: readonly string[]
+  readonly provenance: CalculationRecord['provenance']
+  readonly fixtureFiles: readonly string[]
+}
+
+export interface CalculationCoverageShard {
+  readonly kind: 'retiregolden.calculation-coverage.shard'
+  readonly version: 1
+  readonly group: string
+  readonly records: readonly CalculationCoverageRecord[]
+}
+
+export interface CalculationCoverageManifest {
+  readonly kind: 'retiregolden.calculation-coverage.manifest'
+  readonly version: 1
+  readonly families: {
+    readonly identified: number
+    readonly byGroup: Readonly<Record<string, number>>
+    readonly byKind: Readonly<Record<string, number>>
+    readonly complete: readonly string[]
+    readonly partial: readonly string[]
+    readonly noRecordYet: readonly string[]
+    readonly relocationPending: readonly string[]
+  }
+  readonly records: {
+    readonly total: number
+    readonly byKind: Readonly<Record<string, number>>
+    readonly byJustificationKind: Readonly<Record<string, number>>
+  }
+  readonly oracleExamples: readonly { readonly file: string; readonly count: number }[]
+  readonly walkthroughs: readonly { readonly id: string; readonly testName: string }[]
+  readonly attestationsDerived: {
+    readonly catalogued: number
+    readonly excludedWithReason: number
+    readonly notYetReviewed: number
+  }
+  readonly shards: readonly { readonly group: string; readonly path: string; readonly recordCount: number }[]
+}
+
+export interface CalculationCoverageReport {
+  readonly manifest: CalculationCoverageManifest
+  readonly json: string
+  readonly shards: readonly {
+    readonly group: string
+    readonly path: string
+    readonly shard: CalculationCoverageShard
+    readonly json: string
+  }[]
+}
+
+const CALCULATION_SHARD_DIRECTORY = 'calculation-coverage'
+const CALCULATION_CONFORMANCE_SOURCE = 'calculationRegistry.conformance.test.ts'
+
+export function calculationCoverageShardPath(group: string): string {
+  return CALCULATION_SHARD_DIRECTORY + '/' + group + '.json'
+}
+
+function attestationPathOf(implementedBy: string): string {
+  return implementedBy.replace(/^packages\/engine\/src\//u, '')
+}
+
+function countOracleCalls(source: string): number {
+  return [...source.matchAll(/\b(?:it|test)\(/gu)].length
+}
+
+function calculationRecordPassesGates(
+  id: string,
+  record: CalculationRecord,
+  input: CalculationCoverageInput,
+  fixtureDetails: ReadonlyMap<string, readonly FixtureDetail[]>,
+): boolean {
+  const fixtures = fixtureDetails.get(id) ?? []
+  if (!fixtures.some((fixture) => fixture.tests.length > 0)) return false
+  for (const entry of record.implementedByFunctions) {
+    const hash = entry.indexOf('#')
+    if (hash <= 0 || hash === entry.length - 1) return false
+    try {
+      input.symbolLineFor(entry.slice(0, hash), entry.slice(hash + 1))
+    } catch {
+      return false
+    }
+  }
+  for (const familyId of record.outputs) {
+    if (input.families[familyId] === undefined) return false
+  }
+  if (record.justification.kind === 'derivation') {
+    const worksheet = input.docTextFor(record.justification.worksheet)
+    if (worksheet === null || worksheet.trim().length === 0) return false
+    const mutationPath = record.justification.worksheet.replace(/\.md$/u, '.mutation.md')
+    const mutation = input.docTextFor(mutationPath)
+    if (mutation === null || mutation.trim().length === 0) return false
+  }
+  if (record.provenance.derivedBy === record.provenance.reviewedBy) return false
+  return true
+}
+
+function familyRelocationPending(family: OutputFamily): boolean {
+  return (
+    (family.kind === 'ui-native' || family.kind === 'ui-transformation') &&
+    family.relocation !== null &&
+    family.relocation.status === 'pending'
+  )
+}
+
+function familyIsComplete(
+  family: OutputFamily,
+  records: readonly { record: CalculationRecord; passes: boolean }[],
+): boolean {
+  if (records.length === 0) return false
+  if (!records.every(({ record, passes }) => passes && record.provenance.reviewedBy !== 'unreviewed')) return false
+  if (family.surfaces.length === 0) return false
+  if (family.relocation !== null && family.relocation.status !== 'done') return false
+  return true
+}
+
+export function buildCalculationCoverageReport(input: CalculationCoverageInput): CalculationCoverageReport {
+  const fixtureDetails = detailsByRule(
+    Object.fromEntries(
+      Object.entries(input.testSources).filter(([path]) => !path.endsWith(CALCULATION_CONFORMANCE_SOURCE)),
+    ),
+    'describeCalculation',
+  )
+  const published: readonly CalculationCoverageRecord[] = Object.entries(input.registry)
+    .map(([id, record]) => ({
+      id,
+      title: record.title,
+      kind: record.kind,
+      outputs: [...record.outputs],
+      justificationKind: record.justification.kind,
+      implementedBy: [...record.implementedBy],
+      provenance: record.provenance,
+      fixtureFiles: [...new Set((fixtureDetails.get(id) ?? []).map(({ path }) => path))].sort(compareStrings),
+    }))
+    .sort((left, right) => compareStrings(left.id, right.id))
+  const gateById = new Map(
+    Object.entries(input.registry).map(([id, record]) => [
+      id,
+      calculationRecordPassesGates(id, record, input, fixtureDetails),
+    ]),
+  )
+  const recordsByFamily = new Map<string, { record: CalculationRecord; passes: boolean }[]>()
+  for (const [id, record] of Object.entries(input.registry)) {
+    for (const familyId of record.outputs) {
+      const list = recordsByFamily.get(familyId) ?? []
+      list.push({ record, passes: gateById.get(id) === true })
+      recordsByFamily.set(familyId, list)
+    }
+  }
+  const complete: string[] = []
+  const partial: string[] = []
+  const noRecordYet: string[] = []
+  const relocationPending: string[] = []
+  for (const [familyId, family] of Object.entries(input.families)) {
+    if (familyRelocationPending(family)) relocationPending.push(familyId)
+    const named = recordsByFamily.get(familyId) ?? []
+    if (named.length === 0) noRecordYet.push(familyId)
+    else if (familyIsComplete(family, named)) complete.push(familyId)
+    else partial.push(familyId)
+  }
+  complete.sort(compareStrings)
+  partial.sort(compareStrings)
+  noRecordYet.sort(compareStrings)
+  relocationPending.sort(compareStrings)
+
+  const cataloguedPaths = new Set<string>()
+  for (const record of Object.values(input.registry)) {
+    for (const path of record.implementedBy) cataloguedPaths.add(attestationPathOf(path))
+  }
+  let catalogued = 0
+  let excludedWithReason = 0
+  let notYetReviewed = 0
+  for (const [path, attestation] of Object.entries(input.attestations)) {
+    if (attestation.status !== 'rule-free') continue
+    if (cataloguedPaths.has(path)) catalogued += 1
+    else if (typeof attestation.exclusionReason === 'string' && attestation.exclusionReason.trim().length > 0) {
+      excludedWithReason += 1
+    } else {
+      notYetReviewed += 1
+    }
+  }
+
+  const moduleOfRecord = new Map<string, string>()
+  for (const [moduleName, records] of input.recordModules) {
+    for (const id of Object.keys(records)) moduleOfRecord.set(id, moduleName)
+  }
+  const recordsByModule = new Map<string, CalculationCoverageRecord[]>(
+    input.recordModules.map(([moduleName]) => [moduleName, []]),
+  )
+  for (const record of published) {
+    const moduleName = moduleOfRecord.get(record.id)
+    if (moduleName === undefined) {
+      throw new Error('calculation ' + record.id + ' belongs to no record module, so it has no coverage shard')
+    }
+    recordsByModule.get(moduleName)!.push(record)
+  }
+  const shards = [...recordsByModule.entries()]
+    .sort(([left], [right]) => compareStrings(left, right))
+    .map(([group, moduleRecords]) => {
+      const sorted = [...moduleRecords].sort((left, right) => compareStrings(left.id, right.id))
+      const shard: CalculationCoverageShard = {
+        kind: 'retiregolden.calculation-coverage.shard',
+        version: 1,
+        group,
+        records: sorted,
+      }
+      return {
+        group,
+        path: calculationCoverageShardPath(group),
+        shard,
+        json: JSON.stringify(shard, null, 2) + '\n',
+      }
+    })
+
+  const oracleExamples = Object.entries(input.externalGoldenSources)
+    .map(([file, source]) => ({ file, count: countOracleCalls(source) }))
+    .sort((left, right) => compareStrings(left.file, right.file))
+
+  const familyList = Object.values(input.families)
+  const manifest: CalculationCoverageManifest = {
+    kind: 'retiregolden.calculation-coverage.manifest',
+    version: 1,
+    families: {
+      identified: familyList.length,
+      byGroup: countBy(familyList.map(({ group }) => group)),
+      byKind: countBy(familyList.map(({ kind }) => kind)),
+      complete,
+      partial,
+      noRecordYet,
+      relocationPending,
+    },
+    records: {
+      total: published.length,
+      byKind: countBy(published.map(({ kind }) => kind)),
+      byJustificationKind: countBy(published.map(({ justificationKind }) => justificationKind)),
+    },
+    oracleExamples,
+    walkthroughs: [...input.walkthroughs],
+    attestationsDerived: { catalogued, excludedWithReason, notYetReviewed },
+    shards: shards.map(({ group, path, shard }) => ({ group, path, recordCount: shard.records.length })),
+  }
+  return {
+    manifest,
     json: JSON.stringify(manifest, null, 2) + '\n',
     shards,
   }

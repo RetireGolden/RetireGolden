@@ -3,7 +3,9 @@ import {
   BASELINE_UNSWEPT,
   COVERAGE_ATTESTATIONS,
 } from './coverageAttestations.js'
-import { buildCoverageReport, describeRuleCallEnd } from './coverageReport.js'
+import { CALCULATION_RECORD_MODULES, CALCULATION_REGISTRY } from './calculationRegistry.js'
+import { OUTPUT_FAMILIES } from './outputFamilies.js'
+import { buildCalculationCoverageReport, buildCoverageReport, describeRuleCallEnd } from './coverageReport.js'
 import { declaredSymbolLinesOf, symbolAnchorLine, type DeclaredSymbol } from './symbolLines.js'
 import {
   TAX_RULE_RECORD_MODULES,
@@ -15,7 +17,11 @@ import {
 } from './taxRuleRegistry.js'
 import committedJson from '../../../../DOCS/operations/rule-coverage.json?raw'
 import committedMarkdown from '../../../../DOCS/operations/rule-coverage.md?raw'
-import { isGeneratedShardText, testSourcesInGlobShape } from '../../scripts/rules-coverage.mjs'
+import {
+  isGeneratedCalculationShardText,
+  isGeneratedShardText,
+  testSourcesInGlobShape,
+} from '../../scripts/rules-coverage.mjs'
 
 // Vite requires the options to be inline object literals.
 const testSources = import.meta.glob('../**/*.test.{ts,mts,cts,tsx}', { query: '?raw', import: 'default', eager: true })
@@ -26,6 +32,32 @@ const operationJsonSources = import.meta.glob('../../../../DOCS/operations/*.jso
   eager: true,
 })
 const committedShardSources = import.meta.glob('../../../../DOCS/operations/rule-coverage/*.json', {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+})
+const committedCalculationShardSources = import.meta.glob(
+  '../../../../DOCS/operations/calculation-coverage/*.json',
+  {
+    query: '?raw',
+    import: 'default',
+    eager: true,
+  },
+)
+const engineGoldenSources = import.meta.glob('../**/*.external.golden.test.ts', {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+})
+const plannerGoldenSources = import.meta.glob(
+  '../../../../packages/planner-ui/src/**/*.external.golden.test.ts',
+  {
+    query: '?raw',
+    import: 'default',
+    eager: true,
+  },
+)
+const calculationDocSources = import.meta.glob('../../../../DOCS/calculations/**/*.md', {
   query: '?raw',
   import: 'default',
   eager: true,
@@ -92,6 +124,46 @@ function symbolLineFor(path: string, symbol: string): number {
   }
   return symbolAnchorLine(table, path, symbol)
 }
+
+const committedCalculationShards = new Map(
+  Object.entries(committedCalculationShardSources).map(([path, source]) => [
+    path.slice(path.lastIndexOf('/') + 1),
+    source as string,
+  ]),
+)
+const committedCalculationJson =
+  Object.entries(operationJsonSources).find(([path]) => path.endsWith('/calculation-coverage.json'))?.[1] ??
+  null
+
+const externalGoldenSources = Object.fromEntries([
+  ...Object.entries(engineGoldenSources).map(([path, source]) => [
+    path.replace(/^\.\.\//u, 'packages/engine/src/'),
+    source as string,
+  ]),
+  ...Object.entries(plannerGoldenSources).map(([path, source]) => [
+    // Vite keys this glob relative to this file with a variable number of
+    // `../` segments; the generator keys the same files relative to the repo.
+    'packages/' + path.replace(/^(?:\.\.\/)+/u, '').replace(/^packages\//u, ''),
+    source as string,
+  ]),
+])
+
+function calculationDocTextFor(path: string): string | null {
+  const key = '../../../../' + path.replace(/\\/gu, '/')
+  return calculationDocSources[key] ?? null
+}
+
+const calculationReport = buildCalculationCoverageReport({
+  registry: CALCULATION_REGISTRY,
+  recordModules: CALCULATION_RECORD_MODULES,
+  families: OUTPUT_FAMILIES,
+  attestations: COVERAGE_ATTESTATIONS,
+  testSources,
+  externalGoldenSources,
+  walkthroughs: [],
+  symbolLineFor,
+  docTextFor: calculationDocTextFor,
+})
 
 const report = buildCoverageReport({
   registry: TAX_RULE_REGISTRY,
@@ -235,6 +307,34 @@ describe('rules coverage report artifacts', () => {
   })
 })
 
+describe('calculation coverage report artifacts', () => {
+  it('matches the deterministic calculation report builder', () => {
+    if (committedCalculationJson === null) {
+      throw new Error('committed calculation-coverage.json must be found by the glob')
+    }
+    expect(normalizeNewlines(committedCalculationJson)).toBe(normalizeNewlines(calculationReport.json))
+  })
+
+  it('matches every committed calculation-coverage shard, with no orphan shard files', () => {
+    const generated = new Map(
+      calculationReport.shards.map((shard) => [shard.path.slice(shard.path.lastIndexOf('/') + 1), shard.json]),
+    )
+    expect([...committedCalculationShards.keys()].sort()).toEqual([...generated.keys()].sort())
+    for (const [fileName, json] of generated) {
+      expect(normalizeNewlines(committedCalculationShards.get(fileName) ?? ''), fileName).toBe(
+        normalizeNewlines(json),
+      )
+    }
+  })
+
+  it('recognises a generated calculation shard by its kind, and nothing else', () => {
+    const realShard = calculationReport.shards[0]
+    expect(realShard).toBeDefined()
+    expect(isGeneratedCalculationShardText(realShard!.json)).toBe(true)
+    expect(isGeneratedCalculationShardText(calculationReport.json)).toBe(false)
+    expect(isGeneratedShardText(realShard!.json)).toBe(false)
+  })
+})
 
 // The report builder's identity check (id · citation · url) cannot see a
 // quotedText edit hiding behind an unchanged citation and URL, and it stays

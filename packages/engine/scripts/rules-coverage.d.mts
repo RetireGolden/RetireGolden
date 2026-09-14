@@ -12,3 +12,6 @@ export declare function testSourcesInGlobShape(directory?: string): Record<strin
  * its own prior output.
  */
 export declare function isGeneratedShardText(text: string): boolean
+
+/** Whether `text` is a calculation-coverage shard this generator wrote, judged by its `kind`. */
+export declare function isGeneratedCalculationShardText(text: string): boolean
