@@ -6,6 +6,12 @@ export interface CoverageAttestation {
   readonly sweptOn: string | null
   /** For 'partial': the residual unregistered claims, one short clause each. */
   readonly note: string | null
+  /**
+   * Optional reasoned exclusion from the calculations catalog for a
+   * `rule-free` file. When present the coverage generator counts the file as
+   * `excludedWithReason` rather than `notYetReviewed`.
+   */
+  readonly exclusionReason?: string
 }
 
 import { topLevelAttestations } from './attestations/topLevel.js'

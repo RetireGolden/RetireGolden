@@ -1,0 +1,37 @@
+{
+  "kind": "retiregolden.calculation-coverage.shard",
+  "version": 1,
+  "group": "spendingAndWithdrawals",
+  "records": [
+    {
+      "id": "abw-annuity-due-payment",
+      "title": "Amortization-based withdrawal, growing annuity-due payment",
+      "kind": "formula",
+      "outputs": [
+        "spending-base-annual"
+      ],
+      "feeds": [],
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/spending/abw.ts",
+        "packages/engine/src/projection/internal/annualLifestyleLayers.ts"
+      ],
+      "provenance": {
+        "derivedBy": "claude-orchestrator",
+        "implementedBy": "grok",
+        "reviewedBy": "unreviewed"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/spending/abw.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    }
+  ]
+}

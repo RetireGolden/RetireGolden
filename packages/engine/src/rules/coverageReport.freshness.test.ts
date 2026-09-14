@@ -3,7 +3,18 @@ import {
   BASELINE_UNSWEPT,
   COVERAGE_ATTESTATIONS,
 } from './coverageAttestations.js'
-import { buildCoverageReport, describeRuleCallEnd } from './coverageReport.js'
+import {
+  CALCULATION_RECORD_MODULES,
+  CALCULATION_REGISTRY,
+  type CalculationRecord,
+} from './calculationRegistry.js'
+import { OUTPUT_FAMILIES, type OutputFamily } from './outputFamilies.js'
+import {
+  buildCalculationCoverageReport,
+  buildCoverageReport,
+  describeRuleCallEnd,
+  walkthroughEntriesOf,
+} from './coverageReport.js'
 import { declaredSymbolLinesOf, symbolAnchorLine, type DeclaredSymbol } from './symbolLines.js'
 import {
   TAX_RULE_RECORD_MODULES,
@@ -15,7 +26,11 @@ import {
 } from './taxRuleRegistry.js'
 import committedJson from '../../../../DOCS/operations/rule-coverage.json?raw'
 import committedMarkdown from '../../../../DOCS/operations/rule-coverage.md?raw'
-import { isGeneratedShardText, testSourcesInGlobShape } from '../../scripts/rules-coverage.mjs'
+import {
+  isGeneratedCalculationShardText,
+  isGeneratedShardText,
+  testSourcesInGlobShape,
+} from '../../scripts/rules-coverage.mjs'
 
 // Vite requires the options to be inline object literals.
 const testSources = import.meta.glob('../**/*.test.{ts,mts,cts,tsx}', { query: '?raw', import: 'default', eager: true })
@@ -26,6 +41,44 @@ const operationJsonSources = import.meta.glob('../../../../DOCS/operations/*.jso
   eager: true,
 })
 const committedShardSources = import.meta.glob('../../../../DOCS/operations/rule-coverage/*.json', {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+})
+const committedCalculationShardSources = import.meta.glob(
+  '../../../../DOCS/operations/calculation-coverage/*.json',
+  {
+    query: '?raw',
+    import: 'default',
+    eager: true,
+  },
+)
+const engineGoldenSources = import.meta.glob('../**/*.external.golden.test.ts', {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+})
+const plannerGoldenSources = import.meta.glob(
+  '../../../../packages/planner-ui/src/**/*.external.golden.test.ts',
+  {
+    query: '?raw',
+    import: 'default',
+    eager: true,
+  },
+)
+// The walkthrough directory does not exist yet; Vite expands a glob over a
+// missing directory to {}, which walkthroughEntriesOf turns into the computed
+// empty census — the generator lists the same directory, so the day the
+// first walkthrough test lands both sides publish it.
+const walkthroughSources = import.meta.glob(
+  '../../../../packages/planner-ui/src/planner/examples/walkthroughs/*.test.{ts,tsx}',
+  {
+    query: '?raw',
+    import: 'default',
+    eager: true,
+  },
+)
+const calculationDocSources = import.meta.glob('../../../../DOCS/calculations/**/*.md', {
   query: '?raw',
   import: 'default',
   eager: true,
@@ -92,6 +145,46 @@ function symbolLineFor(path: string, symbol: string): number {
   }
   return symbolAnchorLine(table, path, symbol)
 }
+
+const committedCalculationShards = new Map(
+  Object.entries(committedCalculationShardSources).map(([path, source]) => [
+    path.slice(path.lastIndexOf('/') + 1),
+    source as string,
+  ]),
+)
+const committedCalculationJson =
+  Object.entries(operationJsonSources).find(([path]) => path.endsWith('/calculation-coverage.json'))?.[1] ??
+  null
+
+const externalGoldenSources = Object.fromEntries([
+  ...Object.entries(engineGoldenSources).map(([path, source]) => [
+    path.replace(/^\.\.\//u, 'packages/engine/src/'),
+    source as string,
+  ]),
+  ...Object.entries(plannerGoldenSources).map(([path, source]) => [
+    // Vite keys this glob relative to this file with a variable number of
+    // `../` segments; the generator keys the same files relative to the repo.
+    'packages/' + path.replace(/^(?:\.\.\/)+/u, '').replace(/^packages\//u, ''),
+    source as string,
+  ]),
+])
+
+function calculationDocTextFor(path: string): string | null {
+  const key = '../../../../' + path.replace(/\\/gu, '/')
+  return calculationDocSources[key] ?? null
+}
+
+const calculationReport = buildCalculationCoverageReport({
+  registry: CALCULATION_REGISTRY,
+  recordModules: CALCULATION_RECORD_MODULES,
+  families: OUTPUT_FAMILIES,
+  attestations: COVERAGE_ATTESTATIONS,
+  testSources,
+  externalGoldenSources,
+  walkthroughs: walkthroughEntriesOf(walkthroughSources as Record<string, string>),
+  symbolLineFor,
+  docTextFor: calculationDocTextFor,
+})
 
 const report = buildCoverageReport({
   registry: TAX_RULE_REGISTRY,
@@ -235,6 +328,202 @@ describe('rules coverage report artifacts', () => {
   })
 })
 
+describe('calculation coverage report artifacts', () => {
+  it('matches the deterministic calculation report builder', () => {
+    if (committedCalculationJson === null) {
+      throw new Error('committed calculation-coverage.json must be found by the glob')
+    }
+    expect(normalizeNewlines(committedCalculationJson)).toBe(normalizeNewlines(calculationReport.json))
+  })
+
+  it('matches every committed calculation-coverage shard, with no orphan shard files', () => {
+    const generated = new Map(
+      calculationReport.shards.map((shard) => [shard.path.slice(shard.path.lastIndexOf('/') + 1), shard.json]),
+    )
+    expect([...committedCalculationShards.keys()].sort()).toEqual([...generated.keys()].sort())
+    for (const [fileName, json] of generated) {
+      expect(normalizeNewlines(committedCalculationShards.get(fileName) ?? ''), fileName).toBe(
+        normalizeNewlines(json),
+      )
+    }
+  })
+
+  it('recognises a generated calculation shard by its kind, and nothing else', () => {
+    const realShard = calculationReport.shards[0]
+    expect(realShard).toBeDefined()
+    expect(isGeneratedCalculationShardText(realShard!.json)).toBe(true)
+    expect(isGeneratedCalculationShardText(calculationReport.json)).toBe(false)
+    expect(isGeneratedShardText(realShard!.json)).toBe(false)
+  })
+
+  it('publishes per-record gate status in every shard', () => {
+    for (const { shard } of calculationReport.shards) {
+      for (const record of shard.records) {
+        expect(Object.keys(record.gates).sort(), record.id).toEqual([
+          'familiesExist',
+          'fixtureRegistersTest',
+          'mutationExists',
+          'pinsResolve',
+          'provenanceIndependent',
+          'worksheetExists',
+        ])
+        for (const [gate, value] of Object.entries(record.gates)) {
+          expect(typeof value, record.id + '.gates.' + gate).toBe('boolean')
+        }
+      }
+    }
+  })
+
+  it('publishes exactly the documented record keys, feeds included, in every calculation shard', () => {
+    const documentedKeys = [
+      'feeds',
+      'fixtureFiles',
+      'gates',
+      'id',
+      'implementedBy',
+      'justificationKind',
+      'kind',
+      'outputs',
+      'provenance',
+      'title',
+    ]
+    let seen = 0
+    for (const { json } of calculationReport.shards) {
+      const { records } = JSON.parse(json) as { records: Record<string, unknown>[] }
+      for (const record of records) {
+        seen += 1
+        expect(Object.keys(record).sort(), String(record.id)).toEqual(documentedKeys)
+        // `feeds` is always an array, `[]` when the registry record declares
+        // none, so a consumer never has to special-case its absence.
+        expect(Array.isArray(record.feeds), String(record.id) + '.feeds').toBe(true)
+        expect(Array.isArray(record.outputs), String(record.id) + '.outputs').toBe(true)
+      }
+    }
+    expect(seen).toBe(calculationReport.manifest.records.total)
+  })
+
+  it('publishes the documented families keys in order, fedBy last, keyed by family to sorted feeder ids', () => {
+    const { families } = JSON.parse(calculationReport.json) as {
+      families: Record<string, unknown> & { fedBy: Record<string, string[]> }
+    }
+    expect(Object.keys(families)).toEqual([
+      'identified',
+      'byGroup',
+      'byKind',
+      'complete',
+      'partial',
+      'noRecordYet',
+      'relocationPending',
+      'fedBy',
+    ])
+    const familyIds = Object.keys(families.fedBy)
+    expect(familyIds).toEqual([...familyIds].sort())
+    for (const [familyId, feeders] of Object.entries(families.fedBy)) {
+      expect(Object.hasOwn(OUTPUT_FAMILIES, familyId), familyId).toBe(true)
+      expect(feeders.length, familyId).toBeGreaterThan(0)
+      expect(feeders, familyId).toEqual([...feeders].sort())
+      for (const id of feeders) {
+        const record = (CALCULATION_REGISTRY as Readonly<Record<string, CalculationRecord>>)[id]
+        expect(record, familyId + ' fed by unknown record ' + id).toBeDefined()
+        expect(record!.feeds ?? [], id + '.feeds').toContain(familyId)
+      }
+    }
+  })
+
+  it('keeps a family named only in feeds by a fully passing record in noRecordYet and fedBy, never in complete', () => {
+    // The call token is assembled at runtime: the conformance suite scans every
+    // other test source's text (string literals included) for fixture claims,
+    // and this synthetic fixture must not read as a claim on an unregistered
+    // id with a worksheet that does not exist. The builder still receives the
+    // intact call below as an ordinary test source.
+    const fixture = [
+      'describe' + "Calculation('synthetic-intermediate', { example: {}, worksheet: 'w', mutation: 'm' }, () => {",
+      "  it('registers a test', () => { expect(1).toBe(1) })",
+      '})',
+    ].join('\n')
+    const family = (): OutputFamily => ({
+      title: 'Synthetic family',
+      group: 'synthetic',
+      meaning: 'Exists only inside this test.',
+      unit: 'usd',
+      basis: 'nominal',
+      dimensions: [],
+      kind: 'engine',
+      engineSource: null,
+      surfaces: [{ surface: 'page', selector: 'value' }],
+      relocation: null,
+    })
+    const record = (outputs: readonly string[], feeds: readonly string[]): CalculationRecord => ({
+      title: 'Synthetic intermediate quantity',
+      purpose: 'Enters another family without being it.',
+      kind: 'formula',
+      outputs: outputs as unknown as CalculationRecord['outputs'],
+      feeds: feeds as unknown as CalculationRecord['feeds'],
+      statement: 'q = 1 / e',
+      formula: null,
+      justification: { kind: 'assumption', rationale: 'test', intendedUse: 'test', errorBound: null },
+      limits: [],
+      implementedBy: ['packages/engine/src/spending/abw.ts'],
+      implementedByFunctions: ['packages/engine/src/spending/abw.ts#abwAnnualPayment'],
+      verifiedOn: '2026-09-14',
+      provenance: { derivedBy: 'deriving-agent', implementedBy: 'implementing-agent', reviewedBy: 'reviewing-agent' },
+    })
+    const build = (registry: Readonly<Record<string, CalculationRecord>>) =>
+      buildCalculationCoverageReport({
+        registry,
+        recordModules: [['synthetic', registry]],
+        families: { 'synthetic-own': family(), 'synthetic-fed': family() },
+        attestations: {},
+        testSources: { '../spending/synthetic.evidence.test.ts': fixture },
+        externalGoldenSources: {},
+        walkthroughs: [],
+        symbolLineFor: () => 1,
+        docTextFor: () => null,
+      })
+
+    // A record with its own output that also feeds a second family.
+    const mixed = build({ 'synthetic-intermediate': record(['synthetic-own'], ['synthetic-fed']) })
+    const mixedRecord = mixed.shards[0]!.shard.records[0]!
+    expect(Object.values(mixedRecord.gates).every((gate) => gate === true)).toBe(true)
+    expect(mixedRecord.feeds).toEqual(['synthetic-fed'])
+    expect(mixed.manifest.families).toMatchObject({
+      complete: ['synthetic-own'],
+      partial: [],
+      noRecordYet: ['synthetic-fed'],
+      fedBy: { 'synthetic-fed': ['synthetic-intermediate'] },
+    })
+
+    // A pure intermediate: no output of its own, so it completes nothing.
+    const pure = build({ 'synthetic-intermediate': record([], ['synthetic-fed']) })
+    expect(Object.values(pure.shards[0]!.shard.records[0]!.gates).every((gate) => gate === true)).toBe(true)
+    expect(pure.manifest.families).toMatchObject({
+      complete: [],
+      partial: [],
+      noRecordYet: ['synthetic-fed', 'synthetic-own'],
+      fedBy: { 'synthetic-fed': ['synthetic-intermediate'] },
+    })
+  })
+
+  it('scans walkthrough test files for it() and test() titles at code level, keyed by file name', () => {
+    const entries = walkthroughEntriesOf({
+      'some/dir/roth-ladder.test.ts': [
+        "describe('roth ladder', () => {",
+        "  // it('a pending case')",
+        "  it('funds the first rung', () => {})",
+        "  test(\"skips the second rung\", () => { const note = \"it('not a test')\" })",
+        '})',
+      ].join('\n'),
+      'some/dir/bridge.test.tsx': "it('renders the bridge', () => {})",
+      'some/dir/helpers.ts': "it('is not a test file', () => {})",
+    })
+    expect(entries).toEqual([
+      { id: 'bridge', testName: 'renders the bridge' },
+      { id: 'roth-ladder', testName: 'funds the first rung' },
+      { id: 'roth-ladder', testName: 'skips the second rung' },
+    ])
+    expect(walkthroughEntriesOf({})).toEqual([])
+  })
+})
 
 // The report builder's identity check (id · citation · url) cannot see a
 // quotedText edit hiding behind an unchanged citation and URL, and it stays

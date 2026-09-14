@@ -17,3 +17,10 @@ packages/engine/src/schema/plan.v*.generated.ts linguist-generated=true
 DOCS/operations/rule-coverage.json linguist-generated=true
 DOCS/operations/rule-coverage/*.json linguist-generated=true
 DOCS/operations/quote-fidelity-ledger.json linguist-generated=true
+DOCS/operations/calculation-coverage.json linguist-generated=true
+DOCS/operations/calculation-coverage/*.json linguist-generated=true
+# The engine's frozen copy of the Docs output census and the two modules
+# import-output-census.mjs generates from it; a freshness test pins the pair.
+packages/engine/src/rules/census/*.json linguist-generated=true
+packages/engine/src/rules/outputFamilies.ts linguist-generated=true
+packages/engine/src/rules/outputFieldCoverage.ts linguist-generated=true

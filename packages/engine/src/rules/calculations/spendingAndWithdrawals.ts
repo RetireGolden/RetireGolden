@@ -1,0 +1,54 @@
+/**
+ * Spending-and-withdrawals calculation records.
+ *
+ * One slice of the calculation registry. `../calculationRegistry.ts` composes
+ * every slice into `CALCULATION_REGISTRY`; read it for what a record must carry.
+ */
+import type { CalculationRecord } from '../calculationRegistry.js'
+
+export const spendingAndWithdrawalsRecords = {
+  'abw-annuity-due-payment': {
+    title: 'Amortization-based withdrawal, growing annuity-due payment',
+    purpose: 'This year\'s ABW payment from a start-of-year balance over the remaining horizon.',
+    kind: 'formula',
+    // Under the ABW spending policy, annualLifestyleLayers supplies this
+    // payment as baseAnnualNominal and annualExpenseSummary publishes it as
+    // YearResult.expenses.baseSpending. It is not the solver's independent
+    // sustainable-spending result, nor the broader targetSpending total that
+    // also includes system costs and goals.
+    outputs: ['spending-base-annual'],
+    statement:
+      'Given a start-of-year balance B, an expected return r and a planned payment growth g — both in percent per year, as abwAnnualPayment takes them, so the worksheet\'s 10% is passed as 10 — and remaining years n including the current year, the beginning-of-period payment is P = B(1−x)/(1−x^n) where x = (1 + g/100)/(1 + r/100), or P = B/n when x = 1. Payments are withdrawn before growth. Under the ABW spending policy P is the year\'s base spending before guardrail adjustments: annualLifestyleLayers writes it as baseAnnualNominal, which annualExpenseSummary publishes as YearResult.expenses.baseSpending. Domain: finite B > 0 and n ≥ 1; n ≤ 1 spends the whole balance. Rounding: none — the production function returns a binary float.',
+    formula: {
+      expression: 'P = B(1-x)/(1-x^n), x = (1 + g/100)/(1 + r/100); P = B/n when x = 1',
+      variables: [
+        { symbol: 'P', meaning: 'This year\'s beginning-of-period payment', unit: 'usd', domain: 'P ≥ 0' },
+        { symbol: 'B', meaning: 'Start-of-year portfolio balance', unit: 'usd', domain: 'B > 0 and finite' },
+        { symbol: 'r', meaning: 'Expected return over the period, in percent (10% is 10)', unit: 'percent', domain: 'r > -100 so that 1 + r/100 ≠ 0' },
+        { symbol: 'g', meaning: 'Planned payment growth over the period, in percent (0% is 0)', unit: 'percent', domain: 'g > -100 so that 1 + g/100 ≠ 0' },
+        { symbol: 'n', meaning: 'Remaining periods including the current one', unit: 'count', domain: 'integer n ≥ 1' },
+        { symbol: 'x', meaning: 'Payment-growth ratio (1 + g/100)/(1 + r/100)', unit: '1', domain: 'x > 0' },
+      ],
+      timing: 'beginning of period, annual',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/spending-and-withdrawals/abw-annuity-due-payment.md',
+    },
+    limits: [
+      'The chosen expected return is an assumption, not proven by the identity',
+      'The payment is the ABW policy\'s base spending before guardrail adjustments, written by annualLifestyleLayers as baseAnnualNominal; under other spending policies baseSpending is not this formula',
+    ],
+    implementedBy: [
+      'packages/engine/src/spending/abw.ts',
+      'packages/engine/src/projection/internal/annualLifestyleLayers.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/spending/abw.ts#abwAnnualPayment',
+      'packages/engine/src/projection/internal/annualLifestyleLayers.ts#annualLifestyleLayers',
+    ],
+    verifiedOn: '2026-09-14',
+    provenance: { derivedBy: 'claude-orchestrator', implementedBy: 'grok', reviewedBy: 'unreviewed' },
+  },
+} satisfies Record<string, CalculationRecord>

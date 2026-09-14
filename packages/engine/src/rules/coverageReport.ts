@@ -3,6 +3,8 @@ import type {
   CoverageAttestationStatus,
   COVERAGE_ATTESTATIONS,
 } from './coverageAttestations.js'
+import { mutationReceiptPathOf, type CalculationRecord } from './calculationRegistry.js'
+import type { OutputFamily } from './outputFamilies.js'
 import type {
   TAX_RULE_REGISTRY,
   TaxRuleAuthority,
@@ -397,6 +399,9 @@ function testsBetween(
   start: number,
   end: number,
   newlines: readonly number[],
+  // Also accept the `test(` spelling, for suites outside the fixture helpers
+  // (the walkthrough census) that may use either name.
+  includeTestAlias = false,
 ): { title: string; line: number }[] {
   const tests: { title: string; line: number }[] = []
   let index = start
@@ -406,7 +411,12 @@ function testsBetween(
       index = Math.min(skipped, end)
       continue
     }
-    const match = /^\bit\(\s*(['"\u0060])/u.exec(source.slice(index, Math.min(index + 64, end)))
+    const window = source.slice(index, Math.min(index + 64, end))
+    // Two literal patterns rather than one built at runtime, for the same
+    // static-analysis reason as CALL_PATTERNS below.
+    const match = includeTestAlias
+      ? /^\b(?:it|test)\(\s*(['"\u0060])/u.exec(window)
+      : /^\bit\(\s*(['"\u0060])/u.exec(window)
     if (match !== null && (index === 0 || !/[\w$.]/u.test(source[index - 1]!))) {
       const quote = match[1]!
       const titleStart = index + match[0].length
@@ -466,21 +476,23 @@ function lineAt(newlines: readonly number[], position: number): number {
 }
 
 /**
- * Scans `testSources` for `describeRule(<id>` or `describeRefusal(<id>`
- * blocks, keyed by rule id — the two helpers make different claims about a
- * rule and are published in separate fields (`fixtures` vs
- * `refusalFixtures`), but the source-level shape of a call (an id string
- * literal, then a balanced extent with it() tests inside) is identical for
- * both, so one scan serves either name.
+ * Scans `testSources` for `describeRule(<id>`, `describeRefusal(<id>`, or
+ * `describeCalculation(<id>` blocks, keyed by record id — the three helpers
+ * make different claims and are published in separate places (`fixtures`,
+ * `refusalFixtures`, and the calculation shards' `fixtureFiles`), but the
+ * source-level shape of a call (an id string literal, then a balanced extent
+ * with it() tests inside) is identical for all of them, so one scan serves
+ * any of the three names.
  */
-// Two hardcoded patterns rather than one built from `callName` at runtime: a
-// RegExp built from a variable reads to static analysis (Semgrep's
+// Three hardcoded patterns rather than one built from `callName` at runtime:
+// a RegExp built from a variable reads to static analysis (Semgrep's
 // detect-non-literal-regexp) as attacker-controlled input, even though this
-// one is a closed two-member union. Literal patterns sidestep the warning
+// one is a closed three-member union. Literal patterns sidestep the warning
 // instead of arguing with it.
 const CALL_PATTERNS = {
   describeRule: /describeRule\(\s*'([^']+)'/gu,
   describeRefusal: /describeRefusal\(\s*'([^']+)'/gu,
+  describeCalculation: /describeCalculation\(\s*'([^']+)'/gu,
 } as const
 
 function detailsByRule(
@@ -942,6 +954,381 @@ export function buildCoverageReport(input: CoverageReportInput): CoverageReport 
     manifest,
     rules,
     markdown: buildMarkdown(manifest, rules),
+    json: JSON.stringify(manifest, null, 2) + '\n',
+    shards,
+  }
+}
+
+export interface CalculationCoverageInput {
+  readonly registry: Readonly<Record<string, CalculationRecord>>
+  readonly recordModules: readonly (readonly [string, Readonly<Record<string, CalculationRecord>>])[]
+  readonly families: Readonly<Record<string, OutputFamily>>
+  readonly attestations: Readonly<Record<string, CoverageAttestation>>
+  readonly testSources: Readonly<Record<string, string>>
+  /** Repo-relative path → source, for every `*.external.golden.test.ts` under packages/. */
+  readonly externalGoldenSources: Readonly<Record<string, string>>
+  readonly walkthroughs: readonly { readonly id: string; readonly testName: string }[]
+  readonly symbolLineFor: (path: string, symbol: string) => number
+  readonly docTextFor: (path: string) => string | null
+}
+
+/**
+ * The contract gates a record is held to, published per record so a gate
+ * that breaks later (a moved worksheet, a renamed pin) is visible in the
+ * artifact rather than folded silently into the family's `partial` status.
+ * `worksheetExists` and `mutationExists` are true for a record that owes no
+ * derivation worksheet (dataset, assumption, and registry justifications).
+ */
+export interface CalculationRecordGates {
+  readonly fixtureRegistersTest: boolean
+  readonly pinsResolve: boolean
+  readonly familiesExist: boolean
+  readonly worksheetExists: boolean
+  readonly mutationExists: boolean
+  readonly provenanceIndependent: boolean
+}
+
+export interface CalculationCoverageRecord {
+  readonly id: string
+  readonly title: string
+  readonly kind: CalculationRecord['kind']
+  readonly outputs: readonly string[]
+  /** The record's `feeds` list as declared; `[]` when the record declares none. */
+  readonly feeds: readonly string[]
+  readonly justificationKind: CalculationRecord['justification']['kind']
+  readonly implementedBy: readonly string[]
+  readonly provenance: CalculationRecord['provenance']
+  readonly fixtureFiles: readonly string[]
+  readonly gates: CalculationRecordGates
+}
+
+export interface WalkthroughEntry {
+  readonly id: string
+  readonly testName: string
+}
+
+const WALKTHROUGH_TEST_SUFFIX = /\.test\.tsx?$/u
+
+/**
+ * The walkthrough census: one entry per it()/test() title found at CODE
+ * level in each `*.test.ts(x)` file of planner-ui's `examples/walkthroughs/`,
+ * with `id` the file name minus its test suffix. The generator and the
+ * freshness suite each feed this from their own listing of that directory,
+ * so the published list is always the computed one: an empty list means the
+ * directory holds no walkthrough tests, never that the scan was skipped.
+ */
+export function walkthroughEntriesOf(sources: Readonly<Record<string, string>>): readonly WalkthroughEntry[] {
+  const entries: { id: string; testName: string; line: number }[] = []
+  for (const [path, source] of Object.entries(sources)) {
+    const fileName = path.slice(path.lastIndexOf('/') + 1)
+    if (!WALKTHROUGH_TEST_SUFFIX.test(fileName)) continue
+    const id = fileName.replace(WALKTHROUGH_TEST_SUFFIX, '')
+    for (const test of testsBetween(source, 0, source.length, newlineOffsets(source), true)) {
+      entries.push({ id, testName: test.title, line: test.line })
+    }
+  }
+  return entries
+    .sort((left, right) => compareStrings(left.id, right.id) || left.line - right.line)
+    .map(({ id, testName }) => ({ id, testName }))
+}
+
+export interface CalculationCoverageShard {
+  readonly kind: 'retiregolden.calculation-coverage.shard'
+  readonly version: 1
+  readonly group: string
+  readonly records: readonly CalculationCoverageRecord[]
+}
+
+export interface CalculationCoverageManifest {
+  readonly kind: 'retiregolden.calculation-coverage.manifest'
+  readonly version: 1
+  readonly families: {
+    readonly identified: number
+    readonly byGroup: Readonly<Record<string, number>>
+    readonly byKind: Readonly<Record<string, number>>
+    readonly complete: readonly string[]
+    readonly partial: readonly string[]
+    readonly noRecordYet: readonly string[]
+    readonly relocationPending: readonly string[]
+    /**
+     * Family id → sorted ids of the records whose `feeds` name it. Families
+     * nobody feeds are omitted. Informational only: a family listed here and
+     * in no record's `outputs` is still no-record-yet.
+     */
+    readonly fedBy: Readonly<Record<string, readonly string[]>>
+  }
+  readonly records: {
+    readonly total: number
+    readonly byKind: Readonly<Record<string, number>>
+    readonly byJustificationKind: Readonly<Record<string, number>>
+  }
+  readonly oracleExamples: readonly { readonly file: string; readonly count: number }[]
+  readonly walkthroughs: readonly { readonly id: string; readonly testName: string }[]
+  readonly attestationsDerived: {
+    readonly catalogued: number
+    readonly excludedWithReason: number
+    readonly notYetReviewed: number
+  }
+  readonly shards: readonly { readonly group: string; readonly path: string; readonly recordCount: number }[]
+}
+
+export interface CalculationCoverageReport {
+  readonly manifest: CalculationCoverageManifest
+  readonly json: string
+  readonly shards: readonly {
+    readonly group: string
+    readonly path: string
+    readonly shard: CalculationCoverageShard
+    readonly json: string
+  }[]
+}
+
+const CALCULATION_SHARD_DIRECTORY = 'calculation-coverage'
+const CALCULATION_CONFORMANCE_SOURCE = 'calculationRegistry.conformance.test.ts'
+
+export function calculationCoverageShardPath(group: string): string {
+  return CALCULATION_SHARD_DIRECTORY + '/' + group + '.json'
+}
+
+function attestationPathOf(implementedBy: string): string {
+  return implementedBy.replace(/^packages\/engine\/src\//u, '')
+}
+
+/**
+ * it()/test() calls at CODE level in an external-oracle file — an `it(`
+ * inside a comment or a string never counts, so a pending-case note cannot
+ * inflate the published case count.
+ */
+function countOracleCalls(source: string): number {
+  let count = 0
+  let index = 0
+  while (index < source.length) {
+    const skipped = skipNonCode(source, index, regexCanFollow(source, index))
+    if (skipped !== index) {
+      index = skipped
+      continue
+    }
+    const isIt = source.startsWith('it(', index)
+    if ((isIt || source.startsWith('test(', index)) && (index === 0 || !/[\w$.]/u.test(source[index - 1]!))) {
+      count += 1
+      index += isIt ? 3 : 5
+      continue
+    }
+    index += 1
+  }
+  return count
+}
+
+function docPresent(text: string | null): boolean {
+  return text !== null && text.trim().length > 0
+}
+
+function calculationRecordGates(
+  id: string,
+  record: CalculationRecord,
+  input: CalculationCoverageInput,
+  fixtureDetails: ReadonlyMap<string, readonly FixtureDetail[]>,
+): CalculationRecordGates {
+  const fixtures = fixtureDetails.get(id) ?? []
+  const pinsResolve = record.implementedByFunctions.every((entry) => {
+    const hash = entry.indexOf('#')
+    if (hash <= 0 || hash === entry.length - 1) return false
+    try {
+      input.symbolLineFor(entry.slice(0, hash), entry.slice(hash + 1))
+      return true
+    } catch {
+      return false
+    }
+  })
+  let worksheetExists = true
+  let mutationExists = true
+  if (record.justification.kind === 'derivation') {
+    const { worksheet } = record.justification
+    worksheetExists = docPresent(input.docTextFor(worksheet))
+    // The receipt path is derived by the one shared convention, the same one
+    // describeCalculation holds the fixture to, so the two cannot diverge.
+    mutationExists = docPresent(input.docTextFor(mutationReceiptPathOf(worksheet)))
+  }
+  return {
+    fixtureRegistersTest: fixtures.some((fixture) => fixture.tests.length > 0),
+    pinsResolve,
+    familiesExist: [...record.outputs, ...(record.feeds ?? [])].every(
+      (familyId) => input.families[familyId] !== undefined,
+    ),
+    worksheetExists,
+    mutationExists,
+    provenanceIndependent: record.provenance.derivedBy !== record.provenance.reviewedBy,
+  }
+}
+
+function gatesPass(gates: CalculationRecordGates): boolean {
+  return Object.values(gates).every((gate) => gate === true)
+}
+
+function familyRelocationPending(family: OutputFamily): boolean {
+  return (
+    (family.kind === 'ui-native' || family.kind === 'ui-transformation') &&
+    family.relocation !== null &&
+    family.relocation.status === 'pending'
+  )
+}
+
+function familyIsComplete(
+  family: OutputFamily,
+  records: readonly { record: CalculationRecord; passes: boolean }[],
+): boolean {
+  if (records.length === 0) return false
+  if (!records.every(({ record, passes }) => passes && record.provenance.reviewedBy !== 'unreviewed')) return false
+  if (family.surfaces.length === 0) return false
+  if (family.relocation !== null && family.relocation.status !== 'done') return false
+  return true
+}
+
+export function buildCalculationCoverageReport(input: CalculationCoverageInput): CalculationCoverageReport {
+  const fixtureDetails = detailsByRule(
+    Object.fromEntries(
+      Object.entries(input.testSources).filter(([path]) => !path.endsWith(CALCULATION_CONFORMANCE_SOURCE)),
+    ),
+    'describeCalculation',
+  )
+  const gateById = new Map(
+    Object.entries(input.registry).map(([id, record]) => [
+      id,
+      calculationRecordGates(id, record, input, fixtureDetails),
+    ]),
+  )
+  const published: readonly CalculationCoverageRecord[] = Object.entries(input.registry)
+    .map(([id, record]) => ({
+      id,
+      title: record.title,
+      kind: record.kind,
+      outputs: [...record.outputs],
+      feeds: [...(record.feeds ?? [])],
+      justificationKind: record.justification.kind,
+      implementedBy: [...record.implementedBy],
+      provenance: record.provenance,
+      fixtureFiles: [...new Set((fixtureDetails.get(id) ?? []).map(({ path }) => path))].sort(compareStrings),
+      gates: gateById.get(id)!,
+    }))
+    .sort((left, right) => compareStrings(left.id, right.id))
+  // Family status is decided by `outputs` alone: a record that only feeds a
+  // family (see CalculationRecord.feeds) is not the record that computes it,
+  // so it must not move that family out of no-record-yet.
+  const recordsByFamily = new Map<string, { record: CalculationRecord; passes: boolean }[]>()
+  const feedersByFamily = new Map<string, string[]>()
+  for (const [id, record] of Object.entries(input.registry)) {
+    for (const familyId of record.outputs) {
+      const list = recordsByFamily.get(familyId) ?? []
+      list.push({ record, passes: gatesPass(gateById.get(id)!) })
+      recordsByFamily.set(familyId, list)
+    }
+    for (const familyId of record.feeds ?? []) {
+      if (input.families[familyId] === undefined) continue
+      const feeders = feedersByFamily.get(familyId) ?? []
+      feeders.push(id)
+      feedersByFamily.set(familyId, feeders)
+    }
+  }
+  const fedBy: Record<string, readonly string[]> = Object.fromEntries(
+    [...feedersByFamily.entries()]
+      .sort(([left], [right]) => compareStrings(left, right))
+      .map(([familyId, feeders]) => [familyId, [...feeders].sort(compareStrings)]),
+  )
+  const complete: string[] = []
+  const partial: string[] = []
+  const noRecordYet: string[] = []
+  const relocationPending: string[] = []
+  for (const [familyId, family] of Object.entries(input.families)) {
+    if (familyRelocationPending(family)) relocationPending.push(familyId)
+    const named = recordsByFamily.get(familyId) ?? []
+    if (named.length === 0) noRecordYet.push(familyId)
+    else if (familyIsComplete(family, named)) complete.push(familyId)
+    else partial.push(familyId)
+  }
+  complete.sort(compareStrings)
+  partial.sort(compareStrings)
+  noRecordYet.sort(compareStrings)
+  relocationPending.sort(compareStrings)
+
+  const cataloguedPaths = new Set<string>()
+  for (const record of Object.values(input.registry)) {
+    for (const path of record.implementedBy) cataloguedPaths.add(attestationPathOf(path))
+  }
+  let catalogued = 0
+  let excludedWithReason = 0
+  let notYetReviewed = 0
+  for (const [path, attestation] of Object.entries(input.attestations)) {
+    if (attestation.status !== 'rule-free') continue
+    if (cataloguedPaths.has(path)) catalogued += 1
+    else if (typeof attestation.exclusionReason === 'string' && attestation.exclusionReason.trim().length > 0) {
+      excludedWithReason += 1
+    } else {
+      notYetReviewed += 1
+    }
+  }
+
+  const moduleOfRecord = new Map<string, string>()
+  for (const [moduleName, records] of input.recordModules) {
+    for (const id of Object.keys(records)) moduleOfRecord.set(id, moduleName)
+  }
+  const recordsByModule = new Map<string, CalculationCoverageRecord[]>(
+    input.recordModules.map(([moduleName]) => [moduleName, []]),
+  )
+  for (const record of published) {
+    const moduleName = moduleOfRecord.get(record.id)
+    if (moduleName === undefined) {
+      throw new Error('calculation ' + record.id + ' belongs to no record module, so it has no coverage shard')
+    }
+    recordsByModule.get(moduleName)!.push(record)
+  }
+  const shards = [...recordsByModule.entries()]
+    .sort(([left], [right]) => compareStrings(left, right))
+    .map(([group, moduleRecords]) => {
+      const sorted = [...moduleRecords].sort((left, right) => compareStrings(left.id, right.id))
+      const shard: CalculationCoverageShard = {
+        kind: 'retiregolden.calculation-coverage.shard',
+        version: 1,
+        group,
+        records: sorted,
+      }
+      return {
+        group,
+        path: calculationCoverageShardPath(group),
+        shard,
+        json: JSON.stringify(shard, null, 2) + '\n',
+      }
+    })
+
+  const oracleExamples = Object.entries(input.externalGoldenSources)
+    .map(([file, source]) => ({ file, count: countOracleCalls(source) }))
+    .sort((left, right) => compareStrings(left.file, right.file))
+
+  const familyList = Object.values(input.families)
+  const manifest: CalculationCoverageManifest = {
+    kind: 'retiregolden.calculation-coverage.manifest',
+    version: 1,
+    families: {
+      identified: familyList.length,
+      byGroup: countBy(familyList.map(({ group }) => group)),
+      byKind: countBy(familyList.map(({ kind }) => kind)),
+      complete,
+      partial,
+      noRecordYet,
+      relocationPending,
+      fedBy,
+    },
+    records: {
+      total: published.length,
+      byKind: countBy(published.map(({ kind }) => kind)),
+      byJustificationKind: countBy(published.map(({ justificationKind }) => justificationKind)),
+    },
+    oracleExamples,
+    walkthroughs: [...input.walkthroughs],
+    attestationsDerived: { catalogued, excludedWithReason, notYetReviewed },
+    shards: shards.map(({ group, path, shard }) => ({ group, path, recordCount: shard.records.length })),
+  }
+  return {
+    manifest,
     json: JSON.stringify(manifest, null, 2) + '\n',
     shards,
   }
