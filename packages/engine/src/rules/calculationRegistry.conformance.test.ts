@@ -17,9 +17,11 @@ import {
 import { OUTPUT_FAMILIES, type OutputFamily } from './outputFamilies.js'
 import { OUTPUT_FIELD_COVERAGE, type OutputFieldCoverageRow } from './outputFieldCoverage.js'
 import { declaredSymbolLinesOf, symbolAnchorLine, type DeclaredSymbol } from './symbolLines.js'
+import { laddersAndValuationRecords } from './calculations/laddersAndValuation.js'
 import { spendingAndWithdrawalsRecords } from './calculations/spendingAndWithdrawals.js'
 
 const RECORD_MODULES: readonly (readonly [string, Readonly<Record<string, unknown>>])[] = [
+  ['laddersAndValuation', laddersAndValuationRecords],
   ['spendingAndWithdrawals', spendingAndWithdrawalsRecords],
 ]
 

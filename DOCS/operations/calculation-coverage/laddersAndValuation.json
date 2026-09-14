@@ -1,0 +1,233 @@
+{
+  "kind": "retiregolden.calculation-coverage.shard",
+  "version": 1,
+  "group": "laddersAndValuation",
+  "records": [
+    {
+      "id": "fedinvest-csv-tips-parsing",
+      "title": "FedInvest security-price CSV: TIPS rows to reference records",
+      "kind": "data",
+      "outputs": [
+        "ladder-rung-cost"
+      ],
+      "justificationKind": "dataset",
+      "implementedBy": [
+        "packages/engine/src/ladder/fedInvest.ts"
+      ],
+      "provenance": {
+        "derivedBy": "codex",
+        "implementedBy": "claude-subagent",
+        "reviewedBy": "unreviewed"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/ladder/fedInvest.evidence.test.ts"
+      ]
+    },
+    {
+      "id": "fedinvest-latest-price-date",
+      "title": "Latest FedInvest price date: previous business day in local time",
+      "kind": "model",
+      "outputs": [
+        "ladder-rung-cost"
+      ],
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/ladder/fedInvest.ts"
+      ],
+      "provenance": {
+        "derivedBy": "codex",
+        "implementedBy": "claude-subagent",
+        "reviewedBy": "unreviewed"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/ladder/fedInvest.evidence.test.ts"
+      ]
+    },
+    {
+      "id": "fedinvest-nearest-tips-maturity",
+      "title": "Nearest FedInvest TIPS for a rung year",
+      "kind": "formula",
+      "outputs": [
+        "ladder-rung-cost"
+      ],
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/ladder/fedInvest.ts"
+      ],
+      "provenance": {
+        "derivedBy": "codex",
+        "implementedBy": "claude-subagent",
+        "reviewedBy": "unreviewed"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/ladder/fedInvest.evidence.test.ts"
+      ]
+    },
+    {
+      "id": "funded-ratio-hand-present-value",
+      "title": "Funded ratio: present values of essential spending and guaranteed income",
+      "kind": "composition",
+      "outputs": [
+        "funded-ratio-result-essential-spending-pv",
+        "funded-ratio-result-guaranteed-income-pv",
+        "funded-ratio-result-funded-ratio-pct",
+        "funded-ratio-result-unfunded-pv"
+      ],
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/ladder/fundedRatio.ts"
+      ],
+      "provenance": {
+        "derivedBy": "codex",
+        "implementedBy": "claude-subagent",
+        "reviewedBy": "unreviewed"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/ladder/fundedRatio.evidence.test.ts"
+      ]
+    },
+    {
+      "id": "ladder-annual-coupon-par-pricing",
+      "title": "Synthetic TIPS rung: floored coupon and par-curve price",
+      "kind": "formula",
+      "outputs": [
+        "ladder-rung-cost",
+        "ladder-rung-coupon-rate-pct",
+        "ladder-build-total-cost"
+      ],
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/ladder/ladderMath.ts"
+      ],
+      "provenance": {
+        "derivedBy": "codex",
+        "implementedBy": "claude-subagent",
+        "reviewedBy": "unreviewed"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/ladder/ladderMath.evidence.test.ts"
+      ]
+    },
+    {
+      "id": "ladder-backward-face-construction",
+      "title": "Level-real-income ladder: faces solved back to front",
+      "kind": "formula",
+      "outputs": [
+        "ladder-rung-face",
+        "ladder-build-annual-real-income-by-offset",
+        "ladder-build-total-cost",
+        "ladder-build-target-annual-real-income"
+      ],
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/ladder/ladderMath.ts"
+      ],
+      "provenance": {
+        "derivedBy": "codex",
+        "implementedBy": "claude-subagent",
+        "reviewedBy": "unreviewed"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/ladder/ladderMath.evidence.test.ts"
+      ]
+    },
+    {
+      "id": "ladder-real-present-value",
+      "title": "Real present value of a cash-flow stream on the TIPS curve",
+      "kind": "formula",
+      "outputs": [
+        "funded-ratio-result-essential-spending-pv",
+        "funded-ratio-result-guaranteed-income-pv",
+        "funded-ratio-result-funded-ratio-pct",
+        "funded-ratio-result-unfunded-pv",
+        "ladder-rung-cost"
+      ],
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/ladder/ladderMath.ts"
+      ],
+      "provenance": {
+        "derivedBy": "codex",
+        "implementedBy": "claude-subagent",
+        "reviewedBy": "unreviewed"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/ladder/ladderMath.evidence.test.ts"
+      ]
+    },
+    {
+      "id": "ladder-real-yield-interpolation",
+      "title": "Par real yield at a maturity: linear interpolation with flat endpoints",
+      "kind": "formula",
+      "outputs": [
+        "income-floor-ladder-yield-pct",
+        "ladder-rung-coupon-rate-pct",
+        "funded-ratio-result-essential-spending-pv",
+        "funded-ratio-result-guaranteed-income-pv",
+        "funded-ratio-result-funded-ratio-pct",
+        "funded-ratio-result-unfunded-pv"
+      ],
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/ladder/ladderMath.ts"
+      ],
+      "provenance": {
+        "derivedBy": "codex",
+        "implementedBy": "claude-subagent",
+        "reviewedBy": "unreviewed"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/ladder/ladderMath.evidence.test.ts"
+      ]
+    },
+    {
+      "id": "ladder-rung-flows-and-remaining-face",
+      "title": "Ladder cash flows in a year and face outstanding after it",
+      "kind": "formula",
+      "outputs": [
+        "ladder-real-flows-coupons",
+        "ladder-real-flows-maturing-principal",
+        "ladder-value-annual"
+      ],
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/ladder/ladderMath.ts"
+      ],
+      "provenance": {
+        "derivedBy": "codex",
+        "implementedBy": "claude-subagent",
+        "reviewedBy": "unreviewed"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/ladder/ladderMath.evidence.test.ts"
+      ]
+    },
+    {
+      "id": "treasury-real-yield-curve-2026",
+      "title": "Embedded Treasury par real-yield curve, 2026-06-30",
+      "kind": "data",
+      "outputs": [
+        "income-floor-ladder-yield-pct",
+        "ladder-rung-cost",
+        "ladder-rung-coupon-rate-pct",
+        "ladder-build-total-cost",
+        "funded-ratio-result-essential-spending-pv",
+        "funded-ratio-result-guaranteed-income-pv",
+        "funded-ratio-result-funded-ratio-pct",
+        "funded-ratio-result-unfunded-pv"
+      ],
+      "justificationKind": "dataset",
+      "implementedBy": [
+        "packages/engine/src/params/data/realYieldCurve2026.ts"
+      ],
+      "provenance": {
+        "derivedBy": "codex",
+        "implementedBy": "claude-subagent",
+        "reviewedBy": "unreviewed"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/params/data/realYieldCurve2026.evidence.test.ts"
+      ]
+    }
+  ]
+}
