@@ -1,6 +1,6 @@
 {
   "kind": "retiregolden.calculation-coverage.manifest",
-  "version": 1,
+  "version": 2,
   "families": {
     "identified": 229,
     "byGroup": {

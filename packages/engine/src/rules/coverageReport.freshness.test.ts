@@ -6,6 +6,8 @@ import {
 import {
   CALCULATION_RECORD_MODULES,
   CALCULATION_REGISTRY,
+  calculationIds,
+  mutationReceiptPathOf,
   type CalculationRecord,
 } from './calculationRegistry.js'
 import { OUTPUT_FAMILIES, type OutputFamily } from './outputFamilies.js'
@@ -14,6 +16,7 @@ import {
   buildCoverageReport,
   describeRuleCallEnd,
   walkthroughEntriesOf,
+  type CalculationCoverageRecord,
 } from './coverageReport.js'
 import { declaredSymbolLinesOf, symbolAnchorLine, type DeclaredSymbol } from './symbolLines.js'
 import {
@@ -328,6 +331,24 @@ describe('rules coverage report artifacts', () => {
   })
 })
 
+/** A registry-shaped record that exists only inside this suite, for driving the builder on a chosen justification. */
+function syntheticCalculationRecord(justification: CalculationRecord['justification']): CalculationRecord {
+  return {
+    title: 'Synthetic record',
+    purpose: 'Exists only inside this test.',
+    kind: 'formula',
+    outputs: ['spending-base-annual'],
+    statement: 'q = 1',
+    formula: null,
+    justification,
+    limits: [],
+    implementedBy: ['packages/engine/src/spending/abw.ts'],
+    implementedByFunctions: ['packages/engine/src/spending/abw.ts#abwAnnualPayment'],
+    verifiedOn: '2026-09-14',
+    provenance: { derivedBy: 'deriving-agent', implementedBy: 'implementing-agent', reviewedBy: 'reviewing-agent' },
+  }
+}
+
 describe('calculation coverage report artifacts', () => {
   it('matches the deterministic calculation report builder', () => {
     if (committedCalculationJson === null) {
@@ -356,6 +377,18 @@ describe('calculation coverage report artifacts', () => {
     expect(isGeneratedShardText(realShard!.json)).toBe(false)
   })
 
+  // The index and the shards move as a pair: version 2 added the record
+  // substance to every shard record, so both carry the new number.
+  it('publishes calculation ledger version 2 on the index and on every shard', () => {
+    expect(calculationReport.manifest.version).toBe(2)
+    expect((JSON.parse(calculationReport.json) as { version: unknown }).version).toBe(2)
+    expect(calculationReport.shards.length).toBeGreaterThan(0)
+    for (const { group, shard, json } of calculationReport.shards) {
+      expect(shard.version, group).toBe(2)
+      expect((JSON.parse(json) as { version: unknown }).version, group).toBe(2)
+    }
+  })
+
   it('publishes per-record gate status in every shard', () => {
     for (const { shard } of calculationReport.shards) {
       for (const record of shard.records) {
@@ -374,32 +407,219 @@ describe('calculation coverage report artifacts', () => {
     }
   })
 
-  it('publishes exactly the documented record keys, feeds included, in every calculation shard', () => {
+  it('publishes exactly the documented record keys in order, substance between feeds and justificationKind', () => {
     const documentedKeys = [
-      'feeds',
-      'fixtureFiles',
-      'gates',
       'id',
-      'implementedBy',
-      'justificationKind',
+      'title',
       'kind',
       'outputs',
+      'feeds',
+      'purpose',
+      'statement',
+      'formula',
+      'limits',
+      'worksheet',
+      'mutation',
+      'dataset',
+      'ruleIds',
+      'assumption',
+      'justificationKind',
+      'implementedBy',
       'provenance',
-      'title',
+      'fixtureFiles',
+      'gates',
     ]
     let seen = 0
     for (const { json } of calculationReport.shards) {
       const { records } = JSON.parse(json) as { records: Record<string, unknown>[] }
       for (const record of records) {
         seen += 1
-        expect(Object.keys(record).sort(), String(record.id)).toEqual(documentedKeys)
+        expect(Object.keys(record), String(record.id)).toEqual(documentedKeys)
         // `feeds` is always an array, `[]` when the registry record declares
-        // none, so a consumer never has to special-case its absence.
+        // none, so a consumer never has to special-case its absence. The
+        // same holds for `limits`.
         expect(Array.isArray(record.feeds), String(record.id) + '.feeds').toBe(true)
         expect(Array.isArray(record.outputs), String(record.id) + '.outputs').toBe(true)
+        expect(Array.isArray(record.limits), String(record.id) + '.limits').toBe(true)
       }
     }
     expect(seen).toBe(calculationReport.manifest.records.total)
+  })
+
+  it("publishes a derivation record's worksheet and receipt from the registry, and any other kind's only when the conventional files exist", () => {
+    let derivations = 0
+    let conventional = 0
+    for (const { group, json } of calculationReport.shards) {
+      const directory = group.replace(/[A-Z]/gu, (letter) => '-' + letter.toLowerCase())
+      const { records } = JSON.parse(json) as {
+        records: { id: string; worksheet: string | null; mutation: string | null }[]
+      }
+      for (const record of records) {
+        const { justification } = (CALCULATION_REGISTRY as Readonly<Record<string, CalculationRecord>>)[record.id]!
+        if (justification.kind === 'derivation') {
+          derivations += 1
+          expect(record.worksheet, record.id).toBe(justification.worksheet)
+          expect(record.mutation, record.id).toBe(mutationReceiptPathOf(justification.worksheet))
+          continue
+        }
+        // Not a gate for these kinds: the path is named exactly when the file
+        // is on disk at the convention every derivation worksheet follows, so
+        // a consumer never reads null beside an existing worksheet.
+        const path = 'DOCS/calculations/' + directory + '/' + record.id + '.md'
+        const receipt = mutationReceiptPathOf(path)
+        const worksheetOnDisk = (calculationDocTextFor(path) ?? '').trim().length > 0
+        const receiptOnDisk = (calculationDocTextFor(receipt) ?? '').trim().length > 0
+        expect(record.worksheet, record.id).toBe(worksheetOnDisk ? path : null)
+        expect(record.mutation, record.id).toBe(worksheetOnDisk && receiptOnDisk ? receipt : null)
+        if (worksheetOnDisk) conventional += 1
+      }
+    }
+    expect(derivations).toBeGreaterThan(0)
+    expect(conventional).toBeGreaterThan(0)
+  })
+
+  it("names both dataset records' worksheets and receipts, which are on disk at the conventional paths", () => {
+    const byId = new Map(
+      calculationReport.shards.flatMap(({ json }) => {
+        const { records } = JSON.parse(json) as { records: { id: string; worksheet: unknown; mutation: unknown }[] }
+        return records.map((record) => [record.id, record] as const)
+      }),
+    )
+    for (const id of ['fedinvest-csv-tips-parsing', 'treasury-real-yield-curve-2026'] as const) {
+      expect(CALCULATION_REGISTRY[id].justification.kind, id).toBe('dataset')
+      const worksheet = 'DOCS/calculations/ladders-and-valuation/' + id + '.md'
+      const mutation = 'DOCS/calculations/ladders-and-valuation/' + id + '.mutation.md'
+      expect(calculationDocTextFor(worksheet), worksheet).not.toBeNull()
+      expect(calculationDocTextFor(mutation), mutation).not.toBeNull()
+      expect(byId.get(id), id).toMatchObject({ worksheet, mutation })
+    }
+  })
+
+  it("names a non-derivation record's conventional worksheet when it exists, and its receipt only when that exists too", () => {
+    const registry = {
+      'synthetic-assumption': syntheticCalculationRecord({
+        kind: 'assumption',
+        rationale: 'why it holds',
+        intendedUse: 'where it applies',
+        errorBound: null,
+      }),
+    }
+    // The module name is kebab-cased into the docs directory, the same fold
+    // every committed derivation worksheet path follows.
+    const worksheet = 'DOCS/calculations/synthetic-group/synthetic-assumption.md'
+    const receipt = mutationReceiptPathOf(worksheet)
+    const build = (docs: Readonly<Record<string, string>>) =>
+      buildCalculationCoverageReport({
+        registry,
+        recordModules: [['syntheticGroup', registry]],
+        families: OUTPUT_FAMILIES,
+        attestations: {},
+        testSources: {},
+        externalGoldenSources: {},
+        walkthroughs: [],
+        symbolLineFor: () => 1,
+        docTextFor: (path) => docs[path] ?? null,
+      }).shards[0]!.shard.records[0]!
+    expect(build({})).toMatchObject({ worksheet: null, mutation: null })
+    expect(build({ [worksheet]: '# worksheet' })).toMatchObject({ worksheet, mutation: null })
+    expect(build({ [worksheet]: '# worksheet', [receipt]: '# receipt' })).toMatchObject({ worksheet, mutation: receipt })
+    // A receipt with no worksheet names neither, and an empty file is absent,
+    // as it is for the gates.
+    expect(build({ [receipt]: '# receipt' })).toMatchObject({ worksheet: null, mutation: null })
+    expect(build({ [worksheet]: '   ' })).toMatchObject({ worksheet: null, mutation: null })
+  })
+
+  it('publishes the formula verbatim for a formula record and null for a data record', () => {
+    const formulaById = new Map(
+      calculationReport.shards.flatMap(({ json }) => {
+        const { records } = JSON.parse(json) as { records: { id: string; formula: unknown }[] }
+        return records.map((record) => [record.id, record.formula] as const)
+      }),
+    )
+    const formulaRecord = CALCULATION_REGISTRY['abw-annuity-due-payment']
+    expect(formulaRecord.kind).toBe('formula')
+    expect(formulaRecord.formula).not.toBeNull()
+    expect(formulaById.get('abw-annuity-due-payment')).toEqual(formulaRecord.formula)
+    expect(Object.keys(formulaById.get('abw-annuity-due-payment') as object)).toEqual([
+      'expression',
+      'variables',
+      'timing',
+      'rounding',
+    ])
+    const dataRecord = CALCULATION_REGISTRY['treasury-real-yield-curve-2026']
+    expect(dataRecord.kind).toBe('data')
+    expect(dataRecord.formula).toBeNull()
+    expect(formulaById.get('treasury-real-yield-curve-2026')).toBeNull()
+  })
+
+  it('publishes dataset, ruleIds, and assumption exactly for the matching justification kind', () => {
+    const publishedById = new Map(
+      calculationReport.shards.flatMap(({ json }) => {
+        const { records } = JSON.parse(json) as { records: Record<string, unknown>[] }
+        return records.map((record) => [String(record.id), record] as const)
+      }),
+    )
+    const tips = CALCULATION_REGISTRY['fedinvest-csv-tips-parsing'].justification
+    if (tips.kind !== 'dataset') throw new Error('fedinvest-csv-tips-parsing must carry a dataset justification')
+    const tipsPublished = publishedById.get('fedinvest-csv-tips-parsing')!
+    // The digest, rights note, and transformation stay in the registry.
+    expect(Object.keys(tipsPublished.dataset as object)).toEqual(['citation', 'url', 'asOf', 'retrievedOn'])
+    expect(tipsPublished).toMatchObject({
+      dataset: {
+        citation: tips.source.citation,
+        url: tips.source.url,
+        asOf: tips.source.asOf,
+        retrievedOn: tips.source.retrievedOn,
+      },
+      ruleIds: null,
+      assumption: null,
+    })
+    expect(publishedById.get('abw-annuity-due-payment')).toMatchObject({
+      dataset: null,
+      ruleIds: null,
+      assumption: null,
+    })
+
+    // No committed record justifies by assumption or by registry rule yet, so
+    // those two branches run on synthetic records through the builder. With
+    // no docs at all, neither names a worksheet or a receipt.
+    const ruleIds = [taxRuleIds[1]!, taxRuleIds[0]!] as const
+    const registry = {
+      'synthetic-assumption': syntheticCalculationRecord({
+        kind: 'assumption',
+        rationale: 'why it holds',
+        intendedUse: 'where it applies',
+        errorBound: 'within one percent',
+      }),
+      'synthetic-registry': syntheticCalculationRecord({ kind: 'registry', ruleIds }),
+    }
+    const built = buildCalculationCoverageReport({
+      registry,
+      recordModules: [['synthetic', registry]],
+      families: OUTPUT_FAMILIES,
+      attestations: {},
+      testSources: {},
+      externalGoldenSources: {},
+      walkthroughs: [],
+      symbolLineFor: () => 1,
+      docTextFor: () => null,
+    })
+    const byId = new Map(built.shards[0]!.shard.records.map((record) => [record.id, record]))
+    expect(byId.get('synthetic-assumption')).toMatchObject({
+      worksheet: null,
+      mutation: null,
+      dataset: null,
+      ruleIds: null,
+      assumption: { rationale: 'why it holds', intendedUse: 'where it applies', errorBound: 'within one percent' },
+    })
+    expect(byId.get('synthetic-registry')).toMatchObject({
+      worksheet: null,
+      mutation: null,
+      dataset: null,
+      assumption: null,
+    })
+    // Rule ids are published in the order the record declares them.
+    expect(byId.get('synthetic-registry')!.ruleIds).toEqual([...ruleIds])
   })
 
   it('publishes the documented families keys in order, fedBy last, keyed by family to sorted feeder ids', () => {
@@ -529,6 +749,128 @@ describe('calculation coverage report artifacts', () => {
 // quotedText edit hiding behind an unchanged citation and URL, and it stays
 // crypto-free for browser bundling. This node-side test closes that last gap:
 // every ledger verdict must carry the hash of the exact quote it judged.
+/** Key-order-insensitive structural equality, so a projection is judged by content, not by literal spelling. */
+function canonicalJson(value: unknown): string {
+  const canonical = (entry: unknown): unknown => {
+    if (Array.isArray(entry)) return entry.map(canonical)
+    if (entry !== null && typeof entry === 'object') {
+      return Object.fromEntries(
+        Object.entries(entry as Record<string, unknown>)
+          .sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0))
+          .map(([key, inner]) => [key, canonical(inner)]),
+      )
+    }
+    return entry
+  }
+  return JSON.stringify(canonical(value))
+}
+
+/**
+ * Every field on which a published calculation record disagrees with its
+ * registry record, as `id.field` labels: the one check proves the committed
+ * shards faithful and a deliberately wrong projection unfaithful.
+ */
+function calculationProjectionMismatches(
+  published: readonly CalculationCoverageRecord[],
+  registry: Readonly<Record<string, CalculationRecord>>,
+): string[] {
+  const mismatches: string[] = []
+  for (const record of published) {
+    const source = registry[record.id]
+    if (source === undefined) {
+      mismatches.push(record.id + ' (not in the registry)')
+      continue
+    }
+    const { justification } = source
+    const expected: Record<string, unknown> = {
+      title: source.title,
+      kind: source.kind,
+      outputs: source.outputs,
+      feeds: source.feeds ?? [],
+      purpose: source.purpose,
+      statement: source.statement,
+      formula: source.formula,
+      limits: source.limits,
+      dataset:
+        justification.kind === 'dataset'
+          ? {
+              citation: justification.source.citation,
+              url: justification.source.url,
+              asOf: justification.source.asOf,
+              retrievedOn: justification.source.retrievedOn,
+            }
+          : null,
+      ruleIds: justification.kind === 'registry' ? justification.ruleIds : null,
+      assumption:
+        justification.kind === 'assumption'
+          ? {
+              rationale: justification.rationale,
+              intendedUse: justification.intendedUse,
+              errorBound: justification.errorBound,
+            }
+          : null,
+      justificationKind: justification.kind,
+      implementedBy: source.implementedBy,
+      provenance: source.provenance,
+    }
+    if (justification.kind === 'derivation') {
+      expected.worksheet = justification.worksheet
+      expected.mutation = mutationReceiptPathOf(justification.worksheet)
+    }
+    for (const [field, value] of Object.entries(expected)) {
+      if (canonicalJson((record as unknown as Record<string, unknown>)[field]) !== canonicalJson(value)) {
+        mismatches.push(record.id + '.' + field)
+      }
+    }
+  }
+  return mismatches
+}
+
+// The shard records are the catalog cards on retiregolden.org.
+// Mirror-the-builder freshness checks cannot catch a wrong projection (both
+// sides regenerate together), so these read the expected substance from the
+// registry records themselves. Worksheet and mutation for non-derivation kinds
+// are pinned above against the docs on disk, which the registry does not name.
+describe('calculation shard projection contract', () => {
+  it('copies purpose, statement, formula, limits, justification detail, and pins from the registry for every record', () => {
+    const published = calculationReport.shards.flatMap(
+      ({ json }) => (JSON.parse(json) as { records: CalculationCoverageRecord[] }).records,
+    )
+    // The shards partition the registry: every id once, none dropped.
+    expect([...published.map(({ id }) => id)].sort()).toEqual([...calculationIds])
+    expect(calculationProjectionMismatches(published, CALCULATION_REGISTRY)).toEqual([])
+    for (const record of published) {
+      expect(record.purpose.trim().length, record.id).toBeGreaterThan(0)
+      expect(record.statement.trim().length, record.id).toBeGreaterThan(0)
+    }
+  })
+
+  it('reports a projection whose statement differs from the registry record', () => {
+    const id = 'abw-annuity-due-payment'
+    const altered: CalculationRecord = {
+      ...CALCULATION_REGISTRY[id],
+      statement: CALCULATION_REGISTRY[id].statement + ' (altered)',
+    }
+    const registry = { [id]: altered }
+    const built = buildCalculationCoverageReport({
+      registry,
+      recordModules: [['spendingAndWithdrawals', registry]],
+      families: OUTPUT_FAMILIES,
+      attestations: {},
+      testSources: {},
+      externalGoldenSources: {},
+      walkthroughs: [],
+      symbolLineFor: () => 1,
+      docTextFor: () => null,
+    })
+    const published = built.shards[0]!.shard.records
+    // The builder is faithful to what it was fed; the drift shows only against
+    // the real registry, which is what the check above compares to.
+    expect(calculationProjectionMismatches(published, registry)).toEqual([])
+    expect(calculationProjectionMismatches(published, CALCULATION_REGISTRY)).toEqual([id + '.statement'])
+  })
+})
+
 describe('quote-fidelity ledger hash binding', () => {
   it('binds every ledger verdict to the registry quote it judged', async () => {
     // The repo commits a ledger from this change on; a glob or path miss must

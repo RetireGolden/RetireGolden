@@ -3,7 +3,11 @@ import type {
   CoverageAttestationStatus,
   COVERAGE_ATTESTATIONS,
 } from './coverageAttestations.js'
-import { mutationReceiptPathOf, type CalculationRecord } from './calculationRegistry.js'
+import {
+  mutationReceiptPathOf,
+  type CalculationFormula,
+  type CalculationRecord,
+} from './calculationRegistry.js'
 import type { OutputFamily } from './outputFamilies.js'
 import type {
   TAX_RULE_REGISTRY,
@@ -988,6 +992,20 @@ export interface CalculationRecordGates {
   readonly provenanceIndependent: boolean
 }
 
+/** A dataset justification's public source; its digest and rights note stay in the registry. */
+export interface CalculationCoverageDataset {
+  readonly citation: string
+  readonly url: string
+  readonly asOf: string
+  readonly retrievedOn: string
+}
+
+export interface CalculationCoverageAssumption {
+  readonly rationale: string
+  readonly intendedUse: string
+  readonly errorBound: string | null
+}
+
 export interface CalculationCoverageRecord {
   readonly id: string
   readonly title: string
@@ -995,6 +1013,31 @@ export interface CalculationCoverageRecord {
   readonly outputs: readonly string[]
   /** The record's `feeds` list as declared; `[]` when the record declares none. */
   readonly feeds: readonly string[]
+  // The record's substance, copied from the registry so the catalog page can
+  // show it without a click-through. Justification detail is published per
+  // kind; each field is null for the kinds it does not belong to.
+  readonly purpose: string
+  readonly statement: string
+  readonly formula: CalculationFormula | null
+  readonly limits: readonly string[]
+  /**
+   * The evidence worksheet path: a derivation record's `justification.worksheet`
+   * as declared; for any other justification kind, the conventional
+   * `DOCS/calculations/<group>/<id>.md` when that file exists, else null.
+   */
+  readonly worksheet: string | null
+  /**
+   * The worksheet's mutation receipt, by `mutationReceiptPathOf`: always named
+   * for a derivation record (the gates report whether it exists); for any
+   * other kind only when the receipt file exists; null whenever `worksheet` is.
+   */
+  readonly mutation: string | null
+  /** Null unless `justificationKind` is 'dataset'. */
+  readonly dataset: CalculationCoverageDataset | null
+  /** Null unless `justificationKind` is 'registry'. */
+  readonly ruleIds: readonly string[] | null
+  /** Null unless `justificationKind` is 'assumption'. */
+  readonly assumption: CalculationCoverageAssumption | null
   readonly justificationKind: CalculationRecord['justification']['kind']
   readonly implementedBy: readonly string[]
   readonly provenance: CalculationRecord['provenance']
@@ -1032,16 +1075,27 @@ export function walkthroughEntriesOf(sources: Readonly<Record<string, string>>):
     .map(({ id, testName }) => ({ id, testName }))
 }
 
+/**
+ * The calculation-coverage ledger version, carried by the index and by every
+ * shard: the pair moves together, so a consumer that pins one pins both.
+ * Version 2 added each record's substance (purpose, statement, formula,
+ * limits, worksheet, mutation, dataset, ruleIds, assumption) between `feeds`
+ * and `justificationKind`, and names worksheet and mutation for any
+ * justification kind whose conventional evidence files exist. Version 1 was
+ * the sharded layout with per-record gates only.
+ */
+export const CALCULATION_COVERAGE_VERSION = 2
+
 export interface CalculationCoverageShard {
   readonly kind: 'retiregolden.calculation-coverage.shard'
-  readonly version: 1
+  readonly version: typeof CALCULATION_COVERAGE_VERSION
   readonly group: string
   readonly records: readonly CalculationCoverageRecord[]
 }
 
 export interface CalculationCoverageManifest {
   readonly kind: 'retiregolden.calculation-coverage.manifest'
-  readonly version: 1
+  readonly version: typeof CALCULATION_COVERAGE_VERSION
   readonly families: {
     readonly identified: number
     readonly byGroup: Readonly<Record<string, number>>
@@ -1184,6 +1238,101 @@ function familyIsComplete(
   return true
 }
 
+type CalculationSubstance = Pick<
+  CalculationCoverageRecord,
+  'purpose' | 'statement' | 'formula' | 'limits' | 'worksheet' | 'mutation' | 'dataset' | 'ruleIds' | 'assumption'
+>
+
+/**
+ * The docs directory a record module's evidence lives in: the module name in
+ * kebab case (`laddersAndValuation` is `ladders-and-valuation`), which is the
+ * family-group vocabulary and the directory every derivation worksheet in the
+ * registry already names. A record of any other justification kind owes no
+ * worksheet, but when one exists at `DOCS/calculations/<directory>/<id>.md`
+ * the catalog card should name it rather than publish null beside a file
+ * that is on disk.
+ */
+function conventionalWorksheetPathOf(group: string, id: string): string {
+  const directory = group.replace(/[A-Z]/gu, (letter) => '-' + letter.toLowerCase())
+  return 'DOCS/calculations/' + directory + '/' + id + '.md'
+}
+
+/**
+ * The worksheet and receipt the card names. A derivation record's come from
+ * the registry, the receipt by the one shared convention the gates check, so
+ * the published path and the gated path cannot differ. Any other kind names
+ * the conventional worksheet only when that file exists, and its receipt only
+ * when the receipt file exists too; neither is a gate for those kinds.
+ */
+function evidencePathsOf(
+  record: CalculationRecord,
+  group: string,
+  id: string,
+  docTextFor: CalculationCoverageInput['docTextFor'],
+): Pick<CalculationSubstance, 'worksheet' | 'mutation'> {
+  if (record.justification.kind === 'derivation') {
+    const { worksheet } = record.justification
+    return { worksheet, mutation: mutationReceiptPathOf(worksheet) }
+  }
+  const worksheet = conventionalWorksheetPathOf(group, id)
+  if (!docPresent(docTextFor(worksheet))) return { worksheet: null, mutation: null }
+  const mutation = mutationReceiptPathOf(worksheet)
+  return { worksheet, mutation: docPresent(docTextFor(mutation)) ? mutation : null }
+}
+
+/**
+ * What the catalog page shows for a record without a click-through: its
+ * prose, its formula, its evidence paths, and the public part of its
+ * justification. A dataset's digest and rights note are registry detail and
+ * are not published.
+ */
+function calculationSubstance(
+  record: CalculationRecord,
+  group: string,
+  id: string,
+  docTextFor: CalculationCoverageInput['docTextFor'],
+): CalculationSubstance {
+  const { formula, justification } = record
+  return {
+    purpose: record.purpose,
+    statement: record.statement,
+    formula:
+      formula === null
+        ? null
+        : {
+            expression: formula.expression,
+            variables: formula.variables.map(({ symbol, meaning, unit, domain }) => ({
+              symbol,
+              meaning,
+              unit,
+              domain,
+            })),
+            timing: formula.timing,
+            rounding: formula.rounding,
+          },
+    limits: [...record.limits],
+    ...evidencePathsOf(record, group, id, docTextFor),
+    dataset:
+      justification.kind === 'dataset'
+        ? {
+            citation: justification.source.citation,
+            url: justification.source.url,
+            asOf: justification.source.asOf,
+            retrievedOn: justification.source.retrievedOn,
+          }
+        : null,
+    ruleIds: justification.kind === 'registry' ? [...justification.ruleIds] : null,
+    assumption:
+      justification.kind === 'assumption'
+        ? {
+            rationale: justification.rationale,
+            intendedUse: justification.intendedUse,
+            errorBound: justification.errorBound,
+          }
+        : null,
+  }
+}
+
 export function buildCalculationCoverageReport(input: CalculationCoverageInput): CalculationCoverageReport {
   const fixtureDetails = detailsByRule(
     Object.fromEntries(
@@ -1197,6 +1346,17 @@ export function buildCalculationCoverageReport(input: CalculationCoverageInput):
       calculationRecordGates(id, record, input, fixtureDetails),
     ]),
   )
+  const moduleOfRecord = new Map<string, string>()
+  for (const [moduleName, records] of input.recordModules) {
+    for (const id of Object.keys(records)) moduleOfRecord.set(id, moduleName)
+  }
+  const moduleOf = (id: string): string => {
+    const moduleName = moduleOfRecord.get(id)
+    if (moduleName === undefined) {
+      throw new Error('calculation ' + id + ' belongs to no record module, so it has no coverage shard')
+    }
+    return moduleName
+  }
   const published: readonly CalculationCoverageRecord[] = Object.entries(input.registry)
     .map(([id, record]) => ({
       id,
@@ -1204,6 +1364,7 @@ export function buildCalculationCoverageReport(input: CalculationCoverageInput):
       kind: record.kind,
       outputs: [...record.outputs],
       feeds: [...(record.feeds ?? [])],
+      ...calculationSubstance(record, moduleOf(id), id, input.docTextFor),
       justificationKind: record.justification.kind,
       implementedBy: [...record.implementedBy],
       provenance: record.provenance,
@@ -1267,27 +1428,17 @@ export function buildCalculationCoverageReport(input: CalculationCoverageInput):
     }
   }
 
-  const moduleOfRecord = new Map<string, string>()
-  for (const [moduleName, records] of input.recordModules) {
-    for (const id of Object.keys(records)) moduleOfRecord.set(id, moduleName)
-  }
   const recordsByModule = new Map<string, CalculationCoverageRecord[]>(
     input.recordModules.map(([moduleName]) => [moduleName, []]),
   )
-  for (const record of published) {
-    const moduleName = moduleOfRecord.get(record.id)
-    if (moduleName === undefined) {
-      throw new Error('calculation ' + record.id + ' belongs to no record module, so it has no coverage shard')
-    }
-    recordsByModule.get(moduleName)!.push(record)
-  }
+  for (const record of published) recordsByModule.get(moduleOf(record.id))!.push(record)
   const shards = [...recordsByModule.entries()]
     .sort(([left], [right]) => compareStrings(left, right))
     .map(([group, moduleRecords]) => {
       const sorted = [...moduleRecords].sort((left, right) => compareStrings(left.id, right.id))
       const shard: CalculationCoverageShard = {
         kind: 'retiregolden.calculation-coverage.shard',
-        version: 1,
+        version: CALCULATION_COVERAGE_VERSION,
         group,
         records: sorted,
       }
@@ -1306,7 +1457,7 @@ export function buildCalculationCoverageReport(input: CalculationCoverageInput):
   const familyList = Object.values(input.families)
   const manifest: CalculationCoverageManifest = {
     kind: 'retiregolden.calculation-coverage.manifest',
-    version: 1,
+    version: CALCULATION_COVERAGE_VERSION,
     families: {
       identified: familyList.length,
       byGroup: countBy(familyList.map(({ group }) => group)),

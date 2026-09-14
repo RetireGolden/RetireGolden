@@ -82,3 +82,14 @@ integer-cent `exact`.
 - Derived by: claude-orchestrator, from the formula alone, without running the engine.
 - Implemented by: grok.
 - Reviewed by: unreviewed. An independent recomputation is still owed.
+
+## Revision
+
+- 2026-09-14: the Claim states the closed-form identity, and this worksheet's
+  inputs (n = 2, x = 10/11) exercise neither guard of the production function.
+  `abwAnnualPayment` first truncates the horizon to whole years,
+  n = floor(remainingYears), and returns B/n not only when x = 1 (tested as
+  |x − 1| < 1e-9) but whenever x is not finite or not positive
+  (`!Number.isFinite(x) || x <= 0`). The registry record
+  `abw-annuity-due-payment` states both guards and names the input truncation
+  as its rounding; the identity above is unchanged.
