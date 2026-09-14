@@ -303,12 +303,144 @@ function skipBalanced(source: string, start: number, open: string, close: string
   return source.length
 }
 
+/** A half-open index span `[start, end)` of the text it was found in. */
+type Span = { readonly start: number; readonly end: number }
+
+/** An identifier character: a letter, digit, `_`, or `$`. */
+function isIdentifierChar(ch: string | undefined): boolean {
+  return ch !== undefined && /[A-Za-z0-9_$]/u.test(ch)
+}
+
+/**
+ * Index of the next occurrence of `word` in `text` at or after `from` that
+ * stands as a whole word: at the start of the text or after a character
+ * outside `[A-Za-z0-9_$]`, and at the end of the text or before such a
+ * character. Replaces the pattern `(?:^|[^\w$])word\b` with `word`
+ * interpolated; a `$` in the word is compared literally, so `$foo` and
+ * `foo$` are names of their own and neither is found by `foo`. -1 when there
+ * is no such occurrence.
+ */
+function indexOfWord(text: string, word: string, from = 0): number {
+  for (let at = text.indexOf(word, from); at !== -1; at = text.indexOf(word, at + 1)) {
+    if (!isIdentifierChar(text[at - 1]) && !isIdentifierChar(text[at + word.length])) return at
+  }
+  return -1
+}
+
+/** Whether `word` occurs anywhere in `text` as a whole word (see indexOfWord). */
+function hasWord(text: string, word: string): boolean {
+  return indexOfWord(text, word) !== -1
+}
+
+/**
+ * Whether `word` ends exactly at index `end` of `text` and begins at a word
+ * start (the start of the text or after a character outside `[A-Za-z0-9_$]`),
+ * so that `const` is found before `foo` in `export const foo` and not in
+ * `myconst foo`.
+ */
+function wordEndsAt(text: string, end: number, word: string): boolean {
+  const start = end - word.length
+  return start >= 0 && text.startsWith(word, start) && !isIdentifierChar(text[start - 1])
+}
+
+/**
+ * Fold an optional modifier into a span start. When `modifier` stands before
+ * index `start` of `text` with at least one whitespace character between,
+ * return the index where the modifier begins; otherwise return `start`
+ * unchanged. Replaces an optional `(?:modifier\s+)?` prefix of a pattern.
+ */
+function foldModifier(text: string, start: number, modifier: string): number {
+  let cursor = start
+  while (cursor > 0 && /\s/u.test(text[cursor - 1]!)) cursor -= 1
+  if (cursor === start) return start
+  return wordEndsAt(text, cursor, modifier) ? cursor - modifier.length : start
+}
+
+/**
+ * Every declaration of `name` in `source` under one of `keywords`, in source
+ * order. A declaration is a keyword at a word start, at least one whitespace
+ * character, then `name` followed by an identifier boundary (the end of the
+ * text or a character outside `[A-Za-z0-9_$]`). An `export` standing before
+ * the keyword, and with `modifiers.async` an `async` standing before it, is
+ * folded into the span's start; the span's end is the index just past `name`.
+ * Replaces `(?:export\s+)?(?:async\s+)?(?:kw1|kw2|...)\s+name\b` scanned with
+ * the `g` flag over the same text, which is the raw source: comments and
+ * strings are not stripped here, exactly as before.
+ */
+function declarationsOf(
+  source: string,
+  keywords: readonly string[],
+  name: string,
+  modifiers: { async?: boolean } = {},
+): Span[] {
+  const spans: Span[] = []
+  for (let at = indexOfWord(source, name); at !== -1; at = indexOfWord(source, name, at + 1)) {
+    let cursor = at
+    while (cursor > 0 && /\s/u.test(source[cursor - 1]!)) cursor -= 1
+    if (cursor === at) continue
+    const keyword = keywords.find((candidate) => wordEndsAt(source, cursor, candidate))
+    if (keyword === undefined) continue
+    let start = cursor - keyword.length
+    if (modifiers.async === true) start = foldModifier(source, start, 'async')
+    start = foldModifier(source, start, 'export')
+    spans.push({ start, end: at + name.length })
+  }
+  return spans
+}
+
+const VALUE_OR_FUNCTION_KEYWORDS: readonly string[] = ['const', 'let', 'var', 'class', 'function']
+const TYPE_KEYWORDS: readonly string[] = ['interface', 'type']
+const ALIAS_KEYWORDS: readonly string[] = ['type']
+const FUNCTION_KEYWORDS: readonly string[] = ['function']
+const VALUE_KEYWORDS: readonly string[] = ['const', 'let', 'var', 'class']
+
+/**
+ * Whether `source` declares `name` as a brace-less type alias: a `type name`
+ * declaration whose first following `=` is not followed, after optional
+ * whitespace, by `{`. Replaces `(?:export\s+)?type\s+name\b[^=]*=(?!\s*\{)`
+ * tested against the file: any one such declaration is enough, and a `type
+ * name` with no `=` after it at all counts for nothing.
+ */
+function isAliasWithoutBlock(source: string, name: string): boolean {
+  for (const { end } of declarationsOf(source, ALIAS_KEYWORDS, name)) {
+    const equals = source.indexOf('=', end)
+    if (equals === -1) continue
+    let cursor = equals + 1
+    while (cursor < source.length && /\s/u.test(source[cursor]!)) cursor += 1
+    if (source[cursor] !== '{') return true
+  }
+  return false
+}
+
+/**
+ * Whether `body` (the inside of a member block) declares a member named
+ * `leaf`: the leaf at a word start (the start of the text or after a
+ * character outside `[A-Za-z0-9_$]`), then an optional `?`, optional
+ * whitespace, and `:`. Replaces `(?:^|[^\w$])leaf\??\s*:`.
+ */
+function declaresMember(body: string, leaf: string): boolean {
+  for (let at = indexOfWord(body, leaf); at !== -1; at = indexOfWord(body, leaf, at + 1)) {
+    let cursor = at + leaf.length
+    if (body[cursor] === '?') cursor += 1
+    while (cursor < body.length && /\s/u.test(body[cursor]!)) cursor += 1
+    if (body[cursor] === ':') return true
+  }
+  return false
+}
+
+/**
+ * The block opened by the first of `declarations` (spans from declarationsOf,
+ * found in `source`) that leads to one: from just past the declared name,
+ * skip generics and an initializer's `=` up to the first `{` or `(`, and
+ * return what that brace or parenthesis pair encloses. Declarations that run
+ * into a `;` first, or into nothing, are passed over.
+ */
 function locateNamedBlock(
   source: string,
-  pattern: RegExp,
+  declarations: Iterable<Span>,
 ): { kind: 'braces' | 'params'; body: string } | null {
-  for (const match of source.matchAll(pattern)) {
-    let i = skipWsAndComments(source, (match.index ?? 0) + match[0].length)
+  for (const { end } of declarations) {
+    let i = skipWsAndComments(source, end)
     while (i < source.length && source[i] !== '{' && source[i] !== '(' && source[i] !== ';') {
       if (source[i] === '<') {
         i = skipWsAndComments(source, skipBalanced(source, i, '<', '>'))
@@ -334,26 +466,18 @@ function locateNamedBlock(
 
 /**
  * A census name (an owner, the head of a dotted owner, or a field leaf) about
- * to be interpolated into a locator pattern. The census is a committed
- * artifact, not user input, but the name still becomes regex source, so it
- * must be identifier-shaped (letters, digits, `_`, `$`) with `$` escaped;
- * anything else is a malformed census row and fails here by name rather than
- * compiling into a pattern nobody wrote.
+ * to be handed to a locator. The census is a committed artifact, not user
+ * input, but the name still steers a scan of source text, so it must be
+ * identifier-shaped (letters, digits, `_`, `$`); anything else is a malformed
+ * census row and fails here by name. The scanners compare characters and
+ * never compile a pattern, so a `$` is literal and nothing is escaped: the
+ * name is returned as it is.
  */
 function censusName(name: string, label: string): string {
   if (!/^[A-Za-z_$][\w$]*$/u.test(name)) {
     throw new RangeError(`${label} ${JSON.stringify(name)} is not identifier-shaped`)
   }
-  return name.replace(/\$/gu, '\\$')
-}
-
-/**
- * The one place a locator pattern is compiled from census text. Every
- * interpolated name has passed censusName, which admits identifier characters
- * only, so the pattern's structure is fixed by the literal template around it.
- */
-function namePattern(template: string, flags: string): RegExp {
-  return new RegExp(template, flags) // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp
+  return name
 }
 
 function locateOwnerBlock(source: string, owner: string): { kind: 'braces' | 'params' | 'module'; body: string } | null {
@@ -362,50 +486,88 @@ function locateOwnerBlock(source: string, owner: string): { kind: 'braces' | 'pa
   // the value and treat the file as the field-existence scope.
   if (owner.includes('.')) {
     const head = censusName(owner.slice(0, owner.indexOf('.')), 'census owner head')
-    const valueHead = locateNamedBlock(
-      source,
-      namePattern(`(?:export\\s+)?(?:const|let|var|class|function)\\s+${head}\\b`, 'g'),
-    )
+    const valueHead = locateNamedBlock(source, declarationsOf(source, VALUE_OR_FUNCTION_KEYWORDS, head))
     return valueHead ? { kind: 'module', body: source } : null
   }
   // A brace-less alias (`type X = Pick<...>`, a union, a mapped type) has no
   // member block to enumerate; its fields are checked by existence in the
   // file so the locator never scans forward into the next declaration.
   const name = censusName(owner, 'census owner')
-  const aliasWithoutBlock = namePattern(`(?:export\\s+)?type\\s+${name}\\b[^=]*=(?!\\s*\\{)`, 'u')
-  if (aliasWithoutBlock.test(source)) return { kind: 'module', body: source }
-  const typeBlock = locateNamedBlock(
-    source,
-    namePattern(`(?:export\\s+)?(?:interface|type)\\s+${name}\\b`, 'g'),
-  )
+  if (isAliasWithoutBlock(source, name)) return { kind: 'module', body: source }
+  const typeBlock = locateNamedBlock(source, declarationsOf(source, TYPE_KEYWORDS, name))
   if (typeBlock) return typeBlock
   // The census names functions and consts as owners for some rows. Those are
   // not interface/type blocks to enumerate; locate the symbol so the census
   // is not rejected, then treat the file as the field-existence scope.
-  const functionBlock = locateNamedBlock(
-    source,
-    namePattern(`(?:export\\s+)?(?:async\\s+)?function\\s+${name}\\b`, 'g'),
-  )
+  const functionBlock = locateNamedBlock(source, declarationsOf(source, FUNCTION_KEYWORDS, name, { async: true }))
   if (functionBlock) return { kind: 'module', body: source }
-  const valueBlock = locateNamedBlock(
-    source,
-    namePattern(`(?:export\\s+)?(?:const|let|var|class)\\s+${name}\\b`, 'g'),
-  )
+  const valueBlock = locateNamedBlock(source, declarationsOf(source, VALUE_KEYWORDS, name))
   if (valueBlock) return { kind: 'module', body: source }
   return null
+}
+
+/**
+ * Whether the `<` at `index` of `source` is closed by a matching `>` later in
+ * the same bracket scope. Walks forward from the `<`, skipping comments and
+ * string literals the way splitTopLevel does, `=>` as one token, and balanced
+ * `(...)` and `{...}` blocks whole; a nested glued `<` counts up and a `>`
+ * counts down. Answers yes when the count reaches zero, and no when the walk
+ * first meets a `)` or `}` that closes the enclosing scope, or the end of the
+ * text.
+ */
+function closesAngleWithinScope(source: string, index: number): boolean {
+  let depth = 1
+  let i = index + 1
+  while (i < source.length) {
+    const afterComment = skipComment(source, i)
+    if (afterComment !== i) {
+      i = afterComment
+      continue
+    }
+    const c = source[i]!
+    if (c === "'" || c === '"') {
+      i += 1
+      while (i < source.length && source[i] !== c) i += source[i] === '\\' ? 2 : 1
+      i += 1
+      continue
+    }
+    if (c === '=' && source[i + 1] === '>') {
+      i += 2
+      continue
+    }
+    if (c === '(' || c === '{') {
+      i = skipBalanced(source, i, c, c === '(' ? ')' : '}')
+      continue
+    }
+    if (c === ')' || c === '}') return false
+    if (c === '<') {
+      if (/[\w$]/u.test(source[i - 1]!) && source[i + 1] !== '=') depth += 1
+    } else if (c === '>') {
+      depth -= 1
+      if (depth === 0) return true
+    }
+    i += 1
+  }
+  return false
 }
 
 /**
  * Splits `source` at any of `separators` that sits at depth zero of braces,
  * parentheses, and angle brackets. `=>` is one token that touches no counter
  * (its `>` is not a closing angle). A `<` opens an angle scope only when it
- * is a generic opener: glued to the identifier before it (`Map<`, `f<T>`)
- * and not the first half of `<=`; a comparison written `a < b` has a space
- * before it and counts for nothing, so an unclosed comparison in a default
- * value cannot leave the scanner believing it is inside a generic. The angle
- * count is also saved and reset at every `(` or `{` and restored at the
- * matching close, so whatever a nested scope leaves open dies with it, and it
- * never goes below zero.
+ * is a generic opener: glued to the identifier before it (`Map<`, `f<T>`),
+ * not the first half of `<=`, and closed by a matching `>` later in the same
+ * bracket scope (closesAngleWithinScope). A comparison written `a < b` has a
+ * space before it and counts for nothing; a glued comparison `width<b` in a
+ * default value, with no `>` after it in its scope, counts for nothing
+ * either, so neither can leave the scanner believing it is inside a generic.
+ * The angle count is also saved and reset at every `(` or `{` and restored at
+ * the matching close, so whatever a nested scope leaves open dies with it,
+ * and it never goes below zero. The one accepted residual: a glued comparison
+ * followed later in the same scope by a bare `>` comparison
+ * (`a<b ? 1 : 0, next: number = c > d`) still pairs, and the members between
+ * merge. The census is a committed artifact and the gate over its rows is
+ * the real check.
  */
 function splitTopLevel(source: string, separators: string): string[] {
   const parts: string[] = []
@@ -443,7 +605,7 @@ function splitTopLevel(source: string, separators: string): string[] {
       angles = savedAngles.pop() ?? 0
     } else if (c === '<') {
       const gluedToName = i > 0 && /[\w$]/u.test(source[i - 1]!)
-      if (gluedToName && source[i + 1] !== '=') angles += 1
+      if (gluedToName && source[i + 1] !== '=' && closesAngleWithinScope(source, i)) angles += 1
     } else if (c === '>') angles = Math.max(0, angles - 1)
     else if (braces === 0 && parens === 0 && angles === 0 && separators.includes(c)) {
       parts.push(source.slice(start, i))
@@ -1032,8 +1194,7 @@ describe('calculation registry conformance', () => {
           // leaf name is declared somewhere inside this owner's block; a leaf
           // that appears nowhere in the block is a census error.
           const leaf = censusName(segments[segments.length - 1]!, `census field leaf of ${owner}.${field}`)
-          const declaredInBlock = namePattern(`(?:^|[^\\w$])${leaf}\\??\\s*:`, 'u')
-          if (!declaredInBlock.test(block.body)) unknownFields.push(`${owner}.${field}`)
+          if (!declaresMember(block.body, leaf)) unknownFields.push(`${owner}.${field}`)
         }
       } else {
         // A module-kind owner (a function, const, class, or page component)
@@ -1048,8 +1209,7 @@ describe('calculation registry conformance', () => {
         for (const [field, row] of covered) {
           const rawLeaf = field.split('.').pop()!.replace(/\[\]$/u, '')
           const leaf = censusName(rawLeaf, `census field leaf of ${owner}.${field}`)
-          const declared = namePattern(`(?:^|[^\\w$])${leaf}\\b`, 'u')
-          if (declared.test(code) || literals.has(rawLeaf)) continue
+          if (hasWord(code, leaf) || literals.has(rawLeaf)) continue
           if (source.endsWith('.tsx')) {
             if (typeof row.note === 'string' && row.note.trim().length > 0) continue
             tsxWithoutNote.push(`${source} ${owner}.${field}`)
@@ -1100,6 +1260,28 @@ describe('calculation registry conformance', () => {
     ])
   })
 
+  it('opens an angle scope for a glued < only when a > closes it in the same scope', () => {
+    const glued = 'limit: number = width<b ? 1 : 0, next: number, tail: number'
+    expect(splitTopLevel(glued, ',').map((part) => part.trim())).toEqual([
+      'limit: number = width<b ? 1 : 0',
+      'next: number',
+      'tail: number',
+    ])
+    const withGeneric = 'wide: Map<string, number>, limit: number = width<b ? 1 : 0, tail: number'
+    expect(splitTopLevel(withGeneric, ',').map((part) => part.trim())).toEqual([
+      'wide: Map<string, number>',
+      'limit: number = width<b ? 1 : 0',
+      'tail: number',
+    ])
+    const arrow = 'pick: (a: number) => a<b, tail: number'
+    expect(splitTopLevel(arrow, ',').map((part) => part.trim())).toEqual(['pick: (a: number) => a<b', 'tail: number'])
+    expect(closesAngleWithinScope('Map<string, (x: number) => number>', 3)).toBe(true)
+    expect(closesAngleWithinScope('Array<Map<string, number>>', 5)).toBe(true)
+    expect(closesAngleWithinScope('Array<Map<string, number>>', 9)).toBe(true)
+    expect(closesAngleWithinScope('width<b ? 1 : 0', 5)).toBe(false)
+    expect(closesAngleWithinScope('(x<y) => x, z: Array<number>', 2)).toBe(false)
+  })
+
   it('splits members after a callback-typed member and a comparison, keeping the angle count in sync', () => {
     const body = [
       '',
@@ -1119,6 +1301,96 @@ describe('calculation registry conformance', () => {
       all: ['limit', 'next', 'wide', 'tail'],
       numeric: ['next', 'tail'],
     })
+  })
+
+  it('finds a declaration only when a keyword at a word start precedes the name with whitespace', () => {
+    const found = (source: string, keywords: readonly string[], name: string, modifiers?: { async?: boolean }) =>
+      declarationsOf(source, keywords, name, modifiers).map((span) => source.slice(span.start, span.end))
+    expect(found('const foo = 1', VALUE_KEYWORDS, 'foo')).toEqual(['const foo'])
+    expect(found('export const foo = 1', VALUE_KEYWORDS, 'foo')).toEqual(['export const foo'])
+    expect(found('export\n  let foo = 1', VALUE_KEYWORDS, 'foo')).toEqual(['export\n  let foo'])
+    expect(found('myconst foo = 1', VALUE_KEYWORDS, 'foo')).toEqual([])
+    expect(found('constfoo = 1', VALUE_KEYWORDS, 'foo')).toEqual([])
+    expect(found('const fooBar = 1', VALUE_KEYWORDS, 'foo')).toEqual([])
+    expect(found('interface foo {}', VALUE_KEYWORDS, 'foo')).toEqual([])
+    expect(found('export async function foo() {}', FUNCTION_KEYWORDS, 'foo', { async: true })).toEqual([
+      'export async function foo',
+    ])
+    expect(found('async function foo() {}', FUNCTION_KEYWORDS, 'foo', { async: true })).toEqual(['async function foo'])
+    expect(found('export function foo() {}', FUNCTION_KEYWORDS, 'foo', { async: true })).toEqual(['export function foo'])
+    expect(found('asyncfunction foo() {}', FUNCTION_KEYWORDS, 'foo', { async: true })).toEqual([])
+    // Every declaration is reported, in source order, and the span ends just
+    // past the name: that end is what the block locator scans from.
+    const source = 'let foo: number\nexport class foo {\n  a: number\n}'
+    expect(declarationsOf(source, VALUE_KEYWORDS, 'foo')).toEqual([
+      { start: 0, end: 7 },
+      { start: 16, end: source.indexOf('foo {') + 3 },
+    ])
+    expect(locateNamedBlock(source, declarationsOf(source, VALUE_KEYWORDS, 'foo'))).toEqual({
+      kind: 'braces',
+      body: '\n  a: number\n',
+    })
+    expect(locateNamedBlock(source, [])).toBeNull()
+  })
+
+  it('bounds a word by identifier characters, so fooBar is not foo and a $ belongs to the name', () => {
+    expect(indexOfWord('fooBar', 'foo')).toBe(-1)
+    expect(indexOfWord('foo_1', 'foo')).toBe(-1)
+    expect(indexOfWord('myfoo', 'foo')).toBe(-1)
+    expect(indexOfWord('foo', 'foo')).toBe(0)
+    expect(indexOfWord('a.foo', 'foo')).toBe(2)
+    expect(indexOfWord('foo(', 'foo')).toBe(0)
+    expect(indexOfWord('$foo', 'foo')).toBe(-1)
+    expect(indexOfWord('foo$', 'foo')).toBe(-1)
+    expect(indexOfWord('$foo', '$foo')).toBe(0)
+    expect(indexOfWord('foo$', 'foo$')).toBe(0)
+    expect(indexOfWord('foo$ $foo', 'foo$')).toBe(0)
+    expect(indexOfWord('foo$ $foo', '$foo')).toBe(5)
+    expect(indexOfWord('foofoo foo', 'foo', 1)).toBe(7)
+    expect(hasWord('a foo b', 'foo')).toBe(true)
+    expect(hasWord('a fooBar b', 'foo')).toBe(false)
+    expect(censusName('foo$', 'test')).toBe('foo$')
+    expect(() => censusName('foo-bar', 'test')).toThrow(RangeError)
+  })
+
+  it('accepts a brace-less alias and rejects one that opens a member block', () => {
+    expect(isAliasWithoutBlock("type X = Pick<A, 'b'>", 'X')).toBe(true)
+    expect(isAliasWithoutBlock("export type X = Pick<A, 'b'>", 'X')).toBe(true)
+    expect(isAliasWithoutBlock('type X = A | B', 'X')).toBe(true)
+    expect(isAliasWithoutBlock('type X = {\n  a: number\n}', 'X')).toBe(false)
+    expect(isAliasWithoutBlock('export type X =\n  {\n  a: number\n}', 'X')).toBe(false)
+    expect(isAliasWithoutBlock("type XY = Pick<A, 'b'>", 'X')).toBe(false)
+    expect(isAliasWithoutBlock("prototype X = Pick<A, 'b'>", 'X')).toBe(false)
+    expect(isAliasWithoutBlock('interface X { a: number }', 'X')).toBe(false)
+    expect(isAliasWithoutBlock('type X', 'X')).toBe(false)
+    // The first `=` after the name decides, whatever follows a later one.
+    expect(isAliasWithoutBlock("type X = {\n  a: number\n}\ntype Y = Pick<A, 'b'>", 'X')).toBe(false)
+    expect(isAliasWithoutBlock("type X = Pick<A, 'b'>\ntype Y = {\n  a: number\n}", 'X')).toBe(true)
+  })
+
+  it('finds a leaf declared in a block as the name, an optional ?, whitespace, and a colon', () => {
+    expect(declaresMember('  foo: number', 'foo')).toBe(true)
+    expect(declaresMember('foo?: number', 'foo')).toBe(true)
+    expect(declaresMember('foo\n  : number', 'foo')).toBe(true)
+    expect(declaresMember('{ a: string; foo : number }', 'foo')).toBe(true)
+    expect(declaresMember('fooBar: number', 'foo')).toBe(false)
+    expect(declaresMember('myfoo: number', 'foo')).toBe(false)
+    expect(declaresMember('$foo: number', 'foo')).toBe(false)
+    expect(declaresMember('foo = 1', 'foo')).toBe(false)
+    expect(declaresMember('a: foo', 'foo')).toBe(false)
+    // `?` must be glued to the name, as the pattern it replaces required.
+    expect(declaresMember('foo ?: number', 'foo')).toBe(false)
+  })
+
+  it('finds a leaf at code level only as a whole identifier', () => {
+    expect(hasWord('const total = base + foo', 'foo')).toBe(true)
+    expect(hasWord('foo', 'foo')).toBe(true)
+    expect(hasWord('row.foo()', 'foo')).toBe(true)
+    expect(hasWord('const fooTotal = 1', 'foo')).toBe(false)
+    expect(hasWord('const myFoo = foo2', 'foo')).toBe(false)
+    expect(hasWord('const $foo = 1', 'foo')).toBe(false)
+    expect(hasWord('const foo$ = 1', 'foo')).toBe(false)
+    expect(hasWord('', 'foo')).toBe(false)
   })
 
   it('carries a relocation object on every ui family and none on engine and adapter families', () => {
