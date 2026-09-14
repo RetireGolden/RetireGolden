@@ -1180,7 +1180,7 @@ export const southCentralStateRecords = {
   'ky-dor-2026-standard-deduction-once-per-return': {
     title: 'Kentucky’s TY2026 standard deduction is $3,360 once per return, including MFJ',
     statement:
-      'Kentucky Department of Revenue publishes a $3,360 standard deduction for tax year 2026. An MFJ production scenario computes one joint Kentucky return and receives that amount once — not a doubled spouse-count figure. The latest full-year Form 740 filing-status pattern (TY2025 instructions, amount updated for 2026) allows only one standard deduction on a joint return. The pack encodes `standardDeduction: { single: 3360, marriedFilingJointly: 3360 }`.',
+      'Kentucky Department of Revenue publishes a $3,360 standard deduction for tax year 2026. An MFJ production scenario computes one joint Kentucky return and receives that amount once — not a doubled spouse-count figure. The latest published Form 740 filing-status pattern (TY2024 instructions packet, 42A740(PKT) (10-24); amount updated for 2026 from the DOR announcement) allows only one standard deduction on a joint return. The pack encodes `standardDeduction: { single: 3360, marriedFilingJointly: 3360 }`.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,

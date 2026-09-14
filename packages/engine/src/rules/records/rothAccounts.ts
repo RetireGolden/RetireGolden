@@ -492,7 +492,7 @@ export const rothAccountRecords = {
       citation: 'P.L. 117-328, division T, title I, section 127(e)(1)',
       url: 'https://www.govinfo.gov/content/pkg/PLAW-117publ328/pdf/PLAW-117publ328.pdf',
       quotedText:
-        'Section 402A is amended by redesignating subsection (e) as subsection (f) and by inserting after subsection (d) the following new subsection: ‘‘(e) PENSION-LINKED EMERGENCY SAVINGS ACCOUNTS.—',
+        'Section 402A is amended by redesignating subsection (e) as subsection (f) and by inserting after subsection (d) the following new subsection: ‘‘(e) PENSION-LINKED EMERGENCY SAVINGS ACCOUNTS.— …',
     }],
     volatility: 'awaitingGuidance',
     effectiveFrom: 2026,
