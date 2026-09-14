@@ -1,0 +1,213 @@
+{
+  "kind": "retiregolden.calculation-coverage.shard",
+  "version": 1,
+  "group": "longevity",
+  "records": [
+    {
+      "id": "joint-survival-percentile-age",
+      "title": "Joint (either-survives) percentile age on the primary's age clock",
+      "kind": "formula",
+      "outputs": [
+        "longevity-survival-percentile-age"
+      ],
+      "feeds": [],
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/montecarlo/survival.ts"
+      ],
+      "provenance": {
+        "derivedBy": "codex",
+        "implementedBy": "claude-subagent",
+        "reviewedBy": "cursor"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/montecarlo/survival.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
+      "id": "mortality-ex-to-qx-identity",
+      "title": "One-year death probability from SSA remaining life expectancy",
+      "kind": "formula",
+      "outputs": [],
+      "feeds": [
+        "longevity-survival-percentile-age",
+        "monte-carlo-success-rate",
+        "monte-carlo-ending-investable-histogram"
+      ],
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/montecarlo/mortality.ts"
+      ],
+      "provenance": {
+        "derivedBy": "codex",
+        "implementedBy": "claude-subagent",
+        "reviewedBy": "cursor"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/montecarlo/mortality.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
+      "id": "mortality-joint-last-survivor-expectancy",
+      "title": "Joint last-survivor life expectancy of two independent lives",
+      "kind": "formula",
+      "outputs": [],
+      "feeds": [
+        "income-annuity-annual"
+      ],
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/montecarlo/mortality.ts"
+      ],
+      "provenance": {
+        "derivedBy": "codex",
+        "implementedBy": "claude-subagent",
+        "reviewedBy": "cursor"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/montecarlo/mortality.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
+      "id": "mortality-sampled-death-age",
+      "title": "Sampled death age: inverse-Bernoulli walk over annual death probabilities",
+      "kind": "model",
+      "outputs": [],
+      "feeds": [
+        "monte-carlo-success-rate",
+        "monte-carlo-ending-investable-histogram"
+      ],
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/montecarlo/mortality.ts"
+      ],
+      "provenance": {
+        "derivedBy": "codex",
+        "implementedBy": "claude-subagent",
+        "reviewedBy": "cursor"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/montecarlo/mortality.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
+      "id": "survival-hazard-from-expectancy-multiplier",
+      "title": "Hazard power for a remaining-years multiplier, solved by bisection",
+      "kind": "model",
+      "outputs": [],
+      "feeds": [
+        "longevity-survival-percentile-age"
+      ],
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/montecarlo/survival.ts"
+      ],
+      "provenance": {
+        "derivedBy": "codex",
+        "implementedBy": "claude-subagent",
+        "reviewedBy": "cursor"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/montecarlo/survival.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
+      "id": "survival-percentile-age",
+      "title": "Survival-percentile planning age: oldest age reached with probability at least pct/100",
+      "kind": "formula",
+      "outputs": [
+        "longevity-survival-percentile-age"
+      ],
+      "feeds": [],
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/montecarlo/survival.ts"
+      ],
+      "provenance": {
+        "derivedBy": "codex",
+        "implementedBy": "claude-subagent",
+        "reviewedBy": "cursor"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/montecarlo/survival.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
+      "id": "survival-probability-product",
+      "title": "Conditional survival to a target age: product of hazard-adjusted one-year survivals",
+      "kind": "formula",
+      "outputs": [],
+      "feeds": [
+        "longevity-survival-percentile-age"
+      ],
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/montecarlo/survival.ts"
+      ],
+      "provenance": {
+        "derivedBy": "codex",
+        "implementedBy": "claude-subagent",
+        "reviewedBy": "cursor"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/montecarlo/survival.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    }
+  ]
+}

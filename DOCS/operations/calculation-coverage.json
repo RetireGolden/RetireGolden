@@ -24,7 +24,21 @@
       "ui-native": 21,
       "ui-transformation": 19
     },
-    "complete": [],
+    "complete": [
+      "funded-ratio-result-essential-spending-pv",
+      "funded-ratio-result-funded-ratio-pct",
+      "funded-ratio-result-guaranteed-income-pv",
+      "funded-ratio-result-unfunded-pv",
+      "ladder-build-annual-real-income-by-offset",
+      "ladder-build-target-annual-real-income",
+      "ladder-build-total-cost",
+      "ladder-real-flows-coupons",
+      "ladder-real-flows-maturing-principal",
+      "ladder-rung-cost",
+      "ladder-rung-coupon-rate-pct",
+      "ladder-rung-face",
+      "longevity-survival-percentile-age"
+    ],
     "partial": [
       "spending-base-annual"
     ],
@@ -80,10 +94,6 @@
       "flexible-goals-funded-count-annual",
       "flexible-goals-partially-funded-count-annual",
       "flexible-goals-skipped-count-annual",
-      "funded-ratio-result-essential-spending-pv",
-      "funded-ratio-result-funded-ratio-pct",
-      "funded-ratio-result-guaranteed-income-pv",
-      "funded-ratio-result-unfunded-pv",
       "hecm-draw-annual",
       "historical-stress-window-total-shortfall",
       "income-annuity-annual",
@@ -118,18 +128,9 @@
       "insurance-cash-value-annual",
       "insurance-death-benefit-annual",
       "irmaa-surcharge-annual",
-      "ladder-build-annual-real-income-by-offset",
-      "ladder-build-target-annual-real-income",
-      "ladder-build-total-cost",
-      "ladder-real-flows-coupons",
-      "ladder-real-flows-maturing-principal",
-      "ladder-rung-cost",
-      "ladder-rung-coupon-rate-pct",
-      "ladder-rung-face",
       "ladder-value-annual",
       "long-term-care-benefit-annual",
       "longevity-depletion-year",
-      "longevity-survival-percentile-age",
       "magi-annual",
       "mcp-batch-cumulative-tax-objective",
       "mcp-batch-ending-traditional-objective",
@@ -300,15 +301,78 @@
       "survivor-scenario-row-ssa44premium-savings",
       "survivor-scenario-row-survivor-shortfall-years"
     ],
-    "fedBy": {}
+    "fedBy": {
+      "funded-ratio-result-essential-spending-pv": [
+        "ladder-real-present-value",
+        "ladder-real-yield-interpolation",
+        "treasury-real-yield-curve-2026"
+      ],
+      "funded-ratio-result-funded-ratio-pct": [
+        "ladder-real-present-value",
+        "ladder-real-yield-interpolation",
+        "treasury-real-yield-curve-2026"
+      ],
+      "funded-ratio-result-guaranteed-income-pv": [
+        "ladder-real-present-value",
+        "ladder-real-yield-interpolation",
+        "treasury-real-yield-curve-2026"
+      ],
+      "funded-ratio-result-unfunded-pv": [
+        "ladder-real-present-value",
+        "ladder-real-yield-interpolation",
+        "treasury-real-yield-curve-2026"
+      ],
+      "income-annuity-annual": [
+        "mortality-joint-last-survivor-expectancy"
+      ],
+      "income-floor-ladder-yield-pct": [
+        "ladder-real-yield-interpolation",
+        "treasury-real-yield-curve-2026"
+      ],
+      "ladder-build-total-cost": [
+        "ladder-annual-coupon-par-pricing",
+        "treasury-real-yield-curve-2026"
+      ],
+      "ladder-rung-cost": [
+        "fedinvest-csv-tips-parsing",
+        "fedinvest-latest-price-date",
+        "fedinvest-nearest-tips-maturity",
+        "ladder-real-present-value",
+        "treasury-real-yield-curve-2026"
+      ],
+      "ladder-rung-coupon-rate-pct": [
+        "ladder-real-yield-interpolation",
+        "treasury-real-yield-curve-2026"
+      ],
+      "ladder-value-annual": [
+        "ladder-rung-flows-and-remaining-face"
+      ],
+      "longevity-survival-percentile-age": [
+        "mortality-ex-to-qx-identity",
+        "survival-hazard-from-expectancy-multiplier",
+        "survival-probability-product"
+      ],
+      "monte-carlo-ending-investable-histogram": [
+        "mortality-ex-to-qx-identity",
+        "mortality-sampled-death-age"
+      ],
+      "monte-carlo-success-rate": [
+        "mortality-ex-to-qx-identity",
+        "mortality-sampled-death-age"
+      ]
+    }
   },
   "records": {
-    "total": 1,
+    "total": 18,
     "byKind": {
-      "formula": 1
+      "composition": 1,
+      "data": 2,
+      "formula": 12,
+      "model": 3
     },
     "byJustificationKind": {
-      "derivation": 1
+      "dataset": 2,
+      "derivation": 16
     }
   },
   "oracleExamples": [
@@ -347,11 +411,21 @@
   ],
   "walkthroughs": [],
   "attestationsDerived": {
-    "catalogued": 2,
+    "catalogued": 6,
     "excludedWithReason": 0,
-    "notYetReviewed": 207
+    "notYetReviewed": 205
   },
   "shards": [
+    {
+      "group": "laddersAndValuation",
+      "path": "calculation-coverage/laddersAndValuation.json",
+      "recordCount": 10
+    },
+    {
+      "group": "longevity",
+      "path": "calculation-coverage/longevity.json",
+      "recordCount": 7
+    },
     {
       "group": "spendingAndWithdrawals",
       "path": "calculation-coverage/spendingAndWithdrawals.json",
