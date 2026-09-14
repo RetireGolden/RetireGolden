@@ -43,7 +43,7 @@ export const longevityRecords = {
     implementedBy: ['packages/engine/src/montecarlo/mortality.ts'],
     implementedByFunctions: ['packages/engine/src/montecarlo/mortality.ts#annualMortality'],
     verifiedOn: '2026-09-14',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'cursor' },
   },
   'mortality-sampled-death-age': {
     title: 'Sampled death age: inverse-Bernoulli walk over annual death probabilities',
@@ -78,7 +78,7 @@ export const longevityRecords = {
     implementedBy: ['packages/engine/src/montecarlo/mortality.ts'],
     implementedByFunctions: ['packages/engine/src/montecarlo/mortality.ts#sampleDeathAge'],
     verifiedOn: '2026-09-14',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'cursor' },
   },
   'mortality-joint-last-survivor-expectancy': {
     title: 'Joint last-survivor life expectancy of two independent lives',
@@ -117,7 +117,7 @@ export const longevityRecords = {
     implementedBy: ['packages/engine/src/montecarlo/mortality.ts'],
     implementedByFunctions: ['packages/engine/src/montecarlo/mortality.ts#jointLastSurvivorExpectancy'],
     verifiedOn: '2026-09-14',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'cursor' },
   },
   'survival-probability-product': {
     title: 'Conditional survival to a target age: product of hazard-adjusted one-year survivals',
@@ -153,7 +153,7 @@ export const longevityRecords = {
       'packages/engine/src/montecarlo/survival.ts#annualSurvival',
     ],
     verifiedOn: '2026-09-14',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'cursor' },
   },
   'survival-percentile-age': {
     title: 'Survival-percentile planning age: oldest age reached with probability at least pct/100',
@@ -186,7 +186,7 @@ export const longevityRecords = {
     implementedBy: ['packages/engine/src/montecarlo/survival.ts'],
     implementedByFunctions: ['packages/engine/src/montecarlo/survival.ts#survivalPercentileAge'],
     verifiedOn: '2026-09-14',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'cursor' },
   },
   'joint-survival-percentile-age': {
     title: 'Joint (either-survives) percentile age on the primary\'s age clock',
@@ -219,7 +219,7 @@ export const longevityRecords = {
     implementedBy: ['packages/engine/src/montecarlo/survival.ts'],
     implementedByFunctions: ['packages/engine/src/montecarlo/survival.ts#jointSurvivalPercentileAge'],
     verifiedOn: '2026-09-14',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'cursor' },
   },
   'survival-hazard-from-expectancy-multiplier': {
     title: 'Hazard power for a remaining-years multiplier, solved by bisection',
@@ -251,6 +251,7 @@ export const longevityRecords = {
       'The questionnaire\'s factors are not validated here; the record maps a given multiplier, whatever its source',
       'The expectancy sum stops once the running survival falls to 1e-12, and the bisection runs a fixed 40 halvings rather than to a stated tolerance',
       'expectancyUnderHazard is module-private; the evidence recomputes the adjusted expectancy through survivalProbabilityTo at the solved power',
+      'The worksheet example is the identity point m = 1, so the evidence pins the fixed point and the expectancy identity, not the bisection away from it; survival.test.ts covers direction and monotonicity for m = 0.8 and 1.12, and a non-identity worksheet case is owed by a later derive round',
     ],
     implementedBy: ['packages/engine/src/montecarlo/survival.ts'],
     implementedByFunctions: [
@@ -258,6 +259,6 @@ export const longevityRecords = {
       'packages/engine/src/montecarlo/survival.ts#expectancyUnderHazard',
     ],
     verifiedOn: '2026-09-14',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'cursor' },
   },
 } satisfies Record<string, CalculationRecord>

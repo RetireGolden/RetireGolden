@@ -17,7 +17,7 @@
       "provenance": {
         "derivedBy": "codex",
         "implementedBy": "claude-subagent",
-        "reviewedBy": "unreviewed"
+        "reviewedBy": "cursor"
       },
       "fixtureFiles": [
         "packages/engine/src/montecarlo/survival.evidence.test.ts"
@@ -39,7 +39,7 @@
       "provenance": {
         "derivedBy": "codex",
         "implementedBy": "claude-subagent",
-        "reviewedBy": "unreviewed"
+        "reviewedBy": "cursor"
       },
       "fixtureFiles": [
         "packages/engine/src/montecarlo/mortality.evidence.test.ts"
@@ -59,7 +59,7 @@
       "provenance": {
         "derivedBy": "codex",
         "implementedBy": "claude-subagent",
-        "reviewedBy": "unreviewed"
+        "reviewedBy": "cursor"
       },
       "fixtureFiles": [
         "packages/engine/src/montecarlo/mortality.evidence.test.ts"
@@ -80,7 +80,7 @@
       "provenance": {
         "derivedBy": "codex",
         "implementedBy": "claude-subagent",
-        "reviewedBy": "unreviewed"
+        "reviewedBy": "cursor"
       },
       "fixtureFiles": [
         "packages/engine/src/montecarlo/mortality.evidence.test.ts"
@@ -100,7 +100,7 @@
       "provenance": {
         "derivedBy": "codex",
         "implementedBy": "claude-subagent",
-        "reviewedBy": "unreviewed"
+        "reviewedBy": "cursor"
       },
       "fixtureFiles": [
         "packages/engine/src/montecarlo/survival.evidence.test.ts"
@@ -120,7 +120,7 @@
       "provenance": {
         "derivedBy": "codex",
         "implementedBy": "claude-subagent",
-        "reviewedBy": "unreviewed"
+        "reviewedBy": "cursor"
       },
       "fixtureFiles": [
         "packages/engine/src/montecarlo/survival.evidence.test.ts"
@@ -142,7 +142,7 @@
       "provenance": {
         "derivedBy": "codex",
         "implementedBy": "claude-subagent",
-        "reviewedBy": "unreviewed"
+        "reviewedBy": "cursor"
       },
       "fixtureFiles": [
         "packages/engine/src/montecarlo/survival.evidence.test.ts"
