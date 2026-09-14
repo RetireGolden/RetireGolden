@@ -1,6 +1,6 @@
 # Mutation receipt: mortality-joint-last-survivor-expectancy
 
-Executed 2026-09-14 against RetireGolden base `2dc2011c` (branch claude/b1-p4-cards-longevity) in `packages/engine`.
+Executed 2026-09-14 against RetireGolden head `efaeb827` (branch claude/b1-p4-cards-longevity) in `packages/engine`, with the PR #714 round-1 revision of `src/montecarlo/mortality.evidence.test.ts` applied (the planner-ui comparison moved to the planner-ui suite, so the file carries 11 tests). This run replaces the same-day run against base `2dc2011c`.
 
 ## Mutation applied to `packages/engine/src/montecarlo/mortality.ts`
 
@@ -30,22 +30,26 @@ Captured with `NO_COLOR=1`, stdout and stderr together; stdout precedes stderr, 
 
 ```
  RUN  v5.0.0 C:/TEMP/rg-b1p4long/packages/engine
- ❯ src/montecarlo/mortality.evidence.test.ts (12 tests | 1 failed) 47ms
+ ❯ src/montecarlo/mortality.evidence.test.ts (11 tests | 1 failed) 6ms
    ❯ mortality-joint-last-survivor-expectancy — Joint last-survivor life expectancy of two independent lives (4)
-     × two male lives at 118: 0.5 + (1 - 0.96^2) = 0.5784 years 2ms
+     × two male lives at 118: 0.5 + (1 - 0.96^2) = 0.5784 years 3ms
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
  FAIL  src/montecarlo/mortality.evidence.test.ts > mortality-joint-last-survivor-expectancy — Joint last-survivor life expectancy of two independent lives > two male lives at 118: 0.5 + (1 - 0.96^2) = 0.5784 years
-AssertionError: expected 0.03839999999999999 to be less than or equal to 1e-12
- ❯ src/montecarlo/mortality.evidence.test.ts:187:88
-    185|     it('two male lives at 118: 0.5 + (1 - 0.96^2) = 0.5784 years', () …
-    186|       const expectancy = jointLastSurvivorExpectancy(ageA, sexA, ageB,…
-    187|       expect(Math.abs(expectancy - (example.expected.jointExpectancyYe…
-       |                                                                                        ^
-    188|     })
-    189|
+AssertionError: jointExpectancyYears 0.54 is not within {"abs":1e-12} of the worksheet's 0.5784: expected false to be true // Object.is equality
+- Expected
++ Received
+- true
++ false
+ ❯ src/montecarlo/mortality.evidence.test.ts:185:9
+    183|         withinTolerance(expectancy, expected, example.tolerance),
+    184|         `jointExpectancyYears ${expectancy} is not within ${JSON.strin…
+    185|       ).toBe(true)
+       |         ^
+    186|     })
+    187|
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
  Test Files  1 failed (1)
-      Tests  1 failed | 11 passed (12)
+      Tests  1 failed | 10 passed (11)
 ```
 
 ## Revert

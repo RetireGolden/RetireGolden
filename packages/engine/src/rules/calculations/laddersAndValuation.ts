@@ -353,7 +353,7 @@ export const laddersAndValuationRecords = {
   },
   'fedinvest-nearest-tips-maturity': {
     title: 'Nearest FedInvest TIPS for a rung year',
-    purpose: 'The reference TIPS whose maturity year is closest to a ladder rung\'s maturity year.',
+    purpose: 'The reference TIPS whose maturity year is closest to a ladder rung\'s maturity year, when one lies within a year of it.',
     kind: 'formula',
     // "none yet" in the worksheet: the matched row is the reference price
     // shown beside a rung's cost, so ladder-rung-cost is the nearest family,
@@ -361,9 +361,9 @@ export const laddersAndValuationRecords = {
     outputs: [],
     feeds: ['ladder-rung-cost'],
     statement:
-      'From a list of parsed TIPS and a target calendar year, select the record minimizing |year(maturityIso) - target|, comparing calendar years only; null for an empty list. The first minimum in list order wins a tie. See limits for the one-year window the production entry also applies, which the worksheet did not derive.',
+      'From a list of parsed TIPS and a target calendar year, find the record minimizing |year(maturityIso) - target|, comparing calendar years only; the first minimum in list order wins a tie. Return that record only when its distance is at most one calendar year (|year(maturityIso) - target| <= 1); otherwise return null, as for an empty list. Units: a record selection, not a number. Rounding: none.',
     formula: {
-      expression: 'selected = argmin_t |year(maturityIso_t) - target|; null when the list is empty',
+      expression: 'selected = argmin_t |year(maturityIso_t) - target| when min_t |year(maturityIso_t) - target| <= 1; null otherwise, including the empty list',
       variables: [
         { symbol: 'target', meaning: 'Calendar year the rung matures', unit: 'year', domain: 'integer' },
         { symbol: 'maturityIso_t', meaning: 'ISO maturity date of candidate t', unit: 'date', domain: 'YYYY-MM-DD' },
@@ -376,8 +376,8 @@ export const laddersAndValuationRecords = {
       worksheet: 'DOCS/calculations/ladders-and-valuation/fedinvest-nearest-tips-maturity.md',
     },
     limits: [
-      'DISCREPANCY (2026-09-14): fedInvest.ts returns null when the nearest maturity is more than one calendar year from the target (bestDistance <= 1), a window the signature comment does not state and the worksheet did not derive. For the worksheet example (2030 and 2035 for target 2033) production returns null where the worksheet expects the 2035 record. The evidence test asserts the worksheet value and fails until the orchestrator settles which reading stands; this record does not resolve it',
-      'Ties are resolved by list order (first minimum wins); the worksheet states no tie rule',
+      'The one-year window (bestDistance <= 1) was omitted from the first derivation because the doc comment did not state it. The worksheet was re-derived on 2026-09-14 with three cases (A: 2032/2036 for 2033 selects 2032; B: 2030/2035 for 2033 returns null; C: 2033/2034 for 2033 selects 2033), the evidence test asserts all three and passes, and the doc comment now states the window',
+      'Ties are resolved by list order (first minimum wins); the worksheet states no tie rule and its cases avoid ties',
       'Only the calendar year of the maturity is compared; a January and a December maturity of the same year are equidistant',
       'A reference-row match for display, not CUSIP-level ladder optimization',
     ],
@@ -404,7 +404,7 @@ export const laddersAndValuationRecords = {
       'funded-ratio-result-unfunded-pv',
     ],
     statement:
-      'Five par real yields in percent per year at 5, 7, 10, 20 and 30 years, dated 2026-06-30, sourced from the U.S. Treasury Daily Par Real Yield Curve and stored as {asOfIso, source, points[]} sorted ascending by maturity. Consumers interpolate linearly between points and hold the endpoints flat (ladder-real-yield-interpolation). Embedded values: 1.85, 2.05, 2.25, 2.55, 2.70. Rounding: the file header states nearest 5 basis points; see limits for why the values do not reconcile with the official row.',
+      'Five par real yields in percent per year at 5, 7, 10, 20 and 30 years, dated 2026-06-30, attributed to the U.S. Treasury Daily Par Real Yield Curve and stored as {asOfIso, source, points[]} sorted ascending by maturity. Consumers interpolate linearly between points and hold the endpoints flat (ladder-real-yield-interpolation). The dataset fact this record pins is the stored row: 1.85, 2.05, 2.25, 2.55, 2.70. That row is not the official 2026-06-30 Treasury row (1.93, 2.06, 2.20, 2.54, 2.73): stored minus official is -8, -1, +5, +1 and -3 basis points at 5, 7, 10, 20 and 30 years, as the worksheet tabulates, and a data correction is owed as its own engine change. Rounding: the file header claims nearest 5 basis points, which the stored row is not; it matches the official row\'s nearest-5bp rounding (1.95, 2.05, 2.20, 2.55, 2.75) only at 7 and 20 years.',
     formula: null,
     justification: {
       kind: 'dataset',
@@ -421,8 +421,8 @@ export const laddersAndValuationRecords = {
       digest: 'sha256:15ccae3de237f0f0f328632af05a920fd68b39401391be0ada1f5ce1cb8cd139',
     },
     limits: [
-      'DISCREPANCY (2026-09-14): the official 2026-06-30 row is 1.93/2.06/2.20/2.54/2.73 (worksheet, retrieved 2026-09-14); the embedded values are 1.85/2.05/2.25/2.55/2.70, which is neither the official row nor its nearest-5bp rounding 1.95/2.05/2.20/2.55/2.75. Embedded-minus-official errors: -0.08/-0.01/+0.05/+0.01/-0.03 percentage points',
-      'The correction, and the card\'s choice between exact official values and declared nearest-5bp values, is a separate packet; this slice pins the embedded values as they stand and does not change them',
+      'The stored row 1.85/2.05/2.25/2.55/2.70 is not the official 2026-06-30 Treasury row 1.93/2.06/2.20/2.54/2.73 (worksheet, retrieved 2026-09-14), nor that row\'s nearest-5bp rounding 1.95/2.05/2.20/2.55/2.75. Stored-minus-official deviation by maturity, as the worksheet\'s deviation table gives it: 5y -8bp, 7y -1bp, 10y +5bp, 20y +1bp, 30y -3bp',
+      'A data correction is owed as its own engine change, and that change must state the product decision between embedding the exact official row and embedding its nearest-5bp rounding; this record pins the stored row as the dataset fact and does not correct it',
       'Maturities below 5 years read the 5-year yield and above 30 years the 30-year yield (flat endpoints)',
       'Par yields are consumed as spot rates by every ladder and funded-ratio calculation',
       'Refresh cadence is annual with the parameter packs; the opt-in FedInvest fetch never replaces this snapshot',

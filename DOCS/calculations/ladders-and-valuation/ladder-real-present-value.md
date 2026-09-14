@@ -23,13 +23,17 @@ Real PV `$184.9655829154`, absolute tolerance `1e-9` dollars, covering interpola
 
 ## Wrong readings
 
-- Using 3% for both flows gives `$183.1073531090 (100/1.03^2 + 100/1.03^4; corrected 2026-09-14 after independent review)`.
+- Using 3% for both flows gives `100/1.03^2 + 100/1.03^4 = 1,000,000/10,609 + 10,000,000,000/112,550,881 = 94.2595909133754360 + 88.8487047915688905 = $183.1082957049443265`.
 - Treating rates as simple interest gives `100/1.04 + 100/1.12 = $185.4395604396`.
 
 ## Family
 
 `funded-ratio-result-essential-spending-pv`, `funded-ratio-result-guaranteed-income-pv`, `funded-ratio-result-funded-ratio-pct`, `funded-ratio-result-unfunded-pv`, `ladder-rung-cost`.
 
+## Revision
+
+2026-09-14: The independent review's correction of the uniform-3% wrong-reading bullet was itself wrong; the value is now the exact rational.
+
 ## Provenance
 
-Derived by: codex (gpt-5.6-sol), 2026-09-14, from the signatures-and-comments extract only, without executing the engine or reading any implementation body. Reviewed by: unreviewed.
+Derived by: codex (gpt-5.6-sol), 2026-09-14, from the signatures-and-comments extract only, without executing the engine or reading any implementation body. Reviewed by: cursor (composer-2.5), 2026-09-14, by independent recomputation without executing the engine; see REVIEW-2026-09-14.md in this directory.

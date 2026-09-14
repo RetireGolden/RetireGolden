@@ -41,6 +41,6 @@ none yet - FedInvest matching is an opt-in quote reference.
 
 ## Provenance
 
-Derived by: codex (gpt-5.6-sol), 2026-09-14, from the signatures-and-comments extract and the orchestrator's contract statement for the one-year window, without executing the engine or reading any implementation body. Reviewed by: unreviewed.
+Derived by: codex (gpt-5.6-sol), 2026-09-14, from the signatures-and-comments extract and the orchestrator's contract statement for the one-year window, without executing the engine or reading any implementation body. Reviewed by: cursor (composer-2.5), 2026-09-14, by independent recomputation without executing the engine; see REVIEW-2026-09-14.md in this directory.
 
-Revision note: The first derivation omitted the one-year window because the engine's doc comment does not state it. The engine's doc comment should be updated to state the window explicitly.
+Revision note: The first derivation omitted the one-year window because the engine's doc comment did not state it at the time. The worksheet was re-derived on 2026-09-14 with the window stated, and the engine's doc comment was updated the same day to state the window explicitly.

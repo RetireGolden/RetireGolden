@@ -27,12 +27,16 @@ Death age `66`, exact integer.
 ## Wrong readings
 
 - Returning the next birthday gives `67` (off by one).
-- Testing `U > 1-q` as death would kill the path at age 65 because `0.5 > 0.0179` is misframed, returning `65`.
+- Testing `U > q` as death would kill the path at age 65 because `0.5 > 0.0179`, returning `65`.
 
 ## Family
 
 `monte-carlo-success-rate`, `monte-carlo-ending-investable-histogram`; none has a direct death-age field yet.
 
+## Revision
+
+2026-09-14: Corrected the wrong-reading rule so its stated comparison matches the numbers and the resulting wrong age 65.
+
 ## Provenance
 
-Derived by: codex (gpt-5.6-sol), 2026-09-14, from the signatures-and-comments extract only, without executing the engine or reading any implementation body. Reviewed by: unreviewed.
+Derived by: codex (gpt-5.6-sol), 2026-09-14, from the signatures-and-comments extract only, without executing the engine or reading any implementation body. Reviewed by: cursor (composer-2.5), 2026-09-14, by independent recomputation without executing the engine; see REVIEW-2026-09-14.md in this directory.

@@ -1,29 +1,8 @@
-import { expect, it, vi } from 'vitest'
+import { expect, it } from 'vitest'
 import { MALE } from '../longevity/ssaPeriod2022.js'
 import { describeCalculation, withinTolerance } from '../rules/describeCalculation.js'
 import { annualMortality, jointLastSurvivorExpectancy, MAX_AGE, sampleDeathAge, type Sex } from './mortality.js'
 import type { Rng } from './rng.js'
-
-/**
- * The planner-ui copy of the same identity (its `oneYearSurvival`, reached
- * through the exported `survivalCurve`). The engine's test config has no
- * package path for planner-ui sources and the engine's own package exports
- * point at an unbuilt dist/, so the module is loaded by a relative path at
- * runtime through `vi.importActual`: a static import would pull the file into
- * `tsc -p tsconfig.json`, where its `@retiregolden/engine/*` imports have no
- * dist types to resolve to, and a plain `import()` of a runtime string is
- * resolved against the root-relative module URL and cannot leave the package.
- * `vi.importActual` resolves against this file's absolute path, and the
- * engine vitest config's alias sends the UI module's own
- * `@retiregolden/engine/*` imports to src/.
- */
-interface UiExpectedPvModule {
-  readonly survivalCurve: (
-    sex: Sex,
-    longevityMultiplier?: number,
-  ) => { readonly survival: (fromAge: number, toAge: number) => number }
-}
-const UI_EXPECTED_PV_PATH = '../../../planner-ui/src/socialSecurity/expectedPv.ts'
 
 /** An Rng that hands out the worksheet's draws in order and counts them. */
 function drawsRng(draws: readonly number[]): Rng & { readonly consumed: () => number } {
@@ -107,23 +86,10 @@ describeCalculation(
       // Endpoint of the claim: the last row has no e(x+1) to divide by.
       expect(MAX_AGE).toBe(119)
       expect(annualMortality(MAX_AGE, sex)).toBe(1)
-    })
-
-    it('agrees with the planner-ui copy in socialSecurity/expectedPv.ts within 1e-12 for the same rows', async () => {
-      // Duplication recorded in the record's limits (relocation packet B2-P1):
-      // the UI's oneYearSurvival is p(x) = (e(x) - 0.5)/(e(x+1) + 0.5) on the
-      // same table; survivalCurve exposes it as survival(x, x + 1). Multiplier
-      // 1 so the UI's optional e(x) scaling is the identity.
-      const ui = await vi.importActual<UiExpectedPvModule>(UI_EXPECTED_PV_PATH)
-      const curve = ui.survivalCurve(sex, 1)
-      for (const age of [65, 66, 67]) {
-        const uiSurvival = curve.survival(age, age + 1)
-        const engineSurvival = 1 - annualMortality(age, sex)
-        expect(
-          withinTolerance(uiSurvival, engineSurvival, example.tolerance),
-          `planner-ui survival(${age}, ${age + 1}) ${uiSurvival} is not within ${JSON.stringify(example.tolerance)} of the engine's ${engineSurvival}`,
-        ).toBe(true)
-      }
+      // The planner-ui copy of this identity (socialSecurity/expectedPv.ts)
+      // is proved to agree with annualMortality in that package's own suite,
+      // expectedPv.mortalityParity.test.ts, so this file never loads a UI
+      // module (record limits; relocation packet B2-P1).
     })
   },
 )
