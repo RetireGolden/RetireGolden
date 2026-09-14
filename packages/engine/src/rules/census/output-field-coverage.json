@@ -7246,7 +7246,8 @@
     "field": "solvedWithdrawalRatePct",
     "tsType": "number",
     "disposition": "family",
-    "familyId": "solved-initial-withdrawal-rate-pct"
+    "familyId": "solved-initial-withdrawal-rate-pct",
+    "note": "SWR comparison 'solved on your exact plan' row in SpendingSolverPage: divides solvedRounded (Math.floor(result.maxBaseAnnual / 100) * 100, the solver's maxBaseAnnual floored to the nearest $100) by startingInvestable (startingInvestableOf(plan) from engine/montecarlo/riskBasedGuardrails), multiplies by 100 and prints with toFixed(2) and a % sign; the row renders only when solvedRounded is not null and startingInvestable > 0."
   },
   {
     "source": "planner-ui/src/planner/SsAnalysisPage.tsx",
@@ -7270,7 +7271,8 @@
     "field": "piaAnnual",
     "tsType": "number",
     "disposition": "family",
-    "familyId": "social-security-pia-annualized"
+    "familyId": "social-security-pia-annualized",
+    "note": "CoupleStrategyPanel in SsAnalysisPage.tsx: multiplies each claimant's pia (the monthly PIA that claimingPeople resolves through resolvePia, a plan input or the engine earnings-record piaMonthly) by 12 and prints it through fmtMoneyCompact as '$X/yr' for the higher and lower earner; there is no rounding beyond fmtMoneyCompact, and the panel renders only for exactly two claiming people."
   },
   {
     "source": "planner-ui/src/socialSecurity/explain.ts",
@@ -7286,7 +7288,8 @@
     "field": "taxPlusPenalties",
     "tsType": "number",
     "disposition": "family",
-    "familyId": "display-tax-plus-penalties-annual"
+    "familyId": "display-tax-plus-penalties-annual",
+    "note": "Tax column in YearByYearLedger: adds YearResult.tax and YearResult.penalties, then passes the sum through the dollar-basis adjuster adj(y.year, sum) (view.deflate in today's-dollars mode, identity in nominal mode) and fmtMoney; there is no threshold guard, so zero prints as $0."
   },
   {
     "source": "planner-ui/src/planner/ResultsPage.tsx",
@@ -7294,7 +7297,8 @@
     "field": "upsideSpending",
     "tsType": "number",
     "disposition": "family",
-    "familyId": "display-upside-spending-annual"
+    "familyId": "display-upside-spending-annual",
+    "note": "Upside column in YearByYearLedger: adds YearResult.expenses.idealSpending and YearResult.expenses.excessSpending, then prints the sum through adj(y.year, sum) and fmtMoney when the raw sum exceeds 0.5 and blank otherwise; the column renders only when hasLayeredSpending is true."
   },
   {
     "source": "planner-ui/src/planner/ResultsPage.tsx",
@@ -7302,7 +7306,8 @@
     "field": "upsideShortfall",
     "tsType": "number",
     "disposition": "family",
-    "familyId": "display-upside-shortfall-annual"
+    "familyId": "display-upside-shortfall-annual",
+    "note": "Layer miss column in YearByYearLedger: adds YearResult.idealShortfall and YearResult.excessShortfall and prints the sum as 'Upside $X' through adj(y.year, sum) and fmtMoney when the raw sum exceeds 0.5; the column renders only when hasLayeredSpending is true, and the whole cell is blank when required + target + ideal + excess shortfalls sum to 0.5 or below."
   },
   {
     "source": "planner-ui/src/planner/ResultsPage.tsx",
@@ -7310,7 +7315,8 @@
     "field": "taxFreeGainsRoom",
     "tsType": "number",
     "disposition": "family",
-    "familyId": "display-tax-free-gains-room-annual"
+    "familyId": "display-tax-free-gains-room-annual",
+    "note": "Tax-free gains room column in YearByYearLedger: adds YearResult.ltcgZeroHeadroom and YearResult.capitalLossCarryforwardRemaining, then passes the sum through the dollar-basis adjuster adj(y.year, sum) (view.deflate in today's-dollars mode, identity in nominal mode) and fmtMoney; the cell prints blank when the raw sum is 0.5 or below."
   },
   {
     "source": "planner-ui/src/planner/ResultsPage.tsx",
@@ -7318,7 +7324,8 @@
     "field": "yearsBeforeEnd",
     "tsType": "number",
     "disposition": "family",
-    "familyId": "display-years-before-plan-end"
+    "familyId": "display-years-before-plan-end",
+    "note": "Depletion verdict in ResultsPage: subtracts summary.depletionYear (view.summary.depletionYear) from result.endYear (view.result.endYear) and prints the integer difference with a year/years label; the value is display-only, reads ProjectionSummary.depletionYear and ProjectionResult.endYear, and renders only when depletionYear is not null."
   },
   {
     "source": "planner-ui/src/planner/ResultsPage.tsx",
@@ -7326,7 +7333,8 @@
     "field": "guardrailThresholdDollars",
     "tsType": "number",
     "disposition": "family",
-    "familyId": "display-guardrail-balance-thresholds"
+    "familyId": "display-guardrail-balance-thresholds",
+    "note": "Risk-based guardrails callout in ResultsPage: multiplies plan.expenses.spendingPolicy.lowerBalanceThresholdPct / 100 (cut) and upperBalanceThresholdPct / 100 (raise) by startingInvestableOf(plan) from engine/montecarlo/riskBasedGuardrails and prints each product through fmtMoney; the value is display-only and reads plan inputs plus the engine's starting-investable helper, and each threshold renders only when its Pct field is defined."
   },
   {
     "source": "planner-ui/src/planner/resultsRows.ts",
@@ -7366,7 +7374,8 @@
     "field": "yieldPct",
     "tsType": "number",
     "disposition": "family",
-    "familyId": "income-floor-ladder-yield-pct"
+    "familyId": "income-floor-ladder-yield-pct",
+    "note": "LadderRow in IncomeFloorSection.tsx: divides ladder.annualRealAmount (the TipsLadder plan input) by quote.totalCost (the LadderBuild that buildLadder in engine/ladder/ladderMath returns, priced on EMBEDDED_REAL_YIELD_CURVE), multiplies by 100 and prints with toFixed(2) and a % sign; the sentence renders only when quote is non-null."
   },
   {
     "source": "engine/src/projection/internal/types/yearLedger.ts",

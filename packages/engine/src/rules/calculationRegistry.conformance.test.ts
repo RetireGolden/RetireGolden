@@ -37,27 +37,6 @@ const CONFORMANCE_SOURCE = 'calculationRegistry.conformance.test.ts'
 const ABW_WORKSHEET = 'DOCS/calculations/spending-and-withdrawals/abw-annuity-due-payment.md'
 const ABW_MUTATION = 'DOCS/calculations/spending-and-withdrawals/abw-annuity-due-payment.mutation.md'
 
-/**
- * Census rows on .tsx page components whose field is inline arithmetic with
- * no identifier to find at code level and, in the imported census, no `note`
- * explaining the computation. The field guard accepts a .tsx row only with a
- * code-level match or a note; these rows pre-date the note requirement and
- * are pinned here so the list can only shrink. A row leaves when the Docs
- * census gives it a note (then it must be removed here, or the test fails on
- * the stale entry), and a new note-less inline row fails outright.
- */
-const TSX_INLINE_ROWS_AWAITING_NOTE: readonly string[] = [
-  'planner-ui/src/planner/ResultsPage.tsx ResultsPage.guardrailThresholdDollars',
-  'planner-ui/src/planner/ResultsPage.tsx ResultsPage.yearsBeforeEnd',
-  'planner-ui/src/planner/ResultsPage.tsx YearByYearLedger.taxFreeGainsRoom',
-  'planner-ui/src/planner/ResultsPage.tsx YearByYearLedger.taxPlusPenalties',
-  'planner-ui/src/planner/ResultsPage.tsx YearByYearLedger.upsideShortfall',
-  'planner-ui/src/planner/ResultsPage.tsx YearByYearLedger.upsideSpending',
-  'planner-ui/src/planner/SpendingSolverPage.tsx SpendingSolverPage.solvedWithdrawalRatePct',
-  'planner-ui/src/planner/SsAnalysisPage.tsx SsAnalysisPage.piaAnnual',
-  'planner-ui/src/planner/sections/IncomeFloorSection.tsx IncomeFloorSection.yieldPct',
-]
-
 const REGEX_LITERAL_PRECEDING_KEYWORDS = new Set([
   'return',
   'typeof',
@@ -370,8 +349,7 @@ function censusName(name: string, label: string): string {
  * only, so the pattern's structure is fixed by the literal template around it.
  */
 function namePattern(template: string, flags: string): RegExp {
-  // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp
-  return new RegExp(template, flags)
+  return new RegExp(template, flags) // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp
 }
 
 function locateOwnerBlock(source: string, owner: string): { kind: 'braces' | 'params' | 'module'; body: string } | null {
@@ -416,9 +394,14 @@ function locateOwnerBlock(source: string, owner: string): { kind: 'braces' | 'pa
 /**
  * Splits `source` at any of `separators` that sits at depth zero of braces,
  * parentheses, and angle brackets. `=>` is one token that touches no counter
- * (its `>` is not a closing angle), and the angle count never goes below
- * zero, so a comparison operator in a default value cannot leave the scanner
- * believing it is inside a generic and merge every member after it.
+ * (its `>` is not a closing angle). A `<` opens an angle scope only when it
+ * is a generic opener: glued to the identifier before it (`Map<`, `f<T>`)
+ * and not the first half of `<=`; a comparison written `a < b` has a space
+ * before it and counts for nothing, so an unclosed comparison in a default
+ * value cannot leave the scanner believing it is inside a generic. The angle
+ * count is also saved and reset at every `(` or `{` and restored at the
+ * matching close, so whatever a nested scope leaves open dies with it, and it
+ * never goes below zero.
  */
 function splitTopLevel(source: string, separators: string): string[] {
   const parts: string[] = []
@@ -427,6 +410,7 @@ function splitTopLevel(source: string, separators: string): string[] {
   let braces = 0
   let parens = 0
   let angles = 0
+  const savedAngles: number[] = []
   while (i < source.length) {
     const afterComment = skipComment(source, i)
     if (afterComment !== i) {
@@ -444,12 +428,19 @@ function splitTopLevel(source: string, separators: string): string[] {
       i += 2
       continue
     }
-    if (c === '{') braces += 1
-    else if (c === '}') braces -= 1
-    else if (c === '(') parens += 1
-    else if (c === ')') parens -= 1
-    else if (c === '<') angles += 1
-    else if (c === '>') angles = Math.max(0, angles - 1)
+    if (c === '{' || c === '(') {
+      if (c === '{') braces += 1
+      else parens += 1
+      savedAngles.push(angles)
+      angles = 0
+    } else if (c === '}' || c === ')') {
+      if (c === '}') braces -= 1
+      else parens -= 1
+      angles = savedAngles.pop() ?? 0
+    } else if (c === '<') {
+      const gluedToName = i > 0 && /[\w$]/u.test(source[i - 1]!)
+      if (gluedToName && source[i + 1] !== '=') angles += 1
+    } else if (c === '>') angles = Math.max(0, angles - 1)
     else if (braces === 0 && parens === 0 && angles === 0 && separators.includes(c)) {
       parts.push(source.slice(start, i))
       start = i + 1
@@ -912,7 +903,7 @@ describe('calculation registry conformance', () => {
     const missing: string[] = []
     const unknownFields: string[] = []
     const unlocated: string[] = []
-    const tsxAwaitingNote: string[] = []
+    const tsxWithoutNote: string[] = []
     for (const { source, owner } of [...pairs.values()].sort((left, right) =>
       left.source < right.source ? -1 : left.source > right.source ? 1 : left.owner < right.owner ? -1 : left.owner > right.owner ? 1 : 0,
     )) {
@@ -958,7 +949,7 @@ describe('calculation registry conformance', () => {
         // fields that way). A .tsx page component may also document inline
         // arithmetic the census named itself, with no identifier to find; such
         // a row is accepted only with a non-empty `note` explaining the
-        // computation, or while it remains on TSX_INLINE_ROWS_AWAITING_NOTE.
+        // computation.
         const { code, literals } = codeLevelOf(source, text)
         for (const [field, row] of covered) {
           const rawLeaf = field.split('.').pop()!.replace(/\[\]$/u, '')
@@ -967,7 +958,7 @@ describe('calculation registry conformance', () => {
           if (declared.test(code) || literals.has(rawLeaf)) continue
           if (source.endsWith('.tsx')) {
             if (typeof row.note === 'string' && row.note.trim().length > 0) continue
-            tsxAwaitingNote.push(`${source} ${owner}.${field}`)
+            tsxWithoutNote.push(`${source} ${owner}.${field}`)
             continue
           }
           unknownFields.push(`${owner}.${field}`)
@@ -980,9 +971,39 @@ describe('calculation registry conformance', () => {
       [],
     )
     expect(
-      tsxAwaitingNote.sort(),
-      '.tsx rows with no identifier at code level and no note explaining the inline computation; a row gains a note in the Docs census and leaves TSX_INLINE_ROWS_AWAITING_NOTE, never the reverse',
-    ).toEqual([...TSX_INLINE_ROWS_AWAITING_NOTE].sort())
+      tsxWithoutNote,
+      '.tsx rows with no identifier at code level and no note explaining the inline computation: ' +
+        (tsxWithoutNote.join(', ') || 'none'),
+    ).toEqual([])
+  })
+
+  it('splits members after a comparison in a default value that never closes its angle', () => {
+    const body = 'limit: number = a < b ? 1 : 0, next: number, tail: number'
+    expect(splitTopLevel(body, ',').map((part) => part.trim())).toEqual([
+      'limit: number = a < b ? 1 : 0',
+      'next: number',
+      'tail: number',
+    ])
+    const lessOrEqual = 'limit: number = a <= b ? 1 : 0, next: number'
+    expect(splitTopLevel(lessOrEqual, ',').map((part) => part.trim())).toEqual([
+      'limit: number = a <= b ? 1 : 0',
+      'next: number',
+    ])
+    const arrowBody = 'below: (x: number) => x < limit, tail: Map<string, number>, last: number'
+    expect(splitTopLevel(arrowBody, ',').map((part) => part.trim())).toEqual([
+      'below: (x: number) => x < limit',
+      'tail: Map<string, number>',
+      'last: number',
+    ])
+  })
+
+  it('confines an angle left open inside parentheses to that scope', () => {
+    const body = 'check: (a: number = x<y ? 1 : 0) => number, generic: Array<\n  number\n>, tail: number'
+    expect(splitTopLevel(body, ',').map((part) => part.trim())).toEqual([
+      'check: (a: number = x<y ? 1 : 0) => number',
+      'generic: Array<\n  number\n>',
+      'tail: number',
+    ])
   })
 
   it('splits members after a callback-typed member and a comparison, keeping the angle count in sync', () => {

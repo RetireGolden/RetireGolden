@@ -1,7 +1,7 @@
 /**
  * GENERATED FILE — DO NOT EDIT BY HAND.
  *
- * Output field coverage imported from the output-family census at commit c0d897d80684866c8c5e658d51127c912771d812.
+ * Output field coverage imported from the output-family census at commit 664eae30f6db456663b1e9c1a276ce7b9505ccf6.
  * Regenerate: node packages/engine/scripts/import-output-census.mjs <census-dir>
  */
 
@@ -6639,7 +6639,8 @@ const coverageCensus = [
     "field": "guardrailThresholdDollars",
     "disposition": "family",
     "familyId": "display-guardrail-balance-thresholds",
-    "tsType": "number"
+    "tsType": "number",
+    "note": "Risk-based guardrails callout in ResultsPage: multiplies plan.expenses.spendingPolicy.lowerBalanceThresholdPct / 100 (cut) and upperBalanceThresholdPct / 100 (raise) by startingInvestableOf(plan) from engine/montecarlo/riskBasedGuardrails and prints each product through fmtMoney; the value is display-only and reads plan inputs plus the engine's starting-investable helper, and each threshold renders only when its Pct field is defined."
   },
   {
     "source": "planner-ui/src/planner/ResultsPage.tsx",
@@ -6667,7 +6668,8 @@ const coverageCensus = [
     "field": "yearsBeforeEnd",
     "disposition": "family",
     "familyId": "display-years-before-plan-end",
-    "tsType": "number"
+    "tsType": "number",
+    "note": "Depletion verdict in ResultsPage: subtracts summary.depletionYear (view.summary.depletionYear) from result.endYear (view.result.endYear) and prints the integer difference with a year/years label; the value is display-only, reads ProjectionSummary.depletionYear and ProjectionResult.endYear, and renders only when depletionYear is not null."
   },
   {
     "source": "planner-ui/src/planner/ResultsPage.tsx",
@@ -6675,7 +6677,8 @@ const coverageCensus = [
     "field": "taxFreeGainsRoom",
     "disposition": "family",
     "familyId": "display-tax-free-gains-room-annual",
-    "tsType": "number"
+    "tsType": "number",
+    "note": "Tax-free gains room column in YearByYearLedger: adds YearResult.ltcgZeroHeadroom and YearResult.capitalLossCarryforwardRemaining, then passes the sum through the dollar-basis adjuster adj(y.year, sum) (view.deflate in today's-dollars mode, identity in nominal mode) and fmtMoney; the cell prints blank when the raw sum is 0.5 or below."
   },
   {
     "source": "planner-ui/src/planner/ResultsPage.tsx",
@@ -6683,7 +6686,8 @@ const coverageCensus = [
     "field": "taxPlusPenalties",
     "disposition": "family",
     "familyId": "display-tax-plus-penalties-annual",
-    "tsType": "number"
+    "tsType": "number",
+    "note": "Tax column in YearByYearLedger: adds YearResult.tax and YearResult.penalties, then passes the sum through the dollar-basis adjuster adj(y.year, sum) (view.deflate in today's-dollars mode, identity in nominal mode) and fmtMoney; there is no threshold guard, so zero prints as $0."
   },
   {
     "source": "planner-ui/src/planner/ResultsPage.tsx",
@@ -6691,7 +6695,8 @@ const coverageCensus = [
     "field": "upsideShortfall",
     "disposition": "family",
     "familyId": "display-upside-shortfall-annual",
-    "tsType": "number"
+    "tsType": "number",
+    "note": "Layer miss column in YearByYearLedger: adds YearResult.idealShortfall and YearResult.excessShortfall and prints the sum as 'Upside $X' through adj(y.year, sum) and fmtMoney when the raw sum exceeds 0.5; the column renders only when hasLayeredSpending is true, and the whole cell is blank when required + target + ideal + excess shortfalls sum to 0.5 or below."
   },
   {
     "source": "planner-ui/src/planner/ResultsPage.tsx",
@@ -6699,7 +6704,8 @@ const coverageCensus = [
     "field": "upsideSpending",
     "disposition": "family",
     "familyId": "display-upside-spending-annual",
-    "tsType": "number"
+    "tsType": "number",
+    "note": "Upside column in YearByYearLedger: adds YearResult.expenses.idealSpending and YearResult.expenses.excessSpending, then prints the sum through adj(y.year, sum) and fmtMoney when the raw sum exceeds 0.5 and blank otherwise; the column renders only when hasLayeredSpending is true."
   },
   {
     "source": "planner-ui/src/planner/ResultsPage.tsx",
@@ -7021,7 +7027,8 @@ const coverageCensus = [
     "field": "solvedWithdrawalRatePct",
     "disposition": "family",
     "familyId": "solved-initial-withdrawal-rate-pct",
-    "tsType": "number"
+    "tsType": "number",
+    "note": "SWR comparison 'solved on your exact plan' row in SpendingSolverPage: divides solvedRounded (Math.floor(result.maxBaseAnnual / 100) * 100, the solver's maxBaseAnnual floored to the nearest $100) by startingInvestable (startingInvestableOf(plan) from engine/montecarlo/riskBasedGuardrails), multiplies by 100 and prints with toFixed(2) and a % sign; the row renders only when solvedRounded is not null and startingInvestable > 0."
   },
   {
     "source": "planner-ui/src/planner/SsAnalysisPage.tsx",
@@ -7061,7 +7068,8 @@ const coverageCensus = [
     "field": "piaAnnual",
     "disposition": "family",
     "familyId": "social-security-pia-annualized",
-    "tsType": "number"
+    "tsType": "number",
+    "note": "CoupleStrategyPanel in SsAnalysisPage.tsx: multiplies each claimant's pia (the monthly PIA that claimingPeople resolves through resolvePia, a plan input or the engine earnings-record piaMonthly) by 12 and prints it through fmtMoneyCompact as '$X/yr' for the higher and lower earner; there is no rounding beyond fmtMoneyCompact, and the panel renders only for exactly two claiming people."
   },
   {
     "source": "planner-ui/src/planner/SsAnalysisPage.tsx",
@@ -7926,7 +7934,8 @@ const coverageCensus = [
     "field": "yieldPct",
     "disposition": "family",
     "familyId": "income-floor-ladder-yield-pct",
-    "tsType": "number"
+    "tsType": "number",
+    "note": "LadderRow in IncomeFloorSection.tsx: divides ladder.annualRealAmount (the TipsLadder plan input) by quote.totalCost (the LadderBuild that buildLadder in engine/ladder/ladderMath returns, priced on EMBEDDED_REAL_YIELD_CURVE), multiplies by 100 and prints with toFixed(2) and a % sign; the sentence renders only when quote is non-null."
   },
   {
     "source": "planner-ui/src/planner/sections/IncomeFloorSection.tsx",
