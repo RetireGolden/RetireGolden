@@ -1,6 +1,24 @@
+import { fileURLToPath } from 'node:url'
+
 import { coverageConfigDefaults, defineConfig } from 'vitest/config'
 
+// This package's own source, as a posix path for Vite's resolver.
+const engineSrc = fileURLToPath(new URL('./src', import.meta.url)).replaceAll('\\', '/')
+
 export default defineConfig({
+  resolve: {
+    // `@retiregolden/engine/*` resolves through package.json exports to dist/,
+    // which a checkout has only after a build. Nothing under src/ imports the
+    // package by its own name; the alias is for evidence tests that load a
+    // planner-ui module by relative path to compare a UI copy of a formula
+    // against the engine's (montecarlo/mortality.evidence.test.ts): that
+    // module imports the engine by name, and this sends it to src/ the same
+    // way planner-ui/vite.config.ts and app/vite.config.ts do for their tests.
+    alias: [
+      { find: /^@retiregolden\/engine$/, replacement: `${engineSrc}/index.ts` },
+      { find: /^@retiregolden\/engine\/(.*)$/, replacement: `${engineSrc}/$1` },
+    ],
+  },
   test: {
     environment: 'node',
     // Run one test file at a time. Coverage-heavy projection and nested
