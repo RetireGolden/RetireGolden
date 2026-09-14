@@ -17,7 +17,7 @@
       "provenance": {
         "derivedBy": "codex",
         "implementedBy": "claude-subagent",
-        "reviewedBy": "unreviewed"
+        "reviewedBy": "cursor"
       },
       "fixtureFiles": [
         "packages/engine/src/ladder/fedInvest.evidence.test.ts"
@@ -37,7 +37,7 @@
       "provenance": {
         "derivedBy": "codex",
         "implementedBy": "claude-subagent",
-        "reviewedBy": "unreviewed"
+        "reviewedBy": "cursor"
       },
       "fixtureFiles": [
         "packages/engine/src/ladder/fedInvest.evidence.test.ts"
@@ -57,7 +57,7 @@
       "provenance": {
         "derivedBy": "codex",
         "implementedBy": "claude-subagent",
-        "reviewedBy": "unreviewed"
+        "reviewedBy": "cursor"
       },
       "fixtureFiles": [
         "packages/engine/src/ladder/fedInvest.evidence.test.ts"
@@ -80,7 +80,7 @@
       "provenance": {
         "derivedBy": "codex",
         "implementedBy": "claude-subagent",
-        "reviewedBy": "unreviewed"
+        "reviewedBy": "cursor"
       },
       "fixtureFiles": [
         "packages/engine/src/ladder/fundedRatio.evidence.test.ts"
@@ -102,7 +102,7 @@
       "provenance": {
         "derivedBy": "codex",
         "implementedBy": "claude-subagent",
-        "reviewedBy": "unreviewed"
+        "reviewedBy": "cursor"
       },
       "fixtureFiles": [
         "packages/engine/src/ladder/ladderMath.evidence.test.ts"
@@ -125,7 +125,7 @@
       "provenance": {
         "derivedBy": "codex",
         "implementedBy": "claude-subagent",
-        "reviewedBy": "unreviewed"
+        "reviewedBy": "cursor"
       },
       "fixtureFiles": [
         "packages/engine/src/ladder/ladderMath.evidence.test.ts"
@@ -149,7 +149,7 @@
       "provenance": {
         "derivedBy": "codex",
         "implementedBy": "claude-subagent",
-        "reviewedBy": "unreviewed"
+        "reviewedBy": "cursor"
       },
       "fixtureFiles": [
         "packages/engine/src/ladder/ladderMath.evidence.test.ts"
@@ -174,7 +174,7 @@
       "provenance": {
         "derivedBy": "codex",
         "implementedBy": "claude-subagent",
-        "reviewedBy": "unreviewed"
+        "reviewedBy": "cursor"
       },
       "fixtureFiles": [
         "packages/engine/src/ladder/ladderMath.evidence.test.ts"
@@ -196,7 +196,7 @@
       "provenance": {
         "derivedBy": "codex",
         "implementedBy": "claude-subagent",
-        "reviewedBy": "unreviewed"
+        "reviewedBy": "cursor"
       },
       "fixtureFiles": [
         "packages/engine/src/ladder/ladderMath.evidence.test.ts"
@@ -223,7 +223,7 @@
       "provenance": {
         "derivedBy": "codex",
         "implementedBy": "claude-subagent",
-        "reviewedBy": "unreviewed"
+        "reviewedBy": "cursor"
       },
       "fixtureFiles": [
         "packages/engine/src/params/data/realYieldCurve2026.evidence.test.ts"

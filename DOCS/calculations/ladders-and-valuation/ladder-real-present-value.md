@@ -23,7 +23,7 @@ Real PV `$184.9655829154`, absolute tolerance `1e-9` dollars, covering interpola
 
 ## Wrong readings
 
-- Using 3% for both flows gives `$183.1082957049`.
+- Using 3% for both flows gives `$183.1073531090 (100/1.03^2 + 100/1.03^4; corrected 2026-09-14 after independent review)`.
 - Treating rates as simple interest gives `100/1.04 + 100/1.12 = $185.4395604396`.
 
 ## Family

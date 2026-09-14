@@ -49,7 +49,7 @@ export const laddersAndValuationRecords = {
     implementedBy: ['packages/engine/src/ladder/ladderMath.ts'],
     implementedByFunctions: ['packages/engine/src/ladder/ladderMath.ts#realYieldAt'],
     verifiedOn: '2026-09-14',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'cursor' },
   },
   'ladder-annual-coupon-par-pricing': {
     title: 'Synthetic TIPS rung: floored coupon and par-curve price',
@@ -88,7 +88,7 @@ export const laddersAndValuationRecords = {
       'packages/engine/src/ladder/ladderMath.ts#priceRung',
     ],
     verifiedOn: '2026-09-14',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'cursor' },
   },
   'ladder-real-present-value': {
     title: 'Real present value of a cash-flow stream on the TIPS curve',
@@ -126,7 +126,7 @@ export const laddersAndValuationRecords = {
     implementedBy: ['packages/engine/src/ladder/ladderMath.ts'],
     implementedByFunctions: ['packages/engine/src/ladder/ladderMath.ts#realPresentValue'],
     verifiedOn: '2026-09-14',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'cursor' },
   },
   'ladder-backward-face-construction': {
     title: 'Level-real-income ladder: faces solved back to front',
@@ -166,7 +166,7 @@ export const laddersAndValuationRecords = {
     implementedBy: ['packages/engine/src/ladder/ladderMath.ts'],
     implementedByFunctions: ['packages/engine/src/ladder/ladderMath.ts#buildLadder'],
     verifiedOn: '2026-09-14',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'cursor' },
   },
   'ladder-rung-flows-and-remaining-face': {
     title: 'Ladder cash flows in a year and face outstanding after it',
@@ -202,7 +202,7 @@ export const laddersAndValuationRecords = {
       'packages/engine/src/ladder/ladderMath.ts#ladderRemainingFace',
     ],
     verifiedOn: '2026-09-14',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'cursor' },
   },
   'funded-ratio-hand-present-value': {
     title: 'Funded ratio: present values of essential spending and guaranteed income',
@@ -244,7 +244,7 @@ export const laddersAndValuationRecords = {
     implementedBy: ['packages/engine/src/ladder/fundedRatio.ts'],
     implementedByFunctions: ['packages/engine/src/ladder/fundedRatio.ts#computeFundedRatio'],
     verifiedOn: '2026-09-14',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'cursor' },
   },
   'fedinvest-csv-tips-parsing': {
     title: 'FedInvest security-price CSV: TIPS rows to reference records',
@@ -292,7 +292,7 @@ export const laddersAndValuationRecords = {
     implementedBy: ['packages/engine/src/ladder/fedInvest.ts'],
     implementedByFunctions: ['packages/engine/src/ladder/fedInvest.ts#parseFedInvestCsv'],
     verifiedOn: '2026-09-14',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'cursor' },
   },
   'fedinvest-latest-price-date': {
     title: 'Latest FedInvest price date: previous business day in local time',
@@ -329,7 +329,7 @@ export const laddersAndValuationRecords = {
       'packages/engine/src/ladder/fedInvest.ts#latestPriceDateIso',
     ],
     verifiedOn: '2026-09-14',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'cursor' },
   },
   'fedinvest-nearest-tips-maturity': {
     title: 'Nearest FedInvest TIPS for a rung year',
@@ -362,7 +362,7 @@ export const laddersAndValuationRecords = {
     implementedBy: ['packages/engine/src/ladder/fedInvest.ts'],
     implementedByFunctions: ['packages/engine/src/ladder/fedInvest.ts#nearestTipsForYear'],
     verifiedOn: '2026-09-14',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'cursor' },
   },
   'treasury-real-yield-curve-2026': {
     title: 'Embedded Treasury par real-yield curve, 2026-06-30',
@@ -405,6 +405,6 @@ export const laddersAndValuationRecords = {
     implementedBy: ['packages/engine/src/params/data/realYieldCurve2026.ts'],
     implementedByFunctions: ['packages/engine/src/params/data/realYieldCurve2026.ts#REAL_YIELD_CURVE_2026'],
     verifiedOn: '2026-09-14',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'cursor' },
   },
 } satisfies Record<string, CalculationRecord>
