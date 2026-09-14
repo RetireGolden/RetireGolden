@@ -9,7 +9,11 @@ import {
   type CalculationRecord,
 } from './calculationRegistry.js'
 import { COVERAGE_ATTESTATIONS } from './coverageAttestations.js'
-import { buildCalculationCoverageReport, type CalculationCoverageManifest } from './coverageReport.js'
+import {
+  buildCalculationCoverageReport,
+  type CalculationCoverageManifest,
+  type CalculationRecordGates,
+} from './coverageReport.js'
 import { OUTPUT_FAMILIES, type OutputFamily } from './outputFamilies.js'
 import { OUTPUT_FIELD_COVERAGE, type OutputFieldCoverageRow } from './outputFieldCoverage.js'
 import { declaredSymbolLinesOf, symbolAnchorLine, type DeclaredSymbol } from './symbolLines.js'
@@ -616,12 +620,36 @@ function docText(repoPath: string): string | undefined {
   return calculationDocs['../../../../' + repoPath.replace(/\\/gu, '/')]
 }
 
-function namedFamilies(): ReadonlySet<string> {
-  const named = new Set<string>()
+/** Families some record's `outputs` name — `feeds` deliberately excluded, since feeding is not computing. */
+function computedFamilies(): ReadonlySet<string> {
+  const computed = new Set<string>()
   for (const record of Object.values(CALCULATION_REGISTRY)) {
-    for (const familyId of record.outputs) named.add(familyId)
+    for (const familyId of record.outputs) computed.add(familyId)
   }
-  return named
+  return computed
+}
+
+/** Family ids in `outputs` or `feeds` that are not families, each prefixed by the list that named it. */
+function unknownFamilyIds(record: CalculationRecord, families: Readonly<Record<string, unknown>>): string[] {
+  const unknown: string[] = []
+  for (const familyId of record.outputs) {
+    if (!Object.hasOwn(families, familyId)) unknown.push(`outputs: ${familyId}`)
+  }
+  for (const familyId of record.feeds ?? []) {
+    if (!Object.hasOwn(families, familyId)) unknown.push(`feeds: ${familyId}`)
+  }
+  return unknown
+}
+
+/** Family ids named in both `outputs` and `feeds` — a record cannot both be a family's number and merely enter it. */
+function overlappingFamilyIds(record: CalculationRecord): string[] {
+  const outputs = new Set<string>(record.outputs)
+  return (record.feeds ?? []).filter((familyId) => outputs.has(familyId))
+}
+
+/** Whether the record names at least one family across `outputs` and `feeds`. */
+function namesAFamily(record: CalculationRecord): boolean {
+  return record.outputs.length + (record.feeds ?? []).length > 0
 }
 
 let publishedManifestMemo: CalculationCoverageManifest | null = null
@@ -674,12 +702,13 @@ function syntheticFamily(kind: OutputFamily['kind'], relocation: OutputFamily['r
   }
 }
 
-function syntheticRecord(outputs: readonly string[]): CalculationRecord {
+function syntheticRecord(outputs: readonly string[], feeds?: readonly string[]): CalculationRecord {
   return {
     title: 'Synthetic calculation',
     purpose: 'Exists only to drive the report builder in this test.',
     kind: 'formula',
     outputs: outputs as unknown as CalculationRecord['outputs'],
+    ...(feeds === undefined ? {} : { feeds: feeds as unknown as CalculationRecord['feeds'] }),
     statement: 'y = x',
     formula: null,
     justification: { kind: 'assumption', rationale: 'test', intendedUse: 'test', errorBound: null },
@@ -691,9 +720,19 @@ function syntheticRecord(outputs: readonly string[]): CalculationRecord {
   }
 }
 
-/** A two-family report: one ui family still relocation-pending, one done, both explained by one passing record. */
-function syntheticReport(options: { readonly symbolLineFor?: (path: string, symbol: string) => number } = {}) {
-  const registry = { [SYNTHETIC_ID]: syntheticRecord(['synthetic-ui-pending', 'synthetic-ui-done']) }
+/**
+ * A two-family report: one ui family still relocation-pending, one done, both
+ * explained by one passing record unless `record` substitutes another.
+ */
+function syntheticReport(
+  options: {
+    readonly symbolLineFor?: (path: string, symbol: string) => number
+    readonly record?: CalculationRecord
+  } = {},
+) {
+  const registry = {
+    [SYNTHETIC_ID]: options.record ?? syntheticRecord(['synthetic-ui-pending', 'synthetic-ui-done']),
+  }
   return buildCalculationCoverageReport({
     registry,
     recordModules: [['synthetic', registry]],
@@ -708,6 +747,10 @@ function syntheticReport(options: { readonly symbolLineFor?: (path: string, symb
     symbolLineFor: options.symbolLineFor ?? (() => 1),
     docTextFor: () => null,
   })
+}
+
+function gatesAllPass(gates: CalculationRecordGates): boolean {
+  return Object.values(gates).every((gate) => gate === true)
 }
 
 describe('calculation registry conformance', () => {
@@ -779,35 +822,86 @@ describe('calculation registry conformance', () => {
     expect(violations).toEqual([])
   })
 
-  it('names only families that exist in OUTPUT_FAMILIES', () => {
-    const unknownOutputs: string[] = []
+  it('names only families that exist in OUTPUT_FAMILIES, in outputs and in feeds alike', () => {
+    const unknown: string[] = []
     for (const [id, record] of Object.entries(CALCULATION_REGISTRY)) {
-      for (const familyId of record.outputs) {
-        if (!Object.hasOwn(OUTPUT_FAMILIES, familyId)) unknownOutputs.push(`${id}: ${familyId}`)
-      }
+      for (const entry of unknownFamilyIds(record, OUTPUT_FAMILIES)) unknown.push(`${id} ${entry}`)
     }
-    expect(unknownOutputs).toEqual([])
+    expect(unknown).toEqual([])
   })
 
-  it('publishes no-record-yet for exactly the families no record names, so an engine family is never silently uncatalogued', () => {
-    const named = namedFamilies()
+  it('keeps outputs and feeds disjoint on every record', () => {
+    const overlapping: string[] = []
+    for (const [id, record] of Object.entries(CALCULATION_REGISTRY)) {
+      for (const familyId of overlappingFamilyIds(record)) overlapping.push(`${id}: ${familyId}`)
+    }
+    expect(overlapping).toEqual([])
+  })
+
+  it('names at least one family across outputs and feeds on every record', () => {
+    const nameless = Object.entries(CALCULATION_REGISTRY)
+      .filter(([, record]) => !namesAFamily(record))
+      .map(([id]) => id)
+    expect(nameless).toEqual([])
+  })
+
+  it('rejects a synthetic record whose feeds names a family that does not exist', () => {
+    const record = syntheticRecord(['synthetic-ui-done'], ['synthetic-missing'])
+    expect(unknownFamilyIds(record, { 'synthetic-ui-done': true })).toEqual(['feeds: synthetic-missing'])
+    // The builder's familiesExist gate is the same test, published per record.
+    expect(syntheticReport({ record }).shards[0]!.shard.records[0]!.gates.familiesExist).toBe(false)
+  })
+
+  it('rejects a synthetic record whose feeds repeats one of its outputs', () => {
+    expect(overlappingFamilyIds(syntheticRecord(['synthetic-ui-done'], ['synthetic-ui-done']))).toEqual([
+      'synthetic-ui-done',
+    ])
+    expect(overlappingFamilyIds(syntheticRecord(['synthetic-ui-done'], ['synthetic-ui-pending']))).toEqual([])
+  })
+
+  it('rejects a synthetic record that names no family in outputs or feeds', () => {
+    expect(namesAFamily(syntheticRecord([]))).toBe(false)
+    expect(namesAFamily(syntheticRecord([], []))).toBe(false)
+    expect(namesAFamily(syntheticRecord([], ['synthetic-ui-done']))).toBe(true)
+    expect(namesAFamily(syntheticRecord(['synthetic-ui-done']))).toBe(true)
+  })
+
+  it('publishes no-record-yet for exactly the families no record computes, so an engine family is never silently uncatalogued', () => {
+    const computed = computedFamilies()
     const { noRecordYet } = publishedManifest().families
     const published = new Set(noRecordYet)
     const violations: string[] = []
     for (const familyId of noRecordYet) {
       if (!Object.hasOwn(OUTPUT_FAMILIES, familyId)) {
         violations.push(`${familyId}: published as no-record-yet but is not a family`)
-      } else if (named.has(familyId)) {
-        violations.push(`${familyId}: published as no-record-yet although a record names it`)
+      } else if (computed.has(familyId)) {
+        violations.push(`${familyId}: published as no-record-yet although a record's outputs name it`)
       }
     }
     for (const [familyId, family] of Object.entries(OUTPUT_FAMILIES)) {
-      if (!named.has(familyId) && !published.has(familyId)) {
-        violations.push(`${familyId} (${family.kind}): no record names it and the report does not say so`)
+      if (!computed.has(familyId) && !published.has(familyId)) {
+        violations.push(`${familyId} (${family.kind}): no record computes it and the report does not say so`)
       }
     }
     expect(violations).toEqual([])
     expect(noRecordYet).toEqual([...noRecordYet].sort())
+  })
+
+  it('publishes fedBy for exactly the families some record feeds, as sorted record ids', () => {
+    const expected: Record<string, string[]> = {}
+    // Widened: the frozen registry's inferred type omits `feeds` until a record declares one.
+    for (const [id, record] of Object.entries<CalculationRecord>(CALCULATION_REGISTRY)) {
+      for (const familyId of record.feeds ?? []) {
+        if (!Object.hasOwn(OUTPUT_FAMILIES, familyId)) continue
+        const feeders = expected[familyId] ?? []
+        feeders.push(id)
+        expected[familyId] = feeders
+      }
+    }
+    for (const feeders of Object.values(expected)) feeders.sort()
+    const { fedBy } = publishedManifest().families
+    expect(fedBy).toEqual(expected)
+    expect(Object.keys(fedBy)).toEqual(Object.keys(fedBy).sort())
   })
 
   it('links every family-disposition coverage row to a family that exists', () => {
@@ -1057,7 +1151,9 @@ describe('calculation registry conformance', () => {
       partial: ['synthetic-ui-pending'],
       noRecordYet: [],
       relocationPending: ['synthetic-ui-pending'],
+      fedBy: {},
     })
+    expect(report.shards[0]!.shard.records[0]!.feeds).toEqual([])
     expect(report.shards[0]!.shard.records[0]!.gates).toEqual({
       fixtureRegistersTest: true,
       pinsResolve: true,
@@ -1065,6 +1161,22 @@ describe('calculation registry conformance', () => {
       worksheetExists: true,
       mutationExists: true,
       provenanceIndependent: true,
+    })
+  })
+
+  it('keeps a family that a passing record only feeds in no-record-yet, and publishes the feeder under fedBy', () => {
+    // The intermediate-quantity case: the record's own number is one family,
+    // and it enters another family computed by code that has no record yet.
+    const report = syntheticReport({ record: syntheticRecord(['synthetic-ui-done'], ['synthetic-ui-pending']) })
+    const record = report.shards[0]!.shard.records[0]!
+    expect(gatesAllPass(record.gates)).toBe(true)
+    expect(record.outputs).toEqual(['synthetic-ui-done'])
+    expect(record.feeds).toEqual(['synthetic-ui-pending'])
+    expect(report.manifest.families).toMatchObject({
+      complete: ['synthetic-ui-done'],
+      partial: [],
+      noRecordYet: ['synthetic-ui-pending'],
+      fedBy: { 'synthetic-ui-pending': [SYNTHETIC_ID] },
     })
   })
 

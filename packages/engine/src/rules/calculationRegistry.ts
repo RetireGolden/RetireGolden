@@ -65,7 +65,24 @@ export interface CalculationRecord {
   /** One plain sentence for the catalog card. */
   readonly purpose: string
   readonly kind: CalculationKind
-  readonly outputs: readonly [OutputFamilyId, ...OutputFamilyId[]]
+  /**
+   * Families whose published number this record's formula IS. Only these
+   * count toward a family's complete / partial status. Empty for an
+   * intermediate quantity that no surface publishes directly (a mortality
+   * rate, a survival product, a joint expectancy), which then names the
+   * families it enters under `feeds` instead.
+   */
+  readonly outputs: readonly OutputFamilyId[]
+  /**
+   * Families whose value this record's quantity enters as an input, without
+   * being that value. Publishing the relation keeps an intermediate record
+   * visible (the manifest's `fedBy` map) without letting it stand in for the
+   * record that actually computes the family: a family named only here, and
+   * in no record's `outputs`, stays no-record-yet. Conformance requires a
+   * record to name at least one family across `outputs` and `feeds`, the two
+   * lists to be disjoint, and every id in either to exist in OUTPUT_FAMILIES.
+   */
+  readonly feeds?: readonly OutputFamilyId[]
   readonly statement: string
   readonly formula: CalculationFormula | null
   readonly justification: CalculationJustification

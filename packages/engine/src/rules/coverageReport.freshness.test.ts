@@ -3,8 +3,12 @@ import {
   BASELINE_UNSWEPT,
   COVERAGE_ATTESTATIONS,
 } from './coverageAttestations.js'
-import { CALCULATION_RECORD_MODULES, CALCULATION_REGISTRY } from './calculationRegistry.js'
-import { OUTPUT_FAMILIES } from './outputFamilies.js'
+import {
+  CALCULATION_RECORD_MODULES,
+  CALCULATION_REGISTRY,
+  type CalculationRecord,
+} from './calculationRegistry.js'
+import { OUTPUT_FAMILIES, type OutputFamily } from './outputFamilies.js'
 import {
   buildCalculationCoverageReport,
   buildCoverageReport,
@@ -368,6 +372,136 @@ describe('calculation coverage report artifacts', () => {
         }
       }
     }
+  })
+
+  it('publishes exactly the documented record keys, feeds included, in every calculation shard', () => {
+    const documentedKeys = [
+      'feeds',
+      'fixtureFiles',
+      'gates',
+      'id',
+      'implementedBy',
+      'justificationKind',
+      'kind',
+      'outputs',
+      'provenance',
+      'title',
+    ]
+    let seen = 0
+    for (const { json } of calculationReport.shards) {
+      const { records } = JSON.parse(json) as { records: Record<string, unknown>[] }
+      for (const record of records) {
+        seen += 1
+        expect(Object.keys(record).sort(), String(record.id)).toEqual(documentedKeys)
+        // `feeds` is always an array, `[]` when the registry record declares
+        // none, so a consumer never has to special-case its absence.
+        expect(Array.isArray(record.feeds), String(record.id) + '.feeds').toBe(true)
+        expect(Array.isArray(record.outputs), String(record.id) + '.outputs').toBe(true)
+      }
+    }
+    expect(seen).toBe(calculationReport.manifest.records.total)
+  })
+
+  it('publishes the documented families keys in order, fedBy last, keyed by family to sorted feeder ids', () => {
+    const { families } = JSON.parse(calculationReport.json) as {
+      families: Record<string, unknown> & { fedBy: Record<string, string[]> }
+    }
+    expect(Object.keys(families)).toEqual([
+      'identified',
+      'byGroup',
+      'byKind',
+      'complete',
+      'partial',
+      'noRecordYet',
+      'relocationPending',
+      'fedBy',
+    ])
+    const familyIds = Object.keys(families.fedBy)
+    expect(familyIds).toEqual([...familyIds].sort())
+    for (const [familyId, feeders] of Object.entries(families.fedBy)) {
+      expect(Object.hasOwn(OUTPUT_FAMILIES, familyId), familyId).toBe(true)
+      expect(feeders.length, familyId).toBeGreaterThan(0)
+      expect(feeders, familyId).toEqual([...feeders].sort())
+      for (const id of feeders) {
+        const record = (CALCULATION_REGISTRY as Readonly<Record<string, CalculationRecord>>)[id]
+        expect(record, familyId + ' fed by unknown record ' + id).toBeDefined()
+        expect(record!.feeds ?? [], id + '.feeds').toContain(familyId)
+      }
+    }
+  })
+
+  it('keeps a family named only in feeds by a fully passing record in noRecordYet and fedBy, never in complete', () => {
+    // The call token is assembled at runtime: the conformance suite scans every
+    // other test source's text (string literals included) for fixture claims,
+    // and this synthetic fixture must not read as a claim on an unregistered
+    // id with a worksheet that does not exist. The builder still receives the
+    // intact call below as an ordinary test source.
+    const fixture = [
+      'describe' + "Calculation('synthetic-intermediate', { example: {}, worksheet: 'w', mutation: 'm' }, () => {",
+      "  it('registers a test', () => { expect(1).toBe(1) })",
+      '})',
+    ].join('\n')
+    const family = (): OutputFamily => ({
+      title: 'Synthetic family',
+      group: 'synthetic',
+      meaning: 'Exists only inside this test.',
+      unit: 'usd',
+      basis: 'nominal',
+      dimensions: [],
+      kind: 'engine',
+      engineSource: null,
+      surfaces: [{ surface: 'page', selector: 'value' }],
+      relocation: null,
+    })
+    const record = (outputs: readonly string[], feeds: readonly string[]): CalculationRecord => ({
+      title: 'Synthetic intermediate quantity',
+      purpose: 'Enters another family without being it.',
+      kind: 'formula',
+      outputs: outputs as unknown as CalculationRecord['outputs'],
+      feeds: feeds as unknown as CalculationRecord['feeds'],
+      statement: 'q = 1 / e',
+      formula: null,
+      justification: { kind: 'assumption', rationale: 'test', intendedUse: 'test', errorBound: null },
+      limits: [],
+      implementedBy: ['packages/engine/src/spending/abw.ts'],
+      implementedByFunctions: ['packages/engine/src/spending/abw.ts#abwAnnualPayment'],
+      verifiedOn: '2026-09-14',
+      provenance: { derivedBy: 'deriving-agent', implementedBy: 'implementing-agent', reviewedBy: 'reviewing-agent' },
+    })
+    const build = (registry: Readonly<Record<string, CalculationRecord>>) =>
+      buildCalculationCoverageReport({
+        registry,
+        recordModules: [['synthetic', registry]],
+        families: { 'synthetic-own': family(), 'synthetic-fed': family() },
+        attestations: {},
+        testSources: { '../spending/synthetic.evidence.test.ts': fixture },
+        externalGoldenSources: {},
+        walkthroughs: [],
+        symbolLineFor: () => 1,
+        docTextFor: () => null,
+      })
+
+    // A record with its own output that also feeds a second family.
+    const mixed = build({ 'synthetic-intermediate': record(['synthetic-own'], ['synthetic-fed']) })
+    const mixedRecord = mixed.shards[0]!.shard.records[0]!
+    expect(Object.values(mixedRecord.gates).every((gate) => gate === true)).toBe(true)
+    expect(mixedRecord.feeds).toEqual(['synthetic-fed'])
+    expect(mixed.manifest.families).toMatchObject({
+      complete: ['synthetic-own'],
+      partial: [],
+      noRecordYet: ['synthetic-fed'],
+      fedBy: { 'synthetic-fed': ['synthetic-intermediate'] },
+    })
+
+    // A pure intermediate: no output of its own, so it completes nothing.
+    const pure = build({ 'synthetic-intermediate': record([], ['synthetic-fed']) })
+    expect(Object.values(pure.shards[0]!.shard.records[0]!.gates).every((gate) => gate === true)).toBe(true)
+    expect(pure.manifest.families).toMatchObject({
+      complete: [],
+      partial: [],
+      noRecordYet: ['synthetic-fed', 'synthetic-own'],
+      fedBy: { 'synthetic-fed': ['synthetic-intermediate'] },
+    })
   })
 
   it('scans walkthrough test files for it() and test() titles at code level, keyed by file name', () => {

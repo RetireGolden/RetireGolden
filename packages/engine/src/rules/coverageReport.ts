@@ -993,6 +993,8 @@ export interface CalculationCoverageRecord {
   readonly title: string
   readonly kind: CalculationRecord['kind']
   readonly outputs: readonly string[]
+  /** The record's `feeds` list as declared; `[]` when the record declares none. */
+  readonly feeds: readonly string[]
   readonly justificationKind: CalculationRecord['justification']['kind']
   readonly implementedBy: readonly string[]
   readonly provenance: CalculationRecord['provenance']
@@ -1048,6 +1050,12 @@ export interface CalculationCoverageManifest {
     readonly partial: readonly string[]
     readonly noRecordYet: readonly string[]
     readonly relocationPending: readonly string[]
+    /**
+     * Family id → sorted ids of the records whose `feeds` name it. Families
+     * nobody feeds are omitted. Informational only: a family listed here and
+     * in no record's `outputs` is still no-record-yet.
+     */
+    readonly fedBy: Readonly<Record<string, readonly string[]>>
   }
   readonly records: {
     readonly total: number
@@ -1144,7 +1152,9 @@ function calculationRecordGates(
   return {
     fixtureRegistersTest: fixtures.some((fixture) => fixture.tests.length > 0),
     pinsResolve,
-    familiesExist: record.outputs.every((familyId) => input.families[familyId] !== undefined),
+    familiesExist: [...record.outputs, ...(record.feeds ?? [])].every(
+      (familyId) => input.families[familyId] !== undefined,
+    ),
     worksheetExists,
     mutationExists,
     provenanceIndependent: record.provenance.derivedBy !== record.provenance.reviewedBy,
@@ -1193,6 +1203,7 @@ export function buildCalculationCoverageReport(input: CalculationCoverageInput):
       title: record.title,
       kind: record.kind,
       outputs: [...record.outputs],
+      feeds: [...(record.feeds ?? [])],
       justificationKind: record.justification.kind,
       implementedBy: [...record.implementedBy],
       provenance: record.provenance,
@@ -1200,14 +1211,29 @@ export function buildCalculationCoverageReport(input: CalculationCoverageInput):
       gates: gateById.get(id)!,
     }))
     .sort((left, right) => compareStrings(left.id, right.id))
+  // Family status is decided by `outputs` alone: a record that only feeds a
+  // family (see CalculationRecord.feeds) is not the record that computes it,
+  // so it must not move that family out of no-record-yet.
   const recordsByFamily = new Map<string, { record: CalculationRecord; passes: boolean }[]>()
+  const feedersByFamily = new Map<string, string[]>()
   for (const [id, record] of Object.entries(input.registry)) {
     for (const familyId of record.outputs) {
       const list = recordsByFamily.get(familyId) ?? []
       list.push({ record, passes: gatesPass(gateById.get(id)!) })
       recordsByFamily.set(familyId, list)
     }
+    for (const familyId of record.feeds ?? []) {
+      if (input.families[familyId] === undefined) continue
+      const feeders = feedersByFamily.get(familyId) ?? []
+      feeders.push(id)
+      feedersByFamily.set(familyId, feeders)
+    }
   }
+  const fedBy: Record<string, readonly string[]> = Object.fromEntries(
+    [...feedersByFamily.entries()]
+      .sort(([left], [right]) => compareStrings(left, right))
+      .map(([familyId, feeders]) => [familyId, [...feeders].sort(compareStrings)]),
+  )
   const complete: string[] = []
   const partial: string[] = []
   const noRecordYet: string[] = []
@@ -1289,6 +1315,7 @@ export function buildCalculationCoverageReport(input: CalculationCoverageInput):
       partial,
       noRecordYet,
       relocationPending,
+      fedBy,
     },
     records: {
       total: published.length,
