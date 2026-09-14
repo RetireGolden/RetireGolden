@@ -29,7 +29,9 @@ Survival probability `0.963150477964002`, absolute tolerance `1e-12`; target age
 
 ## Family
 
-`longevity-survival-percentile-age`, `monte-carlo-success-rate`, `monte-carlo-ending-investable-histogram`.
+`longevity-survival-percentile-age`.
+
+Revision 2026-09-14: the first derivation also listed `monte-carlo-success-rate` and `monte-carlo-ending-investable-histogram`. The Monte Carlo reaches mortality through the sampled death age and the q(x) identity, not through this product, so the record feeds the percentile family only.
 
 ## Provenance
 
