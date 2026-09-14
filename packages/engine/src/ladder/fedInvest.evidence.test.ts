@@ -83,49 +83,43 @@ describeCalculation(
     example: {
       inputs: {
         targetYear: 2033,
-        candidates: [
-          { cusip: 'T2030', maturityIso: '2030-01-15' },
-          { cusip: 'T2035', maturityIso: '2035-01-15' },
-        ],
+        // Worksheet cases A, B and C: maturity years only; rate and price are
+        // not read by nearestTipsForYear.
+        caseA: [2032, 2036],
+        caseB: [2030, 2035],
+        caseC: [2033, 2034],
       },
-      expected: { selectedCusip: 'T2035', distanceYears: 2 },
+      expected: { caseA: 'T2032', caseB: null, caseC: 'T2033' },
       tolerance: 'exact',
     },
     worksheet: 'DOCS/calculations/ladders-and-valuation/fedinvest-nearest-tips-maturity.md',
     mutation: 'DOCS/calculations/ladders-and-valuation/fedinvest-nearest-tips-maturity.mutation.md',
   },
   ({ example }) => {
-    // Rate and price are not read by nearestTipsForYear; placeholders keep
-    // the fixture to the worksheet's maturity column.
-    const tipsOf = (rows: Array<{ cusip: string; maturityIso: string }>): FedInvestTips[] =>
-      rows.map((row) => ({ ...row, ratePct: 0.125, endOfDayPrice: 100 }))
-    const candidates = tipsOf(example.inputs.candidates as Array<{ cusip: string; maturityIso: string }>)
+    const tipsOf = (years: number[]): FedInvestTips[] =>
+      years.map((year) => ({ cusip: `T${year}`, maturityIso: `${year}-01-15`, ratePct: 0.125, endOfDayPrice: 100 }))
     const targetYear = example.inputs.targetYear as number
+    const pick = (years: number[]): string | null => {
+      const selected = nearestTipsForYear(tipsOf(years), targetYear)
+      return selected === null ? null : selected.cusip
+    }
 
-    it('selects the 2035 TIPS for 2033: distance 2 beats distance 3', () => {
-      // FINDING (2026-09-14): production returns null here. nearestTipsForYear
-      // also requires the nearest maturity to lie within one calendar year
-      // of the target (`bestDistance <= 1`), a window the worksheet did not
-      // derive from the signature comment. This assertion carries the
-      // worksheet's value and fails until that discrepancy is settled.
-      const selected = nearestTipsForYear(candidates, targetYear)
-      expect(selected === null ? null : selected.cusip).toBe(example.expected.selectedCusip)
+    it('case A: selects the one candidate within a year of the target (2032 for 2033)', () => {
+      expect(pick(example.inputs.caseA as number[])).toBe(example.expected.caseA)
+    })
+
+    it('case B: returns null when the nearest candidate is two years away (2030/2035 for 2033)', () => {
+      // First derivation expected the 2035 row here; the one-year window was
+      // not stated in the doc comment until 2026-09-14.
+      expect(pick(example.inputs.caseB as number[])).toBe(example.expected.caseB)
+    })
+
+    it('case C: the nearer of two in-window candidates wins (2033 over 2034)', () => {
+      expect(pick(example.inputs.caseC as number[])).toBe(example.expected.caseC)
     })
 
     it('returns null from an empty list', () => {
       expect(nearestTipsForYear([], targetYear)).toBeNull()
-    })
-
-    it('prefers a later maturity when it is nearer than the earlier one', () => {
-      // |2034 - 2033| = 1 beats |2031 - 2033| = 2 under the worksheet's
-      // absolute-distance rule; this case also sits inside production's
-      // one-year window, so it passes on the unmutated code.
-      const later = tipsOf([
-        { cusip: 'T2031', maturityIso: '2031-01-15' },
-        { cusip: 'T2034', maturityIso: '2034-01-15' },
-      ])
-      const selected = nearestTipsForYear(later, targetYear)
-      expect(selected === null ? null : selected.cusip).toBe('T2034')
     })
   },
 )

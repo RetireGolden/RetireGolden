@@ -99,7 +99,13 @@ export function parseFedInvestCsv(text: string): FedInvestTips[] {
   return tips.sort((a, b) => a.maturityIso.localeCompare(b.maturityIso))
 }
 
-/** The TIPS whose maturity falls nearest a target calendar year (for rung reference rows). */
+/**
+ * The TIPS whose maturity falls nearest a target calendar year, for rung
+ * reference rows. Returns null unless that nearest maturity is within one
+ * calendar year of the target: a reference row two or more years off would
+ * mislead the rung it labels. Stated explicitly on 2026-09-14 after an
+ * independently derived worksheet expected a match that this window refuses.
+ */
 export function nearestTipsForYear(tips: FedInvestTips[], year: number): FedInvestTips | null {
   let best: FedInvestTips | null = null
   let bestDistance = Number.POSITIVE_INFINITY
