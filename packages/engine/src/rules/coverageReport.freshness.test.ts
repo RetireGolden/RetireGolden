@@ -6,6 +6,7 @@ import {
 import {
   CALCULATION_RECORD_MODULES,
   CALCULATION_REGISTRY,
+  mutationReceiptPathOf,
   type CalculationRecord,
 } from './calculationRegistry.js'
 import { OUTPUT_FAMILIES, type OutputFamily } from './outputFamilies.js'
@@ -374,32 +375,170 @@ describe('calculation coverage report artifacts', () => {
     }
   })
 
-  it('publishes exactly the documented record keys, feeds included, in every calculation shard', () => {
+  it('publishes exactly the documented record keys in order, substance between feeds and justificationKind', () => {
     const documentedKeys = [
-      'feeds',
-      'fixtureFiles',
-      'gates',
       'id',
-      'implementedBy',
-      'justificationKind',
+      'title',
       'kind',
       'outputs',
+      'feeds',
+      'purpose',
+      'statement',
+      'formula',
+      'limits',
+      'worksheet',
+      'mutation',
+      'dataset',
+      'ruleIds',
+      'assumption',
+      'justificationKind',
+      'implementedBy',
       'provenance',
-      'title',
+      'fixtureFiles',
+      'gates',
     ]
     let seen = 0
     for (const { json } of calculationReport.shards) {
       const { records } = JSON.parse(json) as { records: Record<string, unknown>[] }
       for (const record of records) {
         seen += 1
-        expect(Object.keys(record).sort(), String(record.id)).toEqual(documentedKeys)
+        expect(Object.keys(record), String(record.id)).toEqual(documentedKeys)
         // `feeds` is always an array, `[]` when the registry record declares
-        // none, so a consumer never has to special-case its absence.
+        // none, so a consumer never has to special-case its absence. The
+        // same holds for `limits`.
         expect(Array.isArray(record.feeds), String(record.id) + '.feeds').toBe(true)
         expect(Array.isArray(record.outputs), String(record.id) + '.outputs').toBe(true)
+        expect(Array.isArray(record.limits), String(record.id) + '.limits').toBe(true)
       }
     }
     expect(seen).toBe(calculationReport.manifest.records.total)
+  })
+
+  it("publishes a derivation record's worksheet and mutation receipt from the registry, null for other justifications", () => {
+    let derivations = 0
+    for (const { json } of calculationReport.shards) {
+      const { records } = JSON.parse(json) as {
+        records: { id: string; worksheet: string | null; mutation: string | null }[]
+      }
+      for (const record of records) {
+        const { justification } = (CALCULATION_REGISTRY as Readonly<Record<string, CalculationRecord>>)[record.id]!
+        if (justification.kind === 'derivation') {
+          derivations += 1
+          expect(record.worksheet, record.id).toBe(justification.worksheet)
+          expect(record.mutation, record.id).toBe(mutationReceiptPathOf(justification.worksheet))
+        } else {
+          expect(record.worksheet, record.id).toBeNull()
+          expect(record.mutation, record.id).toBeNull()
+        }
+      }
+    }
+    expect(derivations).toBeGreaterThan(0)
+  })
+
+  it('publishes the formula verbatim for a formula record and null for a data record', () => {
+    const formulaById = new Map(
+      calculationReport.shards.flatMap(({ json }) => {
+        const { records } = JSON.parse(json) as { records: { id: string; formula: unknown }[] }
+        return records.map((record) => [record.id, record.formula] as const)
+      }),
+    )
+    const formulaRecord = CALCULATION_REGISTRY['abw-annuity-due-payment']
+    expect(formulaRecord.kind).toBe('formula')
+    expect(formulaRecord.formula).not.toBeNull()
+    expect(formulaById.get('abw-annuity-due-payment')).toEqual(formulaRecord.formula)
+    expect(Object.keys(formulaById.get('abw-annuity-due-payment') as object)).toEqual([
+      'expression',
+      'variables',
+      'timing',
+      'rounding',
+    ])
+    const dataRecord = CALCULATION_REGISTRY['treasury-real-yield-curve-2026']
+    expect(dataRecord.kind).toBe('data')
+    expect(dataRecord.formula).toBeNull()
+    expect(formulaById.get('treasury-real-yield-curve-2026')).toBeNull()
+  })
+
+  it('publishes dataset, ruleIds, and assumption exactly for the matching justification kind', () => {
+    const publishedById = new Map(
+      calculationReport.shards.flatMap(({ json }) => {
+        const { records } = JSON.parse(json) as { records: Record<string, unknown>[] }
+        return records.map((record) => [String(record.id), record] as const)
+      }),
+    )
+    const tips = CALCULATION_REGISTRY['fedinvest-csv-tips-parsing'].justification
+    if (tips.kind !== 'dataset') throw new Error('fedinvest-csv-tips-parsing must carry a dataset justification')
+    const tipsPublished = publishedById.get('fedinvest-csv-tips-parsing')!
+    // The digest, rights note, and transformation stay in the registry.
+    expect(Object.keys(tipsPublished.dataset as object)).toEqual(['citation', 'url', 'asOf', 'retrievedOn'])
+    expect(tipsPublished).toMatchObject({
+      dataset: {
+        citation: tips.source.citation,
+        url: tips.source.url,
+        asOf: tips.source.asOf,
+        retrievedOn: tips.source.retrievedOn,
+      },
+      ruleIds: null,
+      assumption: null,
+    })
+    expect(publishedById.get('abw-annuity-due-payment')).toMatchObject({
+      dataset: null,
+      ruleIds: null,
+      assumption: null,
+    })
+
+    // No committed record justifies by assumption or by registry rule yet, so
+    // those two branches run on synthetic records through the builder.
+    const synthetic = (justification: CalculationRecord['justification']): CalculationRecord => ({
+      title: 'Synthetic record',
+      purpose: 'Exists only inside this test.',
+      kind: 'formula',
+      outputs: ['spending-base-annual'],
+      statement: 'q = 1',
+      formula: null,
+      justification,
+      limits: [],
+      implementedBy: ['packages/engine/src/spending/abw.ts'],
+      implementedByFunctions: ['packages/engine/src/spending/abw.ts#abwAnnualPayment'],
+      verifiedOn: '2026-09-14',
+      provenance: { derivedBy: 'deriving-agent', implementedBy: 'implementing-agent', reviewedBy: 'reviewing-agent' },
+    })
+    const ruleIds = [taxRuleIds[1]!, taxRuleIds[0]!] as const
+    const registry = {
+      'synthetic-assumption': synthetic({
+        kind: 'assumption',
+        rationale: 'why it holds',
+        intendedUse: 'where it applies',
+        errorBound: 'within one percent',
+      }),
+      'synthetic-registry': synthetic({ kind: 'registry', ruleIds }),
+    }
+    const built = buildCalculationCoverageReport({
+      registry,
+      recordModules: [['synthetic', registry]],
+      families: OUTPUT_FAMILIES,
+      attestations: {},
+      testSources: {},
+      externalGoldenSources: {},
+      walkthroughs: [],
+      symbolLineFor: () => 1,
+      docTextFor: () => null,
+    })
+    const byId = new Map(built.shards[0]!.shard.records.map((record) => [record.id, record]))
+    expect(byId.get('synthetic-assumption')).toMatchObject({
+      worksheet: null,
+      mutation: null,
+      dataset: null,
+      ruleIds: null,
+      assumption: { rationale: 'why it holds', intendedUse: 'where it applies', errorBound: 'within one percent' },
+    })
+    expect(byId.get('synthetic-registry')).toMatchObject({
+      worksheet: null,
+      mutation: null,
+      dataset: null,
+      assumption: null,
+    })
+    // Rule ids are published in the order the record declares them.
+    expect(byId.get('synthetic-registry')!.ruleIds).toEqual([...ruleIds])
   })
 
   it('publishes the documented families keys in order, fedBy last, keyed by family to sorted feeder ids', () => {

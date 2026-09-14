@@ -3,7 +3,11 @@ import type {
   CoverageAttestationStatus,
   COVERAGE_ATTESTATIONS,
 } from './coverageAttestations.js'
-import { mutationReceiptPathOf, type CalculationRecord } from './calculationRegistry.js'
+import {
+  mutationReceiptPathOf,
+  type CalculationFormula,
+  type CalculationRecord,
+} from './calculationRegistry.js'
 import type { OutputFamily } from './outputFamilies.js'
 import type {
   TAX_RULE_REGISTRY,
@@ -988,6 +992,20 @@ export interface CalculationRecordGates {
   readonly provenanceIndependent: boolean
 }
 
+/** A dataset justification's public source; its digest and rights note stay in the registry. */
+export interface CalculationCoverageDataset {
+  readonly citation: string
+  readonly url: string
+  readonly asOf: string
+  readonly retrievedOn: string
+}
+
+export interface CalculationCoverageAssumption {
+  readonly rationale: string
+  readonly intendedUse: string
+  readonly errorBound: string | null
+}
+
 export interface CalculationCoverageRecord {
   readonly id: string
   readonly title: string
@@ -995,6 +1013,23 @@ export interface CalculationCoverageRecord {
   readonly outputs: readonly string[]
   /** The record's `feeds` list as declared; `[]` when the record declares none. */
   readonly feeds: readonly string[]
+  // The record's substance, copied from the registry so the catalog page can
+  // show it without a click-through. Justification detail is published per
+  // kind; each field is null for the kinds it does not belong to.
+  readonly purpose: string
+  readonly statement: string
+  readonly formula: CalculationFormula | null
+  readonly limits: readonly string[]
+  /** The derivation worksheet path; null unless `justificationKind` is 'derivation'. */
+  readonly worksheet: string | null
+  /** The worksheet's mutation receipt, by `mutationReceiptPathOf`; null whenever `worksheet` is. */
+  readonly mutation: string | null
+  /** Null unless `justificationKind` is 'dataset'. */
+  readonly dataset: CalculationCoverageDataset | null
+  /** Null unless `justificationKind` is 'registry'. */
+  readonly ruleIds: readonly string[] | null
+  /** Null unless `justificationKind` is 'assumption'. */
+  readonly assumption: CalculationCoverageAssumption | null
   readonly justificationKind: CalculationRecord['justification']['kind']
   readonly implementedBy: readonly string[]
   readonly provenance: CalculationRecord['provenance']
@@ -1184,6 +1219,62 @@ function familyIsComplete(
   return true
 }
 
+type CalculationSubstance = Pick<
+  CalculationCoverageRecord,
+  'purpose' | 'statement' | 'formula' | 'limits' | 'worksheet' | 'mutation' | 'dataset' | 'ruleIds' | 'assumption'
+>
+
+/**
+ * What the catalog page shows for a record without a click-through: its
+ * prose, its formula, and the public part of its justification. The
+ * mutation receipt is derived by the one shared convention the gates check,
+ * so the published path and the gated path cannot differ. A dataset's digest
+ * and rights note are registry detail and are not published.
+ */
+function calculationSubstance(record: CalculationRecord): CalculationSubstance {
+  const { formula, justification } = record
+  const worksheet = justification.kind === 'derivation' ? justification.worksheet : null
+  return {
+    purpose: record.purpose,
+    statement: record.statement,
+    formula:
+      formula === null
+        ? null
+        : {
+            expression: formula.expression,
+            variables: formula.variables.map(({ symbol, meaning, unit, domain }) => ({
+              symbol,
+              meaning,
+              unit,
+              domain,
+            })),
+            timing: formula.timing,
+            rounding: formula.rounding,
+          },
+    limits: [...record.limits],
+    worksheet,
+    mutation: worksheet === null ? null : mutationReceiptPathOf(worksheet),
+    dataset:
+      justification.kind === 'dataset'
+        ? {
+            citation: justification.source.citation,
+            url: justification.source.url,
+            asOf: justification.source.asOf,
+            retrievedOn: justification.source.retrievedOn,
+          }
+        : null,
+    ruleIds: justification.kind === 'registry' ? [...justification.ruleIds] : null,
+    assumption:
+      justification.kind === 'assumption'
+        ? {
+            rationale: justification.rationale,
+            intendedUse: justification.intendedUse,
+            errorBound: justification.errorBound,
+          }
+        : null,
+  }
+}
+
 export function buildCalculationCoverageReport(input: CalculationCoverageInput): CalculationCoverageReport {
   const fixtureDetails = detailsByRule(
     Object.fromEntries(
@@ -1204,6 +1295,7 @@ export function buildCalculationCoverageReport(input: CalculationCoverageInput):
       kind: record.kind,
       outputs: [...record.outputs],
       feeds: [...(record.feeds ?? [])],
+      ...calculationSubstance(record),
       justificationKind: record.justification.kind,
       implementedBy: [...record.implementedBy],
       provenance: record.provenance,
