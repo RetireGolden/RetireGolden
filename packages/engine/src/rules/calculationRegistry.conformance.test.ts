@@ -1,14 +1,17 @@
 import { readPackageSource } from '../../scripts/census-sources.mjs'
 import { describe, expect, it } from 'vitest'
-import { describeCalculation } from './describeCalculation.js'
+import { describeCalculation, withinTolerance } from './describeCalculation.js'
 import {
   CALCULATION_RECORD_MODULES,
   CALCULATION_REGISTRY,
   calculationIds,
   type CalculationId,
+  type CalculationRecord,
 } from './calculationRegistry.js'
-import { OUTPUT_FAMILIES } from './outputFamilies.js'
-import { OUTPUT_FIELD_COVERAGE } from './outputFieldCoverage.js'
+import { COVERAGE_ATTESTATIONS } from './coverageAttestations.js'
+import { buildCalculationCoverageReport, type CalculationCoverageManifest } from './coverageReport.js'
+import { OUTPUT_FAMILIES, type OutputFamily } from './outputFamilies.js'
+import { OUTPUT_FIELD_COVERAGE, type OutputFieldCoverageRow } from './outputFieldCoverage.js'
 import { declaredSymbolLinesOf, symbolAnchorLine, type DeclaredSymbol } from './symbolLines.js'
 import { spendingAndWithdrawalsRecords } from './calculations/spendingAndWithdrawals.js'
 
@@ -30,6 +33,30 @@ const calculationDocs = import.meta.glob('../../../../DOCS/calculations/**/*.md'
 })
 
 const CONFORMANCE_SOURCE = 'calculationRegistry.conformance.test.ts'
+
+const ABW_WORKSHEET = 'DOCS/calculations/spending-and-withdrawals/abw-annuity-due-payment.md'
+const ABW_MUTATION = 'DOCS/calculations/spending-and-withdrawals/abw-annuity-due-payment.mutation.md'
+
+/**
+ * Census rows on .tsx page components whose field is inline arithmetic with
+ * no identifier to find at code level and, in the imported census, no `note`
+ * explaining the computation. The field guard accepts a .tsx row only with a
+ * code-level match or a note; these rows pre-date the note requirement and
+ * are pinned here so the list can only shrink. A row leaves when the Docs
+ * census gives it a note (then it must be removed here, or the test fails on
+ * the stale entry), and a new note-less inline row fails outright.
+ */
+const TSX_INLINE_ROWS_AWAITING_NOTE: readonly string[] = [
+  'planner-ui/src/planner/ResultsPage.tsx ResultsPage.guardrailThresholdDollars',
+  'planner-ui/src/planner/ResultsPage.tsx ResultsPage.yearsBeforeEnd',
+  'planner-ui/src/planner/ResultsPage.tsx YearByYearLedger.taxFreeGainsRoom',
+  'planner-ui/src/planner/ResultsPage.tsx YearByYearLedger.taxPlusPenalties',
+  'planner-ui/src/planner/ResultsPage.tsx YearByYearLedger.upsideShortfall',
+  'planner-ui/src/planner/ResultsPage.tsx YearByYearLedger.upsideSpending',
+  'planner-ui/src/planner/SpendingSolverPage.tsx SpendingSolverPage.solvedWithdrawalRatePct',
+  'planner-ui/src/planner/SsAnalysisPage.tsx SsAnalysisPage.piaAnnual',
+  'planner-ui/src/planner/sections/IncomeFloorSection.tsx IncomeFloorSection.yieldPct',
+]
 
 const REGEX_LITERAL_PRECEDING_KEYWORDS = new Set([
   'return',
@@ -212,6 +239,13 @@ function declaredSymbolsOf(globKey: string, source: string): ReadonlyMap<string,
 const engineGlobKeyOf = (repoPath: string): string =>
   repoPath.replace(/^packages\/engine\/src\/rules\//u, './').replace(/^packages\/engine\/src\//u, '../')
 
+function symbolLineFor(path: string, symbol: string): number {
+  const globKey = engineGlobKeyOf(path)
+  const source = engineSources[globKey]
+  if (source === undefined) throw new Error(path + ' is not an engine source file the glob can see')
+  return symbolAnchorLine(declaredSymbolsOf(globKey, source), path, symbol)
+}
+
 function censusSourceText(censusPath: string): string | undefined {
   if (censusPath.startsWith('engine/src/')) {
     const repo = 'packages/' + censusPath
@@ -315,26 +349,52 @@ function locateNamedBlock(
   return null
 }
 
+/**
+ * A census name (an owner, the head of a dotted owner, or a field leaf) about
+ * to be interpolated into a locator pattern. The census is a committed
+ * artifact, not user input, but the name still becomes regex source, so it
+ * must be identifier-shaped (letters, digits, `_`, `$`) with `$` escaped;
+ * anything else is a malformed census row and fails here by name rather than
+ * compiling into a pattern nobody wrote.
+ */
+function censusName(name: string, label: string): string {
+  if (!/^[A-Za-z_$][\w$]*$/u.test(name)) {
+    throw new RangeError(`${label} ${JSON.stringify(name)} is not identifier-shaped`)
+  }
+  return name.replace(/\$/gu, '\\$')
+}
+
+/**
+ * The one place a locator pattern is compiled from census text. Every
+ * interpolated name has passed censusName, which admits identifier characters
+ * only, so the pattern's structure is fixed by the literal template around it.
+ */
+function namePattern(template: string, flags: string): RegExp {
+  // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp
+  return new RegExp(template, flags)
+}
+
 function locateOwnerBlock(source: string, owner: string): { kind: 'braces' | 'params' | 'module'; body: string } | null {
   if (owner === 'module') return { kind: 'module', body: source }
   // `detector.screen` style owners name a method on an exported value: locate
   // the value and treat the file as the field-existence scope.
   if (owner.includes('.')) {
-    const head = owner.slice(0, owner.indexOf('.'))
+    const head = censusName(owner.slice(0, owner.indexOf('.')), 'census owner head')
     const valueHead = locateNamedBlock(
       source,
-      new RegExp(`(?:export\\s+)?(?:const|let|var|class|function)\\s+${head}\\b`, 'g'),
+      namePattern(`(?:export\\s+)?(?:const|let|var|class|function)\\s+${head}\\b`, 'g'),
     )
     return valueHead ? { kind: 'module', body: source } : null
   }
   // A brace-less alias (`type X = Pick<...>`, a union, a mapped type) has no
   // member block to enumerate; its fields are checked by existence in the
   // file so the locator never scans forward into the next declaration.
-  const aliasWithoutBlock = new RegExp(`(?:export\\s+)?type\\s+${owner}\\b[^=]*=(?!\\s*\\{)`, 'u')
+  const name = censusName(owner, 'census owner')
+  const aliasWithoutBlock = namePattern(`(?:export\\s+)?type\\s+${name}\\b[^=]*=(?!\\s*\\{)`, 'u')
   if (aliasWithoutBlock.test(source)) return { kind: 'module', body: source }
   const typeBlock = locateNamedBlock(
     source,
-    new RegExp(`(?:export\\s+)?(?:interface|type)\\s+${owner}\\b`, 'g'),
+    namePattern(`(?:export\\s+)?(?:interface|type)\\s+${name}\\b`, 'g'),
   )
   if (typeBlock) return typeBlock
   // The census names functions and consts as owners for some rows. Those are
@@ -342,17 +402,24 @@ function locateOwnerBlock(source: string, owner: string): { kind: 'braces' | 'pa
   // is not rejected, then treat the file as the field-existence scope.
   const functionBlock = locateNamedBlock(
     source,
-    new RegExp(`(?:export\\s+)?(?:async\\s+)?function\\s+${owner}\\b`, 'g'),
+    namePattern(`(?:export\\s+)?(?:async\\s+)?function\\s+${name}\\b`, 'g'),
   )
   if (functionBlock) return { kind: 'module', body: source }
   const valueBlock = locateNamedBlock(
     source,
-    new RegExp(`(?:export\\s+)?(?:const|let|var|class)\\s+${owner}\\b`, 'g'),
+    namePattern(`(?:export\\s+)?(?:const|let|var|class)\\s+${name}\\b`, 'g'),
   )
   if (valueBlock) return { kind: 'module', body: source }
   return null
 }
 
+/**
+ * Splits `source` at any of `separators` that sits at depth zero of braces,
+ * parentheses, and angle brackets. `=>` is one token that touches no counter
+ * (its `>` is not a closing angle), and the angle count never goes below
+ * zero, so a comparison operator in a default value cannot leave the scanner
+ * believing it is inside a generic and merge every member after it.
+ */
 function splitTopLevel(source: string, separators: string): string[] {
   const parts: string[] = []
   let start = 0
@@ -373,12 +440,16 @@ function splitTopLevel(source: string, separators: string): string[] {
       i += 1
       continue
     }
+    if (c === '=' && source[i + 1] === '>') {
+      i += 2
+      continue
+    }
     if (c === '{') braces += 1
     else if (c === '}') braces -= 1
     else if (c === '(') parens += 1
     else if (c === ')') parens -= 1
     else if (c === '<') angles += 1
-    else if (c === '>') angles -= 1
+    else if (c === '>') angles = Math.max(0, angles - 1)
     else if (braces === 0 && parens === 0 && angles === 0 && separators.includes(c)) {
       parts.push(source.slice(start, i))
       start = i + 1
@@ -437,6 +508,119 @@ function enumerateOwnerFields(block: { kind: 'braces' | 'params' | 'module'; bod
   return { all, numeric }
 }
 
+interface CodeLevel {
+  readonly code: string
+  readonly literals: ReadonlySet<string>
+}
+
+const codeLevelCache = new Map<string, CodeLevel>()
+
+/**
+ * `source` at CODE level for the field-existence check: comments and the
+ * contents of string, template, and regex literals are blanked (newlines
+ * kept), and the complete values of plain string literals are collected
+ * separately, because an owner such as a CSV column list names its fields as
+ * whole literals. A quote with no closing quote on its own line is not a
+ * string — a JSX text apostrophe ("don't") would otherwise swallow the code
+ * after it — and template substitutions stay code.
+ */
+function codeLevelOf(censusPath: string, source: string): CodeLevel {
+  const cached = codeLevelCache.get(censusPath)
+  if (cached !== undefined) return cached
+  let code = ''
+  const literals = new Set<string>()
+  let i = 0
+  while (i < source.length) {
+    const afterComment = skipComment(source, i)
+    if (afterComment !== i) {
+      code += source.slice(i, afterComment).replace(/[^\n]/gu, ' ')
+      i = afterComment
+      continue
+    }
+    const c = source[i]!
+    if (c === "'" || c === '"') {
+      let cursor = i + 1
+      while (cursor < source.length && source[cursor] !== c && source[cursor] !== '\n') {
+        cursor += source[cursor] === '\\' ? 2 : 1
+      }
+      if (source[cursor] === c) {
+        literals.add(source.slice(i + 1, cursor))
+        code += c + ' '.repeat(cursor - i - 1) + c
+        i = cursor + 1
+        continue
+      }
+      // No closing quote on this line: JSX text or prose, not a literal.
+      code += c
+      i += 1
+      continue
+    }
+    if (c === '`') {
+      let cursor = i + 1
+      let depth = 0
+      code += c
+      while (cursor < source.length) {
+        const cc = source[cursor]!
+        if (depth === 0) {
+          if (cc === '`') {
+            code += cc
+            cursor += 1
+            break
+          }
+          if (cc === '\\') {
+            code += '  '
+            cursor += 2
+            continue
+          }
+          if (cc === '$' && source[cursor + 1] === '{') {
+            depth = 1
+            code += '${'
+            cursor += 2
+            continue
+          }
+          code += cc === '\n' ? cc : ' '
+          cursor += 1
+          continue
+        }
+        if (cc === '{') depth += 1
+        else if (cc === '}') depth -= 1
+        code += cc
+        cursor += 1
+      }
+      i = cursor
+      continue
+    }
+    if (c === '/' && regexLiteralCanOpenAt(source, i)) {
+      let cursor = i + 1
+      let inClass = false
+      let closed = false
+      while (cursor < source.length && source[cursor] !== '\n') {
+        const cc = source[cursor]!
+        if (cc === '\\') {
+          cursor += 2
+          continue
+        }
+        if (cc === '[') inClass = true
+        else if (cc === ']') inClass = false
+        else if (cc === '/' && !inClass) {
+          closed = true
+          break
+        }
+        cursor += 1
+      }
+      if (closed) {
+        code += '/' + ' '.repeat(cursor - i - 1) + '/'
+        i = cursor + 1
+        continue
+      }
+    }
+    code += c
+    i += 1
+  }
+  const result = { code, literals }
+  codeLevelCache.set(censusPath, result)
+  return result
+}
+
 function docText(repoPath: string): string | undefined {
   return calculationDocs['../../../../' + repoPath.replace(/\\/gu, '/')]
 }
@@ -447,6 +631,92 @@ function namedFamilies(): ReadonlySet<string> {
     for (const familyId of record.outputs) named.add(familyId)
   }
   return named
+}
+
+let publishedManifestMemo: CalculationCoverageManifest | null = null
+
+/**
+ * The manifest the generator would publish for the registry as it stands,
+ * built by the same report builder from this suite's own view of the
+ * sources. The family-status gates below check the builder's published lists
+ * against the registry independently, so a drift in either shows up here
+ * rather than only in the byte-for-byte freshness pin.
+ */
+function publishedManifest(): CalculationCoverageManifest {
+  if (publishedManifestMemo !== null) return publishedManifestMemo
+  publishedManifestMemo = buildCalculationCoverageReport({
+    registry: CALCULATION_REGISTRY,
+    recordModules: CALCULATION_RECORD_MODULES,
+    families: OUTPUT_FAMILIES,
+    attestations: COVERAGE_ATTESTATIONS,
+    testSources,
+    externalGoldenSources: {},
+    walkthroughs: [],
+    symbolLineFor,
+    docTextFor: (path) => docText(path) ?? null,
+  }).manifest
+  return publishedManifestMemo
+}
+
+const SYNTHETIC_ID = 'synthetic-calculation'
+const SYNTHETIC_FIXTURE = [
+  `describeCalculation('${SYNTHETIC_ID}', { example: {}, worksheet: 'w', mutation: 'm' }, () => {`,
+  "  it('registers a test', () => {",
+  '    expect(1).toBe(1)',
+  '  })',
+  '})',
+  '',
+].join('\n')
+
+function syntheticFamily(kind: OutputFamily['kind'], relocation: OutputFamily['relocation']): OutputFamily {
+  return {
+    title: 'Synthetic family',
+    group: 'synthetic',
+    meaning: 'A family that exists only inside this test.',
+    unit: 'usd',
+    basis: 'nominal',
+    dimensions: [],
+    kind,
+    engineSource: null,
+    surfaces: [{ surface: 'page', selector: 'value' }],
+    relocation,
+  }
+}
+
+function syntheticRecord(outputs: readonly string[]): CalculationRecord {
+  return {
+    title: 'Synthetic calculation',
+    purpose: 'Exists only to drive the report builder in this test.',
+    kind: 'formula',
+    outputs: outputs as unknown as CalculationRecord['outputs'],
+    statement: 'y = x',
+    formula: null,
+    justification: { kind: 'assumption', rationale: 'test', intendedUse: 'test', errorBound: null },
+    limits: [],
+    implementedBy: ['packages/engine/src/spending/abw.ts'],
+    implementedByFunctions: ['packages/engine/src/spending/abw.ts#abwAnnualPayment'],
+    verifiedOn: '2026-09-14',
+    provenance: { derivedBy: 'deriving-agent', implementedBy: 'implementing-agent', reviewedBy: 'reviewing-agent' },
+  }
+}
+
+/** A two-family report: one ui family still relocation-pending, one done, both explained by one passing record. */
+function syntheticReport(options: { readonly symbolLineFor?: (path: string, symbol: string) => number } = {}) {
+  const registry = { [SYNTHETIC_ID]: syntheticRecord(['synthetic-ui-pending', 'synthetic-ui-done']) }
+  return buildCalculationCoverageReport({
+    registry,
+    recordModules: [['synthetic', registry]],
+    families: {
+      'synthetic-ui-pending': syntheticFamily('ui-native', { status: 'pending', target: null }),
+      'synthetic-ui-done': syntheticFamily('ui-transformation', { status: 'done', target: 'packages/engine/src/synthetic.ts' }),
+    },
+    attestations: {},
+    testSources: { '../spending/synthetic.evidence.test.ts': SYNTHETIC_FIXTURE },
+    externalGoldenSources: {},
+    walkthroughs: [],
+    symbolLineFor: options.symbolLineFor ?? (() => 1),
+    docTextFor: () => null,
+  })
 }
 
 describe('calculation registry conformance', () => {
@@ -518,22 +788,49 @@ describe('calculation registry conformance', () => {
     expect(violations).toEqual([])
   })
 
-  it('names only existing families and reports engine families with no record yet', () => {
+  it('names only families that exist in OUTPUT_FAMILIES', () => {
     const unknownOutputs: string[] = []
     for (const [id, record] of Object.entries(CALCULATION_REGISTRY)) {
       for (const familyId of record.outputs) {
-        if (!(familyId in OUTPUT_FAMILIES)) unknownOutputs.push(`${id}: ${familyId}`)
+        if (!Object.hasOwn(OUTPUT_FAMILIES, familyId)) unknownOutputs.push(`${id}: ${familyId}`)
       }
     }
+    expect(unknownOutputs).toEqual([])
+  })
+
+  it('publishes no-record-yet for exactly the families no record names, so an engine family is never silently uncatalogued', () => {
     const named = namedFamilies()
-    const noRecordYet = Object.entries(OUTPUT_FAMILIES)
-      .filter(([familyId, family]) => family.kind === 'engine' && !named.has(familyId))
-      .map(([familyId]) => familyId)
-      .sort()
-    expect(
-      { unknownOutputs, noRecordYet },
-      'engine families with no record yet:\n' + (noRecordYet.join('\n') || '(none)'),
-    ).toEqual({ unknownOutputs: [], noRecordYet })
+    const { noRecordYet } = publishedManifest().families
+    const published = new Set(noRecordYet)
+    const violations: string[] = []
+    for (const familyId of noRecordYet) {
+      if (!Object.hasOwn(OUTPUT_FAMILIES, familyId)) {
+        violations.push(`${familyId}: published as no-record-yet but is not a family`)
+      } else if (named.has(familyId)) {
+        violations.push(`${familyId}: published as no-record-yet although a record names it`)
+      }
+    }
+    for (const [familyId, family] of Object.entries(OUTPUT_FAMILIES)) {
+      if (!named.has(familyId) && !published.has(familyId)) {
+        violations.push(`${familyId} (${family.kind}): no record names it and the report does not say so`)
+      }
+    }
+    expect(violations).toEqual([])
+    expect(noRecordYet).toEqual([...noRecordYet].sort())
+  })
+
+  it('links every family-disposition coverage row to a family that exists', () => {
+    const violations: string[] = []
+    for (const row of OUTPUT_FIELD_COVERAGE) {
+      const label = `${row.source} ${row.owner}.${row.field}`
+      if (row.disposition === 'family' && row.familyId === null) {
+        violations.push(`${label}: disposition family without a familyId`)
+      }
+      if (row.familyId !== null && !Object.hasOwn(OUTPUT_FAMILIES, row.familyId)) {
+        violations.push(`${label}: familyId ${row.familyId} is not a family`)
+      }
+    }
+    expect(violations).toEqual([])
   })
 
   it('requires every named worksheet and mutation file to exist and be non-empty', () => {
@@ -563,17 +860,59 @@ describe('calculation registry conformance', () => {
     expect(missing).toEqual([])
   })
 
+  it('binds a derivation fixture to the record\'s own worksheet', () => {
+    expect(() =>
+      describeCalculation(
+        'abw-annuity-due-payment',
+        {
+          example: { inputs: {}, expected: { payment: 110 }, tolerance: 'exact' },
+          worksheet: 'DOCS/calculations/spending-and-withdrawals/another-worksheet.md',
+          mutation: 'DOCS/calculations/spending-and-withdrawals/another-worksheet.mutation.md',
+        },
+        () => {},
+      ),
+    ).toThrow(/justification\.worksheet is DOCS\/calculations\/spending-and-withdrawals\/abw-annuity-due-payment\.md/u)
+  })
+
+  it('binds a derivation fixture to the worksheet\'s mutation receipt by the shared convention', () => {
+    expect(() =>
+      describeCalculation(
+        'abw-annuity-due-payment',
+        {
+          example: { inputs: {}, expected: { payment: 110 }, tolerance: 'exact' },
+          worksheet: ABW_WORKSHEET,
+          mutation: 'DOCS/calculations/spending-and-withdrawals/abw-annuity-due-payment-receipt.md',
+        },
+        () => {},
+      ),
+    ).toThrow(/mutation receipt is DOCS\/calculations\/spending-and-withdrawals\/abw-annuity-due-payment\.mutation\.md/u)
+  })
+
+  it('compares evidence under the fixture tolerance contract', () => {
+    expect(withinTolerance(110, 110, 'exact')).toBe(true)
+    expect(withinTolerance(110 + 1e-12, 110, 'exact')).toBe(false)
+    expect(withinTolerance(110 + 1e-10, 110, { abs: 1e-9 })).toBe(true)
+    expect(withinTolerance(111, 110, { abs: 1e-9 })).toBe(false)
+    expect(withinTolerance(110.001, 110, { rel: 1e-4 })).toBe(true)
+    expect(withinTolerance(110.001, 110, { rel: 1e-6 })).toBe(false)
+    // rel is relative to |expected|: an expectation of 0 leaves only abs.
+    expect(withinTolerance(0.5, 0, { rel: 1 })).toBe(false)
+    expect(withinTolerance(0.5, 0, { rel: 1, abs: 1 })).toBe(true)
+    expect(withinTolerance(110.5, 110, {})).toBe(false)
+  })
+
   it('guards every numeric leaf of each census owner, and every coverage row\'s field', () => {
     const pairs = new Map<string, { source: string; owner: string }>()
-    const rowsByPair = new Map<string, string[]>()
+    const rowsByPair = new Map<string, OutputFieldCoverageRow[]>()
     for (const row of OUTPUT_FIELD_COVERAGE) {
       const key = row.source + '\u0000' + row.owner
       pairs.set(key, { source: row.source, owner: row.owner })
-      rowsByPair.set(key, [...(rowsByPair.get(key) ?? []), row.field])
+      rowsByPair.set(key, [...(rowsByPair.get(key) ?? []), row])
     }
     const missing: string[] = []
     const unknownFields: string[] = []
     const unlocated: string[] = []
+    const tsxAwaitingNote: string[] = []
     for (const { source, owner } of [...pairs.values()].sort((left, right) =>
       left.source < right.source ? -1 : left.source > right.source ? 1 : left.owner < right.owner ? -1 : left.owner > right.owner ? 1 : 0,
     )) {
@@ -588,14 +927,14 @@ describe('calculation registry conformance', () => {
         continue
       }
       const key = source + '\u0000' + owner
-      const covered = new Set(rowsByPair.get(key) ?? [])
+      const covered = new Map((rowsByPair.get(key) ?? []).map((row) => [row.field, row]))
       const { all, numeric } = enumerateOwnerFields(block)
       if (block.kind !== 'module') {
         for (const field of numeric) {
           if (!covered.has(field)) missing.push(`${owner}.${field}`)
         }
         const existing = new Set(all)
-        for (const field of covered) {
+        for (const field of covered.keys()) {
           // A dotted field names a leaf inside a nested member; the owner
           // block only declares the member, so the first segment must exist.
           // The nested object's own leaves are guarded under their own type
@@ -607,20 +946,31 @@ describe('calculation registry conformance', () => {
           // array element without its parent segment. Accept the row when the
           // leaf name is declared somewhere inside this owner's block; a leaf
           // that appears nowhere in the block is a census error.
-          const leaf = segments[segments.length - 1]!
-          const declaredInBlock = new RegExp(`(?:^|[^\\w$])${leaf}\\??\\s*:`, 'u')
+          const leaf = censusName(segments[segments.length - 1]!, `census field leaf of ${owner}.${field}`)
+          const declaredInBlock = namePattern(`(?:^|[^\\w$])${leaf}\\??\\s*:`, 'u')
           if (!declaredInBlock.test(block.body)) unknownFields.push(`${owner}.${field}`)
         }
       } else {
-        // A page component owner (.tsx) documents inline arithmetic the census
-        // named itself; there is no declared identifier to find, so existence
-        // is not asserted there. For .ts owners (functions, consts, classes)
-        // the field must appear in the file.
-        if (source.endsWith('.tsx')) continue
-        for (const field of covered) {
-          const leaf = field.split('.').pop()!.replace(/\[\]$/u, '')
-          const declared = new RegExp(`(?:^|[^\\w$])${leaf}\\b`, 'u')
-          if (!declared.test(text)) unknownFields.push(`${owner}.${field}`)
+        // A module-kind owner (a function, const, class, or page component)
+        // declares no member block, so existence means the leaf appears in
+        // the file at CODE level: as an identifier outside comments and
+        // strings, or as a whole string literal (a CSV column list names its
+        // fields that way). A .tsx page component may also document inline
+        // arithmetic the census named itself, with no identifier to find; such
+        // a row is accepted only with a non-empty `note` explaining the
+        // computation, or while it remains on TSX_INLINE_ROWS_AWAITING_NOTE.
+        const { code, literals } = codeLevelOf(source, text)
+        for (const [field, row] of covered) {
+          const rawLeaf = field.split('.').pop()!.replace(/\[\]$/u, '')
+          const leaf = censusName(rawLeaf, `census field leaf of ${owner}.${field}`)
+          const declared = namePattern(`(?:^|[^\\w$])${leaf}\\b`, 'u')
+          if (declared.test(code) || literals.has(rawLeaf)) continue
+          if (source.endsWith('.tsx')) {
+            if (typeof row.note === 'string' && row.note.trim().length > 0) continue
+            tsxAwaitingNote.push(`${source} ${owner}.${field}`)
+            continue
+          }
+          unknownFields.push(`${owner}.${field}`)
         }
       }
     }
@@ -629,21 +979,83 @@ describe('calculation registry conformance', () => {
     expect(unknownFields, 'coverage rows whose field does not exist: ' + (unknownFields.join(', ') || 'none')).toEqual(
       [],
     )
+    expect(
+      tsxAwaitingNote.sort(),
+      '.tsx rows with no identifier at code level and no note explaining the inline computation; a row gains a note in the Docs census and leaves TSX_INLINE_ROWS_AWAITING_NOTE, never the reverse',
+    ).toEqual([...TSX_INLINE_ROWS_AWAITING_NOTE].sort())
   })
 
-  it('computes relocation-pending status rather than failing on it', () => {
-    const relocationPending = Object.entries(OUTPUT_FAMILIES)
-      .filter(([, family]) =>
-        (family.kind === 'ui-native' || family.kind === 'ui-transformation') &&
-        family.relocation !== null &&
-        family.relocation.status === 'pending',
-      )
+  it('splits members after a callback-typed member and a comparison, keeping the angle count in sync', () => {
+    const body = [
+      '',
+      '  format: (n: number) => string',
+      '  compare: (left: number, right: number) => number',
+      '  sort: Array<(left: number, right: number) => -1 | 0 | 1>',
+      '  after: number',
+      '  last?: number | null',
+      '',
+    ].join('\n')
+    expect(enumerateOwnerFields({ kind: 'braces', body })).toEqual({
+      all: ['format', 'compare', 'sort', 'after', 'last'],
+      numeric: ['after', 'last'],
+    })
+    const params = 'limit: number = a > b ? 1 : 0, next: number, wide: Map<string, number>, tail: number'
+    expect(enumerateOwnerFields({ kind: 'params', body: params })).toEqual({
+      all: ['limit', 'next', 'wide', 'tail'],
+      numeric: ['next', 'tail'],
+    })
+  })
+
+  it('carries a relocation object on every ui family and none on engine and adapter families', () => {
+    const violations: string[] = []
+    // Widened: the frozen literal types make each family's relocation a
+    // provable null or object, which would narrow the checks below to never.
+    const families: Readonly<Record<string, OutputFamily>> = OUTPUT_FAMILIES
+    for (const [id, family] of Object.entries(families)) {
+      const isUi = family.kind === 'ui-native' || family.kind === 'ui-transformation'
+      if (isUi && family.relocation === null) violations.push(`${id} (${family.kind}): relocation missing`)
+      if (!isUi && family.relocation !== null) violations.push(`${id} (${family.kind}): relocation must be null`)
+    }
+    expect(violations).toEqual([])
+  })
+
+  it('publishes relocation-pending for exactly the ui families whose relocation is pending, and counts none of them complete', () => {
+    const { complete, relocationPending } = publishedManifest().families
+    const expected = Object.entries(OUTPUT_FAMILIES)
+      .filter(([, family]) => family.relocation !== null && family.relocation.status === 'pending')
       .map(([id]) => id)
       .sort()
-    expect(
-      { count: relocationPending.length, ids: relocationPending },
-      'relocation-pending families (computed status, not a failure)',
-    ).toEqual({ count: relocationPending.length, ids: relocationPending })
+    expect(relocationPending).toEqual(expected)
+    expect(complete.filter((id) => relocationPending.includes(id))).toEqual([])
+  })
+
+  it('never counts a relocation-pending family complete, even when its record passes every gate', () => {
+    const report = syntheticReport()
+    expect(report.manifest.families).toMatchObject({
+      complete: ['synthetic-ui-done'],
+      partial: ['synthetic-ui-pending'],
+      noRecordYet: [],
+      relocationPending: ['synthetic-ui-pending'],
+    })
+    expect(report.shards[0]!.shard.records[0]!.gates).toEqual({
+      fixtureRegistersTest: true,
+      pinsResolve: true,
+      familiesExist: true,
+      worksheetExists: true,
+      mutationExists: true,
+      provenanceIndependent: true,
+    })
+  })
+
+  it('publishes a broken gate on the record rather than folding it into the family status', () => {
+    const report = syntheticReport({
+      symbolLineFor: () => {
+        throw new Error('pin moved')
+      },
+    })
+    expect(report.manifest.families.complete).toEqual([])
+    expect(report.manifest.families.partial).toEqual(['synthetic-ui-done', 'synthetic-ui-pending'])
+    expect(report.shards[0]!.shard.records[0]!.gates).toMatchObject({ pinsResolve: false, fixtureRegistersTest: true })
   })
 
   it('requires provenance.derivedBy to differ from provenance.reviewedBy', () => {
@@ -658,8 +1070,8 @@ describe('calculation registry conformance', () => {
     expect(() =>
       describeCalculation('not-a-registered-calculation' as CalculationId, {
         example: { inputs: {}, expected: { value: 1 }, tolerance: 'exact' },
-        worksheet: 'DOCS/calculations/spending-and-withdrawals/abw-annuity-due-payment.md',
-        mutation: 'DOCS/calculations/spending-and-withdrawals/abw-annuity-due-payment.mutation.md',
+        worksheet: ABW_WORKSHEET,
+        mutation: ABW_MUTATION,
       }, () => {}),
     ).toThrow(RangeError)
   })

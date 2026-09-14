@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 /**
  * Imports the Docs output-family census into frozen engine data.
  *
@@ -8,19 +7,35 @@
  *
  *   - packages/engine/src/rules/outputFamilies.ts
  *   - packages/engine/src/rules/outputFieldCoverage.ts
+ *   - packages/engine/src/rules/census/<the three files, as imported>
  *
- * Generated files name the census git commit in their header. LF newlines.
+ * The census copies sit beside the modules generated from them so
+ * `outputCensus.freshness.test.ts` can regenerate the modules through
+ * `renderCensusModules` below and fail on a hand edit or a skipped
+ * regeneration. Generated files name the census git commit in their header;
+ * the importer refuses to run when that commit cannot be resolved, so the
+ * provenance is never 'unknown'. LF newlines.
  *
  * Run: node packages/engine/scripts/import-output-census.mjs <census-dir>
  */
 import { execFileSync } from 'node:child_process'
-import { readFileSync, writeFileSync } from 'node:fs'
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const scriptDir = dirname(fileURLToPath(import.meta.url))
 const engineDir = resolve(scriptDir, '..')
 const rulesDir = join(engineDir, 'src', 'rules')
+const censusDir = join(rulesDir, 'census')
+
+/** The census files by role: read from the Docs directory, copied under src/rules/census/. */
+const CENSUS_FILES = Object.freeze({
+  families: 'output-families.json',
+  coverage: 'output-field-coverage.json',
+  exclusions: 'output-exclusions.json',
+})
+
+export const CENSUS_FILE_NAMES = Object.freeze(Object.values(CENSUS_FILES))
 
 const FAMILY_KINDS = new Set(['engine', 'ui-native', 'ui-transformation', 'adapter'])
 const UI_KINDS = new Set(['ui-native', 'ui-transformation'])
@@ -39,9 +54,9 @@ function parseArgs(argv) {
   if (args.length === 1) {
     const dir = resolve(args[0])
     return {
-      families: join(dir, 'output-families.json'),
-      coverage: join(dir, 'output-field-coverage.json'),
-      exclusions: join(dir, 'output-exclusions.json'),
+      families: join(dir, CENSUS_FILES.families),
+      coverage: join(dir, CENSUS_FILES.coverage),
+      exclusions: join(dir, CENSUS_FILES.exclusions),
     }
   }
   if (args.length === 3) {
@@ -57,19 +72,35 @@ function parseArgs(argv) {
   )
 }
 
+/**
+ * The commit the census files are checked out at. The generated headers exist
+ * to pin the census revision, so a directory whose commit cannot be resolved
+ * (an exported snapshot, an extracted tarball, no git on PATH) is an error
+ * here, never an 'unknown' written into the headers.
+ */
 function censusCommit(filePath) {
+  let commit
   try {
     // The Docs census is often supplied from another worktree, which may be
     // owned by the interactive user while this importer runs in a sandbox.
     // This command only reads its explicit cwd; accepting that one worktree
     // lets the generated provenance name the actual census revision.
-    return execFileSync('git', ['-c', 'safe.directory=*', 'rev-parse', 'HEAD'], {
+    commit = execFileSync('git', ['-c', 'safe.directory=*', 'rev-parse', 'HEAD'], {
       cwd: dirname(filePath),
       encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
     }).trim()
-  } catch {
-    return 'unknown'
+  } catch (error) {
+    throw new Error(
+      'import-output-census: cannot resolve the census commit for ' + dirname(filePath) +
+        ' (not inside a git worktree, or git is unavailable); the generated headers pin the census revision, so refusing rather than writing "unknown"',
+      { cause: error },
+    )
   }
+  if (!/^[0-9a-f]{40}$/u.test(commit)) {
+    throw new Error('import-output-census: git rev-parse HEAD returned ' + JSON.stringify(commit) + ', not a commit hash')
+  }
+  return commit
 }
 
 function assertArray(value, label) {
@@ -135,7 +166,13 @@ function familyRecord(raw) {
   }
 }
 
-function coverageRow(raw) {
+/**
+ * One coverage row. A row that names a family must name one the census
+ * defines: the engine's field-to-family link is what the catalog hangs on,
+ * so a typo or a deleted id is rejected here as well as by the conformance
+ * gate, rather than imported and left to rot.
+ */
+function coverageRow(raw, familyIds) {
   if (!raw || typeof raw !== 'object') throw new Error('every coverage row must be an object')
   const row = {
     source: asString(raw.source),
@@ -144,9 +181,17 @@ function coverageRow(raw) {
     disposition: asString(raw.disposition),
     familyId: typeof raw.familyId === 'string' ? raw.familyId : null,
   }
+  const label = row.source + ' ' + row.owner + '.' + row.field
+  if (row.disposition === 'family' && row.familyId === null) {
+    throw new Error('coverage row ' + label + ' has disposition family but no familyId')
+  }
+  if (row.familyId !== null && !familyIds.has(row.familyId)) {
+    throw new Error('coverage row ' + label + ' names familyId ' + row.familyId + ', which is not a family in ' + CENSUS_FILES.families)
+  }
   if (typeof raw.reasonKind === 'string') row.reasonKind = raw.reasonKind
   if (typeof raw.reason === 'string') row.reason = raw.reason
   if (typeof raw.tsType === 'string') row.tsType = raw.tsType
+  if (typeof raw.note === 'string') row.note = raw.note
   return row
 }
 
@@ -177,9 +222,9 @@ function generatedHeader(kind, commit) {
   ].join('\n')
 }
 
-function writeFamilies(families, commit) {
+function familiesModuleText(families, commit) {
   const keyed = {}
-  for (const { id, family } of families.sort((left, right) => compareStrings(left.id, right.id))) {
+  for (const { id, family } of families) {
     if (keyed[id] !== undefined) throw new Error('duplicate family id ' + id)
     keyed[id] = family
   }
@@ -225,10 +270,10 @@ function writeFamilies(families, commit) {
     '  Object.keys(OUTPUT_FAMILIES).sort() as readonly OutputFamilyId[],',
     ')',
   ].join('\n')
-  writeFileSync(join(rulesDir, 'outputFamilies.ts'), emitTs(generatedHeader('Output families', commit), body), 'utf8')
+  return emitTs(generatedHeader('Output families', commit), body)
 }
 
-function writeCoverage(coverage, exclusions, commit) {
+function coverageModuleText(coverage, exclusions, commit) {
   const body = [
     '',
     'export interface OutputFieldCoverageRow {',
@@ -240,6 +285,8 @@ function writeCoverage(coverage, exclusions, commit) {
     '  readonly reasonKind?: string',
     '  readonly reason?: string',
     '  readonly tsType?: string',
+    '  /** The census author\'s explanation of an inline computation with no identifier to find. */',
+    '  readonly note?: string',
     '}',
     '',
     'export interface OutputFieldExclusion {',
@@ -260,6 +307,7 @@ function writeCoverage(coverage, exclusions, commit) {
     '  reasonKind?: unknown',
     '  reason?: unknown',
     '  tsType?: unknown',
+    '  note?: unknown',
     '}',
     '',
     'type RawExclusion = {',
@@ -286,6 +334,7 @@ function writeCoverage(coverage, exclusions, commit) {
     '  if (typeof raw.reasonKind === \'string\') Object.assign(row, { reasonKind: raw.reasonKind })',
     '  if (typeof raw.reason === \'string\') Object.assign(row, { reason: raw.reason })',
     '  if (typeof raw.tsType === \'string\') Object.assign(row, { tsType: raw.tsType })',
+    '  if (typeof raw.note === \'string\') Object.assign(row, { note: raw.note })',
     '  return row',
     '}',
     '',
@@ -323,32 +372,74 @@ function writeCoverage(coverage, exclusions, commit) {
     '  ),',
     ') as readonly OutputFieldExclusion[]',
   ].join('\n')
-  writeFileSync(join(rulesDir, 'outputFieldCoverage.ts'), emitTs(generatedHeader('Output field coverage', commit), body), 'utf8')
+  return emitTs(generatedHeader('Output field coverage', commit), body)
 }
 
-function main() {
-  const paths = parseArgs(process.argv.slice(2))
-  const commit = censusCommit(paths.families)
-  const families = assertArray(JSON.parse(readFileSync(paths.families, 'utf8')), 'output-families.json').map(familyRecord)
-  const coverage = assertArray(JSON.parse(readFileSync(paths.coverage, 'utf8')), 'output-field-coverage.json')
-    .map(coverageRow)
+/**
+ * Validates the parsed census and renders both frozen modules, their headers
+ * naming `commit`. Pure: the freshness suite calls it on the committed census
+ * copies and compares the result with the committed modules, so the generator
+ * that wrote them is the one that checks them.
+ */
+export function renderCensusModules(census, commit) {
+  const families = assertArray(census.families, CENSUS_FILES.families)
+    .map(familyRecord)
+    .sort((left, right) => compareStrings(left.id, right.id))
+  const familyIds = new Set(families.map(({ id }) => id))
+  const coverage = assertArray(census.coverage, CENSUS_FILES.coverage)
+    .map((raw) => coverageRow(raw, familyIds))
     .sort((left, right) =>
       compareStrings(left.source, right.source) ||
       compareStrings(left.owner, right.owner) ||
       compareStrings(left.field, right.field),
     )
-  const exclusions = assertArray(JSON.parse(readFileSync(paths.exclusions, 'utf8')), 'output-exclusions.json')
+  const exclusions = assertArray(census.exclusions, CENSUS_FILES.exclusions)
     .map(exclusionRow)
     .sort((left, right) => compareStrings(left.id, right.id))
-  writeFamilies(families, commit)
-  writeCoverage(coverage, exclusions, commit)
+  return {
+    outputFamilies: familiesModuleText(families, commit),
+    outputFieldCoverage: coverageModuleText(coverage, exclusions, commit),
+    counts: { families: families.length, coverage: coverage.length, exclusions: exclusions.length },
+  }
+}
+
+function main() {
+  const paths = parseArgs(process.argv.slice(2))
+  const commit = censusCommit(paths.families)
+  const texts = {
+    families: lf(readFileSync(paths.families, 'utf8')),
+    coverage: lf(readFileSync(paths.coverage, 'utf8')),
+    exclusions: lf(readFileSync(paths.exclusions, 'utf8')),
+  }
+  const modules = renderCensusModules(
+    {
+      families: JSON.parse(texts.families),
+      coverage: JSON.parse(texts.coverage),
+      exclusions: JSON.parse(texts.exclusions),
+    },
+    commit,
+  )
+  writeFileSync(join(rulesDir, 'outputFamilies.ts'), modules.outputFamilies, 'utf8')
+  writeFileSync(join(rulesDir, 'outputFieldCoverage.ts'), modules.outputFieldCoverage, 'utf8')
+  // The census as imported, beside the modules generated from it, so the
+  // freshness suite can regenerate the modules from the copies and fail on a
+  // hand edit or a skipped regeneration instead of drifting silently.
+  mkdirSync(censusDir, { recursive: true })
+  for (const [role, fileName] of Object.entries(CENSUS_FILES)) {
+    writeFileSync(join(censusDir, fileName), texts[role], 'utf8')
+  }
   console.log(
-    'import-output-census: ' + families.length + ' families, ' +
-      coverage.length + ' coverage rows, ' +
-      exclusions.length + ' exclusions, census ' + commit,
+    'import-output-census: ' + modules.counts.families + ' families, ' +
+      modules.counts.coverage + ' coverage rows, ' +
+      modules.counts.exclusions + ' exclusions, census ' + commit,
   )
 }
 
 if (import.meta.main) {
-  main()
+  try {
+    main()
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : error)
+    process.exitCode = 1
+  }
 }

@@ -1,0 +1,3580 @@
+[
+  {
+    "id": "csv-year",
+    "path": "planner-ui/src/planner/resultsRows.ts",
+    "symbol": "LEDGER_CSV_COLUMNS",
+    "field": "year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "Calendar year identifying each CSV ledger row."
+  },
+  {
+    "id": "csv-filing-status",
+    "path": "planner-ui/src/planner/resultsRows.ts",
+    "symbol": "LEDGER_CSV_COLUMNS",
+    "field": "filingStatus",
+    "reasonKind": "label-or-category",
+    "reason": "Tax filing-status label applying to the CSV ledger year."
+  },
+  {
+    "id": "csv-guardrail-action",
+    "path": "planner-ui/src/planner/resultsRows.ts",
+    "symbol": "LEDGER_CSV_COLUMNS",
+    "field": "guardrailAction",
+    "reasonKind": "label-or-category",
+    "reason": "Categorical cut, hold, or raise decision for the CSV ledger year."
+  },
+  {
+    "id": "csv-inherited-requirement-kind",
+    "path": "planner-ui/src/planner/resultsRows.ts",
+    "symbol": "inheritedLedgerCsvValues",
+    "field": "inheritedRequirementKind",
+    "reasonKind": "label-or-category",
+    "reason": "The inheritedLedgerCsvValues.inheritedRequirementKind field is a categorical label used to name or classify the displayed record."
+  },
+  {
+    "id": "csv-inherited-professional-confirmation",
+    "path": "planner-ui/src/planner/resultsRows.ts",
+    "symbol": "inheritedLedgerCsvValues",
+    "field": "inheritedProfessionalConfirmation",
+    "reasonKind": "not-numeric",
+    "reason": "The inheritedLedgerCsvValues.inheritedProfessionalConfirmation field is a nonnumeric object, collection, or text value."
+  },
+  {
+    "id": "csv-inherited-evidence-note",
+    "path": "planner-ui/src/planner/resultsRows.ts",
+    "symbol": "inheritedLedgerCsvValues",
+    "field": "inheritedEvidenceNote",
+    "reasonKind": "evidence-note",
+    "reason": "The inheritedLedgerCsvValues.inheritedEvidenceNote field is a narrative evidence or audit note rather than a numeric amount."
+  },
+  {
+    "id": "insight-aca-threshold-proximity",
+    "path": "engine/src/insights/detectors/acaThresholdProximity.ts",
+    "symbol": "aca-threshold-proximity",
+    "field": "card",
+    "reasonKind": "label-or-category",
+    "reason": "Insight detector aca-threshold-proximity publishes only status text and coordinates on its card: Publishes the year, the parameter-pack FPL boundary percent and status text; the household MAGI, FPL percentage and credit at stake are card evidence, which InsightCardView.tsx does not render at pin fb398216."
+  },
+  {
+    "id": "insight-law-pack-drift",
+    "path": "engine/src/insights/detectors/lawPackDrift.ts",
+    "symbol": "law-pack-drift",
+    "field": "card",
+    "reasonKind": "label-or-category",
+    "reason": "Insight detector law-pack-drift publishes only status text and coordinates on its card: Publishes the plan's last-saved year, the active parameter year and data vintage; status text only."
+  },
+  {
+    "id": "insight-missing-data-basis",
+    "path": "engine/src/insights/detectors/missingDataBasis.ts",
+    "symbol": "missing-data-basis",
+    "field": "card",
+    "reasonKind": "label-or-category",
+    "reason": "Insight detector missing-data-basis publishes only status text and coordinates on its card: Publishes which basis and retirement-date facts use planning defaults; the affected balances are card evidence, which InsightCardView.tsx does not render."
+  },
+  {
+    "id": "insight-qcd-efficiency",
+    "path": "engine/src/insights/detectors/qcdEfficiency.ts",
+    "symbol": "qcd-efficiency",
+    "field": "card",
+    "reasonKind": "label-or-category",
+    "reason": "Insight detector qcd-efficiency publishes only status text and coordinates on its card: Publishes the plan's charitable giving and current QCD (both plan inputs) and status text; the exact preview delta is the shared decision evaluator (insight-impact families)."
+  },
+  {
+    "id": "insight-roth-bridge-headroom",
+    "path": "engine/src/insights/detectors/rothBridgeHeadroom.ts",
+    "symbol": "roth-bridge-headroom",
+    "field": "card",
+    "reasonKind": "label-or-category",
+    "reason": "Insight detector roth-bridge-headroom publishes only status text and coordinates on its card: Publishes the first and last low-income bridge years and status text; the traditional balance is card evidence, not rendered."
+  },
+  {
+    "id": "insight-ss-claim-milestone",
+    "path": "engine/src/insights/detectors/ssClaimMilestone.ts",
+    "symbol": "ss-claim-milestone",
+    "field": "card",
+    "reasonKind": "label-or-category",
+    "reason": "Insight detector ss-claim-milestone publishes only status text and coordinates on its card: Publishes the configured claim age, attained age and first payable year; the modeled first-year benefit is card evidence, not rendered."
+  },
+  {
+    "id": "insight-stale-plan-data",
+    "path": "engine/src/insights/detectors/stalePlanData.ts",
+    "symbol": "stale-plan-data",
+    "field": "card",
+    "reasonKind": "label-or-category",
+    "reason": "Insight detector stale-plan-data publishes only status text and coordinates on its card: Publishes the last-saved year-month, the current planning year and the gap in years; status text only."
+  },
+  {
+    "id": "field-engine-src-projection-internal-types-result-ts-yearresult-year",
+    "path": "engine/src/projection/internal/types/result.ts",
+    "symbol": "YearResult",
+    "field": "year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The YearResult.year field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-engine-src-projection-internal-types-result-ts-yearresult-inflationscale",
+    "path": "engine/src/projection/internal/types/result.ts",
+    "symbol": "YearResult",
+    "field": "inflationScale",
+    "reasonKind": "internal-coefficient",
+    "reason": "Cumulative general-inflation factor for the year; drives nominal conversions inside the engine and the QCD detector targets, never printed."
+  },
+  {
+    "id": "field-engine-src-projection-internal-types-result-ts-yearresult-balanceindex",
+    "path": "engine/src/projection/internal/types/result.ts",
+    "symbol": "YearResult",
+    "field": "balanceIndex",
+    "reasonKind": "identifier",
+    "reason": "Positional index of a physical owned-IRA balance row in the replay source."
+  },
+  {
+    "id": "field-engine-src-projection-internal-types-result-ts-yearresult-irmaatier",
+    "path": "engine/src/projection/internal/types/result.ts",
+    "symbol": "YearResult",
+    "field": "irmaaTier",
+    "reasonKind": "label-or-category",
+    "reason": "IRMAA tier index (0 = standard, 1-5 = surcharge tiers) is a classification of the year's MAGI against the thresholds; irmaa-surcharge-annual is the numeric family. Shown as a category on the scenarios page (annual \"IRMAA tier\", \"Maximum IRMAA tier\") and the survivor page (\"tier a → b\")."
+  },
+  {
+    "id": "field-engine-src-projection-internal-types-result-ts-yearresult-irmaalookbackmagiyear",
+    "path": "engine/src/projection/internal/types/result.ts",
+    "symbol": "YearResult",
+    "field": "irmaaLookbackMagiYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "Calendar year whose MAGI the IRMAA lookback selected; positions irmaaLookbackMagi."
+  },
+  {
+    "id": "field-engine-src-projection-internal-types-result-ts-projectionresult-startyear",
+    "path": "engine/src/projection/internal/types/result.ts",
+    "symbol": "ProjectionResult",
+    "field": "startYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "First projection year; the coordinate every ledger surface starts from."
+  },
+  {
+    "id": "field-engine-src-projection-internal-types-result-ts-projectionresult-endyear",
+    "path": "engine/src/projection/internal/types/result.ts",
+    "symbol": "ProjectionResult",
+    "field": "endYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "Last projection year; printed as the horizon on KPI and compare surfaces."
+  },
+  {
+    "id": "field-engine-src-projection-compare-ts-module-charitypct",
+    "path": "engine/src/projection/compare.ts",
+    "symbol": "module",
+    "field": "charityPct",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The module.charityPct field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-engine-src-projection-compare-ts-projectionsummary-year",
+    "path": "engine/src/projection/compare.ts",
+    "symbol": "ProjectionSummary",
+    "field": "year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The ProjectionSummary.year field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-engine-src-montecarlo-run-ts-montecarlopathoptions-startyear",
+    "path": "engine/src/montecarlo/run.ts",
+    "symbol": "MonteCarloPathOptions",
+    "field": "startYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The MonteCarloPathOptions.startYear field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-engine-src-montecarlo-run-ts-montecarlopathoptions-seed",
+    "path": "engine/src/montecarlo/run.ts",
+    "symbol": "MonteCarloPathOptions",
+    "field": "seed",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The MonteCarloPathOptions.seed field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-engine-src-montecarlo-run-ts-montecarlopathoptions-pathcount",
+    "path": "engine/src/montecarlo/run.ts",
+    "symbol": "MonteCarloPathOptions",
+    "field": "pathCount",
+    "reasonKind": "sample-size-or-count-setting",
+    "reason": "The MonteCarloPathOptions.pathCount field is a run-size setting or execution count that describes calculation effort."
+  },
+  {
+    "id": "field-engine-src-montecarlo-run-ts-montecarlopathoptions-firstpathindex",
+    "path": "engine/src/montecarlo/run.ts",
+    "symbol": "MonteCarloPathOptions",
+    "field": "firstPathIndex",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The MonteCarloPathOptions.firstPathIndex field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-engine-src-montecarlo-run-ts-montecarlopathoptions-completed",
+    "path": "engine/src/montecarlo/run.ts",
+    "symbol": "MonteCarloPathOptions",
+    "field": "completed",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The MonteCarloPathOptions.completed field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-engine-src-montecarlo-run-ts-montecarlopath-depletionyear",
+    "path": "engine/src/montecarlo/run.ts",
+    "symbol": "MonteCarloPath",
+    "field": "depletionYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "Per-path first depletion year; the aggregate histogram keys on it and the page never shows a single path."
+  },
+  {
+    "id": "field-engine-src-montecarlo-run-ts-montecarlopathsresult-startyear",
+    "path": "engine/src/montecarlo/run.ts",
+    "symbol": "MonteCarloPathsResult",
+    "field": "startYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "First projection year of the path grid; positions the fan rows."
+  },
+  {
+    "id": "field-engine-src-montecarlo-run-ts-montecarlopathsresult-endyear",
+    "path": "engine/src/montecarlo/run.ts",
+    "symbol": "MonteCarloPathsResult",
+    "field": "endYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "Last projection year of the path grid."
+  },
+  {
+    "id": "field-engine-src-montecarlo-run-ts-yearpercentiles-year",
+    "path": "engine/src/montecarlo/run.ts",
+    "symbol": "YearPercentiles",
+    "field": "year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The YearPercentiles.year field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-engine-src-montecarlo-run-ts-montecarlosummary-pathcount",
+    "path": "engine/src/montecarlo/run.ts",
+    "symbol": "MonteCarloSummary",
+    "field": "pathCount",
+    "reasonKind": "sample-size-or-count-setting",
+    "reason": "Number of simulated paths; a run-size setting the page prints beside the gauge and KPI, not a plan quantity."
+  },
+  {
+    "id": "field-engine-src-montecarlo-run-ts-montecarlosummary-year",
+    "path": "engine/src/montecarlo/run.ts",
+    "symbol": "MonteCarloSummary",
+    "field": "year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "Calendar year keying the depletion-year histogram, depletion-probability series and fan rows."
+  },
+  {
+    "id": "field-engine-src-montecarlo-run-ts-module-sorted",
+    "path": "engine/src/montecarlo/run.ts",
+    "symbol": "module",
+    "field": "sorted",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The module.sorted field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-engine-src-montecarlo-run-ts-module-p",
+    "path": "engine/src/montecarlo/run.ts",
+    "symbol": "module",
+    "field": "p",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The module.p field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-engine-src-montecarlo-run-ts-module-histogrambins",
+    "path": "engine/src/montecarlo/run.ts",
+    "symbol": "module",
+    "field": "histogramBins",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The module.histogramBins field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-engine-src-montecarlo-run-ts-aggregatemontecarlo-column",
+    "path": "engine/src/montecarlo/run.ts",
+    "symbol": "aggregateMonteCarlo",
+    "field": "column",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The aggregateMonteCarlo.column field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-engine-src-montecarlo-run-ts-aggregatemontecarlo-totalshortfalls",
+    "path": "engine/src/montecarlo/run.ts",
+    "symbol": "aggregateMonteCarlo",
+    "field": "totalShortfalls",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The aggregateMonteCarlo.totalShortfalls field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-engine-src-montecarlo-run-ts-aggregatemontecarlo-targetattainments",
+    "path": "engine/src/montecarlo/run.ts",
+    "symbol": "aggregateMonteCarlo",
+    "field": "targetAttainments",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The aggregateMonteCarlo.targetAttainments field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-engine-src-montecarlo-run-ts-aggregatemontecarlo-averagetargetshortfalls",
+    "path": "engine/src/montecarlo/run.ts",
+    "symbol": "aggregateMonteCarlo",
+    "field": "averageTargetShortfalls",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The aggregateMonteCarlo.averageTargetShortfalls field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-engine-src-montecarlo-run-ts-aggregatemontecarlo-cutdepths",
+    "path": "engine/src/montecarlo/run.ts",
+    "symbol": "aggregateMonteCarlo",
+    "field": "cutDepths",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The aggregateMonteCarlo.cutDepths field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-engine-src-montecarlo-run-ts-aggregatemontecarlo-cutyearcounts",
+    "path": "engine/src/montecarlo/run.ts",
+    "symbol": "aggregateMonteCarlo",
+    "field": "cutYearCounts",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The aggregateMonteCarlo.cutYearCounts field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-engine-src-montecarlo-run-ts-aggregatemontecarlo-n",
+    "path": "engine/src/montecarlo/run.ts",
+    "symbol": "aggregateMonteCarlo",
+    "field": "n",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The aggregateMonteCarlo.n field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-engine-src-projection-optimizeplan-ts-module-year",
+    "path": "engine/src/projection/optimizePlan.ts",
+    "symbol": "module",
+    "field": "year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The module.year field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-engine-src-projection-optimizeplan-ts-module-width",
+    "path": "engine/src/projection/optimizePlan.ts",
+    "symbol": "module",
+    "field": "width",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The module.width field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-engine-src-projection-optimizeplan-ts-module-rate",
+    "path": "engine/src/projection/optimizePlan.ts",
+    "symbol": "module",
+    "field": "rate",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The module.rate field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-engine-src-projection-optimizeplan-ts-module-balance",
+    "path": "engine/src/projection/optimizePlan.ts",
+    "symbol": "module",
+    "field": "balance",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The module.balance field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-engine-src-projection-optimizeplan-ts-module-annualreturnpct",
+    "path": "engine/src/projection/optimizePlan.ts",
+    "symbol": "module",
+    "field": "annualReturnPct",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The module.annualReturnPct field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-engine-src-projection-optimizeplan-ts-optimizeplanoptions-startyear",
+    "path": "engine/src/projection/optimizePlan.ts",
+    "symbol": "OptimizePlanOptions",
+    "field": "startYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The OptimizePlanOptions.startYear field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-engine-src-projection-optimizeplan-ts-optimizeplanoptions-liquidationratepct",
+    "path": "engine/src/projection/optimizePlan.ts",
+    "symbol": "OptimizePlanOptions",
+    "field": "liquidationRatePct",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The OptimizePlanOptions.liquidationRatePct field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-engine-src-projection-optimizeplan-ts-exactledgersearchoptions-maxsimulations",
+    "path": "engine/src/projection/optimizePlan.ts",
+    "symbol": "ExactLedgerSearchOptions",
+    "field": "maxSimulations",
+    "reasonKind": "sample-size-or-count-setting",
+    "reason": "The ExactLedgerSearchOptions.maxSimulations field is a run-size setting or execution count that describes calculation effort."
+  },
+  {
+    "id": "field-engine-src-projection-optimizeplan-ts-exactledgerconvergenceoptions-maxiterations",
+    "path": "engine/src/projection/optimizePlan.ts",
+    "symbol": "ExactLedgerConvergenceOptions",
+    "field": "maxIterations",
+    "reasonKind": "sample-size-or-count-setting",
+    "reason": "The ExactLedgerConvergenceOptions.maxIterations field is a run-size setting or execution count that describes calculation effort."
+  },
+  {
+    "id": "field-engine-src-projection-optimizeplan-ts-exactledgerconvergenceoptions-scheduletolerancedollars",
+    "path": "engine/src/projection/optimizePlan.ts",
+    "symbol": "ExactLedgerConvergenceOptions",
+    "field": "scheduleToleranceDollars",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The ExactLedgerConvergenceOptions.scheduleToleranceDollars field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-engine-src-projection-optimizeplan-ts-exactledgerconvergenceoptions-objectivetolerancedollars",
+    "path": "engine/src/projection/optimizePlan.ts",
+    "symbol": "ExactLedgerConvergenceOptions",
+    "field": "objectiveToleranceDollars",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The ExactLedgerConvergenceOptions.objectiveToleranceDollars field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-engine-src-projection-optimizeplan-ts-exactledgerconvergenceoptions-maxyearstepdollars",
+    "path": "engine/src/projection/optimizePlan.ts",
+    "symbol": "ExactLedgerConvergenceOptions",
+    "field": "maxYearStepDollars",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The ExactLedgerConvergenceOptions.maxYearStepDollars field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-engine-src-projection-optimizeplan-ts-exactledgerconvergenceoptions-dampingfactor",
+    "path": "engine/src/projection/optimizePlan.ts",
+    "symbol": "ExactLedgerConvergenceOptions",
+    "field": "dampingFactor",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The ExactLedgerConvergenceOptions.dampingFactor field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-engine-src-projection-optimizeplan-ts-exactledgerconvergencediagnostics-iterations",
+    "path": "engine/src/projection/optimizePlan.ts",
+    "symbol": "ExactLedgerConvergenceDiagnostics",
+    "field": "iterations",
+    "reasonKind": "sample-size-or-count-setting",
+    "reason": "Number of exact-ledger convergence iterations run; effort, not a plan quantity."
+  },
+  {
+    "id": "field-engine-src-projection-optimizeplan-ts-module-startyear",
+    "path": "engine/src/projection/optimizePlan.ts",
+    "symbol": "module",
+    "field": "startYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The module.startYear field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-engine-src-projection-optimizeplan-ts-optimizeropeningbuckets-costbasis",
+    "path": "engine/src/projection/optimizePlan.ts",
+    "symbol": "optimizerOpeningBuckets",
+    "field": "costBasis",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The optimizerOpeningBuckets.costBasis field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-engine-src-projection-optimizeplan-ts-optimizeropeningbuckets-balance",
+    "path": "engine/src/projection/optimizePlan.ts",
+    "symbol": "optimizerOpeningBuckets",
+    "field": "balance",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The optimizerOpeningBuckets.balance field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-engine-src-projection-optimizeplan-ts-module-amount",
+    "path": "engine/src/projection/optimizePlan.ts",
+    "symbol": "module",
+    "field": "amount",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The module.amount field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-engine-src-projection-optimizeplan-ts-module-trad",
+    "path": "engine/src/projection/optimizePlan.ts",
+    "symbol": "module",
+    "field": "trad",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The module.trad field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-engine-src-projection-optimizeplan-ts-module-inheritedtrad",
+    "path": "engine/src/projection/optimizePlan.ts",
+    "symbol": "module",
+    "field": "inheritedTrad",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The module.inheritedTrad field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-engine-src-projection-optimizeplan-ts-module-other",
+    "path": "engine/src/projection/optimizePlan.ts",
+    "symbol": "module",
+    "field": "other",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The module.other field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-engine-src-projection-optimizeplan-ts-module-taxable",
+    "path": "engine/src/projection/optimizePlan.ts",
+    "symbol": "module",
+    "field": "taxable",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The module.taxable field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-engine-src-projection-optimizeplan-ts-acaactionabilityveto-baselinenonactionableyears",
+    "path": "engine/src/projection/optimizePlan.ts",
+    "symbol": "AcaActionabilityVeto",
+    "field": "baselineNonActionableYears",
+    "reasonKind": "dimension-coordinate",
+    "reason": "List of years whose ACA evidence was non-actionable in the baseline; printed as a veto explanation, not a quantity."
+  },
+  {
+    "id": "field-engine-src-projection-optimizeplan-ts-acaactionabilityveto-candidatenonactionableyears",
+    "path": "engine/src/projection/optimizePlan.ts",
+    "symbol": "AcaActionabilityVeto",
+    "field": "candidateNonActionableYears",
+    "reasonKind": "dimension-coordinate",
+    "reason": "List of years whose ACA evidence was non-actionable in the candidate; printed as a veto explanation, not a quantity."
+  },
+  {
+    "id": "field-engine-src-projection-optimizeplan-ts-retirementactionreadinessveto-year",
+    "path": "engine/src/projection/optimizePlan.ts",
+    "symbol": "RetirementActionReadinessVeto",
+    "field": "year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The RetirementActionReadinessVeto.year field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-engine-src-projection-optimizeplan-ts-retirementactionpromotionyear-year",
+    "path": "engine/src/projection/optimizePlan.ts",
+    "symbol": "RetirementActionPromotionYear",
+    "field": "year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The RetirementActionPromotionYear.year field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-engine-src-projection-optimizeplan-ts-retirementactionpromotion-year",
+    "path": "engine/src/projection/optimizePlan.ts",
+    "symbol": "RetirementActionPromotion",
+    "field": "year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The RetirementActionPromotion.year field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-engine-src-projection-optimizeplan-ts-exactledgertournament-year",
+    "path": "engine/src/projection/optimizePlan.ts",
+    "symbol": "ExactLedgerTournament",
+    "field": "year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The ExactLedgerTournament.year field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-engine-src-projection-optimizeplan-ts-exactledgertournament-searchsimulations",
+    "path": "engine/src/projection/optimizePlan.ts",
+    "symbol": "ExactLedgerTournament",
+    "field": "searchSimulations",
+    "reasonKind": "sample-size-or-count-setting",
+    "reason": "Number of ledger simulations the tournament ran; effort."
+  },
+  {
+    "id": "field-engine-src-projection-optimizeplan-ts-richcandidate-year",
+    "path": "engine/src/projection/optimizePlan.ts",
+    "symbol": "RichCandidate",
+    "field": "year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The RichCandidate.year field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-engine-src-projection-optimizeplan-ts-module-years",
+    "path": "engine/src/projection/optimizePlan.ts",
+    "symbol": "module",
+    "field": "years",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The module.years field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-engine-src-projection-optimizeplan-ts-buildacaactionabilityveto-years",
+    "path": "engine/src/projection/optimizePlan.ts",
+    "symbol": "buildAcaActionabilityVeto",
+    "field": "years",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The buildAcaActionabilityVeto.years field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-engine-src-projection-optimizeplan-ts-runexactledgertournament-switchmargindollars",
+    "path": "engine/src/projection/optimizePlan.ts",
+    "symbol": "runExactLedgerTournament",
+    "field": "switchMarginDollars",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The runExactLedgerTournament.switchMarginDollars field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-engine-src-projection-optimizeplan-ts-promotedwinner-year",
+    "path": "engine/src/projection/optimizePlan.ts",
+    "symbol": "PromotedWinner",
+    "field": "year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The PromotedWinner.year field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-engine-src-projection-optimizeplan-ts-module-publicationfloordollars",
+    "path": "engine/src/projection/optimizePlan.ts",
+    "symbol": "module",
+    "field": "publicationFloorDollars",
+    "reasonKind": "internal-coefficient",
+    "reason": "Dollar floor below which a schedule year is not published; a constant."
+  },
+  {
+    "id": "field-engine-src-projection-optimizeplan-ts-exactledgervalidationoptions-neutraltolerancedollars",
+    "path": "engine/src/projection/optimizePlan.ts",
+    "symbol": "ExactLedgerValidationOptions",
+    "field": "neutralToleranceDollars",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The ExactLedgerValidationOptions.neutralToleranceDollars field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-engine-src-projection-optimizeplan-ts-exactledgervalidationoptions-minimumrequestedconversiondollars",
+    "path": "engine/src/projection/optimizePlan.ts",
+    "symbol": "ExactLedgerValidationOptions",
+    "field": "minimumRequestedConversionDollars",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The ExactLedgerValidationOptions.minimumRequestedConversionDollars field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-engine-src-projection-optimizeplan-ts-exactledgervalidationoptions-materialconversionshortfalldollars",
+    "path": "engine/src/projection/optimizePlan.ts",
+    "symbol": "ExactLedgerValidationOptions",
+    "field": "materialConversionShortfallDollars",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The ExactLedgerValidationOptions.materialConversionShortfallDollars field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-engine-src-projection-optimizeplan-ts-exactledgervalidationoptions-materialconversionshortfallpct",
+    "path": "engine/src/projection/optimizePlan.ts",
+    "symbol": "ExactLedgerValidationOptions",
+    "field": "materialConversionShortfallPct",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The ExactLedgerValidationOptions.materialConversionShortfallPct field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-engine-src-projection-optimizeplan-ts-exactledgerscheduleadjustment-year",
+    "path": "engine/src/projection/optimizePlan.ts",
+    "symbol": "ExactLedgerScheduleAdjustment",
+    "field": "year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The ExactLedgerScheduleAdjustment.year field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-engine-src-projection-optimizeplan-ts-exactledgerpostprocessingoptions-maxiterations",
+    "path": "engine/src/projection/optimizePlan.ts",
+    "symbol": "ExactLedgerPostProcessingOptions",
+    "field": "maxIterations",
+    "reasonKind": "sample-size-or-count-setting",
+    "reason": "The ExactLedgerPostProcessingOptions.maxIterations field is a run-size setting or execution count that describes calculation effort."
+  },
+  {
+    "id": "field-engine-src-projection-optimizeplan-ts-exactledgerpostprocessingoptions-maxpruneiterations",
+    "path": "engine/src/projection/optimizePlan.ts",
+    "symbol": "ExactLedgerPostProcessingOptions",
+    "field": "maxPruneIterations",
+    "reasonKind": "sample-size-or-count-setting",
+    "reason": "The ExactLedgerPostProcessingOptions.maxPruneIterations field is a run-size setting or execution count that describes calculation effort."
+  },
+  {
+    "id": "field-engine-src-projection-optimizeplan-ts-exactledgerpostprocessing-iterationcount",
+    "path": "engine/src/projection/optimizePlan.ts",
+    "symbol": "ExactLedgerPostProcessing",
+    "field": "iterationCount",
+    "reasonKind": "sample-size-or-count-setting",
+    "reason": "Post-processing iterations run; effort."
+  },
+  {
+    "id": "field-engine-src-projection-optimizeplan-ts-exactledgerpostprocessing-pruneiterationcount",
+    "path": "engine/src/projection/optimizePlan.ts",
+    "symbol": "ExactLedgerPostProcessing",
+    "field": "pruneIterationCount",
+    "reasonKind": "sample-size-or-count-setting",
+    "reason": "Post-processing prune iterations run; effort."
+  },
+  {
+    "id": "field-engine-src-projection-optimizeplan-ts-exactledgerpostprocessing-minimumrequestedconversiondollars",
+    "path": "engine/src/projection/optimizePlan.ts",
+    "symbol": "ExactLedgerPostProcessing",
+    "field": "minimumRequestedConversionDollars",
+    "reasonKind": "internal-coefficient",
+    "reason": "Minimum requested conversion the post-processor keeps; a threshold constant."
+  },
+  {
+    "id": "field-engine-src-projection-optimizeplan-ts-module-tolerancedollars",
+    "path": "engine/src/projection/optimizePlan.ts",
+    "symbol": "module",
+    "field": "toleranceDollars",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The module.toleranceDollars field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-engine-src-projection-optimizeplan-ts-exactledgerscheduleidentity-year",
+    "path": "engine/src/projection/optimizePlan.ts",
+    "symbol": "ExactLedgerScheduleIdentity",
+    "field": "year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The ExactLedgerScheduleIdentity.year field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-engine-src-projection-optimizeplan-ts-evaluateexactledgerschedule-year",
+    "path": "engine/src/projection/optimizePlan.ts",
+    "symbol": "evaluateExactLedgerSchedule",
+    "field": "year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The evaluateExactLedgerSchedule.year field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-engine-src-projection-optimizeplan-ts-evaluateidentitycompleteledgerschedule-year",
+    "path": "engine/src/projection/optimizePlan.ts",
+    "symbol": "evaluateIdentityCompleteLedgerSchedule",
+    "field": "year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The evaluateIdentityCompleteLedgerSchedule.year field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-engine-src-projection-optimizeplan-ts-postprocessexactledgerschedule-year",
+    "path": "engine/src/projection/optimizePlan.ts",
+    "symbol": "postProcessExactLedgerSchedule",
+    "field": "year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The postProcessExactLedgerSchedule.year field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-engine-src-projection-optimizeplan-ts-module-estate",
+    "path": "engine/src/projection/optimizePlan.ts",
+    "symbol": "module",
+    "field": "estate",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The module.estate field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-engine-src-projection-optimizeplan-ts-module-incompletecomputationyears",
+    "path": "engine/src/projection/optimizePlan.ts",
+    "symbol": "module",
+    "field": "incompleteComputationYears",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The module.incompleteComputationYears field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-engine-src-projection-optimizeplan-ts-withoptimizedconversions-year",
+    "path": "engine/src/projection/optimizePlan.ts",
+    "symbol": "withOptimizedConversions",
+    "field": "year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The withOptimizedConversions.year field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-engine-src-decisions-spendingsolver-ts-sustainablespendingoptions-maxsimulations",
+    "path": "engine/src/decisions/spendingSolver.ts",
+    "symbol": "SustainableSpendingOptions",
+    "field": "maxSimulations",
+    "reasonKind": "sample-size-or-count-setting",
+    "reason": "The SustainableSpendingOptions.maxSimulations field is a run-size setting or execution count that describes calculation effort."
+  },
+  {
+    "id": "field-engine-src-decisions-spendingsolver-ts-sustainablespendingoptions-resolutiondollars",
+    "path": "engine/src/decisions/spendingSolver.ts",
+    "symbol": "SustainableSpendingOptions",
+    "field": "resolutionDollars",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The SustainableSpendingOptions.resolutionDollars field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-engine-src-decisions-spendingsolver-ts-sustainablespendingoptions-estatefloortodaydollars",
+    "path": "engine/src/decisions/spendingSolver.ts",
+    "symbol": "SustainableSpendingOptions",
+    "field": "estateFloorTodayDollars",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The SustainableSpendingOptions.estateFloorTodayDollars field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-engine-src-decisions-spendingsolver-ts-module-baseannual",
+    "path": "engine/src/decisions/spendingSolver.ts",
+    "symbol": "module",
+    "field": "baseAnnual",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The module.baseAnnual field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-engine-src-decisions-spendingsolver-ts-solvemaxsustainablespending-amount",
+    "path": "engine/src/decisions/spendingSolver.ts",
+    "symbol": "solveMaxSustainableSpending",
+    "field": "amount",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "Candidate spending level tried by the bisection inside solveMaxSustainableSpending; a loop local."
+  },
+  {
+    "id": "field-engine-src-decisions-spendingsolver-ts-solvemaxsustainablespending-baseannual",
+    "path": "engine/src/decisions/spendingSolver.ts",
+    "symbol": "solveMaxSustainableSpending",
+    "field": "baseAnnual",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "Base spending patched into the trial plan by the bisection; a loop local."
+  },
+  {
+    "id": "field-engine-src-decisions-spendingsolver-ts-solvemaxsustainablespending-lower",
+    "path": "engine/src/decisions/spendingSolver.ts",
+    "symbol": "solveMaxSustainableSpending",
+    "field": "lower",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "Bisection lower bound; a loop local."
+  },
+  {
+    "id": "field-engine-src-decisions-spendingsolver-ts-solvemaxsustainablespending-upper",
+    "path": "engine/src/decisions/spendingSolver.ts",
+    "symbol": "solveMaxSustainableSpending",
+    "field": "upper",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "Bisection upper bound; a loop local."
+  },
+  {
+    "id": "field-engine-src-decisions-swrcomparator-ts-swrrulespec-cape",
+    "path": "engine/src/decisions/swrComparator.ts",
+    "symbol": "SwrRuleSpec",
+    "field": "cape",
+    "reasonKind": "input-parameter",
+    "reason": "CAPE ratio input to the CAPE-based withdrawal rule spec."
+  },
+  {
+    "id": "field-engine-src-decisions-swrcomparator-ts-compareswrrules-cape",
+    "path": "engine/src/decisions/swrComparator.ts",
+    "symbol": "compareSwrRules",
+    "field": "cape",
+    "reasonKind": "input-parameter",
+    "reason": "CAPE ratio passed to the rule comparison."
+  },
+  {
+    "id": "field-engine-src-ladder-laddermath-ts-module-realyieldpct",
+    "path": "engine/src/ladder/ladderMath.ts",
+    "symbol": "module",
+    "field": "realYieldPct",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The module.realYieldPct field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-engine-src-ladder-laddermath-ts-realyieldat-maturityyears",
+    "path": "engine/src/ladder/ladderMath.ts",
+    "symbol": "realYieldAt",
+    "field": "maturityYears",
+    "reasonKind": "dimension-coordinate",
+    "reason": "Maturity in years at which the real-yield curve is read."
+  },
+  {
+    "id": "field-engine-src-ladder-laddermath-ts-ladderrung-maturityoffset",
+    "path": "engine/src/ladder/ladderMath.ts",
+    "symbol": "LadderRung",
+    "field": "maturityOffset",
+    "reasonKind": "dimension-coordinate",
+    "reason": "Years from purchase to the rung's maturity; the income-floor rung table prints purchase year + offset as the Year column."
+  },
+  {
+    "id": "field-engine-src-ladder-laddermath-ts-ladderbuildinput-annualrealincome",
+    "path": "engine/src/ladder/ladderMath.ts",
+    "symbol": "LadderBuildInput",
+    "field": "annualRealIncome",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The LadderBuildInput.annualRealIncome field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-engine-src-ladder-laddermath-ts-ladderbuildinput-firstpayoutoffset",
+    "path": "engine/src/ladder/ladderMath.ts",
+    "symbol": "LadderBuildInput",
+    "field": "firstPayoutOffset",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The LadderBuildInput.firstPayoutOffset field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-engine-src-ladder-laddermath-ts-ladderbuildinput-payoutyears",
+    "path": "engine/src/ladder/ladderMath.ts",
+    "symbol": "LadderBuildInput",
+    "field": "payoutYears",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The LadderBuildInput.payoutYears field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-engine-src-ladder-laddermath-ts-module-face",
+    "path": "engine/src/ladder/ladderMath.ts",
+    "symbol": "module",
+    "field": "face",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The module.face field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-engine-src-ladder-laddermath-ts-module-couponratepct",
+    "path": "engine/src/ladder/ladderMath.ts",
+    "symbol": "module",
+    "field": "couponRatePct",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The module.couponRatePct field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-engine-src-ladder-laddermath-ts-module-maturityoffset",
+    "path": "engine/src/ladder/ladderMath.ts",
+    "symbol": "module",
+    "field": "maturityOffset",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The module.maturityOffset field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-engine-src-ladder-laddermath-ts-buildladder-offsets",
+    "path": "engine/src/ladder/ladderMath.ts",
+    "symbol": "buildLadder",
+    "field": "offsets",
+    "reasonKind": "dimension-coordinate",
+    "reason": "Rung maturity offsets the ladder builder iterates."
+  },
+  {
+    "id": "field-engine-src-ladder-laddermath-ts-buildladder-m",
+    "path": "engine/src/ladder/ladderMath.ts",
+    "symbol": "buildLadder",
+    "field": "m",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "Loop index over rung maturities inside buildLadder."
+  },
+  {
+    "id": "field-engine-src-ladder-laddermath-ts-ladderrealflowsatoffset-offset",
+    "path": "engine/src/ladder/ladderMath.ts",
+    "symbol": "ladderRealFlowsAtOffset",
+    "field": "offset",
+    "reasonKind": "dimension-coordinate",
+    "reason": "Year offset at which ladder flows are read."
+  },
+  {
+    "id": "field-engine-src-ladder-laddermath-ts-ladderremainingface-offset",
+    "path": "engine/src/ladder/ladderMath.ts",
+    "symbol": "ladderRemainingFace",
+    "field": "offset",
+    "reasonKind": "dimension-coordinate",
+    "reason": "Year offset at which remaining face is read."
+  },
+  {
+    "id": "field-engine-src-ladder-laddermath-ts-realpresentvalue-yearsfromnow",
+    "path": "engine/src/ladder/ladderMath.ts",
+    "symbol": "realPresentValue",
+    "field": "yearsFromNow",
+    "reasonKind": "dimension-coordinate",
+    "reason": "Discounting offset argument of realPresentValue."
+  },
+  {
+    "id": "field-engine-src-ladder-laddermath-ts-realpresentvalue-realamount",
+    "path": "engine/src/ladder/ladderMath.ts",
+    "symbol": "realPresentValue",
+    "field": "realAmount",
+    "reasonKind": "input-parameter",
+    "reason": "Real amount argument of realPresentValue."
+  },
+  {
+    "id": "field-engine-src-ladder-fundedratio-ts-fundedratioinput-startyear",
+    "path": "engine/src/ladder/fundedRatio.ts",
+    "symbol": "FundedRatioInput",
+    "field": "startYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The FundedRatioInput.startYear field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-engine-src-ladder-fundedratio-ts-fundedratioinput-year",
+    "path": "engine/src/ladder/fundedRatio.ts",
+    "symbol": "FundedRatioInput",
+    "field": "year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The FundedRatioInput.year field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-engine-src-ladder-fundedratio-ts-fundedratioinput-amount",
+    "path": "engine/src/ladder/fundedRatio.ts",
+    "symbol": "FundedRatioInput",
+    "field": "amount",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The FundedRatioInput.amount field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-engine-src-ladder-fundedratio-ts-fundedratioinput-fromyear",
+    "path": "engine/src/ladder/fundedRatio.ts",
+    "symbol": "FundedRatioInput",
+    "field": "fromYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The FundedRatioInput.fromYear field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-engine-src-ladder-fundedratio-ts-fundedratioresult-fromyear",
+    "path": "engine/src/ladder/fundedRatio.ts",
+    "symbol": "FundedRatioResult",
+    "field": "fromYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "First year the funded-ratio present value covers."
+  },
+  {
+    "id": "field-engine-src-ladder-fundedratio-ts-fundedratioresult-toyear",
+    "path": "engine/src/ladder/fundedRatio.ts",
+    "symbol": "FundedRatioResult",
+    "field": "toYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "Last year the funded-ratio present value covers."
+  },
+  {
+    "id": "field-engine-src-ladder-fundedratio-ts-computefundedratio-yearsfromnow",
+    "path": "engine/src/ladder/fundedRatio.ts",
+    "symbol": "computeFundedRatio",
+    "field": "yearsFromNow",
+    "reasonKind": "dimension-coordinate",
+    "reason": "Discounting offset for one cash-flow year inside computeFundedRatio."
+  },
+  {
+    "id": "field-engine-src-ladder-fundedratio-ts-computefundedratio-realamount",
+    "path": "engine/src/ladder/fundedRatio.ts",
+    "symbol": "computeFundedRatio",
+    "field": "realAmount",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "One year's real cash flow inside the present-value sum; a loop local."
+  },
+  {
+    "id": "field-engine-src-insights-types-ts-insightevidence-year",
+    "path": "engine/src/insights/types.ts",
+    "symbol": "InsightEvidence",
+    "field": "year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The InsightEvidence.year field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-engine-src-insights-types-ts-insightimpact-successratedeltapct",
+    "path": "engine/src/insights/types.ts",
+    "symbol": "InsightImpact",
+    "field": "successRateDeltaPct",
+    "reasonKind": "internal-coefficient",
+    "reason": "Screen-time constant (spendingGuardrails sets 12) that only gates whether InsightCardView runs the Monte Carlo pair; the rendered success line is the UI-computed delta, never this value."
+  },
+  {
+    "id": "field-engine-src-insights-types-ts-detectorprojection-startyear",
+    "path": "engine/src/insights/types.ts",
+    "symbol": "DetectorProjection",
+    "field": "startYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "Projection start year handed to detectors; positions their evidence."
+  },
+  {
+    "id": "field-engine-src-insights-types-ts-detectorprojection-year",
+    "path": "engine/src/insights/types.ts",
+    "symbol": "DetectorProjection",
+    "field": "year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The DetectorProjection.year field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-engine-src-insights-types-ts-detectorprojection-amount",
+    "path": "engine/src/insights/types.ts",
+    "symbol": "DetectorProjection",
+    "field": "amount",
+    "reasonKind": "input-parameter",
+    "reason": "Parameter of the DetectorProjection.deflate(year, amount) callback the planner passes to detectors, not a published output."
+  },
+  {
+    "id": "field-engine-src-insights-types-ts-detector-version",
+    "path": "engine/src/insights/types.ts",
+    "symbol": "Detector",
+    "field": "version",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The Detector.version field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-planner-resultsrows-ts-dollaradjuster-year",
+    "path": "planner-ui/src/planner/resultsRows.ts",
+    "symbol": "DollarAdjuster",
+    "field": "year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The DollarAdjuster.year field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-planner-resultsrows-ts-dollaradjuster-value",
+    "path": "planner-ui/src/planner/resultsRows.ts",
+    "symbol": "DollarAdjuster",
+    "field": "value",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The DollarAdjuster.value field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-report-reportmodel-ts-reportpersonrow-retirementage",
+    "path": "planner-ui/src/report/reportModel.ts",
+    "symbol": "ReportPersonRow",
+    "field": "retirementAge",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The ReportPersonRow.retirementAge field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-report-reportmodel-ts-reportpersonrow-planningage",
+    "path": "planner-ui/src/report/reportModel.ts",
+    "symbol": "ReportPersonRow",
+    "field": "planningAge",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The ReportPersonRow.planningAge field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-report-reportmodel-ts-reportaccountrow-balance",
+    "path": "planner-ui/src/report/reportModel.ts",
+    "symbol": "ReportAccountRow",
+    "field": "balance",
+    "reasonKind": "input-parameter",
+    "reason": "ReportAccountRow.balance restates a plan input (account opening balance or a modeling assumption) in the report; not a computed output."
+  },
+  {
+    "id": "field-planner-ui-src-report-reportmodel-ts-reportaccountrow-annualreturnpct",
+    "path": "planner-ui/src/report/reportModel.ts",
+    "symbol": "ReportAccountRow",
+    "field": "annualReturnPct",
+    "reasonKind": "input-parameter",
+    "reason": "ReportAccountRow.annualReturnPct restates a plan input (account opening balance or a modeling assumption) in the report; not a computed output."
+  },
+  {
+    "id": "field-planner-ui-src-report-reportmodel-ts-reportassumptionsblock-inflationpct",
+    "path": "planner-ui/src/report/reportModel.ts",
+    "symbol": "ReportAssumptionsBlock",
+    "field": "inflationPct",
+    "reasonKind": "input-parameter",
+    "reason": "ReportAssumptionsBlock.inflationPct restates a plan input (account opening balance or a modeling assumption) in the report; not a computed output."
+  },
+  {
+    "id": "field-planner-ui-src-report-reportmodel-ts-reportassumptionsblock-healthcareextrainflationpct",
+    "path": "planner-ui/src/report/reportModel.ts",
+    "symbol": "ReportAssumptionsBlock",
+    "field": "healthcareExtraInflationPct",
+    "reasonKind": "input-parameter",
+    "reason": "ReportAssumptionsBlock.healthcareExtraInflationPct restates a plan input (account opening balance or a modeling assumption) in the report; not a computed output."
+  },
+  {
+    "id": "field-planner-ui-src-report-reportmodel-ts-reportassumptionsblock-defaultreturnpct",
+    "path": "planner-ui/src/report/reportModel.ts",
+    "symbol": "ReportAssumptionsBlock",
+    "field": "defaultReturnPct",
+    "reasonKind": "input-parameter",
+    "reason": "ReportAssumptionsBlock.defaultReturnPct restates a plan input (account opening balance or a modeling assumption) in the report; not a computed output."
+  },
+  {
+    "id": "field-planner-ui-src-report-reportmodel-ts-reportassumptionsblock-safewithdrawalratepct",
+    "path": "planner-ui/src/report/reportModel.ts",
+    "symbol": "ReportAssumptionsBlock",
+    "field": "safeWithdrawalRatePct",
+    "reasonKind": "input-parameter",
+    "reason": "ReportAssumptionsBlock.safeWithdrawalRatePct restates a plan input (account opening balance or a modeling assumption) in the report; not a computed output."
+  },
+  {
+    "id": "field-planner-ui-src-report-reportmodel-ts-reportassumptionsblock-stateeffectivetaxpct",
+    "path": "planner-ui/src/report/reportModel.ts",
+    "symbol": "ReportAssumptionsBlock",
+    "field": "stateEffectiveTaxPct",
+    "reasonKind": "input-parameter",
+    "reason": "ReportAssumptionsBlock.stateEffectiveTaxPct restates a plan input (account opening balance or a modeling assumption) in the report; not a computed output."
+  },
+  {
+    "id": "field-planner-ui-src-report-reportmodel-ts-reportassumptionsblock-localincometaxpct",
+    "path": "planner-ui/src/report/reportModel.ts",
+    "symbol": "ReportAssumptionsBlock",
+    "field": "localIncomeTaxPct",
+    "reasonKind": "input-parameter",
+    "reason": "ReportAssumptionsBlock.localIncomeTaxPct restates a plan input (account opening balance or a modeling assumption) in the report; not a computed output."
+  },
+  {
+    "id": "field-planner-ui-src-report-reportmodel-ts-reportassumptionsblock-heirtaxratepct",
+    "path": "planner-ui/src/report/reportModel.ts",
+    "symbol": "ReportAssumptionsBlock",
+    "field": "heirTaxRatePct",
+    "reasonKind": "input-parameter",
+    "reason": "ReportAssumptionsBlock.heirTaxRatePct restates a plan input (account opening balance or a modeling assumption) in the report; not a computed output."
+  },
+  {
+    "id": "field-planner-ui-src-report-reportmodel-ts-reportacaledgerblock-year",
+    "path": "planner-ui/src/report/reportModel.ts",
+    "symbol": "ReportAcaLedgerBlock",
+    "field": "year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "Calendar year of the ACA ledger row."
+  },
+  {
+    "id": "field-planner-ui-src-report-reportmodel-ts-reportyearledgerrow-year",
+    "path": "planner-ui/src/report/reportModel.ts",
+    "symbol": "ReportYearLedgerRow",
+    "field": "year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The ReportYearLedgerRow.year field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-report-reportmodel-ts-reportinheritedscheduleyearrow-year",
+    "path": "planner-ui/src/report/reportModel.ts",
+    "symbol": "ReportInheritedScheduleYearRow",
+    "field": "year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The ReportInheritedScheduleYearRow.year field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-report-reportmodel-ts-reportchartdatarow-year",
+    "path": "planner-ui/src/report/reportModel.ts",
+    "symbol": "ReportChartDataRow",
+    "field": "year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The ReportChartDataRow.year field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-report-reportmodel-ts-reportprovenance-federalparameterpackyear",
+    "path": "planner-ui/src/report/reportModel.ts",
+    "symbol": "ReportProvenance",
+    "field": "federalParameterPackYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The ReportProvenance.federalParameterPackYear field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-report-reportmodel-ts-reportprovenance-stateparameterpackyear",
+    "path": "planner-ui/src/report/reportModel.ts",
+    "symbol": "ReportProvenance",
+    "field": "stateParameterPackYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The ReportProvenance.stateParameterPackYear field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-report-reportmodel-ts-reportmodel-startyear",
+    "path": "planner-ui/src/report/reportModel.ts",
+    "symbol": "ReportModel",
+    "field": "startYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The ReportModel.startYear field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-report-reportmodel-ts-reportmodel-endyear",
+    "path": "planner-ui/src/report/reportModel.ts",
+    "symbol": "ReportModel",
+    "field": "endYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The ReportModel.endYear field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-report-reportmodel-ts-parsedreportmodel-version",
+    "path": "planner-ui/src/report/reportModel.ts",
+    "symbol": "ParsedReportModel",
+    "field": "version",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The ParsedReportModel.version field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-report-reportmodel-ts-parsedreportmodel-startyear",
+    "path": "planner-ui/src/report/reportModel.ts",
+    "symbol": "ParsedReportModel",
+    "field": "startYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The ParsedReportModel.startYear field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-report-reportmodel-ts-parsedreportmodel-endyear",
+    "path": "planner-ui/src/report/reportModel.ts",
+    "symbol": "ParsedReportModel",
+    "field": "endYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The ParsedReportModel.endYear field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-report-reportmodel-ts-reportmodelinput-startyear",
+    "path": "planner-ui/src/report/reportModel.ts",
+    "symbol": "ReportModelInput",
+    "field": "startYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The ReportModelInput.startYear field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-report-reportmodel-ts-module-value",
+    "path": "planner-ui/src/report/reportModel.ts",
+    "symbol": "module",
+    "field": "value",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The module.value field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-report-reportmodel-ts-module-year",
+    "path": "planner-ui/src/report/reportModel.ts",
+    "symbol": "module",
+    "field": "year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The module.year field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-report-reportmodel-ts-inheritedrequirementkindlabelforyear-year",
+    "path": "planner-ui/src/report/reportModel.ts",
+    "symbol": "inheritedRequirementKindLabelForYear",
+    "field": "year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The inheritedRequirementKindLabelForYear.year field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-report-reportmodel-ts-primaryinheritedregimelabel-year",
+    "path": "planner-ui/src/report/reportModel.ts",
+    "symbol": "primaryInheritedRegimeLabel",
+    "field": "year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The primaryInheritedRegimeLabel.year field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-report-reportmodel-ts-module-scheduleyears",
+    "path": "planner-ui/src/report/reportModel.ts",
+    "symbol": "module",
+    "field": "scheduleYears",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The module.scheduleYears field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-report-reportmodel-ts-buildinheritedschedules-year",
+    "path": "planner-ui/src/report/reportModel.ts",
+    "symbol": "buildInheritedSchedules",
+    "field": "year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The buildInheritedSchedules.year field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-report-reportmodel-ts-buildinheritedschedules-finaldeadlineyear",
+    "path": "planner-ui/src/report/reportModel.ts",
+    "symbol": "buildInheritedSchedules",
+    "field": "finalDeadlineYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The buildInheritedSchedules.finalDeadlineYear field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-socialsecurity-expectedpv-ts-module-age",
+    "path": "planner-ui/src/socialSecurity/expectedPv.ts",
+    "symbol": "module",
+    "field": "age",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The module.age field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-socialsecurity-expectedpv-ts-module-multiplier",
+    "path": "planner-ui/src/socialSecurity/expectedPv.ts",
+    "symbol": "module",
+    "field": "multiplier",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The module.multiplier field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-socialsecurity-expectedpv-ts-survivalcurve-fromage",
+    "path": "planner-ui/src/socialSecurity/expectedPv.ts",
+    "symbol": "SurvivalCurve",
+    "field": "fromAge",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The SurvivalCurve.fromAge field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-socialsecurity-expectedpv-ts-survivalcurve-toage",
+    "path": "planner-ui/src/socialSecurity/expectedPv.ts",
+    "symbol": "SurvivalCurve",
+    "field": "toAge",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The SurvivalCurve.toAge field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-socialsecurity-expectedpv-ts-survivalcurve-cum",
+    "path": "planner-ui/src/socialSecurity/expectedPv.ts",
+    "symbol": "survivalCurve",
+    "field": "cum",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The survivalCurve.cum field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-socialsecurity-expectedpv-ts-survivalcurve-fromage",
+    "path": "planner-ui/src/socialSecurity/expectedPv.ts",
+    "symbol": "survivalCurve",
+    "field": "fromAge",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The survivalCurve.fromAge field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-socialsecurity-expectedpv-ts-survivalcurve-toage",
+    "path": "planner-ui/src/socialSecurity/expectedPv.ts",
+    "symbol": "survivalCurve",
+    "field": "toAge",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The survivalCurve.toAge field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-socialsecurity-expectedpv-ts-claimantinput-currentage",
+    "path": "planner-ui/src/socialSecurity/expectedPv.ts",
+    "symbol": "ClaimantInput",
+    "field": "currentAge",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The ClaimantInput.currentAge field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-socialsecurity-expectedpv-ts-claimantinput-year",
+    "path": "planner-ui/src/socialSecurity/expectedPv.ts",
+    "symbol": "ClaimantInput",
+    "field": "year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The ClaimantInput.year field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-socialsecurity-expectedpv-ts-claimantinput-month",
+    "path": "planner-ui/src/socialSecurity/expectedPv.ts",
+    "symbol": "ClaimantInput",
+    "field": "month",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The ClaimantInput.month field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-socialsecurity-expectedpv-ts-claimantinput-day",
+    "path": "planner-ui/src/socialSecurity/expectedPv.ts",
+    "symbol": "ClaimantInput",
+    "field": "day",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The ClaimantInput.day field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-socialsecurity-expectedpv-ts-claimantinput-piamonthly",
+    "path": "planner-ui/src/socialSecurity/expectedPv.ts",
+    "symbol": "ClaimantInput",
+    "field": "piaMonthly",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The ClaimantInput.piaMonthly field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-socialsecurity-expectedpv-ts-claimantinput-longevitymultiplier",
+    "path": "planner-ui/src/socialSecurity/expectedPv.ts",
+    "symbol": "ClaimantInput",
+    "field": "longevityMultiplier",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The ClaimantInput.longevityMultiplier field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-socialsecurity-expectedpv-ts-claimantinput-benefitfloormonthly",
+    "path": "planner-ui/src/socialSecurity/expectedPv.ts",
+    "symbol": "ClaimantInput",
+    "field": "benefitFloorMonthly",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The ClaimantInput.benefitFloorMonthly field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-socialsecurity-expectedpv-ts-expectedpvoptions-discountrate",
+    "path": "planner-ui/src/socialSecurity/expectedPv.ts",
+    "symbol": "ExpectedPvOptions",
+    "field": "discountRate",
+    "reasonKind": "sample-size-or-count-setting",
+    "reason": "The ExpectedPvOptions.discountRate field is a run-size setting or execution count that describes calculation effort."
+  },
+  {
+    "id": "field-planner-ui-src-socialsecurity-expectedpv-ts-expectedpvoptions-maxage",
+    "path": "planner-ui/src/socialSecurity/expectedPv.ts",
+    "symbol": "ExpectedPvOptions",
+    "field": "maxAge",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The ExpectedPvOptions.maxAge field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-socialsecurity-breakeven-ts-breakeveninput-year",
+    "path": "planner-ui/src/socialSecurity/breakEven.ts",
+    "symbol": "BreakEvenInput",
+    "field": "year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The BreakEvenInput.year field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-socialsecurity-breakeven-ts-breakeveninput-month",
+    "path": "planner-ui/src/socialSecurity/breakEven.ts",
+    "symbol": "BreakEvenInput",
+    "field": "month",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The BreakEvenInput.month field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-socialsecurity-breakeven-ts-breakeveninput-day",
+    "path": "planner-ui/src/socialSecurity/breakEven.ts",
+    "symbol": "BreakEvenInput",
+    "field": "day",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The BreakEvenInput.day field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-socialsecurity-breakeven-ts-breakeveninput-piamonthly",
+    "path": "planner-ui/src/socialSecurity/breakEven.ts",
+    "symbol": "BreakEvenInput",
+    "field": "piaMonthly",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The BreakEvenInput.piaMonthly field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-socialsecurity-breakeven-ts-breakeveninput-claimages",
+    "path": "planner-ui/src/socialSecurity/breakEven.ts",
+    "symbol": "BreakEvenInput",
+    "field": "claimAges",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The BreakEvenInput.claimAges field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-socialsecurity-breakeven-ts-breakeveninput-colapct",
+    "path": "planner-ui/src/socialSecurity/breakEven.ts",
+    "symbol": "BreakEvenInput",
+    "field": "colaPct",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The BreakEvenInput.colaPct field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-socialsecurity-breakeven-ts-breakeveninput-growthpct",
+    "path": "planner-ui/src/socialSecurity/breakEven.ts",
+    "symbol": "BreakEvenInput",
+    "field": "growthPct",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The BreakEvenInput.growthPct field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-socialsecurity-breakeven-ts-breakeveninput-throughage",
+    "path": "planner-ui/src/socialSecurity/breakEven.ts",
+    "symbol": "BreakEvenInput",
+    "field": "throughAge",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The BreakEvenInput.throughAge field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-socialsecurity-breakeven-ts-computebreakeven-a",
+    "path": "planner-ui/src/socialSecurity/breakEven.ts",
+    "symbol": "computeBreakEven",
+    "field": "a",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The computeBreakEven.a field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-socialsecurity-breakeven-ts-computebreakeven-age",
+    "path": "planner-ui/src/socialSecurity/breakEven.ts",
+    "symbol": "computeBreakEven",
+    "field": "age",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The computeBreakEven.age field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-socialsecurity-breakeven-ts-computebreakeven-crossage",
+    "path": "planner-ui/src/socialSecurity/breakEven.ts",
+    "symbol": "computeBreakEven",
+    "field": "crossAge",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The computeBreakEven.crossAge field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-socialsecurity-breakeven-ts-computebreakeven-prevdiff",
+    "path": "planner-ui/src/socialSecurity/breakEven.ts",
+    "symbol": "computeBreakEven",
+    "field": "prevDiff",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The computeBreakEven.prevDiff field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-socialsecurity-ficareturn-ts-ficapaidinoptions-oasdiemployeeratepct",
+    "path": "planner-ui/src/socialSecurity/ficaReturn.ts",
+    "symbol": "FicaPaidInOptions",
+    "field": "oasdiEmployeeRatePct",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The FicaPaidInOptions.oasdiEmployeeRatePct field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-socialsecurity-ficareturn-ts-ficapaidinoptions-wagebasefallback",
+    "path": "planner-ui/src/socialSecurity/ficaReturn.ts",
+    "symbol": "FicaPaidInOptions",
+    "field": "wageBaseFallback",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The FicaPaidInOptions.wageBaseFallback field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-socialsecurity-ficareturn-ts-ficaoasdipaidin-year",
+    "path": "planner-ui/src/socialSecurity/ficaReturn.ts",
+    "symbol": "ficaOasdiPaidIn",
+    "field": "year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The ficaOasdiPaidIn.year field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-socialsecurity-ficareturn-ts-ficaoasdipaidin-amount",
+    "path": "planner-ui/src/socialSecurity/ficaReturn.ts",
+    "symbol": "ficaOasdiPaidIn",
+    "field": "amount",
+    "reasonKind": "input-parameter",
+    "reason": "Earnings-history amount iterated by the paid-in sum."
+  },
+  {
+    "id": "field-planner-ui-src-socialsecurity-survivorswitching-ts-switchinginput-year",
+    "path": "planner-ui/src/socialSecurity/survivorSwitching.ts",
+    "symbol": "SwitchingInput",
+    "field": "year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The SwitchingInput.year field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-socialsecurity-survivorswitching-ts-switchinginput-month",
+    "path": "planner-ui/src/socialSecurity/survivorSwitching.ts",
+    "symbol": "SwitchingInput",
+    "field": "month",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The SwitchingInput.month field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-socialsecurity-survivorswitching-ts-switchinginput-day",
+    "path": "planner-ui/src/socialSecurity/survivorSwitching.ts",
+    "symbol": "SwitchingInput",
+    "field": "day",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The SwitchingInput.day field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-socialsecurity-survivorswitching-ts-switchinginput-currentage",
+    "path": "planner-ui/src/socialSecurity/survivorSwitching.ts",
+    "symbol": "SwitchingInput",
+    "field": "currentAge",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The SwitchingInput.currentAge field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-socialsecurity-survivorswitching-ts-switchinginput-ownpiamonthly",
+    "path": "planner-ui/src/socialSecurity/survivorSwitching.ts",
+    "symbol": "SwitchingInput",
+    "field": "ownPiaMonthly",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The SwitchingInput.ownPiaMonthly field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-socialsecurity-survivorswitching-ts-switchinginput-survivormonthly",
+    "path": "planner-ui/src/socialSecurity/survivorSwitching.ts",
+    "symbol": "SwitchingInput",
+    "field": "survivorMonthly",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The SwitchingInput.survivorMonthly field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-socialsecurity-survivorswitching-ts-switchinginput-deceasedpiamonthly",
+    "path": "planner-ui/src/socialSecurity/survivorSwitching.ts",
+    "symbol": "SwitchingInput",
+    "field": "deceasedPiaMonthly",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The SwitchingInput.deceasedPiaMonthly field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-socialsecurity-survivorswitching-ts-switchinginput-longevitymultiplier",
+    "path": "planner-ui/src/socialSecurity/survivorSwitching.ts",
+    "symbol": "SwitchingInput",
+    "field": "longevityMultiplier",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The SwitchingInput.longevityMultiplier field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-socialsecurity-survivorswitching-ts-switchingoptions-discountrate",
+    "path": "planner-ui/src/socialSecurity/survivorSwitching.ts",
+    "symbol": "SwitchingOptions",
+    "field": "discountRate",
+    "reasonKind": "sample-size-or-count-setting",
+    "reason": "The SwitchingOptions.discountRate field is a run-size setting or execution count that describes calculation effort."
+  },
+  {
+    "id": "field-planner-ui-src-socialsecurity-survivorswitching-ts-switchingoptions-maxage",
+    "path": "planner-ui/src/socialSecurity/survivorSwitching.ts",
+    "symbol": "SwitchingOptions",
+    "field": "maxAge",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The SwitchingOptions.maxAge field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-socialsecurity-explain-ts-bendtier-marginalrate",
+    "path": "planner-ui/src/socialSecurity/explain.ts",
+    "symbol": "BendTier",
+    "field": "marginalRate",
+    "reasonKind": "label-or-category",
+    "reason": "BendTier.marginalRate: the bend-point tier the next AIME dollar falls in, printed as the label \"90% / 32% / 15%\"; the bend points themselves are parameter-pack data."
+  },
+  {
+    "id": "field-planner-ui-src-socialsecurity-explain-ts-bendtier-first",
+    "path": "planner-ui/src/socialSecurity/explain.ts",
+    "symbol": "BendTier",
+    "field": "first",
+    "reasonKind": "label-or-category",
+    "reason": "BendTier.first: the bend-point tier the next AIME dollar falls in, printed as the label \"90% / 32% / 15%\"; the bend points themselves are parameter-pack data."
+  },
+  {
+    "id": "field-planner-ui-src-socialsecurity-explain-ts-bendtier-second",
+    "path": "planner-ui/src/socialSecurity/explain.ts",
+    "symbol": "BendTier",
+    "field": "second",
+    "reasonKind": "label-or-category",
+    "reason": "BendTier.second: the bend-point tier the next AIME dollar falls in, printed as the label \"90% / 32% / 15%\"; the bend points themselves are parameter-pack data."
+  },
+  {
+    "id": "field-planner-ui-src-socialsecurity-explain-ts-bendtierforaime-aime",
+    "path": "planner-ui/src/socialSecurity/explain.ts",
+    "symbol": "bendTierForAime",
+    "field": "aime",
+    "reasonKind": "input-parameter",
+    "reason": "AIME argument to the bend-tier lookup (engine piaFromEarnings output passed in)."
+  },
+  {
+    "id": "field-planner-ui-src-socialsecurity-explain-ts-bendtierforaime-eligibilityyear",
+    "path": "planner-ui/src/socialSecurity/explain.ts",
+    "symbol": "bendTierForAime",
+    "field": "eligibilityYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The bendTierForAime.eligibilityYear field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-socialsecurity-explain-ts-replacezeroyeargain-indexedannual",
+    "path": "planner-ui/src/socialSecurity/explain.ts",
+    "symbol": "replaceZeroYearGain",
+    "field": "indexedAnnual",
+    "reasonKind": "input-parameter",
+    "reason": "Sample indexed earnings the explainer plugs in."
+  },
+  {
+    "id": "field-planner-ui-src-socialsecurity-explain-ts-estimatecredits-override",
+    "path": "planner-ui/src/socialSecurity/explain.ts",
+    "symbol": "estimateCredits",
+    "field": "override",
+    "reasonKind": "input-parameter",
+    "reason": "User-entered credit count that overrides the estimate."
+  },
+  {
+    "id": "field-planner-ui-src-planner-ssanalysis-ts-dobparts-y",
+    "path": "planner-ui/src/planner/ssAnalysis.ts",
+    "symbol": "dobParts",
+    "field": "y",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The dobParts.y field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-planner-ssanalysis-ts-dobparts-m",
+    "path": "planner-ui/src/planner/ssAnalysis.ts",
+    "symbol": "dobParts",
+    "field": "m",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The dobParts.m field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-planner-ssanalysis-ts-dobparts-d",
+    "path": "planner-ui/src/planner/ssAnalysis.ts",
+    "symbol": "dobParts",
+    "field": "d",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The dobParts.d field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-planner-ssanalysis-ts-candidateclaimages-startyear",
+    "path": "planner-ui/src/planner/ssAnalysis.ts",
+    "symbol": "candidateClaimAges",
+    "field": "startYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The candidateClaimAges.startYear field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-planner-ssanalysis-ts-claimingpeople-pia",
+    "path": "planner-ui/src/planner/ssAnalysis.ts",
+    "symbol": "claimingPeople",
+    "field": "pia",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The claimingPeople.pia field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-planner-ssanalysis-ts-monthlyclaim-years",
+    "path": "planner-ui/src/planner/ssAnalysis.ts",
+    "symbol": "MonthlyClaim",
+    "field": "years",
+    "reasonKind": "dimension-coordinate",
+    "reason": "Whole-year part of a month-granular claim age; a coordinate."
+  },
+  {
+    "id": "field-planner-ui-src-planner-ssanalysis-ts-module-pia",
+    "path": "planner-ui/src/planner/ssAnalysis.ts",
+    "symbol": "module",
+    "field": "pia",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The module.pia field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-planner-ssanalysis-ts-module-claimyears",
+    "path": "planner-ui/src/planner/ssAnalysis.ts",
+    "symbol": "module",
+    "field": "claimYears",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The module.claimYears field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-planner-ssanalysis-ts-module-startyear",
+    "path": "planner-ui/src/planner/ssAnalysis.ts",
+    "symbol": "module",
+    "field": "startYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The module.startYear field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-planner-ssanalysis-ts-benefitsonlyranking-discountrate",
+    "path": "planner-ui/src/planner/ssAnalysis.ts",
+    "symbol": "benefitsOnlyRanking",
+    "field": "discountRate",
+    "reasonKind": "sample-size-or-count-setting",
+    "reason": "The benefitsOnlyRanking.discountRate field is a run-size setting or execution count that describes calculation effort."
+  },
+  {
+    "id": "field-planner-ui-src-planner-survivoranalysis-ts-survivoranalysisoptions-startyear",
+    "path": "planner-ui/src/planner/survivorAnalysis.ts",
+    "symbol": "SurvivorAnalysisOptions",
+    "field": "startYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The SurvivorAnalysisOptions.startYear field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-planner-survivoranalysis-ts-survivoranalysisoptions-deathages",
+    "path": "planner-ui/src/planner/survivorAnalysis.ts",
+    "symbol": "SurvivorAnalysisOptions",
+    "field": "deathAges",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The SurvivorAnalysisOptions.deathAges field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-planner-survivoranalysis-ts-filingsegment-fromyear",
+    "path": "planner-ui/src/planner/survivorAnalysis.ts",
+    "symbol": "FilingSegment",
+    "field": "fromYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "First year of a filing-status run in the survivor timeline chip."
+  },
+  {
+    "id": "field-planner-ui-src-planner-survivoranalysis-ts-filingsegment-toyear",
+    "path": "planner-ui/src/planner/survivorAnalysis.ts",
+    "symbol": "FilingSegment",
+    "field": "toYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "Last year of a filing-status run in the survivor timeline chip."
+  },
+  {
+    "id": "field-planner-ui-src-planner-survivoranalysis-ts-survivoryearfacts-year",
+    "path": "planner-ui/src/planner/survivorAnalysis.ts",
+    "symbol": "SurvivorYearFacts",
+    "field": "year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The SurvivorYearFacts.year field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-planner-survivoranalysis-ts-survivorirmaayear-year",
+    "path": "planner-ui/src/planner/survivorAnalysis.ts",
+    "symbol": "SurvivorIrmaaYear",
+    "field": "year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The SurvivorIrmaaYear.year field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-planner-survivoranalysis-ts-survivorirmaayear-tierwithoutssa44",
+    "path": "planner-ui/src/planner/survivorAnalysis.ts",
+    "symbol": "SurvivorIrmaaYear",
+    "field": "tierWithoutSsa44",
+    "reasonKind": "label-or-category",
+    "reason": "Engine irmaaTier read from the run without SSA-44 relief; a classification shown as \"tier a → b\" on the survivor page. The premium dollars are the numeric family (medicare-premiums-annual, survivor-scenario-row-ssa44premium-savings)."
+  },
+  {
+    "id": "field-planner-ui-src-planner-survivoranalysis-ts-survivorirmaayear-tierwithssa44",
+    "path": "planner-ui/src/planner/survivorAnalysis.ts",
+    "symbol": "SurvivorIrmaaYear",
+    "field": "tierWithSsa44",
+    "reasonKind": "label-or-category",
+    "reason": "Engine irmaaTier read from the run with SSA-44 relief forced on (the recomputation is engine-side via the plan flag); a classification shown as \"tier a → b\" on the survivor page."
+  },
+  {
+    "id": "field-planner-ui-src-planner-survivoranalysis-ts-survivorscenariorow-deathage",
+    "path": "planner-ui/src/planner/survivorAnalysis.ts",
+    "symbol": "SurvivorScenarioRow",
+    "field": "deathAge",
+    "reasonKind": "dimension-coordinate",
+    "reason": "Swept death age from the SURVIVOR_DEATH_AGES grid (70..90 clamped to the person's ages); the row's coordinate, printed as \"Dies at\"."
+  },
+  {
+    "id": "field-planner-ui-src-planner-survivoranalysis-ts-survivorscenariorow-deathyear",
+    "path": "planner-ui/src/planner/survivorAnalysis.ts",
+    "symbol": "SurvivorScenarioRow",
+    "field": "deathYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "Birth year plus the swept death age; a coordinate printed under \"Dies at\" and in the lever sentence."
+  },
+  {
+    "id": "field-planner-ui-src-planner-survivoranalysis-ts-module-v",
+    "path": "planner-ui/src/planner/survivorAnalysis.ts",
+    "symbol": "module",
+    "field": "v",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The module.v field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-planner-survivoranalysis-ts-survivoranalysis-failedtimings",
+    "path": "planner-ui/src/planner/survivorAnalysis.ts",
+    "symbol": "SurvivorAnalysis",
+    "field": "failedTimings",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "Count of death timings whose ledger run threw and was skipped; a run diagnostic printed as \"N death timings could not be simulated\", not a plan quantity."
+  },
+  {
+    "id": "field-planner-ui-src-planner-survivoranalysis-ts-conversionleverpatch-startyear",
+    "path": "planner-ui/src/planner/survivorAnalysis.ts",
+    "symbol": "conversionLeverPatch",
+    "field": "startYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The conversionLeverPatch.startYear field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-planner-survivoranalysis-ts-conversionleverpatch-lastjointyear",
+    "path": "planner-ui/src/planner/survivorAnalysis.ts",
+    "symbol": "conversionLeverPatch",
+    "field": "lastJointYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The conversionLeverPatch.lastJointYear field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-planner-survivoranalysis-ts-candidatedeathages-startyear",
+    "path": "planner-ui/src/planner/survivorAnalysis.ts",
+    "symbol": "candidateDeathAges",
+    "field": "startYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The candidateDeathAges.startYear field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-planner-survivoranalysis-ts-candidatedeathages-grid",
+    "path": "planner-ui/src/planner/survivorAnalysis.ts",
+    "symbol": "candidateDeathAges",
+    "field": "grid",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The candidateDeathAges.grid field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-planner-survivoranalysis-ts-module-deathage",
+    "path": "planner-ui/src/planner/survivorAnalysis.ts",
+    "symbol": "module",
+    "field": "deathAge",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The module.deathAge field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-planner-bucketlens-ts-bucketyearrow-year",
+    "path": "planner-ui/src/planner/bucketLens.ts",
+    "symbol": "BucketYearRow",
+    "field": "year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The BucketYearRow.year field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-planner-bucketlens-ts-bucketpreset-spans",
+    "path": "planner-ui/src/planner/bucketLens.ts",
+    "symbol": "BucketPreset",
+    "field": "spans",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The BucketPreset.spans field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-planner-comparedeltas-ts-deterministicsuccesspct-depletionyear",
+    "path": "planner-ui/src/planner/compareDeltas.ts",
+    "symbol": "deterministicSuccessPct",
+    "field": "depletionYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The deterministicSuccessPct.depletionYear field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-planner-comparedeltas-ts-lastfundedyear-depletionyear",
+    "path": "planner-ui/src/planner/compareDeltas.ts",
+    "symbol": "lastFundedYear",
+    "field": "depletionYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The lastFundedYear.depletionYear field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-planner-comparedeltas-ts-lastfundedyear-endyear",
+    "path": "planner-ui/src/planner/compareDeltas.ts",
+    "symbol": "lastFundedYear",
+    "field": "endYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The lastFundedYear.endYear field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-planner-comparedeltas-ts-moneylastsdelta-depletionyear",
+    "path": "planner-ui/src/planner/compareDeltas.ts",
+    "symbol": "moneyLastsDelta",
+    "field": "depletionYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The moneyLastsDelta.depletionYear field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-planner-comparedeltas-ts-moneylastsdelta-endyear",
+    "path": "planner-ui/src/planner/compareDeltas.ts",
+    "symbol": "moneyLastsDelta",
+    "field": "endYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The moneyLastsDelta.endYear field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-planner-comparedeltas-ts-module-value",
+    "path": "planner-ui/src/planner/compareDeltas.ts",
+    "symbol": "module",
+    "field": "value",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The module.value field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-planner-comparedeltas-ts-formatdelta-value",
+    "path": "planner-ui/src/planner/compareDeltas.ts",
+    "symbol": "formatDelta",
+    "field": "value",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The formatDelta.value field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-planner-compareplanspage-tsx-module-endyear",
+    "path": "planner-ui/src/planner/ComparePlansPage.tsx",
+    "symbol": "module",
+    "field": "endYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The module.endYear field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-planner-compareplanspage-tsx-module-year",
+    "path": "planner-ui/src/planner/ComparePlansPage.tsx",
+    "symbol": "module",
+    "field": "year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The module.year field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-planner-compareplanspage-tsx-module-value",
+    "path": "planner-ui/src/planner/ComparePlansPage.tsx",
+    "symbol": "module",
+    "field": "value",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The module.value field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-planner-montecarlopage-tsx-modelkind-rate",
+    "path": "planner-ui/src/planner/MonteCarloPage.tsx",
+    "symbol": "ModelKind",
+    "field": "rate",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The ModelKind.rate field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-planner-montecarlopage-tsx-modelkind-pathcount",
+    "path": "planner-ui/src/planner/MonteCarloPage.tsx",
+    "symbol": "ModelKind",
+    "field": "pathCount",
+    "reasonKind": "sample-size-or-count-setting",
+    "reason": "The ModelKind.pathCount field is a run-size setting or execution count that describes calculation effort."
+  },
+  {
+    "id": "field-planner-ui-src-planner-montecarlopage-tsx-montecarlopage-seed",
+    "path": "planner-ui/src/planner/MonteCarloPage.tsx",
+    "symbol": "MonteCarloPage",
+    "field": "seed",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The MonteCarloPage.seed field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-planner-montecarlopage-tsx-montecarlopage-equityweightpct",
+    "path": "planner-ui/src/planner/MonteCarloPage.tsx",
+    "symbol": "MonteCarloPage",
+    "field": "equityWeightPct",
+    "reasonKind": "input-parameter",
+    "reason": "Market-model equity weight chosen in the page controls; a run setting, not an output."
+  },
+  {
+    "id": "field-planner-ui-src-planner-montecarlopage-tsx-montecarlopage-paths",
+    "path": "planner-ui/src/planner/MonteCarloPage.tsx",
+    "symbol": "MonteCarloPage",
+    "field": "paths",
+    "reasonKind": "sample-size-or-count-setting",
+    "reason": "Path count the page passes to the pool; a run-size setting printed beside results."
+  },
+  {
+    "id": "field-planner-ui-src-planner-optimizepage-tsx-module-value",
+    "path": "planner-ui/src/planner/OptimizePage.tsx",
+    "symbol": "module",
+    "field": "value",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The module.value field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-planner-relocationcomparepage-tsx-candidatedraft-moveyear",
+    "path": "planner-ui/src/planner/RelocationComparePage.tsx",
+    "symbol": "CandidateDraft",
+    "field": "moveYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The CandidateDraft.moveYear field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-planner-relocationcomparepage-tsx-candidatedraft-localratepct",
+    "path": "planner-ui/src/planner/RelocationComparePage.tsx",
+    "symbol": "CandidateDraft",
+    "field": "localRatePct",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The CandidateDraft.localRatePct field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-planner-relocationcomparepage-tsx-candidatedraft-spendingdeltapct",
+    "path": "planner-ui/src/planner/RelocationComparePage.tsx",
+    "symbol": "CandidateDraft",
+    "field": "spendingDeltaPct",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The CandidateDraft.spendingDeltaPct field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-planner-resultspage-tsx-flowviewparam-year",
+    "path": "planner-ui/src/planner/ResultsPage.tsx",
+    "symbol": "FlowViewParam",
+    "field": "year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The FlowViewParam.year field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-planner-resultspage-tsx-module-v",
+    "path": "planner-ui/src/planner/ResultsPage.tsx",
+    "symbol": "module",
+    "field": "v",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The module.v field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-planner-resultspage-tsx-inheritedschedulessection-startyear",
+    "path": "planner-ui/src/planner/ResultsPage.tsx",
+    "symbol": "InheritedSchedulesSection",
+    "field": "startYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "Projection start year prop of the inherited schedules section."
+  },
+  {
+    "id": "field-planner-ui-src-planner-resultspage-tsx-inheritedschedulessection-year",
+    "path": "planner-ui/src/planner/ResultsPage.tsx",
+    "symbol": "InheritedSchedulesSection",
+    "field": "year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The InheritedSchedulesSection.year field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-planner-resultspage-tsx-inheritedschedulessection-v",
+    "path": "planner-ui/src/planner/ResultsPage.tsx",
+    "symbol": "InheritedSchedulesSection",
+    "field": "v",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "Formatter or tick callback parameter in InheritedSchedulesSection; not a quantity."
+  },
+  {
+    "id": "field-planner-ui-src-planner-resultspage-tsx-module-startyear",
+    "path": "planner-ui/src/planner/ResultsPage.tsx",
+    "symbol": "module",
+    "field": "startYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The module.startYear field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-planner-resultspage-tsx-module-year",
+    "path": "planner-ui/src/planner/ResultsPage.tsx",
+    "symbol": "module",
+    "field": "year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The module.year field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-planner-resultspage-tsx-module-investable",
+    "path": "planner-ui/src/planner/ResultsPage.tsx",
+    "symbol": "module",
+    "field": "investable",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The module.investable field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-planner-resultspage-tsx-module-fitarget",
+    "path": "planner-ui/src/planner/ResultsPage.tsx",
+    "symbol": "module",
+    "field": "fiTarget",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The module.fiTarget field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-planner-resultspage-tsx-yearbyyearledger-year",
+    "path": "planner-ui/src/planner/ResultsPage.tsx",
+    "symbol": "YearByYearLedger",
+    "field": "year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The YearByYearLedger.year field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-planner-resultspage-tsx-yearbyyearledger-v",
+    "path": "planner-ui/src/planner/ResultsPage.tsx",
+    "symbol": "YearByYearLedger",
+    "field": "v",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "Formatter or tick callback parameter in YearByYearLedger; not a quantity."
+  },
+  {
+    "id": "field-planner-ui-src-planner-resultspage-tsx-resultspage-year",
+    "path": "planner-ui/src/planner/ResultsPage.tsx",
+    "symbol": "ResultsPage",
+    "field": "year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The ResultsPage.year field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-planner-resultspage-tsx-resultspage-v",
+    "path": "planner-ui/src/planner/ResultsPage.tsx",
+    "symbol": "ResultsPage",
+    "field": "v",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "Formatter or tick callback parameter in ResultsPage; not a quantity."
+  },
+  {
+    "id": "field-planner-ui-src-planner-scenariospage-tsx-leverparams-retireagedelta",
+    "path": "planner-ui/src/planner/ScenariosPage.tsx",
+    "symbol": "LeverParams",
+    "field": "retireAgeDelta",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The LeverParams.retireAgeDelta field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-planner-scenariospage-tsx-leverparams-spendpct",
+    "path": "planner-ui/src/planner/ScenariosPage.tsx",
+    "symbol": "LeverParams",
+    "field": "spendPct",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The LeverParams.spendPct field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-planner-scenariospage-tsx-leverparams-ssclaimage",
+    "path": "planner-ui/src/planner/ScenariosPage.tsx",
+    "symbol": "LeverParams",
+    "field": "ssClaimAge",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The LeverParams.ssClaimAge field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-planner-scenariospage-tsx-leverparams-sscutpct",
+    "path": "planner-ui/src/planner/ScenariosPage.tsx",
+    "symbol": "LeverParams",
+    "field": "ssCutPct",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The LeverParams.ssCutPct field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-planner-scenariospage-tsx-leverparams-rothtargetvalue",
+    "path": "planner-ui/src/planner/ScenariosPage.tsx",
+    "symbol": "LeverParams",
+    "field": "rothTargetValue",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The LeverParams.rothTargetValue field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-planner-scenariospage-tsx-leverparams-rothannual",
+    "path": "planner-ui/src/planner/ScenariosPage.tsx",
+    "symbol": "LeverParams",
+    "field": "rothAnnual",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The LeverParams.rothAnnual field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-planner-scenariospage-tsx-leverparams-startyear",
+    "path": "planner-ui/src/planner/ScenariosPage.tsx",
+    "symbol": "LeverParams",
+    "field": "startYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The LeverParams.startYear field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-planner-scenariospage-tsx-leverparams-endyear",
+    "path": "planner-ui/src/planner/ScenariosPage.tsx",
+    "symbol": "LeverParams",
+    "field": "endYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The LeverParams.endYear field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-planner-scenariospage-tsx-leverparams-stockpct",
+    "path": "planner-ui/src/planner/ScenariosPage.tsx",
+    "symbol": "LeverParams",
+    "field": "stockPct",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The LeverParams.stockPct field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-planner-scenariospage-tsx-leverparams-returnpct",
+    "path": "planner-ui/src/planner/ScenariosPage.tsx",
+    "symbol": "LeverParams",
+    "field": "returnPct",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The LeverParams.returnPct field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-planner-scenariospage-tsx-leverparams-incomechangepct",
+    "path": "planner-ui/src/planner/ScenariosPage.tsx",
+    "symbol": "LeverParams",
+    "field": "incomeChangePct",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The LeverParams.incomeChangePct field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-planner-scenariospage-tsx-leverparams-incomestartagedelta",
+    "path": "planner-ui/src/planner/ScenariosPage.tsx",
+    "symbol": "LeverParams",
+    "field": "incomeStartAgeDelta",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The LeverParams.incomeStartAgeDelta field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-planner-scenariospage-tsx-leverparams-moveyear",
+    "path": "planner-ui/src/planner/ScenariosPage.tsx",
+    "symbol": "LeverParams",
+    "field": "moveYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The LeverParams.moveYear field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-planner-scenariospage-tsx-leverparams-movemonth",
+    "path": "planner-ui/src/planner/ScenariosPage.tsx",
+    "symbol": "LeverParams",
+    "field": "moveMonth",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The LeverParams.moveMonth field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-planner-scenariospage-tsx-leverparams-survivorspendingpct",
+    "path": "planner-ui/src/planner/ScenariosPage.tsx",
+    "symbol": "LeverParams",
+    "field": "survivorSpendingPct",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The LeverParams.survivorSpendingPct field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-planner-scenariospage-tsx-leverparams-careyears",
+    "path": "planner-ui/src/planner/ScenariosPage.tsx",
+    "symbol": "LeverParams",
+    "field": "careYears",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The LeverParams.careYears field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-planner-scenariospage-tsx-leverparams-careannual",
+    "path": "planner-ui/src/planner/ScenariosPage.tsx",
+    "symbol": "LeverParams",
+    "field": "careAnnual",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The LeverParams.careAnnual field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-planner-scenariospage-tsx-leverparams-carestartage",
+    "path": "planner-ui/src/planner/ScenariosPage.tsx",
+    "symbol": "LeverParams",
+    "field": "careStartAge",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The LeverParams.careStartAge field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-planner-scenariospage-tsx-leverparams-homesaleyear",
+    "path": "planner-ui/src/planner/ScenariosPage.tsx",
+    "symbol": "LeverParams",
+    "field": "homeSaleYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The LeverParams.homeSaleYear field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-planner-scenariospage-tsx-module-startyear",
+    "path": "planner-ui/src/planner/ScenariosPage.tsx",
+    "symbol": "module",
+    "field": "startYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The module.startYear field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-planner-scenariospage-tsx-module-previousstartyear",
+    "path": "planner-ui/src/planner/ScenariosPage.tsx",
+    "symbol": "module",
+    "field": "previousStartYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The module.previousStartYear field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-planner-scenariospage-tsx-module-nextstartyear",
+    "path": "planner-ui/src/planner/ScenariosPage.tsx",
+    "symbol": "module",
+    "field": "nextStartYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The module.nextStartYear field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-planner-ssanalysispage-tsx-module-t",
+    "path": "planner-ui/src/planner/SsAnalysisPage.tsx",
+    "symbol": "module",
+    "field": "t",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The module.t field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-planner-ssanalysispage-tsx-module-value",
+    "path": "planner-ui/src/planner/SsAnalysisPage.tsx",
+    "symbol": "module",
+    "field": "value",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The module.value field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-planner-ssanalysispage-tsx-module-ra",
+    "path": "planner-ui/src/planner/SsAnalysisPage.tsx",
+    "symbol": "module",
+    "field": "ra",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The module.ra field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-planner-ssanalysispage-tsx-module-ca",
+    "path": "planner-ui/src/planner/SsAnalysisPage.tsx",
+    "symbol": "module",
+    "field": "ca",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The module.ca field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-planner-ssanalysispage-tsx-module-v",
+    "path": "planner-ui/src/planner/SsAnalysisPage.tsx",
+    "symbol": "module",
+    "field": "v",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The module.v field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-planner-ssanalysispage-tsx-module-discountpct",
+    "path": "planner-ui/src/planner/SsAnalysisPage.tsx",
+    "symbol": "module",
+    "field": "discountPct",
+    "reasonKind": "sample-size-or-count-setting",
+    "reason": "The module.discountPct field is a run-size setting or execution count that describes calculation effort."
+  },
+  {
+    "id": "field-planner-ui-src-planner-survivortransitionpage-tsx-module-depletionyear",
+    "path": "planner-ui/src/planner/SurvivorTransitionPage.tsx",
+    "symbol": "module",
+    "field": "depletionYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The module.depletionYear field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-planner-survivortransitionpage-tsx-survivortransitionpage-depletionyear",
+    "path": "planner-ui/src/planner/SurvivorTransitionPage.tsx",
+    "symbol": "SurvivorTransitionPage",
+    "field": "depletionYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "Prop carrying the plan's depletion year into the degenerate-timings note; the value itself is the longevity-depletion-year family."
+  },
+  {
+    "id": "field-planner-ui-src-planner-yearcashflow-yearcashflowdialog-tsx-yearcashflowdialogprops-year",
+    "path": "planner-ui/src/planner/yearCashFlow/YearCashFlowDialog.tsx",
+    "symbol": "YearCashFlowDialogProps",
+    "field": "year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The YearCashFlowDialogProps.year field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-planner-yearcashflow-yearcashflowdialog-tsx-module-year",
+    "path": "planner-ui/src/planner/yearCashFlow/YearCashFlowDialog.tsx",
+    "symbol": "module",
+    "field": "year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The module.year field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-planner-yearcashflow-yearcashflowdialog-tsx-module-value",
+    "path": "planner-ui/src/planner/yearCashFlow/YearCashFlowDialog.tsx",
+    "symbol": "module",
+    "field": "value",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The module.value field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-planner-yearcashflow-yearcashflowsankey-tsx-yearcashflowdisplayamount-year",
+    "path": "planner-ui/src/planner/yearCashFlow/YearCashFlowSankey.tsx",
+    "symbol": "YearCashFlowDisplayAmount",
+    "field": "year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The YearCashFlowDisplayAmount.year field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-planner-yearcashflow-yearcashflowsankey-tsx-yearcashflowdisplayamount-nominalamount",
+    "path": "planner-ui/src/planner/yearCashFlow/YearCashFlowSankey.tsx",
+    "symbol": "YearCashFlowDisplayAmount",
+    "field": "nominalAmount",
+    "reasonKind": "input-parameter",
+    "reason": "Nominal amount argument of the displayAmount dollar-basis callback."
+  },
+  {
+    "id": "field-planner-ui-src-planner-yearcashflow-yearcashflowsankey-tsx-yearcashflowsankeyprops-year",
+    "path": "planner-ui/src/planner/yearCashFlow/YearCashFlowSankey.tsx",
+    "symbol": "YearCashFlowSankeyProps",
+    "field": "year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The YearCashFlowSankeyProps.year field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-planner-yearcashflow-yearcashflowsankey-tsx-chartlink-source",
+    "path": "planner-ui/src/planner/yearCashFlow/YearCashFlowSankey.tsx",
+    "symbol": "ChartLink",
+    "field": "source",
+    "reasonKind": "identifier",
+    "reason": "Index of the link's source node in the placed Sankey."
+  },
+  {
+    "id": "field-planner-ui-src-planner-yearcashflow-yearcashflowsankey-tsx-placednode-x",
+    "path": "planner-ui/src/planner/yearCashFlow/YearCashFlowSankey.tsx",
+    "symbol": "PlacedNode",
+    "field": "x",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The PlacedNode.x field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-planner-yearcashflow-yearcashflowsankey-tsx-placednode-y",
+    "path": "planner-ui/src/planner/yearCashFlow/YearCashFlowSankey.tsx",
+    "symbol": "PlacedNode",
+    "field": "y",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The PlacedNode.y field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-planner-yearcashflow-yearcashflowsankey-tsx-placednode-width",
+    "path": "planner-ui/src/planner/yearCashFlow/YearCashFlowSankey.tsx",
+    "symbol": "PlacedNode",
+    "field": "width",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The PlacedNode.width field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-planner-yearcashflow-yearcashflowsankey-tsx-placednode-height",
+    "path": "planner-ui/src/planner/yearCashFlow/YearCashFlowSankey.tsx",
+    "symbol": "PlacedNode",
+    "field": "height",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "Sankey layout geometry (node height in pixels)."
+  },
+  {
+    "id": "field-planner-ui-src-planner-yearcashflow-yearcashflowsankey-tsx-placednode-index",
+    "path": "planner-ui/src/planner/yearCashFlow/YearCashFlowSankey.tsx",
+    "symbol": "PlacedNode",
+    "field": "index",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The PlacedNode.index field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-planner-yearcashflow-yearcashflowsankey-tsx-placedlink-sourcex",
+    "path": "planner-ui/src/planner/yearCashFlow/YearCashFlowSankey.tsx",
+    "symbol": "PlacedLink",
+    "field": "sourceX",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "Sankey layout geometry (sourceX in pixels)."
+  },
+  {
+    "id": "field-planner-ui-src-planner-yearcashflow-yearcashflowsankey-tsx-placedlink-sourcey",
+    "path": "planner-ui/src/planner/yearCashFlow/YearCashFlowSankey.tsx",
+    "symbol": "PlacedLink",
+    "field": "sourceY",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "Sankey layout geometry (sourceY in pixels)."
+  },
+  {
+    "id": "field-planner-ui-src-planner-yearcashflow-yearcashflowsankey-tsx-placedlink-targetx",
+    "path": "planner-ui/src/planner/yearCashFlow/YearCashFlowSankey.tsx",
+    "symbol": "PlacedLink",
+    "field": "targetX",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The PlacedLink.targetX field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-planner-yearcashflow-yearcashflowsankey-tsx-placedlink-targety",
+    "path": "planner-ui/src/planner/yearCashFlow/YearCashFlowSankey.tsx",
+    "symbol": "PlacedLink",
+    "field": "targetY",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The PlacedLink.targetY field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-planner-yearcashflow-yearcashflowsankey-tsx-placedlink-sourcecontrolx",
+    "path": "planner-ui/src/planner/yearCashFlow/YearCashFlowSankey.tsx",
+    "symbol": "PlacedLink",
+    "field": "sourceControlX",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "Sankey layout geometry (sourceControlX in pixels)."
+  },
+  {
+    "id": "field-planner-ui-src-planner-yearcashflow-yearcashflowsankey-tsx-placedlink-targetcontrolx",
+    "path": "planner-ui/src/planner/yearCashFlow/YearCashFlowSankey.tsx",
+    "symbol": "PlacedLink",
+    "field": "targetControlX",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The PlacedLink.targetControlX field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-planner-yearcashflow-yearcashflowsankey-tsx-placedlink-linkwidth",
+    "path": "planner-ui/src/planner/yearCashFlow/YearCashFlowSankey.tsx",
+    "symbol": "PlacedLink",
+    "field": "linkWidth",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "Sankey layout geometry (linkWidth in pixels)."
+  },
+  {
+    "id": "field-planner-ui-src-planner-yearcashflow-yearcashflowsankey-tsx-module-year",
+    "path": "planner-ui/src/planner/yearCashFlow/YearCashFlowSankey.tsx",
+    "symbol": "module",
+    "field": "year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The module.year field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-planner-yearcashflow-yearcashflowsankey-tsx-module-amount",
+    "path": "planner-ui/src/planner/yearCashFlow/YearCashFlowSankey.tsx",
+    "symbol": "module",
+    "field": "amount",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The module.amount field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-planner-ui-src-planner-sections-incomefloorsection-tsx-fedinvestsnapshot-startyear",
+    "path": "planner-ui/src/planner/sections/IncomeFloorSection.tsx",
+    "symbol": "FedInvestSnapshot",
+    "field": "startYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "Start year the TIPS price snapshot is aligned to."
+  },
+  {
+    "id": "field-planner-ui-src-planner-sections-incomefloorsection-tsx-module-startyear",
+    "path": "planner-ui/src/planner/sections/IncomeFloorSection.tsx",
+    "symbol": "module",
+    "field": "startYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The module.startYear field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-planner-resultsrows-ts-ledger-csv-columns-year",
+    "path": "planner-ui/src/planner/resultsRows.ts",
+    "symbol": "LEDGER_CSV_COLUMNS",
+    "field": "year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The LEDGER_CSV_COLUMNS.year field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-planner-resultsrows-ts-ledger-csv-columns-filingstatus",
+    "path": "planner-ui/src/planner/resultsRows.ts",
+    "symbol": "LEDGER_CSV_COLUMNS",
+    "field": "filingStatus",
+    "reasonKind": "label-or-category",
+    "reason": "The LEDGER_CSV_COLUMNS.filingStatus field is a categorical label used to name or classify the displayed record."
+  },
+  {
+    "id": "field-planner-ui-src-planner-resultsrows-ts-ledger-csv-columns-guardrailaction",
+    "path": "planner-ui/src/planner/resultsRows.ts",
+    "symbol": "LEDGER_CSV_COLUMNS",
+    "field": "guardrailAction",
+    "reasonKind": "label-or-category",
+    "reason": "The LEDGER_CSV_COLUMNS.guardrailAction field is a categorical label used to name or classify the displayed record."
+  },
+  {
+    "id": "field-planner-ui-src-planner-resultsrows-ts-inheritedledgercsvvalues-inheritedrequirementkind",
+    "path": "planner-ui/src/planner/resultsRows.ts",
+    "symbol": "inheritedLedgerCsvValues",
+    "field": "inheritedRequirementKind",
+    "reasonKind": "label-or-category",
+    "reason": "The inheritedLedgerCsvValues.inheritedRequirementKind field is a categorical label used to name or classify the displayed record."
+  },
+  {
+    "id": "field-planner-ui-src-planner-resultsrows-ts-inheritedledgercsvvalues-inheritedprofessionalconfirmation",
+    "path": "planner-ui/src/planner/resultsRows.ts",
+    "symbol": "inheritedLedgerCsvValues",
+    "field": "inheritedProfessionalConfirmation",
+    "reasonKind": "not-numeric",
+    "reason": "The inheritedLedgerCsvValues.inheritedProfessionalConfirmation field is a nonnumeric object, collection, or text value."
+  },
+  {
+    "id": "field-planner-ui-src-planner-resultsrows-ts-inheritedledgercsvvalues-inheritedevidencenote",
+    "path": "planner-ui/src/planner/resultsRows.ts",
+    "symbol": "inheritedLedgerCsvValues",
+    "field": "inheritedEvidenceNote",
+    "reasonKind": "evidence-note",
+    "reason": "The inheritedLedgerCsvValues.inheritedEvidenceNote field is a narrative evidence or audit note rather than a numeric amount."
+  },
+  {
+    "id": "field-engine-src-decisions-annuitization-ts-annuitizationsweeppoint-allocationpct",
+    "path": "engine/src/decisions/annuitization.ts",
+    "symbol": "AnnuitizationSweepPoint",
+    "field": "allocationPct",
+    "reasonKind": "dimension-coordinate",
+    "reason": "Requested grid percent that keys each sweep point; the chart plots effectiveAllocationPct instead."
+  },
+  {
+    "id": "field-engine-src-decisions-annuitization-ts-annuitizationsweep-startage",
+    "path": "engine/src/decisions/annuitization.ts",
+    "symbol": "AnnuitizationSweep",
+    "field": "startAge",
+    "reasonKind": "dimension-coordinate",
+    "reason": "Age annuity payments start, max(current age, 65); printed as a coordinate in the annuitization paragraph."
+  },
+  {
+    "id": "field-engine-src-montecarlo-historicalsuites-ts-historicalstresswindow-starthistoricalyear",
+    "path": "engine/src/montecarlo/historicalSuites.ts",
+    "symbol": "HistoricalStressWindow",
+    "field": "startHistoricalYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "First historical market year of the replayed window; part of the window label."
+  },
+  {
+    "id": "field-engine-src-montecarlo-historicalsuites-ts-historicalstresswindow-endhistoricalyear",
+    "path": "engine/src/montecarlo/historicalSuites.ts",
+    "symbol": "HistoricalStressWindow",
+    "field": "endHistoricalYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "Last historical market year of the replayed window; part of the window label."
+  },
+  {
+    "id": "field-engine-src-montecarlo-historicalsuites-ts-historicalstresssuite-windowlengthyears",
+    "path": "engine/src/montecarlo/historicalSuites.ts",
+    "symbol": "HistoricalStressSuite",
+    "field": "windowLengthYears",
+    "reasonKind": "sample-size-or-count-setting",
+    "reason": "Length in years of each replayed historical window; a suite setting."
+  },
+  {
+    "id": "field-engine-src-scenarios-comparison-ts-scenarioirmaacomparison-maxtier",
+    "path": "engine/src/scenarios/comparison.ts",
+    "symbol": "ScenarioIrmaaComparison",
+    "field": "maxTier",
+    "reasonKind": "label-or-category",
+    "reason": "Highest IRMAA tier index reached; a classification (see YearResult.irmaaTier), shown as \"Maximum IRMAA tier\"."
+  },
+  {
+    "id": "field-engine-src-scenarios-comparison-ts-scenarioheadlinecomparison-projectionendyear",
+    "path": "engine/src/scenarios/comparison.ts",
+    "symbol": "ScenarioHeadlineComparison",
+    "field": "projectionEndYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "Last projection year of each plan; printed as \"Projection end year\"."
+  },
+  {
+    "id": "field-engine-src-ladder-bridge-ts-bridgesizing-startyear",
+    "path": "engine/src/ladder/bridge.ts",
+    "symbol": "BridgeSizing",
+    "field": "startYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "First bridge payout year."
+  },
+  {
+    "id": "field-engine-src-ladder-bridge-ts-bridgesizing-endyear",
+    "path": "engine/src/ladder/bridge.ts",
+    "symbol": "BridgeSizing",
+    "field": "endYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "Last bridge payout year."
+  },
+  {
+    "id": "field-engine-src-ladder-bridge-ts-bridgesizing-years",
+    "path": "engine/src/ladder/bridge.ts",
+    "symbol": "BridgeSizing",
+    "field": "years",
+    "reasonKind": "dimension-coordinate",
+    "reason": "Number of bridge years (endYear - startYear + 1); a span, printed as the gap-year range."
+  },
+  {
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "field": "build_plan",
+    "reasonKind": "protocol-metadata",
+    "reason": "Returns the constructed plan and build/session caveats; numeric plan values are echoed state, not a modeled result."
+  },
+  {
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "field": "validate_plan",
+    "reasonKind": "protocol-metadata",
+    "reason": "Returns parse success or validation issues/schema status, not calculation results."
+  },
+  {
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "field": "get_session",
+    "reasonKind": "protocol-metadata",
+    "reason": "Returns session presence, start year, plan name, versions, conventions and caveats; startYear is session metadata."
+  },
+  {
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "field": "export_plan",
+    "reasonKind": "protocol-metadata",
+    "reason": "Returns a cloned plan plus round-trip provenance, conventions and caveats; numeric plan fields are state echo."
+  },
+  {
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "field": "describe_plan_schema",
+    "reasonKind": "protocol-metadata",
+    "reason": "Returns JSON Schema and schema version/path metadata, not modeled numbers."
+  },
+  {
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "field": "explain_modeled_result",
+    "reasonKind": "label-or-category",
+    "reason": "Returns framing, assumptions, conventions, caveats, limitations, versions and cached-result context; no new numeric calculation is performed."
+  },
+  {
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "field": "update_plan",
+    "reasonKind": "protocol-metadata",
+    "reason": "Returns applied-operation count, compact plan summary, validation status and caveats; numeric expenseBaseAnnual is echoed plan state."
+  },
+  {
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "field": "clear_session",
+    "reasonKind": "protocol-metadata",
+    "reason": "Returns only {ok:true} after clearing session state."
+  },
+  {
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "field": "run_projection.years[].year",
+    "reasonKind": "protocol-metadata",
+    "reason": "Projection year coordinate, not a numeric result."
+  },
+  {
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "field": "run_projection.startYear",
+    "reasonKind": "protocol-metadata",
+    "reason": "Projection start-year coordinate."
+  },
+  {
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "field": "run_projection.endYear",
+    "reasonKind": "protocol-metadata",
+    "reason": "Projection end-year coordinate."
+  },
+  {
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "field": "run_projection.years[].irmaaTier",
+    "reasonKind": "label-or-category",
+    "reason": "IRMAA tier index is a classification, not a modeled dollar output."
+  },
+  {
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "field": "run_monte_carlo.pathCount",
+    "reasonKind": "protocol-metadata",
+    "reason": "Echoed run configuration."
+  },
+  {
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "field": "run_monte_carlo.seed",
+    "reasonKind": "protocol-metadata",
+    "reason": "Echoed run configuration."
+  },
+  {
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "field": "run_monte_carlo.returnVolPct",
+    "reasonKind": "protocol-metadata",
+    "reason": "Echoed model input, not an output."
+  },
+  {
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "field": "batch_evaluate.results[].index",
+    "reasonKind": "protocol-metadata",
+    "reason": "Input-array position."
+  },
+  {
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "field": "batch_evaluate.results[].policy",
+    "reasonKind": "protocol-metadata",
+    "reason": "Echoed candidate policy input."
+  },
+  {
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "field": "batch_evaluate.results[].ok",
+    "reasonKind": "protocol-metadata",
+    "reason": "Per-row evaluation status."
+  },
+  {
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "field": "batch_evaluate.count",
+    "reasonKind": "protocol-metadata",
+    "reason": "Count of submitted result rows, not a financial calculation."
+  },
+  {
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "field": "run_optimizer.tournament.policyId",
+    "reasonKind": "label-or-category",
+    "reason": "Winning policy identifier."
+  },
+  {
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "field": "run_optimizer.tournament.winnerSource",
+    "reasonKind": "label-or-category",
+    "reason": "Winning strategy source label."
+  },
+  {
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "field": "run_optimizer.tournament.winnerLabel",
+    "reasonKind": "label-or-category",
+    "reason": "Winning strategy label."
+  },
+  {
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "field": "run_optimizer.schedule[].year",
+    "reasonKind": "protocol-metadata",
+    "reason": "Schedule year coordinate."
+  },
+  {
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "field": "run_optimizer.tournament.winnerConversions[].year",
+    "reasonKind": "protocol-metadata",
+    "reason": "Winning schedule year coordinate."
+  },
+  {
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "field": "solve_max_spending.converged",
+    "reasonKind": "protocol-metadata",
+    "reason": "Solver status flag."
+  },
+  {
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "field": "solve_max_spending.limitingConstraint",
+    "reasonKind": "label-or-category",
+    "reason": "Constraint category label."
+  },
+  {
+    "path": "RetireGolden-MCP/src/adapter.ts",
+    "field": "compare_scenarios.startYear (input only)",
+    "reasonKind": "protocol-metadata",
+    "reason": "Optional projection start-year input, not returned as a result field."
+  },
+  {
+    "id": "field-engine-src-projection-internal-types-yearledger-ts-personyearstate-ageattained",
+    "path": "engine/src/projection/internal/types/yearLedger.ts",
+    "symbol": "PersonYearState",
+    "field": "ageAttained",
+    "reasonKind": "dimension-coordinate",
+    "reason": "Age attained in the calendar year (year minus birth year); printed as the age column on the ResultsPage.tsx and ReportPage.tsx year tables to place the row, not a computed amount."
+  },
+  {
+    "id": "field-engine-src-projection-internal-types-yearledger-ts-personyearstate-lifeage",
+    "path": "engine/src/projection/internal/types/yearLedger.ts",
+    "symbol": "PersonYearState",
+    "field": "lifeAge",
+    "reasonKind": "input-parameter",
+    "reason": "Effective last full year of life for the run, echoed from SimulateOptions.deathAgeByPersonId or plan longevity.planningAge so detectors can place the first deceased year; a planning input, not an output."
+  },
+  {
+    "id": "field-engine-src-projection-internal-types-aca-ts-yearacaresult-taxfamilysize",
+    "path": "engine/src/projection/internal/types/aca.ts",
+    "symbol": "YearAcaResult",
+    "field": "taxFamilySize",
+    "reasonKind": "input-parameter",
+    "reason": "Number of tax-family members echoed from the ACA year contract (taxFamilyMembers.length); the FPL lookup's household size, a contract input."
+  },
+  {
+    "id": "field-engine-src-projection-internal-types-aca-ts-yearacaresult-taxfamilymembers-magi",
+    "path": "engine/src/projection/internal/types/aca.ts",
+    "symbol": "YearAcaResult",
+    "field": "taxFamilyMembers[].magi",
+    "reasonKind": "input-parameter",
+    "reason": "Per-member MAGI attested in the ACA year contract (dependents); a contract input echoed into the result."
+  },
+  {
+    "id": "field-engine-src-projection-internal-types-aca-ts-yearacaresult-coveredmembers-coveredmonths",
+    "path": "engine/src/projection/internal/types/aca.ts",
+    "symbol": "YearAcaResult",
+    "field": "coveredMembers[].coveredMonths",
+    "reasonKind": "dimension-coordinate",
+    "reason": "Calendar months (1-12) in which the covered member had a positive enrollment premium; a coordinate list."
+  },
+  {
+    "id": "field-engine-src-projection-internal-types-aca-ts-yearacaresult-convergence-iterations",
+    "path": "engine/src/projection/internal/types/aca.ts",
+    "symbol": "YearAcaResult",
+    "field": "convergence.iterations",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "Number of iterations the healthcare/ACA fixed-point solve took for the year; a solver diagnostic."
+  },
+  {
+    "id": "field-engine-src-projection-internal-types-aca-ts-yearacaresult-convergence-maxiterations",
+    "path": "engine/src/projection/internal/types/aca.ts",
+    "symbol": "YearAcaResult",
+    "field": "convergence.maxIterations",
+    "reasonKind": "sample-size-or-count-setting",
+    "reason": "Iteration cap of the healthcare/ACA fixed-point solve; a solver setting."
+  },
+  {
+    "id": "field-engine-src-projection-internal-types-aca-ts-yearacaresult-convergence-residualdollars",
+    "path": "engine/src/projection/internal/types/aca.ts",
+    "symbol": "YearAcaResult",
+    "field": "convergence.residualDollars",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "Dollar residual of the healthcare/ACA fixed-point solve at exit; a solver diagnostic."
+  },
+  {
+    "id": "field-engine-src-tax-aca-ts-acahouseholdmagiinput-federalagi",
+    "path": "engine/src/tax/aca.ts",
+    "symbol": "AcaHouseholdMagiInput",
+    "field": "federalAgi",
+    "reasonKind": "input-parameter",
+    "reason": "Federal AGI (signed, before the household floor) passed into buildAcaHouseholdMagi from the federal probe."
+  },
+  {
+    "id": "field-engine-src-tax-aca-ts-acahouseholdmagiinput-grosssocialsecurity",
+    "path": "engine/src/tax/aca.ts",
+    "symbol": "AcaHouseholdMagiInput",
+    "field": "grossSocialSecurity",
+    "reasonKind": "input-parameter",
+    "reason": "Gross Social Security benefits passed into buildAcaHouseholdMagi."
+  },
+  {
+    "id": "field-engine-src-tax-aca-ts-acahouseholdmagiinput-taxablesocialsecurity",
+    "path": "engine/src/tax/aca.ts",
+    "symbol": "AcaHouseholdMagiInput",
+    "field": "taxableSocialSecurity",
+    "reasonKind": "input-parameter",
+    "reason": "Taxable Social Security from the federal probe passed into buildAcaHouseholdMagi."
+  },
+  {
+    "id": "field-engine-src-tax-aca-ts-acahouseholdmagiinput-taxexemptinterest-amount",
+    "path": "engine/src/tax/aca.ts",
+    "symbol": "AcaHouseholdMagiInput",
+    "field": "taxExemptInterest.amount",
+    "reasonKind": "input-parameter",
+    "reason": "Attested or plan-generated tax-exempt interest amount with its known/notApplicable/unknown state; an input."
+  },
+  {
+    "id": "field-engine-src-tax-aca-ts-acahouseholdmagiinput-foreignexclusionaddback-amount",
+    "path": "engine/src/tax/aca.ts",
+    "symbol": "AcaHouseholdMagiInput",
+    "field": "foreignExclusionAddback.amount",
+    "reasonKind": "input-parameter",
+    "reason": "Attested foreign earned-income exclusion amount with its state; a contract input."
+  },
+  {
+    "id": "field-engine-src-tax-aca-ts-acahouseholdmagiinput-dependents-magi",
+    "path": "engine/src/tax/aca.ts",
+    "symbol": "AcaHouseholdMagiInput",
+    "field": "dependents[].magi",
+    "reasonKind": "input-parameter",
+    "reason": "Dependent MAGI attested in the ACA year contract; an input."
+  },
+  {
+    "id": "field-engine-src-tax-aca-ts-acahouseholdmagiresult-dependents-magi",
+    "path": "engine/src/tax/aca.ts",
+    "symbol": "AcaHouseholdMagiResult",
+    "field": "dependents[].magi",
+    "reasonKind": "input-parameter",
+    "reason": "Dependent MAGI echoed from the input into the result."
+  },
+  {
+    "id": "field-engine-src-tax-aca-ts-acafederalpovertyline-householdsize",
+    "path": "engine/src/tax/aca.ts",
+    "symbol": "acaFederalPovertyLine",
+    "field": "householdSize",
+    "reasonKind": "input-parameter",
+    "reason": "Tax-family size argument of acaFederalPovertyLine."
+  },
+  {
+    "id": "field-engine-src-tax-aca-ts-acafederalpovertyline-fplscale",
+    "path": "engine/src/tax/aca.ts",
+    "symbol": "acaFederalPovertyLine",
+    "field": "fplScale",
+    "reasonKind": "input-parameter",
+    "reason": "FPL inflation scale argument of acaFederalPovertyLine (default 1)."
+  },
+  {
+    "id": "field-engine-src-tax-aca-ts-acaapplicablepct-fplpct",
+    "path": "engine/src/tax/aca.ts",
+    "symbol": "acaApplicablePct",
+    "field": "fplPct",
+    "reasonKind": "input-parameter",
+    "reason": "FPL percentage argument of acaApplicablePct."
+  },
+  {
+    "id": "field-engine-src-tax-aca-ts-acaeconomicpremiumbymonth-householdsize",
+    "path": "engine/src/tax/aca.ts",
+    "symbol": "acaEconomicPremiumByMonth",
+    "field": "householdSize",
+    "reasonKind": "input-parameter",
+    "reason": "householdSize argument of acaEconomicPremiumByMonth."
+  },
+  {
+    "id": "field-engine-src-tax-aca-ts-acaeconomicpremiumbymonth-magi",
+    "path": "engine/src/tax/aca.ts",
+    "symbol": "acaEconomicPremiumByMonth",
+    "field": "magi",
+    "reasonKind": "input-parameter",
+    "reason": "magi argument of acaEconomicPremiumByMonth."
+  },
+  {
+    "id": "field-engine-src-tax-aca-ts-acaeconomicpremiumbymonth-fplscale",
+    "path": "engine/src/tax/aca.ts",
+    "symbol": "acaEconomicPremiumByMonth",
+    "field": "fplScale",
+    "reasonKind": "input-parameter",
+    "reason": "fplScale argument of acaEconomicPremiumByMonth."
+  },
+  {
+    "id": "field-engine-src-tax-aca-ts-acaeconomicpremiumbymonth-enrollmentpremiums",
+    "path": "engine/src/tax/aca.ts",
+    "symbol": "acaEconomicPremiumByMonth",
+    "field": "enrollmentPremiums",
+    "reasonKind": "input-parameter",
+    "reason": "Monthly enrollment premiums (12 entries) argument of acaEconomicPremiumByMonth."
+  },
+  {
+    "id": "field-engine-src-tax-aca-ts-acaeconomicpremiumbymonth-slcspbenchmarkpremiums",
+    "path": "engine/src/tax/aca.ts",
+    "symbol": "acaEconomicPremiumByMonth",
+    "field": "slcspBenchmarkPremiums",
+    "reasonKind": "input-parameter",
+    "reason": "Monthly SLCSP benchmark premiums argument of acaEconomicPremiumByMonth."
+  },
+  {
+    "id": "field-engine-src-tax-aca-ts-acanetannualpremium-householdsize",
+    "path": "engine/src/tax/aca.ts",
+    "symbol": "acaNetAnnualPremium",
+    "field": "householdSize",
+    "reasonKind": "input-parameter",
+    "reason": "householdSize argument of the backward-compatible annual helper acaNetAnnualPremium."
+  },
+  {
+    "id": "field-engine-src-tax-aca-ts-acanetannualpremium-magi",
+    "path": "engine/src/tax/aca.ts",
+    "symbol": "acaNetAnnualPremium",
+    "field": "magi",
+    "reasonKind": "input-parameter",
+    "reason": "magi argument of the backward-compatible annual helper acaNetAnnualPremium."
+  },
+  {
+    "id": "field-engine-src-tax-aca-ts-acanetannualpremium-fullannualpremium",
+    "path": "engine/src/tax/aca.ts",
+    "symbol": "acaNetAnnualPremium",
+    "field": "fullAnnualPremium",
+    "reasonKind": "input-parameter",
+    "reason": "fullAnnualPremium argument of the backward-compatible annual helper acaNetAnnualPremium."
+  },
+  {
+    "id": "field-engine-src-tax-aca-ts-acanetannualpremium-fplscale",
+    "path": "engine/src/tax/aca.ts",
+    "symbol": "acaNetAnnualPremium",
+    "field": "fplScale",
+    "reasonKind": "input-parameter",
+    "reason": "fplScale argument of the backward-compatible annual helper acaNetAnnualPremium."
+  },
+  {
+    "id": "field-engine-src-tax-aca-ts-acanetannualpremiumbymonth-householdsize",
+    "path": "engine/src/tax/aca.ts",
+    "symbol": "acaNetAnnualPremiumByMonth",
+    "field": "householdSize",
+    "reasonKind": "input-parameter",
+    "reason": "householdSize argument of the backward-compatible monthly helper acaNetAnnualPremiumByMonth."
+  },
+  {
+    "id": "field-engine-src-tax-aca-ts-acanetannualpremiumbymonth-magi",
+    "path": "engine/src/tax/aca.ts",
+    "symbol": "acaNetAnnualPremiumByMonth",
+    "field": "magi",
+    "reasonKind": "input-parameter",
+    "reason": "magi argument of the backward-compatible monthly helper acaNetAnnualPremiumByMonth."
+  },
+  {
+    "id": "field-engine-src-tax-aca-ts-acanetannualpremiumbymonth-fplscale",
+    "path": "engine/src/tax/aca.ts",
+    "symbol": "acaNetAnnualPremiumByMonth",
+    "field": "fplScale",
+    "reasonKind": "input-parameter",
+    "reason": "fplScale argument of the backward-compatible monthly helper acaNetAnnualPremiumByMonth."
+  },
+  {
+    "id": "field-engine-src-tax-aca-ts-acanetannualpremiumbymonth-monthlypremiums",
+    "path": "engine/src/tax/aca.ts",
+    "symbol": "acaNetAnnualPremiumByMonth",
+    "field": "monthlyPremiums",
+    "reasonKind": "input-parameter",
+    "reason": "Monthly premiums argument of acaNetAnnualPremiumByMonth (used as both enrollment and benchmark)."
+  },
+  {
+    "id": "field-engine-src-ladder-bridge-ts-bridgesizinginput-piamonthly",
+    "path": "engine/src/ladder/bridge.ts",
+    "symbol": "BridgeSizingInput",
+    "field": "piaMonthly",
+    "reasonKind": "input-parameter",
+    "reason": "Worker's monthly PIA in today's dollars; sizing input."
+  },
+  {
+    "id": "field-engine-src-ladder-bridge-ts-bridgesizinginput-dob-year",
+    "path": "engine/src/ladder/bridge.ts",
+    "symbol": "BridgeSizingInput",
+    "field": "dob.year",
+    "reasonKind": "input-parameter",
+    "reason": "Birth year of the claimant; sizing input."
+  },
+  {
+    "id": "field-engine-src-ladder-bridge-ts-bridgesizinginput-dob-month",
+    "path": "engine/src/ladder/bridge.ts",
+    "symbol": "BridgeSizingInput",
+    "field": "dob.month",
+    "reasonKind": "input-parameter",
+    "reason": "Birth month of the claimant; sizing input."
+  },
+  {
+    "id": "field-engine-src-ladder-bridge-ts-bridgesizinginput-dob-day",
+    "path": "engine/src/ladder/bridge.ts",
+    "symbol": "BridgeSizingInput",
+    "field": "dob.day",
+    "reasonKind": "input-parameter",
+    "reason": "Birth day of the claimant; sizing input."
+  },
+  {
+    "id": "field-engine-src-ladder-bridge-ts-bridgesizinginput-claimage-years",
+    "path": "engine/src/ladder/bridge.ts",
+    "symbol": "BridgeSizingInput",
+    "field": "claimAge.years",
+    "reasonKind": "input-parameter",
+    "reason": "Whole-year part of the chosen claim age the bridge funds the wait for (ClaimAge)."
+  },
+  {
+    "id": "field-engine-src-ladder-bridge-ts-bridgesizinginput-claimage-months",
+    "path": "engine/src/ladder/bridge.ts",
+    "symbol": "BridgeSizingInput",
+    "field": "claimAge.months",
+    "reasonKind": "input-parameter",
+    "reason": "Month part of the chosen claim age (ClaimAge); a positive value extends the bridge through the claim year."
+  },
+  {
+    "id": "field-engine-src-ladder-bridge-ts-bridgesizinginput-currentyear",
+    "path": "engine/src/ladder/bridge.ts",
+    "symbol": "BridgeSizingInput",
+    "field": "currentYear",
+    "reasonKind": "input-parameter",
+    "reason": "Calendar year the projection starts; the bridge never starts before the next year."
+  },
+  {
+    "id": "field-engine-src-ladder-bridge-ts-bridgesizinginput-retirementyear",
+    "path": "engine/src/ladder/bridge.ts",
+    "symbol": "BridgeSizingInput",
+    "field": "retirementYear",
+    "reasonKind": "input-parameter",
+    "reason": "Calendar year retirement-phase spending begins; the bridge never starts before it."
+  },
+  {
+    "id": "field-engine-src-ladder-bridge-ts-module-bridge-funding-min-fraction",
+    "path": "engine/src/ladder/bridge.ts",
+    "symbol": "module",
+    "field": "BRIDGE_FUNDING_MIN_FRACTION",
+    "reasonKind": "internal-coefficient",
+    "reason": "Minimum share (0.5) of the quoted ladder cost the funding account must hold before a bridge is proposed; a threshold shared by the ss-bridge-gap detector and bridgeLadderGenerator."
+  },
+  {
+    "id": "field-engine-src-montecarlo-frontiers-ts-module-max-frontier-points",
+    "path": "engine/src/montecarlo/frontiers.ts",
+    "symbol": "module",
+    "field": "MAX_FRONTIER_POINTS",
+    "reasonKind": "sample-size-or-count-setting",
+    "reason": "Cap (15) on the number of points a frontier or annuitization sweep may evaluate; a run-size bound."
+  },
+  {
+    "id": "field-engine-src-montecarlo-frontiers-ts-buildspendingsuccessfrontier-multipliers",
+    "path": "engine/src/montecarlo/frontiers.ts",
+    "symbol": "buildSpendingSuccessFrontier",
+    "field": "multipliers",
+    "reasonKind": "input-parameter",
+    "reason": "Spending multiplier grid (default 0.85 to 1.15) that builds the plan variants; the point x-axis value is the resulting baseAnnual (StochasticFrontierPoint.x)."
+  },
+  {
+    "id": "field-engine-src-montecarlo-frontiers-ts-buildretirementagesuccessfrontier-deltas",
+    "path": "engine/src/montecarlo/frontiers.ts",
+    "symbol": "buildRetirementAgeSuccessFrontier",
+    "field": "deltas",
+    "reasonKind": "input-parameter",
+    "reason": "Retirement-age offset grid (default -2 to +2 years) that builds the plan variants; the point x-axis value is the earliest resulting retirement age."
+  },
+  {
+    "id": "field-engine-src-decisions-annuitization-ts-annuitizationsweepconfig-allocationpcts",
+    "path": "engine/src/decisions/annuitization.ts",
+    "symbol": "AnnuitizationSweepConfig",
+    "field": "allocationPcts",
+    "reasonKind": "input-parameter",
+    "reason": "Allocation grid (percent of investable) to sweep; overrides the default grid."
+  },
+  {
+    "id": "field-engine-src-decisions-annuitization-ts-annuitizationsweepconfig-quotedpayoutratepct",
+    "path": "engine/src/decisions/annuitization.ts",
+    "symbol": "AnnuitizationSweepConfig",
+    "field": "quotedPayoutRatePct",
+    "reasonKind": "input-parameter",
+    "reason": "User-entered annual SPIA payout rate (percent of premium) overriding the default payout table."
+  },
+  {
+    "id": "field-engine-src-decisions-annuitization-ts-module-default-grid",
+    "path": "engine/src/decisions/annuitization.ts",
+    "symbol": "module",
+    "field": "DEFAULT_GRID",
+    "reasonKind": "internal-coefficient",
+    "reason": "Default allocation grid (0, 5, 10, 15, 20, 25, 30 percent) swept when no allocationPcts is given."
+  },
+  {
+    "id": "field-engine-src-montecarlo-historicalsuites-ts-historicalstresswindow-marketyears",
+    "path": "engine/src/montecarlo/historicalSuites.ts",
+    "symbol": "HistoricalStressWindow",
+    "field": "marketYears",
+    "reasonKind": "dimension-coordinate",
+    "reason": "Historical market years replayed in projection order (wrapping the window, reversed for the reversed suite); coordinates of the replay, not an outcome."
+  },
+  {
+    "id": "field-engine-src-montecarlo-historicalsuites-ts-historicalstresssuiteresult-windowlengthyears",
+    "path": "engine/src/montecarlo/historicalSuites.ts",
+    "symbol": "HistoricalStressSuiteResult",
+    "field": "windowLengthYears",
+    "reasonKind": "sample-size-or-count-setting",
+    "reason": "Effective window length after clamping the requested length to the projection length and the history; a suite setting repeated on each suite."
+  },
+  {
+    "id": "field-engine-src-montecarlo-historicalsuites-ts-historicalstresssuiteoptions-equityweightpct",
+    "path": "engine/src/montecarlo/historicalSuites.ts",
+    "symbol": "HistoricalStressSuiteOptions",
+    "field": "equityWeightPct",
+    "reasonKind": "input-parameter",
+    "reason": "Equity weight (default 60) used to blend the historical stock and bond returns into the portfolio return shock."
+  },
+  {
+    "id": "field-engine-src-montecarlo-historicalsuites-ts-historicalstresssuiteoptions-windowlengthyears",
+    "path": "engine/src/montecarlo/historicalSuites.ts",
+    "symbol": "HistoricalStressSuiteOptions",
+    "field": "windowLengthYears",
+    "reasonKind": "input-parameter",
+    "reason": "Requested historical window length in years (default: the projection length)."
+  },
+  {
+    "id": "field-engine-src-montecarlo-historicalsuites-ts-historicalstresssuiteoptions-worstwindowcount",
+    "path": "engine/src/montecarlo/historicalSuites.ts",
+    "symbol": "HistoricalStressSuiteOptions",
+    "field": "worstWindowCount",
+    "reasonKind": "sample-size-or-count-setting",
+    "reason": "How many worst windows each suite lists (default 5); a display-size setting."
+  },
+  {
+    "id": "field-engine-src-projection-relocation-ts-relocationcandidate-moveyear",
+    "path": "engine/src/projection/relocation.ts",
+    "symbol": "RelocationCandidate",
+    "field": "moveYear",
+    "reasonKind": "input-parameter",
+    "reason": "Calendar year of the move (split-year taxed); omitted means resident from the start."
+  },
+  {
+    "id": "field-engine-src-projection-relocation-ts-relocationcandidate-movemonth",
+    "path": "engine/src/projection/relocation.ts",
+    "symbol": "RelocationCandidate",
+    "field": "moveMonth",
+    "reasonKind": "input-parameter",
+    "reason": "Move month (1-12) for the split year, default July."
+  },
+  {
+    "id": "field-engine-src-projection-relocation-ts-relocationcandidate-localratepct",
+    "path": "engine/src/projection/relocation.ts",
+    "symbol": "RelocationCandidate",
+    "field": "localRatePct",
+    "reasonKind": "input-parameter",
+    "reason": "Flat local income-tax rate (percent) in the destination replacing the plan's localIncomeTaxPct; omitted means 0."
+  },
+  {
+    "id": "field-engine-src-projection-relocation-ts-relocationcandidate-spendingdeltapct",
+    "path": "engine/src/projection/relocation.ts",
+    "symbol": "RelocationCandidate",
+    "field": "spendingDeltaPct",
+    "reasonKind": "input-parameter",
+    "reason": "Flat cost-of-living change (percent) applied to baseline lifestyle spending plan-wide."
+  },
+  {
+    "id": "field-engine-src-projection-relocation-ts-relocationdriverfacts-capitalgainstaxablepct",
+    "path": "engine/src/projection/relocation.ts",
+    "symbol": "RelocationDriverFacts",
+    "field": "capitalGainsTaxablePct",
+    "reasonKind": "internal-coefficient",
+    "reason": "State parameter-pack fact: percent of net capital gain in the state base; printed in the drivers panel prose on RelocationComparePage.tsx ('X% of net gains in the state base'), a rule constant rather than a computed output."
+  },
+  {
+    "id": "field-engine-src-projection-relocation-ts-relocationdriverfacts-topratepct",
+    "path": "engine/src/projection/relocation.ts",
+    "symbol": "RelocationDriverFacts",
+    "field": "topRatePct",
+    "reasonKind": "internal-coefficient",
+    "reason": "State parameter-pack fact: top marginal bracket rate (married filing jointly, percent); printed in the drivers panel prose on RelocationComparePage.tsx ('rate X%'), a rule constant rather than a computed output."
+  },
+  {
+    "id": "field-engine-src-projection-relocation-ts-relocationcandidaterow-endyear",
+    "path": "engine/src/projection/relocation.ts",
+    "symbol": "RelocationCandidateRow",
+    "field": "endYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "Last projection year of the row; RelocationComparePage.tsx uses it as the deflation anchor for the ending estate (relocation-tax-comparison)."
+  },
+  {
+    "id": "field-engine-src-projection-relocation-ts-relocationcandidaterow-statetaxbyyear-year",
+    "path": "engine/src/projection/relocation.ts",
+    "symbol": "RelocationCandidateRow",
+    "field": "stateTaxByYear[].year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "Calendar year of each per-year state+local tax line."
+  },
+  {
+    "id": "field-engine-src-projection-relocation-ts-relocationcomparison-startyear",
+    "path": "engine/src/projection/relocation.ts",
+    "symbol": "RelocationComparison",
+    "field": "startYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "Projection start year shared by every row."
+  },
+  {
+    "id": "field-engine-src-projection-relocation-ts-relocationcomparison-montecarlo-pathcount",
+    "path": "engine/src/projection/relocation.ts",
+    "symbol": "RelocationComparison",
+    "field": "monteCarlo.pathCount",
+    "reasonKind": "sample-size-or-count-setting",
+    "reason": "Number of shared market paths behind the success column; printed as 'the same N paths' on RelocationComparePage.tsx."
+  },
+  {
+    "id": "field-engine-src-projection-relocation-ts-relocationcomparison-montecarlo-seed",
+    "path": "engine/src/projection/relocation.ts",
+    "symbol": "RelocationComparison",
+    "field": "monteCarlo.seed",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "Seed of the shared market paths; a reproducibility diagnostic."
+  },
+  {
+    "id": "field-engine-src-projection-relocation-ts-relocationcompareoptions-startyear",
+    "path": "engine/src/projection/relocation.ts",
+    "symbol": "RelocationCompareOptions",
+    "field": "startYear",
+    "reasonKind": "input-parameter",
+    "reason": "Projection start year argument of compareRelocationCandidates."
+  },
+  {
+    "id": "field-engine-src-projection-relocation-ts-relocationcompareoptions-montecarlo-pathcount",
+    "path": "engine/src/projection/relocation.ts",
+    "symbol": "RelocationCompareOptions",
+    "field": "monteCarlo.pathCount",
+    "reasonKind": "input-parameter",
+    "reason": "Requested shared-path count for the optional Monte Carlo success column."
+  },
+  {
+    "id": "field-engine-src-projection-relocation-ts-relocationcompareoptions-montecarlo-seed",
+    "path": "engine/src/projection/relocation.ts",
+    "symbol": "RelocationCompareOptions",
+    "field": "monteCarlo.seed",
+    "reasonKind": "input-parameter",
+    "reason": "Requested seed for the shared market paths."
+  },
+  {
+    "id": "field-engine-src-projection-relocation-ts-module-max-relocation-candidates",
+    "path": "engine/src/projection/relocation.ts",
+    "symbol": "module",
+    "field": "MAX_RELOCATION_CANDIDATES",
+    "reasonKind": "sample-size-or-count-setting",
+    "reason": "Cap (5) on candidate states per comparison; a run-size bound."
+  },
+  {
+    "id": "field-engine-src-scenarios-comparison-ts-scenarioplancomparisonoptions-startyear",
+    "path": "engine/src/scenarios/comparison.ts",
+    "symbol": "ScenarioPlanComparisonOptions",
+    "field": "startYear",
+    "reasonKind": "input-parameter",
+    "reason": "Projection start year argument of compareScenarioPlans (must be an integer)."
+  },
+  {
+    "id": "field-engine-src-scenarios-comparison-ts-scenarioplancomparisonoptions-stochastic-pathcount",
+    "path": "engine/src/scenarios/comparison.ts",
+    "symbol": "ScenarioPlanComparisonOptions",
+    "field": "stochastic.pathCount",
+    "reasonKind": "sample-size-or-count-setting",
+    "reason": "Requested shared-path count for the optional risk comparison; a run-size setting."
+  },
+  {
+    "id": "field-engine-src-scenarios-comparison-ts-scenarioplancomparisonoptions-stochastic-seed",
+    "path": "engine/src/scenarios/comparison.ts",
+    "symbol": "ScenarioPlanComparisonOptions",
+    "field": "stochastic.seed",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "Requested seed for the shared market paths; a reproducibility diagnostic."
+  },
+  {
+    "id": "field-engine-src-scenarios-comparison-ts-comparisonprovenance-startyear",
+    "path": "engine/src/scenarios/comparison.ts",
+    "symbol": "ComparisonProvenance",
+    "field": "startYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "Start year the comparison was run at; scenarioComparisonView.ts uses it only to test whether a cached comparison is current."
+  },
+  {
+    "id": "field-engine-src-scenarios-comparison-ts-annualcomparisonvalues-irmaatier",
+    "path": "engine/src/scenarios/comparison.ts",
+    "symbol": "AnnualComparisonValues",
+    "field": "irmaaTier",
+    "reasonKind": "label-or-category",
+    "reason": "IRMAA tier index of the year (YearResult.irmaaTier); a classification, printed as 'IRMAA tier' in the annual ledger comparison."
+  },
+  {
+    "id": "field-engine-src-scenarios-comparison-ts-annualscenariocomparisonrow-year",
+    "path": "engine/src/scenarios/comparison.ts",
+    "symbol": "AnnualScenarioComparisonRow",
+    "field": "year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "Calendar year of the annual ledger comparison row (union of both plans' years)."
+  },
+  {
+    "id": "field-engine-src-scenarios-comparison-ts-scenarioriskcomparison-provenance-seed",
+    "path": "engine/src/scenarios/comparison.ts",
+    "symbol": "ScenarioRiskComparison",
+    "field": "provenance.seed",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "Seed of the shared market paths; printed in the risk caption 'N paths, seed S' as provenance."
+  },
+  {
+    "id": "field-engine-src-scenarios-comparison-ts-scenarioriskcomparison-provenance-pathcount",
+    "path": "engine/src/scenarios/comparison.ts",
+    "symbol": "ScenarioRiskComparison",
+    "field": "provenance.pathCount",
+    "reasonKind": "sample-size-or-count-setting",
+    "reason": "Number of shared market paths; printed in the risk caption 'N paths, seed S'."
+  },
+  {
+    "id": "field-engine-src-scenarios-comparison-ts-scenarioriskcomparison-depletionprobabilitybyyear-year",
+    "path": "engine/src/scenarios/comparison.ts",
+    "symbol": "ScenarioRiskComparison",
+    "field": "depletionProbabilityByYear[].year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "Calendar year of each cumulative depletion probability row (union of both plans' depletion years)."
+  },
+  {
+    "id": "field-engine-src-projection-internal-types-cashflow-ts-yearcashflowreconciliationdiagnostic-expectedplandollars",
+    "path": "engine/src/projection/internal/types/cashFlow.ts",
+    "symbol": "YearCashFlowReconciliationDiagnostic",
+    "field": "expectedPlanDollars",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "Expected amount recorded on a reconciliation failure diagnostic; graphical consumers refuse a notReconciled year and detailCsv.ts writes only the reason codes."
+  },
+  {
+    "id": "field-engine-src-projection-internal-types-cashflow-ts-yearcashflowreconciliationdiagnostic-actualplandollars",
+    "path": "engine/src/projection/internal/types/cashFlow.ts",
+    "symbol": "YearCashFlowReconciliationDiagnostic",
+    "field": "actualPlanDollars",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "Actual amount recorded on a reconciliation failure diagnostic; never rendered."
+  },
+  {
+    "id": "field-engine-src-projection-internal-types-cashflow-ts-yearcashflowreconciliationdiagnostic-differenceplandollars",
+    "path": "engine/src/projection/internal/types/cashFlow.ts",
+    "symbol": "YearCashFlowReconciliationDiagnostic",
+    "field": "differencePlanDollars",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "Expected minus actual on a reconciliation failure diagnostic; never rendered."
+  },
+  {
+    "id": "field-engine-src-projection-internal-types-cashflow-ts-yearcashflowreconciliation-toleranceplandollars",
+    "path": "engine/src/projection/internal/types/cashFlow.ts",
+    "symbol": "YearCashFlowReconciliation",
+    "field": "tolerancePlanDollars",
+    "reasonKind": "internal-coefficient",
+    "reason": "Strict structural tolerance for the line, use, transfer and lineage checks; a reconciliation constant."
+  },
+  {
+    "id": "field-engine-src-projection-internal-types-cashflow-ts-yearcashflowreconciliation-cashidentitytoleranceplandollars",
+    "path": "engine/src/projection/internal/types/cashFlow.ts",
+    "symbol": "YearCashFlowReconciliation",
+    "field": "cashIdentityTolerancePlanDollars",
+    "reasonKind": "internal-coefficient",
+    "reason": "Cash-conservation tolerance aligned with the annual funding fixed point; a reconciliation constant."
+  },
+  {
+    "id": "field-planner-ui-src-planner-survivoranalysis-ts-survivoryearfacts-shortfall",
+    "path": "planner-ui/src/planner/survivorAnalysis.ts",
+    "symbol": "SurvivorYearFacts",
+    "field": "shortfall",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "Engine YearResult.shortfall for the last joint and first survivor years, read only by isDegenerateTiming to decide whether a timing row is shown as degenerate; a display gate, never printed (the shortfall family is surfaced elsewhere)."
+  }
+]

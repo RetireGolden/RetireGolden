@@ -55,6 +55,7 @@ File naming marks the intent, co-located beside the code under test:
 | `*.characterization.test.ts` | Reviewed regression snapshots | [`packages/engine/src/projection/fullPlan.characterization.test.ts`](../packages/engine/src/projection/fullPlan.characterization.test.ts) |
 | `*.adversarial.test.ts` | Hostile-input tests for parsers/imports | [`packages/planner-ui/src/socialSecurity/ssaStatementXml.adversarial.test.ts`](../packages/planner-ui/src/socialSecurity/ssaStatementXml.adversarial.test.ts) |
 | `*.approximation.test.ts` | A fixture that pins an `approximated` registry record's stated delta against the code, grouped by rule rather than by module | [`packages/engine/src/rules/approximations/rmdAndInherited.approximation.test.ts`](../packages/engine/src/rules/approximations/rmdAndInherited.approximation.test.ts) |
+| `*.evidence.test.ts` | A `describeCalculation` block bound to a calculation-catalog record: the expected value comes from the record's independent worksheet (`DOCS/calculations/<group>/<id>.md`), never from running the engine; the fixture must name that worksheet and its `<id>.mutation.md` receipt of an executed mutation, both of which must exist; and the conformance suite counts the record covered only when the block registers a test | [`packages/engine/src/spending/abw.evidence.test.ts`](../packages/engine/src/spending/abw.evidence.test.ts) |
 
 External-oracle fixtures follow the sourcing, tolerance, and record-keeping rules in
 [external-oracles.md](external-oracles.md).

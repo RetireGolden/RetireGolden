@@ -67,11 +67,20 @@ export function isGeneratedCalculationShardText(text) {
   return isKindedObject(text, 'retiregolden.calculation-coverage.shard')
 }
 
+/**
+ * Directories the source walks never enter: installed dependencies and build
+ * output can carry files with any suffix, and the freshness suite's Vite globs
+ * never expand into them, so the generator must not either or the two would
+ * disagree the day a dependency ships a `*.external.golden.test.ts`.
+ */
+const SKIPPED_DIRECTORIES = new Set(['node_modules', 'dist'])
+
 function walkFiles(directory, predicate, relativeRoot = directory, found = {}) {
   for (const entry of readdirSync(directory, { withFileTypes: true }).sort((left, right) =>
     left.name < right.name ? -1 : left.name > right.name ? 1 : 0)) {
     const path = join(directory, entry.name)
     if (entry.isDirectory()) {
+      if (SKIPPED_DIRECTORIES.has(entry.name)) continue
       walkFiles(path, predicate, relativeRoot, found)
     } else if (entry.isFile() && predicate(entry.name, path)) {
       const sourcePath = relative(relativeRoot, path).split('\\').join('/')
@@ -79,6 +88,27 @@ function walkFiles(directory, predicate, relativeRoot = directory, found = {}) {
     }
   }
   return found
+}
+
+const WALKTHROUGH_TEST = /\.test\.tsx?$/
+
+/**
+ * The walkthrough test files directly under planner-ui's
+ * `examples/walkthroughs/`, keyed by file name the way the freshness suite's
+ * glob keys them; `{}` when the directory does not exist yet. The entries
+ * themselves come from `walkthroughEntriesOf` in coverageReport.ts, so the
+ * generator and the suite scan the same files the same way.
+ */
+function walkthroughTestSources(directory) {
+  if (!existsSync(directory)) return {}
+  const sources = {}
+  for (const entry of readdirSync(directory, { withFileTypes: true }).sort((left, right) =>
+    left.name < right.name ? -1 : left.name > right.name ? 1 : 0)) {
+    if (entry.isFile() && WALKTHROUGH_TEST.test(entry.name)) {
+      sources[entry.name] = readFileSync(join(directory, entry.name), 'utf8')
+    }
+  }
+  return sources
 }
 
 function sweepShards(shardDir, written, recognise) {
@@ -124,7 +154,7 @@ async function main() {
     { COVERAGE_ATTESTATIONS, BASELINE_UNSWEPT },
     { CALCULATION_REGISTRY, CALCULATION_RECORD_MODULES },
     { OUTPUT_FAMILIES },
-    { buildCoverageReport, buildCalculationCoverageReport },
+    { buildCoverageReport, buildCalculationCoverageReport, walkthroughEntriesOf },
   ] = await Promise.all([
     loadModule('taxRuleRegistry.ts'),
     loadModule('coverageAttestations.ts'),
@@ -179,7 +209,7 @@ async function main() {
     attestations: COVERAGE_ATTESTATIONS,
     testSources: testSourcesInGlobShape(),
     externalGoldenSources,
-    walkthroughs: existsSync(walkthroughDir) ? [] : [],
+    walkthroughs: walkthroughEntriesOf(walkthroughTestSources(walkthroughDir)),
     symbolLineFor,
     docTextFor,
   })

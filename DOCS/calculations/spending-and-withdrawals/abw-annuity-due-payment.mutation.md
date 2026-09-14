@@ -1,6 +1,6 @@
 # Mutation receipt: abw-annuity-due-payment
 
-Executed 2026-09-14 against RetireGolden base `fb398216` (branch grok/b1-p3c-catalog-scaffold) in `packages/engine`.
+Executed 2026-09-14 against RetireGolden base `fb398216` (branch grok/b1-p3c-catalog-scaffold) in `packages/engine`, and re-executed the same day on the round-1 fix pass over `c3799b55` (the fixture now names its inputs `realReturnPct`/`tiltPct` and asserts through `withinTolerance`), which is the output captured below.
 
 ## Mutation applied to `packages/engine/src/spending/abw.ts`
 
@@ -20,22 +20,24 @@ npx vitest run src/spending/abw.evidence.test.ts
 ## Captured failing output
 
 ```
- ❯ src/spending/abw.evidence.test.ts (1 test | 1 failed) 3ms
+ ❯ src/spending/abw.evidence.test.ts (1 test | 1 failed) 4ms
+   ❯ abw-annuity-due-payment — Amortization-based withdrawal, growing annuity-due payment (1)
+     × pays 110 now and 110 next period from 210 at 10% with no growth 4ms
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
  FAIL  src/spending/abw.evidence.test.ts > abw-annuity-due-payment — Amortization-based withdrawal, growing annuity-due payment > pays 110 now and 110 next period from 210 at 10% with no growth
-AssertionError: expected 10.999999999999986 to be less than or equal to 1e-9
- ❯ src/spending/abw.evidence.test.ts:28:72
-     26|       )
-     27|       const abs = example.tolerance === 'exact' ? 0 : (example.toleran…
-     28|       expect(Math.abs(payment - (example.expected.payment as number)))…
-       |                                                                        ^
-     29|     })
-     30|   },
+AssertionError: payment 120.99999999999999 is not within {"abs":1e-9} of the worksheet's 110: expected false to be true // Object.is equality
+ ❯ src/spending/abw.evidence.test.ts:32:9
+     30|         withinTolerance(payment, expected, example.tolerance),
+     31|         `payment ${payment} is not within ${JSON.stringify(example.tol…
+     32|       ).toBe(true)
+       |         ^
+     33|     })
+     34|   },
  Test Files  1 failed (1)
       Tests  1 failed (1)
 ```
 
-The assertion compares the production payment with the worksheet's 110 at an absolute tolerance of 1e-9; the mutated code misses by 11.
+The assertion compares the production payment with the worksheet's 110 through `withinTolerance` at an absolute tolerance of 1e-9; the mutated code pays 121 (the end-of-period reading) and misses by 11.
 
 ## Revert
 

@@ -12,7 +12,8 @@
       ],
       "justificationKind": "derivation",
       "implementedBy": [
-        "packages/engine/src/spending/abw.ts"
+        "packages/engine/src/spending/abw.ts",
+        "packages/engine/src/projection/internal/annualLifestyleLayers.ts"
       ],
       "provenance": {
         "derivedBy": "claude-orchestrator",
@@ -21,7 +22,15 @@
       },
       "fixtureFiles": [
         "packages/engine/src/spending/abw.evidence.test.ts"
-      ]
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
     }
   ]
 }

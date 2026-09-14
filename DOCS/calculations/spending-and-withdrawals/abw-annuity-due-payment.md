@@ -22,6 +22,10 @@ from running the engine.
 | g | Planned payment growth | 0 | 1 |
 | n | Remaining years, current year inclusive | 2 | count |
 
+The production function `abwAnnualPayment` takes r and g in percent per year,
+so the evidence fixture passes this worksheet's 0.10 and 0 as `realReturnPct: 10`
+and `tiltPct: 0`; the arithmetic below is in decimal rates.
+
 ## Arithmetic
 
 \(x = (1+0)/(1+0.10) = 1/1.1 = 10/11\).

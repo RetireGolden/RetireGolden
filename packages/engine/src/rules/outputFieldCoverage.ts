@@ -1,7 +1,7 @@
 /**
  * GENERATED FILE — DO NOT EDIT BY HAND.
  *
- * Output field coverage imported from the output-family census at commit 17c1d3d387430e65992822a159919b1eac5dcfa8.
+ * Output field coverage imported from the output-family census at commit c0d897d80684866c8c5e658d51127c912771d812.
  * Regenerate: node packages/engine/scripts/import-output-census.mjs <census-dir>
  */
 
@@ -14,6 +14,8 @@ export interface OutputFieldCoverageRow {
   readonly reasonKind?: string
   readonly reason?: string
   readonly tsType?: string
+  /** The census author's explanation of an inline computation with no identifier to find. */
+  readonly note?: string
 }
 
 export interface OutputFieldExclusion {
@@ -34,6 +36,7 @@ type RawCoverage = {
   reasonKind?: unknown
   reason?: unknown
   tsType?: unknown
+  note?: unknown
 }
 
 type RawExclusion = {
@@ -60,6 +63,7 @@ function coverageRow(raw: RawCoverage): OutputFieldCoverageRow {
   if (typeof raw.reasonKind === 'string') Object.assign(row, { reasonKind: raw.reasonKind })
   if (typeof raw.reason === 'string') Object.assign(row, { reason: raw.reason })
   if (typeof raw.tsType === 'string') Object.assign(row, { tsType: raw.tsType })
+  if (typeof raw.note === 'string') Object.assign(row, { note: raw.note })
   return row
 }
 
@@ -4299,7 +4303,8 @@ const coverageCensus = [
     "field": "incompleteComputationYears",
     "disposition": "family",
     "familyId": "simple-candidate-evaluation-incomplete-computation-years",
-    "tsType": "number"
+    "tsType": "number",
+    "note": "Promotion-level copy of the candidate evaluation figure shown in the Optimize page explain panel. Added 2026-09-14 from the engine new-field guard."
   },
   {
     "source": "engine/src/projection/optimizePlan.ts",
@@ -4307,7 +4312,8 @@ const coverageCensus = [
     "field": "marginOverMilpDollars",
     "disposition": "family",
     "familyId": "exact-ledger-tournament-margin-over-milp-dollars",
-    "tsType": "number"
+    "tsType": "number",
+    "note": "Promotion-level copy of the candidate evaluation figure shown in the Optimize page explain panel. Added 2026-09-14 from the engine new-field guard."
   },
   {
     "source": "engine/src/projection/optimizePlan.ts",
@@ -7851,7 +7857,8 @@ const coverageCensus = [
     "field": "executedRequiredAmount",
     "disposition": "family",
     "familyId": "inherited-distribution-required-executed-annual",
-    "tsType": "number"
+    "tsType": "number",
+    "note": "CSV header is the account id plus 'inherited' and this name; the value is read from YearResult.inheritedAccounts[].executedRequiredAmount in inheritedLedgerCsvValues."
   },
   {
     "source": "planner-ui/src/planner/resultsRows.ts",
@@ -7871,7 +7878,8 @@ const coverageCensus = [
     "familyId": null,
     "reasonKind": "not-numeric",
     "reason": "The inheritedLedgerCsvValues.inheritedProfessionalConfirmation field is a nonnumeric object, collection, or text value.",
-    "tsType": "string"
+    "tsType": "string",
+    "note": "CSV header is the account id plus 'inherited' and this name; the value is read from YearResult.inheritedAccounts[].needsProfessionalConfirmation in inheritedLedgerCsvValues."
   },
   {
     "source": "planner-ui/src/planner/resultsRows.ts",
@@ -7879,7 +7887,8 @@ const coverageCensus = [
     "field": "requiredAmount",
     "disposition": "family",
     "familyId": "inherited-distribution-required-annual",
-    "tsType": "number"
+    "tsType": "number",
+    "note": "CSV header is the account id plus 'inherited' and this name; the value is read from YearResult.inheritedAccounts[].requiredAmount in inheritedLedgerCsvValues."
   },
   {
     "source": "planner-ui/src/planner/resultsRows.ts",
@@ -7889,7 +7898,8 @@ const coverageCensus = [
     "familyId": null,
     "reasonKind": "label-or-category",
     "reason": "The inheritedLedgerCsvValues.inheritedRequirementKind field is a categorical label used to name or classify the displayed record.",
-    "tsType": "string"
+    "tsType": "string",
+    "note": "CSV header is the account id plus 'inherited' and this name; the value is read from YearResult.inheritedAccounts[].requirementKind in inheritedLedgerCsvValues."
   },
   {
     "source": "planner-ui/src/planner/resultsRows.ts",
@@ -7897,7 +7907,8 @@ const coverageCensus = [
     "field": "voluntaryAmount",
     "disposition": "family",
     "familyId": "inherited-distribution-voluntary-annual",
-    "tsType": "number"
+    "tsType": "number",
+    "note": "CSV header is the account id plus 'inherited' and this name; the value is read from YearResult.inheritedAccounts[].voluntaryAmount in inheritedLedgerCsvValues."
   },
   {
     "source": "planner-ui/src/planner/sections/IncomeFloorSection.tsx",

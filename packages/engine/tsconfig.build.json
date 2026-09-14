@@ -19,8 +19,8 @@
      (rules-coverage.mjs, via rule-tooling-shared.mjs) only, so it stays out
      of dist like the tests do.
 
-     The four rules/ modules after it are excluded for the same reason, and
-     none is reachable through the exports map: `./rules` publishes only the
+     Every rules/ entry after it is excluded for the same reason, and none is
+     reachable through the exports map: `./rules` publishes only the
      taxRuleRegistry barrel, and there is no `./rules/*` wildcard.
      - describeRule.ts, describeRefusal.ts, and describeCalculation.ts import
        `vitest`, so a consumer who did reach any of them would fault on a bare
@@ -31,7 +31,13 @@
        the shards the same way taxRuleRegistry.ts composes records/*.ts) and
        coverageReport.ts are the coverage publisher's inputs, read from
        source by the tests and by rules-coverage.mjs, never from dist.
-     Together they were ~146 KB of test-harness code in every install. */
+     - calculationRegistry.ts with its record slices under calculations/,
+       and the generated output census (outputFamilies.ts,
+       outputFieldCoverage.ts, and the census/ JSON they are regenerated
+       from) are the calculation catalog's inputs, read the same way by the
+       conformance and freshness suites and by rules-coverage.mjs. The two
+       generated modules alone run to roughly twenty thousand lines.
+     All of it is test-harness code or catalog data no install can use. */
   "exclude": [
     "src/**/*.test.ts",
     "src/**/*.test-support.ts",
@@ -41,6 +47,11 @@
     "src/rules/describeRule.ts",
     "src/rules/coverageAttestations.ts",
     "src/rules/attestations/**",
-    "src/rules/coverageReport.ts"
+    "src/rules/coverageReport.ts",
+    "src/rules/calculationRegistry.ts",
+    "src/rules/calculations/**",
+    "src/rules/outputFamilies.ts",
+    "src/rules/outputFieldCoverage.ts",
+    "src/rules/census/**"
   ]
 }

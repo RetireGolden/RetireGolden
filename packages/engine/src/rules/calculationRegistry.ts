@@ -96,3 +96,14 @@ export const calculationIds = Object.freeze(
 export function calculation(id: CalculationId): Readonly<CalculationRecord> {
   return CALCULATION_REGISTRY[id]
 }
+
+/**
+ * The mutation receipt that belongs to a derivation worksheet: the same path
+ * with `.md` replaced by `.mutation.md`. One convention, used by both
+ * `describeCalculation` (which requires the fixture to name exactly this file)
+ * and the coverage gate (which requires it to exist), so the fixture and the
+ * published gate can never point at different receipts.
+ */
+export function mutationReceiptPathOf(worksheet: string): string {
+  return worksheet.replace(/\.md$/u, '.mutation.md')
+}

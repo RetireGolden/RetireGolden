@@ -5,7 +5,12 @@ import {
 } from './coverageAttestations.js'
 import { CALCULATION_RECORD_MODULES, CALCULATION_REGISTRY } from './calculationRegistry.js'
 import { OUTPUT_FAMILIES } from './outputFamilies.js'
-import { buildCalculationCoverageReport, buildCoverageReport, describeRuleCallEnd } from './coverageReport.js'
+import {
+  buildCalculationCoverageReport,
+  buildCoverageReport,
+  describeRuleCallEnd,
+  walkthroughEntriesOf,
+} from './coverageReport.js'
 import { declaredSymbolLinesOf, symbolAnchorLine, type DeclaredSymbol } from './symbolLines.js'
 import {
   TAX_RULE_RECORD_MODULES,
@@ -51,6 +56,18 @@ const engineGoldenSources = import.meta.glob('../**/*.external.golden.test.ts', 
 })
 const plannerGoldenSources = import.meta.glob(
   '../../../../packages/planner-ui/src/**/*.external.golden.test.ts',
+  {
+    query: '?raw',
+    import: 'default',
+    eager: true,
+  },
+)
+// The walkthrough directory does not exist yet; Vite expands a glob over a
+// missing directory to {}, which walkthroughEntriesOf turns into the computed
+// empty census — the generator lists the same directory, so the day the
+// first walkthrough test lands both sides publish it.
+const walkthroughSources = import.meta.glob(
+  '../../../../packages/planner-ui/src/planner/examples/walkthroughs/*.test.{ts,tsx}',
   {
     query: '?raw',
     import: 'default',
@@ -160,7 +177,7 @@ const calculationReport = buildCalculationCoverageReport({
   attestations: COVERAGE_ATTESTATIONS,
   testSources,
   externalGoldenSources,
-  walkthroughs: [],
+  walkthroughs: walkthroughEntriesOf(walkthroughSources as Record<string, string>),
   symbolLineFor,
   docTextFor: calculationDocTextFor,
 })
@@ -333,6 +350,44 @@ describe('calculation coverage report artifacts', () => {
     expect(isGeneratedCalculationShardText(realShard!.json)).toBe(true)
     expect(isGeneratedCalculationShardText(calculationReport.json)).toBe(false)
     expect(isGeneratedShardText(realShard!.json)).toBe(false)
+  })
+
+  it('publishes per-record gate status in every shard', () => {
+    for (const { shard } of calculationReport.shards) {
+      for (const record of shard.records) {
+        expect(Object.keys(record.gates).sort(), record.id).toEqual([
+          'familiesExist',
+          'fixtureRegistersTest',
+          'mutationExists',
+          'pinsResolve',
+          'provenanceIndependent',
+          'worksheetExists',
+        ])
+        for (const [gate, value] of Object.entries(record.gates)) {
+          expect(typeof value, record.id + '.gates.' + gate).toBe('boolean')
+        }
+      }
+    }
+  })
+
+  it('scans walkthrough test files for it() and test() titles at code level, keyed by file name', () => {
+    const entries = walkthroughEntriesOf({
+      'some/dir/roth-ladder.test.ts': [
+        "describe('roth ladder', () => {",
+        "  // it('a pending case')",
+        "  it('funds the first rung', () => {})",
+        "  test(\"skips the second rung\", () => { const note = \"it('not a test')\" })",
+        '})',
+      ].join('\n'),
+      'some/dir/bridge.test.tsx': "it('renders the bridge', () => {})",
+      'some/dir/helpers.ts': "it('is not a test file', () => {})",
+    })
+    expect(entries).toEqual([
+      { id: 'bridge', testName: 'renders the bridge' },
+      { id: 'roth-ladder', testName: 'funds the first rung' },
+      { id: 'roth-ladder', testName: 'skips the second rung' },
+    ])
+    expect(walkthroughEntriesOf({})).toEqual([])
   })
 })
 

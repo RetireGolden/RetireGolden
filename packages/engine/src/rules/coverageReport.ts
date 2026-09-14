@@ -3,7 +3,7 @@ import type {
   CoverageAttestationStatus,
   COVERAGE_ATTESTATIONS,
 } from './coverageAttestations.js'
-import type { CalculationRecord } from './calculationRegistry.js'
+import { mutationReceiptPathOf, type CalculationRecord } from './calculationRegistry.js'
 import type { OutputFamily } from './outputFamilies.js'
 import type {
   TAX_RULE_REGISTRY,
@@ -399,6 +399,9 @@ function testsBetween(
   start: number,
   end: number,
   newlines: readonly number[],
+  // Also accept the `test(` spelling, for suites outside the fixture helpers
+  // (the walkthrough census) that may use either name.
+  includeTestAlias = false,
 ): { title: string; line: number }[] {
   const tests: { title: string; line: number }[] = []
   let index = start
@@ -408,7 +411,12 @@ function testsBetween(
       index = Math.min(skipped, end)
       continue
     }
-    const match = /^\bit\(\s*(['"\u0060])/u.exec(source.slice(index, Math.min(index + 64, end)))
+    const window = source.slice(index, Math.min(index + 64, end))
+    // Two literal patterns rather than one built at runtime, for the same
+    // static-analysis reason as CALL_PATTERNS below.
+    const match = includeTestAlias
+      ? /^\b(?:it|test)\(\s*(['"\u0060])/u.exec(window)
+      : /^\bit\(\s*(['"\u0060])/u.exec(window)
     if (match !== null && (index === 0 || !/[\w$.]/u.test(source[index - 1]!))) {
       const quote = match[1]!
       const titleStart = index + match[0].length
@@ -468,17 +476,18 @@ function lineAt(newlines: readonly number[], position: number): number {
 }
 
 /**
- * Scans `testSources` for `describeRule(<id>` or `describeRefusal(<id>`
- * blocks, keyed by rule id — the two helpers make different claims about a
- * rule and are published in separate fields (`fixtures` vs
- * `refusalFixtures`), but the source-level shape of a call (an id string
- * literal, then a balanced extent with it() tests inside) is identical for
- * both, so one scan serves either name.
+ * Scans `testSources` for `describeRule(<id>`, `describeRefusal(<id>`, or
+ * `describeCalculation(<id>` blocks, keyed by record id — the three helpers
+ * make different claims and are published in separate places (`fixtures`,
+ * `refusalFixtures`, and the calculation shards' `fixtureFiles`), but the
+ * source-level shape of a call (an id string literal, then a balanced extent
+ * with it() tests inside) is identical for all of them, so one scan serves
+ * any of the three names.
  */
-// Two hardcoded patterns rather than one built from `callName` at runtime: a
-// RegExp built from a variable reads to static analysis (Semgrep's
+// Three hardcoded patterns rather than one built from `callName` at runtime:
+// a RegExp built from a variable reads to static analysis (Semgrep's
 // detect-non-literal-regexp) as attacker-controlled input, even though this
-// one is a closed two-member union. Literal patterns sidestep the warning
+// one is a closed three-member union. Literal patterns sidestep the warning
 // instead of arguing with it.
 const CALL_PATTERNS = {
   describeRule: /describeRule\(\s*'([^']+)'/gu,
@@ -963,6 +972,22 @@ export interface CalculationCoverageInput {
   readonly docTextFor: (path: string) => string | null
 }
 
+/**
+ * The contract gates a record is held to, published per record so a gate
+ * that breaks later (a moved worksheet, a renamed pin) is visible in the
+ * artifact rather than folded silently into the family's `partial` status.
+ * `worksheetExists` and `mutationExists` are true for a record that owes no
+ * derivation worksheet (dataset, assumption, and registry justifications).
+ */
+export interface CalculationRecordGates {
+  readonly fixtureRegistersTest: boolean
+  readonly pinsResolve: boolean
+  readonly familiesExist: boolean
+  readonly worksheetExists: boolean
+  readonly mutationExists: boolean
+  readonly provenanceIndependent: boolean
+}
+
 export interface CalculationCoverageRecord {
   readonly id: string
   readonly title: string
@@ -972,6 +997,37 @@ export interface CalculationCoverageRecord {
   readonly implementedBy: readonly string[]
   readonly provenance: CalculationRecord['provenance']
   readonly fixtureFiles: readonly string[]
+  readonly gates: CalculationRecordGates
+}
+
+export interface WalkthroughEntry {
+  readonly id: string
+  readonly testName: string
+}
+
+const WALKTHROUGH_TEST_SUFFIX = /\.test\.tsx?$/u
+
+/**
+ * The walkthrough census: one entry per it()/test() title found at CODE
+ * level in each `*.test.ts(x)` file of planner-ui's `examples/walkthroughs/`,
+ * with `id` the file name minus its test suffix. The generator and the
+ * freshness suite each feed this from their own listing of that directory,
+ * so the published list is always the computed one: an empty list means the
+ * directory holds no walkthrough tests, never that the scan was skipped.
+ */
+export function walkthroughEntriesOf(sources: Readonly<Record<string, string>>): readonly WalkthroughEntry[] {
+  const entries: { id: string; testName: string; line: number }[] = []
+  for (const [path, source] of Object.entries(sources)) {
+    const fileName = path.slice(path.lastIndexOf('/') + 1)
+    if (!WALKTHROUGH_TEST_SUFFIX.test(fileName)) continue
+    const id = fileName.replace(WALKTHROUGH_TEST_SUFFIX, '')
+    for (const test of testsBetween(source, 0, source.length, newlineOffsets(source), true)) {
+      entries.push({ id, testName: test.title, line: test.line })
+    }
+  }
+  return entries
+    .sort((left, right) => compareStrings(left.id, right.id) || left.line - right.line)
+    .map(({ id, testName }) => ({ id, testName }))
 }
 
 export interface CalculationCoverageShard {
@@ -1030,39 +1086,73 @@ function attestationPathOf(implementedBy: string): string {
   return implementedBy.replace(/^packages\/engine\/src\//u, '')
 }
 
+/**
+ * it()/test() calls at CODE level in an external-oracle file — an `it(`
+ * inside a comment or a string never counts, so a pending-case note cannot
+ * inflate the published case count.
+ */
 function countOracleCalls(source: string): number {
-  return [...source.matchAll(/\b(?:it|test)\(/gu)].length
+  let count = 0
+  let index = 0
+  while (index < source.length) {
+    const skipped = skipNonCode(source, index, regexCanFollow(source, index))
+    if (skipped !== index) {
+      index = skipped
+      continue
+    }
+    const isIt = source.startsWith('it(', index)
+    if ((isIt || source.startsWith('test(', index)) && (index === 0 || !/[\w$.]/u.test(source[index - 1]!))) {
+      count += 1
+      index += isIt ? 3 : 5
+      continue
+    }
+    index += 1
+  }
+  return count
 }
 
-function calculationRecordPassesGates(
+function docPresent(text: string | null): boolean {
+  return text !== null && text.trim().length > 0
+}
+
+function calculationRecordGates(
   id: string,
   record: CalculationRecord,
   input: CalculationCoverageInput,
   fixtureDetails: ReadonlyMap<string, readonly FixtureDetail[]>,
-): boolean {
+): CalculationRecordGates {
   const fixtures = fixtureDetails.get(id) ?? []
-  if (!fixtures.some((fixture) => fixture.tests.length > 0)) return false
-  for (const entry of record.implementedByFunctions) {
+  const pinsResolve = record.implementedByFunctions.every((entry) => {
     const hash = entry.indexOf('#')
     if (hash <= 0 || hash === entry.length - 1) return false
     try {
       input.symbolLineFor(entry.slice(0, hash), entry.slice(hash + 1))
+      return true
     } catch {
       return false
     }
-  }
-  for (const familyId of record.outputs) {
-    if (input.families[familyId] === undefined) return false
-  }
+  })
+  let worksheetExists = true
+  let mutationExists = true
   if (record.justification.kind === 'derivation') {
-    const worksheet = input.docTextFor(record.justification.worksheet)
-    if (worksheet === null || worksheet.trim().length === 0) return false
-    const mutationPath = record.justification.worksheet.replace(/\.md$/u, '.mutation.md')
-    const mutation = input.docTextFor(mutationPath)
-    if (mutation === null || mutation.trim().length === 0) return false
+    const { worksheet } = record.justification
+    worksheetExists = docPresent(input.docTextFor(worksheet))
+    // The receipt path is derived by the one shared convention, the same one
+    // describeCalculation holds the fixture to, so the two cannot diverge.
+    mutationExists = docPresent(input.docTextFor(mutationReceiptPathOf(worksheet)))
   }
-  if (record.provenance.derivedBy === record.provenance.reviewedBy) return false
-  return true
+  return {
+    fixtureRegistersTest: fixtures.some((fixture) => fixture.tests.length > 0),
+    pinsResolve,
+    familiesExist: record.outputs.every((familyId) => input.families[familyId] !== undefined),
+    worksheetExists,
+    mutationExists,
+    provenanceIndependent: record.provenance.derivedBy !== record.provenance.reviewedBy,
+  }
+}
+
+function gatesPass(gates: CalculationRecordGates): boolean {
+  return Object.values(gates).every((gate) => gate === true)
 }
 
 function familyRelocationPending(family: OutputFamily): boolean {
@@ -1091,6 +1181,12 @@ export function buildCalculationCoverageReport(input: CalculationCoverageInput):
     ),
     'describeCalculation',
   )
+  const gateById = new Map(
+    Object.entries(input.registry).map(([id, record]) => [
+      id,
+      calculationRecordGates(id, record, input, fixtureDetails),
+    ]),
+  )
   const published: readonly CalculationCoverageRecord[] = Object.entries(input.registry)
     .map(([id, record]) => ({
       id,
@@ -1101,19 +1197,14 @@ export function buildCalculationCoverageReport(input: CalculationCoverageInput):
       implementedBy: [...record.implementedBy],
       provenance: record.provenance,
       fixtureFiles: [...new Set((fixtureDetails.get(id) ?? []).map(({ path }) => path))].sort(compareStrings),
+      gates: gateById.get(id)!,
     }))
     .sort((left, right) => compareStrings(left.id, right.id))
-  const gateById = new Map(
-    Object.entries(input.registry).map(([id, record]) => [
-      id,
-      calculationRecordPassesGates(id, record, input, fixtureDetails),
-    ]),
-  )
   const recordsByFamily = new Map<string, { record: CalculationRecord; passes: boolean }[]>()
   for (const [id, record] of Object.entries(input.registry)) {
     for (const familyId of record.outputs) {
       const list = recordsByFamily.get(familyId) ?? []
-      list.push({ record, passes: gateById.get(id) === true })
+      list.push({ record, passes: gatesPass(gateById.get(id)!) })
       recordsByFamily.set(familyId, list)
     }
   }
