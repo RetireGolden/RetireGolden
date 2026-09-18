@@ -1,0 +1,821 @@
+/**
+ * Monte-Carlo calculation records.
+ *
+ * One slice of the calculation registry: the historical market series and
+ * blends, the per-path RNG, the pluggable market models, LTC shock sampling,
+ * risk-based guardrail thresholds, and the SPIA/QLAC payout-rate table.
+ * `../calculationRegistry.ts` composes every slice into `CALCULATION_REGISTRY`;
+ * read it for what a record must carry.
+ */
+import type { CalculationRecord } from '../calculationRegistry.js'
+
+const PATH_FAMILIES = [
+  'monte-carlo-success-rate',
+  'monte-carlo-investable-fan-percentiles',
+  'monte-carlo-ending-investable-histogram',
+  'monte-carlo-ending-after-tax-estate-percentiles',
+  'monte-carlo-depletion-probability-by-year',
+] as const
+
+export const monteCarloRecords = {
+  'allocation-cholesky-factor': {
+    title: 'Cholesky factor of a correlation matrix',
+    purpose: 'The lower-triangular mix that turns independent Gaussians into correlated class shocks on an allocated Monte Carlo path.',
+    kind: 'formula',
+    outputs: [],
+    feeds: [
+      'monte-carlo-success-rate',
+      'monte-carlo-investable-fan-percentiles',
+      'monte-carlo-ending-investable-histogram',
+      'monte-carlo-ending-after-tax-estate-percentiles',
+    ],
+    statement:
+      'For a symmetric matrix A, the lower-triangular L satisfies L L^T = A when A is positive definite: L_ij = (A_ij − sum_{k<j} L_ik L_jk) / L_jj for i > j, and L_ii = sqrt(max(1e-12, A_ii − sum_{k<i} L_ik^2)), with L_ij = 0 for j > i. For the 2×2 correlation [[1, r], [r, 1]], this is L = [[1, 0], [r, sqrt(1 − r^2)]]. Units: dimensionless. Rounding: none; a nonpositive diagonal radicand is clamped to 1e-12 rather than rejected.',
+    formula: {
+      expression: 'L_ii = sqrt(max(1e-12, A_ii − sum_{k<i} L_ik^2)); L_ij = (A_ij − sum_{k<j} L_ik L_jk) / L_jj for i > j; L_ij = 0 for j > i',
+      variables: [
+        { symbol: 'A', meaning: 'Input matrix (a correlation matrix when used for class shocks)', unit: '1', domain: 'square, intended symmetric positive-definite' },
+        { symbol: 'L', meaning: 'Lower-triangular factor', unit: '1', domain: 'L_ij = 0 for j > i' },
+        { symbol: 'r', meaning: 'Off-diagonal correlation in the 2×2 worksheet case', unit: '1', domain: '|r| < 1 for an exact factorization' },
+      ],
+      timing: 'once per configured correlation matrix; reused every year of every path',
+      rounding: 'none; diagonal radicand floored at 1e-12',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/monte-carlo/allocation-cholesky-factor.md',
+    },
+    limits: [
+      'A non-positive-definite input is not rejected: the diagonal is clamped to 1e-12 so the factor always returns',
+      'The function neither checks symmetry nor rescales a correlation matrix to unit diagonal',
+      'Class-shock models pass this factor a matrix over ASSET_CLASS_IDS order; a 2×2 is the worksheet case, not a live allocation',
+    ],
+    implementedBy: ['packages/engine/src/allocation/assetClasses.ts'],
+    implementedByFunctions: ['packages/engine/src/allocation/assetClasses.ts#choleskyDecompose'],
+    verifiedOn: '2026-09-17',
+    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'unreviewed' },
+  },
+  'historical-market-series': {
+    title: 'Embedded annual stock, bond, and inflation series, 1928–2023',
+    purpose: 'The offline 96-year Damodaran/Shiller snapshot every historical bootstrap and blend reads.',
+    kind: 'data',
+    outputs: [],
+    feeds: [...PATH_FAMILIES],
+    statement:
+      'Ninety-six calendar-year rows, 1928 through 2023 inclusive, each storing S&P 500 total return, 10-year US Treasury total return, and CPI-U calendar-year inflation, all in percent, transcribed to one decimal. The dataset fact this record pins is the embedded table: 96 rows, those endpoints, column sums 1118.9 / 466.6 / 298.8 percentage points, and the sample rows 1928 43.8/0.8/−1.2, 1929 −8.3/4.2/0.6, 2023 26.1/3.9/3.4. Values are approximate at about 0.1–0.5 percentage point. Rounding: one decimal as stored.',
+    formula: null,
+    justification: {
+      kind: 'dataset',
+      source: {
+        citation:
+          'Aswath Damodaran / NYU Stern, “Historical Returns on Stocks, Bonds and Bills,” derived from Shiller annual series: S&P 500 total return, 10-year Treasury total return, and calendar-year CPI inflation',
+        url: 'https://pages.stern.nyu.edu/~adamodar/New_Home_Page/datafile/histretSP.html',
+        asOf: '2023-12-31',
+        retrievedOn: '2026-09-14',
+        rights:
+          'Facts and three attributed sample rows are restated; the source reuse license was not established, so the full table is not recopied in the worksheet',
+      },
+      transformation:
+        'Transcribed to one-decimal percent storage as HISTORICAL_YEARS. The digest is sha256 over the canonical JSON of the 96 {year, stocksPct, bondsPct, inflationPct} objects in file order, as UTF-8.',
+      digest: 'sha256:e6863cd6a8f79b88bcb5be7446c560c8ef77177ba8fdc9d933d27ffe28a53718',
+    },
+    limits: [
+      'Each value is approximate at about 0.1–0.5 percentage point; bootstrap sampling uses the joint distribution and sequencing, not basis-point precision',
+      'Refresh cadence is annual with the parameter packs',
+      'The full table is not reproduced in the worksheet; the evidence pins row count, endpoints, column sums, and the three sample rows the worksheet names',
+    ],
+    implementedBy: ['packages/engine/src/montecarlo/historicalReturns.ts'],
+    implementedByFunctions: ['packages/engine/src/montecarlo/historicalReturns.ts#HISTORICAL_YEARS'],
+    verifiedOn: '2026-09-17',
+    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'unreviewed' },
+  },
+  'historical-portfolio-mean': {
+    title: 'Arithmetic mean of blended historical portfolio returns',
+    purpose: 'The sample mean every centered historical bootstrap subtracts so the average additive shock is zero.',
+    kind: 'formula',
+    outputs: [],
+    feeds: [...PATH_FAMILIES],
+    statement:
+      'For equity weight w percent, mean = (1/96) sum_t [w/100 · stocks_t + (1 − w/100) · bonds_t] over the 96 embedded years. Equivalently w/100 · mean(stocks) + (1 − w/100) · mean(bonds). Arithmetic, not geometric, so the average additive shock is zero. For w = 60 the column sums 1118.9 and 466.6 give 8.93729166666667%. Units: percent per year, nominal. Rounding: none.',
+    formula: {
+      expression: 'mean(w) = (1/N) sum_t [ (w/100) stocks_t + (1 − w/100) bonds_t ], N = 96',
+      variables: [
+        { symbol: 'w', meaning: 'Equity weight', unit: 'percent', domain: 'typically 0–100' },
+        { symbol: 'stocks_t, bonds_t', meaning: 'Embedded year-t stock and bond total returns', unit: 'percent/year', domain: 'finite' },
+        { symbol: 'mean(w)', meaning: 'Arithmetic mean blended return', unit: 'percent/year', domain: 'finite' },
+      ],
+      timing: 'once per configured equity weight; subtracted from every sampled year of a centered bootstrap',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/monte-carlo/historical-portfolio-mean.md',
+    },
+    limits: [
+      'Arithmetic mean is required to center additive shocks; a geometric mean would not make the average shock zero',
+      'The mean is taken over the embedded 96-year window only; it is not a forecast of the plan expected return',
+    ],
+    implementedBy: ['packages/engine/src/montecarlo/historicalReturns.ts'],
+    implementedByFunctions: ['packages/engine/src/montecarlo/historicalReturns.ts#meanPortfolioReturnPct'],
+    verifiedOn: '2026-09-17',
+    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'unreviewed' },
+  },
+  'historical-portfolio-return-blend': {
+    title: 'One-year two-asset blended nominal return',
+    purpose: 'The dollar-weighted stock/bond mix of one historical year, before centering.',
+    kind: 'formula',
+    outputs: [],
+    feeds: [...PATH_FAMILIES],
+    statement:
+      'For a year with stock return s percent and bond return b percent and equity weight w percent, the blended nominal return is (w/100)·s + (1 − w/100)·b, with no rounding. For 1928 (43.8, 0.8) at w = 60 this is 26.6%. Units: percent per year, nominal. Domain: finite series values; w is used as a fraction and is not clamped.',
+    formula: {
+      expression: 'R = (w/100) s + (1 − w/100) b',
+      variables: [
+        { symbol: 's', meaning: 'S&P 500 total return for the year', unit: 'percent/year', domain: 'finite' },
+        { symbol: 'b', meaning: '10-year Treasury total return for the year', unit: 'percent/year', domain: 'finite' },
+        { symbol: 'w', meaning: 'Equity weight', unit: 'percent', domain: 'typically 0–100; not clamped' },
+        { symbol: 'R', meaning: 'Blended nominal portfolio return', unit: 'percent/year', domain: 'finite' },
+      ],
+      timing: 'one calendar year; one blend per sampled historical row',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/monte-carlo/historical-portfolio-return-blend.md',
+    },
+    limits: [
+      'A two-asset stock/bond mix; cash, international, and class-level sleeves are not in this blend',
+      'The weight is not clamped to [0, 100]; a value outside that range is used as passed',
+    ],
+    implementedBy: ['packages/engine/src/montecarlo/historicalReturns.ts'],
+    implementedByFunctions: ['packages/engine/src/montecarlo/historicalReturns.ts#portfolioReturnPct'],
+    verifiedOn: '2026-09-17',
+    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'unreviewed' },
+  },
+  'long-term-care-shock-sampling': {
+    title: 'Per-person paid-care episode draw',
+    purpose: 'Zero or one late-life care event per person on a Monte Carlo path, so existing care-event offsets apply.',
+    kind: 'model',
+    outputs: [],
+    feeds: [
+      'spending-care-cost-gross-annual',
+      'long-term-care-benefit-annual',
+      'monte-carlo-success-rate',
+      'monte-carlo-ending-investable-histogram',
+    ],
+    statement:
+      'For each person, draw one uniform U in [0, 1). If U >= incidence, emit no event for that person. If U < incidence, onset age is max(currentAge, minOnsetAge + nextInt(span + 1)) with span = max(0, maxOnsetAge − minOnsetAge), duration is drawn from the weighted discrete table, and annualCost is the configured today\'s-dollar cost. At most one episode per person. The worksheet case incidence = 0.5, U = 0.75 emits the empty list. Units: a care-event list. Rounding: onset is an integer age.',
+    formula: {
+      expression: 'if U >= incidence then no event; else onset = max(currentAge, minOnset + nextInt(span + 1)), duration ~ weighted table, cost = annualCost',
+      variables: [
+        { symbol: 'incidence', meaning: 'Probability a person has a paid-care episode', unit: '1', domain: '[0, 1]' },
+        { symbol: 'U', meaning: 'First uniform draw for that person', unit: '1', domain: '[0, 1)' },
+        { symbol: 'annualCost', meaning: 'Today\'s-dollar annual care cost of a sampled episode', unit: 'usd/year', domain: '>= 0' },
+      ],
+      timing: 'once per person per path, before the path ledger runs',
+      rounding: 'onset age is an integer; cost is not rounded',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/monte-carlo/long-term-care-shock-sampling.md',
+    },
+    limits: [
+      'Defaults are planning approximations (HHS/ASPE incidence, Genworth-range cost) and do not predict individual need, local cost, or insurance eligibility',
+      'Onset is clamped no earlier than current age so the spike lands in the future',
+      'The comparison is U >= incidence (no event); reversing it to U > incidence is the worksheet\'s first wrong reading',
+      'One draw per person, not one household draw per path',
+    ],
+    implementedBy: ['packages/engine/src/montecarlo/ltcShock.ts'],
+    implementedByFunctions: ['packages/engine/src/montecarlo/ltcShock.ts#sampleCareEvents'],
+    verifiedOn: '2026-09-17',
+    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'unreviewed' },
+  },
+  'market-model-ar1-shock': {
+    title: 'AR(1) mean-reverting return shock',
+    purpose: 'A serially correlated, mean-zero additive return shock for one Monte Carlo path.',
+    kind: 'model',
+    outputs: [],
+    feeds: [...PATH_FAMILIES],
+    statement:
+      'Let phi be the configured persistence (clamped to [−0.9, 0.95]) and sigma = returnVolPct/100. Starting from prev = 0, each year draws an innovation eps ~ N(0, 1) and sets shock = phi · prev + sigma · eps, then prev = shock; the published return shock is 100 · shock percentage points. With phi = 0.2, sigma = 0.10 and a first-year eps that produces a 10-point shock, the next two zero-innovation years are 2 then 0.4 points. Units: percentage points. Rounding: none.',
+    formula: {
+      expression: 'x_0 = 0; x_t = phi x_{t-1} + sigma eps_t; returnShockPct_t = 100 x_t',
+      variables: [
+        { symbol: 'phi', meaning: 'AR(1) persistence', unit: '1', domain: 'clamped to [−0.9, 0.95]; worksheet case 0.2' },
+        { symbol: 'sigma', meaning: 'Innovation scale, returnVolPct/100', unit: '1', domain: '>= 0' },
+        { symbol: 'eps_t', meaning: 'Standard-normal innovation', unit: '1', domain: 'finite' },
+        { symbol: 'returnShockPct_t', meaning: 'Additive return shock', unit: 'percentage points', domain: 'finite' },
+      ],
+      timing: 'annual; prev starts at 0 on every path',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/monte-carlo/market-model-ar1-shock.md',
+    },
+    limits: [
+      'A dynamics assumption, not evidence of a true return process',
+      'The path always starts from prev = 0; a prior shock of 10 is realized as year 1 of the path, and the worksheet\'s "next two shocks" are years 2 and 3 with zero innovations',
+      'The signature default comment says 0.2; the code default is 0.25 when phi is omitted. The worksheet case passes 0.2 explicitly',
+    ],
+    implementedBy: ['packages/engine/src/montecarlo/marketModels.ts'],
+    implementedByFunctions: ['packages/engine/src/montecarlo/marketModels.ts#createAR1Model'],
+    verifiedOn: '2026-09-17',
+    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'unreviewed' },
+  },
+  'market-model-cape-conditioned': {
+    title: 'CAPE-conditioned shift of a mean-preserving lognormal shock',
+    purpose: 'Lowers the path mean when starting CAPE is above 20, on top of a lognormal shock.',
+    kind: 'model',
+    outputs: [],
+    feeds: [...PATH_FAMILIES],
+    statement:
+      'The lognormal base shock is 100 (exp(sigma Z − sigma^2/2) − 1). The CAPE adjustment is adj = clamp(−(startingCape − 20) · sensitivity, −4, 2) percentage points, and the published shock is the base plus adj. For startingCape = 25, sensitivity = 0.15 and sigma = 0, adj = −0.75 and the shock is −0.75 points. Units: percentage points. Rounding: none.',
+    formula: {
+      expression: 'adj = clamp(−(CAPE − 20) · s, −4, 2); shock = 100 (exp(sigma Z − sigma^2/2) − 1) + adj',
+      variables: [
+        { symbol: 'CAPE', meaning: 'Starting cyclically adjusted P/E', unit: '1', domain: 'positive; worksheet 25' },
+        { symbol: 's', meaning: 'Sensitivity, percentage points per CAPE point above 20', unit: 'percentage points', domain: 'worksheet 0.15' },
+        { symbol: 'sigma', meaning: 'Lognormal volatility as a decimal', unit: '1', domain: '>= 0; worksheet 0' },
+        { symbol: 'adj', meaning: 'Additive mean shift', unit: 'percentage points', domain: '[−4, 2]' },
+      ],
+      timing: 'annual; the CAPE adjustment is constant across years of the path',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/monte-carlo/market-model-cape-conditioned.md',
+    },
+    limits: [
+      'A modeling hypothesis, not proof that CAPE causes the stated future-return change',
+      'The adjustment is clamped to [−4, 2] percentage points; the worksheet case −0.75 does not bind',
+      'The projection still adds the plan expected return separately; this record is the shock only',
+    ],
+    implementedBy: ['packages/engine/src/montecarlo/marketModels.ts'],
+    implementedByFunctions: ['packages/engine/src/montecarlo/marketModels.ts#createCapeConditionedModel'],
+    verifiedOn: '2026-09-17',
+    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'unreviewed' },
+  },
+  'market-model-empirical-history': {
+    title: 'Empirical historical shock, centered or raw',
+    purpose: 'Samples blended historical returns as shocks, optionally subtracting the historical mean.',
+    kind: 'model',
+    outputs: [],
+    feeds: [...PATH_FAMILIES],
+    statement:
+      'Each year samples a HISTORICAL_YEARS row: the first nextInt(n) sets the cursor, then a uniform coin of 0.5 redraws iid when next() < 0.5 and otherwise keeps the cursor. At equity weight w, centered mode (the default) publishes blend(row, w) − meanPortfolioReturnPct(w); raw mode (centered === false) publishes the blend itself. Inflation is the row value as-is. For w = 60, nextInt(96) = 0 and next() = 0.6, year 1 is 1928: blend 26.599999999999998%, dataset mean 8.937291666666669%, centered shock 17.662708333333327, raw shock 26.599999999999998, inflation −1.2%. Units: percentage points and percent/year. Rounding: none; absolute tolerance 1e-12 on the non-integer shocks.',
+    formula: {
+      expression: 'shock_centered = R(row, w) − mean(w); shock_raw = R(row, w); inflation = row.inflationPct',
+      variables: [
+        { symbol: 'row', meaning: 'Sampled HISTORICAL_YEARS entry', unit: 'year', domain: '1928–2023; worksheet 1928 via nextInt 0' },
+        { symbol: 'w', meaning: 'Equity weight', unit: 'percent', domain: 'worksheet 60' },
+        { symbol: 'mean(w)', meaning: 'Dataset blended mean at w, meanPortfolioReturnPct(w)', unit: 'percent/year', domain: 'worksheet 8.937291666666669' },
+        { symbol: 'R(row, w)', meaning: 'Blended historical return of the sampled row', unit: 'percent/year', domain: 'worksheet 26.599999999999998' },
+      ],
+      timing: 'annual; one sampled row per path year',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/monte-carlo/market-model-empirical-history.md',
+    },
+    limits: [
+      'Centered mode studies dispersion about the historical mean; raw mode preserves the empirical level but can double-count because the projection adds expected return separately',
+      'Neither mode predicts future returns',
+      'The sampler mixes sequence-step and iid (a 0.5 coin) rather than drawing one iid index per year',
+    ],
+    implementedBy: ['packages/engine/src/montecarlo/marketModels.ts'],
+    implementedByFunctions: ['packages/engine/src/montecarlo/marketModels.ts#createEmpiricalModel'],
+    verifiedOn: '2026-09-17',
+    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'unreviewed' },
+  },
+  'market-model-garch-variance': {
+    title: 'GARCH(1,1) variance recursion',
+    purpose: 'A clustered-volatility scale for the year\'s additive return shock.',
+    kind: 'model',
+    outputs: [],
+    feeds: [...PATH_FAMILIES],
+    statement:
+      'State before the first year is v_0 = 0.0001 and e_0 = 0. Each year: v_t = omega + alpha · e_{t-1}^2 + beta · v_{t-1}; sigma_t = sqrt(max(1e-9, v_t)) · (returnVolScalePct/100) · 5; s_t = sigma_t · Z1_t; published return shock = s_t · 100 percent; inflation_t = inflationMeanPct + inflationVolPct · (rho · Z1_t + sqrt(1 − rho^2) · Z2_t); then e_t = s_t. For omega = 1, alpha = 0.1, beta = 0.8, returnVolScalePct = 100, inflation mean/vol 0/0, correlation 0, and Z1,Z2 = (1, 0) then (0.5, 0), published shocks are 500.019999600016 and 518.4269476020705 percent and inflation is 0, 0. Units: published shock in percent. Rounding: none; absolute tolerance 1e-9 on the published shocks. Internal variances 1.00008 and 4.300264 explain the result but are not outputs.',
+    formula: {
+      expression: 'v_t = omega + alpha e_{t-1}^2 + beta v_{t-1}; s_t = sqrt(max(1e-9, v_t)) · (returnVolScalePct/100) · 5 · Z1_t; shock = 100 s_t; e_t = s_t',
+      variables: [
+        { symbol: 'omega, alpha, beta', meaning: 'GARCH(1,1) parameters', unit: 'variance units', domain: 'worksheet 1, 0.1, 0.8' },
+        { symbol: 'returnVolScalePct', meaning: 'Configured scale as a percent of the tuned factor', unit: 'percent', domain: 'worksheet 100' },
+        { symbol: 'Z1_t, Z2_t', meaning: 'The year\'s two standard-normal draws', unit: '1', domain: 'worksheet (1, 0) then (0.5, 0)' },
+        { symbol: 'shock', meaning: 'Published return shock', unit: 'percent', domain: 'worksheet 500.019999600016 then 518.4269476020705' },
+      ],
+      timing: 'annual; v and e persist along the path from v_0 = 0.0001, e_0 = 0',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/monte-carlo/market-model-garch-variance.md',
+    },
+    limits: [
+      'The fed-back e_t is the scaled shock s_t, not the textbook standardized innovation sqrt(v_t) · Z1_t, so alpha acts on a shock that already carries returnVolScalePct/100 and the fixed factor 5; the recursion is a tuned GARCH(1,1) approximation, not a fitted textbook GARCH',
+      'Variance v_t is internal and not published',
+      'The extract does not state parameter validation; empirical suitability is unproved',
+    ],
+    implementedBy: ['packages/engine/src/montecarlo/marketModels.ts'],
+    implementedByFunctions: ['packages/engine/src/montecarlo/marketModels.ts#createGarchModel'],
+    verifiedOn: '2026-09-17',
+    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'unreviewed' },
+  },
+  'market-model-gaussian-draw': {
+    title: 'Additive Gaussian return shock',
+    purpose: 'A symmetric, mean-zero normal return shock scaled to the configured volatility.',
+    kind: 'model',
+    outputs: [],
+    feeds: [...PATH_FAMILIES],
+    statement:
+      'Each year draws Z ~ N(0, 1) and emits returnShockPct = returnVolPct · Z (equivalently 100 · (returnVolPct/100) · Z). For volatility 12 and Z = −2 the shock is −24 percentage points. Inflation is normal and correlated via a Gaussian copula. Units: percentage points. Rounding: none. Exact for these inputs.',
+    formula: {
+      expression: 'returnShockPct = sigma_pct · Z',
+      variables: [
+        { symbol: 'sigma_pct', meaning: 'Annual return volatility', unit: 'percentage points', domain: '>= 0; worksheet 12' },
+        { symbol: 'Z', meaning: 'Standard-normal draw', unit: '1', domain: 'finite; worksheet −2' },
+        { symbol: 'returnShockPct', meaning: 'Additive return shock', unit: 'percentage points', domain: 'unbounded; can imply returns below −100%' },
+      ],
+      timing: 'annual; iid given the draws',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/monte-carlo/market-model-gaussian-draw.md',
+    },
+    limits: [
+      'The unbounded lower tail can imply returns below −100%, an explicit limitation of additive normal shocks',
+      'This is simulated dispersion, not a forecast',
+    ],
+    implementedBy: ['packages/engine/src/montecarlo/marketModels.ts'],
+    implementedByFunctions: ['packages/engine/src/montecarlo/marketModels.ts#createGaussianModel'],
+    verifiedOn: '2026-09-17',
+    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'unreviewed' },
+  },
+  'market-model-historical-centered-bootstrap': {
+    title: 'Centered historical bootstrap shock',
+    purpose: 'A mean-zero shock from a sampled historical stock/bond/inflation year at the configured equity weight.',
+    kind: 'model',
+    outputs: [],
+    feeds: [...PATH_FAMILIES],
+    statement:
+      'A year is sampled iid, in a fixed-length wrapping block, or as a wrapping sequence. The return shock is portfolioReturnPct(row, w) − meanPortfolioReturnPct(w); inflation is the row\'s inflation. With mode iid, w = 60, and nextInt(96) = 0, path year 1 is the 1928 row: blend 26.599999999999998%, dataset mean 8.937291666666669%, centered shock 17.662708333333327 percentage points, inflation −1.2%. Units: percentage points and percent/year. Rounding: none; absolute tolerance 1e-12 on the shock.',
+    formula: {
+      expression: 'shock = R(row, w) − mean(w); inflation = row.inflationPct',
+      variables: [
+        { symbol: 'row', meaning: 'Sampled HISTORICAL_YEARS entry', unit: 'year', domain: '1928–2023; worksheet 1928 via nextInt 0' },
+        { symbol: 'w', meaning: 'Equity weight', unit: 'percent', domain: 'worksheet 60' },
+        { symbol: 'mean(w)', meaning: 'Dataset blended mean at w, meanPortfolioReturnPct(w)', unit: 'percent/year', domain: 'worksheet 8.937291666666669' },
+        { symbol: 'shock', meaning: 'Centered return shock', unit: 'percentage points', domain: 'worksheet 17.662708333333327' },
+      ],
+      timing: 'annual; iid / block / sequence chooses the row',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/monte-carlo/market-model-historical-centered-bootstrap.md',
+    },
+    limits: [
+      'Subtracting the sample-series mean makes the empirical shock mean zero; it does not claim history repeats or that a 60/40 blend fits every portfolio',
+    ],
+    implementedBy: ['packages/engine/src/montecarlo/marketModels.ts'],
+    implementedByFunctions: ['packages/engine/src/montecarlo/marketModels.ts#createHistoricalModel'],
+    verifiedOn: '2026-09-17',
+    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'unreviewed' },
+  },
+  'market-model-inflation-regime': {
+    title: 'Bernoulli high-inflation regime mix',
+    purpose: 'A two-regime inflation mean (normal vs high) with a lognormal return shock.',
+    kind: 'model',
+    outputs: [],
+    feeds: [...PATH_FAMILIES],
+    statement:
+      'Each year a uniform U is compared with the high-inflation probability (from the low regime) or 0.7 (from the high regime) and the regime toggles on a hit. Inflation is the selected mean plus a 1.5-point copula term. For high-inflation probability 0.20, U = 0.10, high/base means 8/3 and zero innovations, the first year starts in the low regime, 0.10 < 0.20 toggles to high, and inflation is 8%. Units: percent/year. Rounding: none. Exact in this degenerate case.',
+    formula: {
+      expression: 'start low; if U < p_high then high; inflation = (high ? mu_high : mu_base) + 1.5 · copula(Z)',
+      variables: [
+        { symbol: 'p_high', meaning: 'Probability of switching into the high regime from low', unit: '1', domain: 'clamped to [0.01, 0.3]; worksheet 0.20' },
+        { symbol: 'U', meaning: 'Regime uniform draw', unit: '1', domain: '[0, 1); worksheet 0.10' },
+        { symbol: 'mu_high, mu_base', meaning: 'High and base inflation means', unit: 'percent/year', domain: 'worksheet 8 and 3' },
+      ],
+      timing: 'annual; the regime bit persists along the path',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/monte-carlo/market-model-inflation-regime.md',
+    },
+    limits: [
+      'A stress model, not a forecast of regime incidence',
+      'Inflation volatility is hardcoded at 1.5 percentage points; zero-innovation inflation requires Z = 0, not a configured vol of 0',
+      'p_high is clamped to [0.01, 0.3]',
+    ],
+    implementedBy: ['packages/engine/src/montecarlo/marketModels.ts'],
+    implementedByFunctions: ['packages/engine/src/montecarlo/marketModels.ts#createInflationRegimeModel'],
+    verifiedOn: '2026-09-17',
+    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'unreviewed' },
+  },
+  'market-model-lognormal-draw': {
+    title: 'Mean-preserving lognormal return shock',
+    purpose: 'A multiplicative shock whose gross multiplier has mean one, plus correlated normal inflation.',
+    kind: 'model',
+    outputs: [],
+    feeds: [...PATH_FAMILIES],
+    statement:
+      'Each year draws Z ~ N(0, 1) and emits returnShockPct = 100 (exp(sigma Z − sigma^2/2) − 1) with sigma = returnVolPct/100, so E[exp(sigma Z − sigma^2/2)] = 1. Inflation is inflationMeanPct + inflationVolPct · copula(Z). For return volatility 0 and inflation mean/vol 3/0 every year has return shock 0 and inflation 3%, regardless of Z. Units: percentage points and percent/year. Rounding: none. Exact apart from array representation.',
+    formula: {
+      expression: 'returnShockPct = 100 (exp(sigma Z − sigma^2/2) − 1); inflation = mu_i + vol_i · copula(Z)',
+      variables: [
+        { symbol: 'sigma', meaning: 'Return volatility as a decimal, returnVolPct/100', unit: '1', domain: '>= 0; worksheet 0' },
+        { symbol: 'Z', meaning: 'Standard-normal draw', unit: '1', domain: 'finite; arbitrary when sigma = 0' },
+        { symbol: 'mu_i, vol_i', meaning: 'Inflation mean and volatility', unit: 'percent/year', domain: 'worksheet 3 / 0' },
+      ],
+      timing: 'annual; iid given the draws',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/monte-carlo/market-model-lognormal-draw.md',
+    },
+    limits: [
+      'Defines simulated dispersion, not a forecast or a guarantee that returns are lognormal',
+      'The plan expected return is added by the projection; putting it inside this model would double-count',
+    ],
+    implementedBy: ['packages/engine/src/montecarlo/marketModels.ts'],
+    implementedByFunctions: ['packages/engine/src/montecarlo/marketModels.ts#createLognormalModel'],
+    verifiedOn: '2026-09-17',
+    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'unreviewed' },
+  },
+  'market-model-regime-switch': {
+    title: 'Two-state bull/bear Markov return shock',
+    purpose: 'Persistent bull and bear mean deviations with a per-year switch probability.',
+    kind: 'model',
+    outputs: [],
+    feeds: [...PATH_FAMILIES],
+    statement:
+      'The path starts bull if U_start > 0.5. Each year, if U_switch < p_switch the state flips. The shock is 100 · (mu_state + sigma_state · Z) percentage points, with mu_bull / mu_bear the configured deviations (default +4 / −4 percent as decimals 0.04 / −0.04). For bull/bear +4/−4, zero volatilities, current state bull, switch draw 0.9 and p_switch = 0.05, the state remains bull and the shock is +4. Units: percentage points. Rounding: none. Exact for the degenerate volatility case.',
+    formula: {
+      expression: 'stay if U >= p; shock = 100 (mu_state + sigma_state Z)',
+      variables: [
+        { symbol: 'mu_bull, mu_bear', meaning: 'State mean deviations as percents, divided by 100 in the recursion', unit: 'percent', domain: 'worksheet +4 / −4' },
+        { symbol: 'p', meaning: 'Annual switch probability', unit: '1', domain: 'clamped to [0.001, 0.5]; worksheet 0.05' },
+        { symbol: 'U', meaning: 'Switch uniform draw', unit: '1', domain: '[0, 1); worksheet 0.9' },
+      ],
+      timing: 'annual; the state bit persists along the path',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/monte-carlo/market-model-regime-switch.md',
+    },
+    limits: [
+      'A scenario model, not evidence markets have two regimes',
+      'Symmetric +a/−a deviations are near zero only under equal long-run state mass',
+      'The start state is a coin flip (U > 0.5), so the worksheet\'s "current state bull" is realized by scripting that first draw',
+      'p_switch is clamped to [0.001, 0.5]',
+    ],
+    implementedBy: ['packages/engine/src/montecarlo/marketModels.ts'],
+    implementedByFunctions: ['packages/engine/src/montecarlo/marketModels.ts#createRegimeSwitchModel'],
+    verifiedOn: '2026-09-17',
+    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'unreviewed' },
+  },
+  'market-model-reversed-history': {
+    title: 'Reversed-history window replay',
+    purpose: 'Replays a stochastically chosen historical window in reverse chronological order.',
+    kind: 'model',
+    outputs: [],
+    feeds: [...PATH_FAMILIES],
+    statement:
+      'Requested windowLengthYears is clamped to at least 5 and at most the historical row count n. The path draws start = nextInt(n − L + 1) once, then path year i replays row start + L − 1 − (i mod L). Each shock is the row\'s blend at equityWeightPct minus the dataset mean at that weight; inflation is the row value as-is. For requested windowLengthYears 3 (effective L = 5), w = 60, nextInt 72, and three path years, the replayed years are [2004, 2003, 2002], shocks [−0.7172916666666698, 8.26270833333333, −16.097291666666667], inflation [3.3, 1.9, 2.4]. Units: percentage points and percent/year. Rounding: none; absolute tolerance 1e-12 on the shocks.',
+    formula: {
+      expression: 'L = clamp(windowLengthYears, 5, n); idx_i = start + L − 1 − (i mod L); shock_i = R(row_idx, w) − mean(w)',
+      variables: [
+        { symbol: 'windowLengthYears', meaning: 'Requested window length', unit: 'years', domain: 'worksheet 3' },
+        { symbol: 'L', meaning: 'Effective window length after the floor and cap', unit: 'years', domain: '[5, n]; worksheet 5' },
+        { symbol: 'start', meaning: 'Drawn start index, nextInt(n − L + 1)', unit: '1', domain: 'worksheet 72' },
+        { symbol: 'w', meaning: 'Equity weight', unit: 'percent', domain: 'worksheet 60' },
+      ],
+      timing: 'annual; the reversed window repeats for longer paths',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/monte-carlo/market-model-reversed-history.md',
+    },
+    limits: [
+      'A stress transformation that preserves marginal observations while changing sequence risk, not a historical claim',
+      'windowLengthYears is clamped to [5, n]; a requested 3 is raised to 5',
+    ],
+    implementedBy: ['packages/engine/src/montecarlo/marketModels.ts'],
+    implementedByFunctions: ['packages/engine/src/montecarlo/marketModels.ts#createReversedHistoryModel'],
+    verifiedOn: '2026-09-17',
+    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'unreviewed' },
+  },
+  'market-model-stationary-bootstrap': {
+    title: 'Stationary (geometric-block) historical bootstrap',
+    purpose: 'Samples historical years in wrapping contiguous blocks whose length is geometric with mean L.',
+    kind: 'model',
+    outputs: [],
+    feeds: [...PATH_FAMILIES],
+    statement:
+      'For mean block length L, a geometric restart probability is p = 1/L. After a block starts, a continuation draw U >= p continues the current historical block (the next year is the next series row, wrapping). For L = 5, p = 0.20 and U = 0.50, continuation is true. Production draws a whole block length as max(1, floor(−log(1 − U) · L)) at each restart rather than flipping a per-year coin, which is a different parameterization of the same geometric law. Units: a Boolean continuation. Rounding: none. Exact Boolean.',
+    formula: {
+      expression: 'p = 1/L; continue if U >= p (equivalently remaining = floor(−log(1 − U) · L) at block start)',
+      variables: [
+        { symbol: 'L', meaning: 'Mean block length', unit: 'years', domain: '>= 2 as configured; worksheet 5' },
+        { symbol: 'p', meaning: 'Restart probability', unit: '1', domain: '1/L; worksheet 0.20' },
+        { symbol: 'U', meaning: 'Continuation / length draw', unit: '1', domain: '[0, 1); worksheet 0.50' },
+      ],
+      timing: 'annual; a new block is drawn when remaining hits 0',
+      rounding: 'block length is floored; continuation is a Boolean',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/monte-carlo/market-model-stationary-bootstrap.md',
+    },
+    limits: [
+      'Preserves observations while randomizing dependence lengths; it does not establish that historical dependence recurs',
+      'Production uses the inverse-CDF block length floor(−log(1 − U) · L), not a per-year Bernoulli with p = 1/L; for U = 0.50 and L = 5 that length is 3, so the next year continues',
+      'L is clamped to at least 2',
+    ],
+    implementedBy: ['packages/engine/src/montecarlo/marketModels.ts'],
+    implementedByFunctions: ['packages/engine/src/montecarlo/marketModels.ts#createStationaryBootstrapModel'],
+    verifiedOn: '2026-09-17',
+    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'unreviewed' },
+  },
+  'market-model-student-t-draw': {
+    title: 'Centered Student-t return shock scaled to target volatility',
+    purpose: 'A fat-tailed additive return shock whose variance matches the configured annual volatility when df > 2.',
+    kind: 'model',
+    outputs: [],
+    feeds: [...PATH_FAMILIES],
+    statement:
+      'For df > 2 a standard t variate has variance df/(df − 2); multiplying by sqrt((df − 2)/df) gives unit variance before scaling by the target volatility. A raw t draw of 0 is already zero after that scaling, so the shock is 0 percentage points for volatility 12 and df = 5. Units: percentage points. Rounding: none. Absolute tolerance 0 for a zero draw.',
+    formula: {
+      expression: 'shock = sigma_pct · T · sqrt((df − 2)/df); T = 0 ⇒ shock = 0',
+      variables: [
+        { symbol: 'df', meaning: 'Degrees of freedom', unit: '1', domain: '>= 3 as configured; worksheet 5' },
+        { symbol: 'sigma_pct', meaning: 'Target annual volatility', unit: 'percentage points', domain: 'worksheet 12' },
+        { symbol: 'T', meaning: 'Raw t draw', unit: '1', domain: 'worksheet 0' },
+      ],
+      timing: 'annual',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/monte-carlo/market-model-student-t-draw.md',
+    },
+    limits: [
+      'A tail model, not a claim that future returns follow a t distribution',
+      'Production draws a normal and, with probability 0.05, multiplies it by 2.5 (df > 4) or 3.5 rather than sampling a scaled t; a zero draw still yields shock 0, which is the worksheet case',
+      'df is clamped to at least 3',
+    ],
+    implementedBy: ['packages/engine/src/montecarlo/marketModels.ts'],
+    implementedByFunctions: ['packages/engine/src/montecarlo/marketModels.ts#createStudentTModel'],
+    verifiedOn: '2026-09-17',
+    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'unreviewed' },
+  },
+  'market-model-user-shock': {
+    title: 'One-year additive user shock on a lognormal base',
+    purpose: 'Applies a specified percentage-point shock in one 1-based path year and a mean-preserving lognormal base in the others.',
+    kind: 'model',
+    outputs: [],
+    feeds: [...PATH_FAMILIES],
+    statement:
+      'Year indices are 1-based. In the shock year the return shock is the configured shockPct; in other years it is the zero-mean lognormal 100 (exp(sigma Z − sigma^2/2) − 1). For shock year 2, shock −20, base volatility 0 and three years, the vector is [0, −20, 0]. Units: percentage points. Rounding: none. Exact.',
+    formula: {
+      expression: 'returnShockPct_i = shockPct if i+1 = shockYear else 100 (exp(sigma Z_i − sigma^2/2) − 1)',
+      variables: [
+        { symbol: 'shockYear', meaning: '1-based path year of the user shock', unit: 'years', domain: 'integer >= 1; worksheet 2' },
+        { symbol: 'shockPct', meaning: 'Additive shock in that year', unit: 'percentage points', domain: 'worksheet −20' },
+        { symbol: 'sigma', meaning: 'Base lognormal volatility as a decimal', unit: '1', domain: 'worksheet 0' },
+      ],
+      timing: 'annual; the shock year is compared as i+1',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/monte-carlo/market-model-user-shock.md',
+    },
+    limits: [
+      'A what-if, not an assigned crash probability',
+      'shockYear is clamped to at least 1; treating it as zero-based is the worksheet\'s first wrong reading',
+      'The shock year still consumes the year\'s RNG draws; only the return-shock formula is replaced',
+    ],
+    implementedBy: ['packages/engine/src/montecarlo/marketModels.ts'],
+    implementedByFunctions: ['packages/engine/src/montecarlo/marketModels.ts#createUserShockModel'],
+    verifiedOn: '2026-09-17',
+    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'unreviewed' },
+  },
+  'qlac-deferred-payout-placeholder': {
+    title: 'Temporary deferred-QLAC payout-rate placeholder',
+    purpose: 'A conservative annual payout-rate fraction used for a deferred QLAC starting at 80–85 until a quoted deferred rate is sourced.',
+    kind: 'model',
+    outputs: [],
+    feeds: ['annuitization-payout-rate-pct', 'annuitization-sweep-annual-income'],
+    statement:
+      'QLAC_DEFERRED_PAYOUT_RATE = 0.16 (annual payout / premium) with no interpolation or rounding. For a $100,000 premium the annual payout is $16,000 and the monthly illustration is 16,000/12 = $1,333.33333333333. Units: fraction of premium per year. Rounding: none on the rate; exact cents on the annual figure; monthly illustration tolerance 1e-9 dollars.',
+    formula: {
+      expression: 'payout_annual = 0.16 · premium; payout_monthly = payout_annual / 12',
+      variables: [
+        { symbol: 'premium', meaning: 'QLAC premium', unit: 'usd', domain: 'worksheet 100,000' },
+        { symbol: '0.16', meaning: 'Placeholder annual payout-rate fraction', unit: '1/year', domain: 'constant' },
+      ],
+      timing: 'a constant; applied when a deferred QLAC candidate is sized',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/monte-carlo/qlac-deferred-payout-placeholder.md',
+    },
+    limits: [
+      'No direct deferred quote was obtained; the constant is a placeholder to be replaced at the next parameter-pack refresh',
+      'It is intended to understate candidates (16% vs the age-85 immediate 15.3%), not to represent a sourced market quote',
+      'The census has no QLAC-specific family; annuitization-payout-rate-pct and annuitization-sweep-annual-income are named as the nearest families this placeholder feeds when a deferred QLAC candidate is sized, and are not this constant\'s published number',
+    ],
+    implementedBy: ['packages/engine/src/decisions/spiaQuotes.ts'],
+    implementedByFunctions: ['packages/engine/src/decisions/spiaQuotes.ts#QLAC_DEFERRED_PAYOUT_RATE'],
+    verifiedOn: '2026-09-17',
+    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'unreviewed' },
+  },
+  'risk-based-guardrail-threshold-solver': {
+    title: 'Risk-based guardrail threshold bisection',
+    purpose: 'Balance levels (as a fraction of starting investable and in dollars) where fixed-target Monte Carlo success crosses the lower and upper probability bands.',
+    kind: 'model',
+    outputs: ['display-guardrail-balance-thresholds'],
+    feeds: [
+      'monte-carlo-success-rate',
+      'monte-carlo-required-floor-success-rate',
+      'monte-carlo-target-lifestyle-success-rate',
+    ],
+    statement:
+      'Evaluates the plan\'s own Monte Carlo success at scaled investable balances; RiskBasedGuardrailSolveOptions has no injectable success rule. For each target band fraction it first classifies the endpoints or performs ten bisections on [0.02, 4], moving hi when success(mid) >= target and returning hi. A solved balanceFrac lies on 0.02 + k(3.98/1024) for integer k in 1..1023. With one path, success is 0 or 1, so the 70% and 95% edges receive identical classifications and, when solved, identical balanceFrac; balanceDollars = balanceFrac · startingInvestable; successAtThreshold is 0 or 1. Units: fraction of today\'s investable and today\'s dollars. Rounding: none; recovered lattice integer within 1e-9.',
+    formula: {
+      expression: 'solved: balanceFrac = 0.02 + k(3.98/1024), k in 1..1023; balanceDollars = balanceFrac · B; else always-above-band or never-reaches-band',
+      variables: [
+        { symbol: 'f', meaning: 'Balance scale as a fraction of starting investable', unit: '1', domain: '[0.02, 4]' },
+        { symbol: 'S(f)', meaning: 'Fixed-target success probability on shared paths from the plan\'s own Monte Carlo', unit: '1', domain: '[0, 1]; 0 or 1 when pathCount = 1' },
+        { symbol: 'B', meaning: 'Starting investable', unit: 'usd', domain: 'worksheet 500,000' },
+        { symbol: 'k', meaning: 'Lattice index after ten bisections', unit: '1', domain: '1..1023 when solved' },
+      ],
+      timing: 'a solve over shared paths; each probe is a full Monte Carlo',
+      rounding: '10 balance bisections; lattice spacing 3.98/1024',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/monte-carlo/risk-based-guardrail-threshold-solver.md',
+    },
+    limits: [
+      'The result is conditional on model, seed, path count, bracket, and assumed monotonicity; it is neither an unseeded confidence guarantee nor advice',
+      'A missing crossing is reported as always-above-band or never-reaches-band rather than a fabricated threshold',
+      'band-edge dollar values are not evidenced until a success-probe seam exists (D-SOLVER-SEAM)',
+    ],
+    implementedBy: ['packages/engine/src/montecarlo/riskBasedGuardrails.ts'],
+    implementedByFunctions: ['packages/engine/src/montecarlo/riskBasedGuardrails.ts#solveRiskBasedGuardrails'],
+    verifiedOn: '2026-09-17',
+    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'unreviewed' },
+  },
+  'risk-based-starting-investable': {
+    title: 'Starting investable: sum of listed account balances',
+    purpose: 'The dollar base the risk-based guardrail fractions and SWR initial spend apply to.',
+    kind: 'formula',
+    outputs: [],
+    feeds: [
+      'display-guardrail-balance-thresholds',
+      'monte-carlo-success-rate',
+      'swr-rule-result-initial-annual-spend',
+    ],
+    statement:
+      'Sum current balances of accounts whose type is taxable, equityComp, traditional, Roth, HSA, or cash. Property (home) and other noninvestable types are excluded, including when they carry a value rather than a balance. For taxable $100,000, cash $20,000 and home/property $300,000 the sum is $120,000. Units: dollars. Rounding: none. Exact dollars.',
+    formula: {
+      expression: 'B = sum { balance(a) : type(a) in {taxable, equityComp, traditional, roth, hsa, cash} }',
+      variables: [
+        { symbol: 'a', meaning: 'A plan account', unit: 'account', domain: 'finite nonnegative balances' },
+        { symbol: 'B', meaning: 'Starting investable', unit: 'usd', domain: '>= 0' },
+      ],
+      timing: 'once at the start of a solve, on today\'s balances',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/monte-carlo/risk-based-starting-investable.md',
+    },
+    limits: [
+      'The listed investable set is the same dollar base market paths can fund; property is excluded by type and because it stores value rather than balance',
+      'Basis fields are not added; only the balance field of an investable account contributes',
+    ],
+    implementedBy: ['packages/engine/src/montecarlo/riskBasedGuardrails.ts'],
+    implementedByFunctions: ['packages/engine/src/montecarlo/riskBasedGuardrails.ts#startingInvestableOf'],
+    verifiedOn: '2026-09-17',
+    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'unreviewed' },
+  },
+  'rng-derived-path-seed': {
+    title: 'SplitMix32-style per-path seed',
+    purpose: 'A 32-bit path seed from (base seed, zero-based path index) so a path\'s stream does not depend on how preceding paths consume draws.',
+    kind: 'model',
+    outputs: [],
+    feeds: [...PATH_FAMILIES],
+    statement:
+      'The pinned recurrence, all 32-bit: h = (seed XOR imul(pathIndex + 1, 0x9e3779b9)) >>> 0; h = imul(h XOR (h >>> 16), 0x21f0aaad); h = imul(h XOR (h >>> 15), 0x735a2d97); return (h XOR (h >>> 15)) >>> 0. For (seed, pathIndex) = (42, 7) this is the unsigned word 1351098177, and the same pair yields that word under one-worker or split-worker scheduling because the function is a pure hash of the pair. It is not seed + pathIndex = 49. Units: unsigned 32-bit integer. Rounding: none. Exact integer.',
+    formula: {
+      expression:
+        'h = (seed XOR imul(i+1, 0x9e3779b9)) >>> 0; h = imul(h XOR (h>>>16), 0x21f0aaad); h = imul(h XOR (h>>>15), 0x735a2d97); seed_i = (h XOR (h>>>15)) >>> 0',
+      variables: [
+        { symbol: 'seed', meaning: 'Base Monte Carlo seed', unit: 'uint32', domain: 'worksheet 42' },
+        { symbol: 'i', meaning: 'Zero-based path index', unit: '1', domain: 'integer >= 0; worksheet 7' },
+        { symbol: 'seed_i', meaning: 'Derived path seed', unit: 'uint32', domain: '0..2^32−1' },
+      ],
+      timing: 'once per path, before that path\'s RNG is created',
+      rounding: 'none; 32-bit wrapping arithmetic',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/monte-carlo/rng-derived-path-seed.md',
+    },
+    limits: [
+      'Hashing path identity rather than advancing one shared stream makes worker partitioning irrelevant',
+      'The worksheet extract named SplitMix32-style without constants; this record pins the production recurrence (imul constants 0x9e3779b9, 0x21f0aaad, 0x735a2d97 and the pathIndex+1 offset) so the (42, 7) word is an exact integer',
+      'Not cryptographic; adjacent indices are mixed, not used as seed + index',
+    ],
+    implementedBy: ['packages/engine/src/montecarlo/rng.ts'],
+    implementedByFunctions: ['packages/engine/src/montecarlo/rng.ts#derivePathSeed'],
+    verifiedOn: '2026-09-17',
+    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'unreviewed' },
+  },
+  'rng-mulberry32-reference-stream': {
+    title: 'Mulberry32 uniform reference stream',
+    purpose: 'The deterministic [0, 1) stream every Monte Carlo path draw is taken from.',
+    kind: 'model',
+    outputs: [],
+    feeds: [...PATH_FAMILIES],
+    statement:
+      'State a is the seed as uint32. Each uniform draw: a = (a + 0x6d2b79f5) | 0; t = a; t = imul(t XOR (t >>> 15), t | 1); t ^= t + imul(t XOR (t >>> 7), t | 61); u = ((t XOR (t >>> 14)) >>> 0) / 2^32. For seed 1 the first five unsigned words are 2693262067, 11749833, 2265367787, 4213581821, 4159151403; dividing by 2^32 gives 0.6270739405881613, 0.002735721180215478, 0.5274470399599522, 0.9810509674716741, 0.9683778982143849. Standard-normal draws use Box–Muller (with a cached spare) and integers are floor(u · n) clamped into [0, n). Units: dimensionless in [0, 1). Rounding: none. Exact integer words; relative tolerance 1e-15 if doubles are compared.',
+    formula: {
+      expression: 'a ← (a + 0x6d2b79f5) | 0; avalanche; word = uint32(t); u = word / 2^32',
+      variables: [
+        { symbol: 'seed', meaning: 'Initial state', unit: 'uint32', domain: 'worksheet 1' },
+        { symbol: 'word', meaning: 'Unsigned 32-bit Mulberry32 output', unit: 'uint32', domain: 'worksheet [2693262067, 11749833, 2265367787, 4213581821, 4159151403]' },
+        { symbol: 'u', meaning: 'Uniform draw in [0, 1)', unit: '1', domain: '[0, 1)' },
+      ],
+      timing: 'one state advance per uniform; Box–Muller consumes two uniforms per pair of normals',
+      rounding: 'none; divide by 2^32 not 2^32−1',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/monte-carlo/rng-mulberry32-reference-stream.md',
+    },
+    limits: [
+      'A small noncryptographic generator suitable for reproducible simulation sampling, not security',
+      'Normal draws cache the paired Box–Muller value; the worksheet vector is the uniform stream, not the normal stream',
+    ],
+    implementedBy: ['packages/engine/src/montecarlo/rng.ts'],
+    implementedByFunctions: ['packages/engine/src/montecarlo/rng.ts#createRng'],
+    verifiedOn: '2026-09-17',
+    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'unreviewed' },
+  },
+  'spia-payout-rate-interpolation': {
+    title: 'Life-only SPIA payout-rate linear interpolation',
+    purpose: 'The default annual payout-rate fraction of premium at a start age, from the embedded female-conservative anchors.',
+    kind: 'data',
+    outputs: ['annuitization-payout-rate-pct'],
+    feeds: ['annuitization-sweep-annual-income', 'annuitization-sweep-premium'],
+    statement:
+      'Anchors (age, annual payout/premium): (60, 0.060), (65, 0.070), (70, 0.084), (75, 0.103), (80, 0.129), (85, 0.153), the last extrapolated. Below 60 the rate is 0.060; above 85 it is 0.153; otherwise linear in age between the bracketing anchors. At 67.5, t = (67.5 − 65)/5 = 1/2 and the rate is 0.070 + 0.5 · (0.084 − 0.070) = 0.077, so $100,000 of premium pays $7,700 per year. Units: fraction of premium per year. Rounding: none after the table\'s source-side 0.1-percentage-point rounding down. Absolute tolerance 1e-12 on the rate.',
+    formula: {
+      expression: 'r(a) = r_i + (a − a_i)(r_{i+1} − r_i)/(a_{i+1} − a_i) for a_i <= a <= a_{i+1}; r(a) = r_60 for a <= 60; r(a) = r_85 for a >= 85',
+      variables: [
+        { symbol: 'a', meaning: 'Payment start age', unit: 'years', domain: 'worksheet 67.5' },
+        { symbol: 'r(a)', meaning: 'Annual life-only payout as a fraction of premium', unit: '1/year', domain: 'between the bracketing anchors' },
+        { symbol: 'premium', meaning: 'Illustrative premium', unit: 'usd', domain: 'worksheet 100,000' },
+      ],
+      timing: 'a time-invariant lookup on the dated quote table',
+      rounding: 'none after the source-side 0.1-percentage-point rounding down of the anchors',
+    },
+    justification: {
+      kind: 'dataset',
+      source: {
+        citation:
+          'annuity.org April 2026 $100,000 monthly-payout table by age/sex; anchors take the female column conservatively, rounded down to 0.1%; age 85 is extrapolated',
+        url: 'https://www.annuity.org/annuities/how-much-does-a-100000-annuity-pay-per-month/',
+        asOf: '2026-04-01',
+        retrievedOn: '2026-07-15',
+        rights:
+          'Facts and small numeric extracts are restated with attribution; no source prose or table is reproduced',
+      },
+      transformation:
+        'Stored as annual payout-rate fractions at ages 60, 65, 70, 75, 80, 85. Consumers interpolate linearly in age and clamp outside the table. The digest is sha256 over the canonical JSON of [[60,0.06],[65,0.07],[70,0.084],[75,0.103],[80,0.129],[85,0.153]] as UTF-8.',
+      digest: 'sha256:9649a7c32fecae384d940f2cf7b87675a42236a71329de30dd7535335edf20ad',
+    },
+    limits: [
+      'Planning defaults only; a user-entered quote always wins',
+      'The age-85 anchor is extrapolated, not quoted',
+      'Female column is the conservative unisex default; male quotes are higher',
+      'annuitization-sweep-annual-income is premium times this rate and annuitization-sweep-premium is the grid premium; those families are fed, not this interpolation\'s published number',
+    ],
+    implementedBy: ['packages/engine/src/decisions/spiaQuotes.ts'],
+    implementedByFunctions: ['packages/engine/src/decisions/spiaQuotes.ts#spiaPayoutRate'],
+    verifiedOn: '2026-09-17',
+    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'unreviewed' },
+  },
+} satisfies Record<string, CalculationRecord>

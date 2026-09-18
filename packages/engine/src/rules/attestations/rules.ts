@@ -33,6 +33,7 @@ export const rulesAttestations: Readonly<Record<string, CoverageAttestation>> = 
   'rules/calculationRegistry.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-09-14', note: 'calculation catalog registry; composed from calculations/* the same way taxRuleRegistry.ts composes records/*' }),
   'rules/calculations/laddersAndValuation.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-09-14', note: 'one slice of the calculation record store, split out of calculationRegistry.ts; enforced by calculationRegistry.conformance.test.ts' }),
   'rules/calculations/longevity.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-09-14', note: 'one slice of the calculation record store, split out of calculationRegistry.ts; enforced by calculationRegistry.conformance.test.ts' }),
+  'rules/calculations/monteCarlo.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-09-17', note: 'one slice of the calculation record store, split out of calculationRegistry.ts; enforced by calculationRegistry.conformance.test.ts' }),
   'rules/calculations/spendingAndWithdrawals.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-09-14', note: 'one slice of the calculation record store, split out of calculationRegistry.ts; enforced by calculationRegistry.conformance.test.ts' }),
   'rules/coverageAttestations.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: 'registry/coverage tooling' }),
   'rules/coverageReport.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: 'registry/coverage tooling' }),
