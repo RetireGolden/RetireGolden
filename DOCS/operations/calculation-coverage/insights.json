@@ -474,7 +474,7 @@
           }
         ],
         "timing": "lifetime over the union of the two annual series; a start-year move defaults to July (split-year origin tax)",
-        "rounding": "none on the sum; whole-dollar display only"
+        "rounding": "the card publishes only formatWholeUsd(savings), a whole-dollar string (Math.round); the summed deflated delta is not published, so the evidence asserts the published figure and the worksheet states both the exact sum and the shown figure"
       },
       "limits": [
         "Candidate selection uses all taxes and penalties; the savings identity uses state-plus-local tax only",

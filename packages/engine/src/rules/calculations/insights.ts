@@ -284,7 +284,7 @@ export const insightsRecords = {
         { symbol: 'deflate(y, ·)', meaning: 'Maps year-y nominal dollars to start-year dollars', unit: '1', domain: '> 0' },
       ],
       timing: 'lifetime over the union of the two annual series; a start-year move defaults to July (split-year origin tax)',
-      rounding: 'none on the sum; whole-dollar display only',
+      rounding: 'the card publishes only formatWholeUsd(savings), a whole-dollar string (Math.round); the summed deflated delta is not published, so the evidence asserts the published figure and the worksheet states both the exact sum and the shown figure',
     },
     justification: {
       kind: 'derivation',

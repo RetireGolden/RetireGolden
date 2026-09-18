@@ -34,6 +34,7 @@ export const socialSecurityRecords = {
     },
     limits: [
       'The date formula (January claim ends the year before the claim year; start is the later of age 62, retirement, and next year) is the comments\' stated convention',
+      'Synthetic TIPS coupons are floored at 0.125% (ladderMath MIN_TIPS_COUPON_PCT). On the zero real curve the worksheet states, that floor is absorbed into the back-solved face amounts and the ladder cost equals N x A exactly, which the evidence asserts at 1e-9 (a passing check, not an assumption); on a nonzero curve the cost is the discounted ladder and differs from N x A, and the worksheet does not claim otherwise',
     ],
     implementedBy: ['packages/engine/src/ladder/bridge.ts'],
     implementedByFunctions: ['packages/engine/src/ladder/bridge.ts#sizeBridge'],
