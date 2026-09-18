@@ -52,3 +52,5 @@ If an endpoint check instead yields `always-above-band` or `never-reaches-band`,
 Derived by: codex (gpt-5.6-sol), 2026-09-18, from the signatures-and-comments extract (with the 2026-09-18 doc-comment corrections) and the orchestrator's contract statements, without executing the engine or reading any implementation body. Reviewed by: cursor (composer-2.5), 2026-09-18, by independent recomputation without executing the engine; see REVIEW-2026-09-18.md in this directory.
 
 Revision: the first derivation treated an analytic success function as injectable and asserted dollar thresholds that no available call can force or evidence.
+
+Status (orchestrator, 2026-09-18): no catalog record. The solver's thresholds have no output family in the census (display-guardrail-balance-thresholds is the UI's policy-percent-times-investable callout, a different number), and the solver takes no success rule, so neither its outputs nor its bisection can be evidenced yet; see D-SOLVER-SEAM in the plan's decision backlog.

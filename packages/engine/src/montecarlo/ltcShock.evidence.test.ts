@@ -8,16 +8,16 @@ function uniformsRng(draws: readonly number[]): Rng {
   return {
     next: () => {
       const draw = draws[index]
-      if (draw === undefined) throw new RangeError(`uniform ${index} was not scripted`)
       index += 1
+      // Extra uniforms after the incidence draw (onset duration) are valid so
+      // a mutated hit path can finish constructing an event instead of throwing.
+      if (draw === undefined) return 0.5
       return draw
     },
     nextNormal: () => {
       throw new RangeError('nextNormal is not part of the incidence draw')
     },
-    nextInt: () => {
-      throw new RangeError('nextInt is not reached when the incidence draw misses')
-    },
+    nextInt: () => 0,
   }
 }
 
@@ -40,7 +40,7 @@ describeCalculation(
         2026,
         { ...DEFAULT_LTC_SHOCK, incidence: example.inputs.incidence as number, annualCost: example.inputs.annualCost as number },
       )
-      expect(events).toHaveLength(example.expected.eventCount as number)
+      expect(events.length).toBe(example.expected.eventCount as number)
     })
   },
 )

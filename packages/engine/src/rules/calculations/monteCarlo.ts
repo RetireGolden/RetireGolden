@@ -3,7 +3,7 @@
  *
  * One slice of the calculation registry: the historical market series and
  * blends, the per-path RNG, the pluggable market models, LTC shock sampling,
- * risk-based guardrail thresholds, and the SPIA/QLAC payout-rate table.
+ * risk-based starting investable, and the SPIA/QLAC payout-rate table.
  * `../calculationRegistry.ts` composes every slice into `CALCULATION_REGISTRY`;
  * read it for what a record must carry.
  */
@@ -216,7 +216,7 @@ export const monteCarloRecords = {
     limits: [
       'A dynamics assumption, not evidence of a true return process',
       'The path always starts from prev = 0; a prior shock of 10 is realized as year 1 of the path, and the worksheet\'s "next two shocks" are years 2 and 3 with zero innovations',
-      'The signature default comment says 0.2; the code default is 0.25 when phi is omitted. The worksheet case passes 0.2 explicitly',
+      'The phi default comment was corrected to the code\'s 0.25 on 2026-09-18 (D-STUDENT-T-MIXTURE notes the related decision). The worksheet case passes 0.2 explicitly',
     ],
     implementedBy: ['packages/engine/src/montecarlo/marketModels.ts'],
     implementedByFunctions: ['packages/engine/src/montecarlo/marketModels.ts#createAR1Model'],
@@ -545,21 +545,23 @@ export const monteCarloRecords = {
     provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'cursor' },
   },
   'market-model-student-t-draw': {
-    title: 'Centered Student-t return shock scaled to target volatility',
-    purpose: 'A fat-tailed additive return shock whose variance matches the configured annual volatility when df > 2.',
+    title: 'Named student-t return shock: normal with a 5% tail-multiplier mixture',
+    purpose: 'A fat-tailed additive return shock from a normal draw, fattened on a 5% mixture rather than a Student-t variate.',
     kind: 'model',
     outputs: [],
     feeds: [...PATH_FAMILIES],
     statement:
-      'For df > 2 a standard t variate has variance df/(df − 2); multiplying by sqrt((df − 2)/df) gives unit variance before scaling by the target volatility. A raw t draw of 0 is already zero after that scaling, so the shock is 0 percentage points for volatility 12 and df = 5. Units: percentage points. Rounding: none. Absolute tolerance 0 for a zero draw.',
+      'Despite the student-t name, each year draws Z ~ N(0, 1) and a uniform U, then on the strict branch U < 0.05 multiplies Z by 2.5 when df > 4 or 3.5 otherwise, after df = max(3, config.df ?? 5). The published shock is sigma · adjustedZ · 100 percentage points with sigma = returnVolScalePct/100. For returnVolScalePct = 12 and Z = 1: (df 5, U 0.5) is 12; (df 5, U 0.01) is 30; (df 3, U 0.01) is 42. Inflation inputs are zero, so inflation is 0. Units: percentage points and percent/year. Rounding: none. Absolute tolerance 1e-12.',
     formula: {
-      expression: 'shock = sigma_pct · T · sqrt((df − 2)/df); T = 0 ⇒ shock = 0',
+      expression: 'df = max(3, config.df ?? 5); adjustedZ = Z · (df > 4 ? 2.5 : 3.5) if U < 0.05 else Z; returnShockPct = sigma · adjustedZ · 100; sigma = returnVolScalePct/100',
       variables: [
-        { symbol: 'df', meaning: 'Degrees of freedom', unit: '1', domain: '>= 3 as configured; worksheet 5' },
-        { symbol: 'sigma_pct', meaning: 'Target annual volatility', unit: 'percentage points', domain: 'worksheet 12' },
-        { symbol: 'T', meaning: 'Raw t draw', unit: '1', domain: 'worksheet 0' },
+        { symbol: 'df', meaning: 'Degrees of freedom after the floor of 3; selects only the tail multiplier', unit: '1', domain: '>= 3; worksheet 5 and 3' },
+        { symbol: 'Z', meaning: 'Standard-normal draw', unit: '1', domain: 'worksheet 1' },
+        { symbol: 'U', meaning: 'Uniform mixture draw', unit: '1', domain: '[0, 1); worksheet 0.5 and 0.01' },
+        { symbol: 'sigma', meaning: 'Return volatility as a decimal, returnVolScalePct/100', unit: '1', domain: 'worksheet 0.12' },
+        { symbol: 'returnShockPct', meaning: 'Additive return shock', unit: 'percentage points', domain: 'worksheet 12, 30, 42' },
       ],
-      timing: 'annual',
+      timing: 'annual; draws are nextNormal, next, nextNormal per year',
       rounding: 'none',
     },
     justification: {
@@ -568,12 +570,13 @@ export const monteCarloRecords = {
     },
     limits: [
       'A tail model, not a claim that future returns follow a t distribution',
-      'Production draws a normal and, with probability 0.05, multiplies it by 2.5 (df > 4) or 3.5 rather than sampling a scaled t; a zero draw still yields shock 0, which is the worksheet case',
+      'Per D-STUDENT-T-MIXTURE the innovation is standard normal and is multiplied on the strict branch U < 0.05; no t variate is sampled',
+      'The mixture is not rescaled to the configured sigma, so its unconditional variance is sigma^2 · (0.95 + 0.05 · multiplier^2)',
       'df is clamped to at least 3',
     ],
     implementedBy: ['packages/engine/src/montecarlo/marketModels.ts'],
     implementedByFunctions: ['packages/engine/src/montecarlo/marketModels.ts#createStudentTModel'],
-    verifiedOn: '2026-09-17',
+    verifiedOn: '2026-09-18',
     provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'cursor' },
   },
   'market-model-user-shock': {
@@ -639,43 +642,6 @@ export const monteCarloRecords = {
     verifiedOn: '2026-09-17',
     provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'cursor' },
   },
-  'risk-based-guardrail-threshold-solver': {
-    title: 'Risk-based guardrail threshold bisection',
-    purpose: 'Balance levels (as a fraction of starting investable and in dollars) where fixed-target Monte Carlo success crosses the lower and upper probability bands.',
-    kind: 'model',
-    outputs: ['display-guardrail-balance-thresholds'],
-    feeds: [
-      'monte-carlo-success-rate',
-      'monte-carlo-required-floor-success-rate',
-      'monte-carlo-target-lifestyle-success-rate',
-    ],
-    statement:
-      'Evaluates the plan\'s own Monte Carlo success at scaled investable balances; RiskBasedGuardrailSolveOptions has no injectable success rule. For each target band fraction it first classifies the endpoints or performs ten bisections on [0.02, 4], moving hi when success(mid) >= target and returning hi. A solved balanceFrac lies on 0.02 + k(3.98/1024) for integer k in 1..1023. With one path, success is 0 or 1, so the 70% and 95% edges receive identical classifications and, when solved, identical balanceFrac; balanceDollars = balanceFrac · startingInvestable; successAtThreshold is 0 or 1. Units: fraction of today\'s investable and today\'s dollars. Rounding: none; recovered lattice integer within 1e-9.',
-    formula: {
-      expression: 'solved: balanceFrac = 0.02 + k(3.98/1024), k in 1..1023; balanceDollars = balanceFrac · B; else always-above-band or never-reaches-band',
-      variables: [
-        { symbol: 'f', meaning: 'Balance scale as a fraction of starting investable', unit: '1', domain: '[0.02, 4]' },
-        { symbol: 'S(f)', meaning: 'Fixed-target success probability on shared paths from the plan\'s own Monte Carlo', unit: '1', domain: '[0, 1]; 0 or 1 when pathCount = 1' },
-        { symbol: 'B', meaning: 'Starting investable', unit: 'usd', domain: 'worksheet 500,000' },
-        { symbol: 'k', meaning: 'Lattice index after ten bisections', unit: '1', domain: '1..1023 when solved' },
-      ],
-      timing: 'a solve over shared paths; each probe is a full Monte Carlo',
-      rounding: '10 balance bisections; lattice spacing 3.98/1024',
-    },
-    justification: {
-      kind: 'derivation',
-      worksheet: 'DOCS/calculations/monte-carlo/risk-based-guardrail-threshold-solver.md',
-    },
-    limits: [
-      'The result is conditional on model, seed, path count, bracket, and assumed monotonicity; it is neither an unseeded confidence guarantee nor advice',
-      'A missing crossing is reported as always-above-band or never-reaches-band rather than a fabricated threshold',
-      'band-edge dollar values are not evidenced until a success-probe seam exists (D-SOLVER-SEAM)',
-    ],
-    implementedBy: ['packages/engine/src/montecarlo/riskBasedGuardrails.ts'],
-    implementedByFunctions: ['packages/engine/src/montecarlo/riskBasedGuardrails.ts#solveRiskBasedGuardrails'],
-    verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'cursor' },
-  },
   'risk-based-starting-investable': {
     title: 'Starting investable: sum of listed account balances',
     purpose: 'The dollar base the risk-based guardrail fractions and SWR initial spend apply to.',
@@ -717,14 +683,14 @@ export const monteCarloRecords = {
     outputs: [],
     feeds: [...PATH_FAMILIES],
     statement:
-      'The pinned recurrence, all 32-bit: h = (seed XOR imul(pathIndex + 1, 0x9e3779b9)) >>> 0; h = imul(h XOR (h >>> 16), 0x21f0aaad); h = imul(h XOR (h >>> 15), 0x735a2d97); return (h XOR (h >>> 15)) >>> 0. For (seed, pathIndex) = (42, 7) this is the unsigned word 1351098177, and the same pair yields that word under one-worker or split-worker scheduling because the function is a pure hash of the pair. It is not seed + pathIndex = 49. Units: unsigned 32-bit integer. Rounding: none. Exact integer.',
+      'A four-step 32-bit recurrence of the two arguments: h0 = (seed XOR imul(pathIndex + 1, 0x9e3779b9)) >>> 0; h1 = imul(h0 XOR (h0 >>> 16), 0x21f0aaad); h2 = imul(h1 XOR (h1 >>> 15), 0x735a2d97); result = (h2 XOR (h2 >>> 15)) >>> 0. For (42, 7), (42, 8) and (1, 0) the unsigned words are 1351098177, 2450979136 and 3950124170, and 1351098177 != 2450979136 so adjacent paths receive distinct seeds. Units: unsigned 32-bit integer. Rounding: none. Exact integer.',
     formula: {
       expression:
-        'h = (seed XOR imul(i+1, 0x9e3779b9)) >>> 0; h = imul(h XOR (h>>>16), 0x21f0aaad); h = imul(h XOR (h>>>15), 0x735a2d97); seed_i = (h XOR (h>>>15)) >>> 0',
+        'h0 = (seed XOR imul(pathIndex+1, 0x9e3779b9)) >>> 0; h1 = imul(h0 XOR (h0>>>16), 0x21f0aaad); h2 = imul(h1 XOR (h1>>>15), 0x735a2d97); result = (h2 XOR (h2>>>15)) >>> 0',
       variables: [
-        { symbol: 'seed', meaning: 'Base Monte Carlo seed', unit: 'uint32', domain: 'worksheet 42' },
-        { symbol: 'i', meaning: 'Zero-based path index', unit: '1', domain: 'integer >= 0; worksheet 7' },
-        { symbol: 'seed_i', meaning: 'Derived path seed', unit: 'uint32', domain: '0..2^32−1' },
+        { symbol: 'seed', meaning: 'Base Monte Carlo seed', unit: 'uint32', domain: 'worksheet 42 and 1' },
+        { symbol: 'pathIndex', meaning: 'Zero-based path index', unit: '1', domain: 'integer >= 0; worksheet 7, 8, 0' },
+        { symbol: 'result', meaning: 'Derived path seed', unit: 'uint32', domain: '0..2^32−1; worksheet 1351098177, 2450979136, 3950124170' },
       ],
       timing: 'once per path, before that path\'s RNG is created',
       rounding: 'none; 32-bit wrapping arithmetic',
@@ -735,12 +701,11 @@ export const monteCarloRecords = {
     },
     limits: [
       'Hashing path identity rather than advancing one shared stream makes worker partitioning irrelevant',
-      'The worksheet extract named SplitMix32-style without constants; this record pins the production recurrence (imul constants 0x9e3779b9, 0x21f0aaad, 0x735a2d97 and the pathIndex+1 offset) so the (42, 7) word is an exact integer',
-      'Not cryptographic; adjacent indices are mixed, not used as seed + index',
+      'Not cryptographic; adjacent indices are mixed by pathIndex+1 and the lowbias32 finalizer, not used as seed + index',
     ],
     implementedBy: ['packages/engine/src/montecarlo/rng.ts'],
     implementedByFunctions: ['packages/engine/src/montecarlo/rng.ts#derivePathSeed'],
-    verifiedOn: '2026-09-17',
+    verifiedOn: '2026-09-18',
     provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'cursor' },
   },
   'rng-mulberry32-reference-stream': {

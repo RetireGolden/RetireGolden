@@ -16,10 +16,10 @@ describeCalculation(
         row1929: { stocksPct: -8.3, bondsPct: 4.2, inflationPct: 0.6 },
         row2023: { stocksPct: 26.1, bondsPct: 3.9, inflationPct: 3.4 },
       },
-      // Exact at the embedded one-decimal transcription. Non-integer sums
-      // cannot use the 'exact' literal, so a zero absolute bound is the
-      // withinTolerance equivalent for those leaves.
-      tolerance: { abs: 0 },
+      // Sample rows are exact at the one-decimal transcription. Column sums
+      // use an absolute 1e-9 bound on the unrounded accumulation so a
+      // sub-0.05 edit to any row fails.
+      tolerance: { abs: 1e-9 },
     },
     worksheet: 'DOCS/calculations/monte-carlo/historical-market-series.md',
     mutation: 'DOCS/calculations/monte-carlo/historical-market-series.mutation.md',
@@ -37,22 +37,20 @@ describeCalculation(
     })
 
     it('column sums are stocks 1118.9, bonds 466.6, inflation 298.8 percentage points', () => {
-      // The worksheet's sums are exact at one-decimal transcription; binary
-      // accumulation of 96 one-decimal literals is rounded back to that grid.
-      const stockSum = Number(HISTORICAL_YEARS.reduce((sum, row) => sum + row.stocksPct, 0).toFixed(1))
-      const bondSum = Number(HISTORICAL_YEARS.reduce((sum, row) => sum + row.bondsPct, 0).toFixed(1))
-      const inflationSum = Number(HISTORICAL_YEARS.reduce((sum, row) => sum + row.inflationPct, 0).toFixed(1))
+      const stockSum = HISTORICAL_YEARS.reduce((sum, row) => sum + row.stocksPct, 0)
+      const bondSum = HISTORICAL_YEARS.reduce((sum, row) => sum + row.bondsPct, 0)
+      const inflationSum = HISTORICAL_YEARS.reduce((sum, row) => sum + row.inflationPct, 0)
       expect(
         withinTolerance(stockSum, example.expected.stockSumPct as number, example.tolerance),
-        `stockSumPct ${stockSum} is not the worksheet's ${example.expected.stockSumPct}`,
+        `stockSumPct ${stockSum} is not within ${JSON.stringify(example.tolerance)} of the worksheet's ${example.expected.stockSumPct}`,
       ).toBe(true)
       expect(
         withinTolerance(bondSum, example.expected.bondSumPct as number, example.tolerance),
-        `bondSumPct ${bondSum} is not the worksheet's ${example.expected.bondSumPct}`,
+        `bondSumPct ${bondSum} is not within ${JSON.stringify(example.tolerance)} of the worksheet's ${example.expected.bondSumPct}`,
       ).toBe(true)
       expect(
         withinTolerance(inflationSum, example.expected.inflationSumPct as number, example.tolerance),
-        `inflationSumPct ${inflationSum} is not the worksheet's ${example.expected.inflationSumPct}`,
+        `inflationSumPct ${inflationSum} is not within ${JSON.stringify(example.tolerance)} of the worksheet's ${example.expected.inflationSumPct}`,
       ).toBe(true)
     })
 

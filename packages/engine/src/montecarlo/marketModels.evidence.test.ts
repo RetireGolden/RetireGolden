@@ -429,7 +429,6 @@ describeCalculation(
         model.generatePath(scriptedRng({ uniforms: [0.6, example.inputs.switchDraw as number], normals: [0, 0] }), 1),
       )
       expect(path.returnShockPct[0]).toBe(example.expected.returnShockPct)
-      expect(example.inputs.currentState).toBe(example.expected.state)
     })
   },
 )
@@ -520,31 +519,76 @@ describeCalculation(
   'market-model-student-t-draw',
   {
     example: {
-      inputs: { df: 5, volatilityPct: 12, tDraw: 0 },
-      expected: { returnShockPct: 0 },
-      tolerance: { abs: 0 },
+      inputs: {
+        returnVolScalePct: 12,
+        inflationMeanPct: 0,
+        inflationVolPct: 0,
+        correlation: 0,
+        cases: [
+          { df: 5, z: 1, u: 0.5 },
+          { df: 5, z: 1, u: 0.01 },
+          { df: 3, z: 1, u: 0.01 },
+        ],
+      },
+      expected: { returnShockPct: [12, 30, 42], inflationPct: [0, 0, 0] },
+      tolerance: { abs: 1e-12 },
     },
     worksheet: 'DOCS/calculations/monte-carlo/market-model-student-t-draw.md',
     mutation: 'DOCS/calculations/monte-carlo/market-model-student-t-draw.mutation.md',
   },
   ({ example }) => {
-    it('a zero t draw at volatility 12 is shock 0', () => {
+    const cases = example.inputs.cases as readonly { df: number; z: number; u: number }[]
+    const expectedShocks = example.expected.returnShockPct as number[]
+    const expectedInflation = example.expected.inflationPct as number[]
+
+    function pathOf(row: { df: number; z: number; u: number }) {
+      // Draws per year come in the order nextNormal (return z), next (uniform u),
+      // nextNormal (inflation z2). z2 is scripted 0; inflation vol is 0 so its
+      // value is immaterial.
       const model = createStudentTModel({
         type: 'student-t',
-        df: example.inputs.df as number,
-        returnVolPct: example.inputs.volatilityPct as number,
-        inflationMeanPct: 0,
-        inflationVolPct: 0,
+        df: row.df,
+        returnVolPct: example.inputs.returnVolScalePct as number,
+        inflationMeanPct: example.inputs.inflationMeanPct as number,
+        inflationVolPct: example.inputs.inflationVolPct as number,
+        correlation: example.inputs.correlation as number,
       })
-      // nextNormal = 0; next() = 0.5 so the 0.05 fat-tail coin does not fire.
-      const path = seriesOf(
-        model.generatePath(scriptedRng({ normals: [example.inputs.tDraw as number, 0], uniforms: [0.5] }), 1),
-      )
-      const shock = path.returnShockPct[0]!
-      const expected = example.expected.returnShockPct as number
+      return seriesOf(model.generatePath(scriptedRng({ normals: [row.z, 0], uniforms: [row.u] }), 1))
+    }
+
+    it('df 5, u 0.5, z 1: shock 12 and inflation 0', () => {
+      const path = pathOf(cases[0]!)
       expect(
-        withinTolerance(shock, expected, example.tolerance),
-        `returnShockPct ${shock} is not within ${JSON.stringify(example.tolerance)} of the worksheet's ${expected}`,
+        withinTolerance(path.returnShockPct[0]!, expectedShocks[0]!, example.tolerance),
+        `returnShockPct ${path.returnShockPct[0]} is not within ${JSON.stringify(example.tolerance)} of the worksheet's ${expectedShocks[0]}`,
+      ).toBe(true)
+      expect(
+        withinTolerance(path.inflationPct[0]!, expectedInflation[0]!, example.tolerance),
+        `inflationPct ${path.inflationPct[0]} is not within ${JSON.stringify(example.tolerance)} of the worksheet's ${expectedInflation[0]}`,
+      ).toBe(true)
+    })
+
+    it('df 5, u 0.01, z 1: shock 30 and inflation 0', () => {
+      const path = pathOf(cases[1]!)
+      expect(
+        withinTolerance(path.returnShockPct[0]!, expectedShocks[1]!, example.tolerance),
+        `returnShockPct ${path.returnShockPct[0]} is not within ${JSON.stringify(example.tolerance)} of the worksheet's ${expectedShocks[1]}`,
+      ).toBe(true)
+      expect(
+        withinTolerance(path.inflationPct[0]!, expectedInflation[1]!, example.tolerance),
+        `inflationPct ${path.inflationPct[0]} is not within ${JSON.stringify(example.tolerance)} of the worksheet's ${expectedInflation[1]}`,
+      ).toBe(true)
+    })
+
+    it('df 3, u 0.01, z 1: shock 42 and inflation 0', () => {
+      const path = pathOf(cases[2]!)
+      expect(
+        withinTolerance(path.returnShockPct[0]!, expectedShocks[2]!, example.tolerance),
+        `returnShockPct ${path.returnShockPct[0]} is not within ${JSON.stringify(example.tolerance)} of the worksheet's ${expectedShocks[2]}`,
+      ).toBe(true)
+      expect(
+        withinTolerance(path.inflationPct[0]!, expectedInflation[2]!, example.tolerance),
+        `inflationPct ${path.inflationPct[0]} is not within ${JSON.stringify(example.tolerance)} of the worksheet's ${expectedInflation[2]}`,
       ).toBe(true)
     })
   },

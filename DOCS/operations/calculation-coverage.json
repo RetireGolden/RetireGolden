@@ -41,7 +41,6 @@
       "longevity-survival-percentile-age"
     ],
     "partial": [
-      "display-guardrail-balance-thresholds",
       "spending-base-annual"
     ],
     "noRecordYet": [
@@ -71,6 +70,7 @@
       "display-dollar-basis-conversion",
       "display-fan-band-widths",
       "display-fi-target-annual",
+      "display-guardrail-balance-thresholds",
       "display-histogram-bin-label",
       "display-loss-carryforward-used-annual",
       "display-net-care-cost-annual",
@@ -454,9 +454,6 @@
         "rng-derived-path-seed",
         "rng-mulberry32-reference-stream"
       ],
-      "monte-carlo-required-floor-success-rate": [
-        "risk-based-guardrail-threshold-solver"
-      ],
       "monte-carlo-success-rate": [
         "allocation-cholesky-factor",
         "historical-market-series",
@@ -478,13 +475,9 @@
         "market-model-user-shock",
         "mortality-ex-to-qx-identity",
         "mortality-sampled-death-age",
-        "risk-based-guardrail-threshold-solver",
         "risk-based-starting-investable",
         "rng-derived-path-seed",
         "rng-mulberry32-reference-stream"
-      ],
-      "monte-carlo-target-lifestyle-success-rate": [
-        "risk-based-guardrail-threshold-solver"
       ],
       "spending-care-cost-gross-annual": [
         "long-term-care-shock-sampling"
@@ -495,16 +488,16 @@
     }
   },
   "records": {
-    "total": 42,
+    "total": 41,
     "byKind": {
       "composition": 1,
       "data": 4,
       "formula": 16,
-      "model": 21
+      "model": 20
     },
     "byJustificationKind": {
       "dataset": 4,
-      "derivation": 38
+      "derivation": 37
     }
   },
   "oracleExamples": [
@@ -561,7 +554,7 @@
     {
       "group": "monteCarlo",
       "path": "calculation-coverage/monteCarlo.json",
-      "recordCount": 24
+      "recordCount": 23
     },
     {
       "group": "spendingAndWithdrawals",
