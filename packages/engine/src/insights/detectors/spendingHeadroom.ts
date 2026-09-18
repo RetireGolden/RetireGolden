@@ -7,6 +7,17 @@
  * a ROUGH estimate. `evaluate()` runs the exact-ledger sustainable-spending
  * solver under the same fixed budget the "How much can I spend?" page uses,
  * so the card and that surface report the same solved level.
+ *
+ * What `screen()` publishes, when it publishes: with E the ending after-tax
+ * estate deflated to the start year (`projection.deflate(endYear, ...)`), B the
+ * plan's bequest target (`expenses.bequestTargetDollars`, else 0) and
+ *   N = max(1, endYear − startYear)
+ * (the number of year boundaries between the projection's start and end years,
+ * NOT the inclusive count of projection rows: a 2026–2035 projection has N = 9),
+ * it returns null unless the plan never depletes, is not on amortized (ABW)
+ * spending, E − B ≥ MIN_EXCESS_ESTATE_TODAY_DOLLARS and (E − B) / N ≥
+ * MIN_ROUGH_HEADROOM_PER_YEAR; otherwise it publishes E and the rough annual
+ * headroom (E − B) / N, both formatted to whole dollars, in today's dollars.
  */
 
 import { formatWholeUsd } from '../../internal/evidenceFormat.js'
