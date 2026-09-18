@@ -249,9 +249,8 @@ export const cashFlowAndSummaryRecords = {
     outputs: [
       'sustainable-spending-result-max-base-annual',
       'sustainable-spending-result-spending-slack-dollars',
-      'sustainable-spending-result-simulation-count',
     ],
-    feeds: ['solved-initial-withdrawal-rate-pct', 'solved-spending-rounded-to-hundred'],
+    feeds: ['sustainable-spending-result-simulation-count', 'solved-initial-withdrawal-rate-pct', 'solved-spending-rounded-to-hundred'],
     statement: 'decisions/spendingSolver.ts#solveMaxSustainableSpending finds a lower-bound maximum feasible annual base spending in today\'s dollars using deterministic integer-dollar bracketing and bisection, where feasibility means no depletion and nominal ending after-tax estate at least the inflated today-dollar floor.',
     formula: {
       expression: 'probe integer midpoint; keep feasible lower and infeasible upper until upper-lower <= resolution; return best feasible lower',
@@ -267,6 +266,7 @@ export const cashFlowAndSummaryRecords = {
       worksheet: 'DOCS/calculations/cash-flow-and-summary/sustainable-spending-bisection.md',
     },
     limits: [
+      'simulationCount is not derivable from the stated contract because the bracketing rule is not documented. The quantity enters the published result, so its family is fed, not output.',
       'The public API generates its own bracket. Evidence seeds 40000, brackets at 80000, and verifies the first two midpoints reach the worksheet bracket 60000/70000 before checking its four probes and 62500 result. It isolates the stated feasible predicate with an evaluation double, not an invented ledger oracle. Monotone feasibility is assumed; budgets can stop convergence.',
     ],
     implementedBy: ['packages/engine/src/decisions/spendingSolver.ts'],

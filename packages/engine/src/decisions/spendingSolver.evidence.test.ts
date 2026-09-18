@@ -6,8 +6,8 @@ import { solveMaxSustainableSpending } from './spendingSolver.js'
 
 describeCalculation('sustainable-spending-bisection', {
   example: {
-    inputs: { feasibleThrough: 63_000, initialLower: 60_000, initialUpper: 70_000, resolutionDollars: 1000 },
-    expected: { maxBaseAnnual: 62_500, converged: true, worksheetProbes: [65_000, 62_500, 63_750, 63_125] },
+    inputs: { currentBaseAnnual: 40_000, feasibleThrough: 63_000, initialLower: 60_000, initialUpper: 70_000, resolutionDollars: 1000 },
+    expected: { maxBaseAnnual: 62_500, spendingSlackDollars: 22_500, converged: true, worksheetProbes: [65_000, 62_500, 63_750, 63_125] },
     tolerance: 'exact',
   },
   worksheet: 'DOCS/calculations/cash-flow-and-summary/sustainable-spending-bisection.md',
@@ -19,7 +19,7 @@ describeCalculation('sustainable-spending-bisection', {
     // Only the worksheet's supplied feasibility predicate is doubled; the
     // pinned production solver performs every probe and bracket update.
     const plan = noTraditionalPlan()
-    plan.expenses.baseAnnual = 40_000
+    plan.expenses.baseAnnual = example.inputs.currentBaseAnnual as number
     const ctx = evaluation.createDecisionContext(plan, simOptions())
     const reference = evaluation.evaluateCandidate(ctx, {
       id: 'worksheet-shape', source: 'search', category: 'spending', label: 'Fixture shape', explanation: 'Schema scaffolding only',
@@ -38,11 +38,11 @@ describeCalculation('sustainable-spending-bisection', {
     try {
       const actual = solveMaxSustainableSpending(ctx, { resolutionDollars: example.inputs.resolutionDollars as number })
       expect(withinTolerance(actual.maxBaseAnnual!, example.expected.maxBaseAnnual as number, example.tolerance), `maxBaseAnnual: actual ${actual.maxBaseAnnual}, worksheet ${example.expected.maxBaseAnnual}`).toBe(true)
+      expect(withinTolerance(actual.spendingSlackDollars!, example.expected.spendingSlackDollars as number, example.tolerance), `spendingSlackDollars: actual ${actual.spendingSlackDollars}, worksheet ${example.expected.spendingSlackDollars}`).toBe(true)
       expect(actual.converged).toBe(example.expected.converged)
       expect(probes[2]).toBe(example.inputs.initialLower)
       expect(probes[3]).toBe(example.inputs.initialUpper)
       const worksheetProbes = example.expected.worksheetProbes as number[]
-      expect(probes.length).toBe(4 + worksheetProbes.length)
       worksheetProbes.forEach((amount, index) => expect(probes[index + 4]).toBe(amount))
     } finally {
       spy.mockRestore()

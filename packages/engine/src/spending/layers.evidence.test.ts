@@ -17,23 +17,25 @@ describeCalculation('lifestyle-required-discretionary-split', {
 
 describeCalculation('spending-layer-shortfall-attribution', {
   example: {
-    // Two worksheet cases: (a) a guardrail cut with a small withdrawal shortfall
+    // Three worksheet cases: (a) a guardrail cut with a small withdrawal shortfall
     // that discretionary dollars absorb; (b) a deeper cut where the cut and the
-    // shortfall together breach the required floor.
+    // shortfall together breach the required floor; (c) partially funded excess.
     inputs: {
       guardrailCut: { requiredSpending: 60, targetSpending: 100, idealSpending: 20, excessSpending: 10, fundedSpending: 85, withdrawalShortfall: 5 },
       floorBreach: { requiredSpending: 60, targetSpending: 100, idealSpending: 20, excessSpending: 10, fundedSpending: 62, withdrawalShortfall: 5 },
+      partialExcess: { requiredSpending: 60, targetSpending: 100, idealSpending: 20, excessSpending: 10, fundedSpending: 130, withdrawalShortfall: 5 },
     },
     expected: {
       guardrailCut: { requiredShortfall: 0, targetShortfall: 20, idealShortfall: 20, excessShortfall: 10 },
       floorBreach: { requiredShortfall: 3, targetShortfall: 43, idealShortfall: 20, excessShortfall: 10 },
+      partialExcess: { requiredShortfall: 0, targetShortfall: 0, idealShortfall: 0, excessShortfall: 5 },
     },
     tolerance: { abs: 1e-12 },
   },
   worksheet: 'DOCS/calculations/cash-flow-and-summary/spending-layer-shortfall-attribution.md',
   mutation: 'DOCS/calculations/cash-flow-and-summary/spending-layer-shortfall-attribution.mutation.md',
 }, ({ example }) => {
-  const cases = ['guardrailCut', 'floorBreach'] as const
+  const cases = ['guardrailCut', 'floorBreach', 'partialExcess'] as const
   const inputsOf = (c: (typeof cases)[number]) => (example.inputs as Record<string, ShortfallAttributionInput>)[c]!
   const expectedOf = (c: (typeof cases)[number]) => (example.expected as Record<string, Record<keyof ShortfallAttribution, number>>)[c]!
   const check = (c: (typeof cases)[number], key: keyof ShortfallAttribution) => {
@@ -47,10 +49,10 @@ describeCalculation('spending-layer-shortfall-attribution', {
   it('attributes the target miss as the guardrail cut plus every dollar not produced: 20 and 43', () => {
     for (const c of cases) check(c, 'targetShortfall')
   })
-  it('attributes ideal and excess misses of 20 and 10 in both cases', () => {
-    for (const c of cases) {
-      check(c, 'idealShortfall')
-      check(c, 'excessShortfall')
-    }
+  it('attributes ideal misses of 20, 20 and 0 after target funding', () => {
+    for (const c of cases) check(c, 'idealShortfall')
+  })
+  it('attributes excess misses of 10, 10 and 5 after target and ideal funding', () => {
+    for (const c of cases) check(c, 'excessShortfall')
   })
 })

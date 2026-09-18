@@ -489,10 +489,10 @@
       "kind": "model",
       "outputs": [
         "sustainable-spending-result-max-base-annual",
-        "sustainable-spending-result-spending-slack-dollars",
-        "sustainable-spending-result-simulation-count"
+        "sustainable-spending-result-spending-slack-dollars"
       ],
       "feeds": [
+        "sustainable-spending-result-simulation-count",
         "solved-initial-withdrawal-rate-pct",
         "solved-spending-rounded-to-hundred"
       ],
@@ -518,6 +518,7 @@
         "rounding": "integer-dollar midpoint"
       },
       "limits": [
+        "simulationCount is not derivable from the stated contract because the bracketing rule is not documented. The quantity enters the published result, so its family is fed, not output.",
         "The public API generates its own bracket. Evidence seeds 40000, brackets at 80000, and verifies the first two midpoints reach the worksheet bracket 60000/70000 before checking its four probes and 62500 result. It isolates the stated feasible predicate with an evaluation double, not an invented ledger oracle. Monotone feasibility is assumed; budgets can stop convergence."
       ],
       "worksheet": "DOCS/calculations/cash-flow-and-summary/sustainable-spending-bisection.md",

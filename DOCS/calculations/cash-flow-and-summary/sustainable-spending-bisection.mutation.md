@@ -2,6 +2,8 @@
 
 Executed 2026-09-17 against RetireGolden base `33e7d546` (branch `codex/b1-p4-cards-cashflow-optimizer-taxes`) in `packages/engine`.
 
+Re-executed 2026-09-18 after the worksheet extension.
+
 ## Mutation applied to `packages/engine/src/decisions/spendingSolver.ts`
 
 ```diff
@@ -25,19 +27,19 @@ Publish the infeasible upper bound instead of the last feasible lower bound.
 ## Command
 
 ```
-npx.cmd vitest run src/decisions/spendingSolver.evidence.test.ts
+NO_COLOR=1 FORCE_COLOR=0 npx.cmd vitest run src/decisions/spendingSolver.evidence.test.ts
 ```
 
 ## Captured failing output
 
-Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed. Exit code: 1.
+The unmodified baseline passed (exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed. Mutation exit code: 1.
 
 ```
 RUN  v5.0.0 C:/Users/Nathan/source/repos/RetireGolden/.worktrees/slice4-20260917/packages/engine
 
- ❯ src/decisions/spendingSolver.evidence.test.ts (1 test | 1 failed) 56ms
+ ❯ src/decisions/spendingSolver.evidence.test.ts (1 test | 1 failed) 58ms
    ❯ sustainable-spending-bisection — Sustainable spending bisection (1)
-     × bisects the 60000/70000 bracket to the feasible lower bound 62500 55ms
+     × bisects the 60000/70000 bracket to the feasible lower bound 62500 57ms
 
  Test Files  1 failed (1)
       Tests  1 failed (1)
@@ -62,4 +64,4 @@ AssertionError: maxBaseAnnual: actual 63125, worksheet 62500: expected false to 
 
 ## Revert
 
-Restored the exact original production bytes in a `finally` block, then `git diff --quiet -- packages/engine/src/decisions/spendingSolver.ts` exited 0, confirming no production change remained. Re-ran the named command after restoration. The restored named file passed (exit 0).
+Ran `git checkout -- packages/engine/src/decisions/spendingSolver.ts`, then `git diff --quiet -- packages/engine/src/decisions/spendingSolver.ts` exited 0, confirming no production change remained. Re-ran the named command after restoration: the suite passed (exit 0). The baseline and restored suite are green; no discrepancy remains.

@@ -43,7 +43,6 @@
       "spending-required-shortfall-annual",
       "spending-target-shortfall-annual",
       "sustainable-spending-result-max-base-annual",
-      "sustainable-spending-result-simulation-count",
       "sustainable-spending-result-spending-slack-dollars",
       "swr-rule-result-initial-annual-spend",
       "swr-rule-result-initial-rate-pct"
@@ -241,6 +240,7 @@
       "survivor-scenario-row-lifetime-tax-delta",
       "survivor-scenario-row-ssa44premium-savings",
       "survivor-scenario-row-survivor-shortfall-years",
+      "sustainable-spending-result-simulation-count",
       "swr-rule-result-depletion-year",
       "swr-rule-result-end-year",
       "swr-rule-result-ending-after-tax-estate",
@@ -402,6 +402,9 @@
       ],
       "spending-target-requested-annual": [
         "lifestyle-required-discretionary-split"
+      ],
+      "sustainable-spending-result-simulation-count": [
+        "sustainable-spending-bisection"
       ],
       "swr-rule-result-depletion-year": [
         "swr-rule-rate-and-initial-spend"

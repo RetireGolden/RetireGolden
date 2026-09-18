@@ -2,6 +2,8 @@
 
 Executed 2026-09-17 against RetireGolden base `33e7d546` (branch `codex/b1-p4-cards-cashflow-optimizer-taxes`) in `packages/engine`.
 
+Re-executed 2026-09-18 after the worksheet extension.
+
 ## Mutation applied to `packages/engine/src/spending/flexibleGoals.ts`
 
 ```diff
@@ -25,22 +27,22 @@ Disable permitted partial funding, turning the worksheet partially funded goal i
 ## Command
 
 ```
-npx.cmd vitest run src/spending/flexibleGoals.evidence.test.ts
+NO_COLOR=1 FORCE_COLOR=0 npx.cmd vitest run src/spending/flexibleGoals.evidence.test.ts
 ```
 
 ## Captured failing output
 
-Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed. Exit code: 1.
+The unmodified baseline passed (exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed. Mutation exit code: 1.
 
 ```
 RUN  v5.0.0 C:/Users/Nathan/source/repos/RetireGolden/.worktrees/slice4-20260917/packages/engine
 
- ❯ src/spending/flexibleGoals.evidence.test.ts (1 test | 1 failed) 5ms
-   ❯ flexible-goal-scheduling — Flexible goal scheduling (1)
-     × partially funds an inflated 1100 target with 700 and leaves 400 unfunded 4ms
+ ❯ src/spending/flexibleGoals.evidence.test.ts (2 tests | 1 failed) 6ms
+   ❯ flexible-goal-scheduling — Flexible goal scheduling (2)
+     × partially funds an inflated 1100 target with 700 and leaves 400 unfunded 5ms
 
  Test Files  1 failed (1)
-      Tests  1 failed (1)
+      Tests  1 failed | 1 passed (2)
 
 
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
@@ -64,4 +66,4 @@ Received: "deferred"
 
 ## Revert
 
-Restored the exact original production bytes in a `finally` block, then `git diff --quiet -- packages/engine/src/spending/flexibleGoals.ts` exited 0, confirming no production change remained. Re-ran the named command after restoration. The restored named file passed (exit 0).
+Ran `git checkout -- packages/engine/src/spending/flexibleGoals.ts`, then `git diff --quiet -- packages/engine/src/spending/flexibleGoals.ts` exited 0, confirming no production change remained. Re-ran the named command after restoration: the suite passed (exit 0). The baseline and restored suite are green; no discrepancy remains.
