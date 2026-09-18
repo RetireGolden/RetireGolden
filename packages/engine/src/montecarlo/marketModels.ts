@@ -205,7 +205,10 @@ export interface GaussianModelConfig {
 
 export interface AR1ModelConfig {
   type: 'ar1'
-  /** Autoregression coefficient phi (0 < phi < 1 for mean reversion; default 0.2). */
+  /**
+   * Autoregression coefficient phi, clamped to [-0.9, 0.95]; default 0.25.
+   * Note: an earlier comment said 0.2; the code has always applied 0.25.
+   */
   phi?: number
   returnVolPct?: number
   inflationMeanPct: number
@@ -465,9 +468,20 @@ export function createHistoricalModel(config: HistoricalModelConfig): MarketMode
 }
 
 /**
- * Student-t fat-tailed returns (mean-preserving). Uses t-distributed shocks
- * scaled to target volatility; lower df => fatter tails than Gaussian.
- * Draws: z_t for return, then inflation copula, then class after.
+ * Fat-tailed return model, named "student-t" in the config but implemented as a
+ * normal draw with a tail-multiplier mixture, not as a Student-t variate:
+ *   df    = max(3, config.df ?? 5)               (selects the multiplier only)
+ *   sigma = (returnVolScalePct ?? 12) / 100
+ *   per year t: z = N(0,1) (first normal draw); u = next uniform; if u < 0.05 then
+ *     z is multiplied by 2.5 when df > 4, else by 3.5;
+ *   published return shock = sigma * z * 100     (percent)
+ *   inflation_t = inflationMeanPct + inflationVolPct * (rho * z + sqrt(1 - rho^2) * z2)
+ *     with z2 the second normal draw, inflationVolPct default 1.5, rho = correlation
+ *     clamped to [-1, 1] (default -0.2); class shocks, when configured, use the same z.
+ * The mean is zero. Note: the mixture branch is not "scaled to target volatility":
+ * with probability 0.05 the shock variance is 2.5^2 or 3.5^2 times sigma^2, so the
+ * unconditional variance exceeds sigma^2, and no t distribution is sampled; a
+ * worksheet must derive the two branches (u >= 0.05 and u < 0.05) separately.
  */
 export function createStudentTModel(config: StudentTModelConfig): MarketModel {
   const df = Math.max(3, config.df ?? 5)
