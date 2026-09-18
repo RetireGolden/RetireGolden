@@ -40,7 +40,8 @@
       "longevity-survival-percentile-age"
     ],
     "partial": [
-      "spending-base-annual"
+      "spending-base-annual",
+      "spending-guardrail-factor-annual"
     ],
     "noRecordYet": [
       "aca-applicable-slcsp-premium-annual",
@@ -215,7 +216,6 @@
       "spending-debt-service-annual",
       "spending-excess-requested-annual",
       "spending-excess-shortfall-annual",
-      "spending-guardrail-factor-annual",
       "spending-healthcare-annual",
       "spending-ideal-requested-annual",
       "spending-ideal-shortfall-annual",
@@ -302,6 +302,16 @@
       "survivor-scenario-row-survivor-shortfall-years"
     ],
     "fedBy": {
+      "accounts-balance-per-account-annual": [
+        "allocation-glidepath-interpolation",
+        "allocation-total-return-drift",
+        "allocation-weight-normalization",
+        "asset-class-parameter-overrides"
+      ],
+      "accounts-investable-total-annual": [
+        "allocation-total-return-drift",
+        "allocation-weight-normalization"
+      ],
       "funded-ratio-result-essential-spending-pv": [
         "ladder-real-present-value",
         "ladder-real-yield-interpolation",
@@ -328,6 +338,20 @@
       "income-floor-ladder-yield-pct": [
         "ladder-real-yield-interpolation",
         "treasury-real-yield-curve-2026"
+      ],
+      "income-ordinary-dividends-annual": [
+        "allocation-blended-taxable-yield"
+      ],
+      "income-qualified-dividends-annual": [
+        "allocation-blended-taxable-yield"
+      ],
+      "income-taxable-interest-annual": [
+        "allocation-blended-taxable-yield"
+      ],
+      "income-taxable-yield-annual": [
+        "allocation-blended-taxable-yield",
+        "allocation-glidepath-interpolation",
+        "asset-class-parameter-overrides"
       ],
       "ladder-build-total-cost": [
         "ladder-annual-coupon-par-pricing",
@@ -356,23 +380,62 @@
         "mortality-ex-to-qx-identity",
         "mortality-sampled-death-age"
       ],
+      "monte-carlo-guardrail-action-counts": [
+        "balance-risk-guardrail-step",
+        "withdrawal-rate-guardrail-step"
+      ],
+      "monte-carlo-investable-fan-percentiles": [
+        "allocation-non-cash-share",
+        "asset-class-parameter-overrides"
+      ],
+      "monte-carlo-max-cut-depth-percentiles": [
+        "balance-risk-guardrail-step",
+        "withdrawal-rate-guardrail-step"
+      ],
       "monte-carlo-success-rate": [
+        "allocation-non-cash-share",
         "mortality-ex-to-qx-identity",
         "mortality-sampled-death-age"
+      ],
+      "optimizer-recommended-conversion-annual": [
+        "allocation-account-expected-return",
+        "allocation-blended-expected-return"
+      ],
+      "optimizer-schedule-conversion-total": [
+        "allocation-account-expected-return",
+        "allocation-blended-expected-return"
+      ],
+      "spending-base-annual": [
+        "abw-expected-real-return",
+        "spending-shape-annual-delta-phases",
+        "spending-shape-preset-compilation"
+      ],
+      "spending-shape-delta-vs-flat": [
+        "spending-shape-annual-delta-phases",
+        "spending-shape-preset-compilation"
+      ],
+      "sustainable-spending-result-max-base-annual": [
+        "spending-shape-annual-delta-phases"
+      ],
+      "sustainable-spending-result-spending-slack-dollars": [
+        "spending-shape-annual-delta-phases"
+      ],
+      "tax-realized-gains-annual": [
+        "allocation-rebalance-turnover"
       ]
     }
   },
   "records": {
-    "total": 18,
+    "total": 32,
     "byKind": {
-      "composition": 1,
+      "composition": 3,
       "data": 2,
-      "formula": 12,
-      "model": 3
+      "formula": 18,
+      "model": 9
     },
     "byJustificationKind": {
       "dataset": 2,
-      "derivation": 16
+      "derivation": 30
     }
   },
   "oracleExamples": [
@@ -411,11 +474,16 @@
   ],
   "walkthroughs": [],
   "attestationsDerived": {
-    "catalogued": 6,
+    "catalogued": 9,
     "excludedWithReason": 0,
-    "notYetReviewed": 205
+    "notYetReviewed": 203
   },
   "shards": [
+    {
+      "group": "accountsAndGrowth",
+      "path": "calculation-coverage/accountsAndGrowth.json",
+      "recordCount": 9
+    },
     {
       "group": "laddersAndValuation",
       "path": "calculation-coverage/laddersAndValuation.json",
@@ -429,7 +497,7 @@
     {
       "group": "spendingAndWithdrawals",
       "path": "calculation-coverage/spendingAndWithdrawals.json",
-      "recordCount": 1
+      "recordCount": 6
     }
   ]
 }

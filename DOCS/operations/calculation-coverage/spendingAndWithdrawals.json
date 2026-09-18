@@ -86,6 +86,388 @@
         "mutationExists": true,
         "provenanceIndependent": true
       }
+    },
+    {
+      "id": "abw-expected-real-return",
+      "title": "ABW expected real return: fixed, TIPS yield, or CAPE-blended",
+      "kind": "model",
+      "outputs": [],
+      "feeds": [
+        "spending-base-annual"
+      ],
+      "purpose": "The expected real return an amortization-based withdrawal policy amortizes at, by return source.",
+      "statement": "For an ABW policy, or undefined: source = policy.returnSource ?? \"fixed\"; b = policy.bondRealYieldPct ?? 2.0. \"tips\" returns b. \"cape\" returns (100/CAPE) x s + b x (1 - s), with CAPE = policy.startingCape ?? 25 and s = (policy.equitySharePct ?? 60)/100. \"fixed\" returns policy.fixedRealReturnPct ?? 3.8. Units: percent per year, real. Rounding: none.",
+      "formula": {
+        "expression": "r = b (tips); r = s (100/CAPE) + (1 - s) b (cape); r = fixedRealReturnPct (fixed); defaults b = 2.0, CAPE = 25, s = 0.6, fixed = 3.8",
+        "variables": [
+          {
+            "symbol": "CAPE",
+            "meaning": "Starting cyclically adjusted price-earnings ratio",
+            "unit": "ratio",
+            "domain": "schema 5..60"
+          },
+          {
+            "symbol": "s",
+            "meaning": "Equity share of the portfolio",
+            "unit": "1",
+            "domain": "0 <= s <= 1 (schema: percent 0..100)"
+          },
+          {
+            "symbol": "b",
+            "meaning": "Real bond or TIPS yield",
+            "unit": "percent/year",
+            "domain": "schema -2..8"
+          },
+          {
+            "symbol": "r",
+            "meaning": "Expected real return the payment is amortized at",
+            "unit": "percent/year",
+            "domain": "finite"
+          }
+        ],
+        "timing": "resolved once per simulation; every year amortizes at the same r",
+        "rounding": "none"
+      },
+      "limits": [
+        "The CAPE branch treats the cyclically adjusted earnings yield as the equity real return, an ERN/TPAW-style planning convention rather than a forecast",
+        "Defaults come from ABW_DEFAULTS; an undefined policy resolves to the fixed 3.8% (the VPW global 60/40 rate)",
+        "The schema bounds CAPE, the equity share and the bond yield before the function runs; the function itself does not validate",
+        "The worksheet says none yet: no census family carries the expected return. The traced consumer is the ledger, which resolves it once (simulate.ts) and amortizes every year's payment at it (annualLifestyleLayers.ts, abwAnnualPayment), so spending-base-annual is named as the nearest fed family"
+      ],
+      "worksheet": "DOCS/calculations/spending-and-withdrawals/abw-expected-real-return.md",
+      "mutation": "DOCS/calculations/spending-and-withdrawals/abw-expected-real-return.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/spending/abw.ts"
+      ],
+      "provenance": {
+        "derivedBy": "codex",
+        "implementedBy": "claude-subagent",
+        "reviewedBy": "unreviewed"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/spending/abw.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
+      "id": "balance-risk-guardrail-step",
+      "title": "Risk-based guardrail: one year's cut, raise or hold against real-balance thresholds",
+      "kind": "model",
+      "outputs": [
+        "spending-guardrail-factor-annual"
+      ],
+      "feeds": [
+        "monte-carlo-guardrail-action-counts",
+        "monte-carlo-max-cut-depth-percentiles"
+      ],
+      "purpose": "The decision that rations discretionary spending when the deflated portfolio leaves its solved balance band.",
+      "statement": "adj = (adjustmentPct ?? 10)/100; prev = clamp(prevMultiplier) into [0, max(0, maxMultiplier)]. When startingBalance is not > 0, or currentRealBalance is not finite or is negative: hold at prev. lower = (lowerBalanceThresholdPct/100) x startingBalance when that percent is supplied and > 0, else null; upper likewise from upperBalanceThresholdPct. When both are set and lower >= upper: hold. currentRealBalance < lower: multiplier = clamp(prev - adj), action \"cut\" when it fell by more than 1e-9, else \"hold\". currentRealBalance > upper: multiplier = clamp(prev + adj), action \"raise\" when it rose by more than 1e-9, else \"hold\". Otherwise hold. Units: balances in real (deflated) dollars; thresholds as percent of the starting real portfolio; the multiplier a fraction. Rounding: none. annualGuardrailFunding.ts deflates the start-of-year portfolio by the year's inflation factor and anchors startingBalance at the first solvent year's real portfolio.",
+      "formula": {
+        "expression": "L = l/100 x S, U = u/100 x S; m = clamp(prev - adj) if B < L; m = clamp(prev + adj) if B > U; m = prev otherwise, and always when L or U is unset or L >= U",
+        "variables": [
+          {
+            "symbol": "B",
+            "meaning": "This year's real start-of-year portfolio",
+            "unit": "usd, real",
+            "domain": "B >= 0 and finite"
+          },
+          {
+            "symbol": "S",
+            "meaning": "The starting real portfolio the thresholds are scaled from",
+            "unit": "usd, real",
+            "domain": "S > 0"
+          },
+          {
+            "symbol": "l, u",
+            "meaning": "Lower and upper thresholds as percent of S",
+            "unit": "percent",
+            "domain": "each > 0 when set; l < u"
+          },
+          {
+            "symbol": "adj",
+            "meaning": "Step size as a fraction of the full discretionary layer",
+            "unit": "1",
+            "domain": "default 0.1"
+          },
+          {
+            "symbol": "m",
+            "meaning": "This year's discretionary multiplier",
+            "unit": "1",
+            "domain": "0 <= m <= maxMultiplier"
+          }
+        ],
+        "timing": "once per projection year, before the funding fixed point",
+        "rounding": "none"
+      },
+      "limits": [
+        "Thresholds come from the shared-path solver (montecarlo/riskBasedGuardrails.ts); a policy whose thresholds are absent, zero or inverted holds, so the mode never acts on unsolved numbers",
+        "The worksheet names display-guardrail-balance-thresholds upstream; the results-page callout re-derives the dollar thresholds as lowerBalanceThresholdPct/100 x the starting investable in planner-ui (ResultsPage.tsx, MonteCarloPage.tsx) and never calls this function, so that family shares this record's threshold term but is not fed by it and is not listed",
+        "Same fixed step and clamp semantics as the withdrawal-rate step; clampRange is module-private and reached through nextBalanceGuardrailMultiplier",
+        "The Monte Carlo action counts and cut-depth percentiles aggregate this decision's action and multiplier exactly as they do for the withdrawal-rate mode"
+      ],
+      "worksheet": "DOCS/calculations/spending-and-withdrawals/balance-risk-guardrail-step.md",
+      "mutation": "DOCS/calculations/spending-and-withdrawals/balance-risk-guardrail-step.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/spending/guardrails.ts"
+      ],
+      "provenance": {
+        "derivedBy": "codex",
+        "implementedBy": "claude-subagent",
+        "reviewedBy": "unreviewed"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/spending/guardrails.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
+      "id": "spending-shape-annual-delta-phases",
+      "title": "Annual real spending drift compiled to five-year phase rows",
+      "kind": "model",
+      "outputs": [],
+      "feeds": [
+        "spending-base-annual",
+        "spending-shape-delta-vs-flat",
+        "sustainable-spending-result-max-base-annual",
+        "sustainable-spending-result-spending-slack-dollars"
+      ],
+      "purpose": "Turns a steady %/yr real spending change into the editable phase multipliers a plan stores.",
+      "statement": "deltaPct = 0 returns no phases. startAge = min(max(round(retirementAge), 40), 105). For age = startAge + 5, startAge + 10, ... while age <= 100: multiplier = (1 + deltaPct/100)^(age - startAge), rounded to two decimals as Math.round(x x 100)/100 and clamped into [0, 3]; each row is { fromAge: age, multiplier }. Units: fromAge in years of the primary person; multiplier a factor on baseAnnual. Rounding: two decimals per row, as stated.",
+      "formula": {
+        "expression": "m(age) = clamp(round2((1 + d/100)^(age - a0)), 0, 3) for age = a0 + 5k <= 100, k >= 1, a0 = clamp(round(retirementAge), 40, 105)",
+        "variables": [
+          {
+            "symbol": "d",
+            "meaning": "Annual real spending change",
+            "unit": "percent/year",
+            "domain": "finite; 0 emits no rows"
+          },
+          {
+            "symbol": "a0",
+            "meaning": "Rounded, clamped retirement age the steps count from",
+            "unit": "years",
+            "domain": "40 <= a0 <= 105"
+          },
+          {
+            "symbol": "age",
+            "meaning": "A phase row's fromAge",
+            "unit": "years",
+            "domain": "a0 + 5, a0 + 10, ... <= 100"
+          },
+          {
+            "symbol": "m(age)",
+            "meaning": "Multiplier on baseAnnual from that age",
+            "unit": "1",
+            "domain": "0 <= m <= 3, two decimals"
+          }
+        ],
+        "timing": "compiled once when the shape is chosen; the rows then hold flat between step ages",
+        "rounding": "two decimals per multiplier (Math.round(x x 100)/100)"
+      },
+      "limits": [
+        "Five-year steps hold the fully compounded multiplier flat between step ages, an editable approximation to annual drift",
+        "The first row is one step after retirement, never at retirement age itself",
+        "Retirement age is rounded and clamped into [40, 105] so every row satisfies the phase schema (fromAge 40..110, multiplier 0..3)",
+        "The rows are plan data: the planner-ui SpendingSection writes them into expenses.phases and the solver page runs the sustainable-spending solver per shape; no engine module calls this function, so the named families are fed through the plan the UI writes"
+      ],
+      "worksheet": "DOCS/calculations/spending-and-withdrawals/spending-shape-annual-delta-phases.md",
+      "mutation": "DOCS/calculations/spending-and-withdrawals/spending-shape-annual-delta-phases.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/spending/shapePresets.ts"
+      ],
+      "provenance": {
+        "derivedBy": "codex",
+        "implementedBy": "claude-subagent",
+        "reviewedBy": "unreviewed"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/spending/shapePresets.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
+      "id": "spending-shape-preset-compilation",
+      "title": "Named spending shapes compiled to phase rows",
+      "kind": "model",
+      "outputs": [],
+      "feeds": [
+        "spending-shape-delta-vs-flat",
+        "spending-base-annual"
+      ],
+      "purpose": "What phase rows the flat, smile, front-loaded and smirk presets write into a plan.",
+      "statement": "\"flat\" returns no phases. \"smile\" returns [{ fromAge: 75, multiplier: 0.9 }, { fromAge: 85, multiplier: 0.8 }] independent of retirement age. \"smirk\" returns annualDeltaPhases(SMIRK_ANNUAL_REAL_DELTA_PCT = -1, retirementAge). \"frontLoaded\": boostFrom = min(max(retirementAge, 40), 100); boostFrom >= 75 returns no phases, else [{ fromAge: boostFrom, multiplier: 1.1 }, { fromAge: 75, multiplier: 1 }]. Units: fromAge in years; multiplier a factor on baseAnnual. Rounding: none here; the smirk rows carry annualDeltaPhases's two-decimal rounding.",
+      "formula": {
+        "expression": "flat: []; smile: [(75, 0.9), (85, 0.8)]; smirk: annualDeltaPhases(-1, retirementAge); frontLoaded: [(clamp(retirementAge, 40, 100), 1.1), (75, 1)] when that age < 75, else []",
+        "variables": [
+          {
+            "symbol": "shape",
+            "meaning": "The preset id",
+            "unit": "enum",
+            "domain": "flat | smile | frontLoaded | smirk"
+          },
+          {
+            "symbol": "retirementAge",
+            "meaning": "The primary person's retirement age",
+            "unit": "years",
+            "domain": "finite"
+          },
+          {
+            "symbol": "rows",
+            "meaning": "The phase rows written into expenses.phases",
+            "unit": "rows",
+            "domain": "each within the phase schema"
+          }
+        ],
+        "timing": "compiled once when the preset is chosen; never re-evaluated for a saved plan",
+        "rounding": "none (smirk inherits the two-decimal rows)"
+      },
+      "limits": [
+        "Presets compile to visible phase rows at creation time and never live-link a saved plan to the research constants; changing SMIRK_ANNUAL_REAL_DELTA_PCT changes only newly compiled plans",
+        "The smile calibration is a two-step approximation of Blanchett's average path without an explicit late-life step-up",
+        "frontLoaded passes the retirement age through unrounded (clamped into [40, 100]) while the smirk path rounds it",
+        "No engine module calls this function; the UI writes the rows into expenses.phases and the solver page evaluates each shape, so the named families are fed through plan data"
+      ],
+      "worksheet": "DOCS/calculations/spending-and-withdrawals/spending-shape-preset-compilation.md",
+      "mutation": "DOCS/calculations/spending-and-withdrawals/spending-shape-preset-compilation.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/spending/shapePresets.ts"
+      ],
+      "provenance": {
+        "derivedBy": "codex",
+        "implementedBy": "claude-subagent",
+        "reviewedBy": "unreviewed"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/spending/shapePresets.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
+      "id": "withdrawal-rate-guardrail-step",
+      "title": "Withdrawal-rate guardrail: one year's cut, raise or hold of the discretionary multiplier",
+      "kind": "model",
+      "outputs": [
+        "spending-guardrail-factor-annual"
+      ],
+      "feeds": [
+        "monte-carlo-guardrail-action-counts",
+        "monte-carlo-max-cut-depth-percentiles"
+      ],
+      "purpose": "The Guyton-Klinger-style decision that rations discretionary spending when the withdrawal rate leaves its band.",
+      "statement": "upper = (upperGuardrailPct ?? 120)/100; lower = (lowerGuardrailPct ?? 80)/100; adj = (adjustmentPct ?? 10)/100; prev = clamp(prevMultiplier) into [0, max(0, maxMultiplier)] with maxMultiplier defaulting to 1 and a non-finite prev read as min(1, that ceiling). When startingRate is not > 0, or currentRate is not finite or is negative: hold at prev. Otherwise ratio = currentRate/startingRate. ratio > upper: multiplier = clamp(prev - adj), action \"cut\" when it fell by more than 1e-9, else \"hold\". ratio < lower: multiplier = clamp(prev + adj), action \"raise\" when it rose by more than 1e-9, else \"hold\". Otherwise hold. Units: the multiplier is a fraction of the discretionary layer; the rates are ratios of target spending to the start-of-year portfolio whose units cancel. Rounding: none.",
+      "formula": {
+        "expression": "ratio = current/starting; m = clamp(prev - adj) if ratio > upper; m = clamp(prev + adj) if ratio < lower; m = prev otherwise; clamp into [0, maxMultiplier]",
+        "variables": [
+          {
+            "symbol": "prev",
+            "meaning": "Last year's discretionary multiplier",
+            "unit": "1",
+            "domain": "clamped into [0, maxMultiplier]"
+          },
+          {
+            "symbol": "current, starting",
+            "meaning": "This year's and the first year's withdrawal rate",
+            "unit": "1",
+            "domain": "starting > 0, current >= 0 and finite"
+          },
+          {
+            "symbol": "upper, lower",
+            "meaning": "Band edges as fractions of the starting rate",
+            "unit": "1",
+            "domain": "defaults 1.2 and 0.8"
+          },
+          {
+            "symbol": "adj",
+            "meaning": "Step size as a fraction of the full discretionary layer",
+            "unit": "1",
+            "domain": "default 0.1"
+          },
+          {
+            "symbol": "m",
+            "meaning": "This year's discretionary multiplier",
+            "unit": "1",
+            "domain": "0 <= m <= maxMultiplier"
+          }
+        ],
+        "timing": "once per projection year, before the funding fixed point",
+        "rounding": "none"
+      },
+      "limits": [
+        "The signal is gross recurring target spending over the start-of-year portfolio, not the net portfolio draw: a documented simplification that keeps the rule non-circular with the spending it decides",
+        "The step is a fixed adjustmentPct of the full discretionary layer, not a percentage of the previous multiplier",
+        "A cut or raise the clamp absorbs is reported as hold, so downstream counts reflect real moves only",
+        "clampRange is module-private; the evidence reaches it through nextGuardrailMultiplier",
+        "The Monte Carlo counts each year's action (run.ts) and takes 1 - guardrailFactor as the year's cut depth, so both aggregates are fed by this decision"
+      ],
+      "worksheet": "DOCS/calculations/spending-and-withdrawals/withdrawal-rate-guardrail-step.md",
+      "mutation": "DOCS/calculations/spending-and-withdrawals/withdrawal-rate-guardrail-step.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/spending/guardrails.ts"
+      ],
+      "provenance": {
+        "derivedBy": "codex",
+        "implementedBy": "claude-subagent",
+        "reviewedBy": "unreviewed"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/spending/guardrails.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
     }
   ]
 }
