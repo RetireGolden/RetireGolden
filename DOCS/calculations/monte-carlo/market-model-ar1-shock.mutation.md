@@ -1,6 +1,6 @@
 # Mutation receipt: market-model-ar1-shock
 
-Re-executed 2026-09-18 after the #719 review against RetireGolden base `33e7d546` (branch grok/b1-p4-cards-monte-carlo) in `packages/engine`.
+Re-executed 2026-09-18 after the second #719 review against RetireGolden base `33e7d546` (branch grok/b1-p4-cards-monte-carlo) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/montecarlo/marketModels.ts`
 
@@ -27,7 +27,7 @@ Captured with `NO_COLOR=1 FORCE_COLOR=0`. The `Start at` and `Duration` lines ar
 ```
  RUN  v5.0.0 C:/TEMP/rg-s3/packages/engine
 
- ❯ src/montecarlo/marketModels.evidence.test.ts (16 tests | 1 failed) 8ms
+ ❯ src/montecarlo/marketModels.evidence.test.ts (16 tests | 1 failed) 9ms
    ❯ market-model-ar1-shock — AR(1) mean-reverting return shock (1)
      × after a 10-point shock, two zero-innovation years are 2 then 0.4 4ms
 

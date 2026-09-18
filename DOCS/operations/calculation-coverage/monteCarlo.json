@@ -1082,36 +1082,38 @@
         "monte-carlo-depletion-probability-by-year"
       ],
       "purpose": "Samples historical years in wrapping contiguous blocks whose length is geometric with mean L.",
-      "statement": "For mean block length L, a geometric restart probability is p = 1/L. After a block starts, a continuation draw U >= p continues the current historical block (the next year is the next series row, wrapping). For L = 5, p = 0.20 and U = 0.50, continuation is true. Production draws a whole block length as max(1, floor(−log(1 − U) · L)) at each restart rather than flipping a per-year coin, which is a different parameterization of the same geometric law. Units: a Boolean continuation. Rounding: none. Exact Boolean.",
+      "statement": "With L = max(2, meanBlockLength ?? 5), each historical block draws one length remaining = floor(−ln(1 − U) · L) || 1 after cursor = nextInt(n) (U = next()). The path publishes that many contiguous rows with wrap, then draws a new start row and length only when remaining reaches 0. Draw order per block is nextInt then next. A per-year continuation coin with probability 1/L is a different law. For L = 5, equityWeightPct = 60, nextInt 72, U = 0.50, then at restart nextInt 0, U = 0.90, a five-year path replays 2000, 2001, 2002, 1928, 1929: inflation 3.4, 1.6, 2.4, −1.2, 0.6 and shocks −7.657291666666668, −13.837291666666669, −16.097291666666667, 17.662708333333327, −12.23729166666667. Units: percentage points and percent/year. Rounding: block length is floored and a zero floor becomes 1. Absolute tolerance 1e-12 on the shocks; inflation exact.",
       "formula": {
         "expression": "at each block start: remaining = floor(−ln(1 − U) · L) || 1; each year publishes the row at cursor, then cursor = (cursor + 1) mod n and remaining decrements; when remaining reaches 0 a new cursor = nextInt(n) and a new length are drawn",
         "variables": [
           {
             "symbol": "L",
-            "meaning": "Mean block length",
+            "meaning": "Mean block length after the floor of 2",
             "unit": "years",
-            "domain": ">= 2 as configured; worksheet 5"
-          },
-          {
-            "symbol": "p",
-            "meaning": "Restart probability",
-            "unit": "1",
-            "domain": "1/L; worksheet 0.20"
+            "domain": ">= 2; worksheet 5"
           },
           {
             "symbol": "U",
-            "meaning": "Continuation / length draw",
+            "meaning": "Uniform length draw, once per block",
             "unit": "1",
-            "domain": "[0, 1); worksheet 0.50"
+            "domain": "[0, 1); worksheet 0.50 then 0.90"
+          },
+          {
+            "symbol": "remaining",
+            "meaning": "Years left in the current block",
+            "unit": "years",
+            "domain": ">= 1 after the || 1 clamp; worksheet 3 then 11"
           }
         ],
         "timing": "annual; a new block is drawn when remaining hits 0",
-        "rounding": "block length is floored; continuation is a Boolean"
+        "rounding": "block length is floored; a zero floor becomes 1"
       },
       "limits": [
         "Preserves observations while randomizing dependence lengths; it does not establish that historical dependence recurs",
-        "Production uses the inverse-CDF block length floor(−log(1 − U) · L), not a per-year Bernoulli with p = 1/L; for U = 0.50 and L = 5 that length is 3, so the next year continues",
-        "L is clamped to at least 2"
+        "One block-length draw per block: remaining = floor(−ln(1 − U) · L) || 1. A per-year continuation coin with p = 1/L is a different law even when its mean is near L",
+        "L = max(2, meanBlockLength ?? 5); a requested mean below 2 is raised to 2",
+        "Draw order per block is nextInt(n) then next(); a new pair is drawn only when remaining reaches 0",
+        "The || 1 clamp rejects an empty block: at U = 0.01 and L = 5, floor(−ln(0.99) · 5) = 0 would otherwise be length 0"
       ],
       "worksheet": "DOCS/calculations/monte-carlo/market-model-stationary-bootstrap.md",
       "mutation": "DOCS/calculations/monte-carlo/market-model-stationary-bootstrap.mutation.md",

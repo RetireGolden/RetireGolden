@@ -1,6 +1,6 @@
 # Mutation receipt: market-model-lognormal-draw
 
-Re-executed 2026-09-18 after the #719 review against RetireGolden base `33e7d546` (branch grok/b1-p4-cards-monte-carlo) in `packages/engine`.
+Re-executed 2026-09-18 after the second #719 review against RetireGolden base `33e7d546` (branch grok/b1-p4-cards-monte-carlo) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/montecarlo/marketModels.ts`
 

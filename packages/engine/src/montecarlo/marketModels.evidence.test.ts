@@ -488,29 +488,91 @@ describeCalculation(
   'market-model-stationary-bootstrap',
   {
     example: {
-      inputs: { meanBlockLength: 5, continuationDraw: 0.5 },
-      expected: { continuation: 1 },
-      tolerance: 'exact',
+      inputs: {
+        type: 'stationary',
+        meanBlockLength: 5,
+        equityWeightPct: 60,
+        ints: [72, 0],
+        uniforms: [0.5, 0.9],
+        yearCount: 5,
+      },
+      expected: {
+        replayedYears: [2000, 2001, 2002, 1928, 1929],
+        blockLengths: [3, 11],
+        returnShockPct: [-7.657291666666668, -13.837291666666669, -16.097291666666667, 17.662708333333327, -12.23729166666667],
+        inflationPct: [3.4, 1.6, 2.4, -1.2, 0.6],
+      },
+      tolerance: { abs: 1e-12 },
     },
     worksheet: 'DOCS/calculations/monte-carlo/market-model-stationary-bootstrap.md',
     mutation: 'DOCS/calculations/monte-carlo/market-model-stationary-bootstrap.mutation.md',
   },
   ({ example }) => {
-    it('U = 0.50 >= p = 0.20 continues the current historical block', () => {
+    it('five years: inflation 3.4, 1.6, 2.4, −1.2, 0.6 identifying 2000, 2001, 2002, 1928, 1929', () => {
       const model = createStationaryBootstrapModel({
         type: 'stationary',
         meanBlockLength: example.inputs.meanBlockLength as number,
-        equityWeightPct: 60,
+        equityWeightPct: example.inputs.equityWeightPct as number,
       })
       const path = seriesOf(
-        model.generatePath(scriptedRng({ ints: [0], uniforms: [example.inputs.continuationDraw as number] }), 2),
+        model.generatePath(
+          scriptedRng({
+            ints: example.inputs.ints as number[],
+            uniforms: example.inputs.uniforms as number[],
+          }),
+          example.inputs.yearCount as number,
+        ),
       )
-      const continued =
-        path.inflationPct[1] === HISTORICAL_YEARS[1]!.inflationPct &&
-        path.inflationPct[0] === HISTORICAL_YEARS[0]!.inflationPct
-          ? 1
-          : 0
-      expect(continued).toBe(example.expected.continuation)
+      const expectedInflation = example.expected.inflationPct as number[]
+      const expectedShocks = example.expected.returnShockPct as number[]
+      const expectedYears = example.expected.replayedYears as number[]
+      const expectedBlockLengths = example.expected.blockLengths as number[]
+
+      expectedInflation.forEach((value, index) => {
+        expect(path.inflationPct[index]).toBe(value)
+      })
+      expectedShocks.forEach((value, index) => {
+        const shock = path.returnShockPct[index]!
+        expect(
+          withinTolerance(shock, value, example.tolerance),
+          `returnShockPct[${index}] ${shock} is not within ${JSON.stringify(example.tolerance)} of the worksheet's ${value}`,
+        ).toBe(true)
+      })
+
+      const identifiedYears: number[] = []
+      path.inflationPct.forEach((inflation, index) => {
+        const previous = identifiedYears[index - 1]
+        if (previous !== undefined) {
+          const prevIdx = HISTORICAL_YEARS.findIndex((row) => row.year === previous)
+          const continued = HISTORICAL_YEARS[(prevIdx + 1) % HISTORICAL_YEARS.length]!
+          if (continued.inflationPct === inflation) {
+            identifiedYears.push(continued.year)
+            return
+          }
+        }
+        const matches = HISTORICAL_YEARS.filter((row) => row.inflationPct === inflation)
+        const nextInflation = path.inflationPct[index + 1]
+        const chosen =
+          nextInflation === undefined
+            ? matches
+            : matches.filter((row) => {
+                const startIdx = HISTORICAL_YEARS.findIndex((entry) => entry.year === row.year)
+                return HISTORICAL_YEARS[(startIdx + 1) % HISTORICAL_YEARS.length]!.inflationPct === nextInflation
+              })
+        if (chosen.length !== 1) {
+          throw new RangeError(`inflationPct[${index}] = ${inflation} does not identify one historical year`)
+        }
+        identifiedYears.push(chosen[0]!.year)
+      })
+      expect(identifiedYears).toEqual(expectedYears)
+
+      const firstBlockLength = identifiedYears.findIndex(
+        (year, index) => index > 0 && year !== identifiedYears[index - 1]! + 1,
+      )
+      expect(firstBlockLength).toBe(expectedBlockLengths[0])
+      expect(identifiedYears.slice(0, firstBlockLength)).toEqual([2000, 2001, 2002])
+      expect(identifiedYears.slice(firstBlockLength)).toEqual([1928, 1929])
+      expect(expectedBlockLengths[1]).toBe(11)
     })
   },
 )

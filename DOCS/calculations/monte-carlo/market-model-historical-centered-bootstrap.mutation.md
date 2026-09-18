@@ -1,6 +1,6 @@
 # Mutation receipt: market-model-historical-centered-bootstrap
 
-Re-executed 2026-09-18 after the worksheet re-derivation against RetireGolden base `33e7d546` (branch grok/b1-p4-cards-monte-carlo) in `packages/engine`.
+Re-executed 2026-09-18 after the second #719 review against RetireGolden base `33e7d546` (branch grok/b1-p4-cards-monte-carlo) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/montecarlo/marketModels.ts`
 
@@ -27,15 +27,15 @@ Captured with `NO_COLOR=1 FORCE_COLOR=0`. The `Start at` and `Duration` lines ar
 ```
  RUN  v5.0.0 C:/TEMP/rg-s3/packages/engine
 
- ❯ src/montecarlo/marketModels.evidence.test.ts (14 tests | 1 failed) 9ms
-
-⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
-
+ ❯ src/montecarlo/marketModels.evidence.test.ts (16 tests | 1 failed) 9ms
    ❯ market-model-historical-centered-bootstrap — Centered historical bootstrap shock (1)
      × 1928 at 60% equity is shock 17.662708333333327 and inflation −1.2% 4ms
 
  Test Files  1 failed (1)
-      Tests  1 failed | 13 passed (14)
+      Tests  1 failed | 15 passed (16)
+
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
 
  FAIL  src/montecarlo/marketModels.evidence.test.ts > market-model-historical-centered-bootstrap — Centered historical bootstrap shock > 1928 at 60% equity is shock 17.662708333333327 and inflation −1.2%
 AssertionError: returnShockPct 26.599999999999998 is not within {"abs":1e-12} of the worksheet's 17.662708333333327: expected false to be true // Object.is equality

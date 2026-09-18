@@ -1,6 +1,6 @@
 # Mutation receipt: market-model-garch-variance
 
-Re-executed 2026-09-18 after the worksheet re-derivation against RetireGolden base `33e7d546` (branch grok/b1-p4-cards-monte-carlo) in `packages/engine`.
+Re-executed 2026-09-18 after the second #719 review against RetireGolden base `33e7d546` (branch grok/b1-p4-cards-monte-carlo) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/montecarlo/marketModels.ts`
 
@@ -27,15 +27,15 @@ Captured with `NO_COLOR=1 FORCE_COLOR=0`. The `Start at` and `Duration` lines ar
 ```
  RUN  v5.0.0 C:/TEMP/rg-s3/packages/engine
 
- ❯ src/montecarlo/marketModels.evidence.test.ts (14 tests | 1 failed) 8ms
-
-⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
-
+ ❯ src/montecarlo/marketModels.evidence.test.ts (16 tests | 1 failed) 9ms
    ❯ market-model-garch-variance — GARCH(1,1) variance recursion (1)
      × two-year published shocks 500.019999600016 then 518.4269476020705 with inflation 0 4ms
 
  Test Files  1 failed (1)
-      Tests  1 failed | 13 passed (14)
+      Tests  1 failed | 15 passed (16)
+
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
 
  FAIL  src/montecarlo/marketModels.evidence.test.ts > market-model-garch-variance — GARCH(1,1) variance recursion > two-year published shocks 500.019999600016 then 518.4269476020705 with inflation 0
 AssertionError: returnShockPct[0] 100.0039999200032 is not within {"abs":1e-9} of the worksheet's 500.019999600016: expected false to be true // Object.is equality

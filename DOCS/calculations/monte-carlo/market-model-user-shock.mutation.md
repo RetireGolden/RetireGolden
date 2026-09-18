@@ -1,6 +1,6 @@
 # Mutation receipt: market-model-user-shock
 
-Re-executed 2026-09-18 after the #719 review against RetireGolden base `33e7d546` (branch grok/b1-p4-cards-monte-carlo) in `packages/engine`.
+Re-executed 2026-09-18 after the second #719 review against RetireGolden base `33e7d546` (branch grok/b1-p4-cards-monte-carlo) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/montecarlo/marketModels.ts`
 
@@ -27,7 +27,7 @@ Captured with `NO_COLOR=1 FORCE_COLOR=0`. The `Start at` and `Duration` lines ar
 ```
  RUN  v5.0.0 C:/TEMP/rg-s3/packages/engine
 
- ❯ src/montecarlo/marketModels.evidence.test.ts (16 tests | 1 failed) 9ms
+ ❯ src/montecarlo/marketModels.evidence.test.ts (16 tests | 1 failed) 10ms
    ❯ market-model-user-shock — One-year additive user shock on a lognormal base (1)
      × years 1 and 3 are 0 and year 2 is −20 4ms
 
@@ -50,13 +50,13 @@ AssertionError: expected [ +0, +0, -20 ] to deeply equal [ +0, -20, +0 ]
 +   -20,
   ]
 
- ❯ src/montecarlo/marketModels.evidence.test.ts:620:35
-    618|         model.generatePath(scriptedRng({ normals: [0, 0, 0, 0, 0, 0] }…
-    619|       )
-    620|       expect(path.returnShockPct).toEqual(example.expected.returnShock…
+ ❯ src/montecarlo/marketModels.evidence.test.ts:682:35
+    680|         model.generatePath(scriptedRng({ normals: [0, 0, 0, 0, 0, 0] }…
+    681|       )
+    682|       expect(path.returnShockPct).toEqual(example.expected.returnShock…
        |                                   ^
-    621|     })
-    622|   },
+    683|     })
+    684|   },
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 ```
