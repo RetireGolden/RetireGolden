@@ -4,7 +4,7 @@ Kind: composition. `insights/detectors/stateRelocation.ts#stateRelocation.evalua
 
 ## Justification
 
-The sweep prices FL, TX and WA as moves in `startYear`, using split-year taxation and default July move month when none is supplied. Among non-baseline rows with `error=null`, the best candidate has the lowest nominal `lifetimeTaxesAndPenalties`; strict `<` preserves the earlier shortlist row on a tie. For that row and the `id='baseline'` row, `savings=max(0,-sum_y deflate(y,candidateStateTax_y-baselineStateTax_y))`, over the union of years. Candidate selection uses all taxes and penalties, but the identity itself uses state-plus-local tax only. A failed sweep publishes no dollar figure, and the display string rounds the unrounded result to whole dollars.
+The sweep prices FL, TX and WA as moves in `startYear`, using split-year taxation and default July move month when none is supplied. Among non-baseline rows with `error=null`, the best candidate has the lowest nominal `lifetimeTaxesAndPenalties`; strict `<` preserves the earlier shortlist row on a tie. For that row and the `id='baseline'` row, `savings=max(0,-sum_y deflate(y,candidateStateTax_y-baselineStateTax_y))`, over the union of years. Candidate selection uses all taxes and penalties, but the identity itself uses state-plus-local tax only. The relocation series is an input to this published quantity, not a consumer of it. A failed sweep publishes no dollar figure, and the display string rounds the unrounded result to whole dollars.
 
 ## Inputs
 
@@ -49,8 +49,8 @@ The selected candidate is exactly `FL`; published lifetime state-tax savings is 
 
 outputs: `insight-state-relocation-lifetime-state-tax-savings`.
 
-feeds: `relocation-lifetime-state-local-tax`.
+feeds: none.
 
 ## Provenance
 
-Derived by: codex (gpt-5.6-sol), 2026-09-18, from the signatures-and-comments extract with the 2026-09-18 doc-comment contracts, without executing the engine or reading any implementation body. Reviewed by: cursor (composer-2.5), 2026-09-18, by independent recomputation without executing the engine; see REVIEW-2026-09-18.md in this directory.
+Derived by: codex (gpt-5.6-sol), 2026-09-18, from the signatures-and-comments extract with the 2026-09-18 doc-comment contracts, without executing the engine or reading any implementation body. The pull-request review found and prompted correction of the Family direction: this quantity consumes the relocation series and does not feed it. Reviewed by: unreviewed.
