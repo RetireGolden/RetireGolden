@@ -19,7 +19,6 @@ import {
   DEFAULT_QUALIFIED_DIVIDEND_RATIO,
   driftWeights,
   expectedAccountReturnPct,
-  nonCashWeight,
   rebalanceTurnoverFraction,
   resolveAssetClassParams,
   targetWeightsAt,
