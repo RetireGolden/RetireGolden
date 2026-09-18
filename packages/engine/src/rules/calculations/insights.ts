@@ -39,7 +39,7 @@ export const insightsRecords = {
     implementedBy: ['packages/engine/src/insights/detectors/annuitizationHeadroom.ts'],
     implementedByFunctions: ['packages/engine/src/insights/detectors/annuitizationHeadroom.ts#annuitizationHeadroom.screen'],
     verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'cursor' },
   },
   'insight-asset-location-swappable-exposure': {
     title: 'Swappable class exposure of the preferred asset-location candidate',
@@ -70,7 +70,7 @@ export const insightsRecords = {
     implementedBy: ['packages/engine/src/insights/detectors/assetLocation.ts'],
     implementedByFunctions: ['packages/engine/src/insights/detectors/assetLocation.ts#assetLocation.screen'],
     verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'cursor' },
   },
   'insight-hecm-buffer-illustrative-credit-line': {
     title: 'Illustrative HECM credit line for a house-rich, portfolio-thin plan',
@@ -101,7 +101,7 @@ export const insightsRecords = {
     implementedBy: ['packages/engine/src/insights/detectors/hecmBufferCandidate.ts'],
     implementedByFunctions: ['packages/engine/src/insights/detectors/hecmBufferCandidate.ts#hecmBufferCandidate.screen'],
     verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'cursor' },
   },
   'insight-irmaa-tier-edge-premium-cliff': {
     title: 'IRMAA tier-edge household Medicare premium cliff',
@@ -137,7 +137,7 @@ export const insightsRecords = {
     implementedBy: ['packages/engine/src/insights/detectors/irmaaTierEdge.ts'],
     implementedByFunctions: ['packages/engine/src/insights/detectors/irmaaTierEdge.ts#irmaaTierEdge.screen'],
     verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'cursor' },
   },
   'insight-spending-guardrails-illustrative-floor': {
     title: 'Illustrative (or explicit) required spending floor for a guardrail preview',
@@ -167,7 +167,7 @@ export const insightsRecords = {
     implementedBy: ['packages/engine/src/insights/detectors/spendingGuardrails.ts'],
     implementedByFunctions: ['packages/engine/src/insights/detectors/spendingGuardrails.ts#spendingGuardrails.screen'],
     verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'cursor' },
   },
   'insight-spending-headroom-rough-annual': {
     title: 'Rough real annual spending headroom from excess terminal estate',
@@ -198,7 +198,7 @@ export const insightsRecords = {
     implementedBy: ['packages/engine/src/insights/detectors/spendingHeadroom.ts'],
     implementedByFunctions: ['packages/engine/src/insights/detectors/spendingHeadroom.ts#spendingHeadroom.screen'],
     verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'cursor' },
   },
   'insight-ss-bridge-gap-total': {
     title: 'Household Social Security bridge: summed ladder cost and annual real income',
@@ -229,7 +229,7 @@ export const insightsRecords = {
     implementedBy: ['packages/engine/src/insights/detectors/ssBridgeGap.ts'],
     implementedByFunctions: ['packages/engine/src/insights/detectors/ssBridgeGap.ts#ssBridgeGap.screen'],
     verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'cursor' },
   },
   'insight-widows-penalty-bracket-jump': {
     title: 'Rough real survivor bracket jump, single versus joint on the same MAGI',
@@ -262,7 +262,7 @@ export const insightsRecords = {
     implementedBy: ['packages/engine/src/insights/detectors/widowsPenalty.ts'],
     implementedByFunctions: ['packages/engine/src/insights/detectors/widowsPenalty.ts#widowsPenalty.screen'],
     verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'cursor' },
   },
   'insight-state-relocation-lifetime-state-tax-savings': {
     title: 'Lifetime state-and-local tax saved by the best zero-tax relocation candidate',
@@ -298,6 +298,6 @@ export const insightsRecords = {
     implementedBy: ['packages/engine/src/insights/detectors/stateRelocation.ts'],
     implementedByFunctions: ['packages/engine/src/insights/detectors/stateRelocation.ts#stateRelocation.evaluate'],
     verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'cursor' },
   },
 } satisfies Record<string, CalculationRecord>

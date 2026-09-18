@@ -55,7 +55,7 @@
       "provenance": {
         "derivedBy": "codex",
         "implementedBy": "grok",
-        "reviewedBy": "unreviewed"
+        "reviewedBy": "cursor"
       },
       "fixtureFiles": [
         "packages/engine/src/insights/detectors/annuitizationHeadroom.evidence.test.ts"
@@ -115,7 +115,7 @@
       "provenance": {
         "derivedBy": "codex",
         "implementedBy": "grok",
-        "reviewedBy": "unreviewed"
+        "reviewedBy": "cursor"
       },
       "fixtureFiles": [
         "packages/engine/src/insights/detectors/assetLocation.evidence.test.ts"
@@ -180,7 +180,7 @@
       "provenance": {
         "derivedBy": "codex",
         "implementedBy": "grok",
-        "reviewedBy": "unreviewed"
+        "reviewedBy": "cursor"
       },
       "fixtureFiles": [
         "packages/engine/src/insights/detectors/hecmBufferCandidate.evidence.test.ts"
@@ -248,7 +248,7 @@
       "provenance": {
         "derivedBy": "codex",
         "implementedBy": "grok",
-        "reviewedBy": "unreviewed"
+        "reviewedBy": "cursor"
       },
       "fixtureFiles": [
         "packages/engine/src/insights/detectors/irmaaTierEdge.evidence.test.ts"
@@ -307,7 +307,7 @@
       "provenance": {
         "derivedBy": "codex",
         "implementedBy": "grok",
-        "reviewedBy": "unreviewed"
+        "reviewedBy": "cursor"
       },
       "fixtureFiles": [
         "packages/engine/src/insights/detectors/spendingGuardrails.evidence.test.ts"
@@ -372,7 +372,7 @@
       "provenance": {
         "derivedBy": "codex",
         "implementedBy": "grok",
-        "reviewedBy": "unreviewed"
+        "reviewedBy": "cursor"
       },
       "fixtureFiles": [
         "packages/engine/src/insights/detectors/spendingHeadroom.evidence.test.ts"
@@ -432,7 +432,7 @@
       "provenance": {
         "derivedBy": "codex",
         "implementedBy": "grok",
-        "reviewedBy": "unreviewed"
+        "reviewedBy": "cursor"
       },
       "fixtureFiles": [
         "packages/engine/src/insights/detectors/ssBridgeGap.evidence.test.ts"
@@ -495,7 +495,7 @@
       "provenance": {
         "derivedBy": "codex",
         "implementedBy": "grok",
-        "reviewedBy": "unreviewed"
+        "reviewedBy": "cursor"
       },
       "fixtureFiles": [
         "packages/engine/src/insights/detectors/stateRelocation.evidence.test.ts"
@@ -562,7 +562,7 @@
       "provenance": {
         "derivedBy": "codex",
         "implementedBy": "grok",
-        "reviewedBy": "unreviewed"
+        "reviewedBy": "cursor"
       },
       "fixtureFiles": [
         "packages/engine/src/insights/detectors/widowsPenalty.evidence.test.ts"

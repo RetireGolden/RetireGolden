@@ -40,6 +40,6 @@ export const socialSecurityRecords = {
     implementedBy: ['packages/engine/src/ladder/bridge.ts'],
     implementedByFunctions: ['packages/engine/src/ladder/bridge.ts#sizeBridge'],
     verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'cursor' },
   },
 } satisfies Record<string, CalculationRecord>

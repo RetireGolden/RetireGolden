@@ -29,17 +29,6 @@
       "funded-ratio-result-funded-ratio-pct",
       "funded-ratio-result-guaranteed-income-pv",
       "funded-ratio-result-unfunded-pv",
-      "ladder-build-annual-real-income-by-offset",
-      "ladder-build-target-annual-real-income",
-      "ladder-build-total-cost",
-      "ladder-real-flows-coupons",
-      "ladder-real-flows-maturing-principal",
-      "ladder-rung-cost",
-      "ladder-rung-coupon-rate-pct",
-      "ladder-rung-face",
-      "longevity-survival-percentile-age"
-    ],
-    "partial": [
       "insight-annuitization-headroom-illustrative-spia",
       "insight-asset-location-swappable-exposure",
       "insight-hecm-buffer-illustrative-credit-line",
@@ -49,9 +38,20 @@
       "insight-ss-bridge-gap-total",
       "insight-state-relocation-lifetime-state-tax-savings",
       "insight-widows-penalty-bracket-jump",
+      "ladder-build-annual-real-income-by-offset",
+      "ladder-build-target-annual-real-income",
+      "ladder-build-total-cost",
+      "ladder-real-flows-coupons",
+      "ladder-real-flows-maturing-principal",
+      "ladder-rung-cost",
+      "ladder-rung-coupon-rate-pct",
+      "ladder-rung-face",
+      "longevity-survival-percentile-age",
       "projection-summary-lifetime-roth-conversions",
       "scenario-irmaa-surcharge-tier-years",
-      "social-security-bridge-sizing",
+      "social-security-bridge-sizing"
+    ],
+    "partial": [
       "spending-base-annual"
     ],
     "noRecordYet": [

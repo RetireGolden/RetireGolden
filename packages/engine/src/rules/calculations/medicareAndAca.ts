@@ -36,6 +36,6 @@ export const medicareAndAcaRecords = {
     implementedBy: ['packages/engine/src/scenarios/comparison.ts'],
     implementedByFunctions: ['packages/engine/src/scenarios/comparison.ts#compareScenarioPlans'],
     verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'cursor' },
   },
 } satisfies Record<string, CalculationRecord>

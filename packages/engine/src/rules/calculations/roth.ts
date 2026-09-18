@@ -36,6 +36,6 @@ export const rothRecords = {
     implementedBy: ['packages/engine/src/projection/compare.ts'],
     implementedByFunctions: ['packages/engine/src/projection/compare.ts#summarizeProjection'],
     verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'cursor' },
   },
 } satisfies Record<string, CalculationRecord>

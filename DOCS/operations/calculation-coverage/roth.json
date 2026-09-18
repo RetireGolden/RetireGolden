@@ -50,7 +50,7 @@
       "provenance": {
         "derivedBy": "codex",
         "implementedBy": "grok",
-        "reviewedBy": "unreviewed"
+        "reviewedBy": "cursor"
       },
       "fixtureFiles": [
         "packages/engine/src/projection/compare.evidence.test.ts"
