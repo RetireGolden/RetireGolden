@@ -2,4 +2,4 @@
 # GitHub Action in this repo; Dependabot (pip ecosystem, directory /.github)
 # proposes bumps. Named requirements.txt because that is the manifest name
 # Dependabot's pip support documents. Keep this the only pin here.
-semgrep==1.176.0
+semgrep==1.177.0
