@@ -1469,7 +1469,7 @@
       "provenance": {
         "derivedBy": "codex",
         "implementedBy": "grok",
-        "reviewedBy": "cursor"
+        "reviewedBy": "orchestrator"
       },
       "fixtureFiles": [
         "packages/engine/src/montecarlo/rng.evidence.test.ts"

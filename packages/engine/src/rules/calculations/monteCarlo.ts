@@ -706,7 +706,7 @@ export const monteCarloRecords = {
     implementedBy: ['packages/engine/src/montecarlo/rng.ts'],
     implementedByFunctions: ['packages/engine/src/montecarlo/rng.ts#derivePathSeed'],
     verifiedOn: '2026-09-18',
-    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'cursor' },
+    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'orchestrator' },
   },
   'rng-mulberry32-reference-stream': {
     title: 'Mulberry32 uniform reference stream',

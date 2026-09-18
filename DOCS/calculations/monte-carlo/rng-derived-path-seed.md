@@ -83,6 +83,6 @@ In particular, `1351098177 != 2450979136` for paths 7 and 8 under seed 42.
 
 ## Provenance
 
-Derived by: codex (gpt-5.6-sol), 2026-09-18, from the signatures-and-comments extract (with the 2026-09-18 doc-comment corrections) and the orchestrator's contract statements, without executing the engine or reading any implementation body. Reviewed by: unreviewed.
+Derived by: codex (gpt-5.6-sol), 2026-09-18, from the signatures-and-comments extract (with the 2026-09-18 doc-comment corrections) and the orchestrator's contract statements, without executing the engine or reading any implementation body. Reviewed by: cursor (composer-2.5), 2026-09-18, rejected on the reviewer's own fold arithmetic; the orchestrator verified the disputed folds by hand and by a script over the stated recurrence and the worksheet stands (REVIEW-2026-09-18.md in this directory, addenda 1 and 2 and the orchestrator verification); an approving independent recomputation is still owed.
 
 Revision note: the first derivation lacked the exact recurrence and therefore could not assert numeric seed vectors.
