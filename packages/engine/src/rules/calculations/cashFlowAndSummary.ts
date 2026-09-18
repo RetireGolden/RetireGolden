@@ -218,13 +218,14 @@ export const cashFlowAndSummaryRecords = {
       'spending-excess-shortfall-annual',
     ],
     feeds: [],
-    statement: 'Worksheet claim, with the unresolved target-shortfall discrepancy disclosed below: spending/layers.ts#attributeShortfall attributes nominal annual misses so required shortfall is withdrawal shortfall remaining after target discretionary dollars, target shortfall is the gap from funded spending to the full target, and ideal/excess misses are capped gaps in their successive layers; no rounding is stated.',
+    statement: 'spending/layers.ts#attributeShortfall first reduces the spending attempted after any guardrail cut by the withdrawal shortfall to obtain actually funded dollars, then attributes the miss of each layer against those dollars: the target miss includes the deliberate guardrail cut as well as every attempted dollar the portfolio could not produce; the required miss is the floor minus actually funded dollars, floored at zero; ideal and excess misses are the gaps in their successive layers. No rounding.',
     formula: {
-      expression: 'Rmiss=max(0,W-(T-R)); Tmiss=max(0,T-F); Imiss=min(I,max(0,T+I-F)); Xmiss=min(X,max(0,T+I+X-F))',
+      expression: 'A=max(0,F-max(0,W)); Rmiss=max(0,R-A); Tmiss=max(0,T-A); Imiss=I-max(0,min(I,A-T)); Xmiss=X-max(0,min(X,A-T-I))',
       variables: [
         { symbol: 'R,T,I,X', meaning: 'Required, target, ideal increment, excess increment', unit: 'nominal USD/year', domain: 'nonnegative; T >= R' },
-        { symbol: 'F', meaning: 'Worksheet funded/attempted spending', unit: 'nominal USD/year', domain: 'nonnegative' },
-        { symbol: 'W', meaning: 'Withdrawal shortfall', unit: 'nominal USD/year', domain: 'nonnegative' },
+        { symbol: 'F', meaning: 'Spending attempted after any guardrail cut (fundedSpending)', unit: 'nominal USD/year', domain: 'nonnegative' },
+        { symbol: 'W', meaning: 'Withdrawal shortfall: attempted dollars the waterfall could not produce', unit: 'nominal USD/year', domain: 'nonnegative' },
+        { symbol: 'A', meaning: 'Actually funded dollars, F less W', unit: 'nominal USD/year', domain: 'nonnegative' },
       ],
       timing: 'annual after spending and withdrawals',
       rounding: 'none',
@@ -234,7 +235,7 @@ export const cashFlowAndSummaryRecords = {
       worksheet: 'DOCS/calculations/cash-flow-and-summary/spending-layer-shortfall-attribution.md',
     },
     limits: [
-      'UNRESOLVED worksheet/production discrepancy: worksheet F=85,W=5 expects targetShortfall=15; production treats F as attempted and subtracts W first, returning 20. Evidence retains the worksheet assertion and fails; this record is not a correctness attestation.',
+      'The first derivation read fundedSpending as delivered dollars and expected a $15 target miss where production returns $20; the doc comment says attempted, so the worksheet was re-derived and now carries a second case (F=62, W=5) that exposes the guardrail cut in the required miss.',
     ],
     implementedBy: ['packages/engine/src/spending/layers.ts'],
     implementedByFunctions: ['packages/engine/src/spending/layers.ts#attributeShortfall'],

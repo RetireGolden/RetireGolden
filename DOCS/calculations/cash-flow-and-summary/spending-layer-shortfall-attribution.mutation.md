@@ -1,6 +1,6 @@
 # Mutation receipt: spending-layer-shortfall-attribution
 
-Executed 2026-09-17 against RetireGolden base `33e7d546` (branch `codex/b1-p4-cards-cashflow-optimizer-taxes`) in `packages/engine`.
+Executed 2026-09-17 and re-executed 2026-09-18 against RetireGolden base `33e7d546` (branch `codex/b1-p4-cards-cashflow-optimizer-taxes`) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/spending/layers.ts`
 
@@ -20,7 +20,7 @@ index 5cebc894..873c8fff 100644
      excessShortfall: Math.max(0, excessSpending - excessFunded),
 ```
 
-Charge all withdrawal shortfall to the required floor, ignoring funded discretionary dollars. The previously passing required-shortfall assertion independently kills this mutation.
+Charge all withdrawal shortfall to the required floor, ignoring funded discretionary dollars. The required-miss test kills it in the guardrail-cut case (actual 5, worksheet 0).
 
 ## Command
 
@@ -30,59 +30,40 @@ npx.cmd vitest run src/spending/layers.evidence.test.ts
 
 ## Captured failing output
 
-Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed. Exit code: 1.
+Re-executed 2026-09-18 after the worksheet re-derivation, so the baseline is green (4 tests pass on unmodified production) and the one failure below is the mutation's. Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed. Exit code: 1.
 
 ```
 RUN  v5.0.0 C:/Users/Nathan/source/repos/RetireGolden/.worktrees/slice4-20260917/packages/engine
 
- ❯ src/spending/layers.evidence.test.ts (4 tests | 2 failed) 5ms
+ ❯ src/spending/layers.evidence.test.ts (4 tests | 1 failed) 5ms
    ❯ spending-layer-shortfall-attribution — Spending layer shortfall attribution (3)
-     × attributes zero required shortfall 3ms
-     × attributes worksheet target shortfall 15 (production discrepancy remains visible) 0ms
+     × attributes the required miss as the floor less actually funded dollars: 0 for the cut alone, 3 when cut and shortfall breach the floor 3ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/spending/layers.evidence.test.ts > spending-layer-shortfall-attribution — Spending layer shortfall attribution > attributes the required miss as the floor less actually funded dollars: 0 for the cut alone, 3 when cut and shortfall breach the floor
+AssertionError: guardrailCut requiredShortfall: actual 5, worksheet 0: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ check src/spending/layers.evidence.test.ts:41:142
+     39|   const check = (c: (typeof cases)[number], key: keyof ShortfallAttrib…
+     40|     const actual = attributeShortfall(inputsOf(c))[key]
+     41|     expect(withinTolerance(actual, expectedOf(c)[key], example.toleran…
+       |                                                                                                                                              ^
+     42|   }
+     43|   // One test per layer rule, so a mutation of one rule fails by name.
+ ❯ src/spending/layers.evidence.test.ts:45:28
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
 
  Test Files  1 failed (1)
-      Tests  2 failed | 2 passed (4)
-
-
-⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
-
- FAIL  src/spending/layers.evidence.test.ts > spending-layer-shortfall-attribution — Spending layer shortfall attribution > attributes zero required shortfall
-AssertionError: requiredShortfall: actual 5, worksheet 0: expected false to be true // Object.is equality
-
-- Expected
-+ Received
-
-- true
-+ false
-
- ❯ src/spending/layers.evidence.test.ts:31:190
-     29|   it('attributes zero required shortfall', () => {
-     30|     const actual = attributeShortfall(example.inputs as unknown as Sho…
-     31|     expect(withinTolerance(actual, example.expected.requiredShortfall …
-       |                                                                                                                                                                                              ^
-     32|   })
-     33|   it('attributes worksheet target shortfall 15 (production discrepancy…
-
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
-
- FAIL  src/spending/layers.evidence.test.ts > spending-layer-shortfall-attribution — Spending layer shortfall attribution > attributes worksheet target shortfall 15 (production discrepancy remains visible)
-AssertionError: targetShortfall: actual 20, worksheet 15: expected false to be true // Object.is equality
-
-- Expected
-+ Received
-
-- true
-+ false
-
- ❯ src/spending/layers.evidence.test.ts:35:184
-     33|   it('attributes worksheet target shortfall 15 (production discrepancy…
-     34|     const actual = attributeShortfall(example.inputs as unknown as Sho…
-     35|     expect(withinTolerance(actual, example.expected.targetShortfall as…
-       |                                                                                                                                                                                        ^
-     36|   })
-     37|   it('attributes ideal and excess shortfalls 20 and 10', () => {
-
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+      Tests  1 failed | 3 passed (4)
 ```
 
 ## Revert
