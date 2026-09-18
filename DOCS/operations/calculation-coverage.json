@@ -35,6 +35,7 @@
       "insight-irmaa-tier-edge-premium-cliff",
       "insight-spending-guardrails-illustrative-floor",
       "insight-spending-headroom-rough-annual",
+      "insight-ss-bridge-gap-total",
       "insight-state-relocation-lifetime-state-tax-savings",
       "insight-widows-penalty-bracket-jump",
       "ladder-build-annual-real-income-by-offset",
@@ -51,7 +52,6 @@
       "social-security-bridge-sizing"
     ],
     "partial": [
-      "insight-ss-bridge-gap-total",
       "spending-base-annual"
     ],
     "noRecordYet": [

@@ -39,4 +39,4 @@ feeds: none.
 
 ## Provenance
 
-Derived by: codex (gpt-5.6-sol), 2026-09-18, from the signatures-and-comments extract only, without executing the engine or reading any implementation body. The pull-request review found and prompted correction from claimant-level funding ratios to the single post-aggregation household liquid-balance gate. The gate direction was corrected after the independent reviewer read it against the funding-fraction comment. Reviewed by: unreviewed.
+Derived by: codex (gpt-5.6-sol), 2026-09-18, from the signatures-and-comments extract only, without executing the engine or reading any implementation body. The pull-request review found and prompted correction from claimant-level funding ratios to the single post-aggregation household liquid-balance gate. The gate direction was corrected after the independent reviewer read it against the funding-fraction comment. Reviewed by: cursor (composer-2.5), 2026-09-18, by independent recomputation without executing the engine; see REVIEW-2026-09-18.md in this directory (the addendum that rejected the inverted gate and addendum 2 that approved the correction).

@@ -230,7 +230,7 @@ export const insightsRecords = {
     implementedBy: ['packages/engine/src/insights/detectors/ssBridgeGap.ts'],
     implementedByFunctions: ['packages/engine/src/insights/detectors/ssBridgeGap.ts#ssBridgeGap.screen'],
     verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'cursor' },
   },
   'insight-widows-penalty-bracket-jump': {
     title: 'Rough real survivor bracket jump, single versus joint on the same MAGI',
