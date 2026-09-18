@@ -83,6 +83,6 @@ For the scripted RNG, assert:
 
 ## Provenance
 
-Derived by: codex (gpt-5.6-sol), 2026-09-18, from the signatures-and-comments extract (with the 2026-09-18 doc-comment corrections) and the orchestrator's contract statement for the per-block draw, without executing the engine or reading any implementation body. Reviewed by: unreviewed.
+Derived by: codex (gpt-5.6-sol), 2026-09-18, from the signatures-and-comments extract (with the 2026-09-18 doc-comment corrections) and the orchestrator's contract statement for the per-block draw, without executing the engine or reading any implementation body. Reviewed by: cursor (composer-2.5), 2026-09-18, by independent recomputation without executing the engine; see REVIEW-2026-09-18.md in this directory (addendum 3).
 
 Revision note: replaces the prior per-year continuation-coin misreading with the contracted once-per-block floored-exponential draw and a discriminating five-year scripted-RNG fixture.
