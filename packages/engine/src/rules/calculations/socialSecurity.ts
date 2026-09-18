@@ -33,9 +33,7 @@ export const socialSecurityRecords = {
       worksheet: 'DOCS/calculations/social-security/ss-bridge-sizing.md',
     },
     limits: [
-      'The worksheet supplies the already-resolved age-62 factor 7/10; the evidence uses that factor as the expected monthly identity rather than calling claimFactor itself',
       'The date formula (January claim ends the year before the claim year; start is the later of age 62, retirement, and next year) is the comments\' stated convention',
-      'A zero real curve still floors synthetic TIPS coupons at 0.125%, so production ladderCost may differ from the worksheet\'s unit-present-value identity cost = N A; that is a finding, not something this record papers over',
     ],
     implementedBy: ['packages/engine/src/ladder/bridge.ts'],
     implementedByFunctions: ['packages/engine/src/ladder/bridge.ts#sizeBridge'],

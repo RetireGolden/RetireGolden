@@ -176,7 +176,7 @@ export const insightsRecords = {
     kind: 'model',
     outputs: ['insight-spending-headroom-rough-annual'],
     statement:
-      'For a nondepleting, non-ABW plan: endingEstateToday = deflate(endYear, endingAfterTaxEstate); excess = endingEstateToday − bequestTarget; roughHeadroom = excess / yearsRemaining. The card screens only when excess >= $250,000 and roughHeadroom >= $2,000. N = max(1, endYear − startYear) is the number of year boundaries between the projection start and end years (9 for 2026 through 2035), not the inclusive row count. Units: today\'s dollars per year. Rounding: none.',
+      'For a nondepleting, non-ABW plan: endingEstateToday = deflate(endYear, endingAfterTaxEstate); excess = endingEstateToday − bequestTarget; roughHeadroom = excess / yearsRemaining. The card screens only when excess >= $250,000 and roughHeadroom >= $2,000. N = max(1, endYear − startYear) is the number of year boundaries between the projection start and end years (9 for 2026 through 2035), not the inclusive row count. Units: today\'s dollars per year. Rounding: the card publishes both figures as whole dollars (formatWholeUsd, Math.round); the quotient itself is not published.',
     formula: {
       expression: 'headroom = (deflate(endYear, endingAfterTaxEstate) − bequestTarget) / N',
       variables: [
@@ -273,7 +273,7 @@ export const insightsRecords = {
     // Candidate selection and the per-year state-tax series come from the
     // relocation sweep; this record's published number is the floored
     // deflated savings, not the per-candidate lifetime tax itself.
-    feeds: ['relocation-lifetime-state-local-tax'],
+    feeds: [],
     statement:
       'Among non-baseline sweep rows with error=null, the best candidate is the one with the lowest nominal lifetimeTaxesAndPenalties; replacement requires strict `<`, so an earlier shortlist row wins a tie. For that row and the id=\'baseline\' row, savings = max(0, −sum_y deflate(y, candidateStateTax_y − baselineStateTax_y)) over the union of years, with a missing year treated as zero. Units: start-year dollars. Rounding: none on the sum; the display string rounds to whole dollars.',
     formula: {

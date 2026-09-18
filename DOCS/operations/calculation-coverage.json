@@ -366,9 +366,6 @@
         "mortality-ex-to-qx-identity",
         "mortality-sampled-death-age"
       ],
-      "relocation-lifetime-state-local-tax": [
-        "insight-state-relocation-lifetime-state-tax-savings"
-      ],
       "scenario-comparison-cell": [
         "projection-summary-lifetime-roth-conversions",
         "scenario-irmaa-surcharge-tier-years"

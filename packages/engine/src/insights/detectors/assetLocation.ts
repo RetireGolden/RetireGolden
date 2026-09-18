@@ -4,6 +4,16 @@
  * Surfaces the shared `assetLocationGenerator` when a plan opts into static
  * allocation on multiple accounts. `screen()` is cheap and pure; `evaluate()`
  * prices every bounded swap on the exact ledger and previews the winner.
+ *
+ * What `screen()` publishes: it never prices a candidate. It takes the
+ * generator's candidate list, selects the candidate whose id is
+ * `asset-location-bonds-to-traditional` when one exists and otherwise the FIRST
+ * candidate in generator order, and publishes that candidate's
+ * `metadata.swappedDollars` (0 when absent) as the swappable exposure; the card
+ * screens only when that figure clears the detector's minimum. The selection by
+ * largest positive after-tax-estate delta (`pickBestBeneficialCandidate`) belongs
+ * to `evaluate()`, which runs the exact ledger; a worksheet for the screen must
+ * not use it.
  */
 
 import { formatWholeUsd } from '../../internal/evidenceFormat.js'
