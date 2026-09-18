@@ -6,7 +6,7 @@ import { spendingHeadroom } from './spendingHeadroom.js'
 
 /**
  * Constructed DetectorContext: a nondepleting plan, start year 2026, end year
- * 2035 (the worksheet's ten inclusive rows 2026 through 2035), nominal ending
+ * 2035 (nine year boundaries, N = max(1, 2035 - 2026)), nominal ending
  * after-tax estate $1,200,000, deflator 3/4, bequest target $500,000. No
  * simulation is run; summary.endingAfterTaxEstate and deflate are the
  * worksheet's stated inputs.
@@ -40,7 +40,7 @@ describeCalculation(
         nominalEndingAfterTaxEstate: 1_200_000,
         deflationFactor: 0.75,
         bequestTarget: 500_000,
-        remainingProjectionRows: 10,
+        yearBoundaries: 9,
         startYear: 2026,
         endYear: 2035,
       },
