@@ -46,7 +46,7 @@ describeCalculation(
       },
       // The card publishes whole dollars: the worksheet states the quotient 44,444.44 and the shown figure $44,444.
       expected: { endingEstateToday: 900_000, roughAnnualHeadroom: 44_444 },
-      tolerance: { abs: 1e-9 },
+      tolerance: 'exact',
     },
     worksheet: 'DOCS/calculations/insights/insight-spending-headroom-rough-annual.md',
     mutation: 'DOCS/calculations/insights/insight-spending-headroom-rough-annual.mutation.md',

@@ -75,7 +75,7 @@ describeCalculation(
         magiToPremiumLag: 2,
       },
       expected: { annualPremiumCliff: 3_600 },
-      tolerance: { abs: 1e-9 },
+      tolerance: 'exact',
     },
     worksheet: 'DOCS/calculations/insights/insight-irmaa-tier-edge-premium-cliff.md',
     mutation: 'DOCS/calculations/insights/insight-irmaa-tier-edge-premium-cliff.mutation.md',

@@ -31,12 +31,12 @@ npx vitest run src/insights/detectors/spendingGuardrails.evidence.test.ts
 
 ## Captured failing output
 
-Re-executed 2026-09-18 after the #720 review and the worksheet revision; the baseline is green (spendingGuardrails.evidence.test.ts passes on unmodified production). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed. Exit code: 1.
+Re-executed 2026-09-18 after the evidence fixture moved to the exact tolerance on the published whole-dollar figure (round three of the #720 review). The baseline is green (spendingGuardrails.evidence.test.ts passes on unmodified production). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed. Exit code: 1.
 
 ```
 RUN  v5.0.0 C:/TEMP/rg-s6/packages/engine
 
- ❯ src/insights/detectors/spendingGuardrails.evidence.test.ts (4 tests | 3 failed) 16ms
+ ❯ src/insights/detectors/spendingGuardrails.evidence.test.ts (4 tests | 3 failed) 15ms
    ❯ insight-spending-guardrails-illustrative-floor — Illustrative (or explicit) required spending floor for a guardrail preview (4)
      × falls back to 80% of $60,000 = $48,000 when no explicit floor is set 14ms
      × selects the explicit $42,000 floor without applying 80% again 1ms
@@ -49,7 +49,7 @@ RUN  v5.0.0 C:/TEMP/rg-s6/packages/engine
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
 
  FAIL  src/insights/detectors/spendingGuardrails.evidence.test.ts > insight-spending-guardrails-illustrative-floor — Illustrative (or explicit) required spending floor for a guardrail preview > falls back to 80% of $60,000 = $48,000 when no explicit floor is set
-AssertionError: fallbackRequiredAnnual 38400 is not within {"abs":0.01} of the worksheet's 48000: expected false to be true // Object.is equality
+AssertionError: fallbackRequiredAnnual 38400 is not within "exact" of the worksheet's 48000: expected false to be true // Object.is equality
 
 - Expected
 + Received
@@ -68,7 +68,7 @@ AssertionError: fallbackRequiredAnnual 38400 is not within {"abs":0.01} of the w
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
 
  FAIL  src/insights/detectors/spendingGuardrails.evidence.test.ts > insight-spending-guardrails-illustrative-floor — Illustrative (or explicit) required spending floor for a guardrail preview > selects the explicit $42,000 floor without applying 80% again
-AssertionError: explicitRequiredAnnual 33600 is not within {"abs":0.01} of the worksheet's 42000: expected false to be true // Object.is equality
+AssertionError: explicitRequiredAnnual 33600 is not within "exact" of the worksheet's 42000: expected false to be true // Object.is equality
 
 - Expected
 + Received
@@ -87,7 +87,7 @@ AssertionError: explicitRequiredAnnual 33600 is not within {"abs":0.01} of the w
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
 
  FAIL  src/insights/detectors/spendingGuardrails.evidence.test.ts > insight-spending-guardrails-illustrative-floor — Illustrative (or explicit) required spending floor for a guardrail preview > screens a non-depleting plan with $150,000 first-year investable and publishes the $48,000 fallback floor
-AssertionError: nonDepletingAboveThresholdRequiredAnnual 38400 is not within {"abs":0.01} of the worksheet's 48000: expected false to be true // Object.is equality
+AssertionError: nonDepletingAboveThresholdRequiredAnnual 38400 is not within "exact" of the worksheet's 48000: expected false to be true // Object.is equality
 
 - Expected
 + Received

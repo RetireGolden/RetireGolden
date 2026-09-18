@@ -94,7 +94,7 @@ describeCalculation(
         ],
       },
       expected: { totalCost: 200_000, annualTotal: 30_000 },
-      tolerance: { abs: 1e-9 },
+      tolerance: 'exact',
     },
     worksheet: 'DOCS/calculations/insights/insight-ss-bridge-gap-total.md',
     mutation: 'DOCS/calculations/insights/insight-ss-bridge-gap-total.mutation.md',

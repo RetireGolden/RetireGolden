@@ -71,7 +71,7 @@ describeCalculation(
         deflationFactor: 0.8,
       },
       expected: { bracketJumpToday: 8_000 },
-      tolerance: { abs: 1e-9 },
+      tolerance: 'exact',
     },
     worksheet: 'DOCS/calculations/insights/insight-widows-penalty-bracket-jump.md',
     mutation: 'DOCS/calculations/insights/insight-widows-penalty-bracket-jump.mutation.md',

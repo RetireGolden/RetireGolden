@@ -45,7 +45,7 @@ describeCalculation(
         spiaPayoutRatePct: 6.6,
       },
       expected: { premium: 200_000, monthlyPayout: 1_100 },
-      tolerance: { abs: 1e-9 },
+      tolerance: 'exact',
     },
     worksheet: 'DOCS/calculations/insights/insight-annuitization-headroom-illustrative-spia.md',
     mutation: 'DOCS/calculations/insights/insight-annuitization-headroom-illustrative-spia.mutation.md',

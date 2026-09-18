@@ -106,7 +106,7 @@ describeCalculation(
         ],
       },
       expected: { preferredIdPresentExposure: 120_000, preferredIdAbsentExposure: 70_000 },
-      tolerance: { abs: 1e-9 },
+      tolerance: 'exact',
     },
     worksheet: 'DOCS/calculations/insights/insight-asset-location-swappable-exposure.md',
     mutation: 'DOCS/calculations/insights/insight-asset-location-swappable-exposure.mutation.md',

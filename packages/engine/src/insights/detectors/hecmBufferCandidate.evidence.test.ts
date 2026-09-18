@@ -67,7 +67,7 @@ describeCalculation(
         existingHecm: false,
       },
       expected: { creditLine: 180_000, investable: 400_000 },
-      tolerance: { abs: 1e-9 },
+      tolerance: 'exact',
     },
     worksheet: 'DOCS/calculations/insights/insight-hecm-buffer-illustrative-credit-line.md',
     mutation: 'DOCS/calculations/insights/insight-hecm-buffer-illustrative-credit-line.mutation.md',

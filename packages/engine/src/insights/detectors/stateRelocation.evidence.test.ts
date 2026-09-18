@@ -80,7 +80,7 @@ describeCalculation(
         deflate: 'amount / 1.03^(year-2026)',
       },
       expected: { selectedCandidate: 'FL', lifetimeStateTaxSavings: 6_000 },
-      tolerance: { abs: 0.000001 },
+      tolerance: 'exact',
     },
     worksheet: 'DOCS/calculations/insights/insight-state-relocation-lifetime-state-tax-savings.md',
     mutation: 'DOCS/calculations/insights/insight-state-relocation-lifetime-state-tax-savings.mutation.md',

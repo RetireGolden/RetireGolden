@@ -35,7 +35,7 @@ npx vitest run src/insights/detectors/assetLocation.evidence.test.ts
 
 ## Captured failing output
 
-Re-executed 2026-09-18 after the #720 review and the worksheet revision; the baseline is green (assetLocation.evidence.test.ts passes on unmodified production). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed. Exit code: 1.
+Re-executed 2026-09-18 after the evidence fixture moved to the exact tolerance on the published whole-dollar figure (round three of the #720 review). The baseline is green (assetLocation.evidence.test.ts passes on unmodified production). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed. Exit code: 1.
 
 ```
 RUN  v5.0.0 C:/TEMP/rg-s6/packages/engine
@@ -52,7 +52,7 @@ RUN  v5.0.0 C:/TEMP/rg-s6/packages/engine
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
 
  FAIL  src/insights/detectors/assetLocation.evidence.test.ts > insight-asset-location-swappable-exposure — Swappable class exposure of the preferred asset-location candidate > publishes the preferred id's $120,000 exposure even though a later candidate has $150,000
-AssertionError: swappableExposure 150000 is not within {"abs":1e-9} of the worksheet's 120000: expected false to be true // Object.is equality
+AssertionError: swappableExposure 150000 is not within "exact" of the worksheet's 120000: expected false to be true // Object.is equality
 
 - Expected
 + Received
@@ -71,7 +71,7 @@ AssertionError: swappableExposure 150000 is not within {"abs":1e-9} of the works
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
 
  FAIL  src/insights/detectors/assetLocation.evidence.test.ts > insight-asset-location-swappable-exposure — Swappable class exposure of the preferred asset-location candidate > publishes the first candidate's $70,000 exposure when the preferred id is absent
-AssertionError: swappableExposure 200000 is not within {"abs":1e-9} of the worksheet's 70000: expected false to be true // Object.is equality
+AssertionError: swappableExposure 200000 is not within "exact" of the worksheet's 70000: expected false to be true // Object.is equality
 
 - Expected
 + Received

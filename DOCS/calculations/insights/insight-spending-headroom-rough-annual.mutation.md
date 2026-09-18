@@ -23,7 +23,7 @@ npx vitest run src/insights/detectors/spendingHeadroom.evidence.test.ts
 
 ## Captured failing output
 
-Re-executed 2026-09-18 after the worksheet re-derivation (the baseline is green: production publishes $44,444 for the 9 year boundaries the worksheet now states). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed. Exit code: 1.
+Re-executed 2026-09-18 after the evidence fixture moved to the exact tolerance on the published whole-dollar figure (round three of the #720 review). The baseline is green (spendingHeadroom.evidence.test.ts passes on unmodified production). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed. Exit code: 1.
 
 ```
 RUN  v5.0.0 C:/TEMP/rg-s6/packages/engine
@@ -32,10 +32,14 @@ RUN  v5.0.0 C:/TEMP/rg-s6/packages/engine
    ❯ insight-spending-headroom-rough-annual — Rough real annual spending headroom from excess terminal estate (1)
      × deflates $1,200,000 by 3/4 to $900,000 and spreads the $400,000 excess over the 9 year boundaries of 2026-2035 13ms
 
+ Test Files  1 failed (1)
+      Tests  1 failed (1)
+
+
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
 
  FAIL  src/insights/detectors/spendingHeadroom.evidence.test.ts > insight-spending-headroom-rough-annual — Rough real annual spending headroom from excess terminal estate > deflates $1,200,000 by 3/4 to $900,000 and spreads the $400,000 excess over the 9 year boundaries of 2026-2035
-AssertionError: roughAnnualHeadroom 50000 is not within {"abs":1e-9} of the worksheet's 44444: expected false to be true // Object.is equality
+AssertionError: roughAnnualHeadroom 50000 is not within "exact" of the worksheet's 44444: expected false to be true // Object.is equality
 
 - Expected
 + Received
@@ -52,10 +56,6 @@ AssertionError: roughAnnualHeadroom 50000 is not within {"abs":1e-9} of the work
      71|   },
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
-
-
- Test Files  1 failed (1)
-      Tests  1 failed (1)
 ```
 
 ## Revert

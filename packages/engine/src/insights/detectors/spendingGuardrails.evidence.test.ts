@@ -60,7 +60,7 @@ describeCalculation(
         explicitRequiredAnnual: 42_000,
         nonDepletingAboveThresholdRequiredAnnual: 48_000,
       },
-      tolerance: { abs: 0.01 },
+      tolerance: 'exact',
     },
     worksheet: 'DOCS/calculations/insights/insight-spending-guardrails-illustrative-floor.md',
     mutation: 'DOCS/calculations/insights/insight-spending-guardrails-illustrative-floor.mutation.md',
