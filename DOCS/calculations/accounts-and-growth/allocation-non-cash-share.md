@@ -32,3 +32,5 @@ Noncash weight `0.9`, absolute tolerance `1e-12`.
 ## Provenance
 
 Derived by: codex (gpt-5.6-sol), 2026-09-14, from the signatures-and-comments extract only, without executing the engine or reading any implementation body. Reviewed by: cursor (composer-2.5), 2026-09-18, by independent recomputation without executing the engine; see REVIEW-2026-09-18.md in this directory.
+
+Status (orchestrator, 2026-09-18): no catalog record. The pinned helper has no production caller (the Monte Carlo class-shock models hold cash unshocked per class and the single-return shock skips cash by account type), so a record would have to name a family it does not feed. The worksheet stays on file pending decision D-DEAD-EXPORT in the plan's decision backlog.

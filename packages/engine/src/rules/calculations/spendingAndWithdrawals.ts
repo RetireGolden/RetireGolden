@@ -213,6 +213,7 @@ export const spendingAndWithdrawalsRecords = {
       worksheet: 'DOCS/calculations/spending-and-withdrawals/spending-shape-annual-delta-phases.md',
     },
     limits: [
+      'On the amortization-based-withdrawal path the compiled phases do not reach spending-base-annual: annualLifestyleLayers scales the base by the phase multiplier and then, when ABW is active, replaces it with abwAnnualPayment and zeroes the other lifestyle layers. The feed holds on the ordinary lifestyle path, for spending-shape-delta-vs-flat and for the sustainable-spending solver, which run shapes as plan data.',
       'Five-year steps hold the fully compounded multiplier flat between step ages, an editable approximation to annual drift',
       'The first row is one step after retirement, never at retirement age itself',
       'Retirement age is rounded and clamped into [40, 105] so every row satisfies the phase schema (fromAge 40..110, multiplier 0..3)',
@@ -249,6 +250,7 @@ export const spendingAndWithdrawalsRecords = {
       worksheet: 'DOCS/calculations/spending-and-withdrawals/spending-shape-preset-compilation.md',
     },
     limits: [
+      'On the amortization-based-withdrawal path the compiled phases do not reach spending-base-annual: annualLifestyleLayers scales the base by the phase multiplier and then, when ABW is active, replaces it with abwAnnualPayment and zeroes the other lifestyle layers. The feed holds on the ordinary lifestyle path, for spending-shape-delta-vs-flat and for the sustainable-spending solver, which run shapes as plan data.',
       'Presets compile to visible phase rows at creation time and never live-link a saved plan to the research constants; changing SMIRK_ANNUAL_REAL_DELTA_PCT changes only newly compiled plans',
       'The smile calibration is a two-step approximation of Blanchett\'s average path without an explicit late-life step-up',
       'frontLoaded passes the retirement age through unrounded (clamped into [40, 100]) while the smirk path rounds it',

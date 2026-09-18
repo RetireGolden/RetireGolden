@@ -495,36 +495,3 @@ describeCalculation(
     })
   },
 )
-
-describeCalculation(
-  'allocation-non-cash-share',
-  {
-    example: {
-      inputs: { weights: [0.5, 0.1, 0.3, 0.1] },
-      expected: { nonCashShare: 0.9 },
-      tolerance: { abs: 1e-12 },
-    },
-    worksheet: 'DOCS/calculations/accounts-and-growth/allocation-non-cash-share.md',
-    mutation: 'DOCS/calculations/accounts-and-growth/allocation-non-cash-share.mutation.md',
-  },
-  ({ example }) => {
-    const weights = example.inputs.weights as number[]
-
-    it('reads 0.9 for 50/10/30/10, the complement of the 10% cash weight', () => {
-      const share = nonCashWeight(weights)
-      const expected = example.expected.nonCashShare as number
-      expect(
-        withinTolerance(share, expected, example.tolerance),
-        `nonCashShare ${share} is not within ${JSON.stringify(example.tolerance)} of the worksheet's ${expected}`,
-      ).toBe(true)
-    })
-
-    it('cash is the fourth component of ASSET_CLASS_IDS, the one the helper reads', () => {
-      expect(ASSET_CLASS_IDS.indexOf('cash')).toBe(3)
-    })
-
-    it('an all-cash vector has no market-shocked share', () => {
-      expect(nonCashWeight([0, 0, 0, 1])).toBe(0)
-    })
-  },
-)

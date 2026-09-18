@@ -48,7 +48,7 @@
       "limits": [
         "Only taxable, traditional, Roth and HSA accounts can carry an allocation; every other type falls to the scalar precedence",
         "The blend uses the year's target weights, not the drifted weights the ledger holds under rebalancing \"none\"; the two coincide at the start year and under annual rebalancing",
-        "DUPLICATION: the ledger does not call this function. annualPostSolveAccountGrowth.ts applies the same precedence inline (the class blend over the account's tracked weights when a track exists, else state.account.annualReturnPct ?? defaultReturnPct); the only production caller is optimizePlan.ts#blendedGrowth. The evidence drives the ledger phase with the worksheet's allocated account and requires it to ignore the 9% scalar the same way",
+        "DUPLICATION: the ledger does not call this function. annualPostSolveAccountGrowth.ts applies the same precedence inline (the class blend over the account's tracked weights when a track exists, else state.account.annualReturnPct ?? defaultReturnPct); the production callers are optimizePlan.ts#blendedGrowth in the engine and assumptionsExport.ts in planner-ui, which formats the Assumptions card and has no census family. The evidence drives the ledger phase with the worksheet's allocated account and requires it to ignore the 9% scalar the same way",
         "The worksheet names the per-account balance, investable-total and net-worth families upstream; the ledger's inline precedence produces them, so this record feeds the optimizer schedule families its caller reaches"
       ],
       "worksheet": "DOCS/calculations/accounts-and-growth/allocation-account-expected-return.md",
@@ -285,67 +285,6 @@
       ],
       "worksheet": "DOCS/calculations/accounts-and-growth/allocation-glidepath-interpolation.md",
       "mutation": "DOCS/calculations/accounts-and-growth/allocation-glidepath-interpolation.mutation.md",
-      "dataset": null,
-      "ruleIds": null,
-      "assumption": null,
-      "justificationKind": "derivation",
-      "implementedBy": [
-        "packages/engine/src/allocation/assetClasses.ts"
-      ],
-      "provenance": {
-        "derivedBy": "codex",
-        "implementedBy": "claude-subagent",
-        "reviewedBy": "cursor"
-      },
-      "fixtureFiles": [
-        "packages/engine/src/allocation/assetClasses.evidence.test.ts"
-      ],
-      "gates": {
-        "fixtureRegistersTest": true,
-        "pinsResolve": true,
-        "familiesExist": true,
-        "worksheetExists": true,
-        "mutationExists": true,
-        "provenanceIndependent": true
-      }
-    },
-    {
-      "id": "allocation-non-cash-share",
-      "title": "Non-cash share of a weight vector",
-      "kind": "formula",
-      "outputs": [],
-      "feeds": [
-        "monte-carlo-success-rate",
-        "monte-carlo-investable-fan-percentiles"
-      ],
-      "purpose": "The fraction of an allocation exposed to a single-factor market shock: everything but cash.",
-      "statement": "share = max(0, 1 - w_cash), where w_cash is the component at ASSET_CLASS_IDS.indexOf(\"cash\") (index 3) and a missing component reads as 0. Units: fraction. Rounding: none. For a normalized vector this equals the sum of the three non-cash weights.",
-      "formula": {
-        "expression": "share = max(0, 1 - w_cash) = w_usStocks + w_intlStocks + w_bonds for a normalized vector",
-        "variables": [
-          {
-            "symbol": "w_cash",
-            "meaning": "Cash weight, the fourth component",
-            "unit": "1",
-            "domain": "0 <= w_cash <= 1"
-          },
-          {
-            "symbol": "share",
-            "meaning": "Market-shocked (non-cash) share",
-            "unit": "1",
-            "domain": "0 <= share <= 1"
-          }
-        ],
-        "timing": "time-invariant",
-        "rounding": "none"
-      },
-      "limits": [
-        "Reads only the cash component, so an unnormalized vector returns 1 - w_cash rather than the actual non-cash sum",
-        "Floored at 0: a cash weight above 1 returns 0 rather than a negative share",
-        "No production module calls nonCashWeight as of 2026-09-17: the Monte Carlo class-shock models hold cash unshocked per class (classSeries.cash = 0 in marketModels.ts) and the single-return shock in annualPostSolveAccountGrowth.ts skips cash by account type, so the market-shocked share is never computed through this helper. The families named under feeds are the ones the helper's own comment says it serves; the worksheet also names the per-account balance and investable-total families, which no call reaches either"
-      ],
-      "worksheet": "DOCS/calculations/accounts-and-growth/allocation-non-cash-share.md",
-      "mutation": "DOCS/calculations/accounts-and-growth/allocation-non-cash-share.mutation.md",
       "dataset": null,
       "ruleIds": null,
       "assumption": null,
