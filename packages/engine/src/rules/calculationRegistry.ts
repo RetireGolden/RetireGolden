@@ -12,6 +12,9 @@
  * keys stay a closed union while prose strings widen, and a published module
  * list sits beside the spread so coverage can shard one JSON file per group.
  */
+import { taxesRecords } from './calculations/taxes.js'
+import { optimizerAndComparisonsRecords } from './calculations/optimizerAndComparisons.js'
+import { cashFlowAndSummaryRecords } from './calculations/cashFlowAndSummary.js'
 import { laddersAndValuationRecords } from './calculations/laddersAndValuation.js'
 import { longevityRecords } from './calculations/longevity.js'
 import { spendingAndWithdrawalsRecords } from './calculations/spendingAndWithdrawals.js'
@@ -96,6 +99,9 @@ export interface CalculationRecord {
 }
 
 const registry = {
+  ...cashFlowAndSummaryRecords,
+  ...optimizerAndComparisonsRecords,
+  ...taxesRecords,
   ...laddersAndValuationRecords,
   ...longevityRecords,
   ...spendingAndWithdrawalsRecords,
@@ -107,6 +113,9 @@ export const CALCULATION_RECORD_MODULES: readonly (readonly [
   string,
   Readonly<Record<string, CalculationRecord>>,
 ])[] = Object.freeze([
+  ['cashFlowAndSummary', cashFlowAndSummaryRecords],
+  ['optimizerAndComparisons', optimizerAndComparisonsRecords],
+  ['taxes', taxesRecords],
   ['laddersAndValuation', laddersAndValuationRecords],
   ['longevity', longevityRecords],
   ['spendingAndWithdrawals', spendingAndWithdrawalsRecords],

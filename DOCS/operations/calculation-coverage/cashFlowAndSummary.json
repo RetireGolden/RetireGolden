@@ -1,0 +1,596 @@
+{
+  "kind": "retiregolden.calculation-coverage.shard",
+  "version": 2,
+  "group": "cashFlowAndSummary",
+  "records": [
+    {
+      "id": "civil-date-parse-format-and-month-shift",
+      "title": "Civil date parse format and month shift",
+      "kind": "formula",
+      "outputs": [],
+      "feeds": [
+        "tax-penalties-annual"
+      ],
+      "purpose": "Parse, format and shift calendar dates without timezone rollover.",
+      "statement": "actions/civilDate.ts#parseCivilIsoDate accepts only canonical valid proleptic-Gregorian YYYY-MM-DD dates, formatCivilDate emits that form, and addCalendarMonths shifts by whole calendar months while preserving the day or clamping to the target month's last day.",
+      "formula": {
+        "expression": "monthIndex = 12 year + month - 1 + shift; dayOut = min(day, daysInTargetMonth)",
+        "variables": [
+          {
+            "symbol": "date",
+            "meaning": "Canonical Gregorian civil date",
+            "unit": "YYYY-MM-DD",
+            "domain": "valid year 1..9999"
+          },
+          {
+            "symbol": "shift",
+            "meaning": "Calendar month displacement",
+            "unit": "months",
+            "domain": "safe integer"
+          }
+        ],
+        "timing": "civil calendar; no timezone",
+        "rounding": "whole months; clamp day"
+      },
+      "limits": [
+        "No direct census family: actions/annualHsaPenaltyEvaluation.ts consumes addCalendarMonths for the age-65 date and exact-cent penalty evidence feeding tax-penalties-annual."
+      ],
+      "worksheet": "DOCS/calculations/cash-flow-and-summary/civil-date-parse-format-and-month-shift.md",
+      "mutation": "DOCS/calculations/cash-flow-and-summary/civil-date-parse-format-and-month-shift.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/actions/civilDate.ts"
+      ],
+      "provenance": {
+        "derivedBy": "codex",
+        "implementedBy": "codex",
+        "reviewedBy": "unreviewed"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/actions/civilDate.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
+      "id": "exact-cent-largest-remainder-slices",
+      "title": "Exact cent largest remainder slices",
+      "kind": "formula",
+      "outputs": [],
+      "feeds": [
+        "roth-conversion-annual"
+      ],
+      "purpose": "Divide an exact-cent total without losing cents or changing positional tie order.",
+      "statement": "actions/exactCentProRata.ts#exactCentLargestRemainderSlices allocates a nonnegative exact-cent total across nonnegative integer weights, reconciles independently rounded shares to the exact total by largest fractional remainder, and breaks ties by input position.",
+      "formula": {
+        "expression": "share_i = A w_i / sum(w); settle rounded-share residual by fractional remainder, ties by original position",
+        "variables": [
+          {
+            "symbol": "A",
+            "meaning": "Total amount",
+            "unit": "cents",
+            "domain": "nonnegative integer"
+          },
+          {
+            "symbol": "w_i",
+            "meaning": "Allocation weight",
+            "unit": "integer weight",
+            "domain": "nonnegative integer; positive sum"
+          }
+        ],
+        "timing": "one allocation",
+        "rounding": "nearest half up, then exact residual settlement"
+      },
+      "limits": [
+        "No direct census family: actions/aggregateRothConversionOwnerAllocation.ts consumes the slices as owner allocations feeding annual Roth conversions. The fixture discriminates positional ties, not every surplus-residual case."
+      ],
+      "worksheet": "DOCS/calculations/cash-flow-and-summary/exact-cent-largest-remainder-slices.md",
+      "mutation": "DOCS/calculations/cash-flow-and-summary/exact-cent-largest-remainder-slices.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/actions/exactCentProRata.ts"
+      ],
+      "provenance": {
+        "derivedBy": "codex",
+        "implementedBy": "codex",
+        "reviewedBy": "unreviewed"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/actions/exactCentProRata.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
+      "id": "exact-cent-pro-rata-half-up",
+      "title": "Exact cent pro rata half up",
+      "kind": "formula",
+      "outputs": [],
+      "feeds": [
+        "tax-penalties-annual"
+      ],
+      "purpose": "Round a rational share of an exact-cent amount with halves upward.",
+      "statement": "actions/exactCentProRata.ts#exactCentProRataNearestHalfUp computes amount*numerator/denominator in exact nonnegative integer minor units and rounds the single rational result to the nearest minor unit with exact halves upward.",
+      "formula": {
+        "expression": "N = A n; q = floor(N/d); r = N mod d; result = q + [2r >= d]",
+        "variables": [
+          {
+            "symbol": "A",
+            "meaning": "Amount",
+            "unit": "cents",
+            "domain": "nonnegative integer"
+          },
+          {
+            "symbol": "n/d",
+            "meaning": "Allocation ratio",
+            "unit": "1",
+            "domain": "integer n >= 0, integer d > 0"
+          }
+        ],
+        "timing": "one allocation",
+        "rounding": "exact integer half up"
+      },
+      "limits": [
+        "No direct census family: actions/annualHsaPenaltyEvaluation.ts consumes the pro-rata amount for finalPenaltyAmount. Callers validate the domain."
+      ],
+      "worksheet": "DOCS/calculations/cash-flow-and-summary/exact-cent-pro-rata-half-up.md",
+      "mutation": "DOCS/calculations/cash-flow-and-summary/exact-cent-pro-rata-half-up.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/actions/exactCentProRata.ts"
+      ],
+      "provenance": {
+        "derivedBy": "codex",
+        "implementedBy": "codex",
+        "reviewedBy": "unreviewed"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/actions/exactCentProRata.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
+      "id": "exact-cent-rational-half-up",
+      "title": "Exact cent rational half up",
+      "kind": "formula",
+      "outputs": [],
+      "feeds": [
+        "tax-total-annual"
+      ],
+      "purpose": "Quantize an exact rational cent amount once, with halves upward.",
+      "statement": "actions/exactCentProRata.ts#exactCentNearestHalfUp rounds a nonnegative exact rational count of minor units N/D once to a whole minor unit, with exact halves upward.",
+      "formula": {
+        "expression": "q = floor(N/D); r = N mod D; cents = q + [2r >= D]",
+        "variables": [
+          {
+            "symbol": "N",
+            "meaning": "Exact numerator",
+            "unit": "cent-numerator",
+            "domain": "integer >= 0"
+          },
+          {
+            "symbol": "D",
+            "meaning": "Exact denominator",
+            "unit": "1",
+            "domain": "integer > 0"
+          }
+        ],
+        "timing": "one liability quantization",
+        "rounding": "exact integer half up"
+      },
+      "limits": [
+        "No direct census family: actions/conversionTaxFundingEvidence.ts quantizes the annual counterfactual liability difference with this function; tax-total-annual is the nearest liability family, not this evidence amount itself."
+      ],
+      "worksheet": "DOCS/calculations/cash-flow-and-summary/exact-cent-rational-half-up.md",
+      "mutation": "DOCS/calculations/cash-flow-and-summary/exact-cent-rational-half-up.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/actions/exactCentProRata.ts"
+      ],
+      "provenance": {
+        "derivedBy": "codex",
+        "implementedBy": "codex",
+        "reviewedBy": "unreviewed"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/actions/exactCentProRata.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
+      "id": "flexible-goal-scheduling",
+      "title": "Flexible goal scheduling",
+      "kind": "model",
+      "outputs": [],
+      "feeds": [
+        "flexible-goal-funded-amount-annual",
+        "flexible-goal-unfunded-amount-annual",
+        "flexible-goals-funded-count-annual",
+        "flexible-goals-partially-funded-count-annual",
+        "flexible-goals-deferred-count-annual",
+        "flexible-goals-skipped-count-annual",
+        "spending-one-time-goals-annual"
+      ],
+      "purpose": "Schedule and fund flexible goals within their timing, priority and budget rules.",
+      "statement": "spending/flexibleGoals.ts#createGoalScheduler resolves each goal at most once, ordering candidates by classification, explicit priority, then original order, inflating today's-dollar cost and permitting partial funding only when its minimum percentage and budget rules are met.",
+      "formula": {
+        "expression": "A = costToday * inflation; minimum = A * minFundingPct/100; funded = min(A,budget); unfunded = A - funded",
+        "variables": [
+          {
+            "symbol": "costToday",
+            "meaning": "Goal cost",
+            "unit": "today USD",
+            "domain": "nonnegative"
+          },
+          {
+            "symbol": "inflation",
+            "meaning": "Cumulative inflation factor",
+            "unit": "nominal/today",
+            "domain": "positive"
+          },
+          {
+            "symbol": "budget",
+            "meaning": "Available flexible funding",
+            "unit": "nominal USD",
+            "domain": "nonnegative"
+          },
+          {
+            "symbol": "minFundingPct",
+            "meaning": "Partial funding minimum",
+            "unit": "percent",
+            "domain": "0..100"
+          }
+        ],
+        "timing": "annual scheduling; each goal resolves once",
+        "rounding": "none; budget comparisons use half-cent epsilon"
+      },
+      "limits": [
+        "The fixture uses a flexible target goal during a cut so the stated budget binds. At or after target without a cut, resolveBudget returns unlimited funding; fixed goals also ignore the flexible budget. projection/internal/annualOneTimeGoalFundingPhase.ts sums per-goal funded and unfunded amounts and counts outcomes; all seven annual families are downstream aggregates, not this record's individual amounts."
+      ],
+      "worksheet": "DOCS/calculations/cash-flow-and-summary/flexible-goal-scheduling.md",
+      "mutation": "DOCS/calculations/cash-flow-and-summary/flexible-goal-scheduling.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/spending/flexibleGoals.ts"
+      ],
+      "provenance": {
+        "derivedBy": "codex",
+        "implementedBy": "codex",
+        "reviewedBy": "unreviewed"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/spending/flexibleGoals.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
+      "id": "lifestyle-required-discretionary-split",
+      "title": "Lifestyle required discretionary split",
+      "kind": "formula",
+      "outputs": [],
+      "feeds": [
+        "spending-required-requested-annual",
+        "spending-target-requested-annual"
+      ],
+      "purpose": "Partition lifestyle spending into a clamped required floor and discretionary remainder.",
+      "statement": "spending/layers.ts#splitLifestyle splits nominal annual lifestyle spending B into required R = min(max(required,0),max(B,0)) and discretionary D = max(B,0)-R, preserving dollars and clamping the floor to the target; no rounding is stated.",
+      "formula": {
+        "expression": "R = min(max(required,0), max(B,0)); D = max(B,0) - R",
+        "variables": [
+          {
+            "symbol": "B",
+            "meaning": "Lifestyle target",
+            "unit": "nominal USD/year",
+            "domain": "finite >= 0"
+          },
+          {
+            "symbol": "required",
+            "meaning": "Requested required floor",
+            "unit": "nominal USD/year",
+            "domain": "finite"
+          }
+        ],
+        "timing": "annual lifestyle partition",
+        "rounding": "none"
+      },
+      "limits": [
+        "The lifestyle-only partition feeds projection/internal/annualLifestyleLayers.ts; published requested spending also includes system costs and goals, so neither requested family is this helper alone."
+      ],
+      "worksheet": "DOCS/calculations/cash-flow-and-summary/lifestyle-required-discretionary-split.md",
+      "mutation": "DOCS/calculations/cash-flow-and-summary/lifestyle-required-discretionary-split.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/spending/layers.ts"
+      ],
+      "provenance": {
+        "derivedBy": "codex",
+        "implementedBy": "codex",
+        "reviewedBy": "unreviewed"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/spending/layers.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
+      "id": "projection-money-tolerance-thresholds",
+      "title": "Projection money tolerance thresholds",
+      "kind": "data",
+      "outputs": [],
+      "feeds": [
+        "roth-conversion-annual"
+      ],
+      "purpose": "Keep the half-cent funding tolerance distinct from the one-cent conversion floor.",
+      "statement": "projection/moneyTolerance.ts declares two distinct plan-dollar thresholds: an annual funding residual tolerance of $0.005 and an aggregate Roth-conversion action epsilon of $0.01, with comparisons performed in unrounded plan dollars.",
+      "formula": null,
+      "limits": [
+        "No direct census family: projection/internal/annualAggregateRothConversionPhase.ts consumes both constants for funding and conversion materiality; the nearest family is roth-conversion-annual. These are product numerical conventions, not tax law."
+      ],
+      "worksheet": "DOCS/calculations/cash-flow-and-summary/projection-money-tolerance-thresholds.md",
+      "mutation": "DOCS/calculations/cash-flow-and-summary/projection-money-tolerance-thresholds.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/projection/moneyTolerance.ts"
+      ],
+      "provenance": {
+        "derivedBy": "codex",
+        "implementedBy": "codex",
+        "reviewedBy": "unreviewed"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/projection/moneyTolerance.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
+      "id": "spending-layer-shortfall-attribution",
+      "title": "Spending layer shortfall attribution",
+      "kind": "formula",
+      "outputs": [
+        "spending-required-shortfall-annual",
+        "spending-target-shortfall-annual",
+        "spending-ideal-shortfall-annual",
+        "spending-excess-shortfall-annual"
+      ],
+      "feeds": [],
+      "purpose": "Attribute annual spending misses to required, target, ideal and excess layers.",
+      "statement": "Worksheet claim, with the unresolved target-shortfall discrepancy disclosed below: spending/layers.ts#attributeShortfall attributes nominal annual misses so required shortfall is withdrawal shortfall remaining after target discretionary dollars, target shortfall is the gap from funded spending to the full target, and ideal/excess misses are capped gaps in their successive layers; no rounding is stated.",
+      "formula": {
+        "expression": "Rmiss=max(0,W-(T-R)); Tmiss=max(0,T-F); Imiss=min(I,max(0,T+I-F)); Xmiss=min(X,max(0,T+I+X-F))",
+        "variables": [
+          {
+            "symbol": "R,T,I,X",
+            "meaning": "Required, target, ideal increment, excess increment",
+            "unit": "nominal USD/year",
+            "domain": "nonnegative; T >= R"
+          },
+          {
+            "symbol": "F",
+            "meaning": "Worksheet funded/attempted spending",
+            "unit": "nominal USD/year",
+            "domain": "nonnegative"
+          },
+          {
+            "symbol": "W",
+            "meaning": "Withdrawal shortfall",
+            "unit": "nominal USD/year",
+            "domain": "nonnegative"
+          }
+        ],
+        "timing": "annual after spending and withdrawals",
+        "rounding": "none"
+      },
+      "limits": [
+        "UNRESOLVED worksheet/production discrepancy: worksheet F=85,W=5 expects targetShortfall=15; production treats F as attempted and subtracts W first, returning 20. Evidence retains the worksheet assertion and fails; this record is not a correctness attestation."
+      ],
+      "worksheet": "DOCS/calculations/cash-flow-and-summary/spending-layer-shortfall-attribution.md",
+      "mutation": "DOCS/calculations/cash-flow-and-summary/spending-layer-shortfall-attribution.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/spending/layers.ts"
+      ],
+      "provenance": {
+        "derivedBy": "codex",
+        "implementedBy": "codex",
+        "reviewedBy": "unreviewed"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/spending/layers.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
+      "id": "sustainable-spending-bisection",
+      "title": "Sustainable spending bisection",
+      "kind": "model",
+      "outputs": [
+        "sustainable-spending-result-max-base-annual",
+        "sustainable-spending-result-spending-slack-dollars",
+        "sustainable-spending-result-simulation-count"
+      ],
+      "feeds": [
+        "solved-initial-withdrawal-rate-pct",
+        "solved-spending-rounded-to-hundred"
+      ],
+      "purpose": "Find a feasible lower bound for constant annual base spending within a simulation budget.",
+      "statement": "decisions/spendingSolver.ts#solveMaxSustainableSpending finds a lower-bound maximum feasible annual base spending in today's dollars using deterministic integer-dollar bracketing and bisection, where feasibility means no depletion and nominal ending after-tax estate at least the inflated today-dollar floor.",
+      "formula": {
+        "expression": "probe integer midpoint; keep feasible lower and infeasible upper until upper-lower <= resolution; return best feasible lower",
+        "variables": [
+          {
+            "symbol": "spending",
+            "meaning": "Probed annual base spending",
+            "unit": "today USD/year",
+            "domain": "nonnegative integer"
+          },
+          {
+            "symbol": "resolution",
+            "meaning": "Maximum bracket width",
+            "unit": "USD/year",
+            "domain": "positive"
+          }
+        ],
+        "timing": "whole-plan deterministic evaluations",
+        "rounding": "integer-dollar midpoint"
+      },
+      "limits": [
+        "The public API generates its own bracket. Evidence seeds 40000, brackets at 80000, and verifies the first two midpoints reach the worksheet bracket 60000/70000 before checking its four probes and 62500 result. It isolates the stated feasible predicate with an evaluation double, not an invented ledger oracle. Monotone feasibility is assumed; budgets can stop convergence."
+      ],
+      "worksheet": "DOCS/calculations/cash-flow-and-summary/sustainable-spending-bisection.md",
+      "mutation": "DOCS/calculations/cash-flow-and-summary/sustainable-spending-bisection.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/decisions/spendingSolver.ts"
+      ],
+      "provenance": {
+        "derivedBy": "codex",
+        "implementedBy": "codex",
+        "reviewedBy": "unreviewed"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/decisions/spendingSolver.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
+      "id": "usd-cent-arithmetic",
+      "title": "Usd cent arithmetic",
+      "kind": "formula",
+      "outputs": [],
+      "feeds": [
+        "tax-penalties-annual"
+      ],
+      "purpose": "Add, subtract and sum validated US cents exactly.",
+      "statement": "actions/money.ts#addUsdCents, subtractUsdCents, and sumUsdCents perform exact arithmetic on validated nonnegative integer US cents, with subtraction valid only when the result remains in that domain.",
+      "formula": {
+        "expression": "add=a+b; subtract=a-b; sum=sum_i a_i",
+        "variables": [
+          {
+            "symbol": "a,b,a_i",
+            "meaning": "Validated currency minor units",
+            "unit": "US cents",
+            "domain": "nonnegative safe integers; a >= b for subtraction"
+          }
+        ],
+        "timing": "one exact money operation",
+        "rounding": "none; results validated as safe integer cents"
+      },
+      "limits": [
+        "No direct census family: actions/annualHsaPenaltyEvaluation.ts consumes addUsdCents to aggregate exact penalties feeding tax-penalties-annual. Overflow and negative subtraction reject rather than returning an out-of-domain amount."
+      ],
+      "worksheet": "DOCS/calculations/cash-flow-and-summary/usd-cent-arithmetic.md",
+      "mutation": "DOCS/calculations/cash-flow-and-summary/usd-cent-arithmetic.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/actions/money.ts"
+      ],
+      "provenance": {
+        "derivedBy": "codex",
+        "implementedBy": "codex",
+        "reviewedBy": "unreviewed"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/actions/money.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    }
+  ]
+}
