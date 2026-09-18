@@ -29,7 +29,7 @@ export const optimizerAndComparisonsRecords = {
     implementedBy: ['packages/engine/src/decisions/search.ts'],
     implementedByFunctions: ['packages/engine/src/decisions/search.ts#refineConversionSchedule'],
     verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'codex', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'codex', reviewedBy: 'cursor' },
   },
   'swr-rule-rate-and-initial-spend': {
     title: 'Swr rule rate and initial spend',
@@ -62,6 +62,6 @@ export const optimizerAndComparisonsRecords = {
     implementedBy: ['packages/engine/src/decisions/swrComparator.ts'],
     implementedByFunctions: ['packages/engine/src/decisions/swrComparator.ts#compareSwrRules'],
     verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'codex', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'codex', reviewedBy: 'cursor' },
   },
 } satisfies Record<string, CalculationRecord>

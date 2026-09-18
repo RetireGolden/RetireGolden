@@ -32,7 +32,7 @@ export const cashFlowAndSummaryRecords = {
       'packages/engine/src/actions/civilDate.ts#addCalendarMonths',
     ],
     verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'codex', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'codex', reviewedBy: 'cursor' },
   },
   'exact-cent-largest-remainder-slices': {
     title: 'Exact cent largest remainder slices',
@@ -60,7 +60,7 @@ export const cashFlowAndSummaryRecords = {
     implementedBy: ['packages/engine/src/actions/exactCentProRata.ts'],
     implementedByFunctions: ['packages/engine/src/actions/exactCentProRata.ts#exactCentLargestRemainderSlices'],
     verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'codex', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'codex', reviewedBy: 'cursor' },
   },
   'exact-cent-pro-rata-half-up': {
     title: 'Exact cent pro rata half up',
@@ -88,7 +88,7 @@ export const cashFlowAndSummaryRecords = {
     implementedBy: ['packages/engine/src/actions/exactCentProRata.ts'],
     implementedByFunctions: ['packages/engine/src/actions/exactCentProRata.ts#exactCentProRataNearestHalfUp'],
     verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'codex', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'codex', reviewedBy: 'cursor' },
   },
   'exact-cent-rational-half-up': {
     title: 'Exact cent rational half up',
@@ -116,7 +116,7 @@ export const cashFlowAndSummaryRecords = {
     implementedBy: ['packages/engine/src/actions/exactCentProRata.ts'],
     implementedByFunctions: ['packages/engine/src/actions/exactCentProRata.ts#exactCentNearestHalfUp'],
     verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'codex', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'codex', reviewedBy: 'cursor' },
   },
   'flexible-goal-scheduling': {
     title: 'Flexible goal scheduling',
@@ -154,7 +154,7 @@ export const cashFlowAndSummaryRecords = {
     implementedBy: ['packages/engine/src/spending/flexibleGoals.ts'],
     implementedByFunctions: ['packages/engine/src/spending/flexibleGoals.ts#createGoalScheduler'],
     verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'codex', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'codex', reviewedBy: 'cursor' },
   },
   'lifestyle-required-discretionary-split': {
     title: 'Lifestyle required discretionary split',
@@ -182,7 +182,7 @@ export const cashFlowAndSummaryRecords = {
     implementedBy: ['packages/engine/src/spending/layers.ts'],
     implementedByFunctions: ['packages/engine/src/spending/layers.ts#splitLifestyle'],
     verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'codex', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'codex', reviewedBy: 'cursor' },
   },
   'projection-money-tolerance-thresholds': {
     title: 'Projection money tolerance thresholds',
@@ -205,7 +205,7 @@ export const cashFlowAndSummaryRecords = {
       'packages/engine/src/projection/moneyTolerance.ts#AGGREGATE_ROTH_CONVERSION_EPSILON_PLAN_DOLLARS',
     ],
     verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'codex', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'codex', reviewedBy: 'cursor' },
   },
   'spending-layer-shortfall-attribution': {
     title: 'Spending layer shortfall attribution',
@@ -240,7 +240,7 @@ export const cashFlowAndSummaryRecords = {
     implementedBy: ['packages/engine/src/spending/layers.ts'],
     implementedByFunctions: ['packages/engine/src/spending/layers.ts#attributeShortfall'],
     verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'codex', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'codex', reviewedBy: 'cursor' },
   },
   'sustainable-spending-bisection': {
     title: 'Sustainable spending bisection',
@@ -272,7 +272,7 @@ export const cashFlowAndSummaryRecords = {
     implementedBy: ['packages/engine/src/decisions/spendingSolver.ts'],
     implementedByFunctions: ['packages/engine/src/decisions/spendingSolver.ts#solveMaxSustainableSpending'],
     verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'codex', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'codex', reviewedBy: 'cursor' },
   },
   'usd-cent-arithmetic': {
     title: 'Usd cent arithmetic',
@@ -303,6 +303,6 @@ export const cashFlowAndSummaryRecords = {
       'packages/engine/src/actions/money.ts#sumUsdCents',
     ],
     verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'codex', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'codex', reviewedBy: 'cursor' },
   },
 } satisfies Record<string, CalculationRecord>

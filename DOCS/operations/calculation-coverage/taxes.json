@@ -47,7 +47,7 @@
       "provenance": {
         "derivedBy": "codex",
         "implementedBy": "codex",
-        "reviewedBy": "unreviewed"
+        "reviewedBy": "cursor"
       },
       "fixtureFiles": [
         "packages/engine/src/actions/conversionTaxFundingEvidence.evidence.test.ts"
@@ -92,7 +92,7 @@
       "provenance": {
         "derivedBy": "codex",
         "implementedBy": "codex",
-        "reviewedBy": "unreviewed"
+        "reviewedBy": "cursor"
       },
       "fixtureFiles": [
         "packages/engine/src/params/provenance.evidence.test.ts"

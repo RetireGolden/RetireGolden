@@ -43,6 +43,6 @@ Case (a) required/target/ideal/excess shortfalls are `$0/$20/$20/$10`. Case (b) 
 
 ## Provenance
 
-Derived by: codex (gpt-5.6-sol), 2026-09-18, from the signatures-and-comments extract and the orchestrator's contract statement for the attempted-versus-delivered distinction, without executing the engine or reading any implementation body. Reviewed by: unreviewed.
+Derived by: codex (gpt-5.6-sol), 2026-09-18, from the signatures-and-comments extract and the orchestrator's contract statement for the attempted-versus-delivered distinction, without executing the engine or reading any implementation body. Reviewed by: cursor (composer-2.5), 2026-09-18, by independent recomputation without executing the engine; see REVIEW-2026-09-18.md in this directory.
 
 Revision note: The first derivation read `fundedSpending` as delivered dollars although its doc comment says attempted. The doc comment already states the contract, so no engine comment change is needed.

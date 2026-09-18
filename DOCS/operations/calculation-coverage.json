@@ -37,10 +37,7 @@
       "ladder-rung-cost",
       "ladder-rung-coupon-rate-pct",
       "ladder-rung-face",
-      "longevity-survival-percentile-age"
-    ],
-    "partial": [
-      "spending-base-annual",
+      "longevity-survival-percentile-age",
       "spending-excess-shortfall-annual",
       "spending-ideal-shortfall-annual",
       "spending-required-shortfall-annual",
@@ -50,6 +47,9 @@
       "sustainable-spending-result-spending-slack-dollars",
       "swr-rule-result-initial-annual-spend",
       "swr-rule-result-initial-rate-pct"
+    ],
+    "partial": [
+      "spending-base-annual"
     ],
     "noRecordYet": [
       "aca-applicable-slcsp-premium-annual",

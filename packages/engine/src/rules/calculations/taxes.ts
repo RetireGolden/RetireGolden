@@ -30,7 +30,7 @@ export const taxesRecords = {
       'packages/engine/src/actions/conversionTaxFundingEvidence.ts#reducedConversionTaxFundingExactCentAmount',
     ],
     verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'codex', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'codex', reviewedBy: 'cursor' },
   },
   'parameter-provenance-catalog': {
     title: 'Parameter provenance catalog',
@@ -58,6 +58,6 @@ export const taxesRecords = {
     implementedBy: ['packages/engine/src/params/provenance.ts'],
     implementedByFunctions: ['packages/engine/src/params/provenance.ts#PARAMETER_PROVENANCE'],
     verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'codex', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'codex', reviewedBy: 'cursor' },
   },
 } satisfies Record<string, CalculationRecord>

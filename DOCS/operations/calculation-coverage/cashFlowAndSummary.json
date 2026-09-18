@@ -47,7 +47,7 @@
       "provenance": {
         "derivedBy": "codex",
         "implementedBy": "codex",
-        "reviewedBy": "unreviewed"
+        "reviewedBy": "cursor"
       },
       "fixtureFiles": [
         "packages/engine/src/actions/civilDate.evidence.test.ts"
@@ -105,7 +105,7 @@
       "provenance": {
         "derivedBy": "codex",
         "implementedBy": "codex",
-        "reviewedBy": "unreviewed"
+        "reviewedBy": "cursor"
       },
       "fixtureFiles": [
         "packages/engine/src/actions/exactCentProRata.evidence.test.ts"
@@ -163,7 +163,7 @@
       "provenance": {
         "derivedBy": "codex",
         "implementedBy": "codex",
-        "reviewedBy": "unreviewed"
+        "reviewedBy": "cursor"
       },
       "fixtureFiles": [
         "packages/engine/src/actions/exactCentProRata.evidence.test.ts"
@@ -221,7 +221,7 @@
       "provenance": {
         "derivedBy": "codex",
         "implementedBy": "codex",
-        "reviewedBy": "unreviewed"
+        "reviewedBy": "cursor"
       },
       "fixtureFiles": [
         "packages/engine/src/actions/exactCentProRata.evidence.test.ts"
@@ -297,7 +297,7 @@
       "provenance": {
         "derivedBy": "codex",
         "implementedBy": "codex",
-        "reviewedBy": "unreviewed"
+        "reviewedBy": "cursor"
       },
       "fixtureFiles": [
         "packages/engine/src/spending/flexibleGoals.evidence.test.ts"
@@ -356,7 +356,7 @@
       "provenance": {
         "derivedBy": "codex",
         "implementedBy": "codex",
-        "reviewedBy": "unreviewed"
+        "reviewedBy": "cursor"
       },
       "fixtureFiles": [
         "packages/engine/src/spending/layers.evidence.test.ts"
@@ -396,7 +396,7 @@
       "provenance": {
         "derivedBy": "codex",
         "implementedBy": "codex",
-        "reviewedBy": "unreviewed"
+        "reviewedBy": "cursor"
       },
       "fixtureFiles": [
         "packages/engine/src/projection/moneyTolerance.evidence.test.ts"
@@ -469,7 +469,7 @@
       "provenance": {
         "derivedBy": "codex",
         "implementedBy": "codex",
-        "reviewedBy": "unreviewed"
+        "reviewedBy": "cursor"
       },
       "fixtureFiles": [
         "packages/engine/src/spending/layers.evidence.test.ts"
@@ -532,7 +532,7 @@
       "provenance": {
         "derivedBy": "codex",
         "implementedBy": "codex",
-        "reviewedBy": "unreviewed"
+        "reviewedBy": "cursor"
       },
       "fixtureFiles": [
         "packages/engine/src/decisions/spendingSolver.evidence.test.ts"
@@ -584,7 +584,7 @@
       "provenance": {
         "derivedBy": "codex",
         "implementedBy": "codex",
-        "reviewedBy": "unreviewed"
+        "reviewedBy": "cursor"
       },
       "fixtureFiles": [
         "packages/engine/src/actions/money.evidence.test.ts"

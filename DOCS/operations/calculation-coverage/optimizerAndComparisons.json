@@ -54,7 +54,7 @@
       "provenance": {
         "derivedBy": "codex",
         "implementedBy": "codex",
-        "reviewedBy": "unreviewed"
+        "reviewedBy": "cursor"
       },
       "fixtureFiles": [
         "packages/engine/src/decisions/search.evidence.test.ts"
@@ -118,7 +118,7 @@
       "provenance": {
         "derivedBy": "codex",
         "implementedBy": "codex",
-        "reviewedBy": "unreviewed"
+        "reviewedBy": "cursor"
       },
       "fixtureFiles": [
         "packages/engine/src/decisions/swrComparator.evidence.test.ts"
