@@ -93,9 +93,91 @@ export interface ProjectionSummary {
   // Derived FIRE metrics
   savingsRates: Array<{ year: number; ratePct: number }>
   averagePreRetirementSavingsRatePct: number
+  /**
+   * Portfolio target in projection-start-year ("today's") dollars. One calendar
+   * year's nominal outflows, deflated to `result.startYear`, divided by the
+   * plan's safe-withdrawal-rate decimal. The rate convention is
+   * `assumptions.safeWithdrawalRatePct` percent per year (default 4) used as a
+   * lens only — the ledger does not spend at this rate.
+   *
+   * Spending year: the calendar year `max(startYear, birthYear + retirementAge)`,
+   * looked up on `result.years`. `birthYear` is the ISO year of
+   * `household.people[0].dob` (first four characters; month and day ignored),
+   * else 1980; `retirementAge` is that person's `retirementAge`, else 65. If
+   * that year is absent, the first ledger year (`result.years[0]`) is used.
+   *
+   * Spending base: that year's published `expenses.total + tax + penalties`
+   * (nominal dollars for that calendar year). `expenses.total` is funded
+   * spending after guardrail cuts — funded lifestyle layers, funded one-time
+   * goals, debt service, property costs, healthcare, insurance premiums, and
+   * net LTC (`careCost − ltcBenefit`) — not `intendedSpending` and not net of
+   * incomes. `tax` and `penalties` are that year's published liabilities.
+   * Deflation is discrete annual:
+   * `nominal / (1 + inflationPct/100)^(spendingYear − startYear)`. No rounding
+   * or floor.
+   *
+   * Formula: fiNumber = ((expenses.total + tax + penalties) / (1 + inflationPct/100)^(spendingYear − startYear)) / (safeWithdrawalRatePct / 100)
+   *
+   * Empty ledger (`result.years` empty): `plan.expenses.baseAnnual / (safeWithdrawalRatePct / 100)`
+   * with no tax, no penalties, and no deflation.
+   *
+   * Note: the empty-ledger path is base lifestyle only, unlike the normal path
+   * which adds tax and penalties; a horizon that ends before retirement prices
+   * the first ledger year rather than interpolating a retirement-year spend;
+   * guaranteed income is not subtracted (gross outflows, not `netPortfolioNeed`).
+   */
   fiNumber: number
   fiYear: number | null
+  /**
+   * Attained age in the first ledger year whose end-of-year investable, deflated
+   * to `result.startYear`, meets or exceeds `fiNumber`; `null` if none does.
+   * Age-from-date-of-birth: `fiAge = fiYear − birthYear`, where `birthYear` is
+   * the ISO year of `household.people[0].dob` (first four characters of the ISO
+   * date; month and day are ignored), else 1980. That is calendar-year attained
+   * age (`year − birth year`), the same convention as
+   * `PersonYearState.ageAttained`, not age-on-birthday.
+   *
+   * Threshold: walk `result.years` in ledger order. For each year, deflate
+   * end-of-year `investableTotal` (cash + taxable + traditional + Roth + HSA,
+   * excluding property, insurance cash value, and TIPS-ladder principal;
+   * nominal dollars at year end) by
+   * `investableTotal / (1 + inflationPct/100)^(year − startYear)`. The first
+   * year whose deflated investable is **greater than or equal to** `fiNumber`
+   * (inclusive) is the crossing: `fiYear` is that calendar year and `fiAge` is
+   * `fiYear − birthYear`. Never-crossing and an empty ledger both leave
+   * `fiYear` and `fiAge` as `null`. No rounding.
+   *
+   * Formula: fiAge = min { year − birthYear | investableTotal / (1 + inflationPct/100)^(year − startYear) ≥ fiNumber }, else null
+   *
+   * Reads upstream `fiNumber` (start-year dollars) and each year's published
+   * end-of-year `investableTotal` (nominal).
+   *
+   * Note: a December birthday still counts as attaining `year − birthYear` for
+   * the whole calendar year; the comparison is inclusive (`>=`), not strict.
+   */
   fiAge: number | null
+  /**
+   * Amount needed in projection-start-year dollars today so that, with no
+   * further contributions, discrete real growth from the start year to
+   * retirement age reaches `fiNumber`. Growth rate is the simple real return
+   * `defaultReturnPct/100 − inflationPct/100` (percent inputs on
+   * `plan.assumptions`). Horizon is whole years of age:
+   * `max(0, retirementAge − (startYear − birthYear))`, using the same
+   * `birthYear` / `retirementAge` conventions as `fiNumber` (ISO year of
+   * `people[0].dob` else 1980; `retirementAge` else 65). Already at or past
+   * retirement age ⇒ 0-year horizon ⇒ this equals `fiNumber`. Compounding is
+   * discrete annual (`Math.pow`), not continuous. No rounding or floor.
+   *
+   * Formula: coastFireNumber = fiNumber / (1 + defaultReturnPct/100 − inflationPct/100)^max(0, retirementAge − (startYear − birthYear))
+   *
+   * Reads upstream `fiNumber`. An empty ledger has no extra fallback here
+   * beyond whatever `fiNumber` already published.
+   *
+   * Note: real return is a subtraction of the two rates, not the Fisher
+   * `(1+r)/(1+i)−1`; the horizon is retirement age, not the FI-number spending
+   * year, so a ledger that ends before retirement still discounts to retirement
+   * while `fiNumber` may have fallen back to the first ledger year's spending.
+   */
   coastFireNumber: number
 }
 

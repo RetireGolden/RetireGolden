@@ -20,6 +20,39 @@ import {
 /** Modeled zero-income-tax candidates the evaluate() sweep prices. */
 const ZERO_TAX_SHORTLIST = ['FL', 'TX', 'WA'] as const
 
+/**
+ * Insights detector `state-relocation`. `screen()` is unchanged in its cheap
+ * conditions (taxed current state, no planned moves). `evaluate()` runs the
+ * relocation-compare sweep over the modeled zero-income-tax shortlist and
+ * publishes a lifetime state-tax savings figure in today's dollars on the
+ * card's qualitative impact (`formatWholeUsd(savings)`).
+ *
+ * Lifetime state-tax savings identity. For each calendar year in the union of
+ * the baseline row's and the best-candidate row's `stateTaxByYear` lines
+ * (a year present on only one side counts as $0 nominal tax), take that year's
+ * nominal state+local tax (ledger dollars for that calendar year) for the
+ * candidate minus the baseline, deflate to `projection.startYear` with
+ * `ctx.projection.deflate(year, amount)`, and sum. The published savings is
+ * that sum negated and floored at zero — minuend is the baseline's deflated
+ * lifetime state+local tax, subtrahend is the candidate's; a positive number
+ * is tax saved by moving (staying costs more). A candidate that costs more
+ * than staying publishes $0, never a negative penalty. No per-year floor.
+ * The qualitative string then rounds to whole dollars (`Math.round`).
+ *
+ * Formula: savings = max(0, −Σ_year deflate(year, candidateStateTax_year − baselineStateTax_year))
+ *
+ * Upstream: `compareRelocationCandidates` rows. Baseline is `id === 'baseline'`.
+ * Best candidate is the non-baseline row with `error === null` and the lowest
+ * `lifetimeTaxesAndPenalties` (all taxes and penalties, nominal — not the
+ * state-tax series). The identity then reads each of those two rows'
+ * `stateTaxByYear` (nominal state+local tax per calendar year). Sweep failure
+ * degrades to the screen card and publishes no dollar figure.
+ *
+ * Note: the family draft's "candidate minus baseline floored at zero" is the
+ * opposite sign; this code publishes baseline minus candidate floored at zero.
+ * Note: "best" is chosen on total taxes and penalties, then the savings
+ * identity is computed on state+local tax only.
+ */
 export const stateRelocation: Detector = {
   id: 'state-relocation',
   category: 'longevity-insurance-geography',
