@@ -91,7 +91,7 @@ export const spendingAndWithdrawalsRecords = {
       'packages/engine/src/spending/abw.ts#ABW_DEFAULTS',
     ],
     verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'cursor' },
   },
   'withdrawal-rate-guardrail-step': {
     title: 'Withdrawal-rate guardrail: one year\'s cut, raise or hold of the discretionary multiplier',
@@ -135,7 +135,7 @@ export const spendingAndWithdrawalsRecords = {
       'packages/engine/src/spending/guardrails.ts#clampRange',
     ],
     verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'cursor' },
   },
   'balance-risk-guardrail-step': {
     title: 'Risk-based guardrail: one year\'s cut, raise or hold against real-balance thresholds',
@@ -178,7 +178,7 @@ export const spendingAndWithdrawalsRecords = {
       'packages/engine/src/spending/guardrails.ts#clampRange',
     ],
     verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'cursor' },
   },
   'spending-shape-annual-delta-phases': {
     title: 'Annual real spending drift compiled to five-year phase rows',
@@ -221,7 +221,7 @@ export const spendingAndWithdrawalsRecords = {
     implementedBy: ['packages/engine/src/spending/shapePresets.ts'],
     implementedByFunctions: ['packages/engine/src/spending/shapePresets.ts#annualDeltaPhases'],
     verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'cursor' },
   },
   'spending-shape-preset-compilation': {
     title: 'Named spending shapes compiled to phase rows',
@@ -260,6 +260,6 @@ export const spendingAndWithdrawalsRecords = {
       'packages/engine/src/spending/shapePresets.ts#SMIRK_ANNUAL_REAL_DELTA_PCT',
     ],
     verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'cursor' },
   },
 } satisfies Record<string, CalculationRecord>

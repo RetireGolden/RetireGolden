@@ -51,7 +51,7 @@ export const accountsAndGrowthRecords = {
       'packages/engine/src/allocation/assetClasses.ts#DEFAULT_ASSET_CLASS_PARAMS',
     ],
     verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'cursor' },
   },
   'allocation-weight-normalization': {
     title: 'Allocation weights to a normalized fraction vector in class order',
@@ -91,7 +91,7 @@ export const accountsAndGrowthRecords = {
     implementedBy: ['packages/engine/src/allocation/assetClasses.ts'],
     implementedByFunctions: ['packages/engine/src/allocation/assetClasses.ts#weightsToVector'],
     verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'cursor' },
   },
   'allocation-glidepath-interpolation': {
     title: 'Glidepath compilation: linear interpolation with flat endpoints, staged as a step function',
@@ -138,7 +138,7 @@ export const accountsAndGrowthRecords = {
       'packages/engine/src/allocation/assetClasses.ts#lerpVectors',
     ],
     verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'cursor' },
   },
   'allocation-blended-expected-return': {
     title: 'Blended expected nominal return of a weight vector',
@@ -176,7 +176,7 @@ export const accountsAndGrowthRecords = {
     implementedBy: ['packages/engine/src/allocation/assetClasses.ts'],
     implementedByFunctions: ['packages/engine/src/allocation/assetClasses.ts#blendedReturnPct'],
     verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'cursor' },
   },
   'allocation-account-expected-return': {
     title: 'Expected return for an account: allocation blend, else account rate, else plan default',
@@ -217,7 +217,7 @@ export const accountsAndGrowthRecords = {
       'packages/engine/src/allocation/assetClasses.ts#accountAllocation',
     ],
     verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'cursor' },
   },
   'allocation-blended-taxable-yield': {
     title: 'Blended taxable yields and dividend-weighted qualified share',
@@ -264,7 +264,7 @@ export const accountsAndGrowthRecords = {
       'packages/engine/src/allocation/assetClasses.ts#DEFAULT_QUALIFIED_DIVIDEND_RATIO',
     ],
     verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'cursor' },
   },
   'allocation-total-return-drift': {
     title: 'Unrebalanced weights after one year of class returns',
@@ -302,7 +302,7 @@ export const accountsAndGrowthRecords = {
     implementedBy: ['packages/engine/src/allocation/assetClasses.ts'],
     implementedByFunctions: ['packages/engine/src/allocation/assetClasses.ts#driftWeights'],
     verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'cursor' },
   },
   'allocation-rebalance-turnover': {
     title: 'Rebalance turnover: the fraction sold to reach the target weights',
@@ -339,7 +339,7 @@ export const accountsAndGrowthRecords = {
     implementedBy: ['packages/engine/src/allocation/assetClasses.ts'],
     implementedByFunctions: ['packages/engine/src/allocation/assetClasses.ts#rebalanceTurnoverFraction'],
     verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'cursor' },
   },
   'allocation-non-cash-share': {
     title: 'Non-cash share of a weight vector',
@@ -374,6 +374,6 @@ export const accountsAndGrowthRecords = {
     implementedBy: ['packages/engine/src/allocation/assetClasses.ts'],
     implementedByFunctions: ['packages/engine/src/allocation/assetClasses.ts#nonCashWeight'],
     verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'cursor' },
   },
 } satisfies Record<string, CalculationRecord>

@@ -37,11 +37,11 @@
       "ladder-rung-cost",
       "ladder-rung-coupon-rate-pct",
       "ladder-rung-face",
-      "longevity-survival-percentile-age"
+      "longevity-survival-percentile-age",
+      "spending-guardrail-factor-annual"
     ],
     "partial": [
-      "spending-base-annual",
-      "spending-guardrail-factor-annual"
+      "spending-base-annual"
     ],
     "noRecordYet": [
       "aca-applicable-slcsp-premium-annual",
