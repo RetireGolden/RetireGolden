@@ -1,0 +1,81 @@
+{
+  "kind": "retiregolden.calculation-coverage.shard",
+  "version": 2,
+  "group": "socialSecurity",
+  "records": [
+    {
+      "id": "ss-bridge-sizing",
+      "title": "Social Security bridge: age-62 replacement sized as a TIPS ladder",
+      "kind": "formula",
+      "outputs": [
+        "social-security-bridge-sizing"
+      ],
+      "feeds": [
+        "insight-ss-bridge-gap-total"
+      ],
+      "purpose": "The real-dollar bridge that pays the forgone age-62 benefit from retirement until the chosen claim, quoted as a TIPS ladder bought this year.",
+      "statement": "Monthly age-62 benefit M = PIA × f_62; annual real amount A = 12M. startYear = max(age-62 year, retirementYear, currentYear+1). For a January claim (months = 0), endYear = claimYear − 1; for a mid-year claim, endYear = claimYear. years N = endYear − startYear + 1. ladderCost is the TIPS-ladder price of N annual real payments of A purchased in the current year. On a zero real curve with unit present value, cost = N A. Returns null when the claim is at or before 62 or the window is empty. Units: today's dollars and calendar years. Rounding: none.",
+      "formula": {
+        "expression": "M = PIA × f_62; A = 12M; N = endYear − startYear + 1; cost = price of N real payments of A",
+        "variables": [
+          {
+            "symbol": "PIA",
+            "meaning": "Primary insurance amount, monthly, today's dollars",
+            "unit": "usd/month",
+            "domain": "> 0"
+          },
+          {
+            "symbol": "f_62",
+            "meaning": "Claim factor at age 62, already resolved for the date of birth",
+            "unit": "1",
+            "domain": "0 < f_62 <= 1"
+          },
+          {
+            "symbol": "startYear",
+            "meaning": "First calendar year the bridge pays",
+            "unit": "year",
+            "domain": "integer"
+          },
+          {
+            "symbol": "endYear",
+            "meaning": "Last calendar year the bridge pays",
+            "unit": "year",
+            "domain": "integer >= startYear"
+          }
+        ],
+        "timing": "annual real payments from startYear through endYear inclusive; ladder purchased in currentYear",
+        "rounding": "none"
+      },
+      "limits": [
+        "The worksheet supplies the already-resolved age-62 factor 7/10; the evidence uses that factor as the expected monthly identity rather than calling claimFactor itself",
+        "The date formula (January claim ends the year before the claim year; start is the later of age 62, retirement, and next year) is the comments' stated convention",
+        "A zero real curve still floors synthetic TIPS coupons at 0.125%, so production ladderCost may differ from the worksheet's unit-present-value identity cost = N A; that is a finding, not something this record papers over"
+      ],
+      "worksheet": "DOCS/calculations/social-security/ss-bridge-sizing.md",
+      "mutation": "DOCS/calculations/social-security/ss-bridge-sizing.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/ladder/bridge.ts"
+      ],
+      "provenance": {
+        "derivedBy": "codex",
+        "implementedBy": "grok",
+        "reviewedBy": "unreviewed"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/ladder/bridge.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    }
+  ]
+}

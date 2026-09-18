@@ -17,13 +17,21 @@ import {
 import { OUTPUT_FAMILIES, type OutputFamily } from './outputFamilies.js'
 import { OUTPUT_FIELD_COVERAGE, type OutputFieldCoverageRow } from './outputFieldCoverage.js'
 import { declaredSymbolLinesOf, symbolAnchorLine, type DeclaredSymbol } from './symbolLines.js'
+import { insightsRecords } from './calculations/insights.js'
 import { laddersAndValuationRecords } from './calculations/laddersAndValuation.js'
 import { longevityRecords } from './calculations/longevity.js'
+import { medicareAndAcaRecords } from './calculations/medicareAndAca.js'
+import { rothRecords } from './calculations/roth.js'
+import { socialSecurityRecords } from './calculations/socialSecurity.js'
 import { spendingAndWithdrawalsRecords } from './calculations/spendingAndWithdrawals.js'
 
 const RECORD_MODULES: readonly (readonly [string, Readonly<Record<string, unknown>>])[] = [
+  ['insights', insightsRecords],
   ['laddersAndValuation', laddersAndValuationRecords],
   ['longevity', longevityRecords],
+  ['medicareAndAca', medicareAndAcaRecords],
+  ['roth', rothRecords],
+  ['socialSecurity', socialSecurityRecords],
   ['spendingAndWithdrawals', spendingAndWithdrawalsRecords],
 ]
 
