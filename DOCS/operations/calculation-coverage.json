@@ -29,6 +29,15 @@
       "funded-ratio-result-funded-ratio-pct",
       "funded-ratio-result-guaranteed-income-pv",
       "funded-ratio-result-unfunded-pv",
+      "insight-annuitization-headroom-illustrative-spia",
+      "insight-asset-location-swappable-exposure",
+      "insight-hecm-buffer-illustrative-credit-line",
+      "insight-irmaa-tier-edge-premium-cliff",
+      "insight-spending-guardrails-illustrative-floor",
+      "insight-spending-headroom-rough-annual",
+      "insight-ss-bridge-gap-total",
+      "insight-state-relocation-lifetime-state-tax-savings",
+      "insight-widows-penalty-bracket-jump",
       "ladder-build-annual-real-income-by-offset",
       "ladder-build-target-annual-real-income",
       "ladder-build-total-cost",
@@ -37,7 +46,10 @@
       "ladder-rung-cost",
       "ladder-rung-coupon-rate-pct",
       "ladder-rung-face",
-      "longevity-survival-percentile-age"
+      "longevity-survival-percentile-age",
+      "projection-summary-lifetime-roth-conversions",
+      "scenario-irmaa-surcharge-tier-years",
+      "social-security-bridge-sizing"
     ],
     "partial": [
       "spending-base-annual"
@@ -113,18 +125,9 @@
       "inherited-distribution-required-annual",
       "inherited-distribution-required-executed-annual",
       "inherited-distribution-voluntary-annual",
-      "insight-annuitization-headroom-illustrative-spia",
-      "insight-asset-location-swappable-exposure",
-      "insight-hecm-buffer-illustrative-credit-line",
       "insight-impact-ending-after-tax-estate-delta",
       "insight-impact-lifetime-tax-delta",
-      "insight-irmaa-tier-edge-premium-cliff",
       "insight-monte-carlo-success-delta",
-      "insight-spending-guardrails-illustrative-floor",
-      "insight-spending-headroom-rough-annual",
-      "insight-ss-bridge-gap-total",
-      "insight-state-relocation-lifetime-state-tax-savings",
-      "insight-widows-penalty-bracket-jump",
       "insurance-cash-value-annual",
       "insurance-death-benefit-annual",
       "irmaa-surcharge-annual",
@@ -179,7 +182,6 @@
       "projection-summary-fi-age",
       "projection-summary-fi-number",
       "projection-summary-fi-year",
-      "projection-summary-lifetime-roth-conversions",
       "projection-summary-lifetime-taxes-and-penalties",
       "qcd-annual",
       "relocation-lifetime-state-local-tax",
@@ -188,7 +190,6 @@
       "rmd-required-annual",
       "roth-conversion-annual",
       "scenario-comparison-cell",
-      "scenario-irmaa-surcharge-tier-years",
       "scenario-lifetime-penalties",
       "scenario-lifetime-tax",
       "sepp-distribution-annual",
@@ -199,7 +200,6 @@
       "simple-candidate-evaluation-money-lasts-years-delta",
       "social-security-benefit-annual",
       "social-security-break-even",
-      "social-security-bridge-sizing",
       "social-security-claiming-sweep-objective",
       "social-security-computation-summary-counts",
       "social-security-credit-estimate",
@@ -329,6 +329,12 @@
         "ladder-real-yield-interpolation",
         "treasury-real-yield-curve-2026"
       ],
+      "insight-impact-ending-after-tax-estate-delta": [
+        "insight-irmaa-tier-edge-premium-cliff"
+      ],
+      "insight-ss-bridge-gap-total": [
+        "ss-bridge-sizing"
+      ],
       "ladder-build-total-cost": [
         "ladder-annual-coupon-par-pricing",
         "treasury-real-yield-curve-2026"
@@ -359,20 +365,24 @@
       "monte-carlo-success-rate": [
         "mortality-ex-to-qx-identity",
         "mortality-sampled-death-age"
+      ],
+      "scenario-comparison-cell": [
+        "projection-summary-lifetime-roth-conversions",
+        "scenario-irmaa-surcharge-tier-years"
       ]
     }
   },
   "records": {
-    "total": 18,
+    "total": 30,
     "byKind": {
-      "composition": 1,
+      "composition": 5,
       "data": 2,
-      "formula": 12,
-      "model": 3
+      "formula": 13,
+      "model": 10
     },
     "byJustificationKind": {
       "dataset": 2,
-      "derivation": 16
+      "derivation": 28
     }
   },
   "oracleExamples": [
@@ -411,11 +421,16 @@
   ],
   "walkthroughs": [],
   "attestationsDerived": {
-    "catalogued": 6,
+    "catalogued": 14,
     "excludedWithReason": 0,
-    "notYetReviewed": 205
+    "notYetReviewed": 201
   },
   "shards": [
+    {
+      "group": "insights",
+      "path": "calculation-coverage/insights.json",
+      "recordCount": 9
+    },
     {
       "group": "laddersAndValuation",
       "path": "calculation-coverage/laddersAndValuation.json",
@@ -425,6 +440,21 @@
       "group": "longevity",
       "path": "calculation-coverage/longevity.json",
       "recordCount": 7
+    },
+    {
+      "group": "medicareAndAca",
+      "path": "calculation-coverage/medicareAndAca.json",
+      "recordCount": 1
+    },
+    {
+      "group": "roth",
+      "path": "calculation-coverage/roth.json",
+      "recordCount": 1
+    },
+    {
+      "group": "socialSecurity",
+      "path": "calculation-coverage/socialSecurity.json",
+      "recordCount": 1
     },
     {
       "group": "spendingAndWithdrawals",
