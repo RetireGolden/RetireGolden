@@ -15,7 +15,7 @@ Spreading excess terminal estate evenly across the projection's remaining year b
 | Nominal ending after-tax estate | 1,200,000 | horizon dollars |
 | End-year-to-today deflation factor | 3/4 | ratio |
 | Bequest target | 500,000 | today's dollars |
-| Remaining projection rows, 2026 through 2035 inclusive | 10 | years |
+| Year boundaries between the start and end years, `N = max(1, 2035 - 2026)` | 9 | boundaries |
 
 ## Arithmetic
 
@@ -41,4 +41,4 @@ feeds: none.
 
 Derived by: codex (gpt-5.6-sol), 2026-09-18, from the signatures-and-comments extract (with the 2026-09-18 doc-comment correction) and the orchestrator's contract statement for the year count, without executing the engine or reading any implementation body. Reviewed by: cursor (composer-2.5), 2026-09-18, by independent recomputation without executing the engine; see REVIEW-2026-09-18.md in this directory.
 
-Revision: Replaced the first derivation's guessed inclusive-row-count convention with the specified year-boundary convention `N = max(1, endYear - startYear)`. The projection start-year and end-year input rows were added on the reviewer's note. The published-figure statement was added on the pull-request review's finding.
+Revision: Replaced the first derivation's guessed inclusive-row-count convention with the specified year-boundary convention `N = max(1, endYear - startYear)`. The projection start-year and end-year input rows were added on the reviewer's note. The published-figure statement was added on the pull-request review's finding. The inputs row that carried the inclusive row count (10) was replaced by the year-boundary count on a later review note, so the stale count no longer sits in the table.
