@@ -129,7 +129,7 @@ export interface CapeConditionedModelConfig {
 export interface StationaryBootstrapModelConfig {
   type: 'stationary'
   equityWeightPct?: number
-  /** Expected block length (geometric; default 5). */
+  /** Mean block length L (default 5, floored at 2); see createStationaryBootstrapModel for the draw. */
   meanBlockLength?: number
   classShocks?: boolean
 }
@@ -601,7 +601,23 @@ export function createCapeConditionedModel(config: CapeConditionedModelConfig): 
   }
 }
 
-/** Stationary (Politis-Romano) bootstrap: geometric block lengths. */
+/**
+ * Stationary bootstrap: historical years replayed in contiguous blocks of random
+ * length, wrapping at the end of the table.
+ *
+ * With L = max(2, meanBlockLength ?? 5) and n the number of historical rows, the
+ * path draws a start row cursor = nextInt(n) and then a block length
+ *   remaining = floor(−ln(1 − U) · L) || 1        (U = next uniform draw)
+ * (the inverse CDF of an exponential with mean L, floored, and 1 when the floor is
+ * 0). Each path year publishes the row at cursor (blended return at equityWeightPct
+ * minus the dataset mean at that weight; inflation as-is), then advances cursor by
+ * one with wrap and decrements remaining; when remaining reaches 0 a new start row
+ * and a new block length are drawn in that order. Draw order per block: nextInt(n),
+ * then next(). Note: the block length is drawn once per block, so this is NOT a
+ * per-year continuation coin with probability 1/L; the two laws differ (a coin can
+ * restart in consecutive years, and the floor and the "|| 1" clamp shape the length
+ * distribution), even though both have mean block length near L.
+ */
 export function createStationaryBootstrapModel(config: StationaryBootstrapModelConfig): MarketModel {
   const equityWeightPct = config.equityWeightPct ?? 60
   const meanBlock = Math.max(2, config.meanBlockLength ?? 5)

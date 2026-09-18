@@ -521,7 +521,7 @@ export const monteCarloRecords = {
     statement:
       'For mean block length L, a geometric restart probability is p = 1/L. After a block starts, a continuation draw U >= p continues the current historical block (the next year is the next series row, wrapping). For L = 5, p = 0.20 and U = 0.50, continuation is true. Production draws a whole block length as max(1, floor(−log(1 − U) · L)) at each restart rather than flipping a per-year coin, which is a different parameterization of the same geometric law. Units: a Boolean continuation. Rounding: none. Exact Boolean.',
     formula: {
-      expression: 'p = 1/L; continue if U >= p (equivalently remaining = floor(−log(1 − U) · L) at block start)',
+      expression: 'at each block start: remaining = floor(−ln(1 − U) · L) || 1; each year publishes the row at cursor, then cursor = (cursor + 1) mod n and remaining decrements; when remaining reaches 0 a new cursor = nextInt(n) and a new length are drawn',
       variables: [
         { symbol: 'L', meaning: 'Mean block length', unit: 'years', domain: '>= 2 as configured; worksheet 5' },
         { symbol: 'p', meaning: 'Restart probability', unit: '1', domain: '1/L; worksheet 0.20' },
