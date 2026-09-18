@@ -19,11 +19,13 @@ import { OUTPUT_FIELD_COVERAGE, type OutputFieldCoverageRow } from './outputFiel
 import { declaredSymbolLinesOf, symbolAnchorLine, type DeclaredSymbol } from './symbolLines.js'
 import { laddersAndValuationRecords } from './calculations/laddersAndValuation.js'
 import { longevityRecords } from './calculations/longevity.js'
+import { monteCarloRecords } from './calculations/monteCarlo.js'
 import { spendingAndWithdrawalsRecords } from './calculations/spendingAndWithdrawals.js'
 
 const RECORD_MODULES: readonly (readonly [string, Readonly<Record<string, unknown>>])[] = [
   ['laddersAndValuation', laddersAndValuationRecords],
   ['longevity', longevityRecords],
+  ['monteCarlo', monteCarloRecords],
   ['spendingAndWithdrawals', spendingAndWithdrawalsRecords],
 ]
 

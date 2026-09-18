@@ -14,6 +14,7 @@
  */
 import { laddersAndValuationRecords } from './calculations/laddersAndValuation.js'
 import { longevityRecords } from './calculations/longevity.js'
+import { monteCarloRecords } from './calculations/monteCarlo.js'
 import { spendingAndWithdrawalsRecords } from './calculations/spendingAndWithdrawals.js'
 import type { OutputFamilyId } from './outputFamilies.js'
 import type { TaxRuleId } from './taxRuleRegistry.js'
@@ -98,6 +99,7 @@ export interface CalculationRecord {
 const registry = {
   ...laddersAndValuationRecords,
   ...longevityRecords,
+  ...monteCarloRecords,
   ...spendingAndWithdrawalsRecords,
 } satisfies Record<string, CalculationRecord>
 
@@ -109,6 +111,7 @@ export const CALCULATION_RECORD_MODULES: readonly (readonly [
 ])[] = Object.freeze([
   ['laddersAndValuation', laddersAndValuationRecords],
   ['longevity', longevityRecords],
+  ['monteCarlo', monteCarloRecords],
   ['spendingAndWithdrawals', spendingAndWithdrawalsRecords],
 ] as const)
 

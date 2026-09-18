@@ -25,6 +25,7 @@
       "ui-transformation": 19
     },
     "complete": [
+      "annuitization-payout-rate-pct",
       "funded-ratio-result-essential-spending-pv",
       "funded-ratio-result-funded-ratio-pct",
       "funded-ratio-result-guaranteed-income-pv",
@@ -51,7 +52,6 @@
       "accounts-ending-balance-by-category",
       "accounts-investable-total-annual",
       "accounts-net-worth-annual",
-      "annuitization-payout-rate-pct",
       "annuitization-sweep-annual-income",
       "annuitization-sweep-effective-allocation-pct",
       "annuitization-sweep-premium",
@@ -302,6 +302,19 @@
       "survivor-scenario-row-survivor-shortfall-years"
     ],
     "fedBy": {
+      "annuitization-payout-rate-pct": [
+        "qlac-deferred-payout-placeholder"
+      ],
+      "annuitization-sweep-annual-income": [
+        "qlac-deferred-payout-placeholder",
+        "spia-payout-rate-interpolation"
+      ],
+      "annuitization-sweep-premium": [
+        "spia-payout-rate-interpolation"
+      ],
+      "display-guardrail-balance-thresholds": [
+        "risk-based-starting-investable"
+      ],
       "funded-ratio-result-essential-spending-pv": [
         "ladder-real-present-value",
         "ladder-real-yield-interpolation",
@@ -347,32 +360,144 @@
       "ladder-value-annual": [
         "ladder-rung-flows-and-remaining-face"
       ],
+      "long-term-care-benefit-annual": [
+        "long-term-care-shock-sampling"
+      ],
       "longevity-survival-percentile-age": [
         "mortality-ex-to-qx-identity",
         "survival-hazard-from-expectancy-multiplier",
         "survival-probability-product"
       ],
+      "monte-carlo-depletion-probability-by-year": [
+        "historical-market-series",
+        "historical-portfolio-mean",
+        "historical-portfolio-return-blend",
+        "market-model-ar1-shock",
+        "market-model-cape-conditioned",
+        "market-model-empirical-history",
+        "market-model-garch-variance",
+        "market-model-gaussian-draw",
+        "market-model-historical-centered-bootstrap",
+        "market-model-inflation-regime",
+        "market-model-lognormal-draw",
+        "market-model-regime-switch",
+        "market-model-reversed-history",
+        "market-model-stationary-bootstrap",
+        "market-model-student-t-draw",
+        "market-model-user-shock",
+        "rng-derived-path-seed",
+        "rng-mulberry32-reference-stream"
+      ],
+      "monte-carlo-ending-after-tax-estate-percentiles": [
+        "allocation-cholesky-factor",
+        "historical-market-series",
+        "historical-portfolio-mean",
+        "historical-portfolio-return-blend",
+        "market-model-ar1-shock",
+        "market-model-cape-conditioned",
+        "market-model-empirical-history",
+        "market-model-garch-variance",
+        "market-model-gaussian-draw",
+        "market-model-historical-centered-bootstrap",
+        "market-model-inflation-regime",
+        "market-model-lognormal-draw",
+        "market-model-regime-switch",
+        "market-model-reversed-history",
+        "market-model-stationary-bootstrap",
+        "market-model-student-t-draw",
+        "market-model-user-shock",
+        "rng-derived-path-seed",
+        "rng-mulberry32-reference-stream"
+      ],
       "monte-carlo-ending-investable-histogram": [
+        "allocation-cholesky-factor",
+        "historical-market-series",
+        "historical-portfolio-mean",
+        "historical-portfolio-return-blend",
+        "long-term-care-shock-sampling",
+        "market-model-ar1-shock",
+        "market-model-cape-conditioned",
+        "market-model-empirical-history",
+        "market-model-garch-variance",
+        "market-model-gaussian-draw",
+        "market-model-historical-centered-bootstrap",
+        "market-model-inflation-regime",
+        "market-model-lognormal-draw",
+        "market-model-regime-switch",
+        "market-model-reversed-history",
+        "market-model-stationary-bootstrap",
+        "market-model-student-t-draw",
+        "market-model-user-shock",
         "mortality-ex-to-qx-identity",
-        "mortality-sampled-death-age"
+        "mortality-sampled-death-age",
+        "rng-derived-path-seed",
+        "rng-mulberry32-reference-stream"
+      ],
+      "monte-carlo-investable-fan-percentiles": [
+        "allocation-cholesky-factor",
+        "historical-market-series",
+        "historical-portfolio-mean",
+        "historical-portfolio-return-blend",
+        "market-model-ar1-shock",
+        "market-model-cape-conditioned",
+        "market-model-empirical-history",
+        "market-model-garch-variance",
+        "market-model-gaussian-draw",
+        "market-model-historical-centered-bootstrap",
+        "market-model-inflation-regime",
+        "market-model-lognormal-draw",
+        "market-model-regime-switch",
+        "market-model-reversed-history",
+        "market-model-stationary-bootstrap",
+        "market-model-student-t-draw",
+        "market-model-user-shock",
+        "rng-derived-path-seed",
+        "rng-mulberry32-reference-stream"
       ],
       "monte-carlo-success-rate": [
+        "allocation-cholesky-factor",
+        "historical-market-series",
+        "historical-portfolio-mean",
+        "historical-portfolio-return-blend",
+        "long-term-care-shock-sampling",
+        "market-model-ar1-shock",
+        "market-model-cape-conditioned",
+        "market-model-empirical-history",
+        "market-model-garch-variance",
+        "market-model-gaussian-draw",
+        "market-model-historical-centered-bootstrap",
+        "market-model-inflation-regime",
+        "market-model-lognormal-draw",
+        "market-model-regime-switch",
+        "market-model-reversed-history",
+        "market-model-stationary-bootstrap",
+        "market-model-student-t-draw",
+        "market-model-user-shock",
         "mortality-ex-to-qx-identity",
-        "mortality-sampled-death-age"
+        "mortality-sampled-death-age",
+        "risk-based-starting-investable",
+        "rng-derived-path-seed",
+        "rng-mulberry32-reference-stream"
+      ],
+      "spending-care-cost-gross-annual": [
+        "long-term-care-shock-sampling"
+      ],
+      "swr-rule-result-initial-annual-spend": [
+        "risk-based-starting-investable"
       ]
     }
   },
   "records": {
-    "total": 18,
+    "total": 41,
     "byKind": {
       "composition": 1,
-      "data": 2,
-      "formula": 12,
-      "model": 3
+      "data": 4,
+      "formula": 16,
+      "model": 20
     },
     "byJustificationKind": {
-      "dataset": 2,
-      "derivation": 16
+      "dataset": 4,
+      "derivation": 37
     }
   },
   "oracleExamples": [
@@ -411,9 +536,9 @@
   ],
   "walkthroughs": [],
   "attestationsDerived": {
-    "catalogued": 6,
+    "catalogued": 13,
     "excludedWithReason": 0,
-    "notYetReviewed": 205
+    "notYetReviewed": 199
   },
   "shards": [
     {
@@ -425,6 +550,11 @@
       "group": "longevity",
       "path": "calculation-coverage/longevity.json",
       "recordCount": 7
+    },
+    {
+      "group": "monteCarlo",
+      "path": "calculation-coverage/monteCarlo.json",
+      "recordCount": 23
     },
     {
       "group": "spendingAndWithdrawals",
