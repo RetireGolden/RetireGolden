@@ -4,7 +4,7 @@ Kind: model. `spending/flexibleGoals.ts#createGoalScheduler` resolves each goal 
 
 ## Justification
 
-Lexicographic ordering prevents lower-priority upside goals from consuming scarce dollars before required/target goals. This is a product policy, not a claim that the ordering maximizes welfare. Case (b) must be evaluated in the goal's latest allowed year because an under-minimum goal with a later allowed year could be `deferred` instead of `skipped`.
+Lexicographic ordering prevents lower-priority upside goals from consuming scarce dollars before required/target goals. This is a product policy, not a claim that the ordering maximizes welfare. Case (b) must be evaluated in the goal's latest allowed year because an under-minimum goal with a later allowed year could be `deferred` instead of `skipped`. The finite available budget binds a movable goal only while a guardrail cut is in force.
 
 ## Inputs
 
@@ -18,7 +18,7 @@ Lexicographic ordering prevents lower-priority upside goals from consuming scarc
 | Partial funding allowed | true | Boolean |
 | Candidate goals, cases (a) and (b) | This goal only | goal list |
 | Planning year, cases (a) and (b) | Goal's `latestYear` | calendar-year condition |
-| Guardrail cutting, cases (a) and (b) | false | Boolean |
+| Guardrail cutting, cases (a) and (b) | true | Boolean |
 
 ## Arithmetic
 
@@ -48,4 +48,4 @@ Case (b): Outcome `skipped`, amount `$1,100`, funded `$0`, unfunded `$1,100`, re
 
 Derived by: codex (gpt-5.6-sol), 2026-09-14, from the signatures-and-comments extract only, without executing the engine or reading any implementation body. Reviewed by: cursor (composer-2.5), 2026-09-18, by independent recomputation without executing the engine; see REVIEW-2026-09-18.md in this directory (first review and the addendum for the cases added on 2026-09-18).
 
-Revision note: Case (b) was added on 2026-09-18 with a budget between the today-dollar and inflated nominal minimums so the example discriminates between those readings. Following the independent reviewer's note that later allowed years leave `deferred` available, the Inputs now pin a single candidate, resolution in its latest allowed year, and `cutting = false` for both cases.
+Revision note: Case (b) was added on 2026-09-18 with a budget between the today-dollar and inflated nominal minimums so the example discriminates between those readings. Following the independent reviewer's note that later allowed years leave `deferred` available, the Inputs now pin a single candidate, resolution in its latest allowed year, and `cutting = true` for both cases. The guardrail-cutting pin was corrected after the pull-request review caught the error.
