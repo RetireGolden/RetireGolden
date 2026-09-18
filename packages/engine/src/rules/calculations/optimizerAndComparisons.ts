@@ -10,7 +10,7 @@ export const optimizerAndComparisonsRecords = {
     feeds: ['optimizer-recommended-conversion-annual', 'optimizer-schedule-conversion-total'],
     statement: 'decisions/search.ts#refineConversionSchedule deterministically searches annual Roth-conversion dollars by fixed-order coordinate descent, first coarse then fine steps, retaining only hard-constraint-feasible moves whose exact-ledger primary metric improves by more than the minimum, subject to simulation and sweep caps.',
     formula: {
-      expression: 'for coarse then fine step, test +/- one year; retain feasible score > incumbent + minimumImprovement',
+      expression: 'for coarse then fine step, for each year coordinate try amount +/- step; retain a feasible candidate only when score > incumbent + minimumImprovement',
       variables: [
         { symbol: 'schedule', meaning: 'Annual conversion amounts', unit: 'nominal USD', domain: 'nonnegative' },
         { symbol: 'step', meaning: 'Coarse/fine move size', unit: 'USD', domain: 'positive' },

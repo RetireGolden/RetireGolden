@@ -1,24 +1,26 @@
 # Mutation receipt: conversion-coordinate-descent-search
 
-Executed 2026-09-17 against RetireGolden base `33e7d546` (branch `codex/b1-p4-cards-cashflow-optimizer-taxes`) in `packages/engine`.
+Executed 2026-09-17 and re-executed with a different mutant 2026-09-18 against RetireGolden base `33e7d546` (branch `codex/b1-p4-cards-cashflow-optimizer-taxes`) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/decisions/search.ts`
 
 ```diff
 diff --git a/packages/engine/src/decisions/search.ts b/packages/engine/src/decisions/search.ts
-index 6347ebf7..c5019738 100644
+index 6347ebf7..5275f577 100644
 --- a/packages/engine/src/decisions/search.ts
 +++ b/packages/engine/src/decisions/search.ts
-@@ -154,5 +154,5 @@ export function refineConversionSchedule(
-     }
-   }
+@@ -120,7 +120,7 @@ export function refineConversionSchedule(
+     .filter((year) => year > lastSeedYear)
+     .slice(0, TAPER_EXTENSION_YEARS)
+   const years = [...seedYears, ...extensionYears]
+-  const steps = coarseStep === fineStep ? [coarseStep] : [coarseStep, fineStep]
++  const steps = [coarseStep]
  
--  return { bestConversions, bestEvaluation, improved, simulationCount, sweepCount }
-+  return { bestConversions, bestEvaluation, improved: false, simulationCount, sweepCount }
- }
+   for (const step of steps) {
+     for (let sweep = 0; sweep < maxSweepsPerStep; sweep++) {
 ```
 
-Discard the improvement indicator after the coordinate search finds the worksheet's beneficial 12500 conversion. This reports no improvement despite the oracle's strictly better score. The best-schedule assertions remain passing and the independently specified improved flag kills this mutation.
+Drop the fine step, so the search stops after the coarse $10,000 move and never tries the $12,500 refinement the worksheet's arithmetic names ($0 -> $10,000 -> $12,500). Re-executed 2026-09-18 in place of an earlier mutant that only hard-coded the improved flag: both of the worksheet's stated wrong readings (accept every nonnegative move; require an improvement of at least the coarse step) drive the search to a probe outside the worksheet's four-entry score table, where the fixture's guard throws before any assertion, so neither can be shown failing on the published value; the fine-step mutant can.
 
 ## Command
 
@@ -37,30 +39,30 @@ RUN  v5.0.0 C:/Users/Nathan/source/repos/RetireGolden/.worktrees/slice4-20260917
    ❯ conversion-coordinate-descent-search — Conversion coordinate descent search (1)
      × retains the coarse 10000 move then the fine 12500 conversion 46ms
 
- Test Files  1 failed (1)
-      Tests  1 failed (1)
-
-
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
 
  FAIL  src/decisions/search.evidence.test.ts > conversion-coordinate-descent-search — Conversion coordinate descent search > retains the coarse 10000 move then the fine 12500 conversion
-AssertionError: expected false to be true // Object.is equality
+AssertionError: expected 10000 to be 12500 // Object.is equality
 
 - Expected
 + Received
 
-- true
-+ false
+- 12500
++ 10000
 
- ❯ src/decisions/search.evidence.test.ts:44:31
+ ❯ src/decisions/search.evidence.test.ts:43:49
+     41|       expect(actual.bestConversions.length).toBe(1)
      42|       expect(actual.bestConversions[0]!.year).toBe(2026)
      43|       expect(actual.bestConversions[0]!.amount).toBe(example.expected.…
+       |                                                 ^
      44|       expect(actual.improved).toBe(example.expected.improved)
-       |                               ^
      45|     } finally {
-     46|       spy.mockRestore()
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed (1)
 ```
 
 ## Revert

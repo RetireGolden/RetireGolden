@@ -1,6 +1,3 @@
-import { taxesRecords } from './calculations/taxes.js'
-import { optimizerAndComparisonsRecords } from './calculations/optimizerAndComparisons.js'
-import { cashFlowAndSummaryRecords } from './calculations/cashFlowAndSummary.js'
 import { readPackageSource } from '../../scripts/census-sources.mjs'
 import { describe, expect, it } from 'vitest'
 import { describeCalculation, withinTolerance } from './describeCalculation.js'
@@ -23,14 +20,17 @@ import { declaredSymbolLinesOf, symbolAnchorLine, type DeclaredSymbol } from './
 import { laddersAndValuationRecords } from './calculations/laddersAndValuation.js'
 import { longevityRecords } from './calculations/longevity.js'
 import { spendingAndWithdrawalsRecords } from './calculations/spendingAndWithdrawals.js'
+import { taxesRecords } from './calculations/taxes.js'
+import { optimizerAndComparisonsRecords } from './calculations/optimizerAndComparisons.js'
+import { cashFlowAndSummaryRecords } from './calculations/cashFlowAndSummary.js'
 
 const RECORD_MODULES: readonly (readonly [string, Readonly<Record<string, unknown>>])[] = [
-  ['cashFlowAndSummary', cashFlowAndSummaryRecords],
-  ['optimizerAndComparisons', optimizerAndComparisonsRecords],
-  ['taxes', taxesRecords],
   ['laddersAndValuation', laddersAndValuationRecords],
   ['longevity', longevityRecords],
   ['spendingAndWithdrawals', spendingAndWithdrawalsRecords],
+  ['cashFlowAndSummary', cashFlowAndSummaryRecords],
+  ['optimizerAndComparisons', optimizerAndComparisonsRecords],
+  ['taxes', taxesRecords],
 ]
 
 const testSources = import.meta.glob('../**/*.test.ts', { query: '?raw', import: 'default', eager: true })
