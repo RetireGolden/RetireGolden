@@ -53,7 +53,7 @@ export const monteCarloRecords = {
     implementedBy: ['packages/engine/src/allocation/assetClasses.ts'],
     implementedByFunctions: ['packages/engine/src/allocation/assetClasses.ts#choleskyDecompose'],
     verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'cursor' },
   },
   'historical-market-series': {
     title: 'Embedded annual stock, bond, and inflation series, 1928–2023',
@@ -87,7 +87,7 @@ export const monteCarloRecords = {
     implementedBy: ['packages/engine/src/montecarlo/historicalReturns.ts'],
     implementedByFunctions: ['packages/engine/src/montecarlo/historicalReturns.ts#HISTORICAL_YEARS'],
     verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'cursor' },
   },
   'historical-portfolio-mean': {
     title: 'Arithmetic mean of blended historical portfolio returns',
@@ -118,7 +118,7 @@ export const monteCarloRecords = {
     implementedBy: ['packages/engine/src/montecarlo/historicalReturns.ts'],
     implementedByFunctions: ['packages/engine/src/montecarlo/historicalReturns.ts#meanPortfolioReturnPct'],
     verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'cursor' },
   },
   'historical-portfolio-return-blend': {
     title: 'One-year two-asset blended nominal return',
@@ -150,7 +150,7 @@ export const monteCarloRecords = {
     implementedBy: ['packages/engine/src/montecarlo/historicalReturns.ts'],
     implementedByFunctions: ['packages/engine/src/montecarlo/historicalReturns.ts#portfolioReturnPct'],
     verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'cursor' },
   },
   'long-term-care-shock-sampling': {
     title: 'Per-person paid-care episode draw',
@@ -188,7 +188,7 @@ export const monteCarloRecords = {
     implementedBy: ['packages/engine/src/montecarlo/ltcShock.ts'],
     implementedByFunctions: ['packages/engine/src/montecarlo/ltcShock.ts#sampleCareEvents'],
     verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'cursor' },
   },
   'market-model-ar1-shock': {
     title: 'AR(1) mean-reverting return shock',
@@ -221,7 +221,7 @@ export const monteCarloRecords = {
     implementedBy: ['packages/engine/src/montecarlo/marketModels.ts'],
     implementedByFunctions: ['packages/engine/src/montecarlo/marketModels.ts#createAR1Model'],
     verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'cursor' },
   },
   'market-model-cape-conditioned': {
     title: 'CAPE-conditioned shift of a mean-preserving lognormal shock',
@@ -254,7 +254,7 @@ export const monteCarloRecords = {
     implementedBy: ['packages/engine/src/montecarlo/marketModels.ts'],
     implementedByFunctions: ['packages/engine/src/montecarlo/marketModels.ts#createCapeConditionedModel'],
     verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'cursor' },
   },
   'market-model-empirical-history': {
     title: 'Empirical historical shock, centered or raw',
@@ -287,7 +287,7 @@ export const monteCarloRecords = {
     implementedBy: ['packages/engine/src/montecarlo/marketModels.ts'],
     implementedByFunctions: ['packages/engine/src/montecarlo/marketModels.ts#createEmpiricalModel'],
     verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'cursor' },
   },
   'market-model-garch-variance': {
     title: 'GARCH(1,1) variance recursion',
@@ -320,7 +320,7 @@ export const monteCarloRecords = {
     implementedBy: ['packages/engine/src/montecarlo/marketModels.ts'],
     implementedByFunctions: ['packages/engine/src/montecarlo/marketModels.ts#createGarchModel'],
     verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'cursor' },
   },
   'market-model-gaussian-draw': {
     title: 'Additive Gaussian return shock',
@@ -351,7 +351,7 @@ export const monteCarloRecords = {
     implementedBy: ['packages/engine/src/montecarlo/marketModels.ts'],
     implementedByFunctions: ['packages/engine/src/montecarlo/marketModels.ts#createGaussianModel'],
     verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'cursor' },
   },
   'market-model-historical-centered-bootstrap': {
     title: 'Centered historical bootstrap shock',
@@ -382,7 +382,7 @@ export const monteCarloRecords = {
     implementedBy: ['packages/engine/src/montecarlo/marketModels.ts'],
     implementedByFunctions: ['packages/engine/src/montecarlo/marketModels.ts#createHistoricalModel'],
     verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'cursor' },
   },
   'market-model-inflation-regime': {
     title: 'Bernoulli high-inflation regime mix',
@@ -414,7 +414,7 @@ export const monteCarloRecords = {
     implementedBy: ['packages/engine/src/montecarlo/marketModels.ts'],
     implementedByFunctions: ['packages/engine/src/montecarlo/marketModels.ts#createInflationRegimeModel'],
     verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'cursor' },
   },
   'market-model-lognormal-draw': {
     title: 'Mean-preserving lognormal return shock',
@@ -445,7 +445,7 @@ export const monteCarloRecords = {
     implementedBy: ['packages/engine/src/montecarlo/marketModels.ts'],
     implementedByFunctions: ['packages/engine/src/montecarlo/marketModels.ts#createLognormalModel'],
     verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'cursor' },
   },
   'market-model-regime-switch': {
     title: 'Two-state bull/bear Markov return shock',
@@ -478,7 +478,7 @@ export const monteCarloRecords = {
     implementedBy: ['packages/engine/src/montecarlo/marketModels.ts'],
     implementedByFunctions: ['packages/engine/src/montecarlo/marketModels.ts#createRegimeSwitchModel'],
     verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'cursor' },
   },
   'market-model-reversed-history': {
     title: 'Reversed-history window replay',
@@ -510,7 +510,7 @@ export const monteCarloRecords = {
     implementedBy: ['packages/engine/src/montecarlo/marketModels.ts'],
     implementedByFunctions: ['packages/engine/src/montecarlo/marketModels.ts#createReversedHistoryModel'],
     verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'cursor' },
   },
   'market-model-stationary-bootstrap': {
     title: 'Stationary (geometric-block) historical bootstrap',
@@ -542,7 +542,7 @@ export const monteCarloRecords = {
     implementedBy: ['packages/engine/src/montecarlo/marketModels.ts'],
     implementedByFunctions: ['packages/engine/src/montecarlo/marketModels.ts#createStationaryBootstrapModel'],
     verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'cursor' },
   },
   'market-model-student-t-draw': {
     title: 'Centered Student-t return shock scaled to target volatility',
@@ -574,7 +574,7 @@ export const monteCarloRecords = {
     implementedBy: ['packages/engine/src/montecarlo/marketModels.ts'],
     implementedByFunctions: ['packages/engine/src/montecarlo/marketModels.ts#createStudentTModel'],
     verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'cursor' },
   },
   'market-model-user-shock': {
     title: 'One-year additive user shock on a lognormal base',
@@ -606,7 +606,7 @@ export const monteCarloRecords = {
     implementedBy: ['packages/engine/src/montecarlo/marketModels.ts'],
     implementedByFunctions: ['packages/engine/src/montecarlo/marketModels.ts#createUserShockModel'],
     verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'cursor' },
   },
   'qlac-deferred-payout-placeholder': {
     title: 'Temporary deferred-QLAC payout-rate placeholder',
@@ -637,7 +637,7 @@ export const monteCarloRecords = {
     implementedBy: ['packages/engine/src/decisions/spiaQuotes.ts'],
     implementedByFunctions: ['packages/engine/src/decisions/spiaQuotes.ts#QLAC_DEFERRED_PAYOUT_RATE'],
     verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'cursor' },
   },
   'risk-based-guardrail-threshold-solver': {
     title: 'Risk-based guardrail threshold bisection',
@@ -674,7 +674,7 @@ export const monteCarloRecords = {
     implementedBy: ['packages/engine/src/montecarlo/riskBasedGuardrails.ts'],
     implementedByFunctions: ['packages/engine/src/montecarlo/riskBasedGuardrails.ts#solveRiskBasedGuardrails'],
     verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'cursor' },
   },
   'risk-based-starting-investable': {
     title: 'Starting investable: sum of listed account balances',
@@ -708,7 +708,7 @@ export const monteCarloRecords = {
     implementedBy: ['packages/engine/src/montecarlo/riskBasedGuardrails.ts'],
     implementedByFunctions: ['packages/engine/src/montecarlo/riskBasedGuardrails.ts#startingInvestableOf'],
     verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'cursor' },
   },
   'rng-derived-path-seed': {
     title: 'SplitMix32-style per-path seed',
@@ -741,7 +741,7 @@ export const monteCarloRecords = {
     implementedBy: ['packages/engine/src/montecarlo/rng.ts'],
     implementedByFunctions: ['packages/engine/src/montecarlo/rng.ts#derivePathSeed'],
     verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'cursor' },
   },
   'rng-mulberry32-reference-stream': {
     title: 'Mulberry32 uniform reference stream',
@@ -772,7 +772,7 @@ export const monteCarloRecords = {
     implementedBy: ['packages/engine/src/montecarlo/rng.ts'],
     implementedByFunctions: ['packages/engine/src/montecarlo/rng.ts#createRng'],
     verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'cursor' },
   },
   'spia-payout-rate-interpolation': {
     title: 'Life-only SPIA payout-rate linear interpolation',
@@ -816,6 +816,6 @@ export const monteCarloRecords = {
     implementedBy: ['packages/engine/src/decisions/spiaQuotes.ts'],
     implementedByFunctions: ['packages/engine/src/decisions/spiaQuotes.ts#spiaPayoutRate'],
     verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'cursor' },
   },
 } satisfies Record<string, CalculationRecord>

@@ -25,6 +25,7 @@
       "ui-transformation": 19
     },
     "complete": [
+      "annuitization-payout-rate-pct",
       "funded-ratio-result-essential-spending-pv",
       "funded-ratio-result-funded-ratio-pct",
       "funded-ratio-result-guaranteed-income-pv",
@@ -40,7 +41,6 @@
       "longevity-survival-percentile-age"
     ],
     "partial": [
-      "annuitization-payout-rate-pct",
       "display-guardrail-balance-thresholds",
       "spending-base-annual"
     ],
