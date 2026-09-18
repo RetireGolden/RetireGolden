@@ -112,7 +112,8 @@ export interface ProjectionSummary {
    * goals, debt service, property costs, healthcare, insurance premiums, and
    * net LTC (`careCost − ltcBenefit`) — not `intendedSpending` and not net of
    * incomes. `tax` and `penalties` are that year's published liabilities.
-   * Deflation is discrete annual:
+   * Deflation is discrete annual with the plan's general inflation rate
+   * `plan.assumptions.inflationPct` (never `healthcareExtraInflationPct`):
    * `nominal / (1 + inflationPct/100)^(spendingYear − startYear)`. No rounding
    * or floor.
    *
@@ -137,11 +138,14 @@ export interface ProjectionSummary {
    * age (`year − birth year`), the same convention as
    * `PersonYearState.ageAttained`, not age-on-birthday.
    *
-   * Threshold: walk `result.years` in ledger order. For each year, deflate
-   * end-of-year `investableTotal` (cash + taxable + traditional + Roth + HSA,
-   * excluding property, insurance cash value, and TIPS-ladder principal;
-   * nominal dollars at year end) by
-   * `investableTotal / (1 + inflationPct/100)^(year − startYear)`. The first
+   * Threshold: walk `result.years` in ledger order. For each year, deflate the
+   * published end-of-year `investableTotal` (the ledger's own figure: every
+   * physical balance row — cash, taxable, equity compensation, traditional,
+   * Roth and HSA — plus unassigned cash; excluding property, insurance cash
+   * value and TIPS-ladder principal; nominal dollars at year end) by
+   * `investableTotal / (1 + inflationPct/100)^(year − startYear)`, with
+   * `inflationPct` = `plan.assumptions.inflationPct`. Derive from the published
+   * field, not from a sum of account types. The first
    * year whose deflated investable is **greater than or equal to** `fiNumber`
    * (inclusive) is the crossing: `fiYear` is that calendar year and `fiAge` is
    * `fiYear − birthYear`. Never-crossing and an empty ledger both leave
@@ -160,8 +164,9 @@ export interface ProjectionSummary {
    * Amount needed in projection-start-year dollars today so that, with no
    * further contributions, discrete real growth from the start year to
    * retirement age reaches `fiNumber`. Growth rate is the simple real return
-   * `defaultReturnPct/100 − inflationPct/100` (percent inputs on
-   * `plan.assumptions`). Horizon is whole years of age:
+   * `defaultReturnPct/100 − inflationPct/100` (`plan.assumptions.defaultReturnPct`
+   * and `plan.assumptions.inflationPct`, the general rate, not the healthcare
+   * extra). Horizon is whole years of age:
    * `max(0, retirementAge − (startYear − birthYear))`, using the same
    * `birthYear` / `retirementAge` conventions as `fiNumber` (ISO year of
    * `people[0].dob` else 1980; `retirementAge` else 65). Already at or past

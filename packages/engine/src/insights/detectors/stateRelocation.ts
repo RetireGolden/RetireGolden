@@ -2,11 +2,11 @@
  * State-relocation detector (extended by the relocation-compare plan —
  * DOCS/enhancements/state-relocation-compare.md, step 3).
  *
- * `screen()` keeps its original cheap conditions: a taxed state, no planned
- * moves. `evaluate()` now quantifies the lifetime tax drag by running the
- * relocation-compare sweep over the modeled zero-income-tax shortlist and
- * previews the top candidate as a scenario. Copy stays neutral — income tax
- * is one relocation factor, so the card says "worth a look", never "move".
+ * Design note only: the behaviour contract (when `screen()` is silent, how
+ * `evaluate()` sweeps and what it publishes) lives in the doc comment on the
+ * `stateRelocation` export below, and is stated once. Copy stays neutral —
+ * income tax is one relocation factor, so the card says "worth a look",
+ * never "move".
  */
 
 import { formatEvidencePercent, formatWholeUsd } from '../../internal/evidenceFormat.js'
@@ -21,11 +21,22 @@ import {
 const ZERO_TAX_SHORTLIST = ['FL', 'TX', 'WA'] as const
 
 /**
- * Insights detector `state-relocation`. `screen()` is unchanged in its cheap
- * conditions (taxed current state, no planned moves). `evaluate()` runs the
- * relocation-compare sweep over the modeled zero-income-tax shortlist and
- * publishes a lifetime state-tax savings figure in today's dollars on the
- * card's qualitative impact (`formatWholeUsd(savings)`).
+ * Insights detector `state-relocation`: the behaviour contract.
+ *
+ * `screen()` returns null (no card) when the current state has no income tax
+ * (neither a modeled pack with income tax nor a positive `stateEffectiveTaxPct`
+ * override; a state without a modeled pack is silent unless an override is
+ * set), when the current state is Florida (unconditionally, even with a
+ * positive override), or when the household already plans a move
+ * (`stateMoves` non-empty). Otherwise it returns the cheap card.
+ *
+ * `evaluate()` runs the relocation-compare sweep with one candidate per
+ * shortlist state, each as `{ state, moveYear: startYear }`: a move in the
+ * projection's start year, split-year taxed, with the move month defaulting to
+ * July (`moveMonth ?? 7`); the start year is therefore part origin, part
+ * destination. Omitting `moveYear` would price the plan as already resident,
+ * a different contract. It publishes a lifetime state-tax savings figure in
+ * today's dollars on the card's qualitative impact (`formatWholeUsd(savings)`).
  *
  * Lifetime state-tax savings identity. For each calendar year in the union of
  * the baseline row's and the best-candidate row's `stateTaxByYear` lines
@@ -44,7 +55,8 @@ const ZERO_TAX_SHORTLIST = ['FL', 'TX', 'WA'] as const
  * Upstream: `compareRelocationCandidates` rows. Baseline is `id === 'baseline'`.
  * Best candidate is the non-baseline row with `error === null` and the lowest
  * `lifetimeTaxesAndPenalties` (all taxes and penalties, nominal — not the
- * state-tax series). The identity then reads each of those two rows'
+ * state-tax series); on a tie the earlier row wins (a strict `<` reduce over
+ * rows in shortlist order FL, TX, WA), so a Florida/Texas tie publishes Florida. The identity then reads each of those two rows'
  * `stateTaxByYear` (nominal state+local tax per calendar year). Sweep failure
  * degrades to the screen card and publishes no dollar figure.
  *
