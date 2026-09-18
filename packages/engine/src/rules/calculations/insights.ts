@@ -48,14 +48,14 @@ export const insightsRecords = {
     kind: 'model',
     outputs: ['insight-asset-location-swappable-exposure'],
     statement:
-      'Among bounded asset-location candidates generated for a plan that uses static allocation on multiple accounts, the unique best beneficial candidate is the one whose exact-ledger ending-after-tax-estate delta is the largest strictly positive value. The published figure is that candidate\'s swappable-exposure metadata, not the estate delta. Units: nominal dollars. Rounding: the generator stores Math.round(dollars); the worksheet copies that metadata.',
+      'Among bounded asset-location candidates generated for a plan that uses static allocation on multiple accounts, screen() selects the candidate whose id is asset-location-bonds-to-traditional when that id is present and otherwise the first candidate in generator order, then publishes that candidate\'s metadata.swappedDollars (0 when absent). It never prices ending-estate deltas. Units: nominal dollars. Rounding: the generator stores Math.round(dollars); the worksheet copies that metadata.',
     formula: {
-      expression: 'selected = argmax_{c : delta_c > 0} delta_c; exposure = swappedDollars(selected)',
+      expression: 'selected = find(id = asset-location-bonds-to-traditional) ?? first; exposure = swappedDollars(selected) ?? 0',
       variables: [
-        { symbol: 'delta_c', meaning: 'Ending after-tax estate delta of candidate c versus the baseline ledger', unit: 'usd', domain: 'finite' },
-        { symbol: 'swappedDollars', meaning: 'Class exposure the candidate relocates between wrappers', unit: 'usd', domain: '>= 0' },
+        { symbol: 'id', meaning: 'Generator candidate identifier, in generator order', unit: '1', domain: 'string' },
+        { symbol: 'swappedDollars', meaning: 'Class exposure the selected candidate relocates between wrappers', unit: 'usd', domain: '>= 0, or absent' },
       ],
-      timing: 'screen-time metadata of a bounded swap; the estate delta is priced on the exact ledger',
+      timing: 'screen-time metadata of a bounded swap; the estate delta is ignored here and priced on the exact ledger by evaluate()',
       rounding: 'generator rounds swapped dollars to whole dollars',
     },
     justification: {
@@ -64,8 +64,8 @@ export const insightsRecords = {
     },
     limits: [
       'A screening choice, not a claim that asset location always helps',
-      'The worksheet pins screen() and requires a unique largest positive delta, so the extract\'s unstated tie behavior is out of scope',
-      'Production screen() publishes the preferred generator candidate (bonds-to-traditional, else the first) without pricing deltas; evaluate() is what selects the unique best beneficial candidate. The evidence fixture names A as that preferred id so the published exposure still matches the worksheet\'s selected candidate',
+      'screen() never prices candidates; selection is by preferred id then generator position, independent of exposure size',
+      'The largest-positive ending-after-tax-estate-delta rule belongs to evaluate(), which runs the exact ledger, not to this published screen quantity',
     ],
     implementedBy: ['packages/engine/src/insights/detectors/assetLocation.ts'],
     implementedByFunctions: ['packages/engine/src/insights/detectors/assetLocation.ts#assetLocation.screen'],
@@ -146,7 +146,7 @@ export const insightsRecords = {
     kind: 'model',
     outputs: ['insight-spending-guardrails-illustrative-floor'],
     statement:
-      'For a depleting plan (or one with first-year investable of at least $100,000) that does not already run a guardrail policy: requiredAnnual = the plan\'s explicit requiredAnnual when that field is a finite number, otherwise 80% of baseAnnual (the probability-band generator\'s default floor, then min\'d with baseAnnual). Units: nominal dollars per year. Rounding: the generator rounds the 80% fallback with Math.round.',
+      'For a plan that depletes or whose first-year investable balance is strictly greater than $100,000, and that does not already run a guardrail policy: requiredAnnual = the plan\'s explicit requiredAnnual when that field is a finite number, otherwise 80% of baseAnnual (the probability-band generator\'s default floor, then min\'d with baseAnnual). Units: nominal dollars per year. Rounding: the generator rounds the 80% fallback with Math.round.',
     formula: {
       expression: 'floor = min(requiredAnnual ?? round(0.80 × baseAnnual), baseAnnual)',
       variables: [
@@ -163,6 +163,7 @@ export const insightsRecords = {
     limits: [
       'A guardrail preview, not a claim that 80% is an objectively required household budget',
       'The generator also min\'s the floor with baseAnnual, so an explicit floor above base spending is capped; the worksheet\'s explicit case is below base and does not hit that cap',
+      'The screen alternatives are joined by OR: depletion is sufficient at any balance; a non-depleting plan at exactly $100,000 does not screen because the investable comparison is strict',
     ],
     implementedBy: ['packages/engine/src/insights/detectors/spendingGuardrails.ts'],
     implementedByFunctions: ['packages/engine/src/insights/detectors/spendingGuardrails.ts#spendingGuardrails.screen'],
@@ -207,7 +208,7 @@ export const insightsRecords = {
     kind: 'composition',
     outputs: ['insight-ss-bridge-gap-total'],
     statement:
-      'Each delaying claimant is independently sized by sizeBridge. Eligible claimants are those whose gap is not already covered by a plan ladder and who, as a household, meet the shared 50% funding threshold (liquid >= 0.5 × totalCost). totalCost = sum of eligible ladderCost_i; annualTotal = sum of eligible annualRealAmount_i. Units: dollars (ladder cost in today\'s dollars; annual amount real). Rounding: none.',
+      'Each delaying claimant is independently sized by sizeBridge. Eligible claimants are those whose retirement-to-claim gap is not already covered by a plan ladder. totalCost = sum of eligible ladderCost_i; annualTotal = sum of eligible annualRealAmount_i. After that aggregation, one household test reports the totals when liquidBalance >= 0.5 × totalCost. The screen does not compute or apply claimant-level funding ratios. Units: dollars (ladder cost in today\'s dollars; annual amount real). Rounding: none.',
     formula: {
       expression: 'totalCost = sum_eligible ladderCost_i; annualTotal = sum_eligible annualRealAmount_i',
       variables: [
@@ -224,7 +225,7 @@ export const insightsRecords = {
     limits: [
       'A scenario preview, not a claim the ladder is affordable merely because half its cost is present',
       'The worksheet supplies already-sized per-claimant ladder costs and annual amounts; the evidence passes those through rather than re-running sizeBridge on the embedded curve',
-      'The 50% funding gate is household-wide against the summed cost, not per claimant',
+      'The 50% funding gate is a single household test against the summed eligible cost after aggregation, not a per-claimant ratio; an insufficiency comparison (liquid < 0.5 × totalCost) is a wrong reading',
     ],
     implementedBy: ['packages/engine/src/insights/detectors/ssBridgeGap.ts'],
     implementedByFunctions: ['packages/engine/src/insights/detectors/ssBridgeGap.ts#ssBridgeGap.screen'],

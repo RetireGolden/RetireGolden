@@ -38,9 +38,10 @@ function candidateOf(
 
 /**
  * Constructed DetectorContext: a traditional account with static allocation
- * so planUsesAssetAllocation is true. The worksheet's three candidates A/B/C
- * (exposures 80k/120k/150k, estate deltas +4k/+3k/−1k) are passed through
- * the generator rather than produced by a full allocation scan.
+ * so planUsesAssetAllocation is true. The worksheet's two generator-order
+ * candidate lists (preferred id present but not the largest exposure; preferred
+ * id absent so the first candidate is published) are passed through the
+ * generator. Ending-estate deltas are stated inputs the screen ignores.
  */
 function context(): DetectorContext {
   const plan = singlePersonPlan({ dob: '1961-01-01' })
@@ -58,39 +59,91 @@ function context(): DetectorContext {
   } as unknown as DetectorContext
 }
 
+function publishedExposure(card: NonNullable<ReturnType<typeof assetLocation.screen>>): number {
+  const row = card.evidence.find((entry) => entry.label === 'Swappable class exposure')
+  if (row === undefined) throw new Error('missing swappable exposure evidence')
+  return Number(row.value.replace(/[$,]/gu, ''))
+}
+
 describeCalculation(
   'insight-asset-location-swappable-exposure',
   {
     example: {
       inputs: {
-        candidates: [
-          { id: 'A', swappableExposure: 80_000, endingAfterTaxEstateDelta: 4_000 },
-          { id: 'B', swappableExposure: 120_000, endingAfterTaxEstateDelta: 3_000 },
-          { id: 'C', swappableExposure: 150_000, endingAfterTaxEstateDelta: -1_000 },
+        preferredIdPresent: [
+          {
+            id: 'asset-location-stocks-to-roth',
+            swappableExposure: 80_000,
+            endingAfterTaxEstateDelta: 10_000,
+          },
+          {
+            id: 'asset-location-bonds-to-traditional',
+            swappableExposure: 120_000,
+            endingAfterTaxEstateDelta: -2_000,
+          },
+          {
+            id: 'asset-location-stocks-to-traditional',
+            swappableExposure: 150_000,
+            endingAfterTaxEstateDelta: 20_000,
+          },
+        ],
+        preferredIdAbsent: [
+          {
+            id: 'asset-location-bonds-to-roth',
+            swappableExposure: 70_000,
+            endingAfterTaxEstateDelta: -1_000,
+          },
+          {
+            id: 'asset-location-stocks-to-traditional',
+            swappableExposure: 200_000,
+            endingAfterTaxEstateDelta: 30_000,
+          },
+          {
+            id: 'asset-location-stocks-to-roth',
+            swappableExposure: 100_000,
+            endingAfterTaxEstateDelta: 5_000,
+          },
         ],
       },
-      expected: { swappableExposure: 80_000 },
+      expected: { preferredIdPresentExposure: 120_000, preferredIdAbsentExposure: 70_000 },
       tolerance: { abs: 1e-9 },
     },
     worksheet: 'DOCS/calculations/insights/insight-asset-location-swappable-exposure.md',
     mutation: 'DOCS/calculations/insights/insight-asset-location-swappable-exposure.mutation.md',
   },
   ({ example }) => {
-    it('publishes candidate A\'s $80,000 swappable exposure, not C\'s larger harmful exposure', () => {
-      // A is named as the preferred bonds-to-traditional id so screen()
-      // selects it; the worksheet's unique-best-beneficial identity is
-      // evaluate()'s, and A is also the unique largest positive delta.
-      mockedGenerate.mockReturnValue([
-        candidateOf('asset-location-bonds-to-traditional', 80_000, 4_000),
-        candidateOf('B', 120_000, 3_000),
-        candidateOf('C', 150_000, -1_000),
-      ])
+    it('publishes the preferred id\'s $120,000 exposure even though a later candidate has $150,000', () => {
+      const rows = example.inputs.preferredIdPresent as Array<{
+        id: string
+        swappableExposure: number
+        endingAfterTaxEstateDelta: number
+      }>
+      mockedGenerate.mockReturnValue(
+        rows.map((row) => candidateOf(row.id, row.swappableExposure, row.endingAfterTaxEstateDelta)),
+      )
       const card = assetLocation.screen(context())
       expect(card).not.toBeNull()
-      const row = card!.evidence.find((entry) => entry.label === 'Swappable class exposure')
-      if (row === undefined) throw new Error('missing swappable exposure evidence')
-      const exposure = Number(row.value.replace(/[$,]/gu, ''))
-      const expected = example.expected.swappableExposure as number
+      const exposure = publishedExposure(card!)
+      const expected = example.expected.preferredIdPresentExposure as number
+      expect(
+        withinTolerance(exposure, expected, example.tolerance),
+        `swappableExposure ${exposure} is not within ${JSON.stringify(example.tolerance)} of the worksheet's ${expected}`,
+      ).toBe(true)
+    })
+
+    it('publishes the first candidate\'s $70,000 exposure when the preferred id is absent', () => {
+      const rows = example.inputs.preferredIdAbsent as Array<{
+        id: string
+        swappableExposure: number
+        endingAfterTaxEstateDelta: number
+      }>
+      mockedGenerate.mockReturnValue(
+        rows.map((row) => candidateOf(row.id, row.swappableExposure, row.endingAfterTaxEstateDelta)),
+      )
+      const card = assetLocation.screen(context())
+      expect(card).not.toBeNull()
+      const exposure = publishedExposure(card!)
+      const expected = example.expected.preferredIdAbsentExposure as number
       expect(
         withinTolerance(exposure, expected, example.tolerance),
         `swappableExposure ${exposure} is not within ${JSON.stringify(example.tolerance)} of the worksheet's ${expected}`,

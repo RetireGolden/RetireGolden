@@ -35,11 +35,14 @@ function sized(
 
 /**
  * Constructed DetectorContext: three delaying SS claimants. A and C are
- * uncovered; B is already covered by a plan ladder spanning 2028–2030. The
- * worksheet's already-sized ladder costs and annual amounts are passed
- * through the mocked sizeBridge rather than re-priced on the embedded curve.
+ * uncovered; B is already covered by a plan ladder spanning 2030–2032. The
+ * worksheet's household liquid balance and already-sized ladder costs and
+ * annual amounts are passed through the mocked sizeBridge rather than
+ * re-priced on the embedded curve. The screen applies one household gate
+ * after aggregation (liquid >= 0.5 × total eligible cost) and does not use
+ * per-claimant funding ratios.
  */
-function context(): DetectorContext {
+function context(liquidBalance: number): DetectorContext {
   const plan = couplePlan({ p1Dob: '1962-01-01', p2Dob: '1962-01-01', p1RetirementAge: 62, p2RetirementAge: 62 })
   plan.household.people.push({
     id: 'p3',
@@ -49,7 +52,7 @@ function context(): DetectorContext {
     retirementAge: 62,
     longevity: { planningAge: 90, source: 'manual' },
   } as never)
-  plan.accounts = [cashAccount('cash', 150_000)] as never
+  plan.accounts = [cashAccount('cash', liquidBalance)] as never
   plan.incomes = [
     socialSecurityIncome('ss-a', 2_000, 67, 'p1'),
     socialSecurityIncome('ss-b', 1_500, 67, 'p2'),
@@ -68,15 +71,26 @@ function context(): DetectorContext {
   } as unknown as DetectorContext
 }
 
+function stubSizedBridges(): void {
+  mockedSize.mockImplementation((input) => {
+    if (input.piaMonthly === 2_000) return sized(120_000, 18_000, 2027, 2029)
+    if (input.piaMonthly === 1_500) return sized(90_000, 14_000, 2030, 2032)
+    if (input.piaMonthly === 1_000) return sized(80_000, 12_000, 2027, 2029)
+    return null
+  })
+}
+
 describeCalculation(
   'insight-ss-bridge-gap-total',
   {
     example: {
       inputs: {
+        liquidBalance: 120_000,
+        totalEligibleCost: 200_000,
         claimants: [
-          { id: 'A', delays: true, gapCovered: false, fundingOverCost: 0.75, ladderCost: 120_000, annualBridge: 18_000 },
-          { id: 'B', delays: true, gapCovered: true, fundingOverCost: 1, ladderCost: 90_000, annualBridge: 14_000 },
-          { id: 'C', delays: true, gapCovered: false, fundingOverCost: 0.5, ladderCost: 80_000, annualBridge: 12_000 },
+          { id: 'A', delays: true, gapCovered: false, ladderCost: 120_000, annualBridge: 18_000 },
+          { id: 'B', delays: true, gapCovered: true, ladderCost: 90_000, annualBridge: 14_000 },
+          { id: 'C', delays: true, gapCovered: false, ladderCost: 80_000, annualBridge: 12_000 },
         ],
       },
       expected: { totalCost: 200_000, annualTotal: 30_000 },
@@ -86,14 +100,9 @@ describeCalculation(
     mutation: 'DOCS/calculations/insights/insight-ss-bridge-gap-total.mutation.md',
   },
   ({ example }) => {
-    it('sums A and C only: $200,000 cost and $30,000/year, excluding the already-covered claimant', () => {
-      mockedSize.mockImplementation((input) => {
-        if (input.piaMonthly === 2_000) return sized(120_000, 18_000, 2027, 2029)
-        if (input.piaMonthly === 1_500) return sized(90_000, 14_000, 2030, 2032)
-        if (input.piaMonthly === 1_000) return sized(80_000, 12_000, 2027, 2029)
-        return null
-      })
-      const card = ssBridgeGap.screen(context())
+    it('sums A and C only: $200,000 cost and $30,000/year when household liquid $120,000 clears the 50% gate', () => {
+      stubSizedBridges()
+      const card = ssBridgeGap.screen(context(example.inputs.liquidBalance as number))
       expect(card).not.toBeNull()
       const costRow = card!.evidence.find((entry) => entry.label === 'TIPS bridge cost')
       const annualRow = card!.evidence.find((entry) =>
