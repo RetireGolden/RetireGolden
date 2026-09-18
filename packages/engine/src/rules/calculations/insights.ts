@@ -176,13 +176,13 @@ export const insightsRecords = {
     kind: 'model',
     outputs: ['insight-spending-headroom-rough-annual'],
     statement:
-      'For a nondepleting, non-ABW plan: endingEstateToday = deflate(endYear, endingAfterTaxEstate); excess = endingEstateToday − bequestTarget; roughHeadroom = excess / yearsRemaining. The card screens only when excess >= $250,000 and roughHeadroom >= $2,000. The worksheet takes yearsRemaining as the inclusive row count (2026 through 2035 = 10). Units: today\'s dollars per year. Rounding: none.',
+      'For a nondepleting, non-ABW plan: endingEstateToday = deflate(endYear, endingAfterTaxEstate); excess = endingEstateToday − bequestTarget; roughHeadroom = excess / yearsRemaining. The card screens only when excess >= $250,000 and roughHeadroom >= $2,000. N = max(1, endYear − startYear) is the number of year boundaries between the projection start and end years (9 for 2026 through 2035), not the inclusive row count. Units: today\'s dollars per year. Rounding: none.',
     formula: {
       expression: 'headroom = (deflate(endYear, endingAfterTaxEstate) − bequestTarget) / N',
       variables: [
         { symbol: 'endingAfterTaxEstate', meaning: 'Nominal ending after-tax estate at the horizon', unit: 'usd', domain: 'finite' },
         { symbol: 'bequestTarget', meaning: 'Bequest target in today\'s dollars (0 when unset)', unit: 'usd', domain: '>= 0' },
-        { symbol: 'N', meaning: 'Remaining projection-year count; the worksheet uses the inclusive row count', unit: 'years', domain: 'integer N >= 1' },
+        { symbol: 'N', meaning: 'Year boundaries between the start and end years, max(1, endYear − startYear)', unit: 'years', domain: 'integer N >= 1' },
       ],
       timing: 'straight-line over the remaining modeled years, before the exact-ledger solver',
       rounding: 'none',
@@ -193,7 +193,7 @@ export const insightsRecords = {
     },
     limits: [
       'A cheap first-pass, not a claim that withdrawing this amount every year is sustainable',
-      'The worksheet\'s inclusive-row-count convention (N = 10 for 2026 through 2035) must be checked against the engine: production uses max(1, endYear − startYear), which is 9 for those calendar years',
+      'The first derivation guessed an inclusive row count (10 for 2026 through 2035) because the comment stated no convention; the comment now states N = max(1, endYear − startYear) and the worksheet was re-derived on it (44,444.44, shown as $44,444)',
     ],
     implementedBy: ['packages/engine/src/insights/detectors/spendingHeadroom.ts'],
     implementedByFunctions: ['packages/engine/src/insights/detectors/spendingHeadroom.ts#spendingHeadroom.screen'],

@@ -44,14 +44,15 @@ describeCalculation(
         startYear: 2026,
         endYear: 2035,
       },
-      expected: { endingEstateToday: 900_000, roughAnnualHeadroom: 40_000 },
+      // The card publishes whole dollars: the worksheet states the quotient 44,444.44 and the shown figure $44,444.
+      expected: { endingEstateToday: 900_000, roughAnnualHeadroom: 44_444 },
       tolerance: { abs: 1e-9 },
     },
     worksheet: 'DOCS/calculations/insights/insight-spending-headroom-rough-annual.md',
     mutation: 'DOCS/calculations/insights/insight-spending-headroom-rough-annual.mutation.md',
   },
   ({ example }) => {
-    it('deflates $1,200,000 by 3/4 to $900,000 and spreads the $400,000 excess over 10 years', () => {
+    it('deflates $1,200,000 by 3/4 to $900,000 and spreads the $400,000 excess over the 9 year boundaries of 2026-2035', () => {
       const card = spendingHeadroom.screen(context())
       expect(card).not.toBeNull()
       const endingToday = evidenceUsd(card!, "Ending after-tax estate (today's $)")
