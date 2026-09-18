@@ -433,7 +433,7 @@
       "provenance": {
         "derivedBy": "codex",
         "implementedBy": "grok",
-        "reviewedBy": "cursor"
+        "reviewedBy": "unreviewed"
       },
       "fixtureFiles": [
         "packages/engine/src/insights/detectors/ssBridgeGap.evidence.test.ts"

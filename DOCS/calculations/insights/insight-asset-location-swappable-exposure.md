@@ -46,4 +46,4 @@ feeds: none.
 
 ## Provenance
 
-Derived by: codex (gpt-5.6-sol), 2026-09-18, from the signatures-and-comments extract only, without executing the engine or reading any implementation body. The pull-request review found and prompted correction of the screen's candidate-selection rule from evaluated benefit to preferred id or first generator candidate. Reviewed by: unreviewed.
+Derived by: codex (gpt-5.6-sol), 2026-09-18, from the signatures-and-comments extract only, without executing the engine or reading any implementation body. The pull-request review found and prompted correction of the screen's candidate-selection rule from evaluated benefit to preferred id or first generator candidate. Reviewed by: cursor (composer-2.5), 2026-09-18, by independent recomputation without executing the engine; see REVIEW-2026-09-18.md in this directory (first review and the addendum for the revision).
