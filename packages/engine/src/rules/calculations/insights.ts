@@ -25,7 +25,7 @@ export const insightsRecords = {
         { symbol: 'startAge', meaning: 'min(95, max(currentAge, 65))', unit: 'years', domain: '65 <= startAge <= 95' },
       ],
       timing: 'illustration at the projection start year; payout begins at startAge',
-      rounding: 'none',
+      rounding: 'the card publishes whole-dollar strings (formatWholeUsd, Math.round) and the evidence asserts the published figure; no rounding before that',
     },
     justification: {
       kind: 'derivation',
@@ -56,7 +56,7 @@ export const insightsRecords = {
         { symbol: 'swappedDollars', meaning: 'Class exposure the selected candidate relocates between wrappers', unit: 'usd', domain: '>= 0, or absent' },
       ],
       timing: 'screen-time metadata of a bounded swap; the estate delta is ignored here and priced on the exact ledger by evaluate()',
-      rounding: 'generator rounds swapped dollars to whole dollars',
+      rounding: 'the generator rounds swapped dollars to whole dollars; the card publishes whole-dollar strings (formatWholeUsd, Math.round) and the evidence asserts the published figure',
     },
     justification: {
       kind: 'derivation',
@@ -88,7 +88,7 @@ export const insightsRecords = {
         { symbol: 'investable', meaning: 'Sum of cash, taxable, equity-comp, traditional, Roth and HSA balances', unit: 'usd', domain: '> 0' },
       ],
       timing: 'illustration at the projection start year',
-      rounding: 'none',
+      rounding: 'the card publishes whole-dollar strings (formatWholeUsd, Math.round) and the evidence asserts the published figure; no rounding before that',
     },
     justification: {
       kind: 'derivation',
@@ -123,7 +123,7 @@ export const insightsRecords = {
         { symbol: 'P_below', meaning: 'Per-person annual Part B + Part D premium one dollar below the threshold, already resolved', unit: 'usd/year', domain: 'finite' },
       ],
       timing: 'charge year = MAGI year + 2 (the statutory lookback)',
-      rounding: 'none; a negative (P_above − P_below) is floored at 0 before multiplying by n',
+      rounding: 'a negative (P_above − P_below) is floored at 0 before multiplying by n; the card publishes whole-dollar strings (formatWholeUsd, Math.round) and the evidence asserts the published figure',
     },
     justification: {
       kind: 'derivation',
@@ -154,7 +154,7 @@ export const insightsRecords = {
         { symbol: 'requiredAnnual', meaning: 'Plan-supplied essential floor, when present', unit: 'usd/year', domain: 'finite, or absent' },
       ],
       timing: 'illustration at the first projection year',
-      rounding: 'Math.round on the 80% fallback; an explicit floor is used as supplied',
+      rounding: 'Math.round on the 80% fallback; an explicit floor is used as supplied; the card publishes whole-dollar strings (formatWholeUsd, Math.round) and the evidence asserts the published figure',
     },
     justification: {
       kind: 'derivation',
@@ -186,7 +186,7 @@ export const insightsRecords = {
         { symbol: 'N', meaning: 'Year boundaries between the start and end years, max(1, endYear − startYear)', unit: 'years', domain: 'integer N >= 1' },
       ],
       timing: 'straight-line over the remaining modeled years, before the exact-ledger solver',
-      rounding: 'none',
+      rounding: 'the card publishes whole-dollar strings (formatWholeUsd, Math.round) and the evidence asserts the published figure; the quotient itself is not published',
     },
     justification: {
       kind: 'derivation',
@@ -216,7 +216,7 @@ export const insightsRecords = {
         { symbol: 'annualRealAmount_i', meaning: 'Level real annual bridge payout for claimant i, already resolved by sizeBridge', unit: 'usd/year', domain: '>= 0' },
       ],
       timing: 'sum over currently delaying claimants at the projection start year',
-      rounding: 'none',
+      rounding: 'the card publishes whole-dollar strings (formatWholeUsd, Math.round) and the evidence asserts the published figure; sums are exact before that',
     },
     justification: {
       kind: 'derivation',
@@ -248,7 +248,7 @@ export const insightsRecords = {
         { symbol: 'd', meaning: 'Deflation factor from the survivor year to today', unit: '1', domain: 'd > 0' },
       ],
       timing: 'first single-filed survivor year; QSS interlude years keep joint tables and are not priced',
-      rounding: 'Math.round on the deflated jump',
+      rounding: 'Math.round on the deflated jump; the card publishes whole-dollar strings (formatWholeUsd, Math.round) and the evidence asserts the published figure',
     },
     justification: {
       kind: 'derivation',

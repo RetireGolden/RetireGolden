@@ -41,4 +41,4 @@ feeds: none.
 
 Derived by: codex (gpt-5.6-sol), 2026-09-18, from the signatures-and-comments extract (with the 2026-09-18 doc-comment correction) and the orchestrator's contract statement for the year count, without executing the engine or reading any implementation body. Reviewed by: cursor (composer-2.5), 2026-09-18, by independent recomputation without executing the engine; see REVIEW-2026-09-18.md in this directory.
 
-Revision: Replaced the first derivation's guessed inclusive-row-count convention with the specified year-boundary convention `N = max(1, endYear - startYear)`. The projection start-year and end-year input rows were added on the reviewer's note.
+Revision: Replaced the first derivation's guessed inclusive-row-count convention with the specified year-boundary convention `N = max(1, endYear - startYear)`. The projection start-year and end-year input rows were added on the reviewer's note. The published-figure statement was added on the pull-request review's finding.

@@ -21,7 +21,7 @@ Per-person cliff `=$4,200-$2,400=$1,800/year`. Household annual cliff `=2*$1,800
 
 ## Expected
 
-Annual premium cliff is exactly `$3,600.00`, with exact-cent tolerance because the example premiums and person count are exact.
+The exact derived annual premium cliff is `$3,600.00`. The published card figure equals that derived value and is shown as `"$3,600"`, with exact tolerance on the published figure.
 
 ## Wrong readings
 
@@ -37,3 +37,5 @@ feeds: `insight-impact-ending-after-tax-estate-delta`.
 ## Provenance
 
 Derived by: codex (gpt-5.6-sol), 2026-09-18, from the signatures-and-comments extract only, without executing the engine or reading any implementation body. Reviewed by: cursor (composer-2.5), 2026-09-18, by independent recomputation without executing the engine; see REVIEW-2026-09-18.md in this directory.
+
+Revision: The published-figure statement was added on the pull-request review's finding.

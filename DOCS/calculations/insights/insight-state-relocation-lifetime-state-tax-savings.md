@@ -33,7 +33,7 @@ In baseline-minus-candidate form, 2026 contributes `($6,000-$3,000)/1.03^0=$3,00
 
 ## Expected
 
-The selected candidate is exactly `FL`; published lifetime state-tax savings is `$6,000.00`, absolute tolerance `$0.000001` because the calculation contains two integer powers and divisions and the chosen decimals cancel algebraically but are represented in binary floating point. The qualitative whole-dollar value is exactly `$6,000`. If candidate tax instead exceeded baseline tax in aggregate, the expected published amount would be exactly `$0`, not negative.
+The selected candidate is exactly `FL`; the exact derived lifetime state-tax savings is `$6,000.00`. As a derivation note, an absolute tolerance of `$0.000001` may be used for the unrounded sum because the calculation contains two integer powers and divisions and the chosen decimals cancel algebraically but are represented in binary floating point. The published card figure equals the derived value and is shown as `"$6,000"`, with exact tolerance on the published figure. If candidate tax instead exceeded baseline tax in aggregate, the exact derived amount and the published card figure would both be `$0`.
 
 ## Wrong readings
 
@@ -54,3 +54,5 @@ feeds: none.
 ## Provenance
 
 Derived by: codex (gpt-5.6-sol), 2026-09-18, from the signatures-and-comments extract with the 2026-09-18 doc-comment contracts, without executing the engine or reading any implementation body. The pull-request review found and prompted correction of the Family direction: this quantity consumes the relocation series and does not feed it. Reviewed by: cursor (composer-2.5), 2026-09-18, by independent recomputation without executing the engine; see REVIEW-2026-09-18.md in this directory (first review and the addendum for the revision).
+
+Revision: The published-figure statement was added on the pull-request review's finding.

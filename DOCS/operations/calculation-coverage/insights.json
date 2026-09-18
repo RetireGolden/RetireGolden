@@ -36,7 +36,7 @@
           }
         ],
         "timing": "illustration at the projection start year; payout begins at startAge",
-        "rounding": "none"
+        "rounding": "the card publishes whole-dollar strings (formatWholeUsd, Math.round) and the evidence asserts the published figure; no rounding before that"
       },
       "limits": [
         "An illustration, not a carrier quote, recommendation, or claim that the payout is optimal or guaranteed",
@@ -96,7 +96,7 @@
           }
         ],
         "timing": "screen-time metadata of a bounded swap; the estate delta is ignored here and priced on the exact ledger by evaluate()",
-        "rounding": "generator rounds swapped dollars to whole dollars"
+        "rounding": "the generator rounds swapped dollars to whole dollars; the card publishes whole-dollar strings (formatWholeUsd, Math.round) and the evidence asserts the published figure"
       },
       "limits": [
         "A screening choice, not a claim that asset location always helps",
@@ -162,7 +162,7 @@
           }
         ],
         "timing": "illustration at the projection start year",
-        "rounding": "none"
+        "rounding": "the card publishes whole-dollar strings (formatWholeUsd, Math.round) and the evidence asserts the published figure; no rounding before that"
       },
       "limits": [
         "An illustration from the published age factor, not a lender quote or a claim the line is valuable on the deterministic path",
@@ -229,7 +229,7 @@
           }
         ],
         "timing": "charge year = MAGI year + 2 (the statutory lookback)",
-        "rounding": "none; a negative (P_above − P_below) is floored at 0 before multiplying by n"
+        "rounding": "a negative (P_above − P_below) is floored at 0 before multiplying by n; the card publishes whole-dollar strings (formatWholeUsd, Math.round) and the evidence asserts the published figure"
       },
       "limits": [
         "A rough avoidance signal, not a claim that reducing current-year income changes a premium already charged",
@@ -289,7 +289,7 @@
           }
         ],
         "timing": "illustration at the first projection year",
-        "rounding": "Math.round on the 80% fallback; an explicit floor is used as supplied"
+        "rounding": "Math.round on the 80% fallback; an explicit floor is used as supplied; the card publishes whole-dollar strings (formatWholeUsd, Math.round) and the evidence asserts the published figure"
       },
       "limits": [
         "A guardrail preview, not a claim that 80% is an objectively required household budget",
@@ -355,7 +355,7 @@
           }
         ],
         "timing": "straight-line over the remaining modeled years, before the exact-ledger solver",
-        "rounding": "none"
+        "rounding": "the card publishes whole-dollar strings (formatWholeUsd, Math.round) and the evidence asserts the published figure; the quotient itself is not published"
       },
       "limits": [
         "A cheap first-pass, not a claim that withdrawing this amount every year is sustainable",
@@ -414,7 +414,7 @@
           }
         ],
         "timing": "sum over currently delaying claimants at the projection start year",
-        "rounding": "none"
+        "rounding": "the card publishes whole-dollar strings (formatWholeUsd, Math.round) and the evidence asserts the published figure; sums are exact before that"
       },
       "limits": [
         "A scenario preview, not a claim the ladder is affordable merely because half its cost is present",
@@ -541,7 +541,7 @@
           }
         ],
         "timing": "first single-filed survivor year; QSS interlude years keep joint tables and are not priced",
-        "rounding": "Math.round on the deflated jump"
+        "rounding": "Math.round on the deflated jump; the card publishes whole-dollar strings (formatWholeUsd, Math.round) and the evidence asserts the published figure"
       },
       "limits": [
         "Identifies a conversion-planning question, not a forecast of the survivor's actual return",

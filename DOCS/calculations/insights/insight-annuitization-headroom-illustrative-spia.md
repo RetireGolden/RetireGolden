@@ -21,7 +21,7 @@ Quarter-account amount `=$800,000/4=$200,000`. Cap comparison gives `premium=min
 
 ## Expected
 
-Illustrative premium is exactly `$200,000.00` and monthly payout is exactly `$1,100.00`, with exact-cent tolerance because the selected rate and arithmetic terminate exactly in cents.
+The exact derived illustrative premium is `$200,000.00` and the exact derived monthly payout is `$1,100.00`. Each published card figure equals its derived value and is shown as `"$200,000"` and `"$1,100"`, respectively, with exact tolerance on those published figures.
 
 ## Wrong readings
 
@@ -37,3 +37,5 @@ feeds: none.
 ## Provenance
 
 Derived by: codex (gpt-5.6-sol), 2026-09-18, from the signatures-and-comments extract only, without executing the engine or reading any implementation body. Reviewed by: cursor (composer-2.5), 2026-09-18, by independent recomputation without executing the engine; see REVIEW-2026-09-18.md in this directory.
+
+Revision: The published-figure statement was added on the pull-request review's finding.

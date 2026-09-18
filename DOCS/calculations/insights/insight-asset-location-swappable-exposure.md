@@ -30,7 +30,7 @@ In the first list, `asset-location-bonds-to-traditional` is present, so the scre
 
 ## Expected
 
-With the preferred id present, swappable exposure is exactly `$120,000.00`. With the preferred id absent, swappable exposure is exactly `$70,000.00`. Both use exact-cent tolerance because selection copies the chosen candidate's supplied dollar metadata.
+With the preferred id present, the exact derived swappable exposure is `$120,000.00`; with the preferred id absent, it is `$70,000.00`. Each published card figure equals its derived value and is shown as `"$120,000"` and `"$70,000"`, respectively, with exact tolerance on those published figures.
 
 ## Wrong readings
 
@@ -47,3 +47,5 @@ feeds: none.
 ## Provenance
 
 Derived by: codex (gpt-5.6-sol), 2026-09-18, from the signatures-and-comments extract only, without executing the engine or reading any implementation body. The pull-request review found and prompted correction of the screen's candidate-selection rule from evaluated benefit to preferred id or first generator candidate. Reviewed by: cursor (composer-2.5), 2026-09-18, by independent recomputation without executing the engine; see REVIEW-2026-09-18.md in this directory (first review and the addendum for the revision).
+
+Revision: The published-figure statement was added on the pull-request review's finding.

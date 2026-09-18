@@ -23,7 +23,7 @@ Investable `=$20,000+$90,000+$10,000+$180,000+$80,000+$20,000=$400,000`. Home-to
 
 ## Expected
 
-Illustrative credit line is exactly `$180,000.00` and compared investable is exactly `$400,000.00`, with exact-cent tolerance because the inputs and multiplication are exact here.
+The exact derived illustrative credit line is `$180,000.00` and the exact derived compared investable is `$400,000.00`. Each published card figure equals its derived value and is shown as `"$180,000"` and `"$400,000"`, respectively, with exact tolerance on those published figures.
 
 ## Wrong readings
 
@@ -39,3 +39,5 @@ feeds: none.
 ## Provenance
 
 Derived by: codex (gpt-5.6-sol), 2026-09-18, from the signatures-and-comments extract only, without executing the engine or reading any implementation body. Reviewed by: cursor (composer-2.5), 2026-09-18, by independent recomputation without executing the engine; see REVIEW-2026-09-18.md in this directory.
+
+Revision: The published-figure statement was added on the pull-request review's finding.

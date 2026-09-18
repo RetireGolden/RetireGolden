@@ -22,7 +22,7 @@ A and C are eligible; B is excluded because its gap is already covered. `totalCo
 
 ## Expected
 
-Expected total cost is exactly `$200,000.00` and annual total is exactly `$30,000.00`, with exact-cent tolerance because they are sums of exact dollar inputs.
+The exact derived total cost is `$200,000.00` and the exact derived annual total is `$30,000.00`. Each published card figure equals its derived value and is shown as `"$200,000"` and `"$30,000"`, respectively, with exact tolerance on those published figures.
 
 ## Wrong readings
 
@@ -40,3 +40,5 @@ feeds: none.
 ## Provenance
 
 Derived by: codex (gpt-5.6-sol), 2026-09-18, from the signatures-and-comments extract only, without executing the engine or reading any implementation body. The pull-request review found and prompted correction from claimant-level funding ratios to the single post-aggregation household liquid-balance gate. The gate direction was corrected after the independent reviewer read it against the funding-fraction comment. Reviewed by: cursor (composer-2.5), 2026-09-18, by independent recomputation without executing the engine; see REVIEW-2026-09-18.md in this directory (the addendum that rejected the inverted gate and addendum 2 that approved the correction).
+
+Revision: The published-figure statement was added on the pull-request review's finding.

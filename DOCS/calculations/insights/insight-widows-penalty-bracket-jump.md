@@ -22,7 +22,7 @@ Nominal bracket jump `=$28,000-$18,000=$10,000`. Today-dollar jump `=$10,000*(4/
 
 ## Expected
 
-Rough survivor bracket jump is exactly `$8,000.00` in today's dollars, with exact-cent tolerance because the worked inputs yield exact rational arithmetic.
+The exact derived rough survivor bracket jump is `$8,000.00` in today's dollars. The published card figure equals that derived value and is shown as `"$8,000"`, with exact tolerance on the published figure.
 
 ## Wrong readings
 
@@ -38,3 +38,5 @@ feeds: none.
 ## Provenance
 
 Derived by: codex (gpt-5.6-sol), 2026-09-18, from the signatures-and-comments extract only, without executing the engine or reading any implementation body. Reviewed by: cursor (composer-2.5), 2026-09-18, by independent recomputation without executing the engine; see REVIEW-2026-09-18.md in this directory.
+
+Revision: The published-figure statement was added on the pull-request review's finding.

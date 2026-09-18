@@ -20,7 +20,7 @@ Fallback floor `=0.80*$60,000=$48,000/year`. Explicit case selects `$42,000/year
 
 ## Expected
 
-Expected fallback required annual is exactly `$48,000.00`; expected explicit required annual is exactly `$42,000.00`; and expected non-depleting-above-threshold required annual is exactly `$48,000.00`, all with exact-cent tolerance. A non-depleting plan at exactly `$100,000` produces no card and therefore no published floor.
+The exact derived fallback required annual is `$48,000.00`; the exact derived explicit required annual is `$42,000.00`; and the exact derived non-depleting-above-threshold required annual is `$48,000.00`. The corresponding published card figures equal those derived values and are shown as `"$48,000"`, `"$42,000"`, and `"$48,000"`, with exact tolerance on the published figures. A non-depleting plan at exactly `$100,000` produces no card and therefore no published floor.
 
 ## Wrong readings
 
@@ -36,3 +36,5 @@ feeds: none.
 ## Provenance
 
 Derived by: codex (gpt-5.6-sol), 2026-09-18, from the signatures-and-comments extract only, without executing the engine or reading any implementation body. The pull-request review found and prompted correction of the trigger to depletion OR first-year investable strictly greater than `$100,000`. Reviewed by: cursor (composer-2.5), 2026-09-18, by independent recomputation without executing the engine; see REVIEW-2026-09-18.md in this directory (first review and the addendum for the revision).
+
+Revision: The published-figure statement was added on the pull-request review's finding.
