@@ -15,6 +15,9 @@
 import { laddersAndValuationRecords } from './calculations/laddersAndValuation.js'
 import { longevityRecords } from './calculations/longevity.js'
 import { spendingAndWithdrawalsRecords } from './calculations/spendingAndWithdrawals.js'
+import { taxesRecords } from './calculations/taxes.js'
+import { optimizerAndComparisonsRecords } from './calculations/optimizerAndComparisons.js'
+import { cashFlowAndSummaryRecords } from './calculations/cashFlowAndSummary.js'
 import type { OutputFamilyId } from './outputFamilies.js'
 import type { TaxRuleId } from './taxRuleRegistry.js'
 
@@ -99,6 +102,9 @@ const registry = {
   ...laddersAndValuationRecords,
   ...longevityRecords,
   ...spendingAndWithdrawalsRecords,
+  ...cashFlowAndSummaryRecords,
+  ...optimizerAndComparisonsRecords,
+  ...taxesRecords,
 } satisfies Record<string, CalculationRecord>
 
 export const CALCULATION_REGISTRY = Object.freeze(registry)
@@ -110,6 +116,9 @@ export const CALCULATION_RECORD_MODULES: readonly (readonly [
   ['laddersAndValuation', laddersAndValuationRecords],
   ['longevity', longevityRecords],
   ['spendingAndWithdrawals', spendingAndWithdrawalsRecords],
+  ['cashFlowAndSummary', cashFlowAndSummaryRecords],
+  ['optimizerAndComparisons', optimizerAndComparisonsRecords],
+  ['taxes', taxesRecords],
 ] as const)
 
 export type CalculationId = keyof typeof CALCULATION_REGISTRY
