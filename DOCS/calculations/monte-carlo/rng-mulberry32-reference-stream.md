@@ -15,11 +15,11 @@ Mulberry32 is a small noncryptographic generator suitable for reproducible simul
 
 ## Arithmetic
 
-Applying the canonical Mulberry32 recurrence (all operations modulo `2^32`) and dividing each unsigned word by `4,294,967,296` gives `0.6270739405881613`, `0.00273572118021548`, `0.5274470399599522`, `0.9810509674716741`, `0.9683778982143849`.
+Applying the canonical Mulberry32 recurrence (all operations modulo `2^32`) produces unsigned words `[2693262067, 11749833, 2265367787, 4213581821, 4159151403]`. Dividing them by `4,294,967,296` gives IEEE-754 doubles `0.6270739405881613`, `0.002735721180215478`, `0.5274470399599522`, `0.9810509674716741`, `0.9683778982143849`.
 
 ## Expected
 
-That five-value vector, absolute tolerance `0` when compared as IEEE-754 results of the specified integer words. This is a conditional reference: if the implementation uses a different Mulberry32 variant, the calculation record must pin that variant before this can be an engine oracle.
+The exact comparison is the five-word vector `[2693262067, 11749833, 2265367787, 4213581821, 4159151403]`. Its corresponding double vector is `[0.6270739405881613, 0.002735721180215478, 0.5274470399599522, 0.9810509674716741, 0.9683778982143849]`; if doubles are compared, the justified tolerance is relative `1e-15`, never absolute zero against a rounded print. This is a conditional reference: if the implementation uses a different Mulberry32 variant, the calculation record must pin that variant before this can be an engine oracle.
 
 ## Wrong readings
 
@@ -32,4 +32,6 @@ That five-value vector, absolute tolerance `0` when compared as IEEE-754 results
 
 ## Provenance
 
-Derived by: codex (gpt-5.6-sol), 2026-09-14, from the signatures-and-comments extract only, without executing the engine or reading any implementation body. Reviewed by: unreviewed.
+Derived by: codex (gpt-5.6-sol), 2026-09-14, from the signatures-and-comments extract only, without executing the engine or reading any implementation body. Reviewed by: cursor (composer-2.5), 2026-09-18, by independent recomputation without executing the engine; see REVIEW-2026-09-18.md in this directory.
+
+Revision: corrected only the second uniform's printed double from `0.00273572118021548` to its full-precision print `0.002735721180215478` and stated the appropriate tolerance for double comparisons.

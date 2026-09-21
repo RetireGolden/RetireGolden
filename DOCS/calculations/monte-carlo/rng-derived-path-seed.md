@@ -1,35 +1,88 @@
 ## Claim
 
-Kind: model. `montecarlo/rng.ts#derivePathSeed` deterministically hashes the pair `(base seed, zero-based path index)` to a 32-bit path seed so a path's stream does not depend on how preceding paths consume draws; the comment calls it “SplitMix32-style” but does not specify an exact recurrence.
+Kind: model. `montecarlo/rng.ts#derivePathSeed` is a pure function of its two
+arguments, the base seed and zero-based path index. It spreads `pathIndex + 1`
+with the golden-ratio word and applies the specified lowbias32 finalizer, yielding
+a reproducible unsigned 32-bit seed. Therefore a path's seed does not depend on
+draw consumption by another path.
 
 ## Justification
 
-Hashing path identity rather than advancing one shared stream makes worker partitioning irrelevant. “SplitMix32-style” is not a unique numeric specification: constants, index offset, signed/unsigned coercion, and avalanche sequence must be stated before an independent vector can be derived.
+The corrected contract completely specifies the xor, logical shifts, wrapping
+32-bit multiplications, index offset, and final unsigned reinterpretation. The
+results for `(42, 7)` and `(42, 8)` differ, demonstrating that adjacent paths
+receive distinct seeds; derivation solely from the two arguments establishes
+schedule and path independence.
 
 ## Inputs
 
-| Input | Value | Unit |
-|---|---:|---|
-| Base seed | 42 | 32-bit integer |
-| Path index | 7 | zero-based integer |
+| Case | Base seed | Path index | Unit |
+|---|---:|---:|---|
+| (a) | 42 | 7 | 32-bit integer, zero-based index |
+| (b) | 42 | 8 | 32-bit integer, zero-based index |
+| (c) | 1 | 0 | 32-bit integer, zero-based index |
 
 ## Arithmetic
 
-The required arithmetic would be: combine `42` and `7` using the exact documented increment, apply each specified 32-bit xor/shift/multiply avalanche modulo `2^32`, and interpret the final word unsigned. Those constants and steps are absent from the permitted extract, so no defensible number can be calculated.
+The independent script evaluated these expressions exactly, with each displayed
+word reinterpreted unsigned for hexadecimal and decimal output:
+
+```text
+h0 = (seed ^ Math.imul(pathIndex + 1, 0x9e3779b9)) >>> 0
+h1 = Math.imul(h0 ^ (h0 >>> 16), 0x21f0aaad)
+h2 = Math.imul(h1 ^ (h1 >>> 15), 0x735a2d97)
+result = (h2 ^ (h2 >>> 15)) >>> 0
+```
+
+For the table, the script displayed each intermediate with `word >>> 0`; this is
+only the unsigned reinterpretation of the wrapping word returned by `Math.imul`
+and does not alter its bits or the recurrence.
+
+| Case | Word | Hex | Unsigned decimal |
+|---|---|---:|---:|
+| (a) `(42, 7)` | `h0` | `0xf1bbcde2` | 4055616994 |
+| | `h1` | `0xbe0ae225` | 3188384293 |
+| | `h2` | `0x5088be50` | 1351138896 |
+| | result | `0x50881f41` | 1351098177 |
+| (b) `(42, 8)` | `h0` | `0x8ff347ab` | 2415085483 |
+| | `h1` | `0x5548d378` | 1430836088 |
+| | `h2` | `0x9217dd6f` | 2451037551 |
+| | result | `0x9216f940` | 2450979136 |
+| (c) `(1, 0)` | `h0` | `0x9e3779b8` | 2654435768 |
+| | `h1` | `0x909c71a3` | 2426171811 |
+| | `h2` | `0xeb73ca6d` | 3950234221 |
+| | result | `0xeb721c8a` | 3950124170 |
+
+In particular, `1351098177 != 2450979136` for paths 7 and 8 under seed 42.
 
 ## Expected
 
-No numeric oracle is asserted. The record must first pin the exact hash variant; its evidence should then use an exact integer vector and also show the same `(42,7)` seed under one-worker and split-worker scheduling.
+| Input | Derived path seed | Tolerance |
+|---|---:|---|
+| `(42, 7)` | 1351098177 (`0x50881f41`) | exact |
+| `(42, 8)` | 2450979136 (`0x9216f940`) | exact |
+| `(1, 0)` | 3950124170 (`0xeb721c8a`) | exact |
 
 ## Wrong readings
 
-- Using `seed+pathIndex=49` directly permits adjacent, structurally related streams and is not a hash.
-- Advancing path 0's RNG by path 0's draw count makes path 7's seed depend on earlier path length, contrary to the claim.
+- Using `pathIndex` instead of `pathIndex + 1` for `(42, 7)` produces
+  `640652096` (`0x262f9340`), not `1351098177`.
+- Omitting the final `h2 XOR (h2 >>> 15)` fold for `(42, 7)` returns `h2`,
+  `1351138896` (`0x5088be50`), not `1351098177`.
+- Using signed arithmetic without the final `>>> 0` leaves identical 32-bit
+  patterns but exposes high-bit results as negative numbers. For example,
+  `(42, 8)` becomes `-1843988160` instead of unsigned `2450979136`, and
+  `(1, 0)` becomes `-344843126` instead of unsigned `3950124170`.
 
 ## Family
 
-`monte-carlo-success-rate`, `monte-carlo-investable-fan-percentiles`, `monte-carlo-ending-investable-histogram`, `monte-carlo-ending-after-tax-estate-percentiles`, `monte-carlo-depletion-probability-by-year`; no path seed is directly displayed.
+`monte-carlo-success-rate`, `monte-carlo-investable-fan-percentiles`,
+`monte-carlo-ending-investable-histogram`,
+`monte-carlo-ending-after-tax-estate-percentiles`,
+`monte-carlo-depletion-probability-by-year`; no path seed is directly displayed.
 
 ## Provenance
 
-Derived by: codex (gpt-5.6-sol), 2026-09-14, from the signatures-and-comments extract only, without executing the engine or reading any implementation body. Reviewed by: unreviewed.
+Derived by: codex (gpt-5.6-sol), 2026-09-18, from the signatures-and-comments extract (with the 2026-09-18 doc-comment corrections) and the orchestrator's contract statements, without executing the engine or reading any implementation body. Reviewed by: cursor (composer-2.5), 2026-09-18, rejected on the reviewer's own fold arithmetic; the orchestrator verified the disputed folds by hand and by a script over the stated recurrence and the worksheet stands (REVIEW-2026-09-18.md in this directory, addenda 1 and 2 and the orchestrator verification); an approving independent recomputation is still owed.
+
+Revision note: the first derivation lacked the exact recurrence and therefore could not assert numeric seed vectors.

@@ -15,6 +15,7 @@
 import { accountsAndGrowthRecords } from './calculations/accountsAndGrowth.js'
 import { laddersAndValuationRecords } from './calculations/laddersAndValuation.js'
 import { longevityRecords } from './calculations/longevity.js'
+import { monteCarloRecords } from './calculations/monteCarlo.js'
 import { spendingAndWithdrawalsRecords } from './calculations/spendingAndWithdrawals.js'
 import { taxesRecords } from './calculations/taxes.js'
 import { optimizerAndComparisonsRecords } from './calculations/optimizerAndComparisons.js'
@@ -103,6 +104,7 @@ const registry = {
   ...accountsAndGrowthRecords,
   ...laddersAndValuationRecords,
   ...longevityRecords,
+  ...monteCarloRecords,
   ...spendingAndWithdrawalsRecords,
   ...cashFlowAndSummaryRecords,
   ...optimizerAndComparisonsRecords,
@@ -118,6 +120,7 @@ export const CALCULATION_RECORD_MODULES: readonly (readonly [
   ['accountsAndGrowth', accountsAndGrowthRecords],
   ['laddersAndValuation', laddersAndValuationRecords],
   ['longevity', longevityRecords],
+  ['monteCarlo', monteCarloRecords],
   ['spendingAndWithdrawals', spendingAndWithdrawalsRecords],
   ['cashFlowAndSummary', cashFlowAndSummaryRecords],
   ['optimizerAndComparisons', optimizerAndComparisonsRecords],

@@ -129,7 +129,7 @@ export interface CapeConditionedModelConfig {
 export interface StationaryBootstrapModelConfig {
   type: 'stationary'
   equityWeightPct?: number
-  /** Expected block length (geometric; default 5). */
+  /** Mean block length L (default 5, floored at 2); see createStationaryBootstrapModel for the draw. */
   meanBlockLength?: number
   classShocks?: boolean
 }
@@ -144,10 +144,13 @@ export interface EmpiricalModelConfig {
 
 export interface GarchModelConfig {
   type: 'garch'
-  /** GARCH(1,1) omega (base var, scaled). Default tuned for ~12% ann vol. */
+  /** GARCH(1,1) omega, the base variance term (default 0.00001); see createGarchModel for the recursion and its units. */
   omega?: number
+  /** Weight on the squared prior shock (default 0.1). */
   alpha?: number
+  /** Weight on the prior variance (default 0.85). */
   beta?: number
+  /** Multiplies the standard deviation, as a percent of the tuned scale (default 12, i.e. a factor of 0.12 before the fixed factor 5). */
   returnVolScalePct?: number
   inflationMeanPct: number
   inflationVolPct?: number
@@ -168,7 +171,11 @@ export interface InflationRegimeModelConfig {
 
 export interface ReversedHistoryModelConfig {
   type: 'reversed-history'
-  /** Window length for reversed replay blocks. */
+  /**
+   * Requested window length L for reversed replay blocks (default 10). The effective length is
+   * clamped to at least 5 and at most the number of historical rows, so a value below 5 is silently
+   * raised to 5; nothing in the caller contract states that floor.
+   */
   windowLengthYears?: number
   equityWeightPct?: number
   classShocks?: boolean
@@ -198,7 +205,10 @@ export interface GaussianModelConfig {
 
 export interface AR1ModelConfig {
   type: 'ar1'
-  /** Autoregression coefficient phi (0 < phi < 1 for mean reversion; default 0.2). */
+  /**
+   * Autoregression coefficient phi, clamped to [-0.9, 0.95]; default 0.25.
+   * Note: an earlier comment said 0.2; the code has always applied 0.25.
+   */
   phi?: number
   returnVolPct?: number
   inflationMeanPct: number
@@ -458,9 +468,20 @@ export function createHistoricalModel(config: HistoricalModelConfig): MarketMode
 }
 
 /**
- * Student-t fat-tailed returns (mean-preserving). Uses t-distributed shocks
- * scaled to target volatility; lower df => fatter tails than Gaussian.
- * Draws: z_t for return, then inflation copula, then class after.
+ * Fat-tailed return model, named "student-t" in the config but implemented as a
+ * normal draw with a tail-multiplier mixture, not as a Student-t variate:
+ *   df    = max(3, config.df ?? 5)               (selects the multiplier only)
+ *   sigma = (returnVolScalePct ?? 12) / 100
+ *   per year t: z = N(0,1) (first normal draw); u = next uniform; if u < 0.05 then
+ *     z is multiplied by 2.5 when df > 4, else by 3.5;
+ *   published return shock = sigma * z * 100     (percent)
+ *   inflation_t = inflationMeanPct + inflationVolPct * (rho * z + sqrt(1 - rho^2) * z2)
+ *     with z2 the second normal draw, inflationVolPct default 1.5, rho = correlation
+ *     clamped to [-1, 1] (default -0.2); class shocks, when configured, use the same z.
+ * The mean is zero. Note: the mixture branch is not "scaled to target volatility":
+ * with probability 0.05 the shock variance is 2.5^2 or 3.5^2 times sigma^2, so the
+ * unconditional variance exceeds sigma^2, and no t distribution is sampled; a
+ * worksheet must derive the two branches (u >= 0.05 and u < 0.05) separately.
  */
 export function createStudentTModel(config: StudentTModelConfig): MarketModel {
   const df = Math.max(3, config.df ?? 5)
@@ -580,7 +601,23 @@ export function createCapeConditionedModel(config: CapeConditionedModelConfig): 
   }
 }
 
-/** Stationary (Politis-Romano) bootstrap: geometric block lengths. */
+/**
+ * Stationary bootstrap: historical years replayed in contiguous blocks of random
+ * length, wrapping at the end of the table.
+ *
+ * With L = max(2, meanBlockLength ?? 5) and n the number of historical rows, the
+ * path draws a start row cursor = nextInt(n) and then a block length
+ *   remaining = floor(−ln(1 − U) · L) || 1        (U = next uniform draw)
+ * (the inverse CDF of an exponential with mean L, floored, and 1 when the floor is
+ * 0). Each path year publishes the row at cursor (blended return at equityWeightPct
+ * minus the dataset mean at that weight; inflation as-is), then advances cursor by
+ * one with wrap and decrements remaining; when remaining reaches 0 a new start row
+ * and a new block length are drawn in that order. Draw order per block: nextInt(n),
+ * then next(). Note: the block length is drawn once per block, so this is NOT a
+ * per-year continuation coin with probability 1/L; the two laws differ (a coin can
+ * restart in consecutive years, and the floor and the "|| 1" clamp shape the length
+ * distribution), even though both have mean block length near L.
+ */
 export function createStationaryBootstrapModel(config: StationaryBootstrapModelConfig): MarketModel {
   const equityWeightPct = config.equityWeightPct ?? 60
   const meanBlock = Math.max(2, config.meanBlockLength ?? 5)
@@ -662,7 +699,25 @@ export function createEmpiricalModel(config: EmpiricalModelConfig): MarketModel 
   }
 }
 
-/** GARCH(1,1) approx for vol clustering. Simple recursion on sigma_t. */
+/**
+ * GARCH(1,1)-style return-volatility model.
+ *
+ * State before the first year: variance v_0 = 0.0001 and prior shock e_0 = 0.
+ * For each path year t = 1..N, in this order:
+ *   v_t     = omega + alpha * e_{t-1}^2 + beta * v_{t-1}
+ *   sigma_t = sqrt(max(1e-9, v_t)) * (returnVolScalePct / 100) * 5
+ *   s_t     = sigma_t * Z1_t                       (Z1_t ~ N(0,1), the first normal draw of the year)
+ *   published return shock = s_t * 100              (percent)
+ *   inflation_t = inflationMeanPct + inflationVolPct * (rho * Z1_t + sqrt(1 - rho^2) * Z2_t)   (percent; Z2_t the second draw)
+ *   e_t     = s_t                                   (the shock fed back for the next year)
+ * Defaults: omega 0.00001, alpha 0.1, beta 0.85, returnVolScalePct 12, inflationVolPct 1.5, correlation -0.2 (clamped to [-1, 1]).
+ * The variance v_t is internal and not published; only the shock and inflation series are.
+ *
+ * Note: the fed-back e_t is the scaled shock s_t (a fraction), not the standardized innovation sqrt(v_t) * Z1_t
+ * of textbook GARCH, so alpha acts on a shock that already carries the scale factor and the factor 5; the
+ * recursion is "GARCH(1,1) approx", as the earlier comment said, and its parameters are tuned rather than fitted.
+ * Class shocks, when configured, are sampled from the same Z1_t after the market shock.
+ */
 export function createGarchModel(config: GarchModelConfig): MarketModel {
   const omega = config.omega ?? 0.00001
   const alpha = config.alpha ?? 0.1
@@ -737,7 +792,18 @@ export function createInflationRegimeModel(config: InflationRegimeModelConfig): 
   }
 }
 
-/** Reversed history blocks chosen stochastically (formalized from suites). */
+/**
+ * Reversed-history replay: one window of consecutive historical rows, played backwards.
+ *
+ * With L the effective window length (see windowLengthYears) and n the number of historical rows,
+ * the path draws one start index uniformly from 0..n-L (rng.nextInt(n - L + 1)) and then, for path
+ * year i (0-based), replays the row at index start + L - 1 - (i mod L): the window's last row first,
+ * back to its first row, then wrapping to the last row again for paths longer than L. Each replayed
+ * year publishes the blended-portfolio return of that row at equityWeightPct minus the dataset mean at
+ * that weight (meanPortfolioReturnPct, so shocks are centered), and the row's inflation rate as-is.
+ * Class shocks, when configured: US and international stocks both take the row's stock return minus the
+ * all-stock dataset mean, bonds take the row's bond return minus the all-bond mean, and cash is zero.
+ */
 export function createReversedHistoryModel(config: ReversedHistoryModelConfig): MarketModel {
   const equityWeightPct = config.equityWeightPct ?? 60
   const winLen = Math.max(5, Math.min(HISTORICAL_YEARS.length, config.windowLengthYears ?? 10))
