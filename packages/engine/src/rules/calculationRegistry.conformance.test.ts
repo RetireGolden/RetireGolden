@@ -17,6 +17,7 @@ import {
 import { OUTPUT_FAMILIES, type OutputFamily } from './outputFamilies.js'
 import { OUTPUT_FIELD_COVERAGE, type OutputFieldCoverageRow } from './outputFieldCoverage.js'
 import { declaredSymbolLinesOf, symbolAnchorLine, type DeclaredSymbol } from './symbolLines.js'
+import { accountsAndGrowthRecords } from './calculations/accountsAndGrowth.js'
 import { laddersAndValuationRecords } from './calculations/laddersAndValuation.js'
 import { longevityRecords } from './calculations/longevity.js'
 import { spendingAndWithdrawalsRecords } from './calculations/spendingAndWithdrawals.js'
@@ -25,6 +26,7 @@ import { optimizerAndComparisonsRecords } from './calculations/optimizerAndCompa
 import { cashFlowAndSummaryRecords } from './calculations/cashFlowAndSummary.js'
 
 const RECORD_MODULES: readonly (readonly [string, Readonly<Record<string, unknown>>])[] = [
+  ['accountsAndGrowth', accountsAndGrowthRecords],
   ['laddersAndValuation', laddersAndValuationRecords],
   ['longevity', longevityRecords],
   ['spendingAndWithdrawals', spendingAndWithdrawalsRecords],

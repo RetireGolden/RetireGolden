@@ -39,6 +39,7 @@
       "ladder-rung-face",
       "longevity-survival-percentile-age",
       "spending-excess-shortfall-annual",
+      "spending-guardrail-factor-annual",
       "spending-ideal-shortfall-annual",
       "spending-required-shortfall-annual",
       "spending-target-shortfall-annual",
@@ -222,7 +223,6 @@
       "spending-care-cost-gross-annual",
       "spending-debt-service-annual",
       "spending-excess-requested-annual",
-      "spending-guardrail-factor-annual",
       "spending-healthcare-annual",
       "spending-ideal-requested-annual",
       "spending-insurance-premiums-annual",
@@ -302,6 +302,16 @@
       "survivor-scenario-row-survivor-shortfall-years"
     ],
     "fedBy": {
+      "accounts-balance-per-account-annual": [
+        "allocation-glidepath-interpolation",
+        "allocation-total-return-drift",
+        "allocation-weight-normalization",
+        "asset-class-parameter-overrides"
+      ],
+      "accounts-investable-total-annual": [
+        "allocation-total-return-drift",
+        "allocation-weight-normalization"
+      ],
       "flexible-goal-funded-amount-annual": [
         "flexible-goal-scheduling"
       ],
@@ -347,6 +357,20 @@
         "ladder-real-yield-interpolation",
         "treasury-real-yield-curve-2026"
       ],
+      "income-ordinary-dividends-annual": [
+        "allocation-blended-taxable-yield"
+      ],
+      "income-qualified-dividends-annual": [
+        "allocation-blended-taxable-yield"
+      ],
+      "income-taxable-interest-annual": [
+        "allocation-blended-taxable-yield"
+      ],
+      "income-taxable-yield-annual": [
+        "allocation-blended-taxable-yield",
+        "allocation-glidepath-interpolation",
+        "asset-class-parameter-overrides"
+      ],
       "ladder-build-total-cost": [
         "ladder-annual-coupon-par-pricing",
         "treasury-real-yield-curve-2026"
@@ -374,14 +398,29 @@
         "mortality-ex-to-qx-identity",
         "mortality-sampled-death-age"
       ],
+      "monte-carlo-guardrail-action-counts": [
+        "balance-risk-guardrail-step",
+        "withdrawal-rate-guardrail-step"
+      ],
+      "monte-carlo-investable-fan-percentiles": [
+        "asset-class-parameter-overrides"
+      ],
+      "monte-carlo-max-cut-depth-percentiles": [
+        "balance-risk-guardrail-step",
+        "withdrawal-rate-guardrail-step"
+      ],
       "monte-carlo-success-rate": [
         "mortality-ex-to-qx-identity",
         "mortality-sampled-death-age"
       ],
       "optimizer-recommended-conversion-annual": [
+        "allocation-account-expected-return",
+        "allocation-blended-expected-return",
         "conversion-coordinate-descent-search"
       ],
       "optimizer-schedule-conversion-total": [
+        "allocation-account-expected-return",
+        "allocation-blended-expected-return",
         "conversion-coordinate-descent-search"
       ],
       "roth-conversion-annual": [
@@ -394,17 +433,32 @@
       "solved-spending-rounded-to-hundred": [
         "sustainable-spending-bisection"
       ],
+      "spending-base-annual": [
+        "abw-expected-real-return",
+        "spending-shape-annual-delta-phases",
+        "spending-shape-preset-compilation"
+      ],
       "spending-one-time-goals-annual": [
         "flexible-goal-scheduling"
       ],
       "spending-required-requested-annual": [
         "lifestyle-required-discretionary-split"
       ],
+      "spending-shape-delta-vs-flat": [
+        "spending-shape-annual-delta-phases",
+        "spending-shape-preset-compilation"
+      ],
       "spending-target-requested-annual": [
         "lifestyle-required-discretionary-split"
       ],
+      "sustainable-spending-result-max-base-annual": [
+        "spending-shape-annual-delta-phases"
+      ],
       "sustainable-spending-result-simulation-count": [
         "sustainable-spending-bisection"
+      ],
+      "sustainable-spending-result-spending-slack-dollars": [
+        "spending-shape-annual-delta-phases"
       ],
       "swr-rule-result-depletion-year": [
         "swr-rule-rate-and-initial-spend"
@@ -423,6 +477,9 @@
         "exact-cent-pro-rata-half-up",
         "usd-cent-arithmetic"
       ],
+      "tax-realized-gains-annual": [
+        "allocation-rebalance-turnover"
+      ],
       "tax-total-annual": [
         "conversion-tax-funding-gcd-reduction",
         "exact-cent-rational-half-up",
@@ -431,16 +488,16 @@
     }
   },
   "records": {
-    "total": 32,
+    "total": 45,
     "byKind": {
-      "composition": 1,
+      "composition": 3,
       "data": 4,
-      "formula": 20,
-      "model": 7
+      "formula": 25,
+      "model": 13
     },
     "byJustificationKind": {
       "dataset": 3,
-      "derivation": 29
+      "derivation": 42
     }
   },
   "oracleExamples": [
@@ -479,11 +536,16 @@
   ],
   "walkthroughs": [],
   "attestationsDerived": {
-    "catalogued": 17,
+    "catalogued": 20,
     "excludedWithReason": 0,
-    "notYetReviewed": 197
+    "notYetReviewed": 195
   },
   "shards": [
+    {
+      "group": "accountsAndGrowth",
+      "path": "calculation-coverage/accountsAndGrowth.json",
+      "recordCount": 8
+    },
     {
       "group": "cashFlowAndSummary",
       "path": "calculation-coverage/cashFlowAndSummary.json",
@@ -507,7 +569,7 @@
     {
       "group": "spendingAndWithdrawals",
       "path": "calculation-coverage/spendingAndWithdrawals.json",
-      "recordCount": 1
+      "recordCount": 6
     },
     {
       "group": "taxes",
