@@ -38,7 +38,15 @@
       "ladder-rung-coupon-rate-pct",
       "ladder-rung-face",
       "longevity-survival-percentile-age",
-      "spending-guardrail-factor-annual"
+      "spending-excess-shortfall-annual",
+      "spending-guardrail-factor-annual",
+      "spending-ideal-shortfall-annual",
+      "spending-required-shortfall-annual",
+      "spending-target-shortfall-annual",
+      "sustainable-spending-result-max-base-annual",
+      "sustainable-spending-result-spending-slack-dollars",
+      "swr-rule-result-initial-annual-spend",
+      "swr-rule-result-initial-rate-pct"
     ],
     "partial": [
       "spending-base-annual"
@@ -215,20 +223,16 @@
       "spending-care-cost-gross-annual",
       "spending-debt-service-annual",
       "spending-excess-requested-annual",
-      "spending-excess-shortfall-annual",
       "spending-healthcare-annual",
       "spending-ideal-requested-annual",
-      "spending-ideal-shortfall-annual",
       "spending-insurance-premiums-annual",
       "spending-intended-annual",
       "spending-one-time-goals-annual",
       "spending-property-costs-annual",
       "spending-required-requested-annual",
-      "spending-required-shortfall-annual",
       "spending-shape-delta-vs-flat",
       "spending-shortfall-annual",
       "spending-target-requested-annual",
-      "spending-target-shortfall-annual",
       "spending-total-annual",
       "stochastic-frontier-variant-axis",
       "surplus-invested-annual",
@@ -236,14 +240,10 @@
       "survivor-scenario-row-lifetime-tax-delta",
       "survivor-scenario-row-ssa44premium-savings",
       "survivor-scenario-row-survivor-shortfall-years",
-      "sustainable-spending-result-max-base-annual",
       "sustainable-spending-result-simulation-count",
-      "sustainable-spending-result-spending-slack-dollars",
       "swr-rule-result-depletion-year",
       "swr-rule-result-end-year",
       "swr-rule-result-ending-after-tax-estate",
-      "swr-rule-result-initial-annual-spend",
-      "swr-rule-result-initial-rate-pct",
       "swr-rule-result-lifetime-taxes-and-penalties",
       "tax-amt-annual",
       "tax-loss-carryforward-remaining-annual",
@@ -311,6 +311,24 @@
       "accounts-investable-total-annual": [
         "allocation-total-return-drift",
         "allocation-weight-normalization"
+      ],
+      "flexible-goal-funded-amount-annual": [
+        "flexible-goal-scheduling"
+      ],
+      "flexible-goal-unfunded-amount-annual": [
+        "flexible-goal-scheduling"
+      ],
+      "flexible-goals-deferred-count-annual": [
+        "flexible-goal-scheduling"
+      ],
+      "flexible-goals-funded-count-annual": [
+        "flexible-goal-scheduling"
+      ],
+      "flexible-goals-partially-funded-count-annual": [
+        "flexible-goal-scheduling"
+      ],
+      "flexible-goals-skipped-count-annual": [
+        "flexible-goal-scheduling"
       ],
       "funded-ratio-result-essential-spending-pv": [
         "ladder-real-present-value",
@@ -397,43 +415,89 @@
       ],
       "optimizer-recommended-conversion-annual": [
         "allocation-account-expected-return",
-        "allocation-blended-expected-return"
+        "allocation-blended-expected-return",
+        "conversion-coordinate-descent-search"
       ],
       "optimizer-schedule-conversion-total": [
         "allocation-account-expected-return",
-        "allocation-blended-expected-return"
+        "allocation-blended-expected-return",
+        "conversion-coordinate-descent-search"
+      ],
+      "roth-conversion-annual": [
+        "exact-cent-largest-remainder-slices",
+        "projection-money-tolerance-thresholds"
+      ],
+      "solved-initial-withdrawal-rate-pct": [
+        "sustainable-spending-bisection"
+      ],
+      "solved-spending-rounded-to-hundred": [
+        "sustainable-spending-bisection"
       ],
       "spending-base-annual": [
         "abw-expected-real-return",
         "spending-shape-annual-delta-phases",
         "spending-shape-preset-compilation"
       ],
+      "spending-one-time-goals-annual": [
+        "flexible-goal-scheduling"
+      ],
+      "spending-required-requested-annual": [
+        "lifestyle-required-discretionary-split"
+      ],
       "spending-shape-delta-vs-flat": [
         "spending-shape-annual-delta-phases",
         "spending-shape-preset-compilation"
       ],
+      "spending-target-requested-annual": [
+        "lifestyle-required-discretionary-split"
+      ],
       "sustainable-spending-result-max-base-annual": [
         "spending-shape-annual-delta-phases"
+      ],
+      "sustainable-spending-result-simulation-count": [
+        "sustainable-spending-bisection"
       ],
       "sustainable-spending-result-spending-slack-dollars": [
         "spending-shape-annual-delta-phases"
       ],
+      "swr-rule-result-depletion-year": [
+        "swr-rule-rate-and-initial-spend"
+      ],
+      "swr-rule-result-end-year": [
+        "swr-rule-rate-and-initial-spend"
+      ],
+      "swr-rule-result-ending-after-tax-estate": [
+        "swr-rule-rate-and-initial-spend"
+      ],
+      "swr-rule-result-lifetime-taxes-and-penalties": [
+        "swr-rule-rate-and-initial-spend"
+      ],
+      "tax-penalties-annual": [
+        "civil-date-parse-format-and-month-shift",
+        "exact-cent-pro-rata-half-up",
+        "usd-cent-arithmetic"
+      ],
       "tax-realized-gains-annual": [
         "allocation-rebalance-turnover"
+      ],
+      "tax-total-annual": [
+        "conversion-tax-funding-gcd-reduction",
+        "exact-cent-rational-half-up",
+        "parameter-provenance-catalog"
       ]
     }
   },
   "records": {
-    "total": 31,
+    "total": 45,
     "byKind": {
       "composition": 3,
-      "data": 2,
-      "formula": 17,
-      "model": 9
+      "data": 4,
+      "formula": 25,
+      "model": 13
     },
     "byJustificationKind": {
-      "dataset": 2,
-      "derivation": 29
+      "dataset": 3,
+      "derivation": 42
     }
   },
   "oracleExamples": [
@@ -472,15 +536,20 @@
   ],
   "walkthroughs": [],
   "attestationsDerived": {
-    "catalogued": 9,
+    "catalogued": 20,
     "excludedWithReason": 0,
-    "notYetReviewed": 203
+    "notYetReviewed": 195
   },
   "shards": [
     {
       "group": "accountsAndGrowth",
       "path": "calculation-coverage/accountsAndGrowth.json",
       "recordCount": 8
+    },
+    {
+      "group": "cashFlowAndSummary",
+      "path": "calculation-coverage/cashFlowAndSummary.json",
+      "recordCount": 10
     },
     {
       "group": "laddersAndValuation",
@@ -493,9 +562,19 @@
       "recordCount": 7
     },
     {
+      "group": "optimizerAndComparisons",
+      "path": "calculation-coverage/optimizerAndComparisons.json",
+      "recordCount": 2
+    },
+    {
       "group": "spendingAndWithdrawals",
       "path": "calculation-coverage/spendingAndWithdrawals.json",
       "recordCount": 6
+    },
+    {
+      "group": "taxes",
+      "path": "calculation-coverage/taxes.json",
+      "recordCount": 2
     }
   ]
 }

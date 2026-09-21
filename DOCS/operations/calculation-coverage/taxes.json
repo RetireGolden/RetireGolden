@@ -1,0 +1,110 @@
+{
+  "kind": "retiregolden.calculation-coverage.shard",
+  "version": 2,
+  "group": "taxes",
+  "records": [
+    {
+      "id": "conversion-tax-funding-gcd-reduction",
+      "title": "Conversion tax funding gcd reduction",
+      "kind": "formula",
+      "outputs": [],
+      "feeds": [
+        "tax-total-annual"
+      ],
+      "purpose": "Represent exact rational tax-funding cents in canonical lowest terms.",
+      "statement": "actions/conversionTaxFundingEvidence.ts#reducedConversionTaxFundingExactCentAmount reduces a nonnegative exact rational cent amount N/D by gcd(N,D) to a unique lowest-terms numerator and denominator, returning null for a negative numerator, nonpositive denominator, or reduced fields outside the safe-integer domain.",
+      "formula": {
+        "expression": "g=gcd(N,D); reduced=(N/g,D/g)",
+        "variables": [
+          {
+            "symbol": "N",
+            "meaning": "Exact amount numerator",
+            "unit": "cent-numerator",
+            "domain": "integer >= 0"
+          },
+          {
+            "symbol": "D",
+            "meaning": "Exact amount denominator",
+            "unit": "1",
+            "domain": "integer > 0"
+          }
+        ],
+        "timing": "one exact liability evidence amount",
+        "rounding": "none; canonical integer ratio"
+      },
+      "limits": [
+        "No direct census family: internal/counterfactualAnnualLiability.ts consumes the reducer when converting an annual liability into exact-cent evidence. tax-total-annual is the nearest liability family; the reduced pair is not a published tax. Invalid domain or unsafe reduced fields return null."
+      ],
+      "worksheet": "DOCS/calculations/taxes/conversion-tax-funding-gcd-reduction.md",
+      "mutation": "DOCS/calculations/taxes/conversion-tax-funding-gcd-reduction.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/actions/conversionTaxFundingEvidence.ts"
+      ],
+      "provenance": {
+        "derivedBy": "codex",
+        "implementedBy": "codex",
+        "reviewedBy": "cursor"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/actions/conversionTaxFundingEvidence.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
+      "id": "parameter-provenance-catalog",
+      "title": "Parameter provenance catalog",
+      "kind": "data",
+      "outputs": [],
+      "feeds": [
+        "tax-total-annual"
+      ],
+      "purpose": "Preserve the ordered source catalog that accompanies parameter assumptions.",
+      "statement": "params/provenance.ts#PARAMETER_PROVENANCE is a human-maintained ordered catalog of 15 stable assumption-group IDs, labels, key-figure summaries, publishers, and URLs surfaced to users; it does not itself calculate tax or benefit amounts.",
+      "formula": null,
+      "limits": [
+        "No direct census family: actions/annualQcdTaxCharacterPostPass.ts reads the rmd-qcd entry as source provenance for QCD tax-character evidence feeding annual tax. This is a metadata dependency, not a numerical tax formula. The worksheet checks ordered IDs, count and uniqueness, not correctness or freshness of the summaries. Per-entry authorities need independent verification on refresh."
+      ],
+      "worksheet": "DOCS/calculations/taxes/parameter-provenance-catalog.md",
+      "mutation": "DOCS/calculations/taxes/parameter-provenance-catalog.mutation.md",
+      "dataset": {
+        "citation": "RetireGolden parameter provenance catalog; DOCS/calculations/taxes/parameter-provenance-catalog.md, extracted 2026-09-14",
+        "url": "https://github.com/RetireGolden/RetireGolden/blob/33e7d546/packages/engine/src/params/provenance.ts",
+        "asOf": "2026-09-14",
+        "retrievedOn": "2026-09-17"
+      },
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "dataset",
+      "implementedBy": [
+        "packages/engine/src/params/provenance.ts"
+      ],
+      "provenance": {
+        "derivedBy": "codex",
+        "implementedBy": "codex",
+        "reviewedBy": "cursor"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/params/provenance.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    }
+  ]
+}
