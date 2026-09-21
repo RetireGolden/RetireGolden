@@ -572,7 +572,31 @@ describeCalculation(
       expect(firstBlockLength).toBe(expectedBlockLengths[0])
       expect(identifiedYears.slice(0, firstBlockLength)).toEqual([2000, 2001, 2002])
       expect(identifiedYears.slice(firstBlockLength)).toEqual([1928, 1929])
-      expect(expectedBlockLengths[1]).toBe(11)
+
+      // The second block's drawn length (11 from U = 0.9) is not observable in the
+      // worksheet's five-year path, which requests only two of its rows. The same
+      // model, the same first two draws and a third block draw (row 72, U = 0.5)
+      // replayed over sixteen years expose it: the second block must publish
+      // exactly eleven rows, 1928 to 1938, before the third block restarts at 2000.
+      const secondBlockLength = expectedBlockLengths[1]!
+      const longPath = seriesOf(
+        model.generatePath(
+          scriptedRng({
+            ints: [...(example.inputs.ints as number[]), 72],
+            uniforms: [...(example.inputs.uniforms as number[]), 0.5],
+          }),
+          firstBlockLength + secondBlockLength + 2,
+        ),
+      )
+      const rowOf = (year: number) => HISTORICAL_YEARS.find((row) => row.year === year)!
+      expect(longPath.inflationPct.slice(0, example.inputs.yearCount as number)).toEqual(path.inflationPct)
+      for (let offset = 0; offset < secondBlockLength; offset++) {
+        expect(longPath.inflationPct[firstBlockLength + offset]).toBe(rowOf(1928 + offset).inflationPct)
+      }
+      const thirdBlockStart = firstBlockLength + secondBlockLength
+      expect(rowOf(2000).inflationPct).not.toBe(rowOf(1928 + secondBlockLength).inflationPct)
+      expect(longPath.inflationPct[thirdBlockStart]).toBe(rowOf(2000).inflationPct)
+      expect(longPath.inflationPct[thirdBlockStart + 1]).toBe(rowOf(2001).inflationPct)
     })
   },
 )

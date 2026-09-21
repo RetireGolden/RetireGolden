@@ -15,6 +15,7 @@ import {
 import {
   blendedReturnPct,
   blendedTaxableYield,
+  choleskyDecompose,
   DEFAULT_ASSET_CLASS_PARAMS,
   DEFAULT_QUALIFIED_DIVIDEND_RATIO,
   driftWeights,
@@ -25,7 +26,6 @@ import {
   weightsToVector,
   type AssetClassParams,
 } from './assetClasses.js'
-import { choleskyDecompose } from './assetClasses.js'
 
 /** A weights record in the schema's percent unit, in ASSET_CLASS_IDS order. */
 function weightsPct(usStocks: number, intlStocks: number, bonds: number, cash: number): AllocationWeights {

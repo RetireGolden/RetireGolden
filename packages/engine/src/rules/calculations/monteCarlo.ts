@@ -708,7 +708,11 @@ export const monteCarloRecords = {
     implementedBy: ['packages/engine/src/montecarlo/rng.ts'],
     implementedByFunctions: ['packages/engine/src/montecarlo/rng.ts#derivePathSeed'],
     verifiedOn: '2026-09-18',
-    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'orchestrator' },
+    // The independent reviewer rejected two of the three seed words on its own
+    // shift arithmetic; the orchestrator's script check is not the independent
+    // recomputation this field reports, so the record stays unreviewed until an
+    // independent lane approves one (see the worksheet's Provenance section).
+    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'unreviewed' },
   },
   'rng-mulberry32-reference-stream': {
     title: 'Mulberry32 uniform reference stream',
