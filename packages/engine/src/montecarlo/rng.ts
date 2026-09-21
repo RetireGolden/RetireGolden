@@ -46,7 +46,18 @@ export function createRng(seed: number): Rng {
   }
 }
 
-/** SplitMix32-style hash so path i's stream is independent of path i−1's length. */
+/**
+ * Derives a 32-bit path seed from (base seed, zero-based path index), so path i's
+ * stream is independent of how many draws path i-1 consumed. The recurrence, all in
+ * 32-bit unsigned arithmetic (Math.imul is the 32-bit wrapping multiply, >>> 0 the
+ * unsigned reinterpretation, >>> a logical shift):
+ *   h0 = (seed XOR imul(pathIndex + 1, 0x9e3779b9)) >>> 0
+ *   h1 = imul(h0 XOR (h0 >>> 16), 0x21f0aaad)
+ *   h2 = imul(h1 XOR (h1 >>> 15), 0x735a2d97)
+ *   result = (h2 XOR (h2 >>> 15)) >>> 0
+ * This is the "lowbias32" finalizer applied to the golden-ratio-spread index; the
+ * result is the seed handed to createRng for that path.
+ */
 export function derivePathSeed(seed: number, pathIndex: number): number {
   let h = (seed ^ Math.imul(pathIndex + 1, 0x9e3779b9)) >>> 0
   h = Math.imul(h ^ (h >>> 16), 0x21f0aaad)
