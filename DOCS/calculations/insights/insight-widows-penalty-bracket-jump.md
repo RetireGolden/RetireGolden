@@ -1,6 +1,6 @@
 ## Claim
 
-Kind: model. `insights/detectors/widowsPenalty.ts#widowsPenalty.screen` publishes a rough real bracket jump for the plan's first single-filed survivor year as federal tax on that year's MAGI under Single status minus federal tax on the same MAGI under married-filing-jointly status, then deflates that difference to today, with no stated rounding.
+Kind: model. `insights/detectors/widowsPenalty.ts#widowsPenalty.screen` publishes a rough real bracket jump for the plan's first single-filed survivor year as federal tax on that year's MAGI under Single status minus federal tax on the same MAGI under married-filing-jointly status, then deflates that difference to today and rounds it with `Math.round` before publishing.
 
 ## Justification
 
@@ -39,4 +39,4 @@ feeds: none.
 
 Derived by: codex (gpt-5.6-sol), 2026-09-18, from the signatures-and-comments extract only, without executing the engine or reading any implementation body. Reviewed by: cursor (composer-2.5), 2026-09-18, by independent recomputation without executing the engine; see REVIEW-2026-09-18.md in this directory.
 
-Revision: The published-figure statement was added on the pull-request review's finding.
+Revision: The published-figure statement was added on the pull-request review's finding. The Claim's closing phrase, which said the deflated jump had no stated rounding, was corrected on the pull-request review's second finding (2026-09-21) to the production `Math.round` the record's statement and rounding fields already give; no expected value changed.
