@@ -6,7 +6,7 @@ production dependency tree (direct + transitive, excluding TypeScript-only
 @types/* packages that never reach the runtime bundle).
 
 Source:      pnpm list --prod --depth Infinity (workspace root)
-Attributed:  38 packages, sha256 a10fd270364004b80ef6df588ed765b6f81a1a912c03dbc716ebea66e5b5a266
+Attributed:  38 packages, sha256 c98ad02f9b351aace3d1c01de39d94edaafc6717af004158b4aee0ffbf311fe4
 
 ================================================================================
 
@@ -602,7 +602,7 @@ THIS SOFTWARE.
 
 --------------------------------------------------------------------------------
 
-react (19.2.8)
+react (19.3.0)
 License: MIT
 Homepage: https://react.dev/
 ----------
@@ -630,7 +630,7 @@ SOFTWARE.
 
 --------------------------------------------------------------------------------
 
-react-dom (19.2.8)
+react-dom (19.3.0)
 License: MIT
 Homepage: https://react.dev/
 ----------
@@ -860,7 +860,7 @@ SOFTWARE.
 
 --------------------------------------------------------------------------------
 
-scheduler (0.27.0)
+scheduler (0.28.0)
 License: MIT
 Homepage: https://react.dev/
 ----------
@@ -954,7 +954,7 @@ Homepage: https://commerce.nearform.com/open-source/victory
 
 --------------------------------------------------------------------------------
 
-zod (4.5.4)
+zod (4.6.2)
 License: MIT
 Author: Colin McDonnell <zod@colinhacks.com>
 Homepage: https://zod.dev
@@ -996,7 +996,7 @@ Excluded @types/* packages (TypeScript-only; not in the runtime bundle):
   - @retiregolden/engine@link:../packages/engine
   - @retiregolden/planner-ui@link:../packages/planner-ui
   - @types/use-sync-external-store@0.0.6
-  - @types/react@19.2.18
+  - @types/react@19.3.0
   - @types/d3-array@3.2.2
   - @types/d3-ease@3.0.2
   - @types/d3-time@3.0.4
