@@ -8,32 +8,32 @@
       "label": "selected grouped evidence-account index, post-flip suppression, and explicit voluntary writes",
       "file": "projection/internal/annualWithdrawalApplyFlowPlan.ts",
       "lines": [
-        76,
-        95
+        81,
+        100
       ],
       "anchors": [
         {
-          "line": 76,
+          "line": 81,
           "text": "const balanceStateByAccountId = new Map("
         },
         {
-          "line": 80,
+          "line": 85,
           "text": "for (const [evidenceIndex, evidence] of input.inheritedEvidence.entries()) {"
         },
         {
-          "line": 87,
+          "line": 92,
           "text": "isTreatAsOwnEffective(evidenceAccount, input.year, input.ownerTreatmentRouting)"
         },
         {
-          "line": 89,
+          "line": 94,
           "text": "evidenceWrites.push({"
         },
         {
-          "line": 93,
+          "line": 98,
           "text": "input.withdrawnByAccountId.get(evidence.accountId) ?? 0,"
         },
         {
-          "line": 95,
+          "line": 100,
           "text": "}"
         }
       ]
@@ -43,36 +43,36 @@
       "label": "positional balance/basis shadow and positive-withdrawal selection",
       "file": "projection/internal/annualWithdrawalApplyFlowPlan.ts",
       "lines": [
-        97,
-        116
+        102,
+        121
       ],
       "anchors": [
         {
-          "line": 97,
+          "line": 102,
           "text": "const shadowByState = new Map<"
         },
         {
-          "line": 106,
+          "line": 111,
           "text": "const balanceOperations: AnnualWithdrawalBalanceOperation[] = []"
         },
         {
-          "line": 107,
+          "line": 112,
           "text": "for (const [balanceIndex, state] of input.balances.entries()) {"
         },
         {
-          "line": 109,
+          "line": 114,
           "text": "if (taken <= 0) continue"
         },
         {
-          "line": 110,
+          "line": 115,
           "text": "const shadow = shadowByState.get(state)!"
         },
         {
-          "line": 115,
+          "line": 120,
           "text": "if (state.account.type === 'taxable') {"
         },
         {
-          "line": 116,
+          "line": 121,
           "text": "const sale = input.taxableSales.get(state.account.id)"
         }
       ]
@@ -82,20 +82,20 @@
       "label": "committed taxable-sale balance and basis result",
       "file": "projection/internal/annualWithdrawalApplyFlowPlan.ts",
       "lines": [
-        121,
-        123
+        126,
+        128
       ],
       "anchors": [
         {
-          "line": 121,
+          "line": 126,
           "text": "costBasisAfter = sale.remainingCostBasis"
         },
         {
-          "line": 122,
+          "line": 127,
           "text": "sourceBalanceAfter = sale.remainingFairMarketValue"
         },
         {
-          "line": 123,
+          "line": 128,
           "text": "}"
         }
       ],
@@ -106,44 +106,44 @@
       "label": "equity-compensation basis association and ordinary balance subtraction",
       "file": "projection/internal/annualWithdrawalApplyFlowPlan.ts",
       "lines": [
-        124,
-        139
+        129,
+        144
       ],
       "anchors": [
         {
-          "line": 124,
+          "line": 129,
           "text": "} else if ("
         },
         {
-          "line": 125,
+          "line": 130,
           "text": "state.account.type === 'equityComp' &&"
         },
         {
-          "line": 128,
+          "line": 133,
           "text": "const basisRatio = Math.min("
         },
         {
-          "line": 130,
+          "line": 135,
           "text": "shadow.costBasis / sourceBalanceBefore,"
         },
         {
-          "line": 132,
+          "line": 137,
           "text": "costBasisAfter = Math.max("
         },
         {
-          "line": 134,
+          "line": 139,
           "text": "shadow.costBasis - taken * basisRatio,"
         },
         {
-          "line": 136,
+          "line": 141,
           "text": "sourceBalanceAfter = sourceBalanceBefore - taken"
         },
         {
-          "line": 138,
+          "line": 143,
           "text": "sourceBalanceAfter = sourceBalanceBefore - taken"
         },
         {
-          "line": 139,
+          "line": 144,
           "text": "}"
         }
       ]
@@ -153,40 +153,40 @@
       "label": "ordered shadow writes, runtime/application verdicts, and complete result",
       "file": "projection/internal/annualWithdrawalApplyFlowPlan.ts",
       "lines": [
-        140,
-        157
+        145,
+        162
       ],
       "anchors": [
         {
-          "line": 140,
+          "line": 145,
           "text": "shadow.balance = sourceBalanceAfter"
         },
         {
-          "line": 141,
+          "line": 146,
           "text": "if (costBasisAfter !== null) shadow.costBasis = costBasisAfter"
         },
         {
-          "line": 142,
+          "line": 147,
           "text": "balanceOperations.push({"
         },
         {
-          "line": 150,
+          "line": 155,
           "text": "recordsTraditionalRuntimeOccurrence:"
         },
         {
-          "line": 152,
+          "line": 157,
           "text": "recordsOwnedIraApplication:"
         },
         {
-          "line": 154,
+          "line": 159,
           "text": "input.recordsOwnedIraApplicationFor(state.account),"
         },
         {
-          "line": 155,
+          "line": 160,
           "text": "})"
         },
         {
-          "line": 157,
+          "line": 162,
           "text": "return { evidenceWrites, balanceOperations }"
         }
       ]

@@ -8,20 +8,20 @@
       "label": "ordered debt interest, scheduled payoff, capped payment and shadow balance writes",
       "file": "projection/internal/annualDebtAndLongTermCare.ts",
       "lines": [
-        13,
-        40
+        20,
+        47
       ],
       "anchors": [
         {
-          "line": 13,
+          "line": 20,
           "text": "readonly accounts: readonly Account[]"
         },
         {
-          "line": 19,
+          "line": 26,
           "text": "for (const account of input.accounts) {"
         },
         {
-          "line": 40,
+          "line": 47,
           "text": "return rows"
         }
       ]
@@ -31,20 +31,20 @@
       "label": "ordered care episodes, policy benefit limits, elimination/rider, duplicate-id shadow writes and reporting",
       "file": "projection/internal/annualDebtAndLongTermCare.ts",
       "lines": [
-        65,
-        160
+        83,
+        178
       ],
       "anchors": [
         {
-          "line": 65,
+          "line": 83,
           "text": "readonly careEvents: readonly CareEvent[]"
         },
         {
-          "line": 87,
+          "line": 105,
           "text": "for (const event of input.careEvents) {"
         },
         {
-          "line": 160,
+          "line": 178,
           "text": "}"
         }
       ]
