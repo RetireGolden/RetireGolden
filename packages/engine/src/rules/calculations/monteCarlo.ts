@@ -1203,7 +1203,7 @@ export const monteCarloRecords = {
       worksheet: 'DOCS/calculations/monte-carlo/annuitization-sweep-point.md',
     },
     limits: [
-      'A point only reaches the published list when the shared-path Monte Carlo returns a row for its variant, so the evidence has to run one: it uses a two-path comparison on a one-year horizon with a fixed seed. The three figures themselves are decided before that run and do not depend on its outcome',
+      'A point only reaches the published list when the shared-path Monte Carlo returns a row for its variant, so the evidence has to run one: it uses a two-path comparison over a two-year horizon (a 1954 birth with planning age 73 from 2026 runs 2026 and 2027) with a fixed seed. The three figures themselves are decided before that run and do not depend on its outcome',
       'Beyond the worksheet\'s inputs the evidence plan fixes: a 1954-born single filer so the 2026 current age is 72, a $100,000 cash funding account beside a $100,000 traditional account for a $200,000 investable total, a grid of exactly [2, 60] so the skipped and retained points are both present, no user quote, zero return and zero inflation',
       'The funding account carries no static allocation, so the sweep\'s Kitces glidepath controls are not constructible here and attributionAvailable is false; the sweep records that as a note rather than an error',
       'The skipped $4,000 point is asserted as an ABSENT allocationPct, since a skipped point is never pushed rather than published at zero',

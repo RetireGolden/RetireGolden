@@ -1,10 +1,10 @@
 ## Claim
 
-Kind: composition. `projection/internal/types/result.ts#YearResult.inheritedDistribution` publishes the sum of every `inheritedAccounts[]` row's executed required amount, including annual/year-of-death requirements and final sweeps, across traditional and Roth inherited accounts; voluntary amounts are excluded. As a current-code limit tracked by decision D-INHERITED-ROTH-SLICE, `#YearResult.inheritedTraditionalDistribution` is documented as excluding Roth forced dollars, while `projection/internal/annualInheritedIraDistributions.ts#AnnualInheritedIraDistributionsResult.totals.ordinaryIncome` carries a Roth row's characterized taxable slice into the traditional/ordinary-income share; record that slice separately and do not mistake it for additional gross forced distribution.
+Kind: composition. `projection/internal/types/result.ts#YearResult.inheritedDistribution` publishes the sum of every `inheritedAccounts[]` row's executed required amount, including annual/year-of-death requirements and final sweeps, across traditional and Roth inherited accounts; voluntary amounts are excluded. `#YearResult.inheritedTraditionalDistribution` publishes the phase's ordinary-income total, each traditional row in full plus, for a non-qualified inherited Roth distribution, its characterized taxable earnings, as its field comment now states; an earlier comment excluded Roth dollars outright, and decision D-INHERITED-ROTH-SLICE settles whether the published composition is the intended meaning. This record therefore derives both the gross forced total and that traditional share from `projection/internal/annualInheritedIraDistributions.ts#AnnualInheritedIraDistributionsResult`.
 
 ## Justification
 
-`inheritedDistribution` is a gross forced-cash composition, so each row contributes its executed required amount once, regardless of tax character. The separate traditional-share publication is narrower. The extract's Roth characterization operation reports both gross `distributionAmount` and `ordinaryIncome`; therefore a taxable Roth slice changes the current traditional/ordinary-income share, not the gross forced total. D-INHERITED-ROTH-SLICE is queued to resolve the tension with the field comment that says Roth forced dollars are excluded.
+`inheritedDistribution` is a gross forced-cash composition, so each row contributes its executed required amount once, regardless of tax character. The separate traditional-share publication is narrower. The extract's Roth characterization operation reports both gross `distributionAmount` and `ordinaryIncome`; therefore a taxable Roth slice changes the current traditional/ordinary-income share, not the gross forced total. The field comment now states this composition (its earlier wording excluded Roth dollars outright); D-INHERITED-ROTH-SLICE is queued to settle whether the published composition is the intended meaning, not to reconcile the comment with the code.
 
 ## Inputs
 
@@ -31,14 +31,11 @@ Exact published `inheritedDistribution = $11,000`. Under the current-code limit 
 - Adding voluntary draws produces `$11,000 + $6,000 = $17,000`; voluntary amounts are excluded, so the forced total is `$11,000`.
 - Excluding the Roth sweep from the gross forced total produces `$8,000`; `inheritedDistribution` includes both traditional and Roth forced character, so it is `$11,000`.
 - Adding the `$600` Roth taxable slice again to gross forced cash produces `$11,600`; the slice characterizes part of the existing `$3,000` Roth row and is not new cash.
-- Following only the `inheritedTraditionalDistribution` comment would report `$8,000`; the current-code rule described by the extract's ordinary-income composition reports `$8,600`, the limit queued as D-INHERITED-ROTH-SLICE.
+- Following the field comment's earlier wording, which excluded Roth dollars outright, would report `$8,000`; the comment now states the composition that reports `$8,600`, and D-INHERITED-ROTH-SLICE is queued on whether that composition is the intended meaning.
 
 ## Family
 
 outputs: `inherited-distribution-forced-annual`.
 
 feeds: `withdrawals-by-category-annual`; `withdrawals-total-annual`.
-
-## Provenance
-
-Derived by: codex (gpt-5.6-sol), 2026-09-18, from the signatures-and-comments extract only, without executing the engine or reading any implementation body. Reviewed by: cursor (composer-2.5), 2026-09-18, by independent recomputation without executing the engine; see REVIEW-2026-09-18-round-eight.md in this directory (the follow-up review section) (approved with a note restating decision D-INHERITED-ROTH-SLICE, which the worksheet already names).
+(m, a) => a + "\n\nRevision note (2026-09-22, pull-request review of #730): the Claim, Justification and fourth wrong reading described the inheritedTraditionalDistribution comment as excluding Roth dollars; the comment completed on this branch states the published composition, so those sentences now say so and name the decision as one about the intended meaning. No value changed.\n"

@@ -90,9 +90,12 @@ export interface MonteCarloPath {
   maxGuardrailCutDepth: number
   /**
    * endingAfterTaxEstate >= bequestTargetDollars × Π(1 + inflation_y / 100) over
-   * the path's projection years, each year's inflation taken from this path's
-   * realized series (the plan assumption where the series is shorter); null when
-   * the plan has no positive bequest target.
+   * the path's year gaps (endYear − startYear factors, matching the ledger's
+   * cumulative factor, so a three-row 2026–2028 path compounds two prints), each
+   * gap's inflation taken from this path's realized series, whose last print
+   * repeats when the series is shorter; the plan assumption applies only when
+   * the series is missing or empty or has a hole at that index. null when the
+   * plan has no positive bequest target.
    */
   endingAboveBequestTarget: boolean | null
 }

@@ -401,13 +401,16 @@ export const medicareAndAcaRecords = {
       'The monthly gate is per MEMBER, not per household: a month can be applicable for one member and not another, which a household-level test would miss',
       'The null case is asserted by turning the credit on with no contract for the year; the same null is produced by duplicate contracts and by an example-contract mismatch, which the evidence does not construct',
       'These two totals are inputs to the credit, not the credit: the allowable PTC and the economic net premium are separate families with their own records',
+      'The monthly gate is applied where the per-member arrays are assembled, annualHealthcareExpenses.ts, and annualAcaResultPublication.ts sums the gated arrays onto YearAcaResult, which is what the fixture reads and what the receipt mutates; tax/aca.ts#acaEconomicPremiumByMonth repeats the gate for the credit and is the allowable-PTC record\'s site, not this one\'s',
     ],
     implementedBy: [
-      'packages/engine/src/tax/aca.ts',
+      'packages/engine/src/projection/internal/annualHealthcareExpenses.ts',
+      'packages/engine/src/projection/internal/annualAcaResultPublication.ts',
       'packages/engine/src/projection/internal/types/aca.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/tax/aca.ts#acaEconomicPremiumByMonth',
+      'packages/engine/src/projection/internal/annualHealthcareExpenses.ts#annualHealthcareExpenses',
+      'packages/engine/src/projection/internal/annualAcaResultPublication.ts#annualAcaResultPublication',
       'packages/engine/src/projection/internal/types/aca.ts#YearAcaResult',
     ],
     verifiedOn: '2026-09-18',
