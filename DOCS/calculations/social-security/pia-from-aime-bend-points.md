@@ -45,5 +45,4 @@ Derived by: codex (gpt-5.6-sol), 2026-09-18, from the signatures-and-comments ex
 
 Revision: the second wrong reading's wording was corrected on the reviewer's note to describe the misread that produces its figure; no value changed.
 
-Revision note (2026-09-22, pull-request review of #728): the second wrong reading's parenthetical stated a false figure for a flat 32% above the first bend point; that misread is the same as the one it accompanies and gives `$3,625.88`. It now names a distinct misread, a flat 15% above the first bend point, `
-,314.50`. No expected value changed.
+Revision note (2026-09-22, pull-request review of #728): the second wrong reading's parenthetical stated a false figure for a flat 32% above the first bend point; that misread is the same as the one it accompanies and gives `$3,625.88`. It now names a distinct misread, a flat 15% above the first bend point, `$2,314.50`. No expected value changed.
