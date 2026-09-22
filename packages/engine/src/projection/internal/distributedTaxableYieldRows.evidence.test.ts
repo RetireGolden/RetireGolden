@@ -5,7 +5,7 @@ import { describeCalculation, withinTolerance } from '../../rules/describeCalcul
 import { createFederalTaxCalculator } from '../../tax/federalTax.js'
 import { singlePersonPlan } from '../../testing/planFixtures.js'
 import { simulatePlan } from '../simulate.js'
-import type { YearIncomes } from '../types.js'
+import type { YearIncomes, YearResult } from '../types.js'
 
 const YEAR = 2026
 
@@ -37,7 +37,7 @@ function validated(plan: Plan): Plan {
   return parsed.plan
 }
 
-function incomesOf(kind: 'explicit' | 'defaults'): YearIncomes {
+function rowOf(kind: 'explicit' | 'defaults'): YearResult {
   const plan = singlePersonPlan({ dob: '1975-06-15', planningAge: 95 })
   plan.accounts = [
     kind === 'explicit'
@@ -74,10 +74,28 @@ function incomesOf(kind: 'explicit' | 'defaults'): YearIncomes {
     startYear: YEAR,
     horizonEndYear: YEAR,
     taxCalculator: createFederalTaxCalculator(),
+    captureAnnualCashFlow: true,
   })
   const row = result.years.find((entry) => entry.year === YEAR)
   if (row === undefined) throw new Error(`missing projection year ${YEAR}`)
-  return row.incomes
+  return row
+}
+
+function incomesOf(kind: 'explicit' | 'defaults'): YearIncomes {
+  return rowOf(kind).incomes
+}
+
+/** Distributed yield that entered household cash, and yield credited back to its account. */
+function yieldFlowsOf(kind: 'explicit' | 'defaults'): { toCash: number; reinvested: number } {
+  const row = rowOf(kind)
+  if (row.cashFlow === undefined) throw new Error('the year published no cash flow')
+  const toCash = row.cashFlow.sourceLines
+    .filter((line) => line.kind === 'taxableAccountYield')
+    .reduce((sum, line) => sum + line.amountPlanDollars, 0)
+  const reinvested = row.cashFlow.transferLines
+    .filter((line) => line.kind === 'reinvestedYield')
+    .reduce((sum, line) => sum + line.creditPlanDollars, 0)
+  return { toCash, reinvested }
 }
 
 function expectWithin(
@@ -249,6 +267,19 @@ describeCalculation(
       const incomes = incomesOf('defaults')
       expectWithin(incomes.taxableYield, expected.defaults!, example.tolerance, 'taxableYield')
       expect(incomes.taxExemptInterest).toBe(0)
+    })
+
+    it('credits the reinvested 3000 back to the account and adds 0 to the year cash inflows', () => {
+      // The four yield worksheets' third wrong reading: an absent
+      // reinvestDividends means true, so the yield is characterized but never
+      // reaches household cash; the explicit account, with the flag false,
+      // pays its 4000 to cash and reinvests nothing.
+      const defaults = yieldFlowsOf('defaults')
+      expectWithin(defaults.toCash, 0, example.tolerance, 'defaults yield paid to cash')
+      expectWithin(defaults.reinvested, expected.defaults!, example.tolerance, 'defaults yield reinvested')
+      const explicit = yieldFlowsOf('explicit')
+      expectWithin(explicit.toCash, expected.explicit!, example.tolerance, 'explicit yield paid to cash')
+      expectWithin(explicit.reinvested, 0, example.tolerance, 'explicit yield reinvested')
     })
   },
 )

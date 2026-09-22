@@ -42,6 +42,6 @@ feeds: `social-security-benefit-annual`.
 
 ## Provenance
 
-Derived by: codex (gpt-5.6-sol), 2026-09-18, from the signatures-and-comments extract and the orchestrator's contract statement for the two defaults, without executing the engine or reading any implementation body. Reviewed by: cursor (composer-2.5), 2026-09-18, by independent recomputation without executing the engine; see REVIEW-2026-09-18-round-six-followup.md in this directory (approved; the tolerance wording was made exact on the reviewer's note, applied below).
+Derived by: codex (gpt-5.6-sol), 2026-09-18, from the signatures-and-comments extract only, without executing the engine or reading any implementation body. Reviewed by: cursor (composer-2.5), 2026-09-18, by independent recomputation without executing the engine; see REVIEW-2026-09-18-round-six-followup.md in this directory (approved; the tolerance wording was made exact on the reviewer's note, applied below).
 
 Revision: the tolerance statement was made exact on the reviewer's note; no value changed.

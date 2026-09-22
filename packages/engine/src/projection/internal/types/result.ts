@@ -569,7 +569,14 @@ export interface YearResult {
    * defers, or skips at `latestYear`); in a non-cutting year it is the
    * remaining upside budget when goals may be pulled forward (a raise, or a
    * multiplier above 1) and otherwise unlimited, so a partial funding can
-   * arise only in a pull-forward year. Nominal dollars of the year.
+   * arise only in a pull-forward year. The budget constrains a goal only when
+   * it is funded before its target year (pulled forward) or the year is
+   * cutting; a movable or skippable goal in or after its target year in a
+   * non-cutting year funds in full, and a skip at latestYear therefore
+   * happens only in a cutting year. A movable or skippable goal enters the
+   * schedule in its target year, or from its earliest year when goals may be
+   * pulled forward, and leaves it after latestYear; a goal not in the
+   * schedule has no outcome that year. Nominal dollars of the year.
    */
   flexibleGoals: {
     funded: number

@@ -182,7 +182,7 @@ describeCalculation(
         lastRowInvestableTotal: 487_250.125,
         yearRowOrder: [2030, 2031],
       },
-      expected: { endingInvestable: 487_250.125, emptyLedgerEndingInvestable: 0 },
+      expected: { endingInvestable: 487_250.125 },
       tolerance: { abs: 0.005 },
     },
     worksheet: 'DOCS/calculations/cash-flow-and-summary/projection-result-ending-investable.md',
@@ -213,16 +213,6 @@ describeCalculation(
       expect(withinTolerance(result.endingInvestable, first + last, example.tolerance)).toBe(false)
     })
 
-    it('publishes exactly 0 for a result with no year rows', () => {
-      // simulatePlan always produces at least one row for a living household,
-      // so the empty-years state the field comment names is asserted on a
-      // result whose years array is empty.
-      const empty: ProjectionResult = {
-        startYear: 2030, endYear: 2030, years: [], depletionYear: null,
-        endingInvestable: 0, endingNetWorth: 0, endingNondeductibleIraBasis: 0, warnings: [],
-      }
-      expect(empty.endingInvestable).toBe(expected.emptyLedgerEndingInvestable)
-    })
   },
 )
 
@@ -235,7 +225,7 @@ describeCalculation(
         lastRowNetWorth: 901_375.625,
         yearRowOrder: [2030, 2031],
       },
-      expected: { endingNetWorth: 901_375.625, emptyLedgerEndingNetWorth: 0 },
+      expected: { endingNetWorth: 901_375.625 },
       tolerance: { abs: 0.005 },
     },
     worksheet: 'DOCS/calculations/cash-flow-and-summary/projection-result-ending-net-worth.md',
@@ -276,12 +266,5 @@ describeCalculation(
       )
     })
 
-    it('publishes exactly 0 for a result with no year rows', () => {
-      const empty: ProjectionResult = {
-        startYear: 2030, endYear: 2030, years: [], depletionYear: null,
-        endingInvestable: 0, endingNetWorth: 0, endingNondeductibleIraBasis: 0, warnings: [],
-      }
-      expect(empty.endingNetWorth).toBe(expected.emptyLedgerEndingNetWorth)
-    })
   },
 )

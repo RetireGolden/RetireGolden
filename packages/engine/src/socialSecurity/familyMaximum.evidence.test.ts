@@ -56,6 +56,9 @@ describeCalculation(
       // bend point, and publishing the unrounded sum.
       expect(withinTolerance(actual, 5_412.1, example.tolerance)).toBe(false)
       expect(withinTolerance(actual, 6_999.39, example.tolerance)).toBe(false)
+      // The second wrong reading: the PIA formula's own 90/32/15/15 percent
+      // rates on the four family-maximum slices, dime-floored, 1956.00.
+      expect(withinTolerance(actual, 1_956.0, example.tolerance)).toBe(false)
     })
 
     it('isolates the first band below the first bend point at 1500.00', () => {
@@ -64,9 +67,8 @@ describeCalculation(
         inputs.eligibilityYear!,
       )
       expectExactly(actual, expected.belowFirstMonthly!, 'family maximum')
-      // The worksheet's second wrong reading applies the PIA formula's own
-      // 90/32/15 percent rates; on this case that is the PIA itself, not
-      // 150 percent of it.
+      // Below the first bend point the band is 150 percent of the PIA; a
+      // pass-through of the PIA itself is rejected.
       expect(withinTolerance(actual, inputs.belowFirstPiaMonthly!, example.tolerance)).toBe(false)
     })
   },

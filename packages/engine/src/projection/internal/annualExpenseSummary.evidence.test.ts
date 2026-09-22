@@ -530,17 +530,20 @@ describeCalculation(
       inputs: {
         requiredLifestyle: 36_000,
         targetLifestyle: 24_000,
+        // Case 1: an active policy in a cutting year.
         guardrailFactor: 0.75,
-        idealLifestyleFunded: 4_000,
-        excessLifestyleFunded: 1_500,
+        // Case 2: no policy active; the layers fund in full.
+        idealLifestyle: 4_000,
+        excessLifestyle: 1_500,
         oneTimeGoals: 8_000,
       },
       expected: {
-        baseSpending: 59_500,
+        cuttingYearBaseSpending: 54_000,
+        noPolicyBaseSpending: 65_500,
         targetLifestyleFunded: 18_000,
-        factorOnRequiredWrongReading: 50_500,
-        withOneTimeGoalWrongReading: 67_500,
-        withoutUpsideLayersWrongReading: 54_000,
+        factorOnRequiredWrongReading: 45_000,
+        withOneTimeGoalWrongReading: 62_000,
+        upsideInCuttingYearWrongReading: 59_500,
       },
       tolerance: { abs: 0.005 },
     },
@@ -551,71 +554,76 @@ describeCalculation(
     const inputs = example.inputs as Record<string, number>
     const expected = example.expected as Record<string, number>
 
-    it('caps the target layer at the factor and leaves the one-time goal out: 59500', () => {
-      // The min(1, factor) cap comes from the production guardrail phase, not
-      // from this fixture: a household with nobody alive leaves the incoming
-      // multiplier untouched, so the phase applies the worksheet's own 0.75 to
-      // its own 24,000 target layer.
-      const guardrail = annualGuardrailFundingPlan({
+    /**
+     * The real guardrail phase for a live household. The withdrawal-rate
+     * signal is the recurring target spending over the start-of-year
+     * portfolio; with the starting rate equal to this year's rate the policy
+     * holds, so an incoming multiplier carries through unchanged, as it does
+     * in any year after the one in which a cut was made.
+     */
+    function heldGuardrail(discretionaryMultiplier: number, allowRaisesAboveTarget: boolean, idealLifestyle: number, excessLifestyle: number) {
+      const portfolio = 1_000_000
+      const targetRecurring = inputs.requiredLifestyle! + inputs.targetLifestyle!
+      return annualGuardrailFundingPlan({
         guardrailsActive: true,
         riskBasedGuardrails: false,
-        allowRaisesAboveTarget: false,
+        allowRaisesAboveTarget,
         guardrailPolicy: {},
         oneTimeGoals: [],
         isGoalResolved: () => false,
         year: 2030,
         inflFactor: 1,
-        anyAlive: false,
-        balances: [],
-        startOfYearBalances: [],
+        anyAlive: true,
+        balances: [{ account: { type: 'cash', id: 'cash-1', name: 'Cash', ownerPersonId: null, annualReturnPct: 0, balance: portfolio, annualContribution: 0 } as Account }],
+        startOfYearBalances: [portfolio],
         requiredLifestyle: inputs.requiredLifestyle!,
         targetLifestyle: inputs.targetLifestyle!,
-        idealLifestyle: 0,
-        excessLifestyle: 0,
+        idealLifestyle,
+        excessLifestyle,
         systemRequired: 0,
-        discretionaryMultiplier: inputs.guardrailFactor!,
-        startingWithdrawalRate: null,
+        discretionaryMultiplier,
+        startingWithdrawalRate: targetRecurring / portfolio,
         startingRealPortfolio: null,
       })
+    }
+
+    it('case 1: a cutting year funds the target layer at the factor and no upside: 54000', () => {
+      const guardrail = heldGuardrail(inputs.guardrailFactor!, false, inputs.idealLifestyle!, inputs.excessLifestyle!)
+      expect(guardrail.guardrailAction).toBe('hold')
       expect(guardrail.discretionaryMultiplier).toBe(inputs.guardrailFactor)
-      expectWithin(
-        guardrail.targetLifestyleFunded,
-        expected.targetLifestyleFunded!,
-        example.tolerance,
-        'targetLifestyleFunded',
-      )
+      expectWithin(guardrail.targetLifestyleFunded, expected.targetLifestyleFunded!, example.tolerance, 'targetLifestyleFunded')
+      // The contract's rule the worksheet states: the upside budget is
+      // max(0, multiplier - 1) x the step basis, 0 at 0.75, so nothing funds.
+      expect(guardrail.idealLifestyleFunded).toBe(0)
+      expect(guardrail.excessLifestyleFunded).toBe(0)
 
       const expenses = summarize({
         requiredLifestyle: inputs.requiredLifestyle!,
         targetLifestyle: inputs.targetLifestyle!,
         targetLifestyleFunded: guardrail.targetLifestyleFunded,
-        idealLifestyleFunded: inputs.idealLifestyleFunded!,
-        excessLifestyleFunded: inputs.excessLifestyleFunded!,
+        idealLifestyleFunded: guardrail.idealLifestyleFunded,
+        excessLifestyleFunded: guardrail.excessLifestyleFunded,
         oneTimeGoalsFunded: inputs.oneTimeGoals!,
         discretionaryMultiplier: guardrail.discretionaryMultiplier,
       })
-      expectWithin(expenses.baseSpending, expected.baseSpending!, example.tolerance, 'baseSpending')
+      expectWithin(expenses.baseSpending, expected.cuttingYearBaseSpending!, example.tolerance, 'baseSpending')
       // The one-time goal is in the year's total but not in base spending.
       expectWithin(expenses.oneTimeGoals, inputs.oneTimeGoals!, example.tolerance, 'oneTimeGoals')
-      expectWithin(
-        expenses.total,
-        expected.baseSpending! + inputs.oneTimeGoals!,
-        example.tolerance,
-        'expenses.total',
-      )
-      // The worksheet's three wrong readings.
+      expectWithin(expenses.total, expected.cuttingYearBaseSpending! + inputs.oneTimeGoals!, example.tolerance, 'expenses.total')
+      // The worksheet's case-1 wrong readings, including the state the
+      // contract rules out: funded upside in a cutting year.
       for (const wrong of [
         expected.factorOnRequiredWrongReading!,
         expected.withOneTimeGoalWrongReading!,
-        expected.withoutUpsideLayersWrongReading!,
+        expected.upsideInCuttingYearWrongReading!,
       ]) {
         expect(withinTolerance(expenses.baseSpending, wrong, example.tolerance)).toBe(false)
       }
     })
 
-    it('never lets a multiplier above one inflate the target layer', () => {
+    it('case 2: with no policy active the full target layer and both upside layers fund: 65500', () => {
       const guardrail = annualGuardrailFundingPlan({
-        guardrailsActive: true,
+        guardrailsActive: false,
         riskBasedGuardrails: false,
         allowRaisesAboveTarget: false,
         guardrailPolicy: {},
@@ -623,18 +631,44 @@ describeCalculation(
         isGoalResolved: () => false,
         year: 2030,
         inflFactor: 1,
-        anyAlive: false,
-        balances: [],
-        startOfYearBalances: [],
+        anyAlive: true,
+        balances: [{ account: { type: 'cash', id: 'cash-1', name: 'Cash', ownerPersonId: null, annualReturnPct: 0, balance: 1_000_000, annualContribution: 0 } as Account }],
+        startOfYearBalances: [1_000_000],
         requiredLifestyle: inputs.requiredLifestyle!,
         targetLifestyle: inputs.targetLifestyle!,
-        idealLifestyle: 0,
-        excessLifestyle: 0,
+        idealLifestyle: inputs.idealLifestyle!,
+        excessLifestyle: inputs.excessLifestyle!,
         systemRequired: 0,
-        discretionaryMultiplier: 1.4,
+        discretionaryMultiplier: 1,
         startingWithdrawalRate: null,
         startingRealPortfolio: null,
       })
+      expectWithin(guardrail.targetLifestyleFunded, inputs.targetLifestyle!, example.tolerance, 'targetLifestyleFunded without a policy')
+      expectWithin(guardrail.idealLifestyleFunded, inputs.idealLifestyle!, example.tolerance, 'idealLifestyleFunded without a policy')
+      expectWithin(guardrail.excessLifestyleFunded, inputs.excessLifestyle!, example.tolerance, 'excessLifestyleFunded without a policy')
+      const expenses = summarize({
+        requiredLifestyle: inputs.requiredLifestyle!,
+        targetLifestyle: inputs.targetLifestyle!,
+        targetLifestyleFunded: guardrail.targetLifestyleFunded,
+        idealLifestyleFunded: guardrail.idealLifestyleFunded,
+        excessLifestyleFunded: guardrail.excessLifestyleFunded,
+        oneTimeGoalsFunded: inputs.oneTimeGoals!,
+        discretionaryMultiplier: guardrail.discretionaryMultiplier,
+      })
+      expectWithin(expenses.baseSpending, expected.noPolicyBaseSpending!, example.tolerance, 'baseSpending')
+      // The worksheet's case-2 wrong reading: a 0.75 factor applied although
+      // no policy is active.
+      expect(withinTolerance(expenses.baseSpending, expected.upsideInCuttingYearWrongReading!, example.tolerance)).toBe(false)
+    })
+
+    it('never lets a multiplier above one inflate the target layer', () => {
+      // A live household holding a 1.4 multiplier (raises allowed, with an
+      // ideal layer large enough that the multiplier ceiling clears 1.4): the
+      // target layer is capped at the full layer, and the excess goes to the
+      // upside budget instead.
+      const guardrail = heldGuardrail(1.4, true, 12_000, 0)
+      expect(guardrail.guardrailAction).toBe('hold')
+      expect(guardrail.discretionaryMultiplier).toBe(1.4)
       expectWithin(
         guardrail.targetLifestyleFunded,
         inputs.targetLifestyle!,

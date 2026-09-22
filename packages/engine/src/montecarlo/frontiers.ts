@@ -20,7 +20,8 @@ export interface StochasticFrontierPoint {
   /**
    * The variant's value on the frontier axis: the variant plan's
    * `expenses.baseAnnual` for the spending frontier (the base annual times the
-   * grid multiplier), and for the retirement-age frontier the lowest resulting
+   * grid multiplier, rounded to whole dollars and floored at 0), and for the
+   * retirement-age frontier the lowest resulting
    * retirement age among the people who have one, each moved by the grid delta
    * and clamped to [30, 80]; 0 when nobody has a retirement age. The delta
    * itself is not published.

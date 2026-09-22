@@ -2,11 +2,7 @@ import { expect, it } from 'vitest'
 
 import { parsePlan, type Plan } from '../../model/plan.js'
 import { describeCalculation, withinTolerance } from '../../rules/describeCalculation.js'
-import {
-  createGoalScheduler,
-  type GoalScheduler,
-  type SchedulableGoal,
-} from '../../spending/flexibleGoals.js'
+import { createGoalScheduler, type SchedulableGoal } from '../../spending/flexibleGoals.js'
 import { createFederalTaxCalculator } from '../../tax/federalTax.js'
 import { singlePersonPlan } from '../../testing/planFixtures.js'
 import { simulatePlan } from '../simulate.js'
@@ -21,24 +17,21 @@ describeCalculation(
       inputs: {
         planningYear: YEAR,
         cumulativeInflationFactor: 1.1,
-        cutting: true,
-        canPullForward: false,
-        flexibleGoalBudget: 1_700,
+        // Case A: a pull-forward year; the phase hands the scheduler the
+        // remaining upside budget. Case B: a cutting year; the budget is 0.
+        pullForwardYear: { cutting: false, canPullForward: true, remainingUpsideBudget: 1_700 },
+        cuttingYear: { cutting: true, canPullForward: false, remainingUpsideBudget: 0 },
         goals: [
-          { order: 1, classification: 'required', priority: 1, flexibility: 'fixed', targetYear: YEAR, latestYear: YEAR, amountTodayDollars: 1_000, minFundingPct: 100, allowPartialFunding: false },
-          { order: 2, classification: 'target', priority: 1, flexibility: 'movable', targetYear: YEAR, latestYear: 2031, amountTodayDollars: 1_000, minFundingPct: 100, allowPartialFunding: false },
-          { order: 3, classification: 'ideal', priority: 1, flexibility: 'movable', targetYear: YEAR, latestYear: 2031, amountTodayDollars: 1_000, minFundingPct: 50, allowPartialFunding: true },
-          { order: 4, classification: 'excess', priority: 1, flexibility: 'movable', targetYear: YEAR, latestYear: 2031, amountTodayDollars: 500, minFundingPct: 100, allowPartialFunding: false },
-          { order: 5, classification: 'excess', priority: 2, flexibility: 'skippable', targetYear: YEAR, latestYear: YEAR, amountTodayDollars: 400, minFundingPct: 0, allowPartialFunding: false },
+          { order: 1, classification: 'required', priority: 1, flexibility: 'fixed', earliestYear: YEAR, targetYear: YEAR, latestYear: YEAR, amountTodayDollars: 1_000, minFundingPct: 100, allowPartialFunding: false },
+          { order: 2, classification: 'target', priority: 1, flexibility: 'movable', earliestYear: YEAR, targetYear: 2031, latestYear: 2032, amountTodayDollars: 1_000, minFundingPct: 100, allowPartialFunding: false },
+          { order: 3, classification: 'ideal', priority: 1, flexibility: 'movable', earliestYear: YEAR, targetYear: 2031, latestYear: 2032, amountTodayDollars: 1_000, minFundingPct: 50, allowPartialFunding: true },
+          { order: 4, classification: 'excess', priority: 1, flexibility: 'movable', earliestYear: YEAR, targetYear: 2031, latestYear: 2032, amountTodayDollars: 500, minFundingPct: 100, allowPartialFunding: false },
+          { order: 5, classification: 'excess', priority: 2, flexibility: 'skippable', earliestYear: YEAR, targetYear: YEAR, latestYear: YEAR, amountTodayDollars: 400, minFundingPct: 0, allowPartialFunding: false },
         ],
       },
       expected: {
-        funded: 2,
-        partiallyFunded: 1,
-        deferred: 1,
-        skipped: 1,
-        fundedAmount: 2_800,
-        unfundedAmount: 940,
+        pullForwardYear: { funded: 3, partiallyFunded: 1, deferred: 1, skipped: 0, fundedAmount: 3_240, unfundedAmount: 500 },
+        cuttingYear: { funded: 1, partiallyFunded: 0, deferred: 0, skipped: 1, fundedAmount: 1_100, unfundedAmount: 440 },
         outsideGuardrailMode: { funded: 0, partiallyFunded: 0, deferred: 0, skipped: 0, fundedAmount: 0, unfundedAmount: 0 },
       },
       tolerance: { abs: 0.005 },
@@ -48,28 +41,30 @@ describeCalculation(
   },
   ({ example }) => {
     const inputs = example.inputs as Record<string, unknown>
-    const expected = example.expected as Record<string, unknown>
-    const budget = inputs.flexibleGoalBudget as number
+    const expected = example.expected as Record<string, Record<string, number>>
     const inflFactor = inputs.cumulativeInflationFactor as number
     const rows = inputs.goals as {
       order: number
       classification: SchedulableGoal['classification']
       priority: number
       flexibility: SchedulableGoal['flexibility']
+      earliestYear: number
       targetYear: number
       latestYear: number
       amountTodayDollars: number
       minFundingPct: number
       allowPartialFunding: boolean
     }[]
+    type YearCase = { cutting: boolean; canPullForward: boolean; remainingUpsideBudget: number }
 
-    it('publishes 2 funded, 1 partial, 1 deferred, 1 skipped, 2800 funded and 940 unfunded', () => {
+    /** The real scheduler over the worksheet's goals, driven by the real phase for one year. */
+    function runYear(yearCase: YearCase) {
       const scheduler = createGoalScheduler(
         rows.map((row) => ({
           id: `goal-${row.order}`,
           classification: row.classification,
           flexibility: row.flexibility,
-          earliestYear: row.targetYear,
+          earliestYear: row.earliestYear,
           targetYear: row.targetYear,
           latestYear: row.latestYear,
           priority: row.priority,
@@ -79,49 +74,39 @@ describeCalculation(
           allowPartialFunding: row.allowPartialFunding,
         })),
       )
-      /**
-       * annualOneTimeGoalFundingPhase passes availableBudget 0 whenever the
-       * guardrail is cutting, and passes the remaining upside budget only when
-       * it is NOT cutting — where the scheduler then reads the budget as
-       * unlimited. The worksheet's cutting year with a positive $1,700 budget
-       * is therefore not a state the phase produces, so the budget is injected
-       * at the scheduler seam. Both the scheduler and the aggregator below are
-       * production; the substituted budget is the only thing that is not a
-       * plan-produced state.
-       */
-      const seam: GoalScheduler = {
-        isResolved: (id) => scheduler.isResolved(id),
-        planYear: (year, ctx) => scheduler.planYear(year, { ...ctx, availableBudget: budget }),
-      }
-
-      const phase = annualOneTimeGoalFundingPhase({
+      return annualOneTimeGoalFundingPhase({
         year: inputs.planningYear as number,
         inflFactor,
         anyAlive: true,
-        goalScheduler: seam,
+        goalScheduler: scheduler,
         oneTimeGoals: [],
-        cutting: inputs.cutting as boolean,
-        canPullForwardGoals: inputs.canPullForward as boolean,
-        remainingUpsideBudget: 0,
+        cutting: yearCase.cutting,
+        canPullForwardGoals: yearCase.canPullForward,
+        remainingUpsideBudget: yearCase.remainingUpsideBudget,
       })
-      const counts = phase.goalOutcomeCounts
+    }
 
-      expect(counts.funded).toBe(expected.funded)
-      expect(counts.partiallyFunded).toBe(expected.partiallyFunded)
-      expect(counts.deferred).toBe(expected.deferred)
-      expect(counts.skipped).toBe(expected.skipped)
+    function expectCounts(counts: ReturnType<typeof runYear>['goalOutcomeCounts'], want: Record<string, number>, label: string): void {
+      expect(counts.funded, `${label} funded`).toBe(want.funded)
+      expect(counts.partiallyFunded, `${label} partiallyFunded`).toBe(want.partiallyFunded)
+      expect(counts.deferred, `${label} deferred`).toBe(want.deferred)
+      expect(counts.skipped, `${label} skipped`).toBe(want.skipped)
       expect(
-        withinTolerance(counts.fundedAmount, expected.fundedAmount as number, example.tolerance),
-        `fundedAmount: actual ${counts.fundedAmount}, worksheet ${String(expected.fundedAmount)}`,
+        withinTolerance(counts.fundedAmount, want.fundedAmount!, example.tolerance),
+        `${label} fundedAmount: actual ${counts.fundedAmount}, worksheet ${want.fundedAmount}`,
       ).toBe(true)
       expect(
-        withinTolerance(counts.unfundedAmount, expected.unfundedAmount as number, example.tolerance),
-        `unfundedAmount: actual ${counts.unfundedAmount}, worksheet ${String(expected.unfundedAmount)}`,
+        withinTolerance(counts.unfundedAmount, want.unfundedAmount!, example.tolerance),
+        `${label} unfundedAmount: actual ${counts.unfundedAmount}, worksheet ${want.unfundedAmount}`,
       ).toBe(true)
+    }
 
-      // The fixed goal funded without consuming the flexible budget: the
-      // worksheet's first wrong reading would have left the target goal
-      // deferred and the counts at 1/1/2/1.
+    it('case A, a pull-forward year: 3 funded, 1 partial, 1 deferred, 0 skipped, 3240 funded and 500 unfunded', () => {
+      const phase = runYear(inputs.pullForwardYear as YearCase)
+      expectCounts(phase.goalOutcomeCounts, expected.pullForwardYear!, 'pull-forward year')
+      // The fixed goal funded without consuming the budget, and the pulled-
+      // forward target goal funded from it: the worksheet's first wrong
+      // reading would have left the target goal deferred at 2/1/2/0 and 2,140.
       expect(
         withinTolerance(phase.requiredGoalsFunded, rows[0]!.amountTodayDollars * inflFactor, example.tolerance),
         `requiredGoalsFunded: actual ${phase.requiredGoalsFunded}`,
@@ -130,13 +115,18 @@ describeCalculation(
         withinTolerance(phase.targetGoalsFunded, rows[1]!.amountTodayDollars * inflFactor, example.tolerance),
         `targetGoalsFunded: actual ${phase.targetGoalsFunded}`,
       ).toBe(true)
-      // The terminal skip stays in its own layer as intended spending: the
-      // worksheet's third wrong reading drops it and reports 500 unfunded.
-      expect(
-        withinTolerance(phase.skippedExcessNominal, rows[4]!.amountTodayDollars * inflFactor, example.tolerance),
-        `skippedExcessNominal: actual ${phase.skippedExcessNominal}`,
-      ).toBe(true)
-      expect(withinTolerance(counts.unfundedAmount, 500, example.tolerance)).toBe(false)
+      expect(withinTolerance(phase.goalOutcomeCounts.fundedAmount, 2_140, example.tolerance)).toBe(false)
+    })
+
+    it('case B, a cutting year: 1 funded, 0 partial, 0 deferred, 1 skipped, 1100 funded and 440 unfunded', () => {
+      const phase = runYear(inputs.cuttingYear as YearCase)
+      expectCounts(phase.goalOutcomeCounts, expected.cuttingYear!, 'cutting year')
+      // Goals 2 to 4 are not in the schedule (target year 2031, no
+      // pull-forward in a cutting year) and have no outcome; the worksheet's
+      // wrong readings for this case: treating them as deferred (3), and
+      // dropping the terminal skipped amount (0 unfunded).
+      expect(phase.goalOutcomeCounts.deferred).not.toBe(3)
+      expect(withinTolerance(phase.goalOutcomeCounts.unfundedAmount, 0, example.tolerance)).toBe(false)
     })
 
     it('publishes six exact zeros outside guardrail mode while the goal still funds', () => {

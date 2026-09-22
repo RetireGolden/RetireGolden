@@ -1137,7 +1137,7 @@ export const cashFlowAndSummaryRecords = {
     },
     limits: [
       'Asserted on a real two-year simulatePlan run whose 2030 row closes at the worksheet\'s $510,000 and whose 2031 row closes at the worksheet\'s $487,250.125. Plan assumptions beyond the worksheet\'s inputs: a single 55-year-old filing single in KY with a zero state rate, zero inflation, zero account return, no healthcare charge (the person is under 65, with a zero pre-65 premium), a single cash account, and one uninflated 2031 one-time goal sized to spend the difference between the two rows',
-      'The empty-row case cannot be reached through simulatePlan, which always produces at least one row for a living household; it is asserted through the same field on a result whose years array is empty, the state the field comment names',
+      'The empty-row case cannot be reached through simulatePlan, which always produces at least one row for a living household; it is the publishing site\'s fallback as the field comment states it and a contract statement, not executed evidence',
     ],
     implementedBy: [
       'packages/engine/src/projection/simulate.ts',
@@ -1172,7 +1172,7 @@ export const cashFlowAndSummaryRecords = {
     },
     limits: [
       'Asserted on a real two-year simulatePlan run whose 2030 row closes at the worksheet\'s $925,000 and whose 2031 row closes at the worksheet\'s $901,375.625. Plan assumptions beyond the worksheet\'s inputs: a single 55-year-old filing single in KY with a zero state rate, zero inflation, zero account and property return, no healthcare charge, one cash account and one property with no carrying costs, and one uninflated 2031 one-time goal sized to spend the difference between the two rows',
-      'The empty-row case cannot be reached through simulatePlan; it is asserted through the same field on a result whose years array is empty',
+      'The empty-row case cannot be reached through simulatePlan; it is the publishing site\'s fallback as the field comment states it and a contract statement, not executed evidence',
       'Substituting ending investable for net worth names a different quantity, which the fixture asserts against on a run where the two differ by the property value',
     ],
     implementedBy: [

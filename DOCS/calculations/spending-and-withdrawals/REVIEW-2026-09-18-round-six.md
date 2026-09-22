@@ -284,3 +284,52 @@ Last row 2031 → **$901,375.625**. Empty rows → **$0**.
 | spending-shortfall-annual | yes | approve with note |
 
 Reviewed by: cursor (composer), 2026-09-18, by independent recomputation without executing the engine.
+
+---
+
+## Re-check 2026-09-22: spending-base-annual two reachable cases
+
+**Scope:** Re-derived worksheet (Revision 2026-09-22). Recomputed from **Inputs** and **Justification** only; the 2026-09-18 Arithmetic and Expected are not trusted. No engine bodies read.
+
+**Framing change:** The single cutting-year case that carried funded upside layers ($59,500) is split into two contract-reachable cases. Contract (Claim): `baseSpending` = required lifestyle + target lifestyle × `min(1, guardrailFactor)` + funded ideal lifestyle + funded excess lifestyle; one-time goals excluded.
+
+**Recomputed — Case 1 (active policy, cutting year)**
+
+| Component | Calculation | Amount |
+|---|---|---:|
+| Required lifestyle | full | $36,000 |
+| Target lifestyle | 24,000 × min(1, 0.75) = 24,000 × 0.75 | $18,000 |
+| Ideal lifestyle funded | 0 (multiplier ≤ 1) | $0 |
+| Excess lifestyle funded | 0 (multiplier ≤ 1) | $0 |
+| **baseSpending** | 36,000 + 18,000 + 0 + 0 | **$54,000** |
+
+One-time goal $8,000 excluded.
+
+**Recomputed — Case 2 (no policy active)**
+
+| Component | Calculation | Amount |
+|---|---|---:|
+| Required lifestyle | full | $36,000 |
+| Target lifestyle | full layer (no guardrail cap) | $24,000 |
+| Ideal lifestyle funded | full upside budget | $4,000 |
+| Excess lifestyle funded | full upside budget | $1,500 |
+| **baseSpending** | 36,000 + 24,000 + 4,000 + 1,500 | **$65,500** |
+
+One-time goal $8,000 excluded.
+
+**Match:** yes (Case 1 $54,000; Case 2 $65,500).
+
+**Upside-layer rule (Justification vs Claim):** The Justification states that with a policy active, funded ideal and excess layers draw on `max(0, discretionaryMultiplier − 1) × guardrailStepBasis`, so both are **0 whenever the multiplier is at or below 1, every cutting year included**. Case 1 inputs set ideal funded = 0 and excess funded = 0 with factor 0.75 (≤ 1); Case 2 supplies the full upside only because no policy is active. This matches the Claim formula: upside enters only through separately funded ideal and excess layers, not through `min(1, guardrailFactor)` on the target layer.
+
+**Wrong readings (4/4 verified, case-labelled):**
+
+| Wrong reading | Case | Recomputed | Match |
+|---|---|---:|---:|
+| Factor applied to required too | Case 1 | 36,000 × 0.75 + 18,000 = 27,000 + 18,000 = **$45,000** | ✓ |
+| One-time goal included | Case 1 | 54,000 + 8,000 = **$62,000** | ✓ |
+| Ideal/excess funded in cutting year | Case 1 | 54,000 + 4,000 + 1,500 = **$59,500** (contract rules out) | ✓ |
+| 0.75 factor applied with no policy | Case 2 | 36,000 + 18,000 + 4,000 + 1,500 = **$59,500** | ✓ |
+
+**Verdict:** approve (two cases are contract-reachable; prior single-case $59,500 correctly retired as unreachable under active-policy cutting-year rules).
+
+Reviewed by: cursor (composer-2.5), 2026-09-22 (re-check), by independent recomputation without executing the engine.

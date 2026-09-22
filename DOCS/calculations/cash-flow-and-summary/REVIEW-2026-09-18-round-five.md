@@ -385,3 +385,144 @@ Surplus case (wrong-reading #3): 94,000 + 12,000 + 1,000 − 120,000 = −13,000
 ---
 
 Reviewed by: cursor (composer), 2026-09-18, by independent recomputation without executing the engine.
+
+---
+
+# Re-check, 2026-09-18 (reconciliation totals after the identity-total comment completion)
+
+The slice-nine fixture found the first derivation of cash-flow-reconciliation-totals internally inconsistent: its cash destination total (100,000) and its funded-use total (90,000) are the same sum of fundedPlanDollars over the same use lines, so no year can carry both. The identity-total comments on cashFlow.ts were completed to state that (each destination member is a by-kind sum, the five groups cover the closed use vocabulary, so the destination total equals the use identity's funded total), Codex Sol re-derived the worksheet on one line set (requested 103,000, funded 100,000, unfunded 3,000; cash residual 0.004 accepted at the annual-funding tolerance), and the same reviewer recomputed every total and approved. Verbatim output follows.
+
+---
+
+# Independent recomputation report — cash-flow-reconciliation-totals
+
+**Worksheet:** `DOCS/calculations/cash-flow-and-summary/cash-flow-reconciliation-totals.md`  
+**Signature extract:** `b1-p4-signatures-s9-reconciliation.md` (6ef9cd3f; bodies elided)
+
+---
+
+## 1. Recomputation
+
+### Cash sources and destination
+
+| Item | Recomputed |
+|---|---:|
+| Spendable sources | $65,000.000 |
+| Portfolio funding | $25,000.004 |
+| Loan proceeds | $10,000.000 |
+| **Source total** | **$100,000.004** |
+
+**Funded household uses** — sum of **funded** amounts for the first ten kinds (per `FUNDED_HOUSEHOLD_USE_KINDS` in the extract):  
+`requiredLifestyle`, `targetLifestyle`, `idealLifestyle`, `excessLifestyle`, `oneTimeGoal`, `debtService`, `propertyCosts`, `healthcare`, `insurancePremium`, `longTermCare`.
+
+| Kind | Funded |
+|---|---:|
+| requiredLifestyle | 30,000 |
+| targetLifestyle | 10,000 |
+| idealLifestyle | 5,000 |
+| excessLifestyle | 2,000 |
+| oneTimeGoal | 5,000 |
+| debtService | 6,000 |
+| propertyCosts | 4,000 |
+| healthcare | 5,000 |
+| insurancePremium | 2,000 |
+| longTermCare | 1,000 |
+| **Funded household uses** | **$70,000** |
+
+Other cash-destination members (funded amounts for the remaining four kinds):
+
+| Member | Amount |
+|---|---:|
+| Settled tax | $12,000 |
+| Penalties | $1,000 |
+| Contributions | $7,000 |
+| Surplus investment | $10,000 |
+| **Destination total** | **$100,000** |
+
+**Cash difference:** $100,000.004 − $100,000 = **$0.004**
+
+### Use identity
+
+| Total | Recomputed |
+|---|---:|
+| Requested (14 lines) | $103,000 |
+| Funded (14 lines) | $100,000 |
+| Unfunded (14 lines) | $3,000 |
+| Disposition (funded + unfunded) | $103,000 |
+| **Use difference** (requested − disposition) | **$0** |
+
+### Transfer identity
+
+| Total | Recomputed |
+|---|---:|
+| Debits | $22,500 |
+| Credits | $22,500 |
+| **Transfer difference** | **$0** |
+
+---
+
+## 2. Per-line and cross-identity checks
+
+**Requested = funded + unfunded on every use line:** yes (all 14 lines balance).
+
+**Funded total equals cash destination total:** yes ($100,000 = $100,000). The five destination members partition the fourteen kinds; funded household uses cover kinds 1–10 and the other four members cover kinds 11–14, so both totals are the same sum over the same fourteen funded fields. The prior $90,000 vs $100,000 split is gone.
+
+---
+
+## 3. Match vs Expected
+
+| Expected figure | Match |
+|---|---|
+| Spendable sources $65,000.000 | yes |
+| Portfolio funding $25,000.004 | yes |
+| Loan proceeds $10,000.000 | yes |
+| Source total $100,000.004 | yes |
+| Funded household uses $70,000.000 | yes |
+| Settled tax $12,000.000 | yes |
+| Penalties $1,000.000 | yes |
+| Contributions $7,000.000 | yes |
+| Surplus investment $10,000.000 | yes |
+| Destination total $100,000.000 | yes |
+| Cash difference $0.004 | yes |
+| Cash accepted (abs ≤ $0.005) | yes |
+| Requested total $103,000.000000 | yes |
+| Funded total $100,000.000000 | yes |
+| Unfunded total $3,000.000000 | yes |
+| Disposition total $103,000.000000 | yes |
+| Use difference $0.000000 | yes |
+| Funded = destination | yes |
+| Debit total $22,500.000000 | yes |
+| Credit total $22,500.000000 | yes |
+| Transfer difference $0.000000 | yes |
+
+---
+
+## 4. Wrong readings
+
+| Wrong reading | Stated value / claim | Correct as a mistake pattern? |
+|---|---|---|
+| Funded-use $90,000 with destination $100,000 | Both should be the same fourteen-funded sum | yes — describes the first-derivation inconsistency; current data gives $100,000 on both sides |
+| Rejecting a difference exactly at tolerance | Boundary should be accepted | yes — matches extract checker rule |
+| Applying $0.000001 structural tolerance to cash | $0.004 would be wrongly rejected | yes — cash uses the annual-funding tolerance |
+| Omitting a funded use kind from one side | Five members must cover all fourteen kinds | yes |
+| Subtracting unfunded from funded | Disposition would be $97,000, not $103,000 | yes ($100,000 − $3,000 = $97,000) |
+| Adding debits and credits | Would yield $45,000, not an identity compare | yes ($22,500 + $22,500 = $45,000) |
+
+---
+
+## 5. Tolerances and boundary acceptance
+
+| Tolerance | Expected | Extract constant | Match |
+|---|---|---|---|
+| Structural (use / transfer) | $0.000001 | `CASH_FLOW_RECONCILIATION_TOLERANCE_PLAN_DOLLARS = 1e-6` | yes |
+| Cash (annual funding) | $0.005 | `CASH_FLOW_CASH_IDENTITY_TOLERANCE_PLAN_DOLLARS = ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS` (numeric literal not in extract; capture comment: “inclusive half-cent residual”) | yes by wiring and half-cent semantics |
+
+**Boundary statement:** The Expected claim that a difference exactly at the bound is accepted follows the extract: reconciliation uses `Math.abs(difference) > tolerance` (strict greater than), so `abs(0.005) > 0.005` and `abs(0.000001) > 0.000001` are both false and boundary values are accepted. The Expected `abs($0.004) <= $0.005` acceptance statement for cash is equivalent under that rule.
+
+---
+
+## 6. Verdict
+
+**Approve.** All arithmetic recomputes cleanly; per-line funded + unfunded = requested holds; funded total and destination total both equal $100,000 and partition the same fourteen funded fields; every Expected figure matches; wrong readings are accurate; tolerances and boundary acceptance align with the extract. The re-derivation fixes the first derivation’s internal inconsistency.
+
+Reviewed by: cursor (composer), 2026-09-18, by independent recomputation without executing the engine.

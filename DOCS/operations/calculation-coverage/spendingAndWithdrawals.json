@@ -1024,7 +1024,7 @@
       ],
       "feeds": [],
       "purpose": "The single figure for everything drawn from the portfolio this year.",
-      "statement": "projection/internal/types/yearLedger.ts#YearWithdrawals.total is cash + taxable + traditional + roth + hsa for the published year row. projection/internal/annualWithdrawalPlanning.ts#annualWithdrawalPlan folds the planned categories into byCategory.total in that operand order, and projection/internal/annualFundingApplicationAndClosePhase.ts#annualFundingApplicationAndClosePhase publishes the reported total as that planned total plus the forced amounts each category also carries — the RMD and SEPP totals, the inherited distributions and the retirement-action proceeds. Units: nominal USD per year. Rounding: none.",
+      "statement": "projection/internal/types/yearLedger.ts#YearWithdrawals.total is cash + taxable + traditional + roth + hsa for the published year row, with one documented departure: in a year with a non-qualified inherited Roth distribution the categories exceed the total by that distribution's taxable earnings, which enter traditional as inherited ordinary income as well as roth (D-INHERITED-ROTH-SLICE). projection/internal/annualWithdrawalPlanning.ts#annualWithdrawalPlan folds the planned categories into byCategory.total in that operand order, and projection/internal/annualFundingApplicationAndClosePhase.ts#annualFundingApplicationAndClosePhase publishes the reported total as that planned total plus the forced amounts each category also carries — the RMD and SEPP totals, the inherited distributions and the retirement-action proceeds. Units: nominal USD per year. Rounding: none.",
       "formula": {
         "expression": "total = cash + taxable + traditional + roth + hsa",
         "variables": [
@@ -1041,7 +1041,8 @@
       "limits": [
         "Asserted on a real simulatePlan run whose five accounts hold exactly the worksheet's five category amounts and whose spending exceeds their sum, so sequential ordering drains every one of them and the published categories are the worksheet's. Plan assumptions beyond the worksheet's inputs: a single 76-year-old filing single in KY with a zero state rate, zero inflation, zero account return, no taxable yield, cost basis equal to balance, sequential withdrawal order, and a base lifestyle far above the portfolio, so the year also publishes a shortfall",
         "The year's traditional draw includes an RMD, so the fixture also asserts that the published total is the five categories and not the five categories with the RMD added again",
-        "Roth dollars are a member like any other; subtracting them as a tax offset is the worksheet's second wrong reading"
+        "Roth dollars are a member like any other; subtracting them as a tax offset is the worksheet's second wrong reading",
+        "Known departure (D-INHERITED-ROTH-SLICE): the publishing site composes total as the need-based category total plus RMDs, SEPP payments, the inherited executed total and retirement-action proceeds, while traditional adds inherited ordinary income including a non-qualified inherited Roth distribution's taxable earnings and roth adds the forced inherited Roth distribution, so in such a year the five categories exceed total by that earnings slice. The fixture's plan carries no inherited account, so the identity is asserted only for a year without one"
       ],
       "worksheet": "DOCS/calculations/spending-and-withdrawals/withdrawals-total-annual.md",
       "mutation": "DOCS/calculations/spending-and-withdrawals/withdrawals-total-annual.mutation.md",

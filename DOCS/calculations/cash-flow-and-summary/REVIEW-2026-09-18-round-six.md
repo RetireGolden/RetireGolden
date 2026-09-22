@@ -284,3 +284,120 @@ Last row 2031 → **$901,375.625**. Empty rows → **$0**.
 | spending-shortfall-annual | yes | approve with note |
 
 Reviewed by: cursor (composer), 2026-09-18, by independent recomputation without executing the engine.
+
+---
+
+## Re-check 2026-09-22: flexible-goal-outcomes-annual two cases
+
+**Scope:** Re-derived worksheet `flexible-goal-outcomes-annual.md` (revision 2026-09-22). Recomputed from **Inputs** and **Justification** only (Arithmetic not trusted). No engine bodies read; no commands run.
+
+**Shared inputs**
+
+Planning year 2030; cumulative inflation factor `1.10`. Visiting order: required fixed → target movable → ideal movable → excess movable (priority 1) → excess skippable (priority 2).
+
+Nominal amounts (today × 1.10): $1,100; $1,100; $1,100; $550; $440.
+
+### Case A — non-cutting pull-forward year, remaining upside budget $1,700
+
+| Step | Goal | Nominal | Budget constrains? | Outcome | Budget before | Paid | Budget after |
+|---:|---|---:|---|---|---:|---:|---:|
+| 1 | Required fixed | $1,100 | No (fixed in target year; does not draw flexible budget) | Funded | $1,700 | $1,100 | $1,700 |
+| 2 | Target movable | $1,100 | Yes (2030 < target 2031) | Fully funded | $1,700 | $1,100 | $600 |
+| 3 | Ideal movable | $1,100 | Yes (2030 < target 2031) | Partial: inflated minimum = $1,100 × 50% = $550; $600 ≥ $550 → pay min($1,100, $600) = $600; unfunded $500 | $600 | $600 | $0 |
+| 4 | Excess movable | $550 | Yes (2030 < target 2031) | Deferred (2030 < latest 2032; no partial rule; budget $0) | $0 | — | $0 |
+| 5 | Excess skippable | $440 | No (in target year in a non-cutting year → funds in full regardless of exhausted budget) | Funded | $0 | $440 | $0 |
+
+- Counts: funded = **3**, partiallyFunded = **1**, deferred = **1**, skipped = **0**
+- fundedAmount = $1,100 + $1,100 + $600 + $440 = **$3,240**
+- unfundedAmount = $1,100 − $600 = **$500**
+
+**Match worksheet Expected:** yes.
+
+### Case B — cutting year, flexible budget 0
+
+| Step | Goal | Nominal | Budget constrains? | Outcome | Budget before | Paid | Budget after |
+|---:|---|---:|---|---|---:|---:|---:|
+| 1 | Required fixed | $1,100 | No (fixed in target year) | Funded | $0 | $1,100 | $0 |
+| 2 | Target movable | $1,100 | Yes (cutting year) | Deferred (2030 < latest 2032) | $0 | — | $0 |
+| 3 | Ideal movable | $1,100 | Yes (cutting year) | Deferred (2030 < latest 2032) | $0 | — | $0 |
+| 4 | Excess movable | $550 | Yes (cutting year) | Deferred (2030 < latest 2032) | $0 | — | $0 |
+| 5 | Excess skippable | $440 | Yes (cutting year; at latestYear 2030) | Skipped; $440 unfunded (intended spending in excess layer) | $0 | — | $0 |
+
+- Counts: funded = **1**, partiallyFunded = **0**, deferred = **3**, skipped = **1**
+- fundedAmount = **$1,100**
+- unfundedAmount = **$440**
+
+**Match worksheet Expected:** yes.
+
+**Guardrail-off case:** all six published fields = 0 (per Justification).
+
+**Rule alignment (Justification vs quoted contract):** Matches the worksheet's stated contract: classification → priority → plan order; fixed goal funds unconditionally in target year without consuming flexible budget; flexible budget constrains movable/skippable goals only when funded before target year or in a cutting year; in a non-cutting year a goal in or at its target year funds in full; full fund when budget covers inflated amount; partial when allowed and budget ≥ inflated minimum; defer before `latestYear`; skip at `latestYear` in a cutting year with skipped amount in layer intended spending and `unfundedAmount`. The revision correctly splits the prior unreachable single case (cutting year with $1,700 budget) into pull-forward (Case A) and cutting (Case B).
+
+**Wrong readings (3/3 verified):**
+1. Fixed consumes flexible budget → remainder $600; goal 2 defers; goal 3 partial $600; goal 4 defers; goal 5 still funds $440 in full → counts **2/1/2/0**, fundedAmount **$2,140**, unfundedAmount **$500** ✓
+2. Goal 3 minimum tested on $1,000 today ($500) vs correct inflated $550 — qualitative threshold error; with $600 remainder both rules agree (coincidental match 3/1/1/0, $3,240 / $500); with $520 remainder wrong rule would partial where correct rule defers ✓
+3. Case B: drop terminal skipped $440 → unfunded **$0** instead of **$440** ✓
+
+**Verdict:** approve.
+
+Reviewed by: cursor (composer-2.5), 2026-09-22 (re-check), by independent recomputation without executing the engine.
+
+---
+
+## Re-check 2026-09-22 (correction): flexible-goal-outcomes-annual cutting case
+
+**Scope:** Corrected worksheet `flexible-goal-outcomes-annual.md` (revision 2026-09-22, same-day correction). Recomputed from **Inputs** and **Justification** only (Arithmetic not trusted). No engine bodies read; no commands run.
+
+**Contract applied (correction):** A movable or skippable goal enters the schedule in its target year, or from its earliest year when goals may be pulled forward, and leaves it after `latestYear`; a goal not in the schedule has no outcome that year.
+
+**Shared inputs**
+
+Planning year 2030; cumulative inflation factor `1.10`. Visiting order: required fixed → target movable → ideal movable → excess movable (priority 1) → excess skippable (priority 2).
+
+Nominal amounts (today × 1.10): $1,100; $1,100; $1,100; $550; $440.
+
+### Case A — non-cutting pull-forward year, remaining upside budget $1,700
+
+| Step | Goal | In schedule? | Budget constrains? | Outcome | Budget before | Paid | Budget after |
+|---:|---|---|---|---|---:|---:|---:|
+| 1 | Required fixed | Yes (target 2030) | No (fixed in target year; does not draw flexible budget) | Funded | $1,700 | $1,100 | $1,700 |
+| 2 | Target movable | Yes (earliest 2030; pull-forward allowed) | Yes (2030 < target 2031) | Fully funded | $1,700 | $1,100 | $600 |
+| 3 | Ideal movable | Yes (earliest 2030; pull-forward allowed) | Yes (2030 < target 2031) | Partial: inflated minimum = $1,100 × 50% = $550; $600 ≥ $550 → pay min($1,100, $600) = $600; unfunded $500 | $600 | $600 | $0 |
+| 4 | Excess movable | Yes (earliest 2030; pull-forward allowed) | Yes (2030 < target 2031) | Deferred (2030 < latest 2032; no partial rule; budget $0) | $0 | — | $0 |
+| 5 | Excess skippable | Yes (target 2030) | No (in target year in a non-cutting year → funds in full regardless of exhausted budget) | Funded | $0 | $440 | $0 |
+
+- Counts: funded = **3**, partiallyFunded = **1**, deferred = **1**, skipped = **0**
+- fundedAmount = $1,100 + $1,100 + $600 + $440 = **$3,240**
+- unfundedAmount = $1,100 − $600 = **$500**
+
+**Match worksheet Expected:** yes.
+
+### Case B — cutting year, flexible budget 0, no pull-forward
+
+| Step | Goal | In schedule? | Budget constrains? | Outcome | Budget before | Paid | Budget after |
+|---:|---|---|---|---|---:|---:|---:|
+| 1 | Required fixed | Yes (target 2030) | No (fixed in target year) | Funded | $0 | $1,100 | $0 |
+| 2 | Target movable | **No** (target 2031; pull-forward disallowed in cutting year) | — | **No outcome** (not deferred; not in schedule) | — | — | — |
+| 3 | Ideal movable | **No** (target 2031; pull-forward disallowed) | — | **No outcome** | — | — | — |
+| 4 | Excess movable | **No** (target 2031; pull-forward disallowed) | — | **No outcome** | — | — | — |
+| 5 | Excess skippable | Yes (target and latest 2030) | Yes (cutting year; at `latestYear`) | Skipped; $440 unfunded (intended spending in excess layer) | $0 | — | $0 |
+
+- Counts: funded = **1**, partiallyFunded = **0**, deferred = **0**, skipped = **1**
+- fundedAmount = **$1,100**
+- unfundedAmount = **$440**
+
+**Match worksheet Expected:** yes.
+
+**Guardrail-off case:** all six published fields = 0 (per Justification).
+
+**Rule alignment (corrected contract):** Goals 2–4 in Case B are outside the 2030 schedule because their target year is 2031 and pull-forward is disallowed in a cutting year; they therefore publish no outcome and do not increment `deferred`. Only goal 5, which is in the schedule at its `latestYear` in a cutting year, skips. Case A is unchanged: pull-forward brings goals 2–4 into the schedule from earliest year 2030, and goal 5 funds in full in a non-cutting target year regardless of exhausted budget.
+
+**Wrong readings (4/4 verified):**
+1. Case A: fixed consumes flexible budget → remainder $600; goal 2 defers; goal 3 partial $600; goal 4 defers; goal 5 still funds $440 in full → counts **2/1/2/0**, fundedAmount **$2,140**, unfundedAmount **$500** ✓
+2. Case A: goal 3 minimum tested on $1,000 today ($500) vs correct inflated $550 — qualitative threshold error; with $600 remainder both rules agree (coincidental match 3/1/1/0, $3,240 / $500); with $520 remainder wrong rule would partial where correct rule defers ✓
+3. Case B: drop terminal skipped $440 → unfunded **$0** instead of **$440** ✓
+4. Case B: treat goals 2–4 as deferred though not in schedule → **deferred = 3** instead of **deferred = 0** ✓
+
+**Verdict:** approve.
+
+Reviewed by: cursor (composer-2.5), 2026-09-22 (re-check), by independent recomputation without executing the engine.

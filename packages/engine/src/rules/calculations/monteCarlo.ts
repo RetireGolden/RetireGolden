@@ -897,27 +897,28 @@ export const monteCarloRecords = {
     kind: 'data',
     outputs: ['stochastic-frontier-variant-axis'],
     statement:
-      'Each frontier point\'s x is the caller\'s grid value for that variant. For buildSpendingSuccessFrontier it is the variant plan\'s expenses.baseAnnual, that is max(0, round(baseAnnual x multiplier)); for buildRetirementAgeSuccessFrontier it is the caller-supplied retirement-age delta in years, negative for earlier and 0 for the current age. Neither is inferred from the point\'s stochastic row. For baseAnnual $60,000 with multipliers 0.8, 1.0 and 1.2 the axis is $48,000, $60,000 and $72,000; for deltas -2, 0 and 3 the axis is -2, 0 and 3. Units: usd on the spending axis, years on the retirement-age axis. Rounding: the spending variant rounds to whole dollars and floors at 0; the retirement-age value is the caller\'s integer. Compared exactly.',
+      'Each frontier point\'s x is the caller\'s grid value for that variant. For buildSpendingSuccessFrontier it is the variant plan\'s expenses.baseAnnual, that is max(0, round(baseAnnual x multiplier)); for buildRetirementAgeSuccessFrontier it is the lowest resulting retirement age among the people who have one, each moved by the caller\'s delta and clamped to [30, 80], or 0 when nobody has a retirement age. Neither is inferred from the point\'s stochastic row. For baseAnnual $60,000 with multipliers 0.8, 1.0 and 1.2 the axis is $48,000, $60,000 and $72,000; for deltas -2, 0 and 3 on a one-person plan retiring at 65 the axis is 63, 65 and 68; for two people at 65 and 62 with delta +3 it is 65; for age 31 with delta -2 it is 30. Units: usd on the spending axis, years on the retirement-age axis. Rounding: the spending variant rounds to whole dollars and floors at 0; the retirement-age variant clamps to [30, 80] and is not otherwise rounded.',
     formula: {
-      expression: 'x_spending(i) = max(0, round(baseAnnual x multiplier_i)); x_retirementAge(i) = delta_i',
+      expression: 'x_spending(i) = max(0, round(baseAnnual x multiplier_i)); x_retirementAge(i) = min over people p with a retirement age of clamp(age_p + delta_i, 30, 80), or 0 when no person has one',
       variables: [
         { symbol: 'baseAnnual', meaning: 'Base plan\'s annual base expenses', unit: 'usd', domain: 'worksheet 60,000' },
         { symbol: 'multiplier_i', meaning: 'Caller\'s spending multiplier for variant i', unit: '1', domain: 'worksheet 0.8, 1.0, 1.2' },
-        { symbol: 'delta_i', meaning: 'Caller\'s signed retirement-age change for variant i', unit: 'years', domain: 'worksheet -2, 0, 3' },
+        { symbol: 'delta_i', meaning: 'Caller\'s signed retirement-age change for variant i, applied to each person\'s planned retirement age', unit: 'years', domain: 'worksheet -2, 0, 3' },
+        { symbol: 'age_p', meaning: 'Person p\'s planned retirement age', unit: 'years', domain: 'worksheet 65; 65 and 62; 31' },
       ],
       timing: 'once per variant, when the frontier builds its plan set',
-      rounding: 'spending rounds to whole dollars and floors at 0; the retirement-age delta is not rounded',
+      rounding: 'spending rounds to whole dollars and floors at 0; the retirement-age result is clamped to [30, 80] and not otherwise rounded',
     },
     justification: {
       kind: 'derivation',
       worksheet: 'DOCS/calculations/monte-carlo/monte-carlo-stochastic-frontier-axis.md',
     },
     limits: [
-      'The two axes are not the same quantity: the spending axis is the variant\'s absolute base annual expense, while the retirement-age axis is a signed change, so the spending axis is not a delta from the base (-12,000, 0, 12,000)',
+      'The two axes are not the same quantity: the spending axis is the variant\'s absolute base annual expense, while the retirement-age axis is the resulting planned age, so neither axis is a delta from the base: not -12,000, 0 and 12,000, and not -2, 0 and 3',
       'A frontier sweep is capped at MAX_FRONTIER_POINTS (15) points and neither builder searches; the grid is always the caller\'s',
       'A point\'s other figures (the three success rates, the ending-estate percentiles, expected shortfall) come from the variant\'s Monte Carlo summary and are not this record\'s claim; the evidence asserts x only',
       'The evidence runs the real builders on a small one-person plan at pathCount 2 and seed 123, the smallest reproducible run the options allow, because the axis does not depend on the stochastic result at all',
-      'Open finding, 2026-09-18: buildRetirementAgeSuccessFrontier publishes the minimum resulting planned retirement age, not the caller\'s delta (63, 65 and 68 for deltas -2, 0 and 3 on a plan retiring at 65), so the worksheet\'s retirement-age expectation fails against production as it stands, while the pinned StochasticFrontierPoint.x doc comment states the delta',
+      'The retirement-age axis was first derived as the caller\'s delta from the StochasticFrontierPoint.x doc comment, which stated the delta; on 2026-09-18 the comment was corrected to the resulting clamped age the builder publishes, the worksheet was re-derived and re-approved on it, and the evidence pins 63, 65 and 68 for deltas -2, 0 and 3 on a plan retiring at 65, 65 for the two-person case and 30 at the lower clamp',
     ],
     implementedBy: ['packages/engine/src/montecarlo/frontiers.ts'],
     implementedByFunctions: [

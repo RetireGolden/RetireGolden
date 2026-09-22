@@ -20,7 +20,7 @@ Last row is 2031, so ending net worth `= $901,375.625`.
 
 ## Expected
 
-Exact value: `$901,375.625`. Fixture tolerance: absolute `$0.005`, because the copied ledger dollar is represented in binary floating point. An empty `years` array produces exactly `$0`.
+Exact value: `$901,375.625`. Fixture tolerance: absolute `$0.005`, because the copied ledger dollar is represented in binary floating point. An empty `years` array produces exactly `$0`; that is the publishing site's fallback as the field comment states it, and it is a contract statement here rather than executed evidence, because `simulatePlan` emits at least one row for a living household and no caller produces an empty array.
 
 ## Wrong readings
 
@@ -36,3 +36,5 @@ feeds: none.
 ## Provenance
 
 Derived by: codex (gpt-5.6-sol), 2026-09-18, from the signatures-and-comments extract only, without executing the engine or reading any implementation body. Reviewed by: cursor (composer-2.5), 2026-09-18, by independent recomputation without executing the engine; see REVIEW-2026-09-18-round-six.md in this directory.
+
+Revision note (2026-09-22, pull-request review of #729): the empty-array sentence now says it is a contract statement the fixture does not execute; the fixture's earlier assertion of it compared a hand-built result with itself and was removed. No value changed.
