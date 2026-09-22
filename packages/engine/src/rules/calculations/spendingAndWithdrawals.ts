@@ -367,4 +367,237 @@ export const spendingAndWithdrawalsRecords = {
     verifiedOn: '2026-09-18',
     provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
   },
+  'spending-total-annual': {
+    title: 'Annual net expense total',
+    purpose: 'The year\'s actual net outflow, and which expense members compose it.',
+    kind: 'composition',
+    outputs: ['spending-total-annual'],
+    feeds: ['portfolio-need-annual'],
+    statement:
+      'projection/internal/annualExpenseSummary.ts#annualExpenseSummary publishes projection/internal/types/yearLedger.ts#YearExpenses.total as baseSpending + oneTimeGoals + debtService + propertyCosts + healthcare + insurancePremiums + careCost - ltcBenefit, kept in that left-to-right association because regrouping the LTC pair can move the last bit. careCost is gross and ltcBenefit offsets it. guardrailFactor is descriptive — the cut is already inside baseSpending and is never multiplied in again. requiredSpending, targetSpending, idealSpending, excessSpending and intendedSpending are overlapping layer summaries, not additional members, and intendedSpending is the no-cut request and need not equal this total. Units: nominal USD per year. Rounding: none.',
+    formula: {
+      expression: 'total = baseSpending + oneTimeGoals + debtService + propertyCosts + healthcare + insurancePremiums + careCost - ltcBenefit',
+      variables: [
+        { symbol: 'baseSpending', meaning: 'Recurring lifestyle spending already net of the guardrail cut', unit: 'usd/year', domain: 'nonnegative' },
+        { symbol: 'oneTimeGoals', meaning: 'One-time goals funded this year', unit: 'usd/year', domain: 'nonnegative' },
+        { symbol: 'careCost, ltcBenefit', meaning: 'Gross care-episode cost and the policy benefit offsetting it', unit: 'usd/year', domain: 'nonnegative; the benefit is subtracted' },
+        { symbol: 'guardrailFactor', meaning: 'Discretionary multiplier already applied inside baseSpending', unit: '1', domain: 'descriptive only' },
+      ],
+      timing: 'once per projection year, at the expense summary',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/spending-and-withdrawals/spending-total-annual.md',
+    },
+    limits: [
+      'Asserted at the annualExpenseSummary seam with the worksheet\'s eight member amounts, because the worksheet states them as published year-row components: a single real plan cannot present a chosen base spending, one-time goal, debt service, property cost, healthcare charge, insurance premium, gross care cost and LTC benefit at those exact values simultaneously',
+      'Cross-checked on a real simulatePlan run: the published total of that year row equals the same row\'s own eight published members in the same association',
+      'The guardrail factor and intended spending are asserted NOT to enter: the fixture drives the seam with a factor of 0.90 and an intended request of $100,000 and shows neither changes the total',
+    ],
+    implementedBy: [
+      'packages/engine/src/projection/internal/annualExpenseSummary.ts',
+      'packages/engine/src/projection/internal/types/yearLedger.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualExpenseSummary.ts#annualExpenseSummary',
+      'packages/engine/src/projection/internal/types/yearLedger.ts#YearExpenses.total',
+    ],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
+  'spending-base-annual': {
+    title: 'Annual base spending after the guardrail cut',
+    purpose: 'Recurring lifestyle spending actually intended once the guardrail has rationed the target layer.',
+    kind: 'composition',
+    outputs: ['spending-base-annual'],
+    feeds: ['spending-total-annual'],
+    statement:
+      'projection/internal/annualGuardrailFunding.ts#annualGuardrailFundingPlan computes targetLifestyleFunded as targetLifestyle x min(1, discretionaryMultiplier) while guardrails are active, and the full targetLifestyle otherwise; projection/internal/annualExpenseSummary.ts#annualExpenseSummary then publishes projection/internal/types/yearLedger.ts#YearExpenses.baseSpending as requiredLifestyle + targetLifestyleFunded + idealLifestyleFunded + excessLifestyleFunded. The cap keeps a multiplier above one from inflating the target layer; upside instead reaches the separately funded ideal and excess layers. One-time goals and the system-computed costs are excluded — expenses.total adds them. The same multiplier is published unchanged as expenses.guardrailFactor. Units: nominal USD per year. Rounding: none.',
+    formula: {
+      expression: 'baseSpending = requiredLifestyle + targetLifestyle * min(1, guardrailFactor) + idealLifestyleFunded + excessLifestyleFunded',
+      variables: [
+        { symbol: 'requiredLifestyle', meaning: 'Required-floor lifestyle layer, never cut', unit: 'usd/year', domain: 'nonnegative' },
+        { symbol: 'targetLifestyle', meaning: 'Full target lifestyle layer before the cut', unit: 'usd/year', domain: 'nonnegative' },
+        { symbol: 'guardrailFactor', meaning: 'This year\'s discretionary multiplier', unit: '1', domain: 'nonnegative; capped at 1 for this term' },
+        { symbol: 'idealLifestyleFunded, excessLifestyleFunded', meaning: 'Upside layers funded this year', unit: 'usd/year', domain: 'nonnegative' },
+      ],
+      timing: 'once per projection year, after the guardrail decision and before the funding fixed point',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/spending-and-withdrawals/spending-base-annual.md',
+    },
+    limits: [
+      'The same published field is also the output of abw-annuity-due-payment, which computes it under the ABW spending policy; this record is the guardrail-policy composition of the same field, so the family carries two records rather than one',
+      'The worksheet\'s two cases are states annualGuardrailFundingPlan produces, and the evidence runs the real phase for a live household: a cutting year holding an incoming 0.75 (its withdrawal rate at its starting rate, so the policy holds, as in any year after a cut), where the phase funds the target layer at the factor and no upside because the upside budget is max(0, multiplier - 1) x the guardrail step basis; and a year with no policy active, where the full target layer and both upside layers fund. The first derivation paired a 0.75 cut with $4,000 of funded ideal and $1,500 of funded excess, which the YearExpenses.baseSpending comment rules out; it was re-derived on 2026-09-22 and re-approved by the reviewer, and the min(1, factor) cap is also asserted at a held multiplier of 1.4',
+      'The $8,000 one-time goal is passed to annualExpenseSummary beside the phase\'s funded layers and asserted to be absent from baseSpending while present in expenses.total, which is the worksheet\'s second wrong reading',
+    ],
+    implementedBy: [
+      'packages/engine/src/projection/internal/annualExpenseSummary.ts',
+      'packages/engine/src/projection/internal/annualGuardrailFunding.ts',
+      'packages/engine/src/projection/internal/types/yearLedger.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualExpenseSummary.ts#annualExpenseSummary',
+      'packages/engine/src/projection/internal/annualGuardrailFunding.ts#annualGuardrailFundingPlan',
+      'packages/engine/src/projection/internal/types/yearLedger.ts#YearExpenses.baseSpending',
+    ],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
+  'withdrawals-total-annual': {
+    title: 'Annual withdrawal total',
+    purpose: 'The single figure for everything drawn from the portfolio this year.',
+    kind: 'composition',
+    outputs: ['withdrawals-total-annual'],
+    statement:
+      'projection/internal/types/yearLedger.ts#YearWithdrawals.total is cash + taxable + traditional + roth + hsa for the published year row, with one documented departure: in a year with a non-qualified inherited Roth distribution the categories exceed the total by that distribution\'s taxable earnings, which enter traditional as inherited ordinary income as well as roth (D-INHERITED-ROTH-SLICE). projection/internal/annualWithdrawalPlanning.ts#annualWithdrawalPlan folds the planned categories into byCategory.total in that operand order, and projection/internal/annualFundingApplicationAndClosePhase.ts#annualFundingApplicationAndClosePhase publishes the reported total as that planned total plus the forced amounts each category also carries — the RMD and SEPP totals, the inherited distributions and the retirement-action proceeds. Units: nominal USD per year. Rounding: none.',
+    formula: {
+      expression: 'total = cash + taxable + traditional + roth + hsa',
+      variables: [
+        { symbol: 'cash, taxable, traditional, roth, hsa', meaning: 'Published withdrawal totals by source-account category', unit: 'usd/year', domain: 'nonnegative' },
+      ],
+      timing: 'once per projection year, at the funding-and-close phase',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/spending-and-withdrawals/withdrawals-total-annual.md',
+    },
+    limits: [
+      'Asserted on a real simulatePlan run whose five accounts hold exactly the worksheet\'s five category amounts and whose spending exceeds their sum, so sequential ordering drains every one of them and the published categories are the worksheet\'s. Plan assumptions beyond the worksheet\'s inputs: a single 76-year-old filing single in KY with a zero state rate, zero inflation, zero account return, no taxable yield, cost basis equal to balance, sequential withdrawal order, and a base lifestyle far above the portfolio, so the year also publishes a shortfall',
+      'The year\'s traditional draw includes an RMD, so the fixture also asserts that the published total is the five categories and not the five categories with the RMD added again',
+      'Roth dollars are a member like any other; subtracting them as a tax offset is the worksheet\'s second wrong reading',
+      'Known departure (D-INHERITED-ROTH-SLICE): the publishing site composes total as the need-based category total plus RMDs, SEPP payments, the inherited executed total and retirement-action proceeds, while traditional adds inherited ordinary income including a non-qualified inherited Roth distribution\'s taxable earnings and roth adds the forced inherited Roth distribution, so in such a year the five categories exceed total by that earnings slice. The fixture\'s plan carries no inherited account, so the identity is asserted only for a year without one',
+    ],
+    implementedBy: [
+      'packages/engine/src/projection/internal/types/yearLedger.ts',
+      'packages/engine/src/projection/internal/annualWithdrawalPlanning.ts',
+      'packages/engine/src/projection/internal/annualFundingApplicationAndClosePhase.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/internal/types/yearLedger.ts#YearWithdrawals.total',
+      'packages/engine/src/projection/internal/annualWithdrawalPlanning.ts#annualWithdrawalPlan',
+      'packages/engine/src/projection/internal/annualFundingApplicationAndClosePhase.ts#annualFundingApplicationAndClosePhase',
+    ],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
+  'withdrawals-by-category-annual': {
+    title: 'Annual withdrawals partitioned by source-account category',
+    purpose: 'Which bucket each withdrawn dollar is reported in, and which named amounts are subsets rather than extra categories.',
+    kind: 'composition',
+    outputs: ['withdrawals-by-category-annual'],
+    feeds: ['withdrawals-total-annual'],
+    statement:
+      'projection/internal/types/yearLedger.ts#YearWithdrawals partitions the year\'s draws by SOURCE ACCOUNT category in the sequential order cash, taxable, traditional, roth, hsa. projection/internal/annualFundingApplicationAndClosePhase.ts#annualFundingApplicationAndClosePhase assembles the reported vector: traditional carries the planned traditional draw plus the owner RMD total, the SEPP total and the forced inherited ordinary income; roth carries the planned Roth draw plus forced inherited Roth dollars; cash and taxable carry the retirement-action cash, equity-compensation and taxable proceeds. The separately published rmd, sepp, inheritedDistribution and inheritedTraditionalDistribution are SUBSETS of those categories, not extra categories and not amounts to add again. Units: nominal USD per year. Rounding: none.',
+    formula: {
+      expression: 'traditional = plannedTraditional + rmdTotal + seppTotal + inheritedOrdinaryIncome; roth = plannedRoth + inheritedRothForced; hsa = plannedHsa; cash and taxable add the retirement-action proceeds',
+      variables: [
+        { symbol: 'plannedX', meaning: 'The withdrawal planner\'s draw from category X', unit: 'usd/year', domain: 'nonnegative' },
+        { symbol: 'rmdTotal, seppTotal', meaning: 'Forced owner distributions, reported inside traditional', unit: 'usd/year', domain: 'nonnegative subsets' },
+        { symbol: 'inheritedOrdinaryIncome, inheritedRothForced', meaning: 'Forced inherited dollars, split by the character of the inherited account', unit: 'usd/year', domain: 'nonnegative subsets' },
+      ],
+      timing: 'once per projection year, at the funding-and-close phase',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/spending-and-withdrawals/withdrawals-by-category-annual.md',
+    },
+    limits: [
+      'Asserted on a real simulatePlan run whose five accounts hold exactly the worksheet\'s five category amounts and whose spending exceeds their sum, so each account drains and its category equals its own opening balance. Plan assumptions beyond the worksheet\'s inputs: a single 76-year-old filing single in KY with a zero state rate, zero inflation, zero account return, no taxable yield, cost basis equal to balance, sequential withdrawal order, and a base lifestyle far above the portfolio',
+      'The worksheet\'s stated subset split — $8,000 of RMD, $3,000 of SEPP, $2,000 of forced inherited traditional inside $18,000 of traditional, and $1,000 of forced inherited Roth inside $7,000 of Roth — is NOT constructed. Those four amounts are each determined by the engine from age, balance and beneficiary facts, and no plan sets them to chosen values inside a traditional draw that must also equal $18,000. The run\'s own RMD is asserted instead to be a nonzero subset of the published traditional category, which is the claim the worksheet\'s first wrong reading denies',
+      'HSA is a withdrawal category like the other four, not a sixth non-withdrawal bucket',
+    ],
+    implementedBy: [
+      'packages/engine/src/projection/internal/types/yearLedger.ts',
+      'packages/engine/src/projection/internal/annualFundingApplicationAndClosePhase.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/internal/types/yearLedger.ts#YearWithdrawals',
+      'packages/engine/src/projection/internal/annualFundingApplicationAndClosePhase.ts#annualFundingApplicationAndClosePhase',
+    ],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
+  'portfolio-need-annual': {
+    title: 'Annual net portfolio need',
+    purpose: 'What the portfolio has to supply this year, floored so a surplus is never reported as a need.',
+    kind: 'composition',
+    outputs: ['portfolio-need-annual'],
+    feeds: ['spending-shortfall-annual'],
+    statement:
+      'projection/internal/annualYearResultAssembly.ts#annualYearResultAssembly publishes projection/internal/types/result.ts#YearResult.netPortfolioNeed as Math.max(0, expenses.total + tax + penalties - incomes.total), computed from the committed ledger totals and the settled tax and penalty scalars at the end of the annual pass. It is what the year REQUIRED, not what the portfolio managed to supply: a year that cannot fund it still publishes the need and records the gap in shortfall. A year whose incomes cover every outflow publishes exactly 0. Units: nominal USD per year. Rounding: none.',
+    formula: {
+      expression: 'netPortfolioNeed = max(0, expenses.total + tax + penalties - incomes.total)',
+      variables: [
+        { symbol: 'expenses.total', meaning: 'The year\'s net outflow', unit: 'usd/year', domain: 'nonnegative' },
+        { symbol: 'tax, penalties', meaning: 'Settled tax and the penalty scalar, which is not inside tax', unit: 'usd/year', domain: 'nonnegative' },
+        { symbol: 'incomes.total', meaning: 'The year\'s cash income', unit: 'usd/year', domain: 'nonnegative' },
+      ],
+      timing: 'once per projection year, published last in the year-result assembly',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/spending-and-withdrawals/portfolio-need-annual.md',
+    },
+    limits: [
+      'Asserted at annualYearResultAssembly, the function that computes the field, with the worksheet\'s four year-row components, and separately on a real simulatePlan run where the published need equals its own row\'s published expenses, tax, penalties and incomes',
+      'The floor case the worksheet names — the same outflows against $120,000 of income — is asserted at the same seam, because the published need must be exactly 0 rather than the negative surplus',
+      'Penalties are a separate term from tax and are not inside it; omitting them is the worksheet\'s first wrong reading',
+    ],
+    implementedBy: [
+      'packages/engine/src/projection/internal/annualYearResultAssembly.ts',
+      'packages/engine/src/projection/internal/types/result.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualYearResultAssembly.ts#annualYearResultAssembly',
+      'packages/engine/src/projection/internal/types/result.ts#YearResult.netPortfolioNeed',
+    ],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
+  'spending-shortfall-annual': {
+    title: 'Annual funding shortfall after the HECM backstop',
+    purpose: 'What the year could not fund once every withdrawal and any reverse-mortgage draw had been applied.',
+    kind: 'composition',
+    outputs: ['spending-shortfall-annual'],
+    statement:
+      'projection/internal/annualHecmBackstop.ts#annualHecmBackstopPlan publishes shortfallAfterHecm = Math.max(0, portfolioShortfall - draw), the value the year publishes as projection/internal/types/result.ts#YearResult.shortfall: the funding gap that remains after every withdrawal AND any HECM backstop draw. projection/internal/types/result.ts#ProjectionResult.depletionYear is the first year this exceeds projection/moneyTolerance.ts#ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS, the ledger\'s own half-cent residual budget; a residual at or below that budget is not depletion. Units: nominal USD per year. Rounding: none.',
+    formula: {
+      expression: 'shortfall = max(0, needAfterWithdrawals - hecmDraw); depletionYear = first year with shortfall > ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS',
+      variables: [
+        { symbol: 'needAfterWithdrawals', meaning: 'Funding gap left after every withdrawal', unit: 'usd/year', domain: 'nonnegative' },
+        { symbol: 'hecmDraw', meaning: 'Tax-free HECM line-of-credit proceeds drawn as a backstop', unit: 'usd/year', domain: 'nonnegative; 0 without a HECM' },
+        { symbol: 'ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS', meaning: 'The ledger\'s accepted annual residual', unit: 'usd', domain: 'half a cent' },
+      ],
+      timing: 'once per projection year, after the funding fixed point and the HECM backstop',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/spending-and-withdrawals/spending-shortfall-annual.md',
+    },
+    limits: [
+      'Asserted on a real simulatePlan run that realizes the worksheet\'s four inputs: a $10,000 cash account, a $12,000 lifestyle need, and a last-resort HECM whose principal limit is exactly $1,500, leaving the worksheet\'s $500. Plan assumptions beyond the worksheet\'s inputs: a single 64-year-old filing single in KY with a zero state rate, zero inflation, zero account and property return, a zero pre-65 premium so healthcare charges nothing, a primary residence worth $30,000 carrying the HECM at the schema\'s minimum 5 percent principal limit with a zero growth rate, and no earlier projection year, so the worksheet\'s "earlier-year shortfalls 0" holds by construction',
+      'The worksheet declines to state the depletion tolerance numerically, so the fixture imports ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS from production, confirms the $500 exceeds it, and only then asserts the run\'s depletionYear',
+      'The year\'s pre-HECM gap is asserted separately from the published figure, because publishing the pre-HECM gap is the worksheet\'s first wrong reading',
+    ],
+    implementedBy: [
+      'packages/engine/src/projection/internal/annualHecmBackstop.ts',
+      'packages/engine/src/projection/internal/types/result.ts',
+      'packages/engine/src/projection/moneyTolerance.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualHecmBackstop.ts#annualHecmBackstopPlan',
+      'packages/engine/src/projection/internal/types/result.ts#YearResult.shortfall',
+      'packages/engine/src/projection/moneyTolerance.ts#ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS',
+    ],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
 } satisfies Record<string, CalculationRecord>

@@ -1295,6 +1295,708 @@
       }
     },
     {
+      "id": "monte-carlo-depletion-distribution",
+      "title": "Depletion-year histogram across paths",
+      "kind": "formula",
+      "outputs": [
+        "monte-carlo-depletion-year-histogram"
+      ],
+      "feeds": [],
+      "purpose": "How many paths first ran out of investable assets in each year, with the paths that never depleted left out.",
+      "statement": "Every path with a non-null depletionYear adds 1 to that year's bucket; a path whose depletionYear is null never depleted and contributes nothing at all. The buckets are published as { year, count } rows in ascending year order, one row per year that occurs. For the worksheet's five paths (null, 2031, 2031, 2033, null) the rows are [{ year: 2031, count: 2 }, { year: 2033, count: 1 }]. Units: paths per calendar year. Rounding: none; integer counts and years, compared exactly.",
+      "formula": {
+        "expression": "count(y) = |{ p : p.depletionYear = y }| for each y that occurs, rows sorted by ascending y",
+        "variables": [
+          {
+            "symbol": "p.depletionYear",
+            "meaning": "Year a path first depleted; null when it never did",
+            "unit": "calendar year or null",
+            "domain": "worksheet null, 2031, 2031, 2033, null"
+          },
+          {
+            "symbol": "count(y)",
+            "meaning": "Paths first depleting in year y",
+            "unit": "paths",
+            "domain": "integer >= 1 for a year that appears"
+          }
+        ],
+        "timing": "once per aggregation, over the completed path set",
+        "rounding": "none; integer counts"
+      },
+      "limits": [
+        "Successful paths are absent entirely: there is no null bucket, and no zero row for a year in which nothing depleted",
+        "The rows are grouped, not one row per failing path; the two 2031 failures are one row of count 2",
+        "depletionProbabilityByYear divides these counts by a base this record does not publish; monte-carlo-depletion-probability-by-year states that rule",
+        "The evidence supplies depletionYear only; every other MonteCarloPath field is at the fixture's neutral (zero balances and shortfalls, floor and target met, attainment 1, no goal or guardrail activity, no bequest target)"
+      ],
+      "worksheet": "DOCS/calculations/monte-carlo/monte-carlo-depletion-distribution.md",
+      "mutation": "DOCS/calculations/monte-carlo/monte-carlo-depletion-distribution.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/montecarlo/run.ts"
+      ],
+      "provenance": {
+        "derivedBy": "codex",
+        "implementedBy": "claude",
+        "reviewedBy": "cursor"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/montecarlo/run.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
+      "id": "monte-carlo-depletion-probability-by-year",
+      "title": "Depletion probability and cumulative probability by year",
+      "kind": "formula",
+      "outputs": [
+        "monte-carlo-depletion-probability-by-year"
+      ],
+      "feeds": [],
+      "purpose": "The chance the plan first runs out in each depletion year, taken over every path, with the running total.",
+      "statement": "One row per depletion year, in depletionYearCounts order: probability = count / pathCount, with the successful paths kept in the denominator, and cumulativeProbability = the running sum of those probabilities through that row. For six paths depleting in 2031 (1), 2033 (2) and 2035 (1) alongside two successes, the rows are 1/6, 1/3 and 1/6 with cumulative 1/6, 1/2 and 2/3. Units: probability in [0, 1]. Rounding: none; absolute tolerance 1e-9, since each figure is a ratio of small integers accumulated in floating point.",
+      "formula": {
+        "expression": "probability(y) = count(y) / N; cumulativeProbability(y_k) = sum_{j <= k} probability(y_j), N = total paths",
+        "variables": [
+          {
+            "symbol": "N",
+            "meaning": "Total paths, successes included",
+            "unit": "paths",
+            "domain": "worksheet 6"
+          },
+          {
+            "symbol": "count(y)",
+            "meaning": "Paths first depleting in year y",
+            "unit": "paths",
+            "domain": "worksheet 1, 2, 1"
+          },
+          {
+            "symbol": "probability(y)",
+            "meaning": "Share of all paths first depleting in year y",
+            "unit": "1",
+            "domain": "[0, 1]"
+          }
+        ],
+        "timing": "once per aggregation, after the depletion-year rows are ordered",
+        "rounding": "none"
+      },
+      "limits": [
+        "The denominator is every path, successes included; dividing by the four failures alone would give 1/4, 1/2, 1/4 with a final cumulative of 1",
+        "Successes never form a row of their own; they act only on the denominator",
+        "cumulativeProbability is accumulated left to right in floating point, so the last row equals the failure rate only up to that accumulation",
+        "The evidence supplies depletionYear only; every other MonteCarloPath field is at the fixture's neutral (zero balances and shortfalls, floor and target met, attainment 1, no goal or guardrail activity, no bequest target)"
+      ],
+      "worksheet": "DOCS/calculations/monte-carlo/monte-carlo-depletion-probability-by-year.md",
+      "mutation": "DOCS/calculations/monte-carlo/monte-carlo-depletion-probability-by-year.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/montecarlo/run.ts"
+      ],
+      "provenance": {
+        "derivedBy": "codex",
+        "implementedBy": "claude",
+        "reviewedBy": "cursor"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/montecarlo/run.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
+      "id": "monte-carlo-ending-distributions",
+      "title": "Ending investable histogram and ending after-tax estate percentiles",
+      "kind": "formula",
+      "outputs": [
+        "monte-carlo-ending-investable-histogram",
+        "monte-carlo-ending-after-tax-estate-percentiles"
+      ],
+      "feeds": [],
+      "purpose": "The shape of where the paths end: a binned spread of ending investable balances and the estate percentiles beside it.",
+      "statement": "The ending investable balances are binned into histogramBins equal-width bins: min is the sample minimum, binWidth = (max - min) / bins (1 when every value is equal), and each value lands in bin min(bins - 1, floor((v - min) / binWidth)), so the maximum is clamped into the last bin rather than opening one past the end. The ending after-tax estates use the same five-level interpolated percentile set as every other distribution. For endings [0, 20, 40, 80, 100] at 4 bins this is min $0, binWidth $25 and counts [2, 1, 0, 2]; for estates [0, 100, 300, 600, 1000] the percentiles are $40, $100, $300, $600 and $840. Units: usd for min, binWidth and percentiles; paths for counts. Rounding: none; counts compared exactly and the dollar figures at absolute 1e-9.",
+      "formula": {
+        "expression": "min = v_(1); binWidth = (v_(n) - v_(1)) / bins; bin(v) = min(bins - 1, floor((v - min) / binWidth)); p-th percentile by interpolation at (p/100)(n-1)",
+        "variables": [
+          {
+            "symbol": "v_(1), v_(n)",
+            "meaning": "Smallest and largest ending value of the ascending sample",
+            "unit": "usd",
+            "domain": "worksheet 0 and 100"
+          },
+          {
+            "symbol": "bins",
+            "meaning": "Histogram bin count passed to aggregateMonteCarlo",
+            "unit": "bins",
+            "domain": "worksheet 4; production default 30"
+          },
+          {
+            "symbol": "counts",
+            "meaning": "Paths landing in each bin",
+            "unit": "paths",
+            "domain": "worksheet [2, 1, 0, 2]"
+          }
+        ],
+        "timing": "once per aggregation, over the ascending ending samples",
+        "rounding": "none; the maximum is clamped into the last bin"
+      },
+      "limits": [
+        "The fixture passes 4 bins; production defaults to 30, where the same clamp puts the maximum in bin 29",
+        "binWidth is 1, not 0, when every ending value is equal, so a degenerate sample still bins",
+        "The percentiles are interpolated, so p90 of these five estates is $840 and not the observed $1,000",
+        "aggregateMonteCarlo also publishes a histogram of ending estates and percentiles of ending investable; this record's worksheet pins one of each, and the ending net worth pair is outside it",
+        "The evidence supplies endingInvestable and endingAfterTaxEstate only; every other MonteCarloPath field is at the fixture's neutral (no depletion or shortfall, floor and target met, attainment 1, no goal or guardrail activity, no bequest target)"
+      ],
+      "worksheet": "DOCS/calculations/monte-carlo/monte-carlo-ending-distributions.md",
+      "mutation": "DOCS/calculations/monte-carlo/monte-carlo-ending-distributions.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/montecarlo/run.ts"
+      ],
+      "provenance": {
+        "derivedBy": "codex",
+        "implementedBy": "claude",
+        "reviewedBy": "cursor"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/montecarlo/run.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
+      "id": "monte-carlo-funding-rates",
+      "title": "Ideal and excess funding rates, and the flexible-goal totals",
+      "kind": "formula",
+      "outputs": [
+        "monte-carlo-ideal-funding-rate",
+        "monte-carlo-excess-funding-rate",
+        "monte-carlo-flexible-goal-outcome-counts"
+      ],
+      "feeds": [],
+      "purpose": "How much of the intended ideal and excess spending the paths actually funded, and the flexible-goal outcomes summed over them.",
+      "statement": "idealFundingRate = sum(idealFunded) / sum(idealIntended) and excessFundingRate = sum(excessFunded) / sum(excessIntended), each a ratio of totals across paths and each 1 when its total intended amount is not positive. Every flexibleGoals count and amount is the plain sum across every path, never an average. For the worksheet's four paths the ideal totals are $150 / $500 = 0.3 and the excess totals $350 / $500 = 0.7, with flexibleGoals { funded 3, partiallyFunded 2, deferred 2, skipped 1, fundedAmount $500, unfundedAmount $300 }; when every path intends nothing, both rates are 1. Units: rates dimensionless, counts in goals, amounts in usd. Rounding: none; rates at absolute 1e-9 and every sum exactly.",
+      "formula": {
+        "expression": "rate = sum_p funded_p / sum_p intended_p when sum_p intended_p > 0, else 1; goal_field = sum_p goal_field_p",
+        "variables": [
+          {
+            "symbol": "intended_p, funded_p",
+            "meaning": "One path's intended and funded amount for the ideal or excess layer",
+            "unit": "usd",
+            "domain": "worksheet ideal 100/300/100/0 intended"
+          },
+          {
+            "symbol": "rate",
+            "meaning": "Funding rate for that layer",
+            "unit": "1",
+            "domain": "worksheet 0.3 and 0.7; 1 with nothing intended"
+          },
+          {
+            "symbol": "goal_field",
+            "meaning": "One flexible-goal count or amount",
+            "unit": "goals or usd",
+            "domain": "worksheet 3, 2, 2, 1, $500, $300"
+          }
+        ],
+        "timing": "once per aggregation, over the completed path set",
+        "rounding": "none"
+      },
+      "limits": [
+        "A ratio of totals, not a mean of per-path rates: averaging the four per-path rates under the zero-intended convention would give 0.625 for both",
+        "A path that intended nothing adds nothing to either side of its ratio, so it moves neither rate",
+        "The convention tests \"intended total > 0\", so a zero or negative total intended amount yields 1 rather than a division",
+        "The flexible-goal figures are sums; averaging them would give 0.75, 0.5, 0.5, 0.25, $125 and $75",
+        "The evidence supplies the four funding fields and flexibleGoals only; every other MonteCarloPath field is at the fixture's neutral (no depletion or shortfall, floor and target met, attainment 1, no guardrail activity, zero balances, no bequest target)"
+      ],
+      "worksheet": "DOCS/calculations/monte-carlo/monte-carlo-funding-rates.md",
+      "mutation": "DOCS/calculations/monte-carlo/monte-carlo-funding-rates.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/montecarlo/run.ts"
+      ],
+      "provenance": {
+        "derivedBy": "codex",
+        "implementedBy": "claude",
+        "reviewedBy": "cursor"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/montecarlo/run.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
+      "id": "monte-carlo-guardrail-action-counts",
+      "title": "Guardrail action counts summed across paths",
+      "kind": "formula",
+      "outputs": [
+        "monte-carlo-guardrail-action-counts"
+      ],
+      "feeds": [],
+      "purpose": "How many guardrail cuts, raises and holds the whole run took, counted as actions rather than as paths.",
+      "statement": "guardrailActionCounts.cut, .raise and .hold are each that action's count summed over every path, with idle paths still in the set. For per-path records (2, 1, 3), (0, 2, 1), (4, 0, 2) and (0, 0, 0) the totals are cut 6, raise 3 and hold 6. Units: guardrail actions. Rounding: none; sums of integers, compared exactly.",
+      "formula": {
+        "expression": "total(action) = sum_p p.guardrailActionCounts[action] for action in {cut, raise, hold}",
+        "variables": [
+          {
+            "symbol": "p.guardrailActionCounts",
+            "meaning": "One path's cut, raise and hold counts",
+            "unit": "actions",
+            "domain": "worksheet (2,1,3), (0,2,1), (4,0,2), (0,0,0)"
+          },
+          {
+            "symbol": "total(action)",
+            "meaning": "Run-wide count of that action",
+            "unit": "actions",
+            "domain": "worksheet 6, 3, 6"
+          }
+        ],
+        "timing": "once per aggregation, over the completed path set",
+        "rounding": "none; integer sums"
+      },
+      "limits": [
+        "A sum, not an average and not a path incidence count: averaging over four paths gives 1.5, 0.75 and 1.5, and counting the paths with at least one action of each kind gives 2, 2 and 3",
+        "A path with no actions stays in the set; it adds zero, and it is not dropped from any denominator here because there is none",
+        "The path-share and conditional-magnitude statistics live in the adjustments block (monte-carlo-guardrail-adjustments), which counts paths, not actions",
+        "The evidence supplies guardrailActionCounts only; every other MonteCarloPath field is at the fixture's neutral (no depletion or shortfall, floor and target met, attainment 1, no cut years, zero balances, no bequest target)"
+      ],
+      "worksheet": "DOCS/calculations/monte-carlo/monte-carlo-guardrail-action-counts.md",
+      "mutation": "DOCS/calculations/monte-carlo/monte-carlo-guardrail-action-counts.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/montecarlo/run.ts"
+      ],
+      "provenance": {
+        "derivedBy": "codex",
+        "implementedBy": "claude",
+        "reviewedBy": "cursor"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/montecarlo/run.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
+      "id": "monte-carlo-guardrail-adjustments",
+      "title": "Guardrail adjustment shares, depths, durations and ending surplus",
+      "kind": "formula",
+      "outputs": [
+        "monte-carlo-paths-with-cut-share",
+        "monte-carlo-paths-with-raise-share",
+        "monte-carlo-cut-years",
+        "monte-carlo-max-cut-depth-percentiles",
+        "monte-carlo-average-longest-cut-spell-years",
+        "monte-carlo-prob-ending-surplus",
+        "monte-carlo-prob-ending-above-bequest-target"
+      ],
+      "feeds": [],
+      "purpose": "How likely a mid-course spending cut is, how deep and how long it runs among the paths that cut, and how often the plan still ends with something left.",
+      "statement": "pathsWithCut is the share of all paths with at least one cut year and pathsWithRaise the share with at least one raise action. Among the cut paths only: averageCutYears is their mean guardrailCutYears, p90CutYears its interpolated 90th percentile, medianMaxCutDepth and p90MaxCutDepth the interpolated 50th and 90th of their maxGuardrailCutDepth, and averageLongestCutSpellYears their mean longestGuardrailCutSpellYears. probEndingSurplus is the share of all paths whose ending after-tax estate is strictly positive; probEndingAboveBequestTarget is the share of the paths carrying a target that cleared it, and exactly null when no path carries one. For the worksheet's five paths: 0.6, 0.6, 14/3, 7.2, 0.3, 0.54, 3 years, 0.6 and 0.6. Units: shares in [0, 1], years, and depth as a fraction of the discretionary layer. Rounding: none; absolute 1e-9, with the no-target null compared exactly.",
+      "formula": {
+        "expression": "pathsWithCut = |{p : cutYears_p > 0}| / N; among those paths, averageCutYears = mean(cutYears), p90 by interpolation at 0.9(m-1); probEndingSurplus = |{p : estate_p > 0}| / N",
+        "variables": [
+          {
+            "symbol": "N",
+            "meaning": "All paths",
+            "unit": "paths",
+            "domain": "worksheet 5"
+          },
+          {
+            "symbol": "m",
+            "meaning": "Paths with at least one cut year",
+            "unit": "paths",
+            "domain": "worksheet 3"
+          },
+          {
+            "symbol": "cutYears_p, spell_p, depth_p",
+            "meaning": "One path's cut years, longest consecutive cut spell and deepest cut",
+            "unit": "years, years, fraction",
+            "domain": "worksheet [2,4,8], [1,3,5], [0.10,0.30,0.60] among cut paths"
+          },
+          {
+            "symbol": "estate_p",
+            "meaning": "One path's ending after-tax estate",
+            "unit": "usd",
+            "domain": "worksheet 0, 100, 200, 0, 50"
+          }
+        ],
+        "timing": "once per aggregation, over the completed path set",
+        "rounding": "none"
+      },
+      "limits": [
+        "Every cut statistic divides by the cut paths, not by all paths: over all five, average cut years would be 2.8 and the average longest spell 1.8 years",
+        "A zero ending estate is not a surplus; probEndingSurplus takes a strictly positive estate, so counting zeros would give 1 rather than 0.6",
+        "probEndingAboveBequestTarget divides by the paths whose comparison is non-null, and is null only when no path carries a target; all five worksheet paths carry one, so that denominator and the path count coincide here",
+        "The cut statistics are all zero for a plan with no guardrail policy, which is not the same claim as a plan that cut nothing",
+        "guardrailActionCounts is summed elsewhere (monte-carlo-guardrail-action-counts); this record publishes path shares and conditional magnitudes only",
+        "The evidence supplies the guardrail fields, endingAfterTaxEstate and endingAboveBequestTarget only; every other MonteCarloPath field is at the fixture's neutral (no depletion or shortfall, floor and target met, attainment 1, no goal activity)"
+      ],
+      "worksheet": "DOCS/calculations/monte-carlo/monte-carlo-guardrail-adjustments.md",
+      "mutation": "DOCS/calculations/monte-carlo/monte-carlo-guardrail-adjustments.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/montecarlo/run.ts"
+      ],
+      "provenance": {
+        "derivedBy": "codex",
+        "implementedBy": "claude",
+        "reviewedBy": "cursor"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/montecarlo/run.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
+      "id": "monte-carlo-investable-fan-percentiles",
+      "title": "Per-year investable balance fan",
+      "kind": "formula",
+      "outputs": [
+        "monte-carlo-investable-fan-percentiles"
+      ],
+      "feeds": [],
+      "purpose": "The 10th through 90th percentile band of investable balances in each projection year, taken across paths.",
+      "statement": "For each projection year the end-of-year investable balances of every path form one sample, sorted ascending; the fan row is that year with the 10th, 25th, 50th, 75th and 90th percentiles by linear interpolation at index (p/100)(n-1): with lo = floor(idx), hi = ceil(idx) and frac = idx - lo, the value is sorted[lo](1 - frac) + sorted[hi]frac, so an even-length sample has the mean of its two middle values as the median. The row's year is startYear + the column index. For the worksheet's four paths, 2030 is { p10 $30, p25 $75, p50 $200, p75 $475, p90 $790 }, and the medians are $500 in 2031 and $3,000 in 2032. Units: usd. Rounding: none; absolute 1e-9 on the percentiles and the years exactly.",
+      "formula": {
+        "expression": "idx = (p/100)(n-1); fan_y(p) = sorted_y[floor(idx)](1 - frac) + sorted_y[ceil(idx)]frac, frac = idx - floor(idx)",
+        "variables": [
+          {
+            "symbol": "sorted_y",
+            "meaning": "That year's investable balances across paths, ascending",
+            "unit": "usd",
+            "domain": "worksheet 2030 [0, 100, 300, 1000]"
+          },
+          {
+            "symbol": "n",
+            "meaning": "Paths in the sample",
+            "unit": "paths",
+            "domain": "worksheet 4"
+          },
+          {
+            "symbol": "p",
+            "meaning": "Percentile level",
+            "unit": "percent",
+            "domain": "10, 25, 50, 75, 90"
+          }
+        ],
+        "timing": "once per projection year of the aggregation",
+        "rounding": "none"
+      },
+      "limits": [
+        "The sample runs down one year's column across paths, never along one path's years: reading the rows as years would make the first sample [0, 100, 1000] with median $100",
+        "Interpolated, not nearest-rank: nearest rank would read 2030 as $0, $0, $100, $300 and $1,000",
+        "The fan is as long as the first path's investableByYear, so every path in a result must carry the same year grid",
+        "An empty sample gives 0 at every level rather than an undefined percentile",
+        "The evidence supplies investableByYear only; every other MonteCarloPath field is at the fixture's neutral (no depletion or shortfall, floor and target met, attainment 1, no goal or guardrail activity, no bequest target)"
+      ],
+      "worksheet": "DOCS/calculations/monte-carlo/monte-carlo-investable-fan-percentiles.md",
+      "mutation": "DOCS/calculations/monte-carlo/monte-carlo-investable-fan-percentiles.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/montecarlo/run.ts"
+      ],
+      "provenance": {
+        "derivedBy": "codex",
+        "implementedBy": "claude",
+        "reviewedBy": "cursor"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/montecarlo/run.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
+      "id": "monte-carlo-shortfall-statistics",
+      "title": "Shortfall averages, p90s, and expected shortfall on failing paths",
+      "kind": "formula",
+      "outputs": [
+        "monte-carlo-average-total-shortfall",
+        "monte-carlo-p90-total-shortfall",
+        "monte-carlo-expected-shortfall-on-failing-paths",
+        "monte-carlo-average-years-below-target",
+        "monte-carlo-p90-average-annual-target-shortfall",
+        "monte-carlo-target-attainment-median"
+      ],
+      "feeds": [],
+      "purpose": "How much spending went unfunded across the run, and how much worse it was on the paths that actually ran out.",
+      "statement": "spendingShortfall.averageTotalShortfallDollars and averageYearsBelowTarget are means over all paths; spendingShortfall.p90TotalShortfallDollars and p90AverageAnnualTargetShortfall are interpolated 90th percentiles of the all-path samples; targetAttainmentPct.p50 is the interpolated median of the per-path attainment. downsideRisk.expectedShortfallDollars is the mean total shortfall over the failing paths alone, a failing path being one whose depletionYear is non-null. For the worksheet's five paths these are $36, $80, 3 years, $32, 0.8 and $35. Units: usd, years, and attainment as a fraction of target spending. Rounding: none; absolute 1e-9.",
+      "formula": {
+        "expression": "mean = (1/N) sum_p x_p; p90 by interpolation at 0.9(N-1); expectedShortfall = (1/F) sum_{p : depletionYear_p != null} totalShortfall_p",
+        "variables": [
+          {
+            "symbol": "N",
+            "meaning": "All paths",
+            "unit": "paths",
+            "domain": "worksheet 5"
+          },
+          {
+            "symbol": "F",
+            "meaning": "Failing paths (non-null depletionYear)",
+            "unit": "paths",
+            "domain": "worksheet 2"
+          },
+          {
+            "symbol": "totalShortfall_p",
+            "meaning": "One path's unfunded spending",
+            "unit": "usd",
+            "domain": "worksheet 0, 10, 20, 50, 100"
+          },
+          {
+            "symbol": "targetAttainmentPct_p",
+            "meaning": "One path's share of target spending funded",
+            "unit": "1",
+            "domain": "worksheet 1.00, 0.90, 0.80, 0.60, 0.20"
+          }
+        ],
+        "timing": "once per aggregation, over the completed path set",
+        "rounding": "none"
+      },
+      "limits": [
+        "Expected shortfall conditions on depletion, not on a positive shortfall: path E's $100 shortfall without depletion stays outside it, and averaging all five would give $36 rather than $35",
+        "The p90 figures are interpolated, so they need not be an observed value: nearest rank would give $100 and $40",
+        "The requested attainment figure is the median of the percentile set, not the mean, which is 0.70 on these paths",
+        "The worksheet allows absolute $0.005 on a dollar average whose division is inexact; these five inputs divide exactly, so the fixture holds every figure to 1e-9",
+        "downsideRisk.expectedShortfallDollars and the required and target variants beside it are zero, not undefined, when no path fails",
+        "The evidence supplies depletionYear, totalShortfall, yearsBelowTarget, averageAnnualTargetShortfall and targetAttainmentPct only; every other MonteCarloPath field is at the fixture's neutral (floor and target met, no goal or guardrail activity, zero balances, no bequest target)"
+      ],
+      "worksheet": "DOCS/calculations/monte-carlo/monte-carlo-shortfall-statistics.md",
+      "mutation": "DOCS/calculations/monte-carlo/monte-carlo-shortfall-statistics.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/montecarlo/run.ts"
+      ],
+      "provenance": {
+        "derivedBy": "codex",
+        "implementedBy": "claude",
+        "reviewedBy": "cursor"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/montecarlo/run.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
+      "id": "monte-carlo-stochastic-frontier-axis",
+      "title": "Stochastic frontier axis value per variant",
+      "kind": "data",
+      "outputs": [
+        "stochastic-frontier-variant-axis"
+      ],
+      "feeds": [],
+      "purpose": "What the x of a frontier point means: the caller's own grid value, not anything read back out of the stochastic result.",
+      "statement": "Each frontier point's x is the caller's grid value for that variant. For buildSpendingSuccessFrontier it is the variant plan's expenses.baseAnnual, that is max(0, round(baseAnnual x multiplier)); for buildRetirementAgeSuccessFrontier it is the lowest resulting retirement age among the people who have one, each moved by the caller's delta and clamped to [30, 80], or 0 when nobody has a retirement age. Neither is inferred from the point's stochastic row. For baseAnnual $60,000 with multipliers 0.8, 1.0 and 1.2 the axis is $48,000, $60,000 and $72,000; for deltas -2, 0 and 3 on a one-person plan retiring at 65 the axis is 63, 65 and 68; for two people at 65 and 62 with delta +3 it is 65; for age 31 with delta -2 it is 30. Units: usd on the spending axis, years on the retirement-age axis. Rounding: the spending variant rounds to whole dollars and floors at 0; the retirement-age variant clamps to [30, 80] and is not otherwise rounded.",
+      "formula": {
+        "expression": "x_spending(i) = max(0, round(baseAnnual x multiplier_i)); x_retirementAge(i) = min over people p with a retirement age of clamp(age_p + delta_i, 30, 80), or 0 when no person has one",
+        "variables": [
+          {
+            "symbol": "baseAnnual",
+            "meaning": "Base plan's annual base expenses",
+            "unit": "usd",
+            "domain": "worksheet 60,000"
+          },
+          {
+            "symbol": "multiplier_i",
+            "meaning": "Caller's spending multiplier for variant i",
+            "unit": "1",
+            "domain": "worksheet 0.8, 1.0, 1.2"
+          },
+          {
+            "symbol": "delta_i",
+            "meaning": "Caller's signed retirement-age change for variant i, applied to each person's planned retirement age",
+            "unit": "years",
+            "domain": "worksheet -2, 0, 3"
+          },
+          {
+            "symbol": "age_p",
+            "meaning": "Person p's planned retirement age",
+            "unit": "years",
+            "domain": "worksheet 65; 65 and 62; 31"
+          }
+        ],
+        "timing": "once per variant, when the frontier builds its plan set",
+        "rounding": "spending rounds to whole dollars and floors at 0; the retirement-age result is clamped to [30, 80] and not otherwise rounded"
+      },
+      "limits": [
+        "The two axes are not the same quantity: the spending axis is the variant's absolute base annual expense, while the retirement-age axis is the resulting planned age, so neither axis is a delta from the base: not -12,000, 0 and 12,000, and not -2, 0 and 3",
+        "A frontier sweep is capped at MAX_FRONTIER_POINTS (15) points and neither builder searches; the grid is always the caller's",
+        "A point's other figures (the three success rates, the ending-estate percentiles, expected shortfall) come from the variant's Monte Carlo summary and are not this record's claim; the evidence asserts x only",
+        "The evidence runs the real builders on a small one-person plan at pathCount 2 and seed 123, the smallest reproducible run the options allow, because the axis does not depend on the stochastic result at all",
+        "The retirement-age axis was first derived as the caller's delta from the StochasticFrontierPoint.x doc comment, which stated the delta; on 2026-09-18 the comment was corrected to the resulting clamped age the builder publishes, the worksheet was re-derived and re-approved on it, and the evidence pins 63, 65 and 68 for deltas -2, 0 and 3 on a plan retiring at 65, 65 for the two-person case and 30 at the lower clamp"
+      ],
+      "worksheet": "DOCS/calculations/monte-carlo/monte-carlo-stochastic-frontier-axis.md",
+      "mutation": "DOCS/calculations/monte-carlo/monte-carlo-stochastic-frontier-axis.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/montecarlo/frontiers.ts"
+      ],
+      "provenance": {
+        "derivedBy": "codex",
+        "implementedBy": "claude",
+        "reviewedBy": "cursor"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/montecarlo/frontiers.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
+      "id": "monte-carlo-success-and-failure-rates",
+      "title": "Success, required-floor, target-lifestyle and failure rates",
+      "kind": "formula",
+      "outputs": [
+        "monte-carlo-success-rate",
+        "monte-carlo-required-floor-success-rate",
+        "monte-carlo-target-lifestyle-success-rate",
+        "monte-carlo-failure-rate",
+        "monte-carlo-failing-path-count"
+      ],
+      "feeds": [],
+      "purpose": "The headline shares: how often the money lasted, how often the essentials were funded, how often the full lifestyle was, and how often it ran out.",
+      "statement": "successRate is the share of paths whose depletionYear is null; requiredFloorSuccessRate the share with requiredFloorMet; targetLifestyleSuccessRate the share with targetLifestyleMet; downsideRisk.failureRate the share whose depletionYear is non-null, and downsideRisk.failingPathCount how many those are. Failure is the complement of success over the same depletion test. For the worksheet's five deliberately crossed paths these are 0.6, 0.6, 0.2, 0.4 and 2. Units: shares in [0, 1] and a path count. Rounding: none; absolute 1e-9 on the rates and the count exactly.",
+      "formula": {
+        "expression": "successRate = |{p : depletionYear_p = null}| / N; failureRate = 1 - successRate; failingPathCount = N - |{p : depletionYear_p = null}|",
+        "variables": [
+          {
+            "symbol": "N",
+            "meaning": "All paths",
+            "unit": "paths",
+            "domain": "worksheet 5"
+          },
+          {
+            "symbol": "depletionYear_p",
+            "meaning": "Year a path first depleted; null when it never did",
+            "unit": "calendar year or null",
+            "domain": "worksheet null, null, null, 2031, 2032"
+          },
+          {
+            "symbol": "requiredFloorMet_p, targetLifestyleMet_p",
+            "meaning": "Whether a path funded the required floor, and the full target, every year",
+            "unit": "boolean",
+            "domain": "worksheet crossed against depletion"
+          }
+        ],
+        "timing": "once per aggregation, over the completed path set",
+        "rounding": "none"
+      },
+      "limits": [
+        "The three tests are distinct, and the shared 0.6 of successRate and requiredFloorSuccessRate is a coincidence of this path set; the evidence therefore also asserts each path's own three verdicts",
+        "Depletion alone defines failure here: a path that missed its target every year without depleting still counts as a success, and treating any target miss as depletion would give failure rate 0.8 on four paths",
+        "An empty path set gives 0 for every share rather than an undefined rate",
+        "The evidence supplies depletionYear, requiredFloorMet and targetLifestyleMet only; every other MonteCarloPath field is at the fixture's neutral (no shortfall, attainment 1, no goal or guardrail activity, zero balances, no bequest target)"
+      ],
+      "worksheet": "DOCS/calculations/monte-carlo/monte-carlo-success-and-failure-rates.md",
+      "mutation": "DOCS/calculations/monte-carlo/monte-carlo-success-and-failure-rates.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/montecarlo/run.ts"
+      ],
+      "provenance": {
+        "derivedBy": "codex",
+        "implementedBy": "claude",
+        "reviewedBy": "cursor"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/montecarlo/run.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
       "id": "qlac-deferred-payout-placeholder",
       "title": "Temporary deferred-QLAC payout-rate placeholder",
       "kind": "model",

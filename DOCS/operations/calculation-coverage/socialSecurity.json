@@ -262,6 +262,74 @@
       }
     },
     {
+      "id": "family-maximum-bend-points",
+      "title": "Retirement/survivor family maximum from PIA",
+      "kind": "formula",
+      "outputs": [],
+      "feeds": [
+        "social-security-benefit-annual"
+      ],
+      "purpose": "The monthly ceiling every auxiliary benefit on a worker record shares, from that worker's PIA.",
+      "statement": "socialSecurity/familyMaximum.ts#familyMaximumMonthlyFromPia takes a monthly PIA P and an eligibility year, reads that year's three family-maximum bend points b1 < b2 < b3 from FAMILY_MAXIMUM_BEND_POINTS (2026: 1,643, 2,371 and 3,093 dollars per month; a year with no published triplet falls back to the latest one on file), and returns floorToDime(1.50 min(P, b1) + 2.72 min(max(P - b1, 0), b2 - b1) + 1.34 min(max(P - b2, 0), b3 - b2) + 1.75 max(P - b3, 0)). A PIA at or below zero returns 0. Units: nominal USD per month, before COLA and any trust-fund haircut. Rounding: the sum is floored to the next lower dime, Math.floor(x * 10 + 1e-9) / 10, so the published figure is quantized and the unrounded sum is an intermediate only.",
+      "formula": {
+        "expression": "MFB = floorToDime(1.50 min(P, b1) + 2.72 min(max(P - b1, 0), b2 - b1) + 1.34 min(max(P - b2, 0), b3 - b2) + 1.75 max(P - b3, 0))",
+        "variables": [
+          {
+            "symbol": "P",
+            "meaning": "Worker primary insurance amount",
+            "unit": "usd/month",
+            "domain": "P > 0; P <= 0 returns 0"
+          },
+          {
+            "symbol": "b1, b2, b3",
+            "meaning": "Family-maximum bend points for the eligibility year",
+            "unit": "usd/month",
+            "domain": "0 < b1 < b2 < b3, from FAMILY_MAXIMUM_BEND_POINTS"
+          },
+          {
+            "symbol": "MFB",
+            "meaning": "Monthly retirement/survivor family maximum",
+            "unit": "usd/month",
+            "domain": "nonnegative multiple of 0.10"
+          }
+        ],
+        "timing": "once per worker record, before COLA and haircut",
+        "rounding": "floored to the next lower dime"
+      },
+      "limits": [
+        "The four band rates 150/272/134/175 percent are the retirement and survivor family maximum, not the disability family maximum, which SSA computes differently",
+        "The bend points are eligibility-year values (the year the worker attains 62 under familyMaximumEligibilityYearFromDobParts), not the benefit year; an eligibility year the table does not price falls back to the latest published triplet",
+        "RetireGolden models no child dependents, so capAuxiliaryForFamilyMaximum gives the whole room above the worker's own benefit to the single current-spouse auxiliary; the worker's own benefit is never reduced by this ceiling",
+        "The dime floor is part of the published contract: the fixture compares the floored figure exactly and treats the unrounded sum as an intermediate"
+      ],
+      "worksheet": "DOCS/calculations/social-security/family-maximum-bend-points.md",
+      "mutation": "DOCS/calculations/social-security/family-maximum-bend-points.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/socialSecurity/familyMaximum.ts",
+        "packages/engine/src/socialSecurity/ssaWageData.ts"
+      ],
+      "provenance": {
+        "derivedBy": "codex",
+        "implementedBy": "claude",
+        "reviewedBy": "cursor"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/socialSecurity/familyMaximum.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
       "id": "normal-retirement-age",
       "title": "Normal retirement age endpoint",
       "kind": "data",

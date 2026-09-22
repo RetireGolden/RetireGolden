@@ -1,0 +1,335 @@
+# Independent review, 2026-09-18 (derive round six, eleven worksheets)
+
+Reviewer: cursor (composer-2.5), by independent recomputation without executing the engine, from the worksheets and the signatures-and-comments extract b1-p4-signatures-r6.md (the year-ledger types with the 2026-09-18 comment statements, the flexible-goal scheduler and phase, the income-stream modules, the expense summary and guardrail funding, the lifestyle layers, the snapshot and assembly, and the plan schema; built at 47ea1c24, bodies elided). Scope in this directory: spending-base-annual, spending-shortfall-annual. The report covers all eleven worksheets of the round across two directories; the verbatim output follows. Its two notes: the flexible-goal worksheet follows the scheduler where the plan schema's GoalFlexibility comment promises a movable/skippable distinction the engine does not make (queued for Nathan as D-GOAL-FLEXIBILITY); the shortfall worksheet leaves the depletion-year assertion to the fixture because the extract did not carry the tolerance constant's value (ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS is 0.005; the fixture asserts it).
+
+---
+
+# Independent Worksheet Review Report
+
+Review scope: eleven worksheets on branch `codex/b1-p4-worksheets-r3`, recomputed from **Inputs** and **Justification** only (Arithmetic not trusted). Rule cross-check against `b1-p4-signatures-r6.md` (2026-09-18 comments). No engine bodies read; no commands run.
+
+---
+
+## 1. `flexible-goal-outcomes-annual`
+
+**Recomputed (guardrail-active case, 2030)**
+
+Nominal amounts (today × 1.10): $1,100; $1,100; $1,100; $550; $440.
+
+Visiting order: required fixed → target movable → ideal movable → excess movable (pri 1) → excess skippable (pri 2).
+
+| Step | Goal | Outcome | Budget before | Paid | Budget after |
+|---|---|---|---:|---:|---:|
+| 1 | Required fixed | Funded (no budget use) | $1,700 | $1,100 | $1,700 |
+| 2 | Target movable | Fully funded | $1,700 | $1,100 | $600 |
+| 3 | Ideal movable | Partial (min = $1,100×50% = $550; $600 ≥ $550) | $600 | $600 | $0 |
+| 4 | Excess movable | Deferred (2030 < latest 2031) | $0 | — | $0 |
+| 5 | Excess skippable | Skipped (at latest year) | $0 | — | $0 |
+
+- Counts: funded = 2, partiallyFunded = 1, deferred = 1, skipped = 1  
+- fundedAmount = $1,100 + $1,100 + $600 = **$2,800**  
+- unfundedAmount = ($1,100 − $600) + $440 = $500 + $440 = **$940**
+
+**Guardrail-off case:** all six fields = 0.
+
+**Match:** yes (both cases).
+
+**Rule alignment:** Matches `YearResult.flexibleGoals` and scheduler comments: classification → priority → plan order; fixed funds unconditionally in target year without consuming flexible budget; full fund when budget covers inflated amount; partial when allowed and budget ≥ inflated minimum; defer before `latestYear`; skip at `latestYear` with skipped amount in layer intended spending and in `unfundedAmount`. Worksheet correctly follows scheduler over `GoalFlexibility` schema text (noted under Limits).
+
+**Tolerance:** Exact for counts; $0.005 for dollar amounts justified (nominal inflation products in binary float; extract defines `EPSILON = 0.005` in scheduler module).
+
+**Wrong readings (3/3 verified):**
+1. Fixed consumes budget → target defers, ideal partial $600 → counts 1/1/2/1, fundedAmount $1,700, unfunded $940 ✓  
+2. Min tested on $1,000 today ($500) vs correct $550 — qualitative threshold error; with $520 remainder, wrong rule could misclassify ✓  
+3. Drop skipped $440 → unfunded $500 ✓  
+
+**Family:** `outputs` lists the six published flexible-goal fields; `feeds: spending-intended-annual` is correct (skipped goals feed layer summaries). Appropriate for year-row publication.
+
+**Verdict:** approve with note (documented schema vs scheduler divergence on skippable at `latestYear`).
+
+---
+
+## 2. `projection-result-ending-investable`
+
+**Recomputed**
+
+Last ordered row = 2031 → endingInvestable = **$487,250.125**.  
+Empty `years` → **$0**.
+
+**Match:** yes.
+
+**Rule alignment:** Matches `ProjectionResult.endingInvestable` comment: terminal copy of last row’s `investableTotal`, not a sum or first row.
+
+**Tolerance:** $0.005 for copied ledger dollars is standard and justified.
+
+**Wrong readings (2/2):** First row $510,000 ✓; sum $997,250.125 ✓.
+
+**Family:** Terminal projection result; `feeds: none` correct.
+
+**Verdict:** approve.
+
+---
+
+## 3. `projection-result-ending-net-worth`
+
+**Recomputed**
+
+Last row 2031 → **$901,375.625**. Empty rows → **$0**.
+
+**Match:** yes.
+
+**Rule alignment:** Matches `ProjectionResult.endingNetWorth`: copy last row `netWorth`, no recomputation.
+
+**Tolerance:** $0.005 justified.
+
+**Wrong readings (2/2):** First row $925,000 ✓; substituting ending investable is a different field ✓.
+
+**Family:** Terminal projection result; `feeds: none` correct.
+
+**Verdict:** approve.
+
+---
+
+## 4. `income-wages-annual`
+
+**Recomputed**
+
+- Elapsed: 2030 − 2028 = 2  
+- Real-growth factor: (1 + 2/100)² = 1.02000000² = **1.04040000**  
+- Nominal: 80,000 × 1.04040000 × 1.08 = 83,232 × 1.08 = **$89,890.56**  
+- Age 64 < stop age 65, owner alive → row pays.
+
+**Match:** yes.
+
+**Rule alignment:** Matches `wageIncomeStreams` comments: `Math.pow(1 + realGrowthPct/100, year − startYear)` then × `inflFactor`; skip when dead or stop age attained (`endAge ?? retirementAge`); pass 1 before Social Security.
+
+**Tolerance:** $0.005 justified for float product.
+
+**Wrong readings (3/3):** Inflation only $86,400 ✓; age 64 treated as stopped $0 ✓; re-bracketing can move last binary digit (qualitative) ✓.
+
+**Family:** `outputs: income-wages-annual`; feeds `income-total-annual` and `social-security-benefit-annual` (earnings test) — correct.
+
+**Verdict:** approve.
+
+---
+
+## 5. `income-pension-annual`
+
+**Recomputed**
+
+- COLA factor (2 years since start at 65, current would-be age 67): 1.03000000² = **1.06090000**  
+- Full annual: 2,000 × 12 × 1.06090000 = **$25,461.60**  
+- Survivor (owner dead, spouse alive, 50%): 25,461.60 × 0.50 = **$12,730.80**
+
+**Match:** yes.
+
+**Rule alignment:** Matches pension schema (`monthlyAmount`, annual `colaPct`, `survivorPct`); survivor continuation after owner death; lump-sum absent so pension pays.
+
+**Tolerance:** $0.005 justified.
+
+**Wrong readings (3/3):** Full $25,461.60 ✓; 50% before COLA $12,000 ✓; gate on deceased owner alone $0 ✓.
+
+**Family:** `outputs: income-pension-annual`; `feeds: income-total-annual` — correct.
+
+**Verdict:** approve.
+
+---
+
+## 6. `income-annuity-annual`
+
+**Recomputed**
+
+- COLA factor (1 year since start 65, age 66): **1.02000000**  
+- Full annual: 1,500 × 12 × 1.02000000 = **$18,360.00**  
+- Joint-survivor (owner dead, other alive, 60%): 18,360 × 0.60 = **$11,016.00**
+
+**Match:** yes.
+
+**Rule alignment:** Matches `jointSurvivor` payout form and `survivorPct` comment; life-only would stop at owner death.
+
+**Tolerance:** $0.005 justified.
+
+**Wrong readings (3/3):** Life-only $0 ✓; full $18,360 ✓; 60% of monthly without COLA $10,800 ✓.
+
+**Family:** `outputs: income-annuity-annual`; `feeds: income-total-annual` — correct.
+
+**Verdict:** approve.
+
+---
+
+## 7. `income-recurring-annual`
+
+**Recomputed**
+
+2030 ∈ [2029, 2032], `anyAlive` true, `inflationAdjusted` true:  
+12,000 × 1.08 = **$12,960.00** (`taxTreatment: none` does not zero cash).
+
+**Match:** yes.
+
+**Rule alignment:** Matches `otherIncomeStreams`: inclusive year window, household `anyAlive` gate, inflation only when elected.
+
+**Tolerance:** $0.005 justified.
+
+**Wrong readings (3/3):** No inflation $12,000 ✓; tax-free exclusion $0 (wrong) ✓; post-death gate $0 vs $12,960 (wrong) ✓.
+
+**Family:** `outputs: income-recurring-annual`; `feeds: income-total-annual` — correct.
+
+**Verdict:** approve.
+
+---
+
+## 8. `income-one-time-annual`
+
+**Recomputed**
+
+2031 = payment year, `anyAlive` true, inflation adjusted:  
+50,000 × 1.12 = **$56,000.00** (capital-gain tax character does not exclude cash).
+
+**Match:** yes.
+
+**Rule alignment:** Exact-year gate; household alive; inflation when elected — all per extract.
+
+**Tolerance:** $0.005 justified.
+
+**Wrong readings (3/3):** Already nominal $50,000 ✓; wrong year would pay $56,000 but gate gives $0 ✓; capital-gain exclusion $0 ✓.
+
+**Family:** `outputs: income-one-time-annual`; `feeds: income-total-annual` — correct.
+
+**Verdict:** approve.
+
+---
+
+## 9. `spending-intended-annual`
+
+**Recomputed**
+
+- Required summary: 20,000 + 30,000 + 2,000 + 1,000 = **$53,000**  
+- Target summary: 53,000 + 15,000 + 3,000 + 2,000 = **$73,000**  
+- Ideal increment: 6,000 + 1,000 + 500 = **$7,500**  
+- Excess increment: 4,000 + 500 + 250 = **$4,750**  
+- intendedSpending: 73,000 + 7,500 + 4,750 = **$85,250**
+
+**Match:** yes.
+
+**Rule alignment:** Matches `YearExpenses`: required/target are cumulative layer summaries including funded and skipped goals; ideal/excess are incremental; `intendedSpending` = target + ideal + excess (not required + target again).
+
+**Tolerance:** $0.005 justified.
+
+**Wrong readings (3/3):** Omit skipped $81,500 ✓; double-count $138,250 ✓; cumulative ideal/excess misread (qualitative) ✓.
+
+**Family:** `outputs: spending-intended-annual`; `feeds: none` — correct for a published year-row total.
+
+**Verdict:** approve.
+
+---
+
+## 10. `spending-base-annual`
+
+**Recomputed**
+
+- Target layer after guardrail: 24,000 × min(1, 0.75) = 24,000 × 0.75 = **$18,000**  
+- baseSpending: 36,000 + 18,000 + 4,000 + 1,500 = **$59,500**  
+- One-time goal $8,000 excluded.
+
+**Match:** yes.
+
+**Rule alignment:** Matches `YearExpenses.baseSpending` comment: required lifestyle full; target × min(1, guardrailFactor); ideal and excess **funded** lifestyle added; one-time goals excluded.
+
+**Tolerance:** $0.005 justified.
+
+**Wrong readings (3/3):** Factor on required $50,500 ✓; include one-time $67,500 ✓; omit ideal/excess $54,000 ✓.
+
+**Family:** `outputs: spending-base-annual`; `feeds: spending-total-annual` — correct.
+
+**Verdict:** approve.
+
+---
+
+## 11. `spending-shortfall-annual`
+
+**Recomputed**
+
+- After withdrawals: 12,000 − 10,000 = **$2,000**  
+- After HECM backstop: 2,000 − 1,500 = **$500**  
+- depletionYear = 2034 iff $500 > `ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS` and no earlier exceedance (tolerance not numerically stated in extract — worksheet correctly does not invent it).
+
+**Match:** yes (shortfall dollar figure).
+
+**Rule alignment:** Matches `YearResult.shortfall` comment: gap **after** withdrawals and HECM draw; `depletionYear` gated on named tolerance, not any positive residue.
+
+**Tolerance:** $0.005 for shortfall dollar justified; depletion-year exactness correctly conditional on fixture supplying tolerance.
+
+**Wrong readings (3/3):** Pre-HECM $2,000 ✓; add HECM as expense $3,500 ✓; any-positive-residue depletion (qualitative vs tolerance gate) ✓.
+
+**Family:** `outputs: spending-shortfall-annual`; `feeds: none` — correct.
+
+**Verdict:** approve with note (depletion-year assertion appropriately deferred to tolerance-supplying fixture).
+
+---
+
+## Summary Table
+
+| id | match | verdict |
+|---|---|---|
+| flexible-goal-outcomes-annual | yes | approve with note |
+| projection-result-ending-investable | yes | approve |
+| projection-result-ending-net-worth | yes | approve |
+| income-wages-annual | yes | approve |
+| income-pension-annual | yes | approve |
+| income-annuity-annual | yes | approve |
+| income-recurring-annual | yes | approve |
+| income-one-time-annual | yes | approve |
+| spending-intended-annual | yes | approve |
+| spending-base-annual | yes | approve |
+| spending-shortfall-annual | yes | approve with note |
+
+Reviewed by: cursor (composer), 2026-09-18, by independent recomputation without executing the engine.
+
+---
+
+## Re-check 2026-09-22: spending-base-annual two reachable cases
+
+**Scope:** Re-derived worksheet (Revision 2026-09-22). Recomputed from **Inputs** and **Justification** only; the 2026-09-18 Arithmetic and Expected are not trusted. No engine bodies read.
+
+**Framing change:** The single cutting-year case that carried funded upside layers ($59,500) is split into two contract-reachable cases. Contract (Claim): `baseSpending` = required lifestyle + target lifestyle × `min(1, guardrailFactor)` + funded ideal lifestyle + funded excess lifestyle; one-time goals excluded.
+
+**Recomputed — Case 1 (active policy, cutting year)**
+
+| Component | Calculation | Amount |
+|---|---|---:|
+| Required lifestyle | full | $36,000 |
+| Target lifestyle | 24,000 × min(1, 0.75) = 24,000 × 0.75 | $18,000 |
+| Ideal lifestyle funded | 0 (multiplier ≤ 1) | $0 |
+| Excess lifestyle funded | 0 (multiplier ≤ 1) | $0 |
+| **baseSpending** | 36,000 + 18,000 + 0 + 0 | **$54,000** |
+
+One-time goal $8,000 excluded.
+
+**Recomputed — Case 2 (no policy active)**
+
+| Component | Calculation | Amount |
+|---|---|---:|
+| Required lifestyle | full | $36,000 |
+| Target lifestyle | full layer (no guardrail cap) | $24,000 |
+| Ideal lifestyle funded | full upside budget | $4,000 |
+| Excess lifestyle funded | full upside budget | $1,500 |
+| **baseSpending** | 36,000 + 24,000 + 4,000 + 1,500 | **$65,500** |
+
+One-time goal $8,000 excluded.
+
+**Match:** yes (Case 1 $54,000; Case 2 $65,500).
+
+**Upside-layer rule (Justification vs Claim):** The Justification states that with a policy active, funded ideal and excess layers draw on `max(0, discretionaryMultiplier − 1) × guardrailStepBasis`, so both are **0 whenever the multiplier is at or below 1, every cutting year included**. Case 1 inputs set ideal funded = 0 and excess funded = 0 with factor 0.75 (≤ 1); Case 2 supplies the full upside only because no policy is active. This matches the Claim formula: upside enters only through separately funded ideal and excess layers, not through `min(1, guardrailFactor)` on the target layer.
+
+**Wrong readings (4/4 verified, case-labelled):**
+
+| Wrong reading | Case | Recomputed | Match |
+|---|---|---:|---:|
+| Factor applied to required too | Case 1 | 36,000 × 0.75 + 18,000 = 27,000 + 18,000 = **$45,000** | ✓ |
+| One-time goal included | Case 1 | 54,000 + 8,000 = **$62,000** | ✓ |
+| Ideal/excess funded in cutting year | Case 1 | 54,000 + 4,000 + 1,500 = **$59,500** (contract rules out) | ✓ |
+| 0.75 factor applied with no policy | Case 2 | 36,000 + 18,000 + 4,000 + 1,500 = **$59,500** | ✓ |
+
+**Verdict:** approve (two cases are contract-reachable; prior single-case $59,500 correctly retired as unreachable under active-policy cutting-year rules).
+
+Reviewed by: cursor (composer-2.5), 2026-09-22 (re-check), by independent recomputation without executing the engine.

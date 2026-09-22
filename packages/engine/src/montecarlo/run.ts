@@ -265,9 +265,13 @@ export interface MonteCarloSummary {
   averageAnnualTargetShortfall: number
   p90AverageAnnualTargetShortfall: number
   averageYearsBelowTarget: number
+  /** Ratio of totals across paths: Σ idealFunded / Σ idealIntended; 1 when nothing was intended. */
   idealFundingRate: number
+  /** Ratio of totals across paths: Σ excessFunded / Σ excessIntended; 1 when nothing was intended. */
   excessFundingRate: number
+  /** Each count and amount summed across every path (not averaged). */
   flexibleGoals: { funded: number; partiallyFunded: number; deferred: number; skipped: number; fundedAmount: number; unfundedAmount: number }
+  /** Each action count summed across every path (not averaged). */
   guardrailActionCounts: { cut: number; raise: number; hold: number }
   /**
    * Probability-and-magnitude-of-adjustment reporting (risk-based guardrails
@@ -319,10 +323,22 @@ export interface MonteCarloSummary {
   endingAfterTaxEstate: { percentiles: Omit<YearPercentiles, 'year'>; histogram: Histogram }
   /** Depletion year → number of paths first depleting that year (successes excluded). */
   depletionYearCounts: { year: number; count: number }[]
-  /** Cumulative probability that assets have depleted by each depletion year. */
+  /**
+   * One row per depletion year in `depletionYearCounts` order: `probability` is
+   * that year's count divided by the total path count (successes included in
+   * the base), and `cumulativeProbability` is the running sum of those
+   * probabilities through that year.
+   */
   depletionProbabilityByYear: { year: number; count: number; probability: number; cumulativeProbability: number }[]
 }
 
+/**
+ * The p-th percentile of an ascending sample by linear interpolation on the
+ * index `(p / 100) × (n − 1)`: with `lo = floor(idx)`, `hi = ceil(idx)` and
+ * `frac = idx − lo`, the value is `sorted[lo] × (1 − frac) + sorted[hi] × frac`
+ * (so the 50th of an even-length sample is the mean of the two middle values).
+ * An empty sample gives 0.
+ */
 function percentile(sorted: number[], p: number): number {
   if (sorted.length === 0) return 0
   const idx = (p / 100) * (sorted.length - 1)
@@ -332,6 +348,7 @@ function percentile(sorted: number[], p: number): number {
   return sorted[lo]! * (1 - frac) + sorted[hi]! * frac
 }
 
+/** The 10th, 25th, 50th, 75th and 90th percentiles of an ascending sample, each by `percentile`. */
 function percentileSet(sorted: number[]): Omit<YearPercentiles, 'year'> {
   return {
     p10: percentile(sorted, 10),
@@ -342,6 +359,13 @@ function percentileSet(sorted: number[]): Omit<YearPercentiles, 'year'> {
   }
 }
 
+/**
+ * Equal-width histogram of an ascending sample: `min` is the smallest value,
+ * `binWidth = (max − min) / bins` (1 when every value is equal), and each
+ * value lands in bin `min(bins − 1, floor((v − min) / binWidth))`, so the
+ * maximum falls in the last bin. An empty sample gives min 0, width 1 and all
+ * counts 0. `aggregateMonteCarlo` uses 30 bins unless told otherwise.
+ */
 function histogramFor(sorted: number[], histogramBins: number): Histogram {
   const min = sorted[0] ?? 0
   const max = sorted[sorted.length - 1] ?? 0

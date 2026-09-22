@@ -27,12 +27,31 @@
     "complete": [
       "aca-economic-net-premium-annual",
       "aca-modeled-allowable-ptc-annual",
+      "accounts-investable-total-annual",
+      "accounts-net-worth-annual",
       "annuitization-payout-rate-pct",
+      "cash-flow-reconciliation-totals",
       "estate-heir-income-tax",
+      "flexible-goal-funded-amount-annual",
+      "flexible-goal-unfunded-amount-annual",
+      "flexible-goals-deferred-count-annual",
+      "flexible-goals-funded-count-annual",
+      "flexible-goals-partially-funded-count-annual",
+      "flexible-goals-skipped-count-annual",
       "funded-ratio-result-essential-spending-pv",
       "funded-ratio-result-funded-ratio-pct",
       "funded-ratio-result-guaranteed-income-pv",
       "funded-ratio-result-unfunded-pv",
+      "income-annuity-annual",
+      "income-one-time-annual",
+      "income-ordinary-dividends-annual",
+      "income-pension-annual",
+      "income-qualified-dividends-annual",
+      "income-recurring-annual",
+      "income-taxable-interest-annual",
+      "income-taxable-yield-annual",
+      "income-total-annual",
+      "income-wages-annual",
       "insight-annuitization-headroom-illustrative-spia",
       "insight-asset-location-swappable-exposure",
       "insight-hecm-buffer-illustrative-credit-line",
@@ -54,6 +73,36 @@
       "longevity-survival-percentile-age",
       "magi-annual",
       "medicare-premiums-annual",
+      "monte-carlo-average-longest-cut-spell-years",
+      "monte-carlo-average-total-shortfall",
+      "monte-carlo-average-years-below-target",
+      "monte-carlo-cut-years",
+      "monte-carlo-depletion-probability-by-year",
+      "monte-carlo-depletion-year-histogram",
+      "monte-carlo-ending-after-tax-estate-percentiles",
+      "monte-carlo-ending-investable-histogram",
+      "monte-carlo-excess-funding-rate",
+      "monte-carlo-expected-shortfall-on-failing-paths",
+      "monte-carlo-failing-path-count",
+      "monte-carlo-failure-rate",
+      "monte-carlo-flexible-goal-outcome-counts",
+      "monte-carlo-guardrail-action-counts",
+      "monte-carlo-ideal-funding-rate",
+      "monte-carlo-investable-fan-percentiles",
+      "monte-carlo-max-cut-depth-percentiles",
+      "monte-carlo-p90-average-annual-target-shortfall",
+      "monte-carlo-p90-total-shortfall",
+      "monte-carlo-paths-with-cut-share",
+      "monte-carlo-paths-with-raise-share",
+      "monte-carlo-prob-ending-above-bequest-target",
+      "monte-carlo-prob-ending-surplus",
+      "monte-carlo-required-floor-success-rate",
+      "monte-carlo-success-rate",
+      "monte-carlo-target-attainment-median",
+      "monte-carlo-target-lifestyle-success-rate",
+      "portfolio-need-annual",
+      "projection-result-ending-investable",
+      "projection-result-ending-net-worth",
       "projection-summary-average-pre-retirement-savings-rate-pct",
       "projection-summary-coast-fire-number",
       "projection-summary-ending-after-tax-estate",
@@ -73,11 +122,19 @@
       "scenario-lifetime-tax",
       "sepp-distribution-annual",
       "social-security-bridge-sizing",
+      "spending-excess-requested-annual",
       "spending-excess-shortfall-annual",
       "spending-guardrail-factor-annual",
+      "spending-ideal-requested-annual",
       "spending-ideal-shortfall-annual",
+      "spending-intended-annual",
+      "spending-required-requested-annual",
       "spending-required-shortfall-annual",
+      "spending-shortfall-annual",
+      "spending-target-requested-annual",
       "spending-target-shortfall-annual",
+      "spending-total-annual",
+      "stochastic-frontier-variant-axis",
       "sustainable-spending-result-max-base-annual",
       "sustainable-spending-result-spending-slack-dollars",
       "swr-rule-result-depletion-year",
@@ -89,7 +146,9 @@
       "tax-amt-annual",
       "tax-loss-carryforward-remaining-annual",
       "tax-loss-carryforward-used-against-gains-annual",
-      "tax-loss-carryforward-used-against-ordinary-annual"
+      "tax-loss-carryforward-used-against-ordinary-annual",
+      "withdrawals-by-category-annual",
+      "withdrawals-total-annual"
     ],
     "partial": [
       "spending-base-annual"
@@ -99,15 +158,12 @@
       "aca-gross-enrollment-premium-annual",
       "accounts-balance-per-account-annual",
       "accounts-ending-balance-by-category",
-      "accounts-investable-total-annual",
-      "accounts-net-worth-annual",
       "annuitization-sweep-annual-income",
       "annuitization-sweep-effective-allocation-pct",
       "annuitization-sweep-premium",
       "bucket-lens-allocation",
       "cash-flow-line-amount",
       "cash-flow-line-plan-dollars",
-      "cash-flow-reconciliation-totals",
       "cash-flow-tax-character-amount",
       "claim-age-co-optimization-combinations-evaluated",
       "claim-age-co-optimization-current-claim-exact-estate",
@@ -136,26 +192,10 @@
       "exact-ledger-validation-first-materially-unexecuted-year",
       "exact-ledger-validation-requested-conversion-total",
       "exact-ledger-validation-traditional-depletion-year",
-      "flexible-goal-funded-amount-annual",
-      "flexible-goal-unfunded-amount-annual",
-      "flexible-goals-deferred-count-annual",
-      "flexible-goals-funded-count-annual",
-      "flexible-goals-partially-funded-count-annual",
-      "flexible-goals-skipped-count-annual",
       "hecm-draw-annual",
       "historical-stress-window-total-shortfall",
-      "income-annuity-annual",
       "income-floor-ladder-yield-pct",
-      "income-one-time-annual",
-      "income-ordinary-dividends-annual",
-      "income-pension-annual",
-      "income-qualified-dividends-annual",
-      "income-recurring-annual",
-      "income-taxable-interest-annual",
-      "income-taxable-yield-annual",
       "income-tips-ladder-annual",
-      "income-total-annual",
-      "income-wages-annual",
       "inherited-account-final-deadline-year",
       "inherited-distribution-forced-annual",
       "inherited-distribution-required-annual",
@@ -172,41 +212,11 @@
       "mcp-batch-cumulative-tax-objective",
       "mcp-batch-ending-traditional-objective",
       "mcp-compare-ending-after-tax-estate-delta",
-      "monte-carlo-average-longest-cut-spell-years",
-      "monte-carlo-average-total-shortfall",
-      "monte-carlo-average-years-below-target",
-      "monte-carlo-cut-years",
-      "monte-carlo-depletion-probability-by-year",
-      "monte-carlo-depletion-year-histogram",
-      "monte-carlo-ending-after-tax-estate-percentiles",
-      "monte-carlo-ending-investable-histogram",
-      "monte-carlo-excess-funding-rate",
-      "monte-carlo-expected-shortfall-on-failing-paths",
-      "monte-carlo-failing-path-count",
-      "monte-carlo-failure-rate",
-      "monte-carlo-flexible-goal-outcome-counts",
-      "monte-carlo-guardrail-action-counts",
-      "monte-carlo-ideal-funding-rate",
-      "monte-carlo-investable-fan-percentiles",
-      "monte-carlo-max-cut-depth-percentiles",
-      "monte-carlo-p90-average-annual-target-shortfall",
-      "monte-carlo-p90-total-shortfall",
-      "monte-carlo-paths-with-cut-share",
-      "monte-carlo-paths-with-raise-share",
-      "monte-carlo-prob-ending-above-bequest-target",
-      "monte-carlo-prob-ending-surplus",
-      "monte-carlo-required-floor-success-rate",
-      "monte-carlo-success-rate",
-      "monte-carlo-target-attainment-median",
-      "monte-carlo-target-lifestyle-success-rate",
       "optimization-baseline-after-tax-estate",
       "optimization-candidate-after-tax-estate",
       "optimizer-recommended-conversion-annual",
       "optimizer-schedule-conversion-total",
       "pension-election-annuity-present-value",
-      "portfolio-need-annual",
-      "projection-result-ending-investable",
-      "projection-result-ending-net-worth",
       "projection-summary-fi-year",
       "relocation-tax-comparison",
       "roth-conversion-annual",
@@ -230,19 +240,11 @@
       "solved-spending-rounded-to-hundred",
       "spending-care-cost-gross-annual",
       "spending-debt-service-annual",
-      "spending-excess-requested-annual",
       "spending-healthcare-annual",
-      "spending-ideal-requested-annual",
       "spending-insurance-premiums-annual",
-      "spending-intended-annual",
       "spending-one-time-goals-annual",
       "spending-property-costs-annual",
-      "spending-required-requested-annual",
       "spending-shape-delta-vs-flat",
-      "spending-shortfall-annual",
-      "spending-target-requested-annual",
-      "spending-total-annual",
-      "stochastic-frontier-variant-axis",
       "surplus-invested-annual",
       "survivor-scenario-row-estate-delta",
       "survivor-scenario-row-lifetime-tax-delta",
@@ -252,8 +254,6 @@
       "tax-penalties-annual",
       "tax-realized-gains-annual",
       "tax-total-annual",
-      "withdrawals-by-category-annual",
-      "withdrawals-total-annual",
       "year-result-contributions",
       "year-result-employer-match",
       "year-result-ltcg-zero-headroom",
@@ -322,6 +322,9 @@
       "accounts-investable-total-annual": [
         "allocation-total-return-drift",
         "allocation-weight-normalization"
+      ],
+      "accounts-net-worth-annual": [
+        "accounts-investable-total-annual"
       ],
       "annuitization-payout-rate-pct": [
         "qlac-deferred-payout-placeholder"
@@ -395,6 +398,14 @@
         "allocation-glidepath-interpolation",
         "asset-class-parameter-overrides"
       ],
+      "income-total-annual": [
+        "income-annuity-annual",
+        "income-one-time-annual",
+        "income-pension-annual",
+        "income-recurring-annual",
+        "income-taxable-yield-annual",
+        "income-wages-annual"
+      ],
       "insight-impact-ending-after-tax-estate-delta": [
         "insight-irmaa-tier-edge-premium-cliff"
       ],
@@ -439,6 +450,9 @@
         "survival-probability-product"
       ],
       "magi-annual": [
+        "income-ordinary-dividends-annual",
+        "income-qualified-dividends-annual",
+        "income-taxable-interest-annual",
         "qcd-income-offset-qualified-slice",
         "qcd-limit-and-age-proxy"
       ],
@@ -577,6 +591,16 @@
         "allocation-blended-expected-return",
         "conversion-coordinate-descent-search"
       ],
+      "portfolio-need-annual": [
+        "income-total-annual",
+        "spending-total-annual"
+      ],
+      "projection-result-ending-investable": [
+        "accounts-investable-total-annual"
+      ],
+      "projection-result-ending-net-worth": [
+        "accounts-net-worth-annual"
+      ],
       "projection-summary-coast-fire-number": [
         "projection-summary-fi-number"
       ],
@@ -612,6 +636,8 @@
         "current-spouse-excess-poms-order",
         "delayed-retirement-credit-factor",
         "early-claim-factor",
+        "family-maximum-bend-points",
+        "income-wages-annual",
         "normal-retirement-age",
         "pia-from-aime-bend-points",
         "social-security-cola-factor",
@@ -639,18 +665,33 @@
         "medicare-base-part-b-premium",
         "medicare-irmaa-first-tier-boundary"
       ],
+      "spending-intended-annual": [
+        "flexible-goal-outcomes-annual"
+      ],
       "spending-one-time-goals-annual": [
         "flexible-goal-scheduling"
       ],
       "spending-required-requested-annual": [
         "lifestyle-required-discretionary-split"
       ],
+      "spending-required-shortfall-annual": [
+        "spending-required-requested-annual"
+      ],
       "spending-shape-delta-vs-flat": [
         "spending-shape-annual-delta-phases",
         "spending-shape-preset-compilation"
       ],
+      "spending-shortfall-annual": [
+        "portfolio-need-annual"
+      ],
       "spending-target-requested-annual": [
         "lifestyle-required-discretionary-split"
+      ],
+      "spending-target-shortfall-annual": [
+        "spending-target-requested-annual"
+      ],
+      "spending-total-annual": [
+        "spending-base-annual"
       ],
       "sustainable-spending-result-max-base-annual": [
         "spending-shape-annual-delta-phases"
@@ -696,23 +737,29 @@
         "federal-ordinary-bracket-tax",
         "federal-standard-deduction-age-65",
         "federal-taxable-social-security-tiers",
+        "income-ordinary-dividends-annual",
+        "income-qualified-dividends-annual",
+        "income-taxable-interest-annual",
         "parameter-provenance-catalog",
         "qcd-income-offset-qualified-slice",
         "qcd-limit-and-age-proxy"
+      ],
+      "withdrawals-total-annual": [
+        "withdrawals-by-category-annual"
       ]
     }
   },
   "records": {
-    "total": 132,
+    "total": 170,
     "byKind": {
-      "composition": 35,
-      "data": 14,
-      "formula": 41,
-      "model": 42
+      "composition": 52,
+      "data": 15,
+      "formula": 58,
+      "model": 45
     },
     "byJustificationKind": {
       "dataset": 5,
-      "derivation": 127
+      "derivation": 165
     }
   },
   "oracleExamples": [
@@ -751,20 +798,20 @@
   ],
   "walkthroughs": [],
   "attestationsDerived": {
-    "catalogued": 36,
+    "catalogued": 50,
     "excludedWithReason": 0,
-    "notYetReviewed": 185
+    "notYetReviewed": 171
   },
   "shards": [
     {
       "group": "accountsAndGrowth",
       "path": "calculation-coverage/accountsAndGrowth.json",
-      "recordCount": 9
+      "recordCount": 11
     },
     {
       "group": "cashFlowAndSummary",
       "path": "calculation-coverage/cashFlowAndSummary.json",
-      "recordCount": 16
+      "recordCount": 35
     },
     {
       "group": "insights",
@@ -789,7 +836,7 @@
     {
       "group": "monteCarlo",
       "path": "calculation-coverage/monteCarlo.json",
-      "recordCount": 23
+      "recordCount": 33
     },
     {
       "group": "optimizerAndComparisons",
@@ -809,12 +856,12 @@
     {
       "group": "socialSecurity",
       "path": "calculation-coverage/socialSecurity.json",
-      "recordCount": 10
+      "recordCount": 11
     },
     {
       "group": "spendingAndWithdrawals",
       "path": "calculation-coverage/spendingAndWithdrawals.json",
-      "recordCount": 9
+      "recordCount": 15
     },
     {
       "group": "taxes",

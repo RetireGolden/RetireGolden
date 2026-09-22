@@ -24,7 +24,11 @@ export function familyMaximumEligibilityYearFromDobParts(year: number, month: nu
 
 /**
  * Monthly family maximum for a retirement/survivor worker record, before COLA
- * and trust-fund haircut.
+ * and trust-fund haircut: 150% of the PIA up to the eligibility year's first
+ * family-maximum bend point, plus 272% of the slice up to the second, plus
+ * 134% of the slice up to the third, plus 175% of the PIA above the third,
+ * floored to the dime (the SSA formula at ssa.gov/oact/cola/familymax.html).
+ * The bend points come from FAMILY_MAXIMUM_BEND_POINTS in ssaWageData.ts.
  */
 export function familyMaximumMonthlyFromPia(piaMonthly: number, eligibilityYear: number): number {
   if (piaMonthly <= 0) return 0

@@ -449,7 +449,11 @@ export const taxableAccountSchema = z.object({
   interestYieldPct: nonNegative.optional(),
   /** Annual dividend yield as a percent of start-of-year balance. */
   dividendYieldPct: nonNegative.optional(),
-  /** Fraction of dividends taxed as qualified dividends. */
+  /**
+   * Fraction of dividends taxed as qualified dividends. Absent, the
+   * allocation blend's ratio applies, and absent that,
+   * DEFAULT_QUALIFIED_DIVIDEND_RATIO (0.85); the result is clamped to [0, 1].
+   */
   qualifiedRatio: z.number().min(0).max(1).optional(),
   /**
    * Annual federally tax-exempt (municipal-bond) interest yield as a percent of
@@ -465,7 +469,11 @@ export const taxableAccountSchema = z.object({
    * taxable.
    */
   taxExemptInterestYieldPct: nonNegative.optional(),
-  /** Reinvest generated yield into the account instead of paying it into cash flow. */
+  /**
+   * Reinvest generated yield into the account instead of paying it into cash
+   * flow. Absent means true: yield is credited back to the account and never
+   * reaches the year's cash inflows.
+   */
   reinvestDividends: z.boolean().optional(),
   /** Opt-in class allocation; supersedes annualReturnPct and (unless explicitly set) drives the yield fields. */
   allocation: assetAllocationPolicySchema.optional(),
