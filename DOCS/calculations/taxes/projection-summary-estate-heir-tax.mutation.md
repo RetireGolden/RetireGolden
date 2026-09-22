@@ -22,7 +22,7 @@ index b2fd5c29..2708c541 100644
 
 Subtract the charity amount a second time from the already resolved heir-tax total.
 
-The assertion this record owns is the one reading `endingEstateHeirTax: actual 26320, worksheet 61600`; the mutation also breaks a sibling record's assertion in the same file, because both read the mutated expression. The captured output shows every failure in full.
+The assertion this record owns is the one reading `endingEstateHeirTax: actual 26320, worksheet 56320`; the mutation also breaks a sibling record's assertion in the same file, because both read the mutated expression. The captured output shows every failure in full.
 
 ## Command
 

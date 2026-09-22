@@ -28,11 +28,13 @@ A second case with every shortfall equal to zero expects exactly `null`.
 
 A third case whose only nonzero shortfall is exactly `0.005` in one year expects exactly `null`, because the comparison is strict.
 
+What the fixture executes: the first two cases, realized by a real ledger run rather than the shortfall table above (a $1,000,000 cash portfolio exhausted in 2041 by the rule level and a level premium, whose shortfalls from 2041 on are in the thousands of dollars; and a run ending in 2040 with no shortfall). The `0.004` row and the third case are contract statements, not executed evidence: the ledger funds to its own exact-cent fixed point, and no plan input leaves a residual of exactly half a cent in one year while every other year is funded, so the fixture does not discriminate the strict `>` from `>=` or from any-positive-shortfall. The record's limits say the same.
+
 ## Wrong readings
 
 - Treating any shortfall greater than zero as depletion gives `2039`.
 - Selecting the largest-shortfall year gives `2042`.
-- Using a `>=` comparison flips the exact-`0.005` case from `null` to that year.
+- Using a `>=` comparison flips the exact-`0.005` case from `null` to that year (not executed as a mutation, for the reason given under Expected).
 
 ## Family
 

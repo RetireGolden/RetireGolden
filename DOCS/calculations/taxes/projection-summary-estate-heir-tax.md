@@ -10,9 +10,11 @@ The interface comments give both the exact identity `endingEstateHeirTax=sum_a e
 
 | Account | Gross balance | Taxable pre-tax base | Charity fraction (share of gross) | Destination | Heir rate | Unit |
 |---|---:|---:|---:|---|---:|---|
-| Traditional IRA | 300,000.00 | 240,000.00 | 10% | non-spouse | 22% | nominal dollars |
+| Traditional IRA | 300,000.00 | 240,000.00 | 10% | charity (10% to charity, the remainder to a non-spouse heir) | 22% | nominal dollars |
 | Non-spouse HSA | 40,000.00 | 40,000.00 | 0% | non-spouse | 22% | nominal dollars |
 | Roth IRA | 125,000.00 | 0.00 | 0% | non-spouse | 22% | nominal dollars |
+
+The charity fraction is nonzero only when the account's destination is `charity`: the schema's `charityPct` is the charity share for that destination and the remainder passes to a non-spouse heir. The second Expected case sets every destination to `non-spouse`.
 
 ## Arithmetic
 
@@ -43,4 +45,4 @@ feeds: `projection-summary-ending-after-tax-estate`.
 
 Derived by: codex (gpt-5.6-sol), 2026-09-18, from the signatures-and-comments extract (with the 2026-09-18 heirTax doc comment) and the orchestrator's contract statement, without executing the engine or reading any implementation body. Reviewed by: cursor (composer-2.5), 2026-09-18, by independent recomputation without executing the engine; see REVIEW-2026-09-18-slice-seven.md in this directory (the first review, and the re-check section for this re-derivation).
 
-Revision note: The first derivation assumed each account's heir tax was a supplied input and therefore taxed the traditional IRA's full `$240,000.00` taxable pre-tax base despite its 10% charity fraction; the implementation's fixture found that mismatch.
+Revision note: The first derivation assumed each account's heir tax was a supplied input and therefore taxed the traditional IRA's full `$240,000.00` taxable pre-tax base despite its 10% charity fraction; the implementation's fixture found that mismatch. Revision 2026-09-22 (pull-request review of #727): the Inputs row for the traditional IRA named a `non-spouse` destination beside its 10% charity fraction, while production applies the fraction only under a `charity` destination, which is what the fixture supplies; the row now says so. No expected value changed.

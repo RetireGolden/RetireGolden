@@ -80,7 +80,7 @@ export const taxesRecords = {
       worksheet: 'DOCS/calculations/taxes/projection-summary-estate-heir-tax.md',
     },
     limits: [
-      'It sums the already resolved per-account tax rather than recomputing taxable bases or taxing gross balances a second time, and it must not subtract the charity amount again from the resolved total. Disclosed discrepancy: on the worksheet\'s own account inputs the engine publishes 56,320.00 where the worksheet expects 61,600.00, because the engine multiplies the taxable pre-tax base by one minus the charity fraction before applying the heir rate (240,000 x 0.9 x 0.22 = 47,520.00) while the worksheet\'s traditional row states 52,800.00 (240,000 x 0.22), taxing the whole base and carving charity out of the balance only. The evidence keeps the worksheet\'s expectation and fails.',
+      'It sums the already resolved per-account tax rather than recomputing taxable bases or taxing gross balances a second time, and it must not subtract the charity amount again from the resolved total. The charity fraction reduces the taxable pre-tax base before the heir rate applies (240,000 x 0.9 x 0.22 = 47,520.00 on the worksheet\'s traditional row), and only a charity destination carries a nonzero fraction. The first derivation taxed the whole base (52,800.00) and was re-derived on that rule; the evidence pins both cases, 56,320.00 with the 10% charity bequest and 61,600.00 with no charity destination, and is green.',
     ],
     implementedBy: ['packages/engine/src/projection/compare.ts'],
     implementedByFunctions: ['packages/engine/src/projection/compare.ts#summarizeProjection'],
@@ -135,7 +135,7 @@ export const taxesRecords = {
       worksheet: 'DOCS/calculations/taxes/relocation-lifetime-state-local-tax.md',
     },
     limits: [
-      'Scope is income tax only: federal tax, property tax, sales tax and cost of living are outside this quantity, the annual lines are nominal and are never discounted, and dropping the split or baseline year understates the total. The worksheet\'s per-year lines are supplied by a deterministic state-tax calculator injected at the createStateTaxCalculator seam, so the recording, the row assembly and the sum are the real code path while the state packs themselves are not exercised here.',
+      'Scope is income tax only: federal tax, property tax, sales tax and cost of living are outside this quantity, the annual lines are nominal and are never discounted, and dropping the split or baseline year understates the total. The worksheet\'s per-year lines are supplied by a deterministic state-tax calculator injected at the createStateTaxCalculator seam, so the recording, the row assembly and the sum are the real code path while the state packs themselves are not exercised here. The published total is the driver sum over every recorded line, and the per-year series is that recording restricted to the run horizon; the two agree when every recorded line lies inside the horizon, which the fixture\'s scenario satisfies and which no known code path violates.',
     ],
     implementedBy: ['packages/engine/src/projection/relocation.ts'],
     implementedByFunctions: ['packages/engine/src/projection/relocation.ts#compareRelocationCandidates'],

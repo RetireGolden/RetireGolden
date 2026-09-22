@@ -442,14 +442,18 @@ describeCalculation(
     // The summary publishes the per-year rates it averages, so the worksheet's
     // rates enter as the ledger rows that produce them: savings over gross
     // income, a rate the production formula clamps to [0, 100].
-    const grossIncome = 100_000
+    // Incomes differ year to year so that the dollar-weighted ratio the
+    // record's limits rule out, sum(savings) / sum(income), is 27.142857...%
+    // here and cannot pass as the worksheet's unweighted mean.
+    const grossIncomes = [50_000, 100_000, 200_000]
     function ratesLedger(rates: { year: number; ratePct: number }[]): YearResult[] {
-      return rates.map((row) =>
-        ledgerYear(row.year, {
+      return rates.map((row, index) => {
+        const grossIncome = grossIncomes[index % grossIncomes.length]!
+        return ledgerYear(row.year, {
           contributions: (row.ratePct / 100) * grossIncome,
           incomes: { ...ledgerYear(row.year).incomes, wages: grossIncome, total: grossIncome },
-        }),
-      )
+        })
+      })
     }
     function savingsPlan(): Plan {
       return evidencePlan((plan) => {
@@ -462,6 +466,10 @@ describeCalculation(
       const summary = summarizeProjection(savingsPlan(), projection({ endYear: 2028, years }))
       expect(summary.savingsRates.map((row) => row.year)).toEqual([2026, 2027, 2028])
       const expected = example.expected.averagePct as number
+      const dollarWeightedPct =
+        (100 * years.reduce((sum, year) => sum + year.contributions, 0)) /
+        years.reduce((sum, year) => sum + year.incomes.total, 0)
+      expect(Math.abs(dollarWeightedPct - expected)).toBeGreaterThan(1)
       expect(
         withinTolerance(summary.averagePreRetirementSavingsRatePct, expected, example.tolerance),
         `averagePreRetirementSavingsRatePct: actual ${summary.averagePreRetirementSavingsRatePct}, worksheet ${expected}`,

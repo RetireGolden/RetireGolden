@@ -4,7 +4,7 @@ Kind: composition. `projection/relocation.ts#compareRelocationCandidates` sums a
 
 ## Justification
 
-The row exposes the exact annual reconciliation series `stateTaxByYear`, so `lifetimeStateLocalTax=sum_y stateTaxByYear[y].tax`; federal tax, property tax, sales tax and cost of living are outside this quantity. The domain is a successful candidate row with a finite annual series.
+The published total is the driver sum over every state-tax line the run recorded for the candidate, and the row's annual reconciliation series `stateTaxByYear` is that same recording restricted to the run's start-to-end years, so `lifetimeStateLocalTax=sum_y stateTaxByYear[y].tax` whenever every recorded line lies inside the horizon, which holds for a normal run and for this scenario; federal tax, property tax, sales tax and cost of living are outside this quantity. The domain is a successful candidate row with a finite annual series.
 
 ## Inputs
 
@@ -35,4 +35,4 @@ feeds: `insight-state-relocation-lifetime-state-tax-savings`, `scenario-comparis
 
 ## Provenance
 
-Derived by: codex (gpt-5.6-sol), 2026-09-18, from the signatures-and-comments extract only, without executing the engine or reading any implementation body. Reviewed by: cursor (composer-2.5), 2026-09-18, by independent recomputation without executing the engine; see REVIEW-2026-09-18-slice-seven.md in this directory.
+Derived by: codex (gpt-5.6-sol), 2026-09-18, from the signatures-and-comments extract only, without executing the engine or reading any implementation body. Reviewed by: cursor (composer-2.5), 2026-09-18, by independent recomputation without executing the engine; see REVIEW-2026-09-18-slice-seven.md in this directory. Revision 2026-09-22 (pull-request review of #727): the Justification now states the identity on the driver total the code publishes and the horizon condition under which it equals the per-year series; no value changed.

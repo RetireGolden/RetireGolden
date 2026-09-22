@@ -210,17 +210,20 @@ describeCalculation(
   'swr-rule-depletion-year',
   {
     example: {
+      // The fixture realizes the worksheet's first two cases with a real
+      // ledger run built from these inputs, not from the worksheet's shortfall
+      // table. The third case (a sole shortfall of exactly 0.005) is not
+      // constructed from plan inputs and is not asserted: the ledger funds to
+      // its own exact-cent fixed point, as the record's limits and the
+      // worksheet's Expected section say.
       inputs: {
-        shortfallRows: [
-          { year: 2039, shortfall: 0.004 },
-          { year: 2040, shortfall: 0.0 },
-          { year: 2041, shortfall: 125.0 },
-          { year: 2042, shortfall: 2_400.0 },
-        ],
-        projectionEndYear: 2042,
+        cashBalance: 1_000_000,
+        monthlyPremiumPerPerson: 1_500,
+        depletingPlanningAge: 75,
+        fundedPlanningAge: 60,
         toleranceDollars: 0.005,
       },
-      expected: { depletionYear: 2041, noShortfallDepletionYear: null, exactlyAtToleranceDepletionYear: null },
+      expected: { depletionYear: 2041, noShortfallDepletionYear: null },
       tolerance: 'exact',
     },
     worksheet: 'DOCS/calculations/optimizer-and-comparisons/swr-rule-depletion-year.md',
@@ -236,19 +239,19 @@ describeCalculation(
       return evidencePlan((plan) => {
         plan.household.people[0]!.longevity = { planningAge, source: 'manual' }
         plan.expenses.healthcare = {
-          pre65MonthlyPremiumPerPerson: 1_500,
+          pre65MonthlyPremiumPerPerson: example.inputs.monthlyPremiumPerPerson as number,
           applyAcaCredit: false,
           medicareExtrasMonthlyPerPerson: 0,
         }
         plan.accounts = [
-          { type: 'cash', id: 'cash-1', name: 'Cash', ownerPersonId: null, annualReturnPct: 0, balance: 1_000_000, annualContribution: 0 },
+          { type: 'cash', id: 'cash-1', name: 'Cash', ownerPersonId: null, annualReturnPct: 0, balance: example.inputs.cashBalance as number, annualContribution: 0 },
         ]
       })
     }
     const opts = (): SimulateOptions => ({ startYear: 2026, taxCalculator: createFlatTaxCalculator(0) })
 
     it('selects 2041, the first year whose shortfall clears the half-cent budget', () => {
-      const rows = compareSwrRules(depletingPlan(75), opts())
+      const rows = compareSwrRules(depletingPlan(example.inputs.depletingPlanningAge as number), opts())
       const row = rows.find((candidate) => candidate.id === BENGEN)!
       // Every later year of this run is short by more than 2041 is, so the
       // largest-shortfall reading the worksheet rejects would name a later
@@ -259,7 +262,7 @@ describeCalculation(
     it('publishes null when no year is short', () => {
       // The minimum modeled planning age, 60, ends the run in 2040 — the
       // fifteenth funded year, one short of the crossing.
-      const rows = compareSwrRules(depletingPlan(60), opts())
+      const rows = compareSwrRules(depletingPlan(example.inputs.fundedPlanningAge as number), opts())
       const row = rows.find((candidate) => candidate.id === BENGEN)!
       expect(row.depletionYear).toBe(example.expected.noShortfallDepletionYear)
     })
