@@ -281,6 +281,82 @@
       }
     },
     {
+      "id": "income-tips-ladder-and-ladder-value-annual",
+      "title": "TIPS ladder annual cash and remaining ladder value",
+      "kind": "composition",
+      "outputs": [
+        "income-tips-ladder-annual",
+        "ladder-value-annual"
+      ],
+      "feeds": [],
+      "purpose": "The cash a TIPS income-floor ladder pays in a year and the face still riding in net worth at its end.",
+      "statement": "At offset = year − anchor year, projection/internal/tipsLadderAnnualCashFlow.ts#tipsLadderAnnualCashFlows publishes, per ladder: cash = (coupons + maturing principal) x the ladder's funding scale x the cumulative inflation factor from the start year, where coupons sum face x couponRatePct / 100 over every rung with maturityOffset >= offset and maturing principal is the face of the rungs maturing at exactly that offset; and ladderValue = unmatured face (rungs with maturityOffset > offset) x the same scale and factor. In the purchase year (offset 0) cash is 0 and the value is the whole face at that year's factor; with nobody alive the remaining face is frozen at the last living year's offset. YearIncomes.tipsLadder and YearResult.ladderValue are the sums of these rows over the plan's ladders. Units: nominal dollars. Rounding: none.",
+      "formula": {
+        "expression": "cash = (Σ_{m >= k} F_m c_m + Σ_{m = k} F_m) s f_k; value = (Σ_{m > k} F_m) s f_k; cash = 0 at k = 0",
+        "variables": [
+          {
+            "symbol": "k",
+            "meaning": "Offset from the anchor year (purchase year, or the year before the start when already owned)",
+            "unit": "years",
+            "domain": "integer >= 0"
+          },
+          {
+            "symbol": "F_m, c_m",
+            "meaning": "Real face and coupon rate of the rung maturing at offset m",
+            "unit": "usd / fraction",
+            "domain": "F_m >= 0, 0 <= c_m"
+          },
+          {
+            "symbol": "s",
+            "meaning": "Funding scale: 1, or the funded fraction when the purchase-year account could not cover the quoted cost",
+            "unit": "1",
+            "domain": "0 <= s <= 1"
+          },
+          {
+            "symbol": "f_k",
+            "meaning": "Cumulative general-inflation factor from the start year to this year",
+            "unit": "1",
+            "domain": "positive"
+          }
+        ],
+        "timing": "annual; one row per ladder, never summed inside the phase",
+        "rounding": "none"
+      },
+      "limits": [
+        "The worksheet's rung set (face $10,000 at offset 1 with a 1% coupon and face $20,000 at offset 3 with a 2% coupon, nothing at offset 2) is NOT plan-constructible: ladder/ladderMath.ts#buildLadder derives faces by back-substitution from a level real income and prices every coupon off the embedded real-yield curve, over CONSECUTIVE offsets. The three-offset case is therefore asserted by calling the phase directly with those rungs, the way the other annual-phase evidence files do",
+        "A real simulatePlan run is asserted beside it for the purchase-year branch the worksheet also states — cash exactly 0 and ladderValue the whole face x scale x factor — because that branch IS plan-constructible",
+        "The funding scale is written once by the simulator's purchase-funding block and only read here; the direct-call evidence sets it to the worksheet's 0.8 rather than starving a funding account to produce it",
+        "Cumulative factors of 1.05 at offset 1 and 1.10 at offset 2 are not a constant inflation rate; the direct call passes them as the worksheet states them",
+        "Taxable income is a different quantity from cash: the phase also returns coupons plus this year's accretion on outstanding face, which these two families do not publish"
+      ],
+      "worksheet": "DOCS/calculations/ladders-and-valuation/income-tips-ladder-and-ladder-value-annual.md",
+      "mutation": "DOCS/calculations/ladders-and-valuation/income-tips-ladder-and-ladder-value-annual.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/projection/internal/tipsLadderAnnualCashFlow.ts",
+        "packages/engine/src/ladder/ladderMath.ts"
+      ],
+      "provenance": {
+        "derivedBy": "codex",
+        "implementedBy": "claude",
+        "reviewedBy": "cursor"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/projection/internal/tipsLadderAnnualCashFlow.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
       "id": "ladder-annual-coupon-par-pricing",
       "title": "Synthetic TIPS rung: floored coupon and par-curve price",
       "kind": "formula",

@@ -46,6 +46,12 @@ export interface MonteCarloPath {
   endingInvestable: number
   endingNetWorth: number
   endingAfterTaxEstate: number
+  /**
+   * Copied from the path's ProjectionResult.depletionYear: the first year whose
+   * funding shortfall after any HECM backstop draw exceeds
+   * ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS (half a cent); null when no year does
+   * within the horizon.
+   */
   depletionYear: number | null
   /** Sum of unfunded spending across the path. */
   totalShortfall: number
@@ -63,9 +69,12 @@ export interface MonteCarloPath {
   targetLifestyleMet: boolean
   /** Share of target spending funded across the path. */
   targetAttainmentPct: number
-  /** Average annual target shortfall across the path. */
+  /** Σ targetShortfall over the path's years ÷ the number of years (0 for an empty path). */
   averageAnnualTargetShortfall: number
-  /** Number of years with any target shortfall. */
+  /**
+   * Number of years whose targetShortfall exceeds SHORTFALL_EPSILON (half a
+   * dollar); a smaller residual is rounding, not a miss.
+   */
   yearsBelowTarget: number
   idealIntended: number
   idealFunded: number
@@ -79,7 +88,15 @@ export interface MonteCarloPath {
   longestGuardrailCutSpellYears: number
   /** Deepest cut reached on this path, as a fraction of the discretionary layer (0..1). */
   maxGuardrailCutDepth: number
-  /** Ending after-tax estate cleared the plan's bequest target (today's $, inflated to path end); null = no target set. */
+  /**
+   * endingAfterTaxEstate >= bequestTargetDollars × Π(1 + inflation_y / 100) over
+   * the path's year gaps (endYear − startYear factors, matching the ledger's
+   * cumulative factor, so a three-row 2026–2028 path compounds two prints), each
+   * gap's inflation taken from this path's realized series, whose last print
+   * repeats when the series is shorter; the plan assumption applies only when
+   * the series is missing or empty or has a hole at that index. null when the
+   * plan has no positive bequest target.
+   */
   endingAboveBequestTarget: boolean | null
 }
 
@@ -262,8 +279,14 @@ export interface MonteCarloSummary {
   targetLifestyleSuccessRate: number
   /** Path-level target-attainment distribution (1 = every target dollar funded). */
   targetAttainmentPct: Omit<YearPercentiles, 'year'>
+  /**
+   * Mean over all paths of each path's averageAnnualTargetShortfall (an average
+   * of per-path averages, not a pooled per-year mean); 0 with no paths.
+   */
   averageAnnualTargetShortfall: number
+  /** 90th percentile (linear interpolation) of the per-path averageAnnualTargetShortfall values. */
   p90AverageAnnualTargetShortfall: number
+  /** Mean over all paths of each path's yearsBelowTarget; 0 with no paths. */
   averageYearsBelowTarget: number
   /** Ratio of totals across paths: Σ idealFunded / Σ idealIntended; 1 when nothing was intended. */
   idealFundingRate: number
@@ -298,22 +321,36 @@ export interface MonteCarloSummary {
     averageLongestCutSpellYears: number
     /** Share of paths ending with any after-tax estate left. */
     probEndingSurplus: number
-    /** Share of paths whose ending estate clears the bequest target; null = no target set. */
+    /**
+     * Among the paths whose endingAboveBequestTarget is not null: the share
+     * with true (ending after-tax estate at least the bequest target inflated
+     * along that path's realized inflation); null when no path has a target.
+     */
     probEndingAboveBequestTarget: number | null
   }
   downsideRisk: {
+    /** failingPathCount ÷ pathCount; 0 with no paths. */
     failureRate: number
+    /** Number of paths whose depletionYear is not null. */
     failingPathCount: number
-    /** Average total unfunded spending across failing paths. */
+    /** Σ totalShortfall over failing paths ÷ failingPathCount; 0 with none. */
     expectedShortfallDollars: number
+    /** Σ totalRequiredShortfall over failing paths ÷ failingPathCount; 0 with none. */
     expectedRequiredShortfallDollars: number
+    /** Σ totalTargetShortfall over failing paths ÷ failingPathCount; 0 with none. */
     expectedTargetShortfallDollars: number
+    /** 90th percentile (linear interpolation) of every path's totalShortfall, failing or not. */
     p90TotalShortfallDollars: number
   }
+  /** Averages over every path (failing or not), each path's summed per-year shortfalls ÷ pathCount. */
   spendingShortfall: {
+    /** Σ totalShortfall over all paths ÷ pathCount. */
     averageTotalShortfallDollars: number
+    /** Σ totalRequiredShortfall over all paths ÷ pathCount. */
     averageRequiredShortfallDollars: number
+    /** Σ totalTargetShortfall over all paths ÷ pathCount. */
     averageTargetShortfallDollars: number
+    /** The same value as downsideRisk.p90TotalShortfallDollars. */
     p90TotalShortfallDollars: number
   }
   /** Per-year investable-balance fan (10/25/50/75/90). */

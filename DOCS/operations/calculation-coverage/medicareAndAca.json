@@ -200,6 +200,71 @@
       }
     },
     {
+      "id": "aca-enrollment-and-applicable-slcsp-premium-annual",
+      "title": "ACA gross enrollment premium and applicable SLCSP benchmark",
+      "kind": "composition",
+      "outputs": [
+        "aca-gross-enrollment-premium-annual",
+        "aca-applicable-slcsp-premium-annual"
+      ],
+      "feeds": [],
+      "purpose": "The year's Marketplace premium actually enrolled for, and the benchmark premium the credit is measured against.",
+      "statement": "YearAcaResult.grossEnrollmentPremium is the sum over all 12 months of every covered member's enrollment premium for that month (negatives floored at 0). YearAcaResult.applicableSlcspPremium sums that member's SLCSP benchmark premium only in months whose own enrollment premium is strictly above 0, so a benchmark quote in a month with no enrollment is excluded; it is null — not 0 — when the year carries no ACA contract, when contracts for the year are duplicated, or when an example plan's contract inputs mismatch. Units: nominal dollars per year, or null. Rounding: none.",
+      "formula": {
+        "expression": "gross = sum_m sum_i max(0, E_i,m); applicable = sum_m sum_i [E_i,m > 0] max(0, B_i,m)",
+        "variables": [
+          {
+            "symbol": "E_i,m",
+            "meaning": "Covered member i's enrollment premium in month m",
+            "unit": "usd/month",
+            "domain": "nonnegative"
+          },
+          {
+            "symbol": "B_i,m",
+            "meaning": "Covered member i's SLCSP benchmark premium in month m",
+            "unit": "usd/month",
+            "domain": "nonnegative"
+          }
+        ],
+        "timing": "annual, from the year's 12 monthly quotes",
+        "rounding": "none"
+      },
+      "limits": [
+        "Beyond the worksheet's inputs the evidence plan fixes: a single filer aged 63 in 2026 (pre-65, so Marketplace months exist and no Medicare month competes), applyAcaCredit on with one contract for the year, a tax family of one, zero inflation and zero return, and a cash account to fund the premium",
+        "The monthly gate is per MEMBER, not per household: a month can be applicable for one member and not another, which a household-level test would miss",
+        "The null case is asserted by turning the credit on with no contract for the year; the same null is produced by duplicate contracts and by an example-contract mismatch, which the evidence does not construct",
+        "These two totals are inputs to the credit, not the credit: the allowable PTC and the economic net premium are separate families with their own records",
+        "The monthly gate is applied where the per-member arrays are assembled, annualHealthcareExpenses.ts, and annualAcaResultPublication.ts sums the gated arrays onto YearAcaResult, which is what the fixture reads and what the receipt mutates; tax/aca.ts#acaEconomicPremiumByMonth repeats the gate for the credit and is the allowable-PTC record's site, not this one's"
+      ],
+      "worksheet": "DOCS/calculations/medicare-and-aca/aca-enrollment-and-applicable-slcsp-premium-annual.md",
+      "mutation": "DOCS/calculations/medicare-and-aca/aca-enrollment-and-applicable-slcsp-premium-annual.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/projection/internal/annualHealthcareExpenses.ts",
+        "packages/engine/src/projection/internal/annualAcaResultPublication.ts",
+        "packages/engine/src/projection/internal/types/aca.ts"
+      ],
+      "provenance": {
+        "derivedBy": "codex",
+        "implementedBy": "claude",
+        "reviewedBy": "cursor"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/projection/internal/types/aca.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
       "id": "aca-expected-contribution",
       "title": "ACA expected contribution",
       "kind": "composition",
@@ -754,6 +819,75 @@
       },
       "fixtureFiles": [
         "packages/engine/src/scenarios/comparison.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
+      "id": "spending-healthcare-annual",
+      "title": "Annual healthcare expense: Medicare, extras and marketplace premiums",
+      "kind": "composition",
+      "outputs": [
+        "spending-healthcare-annual"
+      ],
+      "feeds": [],
+      "purpose": "Everything the projection charges the household for health coverage in one year.",
+      "statement": "YearResult.expenses.healthcare adds, for each LIVING person: the tier-priced annual Medicare premium (Part B plus any Part D IRMAA surcharge, itself scaled by the healthcare factor from the pack year to this year) prorated by Medicare months / 12, plus medicareExtrasMonthlyPerPerson x Medicare months x the healthcare inflation factor from the start year, plus — with the ACA credit OFF — pre65MonthlyPremiumPerPerson x marketplace months x that same factor. Medicare months are 12 minus marketplace months, and marketplace months are 12 below 65, birth month minus 1 in the year 65 is attained, and 0 after. With the credit ON the marketplace component instead enters the ACA gross enrollment premium during the solve, and a converged fixed point republishes healthcare excluding enrollment plus the economic net premium (gross premium on non-convergence). Units: nominal dollars per year. Rounding: none.",
+      "formula": {
+        "expression": "healthcare = sum_p [ P_tier(p) x M_p/12 + extras x M_p x h + premium x A_p x h ], M_p = 12 - A_p",
+        "variables": [
+          {
+            "symbol": "P_tier(p)",
+            "meaning": "Annual Part B + Part D surcharge at the lookback MAGI tier for the year",
+            "unit": "usd/year",
+            "domain": "positive"
+          },
+          {
+            "symbol": "A_p, M_p",
+            "meaning": "Marketplace and Medicare months for person p",
+            "unit": "months",
+            "domain": "A_p + M_p = 12"
+          },
+          {
+            "symbol": "h",
+            "meaning": "Cumulative healthcare inflation factor from the start year (general inflation plus the healthcare extra)",
+            "unit": "1",
+            "domain": "positive"
+          }
+        ],
+        "timing": "annual; the Medicare tier reads the two-year lookback MAGI",
+        "rounding": "none"
+      },
+      "limits": [
+        "The worksheet's household is constructible on one plan as it now stands: the second person's 4 marketplace months and 8 Medicare months partition that person's year, so a March-1958 birth (12 Medicare months) and a May-1961 birth (4 marketplace, 8 Medicare) are one household whose published healthcare is $8,831.20. The first derivation gave the second person the 4 marketplace months with no Medicare months and totalled $6,002.72, an impossible annual partition; it was corrected on 2026-09-18, and $6,002.72 is now the worksheet's third wrong reading, asserted as not matching",
+        "Beyond the worksheet's inputs the evidence plans fix: startYear 2025 with the asserted row in 2026, inflationPct 0 and healthcareExtraInflationPct 10, so the factor from the start year is 1.10 while the factor from the pack year (2026) to the asserted year is 1 — which is what leaves the tier-priced premium unscaled while extras and the marketplace premium are scaled, the distinction the worksheet's first wrong reading names. Each person's own component is asserted on that person's own single-filer plan, and the household plan asserts the total and the 12 + 8 Medicare months behind it",
+        "Tier 1 is reached through assumptions.recentAnnualMagi, because the 2024 lookback year is before the projection and resolves to that plan fallback rather than to a projected MAGI. The two-person household files jointly, so it reaches the SAME tier 1 through the $218,000 joint threshold rather than the worksheet's $109,000 single threshold; the tier-priced premium is a function of the tier alone, so it is $3,582.72 either way",
+        "The second person's marketplace component is read as healthcare minus medicarePremiums minus that person's extras, since the phase result itself is not published on the year row; the extras rule it subtracts is pinned independently by the first person, whose zero marketplace months make healthcare minus medicarePremiums the extras exactly",
+        "The credit-on branch carries no numeric expectation: the worksheet states none without a complete ACA quote and a converged fixed point"
+      ],
+      "worksheet": "DOCS/calculations/medicare-and-aca/spending-healthcare-annual.md",
+      "mutation": "DOCS/calculations/medicare-and-aca/spending-healthcare-annual.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/projection/internal/annualHealthcareExpenses.ts",
+        "packages/engine/src/tax/medicare.ts"
+      ],
+      "provenance": {
+        "derivedBy": "codex",
+        "implementedBy": "claude",
+        "reviewedBy": "cursor"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/projection/internal/annualHealthcareExpenses.spendingHealthcare.evidence.test.ts"
       ],
       "gates": {
         "fixtureRegistersTest": true,

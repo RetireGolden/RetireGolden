@@ -341,6 +341,86 @@ describeCalculation(
   },
 )
 
+describeCalculation(
+  'tax-realized-gains-annual',
+  {
+    example: {
+      inputs: {
+        taxableWithdrawals: 2_500,
+        rebalancingSales: 750,
+        namedRetirementActions: -200,
+      },
+      expected: {
+        realizedGains: 3_050,
+        droppingSignedLossWrongReading: 3_250,
+        absoluteValuesWrongReading: 3_450,
+        withdrawalsOnlyWrongReading: 2_500,
+      },
+      tolerance: { abs: 0.005 },
+    },
+    worksheet: 'DOCS/calculations/taxes/tax-realized-gains-annual.md',
+    mutation: 'DOCS/calculations/taxes/tax-realized-gains-annual.mutation.md',
+  },
+  ({ example }) => {
+    const inputs = example.inputs as Record<string, number>
+    const expected = example.expected as Record<string, number>
+
+    it('folds 2500, 750 and -200 into a signed 3050', () => {
+      const base = assemblyInput({
+        snapshot: emptySnapshot(),
+        ladderValue: 0,
+        expensesTotal: 0,
+        incomesTotal: 0,
+        tax: 0,
+        penalties: 0,
+      })
+      const row = annualYearResultAssembly({
+        ...base,
+        funding: {
+          ...base.funding,
+          realizedGains: {
+            withdrawal: inputs.taxableWithdrawals!,
+            rebalance: inputs.rebalancingSales!,
+            retirementAction: inputs.namedRetirementActions!,
+          },
+        },
+      })
+      expectWithin(row.realizedGains, expected.realizedGains!, example.tolerance, 'realizedGains')
+      // The worksheet's three wrong readings.
+      for (const wrong of [
+        expected.droppingSignedLossWrongReading!,
+        expected.absoluteValuesWrongReading!,
+        expected.withdrawalsOnlyWrongReading!,
+      ]) {
+        expect(withinTolerance(row.realizedGains, wrong, example.tolerance)).toBe(false)
+      }
+    })
+
+    it('lets one source loss offset another source gain rather than flooring it', () => {
+      const base = assemblyInput({
+        snapshot: emptySnapshot(),
+        ladderValue: 0,
+        expensesTotal: 0,
+        incomesTotal: 0,
+        tax: 0,
+        penalties: 0,
+      })
+      const row = annualYearResultAssembly({
+        ...base,
+        funding: {
+          ...base.funding,
+          realizedGains: {
+            withdrawal: inputs.taxableWithdrawals!,
+            rebalance: 0,
+            retirementAction: -inputs.taxableWithdrawals!,
+          },
+        },
+      })
+      expect(row.realizedGains).toBe(0)
+    })
+  },
+)
+
 function validatedPlan(plan: Plan): Plan {
   const parsed = parsePlan(plan)
   if (!parsed.ok) throw new Error(parsed.issues.join('; '))

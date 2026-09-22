@@ -73,7 +73,7 @@
       "provenance": {
         "derivedBy": "claude-orchestrator",
         "implementedBy": "grok",
-        "reviewedBy": "unreviewed"
+        "reviewedBy": "cursor"
       },
       "fixtureFiles": [
         "packages/engine/src/spending/abw.evidence.test.ts"

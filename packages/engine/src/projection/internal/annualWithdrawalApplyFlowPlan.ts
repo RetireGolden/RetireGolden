@@ -37,6 +37,11 @@ export interface AnnualWithdrawalTaxableSale {
 export interface AnnualWithdrawalEvidenceWrite {
   readonly evidenceIndex: number
   readonly accountId: string
+  /**
+   * The account's need-based (voluntary) withdrawal this year, 0 when it drew
+   * nothing. A traditional or Roth inherited account whose treat-as-own
+   * election is effective receives no evidence write at all, not a zero row.
+   */
   readonly voluntaryAmount: number
 }
 

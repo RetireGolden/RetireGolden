@@ -32,10 +32,32 @@ export interface PersonYearState {
 
 export interface YearIncomes {
   wages: number
+  /**
+   * Σ over living people of that person's benefit. Own retirement (or SSDI)
+   * rows add pia × claim-age factor × payable months (0 before the claim year,
+   * 12 − claim months in it, 12 after) × the COLA factor × the haircut factor;
+   * a divorced-spouse marital, current-spouse spousal (the lower earner's own
+   * monthly + max(0, 0.5 × the higher PIA × the spousal factor − own monthly),
+   * the excess capped by the family maximum) or survivor step-up candidate
+   * replaces the running amount only when larger;
+   * then, while under FRA, the earnings test withholds max(0, (wages − the
+   * below-FRA limit) / 2), or ÷ 3 against the FRA-year limit in that year,
+   * capped at the benefit. COLA factor: the inflation factor from the start
+   * year under matchInflation, else (1 + annualPct / 100)^(year − start year);
+   * haircut factor: 1 − cutPct / 100 from ssHaircut.fromYear, else 1.
+   */
   socialSecurity: number
   pension: number
   annuity: number
-  /** TIPS-ladder cash flows (coupons + maturing principal); 0 when the plan has no ladders. */
+  /**
+   * TIPS-ladder cash flows, summed over ladders: (coupons + maturing
+   * principal) × the ladder's funding scale × the cumulative inflation factor
+   * from the start year, at offset = year − anchor year ≥ 1 while someone is
+   * alive, where coupons = Σ face × couponRatePct / 100 over rungs with
+   * maturityOffset ≥ offset and maturing principal is the face of the rungs
+   * maturing at that offset; 0 in the purchase year, with no one alive, or
+   * without ladders.
+   */
   tipsLadder: number
   recurring: number
   oneTime: number
@@ -75,7 +97,21 @@ export interface YearExpenses {
   debtService: number
   /** Property tax + homeowner's insurance on owned properties (continues after mortgage payoff). */
   propertyCosts: number
-  /** Pre-65 marketplace premiums net of ACA credit + Medicare (Part B incl. IRMAA, Part D surcharge, extras). */
+  /**
+   * Pre-65 marketplace premiums net of ACA credit + Medicare (Part B incl.
+   * IRMAA, Part D surcharge, extras). Per living person the year splits at the
+   * Medicare birth month into marketplace months and Medicare months: Medicare
+   * months add the annual premium (with IRMAA) × months / 12 plus the extras
+   * × months × the health inflation factor; marketplace months with the credit
+   * off add the pre-65 monthly premium × months × the health inflation factor,
+   * and with the credit on enter the gross enrollment premium instead. The
+   * ACA fixed point then publishes healthcare excluding enrollment + the
+   * economic net premium when it converges, else + the gross premium. The two
+   * month counts partition the year (Medicare months = 12 − marketplace
+   * months); the tier premium with IRMAA is inflated from the pack year, while
+   * the extras and the marketplace premium use the health inflation factor
+   * from the start year.
+   */
   healthcare: number
   /** Level (fixed-nominal) insurance premiums charged this year (LTC + permanent life). */
   insurancePremiums: number

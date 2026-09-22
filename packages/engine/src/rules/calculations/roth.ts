@@ -38,4 +38,43 @@ export const rothRecords = {
     verifiedOn: '2026-09-17',
     provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'cursor' },
   },
+  'roth-conversion-annual': {
+    title: 'Annual Roth conversion: the bracket headroom a fill-to-target strategy converts',
+    purpose: 'Dollars moved traditional-to-Roth in one year by a fill-to-bracket conversion strategy.',
+    kind: 'model',
+    outputs: ['roth-conversion-annual'],
+    statement:
+      'For strategies.rothConversion in fillToTarget/topOfBracket mode, strategies/rothConversion.ts#sizeRothConversion bisects the federal engine for the largest conversion keeping federal taxable income at or under the selected bracket\'s ceiling — the NEXT bracket\'s lowerBound, indexed to the projected year. Without Social Security benefits taxable income rises one dollar per converted dollar, so the answer is that ceiling minus taxable income before the conversion, i.e. upper bound − (ordinary income − deduction). With benefits it is not that subtraction: taxable Social Security phases in at up to 1.85x per converted dollar, so only the bisection\'s root is the answer. YearResult.rothConversion then publishes the gross movement actually executed, capped by the traditional balance left after the RMD reserve. Units: nominal dollars. Rounding: the bisection stops at a bracket width of $0.01.',
+    formula: {
+      expression: 'amount = max{ c : taxableIncome(ordinary + c) <= bracketUpperBound }; without benefits = upperBound − (ordinary − deduction)',
+      variables: [
+        { symbol: 'upperBound', meaning: 'Selected bracket\'s ceiling: the next bracket\'s lowerBound for the year', unit: 'usd taxable income', domain: 'finite; null for the open-ended top bracket' },
+        { symbol: 'ordinary', meaning: 'Ordinary income before the conversion', unit: 'usd', domain: 'finite' },
+        { symbol: 'deduction', meaning: 'Standard or itemized deduction the federal engine applies', unit: 'usd', domain: 'nonnegative' },
+        { symbol: 'amount', meaning: 'Conversion sized for the year', unit: 'usd', domain: 'nonnegative' },
+      ],
+      timing: 'annual, inside the strategy window [startYear, endYear]',
+      rounding: 'bisection to a $0.01 bracket; no rounding of the published figure',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/roth/roth-conversion-annual.md',
+    },
+    limits: [
+      'Beyond the worksheet\'s inputs the evidence plan fixes: a 63-year-old single filer (over 59.5 so no early-distribution exposure, under 65 so the deduction is the base standard deduction with no age addition), the $70,000 as an uninflated recurring ordinary stream, zero returns and zero inflation so the 2026 bracket ladder is unindexed, a cash account large enough to pay the conversion tax, and no base spending',
+      'The published year figure is the executed gross movement: the sized amount is the ceiling, and a traditional balance smaller than it (or an RMD reserve) lowers what the row shows',
+      'The bisection\'s $0.01 stopping width is a real error bar on the published dollar; the worksheet\'s $51,800 is reached exactly here only because the first midpoint of the expanded bracket lands on the root',
+      'The benefits branch is asserted as a branch, not as a number: the worksheet states no closed form for it, so the evidence shows only that a positive benefit makes the answer differ from the no-benefit subtraction',
+    ],
+    implementedBy: [
+      'packages/engine/src/strategies/rothConversion.ts',
+      'packages/engine/src/projection/internal/annualAggregateRothConversionTargetPlan.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/strategies/rothConversion.ts#sizeRothConversion',
+      'packages/engine/src/projection/internal/annualAggregateRothConversionTargetPlan.ts#annualAggregateRothConversionTargetPlan',
+    ],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
 } satisfies Record<string, CalculationRecord>

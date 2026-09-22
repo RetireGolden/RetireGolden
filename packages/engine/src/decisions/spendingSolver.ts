@@ -58,6 +58,14 @@ export interface SustainableSpendingResult {
    * spending) or the solve bailed out on a diagnostic evaluation.
    */
   limitingConstraint: 'depletion' | 'estate-floor' | null
+  /**
+   * Number of full-projection probes the solve ran: one seed probe at the
+   * plan's base spending; when feasible, doubling probes from max(2 × seed,
+   * MINIMUM_BRACKET_PROBE_DOLLARS) until one fails or the budget or the
+   * unbounded ceiling is reached; when infeasible, one probe at 0; then one
+   * bisection probe per halving while the bracket exceeds the resolution and
+   * the budget (maxSimulations) is not spent.
+   */
   simulationCount: number
   diagnostics: string[]
 }

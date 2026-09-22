@@ -76,21 +76,21 @@
       "label": "annual insurance-premium row production",
       "file": "projection/internal/annualInsurancePremiumRows.ts",
       "lines": [
-        34,
-        60
+        40,
+        66
       ],
       "note": "The corpus reaches paid-up, lifetime, until-age, alive/dead subject, and LTC-owner versus life-insured paths while preserving policy order; reach reports no cold whole lines or sub-line regions in this helper range.",
       "anchors": [
         {
-          "line": 34,
+          "line": 40,
           "text": "const rows: AnnualInsurancePremiumRow[] = []"
         },
         {
-          "line": 47,
+          "line": 53,
           "text": "continue"
         },
         {
-          "line": 60,
+          "line": 66,
           "text": "return rows"
         }
       ]
@@ -128,21 +128,21 @@
       "label": "annual property carrying-cost row production",
       "file": "projection/internal/annualPropertyCarryingCosts.ts",
       "lines": [
-        31,
-        48
+        38,
+        55
       ],
-      "note": "The corpus reaches alive and all-dead years, non-property skips, pre-sale and sale-year paths, duplicate ids, omitted cost fields, and both cost operands. The sole cold sub-line region is line 43's `?? null`: the dedicated projection members use owned properties, while the helper unit suite covers the supported ownerless-property record shape.",
+      "note": "The corpus reaches alive and all-dead years, non-property skips, pre-sale and sale-year paths, duplicate ids, omitted cost fields, and both cost operands. The sole cold sub-line region is line 50's `?? null`: the dedicated projection members use owned properties, while the helper unit suite covers the supported ownerless-property record shape.",
       "anchors": [
         {
-          "line": 31,
+          "line": 38,
           "text": "if (!input.anyAlive) return []"
         },
         {
-          "line": 40,
+          "line": 47,
           "text": "input.inflFactor"
         },
         {
-          "line": 48,
+          "line": 55,
           "text": "return rows"
         }
       ]

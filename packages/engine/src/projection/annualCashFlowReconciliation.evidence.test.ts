@@ -315,3 +315,278 @@ describeCalculation(
     })
   },
 )
+
+describeCalculation(
+  'cash-flow-line-plan-dollars',
+  {
+    example: {
+      inputs: {
+        spendableSources: 40_000,
+        portfolioFunding: 30_000,
+        loanProceeds: 10_000,
+        fundedHouseholdUses: 50_000,
+        settledTax: 10_000,
+        penalties: 2_000,
+        contributions: 8_000,
+        surplusInvestment: 10_000,
+        postSolveLifeInsuranceDeposit: 5_000,
+      },
+      expected: {
+        sourceTotal: 80_000,
+        destinationTotal: 80_000,
+        difference: 0,
+        depositInSourcesWrongReading: 85_000,
+        omittingLoanProceedsWrongReading: 70_000,
+        transferDoubleCountedDestinationWrongReading: 88_000,
+      },
+      tolerance: { abs: 0.005 },
+    },
+    worksheet: 'DOCS/calculations/cash-flow-and-summary/cash-flow-line-plan-dollars.md',
+    mutation: 'DOCS/calculations/cash-flow-and-summary/cash-flow-line-plan-dollars.mutation.md',
+  },
+  ({ example }) => {
+    const inputs = example.inputs as Record<string, number>
+    const expected = example.expected as Record<string, number>
+
+    function expectWithin(actual: number, target: number, label: string): void {
+      expect(
+        withinTolerance(actual, target, example.tolerance),
+        `${label} ${actual} is not within ${JSON.stringify(example.tolerance)} of the worksheet's ${target}`,
+      ).toBe(true)
+    }
+
+    /**
+     * The worksheet's eight cash totals as published lines, plus the 5,000
+     * post-solve life-insurance deposit that must stay outside the identity
+     * and the same-dollar contribution transfer whose credit must not be
+     * summed into destinations a second time.
+     */
+    function identityLines(): {
+      sourceLines: YearCashFlowSourceLine[]
+      useLines: YearCashFlowUseLine[]
+      transferLines: YearCashFlowTransferLine[]
+    } {
+      return {
+        sourceLines: [
+          {
+            id: cashFlowLineIds.sourcePropertySaleProceeds('home'),
+            kind: 'propertySaleProceeds',
+            role: 'spendableSource',
+            amountPlanDollars: inputs.spendableSources!,
+            identities: [{ entityKind: 'propertyAccount', propertyAccountId: PROPERTY }],
+          },
+          {
+            id: cashFlowLineIds.sourceNeedBasedPortfolioWithdrawal('brokerage'),
+            kind: 'needBasedPortfolioWithdrawal',
+            role: 'portfolioFunding',
+            amountPlanDollars: inputs.portfolioFunding!,
+            identities: [{ entityKind: 'account', accountId: BROKERAGE }],
+          },
+          {
+            id: cashFlowLineIds.sourceHecmBackstopDraw('home'),
+            kind: 'hecmBackstopDraw',
+            role: 'loanProceeds',
+            amountPlanDollars: inputs.loanProceeds!,
+            identities: [{ entityKind: 'propertyAccount', propertyAccountId: PROPERTY }],
+          },
+          {
+            id: cashFlowLineIds.sourceLifeInsuranceDeathBenefit('policy'),
+            kind: 'lifeInsuranceDeathBenefit',
+            role: 'postSolveDeposit',
+            amountPlanDollars: inputs.postSolveLifeInsuranceDeposit!,
+            identities: [{ entityKind: 'account', accountId: BROKERAGE }],
+            postSolveDestination: { entityKind: 'account', accountId: BROKERAGE },
+          },
+        ],
+        useLines: [
+          {
+            id: cashFlowLineIds.useRequiredLifestyle(),
+            kind: 'requiredLifestyle',
+            requestedPlanDollars: inputs.fundedHouseholdUses!,
+            fundedPlanDollars: inputs.fundedHouseholdUses!,
+            unfundedPlanDollars: 0,
+            identities: [],
+          },
+          {
+            id: cashFlowLineIds.useSettledTax(),
+            kind: 'settledTax',
+            requestedPlanDollars: inputs.settledTax!,
+            fundedPlanDollars: inputs.settledTax!,
+            unfundedPlanDollars: 0,
+            identities: [],
+          },
+          {
+            id: cashFlowLineIds.usePenaltyHousehold('traditionalEarly'),
+            kind: 'earlyWithdrawalPenalty',
+            penaltyClass: 'traditionalEarly',
+            requestedPlanDollars: inputs.penalties!,
+            fundedPlanDollars: inputs.penalties!,
+            unfundedPlanDollars: 0,
+            identities: [],
+          },
+          {
+            id: cashFlowLineIds.useContribution('brokerage'),
+            kind: 'contribution',
+            requestedPlanDollars: inputs.contributions!,
+            fundedPlanDollars: inputs.contributions!,
+            unfundedPlanDollars: 0,
+            identities: [{ entityKind: 'account', accountId: BROKERAGE }],
+          },
+          {
+            id: cashFlowLineIds.useSurplusUnassigned(),
+            kind: 'surplusInvestment',
+            requestedPlanDollars: inputs.surplusInvestment!,
+            fundedPlanDollars: inputs.surplusInvestment!,
+            unfundedPlanDollars: 0,
+            identities: [],
+          },
+        ],
+        transferLines: [
+          {
+            id: cashFlowLineIds.transferEmployeeContribution('brokerage'),
+            kind: 'employeeContribution',
+            source: { entityKind: 'householdCash' },
+            destination: { entityKind: 'account', accountId: BROKERAGE },
+            debitPlanDollars: inputs.contributions!,
+            creditPlanDollars: inputs.contributions!,
+            identities: [{ entityKind: 'account', accountId: BROKERAGE }],
+          },
+        ],
+      }
+    }
+
+    it('closes the 80000 cash identity and leaves the 5000 post-solve deposit outside it', () => {
+      const { sourceLines, useLines, transferLines } = identityLines()
+      const result = reconcile({ sourceLines, useLines, transferLines })
+
+      expectWithin(result.cash.sourceTotalPlanDollars, expected.sourceTotal!, 'cash source total')
+      expectWithin(result.cash.destinationTotalPlanDollars, expected.destinationTotal!, 'cash destination total')
+      expectWithin(result.cash.differencePlanDollars, expected.difference!, 'cash difference')
+      expect(result.reasonCodes).not.toContain('cashIdentityMismatch')
+
+      // Each source role really carries its own worksheet figure.
+      expectWithin(result.cash.spendableSourcesPlanDollars, inputs.spendableSources!, 'spendable sources')
+      expectWithin(result.cash.portfolioFundingPlanDollars, inputs.portfolioFunding!, 'portfolio funding')
+      expectWithin(result.cash.loanProceedsPlanDollars, inputs.loanProceeds!, 'loan proceeds')
+
+      // The worksheet's three wrong readings.
+      for (const wrong of [
+        expected.depositInSourcesWrongReading!,
+        expected.omittingLoanProceedsWrongReading!,
+      ]) {
+        expect(withinTolerance(result.cash.sourceTotalPlanDollars, wrong, example.tolerance)).toBe(false)
+      }
+      expect(
+        withinTolerance(
+          result.cash.destinationTotalPlanDollars,
+          expected.transferDoubleCountedDestinationWrongReading!,
+          example.tolerance,
+        ),
+      ).toBe(false)
+      // The transfer view carries the same 8,000 of contribution dollars once
+      // on each side, and neither side joined the destination total.
+      expectWithin(result.transfers.debitsPlanDollars, inputs.contributions!, 'transfer debits')
+      expectWithin(result.transfers.creditsPlanDollars, inputs.contributions!, 'transfer credits')
+    })
+  },
+)
+
+describeCalculation(
+  'cash-flow-tax-character-amount',
+  {
+    example: {
+      inputs: {
+        physicalTaxableWithdrawal: 100_000,
+        attachedCapitalGainCharacter: 30_000,
+        otherPhysicalSources: 20_000,
+      },
+      expected: {
+        taxCharacterAmount: 30_000,
+        sourceTotal: 120_000,
+        characterAsCashWrongReading: 150_000,
+        gainReplacingGrossWrongReading: 50_000,
+      },
+      tolerance: { abs: 0.005 },
+    },
+    worksheet: 'DOCS/calculations/taxes/cash-flow-tax-character-amount.md',
+    mutation: 'DOCS/calculations/taxes/cash-flow-tax-character-amount.mutation.md',
+  },
+  ({ example }) => {
+    const inputs = example.inputs as Record<string, number>
+    const expected = example.expected as Record<string, number>
+
+    function expectWithin(actual: number, target: number, label: string): void {
+      expect(
+        withinTolerance(actual, target, example.tolerance),
+        `${label} ${actual} is not within ${JSON.stringify(example.tolerance)} of the worksheet's ${target}`,
+      ).toBe(true)
+    }
+
+    function characterLines(capitalGainAmount: number): {
+      sourceLines: YearCashFlowSourceLine[]
+      useLines: YearCashFlowUseLine[]
+    } {
+      return {
+        sourceLines: [
+          {
+            id: cashFlowLineIds.sourceNeedBasedPortfolioWithdrawal('brokerage'),
+            kind: 'needBasedPortfolioWithdrawal',
+            role: 'portfolioFunding',
+            amountPlanDollars: inputs.physicalTaxableWithdrawal!,
+            identities: [{ entityKind: 'account', accountId: BROKERAGE }],
+            taxCharacter: [{ kind: 'capitalGain', amountPlanDollars: capitalGainAmount }],
+          },
+          {
+            id: cashFlowLineIds.sourcePropertySaleProceeds('home'),
+            kind: 'propertySaleProceeds',
+            role: 'spendableSource',
+            amountPlanDollars: inputs.otherPhysicalSources!,
+            identities: [{ entityKind: 'propertyAccount', propertyAccountId: PROPERTY }],
+          },
+        ],
+        useLines: [
+          {
+            id: cashFlowLineIds.useRequiredLifestyle(),
+            kind: 'requiredLifestyle',
+            requestedPlanDollars: inputs.physicalTaxableWithdrawal! + inputs.otherPhysicalSources!,
+            fundedPlanDollars: inputs.physicalTaxableWithdrawal! + inputs.otherPhysicalSources!,
+            unfundedPlanDollars: 0,
+            identities: [],
+          },
+        ],
+      }
+    }
+
+    it('annotates the 100000 withdrawal with 30000 of gain and still totals 120000 of cash', () => {
+      const { sourceLines, useLines } = characterLines(inputs.attachedCapitalGainCharacter!)
+      const result = reconcile({ sourceLines, useLines })
+
+      // The annotation really is published at the worksheet's amount.
+      const annotated = sourceLines[0]!
+      expectWithin(
+        annotated.taxCharacter?.[0]?.amountPlanDollars ?? 0,
+        expected.taxCharacterAmount!,
+        'taxCharacter.amountPlanDollars',
+      )
+      expectWithin(result.cash.sourceTotalPlanDollars, expected.sourceTotal!, 'cash source total')
+      expect(result.reasonCodes).not.toContain('cashIdentityMismatch')
+
+      // The worksheet's first two wrong readings.
+      expect(
+        withinTolerance(result.cash.sourceTotalPlanDollars, expected.characterAsCashWrongReading!, example.tolerance),
+      ).toBe(false)
+      expect(
+        withinTolerance(result.cash.sourceTotalPlanDollars, expected.gainReplacingGrossWrongReading!, example.tolerance),
+      ).toBe(false)
+    })
+
+    it('accepts a negative capital-gain character and still counts it as no cash', () => {
+      // The worksheet's third wrong reading is a rule: requiring every
+      // character amount to be nonnegative would reject a realized loss.
+      const { sourceLines, useLines } = characterLines(-inputs.attachedCapitalGainCharacter!)
+      const result = reconcile({ sourceLines, useLines })
+      expectWithin(result.cash.sourceTotalPlanDollars, expected.sourceTotal!, 'cash source total with a loss')
+      expect(result.reasonCodes).not.toContain('cashIdentityMismatch')
+    })
+  },
+)

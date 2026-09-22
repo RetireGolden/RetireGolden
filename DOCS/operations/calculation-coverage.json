@@ -25,13 +25,32 @@
       "ui-transformation": 19
     },
     "complete": [
+      "aca-applicable-slcsp-premium-annual",
       "aca-economic-net-premium-annual",
+      "aca-gross-enrollment-premium-annual",
       "aca-modeled-allowable-ptc-annual",
+      "accounts-balance-per-account-annual",
+      "accounts-ending-balance-by-category",
       "accounts-investable-total-annual",
       "accounts-net-worth-annual",
       "annuitization-payout-rate-pct",
+      "annuitization-sweep-annual-income",
+      "annuitization-sweep-effective-allocation-pct",
+      "annuitization-sweep-premium",
+      "cash-flow-line-plan-dollars",
       "cash-flow-reconciliation-totals",
+      "cash-flow-tax-character-amount",
+      "claim-age-co-optimization-combinations-evaluated",
+      "claim-age-co-optimization-current-claim-exact-estate",
+      "claim-age-co-optimization-joint-exact-estate",
       "estate-heir-income-tax",
+      "estate-to-charity",
+      "exact-ledger-tournament-margin-over-milp-dollars",
+      "exact-ledger-validation-ending-net-worth-delta",
+      "exact-ledger-validation-executed-conversion-ratio",
+      "exact-ledger-validation-first-materially-unexecuted-year",
+      "exact-ledger-validation-requested-conversion-total",
+      "exact-ledger-validation-traditional-depletion-year",
       "flexible-goal-funded-amount-annual",
       "flexible-goal-unfunded-amount-annual",
       "flexible-goals-deferred-count-annual",
@@ -42,6 +61,8 @@
       "funded-ratio-result-funded-ratio-pct",
       "funded-ratio-result-guaranteed-income-pv",
       "funded-ratio-result-unfunded-pv",
+      "hecm-draw-annual",
+      "historical-stress-window-total-shortfall",
       "income-annuity-annual",
       "income-one-time-annual",
       "income-ordinary-dividends-annual",
@@ -50,17 +71,27 @@
       "income-recurring-annual",
       "income-taxable-interest-annual",
       "income-taxable-yield-annual",
+      "income-tips-ladder-annual",
       "income-total-annual",
       "income-wages-annual",
+      "inherited-account-final-deadline-year",
+      "inherited-distribution-forced-annual",
+      "inherited-distribution-required-annual",
+      "inherited-distribution-required-executed-annual",
+      "inherited-distribution-voluntary-annual",
       "insight-annuitization-headroom-illustrative-spia",
       "insight-asset-location-swappable-exposure",
       "insight-hecm-buffer-illustrative-credit-line",
+      "insight-impact-ending-after-tax-estate-delta",
+      "insight-impact-lifetime-tax-delta",
       "insight-irmaa-tier-edge-premium-cliff",
       "insight-spending-guardrails-illustrative-floor",
       "insight-spending-headroom-rough-annual",
       "insight-ss-bridge-gap-total",
       "insight-state-relocation-lifetime-state-tax-savings",
       "insight-widows-penalty-bracket-jump",
+      "insurance-cash-value-annual",
+      "insurance-death-benefit-annual",
       "irmaa-surcharge-annual",
       "ladder-build-annual-real-income-by-offset",
       "ladder-build-target-annual-real-income",
@@ -70,6 +101,9 @@
       "ladder-rung-cost",
       "ladder-rung-coupon-rate-pct",
       "ladder-rung-face",
+      "ladder-value-annual",
+      "long-term-care-benefit-annual",
+      "longevity-depletion-year",
       "longevity-survival-percentile-age",
       "magi-annual",
       "medicare-premiums-annual",
@@ -100,6 +134,10 @@
       "monte-carlo-success-rate",
       "monte-carlo-target-attainment-median",
       "monte-carlo-target-lifestyle-success-rate",
+      "optimization-baseline-after-tax-estate",
+      "optimization-candidate-after-tax-estate",
+      "optimizer-recommended-conversion-annual",
+      "pension-election-annuity-present-value",
       "portfolio-need-annual",
       "projection-result-ending-investable",
       "projection-result-ending-net-worth",
@@ -110,24 +148,39 @@
       "projection-summary-ending-net-worth",
       "projection-summary-fi-age",
       "projection-summary-fi-number",
+      "projection-summary-fi-year",
       "projection-summary-lifetime-roth-conversions",
       "projection-summary-lifetime-taxes-and-penalties",
       "qcd-annual",
       "relocation-lifetime-state-local-tax",
       "relocation-state-tax-driver-savings",
       "rmd-required-annual",
+      "roth-conversion-annual",
       "scenario-comparison-cell",
       "scenario-irmaa-surcharge-tier-years",
       "scenario-lifetime-penalties",
       "scenario-lifetime-tax",
       "sepp-distribution-annual",
+      "simple-candidate-evaluation-after-tax-estate-delta",
+      "simple-candidate-evaluation-executed-conversion-total",
+      "simple-candidate-evaluation-incomplete-computation-years",
+      "simple-candidate-evaluation-lifetime-tax-delta",
+      "simple-candidate-evaluation-money-lasts-years-delta",
+      "social-security-benefit-annual",
       "social-security-bridge-sizing",
+      "spending-base-annual",
+      "spending-care-cost-gross-annual",
+      "spending-debt-service-annual",
       "spending-excess-requested-annual",
       "spending-excess-shortfall-annual",
       "spending-guardrail-factor-annual",
+      "spending-healthcare-annual",
       "spending-ideal-requested-annual",
       "spending-ideal-shortfall-annual",
+      "spending-insurance-premiums-annual",
       "spending-intended-annual",
+      "spending-one-time-goals-annual",
+      "spending-property-costs-annual",
       "spending-required-requested-annual",
       "spending-required-shortfall-annual",
       "spending-shortfall-annual",
@@ -135,7 +188,9 @@
       "spending-target-shortfall-annual",
       "spending-total-annual",
       "stochastic-frontier-variant-axis",
+      "surplus-invested-annual",
       "sustainable-spending-result-max-base-annual",
+      "sustainable-spending-result-simulation-count",
       "sustainable-spending-result-spending-slack-dollars",
       "swr-rule-result-depletion-year",
       "swr-rule-result-end-year",
@@ -147,28 +202,21 @@
       "tax-loss-carryforward-remaining-annual",
       "tax-loss-carryforward-used-against-gains-annual",
       "tax-loss-carryforward-used-against-ordinary-annual",
+      "tax-penalties-annual",
+      "tax-realized-gains-annual",
+      "tax-total-annual",
       "withdrawals-by-category-annual",
-      "withdrawals-total-annual"
+      "withdrawals-total-annual",
+      "year-result-contributions",
+      "year-result-employer-match",
+      "year-result-ltcg-zero-headroom",
+      "year-result-tax-exempt-interest"
     ],
-    "partial": [
-      "spending-base-annual"
-    ],
+    "partial": [],
     "noRecordYet": [
-      "aca-applicable-slcsp-premium-annual",
-      "aca-gross-enrollment-premium-annual",
-      "accounts-balance-per-account-annual",
-      "accounts-ending-balance-by-category",
-      "annuitization-sweep-annual-income",
-      "annuitization-sweep-effective-allocation-pct",
-      "annuitization-sweep-premium",
       "bucket-lens-allocation",
       "cash-flow-line-amount",
-      "cash-flow-line-plan-dollars",
-      "cash-flow-tax-character-amount",
-      "claim-age-co-optimization-combinations-evaluated",
-      "claim-age-co-optimization-current-claim-exact-estate",
       "claim-age-co-optimization-estate-gain",
-      "claim-age-co-optimization-joint-exact-estate",
       "compare-plan-deltas",
       "compare-plan-money-deltas",
       "display-balance-by-category-annual",
@@ -185,47 +233,13 @@
       "display-upside-shortfall-annual",
       "display-upside-spending-annual",
       "display-years-before-plan-end",
-      "estate-to-charity",
-      "exact-ledger-tournament-margin-over-milp-dollars",
-      "exact-ledger-validation-ending-net-worth-delta",
-      "exact-ledger-validation-executed-conversion-ratio",
-      "exact-ledger-validation-first-materially-unexecuted-year",
-      "exact-ledger-validation-requested-conversion-total",
-      "exact-ledger-validation-traditional-depletion-year",
-      "hecm-draw-annual",
-      "historical-stress-window-total-shortfall",
       "income-floor-ladder-yield-pct",
-      "income-tips-ladder-annual",
-      "inherited-account-final-deadline-year",
-      "inherited-distribution-forced-annual",
-      "inherited-distribution-required-annual",
-      "inherited-distribution-required-executed-annual",
-      "inherited-distribution-voluntary-annual",
-      "insight-impact-ending-after-tax-estate-delta",
-      "insight-impact-lifetime-tax-delta",
       "insight-monte-carlo-success-delta",
-      "insurance-cash-value-annual",
-      "insurance-death-benefit-annual",
-      "ladder-value-annual",
-      "long-term-care-benefit-annual",
-      "longevity-depletion-year",
       "mcp-batch-cumulative-tax-objective",
       "mcp-batch-ending-traditional-objective",
       "mcp-compare-ending-after-tax-estate-delta",
-      "optimization-baseline-after-tax-estate",
-      "optimization-candidate-after-tax-estate",
-      "optimizer-recommended-conversion-annual",
       "optimizer-schedule-conversion-total",
-      "pension-election-annuity-present-value",
-      "projection-summary-fi-year",
       "relocation-tax-comparison",
-      "roth-conversion-annual",
-      "simple-candidate-evaluation-after-tax-estate-delta",
-      "simple-candidate-evaluation-executed-conversion-total",
-      "simple-candidate-evaluation-incomplete-computation-years",
-      "simple-candidate-evaluation-lifetime-tax-delta",
-      "simple-candidate-evaluation-money-lasts-years-delta",
-      "social-security-benefit-annual",
       "social-security-break-even",
       "social-security-claiming-sweep-objective",
       "social-security-computation-summary-counts",
@@ -238,26 +252,11 @@
       "social-security-zero-year-replacement-gain",
       "solved-initial-withdrawal-rate-pct",
       "solved-spending-rounded-to-hundred",
-      "spending-care-cost-gross-annual",
-      "spending-debt-service-annual",
-      "spending-healthcare-annual",
-      "spending-insurance-premiums-annual",
-      "spending-one-time-goals-annual",
-      "spending-property-costs-annual",
       "spending-shape-delta-vs-flat",
-      "surplus-invested-annual",
       "survivor-scenario-row-estate-delta",
       "survivor-scenario-row-lifetime-tax-delta",
       "survivor-scenario-row-ssa44premium-savings",
-      "survivor-scenario-row-survivor-shortfall-years",
-      "sustainable-spending-result-simulation-count",
-      "tax-penalties-annual",
-      "tax-realized-gains-annual",
-      "tax-total-annual",
-      "year-result-contributions",
-      "year-result-employer-match",
-      "year-result-ltcg-zero-headroom",
-      "year-result-tax-exempt-interest"
+      "survivor-scenario-row-survivor-shortfall-years"
     ],
     "relocationPending": [
       "bucket-lens-allocation",
@@ -317,14 +316,20 @@
         "allocation-glidepath-interpolation",
         "allocation-total-return-drift",
         "allocation-weight-normalization",
-        "asset-class-parameter-overrides"
+        "asset-class-parameter-overrides",
+        "surplus-invested-annual"
+      ],
+      "accounts-ending-balance-by-category": [
+        "year-result-employer-match"
       ],
       "accounts-investable-total-annual": [
         "allocation-total-return-drift",
         "allocation-weight-normalization"
       ],
       "accounts-net-worth-annual": [
-        "accounts-investable-total-annual"
+        "accounts-investable-total-annual",
+        "hecm-draw-annual",
+        "insurance-cash-value-and-death-benefit-annual"
       ],
       "annuitization-payout-rate-pct": [
         "qlac-deferred-payout-placeholder"
@@ -336,8 +341,22 @@
       "annuitization-sweep-premium": [
         "spia-payout-rate-interpolation"
       ],
+      "cash-flow-line-plan-dollars": [
+        "year-result-employer-match"
+      ],
+      "cash-flow-reconciliation-totals": [
+        "cash-flow-line-plan-dollars",
+        "surplus-invested-annual",
+        "year-result-contributions"
+      ],
       "display-guardrail-balance-thresholds": [
         "risk-based-starting-investable"
+      ],
+      "display-total-spending-annual": [
+        "tax-penalties-annual"
+      ],
+      "exact-ledger-tournament-margin-over-milp-dollars": [
+        "exact-ledger-cleaned-schedule"
       ],
       "flexible-goal-funded-amount-annual": [
         "flexible-goal-scheduling"
@@ -404,7 +423,17 @@
         "income-pension-annual",
         "income-recurring-annual",
         "income-taxable-yield-annual",
-        "income-wages-annual"
+        "income-wages-annual",
+        "year-result-tax-exempt-interest"
+      ],
+      "inherited-distribution-forced-annual": [
+        "inherited-distribution-required-executed-annual"
+      ],
+      "inherited-distribution-required-annual": [
+        "inherited-account-final-deadline-year"
+      ],
+      "inherited-distribution-required-executed-annual": [
+        "inherited-distribution-required-annual"
       ],
       "insight-impact-ending-after-tax-estate-delta": [
         "insight-irmaa-tier-edge-premium-cliff"
@@ -584,6 +613,7 @@
       "optimizer-recommended-conversion-annual": [
         "allocation-account-expected-return",
         "allocation-blended-expected-return",
+        "claim-age-co-optimization",
         "conversion-coordinate-descent-search"
       ],
       "optimizer-schedule-conversion-total": [
@@ -593,7 +623,9 @@
       ],
       "portfolio-need-annual": [
         "income-total-annual",
-        "spending-total-annual"
+        "spending-total-annual",
+        "tax-penalties-annual",
+        "tax-total-annual"
       ],
       "projection-result-ending-investable": [
         "accounts-investable-total-annual"
@@ -627,6 +659,9 @@
         "relocation-lifetime-state-local-tax",
         "scenario-irmaa-surcharge-tier-years",
         "scenario-lifetime-tax-and-penalties"
+      ],
+      "scenario-lifetime-penalties": [
+        "tax-penalties-annual"
       ],
       "sepp-distribution-annual": [
         "sepp-active-annual-rule"
@@ -682,6 +717,7 @@
         "spending-shape-preset-compilation"
       ],
       "spending-shortfall-annual": [
+        "hecm-draw-annual",
         "portfolio-need-annual"
       ],
       "spending-target-requested-annual": [
@@ -691,7 +727,16 @@
         "spending-target-requested-annual"
       ],
       "spending-total-annual": [
-        "spending-base-annual"
+        "spending-base-annual",
+        "spending-care-cost-gross-and-ltc-benefit-annual",
+        "spending-debt-service-annual",
+        "spending-insurance-premiums-annual",
+        "spending-one-time-goals-annual",
+        "spending-property-costs-annual"
+      ],
+      "surplus-invested-annual": [
+        "tax-total-annual",
+        "year-result-contributions"
       ],
       "sustainable-spending-result-max-base-annual": [
         "spending-shape-annual-delta-phases"
@@ -722,6 +767,7 @@
       "tax-penalties-annual": [
         "civil-date-parse-format-and-month-shift",
         "exact-cent-pro-rata-half-up",
+        "inherited-distribution-required-annual",
         "rmd-shortfall-excise-default",
         "usd-cent-arithmetic"
       ],
@@ -730,6 +776,7 @@
       ],
       "tax-total-annual": [
         "capital-loss-carryforward-netting",
+        "cash-flow-tax-character-amount",
         "conversion-tax-funding-gcd-reduction",
         "exact-cent-rational-half-up",
         "federal-amt-screen",
@@ -742,24 +789,33 @@
         "income-taxable-interest-annual",
         "parameter-provenance-catalog",
         "qcd-income-offset-qualified-slice",
-        "qcd-limit-and-age-proxy"
+        "qcd-limit-and-age-proxy",
+        "tax-realized-gains-annual",
+        "year-result-tax-exempt-interest"
+      ],
+      "withdrawals-by-category-annual": [
+        "inherited-distribution-forced-annual",
+        "inherited-distribution-required-executed-annual",
+        "inherited-distribution-voluntary-annual"
       ],
       "withdrawals-total-annual": [
+        "inherited-distribution-forced-annual",
+        "inherited-distribution-voluntary-annual",
         "withdrawals-by-category-annual"
       ]
     }
   },
   "records": {
-    "total": 170,
+    "total": 214,
     "byKind": {
-      "composition": 52,
-      "data": 15,
-      "formula": 58,
-      "model": 45
+      "composition": 66,
+      "data": 16,
+      "formula": 76,
+      "model": 56
     },
     "byJustificationKind": {
       "dataset": 5,
-      "derivation": 165
+      "derivation": 209
     }
   },
   "oracleExamples": [
@@ -798,65 +854,65 @@
   ],
   "walkthroughs": [],
   "attestationsDerived": {
-    "catalogued": 50,
+    "catalogued": 60,
     "excludedWithReason": 0,
-    "notYetReviewed": 171
+    "notYetReviewed": 161
   },
   "shards": [
     {
       "group": "accountsAndGrowth",
       "path": "calculation-coverage/accountsAndGrowth.json",
-      "recordCount": 11
+      "recordCount": 16
     },
     {
       "group": "cashFlowAndSummary",
       "path": "calculation-coverage/cashFlowAndSummary.json",
-      "recordCount": 35
+      "recordCount": 53
     },
     {
       "group": "insights",
       "path": "calculation-coverage/insights.json",
-      "recordCount": 9
+      "recordCount": 10
     },
     {
       "group": "laddersAndValuation",
       "path": "calculation-coverage/laddersAndValuation.json",
-      "recordCount": 10
+      "recordCount": 11
     },
     {
       "group": "longevity",
       "path": "calculation-coverage/longevity.json",
-      "recordCount": 7
+      "recordCount": 8
     },
     {
       "group": "medicareAndAca",
       "path": "calculation-coverage/medicareAndAca.json",
-      "recordCount": 11
+      "recordCount": 13
     },
     {
       "group": "monteCarlo",
       "path": "calculation-coverage/monteCarlo.json",
-      "recordCount": 33
+      "recordCount": 35
     },
     {
       "group": "optimizerAndComparisons",
       "path": "calculation-coverage/optimizerAndComparisons.json",
-      "recordCount": 8
+      "recordCount": 15
     },
     {
       "group": "rmd",
       "path": "calculation-coverage/rmd.json",
-      "recordCount": 6
+      "recordCount": 7
     },
     {
       "group": "roth",
       "path": "calculation-coverage/roth.json",
-      "recordCount": 1
+      "recordCount": 2
     },
     {
       "group": "socialSecurity",
       "path": "calculation-coverage/socialSecurity.json",
-      "recordCount": 11
+      "recordCount": 12
     },
     {
       "group": "spendingAndWithdrawals",
@@ -866,7 +922,7 @@
     {
       "group": "taxes",
       "path": "calculation-coverage/taxes.json",
-      "recordCount": 13
+      "recordCount": 17
     }
   ]
 }

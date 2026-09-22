@@ -163,3 +163,109 @@ describeCalculation(
     })
   },
 )
+
+describeCalculation(
+  'spending-one-time-goals-annual',
+  {
+    example: {
+      inputs: {
+        currentYear: YEAR,
+        cumulativeInflationFactor: 1.1,
+        goalScheduler: null,
+        anyAlive: true,
+        goals: [
+          { id: 'roof', label: 'Roof', targetYear: YEAR, amountTodayDollars: 10_000 },
+          { id: 'trip', label: 'Trip', targetYear: YEAR, amountTodayDollars: 5_000 },
+          { id: 'car', label: 'Car', targetYear: 2031, amountTodayDollars: 20_000 },
+        ],
+      },
+      expected: {
+        oneTimeGoals: 16_500,
+        roofFunded: 11_000,
+        tripFunded: 5_500,
+        carFunded: 0,
+        includingNextYearGoalWrongReading: 38_500,
+        uninflatedWrongReading: 15_000,
+        skippedAddedWrongReading: 23_500,
+      },
+      tolerance: { abs: 0.005 },
+    },
+    worksheet: 'DOCS/calculations/cash-flow-and-summary/spending-one-time-goals-annual.md',
+    mutation: 'DOCS/calculations/cash-flow-and-summary/spending-one-time-goals-annual.mutation.md',
+  },
+  ({ example }) => {
+    const inputs = example.inputs as Record<string, unknown>
+    const expected = example.expected as Record<string, number>
+    const inflFactor = inputs.cumulativeInflationFactor as number
+    const goals = inputs.goals as {
+      id: string
+      label: string
+      targetYear: number
+      amountTodayDollars: number
+    }[]
+
+    it('funds both 2030 goals at the inflated amount and leaves the 2031 goal out', () => {
+      const phase = annualOneTimeGoalFundingPhase({
+        year: YEAR,
+        inflFactor,
+        anyAlive: inputs.anyAlive as boolean,
+        goalScheduler: null,
+        oneTimeGoals: goals.map((goal) => ({
+          id: goal.id,
+          label: goal.label,
+          year: goal.targetYear,
+          amount: goal.amountTodayDollars,
+        })) as Plan['expenses']['oneTimeGoals'],
+        cutting: false,
+        canPullForwardGoals: false,
+        remainingUpsideBudget: 0,
+      })
+
+      expect(
+        withinTolerance(phase.oneTimeGoalsFunded, expected.oneTimeGoals!, example.tolerance),
+        `oneTimeGoalsFunded: actual ${phase.oneTimeGoalsFunded}, worksheet ${expected.oneTimeGoals}`,
+      ).toBe(true)
+      // The composition really is the two 2030 goals inflated, and nothing else.
+      expect(
+        withinTolerance(
+          phase.oneTimeGoalsFunded,
+          expected.roofFunded! + expected.tripFunded! + expected.carFunded!,
+          example.tolerance,
+        ),
+      ).toBe(true)
+      // With no scheduler nothing is skipped, so no miss can leak into the field.
+      expect(phase.skippedRequiredNominal).toBe(0)
+      expect(phase.skippedTargetNominal).toBe(0)
+      expect(phase.skippedIdealNominal).toBe(0)
+      expect(phase.skippedExcessNominal).toBe(0)
+
+      // The worksheet's three wrong readings.
+      for (const wrong of [
+        expected.includingNextYearGoalWrongReading!,
+        expected.uninflatedWrongReading!,
+        expected.skippedAddedWrongReading!,
+      ]) {
+        expect(withinTolerance(phase.oneTimeGoalsFunded, wrong, example.tolerance)).toBe(false)
+      }
+    })
+
+    it('funds nothing at all when nobody in the household is alive', () => {
+      const phase = annualOneTimeGoalFundingPhase({
+        year: YEAR,
+        inflFactor,
+        anyAlive: false,
+        goalScheduler: null,
+        oneTimeGoals: goals.map((goal) => ({
+          id: goal.id,
+          label: goal.label,
+          year: goal.targetYear,
+          amount: goal.amountTodayDollars,
+        })) as Plan['expenses']['oneTimeGoals'],
+        cutting: false,
+        canPullForwardGoals: false,
+        remainingUpsideBudget: 0,
+      })
+      expect(phase.oneTimeGoalsFunded).toBe(0)
+    })
+  },
+)

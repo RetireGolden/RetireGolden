@@ -767,3 +767,262 @@ describeCalculation(
     })
   },
 )
+
+describeCalculation(
+  'projection-summary-fi-year',
+  {
+    example: {
+      inputs: {
+        startYear: 2026,
+        inflationPct: 0,
+        fiNumber: 500_000,
+        crossingRows: [
+          { year: 2026, investableTotal: 490_000 },
+          { year: 2027, investableTotal: 500_000 },
+          { year: 2028, investableTotal: 520_000 },
+        ],
+        nullRows: [
+          { year: 2026, investableTotal: 490_000 },
+          { year: 2027, investableTotal: 499_999 },
+          { year: 2028, investableTotal: 499_999 },
+        ],
+      },
+      expected: {
+        crossingFiYear: 2027,
+        nullFiYear: null,
+        emptyLedgerFiYear: null,
+        strictComparisonWrongReading: 2028,
+        largestInvestableWrongReading: 2028,
+        horizonFallbackWrongReading: 2028,
+      },
+      tolerance: 'exact',
+    },
+    worksheet: 'DOCS/calculations/cash-flow-and-summary/projection-summary-fi-year.md',
+    mutation: 'DOCS/calculations/cash-flow-and-summary/projection-summary-fi-year.mutation.md',
+  },
+  ({ example }) => {
+    const inputs = example.inputs as Record<string, unknown>
+    const expected = example.expected as Record<string, number | null>
+    // The worksheet states its FI number as an input; the summary derives it.
+    // A retirement age already attained puts the spending year at the start
+    // year, so 20,000 of funded outflows over the 4% lens is exactly 500,000.
+    const spendingBaseForFiveHundredThousand = 20_000
+
+    function fiYearPlan(): Plan {
+      return evidencePlan((plan) => {
+        personAged(plan, '1980-12-31', 46)
+        plan.assumptions.inflationPct = inputs.inflationPct as number
+        plan.assumptions.healthcareExtraInflationPct = 0
+        plan.assumptions.safeWithdrawalRatePct = 4
+        plan.expenses.baseAnnual = spendingBaseForFiveHundredThousand
+      })
+    }
+
+    function ledger(rows: { year: number; investableTotal: number }[]): YearResult[] {
+      return rows.map((row, index) =>
+        ledgerYear(row.year, {
+          investableTotal: row.investableTotal,
+          expenses:
+            index === 0
+              ? { ...ledgerYear(row.year).expenses, total: spendingBaseForFiveHundredThousand }
+              : ledgerYear(row.year).expenses,
+        }),
+      )
+    }
+
+    it('crosses inclusively in 2027 and never waits for the larger 2028 row', () => {
+      const rows = inputs.crossingRows as { year: number; investableTotal: number }[]
+      const summary = summarizeProjection(
+        fiYearPlan(),
+        projection({ endYear: 2028, years: ledger(rows) }),
+      )
+      // The constructed ledger really is priced against the worksheet's FI number.
+      expect(
+        withinTolerance(summary.fiNumber, inputs.fiNumber as number, { abs: 0.005 }),
+        `fiNumber: actual ${summary.fiNumber}, worksheet ${inputs.fiNumber as number}`,
+      ).toBe(true)
+      expect(summary.fiYear).toBe(expected.crossingFiYear)
+      // The worksheet's three wrong readings all land on 2028.
+      expect(summary.fiYear).not.toBe(expected.strictComparisonWrongReading)
+    })
+
+    it('publishes null when no row crosses, and null again for an empty ledger', () => {
+      const rows = inputs.nullRows as { year: number; investableTotal: number }[]
+      const summary = summarizeProjection(
+        fiYearPlan(),
+        projection({ endYear: 2028, years: ledger(rows) }),
+      )
+      expect(summary.fiYear).toBe(expected.nullFiYear)
+      expect(summary.fiYear).not.toBe(expected.horizonFallbackWrongReading)
+
+      const empty = summarizeProjection(fiYearPlan(), projection({ years: [] }))
+      expect(empty.fiYear).toBe(expected.emptyLedgerFiYear)
+    })
+  },
+)
+
+describeCalculation(
+  'accounts-ending-balance-by-category',
+  {
+    example: {
+      inputs: {
+        accounts: [
+          { id: 'cash-1', type: 'cash', lastYearBalance: 10_000 },
+          { id: 'tax-1', type: 'taxable', lastYearBalance: 20_000 },
+          { id: 'tax-2', type: 'taxable', lastYearBalance: 5_000 },
+          { id: 'trad-1', type: 'traditional', lastYearBalance: 30_000 },
+          { id: 'roth-1', type: 'roth', lastYearBalance: 40_000 },
+          { id: 'hsa-1', type: 'hsa', lastYearBalance: 6_000 },
+        ],
+        penultimateYearBalance: 1,
+      },
+      expected: {
+        cash: 10_000,
+        taxable: 25_000,
+        traditional: 30_000,
+        roth: 40_000,
+        hsa: 6_000,
+      },
+      tolerance: { abs: 0.005 },
+    },
+    worksheet: 'DOCS/calculations/accounts-and-growth/accounts-ending-balance-by-category.md',
+    mutation: 'DOCS/calculations/accounts-and-growth/accounts-ending-balance-by-category.mutation.md',
+  },
+  ({ example }) => {
+    const inputs = example.inputs as Record<string, unknown>
+    const expected = example.expected as Record<string, number>
+    const rows = inputs.accounts as { id: string; type: string; lastYearBalance: number }[]
+
+    function categoryPlan(): Plan {
+      return evidencePlan((plan) => {
+        personAged(plan, '1980-12-31', 46)
+        plan.accounts = rows.map((row) => {
+          const base = { id: row.id, name: row.id, ownerPersonId: null, annualReturnPct: 0, annualContribution: 0 }
+          if (row.type === 'taxable') return { ...base, type: 'taxable', balance: 0, costBasis: 0 } as unknown as Account
+          if (row.type === 'traditional') return { ...base, type: 'traditional', kind: 'ira', ownerPersonId: 'p1', balance: 0 } as unknown as Account
+          if (row.type === 'roth') return { ...base, type: 'roth', kind: 'ira', ownerPersonId: 'p1', balance: 0 } as unknown as Account
+          if (row.type === 'hsa') return { ...base, type: 'hsa', ownerPersonId: 'p1', balance: 0 } as unknown as Account
+          return { ...base, type: 'cash', balance: 0 } as unknown as Account
+        })
+      })
+    }
+
+    it('folds the two taxable accounts into 25000 and reads only the last ledger year', () => {
+      const penultimate = Object.fromEntries(
+        rows.map((row) => [row.id, inputs.penultimateYearBalance as number]),
+      )
+      const last = Object.fromEntries(rows.map((row) => [row.id, row.lastYearBalance]))
+      const summary = summarizeProjection(
+        categoryPlan(),
+        projection({
+          endYear: 2027,
+          years: [
+            ledgerYear(2026, { balances: penultimate }),
+            ledgerYear(2027, { balances: last }),
+          ],
+        }),
+      )
+      for (const category of ['cash', 'taxable', 'traditional', 'roth', 'hsa'] as const) {
+        expect(
+          withinTolerance(summary.endingByCategory[category], expected[category]!, example.tolerance),
+          `endingByCategory.${category}: actual ${summary.endingByCategory[category]}, worksheet ${expected[category]}`,
+        ).toBe(true)
+      }
+      // The penultimate row's categories are not what the summary published.
+      expect(summary.endingByCategory.taxable).not.toBe(2 * (inputs.penultimateYearBalance as number))
+      // Only the five published categories exist on the summary.
+      expect(Object.keys(summary.endingByCategory).sort()).toEqual(
+        ['cash', 'hsa', 'roth', 'taxable', 'traditional'],
+      )
+    })
+  },
+)
+
+describeCalculation(
+  'estate-to-charity',
+  {
+    example: {
+      inputs: {
+        accounts: [
+          { id: 'trad-a', type: 'traditional', destination: 'charity', charityPct: 25, grossEndingBalance: 100_000 },
+          { id: 'tax-b', type: 'taxable', destination: 'charity', charityPct: 100, grossEndingBalance: 50_000 },
+          { id: 'roth-c', type: 'roth', destination: 'spouse', charityPct: 0, grossEndingBalance: 40_000 },
+        ],
+      },
+      expected: {
+        endingEstateToCharity: 75_000,
+        traditionalCharityAmount: 25_000,
+        taxableCharityAmount: 50_000,
+        rothCharityAmount: 0,
+        flatTwentyFivePercentWrongReading: 47_500,
+        includingSpouseWrongReading: 115_000,
+      },
+      tolerance: { abs: 0.005 },
+    },
+    worksheet: 'DOCS/calculations/accounts-and-growth/estate-to-charity.md',
+    mutation: 'DOCS/calculations/accounts-and-growth/estate-to-charity.mutation.md',
+  },
+  ({ example }) => {
+    const inputs = example.inputs as Record<string, unknown>
+    const expected = example.expected as Record<string, number>
+    const rows = inputs.accounts as {
+      id: string
+      type: string
+      destination: 'charity' | 'spouse'
+      charityPct: number
+      grossEndingBalance: number
+    }[]
+
+    function charityPlan(): Plan {
+      return evidencePlan((plan) => {
+        personAged(plan, '1980-12-31', 46)
+        plan.accounts = rows.map((row) => {
+          const estateBeneficiary =
+            row.destination === 'charity'
+              ? { destination: 'charity' as const, charityPct: row.charityPct }
+              : { destination: 'spouse' as const }
+          const base = {
+            id: row.id, name: row.id, ownerPersonId: 'p1', annualReturnPct: 0,
+            annualContribution: 0, estateBeneficiary,
+          }
+          if (row.type === 'taxable') return { ...base, type: 'taxable', balance: 0, costBasis: 0 } as unknown as Account
+          if (row.type === 'roth') return { ...base, type: 'roth', kind: 'ira', balance: 0 } as unknown as Account
+          return { ...base, type: 'traditional', kind: 'ira', balance: 0 } as unknown as Account
+        })
+      })
+    }
+
+    it('takes 25 percent of the traditional account and all of the taxable one', () => {
+      const balances = Object.fromEntries(rows.map((row) => [row.id, row.grossEndingBalance]))
+      const summary = summarizeProjection(
+        charityPlan(),
+        projection({ years: [ledgerYear(2026, { balances })] }),
+      )
+      expect(
+        withinTolerance(summary.endingEstateToCharity, expected.endingEstateToCharity!, example.tolerance),
+        `endingEstateToCharity: actual ${summary.endingEstateToCharity}, worksheet ${expected.endingEstateToCharity}`,
+      ).toBe(true)
+
+      // Each account's own charity amount, so a compensating pair cannot pass.
+      const byId = new Map(summary.estateBreakdown.map((row) => [row.accountId, row]))
+      for (const [id, amount] of [
+        ['trad-a', expected.traditionalCharityAmount!],
+        ['tax-b', expected.taxableCharityAmount!],
+      ] as const) {
+        expect(
+          withinTolerance(byId.get(id)?.charityAmount ?? 0, amount, example.tolerance),
+          `${id} charity amount: actual ${byId.get(id)?.charityAmount}, worksheet ${amount}`,
+        ).toBe(true)
+      }
+      expect(byId.get('roth-c')?.charityAmount).toBe(expected.rothCharityAmount)
+
+      // The worksheet's first two wrong readings.
+      expect(
+        withinTolerance(summary.endingEstateToCharity, expected.flatTwentyFivePercentWrongReading!, example.tolerance),
+      ).toBe(false)
+      expect(
+        withinTolerance(summary.endingEstateToCharity, expected.includingSpouseWrongReading!, example.tolerance),
+      ).toBe(false)
+    })
+  },
+)

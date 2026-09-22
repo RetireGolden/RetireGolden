@@ -93,7 +93,19 @@ export interface YearResult {
    * captured, not that the year had no cash flow.
    */
   cashFlow?: Readonly<YearCashFlow>
-  /** Contributions actually made this year (after IRS caps). */
+  /**
+   * Contributions actually made this year, summed over every contributing
+   * account: each account's desired amount (its schedule phase amount grown by
+   * its escalation and by inflation within the owner's age window, or its flat
+   * annual amount grown by inflation; 0 when the owner is dead or, for a
+   * wage-linked account, has no wages) trimmed to the applicable limit group
+   * (the IRA limit with the age-50 catch-up shared across an owner's
+   * traditional and Roth IRAs, the HSA family or self-only limit with the
+   * age-55 catch-up, the employer-plan deferral limit with its age-banded
+   * catch-up) and to the §415(c) room min(limit, wages) less amounts already
+   * used. A shortfall against the desired amount raises the contribution-limit
+   * warning.
+   */
   contributions: number
   /**
    * Employee contributions credited specifically to complete owner-wide
@@ -160,7 +172,12 @@ export interface YearResult {
    * preserves fixtures.
    */
   socialSecurityStreams?: readonly Readonly<SocialSecurityStreamActivity>[]
-  /** Employer match contributions made this year. */
+  /**
+   * Employer match made this year, summed over accounts with a match and an
+   * owner with wages: `min(elective deferral landed, capPctOfPay/100 × wages) ×
+   * matchPct/100`, then capped by the owner's remaining §415(c) room for that
+   * plan; computed after every elective deferral has landed.
+   */
   employerMatch: number
   /** Forced traditional-account distributions (included in withdrawals.traditional). */
   rmd: number
@@ -185,10 +202,13 @@ export interface YearResult {
    */
   inheritedDistribution: number
   /**
-   * Forced inherited amounts from TRADITIONAL accounts only (forced-only;
-   * subset of `withdrawals.traditional`). Roth forced dollars are excluded —
-   * they are not ordinary income and never join the traditional withdrawal
-   * total. Equals the traditional share of `inheritedDistribution`.
+   * Forced inherited amounts assigned from the phase's ordinary-income total:
+   * each traditional row in full plus, for a non-qualified inherited Roth
+   * distribution, its characterized taxable earnings; for qualified Roth
+   * distributions the Roth share is 0 and the figure is the traditional share
+   * of `inheritedDistribution`. The traditional rows are a subset of
+   * `withdrawals.traditional`. An earlier comment said Roth dollars were
+   * excluded outright; decision D-INHERITED-ROTH-SLICE settles the meaning.
    */
   inheritedTraditionalDistribution: number
   /**
@@ -220,7 +240,18 @@ export interface YearResult {
    * earlier).
    */
   qcd: number
-  /** Dollars moved traditional → Roth this year (taxed as ordinary income, no penalty). */
+  /**
+   * Dollars moved traditional → Roth this year (taxed as ordinary income, no
+   * penalty). A fill-to-target strategy sizes it by bisection (to $0.01) as the
+   * largest amount that keeps its metric at or under the ceiling: topOfBracket
+   * holds federal taxable income at the chosen bracket's upper bound;
+   * irmaaTier, acaCliff and fixedMagi hold MAGI under the tier threshold, 400%
+   * of the FPL, or the entered ceiling. The metric is modeled on the federal
+   * engine with the Social Security phase-in, so without benefits the
+   * topOfBracket amount is the bracket bound − (ordinary income − deduction).
+   * The amount is drawn from traditional balances after any unsatisfied RMD is
+   * reserved from them. An optimized schedule comes from the tournament.
+   */
   rothConversion: number
   /**
    * The live balances the shared aggregate-conversion allocation policy
@@ -487,12 +518,27 @@ export interface YearResult {
   advisoryFederalTax?: Readonly<{ input: TaxYearInput; detail: FederalTaxDetail }>
   /** Federal alternative minimum tax included in `tax` when the planning-grade AMT screen binds. */
   amt: number
-  /** Additional long-term gains realizable this year still taxed at 0% (gain-harvesting advisory). */
+  /**
+   * Additional long-term gains realizable this year still taxed at 0%
+   * (gain-harvesting advisory): 0 when taxable income with no extra gains
+   * already reaches the 15% long-term-gains threshold
+   * (pack.capitalGains.rate15StartsAbove for the filing status); otherwise the
+   * largest extra gain, by bisection to $0.01, that keeps max(0, ordinary
+   * income excluding Social Security + gains + qualified dividends + the extra
+   * gain + the resulting taxable Social Security − deduction) at or under that
+   * threshold. Without benefits that is threshold − taxable income.
+   */
   ltcgZeroHeadroom: number
   /** Benefits withheld by the retirement earnings test (working early claimants). */
   ssEarningsTestWithheld: number
   /** SSDI paid this year (included in `incomes.socialSecurity`; 0 when disability is off). */
   ssdiPaid: number
+  /**
+   * Total tax for the year at the accepted funding fixed point: the composed
+   * calculator's amount, which is the federal total (regular income tax + AMT
+   * + NIIT) plus the state calculator's amount plus any further calculator
+   * the caller composes. Penalties are not in it (see `penalties`).
+   */
   tax: number
   /** Accepted dated election routing, shared by live execution and replay. */
   spousalElectionAtYearEnd?: readonly { accountId: string; status: string; ownerTreatment?: boolean; evaluationContext?: string; simulationId?: string; missingFacts?: readonly string[] }[]
@@ -512,7 +558,11 @@ export interface YearResult {
    */
   acceptedTaxInput?: TaxYearInput
   withdrawals: YearWithdrawals
-  /** Signed capital gain-or-loss embedded in taxable withdrawals and other legacy taxable sales. */
+  /**
+   * Signed capital gain-or-loss realized this year: the gain embedded in
+   * taxable withdrawals + the gain from rebalancing sales + the gain from
+   * named retirement-action executions, summed in that order.
+   */
   realizedGains: number
   /** Taxable account interest + dividends generated this year. */
   taxableYield: number
@@ -524,7 +574,13 @@ export interface YearResult {
   capitalLossUsedAgainstOrdinary: number
   /** Capital-loss carryforward balance carried into next year. */
   capitalLossCarryforwardRemaining: number
-  /** Surplus cashflow invested (into cash, else taxable, else unassigned). */
+  /**
+   * Surplus cash flow invested: `max(0, cash inflows − expenses.total −
+   * contributions − tax − penalties)` at the accepted funding fixed point,
+   * deposited to the lowest-id cash account, else the lowest-id taxable
+   * account (whose cost basis grows by the same amount), else tracked as
+   * unassigned cash with a warning. No cap.
+   */
   surplusInvested: number
   /**
    * Spending the portfolio could not cover this year: the funding shortfall
@@ -586,7 +642,13 @@ export interface YearResult {
     fundedAmount: number
     unfundedAmount: number
   }
-  /** End-of-year balance per account id (after flows and growth). */
+  /**
+   * End-of-year balance per id (after flows and growth), one map for four
+   * channels written in this order, a later channel overwriting an equal id:
+   * investable accounts (post-growth, post-flow), then property values by
+   * property id, then debt balances by debt id, then permanent-life cash
+   * values by policy id. Each entry is its channel's own full-year figure.
+   */
   balances: Record<string, number>
   /**
    * Sum of every investable account balance at year end (cash, taxable,
@@ -604,11 +666,21 @@ export interface YearResult {
    * Remaining TIPS-ladder principal at year end (nominal book value: unmatured
    * face × inflation to date, ignoring rate moves). A dedicated asset held out
    * of withdrawals — counted in netWorth, not investableTotal. 0 without ladders.
+   * Per ladder: Σ face over rungs with maturityOffset > offset, × the ladder's
+   * funding scale (1 when fully funded) × the cumulative inflation factor from
+   * the start year; offset = year − anchor year (0 in the purchase year), and
+   * once no one is alive the offset freezes at the last living year so the
+   * face stops shrinking.
    */
   ladderValue: number
   /** Income-tax-free life death benefit paid into the estate/beneficiary this year. */
   deathBenefit: number
-  /** Tax-free HECM line-of-credit loan proceeds drawn this year (0 without a HECM). */
+  /**
+   * Tax-free HECM line-of-credit loan proceeds drawn this year (0 without a
+   * HECM): the coordinated draw the ACA/tax funding solve accepted under the
+   * plan's draw policy, plus the backstop draw any open line makes against a
+   * true portfolio shortfall regardless of policy.
+   */
   hecmDraw: number
   /** Total HECM loan balance at year end, before the non-recourse floor (0 without a HECM). */
   hecmLoanBalance: number

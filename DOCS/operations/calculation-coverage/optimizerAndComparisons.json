@@ -4,6 +4,81 @@
   "group": "optimizerAndComparisons",
   "records": [
     {
+      "id": "claim-age-co-optimization",
+      "title": "Claim age co-optimization",
+      "kind": "model",
+      "outputs": [
+        "claim-age-co-optimization-combinations-evaluated",
+        "claim-age-co-optimization-current-claim-exact-estate",
+        "claim-age-co-optimization-joint-exact-estate"
+      ],
+      "feeds": [
+        "optimizer-recommended-conversion-annual"
+      ],
+      "purpose": "Count the Social Security claim combinations priced and publish the current-claim and joint exact estates.",
+      "statement": "projection/optimizePlan.ts#optimizePlanCoOptimizingClaimAge publishes ClaimAgeCoOptimization.combinationsEvaluated as one plus the claim candidates decisions/generators.ts#socialSecurityClaimGenerator produced (up to two Social Security streams times the three canonical claim ages 62y0m, 67y0m labelled FRA, and 70y0m, skipping each stream's own current claim age), currentClaimExactEstate as the exact after-tax estate of the optimum at the current claim ages, and jointExactEstate as the exact after-tax estate of the best evaluated claim-and-schedule pair, which stays the current-claim estate unless a candidate beats it by more than DEFAULT_CLAIM_SWITCH_MARGIN_DOLLARS, which is 1000 dollars.",
+      "formula": {
+        "expression": "combinationsEvaluated = 1 + generatedClaimCandidates; jointExactEstate = the best pair estate that clears currentClaimExactEstate + 1000, else currentClaimExactEstate; winningClaimLabel and winningClaimPatch are null exactly when no pair clears it",
+        "variables": [
+          {
+            "symbol": "generatedClaimCandidates",
+            "meaning": "Claim candidates from socialSecurityClaimGenerator: streams (at most 2) times the canonical ages that differ from that stream's current claim",
+            "unit": "count",
+            "domain": "integer 0 to 6"
+          },
+          {
+            "symbol": "currentClaimExactEstate",
+            "meaning": "Exact after-tax estate of the optimum at the plan's current claim ages",
+            "unit": "nominal USD at horizon",
+            "domain": "finite"
+          },
+          {
+            "symbol": "jointExactEstate",
+            "meaning": "Exact after-tax estate of the winning claim-and-schedule pair",
+            "unit": "nominal USD at horizon",
+            "domain": "finite"
+          },
+          {
+            "symbol": "claimSwitchMarginDollars",
+            "meaning": "DEFAULT_CLAIM_SWITCH_MARGIN_DOLLARS",
+            "unit": "nominal USD",
+            "domain": "1000"
+          }
+        ],
+        "timing": "one full conversion optimum per claim combination, the current claim included",
+        "rounding": "none; the count is an integer and the estates carry binary floating-point representation"
+      },
+      "limits": [
+        "The count includes the current claim and excludes the stream's own current age as a candidate: a stream already claiming at 70y0m generates two candidates and so evaluates three combinations, and a plan with no stream still evaluates one. The 67y0m point is labelled FRA for every birth year (decision D-CLAIM-AGE-FRA-LABEL), a grid label rather than the birth-year FRA socialSecurity/nra.ts#fraForBirthYear computes, so the label is not recomputed from the person. The two estates are RUN-PINNED, not derived: the worksheet states no dollar figure for either, so the fixture's example carries the value one execution of the co-optimizer produced on the stated plan, and it is evidence of that execution rather than of an independent derivation. What is derived is their equality — with no traditional balance every schedule is empty and no claim clears the 1000-dollar margin, so the joint estate IS the current-claim estate and both claim outputs are null. The strictness of that margin at exactly 1000 dollars was NOT constructed: it needs a candidate whose exact estate sits one margin above the current-claim optimum, which no plan input the worksheet states can produce. Beyond the worksheet's inputs the fixture assumes validated single-person plans with one cash account and no traditional balance, zero returns, zero inflation, zero state tax, zero base spending, a birth date that makes the person 70 in the start year, an integer planning age of 70 (the plan schema admits no 70y1m) and the production federal tax calculator from start year 2026; the count is asserted at the generator itself, whose context takes the plan's own baseline ledger run."
+      ],
+      "worksheet": "DOCS/calculations/optimizer-and-comparisons/claim-age-co-optimization.md",
+      "mutation": "DOCS/calculations/optimizer-and-comparisons/claim-age-co-optimization.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/projection/optimizePlan.ts",
+        "packages/engine/src/decisions/generators.ts"
+      ],
+      "provenance": {
+        "derivedBy": "codex",
+        "implementedBy": "claude",
+        "reviewedBy": "cursor"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/projection/optimizePlan.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
       "id": "conversion-coordinate-descent-search",
       "title": "Conversion coordinate descent search",
       "kind": "model",
@@ -58,6 +133,341 @@
       },
       "fixtureFiles": [
         "packages/engine/src/decisions/search.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
+      "id": "exact-ledger-cleaned-schedule",
+      "title": "Exact ledger cleaned schedule",
+      "kind": "model",
+      "outputs": [
+        "optimizer-recommended-conversion-annual"
+      ],
+      "feeds": [
+        "exact-ledger-tournament-margin-over-milp-dollars"
+      ],
+      "purpose": "Trim a raw solver conversion schedule to what the exact ledger actually executes.",
+      "statement": "projection/optimizePlan.ts#postProcessExactLedgerSchedule publishes ExactLedgerPostProcessing.cleanedSchedule as the per-year minimum of the raw requested conversion and the ledger's executed conversion, taking that minimum only when execution exceeds the neutral tolerance and zero otherwise, and records each materially changed year as an ExactLedgerScheduleAdjustment whose reason is ledger-capped when the cleaned amount survives, dropped-zero when it does not, and estate-pruned when the trailing prune pass removes the year; rounding is declared on that reason union and never assigned (decision D-ADJUSTMENT-ROUNDING-REASON).",
+      "formula": {
+        "expression": "cleaned_y = executed_y > neutralTolerance ? min(requested_y, executed_y) : 0; reason_y = cleaned_y <= neutralTolerance ? dropped-zero : ledger-capped, or estate-pruned when the prune pass drops year y",
+        "variables": [
+          {
+            "symbol": "requested_y",
+            "meaning": "Raw solver schedule amount for year y",
+            "unit": "nominal USD",
+            "domain": "nonnegative"
+          },
+          {
+            "symbol": "executed_y",
+            "meaning": "max(0, the rerun ledger's rothConversion for year y)",
+            "unit": "nominal USD",
+            "domain": "nonnegative"
+          },
+          {
+            "symbol": "neutralTolerance",
+            "meaning": "DECISION_NEUTRAL_TOLERANCE_DOLLARS",
+            "unit": "nominal USD",
+            "domain": "1"
+          }
+        ],
+        "timing": "raw request, exact-ledger execution, rerun, repeated to a fixed point within the stabilization budget",
+        "rounding": "adjustment rows carry cents-rounded requested, executed and cleaned amounts; the dollar totals carry binary floating-point representation"
+      },
+      "limits": [
+        "Cleaned is the per-year minimum, not the request: keeping the request republishes 15000 dollars in a year the ledger funded with 5000, and summing the raw requests publishes 30000 dollars rather than the cleaned 20000. The reason on that year is ledger-capped, never the declared-but-never-assigned rounding. Of the worksheet's three live reasons only ledger-capped is realized by its stated inputs; dropped-zero and estate-pruned were NOT constructed from them, because each needs a different raw schedule and, for estate-pruned, a plan whose trailing conversion year harms the exact estate — neither of which the worksheet states, so the fixture asserts instead that the run's reasons lie inside the three live values and that rounding is not among them. Beyond the worksheet's inputs the fixture assumes a validated single-person plan with a 10000-dollar cash account and an empty Roth account beside the 20000-dollar traditional one, zero healthcare expenses, a planning age of 67 and the production federal tax calculator from start year 2026, so Y1 is 2026 and Y2 is 2027; the raw schedule is a full OptimizedSchedule literal whose per-year solver rows are zero apart from the conversion, which the entry requires and the worksheet does not name. The MILP-sourced winning schedule the worksheet mentions is a solver-run limit with no number and is not asserted here."
+      ],
+      "worksheet": "DOCS/calculations/optimizer-and-comparisons/exact-ledger-cleaned-schedule.md",
+      "mutation": "DOCS/calculations/optimizer-and-comparisons/exact-ledger-cleaned-schedule.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/projection/optimizePlan.ts"
+      ],
+      "provenance": {
+        "derivedBy": "codex",
+        "implementedBy": "claude",
+        "reviewedBy": "cursor"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/projection/optimizePlan.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
+      "id": "exact-ledger-conversion-execution",
+      "title": "Exact ledger conversion execution",
+      "kind": "formula",
+      "outputs": [
+        "exact-ledger-validation-requested-conversion-total",
+        "exact-ledger-validation-executed-conversion-ratio",
+        "exact-ledger-validation-first-materially-unexecuted-year"
+      ],
+      "feeds": [],
+      "purpose": "Report how much of a requested conversion schedule the exact ledger actually executed.",
+      "statement": "projection/optimizePlan.ts#evaluateExactLedgerSchedule sums the requested schedule into requestedConversionTotal, sums the candidate result's YearResult.rothConversion into the executed total, publishes executedConversionRatio as min(1, executed / requested) and exactly 1 when nothing was requested, and publishes firstMateriallyUnexecutedYear as the first ascending requested year whose shortfall is more than max(DECISION_MATERIAL_SHORTFALL_DOLLARS, requested times DECISION_MATERIAL_SHORTFALL_PCT), else null.",
+      "formula": {
+        "expression": "requested = sum(schedule.amount); executed = sum(candidate.years.rothConversion); ratio = requested > 0 ? min(1, executed / requested) : 1; firstMateriallyUnexecutedYear = min { y ascending : requested_y - executed_y > max(1000, requested_y * 0.05) }, else null",
+        "variables": [
+          {
+            "symbol": "requested_y",
+            "meaning": "Requested conversion dollars in year y",
+            "unit": "nominal USD",
+            "domain": "nonnegative"
+          },
+          {
+            "symbol": "executed_y",
+            "meaning": "Candidate result rothConversion in year y",
+            "unit": "nominal USD",
+            "domain": "nonnegative"
+          },
+          {
+            "symbol": "DECISION_MATERIAL_SHORTFALL_DOLLARS",
+            "meaning": "Absolute material shortfall margin",
+            "unit": "nominal USD",
+            "domain": "1000"
+          },
+          {
+            "symbol": "DECISION_MATERIAL_SHORTFALL_PCT",
+            "meaning": "Proportional material shortfall margin",
+            "unit": "1",
+            "domain": "0.05"
+          }
+        ],
+        "timing": "one candidate schedule against its own exact-ledger run, requested years tested in ascending order",
+        "rounding": "none; the dollar sums carry binary floating-point representation and the materiality comparison is strict"
+      },
+      "limits": [
+        "The materiality margin is resolved per year from that year's own requested amount, not once from the schedule total, and the comparison is strictly more than, so a shortfall equal to its margin does not qualify; the ratio is capped at 1 so an over-execution cannot read as more than the whole request, and the zero-request branch is the stated exact 1 rather than a division. Beyond the worksheet's rows the fixture assumes a validated plan with one non-inherited traditional account and a baseline result that the entry requires and the worksheet does not name; both projections are supplied as ProjectionResult values at the exported validation entry, so the requested-versus-executed arithmetic is the real function while neither ledger run is exercised here. ExactLedgerValidation.executedConversionTotal has no census family this round, so it is read only as the ratio's numerator and is not published by this record."
+      ],
+      "worksheet": "DOCS/calculations/optimizer-and-comparisons/exact-ledger-conversion-execution.md",
+      "mutation": "DOCS/calculations/optimizer-and-comparisons/exact-ledger-conversion-execution.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/projection/optimizePlan.ts",
+        "packages/engine/src/decisions/evaluateCandidate.ts"
+      ],
+      "provenance": {
+        "derivedBy": "codex",
+        "implementedBy": "claude",
+        "reviewedBy": "cursor"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/projection/optimizePlan.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
+      "id": "exact-ledger-summary-comparison",
+      "title": "Exact ledger summary comparison",
+      "kind": "formula",
+      "outputs": [
+        "optimization-baseline-after-tax-estate",
+        "optimization-candidate-after-tax-estate",
+        "exact-ledger-validation-ending-net-worth-delta"
+      ],
+      "feeds": [],
+      "purpose": "Publish the two exact-ledger estates and the ending-net-worth delta between them.",
+      "statement": "projection/optimizePlan.ts#evaluateExactLedgerSchedule publishes ExactLedgerValidation.baseline as summarizeProjection of the plan's shared baseline result and ExactLedgerValidation.candidate as summarizeProjection of the candidate schedule's own simulated result, and publishes endingNetWorthDelta as candidate.endingNetWorth minus baseline.endingNetWorth.",
+      "formula": {
+        "expression": "baseline = summarizeProjection(sharedBaselineResult); candidate = summarizeProjection(candidateResult); endingNetWorthDelta = candidate.endingNetWorth - baseline.endingNetWorth",
+        "variables": [
+          {
+            "symbol": "baseline.endingAfterTaxEstate",
+            "meaning": "Shared baseline result summary ending after-tax estate",
+            "unit": "nominal USD at horizon",
+            "domain": "finite"
+          },
+          {
+            "symbol": "candidate.endingAfterTaxEstate",
+            "meaning": "Candidate schedule result summary ending after-tax estate",
+            "unit": "nominal USD at horizon",
+            "domain": "finite"
+          },
+          {
+            "symbol": "baseline.endingNetWorth",
+            "meaning": "Shared baseline result summary ending net worth",
+            "unit": "nominal USD at horizon",
+            "domain": "finite"
+          },
+          {
+            "symbol": "candidate.endingNetWorth",
+            "meaning": "Candidate schedule result summary ending net worth",
+            "unit": "nominal USD at horizon",
+            "domain": "finite"
+          }
+        ],
+        "timing": "one candidate schedule validated against the plan's shared baseline run",
+        "rounding": "none; the summarized dollar figures carry binary floating-point representation"
+      },
+      "limits": [
+        "No value from one result may be paired with the other result's label: the baseline estate is the shared baseline run's summary and the candidate estate is the candidate schedule's own run, and the delta is on ending net worth rather than on after-tax estate. Beyond the worksheet's four summary figures the fixture assumes a validated plan whose only estate-discounted holding is one non-inherited traditional account at a 25 percent flat heir rate, so each result's final-year balance for that account is what turns its ending net worth into the worksheet's after-tax estate; both projections are supplied as ProjectionResult values at the exported validation entry, so the summary composition and the validation wrapper are the real functions while neither ledger run is exercised here. The entry also requires a requested schedule, which the worksheet does not name and the fixture leaves empty. recommendationState has no census family this round and is not published by this record."
+      ],
+      "worksheet": "DOCS/calculations/optimizer-and-comparisons/exact-ledger-summary-comparison.md",
+      "mutation": "DOCS/calculations/optimizer-and-comparisons/exact-ledger-summary-comparison.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/projection/optimizePlan.ts",
+        "packages/engine/src/decisions/evaluateCandidate.ts"
+      ],
+      "provenance": {
+        "derivedBy": "codex",
+        "implementedBy": "claude",
+        "reviewedBy": "cursor"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/projection/optimizePlan.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
+      "id": "exact-ledger-tournament-margin",
+      "title": "Exact ledger tournament margin",
+      "kind": "model",
+      "outputs": [
+        "exact-ledger-tournament-margin-over-milp-dollars"
+      ],
+      "feeds": [],
+      "purpose": "Report how far the tournament winner beat the solver schedule it displaced, and zero when it displaced none.",
+      "statement": "projection/optimizePlan.ts#runExactLedgerTournament publishes ExactLedgerTournament.marginOverMilpDollars as the winning candidate's exact after-tax estate delta minus the displaced recommendable MILP schedule's exact after-tax estate delta, and as exactly 0 whenever no MILP comparison was made, which includes the MILP-winner branch and both the incumbent and none fallbacks; a candidate replaces a recommendable MILP only when its delta is more than that schedule's delta plus DEFAULT_TOURNAMENT_SWITCH_MARGIN_DOLLARS, which is 1000 dollars.",
+      "formula": {
+        "expression": "marginOverMilpDollars = milpRecommended ? winnerEstateDelta - milpDelta : 0; the candidate replaces the MILP only when winnerEstateDelta > milpDelta + 1000",
+        "variables": [
+          {
+            "symbol": "winnerEstateDelta",
+            "meaning": "Winning candidate's exact after-tax estate delta over the shared baseline",
+            "unit": "nominal USD at horizon",
+            "domain": "finite"
+          },
+          {
+            "symbol": "milpDelta",
+            "meaning": "Recommendable post-processed MILP schedule's exact after-tax estate delta, 0 when none is recommendable",
+            "unit": "nominal USD at horizon",
+            "domain": "finite"
+          },
+          {
+            "symbol": "switchMarginDollars",
+            "meaning": "DEFAULT_TOURNAMENT_SWITCH_MARGIN_DOLLARS",
+            "unit": "nominal USD",
+            "domain": "1000"
+          }
+        ],
+        "timing": "one tournament over the plan's simple candidates and its post-processed MILP schedule",
+        "rounding": "none; the dollar figures carry binary floating-point representation and the switch comparison is strict"
+      },
+      "limits": [
+        "The zero convention is the evidenced branch: with no MILP result supplied the published margin is 0 on both the none and the incumbent outcome, so a candidate-versus-incumbent difference must never be reported there, and a no-traditional plan reports source none with an empty schedule rather than an incumbent request. The worksheet's third case — a candidate that beats a recommendable MILP by more than the 1000-dollar switch margin, and the strictness of that threshold at exactly 1000 — is a solver-run limit and was NOT constructed: the worksheet supplies no estate inputs for the MILP schedule, and the entry takes a post-processed solver schedule rather than a dollar figure, so no assertion here can pin that branch or its published difference. Beyond the worksheet's two inputs the fixture assumes, for the none case, a validated single-person plan with one cash account, zero returns, zero inflation, zero state tax and zero base spending, and for the incumbent case a validated single-person retiree plan with an 800000-dollar traditional account beside a taxable and a cash account, 4 percent returns, a 25 percent heir rate, 45000 dollars of base spending and a planning age of 85, both run with the production federal tax calculator from start year 2026 so Y1 is 2026; on the incumbent plan the tournament's own candidate winner is withheld by the retirement-action readiness veto, which is what routes the run to the incumbent fallback the worksheet describes. Both runs exercise the real ledger; nothing is supplied at a seam."
+      ],
+      "worksheet": "DOCS/calculations/optimizer-and-comparisons/exact-ledger-tournament-margin.md",
+      "mutation": "DOCS/calculations/optimizer-and-comparisons/exact-ledger-tournament-margin.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/projection/optimizePlan.ts"
+      ],
+      "provenance": {
+        "derivedBy": "codex",
+        "implementedBy": "claude",
+        "reviewedBy": "cursor"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/projection/optimizePlan.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
+      "id": "exact-ledger-traditional-depletion",
+      "title": "Exact ledger traditional depletion",
+      "kind": "formula",
+      "outputs": [
+        "exact-ledger-validation-traditional-depletion-year"
+      ],
+      "feeds": [],
+      "purpose": "Name the first year the plan's own traditional balances are exhausted under a candidate schedule.",
+      "statement": "projection/optimizePlan.ts#evaluateExactLedgerSchedule publishes ExactLedgerValidation.traditionalDepletionYear through decisions/evaluateCandidate.ts#findTraditionalDepletionYear as the first ascending candidate-result year whose non-inherited traditional account balances sum to at most the validation tolerance, one dollar by default, and null when no year does.",
+      "formula": {
+        "expression": "traditionalDepletionYear = min { y ascending : sum over own traditional accounts a of balance(a, y) <= toleranceDollars }, else null",
+        "variables": [
+          {
+            "symbol": "balance(a, y)",
+            "meaning": "Year-end balance of own traditional account a in year y",
+            "unit": "nominal USD",
+            "domain": "nonnegative"
+          },
+          {
+            "symbol": "toleranceDollars",
+            "meaning": "Validation tolerance, DECISION_NEUTRAL_TOLERANCE_DOLLARS by default",
+            "unit": "nominal USD",
+            "domain": "1"
+          }
+        ],
+        "timing": "candidate-result years in ascending order; the first qualifying year wins",
+        "rounding": "none; the boundary is inclusive at the tolerance"
+      },
+      "limits": [
+        "Inherited traditional balances are excluded, the boundary is inclusive so an owned sum of exactly the tolerance qualifies, and a later fully drained year cannot displace the first qualifying one. Beyond the worksheet's three account balance columns the fixture assumes a validated plan whose two owned traditional accounts and one inherited traditional account carry the worksheet's ids, an empty requested schedule, and a baseline result that the entry requires and the worksheet does not name; the candidate projection is supplied as a ProjectionResult value at the exported validation entry, so the selection is the real function while no ledger run is exercised here."
+      ],
+      "worksheet": "DOCS/calculations/optimizer-and-comparisons/exact-ledger-traditional-depletion.md",
+      "mutation": "DOCS/calculations/optimizer-and-comparisons/exact-ledger-traditional-depletion.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/projection/optimizePlan.ts",
+        "packages/engine/src/decisions/evaluateCandidate.ts"
+      ],
+      "provenance": {
+        "derivedBy": "codex",
+        "implementedBy": "claude",
+        "reviewedBy": "cursor"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/projection/optimizePlan.evidence.test.ts"
       ],
       "gates": {
         "fixtureRegistersTest": true,
@@ -174,6 +584,81 @@
       },
       "fixtureFiles": [
         "packages/engine/src/scenarios/comparisonCells.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
+      "id": "simple-candidate-evaluation-comparison",
+      "title": "Simple candidate evaluation comparison",
+      "kind": "formula",
+      "outputs": [
+        "simple-candidate-evaluation-after-tax-estate-delta",
+        "simple-candidate-evaluation-executed-conversion-total",
+        "simple-candidate-evaluation-incomplete-computation-years",
+        "simple-candidate-evaluation-lifetime-tax-delta",
+        "simple-candidate-evaluation-money-lasts-years-delta"
+      ],
+      "feeds": [],
+      "purpose": "Compare one simple conversion candidate with the shared baseline on the exact ledger.",
+      "statement": "projection/optimizePlan.ts#evaluateSimpleConversionCandidates publishes each SimpleCandidateEvaluation as the sum of the candidate result's YearResult.rothConversion, the candidate-minus-baseline differences of summarizeProjection's endingAfterTaxEstate and lifetimeTaxesAndPenalties, the candidate-minus-baseline difference of lastsThrough (a result's depletionYear, or its endYear + 1 when it never depletes), and the ascending sorted union across both results of the years whose taxComputation.status or hecmComputation.status is incomplete.",
+      "formula": {
+        "expression": "executedConversionTotal = sum(candidate.years.rothConversion); afterTaxEstateDelta = candidate.endingAfterTaxEstate - baseline.endingAfterTaxEstate; lifetimeTaxDelta = candidate.lifetimeTaxesAndPenalties - baseline.lifetimeTaxesAndPenalties; moneyLastsYearsDelta = lastsThrough(candidate) - lastsThrough(baseline); incompleteComputationYears = sorted union of the incomplete years of both results",
+        "variables": [
+          {
+            "symbol": "lastsThrough(result)",
+            "meaning": "Result depletionYear, or endYear + 1 when it never depletes",
+            "unit": "calendar year",
+            "domain": "integer"
+          },
+          {
+            "symbol": "candidate.endingAfterTaxEstate",
+            "meaning": "Candidate result summary ending after-tax estate",
+            "unit": "nominal USD at horizon",
+            "domain": "finite"
+          },
+          {
+            "symbol": "candidate.lifetimeTaxesAndPenalties",
+            "meaning": "Candidate result summary lifetime taxes and penalties",
+            "unit": "nominal USD over projection",
+            "domain": "finite"
+          },
+          {
+            "symbol": "incomplete(result)",
+            "meaning": "Years whose taxComputation.status or hecmComputation.status is incomplete",
+            "unit": "calendar years",
+            "domain": "set of integers"
+          }
+        ],
+        "timing": "one simple conversion candidate against the plan's shared baseline run",
+        "rounding": "none; the dollar sum and the dollar differences carry binary floating-point representation"
+      },
+      "limits": [
+        "Every difference is candidate minus baseline, the conversion sum is the candidate result's rows alone, a non-depleting result lasts through endYear + 1 rather than endYear, and the incomplete years are a de-duplicated ascending union across both results rather than a concatenation. Beyond the worksheet's inputs the smallest exported entry that publishes these fields generates its own fixed set of fill-to-target candidates and runs each one through the ledger, so the fixture supplies the candidate result at the simulate seam and the baseline result directly; it also assumes a validated plan whose only estate-discounted holding is one non-inherited traditional account at a 20 percent flat heir rate, so each result's final-year balance for that account is what turns its ending net worth into the worksheet's after-tax estate. In the no-incomplete-status branch the optional incompleteComputationYears key is omitted, not set to an empty list, as the worksheet states since its 2026-09-18 revision (the first derivation expected an empty list, which the fixture found); the fixture asserts the omission and the empty union it stands for. recommendationState has no census family this round and is not published by this record."
+      ],
+      "worksheet": "DOCS/calculations/optimizer-and-comparisons/simple-candidate-evaluation-comparison.md",
+      "mutation": "DOCS/calculations/optimizer-and-comparisons/simple-candidate-evaluation-comparison.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/projection/optimizePlan.ts",
+        "packages/engine/src/decisions/evaluateCandidate.ts"
+      ],
+      "provenance": {
+        "derivedBy": "codex",
+        "implementedBy": "claude",
+        "reviewedBy": "cursor"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/projection/optimizePlan.evidence.test.ts"
       ],
       "gates": {
         "fixtureRegistersTest": true,

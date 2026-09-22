@@ -690,14 +690,23 @@ export interface OptimizePlanResult {
 }
 
 export interface SimpleCandidateEvaluation {
-  /** Present when numeric deltas are informational and cannot support an exact recommendation. */
+  /**
+   * Present only when non-empty: the ascending, de-duplicated years, across
+   * both the baseline and the candidate results, whose taxComputation.status
+   * or hecmComputation.status is 'incomplete'. The key is omitted, not set to
+   * an empty list, when no year qualifies. When present the numeric deltas are
+   * informational and cannot support an exact recommendation.
+   */
   incompleteComputationYears?: number[]
   id: string
   label: string
-  /** Total conversions the exact ledger executed under this candidate strategy. */
+  /** Sum of rothConversion over the candidate result's year rows (executed, not the requested or cleaned schedule). */
   executedConversionTotal: number
+  /** candidate minus baseline ending after-tax estate. */
   afterTaxEstateDelta: number
+  /** candidate minus baseline lifetime taxes and penalties. */
   lifetimeTaxDelta: number
+  /** lastsThrough(candidate) − lastsThrough(baseline): depletionYear, or endYear + 1 when never depleting. */
   moneyLastsYearsDelta: number
 }
 
@@ -900,12 +909,16 @@ export interface ExactLedgerTournament {
   /**
    * The recommended per-year schedule (exact-ledger executed amounts; empty
    * when winnerSource is 'none'; the plan's current executed conversions when
-   * winnerSource is 'incumbent').
+   * winnerSource is 'incumbent': each year whose executed conversion exceeds
+   * one dollar, rounded to cents).
    */
   winnerConversions: { year: number; amount: number }[]
   /** Exact comparison for the winner; null for 'incumbent' (a plan's delta vs itself is zero) and 'none'. */
   winnerValidation: ExactLedgerValidation | null
-  /** Candidate's exact estate delta over the displaced MILP schedule; 0 when no MILP comparison was made. */
+  /**
+   * Candidate's exact estate delta over the displaced MILP schedule; 0 when no
+   * MILP comparison was made, and 0 when the MILP schedule itself wins.
+   */
   marginOverMilpDollars: number
   /** True when Phase 4 local search improved the winning candidate schedule. */
   searchRefined: boolean
@@ -2053,27 +2066,82 @@ export interface ExactLedgerValidationOptions {
 }
 
 export interface ExactLedgerValidation {
-  /** Present when numeric deltas are informational and cannot support an exact recommendation. */
+  /**
+   * Present only when non-empty: the ascending, de-duplicated years, across
+   * both the baseline and the candidate results, whose taxComputation.status
+   * or hecmComputation.status is 'incomplete'. The key is omitted, not set to
+   * an empty list, when no year qualifies. When present the numeric deltas are
+   * informational and cannot support an exact recommendation.
+   */
   incompleteComputationYears?: number[]
+  /** summarizeProjection of the plan's shared baseline result. */
   baseline: ProjectionSummary
+  /** summarizeProjection of the candidate schedule's own simulated result. */
   candidate: ProjectionSummary
+  /** candidate.endingAfterTaxEstate − baseline.endingAfterTaxEstate. */
   afterTaxEstateDelta: number
+  /** candidate.endingNetWorth − baseline.endingNetWorth. */
   endingNetWorthDelta: number
+  /** candidate.lifetimeTaxesAndPenalties − baseline.lifetimeTaxesAndPenalties. */
   lifetimeTaxDelta: number
+  /**
+   * lastsThrough(candidate) − lastsThrough(baseline), where lastsThrough is a
+   * result's depletionYear, or its endYear + 1 when it never depletes.
+   */
   moneyLastsYearsDelta: number
+  /** Sum of the candidate schedule's requested conversion amounts. */
   requestedConversionTotal: number
+  /** Sum of rothConversion over the candidate result's year rows. */
   executedConversionTotal: number
+  /** min(1, executed / requested); 1 when nothing was requested. */
   executedConversionRatio: number
+  /**
+   * The first year, ascending, whose requested amount exceeds its executed
+   * amount by more than max(DECISION_MATERIAL_SHORTFALL_DOLLARS, requested ×
+   * DECISION_MATERIAL_SHORTFALL_PCT); null when no year does.
+   */
   firstMateriallyUnexecutedYear: number | null
+  /**
+   * The first year, over the candidate result's rows, that the candidate
+   * plan's own (non-inherited) traditional balances sum to at most the neutral
+   * tolerance (one dollar by default); null if never, and null when the plan
+   * has no owned traditional account.
+   */
   traditionalDepletionYear: number | null
+  /**
+   * beneficial when afterTaxEstateDelta > 1; otherwise unexecutable when the
+   * requested total is at least 1 and requested − executed exceeds
+   * max(DECISION_MATERIAL_SHORTFALL_DOLLARS, requested ×
+   * DECISION_MATERIAL_SHORTFALL_PCT) (the candidate evaluation's 'diagnostic'
+   * state, which this wrapper publishes as unexecutable); otherwise rejected
+   * when the delta < −1; otherwise neutral. Any incomplete computation year,
+   * non-actionable ACA year or retirement-action diagnostic also makes it
+   * unexecutable, and a beneficial household-only aggregate schedule becomes
+   * identityIncomplete.
+   */
   recommendationState: ExactLedgerRecommendationState
 }
 
+/**
+ * One row per requested year whose cleaned amount differs from its requested
+ * amount by more than the neutral tolerance after rounding, written by the
+ * post-processing loop (at most DEFAULT_MAX_POST_PROCESSING_ITERATIONS passes,
+ * each re-simulating the plan with the cleaned conversions installed).
+ */
 export interface ExactLedgerScheduleAdjustment {
   year: number
+  /** The raw schedule's amount for the year. */
   requested: number
+  /** max(0, the candidate result's rothConversion for the year), the ledger's execution. */
   executed: number
+  /** min(requested, executed) when executed exceeds the neutral tolerance, else 0. */
   cleaned: number
+  /**
+   * dropped-zero when the rounded cleaned amount is within the neutral
+   * tolerance, ledger-capped otherwise, and estate-pruned when the trailing
+   * prune pass drops a year that harms the estate; rounding is declared but
+   * never assigned (decision D-ADJUSTMENT-ROUNDING-REASON).
+   */
   reason: 'ledger-capped' | 'dropped-zero' | 'estate-pruned' | 'rounding'
 }
 
@@ -2764,7 +2832,12 @@ export interface ClaimAgeCoOptimization {
   incompleteComputationYears?: number[]
   /** True when claim-age co-optimization actually ran. */
   enabled: boolean
-  /** Claim combinations optimized, including the current claim (1 when off). */
+  /**
+   * 1 for the current claim plus one per generated candidate whose claim patch
+   * applied cleanly (a candidate without a patch, or whose patch fails, is not
+   * counted); 1 when off. A counted pair can still be excluded from winning by
+   * incomplete computation years or a retirement-action readiness veto.
+   */
   combinationsEvaluated: number
   /** Label of the winning claim change, or null when the current claim won. */
   winningClaimLabel: string | null

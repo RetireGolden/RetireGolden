@@ -242,8 +242,15 @@ export interface PensionDecisionAnalysis {
   pensionName: string
   lumpSum: number
   electionYear: number
-  /** PV at the curve-anchored rate, full survivor continuation as configured. */
+  /**
+   * PV at the curve-anchored rate, full survivor continuation as configured:
+   * pensionAnnuityPresentValue at curveRatePct (its doc states the sum) over
+   * the payments through the planning age: ownerDeathAge is the planning age,
+   * the same age that sets the curve horizon, so the payment count and the
+   * rate come from one input.
+   */
   presentValueAtCurveRate: number
+  /** curveNominalDiscountRatePct: the embedded real-yield curve interpolated at max(5, planning age − current age) years, plus the plan's inflation. */
   curveRatePct: number
   /** PV with survivor continuation zeroed — the survivor option's PV value is the difference. */
   presentValueSingleLife: number

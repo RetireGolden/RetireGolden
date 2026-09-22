@@ -276,4 +276,42 @@ export const longevityRecords = {
     verifiedOn: '2026-09-14',
     provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'cursor' },
   },
+  'longevity-depletion-year': {
+    title: 'Depletion year: the first projection year whose shortfall clears the funding tolerance',
+    purpose: 'The year the headline results call the plan depleted, or null when every year was funded.',
+    kind: 'model',
+    outputs: ['longevity-depletion-year'],
+    statement:
+      'ProjectionResult.depletionYear is the first projection year, in year order, whose YearResult.shortfall — the funding shortfall left after every withdrawal and any HECM backstop draw — is strictly greater than projection/moneyTolerance.ts#ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS ($0.005, the ledger\'s own residual budget). A residual at or below that budget is not depletion; once a year is recorded the value is never replaced by a later one; and the field is null when no year exceeds the tolerance. Units: calendar year, or null. Rounding: none; the comparison is strict.',
+    formula: {
+      expression: 'depletionYear = min{ y : shortfall_y > ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS }, else null',
+      variables: [
+        { symbol: 'shortfall_y', meaning: 'Year y\'s funding shortfall after every withdrawal and any HECM backstop draw', unit: 'usd', domain: 'shortfall_y >= 0' },
+        { symbol: 'ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS', meaning: 'The funding fixed point\'s accepted residual', unit: 'usd', domain: '0.005' },
+        { symbol: 'depletionYear', meaning: 'First qualifying calendar year', unit: 'year', domain: 'a projection year, or null' },
+      ],
+      timing: 'annual; tested in each year\'s funding-and-close phase, in year order',
+      rounding: 'none; strictly greater than the half-cent tolerance',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/longevity/longevity-depletion-year.md',
+    },
+    limits: [
+      'Beyond the worksheet\'s inputs the evidence plan fixes: one cash account (so no market shock and no taxable yield reach it), a 51-year-old single filer under 65 (no Medicare premium, no early-withdrawal exposure), zero income, zero inflation and zero return, base spending as the only expense, and an explicit horizonEndYear of 2028 so the three rows are exactly 2026-2028',
+      'The tolerance is a residual budget, not a balance test: a year that closes at exactly zero with every dollar of spending funded is not depletion, which is why the $30,000 opening balance against the same $10,000 gap still publishes null',
+      'The field records the FIRST qualifying year only; later shortfalls do not move it, and a plan that recovers after a shortfall year still reports that year',
+      'The comparison is strict (>), so a shortfall of exactly $0.005 is accepted as a rounding residual rather than depletion; the evidence does not pin that boundary, which would need a plan whose funding residual lands on the tolerance exactly',
+    ],
+    implementedBy: [
+      'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/projection/internal/annualFundingApplicationAndClosePhase.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/internal/annualFundingApplicationAndClosePhase.ts#annualFundingApplicationAndClosePhase',
+    ],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
 } satisfies Record<string, CalculationRecord>
