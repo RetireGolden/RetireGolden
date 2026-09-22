@@ -25,6 +25,8 @@
       "ui-transformation": 19
     },
     "complete": [
+      "aca-economic-net-premium-annual",
+      "aca-modeled-allowable-ptc-annual",
       "annuitization-payout-rate-pct",
       "estate-heir-income-tax",
       "funded-ratio-result-essential-spending-pv",
@@ -40,6 +42,7 @@
       "insight-ss-bridge-gap-total",
       "insight-state-relocation-lifetime-state-tax-savings",
       "insight-widows-penalty-bracket-jump",
+      "irmaa-surcharge-annual",
       "ladder-build-annual-real-income-by-offset",
       "ladder-build-target-annual-real-income",
       "ladder-build-total-cost",
@@ -49,6 +52,8 @@
       "ladder-rung-coupon-rate-pct",
       "ladder-rung-face",
       "longevity-survival-percentile-age",
+      "magi-annual",
+      "medicare-premiums-annual",
       "projection-summary-average-pre-retirement-savings-rate-pct",
       "projection-summary-coast-fire-number",
       "projection-summary-ending-after-tax-estate",
@@ -58,12 +63,15 @@
       "projection-summary-fi-number",
       "projection-summary-lifetime-roth-conversions",
       "projection-summary-lifetime-taxes-and-penalties",
+      "qcd-annual",
       "relocation-lifetime-state-local-tax",
       "relocation-state-tax-driver-savings",
+      "rmd-required-annual",
       "scenario-comparison-cell",
       "scenario-irmaa-surcharge-tier-years",
       "scenario-lifetime-penalties",
       "scenario-lifetime-tax",
+      "sepp-distribution-annual",
       "social-security-bridge-sizing",
       "spending-excess-shortfall-annual",
       "spending-guardrail-factor-annual",
@@ -77,16 +85,18 @@
       "swr-rule-result-ending-after-tax-estate",
       "swr-rule-result-initial-annual-spend",
       "swr-rule-result-initial-rate-pct",
-      "swr-rule-result-lifetime-taxes-and-penalties"
+      "swr-rule-result-lifetime-taxes-and-penalties",
+      "tax-amt-annual",
+      "tax-loss-carryforward-remaining-annual",
+      "tax-loss-carryforward-used-against-gains-annual",
+      "tax-loss-carryforward-used-against-ordinary-annual"
     ],
     "partial": [
       "spending-base-annual"
     ],
     "noRecordYet": [
       "aca-applicable-slcsp-premium-annual",
-      "aca-economic-net-premium-annual",
       "aca-gross-enrollment-premium-annual",
-      "aca-modeled-allowable-ptc-annual",
       "accounts-balance-per-account-annual",
       "accounts-ending-balance-by-category",
       "accounts-investable-total-annual",
@@ -156,15 +166,12 @@
       "insight-monte-carlo-success-delta",
       "insurance-cash-value-annual",
       "insurance-death-benefit-annual",
-      "irmaa-surcharge-annual",
       "ladder-value-annual",
       "long-term-care-benefit-annual",
       "longevity-depletion-year",
-      "magi-annual",
       "mcp-batch-cumulative-tax-objective",
       "mcp-batch-ending-traditional-objective",
       "mcp-compare-ending-after-tax-estate-delta",
-      "medicare-premiums-annual",
       "monte-carlo-average-longest-cut-spell-years",
       "monte-carlo-average-total-shortfall",
       "monte-carlo-average-years-below-target",
@@ -201,11 +208,8 @@
       "projection-result-ending-investable",
       "projection-result-ending-net-worth",
       "projection-summary-fi-year",
-      "qcd-annual",
       "relocation-tax-comparison",
-      "rmd-required-annual",
       "roth-conversion-annual",
-      "sepp-distribution-annual",
       "simple-candidate-evaluation-after-tax-estate-delta",
       "simple-candidate-evaluation-executed-conversion-total",
       "simple-candidate-evaluation-incomplete-computation-years",
@@ -245,10 +249,6 @@
       "survivor-scenario-row-ssa44premium-savings",
       "survivor-scenario-row-survivor-shortfall-years",
       "sustainable-spending-result-simulation-count",
-      "tax-amt-annual",
-      "tax-loss-carryforward-remaining-annual",
-      "tax-loss-carryforward-used-against-gains-annual",
-      "tax-loss-carryforward-used-against-ordinary-annual",
       "tax-penalties-annual",
       "tax-realized-gains-annual",
       "tax-total-annual",
@@ -302,6 +302,17 @@
       "survivor-scenario-row-survivor-shortfall-years"
     ],
     "fedBy": {
+      "aca-economic-net-premium-annual": [
+        "aca-400-percent-cliff",
+        "aca-allowable-premium-tax-credit",
+        "aca-expected-contribution",
+        "aca-household-magi-composition"
+      ],
+      "aca-modeled-allowable-ptc-annual": [
+        "aca-400-percent-cliff",
+        "aca-expected-contribution",
+        "aca-household-magi-composition"
+      ],
       "accounts-balance-per-account-annual": [
         "allocation-glidepath-interpolation",
         "allocation-total-return-drift",
@@ -396,6 +407,11 @@
       "insight-state-relocation-lifetime-state-tax-savings": [
         "relocation-lifetime-state-local-tax"
       ],
+      "irmaa-surcharge-annual": [
+        "irmaa-lookback-selection",
+        "medicare-irmaa-two-year-lookback",
+        "medicare-magi-composition"
+      ],
       "ladder-build-total-cost": [
         "ladder-annual-coupon-par-pricing",
         "treasury-real-yield-curve-2026"
@@ -421,6 +437,15 @@
         "mortality-ex-to-qx-identity",
         "survival-hazard-from-expectancy-multiplier",
         "survival-probability-product"
+      ],
+      "magi-annual": [
+        "qcd-income-offset-qualified-slice",
+        "qcd-limit-and-age-proxy"
+      ],
+      "medicare-premiums-annual": [
+        "irmaa-lookback-selection",
+        "medicare-irmaa-two-year-lookback",
+        "medicare-magi-composition"
       ],
       "monte-carlo-depletion-probability-by-year": [
         "historical-market-series",
@@ -562,6 +587,9 @@
       "projection-summary-fi-age": [
         "projection-summary-fi-number"
       ],
+      "rmd-required-annual": [
+        "rmd-applicable-age-attain-year"
+      ],
       "roth-conversion-annual": [
         "exact-cent-largest-remainder-slices",
         "projection-money-tolerance-thresholds"
@@ -576,6 +604,20 @@
         "scenario-irmaa-surcharge-tier-years",
         "scenario-lifetime-tax-and-penalties"
       ],
+      "sepp-distribution-annual": [
+        "sepp-active-annual-rule"
+      ],
+      "social-security-benefit-annual": [
+        "current-spouse-excess-fallback",
+        "current-spouse-excess-poms-order",
+        "delayed-retirement-credit-factor",
+        "early-claim-factor",
+        "normal-retirement-age",
+        "pia-from-aime-bend-points",
+        "social-security-cola-factor",
+        "social-security-payable-months",
+        "survivor-benefit-rib-lim"
+      ],
       "solved-initial-withdrawal-rate-pct": [
         "sustainable-spending-bisection"
       ],
@@ -589,6 +631,13 @@
       ],
       "spending-care-cost-gross-annual": [
         "long-term-care-shock-sampling"
+      ],
+      "spending-healthcare-annual": [
+        "aca-400-percent-cliff",
+        "aca-allowable-premium-tax-credit",
+        "aca-economic-net-premium",
+        "medicare-base-part-b-premium",
+        "medicare-irmaa-first-tier-boundary"
       ],
       "spending-one-time-goals-annual": [
         "flexible-goal-scheduling"
@@ -632,29 +681,38 @@
       "tax-penalties-annual": [
         "civil-date-parse-format-and-month-shift",
         "exact-cent-pro-rata-half-up",
+        "rmd-shortfall-excise-default",
         "usd-cent-arithmetic"
       ],
       "tax-realized-gains-annual": [
         "allocation-rebalance-turnover"
       ],
       "tax-total-annual": [
+        "capital-loss-carryforward-netting",
         "conversion-tax-funding-gcd-reduction",
         "exact-cent-rational-half-up",
-        "parameter-provenance-catalog"
+        "federal-amt-screen",
+        "federal-ltcg-stacking",
+        "federal-ordinary-bracket-tax",
+        "federal-standard-deduction-age-65",
+        "federal-taxable-social-security-tiers",
+        "parameter-provenance-catalog",
+        "qcd-income-offset-qualified-slice",
+        "qcd-limit-and-age-proxy"
       ]
     }
   },
   "records": {
-    "total": 98,
+    "total": 132,
     "byKind": {
-      "composition": 25,
-      "data": 6,
-      "formula": 30,
-      "model": 37
+      "composition": 35,
+      "data": 14,
+      "formula": 41,
+      "model": 42
     },
     "byJustificationKind": {
       "dataset": 5,
-      "derivation": 93
+      "derivation": 127
     }
   },
   "oracleExamples": [
@@ -693,7 +751,7 @@
   ],
   "walkthroughs": [],
   "attestationsDerived": {
-    "catalogued": 35,
+    "catalogued": 36,
     "excludedWithReason": 0,
     "notYetReviewed": 185
   },
@@ -726,7 +784,7 @@
     {
       "group": "medicareAndAca",
       "path": "calculation-coverage/medicareAndAca.json",
-      "recordCount": 1
+      "recordCount": 11
     },
     {
       "group": "monteCarlo",
@@ -739,6 +797,11 @@
       "recordCount": 8
     },
     {
+      "group": "rmd",
+      "path": "calculation-coverage/rmd.json",
+      "recordCount": 6
+    },
+    {
       "group": "roth",
       "path": "calculation-coverage/roth.json",
       "recordCount": 1
@@ -746,17 +809,17 @@
     {
       "group": "socialSecurity",
       "path": "calculation-coverage/socialSecurity.json",
-      "recordCount": 1
+      "recordCount": 10
     },
     {
       "group": "spendingAndWithdrawals",
       "path": "calculation-coverage/spendingAndWithdrawals.json",
-      "recordCount": 6
+      "recordCount": 9
     },
     {
       "group": "taxes",
       "path": "calculation-coverage/taxes.json",
-      "recordCount": 7
+      "recordCount": 13
     }
   ]
 }

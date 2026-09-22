@@ -167,7 +167,10 @@ function noCreditResult(
 
 /**
  * Monthly planning-year allowable PTC. The SLCSP determines the preliminary
- * credit; actual enrollment premium caps the allowable credit.
+ * credit; actual enrollment premium caps the allowable credit. The annual
+ * expected contribution is applied month by month as one twelfth against
+ * each month's benchmark premium: `min(enrollment, max(0, benchmark −
+ * contribution / 12))`, summed over the months with enrollment.
  */
 export function acaEconomicPremiumByMonth(
   pack: ParameterPack,

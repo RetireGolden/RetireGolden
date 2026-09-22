@@ -57,7 +57,9 @@ export const SEPP_AMORTIZATION_RATE_PCT = 5
 /**
  * A SEPP must run for the LONGER of 5 years or until age 59½ (≈ the engine's
  * age-60 penalty boundary). Active in the year the owner attains `age` when the
- * election has started and neither condition has yet been satisfied.
+ * election has started and at least one of the two conditions is still
+ * unsatisfied (age below 60, or fewer than five years since the start age):
+ * the series stays active until both are satisfied.
  */
 export function seppActive(startAge: number, age: number): boolean {
   if (age < startAge) return false

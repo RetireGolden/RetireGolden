@@ -7,6 +7,344 @@
 import type { CalculationRecord } from '../calculationRegistry.js'
 
 export const medicareAndAcaRecords = {
+  'aca-400-percent-cliff': {
+    title: 'ACA 400% FPL cliff',
+    purpose: 'Allow the premium tax credit at exactly 400% of the poverty line and deny it one dollar above.',
+    kind: 'data',
+    outputs: [],
+    feeds: [
+      'aca-modeled-allowable-ptc-annual',
+      'aca-economic-net-premium-annual',
+      'spending-healthcare-annual',
+    ],
+    statement:
+      'tax/aca.ts#acaEconomicPremiumByMonth allows 2026 PTC at exactly 400% FPL but no credit strictly above it, reflecting the restored post-2025 cliff: year2026.aca.maxFplPctForCredit is 400 and AcaResult.overCliff is true only above, not at, the ceiling. The separate 100% floor still applies, and below-100%-FPL exception pathways are outside this calculation. Units: percent of the federal poverty line, and nominal USD for the resulting credit.',
+    formula: {
+      expression: 'f = 100 x MAGI / FPL; overCliff = f > 400; credit = 0 when overCliff',
+      variables: [
+        { symbol: 'f', meaning: 'MAGI as a percentage of the regional poverty line', unit: 'percent', domain: 'nonnegative; Infinity when the poverty line is zero' },
+        { symbol: 'MAGI', meaning: 'ACA household MAGI for the coverage year', unit: 'usd/year', domain: 'nonnegative' },
+        { symbol: 'FPL', meaning: 'Regional federal poverty line for the household size', unit: 'usd/year', domain: 'positive' },
+      ],
+      timing: 'one coverage year',
+      rounding: 'none; the comparison is on the unrounded percentage',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/medicare-and-aca/aca-400-percent-cliff.md',
+    },
+    limits: [
+      'The cliff is the only eligibility question this record answers: the separate below-100%-FPL floor and its exception pathways are outside it',
+      'It is annual planning math, not APTC cash timing or a Form 8962 reconciliation',
+    ],
+    implementedBy: ['packages/engine/src/tax/aca.ts'],
+    implementedByFunctions: ['packages/engine/src/tax/aca.ts#acaEconomicPremiumByMonth'],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
+  'aca-allowable-premium-tax-credit': {
+    title: 'ACA modeled allowable premium tax credit',
+    purpose: 'Size the credit from the benchmark premium less the expected contribution, capped by what the household actually enrolled in.',
+    kind: 'formula',
+    outputs: ['aca-modeled-allowable-ptc-annual'],
+    feeds: ['aca-economic-net-premium-annual', 'spending-healthcare-annual'],
+    statement:
+      'tax/aca.ts#acaEconomicPremiumByMonth computes current-year modeled allowable PTC from the SLCSP benchmark less the expected contribution, floored at zero and capped by the actual enrollment premium. The month loop applies both the floor and the enrollment cap on each month against a twelfth of the annual contribution, so the annual figure is the sum of twelve monthly credits. Units: nominal USD. Rounding: none stated.',
+    formula: {
+      expression: 'P = sum over months m of min(E_m, max(0, S_m - C/12))',
+      variables: [
+        { symbol: 'E_m', meaning: 'Enrollment premium for month m', unit: 'usd/month', domain: 'nonnegative' },
+        { symbol: 'S_m', meaning: 'Applicable SLCSP benchmark premium for month m', unit: 'usd/month', domain: 'nonnegative' },
+        { symbol: 'C', meaning: 'Expected annual contribution toward the benchmark premium', unit: 'usd/year', domain: 'nonnegative' },
+      ],
+      timing: 'twelve coverage months of one year',
+      rounding: 'none stated',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/medicare-and-aca/aca-allowable-premium-tax-credit.md',
+    },
+    limits: [
+      'Annual planning math: APTC cash timing, refunds and balances due, and Form 8962 reconciliation are outside this module',
+      'A month with no enrollment premium contributes no benchmark and no credit, so the annual benchmark is the enrolled-month benchmark rather than a full-year figure',
+    ],
+    implementedBy: ['packages/engine/src/tax/aca.ts'],
+    implementedByFunctions: ['packages/engine/src/tax/aca.ts#acaEconomicPremiumByMonth'],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
+  'aca-economic-net-premium': {
+    title: 'ACA economic net premium',
+    purpose: 'Publish what the household actually bears: gross enrollment premium less the modeled allowable credit.',
+    kind: 'formula',
+    outputs: ['aca-economic-net-premium-annual'],
+    feeds: ['spending-healthcare-annual'],
+    statement:
+      'tax/aca.ts#acaEconomicPremiumByMonth computes annual economic net premium as gross enrollment premium minus modeled allowable PTC. The monthly credit is itself capped at that month\'s enrollment premium, so the difference cannot fall below zero. Units: nominal USD. Rounding: none stated.',
+    formula: {
+      expression: 'N = E - P, where each month\'s P is capped at that month\'s E',
+      variables: [
+        { symbol: 'E', meaning: 'Gross annual enrollment premium', unit: 'usd/year', domain: 'nonnegative' },
+        { symbol: 'P', meaning: 'Modeled allowable premium tax credit', unit: 'usd/year', domain: '0 <= P <= E' },
+      ],
+      timing: 'one coverage year',
+      rounding: 'none stated',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/medicare-and-aca/aca-economic-net-premium.md',
+    },
+    limits: [
+      'Economic cost, not cash timing: advance payments of the credit are not modeled, so this is not what the household pays month to month',
+      'The zero floor the worksheet states is enforced by the per-month enrollment cap inside the credit, not by a second clamp on the difference',
+    ],
+    implementedBy: ['packages/engine/src/tax/aca.ts'],
+    implementedByFunctions: ['packages/engine/src/tax/aca.ts#acaEconomicPremiumByMonth'],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
+  'aca-expected-contribution': {
+    title: 'ACA expected contribution',
+    purpose: 'Price the household\'s own share of the benchmark premium from its income as a percentage of the poverty line.',
+    kind: 'composition',
+    outputs: [],
+    feeds: ['aca-modeled-allowable-ptc-annual', 'aca-economic-net-premium-annual'],
+    statement:
+      'tax/aca.ts#acaFederalPovertyLine, #acaApplicablePct and #acaEconomicPremiumByMonth compute the 2026 expected annual benchmark-premium contribution as household MAGI times the piecewise-linear applicable percentage selected from MAGI as a percentage of the regional poverty line. The poverty line is the first-person amount plus one additional-person amount for each member past the first; the applicable percentage is interpolated between pack breakpoints with a real step at exactly 133%. Units: nominal USD. Rounding: none stated.',
+    formula: {
+      expression: 'FPL = (first + (h - 1) x perAdditional) x fplScale; f = 100 x M / FPL; C = M x r(f) / 100',
+      variables: [
+        { symbol: 'h', meaning: 'Household size', unit: 'people', domain: 'integer >= 1' },
+        { symbol: 'M', meaning: 'Household MAGI', unit: 'usd/year', domain: 'nonnegative' },
+        { symbol: 'f', meaning: 'MAGI as a percentage of the poverty line', unit: 'percent', domain: 'nonnegative' },
+        { symbol: 'r(f)', meaning: 'Applicable percentage interpolated from year2026.aca.applicablePctBreakpoints', unit: 'percent', domain: 'positive' },
+      ],
+      timing: 'one coverage year',
+      rounding: 'none stated',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/medicare-and-aca/aca-expected-contribution.md',
+    },
+    limits: [
+      'The contribution is an intermediate: no census family publishes it, and it is visible only through the credit and the net premium it produces',
+      'The applicable-percentage curve is linear between published breakpoints with a discontinuous step at exactly 133%; it is the pack\'s reproduction of a published table, not a statutory formula',
+    ],
+    implementedBy: ['packages/engine/src/tax/aca.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/tax/aca.ts#acaFederalPovertyLine',
+      'packages/engine/src/tax/aca.ts#acaApplicablePct',
+      'packages/engine/src/tax/aca.ts#acaEconomicPremiumByMonth',
+    ],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
+  'aca-household-magi-composition': {
+    title: 'ACA household MAGI composition',
+    purpose: 'Assemble the program-specific household income the credit is measured against.',
+    kind: 'composition',
+    outputs: ['magi-annual'],
+    feeds: ['aca-modeled-allowable-ptc-annual', 'aca-economic-net-premium-annual'],
+    statement:
+      'tax/aca.ts#buildAcaHouseholdMagi computes current-year ACA household MAGI as federal AGI plus nontaxable Social Security (gross less taxable), plus known tax-exempt interest, plus the known foreign-exclusion addback, plus the MAGI of dependents required to file, floored at zero. Unknown tax-exempt interest, an unknown foreign addback or an unknown dependent filing status make the result non-actionable and publish a null MAGI with blockers instead. These addbacks change ACA MAGI evidence only and are never fed back into ordinary taxable income. Units: nominal USD. Rounding: none.',
+    formula: {
+      expression: 'MAGI = max(0, AGI + max(0, SSgross - SStaxable) + TEI + FEA + sum of required-filer dependent MAGI)',
+      variables: [
+        { symbol: 'AGI', meaning: 'Federal adjusted gross income, carried signed until the household floor', unit: 'usd/year', domain: 'any finite number' },
+        { symbol: 'SSgross', meaning: 'Gross Social Security benefits', unit: 'usd/year', domain: 'nonnegative' },
+        { symbol: 'SStaxable', meaning: 'Taxable share of those benefits', unit: 'usd/year', domain: 'nonnegative' },
+        { symbol: 'TEI', meaning: 'Tax-exempt interest, counted only when its state is known', unit: 'usd/year', domain: 'nonnegative' },
+        { symbol: 'FEA', meaning: 'Foreign-exclusion addback, counted only when its state is known', unit: 'usd/year', domain: 'nonnegative' },
+      ],
+      timing: 'one coverage year',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/medicare-and-aca/aca-household-magi-composition.md',
+    },
+    limits: [
+      'Only dependents whose filing status is required contribute; a not-required dependent contributes zero and an unknown one blocks the whole result rather than being guessed',
+      'This is the ACA program MAGI, a different quantity from the IRMAA ledger MAGI on YearResult.magi even though both are catalogued under magi-annual',
+    ],
+    implementedBy: ['packages/engine/src/tax/aca.ts'],
+    implementedByFunctions: ['packages/engine/src/tax/aca.ts#buildAcaHouseholdMagi'],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
+  'irmaa-lookback-selection': {
+    title: 'IRMAA lookback MAGI selection',
+    purpose: 'Choose which calendar year\'s MAGI, and from which source, prices a premium year\'s IRMAA.',
+    kind: 'model',
+    outputs: [],
+    feeds: ['irmaa-surcharge-annual', 'medicare-premiums-annual'],
+    statement:
+      'projection/internal/annualHealthcareExpenses.ts#annualHealthcareExpenses resolves premium-year IRMAA MAGI from year minus two, except that an active SSA-44 life-changing event selects year minus one only when it is strictly lower; a tie retains year minus two and its source. For lookback years before the projection ledger, projection/simulate.ts#simulatePlan resolves them through its own resolveMagiFor closure, which falls back to the plan\'s matching historicalAnnualMagiByYear entry, then to its coarse recentAnnualMagi stand-in, and publishes which arm supplied the figure. Units: calendar years, nominal USD and a source enum. Rounding: none; the selection performs no numerical approximation.',
+    formula: {
+      expression:
+        'primary = resolveMagiFor(y - 2); selected = ssa44(y) and resolveMagiFor(y - 1).magi < primary.magi ? resolveMagiFor(y - 1) : primary',
+      variables: [
+        { symbol: 'y', meaning: 'Premium year being priced', unit: 'year', domain: 'integer' },
+        { symbol: 'primary.magi', meaning: 'Ledger or fallback MAGI for year minus two', unit: 'usd/year', domain: 'nonnegative' },
+        { symbol: 'ssa44(y)', meaning: 'Whether an SSA-44 life-changing event is active in y', unit: 'boolean', domain: 'true or false' },
+      ],
+      timing: 'once per premium year',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/medicare-and-aca/irmaa-lookback-selection.md',
+    },
+    limits: [
+      'The comparison is strictly lower, so equal MAGIs keep the ordinary two-year year; reading it as always selecting year minus one under SSA-44 changes the tie case',
+      'The planFallback arm is the coarse recentAnnualMagi stand-in, published as evidence of which arm answered rather than as evidence of the household\'s income',
+      'The selection is asserted two ways: the three SSA-44 branches through annualHealthcareExpenses with resolveMagiFor supplied at its documented injection point, and the two first-year fallback arms through a real simulatePlan run that publishes irmaaLookbackMagi, its source and its year. The fallback resolver is a closure inside simulatePlan rather than a module-scope symbol, so the pin names the exported function that owns it',
+    ],
+    implementedBy: [
+      'packages/engine/src/projection/internal/annualHealthcareExpenses.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualHealthcareExpenses.ts#annualHealthcareExpenses',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+    ],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
+  'medicare-base-part-b-premium': {
+    title: 'Medicare base Part B premium',
+    purpose: 'Annualize the standard Part B premium for a covered person at tier 0.',
+    kind: 'data',
+    outputs: ['medicare-premiums-annual', 'irmaa-surcharge-annual'],
+    feeds: ['spending-healthcare-annual'],
+    statement:
+      'tax/medicare.ts#medicareAnnualPremiumPerPerson publishes the 2026 standard Part B premium per Medicare-covered person as year2026.medicare.partBStandardMonthly times twelve, with no Part D surcharge and no IRMAA surcharge at tier 0. Units: nominal USD per person per year. Rounding: none stated.',
+    formula: {
+      expression: 'partBAnnual = base x (applicablePct / 25) x premiumScale x 12; at tier 0 applicablePct = 25',
+      variables: [
+        { symbol: 'base', meaning: 'year2026.medicare.partBStandardMonthly', unit: 'usd/person/month', domain: 'positive' },
+        { symbol: 'applicablePct', meaning: 'Beneficiary share of program cost; 25 at tier 0', unit: 'percent', domain: '25 <= applicablePct <= 85' },
+        { symbol: 'premiumScale', meaning: 'Healthcare-inflation scale to the premium year', unit: '1', domain: 'positive; 1 in the pack year' },
+      ],
+      timing: 'one premium year, per covered person',
+      rounding: 'none stated',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/medicare-and-aca/medicare-base-part-b-premium.md',
+    },
+    limits: [
+      'Per person, not per household: a two-person Medicare year charges this twice',
+      'The Part D out-of-pocket threshold the pack also carries is not a premium and never enters this figure',
+    ],
+    implementedBy: ['packages/engine/src/tax/medicare.ts'],
+    implementedByFunctions: ['packages/engine/src/tax/medicare.ts#medicareAnnualPremiumPerPerson'],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
+  'medicare-irmaa-first-tier-boundary': {
+    title: 'Medicare IRMAA first-tier boundary',
+    purpose: 'Price the cliff at the first IRMAA threshold, on both sides of the same dollar.',
+    kind: 'formula',
+    outputs: ['medicare-premiums-annual', 'irmaa-surcharge-annual'],
+    feeds: ['spending-healthcare-annual'],
+    statement:
+      'tax/medicare.ts#medicareAnnualPremiumPerPerson applies the 2026 single-filer first IRMAA tier only when two-year-lookback MAGI is strictly greater than the tier\'s magiOver, then prices Part B at the tier\'s applicable percentage over the 25% standard share and adds the published monthly Part D surcharge. The IRMAA-only surcharge is the Part B amount above standard plus the Part D surcharge. Units: nominal USD per person per year, and an integer tier. Rounding: none stated.',
+    formula: {
+      expression:
+        'tier = 1 when MAGI > magiOver; partBMonthly = base x (applicablePct / 25); irmaaSurchargeAnnual = max(0, partBMonthly - base) x 12 + partDSurchargeMonthly x 12',
+      variables: [
+        { symbol: 'MAGI', meaning: 'Two-year-lookback MAGI', unit: 'usd/year', domain: 'nonnegative' },
+        { symbol: 'magiOver', meaning: 'First-tier floor, year2026.medicare.irmaaTiers[0].magiOver for the filing status', unit: 'usd/year', domain: 'positive' },
+        { symbol: 'applicablePct', meaning: 'First-tier share of program cost', unit: 'percent', domain: 'greater than 25' },
+        { symbol: 'partDSurchargeMonthly', meaning: 'First-tier Part D surcharge', unit: 'usd/person/month', domain: 'nonnegative, or null when unverified' },
+      ],
+      timing: 'one premium year, per covered person',
+      rounding: 'none stated',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/medicare-and-aca/medicare-irmaa-first-tier-boundary.md',
+    },
+    limits: [
+      'The applicable percentage is a share of program cost, not a surcharge percentage: reading 35% as standard plus 35% understates every tier',
+      'The lower tiers use a strict greater-than test and only the top tier is inclusive; that asymmetry is the module\'s own stated convention',
+      'A tier whose Part D surcharge is unpublished sets partDSurchargeUnverified rather than inventing a figure; this record is asserted on the first tier, whose surcharge is published',
+    ],
+    implementedBy: ['packages/engine/src/tax/medicare.ts'],
+    implementedByFunctions: ['packages/engine/src/tax/medicare.ts#medicareAnnualPremiumPerPerson'],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
+  'medicare-irmaa-two-year-lookback': {
+    title: 'Medicare IRMAA two-year lookback',
+    purpose: 'Name which calendar year\'s MAGI a premium year reads.',
+    kind: 'data',
+    outputs: [],
+    feeds: ['medicare-premiums-annual', 'irmaa-surcharge-annual'],
+    statement:
+      'tax/medicare.ts#medicareAnnualPremiumPerPerson selects an IRMAA tier for a premium year from MAGI two calendar years prior, so 2026 premiums use 2024 MAGI rather than current-year or prior-year MAGI. The rule is a timing selector, not a MAGI forecast: the caller resolves the figure and the module names its input magiTwoYearsPrior. Units: calendar years and nominal USD. Rounding: none.',
+    formula: {
+      expression: 'lookbackYear = premiumYear - 2; tier = tierFor(magi[lookbackYear])',
+      variables: [
+        { symbol: 'premiumYear', meaning: 'Year the premium is charged', unit: 'year', domain: 'integer' },
+        { symbol: 'magi[y]', meaning: 'Ledger MAGI for calendar year y', unit: 'usd/year', domain: 'nonnegative' },
+      ],
+      timing: 'once per premium year',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/medicare-and-aca/medicare-irmaa-two-year-lookback.md',
+    },
+    limits: [
+      'The two-year offset is the ordinary rule; an active SSA-44 life-changing event can substitute the year-minus-one figure when it is lower, which is the separate irmaa-lookback-selection record',
+      'The module takes the already-resolved lookback figure, so this record pins which year the caller must hand it, not how that year\'s MAGI was computed',
+    ],
+    implementedBy: ['packages/engine/src/tax/medicare.ts'],
+    implementedByFunctions: ['packages/engine/src/tax/medicare.ts#medicareAnnualPremiumPerPerson'],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
+  'medicare-magi-composition': {
+    title: 'Ledger MAGI composition',
+    purpose: 'Publish the five-term annual MAGI the IRMAA lookback and the ACA credit both read.',
+    kind: 'composition',
+    outputs: ['magi-annual'],
+    feeds: ['irmaa-surcharge-annual', 'medicare-premiums-annual'],
+    statement:
+      'projection/internal/types/result.ts#YearResult.magi publishes max(0, ordinary income realized + realized gains + qualified dividends + taxable Social Security + tax-exempt interest); projection/internal/annualFundingApplicationAndClosePhase.ts#annualFundingApplicationAndClosePhase is the site that computes it and writes the year into magiHistory. Untaxed Social Security is not a separate add-back, and foreign income enters only indirectly through taxable-Social-Security provisional income. Units: nominal USD. Rounding: none; the only transformation is the zero floor.',
+    formula: {
+      expression: 'magi = max(0, ordinaryRealized + gainsRealized + qualifiedDividends + taxableSs + taxExemptInterest)',
+      variables: [
+        { symbol: 'ordinaryRealized', meaning: 'Ordinary income realized this year, the carryforward netting\'s ordinaryAfter', unit: 'usd/year', domain: 'nonnegative; the netting floors it at zero' },
+        { symbol: 'gainsRealized', meaning: 'Signed net capital gain after carryforward netting', unit: 'usd/year', domain: 'at or above minus the annual ordinary-offset limit' },
+        { symbol: 'qualifiedDividends', meaning: 'Qualified dividends realized this year', unit: 'usd/year', domain: 'nonnegative' },
+        { symbol: 'taxableSs', meaning: 'Taxable share of Social Security under section 86', unit: 'usd/year', domain: 'nonnegative' },
+        { symbol: 'taxExemptInterest', meaning: 'Federally tax-exempt interest realized this year', unit: 'usd/year', domain: 'nonnegative' },
+      ],
+      timing: 'once per projection year, in the funding-and-close phase',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/medicare-and-aca/medicare-magi-composition.md',
+    },
+    limits: [
+      'Asserted on real simulatePlan runs rather than at a seam. The positive case is a real plan whose single year realizes all five terms exactly as the worksheet states them (a recurring ordinary stream, a one-time capital-gain income, a taxable account whose wholly qualified dividend yield and municipal sleeve carry the third and fifth terms, and a Social Security benefit sized so that section 86 makes exactly the fourth taxable, with cost basis equal to balance so nothing else can realize a gain), and the published magi is checked against that year\'s own published components',
+      'The worksheet\'s floor case is not reachable as written: it gives ordinary income realized as minus 10,000, which the ledger cannot produce, because that term is applyCapitalLossCarryforward\'s ordinaryAfter and is floored at zero. The floor is instead asserted on the only negative sum the ledger can reach, a deductible capital loss on the capital line with nothing else realized, which the worksheet\'s third wrong reading would publish as a negative MAGI',
+    ],
+    implementedBy: [
+      'packages/engine/src/projection/internal/types/result.ts',
+      'packages/engine/src/projection/internal/annualFundingApplicationAndClosePhase.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/internal/types/result.ts#YearResult.magi',
+      'packages/engine/src/projection/internal/annualFundingApplicationAndClosePhase.ts#annualFundingApplicationAndClosePhase',
+    ],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
   'scenario-irmaa-surcharge-tier-years': {
     title: 'Scenario comparison: years in an IRMAA surcharge tier',
     purpose:
