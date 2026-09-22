@@ -1,6 +1,6 @@
 # Mutation receipt: simple-candidate-evaluation-comparison
 
-Executed 2026-09-18 against RetireGolden base `2c07f0d7` (branch `claude/b1-p4-cards-slice-twelve`) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-twelve` at base `2c07f0d7`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/decisions/evaluateCandidate.ts`
 
@@ -30,14 +30,22 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed. Exit code: 1.
+Re-executed 2026-09-22 on the pull-request branch after the review of #730: the branch was renamed for the pull request, so every capture, blob hash and revert note is refreshed against this head. The baseline is green (optimizePlan.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/TEMP/rg-s12/packages/engine
+RUN  v5.0.0 C:/TEMP/rg-rehearse2/packages/engine
 
- ❯ src/projection/optimizePlan.evidence.test.ts (10 tests | 1 failed) 28ms
+ ❯ src/projection/optimizePlan.evidence.test.ts (17 tests | 1 failed) 288ms
    ❯ simple-candidate-evaluation-comparison — Simple candidate evaluation comparison (3)
-     × sums 20000.75 of candidate conversions and publishes 25250.25, 7500.75 and 2 years 6ms
+     × sums 20000.75 of candidate conversions and publishes 25250.25, 7500.75 and 2 years 7ms
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 16 passed (17)
+
+  Transform  transforming modules took 2.52s · 42% of tracked time, re-done on every run
+             persist transforms across runs with fsModuleCache: true
+             learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
+
 
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
 
@@ -50,21 +58,17 @@ AssertionError: expected 1 to be 2 // Object.is equality
 - 2
 + 1
 
- ❯ src/projection/optimizePlan.evidence.test.ts:569:40
-    567|       // against the baseline's 2034 depletion year; using endYear its…
-    568|       // worksheet's wrong reading, would publish 1.
-    569|       expect(row.moneyLastsYearsDelta).toBe(example.expected.moneyLast…
+ ❯ src/projection/optimizePlan.evidence.test.ts:581:40
+    579|       // against the baseline's 2034 depletion year; using endYear its…
+    580|       // worksheet's wrong reading, would publish 1.
+    581|       expect(row.moneyLastsYearsDelta).toBe(example.expected.moneyLast…
        |                                        ^
-    570|       // The reversed-subtraction wrong readings.
-    571|       expect(row.afterTaxEstateDelta).not.toBe(-expectedEstate)
+    582|       // The reversed-subtraction wrong readings.
+    583|       expect(row.afterTaxEstateDelta).not.toBe(-expectedEstate)
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
-
-
- Test Files  1 failed (1)
-      Tests  1 failed | 9 passed (10)
 ```
 
 ## Revert
 
-`git checkout -- packages/engine/src/decisions/evaluateCandidate.ts` restored the file, and `git diff --quiet -- packages/engine/src/decisions/evaluateCandidate.ts` then exited 0, confirming no production change remained. Re-ran the named command after restoration: the named file passed again (10 passed, exit 0).
+The original bytes of `packages/engine/src/decisions/evaluateCandidate.ts` were written back and compared byte for byte in the harness, and `git diff --quiet -- packages/engine/src/decisions/evaluateCandidate.ts` then exited 0, confirming no production change remained. Re-ran the named command after restoration: the suite returned to its baseline state, green (exit 0).

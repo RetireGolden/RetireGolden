@@ -1,6 +1,6 @@
 # Mutation receipt: exact-ledger-conversion-execution
 
-Executed 2026-09-18 against RetireGolden base `2c07f0d7` (branch `claude/b1-p4-cards-slice-twelve`) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-twelve` at base `2c07f0d7`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/decisions/evaluateCandidate.ts`
 
@@ -32,14 +32,22 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed. Exit code: 1.
+Re-executed 2026-09-22 on the pull-request branch after the review of #730: the branch was renamed for the pull request, so every capture, blob hash and revert note is refreshed against this head. The baseline is green (optimizePlan.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/TEMP/rg-s12/packages/engine
+RUN  v5.0.0 C:/TEMP/rg-rehearse2/packages/engine
 
- ❯ src/projection/optimizePlan.evidence.test.ts (10 tests | 1 failed) 30ms
+ ❯ src/projection/optimizePlan.evidence.test.ts (17 tests | 1 failed) 290ms
    ❯ exact-ledger-conversion-execution — Exact ledger conversion execution (4)
      × returns null when the only shortfall equals its own margin 3ms
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 16 passed (17)
+
+  Transform  transforming modules took 2.52s · 42% of tracked time, re-done on every run
+             persist transforms across runs with fsModuleCache: true
+             learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
+
 
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
 
@@ -52,21 +60,17 @@ null
 + Received:
 2040
 
- ❯ src/projection/optimizePlan.evidence.test.ts:315:56
-    313|       // 20000 requested, 19000 executed: the shortfall is 1000 and th…
-    314|       // is max(1000, 1000); "more than" is strict, so 2040 does not q…
-    315|       expect(validation.firstMateriallyUnexecutedYear).toBe(example.ex…
+ ❯ src/projection/optimizePlan.evidence.test.ts:327:56
+    325|       // 20000 requested, 19000 executed: the shortfall is 1000 and th…
+    326|       // is max(1000, 1000); "more than" is strict, so 2040 does not q…
+    327|       expect(validation.firstMateriallyUnexecutedYear).toBe(example.ex…
        |                                                        ^
-    316|     })
-    317|
+    328|     })
+    329|
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
-
-
- Test Files  1 failed (1)
-      Tests  1 failed | 9 passed (10)
 ```
 
 ## Revert
 
-`git checkout -- packages/engine/src/decisions/evaluateCandidate.ts` restored the file, and `git diff --quiet -- packages/engine/src/decisions/evaluateCandidate.ts` then exited 0, confirming no production change remained. The same revert and the same check were run after the non-observable total-margin attempt described above. Re-ran the named command after restoration: the named file passed again (10 passed, exit 0).
+The original bytes of `packages/engine/src/decisions/evaluateCandidate.ts` were written back and compared byte for byte in the harness, and `git diff --quiet -- packages/engine/src/decisions/evaluateCandidate.ts` then exited 0, confirming no production change remained. Re-ran the named command after restoration: the suite returned to its baseline state, green (exit 0).

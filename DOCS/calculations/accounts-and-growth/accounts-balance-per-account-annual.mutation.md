@@ -1,6 +1,6 @@
 # Mutation receipt: accounts-balance-per-account-annual
 
-Executed 2026-09-18 against RetireGolden base `1452ae11` (branch `claude/b1-p4-cards-slice-thirteen`) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-thirteen` at base `1452ae11`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/projection/internal/annualSnapshot.ts`
 
@@ -30,15 +30,22 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and cache-hint lines were removed. Exit code: 1.
+Re-executed 2026-09-22 on the pull-request branch after the review of #730: the branch was renamed for the pull request, so every capture, blob hash and revert note is refreshed against this head. The baseline is green (annualSnapshot.balances.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed. Exit code: 1.
 
 ```
+RUN  v5.0.0 C:/TEMP/rg-rehearse2/packages/engine
 
- RUN  v5.0.0 C:/TEMP/rg-s13/packages/engine
-
- ❯ src/projection/internal/annualSnapshot.balances.evidence.test.ts (2 tests | 1 failed) 30ms
+ ❯ src/projection/internal/annualSnapshot.balances.evidence.test.ts (2 tests | 1 failed) 29ms
    ❯ accounts-balance-per-account-annual — Year-end balance map: one entry per id, written channel by channel (2)
-     × writes each channel its own year-end figure, netting nothing across them 29ms
+     × writes each channel its own year-end figure, netting nothing across them 28ms
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 1 passed (2)
+
+  Transform  transforming modules took 2.42s · 43% of tracked time, re-done on every run
+             persist transforms across runs with fsModuleCache: true
+             learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
+
 
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
 
@@ -61,12 +68,8 @@ AssertionError: debt-1 -26000 is not within {"abs":0.005} of 26000: expected fal
  ❯ src/projection/internal/annualSnapshot.balances.evidence.test.ts:97:7
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
-
-
- Test Files  1 failed (1)
-      Tests  1 failed | 1 passed (2)
 ```
 
 ## Revert
 
-`git checkout -- packages/engine/src/projection/internal/annualSnapshot.ts` restored the file, and `git diff --quiet -- packages/engine/src/projection/internal/annualSnapshot.ts` then exited 0, confirming no production change remained. Re-ran the named command after restoration: the named file passed again (2 passed, exit 0).
+The original bytes of `packages/engine/src/projection/internal/annualSnapshot.ts` were written back and compared byte for byte in the harness, and `git diff --quiet -- packages/engine/src/projection/internal/annualSnapshot.ts` then exited 0, confirming no production change remained. Re-ran the named command after restoration: the suite returned to its baseline state, green (exit 0).

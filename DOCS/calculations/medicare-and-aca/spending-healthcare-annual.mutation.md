@@ -1,6 +1,6 @@
 # Mutation receipt: spending-healthcare-annual
 
-Executed 2026-09-18 against RetireGolden base `1452ae11` (branch `claude/b1-p4-cards-slice-thirteen`) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-thirteen` at base `1452ae11`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/projection/internal/annualHealthcareExpenses.ts`
 
@@ -30,17 +30,24 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-Re-executed 2026-09-18 against base `e522ddfb`, after the worksheet was re-derived (the second person's four marketplace months carry the complementary eight Medicare months, so the household is one real plan whose total is $8,831.20) and its fixture rebuilt: each person's component on that person's own plan, and the total on a two-person household plan. The same mutation still fails, on all three tests. The baseline is green: `annualHealthcareExpenses.spendingHealthcare.evidence.test.ts` passes on unmodified production, so no deliberately red test remains. Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and cache-hint lines were removed. Exit code: 1.
+Re-executed 2026-09-22 on the pull-request branch after the review of #730: the branch was renamed for the pull request, so every capture, blob hash and revert note is refreshed against this head. The baseline is green (annualHealthcareExpenses.spendingHealthcare.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed. Exit code: 1.
 
 ```
+RUN  v5.0.0 C:/TEMP/rg-rehearse2/packages/engine
 
- RUN  v5.0.0 C:/TEMP/rg-s13/packages/engine
-
- ❯ src/projection/internal/annualHealthcareExpenses.spendingHealthcare.evidence.test.ts (3 tests | 3 failed) 33ms
+ ❯ src/projection/internal/annualHealthcareExpenses.spendingHealthcare.evidence.test.ts (3 tests | 3 failed) 36ms
    ❯ spending-healthcare-annual — Annual healthcare expense: Medicare, extras and marketplace premiums (3)
-     × charges the first person 4242.72: twelve Medicare months of tier premium plus scaled extras 28ms
+     × charges the first person 4242.72: twelve Medicare months of tier premium plus scaled extras 30ms
      × charges the second person 4588.48: 1760 of marketplace beside 2828.48 of Medicare 2ms
      × adds the two people to 8831.20 on one household plan 3ms
+
+ Test Files  1 failed (1)
+      Tests  3 failed (3)
+
+  Transform  transforming modules took 2.41s · 43% of tracked time, re-done on every run
+             persist transforms across runs with fsModuleCache: true
+             learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
+
 
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
 
@@ -103,12 +110,8 @@ AssertionError: household medicarePremiums 6568.3200000000015 is not within {"ab
  ❯ src/projection/internal/annualHealthcareExpenses.spendingHealthcare.evidence.test.ts:197:7
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
-
-
- Test Files  1 failed (1)
-      Tests  3 failed (3)
 ```
 
 ## Revert
 
-`git checkout -- packages/engine/src/projection/internal/annualHealthcareExpenses.ts` restored the file, and `git diff --quiet -- packages/engine/src/projection/internal/annualHealthcareExpenses.ts` then exited 0, confirming no production change remained. Re-ran the named command after restoration: the named file passed again (3 passed, exit 0).
+The original bytes of `packages/engine/src/projection/internal/annualHealthcareExpenses.ts` were written back and compared byte for byte in the harness, and `git diff --quiet -- packages/engine/src/projection/internal/annualHealthcareExpenses.ts` then exited 0, confirming no production change remained. Re-ran the named command after restoration: the suite returned to its baseline state, green (exit 0).

@@ -1,12 +1,12 @@
 # Mutation receipt: exact-ledger-cleaned-schedule
 
-Executed 2026-09-18 against RetireGolden base `a4a278ef` (branch `claude/b1-p4-cards-slice-fourteen`) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-fourteen` at base `a4a278ef`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/projection/optimizePlan.ts`
 
 ```diff
 diff --git a/packages/engine/src/projection/optimizePlan.ts b/packages/engine/src/projection/optimizePlan.ts
-index 09307876..3746ec8f 100644
+index 930a11ac..5e2083be 100644
 --- a/packages/engine/src/projection/optimizePlan.ts
 +++ b/packages/engine/src/projection/optimizePlan.ts
 @@ -2401,7 +2401,7 @@ function buildCleanedConversionsFromExecution(
@@ -30,15 +30,23 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and the transform-cache advisory were removed. Exit code: 1.
+Re-executed 2026-09-22 on the pull-request branch after the review of #730: the branch was renamed for the pull request, so every capture, blob hash and revert note is refreshed against this head. The baseline is green (optimizePlan.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed. Exit code: 1.
 
 ```
- RUN  v5.0.0 C:/TEMP/rg-s14/packages/engine
+RUN  v5.0.0 C:/TEMP/rg-rehearse2/packages/engine
 
- ❯ src/projection/optimizePlan.evidence.test.ts (17 tests | 2 failed) 281ms
+ ❯ src/projection/optimizePlan.evidence.test.ts (17 tests | 2 failed) 304ms
    ❯ exact-ledger-cleaned-schedule — Exact ledger cleaned schedule (2)
      × cleans $15,000 and $15,000 to $15,000 and $5,000, totalling $20,000 at a ratio of 1 8ms
      × records Y2 as ledger-capped, never the declared-but-never-assigned rounding 4ms
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 15 passed (17)
+
+  Transform  transforming modules took 2.53s · 42% of tracked time, re-done on every run
+             persist transforms across runs with fsModuleCache: true
+             learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
+
 
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
 
@@ -94,12 +102,8 @@ AssertionError: expected [] to deep equally contain { year: 2027, requested: 150
     866|       // Every reason this run assigned is one of the three live value…
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
-
-
- Test Files  1 failed (1)
-      Tests  2 failed | 15 passed (17)
 ```
 
 ## Revert
 
-`git checkout -- packages/engine/src/projection/optimizePlan.ts` restored the file, and `git diff --quiet -- packages/engine/src/projection/optimizePlan.ts` then exited 0, confirming no production change remained. Re-ran the named command after restoration: the named file passed again (17 passed, exit 0).
+The original bytes of `packages/engine/src/projection/optimizePlan.ts` were written back and compared byte for byte in the harness, and `git diff --quiet -- packages/engine/src/projection/optimizePlan.ts` then exited 0, confirming no production change remained. Re-ran the named command after restoration: the suite returned to its baseline state, green (exit 0).

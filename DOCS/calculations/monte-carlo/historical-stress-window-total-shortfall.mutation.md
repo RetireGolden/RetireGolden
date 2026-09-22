@@ -1,6 +1,6 @@
 # Mutation receipt: historical-stress-window-total-shortfall
 
-Executed 2026-09-18 against RetireGolden base `1452ae11` (branch `claude/b1-p4-cards-slice-thirteen`) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-thirteen` at base `1452ae11`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/montecarlo/historicalSuites.ts`
 
@@ -30,15 +30,22 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/montecarlo/
 
 ## Captured failing output
 
-Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and cache-hint lines were removed. Exit code: 1.
+Re-executed 2026-09-22 on the pull-request branch after the review of #730: the branch was renamed for the pull request, so every capture, blob hash and revert note is refreshed against this head. The baseline is green (historicalSuites.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed. Exit code: 1.
 
 ```
+RUN  v5.0.0 C:/TEMP/rg-rehearse2/packages/engine
 
- RUN  v5.0.0 C:/TEMP/rg-s13/packages/engine
-
- ❯ src/montecarlo/historicalSuites.evidence.test.ts (1 test | 1 failed) 95ms
+ ❯ src/montecarlo/historicalSuites.evidence.test.ts (1 test | 1 failed) 116ms
    ❯ historical-stress-window-total-shortfall — Historical stress window total shortfall (1)
-     × sums 0, 20000 and 60000 to 80000 over the replayed 2000-2002 window 94ms
+     × sums 0, 20000 and 60000 to 80000 over the replayed 2000-2002 window 115ms
+
+ Test Files  1 failed (1)
+      Tests  1 failed (1)
+
+  Transform  transforming modules took 2.37s · 42% of tracked time, re-done on every run
+             persist transforms across runs with fsModuleCache: true
+             learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
+
 
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
 
@@ -61,12 +68,8 @@ AssertionError: totalShortfall 20000 is not within {"abs":0.005} of 80000: expec
  ❯ src/montecarlo/historicalSuites.evidence.test.ts:81:7
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
-
-
- Test Files  1 failed (1)
-      Tests  1 failed (1)
 ```
 
 ## Revert
 
-`git checkout -- packages/engine/src/montecarlo/historicalSuites.ts` restored the file, and `git diff --quiet -- packages/engine/src/montecarlo/historicalSuites.ts` then exited 0, confirming no production change remained. Re-ran the named command after restoration: the named file passed again (1 passed, exit 0).
+The original bytes of `packages/engine/src/montecarlo/historicalSuites.ts` were written back and compared byte for byte in the harness, and `git diff --quiet -- packages/engine/src/montecarlo/historicalSuites.ts` then exited 0, confirming no production change remained. Re-ran the named command after restoration: the suite returned to its baseline state, green (exit 0).

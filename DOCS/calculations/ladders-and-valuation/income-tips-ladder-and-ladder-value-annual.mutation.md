@@ -1,6 +1,6 @@
 # Mutation receipt: income-tips-ladder-and-ladder-value-annual
 
-Executed 2026-09-18 against RetireGolden base `1452ae11` (branch `claude/b1-p4-cards-slice-thirteen`) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-thirteen` at base `1452ae11`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/ladder/ladderMath.ts`
 
@@ -30,16 +30,23 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and cache-hint lines were removed. Exit code: 1.
+Re-executed 2026-09-22 on the pull-request branch after the review of #730: the branch was renamed for the pull request, so every capture, blob hash and revert note is refreshed against this head. The baseline is green (tipsLadderAnnualCashFlow.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed. Exit code: 1.
 
 ```
+RUN  v5.0.0 C:/TEMP/rg-rehearse2/packages/engine
 
- RUN  v5.0.0 C:/TEMP/rg-s13/packages/engine
-
- ❯ src/projection/internal/tipsLadderAnnualCashFlow.evidence.test.ts (4 tests | 2 failed) 32ms
+ ❯ src/projection/internal/tipsLadderAnnualCashFlow.evidence.test.ts (4 tests | 2 failed) 31ms
    ❯ income-tips-ladder-and-ladder-value-annual — TIPS ladder annual cash and remaining ladder value (4)
      × pays 8820 at offset 1 and leaves 16800 of unmatured face 3ms
-     × publishes the same purchase-year branch on a real projection 25ms
+     × publishes the same purchase-year branch on a real projection 26ms
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 2 passed (4)
+
+  Transform  transforming modules took 2.38s · 45% of tracked time, re-done on every run
+             persist transforms across runs with fsModuleCache: true
+             learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
+
 
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
 
@@ -82,12 +89,8 @@ AssertionError: offset-1 published ladderValue 9818.360333824252 is not within {
  ❯ src/projection/internal/tipsLadderAnnualCashFlow.evidence.test.ts:165:7
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
-
-
- Test Files  1 failed (1)
-      Tests  2 failed | 2 passed (4)
 ```
 
 ## Revert
 
-`git checkout -- packages/engine/src/ladder/ladderMath.ts` restored the file, and `git diff --quiet -- packages/engine/src/ladder/ladderMath.ts` then exited 0, confirming no production change remained. Re-ran the named command after restoration: the named file passed again (4 passed, exit 0).
+The original bytes of `packages/engine/src/ladder/ladderMath.ts` were written back and compared byte for byte in the harness, and `git diff --quiet -- packages/engine/src/ladder/ladderMath.ts` then exited 0, confirming no production change remained. Re-ran the named command after restoration: the suite returned to its baseline state, green (exit 0).

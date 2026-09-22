@@ -1,6 +1,6 @@
 # Mutation receipt: sustainable-spending-result-simulation-count
 
-Executed 2026-09-18 against RetireGolden base `1452ae11` (branch `claude/b1-p4-cards-slice-thirteen`) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-thirteen` at base `1452ae11`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/decisions/spendingSolver.ts`
 
@@ -32,15 +32,22 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/decisions/s
 
 ## Captured failing output
 
-Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and cache-hint lines were removed. Exit code: 1.
+Re-executed 2026-09-22 on the pull-request branch after the review of #730: the branch was renamed for the pull request, so every capture, blob hash and revert note is refreshed against this head. The baseline is green (spendingSolver.simulationCount.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed. Exit code: 1.
 
 ```
+RUN  v5.0.0 C:/TEMP/rg-rehearse2/packages/engine
 
- RUN  v5.0.0 C:/TEMP/rg-s13/packages/engine
-
- ❯ src/decisions/spendingSolver.simulationCount.evidence.test.ts (2 tests | 1 failed) 80ms
+ ❯ src/decisions/spendingSolver.simulationCount.evidence.test.ts (2 tests | 1 failed) 55ms
    ❯ sustainable-spending-result-simulation-count — Sustainable-spending simulation count: the probe sequence, counted (2)
-     × counts six probes: the seed, two doublings and three halvings 71ms
+     × counts six probes: the seed, two doublings and three halvings 50ms
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 1 passed (2)
+
+  Transform  transforming modules took 2.52s · 44% of tracked time, re-done on every run
+             persist transforms across runs with fsModuleCache: true
+             learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
+
 
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
 
@@ -62,12 +69,8 @@ AssertionError: expected 5 to be 6 // Object.is equality
      77|       // The worksheet's three wrong readings.
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
-
-
- Test Files  1 failed (1)
-      Tests  1 failed | 1 passed (2)
 ```
 
 ## Revert
 
-`git checkout -- packages/engine/src/decisions/spendingSolver.ts` restored the file, and `git diff --quiet -- packages/engine/src/decisions/spendingSolver.ts` then exited 0, confirming no production change remained. Re-ran the named command after restoration: the named file passed again (2 passed, exit 0).
+The original bytes of `packages/engine/src/decisions/spendingSolver.ts` were written back and compared byte for byte in the harness, and `git diff --quiet -- packages/engine/src/decisions/spendingSolver.ts` then exited 0, confirming no production change remained. Re-ran the named command after restoration: the suite returned to its baseline state, green (exit 0).

@@ -1,12 +1,12 @@
 # Mutation receipt: social-security-benefit-annual
 
-Executed 2026-09-18 against RetireGolden base `1452ae11` (branch `claude/b1-p4-cards-slice-thirteen`) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-thirteen` at base `1452ae11`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/projection/internal/annualSocialSecurity.ts`
 
 ```diff
 diff --git a/packages/engine/src/projection/internal/annualSocialSecurity.ts b/packages/engine/src/projection/internal/annualSocialSecurity.ts
-index b0a5e41e..af6655b0 100644
+index 271d0d7b..ac504a63 100644
 --- a/packages/engine/src/projection/internal/annualSocialSecurity.ts
 +++ b/packages/engine/src/projection/internal/annualSocialSecurity.ts
 @@ -405,7 +405,7 @@ export function annualSocialSecurity(
@@ -30,15 +30,22 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-Re-executed 2026-09-18 against base `e522ddfb`, after the worksheet was re-derived (the current-spouse candidate is own monthly plus the capped excess, $36,000; the claim year is a realizable 64y3m claim on a 1960 birth, whose 49/60 factor and nine payable months come from the same claim age) and its fixture rebuilt around those values. The same mutation still fails, and it is now the ONLY failure: the two-person case that the first derivation disclosed as a discrepancy passes, so no deliberately red test remains and the baseline is green. Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and cache-hint lines were removed. Exit code: 1.
+Re-executed 2026-09-22 on the pull-request branch after the review of #730: the branch was renamed for the pull request, so every capture, blob hash and revert note is refreshed against this head. The baseline is green (annualSocialSecurity.benefitAnnual.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed. Exit code: 1.
 
 ```
+RUN  v5.0.0 C:/TEMP/rg-rehearse2/packages/engine
 
- RUN  v5.0.0 C:/TEMP/rg-s13/packages/engine
-
- ❯ src/projection/internal/annualSocialSecurity.benefitAnnual.evidence.test.ts (4 tests | 1 failed) 35ms
+ ❯ src/projection/internal/annualSocialSecurity.benefitAnnual.evidence.test.ts (4 tests | 1 failed) 37ms
    ❯ social-security-benefit-annual — Annual household Social Security benefit (4)
      × withholds half the excess wages below FRA, paying 19000 of a 24000 benefit 5ms
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 3 passed (4)
+
+  Transform  transforming modules took 2.37s · 44% of tracked time, re-done on every run
+             persist transforms across runs with fsModuleCache: true
+             learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
+
 
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
 
@@ -61,12 +68,8 @@ AssertionError: ssEarningsTestWithheld 3333.3333333333335 is not within {"abs":0
  ❯ src/projection/internal/annualSocialSecurity.benefitAnnual.evidence.test.ts:213:7
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
-
-
- Test Files  1 failed (1)
-      Tests  1 failed | 3 passed (4)
 ```
 
 ## Revert
 
-`git checkout -- packages/engine/src/projection/internal/annualSocialSecurity.ts` restored the file, and `git diff --quiet -- packages/engine/src/projection/internal/annualSocialSecurity.ts` then exited 0, confirming no production change remained. Re-ran the named command after restoration: the named file passed again (4 passed, exit 0).
+The original bytes of `packages/engine/src/projection/internal/annualSocialSecurity.ts` were written back and compared byte for byte in the harness, and `git diff --quiet -- packages/engine/src/projection/internal/annualSocialSecurity.ts` then exited 0, confirming no production change remained. Re-ran the named command after restoration: the suite returned to its baseline state, green (exit 0).
