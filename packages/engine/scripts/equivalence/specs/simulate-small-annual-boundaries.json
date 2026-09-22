@@ -81,7 +81,7 @@
         77,
         118
       ],
-      "note": "The corpus reaches the permanent-life kind filter, flat-rate and schedule modes, positive and zero settlement, and post-death zeroing. The missing-insured nullish operands on lines 81-82 are a defensive structural-input contract: Plan validation rejects an insurance subject absent from household.people, so no validated differential member can select those sub-line operands.",
+      "note": "The corpus reaches the permanent-life kind filter, flat-rate and schedule modes, positive and zero settlement, and post-death zeroing. The missing-insured nullish operands on lines 89-90 are a defensive structural-input contract: Plan validation rejects an insurance subject absent from household.people, so no validated differential member can select those sub-line operands.",
       "anchors": [
         {
           "line": 77,

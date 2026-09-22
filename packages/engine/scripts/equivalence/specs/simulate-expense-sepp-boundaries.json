@@ -131,7 +131,7 @@
         38,
         55
       ],
-      "note": "The corpus reaches alive and all-dead years, non-property skips, pre-sale and sale-year paths, duplicate ids, omitted cost fields, and both cost operands. The sole cold sub-line region is line 43's `?? null`: the dedicated projection members use owned properties, while the helper unit suite covers the supported ownerless-property record shape.",
+      "note": "The corpus reaches alive and all-dead years, non-property skips, pre-sale and sale-year paths, duplicate ids, omitted cost fields, and both cost operands. The sole cold sub-line region is line 50's `?? null`: the dedicated projection members use owned properties, while the helper unit suite covers the supported ownerless-property record shape.",
       "anchors": [
         {
           "line": 38,
