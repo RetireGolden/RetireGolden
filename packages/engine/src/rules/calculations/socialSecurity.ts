@@ -1,0 +1,44 @@
+/**
+ * Social Security calculation records.
+ *
+ * One slice of the calculation registry. `../calculationRegistry.ts` composes
+ * every slice into `CALCULATION_REGISTRY`; read it for what a record must carry.
+ */
+import type { CalculationRecord } from '../calculationRegistry.js'
+
+export const socialSecurityRecords = {
+  'ss-bridge-sizing': {
+    title: 'Social Security bridge: age-62 replacement sized as a TIPS ladder',
+    purpose:
+      'The real-dollar bridge that pays the forgone age-62 benefit from retirement until the chosen claim, quoted as a TIPS ladder bought this year.',
+    kind: 'formula',
+    outputs: ['social-security-bridge-sizing'],
+    // The detector sums these per-claimant quotes; it does not re-derive them.
+    feeds: ['insight-ss-bridge-gap-total'],
+    statement:
+      'Monthly age-62 benefit M = PIA × f_62; annual real amount A = 12M. startYear = max(age-62 year, retirementYear, currentYear+1). For a January claim (months = 0), endYear = claimYear − 1; for a mid-year claim, endYear = claimYear. years N = endYear − startYear + 1. ladderCost is the TIPS-ladder price of N annual real payments of A purchased in the current year. On a zero real curve with unit present value, cost = N A. Returns null when the claim is at or before 62 or the window is empty. Units: today\'s dollars and calendar years. Rounding: none.',
+    formula: {
+      expression: 'M = PIA × f_62; A = 12M; N = endYear − startYear + 1; cost = price of N real payments of A',
+      variables: [
+        { symbol: 'PIA', meaning: 'Primary insurance amount, monthly, today\'s dollars', unit: 'usd/month', domain: '> 0' },
+        { symbol: 'f_62', meaning: 'Claim factor at age 62, already resolved for the date of birth', unit: '1', domain: '0 < f_62 <= 1' },
+        { symbol: 'startYear', meaning: 'First calendar year the bridge pays', unit: 'year', domain: 'integer' },
+        { symbol: 'endYear', meaning: 'Last calendar year the bridge pays', unit: 'year', domain: 'integer >= startYear' },
+      ],
+      timing: 'annual real payments from startYear through endYear inclusive; ladder purchased in currentYear',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/social-security/ss-bridge-sizing.md',
+    },
+    limits: [
+      'The date formula (January claim ends the year before the claim year; start is the later of age 62, retirement, and next year) is the comments\' stated convention',
+      'Synthetic TIPS coupons are floored at 0.125% (ladderMath MIN_TIPS_COUPON_PCT). On the zero real curve the worksheet states, that floor is absorbed into the back-solved face amounts and the ladder cost equals N x A exactly, which the evidence asserts at 1e-9 (a passing check, not an assumption); on a nonzero curve the cost is the discounted ladder and differs from N x A, and the worksheet does not claim otherwise',
+    ],
+    implementedBy: ['packages/engine/src/ladder/bridge.ts'],
+    implementedByFunctions: ['packages/engine/src/ladder/bridge.ts#sizeBridge'],
+    verifiedOn: '2026-09-17',
+    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'cursor' },
+  },
+} satisfies Record<string, CalculationRecord>

@@ -21,6 +21,10 @@ import { accountsAndGrowthRecords } from './calculations/accountsAndGrowth.js'
 import { laddersAndValuationRecords } from './calculations/laddersAndValuation.js'
 import { longevityRecords } from './calculations/longevity.js'
 import { monteCarloRecords } from './calculations/monteCarlo.js'
+import { insightsRecords } from './calculations/insights.js'
+import { medicareAndAcaRecords } from './calculations/medicareAndAca.js'
+import { rothRecords } from './calculations/roth.js'
+import { socialSecurityRecords } from './calculations/socialSecurity.js'
 import { spendingAndWithdrawalsRecords } from './calculations/spendingAndWithdrawals.js'
 import { taxesRecords } from './calculations/taxes.js'
 import { optimizerAndComparisonsRecords } from './calculations/optimizerAndComparisons.js'
@@ -31,6 +35,10 @@ const RECORD_MODULES: readonly (readonly [string, Readonly<Record<string, unknow
   ['laddersAndValuation', laddersAndValuationRecords],
   ['longevity', longevityRecords],
   ['monteCarlo', monteCarloRecords],
+  ['insights', insightsRecords],
+  ['medicareAndAca', medicareAndAcaRecords],
+  ['roth', rothRecords],
+  ['socialSecurity', socialSecurityRecords],
   ['spendingAndWithdrawals', spendingAndWithdrawalsRecords],
   ['cashFlowAndSummary', cashFlowAndSummaryRecords],
   ['optimizerAndComparisons', optimizerAndComparisonsRecords],
