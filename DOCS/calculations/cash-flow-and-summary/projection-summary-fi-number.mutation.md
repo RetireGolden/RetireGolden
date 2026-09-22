@@ -1,12 +1,12 @@
 # Mutation receipt: projection-summary-fi-number
 
-Executed 2026-09-18 against RetireGolden base `74916a7e` (branch `claude/b1-p4-cards-slice-seven`) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-seven` at base `74916a7e`, and re-executed 2026-09-22 against RetireGolden base `7ae019a8` (branch `claude/b1-p4-cards-seven`, pull request #727) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/projection/compare.ts`
 
 ```diff
 diff --git a/packages/engine/src/projection/compare.ts b/packages/engine/src/projection/compare.ts
-index b2fd5c29..a9c3725a 100644
+index 893060b3..fa566a58 100644
 --- a/packages/engine/src/projection/compare.ts
 +++ b/packages/engine/src/projection/compare.ts
 @@ -326,7 +326,7 @@ export function summarizeProjection(plan: Plan, result: ProjectionResult): Proje
@@ -34,26 +34,25 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed. Exit code: 1.
+Re-executed 2026-09-22 on the pull-request branch after the review of #727: the heir-tax fixture had grown to two cases since the first execution and the branch was renamed for the pull request, so every capture, blob hash and revert note is refreshed against this head. The baseline is green (compareSummary.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/TEMP/rg-s7/packages/engine
+RUN  v5.0.0 C:/TEMP/rg-rehearse2/packages/engine
 
- ❯ src/projection/compareSummary.evidence.test.ts (14 tests | 5 failed) 18ms
+ ❯ src/projection/compareSummary.evidence.test.ts (15 tests | 4 failed) 23ms
    ❯ projection-summary-fi-number — Projection summary fi number (2)
      × deflates 92000 of 2030 outflows four years and divides by 4 percent 4ms
    ❯ projection-summary-fi-age — Projection summary fi age (2)
      × crosses inclusively in 2027 at age 47 and ignores the later sentinel row 1ms
    ❯ projection-summary-coast-fire-number — Projection summary coast fire number (2)
      × discounts the FI number four years at the simple real 4 percent 1ms
-     × equals the FI number when retirement age is already attained 0ms
-   ❯ projection-summary-estate-heir-tax — Projection summary estate heir tax (1)
-     × sums the resolved per-account heir tax to 61600.00 1ms
+     × equals the FI number when retirement age is already attained 1ms
 
  Test Files  1 failed (1)
-      Tests  5 failed | 9 passed (14)
+      Tests  4 failed | 11 passed (15)
 
-⎯⎯⎯⎯⎯⎯⎯ Failed Tests 5 ⎯⎯⎯⎯⎯⎯⎯
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
 
  FAIL  src/projection/compareSummary.evidence.test.ts > projection-summary-fi-number — Projection summary fi number > deflates 92000 of 2030 outflows four years and divides by 4 percent
 AssertionError: fiNumber: actual 266546.11437470664, worksheet 2043520.21020608: expected false to be true // Object.is equality
@@ -72,7 +71,7 @@ AssertionError: fiNumber: actual 266546.11437470664, worksheet 2043520.21020608:
     262|     })
     263|
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/5]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
 
  FAIL  src/projection/compareSummary.evidence.test.ts > projection-summary-fi-age — Projection summary fi age > crosses inclusively in 2027 at age 47 and ignores the later sentinel row
 AssertionError: upstream fiNumber: actual 0, worksheet 1000000: expected false to be true // Object.is equality
@@ -91,7 +90,7 @@ AssertionError: upstream fiNumber: actual 0, worksheet 1000000: expected false t
     330|       expect(summary.fiYear).toBe(example.expected.fiYear)
     331|       expect(summary.fiAge).toBe(example.expected.fiAge)
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/5]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯
 
  FAIL  src/projection/compareSummary.evidence.test.ts > projection-summary-coast-fire-number — Projection summary coast fire number > discounts the FI number four years at the simple real 4 percent
 AssertionError: upstream fiNumber: actual 266546.11437470664, worksheet 2043520.21020608: expected false to be true // Object.is equality
@@ -110,7 +109,7 @@ AssertionError: upstream fiNumber: actual 266546.11437470664, worksheet 2043520.
     389|       const expected = example.expected.coastFireNumber as number
     390|       expect(
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/5]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯
 
  FAIL  src/projection/compareSummary.evidence.test.ts > projection-summary-coast-fire-number — Projection summary coast fire number > equals the FI number when retirement age is already attained
 AssertionError: zero-horizon coastFireNumber: actual 266546.11437470664, worksheet 2043520.21020608: expected false to be true // Object.is equality
@@ -129,28 +128,9 @@ AssertionError: zero-horizon coastFireNumber: actual 266546.11437470664, workshe
     409|     })
     410|   },
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/5]⎯
-
- FAIL  src/projection/compareSummary.evidence.test.ts > projection-summary-estate-heir-tax — Projection summary estate heir tax > sums the resolved per-account heir tax to 61600.00
-AssertionError: endingEstateHeirTax: actual 56320, worksheet 61600 (per-account actual traditional=47520, hsa=8800, roth=0): expected false to be true // Object.is equality
-
-- Expected
-+ Received
-
-- true
-+ false
-
- ❯ src/projection/compareSummary.evidence.test.ts:697:9
-    695|         `endingEstateHeirTax: actual ${summary.endingEstateHeirTax}, w…
-    696|           `(per-account actual ${summary.estateBreakdown.map((row) => …
-    697|       ).toBe(true)
-       |         ^
-    698|     })
-    699|   },
-
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/5]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯
 ```
 
 ## Revert
 
-`git checkout -- packages/engine/src/projection/compare.ts` restored the exact original bytes (compared byte for byte in the harness), and `git diff --quiet -- packages/engine/src/projection/compare.ts` then exited 0, confirming no production change remained. Re-ran the named command after restoration: the named file returned to its baseline state (exit 1): the only failure is the disclosed `projection-summary-estate-heir-tax` discrepancy, which fails on unmutated production because the worksheet and the engine disagree about whether the charity fraction reduces the heir-taxed base (worksheet 61,600.00, engine 56,320.00).
+The original bytes of `packages/engine/src/projection/compare.ts` were written back and compared byte for byte in the harness, and `git diff --quiet -- packages/engine/src/projection/compare.ts` then exited 0, confirming no production change remained. Re-ran the named command after restoration: the suite returned to its baseline state, green (exit 0).

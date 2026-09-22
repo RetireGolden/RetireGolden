@@ -1,6 +1,6 @@
 # Mutation receipt: relocation-lifetime-state-local-tax
 
-Executed 2026-09-18 against RetireGolden base `74916a7e` (branch `claude/b1-p4-cards-slice-seven`) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-seven` at base `74916a7e`, and re-executed 2026-09-22 against RetireGolden base `7ae019a8` (branch `claude/b1-p4-cards-seven`, pull request #727) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/projection/relocation.ts`
 
@@ -30,17 +30,18 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed. Exit code: 1.
+Re-executed 2026-09-22 on the pull-request branch after the review of #727: the heir-tax fixture had grown to two cases since the first execution and the branch was renamed for the pull request, so every capture, blob hash and revert note is refreshed against this head. The baseline is green (relocation.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/TEMP/rg-s7/packages/engine
+RUN  v5.0.0 C:/TEMP/rg-rehearse2/packages/engine
 
- ❯ src/projection/relocation.evidence.test.ts (2 tests | 1 failed) 39ms
+ ❯ src/projection/relocation.evidence.test.ts (2 tests | 1 failed) 41ms
    ❯ relocation-lifetime-state-local-tax — Relocation lifetime state local tax (1)
-     × sums the three recorded annual lines to 13250.25 34ms
+     × sums the three recorded annual lines to 13250.25 35ms
 
  Test Files  1 failed (1)
       Tests  1 failed | 1 passed (2)
+
 
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
 
@@ -66,4 +67,4 @@ AssertionError: lifetimeStateLocalTax: actual 9000.25, worksheet 13250.25: expec
 
 ## Revert
 
-`git checkout -- packages/engine/src/projection/relocation.ts` restored the exact original bytes (compared byte for byte in the harness), and `git diff --quiet -- packages/engine/src/projection/relocation.ts` then exited 0, confirming no production change remained. Re-ran the named command after restoration: the named file passed again (exit 0).
+The original bytes of `packages/engine/src/projection/relocation.ts` were written back and compared byte for byte in the harness, and `git diff --quiet -- packages/engine/src/projection/relocation.ts` then exited 0, confirming no production change remained. Re-ran the named command after restoration: the suite returned to its baseline state, green (exit 0).
