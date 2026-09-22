@@ -448,3 +448,7 @@ All eighteen families appear on exactly one worksheet; every worksheet lists onl
 **Round result:** 12 approve, 1 approve with a note, 0 reject. All Expected values match independent recomputation. The only material caveat is `pension-election-annuity-present-value` wrong-reading illustrative PVs for the 3.85% and 1.95% misreads, which differ by a few dollars from strict discount arithmetic while the primary Expected PV is exact to the stated precision.
 
 Reviewed by: cursor (composer), 2026-09-18, by independent recomputation without executing the engine.
+
+---
+
+Orchestrator note, 2026-09-22 (pull-request review of #730): the zero-balance misread in the `longevity-depletion-year` section reads "2027 (not 2028)"; on the worksheet's `$30,000` opening balance against a `$10,000` gap the balance closes at exactly `$0` in 2028, so that misread reports 2028 while the contract reports `null`. The worksheet's wrong reading was corrected; the approved cases and their arithmetic are unaffected.

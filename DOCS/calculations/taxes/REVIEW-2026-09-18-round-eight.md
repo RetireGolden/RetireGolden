@@ -943,3 +943,243 @@ No divisors/rates; D-INHERITED-ROTH-SLICE limit naming matches extract commentar
 | `tax-penalties-annual` | yes | approve |
 
 Reviewed by: cursor (composer), 2026-09-18, by independent recomputation without executing the engine.
+
+---
+
+Appended 2026-09-22 (pull-request review of #730): the re-check below was recorded in the cash-flow-and-summary copy of this report and supersedes the `inherited-distribution-required-annual` values approved above (the post-RBD case is the greater divisor, 6.6, not the greater amount at 10.8).
+
+# Re-check, 2026-09-18 (three worksheets after the slice-eleven comment completion)
+
+The slice-eleven fixtures found three defects in worksheets approved earlier today: spending-insurance-premiums-annual charged a policy in the year its subject attains premiumEndAge, following a schema comment that said "through" where the field comment and the code stop at that age (decision D-PREMIUM-END-AGE; the mode comment now states the code); inherited-distribution-required-annual stated the post-RBD comparison as the greater required amount, where the code selects the greater divisor, and used an owner divisor no table entry can produce; insurance-cash-value-and-death-benefit-annual placed its settling policy at the year after death. Six missing or contradicted contracts became doc comments, Codex Sol revised the three worksheets, and the same reviewer recomputed every value and approved all three (one note: the post-RBD rows were labelled "second year after death" while their divisors are those of the first year after the death year; the label was corrected by the orchestrator, the numbers unchanged). Verbatim output follows.
+
+---
+
+# Independent recomputation review — cash-flow-and-summary worksheets (revision pass)
+
+Sources: the three revised worksheets under `DOCS/calculations/cash-flow-and-summary/`, and the signatures-and-comments extract (`b1-p4-signatures-s11-followups.md`, commit `1b6a0ba9`). No engine bodies were read or executed.
+
+---
+
+## 1. `spending-insurance-premiums-annual.md`
+
+### (1) Recomputation
+
+**Rule applied:** charge `annualPremium` when mode is `lifetime` (subject alive), zero for `paidUp`, and for `untilAge` only when `subjectAge < premiumEndAge` (strict; nothing at or after end age).
+
+**Primary case**
+
+| Policy | Mode | Premium | Subject age | End age | Charge? | Amount |
+|--------|------|--------:|------------:|--------:|---------|-------:|
+| LTC A | lifetime | 1,200 | 64 | n/a | yes (lifetime, alive) | 1,200 |
+| Life B | paidUp | 900 | 70 | n/a | no (paid up) | 0 |
+| Life C | untilAge | 600 | 65 | 65 | no (`65 < 65` is false) | 0 |
+| LTC D | untilAge | 500 | 66 | 65 | no (`66 < 65` is false) | 0 |
+
+**Sum:** `$1,200 + $0 + $0 + $0 = $1,200`
+
+**Boundary case (Life E)**
+
+- Mode `untilAge`, age 64, end age 65, alive.
+- `64 < 65` → charge `$600`.
+
+**Published figures:** primary `$1,200`; boundary `$600`; tolerance `$0.005`.
+
+### (2) Match vs Expected
+
+| Figure | Recomputed | Expected | Match |
+|--------|----------:|---------:|:-----:|
+| Primary `expenses.insurancePremiums` | $1,200 | $1,200 | **yes** |
+| Boundary `expenses.insurancePremiums` | $600 | $600 | **yes** |
+
+### (3) Extract alignment and internal consistency
+
+| Check | Result |
+|-------|--------|
+| Strict stop at attained `premiumEndAge` | **Matches** extract: `untilAge` charges only while attained age is **below** `premiumEndAge`; subject who has attained that age is skipped (`annualInsurancePremiumRows` comment; `premiumModeSchema` comment). |
+| Claim ↔ Justification ↔ Inputs ↔ Arithmetic ↔ Expected | **Agree** on strict `<` comparison and fixed-nominal premiums. |
+
+### (4) Wrong readings
+
+| Wrong reading | Stated value | Recomputed wrong value | Match |
+|---------------|-------------:|-----------------------:|:-----:|
+| Inclusive through end age (Life C charged) | $1,800 | $1,200 + $600 = $1,800 | **yes** |
+| Stop one year early at age 64 | $0 | $0 | **yes** |
+| Inflate primary 3% | $1,236 | $1,200 × 1.03 = $1,236 | **yes** |
+| Charge paid-up + post-end-age policies | $2,600 | $1,200 + $900 (Life B) + $500 (LTC D) = $2,600 | **yes** |
+
+### (5) Changes from first approved derivation
+
+- **Intended:** Life C at age 65 with end age 65 no longer charged; primary total **$1,800 → $1,200**.
+- **Intended:** Claim/Justification now document strict stop-age contract and D-PREMIUM-END-AGE.
+- **Should not have changed:** lifetime, paidUp, boundary Life E logic — unchanged and still correct.
+
+### (6) Verdict
+
+**Approve.** All figures recomputed; rule matches extract comments.
+
+---
+
+## 2. `inherited-distribution-required-annual.md`
+
+### (1) Recomputation
+
+**Table anchors (2026 pack `singleLifeTable`):** age 75 → **14.8**; age 76 → 14.1; age 86 → **7.6**; age 88 → 6.6 (current-age lookup only); age 90 → **5.7**.
+
+**Fixed beneficiary continuation:** read once at age 75 → 14.8; next year → `14.8 − 1 = 13.8` (not age-76 entry 14.1).
+
+**Owner fixed arm:** death-year age 86 → entry **7.6**; extract states in `deathYear+1` the arm is already `entry − 1` → **6.6** (one calendar year elapsed after death year).
+
+**Post-RBD rule:** `divisor = max(beneficiaryDivisor, ownerDivisor)` → required amount = `priorYearEndBalance / divisor` (smaller quotient).
+
+---
+
+**Case A — Fixed beneficiary, first year (2027), B = $148,000, divisor 14.8**
+
+1. Table: age 75 → 14.8  
+2. Quotient: `$148,000 ÷ 14.8 = $10,000.00`
+
+---
+
+**Case B — Fixed beneficiary, next year (2028), B = $148,000**
+
+1. Fixed continuation: `14.8 − 1 = 13.8`  
+2. Quotient: `$148,000 ÷ 13.8 = $10,724.637681159420…`
+
+---
+
+**Case C — Post-RBD, beneficiary divisor greater, B = $148,000**
+
+| Arm | Divisor source | Divisor | Amount |
+|-----|----------------|--------:|-------:|
+| Beneficiary | stated fixed | 14.8 | $148,000 ÷ 14.8 = **$10,000.00** |
+| Owner | age 86 death-year 7.6, −1 elapsed → 6.6 | 6.6 | $148,000 ÷ 6.6 = **$22,424.242424242…** |
+
+- `max(14.8, 6.6) = 14.8` → beneficiary arm wins → **$10,000**
+
+---
+
+**Case D — Post-RBD, owner divisor greater, B = $148,000**
+
+| Arm | Divisor source | Divisor | Amount |
+|-----|----------------|--------:|-------:|
+| Beneficiary | table age 90 | 5.7 | $148,000 ÷ 5.7 = **$25,964.912280701…** |
+| Owner | 7.6 − 1 = 6.6 | 6.6 | $148,000 ÷ 6.6 = **$22,424.242424242…** |
+
+- `max(5.7, 6.6) = 6.6` → owner arm wins → **$22,424.242424242…**
+
+---
+
+**Case E — Pre-RBD ten-year window:** **$0**
+
+**Case F — Final-sweep year (2036), B = $83,000:** full prior-year-end balance → **$83,000**
+
+### (2) Match vs Expected
+
+| Case | Recomputed | Expected | Match |
+|------|----------:|---------:|:-----:|
+| 2027 beneficiary | $10,000 | $10,000 | **yes** |
+| 2028 beneficiary | $10,724.637681… | $10,724.637681… | **yes** |
+| Post-RBD, beneficiary divisor greater | $10,000 | $10,000 | **yes** |
+| Post-RBD, owner divisor greater | $22,424.242424… | $22,424.242424… | **yes** |
+| Pre-RBD window | $0 | $0 | **yes** |
+| Final sweep | $83,000 | $83,000 | **yes** |
+
+### (3) Extract alignment and internal consistency
+
+| Check | Result |
+|-------|--------|
+| Greater **divisor** (not greater amount) | **Matches** “greater-of life-expectancy arm” / at-least-as-rapidly framing; `max(divisors)` yields `min(amounts)`. |
+| Owner 7.6 → 6.6 | **Matches** `ownerFixedDivisor` comment (death-year age-86 entry, `entry−1` in `deathYear+1`). |
+| Beneficiary 14.8 → 13.8 | **Matches** fixed subtract-one convention; not age-76 re-read (14.1). |
+| Claim ↔ Justification ↔ Inputs ↔ Arithmetic ↔ Expected | **Agree** on divisor comparison and all six published amounts. |
+
+**Note:** Inputs label the post-RBD rows “second year after death” while owner divisor **6.6** is the extract value for **one** calendar year elapsed after the death year (`deathYear+1`). Under ordinary “second year after death” = `deathYear+2`, owner divisor would be **5.6** (`7.6 − 2`). The **6.6** figure is arithmetically correct for the extract’s `deathYear+1` rule; only the row label is ambiguous.
+
+### (4) Wrong readings
+
+| Wrong reading | Stated | Recomputed | Match |
+|---------------|-------:|-----------:|:-----:|
+| Live balance $120,000 | $8,108.108108… | $120,000 ÷ 14.8 = $8,108.108108… | **yes** |
+| Re-read beneficiary at age 76 | $10,496.453901… | $148,000 ÷ 14.1 = $10,496.453900… | **yes** |
+| Owner double-advance from age-88 table 6.6 | (qualitative) | Table age 88 = 6.6; fixed arm must start at death-year 7.6 | **yes** |
+| Greater **amount** in beneficiary-greater case | $22,424.242424… | owner quotient | **yes** |
+| Choose by amount in owner-greater case | $25,964.912280… | beneficiary quotient | **yes** |
+| Annual quotient in no-annual window | $10,000 | $0 required | **yes** |
+
+### (5) Changes from first approved derivation
+
+- **Intended:** comparison is `max(divisors)`, not `max(amounts)`; beneficiary-greater case **$10,000** (not ~$22,424).
+- **Intended:** owner arm uses table **7.6** at death-year age 86 → **6.6** (replacing impossible **10.8**).
+- **Intended:** added owner-greater discriminator with beneficiary divisor **5.7** (table age 90).
+- **Should not have changed:** $148,000 base, $83,000 final sweep, pre-RBD $0, beneficiary fixed 14.8/13.8 arms — preserved.
+
+### (6) Verdict
+
+**Approve with a note:** all six amounts match; greater-divisor rule and table derivations align with the extract. Note the post-RBD row timing label (“second year after death” vs `deathYear+1` / divisor 6.6) for fixture authors; arithmetic is not affected.
+
+---
+
+## 3. `insurance-cash-value-and-death-benefit-annual.md`
+
+### (1) Recomputation
+
+**Living policy (schedule mode, age 65, death age 90)**
+
+1. Weight: `(65 − 60) / (70 − 60) = 5/10 = 0.5`  
+2. Cash value: `$20,000 + 0.5 × ($40,000 − $20,000) = $20,000 + $10,000 = $30,000`
+
+**Settling policy (flatRate, age 65→**revised: attained **70** = death age 70**)**
+
+1. Entry cash value: $60,000; growth 0% → pre-settlement CV = **$60,000**  
+2. Death-year payout: `max(face $50,000, CV $60,000) = $60,000`  
+3. Post-settlement ending CV for that policy: **$0**
+
+**Totals (death-age year)**
+
+- `insuranceCashValue` = living only = **$30,000**  
+- `deathBenefit` = settlement payout = **$60,000**
+
+### (2) Match vs Expected
+
+| Output | Recomputed | Expected | Match |
+|--------|----------:|---------:|:-----:|
+| `insuranceCashValue` | $30,000 | $30,000 | **yes** |
+| `deathBenefit` | $60,000 | $60,000 | **yes** |
+
+### (3) Extract alignment and internal consistency
+
+| Check | Result |
+|-------|--------|
+| Settlement in death-age year only | **Matches** `annualPermanentLifeTransitions` comment: in death-age year pay `max(deathBenefit, cash value)`, CV → 0; afterwards 0. |
+| Settling row at attained age 70 = death age 70 | **Matches** “settlement exactly in the death-age year, not in a later year.” |
+| Claim ↔ Justification ↔ Inputs ↔ Arithmetic ↔ Expected | **Agree**; revised input row now matches the death-year narrative. |
+
+### (4) Wrong readings
+
+| Wrong reading | Stated | Recomputed | Match |
+|---------------|-------:|-----------:|:-----:|
+| Lower endpoint, no interpolation | $20,000 | $20,000 | **yes** |
+| Face only | $50,000 | $50,000 | **yes** |
+| Retain settled CV | $90,000 year-end CV | $30,000 + $60,000 = $90,000 | **yes** |
+| Settling row at age 71 | payout null, CV $0 | year after death — no settlement | **yes** |
+
+### (5) Changes from first approved derivation
+
+- **Intended:** settling policy attained age **71 → 70** (death age); fixes input/death-year mismatch.
+- **Preserved (correctly):** $30,000 living CV, $60,000 payout, $0 settled ending CV — amounts unchanged because settlement math was always at death age 70.
+
+### (6) Verdict
+
+**Approve.** All figures match; settlement timing now consistent with extract and arithmetic.
+
+---
+
+## Summary table
+
+| Worksheet id | All figures match Expected? | Verdict |
+|--------------|:---------------------------:|---------|
+| `spending-insurance-premiums-annual` | yes | **approve** |
+| `inherited-distribution-required-annual` | yes | **approve with a note** (post-RBD row timing label vs `deathYear+1` / divisor 6.6) |
+| `insurance-cash-value-and-death-benefit-annual` | yes | **approve** |
+
+Reviewed by: cursor (composer), 2026-09-18, by independent recomputation without executing the engine.

@@ -13,6 +13,16 @@ P = B\frac{1-x}{1-x^n},\quad x=\frac{1+g}{1+r}
 and \(P = B/n\) when \(x = 1\). Derived from the geometric-sum identity; not
 from running the engine.
 
+## Justification
+
+A growing annuity due pays P at the start of each of n periods, growing by g
+per period and discounted at r, so its present value is
+P(1 + x + ... + x^(n-1)) = P(1 - x^n)/(1 - x) with x = (1 + g)/(1 + r).
+Setting that value equal to the start-of-year balance B and solving for P
+gives the Claim; the limit x -> 1 gives B/n. The production function adds two
+guards and a horizon truncation, stated in the Revision section and in the
+registry record.
+
 ## Inputs
 
 | Symbol | Meaning | Value | Unit |
@@ -83,7 +93,7 @@ outputs: `spending-base-annual` (the ABW policy's base spending before guardrail
 
 feeds: none.
 
-## Author and reviewer
+## Provenance
 
 - Derived by: claude-orchestrator, from the formula alone, without running the engine.
 - Implemented by: grok.

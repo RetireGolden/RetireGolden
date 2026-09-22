@@ -734,3 +734,7 @@ Only the partition error was corrected; no inappropriate changes.
 ---
 
 Reviewed by: cursor (composer), 2026-09-18, by independent recomputation without executing the engine.
+
+---
+
+Orchestrator note, 2026-09-22 (pull-request review of #730): the zero-balance misread in the `longevity-depletion-year` section reads "2027 (not 2028)"; on the worksheet's `$30,000` opening balance against a `$10,000` gap the balance closes at exactly `$0` in 2028, so that misread reports 2028 while the contract reports `null`. The worksheet's wrong reading was corrected; the approved cases and their arithmetic are unaffected.

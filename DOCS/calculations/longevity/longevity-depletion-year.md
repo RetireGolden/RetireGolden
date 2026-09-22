@@ -30,7 +30,7 @@ Exact values: depletion case `2028`; no-depletion case `null`. Fixture tolerance
 
 ## Wrong readings
 
-- Treating a zero closing balance as depletion would report `2027` for a `$30,000` opening balance and the same gap; the contract tests shortfall above `$0.005`, not balance alone.
+- Treating a zero closing balance as depletion would report `2028` for a `$30,000` opening balance and the same gap (`$20,000`, `$10,000`, then a close at exactly `$0`), where the contract reports `null` because the shortfall stays `$0`; it tests shortfall above `$0.005`, not balance alone.
 - Testing before the account funds the year would report `2026`; the actual first positive shortfall is in `2028`.
 - Returning the horizon year for the null case would produce `2028` instead of `null`.
 
@@ -43,3 +43,5 @@ feeds: none.
 ## Provenance
 
 Derived by: codex (gpt-5.6-sol), 2026-09-18, from the signatures-and-comments extract only, without executing the engine or reading any implementation body. Reviewed by: cursor (composer-2.5), 2026-09-18, by independent recomputation without executing the engine; see REVIEW-2026-09-18-round-eleven.md in this directory.
+
+Revision note (2026-09-22, pull-request review of #730): the first wrong reading named `2027` for the zero-balance misread on a `$30,000` opening balance; that balance closes at exactly `$0` in `2028`, which is the year the misread would report and the case the fixture pins as `null`. No expected value changed.
