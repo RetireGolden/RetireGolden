@@ -14,7 +14,7 @@ One-stream fixture: one Social Security stream currently claiming at exactly `70
 
 No-stream fixture: no Social Security streams.
 
-Current-claim-wins fixture: no traditional balance, therefore no conversions anywhere; one stream currently claiming at `70y0m`; planning age `70y1m`, just past that current claim age. Use the same options for every candidate and current plan.
+Current-claim-wins fixture: planning age `70`, a whole number of years as the plan schema requires; one stream currently claiming at `70y0m`; no traditional balance, therefore no conversions anywhere. Use the same options for every candidate and current plan.
 
 ## Arithmetic
 
@@ -22,7 +22,7 @@ One-stream fixture: canonical ages are `{62y0m, 67y0m (FRA), 70y0m}`. Remove the
 
 No-stream fixture: generated candidates `= 0`; `combinationsEvaluated = 1 + 0 = 1`.
 
-Current-claim-wins fixture: no traditional balance `→` all conversion schedules are empty. Planning age is past the existing `70y0m` claim age and no later claim can improve it `→ winningClaimLabel = null` and `winningClaimPatch = null`. Therefore `jointExactEstate = currentClaimExactEstate`. The shared dollar value is run-pinned: the extract does not state the full optimizer inputs or the exact ledger result.
+Current-claim-wins fixture: the co-optimizer evaluates the two generated candidates, `62y0m` and `67y0m (FRA)`, with the same options as the current plan and, because there is no traditional balance, empty conversion schedules. A candidate replaces the current claim only when its `jointExactEstate − currentClaimExactEstate > $1,000`. Neither candidate clears that switch margin over the current-claim estate, so `winningClaimLabel = null` and `winningClaimPatch = null`, and `jointExactEstate = currentClaimExactEstate`. The shared dollar value is run-pinned: the extract does not state the full optimizer inputs or the exact ledger result.
 
 A claim switch, if any, requires `jointExactEstate − currentClaimExactEstate > $1,000`; equality at `$1,000` does not switch.
 
@@ -39,6 +39,7 @@ A claim switch, if any, requires `jointExactEstate − currentClaimExactEstate >
 - Omitting the current claim from the count yields `2`, rather than `3`; with no stream it yields `0`, rather than `1`.
 - Computing the `FRA` grid label from the person's birth year can label the middle point something other than `67y0m (FRA)`; the declared grid label is always `67y0m (FRA)`.
 - Switching at a `$1,000` estate advantage treats the threshold as inclusive; the required comparison is more than `$1,000`.
+- Treating the planning age as past the current claim age (`70y1m`) and concluding no candidate is evaluated would report `combinationsEvaluated = 1` for that fixture, whereas the count is `3` (the current claim plus two candidates) and the null winner comes from the margin, not from an empty candidate set.
 
 ## Family
 
@@ -48,4 +49,4 @@ feeds: `optimizer-recommended-conversion-annual` through each claim candidate's 
 
 ## Provenance
 
-Derived by: codex (gpt-5.6-terra), 2026-09-18, from the signatures-and-comments extract only, without executing the engine or reading any implementation body. Reviewed by: cursor (composer-2.5), 2026-09-18, by independent recomputation without executing the engine; see REVIEW-2026-09-18-round-twelve.md in this directory.
+Derived by: codex (gpt-5.6-terra), 2026-09-18, from the signatures-and-comments extract only, without executing the engine or reading any implementation body. Reviewed by: cursor (composer-2.5), 2026-09-18, by independent recomputation without executing the engine; see REVIEW-2026-09-18-round-twelve.md in this directory. Revision 2026-09-22: the current-claim-wins case was re-derived on the schema fact that planningAge is a whole number of years; the null winner follows from the $1,000 switch margin over two evaluated candidates, not from a planning age past the current claim. Re-derived by codex without executing the engine.

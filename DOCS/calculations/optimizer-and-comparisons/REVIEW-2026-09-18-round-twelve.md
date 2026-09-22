@@ -286,3 +286,61 @@ Feed chain is consistent: claim-age → conversion schedule → tournament incum
 | `claim-age-co-optimization` | yes | approve |
 
 Reviewed by: cursor (composer), 2026-09-18, by independent recomputation without executing the engine.
+
+---
+
+## Re-check 2026-09-22: claim-age-co-optimization current-claim-wins case
+
+Scope: the Revision 2026-09-22 note in `claim-age-co-optimization.md` Provenance — re-derived current-claim-wins fixture only. Recomputed from that worksheet's Claim, Justification, Inputs, and Arithmetic sections only; no engine execution; no implementation read.
+
+### Contract applied
+
+| Rule | Source in worksheet |
+|------|---------------------|
+| Canonical grid | `{62y0m, 67y0m (FRA), 70y0m}` |
+| Generated candidates | Grid ages **different from** the stream's current claim |
+| `combinationsEvaluated` | `1 + generated` (current claim always counted) |
+| Co-optimization | Each generated candidate uses the same options as the current plan; with no traditional balance, conversion schedules are empty |
+| Switch threshold | Replace only when `jointExactEstate − currentClaimExactEstate > $1,000` (exclusive; equality does not switch) |
+| No switch | `winningClaimLabel = null`, `winningClaimPatch = null`, and `jointExactEstate = currentClaimExactEstate` |
+
+### Current-claim-wins fixture (re-derived inputs)
+
+**Given:** planning age `70` (whole years, as the plan schema requires); one Social Security stream currently claiming at `70y0m`; no traditional balance; same options for every candidate and the current plan.
+
+| Step | Result |
+|------|--------|
+| Canonical grid | `{62y0m, 67y0m (FRA), 70y0m}` |
+| Remove current `70y0m` | Generated candidates = `62y0m`, `67y0m (FRA)` → count `2` |
+| Include current claim in total | `combinationsEvaluated = 1 + 2 = 3` |
+| No traditional balance | Empty conversion schedules for current claim and both candidates |
+| Neither candidate estate exceeds current-claim estate by **more than** `$1,000` | No claim switch |
+| `winningClaimLabel` | `null` |
+| `winningClaimPatch` | `null` |
+| Estate identity | `jointExactEstate = currentClaimExactEstate` (retained current claim is the best non-switching outcome) |
+| Dollar magnitudes | **Run-pinned** (worksheet does not state full optimizer inputs or exact ledger result) |
+
+**Candidate set confirmed:** the two generated claim ages are `62y0m` and `67y0m (FRA)` only; the stream's own `70y0m` is excluded from generation but included once in the evaluated total via the current-claim slot. **`combinationsEvaluated = 3`** matches the one-stream `70y0m` count fixture arithmetic (`3 − 1 = 2` generated, plus current).
+
+### Null winner and estate identity
+
+The null winner does **not** follow from an empty candidate set. Two candidates are evaluated with empty schedules and identical options; neither clears the exclusive `$1,000` margin over `currentClaimExactEstate`. Under the stated switch rule, no replacement occurs, so the published winner fields are null and the joint exact estate equals the current-claim exact estate. That matches Arithmetic and Expected (null structured outputs exact; dollar fields run-pinned but required equal in this fixture).
+
+### Wrong reading: planning age past the claim
+
+| Reading | Planning age | Reasoning | `combinationsEvaluated` |
+|---------|--------------|-----------|---------------------------|
+| **Wrong** | `70y1m` (past claim at `70y0m`) | Treat claim as already past → conclude no candidate is evaluated | `1` (current claim only, zero generated) |
+| **Correct (re-derived)** | `70` with stream at `70y0m` | Two grid ages differ from current claim → both evaluated; null winner from margin | `3` |
+
+Recomputing the wrong reading: if no generated candidate is evaluated, `generated = 0` and `combinationsEvaluated = 1 + 0 = 1`. That is exactly the erroneous count named in Wrong readings; the correct fixture still evaluates two candidates and reports `3`, with null winner fields driven by the margin rule.
+
+### Match to revised worksheet
+
+**Yes.** Candidate set (`62y0m`, `67y0m (FRA)`), `combinationsEvaluated = 3`, null winner fields, `jointExactEstate = currentClaimExactEstate`, and the planning-age-past-claim wrong reading (`1` vs `3`) all match the re-derived Inputs, Arithmetic, Expected, and Wrong readings sections.
+
+### Verdict
+
+**Approve** — the 2026-09-22 re-derivation is consistent with the worksheet contract; the prior round-twelve review's `70y1m` planning-age row for this fixture is superseded by the schema-correct `70` / margin-based reasoning.
+
+Reviewed by: cursor (composer-2.5), 2026-09-22 (re-check), by independent recomputation without executing the engine.
