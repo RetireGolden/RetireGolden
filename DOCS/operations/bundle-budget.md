@@ -46,14 +46,15 @@ the parse cost that dominates on a low-end device is paid on the decompressed by
 | every other JS chunk | 260 KiB | 129.2 KiB (`annualProjectionKernels`) | Route and page chunks staying route-sized |
 | all JS together | 5100 KiB | 4824.2 KiB | "Many new chunks", not just one fat one |
 | one stylesheet / all CSS | 64 / 80 KiB | 45 / 52 KiB | The token layer |
-| landing critical path | 700 KiB | 596 KiB | Entry + every `modulepreload`: what a cold visit blocks on |
+| landing critical path | 800 KiB | 716.8 KiB | Entry + every `modulepreload`: what a cold visit blocks on |
 | PWA precache | 5250 KiB | 4971.8 KiB | Install cost, and the offline guarantee's price |
 
 Each limit is the size measured when the budget landed plus headroom, and the headroom is deliberately
 uneven — read the table, not an average:
 
 - The **aggregate** rows used to be the tightest. The landing critical path
-  (596 → 700) still is: that is what a cold visit blocks on. `all JS` and the
+  (596 → 700, then 684.9 → 800 for the vite 8.3 / react 19.3 bump; see below)
+  still is: that is what a cold visit blocks on. `all JS` and the
   PWA precache were equally tight (4356 → 4400, 4504 → 4550) until that
   ~30–46 KiB of slack started failing every unrelated PR; they moved to 4431.7 →
   4800 and 4579.6 → 4900 (PR 707, measured), then to 4824.2 → 5100 and
@@ -341,8 +342,40 @@ branch diff and emitted graph shape, not on a line-item audit of every KiB.
 **What the new headroom is for.** Round hundreds with modest slack above the measured audit build:
 ~92 KiB on the worker, ~73 KiB on `useProjection`, ~36 KiB on the entry, ~276 KiB on all JS,
 ~278 KiB on precache. That covers ordinary follow-on work inside the same audit stack without
-re-opening the aggregate rows on every commit. It is not a blanket disable — landing (700),
-`DEFAULT_CHUNK_KIB` (260), CSS, the single-worker rule, and the static-cycle gate are unchanged.
+re-opening the aggregate rows on every commit. It is not a blanket disable — landing was still 700
+then, `DEFAULT_CHUNK_KIB` (260), CSS, the single-worker rule, and the static-cycle gate are
+unchanged. Landing later moved 700 → 800 for the vite 8.3 / react 19.3 bump (see below).
+
+## Raising the landing row: vite 8.3 / react 19.3
+
+The landing critical path went from 700 to 800 KiB on the npm-minor-patch bump (vite 8.2.2 → 8.3.0,
+which takes rolldown 1.2.6 → 1.2.8, and react / react-dom 19.2.8 → 19.3.0). This is rule 3 above:
+the growth is the runtime and bundler, not a new feature leak, and splitting the landing graph is
+out of scope for a dependency chore.
+
+**What was measured.** Azure `build` on `33e7d546` (the PR base, vite 8.2.2 / react 19.2.8) versus a
+production build of that same source with the bumped toolchain:
+
+| Row | `33e7d546` Azure | this bump | delta |
+|---|---|---|---|
+| landing critical path | 684.9 / 700 | 716.8 / 700 (fail) | +31.9 |
+| app entry | 384.9 / 420 | 413.1 / 420 | +28.2 |
+| plan route group (`PlanRoutes`) | 291.7 / 300 | 291.7 / 300 | 0 |
+| all JS | 4887.3 / 5100 | 4922.3 / 5100 | +35.0 |
+
+Eight landing files either way (`index.html` `modulepreload` set unchanged). `PlanRoutes` staying
+flat is the counterexample to treating this as another rolldown 1.2.4 → 1.2.6 redistribution of the
+route group. The +28.2 KiB in the entry accounts for most of the landing overshoot; react 19.3
+ships ViewTransition / Fragment-refs into that graph.
+
+**What did not fail.** One `planner.worker`, no static import cycles, `PlanRoutes` still exactly one
+chunk under 300, every unclassified chunk under 260, CSS and precache under their rows, engine
+schema-sync tests green on zod 4.6.2.
+
+**What the new headroom is for.** 800 is a round hundred ~83 KiB above the measured 716.8 KiB. The
+previous 15 KiB of slack (684.9 → 700) was a peek-over waiting for the next runtime minor; this
+raise is so that bump is paid once, with a note, rather than re-opening the row on every
+follow-on.
 
 ## The Learn content split
 
