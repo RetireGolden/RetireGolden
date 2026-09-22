@@ -27,6 +27,13 @@ export interface EstateAccountBreakdown {
   heirTaxRatePct: number
   /** Portion passing to charity, untaxed. */
   charityAmount: number
+  /**
+   * Assumed heir income tax on the non-charity slice of the taxable pre-tax
+   * base: `taxablePretaxBase × (1 − charity fraction) × heir rate`, and 0
+   * for a spouse destination. The charity fraction therefore reduces both
+   * the amount heirs receive and the base they are taxed on; it is not
+   * carved from the gross balance alone.
+   */
   heirTax: number
   /** grossBalance − charityAmount − heirTax. */
   netToHeirs: number
@@ -60,8 +67,11 @@ export interface ProjectionSummary {
   endingInvestable: number
   endingNetWorth: number
   /**
-   * Ending net worth net of the income tax heirs owe on inherited pre-tax
-   * (traditional) balances, at the plan's assumed heir tax rate. Remaining
+   * Ending net worth minus the charity carve-outs and minus the income tax
+   * heirs owe on inherited pre-tax (traditional) balances at the plan's assumed
+   * heir tax rate: `endingAfterTaxEstate = endingNetWorth − endingEstateToCharity
+   * − endingEstateHeirTax`. With no charity destination this is net worth minus
+   * heir tax. Remaining
    * nondeductible IRA basis is excluded from each traditional taxable pretax
    * base by estateTraditionalTaxableBase, which spreads the household
    * remaining-basis scalar across traditional accounts by gross — a disclosed
@@ -75,7 +85,8 @@ export interface ProjectionSummary {
    * statutory designation. Any other modeled destination uses the ending gross as the
    * terminal inclusion base under IRC §223(f)(8)(B)(i); the
    * §223(f)(8)(B)(ii)(I) predeath-expense reduction is not applied. Charity
-   * carve-outs are applied separately; the gross base for charity is the
+   * carve-outs are subtracted from this figure and reported in
+   * endingEstateToCharity; the gross base for charity is the
    * pre-carveout model value, not a claim that charity owes income under the
    * HSA statute. That figure is assumed terminal exposure at the horizon, not a death-year return.
    */
@@ -88,10 +99,28 @@ export interface ProjectionSummary {
   estateBreakdown: EstateAccountBreakdown[]
   /** End-of-plan balance by account category. */
   endingByCategory: { cash: number; taxable: number; traditional: number; roth: number; hsa: number }
+  /**
+   * The projection's depletion year, copied from ProjectionResult: the first
+   * year whose funding shortfall after any HECM backstop draw exceeds
+   * ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS (half a cent, the ledger's own
+   * residual budget), else null. A residual at or below that budget is not
+   * depletion.
+   */
   depletionYear: number | null
   warnings: string[]
   // Derived FIRE metrics
+  /**
+   * One row per projection year: savings (contributions + employer match +
+   * surplus invested) over gross income, as a percentage clamped to [0, 100];
+   * 0 when gross income is 0.
+   */
   savingsRates: Array<{ year: number; ratePct: number }>
+  /**
+   * Arithmetic mean of savingsRates[].ratePct over the years strictly before
+   * the primary person's target retirement year (birth year + retirement age,
+   * 65 when unset); 0 when no year qualifies. Unweighted: every qualifying
+   * year counts once regardless of income.
+   */
   averagePreRetirementSavingsRatePct: number
   /**
    * Portfolio target in projection-start-year ("today's") dollars. One calendar

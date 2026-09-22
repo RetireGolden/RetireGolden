@@ -572,7 +572,12 @@ export interface ProjectionResult {
   startYear: number
   endYear: number
   years: YearResult[]
-  /** First year with any shortfall, else null. */
+  /**
+   * First year whose funding shortfall after any HECM backstop draw exceeds
+   * ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS (half a cent, the ledger's own
+   * residual budget), else null. A residual at or below that budget is not
+   * depletion.
+   */
   depletionYear: number | null
   endingInvestable: number
   endingNetWorth: number

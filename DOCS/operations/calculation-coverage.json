@@ -26,6 +26,7 @@
     },
     "complete": [
       "annuitization-payout-rate-pct",
+      "estate-heir-income-tax",
       "funded-ratio-result-essential-spending-pv",
       "funded-ratio-result-funded-ratio-pct",
       "funded-ratio-result-guaranteed-income-pv",
@@ -48,8 +49,21 @@
       "ladder-rung-coupon-rate-pct",
       "ladder-rung-face",
       "longevity-survival-percentile-age",
+      "projection-summary-average-pre-retirement-savings-rate-pct",
+      "projection-summary-coast-fire-number",
+      "projection-summary-ending-after-tax-estate",
+      "projection-summary-ending-investable",
+      "projection-summary-ending-net-worth",
+      "projection-summary-fi-age",
+      "projection-summary-fi-number",
       "projection-summary-lifetime-roth-conversions",
+      "projection-summary-lifetime-taxes-and-penalties",
+      "relocation-lifetime-state-local-tax",
+      "relocation-state-tax-driver-savings",
+      "scenario-comparison-cell",
       "scenario-irmaa-surcharge-tier-years",
+      "scenario-lifetime-penalties",
+      "scenario-lifetime-tax",
       "social-security-bridge-sizing",
       "spending-excess-shortfall-annual",
       "spending-guardrail-factor-annual",
@@ -58,8 +72,12 @@
       "spending-target-shortfall-annual",
       "sustainable-spending-result-max-base-annual",
       "sustainable-spending-result-spending-slack-dollars",
+      "swr-rule-result-depletion-year",
+      "swr-rule-result-end-year",
+      "swr-rule-result-ending-after-tax-estate",
       "swr-rule-result-initial-annual-spend",
-      "swr-rule-result-initial-rate-pct"
+      "swr-rule-result-initial-rate-pct",
+      "swr-rule-result-lifetime-taxes-and-penalties"
     ],
     "partial": [
       "spending-base-annual"
@@ -101,7 +119,6 @@
       "display-upside-shortfall-annual",
       "display-upside-spending-annual",
       "display-years-before-plan-end",
-      "estate-heir-income-tax",
       "estate-to-charity",
       "exact-ledger-tournament-margin-over-milp-dollars",
       "exact-ledger-validation-ending-net-worth-delta",
@@ -183,24 +200,11 @@
       "portfolio-need-annual",
       "projection-result-ending-investable",
       "projection-result-ending-net-worth",
-      "projection-summary-average-pre-retirement-savings-rate-pct",
-      "projection-summary-coast-fire-number",
-      "projection-summary-ending-after-tax-estate",
-      "projection-summary-ending-investable",
-      "projection-summary-ending-net-worth",
-      "projection-summary-fi-age",
-      "projection-summary-fi-number",
       "projection-summary-fi-year",
-      "projection-summary-lifetime-taxes-and-penalties",
       "qcd-annual",
-      "relocation-lifetime-state-local-tax",
-      "relocation-state-tax-driver-savings",
       "relocation-tax-comparison",
       "rmd-required-annual",
       "roth-conversion-annual",
-      "scenario-comparison-cell",
-      "scenario-lifetime-penalties",
-      "scenario-lifetime-tax",
       "sepp-distribution-annual",
       "simple-candidate-evaluation-after-tax-estate-delta",
       "simple-candidate-evaluation-executed-conversion-total",
@@ -241,10 +245,6 @@
       "survivor-scenario-row-ssa44premium-savings",
       "survivor-scenario-row-survivor-shortfall-years",
       "sustainable-spending-result-simulation-count",
-      "swr-rule-result-depletion-year",
-      "swr-rule-result-end-year",
-      "swr-rule-result-ending-after-tax-estate",
-      "swr-rule-result-lifetime-taxes-and-penalties",
       "tax-amt-annual",
       "tax-loss-carryforward-remaining-annual",
       "tax-loss-carryforward-used-against-gains-annual",
@@ -387,8 +387,14 @@
       "insight-impact-ending-after-tax-estate-delta": [
         "insight-irmaa-tier-edge-premium-cliff"
       ],
+      "insight-spending-headroom-rough-annual": [
+        "projection-summary-ending-after-tax-estate"
+      ],
       "insight-ss-bridge-gap-total": [
         "ss-bridge-sizing"
+      ],
+      "insight-state-relocation-lifetime-state-tax-savings": [
+        "relocation-lifetime-state-local-tax"
       ],
       "ladder-build-total-cost": [
         "ladder-annual-coupon-par-pricing",
@@ -546,13 +552,29 @@
         "allocation-blended-expected-return",
         "conversion-coordinate-descent-search"
       ],
+      "projection-summary-coast-fire-number": [
+        "projection-summary-fi-number"
+      ],
+      "projection-summary-ending-after-tax-estate": [
+        "projection-summary-ending-net-worth",
+        "projection-summary-estate-heir-tax"
+      ],
+      "projection-summary-fi-age": [
+        "projection-summary-fi-number"
+      ],
       "roth-conversion-annual": [
         "exact-cent-largest-remainder-slices",
         "projection-money-tolerance-thresholds"
       ],
       "scenario-comparison-cell": [
+        "projection-summary-ending-after-tax-estate",
+        "projection-summary-ending-investable",
+        "projection-summary-ending-net-worth",
         "projection-summary-lifetime-roth-conversions",
-        "scenario-irmaa-surcharge-tier-years"
+        "projection-summary-lifetime-taxes-and-penalties",
+        "relocation-lifetime-state-local-tax",
+        "scenario-irmaa-surcharge-tier-years",
+        "scenario-lifetime-tax-and-penalties"
       ],
       "solved-initial-withdrawal-rate-pct": [
         "sustainable-spending-bisection"
@@ -597,12 +619,14 @@
         "swr-rule-rate-and-initial-spend"
       ],
       "swr-rule-result-ending-after-tax-estate": [
+        "projection-summary-ending-after-tax-estate",
         "swr-rule-rate-and-initial-spend"
       ],
       "swr-rule-result-initial-annual-spend": [
         "risk-based-starting-investable"
       ],
       "swr-rule-result-lifetime-taxes-and-penalties": [
+        "projection-summary-lifetime-taxes-and-penalties",
         "swr-rule-rate-and-initial-spend"
       ],
       "tax-penalties-annual": [
@@ -621,16 +645,16 @@
     }
   },
   "records": {
-    "total": 80,
+    "total": 98,
     "byKind": {
-      "composition": 7,
+      "composition": 25,
       "data": 6,
       "formula": 30,
       "model": 37
     },
     "byJustificationKind": {
       "dataset": 5,
-      "derivation": 75
+      "derivation": 93
     }
   },
   "oracleExamples": [
@@ -669,20 +693,20 @@
   ],
   "walkthroughs": [],
   "attestationsDerived": {
-    "catalogued": 34,
+    "catalogued": 35,
     "excludedWithReason": 0,
-    "notYetReviewed": 186
+    "notYetReviewed": 185
   },
   "shards": [
     {
       "group": "accountsAndGrowth",
       "path": "calculation-coverage/accountsAndGrowth.json",
-      "recordCount": 8
+      "recordCount": 9
     },
     {
       "group": "cashFlowAndSummary",
       "path": "calculation-coverage/cashFlowAndSummary.json",
-      "recordCount": 10
+      "recordCount": 16
     },
     {
       "group": "insights",
@@ -712,7 +736,7 @@
     {
       "group": "optimizerAndComparisons",
       "path": "calculation-coverage/optimizerAndComparisons.json",
-      "recordCount": 2
+      "recordCount": 8
     },
     {
       "group": "roth",
@@ -732,7 +756,7 @@
     {
       "group": "taxes",
       "path": "calculation-coverage/taxes.json",
-      "recordCount": 2
+      "recordCount": 7
     }
   ]
 }

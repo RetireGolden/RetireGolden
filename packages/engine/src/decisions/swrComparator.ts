@@ -65,7 +65,13 @@ export interface SwrRuleResult {
   initialRatePct: number
   /** rate × starting investable balance — the rule's spending level (today's $). */
   initialAnnualSpend: number
-  /** Exact-ledger outcome of spending that level constant-real on this plan. */
+  /**
+   * Exact-ledger outcome of spending that level constant-real on this plan:
+   * the projection's depletionYear, the first year whose funding shortfall
+   * after any HECM backstop draw exceeds ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS
+   * (half a cent, the ledger's own residual budget), else null when no year
+   * crosses that budget.
+   */
   depletionYear: number | null
   endYear: number
   endingAfterTaxEstate: number

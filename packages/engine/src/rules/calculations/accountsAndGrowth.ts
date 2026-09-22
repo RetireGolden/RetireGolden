@@ -342,4 +342,33 @@ export const accountsAndGrowthRecords = {
     verifiedOn: '2026-09-17',
     provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'cursor' },
   },
+  'projection-summary-ending-after-tax-estate': {
+    title: 'Projection summary ending after tax estate',
+    purpose: 'Net the horizon estate of charity carve-outs and assumed heir income tax.',
+    kind: 'composition',
+    outputs: ['projection-summary-ending-after-tax-estate'],
+    feeds: ['swr-rule-result-ending-after-tax-estate', 'scenario-comparison-cell', 'insight-spending-headroom-rough-annual'],
+    statement: 'projection/compare.ts#summarizeProjection computes nominal ending after-tax estate as horizon net worth minus the amount passing to charity and minus the total assumed heir income tax on inherited pre-tax balances: endingAfterTaxEstate = endingNetWorth - endingEstateToCharity - endingEstateHeirTax.',
+    formula: {
+      expression: 'endingAfterTaxEstate = endingNetWorth - endingEstateToCharity - endingEstateHeirTax',
+      variables: [
+        { symbol: 'endingNetWorth', meaning: 'Horizon net worth', unit: 'nominal USD', domain: 'finite' },
+        { symbol: 'endingEstateToCharity', meaning: 'Amount passing to charity, untaxed', unit: 'nominal USD', domain: 'nonnegative' },
+        { symbol: 'endingEstateHeirTax', meaning: 'Assumed heir income tax on inherited pre-tax balances', unit: 'nominal USD', domain: 'nonnegative' },
+      ],
+      timing: 'projection horizon',
+      rounding: 'none stated',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/accounts-and-growth/projection-summary-ending-after-tax-estate.md',
+    },
+    limits: [
+      'Charity carve-outs pass untaxed rather than remaining in the heirs\' estate, so they are subtracted here even though they are also reported separately in endingEstateToCharity; with no charity destination the identity collapses to net worth minus heir tax. Ignoring charity, adding heir tax instead of subtracting it, or subtracting charity a second time through the heir tax each name a different quantity. The figure is assumed terminal exposure at the horizon, not a death-year return.',
+    ],
+    implementedBy: ['packages/engine/src/projection/compare.ts'],
+    implementedByFunctions: ['packages/engine/src/projection/compare.ts#summarizeProjection'],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
 } satisfies Record<string, CalculationRecord>

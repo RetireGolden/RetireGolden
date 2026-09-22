@@ -1,0 +1,113 @@
+# Mutation receipt: swr-rule-depletion-year
+
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-seven` at base `74916a7e`, and re-executed 2026-09-22 against RetireGolden base `7ae019a8` (branch `claude/b1-p4-cards-seven`, pull request #727) in `packages/engine`.
+
+## Mutation applied to `packages/engine/src/decisions/swrComparator.ts`
+
+```diff
+diff --git a/packages/engine/src/decisions/swrComparator.ts b/packages/engine/src/decisions/swrComparator.ts
+index fb930611..be61fb42 100644
+--- a/packages/engine/src/decisions/swrComparator.ts
++++ b/packages/engine/src/decisions/swrComparator.ts
+@@ -119,7 +119,7 @@ export function compareSwrRules(
+       citation: rule.citation,
+       initialRatePct: ratePct,
+       initialAnnualSpend,
+-      depletionYear: summary.depletionYear,
++      depletionYear: [...result.years].sort((a, b) => b.shortfall - a.shortfall)[0]?.year ?? null,
+       endYear: result.endYear,
+       endingAfterTaxEstate: summary.endingAfterTaxEstate,
+       lifetimeTaxesAndPenalties: summary.lifetimeTaxesAndPenalties,
+```
+
+Select the largest-shortfall year instead of the first year over the residual budget.
+
+The assertion this record owns is the one reading `expected 2042 to be 2041`; the mutation also breaks a sibling record's assertion in the same file, because both read the mutated expression. The captured output shows every failure in full.
+
+## Command
+
+```
+NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/decisions/swrComparator.evidence.test.ts
+```
+
+## Captured failing output
+
+Re-executed 2026-09-22 on the pull-request branch after the review of #727: the heir-tax fixture had grown to two cases since the first execution and the branch was renamed for the pull request, so every capture, blob hash and revert note is refreshed against this head. The baseline is green (swrComparator.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed. Exit code: 1.
+
+```
+RUN  v5.0.0 C:/TEMP/rg-rehearse2/packages/engine
+
+ ❯ src/decisions/swrComparator.evidence.test.ts (6 tests | 3 failed) 90ms
+   ❯ swr-rule-end-year — Swr rule end year (1)
+     × publishes the 2055 ledger endpoint, not the 2041 depletion year 5ms
+   ❯ swr-rule-depletion-year — Swr rule depletion year (2)
+     × selects 2041, the first year whose shortfall clears the half-cent budget 25ms
+     × publishes null when no year is short 9ms
+
+ Test Files  1 failed (1)
+      Tests  3 failed | 3 passed (6)
+
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/decisions/swrComparator.evidence.test.ts > swr-rule-end-year — Swr rule end year > publishes the 2055 ledger endpoint, not the 2041 depletion year
+AssertionError: expected 2026 to be 2041 // Object.is equality
+
+- Expected
++ Received
+
+- 2041
++ 2026
+
+ ❯ src/decisions/swrComparator.evidence.test.ts:199:35
+    197|         const row = rows.find((candidate) => candidate.id === BENGEN)!
+    198|         expect(row.endYear).toBe(example.expected.endYear)
+    199|         expect(row.depletionYear).toBe(inputs.depletionYear)
+       |                                   ^
+    200|         expect(row.endYear).not.toBe(inputs.depletionYear)
+    201|         expect(row.endYear).not.toBe(inputs.startYear + 30)
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
+
+ FAIL  src/decisions/swrComparator.evidence.test.ts > swr-rule-depletion-year — Swr rule depletion year > selects 2041, the first year whose shortfall clears the half-cent budget
+AssertionError: expected 2042 to be 2041 // Object.is equality
+
+- Expected
++ Received
+
+- 2041
++ 2042
+
+ ❯ src/decisions/swrComparator.evidence.test.ts:259:33
+    257|       // largest-shortfall reading the worksheet rejects would name a …
+    258|       // year; the mutation receipt executes exactly that reading.
+    259|       expect(row.depletionYear).toBe(example.expected.depletionYear)
+       |                                 ^
+    260|     })
+    261|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
+
+ FAIL  src/decisions/swrComparator.evidence.test.ts > swr-rule-depletion-year — Swr rule depletion year > publishes null when no year is short
+AssertionError: expected 2026 to be null // Object.is equality
+
+- Expected:
+null
+
++ Received:
+2026
+
+ ❯ src/decisions/swrComparator.evidence.test.ts:267:33
+    265|       const rows = compareSwrRules(depletingPlan(example.inputs.funded…
+    266|       const row = rows.find((candidate) => candidate.id === BENGEN)!
+    267|       expect(row.depletionYear).toBe(example.expected.noShortfallDeple…
+       |                                 ^
+    268|     })
+    269|   },
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
+```
+
+## Revert
+
+The original bytes of `packages/engine/src/decisions/swrComparator.ts` were written back and compared byte for byte in the harness, and `git diff --quiet -- packages/engine/src/decisions/swrComparator.ts` then exited 0, confirming no production change remained. Re-ran the named command after restoration: the suite returned to its baseline state, green (exit 0).
