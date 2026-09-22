@@ -25,6 +25,13 @@ export interface AnnualPropertyCarryingCostRow {
   readonly record: RecordedAccountAmount
 }
 
+/**
+ * Carrying cost of each owned property for the year: `(propertyTaxAnnual +
+ * insuranceAnnual) × the inflation factor`, charged every year the household
+ * has someone alive and the property has not reached its planned sale year;
+ * it continues after any mortgage is paid off, since the debt account carries
+ * only principal and interest.
+ */
 export function annualPropertyCarryingCosts(
   input: AnnualPropertyCarryingCostsInput,
 ): readonly AnnualPropertyCarryingCostRow[] {

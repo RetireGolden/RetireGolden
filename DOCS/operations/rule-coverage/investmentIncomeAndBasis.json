@@ -485,7 +485,7 @@
           "functions": [
             {
               "name": "summarizeProjection",
-              "line": 218
+              "line": 222
             }
           ]
         },
@@ -1556,7 +1556,7 @@
           "functions": [
             {
               "name": "tipsLadderSchema",
-              "line": 1770
+              "line": 1775
             }
           ]
         },
@@ -1924,7 +1924,7 @@
           "functions": [
             {
               "name": "tipsLadderSchema",
-              "line": 1770
+              "line": 1775
             }
           ]
         },
@@ -2007,7 +2007,7 @@
           "functions": [
             {
               "name": "tipsLadderSchema",
-              "line": 1770
+              "line": 1775
             }
           ]
         },
@@ -2075,7 +2075,7 @@
           "functions": [
             {
               "name": "tipsLadderSchema",
-              "line": 1770
+              "line": 1775
             }
           ]
         },

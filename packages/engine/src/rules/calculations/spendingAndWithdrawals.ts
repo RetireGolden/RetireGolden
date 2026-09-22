@@ -49,7 +49,7 @@ export const spendingAndWithdrawalsRecords = {
       'packages/engine/src/projection/internal/annualLifestyleLayers.ts#annualLifestyleLayers',
     ],
     verifiedOn: '2026-09-14',
-    provenance: { derivedBy: 'claude-orchestrator', implementedBy: 'grok', reviewedBy: 'unreviewed' },
+    provenance: { derivedBy: 'claude-orchestrator', implementedBy: 'grok', reviewedBy: 'cursor' },
   },
   'abw-expected-real-return': {
     title: 'ABW expected real return: fixed, TIPS yield, or CAPE-blended',

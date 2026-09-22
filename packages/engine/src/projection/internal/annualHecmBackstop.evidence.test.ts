@@ -5,6 +5,7 @@ import { describeCalculation, withinTolerance } from '../../rules/describeCalcul
 import { createFederalTaxCalculator } from '../../tax/federalTax.js'
 import { singlePersonPlan } from '../../testing/planFixtures.js'
 import { ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS } from '../moneyTolerance.js'
+import { annualHecmBackstopPlan } from './annualHecmBackstop.js'
 import { simulatePlan } from '../simulate.js'
 import type { ProjectionResult } from '../types.js'
 
@@ -115,6 +116,96 @@ describeCalculation(
       const row = result.years.find((entry) => entry.year === YEAR)!
       expect(row.shortfall).toBeGreaterThan(ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS)
       expect(result.depletionYear).toBe(YEAR)
+    })
+  },
+)
+
+describeCalculation(
+  'hecm-draw-annual',
+  {
+    example: {
+      inputs: {
+        hecmLineOpen: true,
+        drawPolicy: 'lastResort',
+        acceptedCoordinatedDraw: 0,
+        truePortfolioShortfallBeforeBackstop: 40_000,
+        availableLine: 25_000,
+      },
+      expected: {
+        hecmDraw: 25_000,
+        remainingShortfall: 15_000,
+        fullShortfallWrongReading: 40_000,
+        policyRefusalWrongReading: 0,
+        drawPlusRemainingWrongReading: 40_000,
+      },
+      tolerance: { abs: 0.005 },
+    },
+    worksheet: 'DOCS/calculations/accounts-and-growth/hecm-draw-annual.md',
+    mutation: 'DOCS/calculations/accounts-and-growth/hecm-draw-annual.mutation.md',
+  },
+  ({ example }) => {
+    const inputs = example.inputs as Record<string, number | string | boolean>
+    const expected = example.expected as Record<string, number>
+    const YEAR = 2034
+    const shortfall = inputs.truePortfolioShortfallBeforeBackstop as number
+    const availableLine = inputs.availableLine as number
+
+    function expectWithin(actual: number, target: number, label: string): void {
+      expect(
+        withinTolerance(actual, target, example.tolerance),
+        `${label} ${actual} is not within ${JSON.stringify(example.tolerance)} of the worksheet's ${target}`,
+      ).toBe(true)
+    }
+
+    const hecmProperty = {
+      type: 'property', id: 'home', name: 'Home', ownerPersonId: null, annualReturnPct: 0,
+      value: availableLine * 20, plannedSaleYear: null, expectedNetProceeds: null,
+      primaryResidence: true,
+      hecm: { openYear: YEAR, principalLimitPct: 5, growthRatePct: 0, drawPolicy: 'lastResort' },
+    } as unknown as Account
+
+    it('draws the whole 25000 available line against the 40000 shortfall and no more', () => {
+      const plan = annualHecmBackstopPlan({
+        accounts: [hecmProperty],
+        hecmStates: new Map([['home', { principalLimit: availableLine, loanBalance: 0 }]]),
+        portfolioShortfall: shortfall,
+        anyAlive: true,
+      })
+      expectWithin(plan.draw, expected.hecmDraw!, 'backstop draw')
+      expectWithin(plan.shortfallAfterHecm, expected.remainingShortfall!, 'shortfall after the backstop')
+      expect(plan.allocations.map((row) => row.propertyAccountId)).toEqual(['home'])
+      // The worksheet's first and third wrong readings.
+      expect(withinTolerance(plan.draw, expected.fullShortfallWrongReading!, example.tolerance)).toBe(false)
+      expect(
+        withinTolerance(plan.draw + plan.shortfallAfterHecm, expected.hecmDraw!, example.tolerance),
+      ).toBe(false)
+    })
+
+    it('publishes the same 25000 as hecmDraw on a real last-resort ledger year', () => {
+      // A 40,000 lifestyle need, no portfolio at all, and a 500,000 primary
+      // residence at the schema's minimum 5-percent principal limit with a
+      // zero growth rate, so the available line is exactly 25,000. The owner
+      // is 64, so no Medicare or marketplace premium can change the need.
+      const plan = singlePersonPlan({ dob: `${YEAR - 64}-06-15`, planningAge: 95 })
+      plan.accounts = [hecmProperty]
+      plan.expenses.baseAnnual = shortfall
+      const result: ProjectionResult = simulatePlan(validated(plan), {
+        startYear: YEAR,
+        horizonEndYear: YEAR,
+        taxCalculator: createFederalTaxCalculator(),
+      })
+      const row = result.years.find((entry) => entry.year === YEAR)
+      if (row === undefined) throw new Error(`missing projection year ${YEAR}`)
+
+      // The constructed year really is the worksheet's: a 40,000 need with no
+      // portfolio withdrawal behind it.
+      expectWithin(row.expenses.total, shortfall, 'expenses.total')
+      expect(row.withdrawals.total).toBe(0)
+      expectWithin(row.hecmDraw, expected.hecmDraw!, 'hecmDraw')
+      expectWithin(row.shortfall, expected.remainingShortfall!, 'residual shortfall')
+      // The worksheet's second wrong reading: refusing the backstop because
+      // the policy is lastResort rather than coordinated.
+      expect(withinTolerance(row.hecmDraw, expected.policyRefusalWrongReading!, example.tolerance)).toBe(false)
     })
   },
 )

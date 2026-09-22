@@ -77,11 +77,17 @@ integer-cent `exact`.
 2. **Ignoring growth of the remainder** — divide the opening balance by n:
    \(P = 210/2 = 105\). Discriminates the amortization identity from a flat split.
 
+## Family
+
+outputs: `spending-base-annual` (the ABW policy's base spending before guardrail adjustments; the record's limits say so).
+
+feeds: none.
+
 ## Author and reviewer
 
 - Derived by: claude-orchestrator, from the formula alone, without running the engine.
 - Implemented by: grok.
-- Reviewed by: unreviewed. An independent recomputation is still owed.
+- Reviewed by: cursor (composer-2.5), 2026-09-18, by independent recomputation without executing the engine; see REVIEW-2026-09-18-abw.md in this directory.
 
 ## Revision
 

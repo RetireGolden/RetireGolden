@@ -397,4 +397,43 @@ export const socialSecurityRecords = {
     verifiedOn: '2026-09-18',
     provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
   },
+  'social-security-benefit-annual': {
+    title: 'Annual household Social Security benefit',
+    purpose: 'The Social Security cash the household is paid in one projection year, after the earnings test.',
+    kind: 'composition',
+    outputs: ['social-security-benefit-annual'],
+    statement:
+      'YearResult.incomes.socialSecurity is the sum over living people of that person\'s benefit. Each own retirement row is PIA x the claim-age factor x payable months (0 before the claim year, 12 − claim months in it, 12 after) x the COLA factor x the haircut factor. A divorced-spouse, current-spouse spousal — the claimant\'s own monthly PLUS max(0, 0.5 x the higher PIA x the spousal factor − own monthly), that excess capped by the family maximum — or survivor candidate REPLACES the running amount when it is larger, rather than adding to it. While the person is under FRA the earnings test then withholds max(0, (wages − the below-FRA annual limit) / 2), or the excess over the FRA-year limit divided by 3 in the FRA year itself, capped at the benefit. Units: nominal dollars per year. Rounding: none.',
+    formula: {
+      expression: 'benefit = Σ_people max(own, marital candidate) x months x cola x haircut, less max(0, (wages − limit)/2) capped at the benefit',
+      variables: [
+        { symbol: 'PIA', meaning: 'Primary insurance amount at FRA', unit: 'usd/month', domain: 'nonnegative' },
+        { symbol: 'claim factor', meaning: 'Retirement factor for the claim age (early reduction or delayed credits)', unit: '1', domain: '0.70 to 1.32' },
+        { symbol: 'payable months', meaning: '0, 12 − claim months, or 12', unit: 'months', domain: '0..12' },
+        { symbol: 'cola, haircut', meaning: 'COLA factor from the start year and 1 − cutPct/100 from ssHaircut.fromYear', unit: '1', domain: 'positive' },
+        { symbol: 'limit', meaning: 'Pack earnings-test limit, below-FRA or FRA-year, scaled for the year', unit: 'usd/year', domain: 'positive' },
+      ],
+      timing: 'annual; the earnings test applies after the marital comparison',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/social-security/social-security-benefit-annual.md',
+    },
+    limits: [
+      'The own-claim-year case is constructible exactly as the worksheet now states it: a 1960 birth has FRA 67y0m, so a 64y3m claim is 33 months early and the factor is 1 − 33 x (5/9 of 1%) = 49/60, while the claim-age month of 3 pays 12 − 3 = 9 months in the claim year. The first derivation instead paired a 0.8 factor with those nine months — 0.8 is exactly 36 months before FRA, whose claim-age month is 0 and which therefore pays all 12 — and that was corrected on 2026-09-18; the incompatible pair is now the worksheet\'s first wrong reading, asserted as not matching',
+      'Beyond the worksheet\'s inputs the evidence plans fix, for the claim-year and later-year cases: a 1960-born single filer claiming at 64y3m on one plan whose projection starts in 2024, the year that birth attains 64, so the claim year is the first projection year and its COLA factor is exactly 1; zero inflation and zero return; a fixed 6%/year ssCola so the second projection year\'s factor is exactly 1.06; ssHaircut cutPct 5 from the start year; and a cash account to fund the year',
+      'The two-person case asserts the REPLACEMENT rule, so both people claim at their own FRA (claim and spousal factors 1) in the projection\'s first year, where the COLA factor is 1 and no haircut applies; the family maximum is left non-binding by the PIAs chosen',
+      'The earnings-test case is a separate 1962-born plan claiming at 64y0m, where the 0.8 factor and 12 payable months ARE the compatible pair, and is asserted in 2026 so the pack\'s $24,480 below-FRA limit is unindexed; the wage row that drives it is ordinary income and is taxed, which does not enter this family',
+      'The published field is the PAID benefit; the amount withheld is a separate field (ssEarningsTestWithheld), and withheld months are credited back into a later claim age rather than lost',
+      'No discrepancy remains in the two-person case: annualSocialSecurity builds the current-spouse candidate as the claimant\'s own monthly benefit PLUS the capped spousal excess ($300 + $700 = $1,000) and replaces the running amount with that total, which is what a dually-entitled spouse is actually paid, so the household is $36,000 and the worksheet expects $36,000. The first derivation read the ledger comment\'s "replaces the running amount" as replacing the own benefit with the excess alone and expected $32,400; it was corrected on 2026-09-18, and $32,400 is now the worksheet\'s second wrong reading, asserted as not matching',
+    ],
+    implementedBy: ['packages/engine/src/projection/internal/annualSocialSecurity.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualSocialSecurity.ts#annualSocialSecurity',
+      'packages/engine/src/projection/internal/annualSocialSecurity.ts#annualSocialSecurityPayableMonths',
+    ],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
 } satisfies Record<string, CalculationRecord>

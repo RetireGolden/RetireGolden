@@ -301,4 +301,43 @@ export const insightsRecords = {
     verifiedOn: '2026-09-17',
     provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'cursor' },
   },
+  'insight-impact-estate-and-lifetime-tax-deltas': {
+    title: 'Insight impact: ending after-tax estate and lifetime tax deltas',
+    purpose: 'What an insight\'s modeled action does to the estate and to lifetime taxes, as candidate minus baseline.',
+    kind: 'formula',
+    outputs: ['insight-impact-ending-after-tax-estate-delta', 'insight-impact-lifetime-tax-delta'],
+    statement:
+      'decisions/evaluateCandidate.ts#evaluateCandidate prices the candidate on its own exact-ledger projection and subtracts the shared baseline in the same direction for both fields: endingAfterTaxEstateDelta = candidateSummary.endingAfterTaxEstate - baselineSummary.endingAfterTaxEstate, and lifetimeTaxDelta = candidateSummary.lifetimeTaxesAndPenalties - baselineSummary.lifetimeTaxesAndPenalties. The estate field\'s comment states that order outright and the lifetime-tax field defines a negative value as savings, which is the same convention: an estate improvement is positive and a tax saving is negative. Units: today\'s dollars. Rounding: none.',
+    formula: {
+      expression: 'estateDelta = E_candidate - E_baseline; taxDelta = T_candidate - T_baseline',
+      variables: [
+        { symbol: 'E', meaning: 'Ending after-tax estate of a run\'s summary', unit: 'usd', domain: 'finite' },
+        { symbol: 'T', meaning: 'Lifetime taxes and penalties of a run\'s summary', unit: 'usd', domain: 'nonnegative' },
+      ],
+      timing: 'once per evaluated candidate, against the context\'s single shared baseline',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/insights/insight-impact-estate-and-lifetime-tax-deltas.md',
+    },
+    limits: [
+      'Beyond the worksheet\'s inputs the evidence plan fixes two real one-year projections that land on the worksheet\'s four summary figures exactly: a 1963-born single filer (over 59.5 so no early-distribution rule, under 65 so no Medicare premium) with one $1,800,000 traditional account, a flat 25% tax double, heirTaxRatePct 50, zero return and zero inflation, and base spending of $600,000 in the baseline against $555,000 in the candidate patch. At a flat rate r the withdrawal funding spending S is S / (1 - r) and the tax is r x that, and the estate is the remaining balance net of the heir rate',
+      'The flat calculator is a test double, never the shipped stack: it exists so the fixture can name exact dollars without recomputing federal law, and it must not be read as a tax result',
+      'Both deltas are differences of SUMMARIES, so they inherit every convention of summarizeProjection — the heir-tax haircut, charity carve-outs, and the fact that property, debts and ladder face ride through net worth without per-account estate rows',
+      'The irmaa-tier-edge detector writes its annual premium cliff into endingAfterTaxEstateDelta as an avoidance signal rather than an estate change; that exception belongs to that detector\'s own record and the evidence here does not exercise it',
+    ],
+    implementedBy: [
+      'packages/engine/src/decisions/evaluateCandidate.ts',
+      'packages/engine/src/insights/types.ts',
+      'packages/engine/src/decisions/insightsAdapter.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/decisions/evaluateCandidate.ts#evaluateCandidate',
+      'packages/engine/src/insights/types.ts#InsightImpact',
+      'packages/engine/src/decisions/insightsAdapter.ts#evaluateInsightAction',
+    ],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
 } satisfies Record<string, CalculationRecord>

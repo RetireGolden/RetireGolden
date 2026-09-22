@@ -97,7 +97,11 @@ export interface ProjectionSummary {
   endingEstateToCharity: number
   /** Per-account estate discounting, so the summary can explain each class's haircut. */
   estateBreakdown: EstateAccountBreakdown[]
-  /** End-of-plan balance by account category. */
+  /**
+   * The last ledger row's balances summed by account type into the five
+   * categories (cash, taxable, traditional, roth, hsa); equity-compensation
+   * accounts are not one of them and are left out here.
+   */
   endingByCategory: { cash: number; taxable: number; traditional: number; roth: number; hsa: number }
   /**
    * The projection's depletion year, copied from ProjectionResult: the first

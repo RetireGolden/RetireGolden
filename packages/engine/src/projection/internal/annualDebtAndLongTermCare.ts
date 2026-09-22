@@ -9,6 +9,13 @@ export interface AnnualDebtServiceRow {
   readonly nextBalance: number
 }
 
+/**
+ * One row per debt account with a positive balance: the balance first grows
+ * by `1 + interestPct / 100`, then the year pays the whole grown balance when
+ * a payoff year is set and reached, else `min(grown balance, monthlyPayment ×
+ * 12)`; the level payment is never inflated and self-caps at the balance, so
+ * the debt cannot go negative. `nextBalance` is what remains after the payment.
+ */
 export function annualDebtServiceRows(input: {
   readonly accounts: readonly Account[]
   readonly balances: ReadonlyMap<string, number>
@@ -61,6 +68,17 @@ export interface AnnualLongTermCarePlan {
   readonly personRows: AnnualLongTermCarePersonRow[]
 }
 
+/**
+ * Care episodes and policy benefits for the year. A care event applies while
+ * its person is alive and `0 ≤ ageAttained − startAge < durationYears`, at
+ * `annualCost × the health-inflation factor`; `careCost` is the sum. Each LTC
+ * policy the person owns pays `min(remaining cost, cap)` where `cap =
+ * benefitMonthly × 12 × (1 + riderPct / 100)^(year − startYear)`, reduced in
+ * the episode's first year by `max(0, 1 − eliminationPeriodDays / 365)` (the
+ * elimination period is self-paid), and only while the policy's benefit
+ * years remain (`benefitPeriodYears`, or unlimited for lifetime); `ltcBenefit`
+ * is the sum and never exceeds `careCost`.
+ */
 export function annualLongTermCarePlan(input: {
   readonly careEvents: readonly CareEvent[]
   readonly policies: readonly InsurancePolicy[]

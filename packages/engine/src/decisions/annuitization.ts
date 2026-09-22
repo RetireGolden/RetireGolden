@@ -44,9 +44,16 @@ export interface AnnuitizationSweepPoint {
    * only fund what the largest liquid account holds. Charts plot this.
    */
   effectiveAllocationPct: number
-  /** SPIA premium this point trades away (nominal, at the start year). */
+  /**
+   * SPIA premium this point trades away (nominal, at the start year):
+   * min(grid percent / 100 × the plan's investable total, 0.95 × the funding
+   * account's balance); a point whose premium is under $5,000 is skipped.
+   */
   premium: number
-  /** Annual annuity income the premium buys at the quoted rate. */
+  /**
+   * premium × the payout rate: the user's quoted rate / 100 when given, else
+   * the SPIA table interpolated at min(95, max(current age, 65)).
+   */
   annualIncome: number
   metrics: AnnuitizationPointMetrics
   /** Allocation-matched control (glidepath without the annuity); absent when not constructible. */

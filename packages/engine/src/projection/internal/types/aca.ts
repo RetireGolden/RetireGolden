@@ -70,7 +70,14 @@ export interface YearAcaResult {
     grossEnrollmentPremium: number
     applicableSlcspPremium: number
   }>
+  /** Σ over the 12 months of every covered member's enrollment premium for the month. */
   grossEnrollmentPremium: number
+  /**
+   * Σ over the 12 months of each covered member's SLCSP benchmark premium,
+   * counting a month only when that member's enrollment premium for it is
+   * above 0; null without an ACA contract or when the example contract's
+   * inputs mismatch.
+   */
   applicableSlcspPremium: number | null
   /** Current-year planning result; not actual APTC cash/refund/balance-due reconciliation. */
   modeledAllowablePtc: number | null

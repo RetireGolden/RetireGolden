@@ -232,4 +232,41 @@ export const rmdRecords = {
     verifiedOn: '2026-09-18',
     provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
   },
+  'inherited-distribution-forced-annual': {
+    title: 'Annual forced inherited distribution',
+    purpose: 'The gross forced cash every inherited account is required to distribute this year.',
+    kind: 'composition',
+    outputs: ['inherited-distribution-forced-annual'],
+    feeds: ['withdrawals-by-category-annual', 'withdrawals-total-annual'],
+    statement:
+      'projection/internal/types/result.ts#YearResult.inheritedDistribution publishes the sum of every inheritedAccounts[] row\'s executed required amount — annual, year-of-death and final-sweep alike — across traditional and Roth inherited accounts; voluntary amounts are excluded. As a current-code limit tracked by decision D-INHERITED-ROTH-SLICE, #YearResult.inheritedTraditionalDistribution is documented as excluding Roth forced dollars, while projection/internal/annualInheritedIraDistributions.ts#AnnualInheritedIraDistributionsResult carries a Roth row\'s characterized taxable slice into its ordinary-income total, which is what that field publishes. Units: nominal USD per year. Rounding: none.',
+    formula: {
+      expression: 'inheritedDistribution = sum of executed required amounts; inheritedTraditionalDistribution = traditional executed + characterized Roth ordinary income',
+      variables: [
+        { symbol: 'executed', meaning: 'Executed required amount on one inherited row', unit: 'usd', domain: 'nonnegative' },
+        { symbol: 'Roth taxable slice', meaning: 'Characterized ordinary income inside a Roth forced row', unit: 'usd', domain: '0 <= slice <= that row\'s gross' },
+      ],
+      timing: 'once per projection year, over every inherited row',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/rmd/inherited-distribution-forced-annual.md',
+    },
+    limits: [
+      'Decision D-INHERITED-ROTH-SLICE: the field comment on inheritedTraditionalDistribution says Roth forced dollars are excluded, while the code publishes the phase\'s ordinary-income total, which carries a Roth row\'s characterized taxable slice. The fixture asserts the current-code 8,600 and, separately, the Roth row\'s 3,000 gross and 600 slice, so whichever way the decision lands the discriminating evidence is already recorded',
+      'Asserted at the exported phase with the worksheet\'s three rows realized from plan facts: a traditional annual-RMD row whose 8,000 executed amount is min(required, live balance) at a live balance of exactly 8,000, a Roth final-sweep row executing its whole 3,000 live balance with an injected characterization returning the worksheet\'s 600 of ordinary income, and a traditional row inside a ten-year window with no annual requirement. Plan assumptions beyond the worksheet\'s inputs: each account is a sole designated-individual beneficiary IRA with asserted provenance and a 2026 owner death, and the voluntary amounts the worksheet lists belong to a later phase and are not supplied here — the fixture asserts that this phase writes zero voluntary on every row',
+    ],
+    implementedBy: [
+      'packages/engine/src/projection/internal/types/result.ts',
+      'packages/engine/src/projection/internal/annualInheritedIraDistributions.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/internal/types/result.ts#YearResult.inheritedDistribution',
+      'packages/engine/src/projection/internal/types/result.ts#YearResult.inheritedTraditionalDistribution',
+      'packages/engine/src/projection/internal/annualInheritedIraDistributions.ts#AnnualInheritedIraDistributionsResult',
+    ],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
 } satisfies Record<string, CalculationRecord>

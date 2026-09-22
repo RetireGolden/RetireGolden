@@ -418,4 +418,157 @@ export const taxesRecords = {
     verifiedOn: '2026-09-18',
     provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
   },
+  'tax-realized-gains-annual': {
+    title: 'Annual realized gains, signed and composed',
+    purpose: 'The year\'s net realized capital result across its three signed sources.',
+    kind: 'composition',
+    outputs: ['tax-realized-gains-annual'],
+    feeds: ['tax-total-annual'],
+    statement:
+      'projection/internal/types/result.ts#YearResult.realizedGains, assembled by projection/internal/annualYearResultAssembly.ts#annualYearResultAssembly, is the signed sum, in stated order, of gain embedded in taxable withdrawals, gain from rebalancing sales, and gain from named retirement-action executions. Each component is signed, so a loss from one source offsets gains from the others rather than being floored separately. Units: nominal USD per year. Rounding: none.',
+    formula: {
+      expression: 'realizedGains = withdrawal + rebalance + retirementAction',
+      variables: [
+        { symbol: 'withdrawal', meaning: 'Gain embedded in taxable-account withdrawals', unit: 'usd', domain: 'signed' },
+        { symbol: 'rebalance', meaning: 'Gain realized by rebalancing sales', unit: 'usd', domain: 'signed' },
+        { symbol: 'retirementAction', meaning: 'Gain or loss from named retirement-action executions', unit: 'usd', domain: 'signed' },
+      ],
+      timing: 'once per projection year, at year-result assembly',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/taxes/tax-realized-gains-annual.md',
+    },
+    limits: [
+      'Asserted at the exported assembly boundary with the worksheet\'s three signed components verbatim and every other assembly channel at zero, so nothing unstated can reach the published field. Plan assumptions beyond the worksheet\'s inputs: an empty balance-sheet snapshot and a zero ladder value, neither of which this field reads',
+      'The record covers the composition boundary only; each component\'s own arithmetic is evidenced by the withdrawal, rebalancing and retirement-action records',
+    ],
+    implementedBy: [
+      'packages/engine/src/projection/internal/types/result.ts',
+      'packages/engine/src/projection/internal/annualYearResultAssembly.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/internal/types/result.ts#YearResult.realizedGains',
+      'packages/engine/src/projection/internal/annualYearResultAssembly.ts#annualYearResultAssembly',
+    ],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
+  'tax-total-annual': {
+    title: 'Annual composed tax',
+    purpose: 'What the year\'s published tax figure is composed of, and what it excludes.',
+    kind: 'composition',
+    outputs: ['tax-total-annual'],
+    feeds: ['portfolio-need-annual', 'surplus-invested-annual'],
+    statement:
+      'projection/internal/types/result.ts#YearResult.tax is the amount produced by the composed calculator built by tax/federalTax.ts#combineTaxCalculators: the federal total of regular income tax plus AMT plus NIIT, plus the state calculator amount, plus any further composed calculator amounts. Penalties are excluded from it, from AGI and from MAGI. Units: nominal USD per year. Rounding: none; the composition is an ordered fold.',
+    formula: {
+      expression: 'tax = federalTotal + stateAmount + sum of further calculator amounts',
+      variables: [
+        { symbol: 'federalTotal', meaning: 'Regular income tax + AMT + NIIT', unit: 'usd/year', domain: 'nonnegative' },
+        { symbol: 'stateAmount', meaning: 'State calculator amount', unit: 'usd/year', domain: 'nonnegative' },
+        { symbol: 'penalties', meaning: 'Early-withdrawal and IRC 4974 amounts', unit: 'usd/year', domain: 'never a member of tax' },
+      ],
+      timing: 'once per accepted tax evaluation in the projection year',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/taxes/tax-total-annual.md',
+    },
+    limits: [
+      'The worksheet treats the federal and state amounts as outputs independently evidenced by their own worksheets and checks only the annual composition boundary, so the fixture composes two calculators that report the worksheet\'s stated 12,000 federal total and 3,000 state amount and asserts the composed 15,000 through both compute and computeResult. Those two calculators are fixture doubles standing in for the evidenced federal and state records; this record makes no claim about federal or state tax arithmetic',
+      'The 500 of penalties is asserted as excluded by composing the same calculators and showing the amount is unchanged: penalties never enter the calculator chain at all',
+    ],
+    implementedBy: [
+      'packages/engine/src/projection/internal/types/result.ts',
+      'packages/engine/src/tax/federalTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/internal/types/result.ts#YearResult.tax',
+      'packages/engine/src/tax/federalTax.ts#combineTaxCalculators',
+    ],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
+  'cash-flow-tax-character-amount': {
+    title: 'Cash-flow tax-character amount',
+    purpose: 'Why a tax annotation on a cash line never becomes a second cash source or use.',
+    kind: 'composition',
+    outputs: ['cash-flow-tax-character-amount'],
+    feeds: ['tax-total-annual'],
+    statement:
+      'projection/internal/types/cashFlow.ts#YearCashFlowTaxCharacter.amountPlanDollars, whether attached to a source line, a transfer line or standalone metadata, is a nominal tax-only annotation that is excluded from every cash conservation identity and from every transfer debit and credit total. A capitalGain annotation may be negative for a realized loss; other character kinds are nonnegative. Units: nominal Plan USD. Rounding: none.',
+    formula: {
+      expression: 'sourceTotal counts physical amounts only; attached taxCharacter contributes 0 to every money total',
+      variables: [
+        { symbol: 'amountPlanDollars', meaning: 'Characterized amount on the annotation', unit: 'usd', domain: 'signed for capitalGain' },
+        { symbol: 'physical amount', meaning: 'The line the annotation is attached to', unit: 'usd', domain: 'nonnegative' },
+      ],
+      timing: 'once per captured projection year',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/taxes/cash-flow-tax-character-amount.md',
+    },
+    limits: [
+      'Asserted at the production reconciler with the worksheet\'s 100,000 physical taxable-account withdrawal carrying a 30,000 capital-gain character and 20,000 of other physical sources, so the published cash source total stays 120,000. Plan assumptions beyond the worksheet\'s inputs: the account identity the line ids carry, and a matching set of funded uses so the year\'s cash identity still balances',
+      'The worksheet\'s third wrong reading is asserted as a rule rather than a number: the same reconciliation is run with a negative capital-gain character to show a realized loss is accepted and still contributes nothing to the cash totals',
+    ],
+    implementedBy: [
+      'packages/engine/src/projection/internal/types/cashFlow.ts',
+      'packages/engine/src/projection/annualCashFlowReconciliation.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/internal/types/cashFlow.ts#YearCashFlowTaxCharacter.amountPlanDollars',
+      'packages/engine/src/projection/annualCashFlowReconciliation.ts#reconcileYearCashFlow',
+    ],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
+  'tax-penalties-annual': {
+    title: 'Annual penalties: early withdrawal plus the IRC 4974 excise',
+    purpose: 'The two penalty channels a year composes, and why neither is part of tax.',
+    kind: 'composition',
+    outputs: ['tax-penalties-annual'],
+    feeds: ['portfolio-need-annual', 'display-total-spending-annual', 'scenario-lifetime-penalties'],
+    statement:
+      'projection/internal/types/result.ts#YearResult.penalties is composed by projection/internal/annualFundingCandidateEvaluation.ts#annualFundingCandidateEvaluation as projection/internal/annualFundingWithdrawalEffects.ts#annualFundingWithdrawalEffects reporting penaltyExcludingRmdShortfallExcise plus the IRC 4974 excise from rmd/rmdShortfallExcise.ts#computeRmdShortfallExcise. The early-withdrawal rate is 10 percent on pre-age-59-and-a-half taxable traditional withdrawals, inherited distributions are never subject to it, and the excise prices max(0, required - distributed by deadline) at the stated rate, whose post-SECURE-2 default is 25 percent. Penalties stay outside tax, AGI and MAGI. Units: nominal USD per year. Rounding: none.',
+    formula: {
+      expression: 'penalties = penaltyExcludingRmdShortfallExcise + rmdShortfallExciseTax; early = 0.10 x penalizable traditional; excise = rate x max(0, required - distributed)',
+      variables: [
+        { symbol: 'penalizable traditional', meaning: 'Taxable pre-59.5 traditional withdrawal', unit: 'usd', domain: 'nonnegative; 0 for inherited accounts' },
+        { symbol: 'required', meaning: 'Required minimum for the obligation', unit: 'usd', domain: 'nonnegative' },
+        { symbol: 'distributed', meaning: 'Distributed by the statutory deadline', unit: 'usd', domain: 'nonnegative' },
+        { symbol: 'rate', meaning: 'IRC 4974 rate', unit: '1', domain: '0.25 default from 2023' },
+      ],
+      timing: 'once per accepted funding evaluation in the projection year',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/taxes/tax-penalties-annual.md',
+    },
+    limits: [
+      'Asserted twice. At the two component producers: annualFundingWithdrawalEffects reports 2,000 of penaltyExcludingRmdShortfallExcise on the worksheet\'s 20,000 pre-59.5 taxable traditional withdrawal, and computeRmdShortfallExcise prices the worksheet\'s 12,000 required against 4,000 distributed as an 8,000 shortfall and a 2,000 excise at the default 25-percent rate with no relief elected. And as the published penalties of a real simulatePlan 2026 row that carries both channels at once: a 50-year-old whose only portfolio is a traditional IRA and whose 16,000 of required lifestyle plus the 2,000 excise drive a need-based withdrawal of exactly 20,000 under a zero-rate test calculator, alongside an inherited Roth account whose completed five-year deadline observation (opening benefit 12,000, 4,000 distributed by the 2026 deadline) prices the excise without replaying any cash',
+      'Plan assumptions beyond the worksheet\'s inputs for that ledger year: filing single in KY at a zero state rate with a zero-rate test tax calculator, so tax is 0 and the whole need is spending plus penalties; the fixture asserts the 10-percent rate relation W = S + excise + 0.10 W closes at exactly 20,000',
+      'The worksheet\'s fourth wrong reading is asserted as a rule: the same withdrawal-effects call on an inherited traditional account reports a zero penalty',
+    ],
+    implementedBy: [
+      'packages/engine/src/projection/internal/types/result.ts',
+      'packages/engine/src/projection/internal/annualFundingCandidateEvaluation.ts',
+      'packages/engine/src/projection/internal/annualFundingWithdrawalEffects.ts',
+      'packages/engine/src/rmd/rmdShortfallExcise.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/internal/types/result.ts#YearResult.penalties',
+      'packages/engine/src/projection/internal/annualFundingCandidateEvaluation.ts#annualFundingCandidateEvaluation',
+      'packages/engine/src/projection/internal/annualFundingWithdrawalEffects.ts#annualFundingWithdrawalEffects',
+      'packages/engine/src/rmd/rmdShortfallExcise.ts#computeRmdShortfallExcise',
+    ],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
 } satisfies Record<string, CalculationRecord>

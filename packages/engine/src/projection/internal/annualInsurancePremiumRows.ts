@@ -28,6 +28,12 @@ export interface AnnualInsurancePremiumRow {
   readonly record: RecordedPolicyPremium
 }
 
+/**
+ * One row per policy, in plan order, with amount = annualPremium, for every
+ * policy whose mode is not paidUp, whose subject (the LTC owner or the
+ * insured) is alive, and which, under untilAge, has a subject whose attained
+ * age is below premiumEndAge; a subject who has attained that age is skipped.
+ */
 export function annualInsurancePremiumRows(
   input: AnnualInsurancePremiumRowsInput,
 ): AnnualInsurancePremiumRow[] {

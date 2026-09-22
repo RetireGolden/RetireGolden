@@ -23,8 +23,11 @@ export interface HistoricalStressWindow {
   projection: ProjectionResult
   summary: ProjectionSummary
   success: boolean
+  /** Σ over every projection year of the year's shortfall (after the HECM backstop) in the replayed window. */
   totalShortfall: number
+  /** Σ over every projection year of the year's requiredShortfall. */
   totalRequiredShortfall: number
+  /** Σ over every projection year of the year's targetShortfall. */
   totalTargetShortfall: number
 }
 

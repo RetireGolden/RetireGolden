@@ -3,7 +3,8 @@ import { expect, it } from 'vitest'
 import { packForYear, standardDeduction } from '../params/index.js'
 import type { TaxYearInput } from '../projection/types.js'
 import { describeCalculation, withinTolerance } from '../rules/describeCalculation.js'
-import { applyCapitalLossCarryforward, computeFederalTax, taxableSocialSecurity } from './federalTax.js'
+import type { TaxCalculator } from '../projection/internal/types/tax.js'
+import { applyCapitalLossCarryforward, combineTaxCalculators, computeFederalTax, taxableSocialSecurity } from './federalTax.js'
 
 const pack = packForYear(2026).pack
 
@@ -343,6 +344,82 @@ describeCalculation(
 
     it('returns nothing when there is no benefit to tax', () => {
       expect(taxableSocialSecurity(pack, 'single', 100_000, 0)).toBe(0)
+    })
+  },
+)
+
+describeCalculation(
+  'tax-total-annual',
+  {
+    example: {
+      inputs: {
+        federalTotalFromFederalWorksheet: 12_000,
+        stateAmountFromStateWorksheet: 3_000,
+        furtherComposedCalculators: 0,
+        earlyWithdrawalAndRmdPenalties: 500,
+      },
+      expected: {
+        tax: 15_000,
+        addingPenaltiesWrongReading: 15_500,
+        omittingStateWrongReading: 12_000,
+      },
+      tolerance: { abs: 0.005 },
+    },
+    worksheet: 'DOCS/calculations/taxes/tax-total-annual.md',
+    mutation: 'DOCS/calculations/taxes/tax-total-annual.mutation.md',
+  },
+  ({ example }) => {
+    const inputs = example.inputs as Record<string, number>
+    const expected = example.expected as Record<string, number>
+
+    /**
+     * The worksheet treats the federal and state amounts as outputs already
+     * evidenced by their own worksheets and checks only the annual composition
+     * boundary, so each arm is a calculator that reports the worksheet's own
+     * figure. These two are fixture doubles standing in for the evidenced
+     * federal and state records, not tax models.
+     */
+    function fixedCalculator(amount: number): TaxCalculator {
+      return { compute: () => amount }
+    }
+
+    const composed = combineTaxCalculators(
+      fixedCalculator(inputs.federalTotalFromFederalWorksheet!),
+      fixedCalculator(inputs.stateAmountFromStateWorksheet!),
+      fixedCalculator(inputs.furtherComposedCalculators!),
+    )
+    const input = singleFiler({ ordinaryIncome: 0 })
+
+    it('composes 12000 of federal and 3000 of state into 15000 and excludes penalties', () => {
+      expectWithin(composed.compute(input), expected.tax!, example.tolerance, 'composed tax')
+      expectWithin(
+        composed.computeResult?.(input).amount ?? Number.NaN,
+        expected.tax!,
+        example.tolerance,
+        'composed tax through computeResult',
+      )
+      // The 500 of penalties never enters the calculator chain at all, so the
+      // worksheet's first wrong reading cannot be produced by composition.
+      expect(
+        withinTolerance(composed.compute(input), expected.addingPenaltiesWrongReading!, example.tolerance),
+      ).toBe(false)
+    })
+
+    it('loses exactly the state amount when the state arm is dropped', () => {
+      const federalOnly = combineTaxCalculators(
+        fixedCalculator(inputs.federalTotalFromFederalWorksheet!),
+      )
+      // The worksheet's third wrong reading, reproduced only by omitting the
+      // state calculator.
+      expectWithin(
+        federalOnly.compute(input),
+        expected.omittingStateWrongReading!,
+        example.tolerance,
+        'federal-only composition',
+      )
+      expect(
+        withinTolerance(federalOnly.compute(input), expected.tax!, example.tolerance),
+      ).toBe(false)
     })
   },
 )

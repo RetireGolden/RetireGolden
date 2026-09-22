@@ -63,6 +63,14 @@ function interpolateByAge(
   return sorted[sorted.length - 1]!.value
 }
 
+/**
+ * Year transition for each permanent-life policy: while the insured is alive
+ * and below the death age, the cash value follows the policy's schedule
+ * (interpolated by age, clamped at its ends) or grows by `1 +
+ * cashValueGrowthPct / 100`; in the death-age year the policy pays
+ * `max(deathBenefit, cash value)` into the estate and the cash value becomes
+ * 0, and it stays 0 afterwards.
+ */
 export function annualPermanentLifeTransitions(
   input: AnnualPermanentLifeTransitionsInput,
 ): AnnualPermanentLifeTransitionsResult {

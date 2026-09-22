@@ -1465,6 +1465,7 @@ export type HecmLineOfCredit = z.infer<typeof hecmLineOfCreditSchema>
 export const propertySchema = z.object({
   ...accountBase,
   type: z.literal('property'),
+  /** Grows at general inflation; the annualReturnPct carried by accountBase is ignored for a property (propertyEventsAndGrowth). */
   value: nonNegative,
   plannedSaleYear: calendarYear.nullable(),
   /**
@@ -1688,7 +1689,11 @@ export function selectedLogicalBalanceAccounts(
  * Premiums are a shared shape across kinds:
  *   'lifetime' = charge annualPremium every year while the insured is alive
  *   'paidUp'   = charge nothing (fully paid up); annualPremium ignored
- *   'untilAge' = charge annualPremium through premiumEndAge (required)
+ *   'untilAge' = charge annualPremium in each year the subject's attained age
+ *                is below premiumEndAge (required); nothing is charged in the
+ *                year that age is attained or after (the field comments say
+ *                "age when premiums stop"; an earlier reading here said
+ *                "through", see decision D-PREMIUM-END-AGE)
  * Premiums are level (fixed nominal), not inflation-adjusted: permanent-life
  * base premiums and most LTC premiums are contractually level.
  */

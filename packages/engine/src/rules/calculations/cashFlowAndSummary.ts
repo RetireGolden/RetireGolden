@@ -1186,4 +1186,661 @@ export const cashFlowAndSummaryRecords = {
     verifiedOn: '2026-09-18',
     provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
   },
+  'spending-debt-service-annual': {
+    title: 'Annual debt service under the grow-then-pay convention',
+    purpose: 'What the year\'s debts actually cost, once interest is charged before the payment.',
+    kind: 'formula',
+    outputs: ['spending-debt-service-annual'],
+    feeds: ['spending-total-annual'],
+    statement:
+      'projection/internal/types/yearLedger.ts#YearExpenses.debtService, planned by projection/internal/annualDebtAndLongTermCare.ts#annualDebtServiceRows, is the sum over debt accounts with a positive balance of the year\'s payment, where the opening balance first grows by 1 + interestPct/100 and the year then pays the whole grown balance when payoffYear is set and reached, else min(grown balance, monthlyPayment x 12). The level payment is never inflated and self-caps at the balance. Units: nominal USD per year. Rounding: none; the ordered fold is a binary float.',
+    formula: {
+      expression: 'grown_i = B_i (1 + r_i); pay_i = payoff ? grown_i : min(grown_i, 12 m_i); debtService = sum_i pay_i',
+      variables: [
+        { symbol: 'B_i', meaning: 'Opening balance of debt i', unit: 'usd', domain: 'positive' },
+        { symbol: 'r_i', meaning: 'Annual interest rate', unit: '1', domain: 'interestPct / 100' },
+        { symbol: 'm_i', meaning: 'Level monthly payment', unit: 'usd/month', domain: 'nonnegative' },
+        { symbol: 'payoff', meaning: 'Scheduled payoff reached', unit: 'boolean', domain: 'year >= payoffYear' },
+      ],
+      timing: 'once per projection year, before the funding solve',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/cash-flow-and-summary/spending-debt-service-annual.md',
+    },
+    limits: [
+      'Asserted twice: at the exported phase helper with the worksheet\'s two debts verbatim, and as the published expenses.debtService of a real simulatePlan 2030 row carrying the same two debts. Plan assumptions beyond the worksheet\'s inputs for that ledger row: a single 60-year-old filing single in KY at a zero state rate, zero general inflation, zero account returns, and one 500,000 cash account large enough that the payments are funded without a portfolio sale',
+      'The worksheet\'s third wrong reading (ignoring payoffYear) coincides with the right answer at these inputs, so the fixture discriminates the first two numerically and states the third as a rule',
+    ],
+    implementedBy: [
+      'packages/engine/src/projection/internal/types/yearLedger.ts',
+      'packages/engine/src/projection/internal/annualDebtAndLongTermCare.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/internal/types/yearLedger.ts#YearExpenses.debtService',
+      'packages/engine/src/projection/internal/annualDebtAndLongTermCare.ts#annualDebtServiceRows',
+    ],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
+  'spending-property-costs-annual': {
+    title: 'Annual property carrying costs on owned properties',
+    purpose: 'Property tax and homeowner insurance on every property still owned this year.',
+    kind: 'formula',
+    outputs: ['spending-property-costs-annual'],
+    feeds: ['spending-total-annual'],
+    statement:
+      'projection/internal/types/yearLedger.ts#YearExpenses.propertyCosts, produced by projection/internal/annualPropertyCarryingCosts.ts#annualPropertyCarryingCosts, is the sum over property accounts that the household still owns of (propertyTaxAnnual + insuranceAnnual) x the cumulative general-inflation factor. A property contributes nothing from its planned sale year onward, the charge continues after any mortgage is paid off, and no row is produced at all when nobody in the household is alive. Units: nominal USD per year. Rounding: none.',
+    formula: {
+      expression: 'propertyCosts = sum over owned p of (tax_p + insurance_p) x f',
+      variables: [
+        { symbol: 'tax_p', meaning: 'Annual property tax, today dollars', unit: 'usd/year', domain: 'nonnegative; absent = 0' },
+        { symbol: 'insurance_p', meaning: 'Annual homeowner insurance, today dollars', unit: 'usd/year', domain: 'nonnegative; absent = 0' },
+        { symbol: 'f', meaning: 'Cumulative general-inflation factor to this year', unit: '1', domain: 'positive' },
+      ],
+      timing: 'once per projection year, while the property is owned',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/cash-flow-and-summary/spending-property-costs-annual.md',
+    },
+    limits: [
+      'Asserted at the exported phase helper with the worksheet\'s two properties, current year, inflation factor and alive flag verbatim; the helper receives the caller\'s already-resolved inflation factor, so the 1.10 is supplied rather than compounded from plan assumptions. Plan assumptions beyond the worksheet\'s inputs: each property carries a 400,000 value and no HECM, neither of which the carrying-cost formula reads',
+      'Ownership is decided by plannedSaleYear alone; a property with no sale year is owned for the whole horizon',
+    ],
+    implementedBy: [
+      'packages/engine/src/projection/internal/types/yearLedger.ts',
+      'packages/engine/src/projection/internal/annualPropertyCarryingCosts.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/internal/types/yearLedger.ts#YearExpenses.propertyCosts',
+      'packages/engine/src/projection/internal/annualPropertyCarryingCosts.ts#annualPropertyCarryingCosts',
+    ],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
+  'spending-insurance-premiums-annual': {
+    title: 'Annual level insurance premiums',
+    purpose: 'Which insurance policies are charged this year, and at what level nominal premium.',
+    kind: 'formula',
+    outputs: ['spending-insurance-premiums-annual'],
+    feeds: ['spending-total-annual'],
+    statement:
+      'projection/internal/types/yearLedger.ts#YearExpenses.insurancePremiums, selected by projection/internal/annualInsurancePremiumRows.ts#annualInsurancePremiumRows, sums the fixed-nominal annualPremium of every policy whose subject is alive: lifetime charges every year, paidUp charges nothing, and untilAge charges only while the subject\'s attained age is below premiumEndAge, so nothing is charged in the year the subject attains premiumEndAge or afterward. No inflation factor is applied. Units: nominal USD per year. Rounding: none.',
+    formula: {
+      expression: 'insurancePremiums = sum over charged policies of annualPremium',
+      variables: [
+        { symbol: 'annualPremium', meaning: 'Level contractual premium', unit: 'usd/year', domain: 'nonnegative' },
+        { symbol: 'premiumMode', meaning: 'lifetime | paidUp | untilAge', unit: 'mode', domain: 'closed enum' },
+        { symbol: 'premiumEndAge', meaning: 'Subject age at which untilAge premiums stop', unit: 'years', domain: 'required for untilAge' },
+      ],
+      timing: 'once per projection year, per policy occurrence in plan order',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/cash-flow-and-summary/spending-insurance-premiums-annual.md',
+    },
+    limits: [
+      'Asserted at the exported phase helper with the worksheet\'s five policies — the primary case\'s four and the boundary case\'s Life E — their modes, premiums, subject ages and end ages verbatim; the subject resolver supplies the stated ages and alive flags. Plan assumptions beyond the worksheet\'s inputs: each policy carries zero benefit fields, which the premium selection does not read',
+      'The first derivation read untilAge as charging through and including premiumEndAge, charged its Life C at attained age 65 against an end age of 65, and expected 1,800; that derivation was corrected on 2026-09-18 under decision D-PREMIUM-END-AGE. The worksheet now states the strict stop age production holds — a policy is skipped once subject.ageAttained >= policy.premiumEndAge — so its primary case totals 1,200 with Life C not charged, and its boundary case charges Life E 600 at attained age 64, one year below the same end age. Both are asserted, the 1,800 through-the-end-age reading is asserted as a wrong reading, and no production-versus-worksheet discrepancy remains. The plan schema still states both readings (premiumModeSchema says "charge annualPremium through premiumEndAge", premiumEndAge says "age when premiums stop"), which is what D-PREMIUM-END-AGE resolves',
+    ],
+    implementedBy: [
+      'packages/engine/src/projection/internal/types/yearLedger.ts',
+      'packages/engine/src/projection/internal/annualInsurancePremiumRows.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/internal/types/yearLedger.ts#YearExpenses.insurancePremiums',
+      'packages/engine/src/projection/internal/annualInsurancePremiumRows.ts#annualInsurancePremiumRows',
+    ],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
+  'spending-care-cost-gross-and-ltc-benefit-annual': {
+    title: 'Annual gross care cost and the LTC benefit against it',
+    purpose: 'The two published sides of one long-term-care year: what care costs, and what a policy pays.',
+    kind: 'model',
+    outputs: ['spending-care-cost-gross-annual', 'long-term-care-benefit-annual'],
+    feeds: ['spending-total-annual'],
+    statement:
+      'projection/internal/types/yearLedger.ts#YearExpenses.careCost and #YearExpenses.ltcBenefit, planned by projection/internal/annualDebtAndLongTermCare.ts#annualLongTermCarePlan, publish the two sides of one rule. An active episode (the person is alive and 0 <= ageAttained - startAge < durationYears) contributes annualCost x the health-inflation factor to gross care cost. Each LTC policy the same person owns pays min(remaining cost, cap), where cap = benefitMonthly x 12 x (1 + riderPct/100)^(year - startYear), multiplied in the episode\'s first year by max(0, 1 - eliminationPeriodDays/365); a policy whose benefitPeriodYears are already used pays nothing. Units: nominal USD per year. Rounding: none.',
+    formula: {
+      expression: 'careCost = sum_e cost_e f_h; cap_p = 12 b_p (1 + q_p)^(y - y0) [x (1 - d_p/365) in the first episode year]; ltcBenefit = sum of min(remaining, cap_p)',
+      variables: [
+        { symbol: 'cost_e', meaning: 'Episode annual cost, today dollars', unit: 'usd/year', domain: 'nonnegative' },
+        { symbol: 'f_h', meaning: 'Cumulative health-inflation factor', unit: '1', domain: 'positive' },
+        { symbol: 'b_p', meaning: 'Policy monthly benefit base', unit: 'usd/month', domain: 'nonnegative' },
+        { symbol: 'q_p', meaning: 'Inflation rider', unit: '1', domain: 'inflationRiderPct / 100' },
+        { symbol: 'd_p', meaning: 'Elimination period', unit: 'days', domain: '0..365' },
+      ],
+      timing: 'once per projection year, per episode then per owned policy in plan order',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/cash-flow-and-summary/spending-care-cost-gross-and-ltc-benefit-annual.md',
+    },
+    limits: [
+      'Asserted at the exported phase helper with the worksheet\'s episode, both policies, the years-used map, the health-inflation factor and the start and current years verbatim. Plan assumptions beyond the worksheet\'s inputs: both policies are paid-up (premium 0), which this plan does not read, and the person resolver reports the stated attained age and alive',
+      'The benefit is published gross of the expense fold; expenses.total subtracts it, so the same dollars are never counted twice',
+    ],
+    implementedBy: [
+      'packages/engine/src/projection/internal/types/yearLedger.ts',
+      'packages/engine/src/projection/internal/annualDebtAndLongTermCare.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/internal/types/yearLedger.ts#YearExpenses.careCost',
+      'packages/engine/src/projection/internal/types/yearLedger.ts#YearExpenses.ltcBenefit',
+      'packages/engine/src/projection/internal/annualDebtAndLongTermCare.ts#annualLongTermCarePlan',
+    ],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
+  'spending-one-time-goals-annual': {
+    title: 'Annual funded one-time goals',
+    purpose: 'What this year\'s one-time goals actually cost, as distinct from what was intended.',
+    kind: 'formula',
+    outputs: ['spending-one-time-goals-annual'],
+    feeds: ['spending-total-annual'],
+    statement:
+      'projection/internal/types/yearLedger.ts#YearExpenses.oneTimeGoals, produced by projection/internal/annualOneTimeGoalFundingPhase.ts#annualOneTimeGoalFundingPhase, is the funded nominal amount of goals in the current year. With no guardrail scheduler every goal funds exactly in its target year at amount x the cumulative inflation factor; a skipped amount is an intended-but-unfunded miss tracked separately and is not in this field. Nothing funds when nobody in the household is alive. Units: nominal USD per year. Rounding: none.',
+    formula: {
+      expression: 'oneTimeGoals = sum over goals with targetYear = y of amount x f',
+      variables: [
+        { symbol: 'amount', meaning: 'Goal amount, today dollars', unit: 'usd', domain: 'nonnegative' },
+        { symbol: 'f', meaning: 'Cumulative general-inflation factor to this year', unit: '1', domain: 'positive' },
+      ],
+      timing: 'once per projection year, in goal order',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/cash-flow-and-summary/spending-one-time-goals-annual.md',
+    },
+    limits: [
+      'Asserted at the exported phase helper with the worksheet\'s three goals, target years, amounts, current year, null scheduler and alive flag verbatim; the helper receives the caller\'s already-resolved inflation factor, so the 1.10 is supplied rather than compounded from plan assumptions',
+      'The worksheet\'s third wrong reading is a guardrail case: with no scheduler the phase reports four exact zero skip accumulators, which the fixture asserts, so no skipped amount can reach this field here',
+    ],
+    implementedBy: [
+      'packages/engine/src/projection/internal/types/yearLedger.ts',
+      'packages/engine/src/projection/internal/annualOneTimeGoalFundingPhase.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/internal/types/yearLedger.ts#YearExpenses.oneTimeGoals',
+      'packages/engine/src/projection/internal/annualOneTimeGoalFundingPhase.ts#annualOneTimeGoalFundingPhase',
+    ],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
+  'year-result-contributions': {
+    title: 'Annual contributions credited after limit trimming',
+    purpose: 'How much of the desired contribution each owner is actually allowed to put in.',
+    kind: 'formula',
+    outputs: ['year-result-contributions'],
+    feeds: ['surplus-invested-annual', 'cash-flow-reconciliation-totals'],
+    statement:
+      'projection/internal/types/result.ts#YearResult.contributions, planned by projection/internal/annualContributionsAndEmployerMatch.ts#annualContributionsAndEmployerMatch, sums the contributions actually credited after each desired amount is trimmed to its applicable group limit and to compensation. The IRA limit in params/data/year2026.ts#year2026 is 7,500 for 2026, shared per owner across that owner\'s traditional and Roth IRAs, with a separate age-50 catch-up only when applicable. Units: nominal USD per year. Rounding: none.',
+    formula: {
+      expression: 'contributions = sum over owners and accounts of min(desired, group limit, compensation)',
+      variables: [
+        { symbol: 'desired', meaning: 'Plan annual contribution for the account', unit: 'usd/year', domain: 'nonnegative' },
+        { symbol: 'group limit', meaning: 'Per-owner IRA limit plus any applicable catch-up', unit: 'usd/year', domain: '7,500 for 2026' },
+        { symbol: 'compensation', meaning: 'Owner wages available to support the contribution', unit: 'usd/year', domain: 'nonnegative' },
+      ],
+      timing: 'once per projection year, after wages land',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/cash-flow-and-summary/year-result-contributions.md',
+    },
+    limits: [
+      'Asserted as the published field of a real simulatePlan 2026 row built from the worksheet\'s inputs: two owners aged 40 and 45 with one traditional IRA each, desired 6,000 and 9,000, wages 50,000 each, and zero general inflation. Plan assumptions beyond the worksheet\'s inputs: the household files jointly in KY at a zero state rate, both IRAs open at a zero balance with zero returns, there are no other accounts and no spending, and the 2026 IRA limit is read from the parameter pack rather than written into the fixture',
+      'Both owners are under 50, so the fixture isolates the base limit and evidences no catch-up band',
+    ],
+    implementedBy: [
+      'packages/engine/src/projection/internal/types/result.ts',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/internal/types/result.ts#YearResult.contributions',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts#annualContributionsAndEmployerMatch',
+    ],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
+  'year-result-employer-match': {
+    title: 'Annual employer match under the pay cap and the annual-additions limit',
+    purpose: 'What the employer actually adds once the pay cap and the IRC 415(c) ceiling are applied.',
+    kind: 'formula',
+    outputs: ['year-result-employer-match'],
+    feeds: ['accounts-ending-balance-by-category', 'cash-flow-line-plan-dollars'],
+    statement:
+      'projection/internal/types/result.ts#YearResult.employerMatch, planned by projection/internal/annualContributionsAndEmployerMatch.ts#annualContributionsAndEmployerMatch, is min(elective deferral landed, capPctOfPay/100 x wages) x matchPct/100, capped by the owner\'s remaining IRC 415(c) room for that plan after the elective deferrals. The 2026 pack fixes the 415(c) limit at 72,000. The match is computed only after every elective deferral has landed. Units: nominal USD per year. Rounding: none.',
+    formula: {
+      expression: 'employerMatch = min(min(E, c W) m, L - E - other additions)',
+      variables: [
+        { symbol: 'E', meaning: 'Elective deferral landed in the plan', unit: 'usd/year', domain: 'nonnegative' },
+        { symbol: 'W', meaning: 'Owner wages from the sponsoring employer', unit: 'usd/year', domain: 'nonnegative' },
+        { symbol: 'c', meaning: 'Match cap share of pay', unit: '1', domain: 'capPctOfPay / 100' },
+        { symbol: 'm', meaning: 'Match rate on the matched elective base', unit: '1', domain: 'matchPct / 100' },
+        { symbol: 'L', meaning: 'IRC 415(c) annual-additions limit', unit: 'usd/year', domain: '72,000 for 2026' },
+      ],
+      timing: 'once per projection year, after every elective deferral has landed',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/cash-flow-and-summary/year-result-employer-match.md',
+    },
+    limits: [
+      'Asserted as the published field of a real simulatePlan 2026 row built from the worksheet\'s inputs: wages 75,000, one employer traditional plan whose desired deferral of 24,500 lands in full, a 50-percent-of-pay match cap, a 200-percent match rate, and no other annual additions. Plan assumptions beyond the worksheet\'s inputs: the owner is 45 and filing single in KY at a zero state rate, so no age-50 catch-up can widen either the deferral or the room; the plan opens at a zero balance with zero returns and no spending; and the 2026 415(c) limit and elective-deferral limit are read from the parameter pack rather than written into the fixture',
+      'The worksheet\'s third wrong reading (applying the pay cap after the match rate) produces 37,500, which is discriminated numerically here only because the 415(c) cap lands at 47,500 rather than 37,500',
+    ],
+    implementedBy: [
+      'packages/engine/src/projection/internal/types/result.ts',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/internal/types/result.ts#YearResult.employerMatch',
+      'packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts#annualContributionsAndEmployerMatch',
+    ],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
+  'surplus-invested-annual': {
+    title: 'Annual surplus invested, floored at zero',
+    purpose: 'The residual cash a year ends with, after every stated use, and where it lands.',
+    kind: 'formula',
+    outputs: ['surplus-invested-annual'],
+    feeds: ['accounts-balance-per-account-annual', 'cash-flow-reconciliation-totals'],
+    statement:
+      'projection/internal/types/result.ts#YearResult.surplusInvested is max(0, accepted cash inflows - expenses.total - contributions - tax - penalties) at the accepted funding fixed point. The credited surplus goes to the lowest-id cash account, otherwise the lowest-id taxable account with equal cost-basis growth, otherwise unassigned cash with a warning; the amount has no cap. Units: nominal USD per year. Rounding: none.',
+    formula: {
+      expression: 'surplusInvested = max(0, I - X - C - T - P)',
+      variables: [
+        { symbol: 'I', meaning: 'Accepted cash inflows at the funding fixed point', unit: 'usd/year', domain: 'nonnegative' },
+        { symbol: 'X', meaning: 'expenses.total for the year', unit: 'usd/year', domain: 'nonnegative' },
+        { symbol: 'C', meaning: 'Contributions credited', unit: 'usd/year', domain: 'nonnegative' },
+        { symbol: 'T', meaning: 'Composed tax', unit: 'usd/year', domain: 'nonnegative' },
+        { symbol: 'P', meaning: 'Penalties', unit: 'usd/year', domain: 'nonnegative' },
+      ],
+      timing: 'once per projection year, at the accepted funding fixed point',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/cash-flow-and-summary/surplus-invested-annual.md',
+    },
+    limits: [
+      'Asserted as the published field of a real simulatePlan 2026 row that carries all five of the worksheet\'s members. Plan assumptions beyond the worksheet\'s inputs: a 55-year-old filing single in KY, so no Medicare or marketplace premium can move expenses.total off 50,000; cash inflows split into an 80,000 wage and a 20,000 tax-free recurring receipt, so a flat 10-percent test calculator prices tax at exactly 8,000 while inflows are exactly 100,000; the 10,000 of contributions go to one taxable brokerage account; and the 2,000 of penalties are the IRC 4974 excise on a completed five-year deadline year (opening benefit 12,000, 4,000 distributed by the 2026 deadline) asserted on an inherited Roth account',
+      'That excise is the only penalty a surplus year can carry: the early-withdrawal and HSA penalties are charged on need-based withdrawals, and a year whose inflows exceed its uses takes none, so no plan can produce both a positive surplus and an early-withdrawal penalty',
+      'The flat test calculator is a fixture double, not the shipped calculator; it is used only to realize the worksheet\'s stated tax member exactly, and the record makes no claim about federal tax arithmetic',
+    ],
+    implementedBy: [
+      'packages/engine/src/projection/internal/types/result.ts',
+      'packages/engine/src/projection/internal/annualFundingApplicationAndClosePhase.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/internal/types/result.ts#YearResult.surplusInvested',
+      'packages/engine/src/projection/internal/annualFundingApplicationAndClosePhase.ts#annualFundingApplicationAndClosePhase',
+    ],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
+  'insurance-cash-value-and-death-benefit-annual': {
+    title: 'Annual permanent-life cash value and death-year settlement',
+    purpose: 'What a permanent-life policy is worth at year end, and what it pays in the insured\'s death year.',
+    kind: 'model',
+    outputs: ['insurance-cash-value-annual', 'insurance-death-benefit-annual'],
+    feeds: ['accounts-net-worth-annual'],
+    statement:
+      'projection/internal/types/result.ts#YearResult.insuranceCashValue and #YearResult.deathBenefit, transitioned by projection/internal/annualPermanentLifeTransitions.ts#annualPermanentLifeTransitions, publish the year-end cash-value asset and the death-year settlement. While the insured is below the death age, schedule mode interpolates the illustration table linearly by attained age with endpoint clamping and flat-rate mode compounds the prior cash value by cashValueGrowthPct. In the year attained age equals the death age the policy pays max(deathBenefit face amount, cash value) and its cash value becomes 0, and it stays 0 afterwards. Units: nominal USD. Rounding: none.',
+    formula: {
+      expression: 'schedule: cv = v_lo + (a - a_lo)/(a_hi - a_lo) (v_hi - v_lo); flat: cv = cv_prev (1 + g); death year: payout = max(face, cv_prev), cv = 0',
+      variables: [
+        { symbol: 'a', meaning: 'Insured attained age', unit: 'years', domain: 'clamped to the schedule ends' },
+        { symbol: 'v_lo, v_hi', meaning: 'Bracketing illustration values', unit: 'usd', domain: 'nonnegative' },
+        { symbol: 'g', meaning: 'Flat cash-value growth', unit: '1', domain: 'cashValueGrowthPct / 100' },
+        { symbol: 'face', meaning: 'Current face death benefit', unit: 'usd', domain: 'nonnegative' },
+      ],
+      timing: 'once per projection year, per policy in plan order',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/cash-flow-and-summary/insurance-cash-value-and-death-benefit-annual.md',
+    },
+    limits: [
+      'Asserted at the exported phase helper with the worksheet\'s two policies, their modes, schedule points, entry cash value, growth rate and face amounts verbatim. Plan assumptions beyond the worksheet\'s inputs: both policies are paid-up, which this transition does not read',
+      'The first derivation put the settling policy at attained age 71 while its Claim and Arithmetic described and calculated the death-age-70 year; that derivation was corrected on 2026-09-18. The worksheet\'s Inputs table now states attained age 70, the death year production settles in, where the payout is max(50,000 face, 60,000 cash value) = 60,000 and the settled policy stops being a cash-value asset. Its last wrong reading moves that row to attained age 71 — the year after the death year, where the payout is null and the cash value 0 — and the fixture asserts both, so no production-versus-worksheet discrepancy remains',
+    ],
+    implementedBy: [
+      'packages/engine/src/projection/internal/types/result.ts',
+      'packages/engine/src/projection/internal/annualPermanentLifeTransitions.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/internal/types/result.ts#YearResult.insuranceCashValue',
+      'packages/engine/src/projection/internal/types/result.ts#YearResult.deathBenefit',
+      'packages/engine/src/projection/internal/annualPermanentLifeTransitions.ts#annualPermanentLifeTransitions',
+    ],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
+  'year-result-tax-exempt-interest': {
+    title: 'Annual tax-exempt interest, and the ACA-year maximum',
+    purpose: 'Municipal interest the year really generates, raised to an attested household total in an ACA year.',
+    kind: 'formula',
+    outputs: ['year-result-tax-exempt-interest'],
+    feeds: ['income-total-annual', 'tax-total-annual'],
+    statement:
+      'projection/internal/types/result.ts#YearResult.taxExemptInterest is the account-generated federally tax-exempt interest total, except in a year with an active ACA contract whose taxExemptInterest state is known, when it is max(attested household total, plan-generated subset). Generated account interest is the stated taxable-account balance times taxExemptInterestYieldPct/100. Cash and balances always follow the generated figure. Units: nominal USD per year. Rounding: none.',
+    formula: {
+      expression: 'generated = B x q; published = known ACA contract ? max(attested, generated) : generated',
+      variables: [
+        { symbol: 'B', meaning: 'Taxable-account start-of-year balance', unit: 'usd', domain: 'nonnegative' },
+        { symbol: 'q', meaning: 'Tax-exempt interest yield', unit: '1', domain: 'taxExemptInterestYieldPct / 100' },
+        { symbol: 'attested', meaning: 'Household tax-exempt interest on a known ACA contract', unit: 'usd/year', domain: 'nonnegative' },
+      ],
+      timing: 'once per projection year, after the account yield pass',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/cash-flow-and-summary/year-result-tax-exempt-interest.md',
+    },
+    limits: [
+      'Both cases asserted as the published field of a real simulatePlan 2026 row: one municipal sleeve at the worksheet\'s 200,000 balance and 2-percent tax-exempt yield, zero account return and zero inflation. Plan assumptions beyond the worksheet\'s inputs: a 60-year-old filing single in KY at a zero state rate, the sleeve does not reinvest its yield, and Case B adds a 2026 ACA contract at a 500-per-month enrollment premium whose taxExemptInterest state is known at the worksheet\'s 6,000 — the enrollment premium is what makes the contract active and is not read by this field',
+      'The ACA maximum characterizes income only; the fixture also asserts that the generated 4,000 remains the cash-real income member in Case A',
+    ],
+    implementedBy: [
+      'packages/engine/src/projection/internal/types/result.ts',
+      'packages/engine/src/projection/internal/annualAggregateRothConversionPhase.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/internal/types/result.ts#YearResult.taxExemptInterest',
+      'packages/engine/src/projection/internal/annualAggregateRothConversionPhase.ts#annualAggregateRothConversionPhase',
+    ],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
+  'projection-summary-fi-year': {
+    title: 'First financial-independence crossing year',
+    purpose: 'The first ledger year whose deflated investable total reaches the FI number.',
+    kind: 'formula',
+    outputs: ['projection-summary-fi-year'],
+    statement:
+      'projection/compare.ts#summarizeProjection publishes fiYear as the first ledger year, in ledger order, whose published end-of-year investableTotal, deflated by (1 + inflationPct/100)^(year - startYear), is greater than or equal to fiNumber. It is null when no year crosses and when the ledger is empty. Units: calendar year or null. Rounding: none; the comparison is inclusive.',
+    formula: {
+      expression: 'fiYear = min { y : investableTotal_y / (1 + i)^(y - y0) >= fiNumber }, else null',
+      variables: [
+        { symbol: 'investableTotal_y', meaning: 'Published end-of-year investable total', unit: 'usd', domain: 'nonnegative' },
+        { symbol: 'i', meaning: 'General inflation', unit: '1', domain: 'inflationPct / 100' },
+        { symbol: 'fiNumber', meaning: 'Upstream FI number in start-year dollars', unit: 'usd', domain: 'positive' },
+      ],
+      timing: 'once per projection, over the ledger in order',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/cash-flow-and-summary/projection-summary-fi-year.md',
+    },
+    limits: [
+      'Asserted at summarizeProjection with the worksheet\'s three-row crossing ledger and its three-row null ledger, both at zero inflation from a 2026 start so every deflator is exactly 1. The worksheet states its FI number as an input; the summary derives it, so the plan is built to derive exactly 500,000 — a retirement age already attained puts the spending year at the start year, and 20,000 of funded outflows over the 4-percent lens is exactly 500,000',
+      'The empty-ledger null is asserted separately from the no-crossing null, because they reach the same published value by different paths',
+    ],
+    implementedBy: ['packages/engine/src/projection/compare.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/projection/compare.ts#summarizeProjection',
+      'packages/engine/src/projection/compare.ts#ProjectionSummary.fiYear',
+    ],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
+  'cash-flow-line-plan-dollars': {
+    title: 'Cash-flow line amounts and the annual cash identity',
+    purpose: 'Which reported lines are cash on each side, so the same dollar is never counted twice.',
+    kind: 'composition',
+    outputs: ['cash-flow-line-plan-dollars'],
+    feeds: ['cash-flow-reconciliation-totals'],
+    statement:
+      'The Plan-dollar amounts on projection/internal/types/cashFlow.ts#YearCashFlowCashSourceLine, #YearCashFlowUseLine and #YearCashFlowTransferLine obey the source-side annual cash identity reconciled by projection/annualCashFlowReconciliation.ts#reconcileYearCashFlow: spendable sources plus portfolio funding plus loan proceeds equal funded household uses plus settled tax plus penalties plus contributions plus surplus investment. A #YearCashFlowPostSolveDepositLine sits outside that identity, as does a tax-character annotation. Units: nominal Plan USD. Rounding: none.',
+    formula: {
+      expression: 'sourceTotal = spendable + portfolioFunding + loanProceeds; destinationTotal = fundedUses + tax + penalties + contributions + surplus; difference = sourceTotal - destinationTotal',
+      variables: [
+        { symbol: 'spendable', meaning: 'Spendable-source lines', unit: 'usd', domain: 'role spendableSource' },
+        { symbol: 'portfolioFunding', meaning: 'Portfolio-funding lines', unit: 'usd', domain: 'role portfolioFunding' },
+        { symbol: 'loanProceeds', meaning: 'Loan-proceeds lines', unit: 'usd', domain: 'role loanProceeds' },
+        { symbol: 'postSolveDeposit', meaning: 'Receipt deposited after the solve', unit: 'usd', domain: 'excluded from both sides' },
+      ],
+      timing: 'once per captured projection year',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/cash-flow-and-summary/cash-flow-line-plan-dollars.md',
+    },
+    limits: [
+      'Asserted at the production reconciler with the worksheet\'s eight published totals as line amounts, plus its 5,000 post-solve life-insurance deposit and a 5,000 contribution transfer pair. Plan assumptions beyond the worksheet\'s inputs: the account and property identities the line ids carry, and the reconciler\'s own published tolerances, which are imported rather than written in',
+      'The identity is asserted on the published totals, not re-derived: the fixture reads sourceTotalPlanDollars, destinationTotalPlanDollars and differencePlanDollars from the reconciliation result',
+    ],
+    implementedBy: [
+      'packages/engine/src/projection/internal/types/cashFlow.ts',
+      'packages/engine/src/projection/annualCashFlowReconciliation.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/internal/types/cashFlow.ts#YearCashFlowCashIdentityTotals.sourceTotalPlanDollars',
+      'packages/engine/src/projection/internal/types/cashFlow.ts#YearCashFlowCashIdentityTotals.destinationTotalPlanDollars',
+      'packages/engine/src/projection/annualCashFlowReconciliation.ts#reconcileYearCashFlow',
+    ],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
+  'inherited-account-final-deadline-year': {
+    title: 'Inherited-account final emptying year',
+    purpose: 'The fixed calendar year an inherited account must be emptied by, when its regime has one.',
+    kind: 'data',
+    outputs: ['inherited-account-final-deadline-year'],
+    feeds: ['inherited-distribution-required-annual'],
+    statement:
+      'strategies/inheritedIra.ts#classifyInheritedRegime publishes #InheritedRegimeClassification.finalDeadlineYear as the fixed final emptying year when the regime has one: ownerDeathYear + 10 for a non-eligible designated beneficiary and for a spouse\'s ten-year election, and beneficiaryBirthYear + 21 + 10 for an eligible designated minor child, whose majority year is separately published as minorMajorityYear. A single-life regime has no fixed deadline and the field is absent. Units: calendar year, or absent. Rounding: none; integer year addition.',
+    formula: {
+      expression: 'ten-year rows: deathYear + 10; minor child: birthYear + 21 + 10; life-expectancy rows: absent',
+      variables: [
+        { symbol: 'deathYear', meaning: 'Calendar year the original owner died', unit: 'year', domain: '>= 2020' },
+        { symbol: 'birthYear', meaning: 'Minor-child beneficiary birth year', unit: 'year', domain: 'majority year >= death year' },
+      ],
+      timing: 'once per inherited account, at classification',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/cash-flow-and-summary/inherited-account-final-deadline-year.md',
+    },
+    limits: [
+      'All four regime cases asserted at the exported classifier with the worksheet\'s death year, beneficiary birth year and conventions verbatim. Plan assumptions beyond the worksheet\'s inputs: every case is a traditional IRA with a sole designated-individual beneficiary and asserted provenance, and the owner is asserted to have died before the required beginning date, which is what places the non-eligible case on the ten-year row rather than the ten-year-with-annual-RMDs row; both rows publish the same deathYear + 10 deadline',
+      'The single-life case is the not-more-than-10-years-younger eligible designated beneficiary, whose classification carries no finalDeadlineYear at all rather than a null one',
+    ],
+    implementedBy: ['packages/engine/src/strategies/inheritedIra.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/strategies/inheritedIra.ts#classifyInheritedRegime',
+      'packages/engine/src/strategies/inheritedIra.ts#InheritedRegimeClassification.finalDeadlineYear',
+    ],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
+  'inherited-distribution-required-annual': {
+    title: 'Annual inherited-account required amount',
+    purpose: 'The legal-year requirement on an inherited account, before any comparison to the live balance.',
+    kind: 'formula',
+    outputs: ['inherited-distribution-required-annual'],
+    feeds: ['inherited-distribution-required-executed-annual', 'tax-penalties-annual'],
+    statement:
+      'strategies/inheritedIra.ts#inheritedRequirementForYear publishes the annual inherited-account requirement from the prior-December-31 balance. A beneficiary fixed Single Life Table divisor is read once at the beneficiary\'s age in the year after death and declines by exactly one per later calendar year; for a traditional account inherited on or after the owner\'s required beginning date under the eligible-designated-beneficiary life-expectancy regime, the greater of the beneficiary\'s fixed divisor and the owner\'s fixed divisor governs, so the longer life expectancy produces the smaller required amount; a no-annual-requirement window publishes 0; and the final deadline year requires the full prior-year-end balance, reconciled to the live balance at execution. The 2026 pack supplies 14.8 at age 75, so the next fixed divisor is 13.8, not the age-76 entry 14.1; an owner aged 86 in the death year starts from the entry 7.6 and so stands at 6.6 in the first year after the death year. Units: nominal USD per year. Rounding: none.',
+    formula: {
+      expression: 'annual: required = B / d, d read once at the first distribution year and reduced by one per later year; none: 0; final sweep: required = B',
+      variables: [
+        { symbol: 'B', meaning: 'Prior-December-31 balance', unit: 'usd', domain: 'nonnegative' },
+        { symbol: 'd', meaning: 'Fixed Single Life divisor, minus elapsed years', unit: 'years', domain: 'positive; <= 1 becomes a sweep' },
+      ],
+      timing: 'once per inherited account per calendar year',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/cash-flow-and-summary/inherited-distribution-required-annual.md',
+    },
+    limits: [
+      'All six of the worksheet\'s cases asserted at the exported calculator with the stated year, prior-year-end balance and divisors verbatim: the 2027 first-year beneficiary arm, the 2028 fixed-minus-one continuation, both post-RBD rows in the first year after the death year, the pre-RBD ten-year no-annual window, and the 2036 final sweep. Plan assumptions beyond the worksheet\'s inputs: the annual arm and both post-RBD rows are an eligible designated beneficiary (disabled) born so the stated age falls in the stated year, the post-RBD rows add an owner born in 1940 — age 86 in the 2026 death year — who had started RMDs and whose death-year RMD was satisfied, the no-annual and sweep cases are a non-eligible designated beneficiary whose owner died in 2026 before the required beginning date, and every case is a sole designated-individual beneficiary of a traditional IRA with asserted provenance',
+      'The first derivation stated the post-RBD rule as the greater required amount, max(B / beneficiary divisor, B / owner divisor), and used an owner-fixed divisor of exactly 10.8 that no 2026 Single Life Table entry can produce; that derivation was corrected on 2026-09-18. The worksheet now states the comparison production holds — the greater DIVISOR (`if (ownDiv > divisor) divisor = ownDiv`), which is the longer life expectancy and so the smaller amount, per Treas. Reg. 1.401(a)(9)-5(d)(1)(ii) — and reaches the owner arm from the age-86 death-year entry 7.6, giving 6.6 in the first year after the death year. Both winning arms are now constructed and asserted: a beneficiary aged 75 keeps 14.8 and publishes 10,000, and a beneficiary aged 90 at 5.7 loses to the owner\'s 6.6 and publishes 22,424.242424. No production-versus-worksheet discrepancy remains',
+    ],
+    implementedBy: ['packages/engine/src/strategies/inheritedIra.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/strategies/inheritedIra.ts#inheritedRequirementForYear',
+      'packages/engine/src/strategies/inheritedIra.ts#beneficiaryRemainingLifeExpectancy',
+    ],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
+  'inherited-distribution-required-executed-annual': {
+    title: 'Executed inherited required distribution',
+    purpose: 'The cash a required inherited distribution actually debits, once the live balance is consulted.',
+    kind: 'formula',
+    outputs: ['inherited-distribution-required-executed-annual'],
+    feeds: ['inherited-distribution-forced-annual', 'withdrawals-by-category-annual'],
+    statement:
+      'projection/internal/annualInheritedIraDistributions.ts#annualInheritedIraDistributions writes #AnnualInheritedIraDistributionOperation.executed as min(required amount, live balance) in an ordinary required year, the full live balance in a final-sweep year, and 0 when the requirement is none or notice-waived. Requirement evidence stays immutable at its legal-year amount; only the executed figure is capped. Units: nominal USD per year. Rounding: none.',
+    formula: {
+      expression: 'ordinary: executed = min(R, L); final sweep: executed = L; none or notice-waived: executed = 0',
+      variables: [
+        { symbol: 'R', meaning: 'Required amount from the requirement evidence', unit: 'usd', domain: 'nonnegative' },
+        { symbol: 'L', meaning: 'Live account balance at the forced-distribution phase', unit: 'usd', domain: 'nonnegative' },
+      ],
+      timing: 'once per inherited account per projection year, before the funding solve',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/cash-flow-and-summary/inherited-distribution-required-executed-annual.md',
+    },
+    limits: [
+      'All five cases asserted at the exported phase with the worksheet\'s required amounts, live balances and requirement statuses realized from plan facts. Plan assumptions beyond the worksheet\'s inputs: an 8,000 requirement is realized as a 320,000 prior-year-end balance over an exact 40.0 fixed Single Life divisor (a beneficiary aged 46 in the first distribution year), so the quotient is exactly the worksheet\'s whole dollar; the final sweep is a non-eligible designated beneficiary reaching deathYear + 10; the none case is the same beneficiary inside the ten-year window; and the notice-waived case is a post-RBD ten-year-with-annual-RMDs row for a 2022 death in relief year 2024, whose 312,000 prior-year-end balance over the 39.0 continuation divisor is again exactly 8,000',
+      'The requirement evidence is asserted alongside the executed amount in every case, so a cap can never be mistaken for a smaller requirement',
+    ],
+    implementedBy: ['packages/engine/src/projection/internal/annualInheritedIraDistributions.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualInheritedIraDistributions.ts#annualInheritedIraDistributions',
+      'packages/engine/src/projection/internal/annualInheritedIraDistributions.ts#AnnualInheritedIraDistributionOperation.executed',
+    ],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
+  'inherited-distribution-voluntary-annual': {
+    title: 'Voluntary inherited-account draw',
+    purpose: 'The ordinary withdrawal plan\'s extra draw from an inherited account, kept apart from its forced take.',
+    kind: 'composition',
+    outputs: ['inherited-distribution-voluntary-annual'],
+    feeds: ['withdrawals-by-category-annual', 'withdrawals-total-annual'],
+    statement:
+      'projection/internal/annualWithdrawalApplyFlowPlan.ts#annualWithdrawalApplyFlowPlan writes #AnnualWithdrawalEvidenceWrite.voluntaryAmount as the ordinary withdrawal plan\'s draw from that inherited account, taken from the plan by account id after the forced required take has already been classified. An account for which treat-as-own is effective this year is routed as owner treatment and receives no inherited evidence write at all. Units: nominal USD per year. Rounding: none.',
+    formula: {
+      expression: 'voluntaryAmount = withdrawnByAccountId(accountId), or no write when treat-as-own is effective',
+      variables: [
+        { symbol: 'withdrawnByAccountId', meaning: 'Accepted ordinary withdrawal plan by account', unit: 'usd', domain: 'nonnegative' },
+        { symbol: 'treat-as-own effective', meaning: 'Annual owner-treatment routing for the account', unit: 'boolean', domain: 'IRA, death year >= 2020, year > death year' },
+      ],
+      timing: 'once per projection year, in the apply-flow phase after forced distributions',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/cash-flow-and-summary/inherited-distribution-voluntary-annual.md',
+    },
+    limits: [
+      'Asserted at the exported phase with the worksheet\'s remaining balance, ordinary plan draw and treat-as-own flag verbatim: the account enters the phase at 95,000, already net of the 5,000 forced take, and the plan draws 12,000. The 5,000 forced take is not re-supplied to this phase, which is the point of the separation, so the fixture asserts that the sum of the two is the account\'s 17,000 total distribution while only 12,000 is voluntary',
+      'The treat-as-own case is asserted with the same inputs and an accepted owner-treatment route for the account, where the phase emits no inherited evidence write; it needs an IRA whose owner died in 2020 or later and a year after the death year, which the fixture supplies',
+    ],
+    implementedBy: ['packages/engine/src/projection/internal/annualWithdrawalApplyFlowPlan.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualWithdrawalApplyFlowPlan.ts#annualWithdrawalApplyFlowPlan',
+      'packages/engine/src/projection/internal/annualWithdrawalApplyFlowPlan.ts#AnnualWithdrawalEvidenceWrite.voluntaryAmount',
+    ],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
+  'year-result-ltcg-zero-headroom': {
+    title: '0% long-term-gains headroom: the unused layer under the 15% threshold',
+    purpose: 'How much more long-term gain the year could realize and still pay 0% on it.',
+    kind: 'model',
+    outputs: ['year-result-ltcg-zero-headroom'],
+    statement:
+      'YearResult.ltcgZeroHeadroom, computed by tax/federalTax.ts#zeroRateLtcgHeadroom, is 0 when taxable income with no extra gain already reaches pack.capitalGains.rate15StartsAbove for the filing status; otherwise it is the largest extra gain, found by bisection to a $0.01 bracket, that keeps max(0, ordinary income excluding Social Security + gains + qualified dividends + the extra gain + the resulting taxable Social Security − deduction) at or under that threshold. Without benefits the slope is exactly 1, so the root is threshold − taxable income. Units: nominal dollars of additional gain. Rounding: bisection to $0.01, so the published figure sits at or just under the exact root.',
+    formula: {
+      expression: 'headroom = 0 when taxable(0) >= T; else max{ g : taxable(g) <= T }, T = rate15StartsAbove[filingStatus]',
+      variables: [
+        { symbol: 'T', meaning: '15% long-term-gains threshold for the filing status', unit: 'usd taxable income', domain: 'positive' },
+        { symbol: 'taxable(g)', meaning: 'Taxable income with g of extra long-term gain, including any resulting taxable Social Security', unit: 'usd', domain: 'nondecreasing in g, slope 1 to 1.85' },
+        { symbol: 'headroom', meaning: 'Additional gain still taxed at 0%', unit: 'usd', domain: 'nonnegative' },
+      ],
+      timing: 'annual, priced with the year\'s federal detail after the funding fixed point',
+      rounding: 'bisection stops at a $0.01 bracket width; the at-threshold branch returns exactly 0',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/cash-flow-and-summary/year-result-ltcg-zero-headroom.md',
+    },
+    limits: [
+      'Beyond the worksheet\'s inputs the evidence plan fixes: a 63-year-old single filer (under 65, so the deduction is the base 2026 standard deduction of $16,100 with no age addition), an uninflated recurring ordinary stream sized to $16,100 above the case\'s taxable income, zero inflation and zero return so the 2026 threshold is unindexed, no gains and no qualified dividends, and a cash account to absorb surplus and pay tax',
+      'Case A is asserted at the worksheet\'s absolute $0.005 because the bisection lands 0.002 under the exact $12,450 root; a fixture that demanded exactness would fail on the algorithm\'s own $0.01 stopping width, not on the identity',
+      'The at-threshold branch returns exactly 0 before any bisection, which is why Case B is compared with toBe rather than a tolerance',
+      'The benefits branch is out of scope here: the worksheet states the no-benefit subtraction, and the bisection exists precisely because that subtraction is wrong once §86 inclusion moves with the gain',
+    ],
+    implementedBy: [
+      'packages/engine/src/tax/federalTax.ts',
+      'packages/engine/src/projection/internal/annualFundingApplicationAndClosePhase.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/tax/federalTax.ts#zeroRateLtcgHeadroom',
+      'packages/engine/src/projection/internal/annualFundingApplicationAndClosePhase.ts#annualFundingApplicationAndClosePhase',
+    ],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
+  'sustainable-spending-result-simulation-count': {
+    title: 'Sustainable-spending simulation count: the probe sequence, counted',
+    purpose: 'How many full-projection probes the sustainable-spending solve actually ran.',
+    kind: 'model',
+    outputs: ['sustainable-spending-result-simulation-count'],
+    statement:
+      'decisions/spendingSolver.ts#solveMaxSustainableSpending counts one probe at the seed (the patched plan\'s own base spending, rounded and floored at 0). When the seed is feasible it counts one probe per doubling from max(2 x seed, $20,000), doubling again after each feasible one, until a probe fails or the budget or the $100,000,000 unbounded ceiling is reached; when the seed is infeasible and non-zero it counts one further probe at 0. It then counts one bisection probe per halving while the bracket is strictly wider than resolutionDollars and simulationCount is below maxSimulations. Units: probes (whole projections). Rounding: none; the value is an integer.',
+    formula: {
+      expression: 'count = 1 + doublings + bisections, or 2 when a non-zero seed and zero both fail',
+      variables: [
+        { symbol: 'seed', meaning: 'max(0, round(base spending of the patched plan))', unit: 'usd/year', domain: 'nonnegative' },
+        { symbol: 'resolution', meaning: 'Bracket width the bisection stops at', unit: 'usd/year', domain: 'positive' },
+        { symbol: 'budget', meaning: 'maxSimulations, the hard probe cap', unit: 'probes', domain: 'positive integer' },
+        { symbol: 'count', meaning: 'Projections the solve ran', unit: 'probes', domain: 'nonnegative integer' },
+      ],
+      timing: 'once per solve; every probe is a complete simulatePlan run',
+      rounding: 'none; integer',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/cash-flow-and-summary/sustainable-spending-result-simulation-count.md',
+    },
+    limits: [
+      'The worksheet supplies probe feasibility as fixture evidence; the evidence therefore builds a plan whose feasibility frontier really does fall between $22,500 and $25,000 — four projection years, one $95,000 cash account, zero return and zero inflation, no income and no tax, so a level S is feasible exactly when 4S <= $95,000 (frontier $23,750)',
+      'The infeasible-seed case counts 2 only when the zero-spending probe ALSO fails; the evidence forces that with a $60,000 uninflated one-time goal the $5,000 portfolio cannot fund, because a feasible zero would open the bisection and raise the count',
+      'The count is not a measure of accuracy: it rises with the budget and falls with a looser resolution, and a diagnostic first probe returns 0',
+    ],
+    implementedBy: ['packages/engine/src/decisions/spendingSolver.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/decisions/spendingSolver.ts#solveMaxSustainableSpending',
+      'packages/engine/src/decisions/spendingSolver.ts#SustainableSpendingResult',
+    ],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
 } satisfies Record<string, CalculationRecord>

@@ -1397,6 +1397,8 @@ export function inheritedRequirementForYear(input: {
     let arm: InheritedRequirementEvidence['divisorArm'] = 'beneficiary-fixed'
     // Greater-of only for traditional on-or-after-RBD (§1.401(a)(9)-5(d)(1)(ii));
     // K2 has no post-RBD arm; before-RBD R3 uses beneficiary only (§(d)(2)).
+    // The comparison selects the greater DIVISOR (the longer life expectancy),
+    // which gives the smaller required amount; it never compares the amounts.
     if (
       regime === 'edb-life-expectancy' &&
       rbd === 'on-or-after-rbd' &&

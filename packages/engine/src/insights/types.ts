@@ -31,7 +31,13 @@ export type InsightActionKind =
   | 'apply-toggle'        // trivially-reversible in-plan change
 
 export interface InsightImpact {
-  /** Rough (screen) or exact (evaluate) change in ending after-tax estate, today's $. */
+  /**
+   * Rough (screen) or exact (evaluate) change in ending after-tax estate,
+   * today's $: the candidate result's endingAfterTaxEstate − the baseline's
+   * (evaluateCandidate). The IRMAA tier-edge detector instead writes its
+   * annual premium cliff here as an avoidance signal, which is not an estate
+   * change (see its calculation record).
+   */
   endingAfterTaxEstateDelta?: number
   /** Change in lifetime taxes & penalties, today's $ (negative = savings). */
   lifetimeTaxDelta?: number

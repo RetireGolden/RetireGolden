@@ -1142,4 +1142,82 @@ export const monteCarloRecords = {
     verifiedOn: '2026-09-17',
     provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'cursor' },
   },
+  'historical-stress-window-total-shortfall': {
+    title: 'Historical stress window total shortfall',
+    purpose: 'How many dollars of spending one replayed history left unfunded across the whole projection.',
+    kind: 'composition',
+    outputs: ['historical-stress-window-total-shortfall'],
+    statement:
+      'montecarlo/historicalSuites.ts#HistoricalStressWindow.totalShortfall is the sum, over EVERY projection year of that window\'s replayed run, of the year\'s YearResult.shortfall — the funding shortfall left after every withdrawal and any HECM backstop draw. Every year is counted, including years after the portfolio first empties, and each year\'s shortfall is that year\'s own unfunded spending rather than a cumulative miss. The annual shortfalls remain outputs of the full shared ledger: returns, inflation, taxes, income, withdrawals and HECM draws are priced by simulatePlan on the window\'s market series, not by a side model. Units: nominal dollars. Rounding: none.',
+    formula: {
+      expression: 'totalShortfall = sum over projection years of shortfall_y',
+      variables: [
+        { symbol: 'shortfall_y', meaning: 'Year y\'s funding shortfall after every withdrawal and any HECM backstop draw', unit: 'usd', domain: 'shortfall_y >= 0' },
+        { symbol: 'window', meaning: 'One rolling (or reversed) historical return/inflation series replayed through the ledger', unit: 'years', domain: 'windowLengthYears from HISTORICAL_YEARS' },
+      ],
+      timing: 'once per window, over every published projection year',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/monte-carlo/historical-stress-window-total-shortfall.md',
+    },
+    limits: [
+      'Beyond the worksheet\'s inputs the evidence plan fixes a plan the replay cannot move on either axis: one CASH account, which annualPostSolveAccountGrowth exempts from the market return shock, so the replayed returns really are the worksheet\'s 0, 0, 0; and the $60,000 a year delivered as the scheduled payment of an interest-free note, because debt service is NOMINAL while base spending and one-time goals are both inflated to the year — the 2000-2002 window\'s own 3.4% and 1.6% CPI prints rescale a goal-based fixture to a 2027 shortfall of $22,040. Beside that: a 58-year-old single filer (no Medicare month, no traditional account to penalize), no income, no tax, no HECM, and a three-year horizon from the planning age',
+      'Because that plan is replay-invariant, every rolling window in the suite reports the same total; the evidence reads the 2000-2002 window by label, and the identity it pins is the sum, not a property of those particular historical years',
+      'Suites are run with suites: [\'rolling\'] and windowLengthYears 3 to keep the fixture to one pass over the rolling windows',
+      'The sum does not distinguish a discretionary miss from a floor miss: totalRequiredShortfall and totalTargetShortfall are separate fields over the same years',
+    ],
+    implementedBy: ['packages/engine/src/montecarlo/historicalSuites.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/montecarlo/historicalSuites.ts#runHistoricalStressSuites',
+      'packages/engine/src/montecarlo/historicalSuites.ts#HistoricalStressWindow',
+    ],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
+  'annuitization-sweep-point': {
+    title: 'Annuitization sweep point: premium, annual income and effective allocation',
+    purpose: 'What one point of the SPIA allocation sweep actually buys, and the share of the portfolio it costs.',
+    kind: 'model',
+    outputs: [
+      'annuitization-sweep-premium',
+      'annuitization-sweep-annual-income',
+      'annuitization-sweep-effective-allocation-pct',
+    ],
+    statement:
+      'For each non-zero grid percent, decisions/annuitization.ts#buildAnnuitizationSweep sets premium = min(gridPct / 100 x the plan\'s total investable balance, 0.95 x the largest cash-or-taxable account\'s balance) and SKIPS the point when that premium is under $5,000. A retained point publishes annualIncome = premium x the payout rate — the user\'s quoted rate / 100 when given, else decisions/spiaQuotes.ts#spiaPayoutRate interpolated at startAge = min(95, max(current age, 65)) — and effectiveAllocationPct = premium / total investable x 100, which is below the requested grid percent exactly when the funding cap bound the purchase. Units: nominal dollars; percent of investable. Rounding: none.',
+    formula: {
+      expression: 'premium = min(g/100 x V, 0.95 x F); income = premium x rate(startAge); effectivePct = premium / V x 100; skip when premium < 5000',
+      variables: [
+        { symbol: 'V', meaning: 'Total investable balance (cash, taxable, equity comp, traditional, Roth, HSA)', unit: 'usd', domain: 'positive' },
+        { symbol: 'F', meaning: 'Largest cash or taxable account balance — the funding account', unit: 'usd', domain: 'nonnegative' },
+        { symbol: 'g', meaning: 'Requested grid allocation', unit: 'percent of investable', domain: 'g > 0' },
+        { symbol: 'rate(startAge)', meaning: 'Life-only SPIA payout rate, linearly interpolated between the table anchors and clamped outside them', unit: 'fraction of premium per year', domain: '0.06 to 0.153' },
+      ],
+      timing: 'once per sweep, at the comparison\'s start year',
+      rounding: 'none; the $5,000 floor is a strict under-test',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/monte-carlo/annuitization-sweep-point.md',
+    },
+    limits: [
+      'A point only reaches the published list when the shared-path Monte Carlo returns a row for its variant, so the evidence has to run one: it uses a two-path comparison on a one-year horizon with a fixed seed. The three figures themselves are decided before that run and do not depend on its outcome',
+      'Beyond the worksheet\'s inputs the evidence plan fixes: a 1954-born single filer so the 2026 current age is 72, a $100,000 cash funding account beside a $100,000 traditional account for a $200,000 investable total, a grid of exactly [2, 60] so the skipped and retained points are both present, no user quote, zero return and zero inflation',
+      'The funding account carries no static allocation, so the sweep\'s Kitces glidepath controls are not constructible here and attributionAvailable is false; the sweep records that as a note rather than an error',
+      'The skipped $4,000 point is asserted as an ABSENT allocationPct, since a skipped point is never pushed rather than published at zero',
+    ],
+    implementedBy: [
+      'packages/engine/src/decisions/annuitization.ts',
+      'packages/engine/src/decisions/spiaQuotes.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/decisions/annuitization.ts#buildAnnuitizationSweep',
+      'packages/engine/src/decisions/annuitization.ts#AnnuitizationSweepPoint',
+      'packages/engine/src/decisions/spiaQuotes.ts#spiaPayoutRate',
+    ],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
 } satisfies Record<string, CalculationRecord>

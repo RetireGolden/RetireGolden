@@ -702,6 +702,12 @@ export function createFederalTaxCalculator(): TaxCalculator {
   return calculator
 }
 
+/**
+ * Sums every calculator's amount over one shared federally enriched input: an
+ * unmodified built-in federal calculator contributes that shared derivation's
+ * federal total rather than recomputing it, and every other calculator
+ * computes on the enriched input. Penalties are never a member of the sum.
+ */
 export function combineTaxCalculators(...calculators: TaxCalculator[]): TaxCalculator {
   return {
     compute: (input) => {

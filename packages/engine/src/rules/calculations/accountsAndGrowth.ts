@@ -451,4 +451,181 @@ export const accountsAndGrowthRecords = {
     verifiedOn: '2026-09-18',
     provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
   },
+  'accounts-ending-balance-by-category': {
+    title: 'Ending balances by logical account category',
+    purpose: 'How the last ledger year\'s account balances roll up into the five published categories.',
+    kind: 'composition',
+    outputs: ['accounts-ending-balance-by-category'],
+    statement:
+      'projection/compare.ts#summarizeProjection publishes endingByCategory as the sum of the LAST ledger year\'s published balances by the corresponding selected logical account type: cash, taxable, traditional, roth and hsa. Equity-compensation balances are not one of these five categories, and no property, debt, ladder or insurance value enters them. Units: nominal USD. Rounding: none.',
+    formula: {
+      expression: 'endingByCategory[c] = sum over selected accounts of type c of lastYear.balances[accountId]',
+      variables: [
+        { symbol: 'lastYear', meaning: 'Final row of the ledger', unit: 'year row', domain: 'empty ledger publishes five zeros' },
+        { symbol: 'c', meaning: 'Published category', unit: 'enum', domain: 'cash | taxable | traditional | roth | hsa' },
+      ],
+      timing: 'once per projection, on the final ledger row',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/accounts-and-growth/accounts-ending-balance-by-category.md',
+    },
+    limits: [
+      'Asserted at summarizeProjection with the worksheet\'s six accounts, their plan types and their last-year balances verbatim, over a two-row ledger whose penultimate row carries a distinct sentinel balance on every account so a row mistake cannot pass. Plan assumptions beyond the worksheet\'s inputs: each account opens at a zero balance with zero returns, because the summary reads the ledger row rather than the plan; the owner-held accounts name the plan\'s single person',
+      'The fixture also asserts that the published object has exactly the five category keys, which is how the worksheet\'s third wrong reading (adding property or insurance categories) is discriminated',
+    ],
+    implementedBy: ['packages/engine/src/projection/compare.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/projection/compare.ts#summarizeProjection',
+      'packages/engine/src/projection/compare.ts#ProjectionSummary.endingByCategory',
+    ],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
+  'estate-to-charity': {
+    title: 'Ending estate passing to charity',
+    purpose: 'How much of the ending estate is carved out to charity, before any heir tax.',
+    kind: 'formula',
+    outputs: ['estate-to-charity'],
+    statement:
+      'projection/compare.ts#summarizeProjection publishes endingEstateToCharity as the sum, over accounts whose resolved estate destination is charity, of gross ending balance x min(1, charityPct/100). Non-charity destinations contribute zero. The share is applied to the pre-carveout gross model value and passes untaxed; the remainder follows the non-spouse-heir treatment and does not change this field. Units: nominal USD. Rounding: none.',
+    formula: {
+      expression: 'endingEstateToCharity = sum over charity accounts of G x min(1, p/100)',
+      variables: [
+        { symbol: 'G', meaning: 'Gross ending balance of the account', unit: 'usd', domain: 'positive rows only' },
+        { symbol: 'p', meaning: 'Charity share', unit: 'percent', domain: '0..100, capped at 1 after division' },
+      ],
+      timing: 'once per projection, on the final ledger row',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/accounts-and-growth/estate-to-charity.md',
+    },
+    limits: [
+      'Asserted at summarizeProjection with the worksheet\'s three accounts, their destinations, charity percents and gross ending balances verbatim, and at the per-account charity amounts as well as the total, so a compensating pair of errors cannot pass. Plan assumptions beyond the worksheet\'s inputs: each account opens at a zero balance with zero returns, because the summary reads the final ledger row rather than the plan, and the default heir tax rate applies to the non-charity remainder without entering this field',
+      'The worksheet\'s third wrong reading (reading 25 as a decimal) is the reason the record states the min(1, p/100) cap rather than a bare multiplication',
+    ],
+    implementedBy: ['packages/engine/src/projection/compare.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/projection/compare.ts#summarizeProjection',
+      'packages/engine/src/projection/compare.ts#ProjectionSummary.endingEstateToCharity',
+    ],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
+  'hecm-draw-annual': {
+    title: 'Annual HECM draw, including the last-resort backstop',
+    purpose: 'What an open reverse-mortgage line actually lends the household this year.',
+    kind: 'formula',
+    outputs: ['hecm-draw-annual'],
+    feeds: ['spending-shortfall-annual', 'accounts-net-worth-annual'],
+    statement:
+      'projection/internal/types/result.ts#YearResult.hecmDraw is the accepted coordinated draw plus any backstop draw planned by projection/internal/annualHecmBackstop.ts#annualHecmBackstopPlan against a true portfolio shortfall. With the coordinated draw zero, the backstop is min(true shortfall, available open line), where the available line is max(0, principalLimit - loanBalance); draw policy does not gate it, because every open line is a last backstop before the household is reported depleted. Units: nominal USD per year. Rounding: none.',
+    formula: {
+      expression: 'backstop = min(shortfall, max(0, principalLimit - loanBalance)); hecmDraw = coordinated + backstop; shortfallAfterHecm = max(0, shortfall - backstop)',
+      variables: [
+        { symbol: 'shortfall', meaning: 'True portfolio shortfall before the backstop', unit: 'usd', domain: 'above the annual funding tolerance' },
+        { symbol: 'principalLimit', meaning: 'HECM line principal limit', unit: 'usd', domain: 'nonnegative' },
+        { symbol: 'loanBalance', meaning: 'Amount already drawn on the line', unit: 'usd', domain: 'nonnegative' },
+      ],
+      timing: 'once per projection year, after the accepted withdrawal plan',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/accounts-and-growth/hecm-draw-annual.md',
+    },
+    limits: [
+      'Asserted twice: at the exported backstop planner with the worksheet\'s open line, 40,000 shortfall and 25,000 available line verbatim, and as the published hecmDraw of a real simulatePlan year built from the same inputs — a last-resort line on a 500,000 primary residence at the schema\'s minimum 5-percent principal limit and a zero growth rate, so the available line is exactly 25,000, against a 40,000 lifestyle need with no portfolio at all. Plan assumptions beyond the worksheet\'s inputs for that ledger year: a 64-year-old filing single in KY at a zero state rate, so no Medicare or marketplace premium can change the need, and no coordinated draw is possible because the policy is lastResort',
+      'The worksheet derives only the backstop case; the extract states no sizing formula for a coordinated draw, so this record makes no claim about one',
+    ],
+    implementedBy: [
+      'packages/engine/src/projection/internal/types/result.ts',
+      'packages/engine/src/projection/internal/annualHecmBackstop.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/internal/types/result.ts#YearResult.hecmDraw',
+      'packages/engine/src/projection/internal/annualHecmBackstop.ts#annualHecmBackstopPlan',
+    ],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
+  'accounts-balance-per-account-annual': {
+    title: 'Year-end balance map: one entry per id, written channel by channel',
+    purpose: 'The per-account year-end balances the ledger publishes for every projection year.',
+    kind: 'composition',
+    outputs: ['accounts-balance-per-account-annual'],
+    statement:
+      'YearResult.balances, materialized by projection/internal/annualSnapshot.ts#annualSnapshot, is the year-end map written in exactly this order: logical investable balances, then property values, then ordinary debt balances, then permanent-life cash values. Object.fromEntries keeps the later-channel write, so when two channels share an id the LAST channel written wins. Each value is that channel\'s own full-year figure and no netting across channels happens: a debt appears as its positive outstanding balance, not as a negative asset. Units: nominal dollars per id. Rounding: none.',
+    formula: {
+      expression: 'balances = fromEntries([...investable, ...property, ...debt, ...insuranceCashValue]) ; last write wins per id',
+      variables: [
+        { symbol: 'investable', meaning: 'One published row per logical investable account id, at its year-end balance', unit: 'usd', domain: 'finite' },
+        { symbol: 'property, debt', meaning: 'Year-end property values and ordinary debt balances, in insertion order', unit: 'usd', domain: 'nonnegative' },
+        { symbol: 'insuranceCashValue', meaning: 'Permanent-life cash values, written last', unit: 'usd', domain: 'nonnegative' },
+      ],
+      timing: 'once per projection year, at the end of the annual pass',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/accounts-and-growth/accounts-balance-per-account-annual.md',
+    },
+    limits: [
+      'Beyond the worksheet\'s inputs the evidence plan fixes: a single filer aged 51 in 2026 (no Medicare month, no required distribution), zero inflation, zero return on the investable account, no spending and no income other than the stated contribution, a single-year horizon, and an interest-free debt whose scheduled payment is exactly the $4,000 of principal the worksheet amortizes',
+      'The withdrawal is realized as an uninflated one-time goal, which is what makes the investable close opening + contributions - withdrawals at a zero return',
+      'The worksheet names 3% as the PROPERTY\'s appreciation; internal/propertyEventsAndGrowth.ts grows a property at GENERAL inflation and ignores the property account\'s own annualReturnPct, so the evidence sets the plan\'s inflationPct to 3 instead. In the start year every cumulative factor is still 1, so nothing else in the row moves',
+      'The collision case is asserted by calling annualSnapshot directly with four channels on one id, because a real plan cannot give a property, a debt and an investable account the same id (the plan schema rejects it) — the overwrite order is a property of the snapshot, not of any plan',
+      'The map holds no HECM line: HECM debt is published separately and only enters net worth under its non-recourse cap',
+    ],
+    implementedBy: [
+      'packages/engine/src/projection/internal/annualSnapshot.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualSnapshot.ts#annualSnapshot',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+    ],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
+  'pension-election-annuity-present-value': {
+    title: 'Pension annuity present value at the curve-anchored discount rate',
+    purpose: 'What the pension\'s lifetime payments are worth today, the number a lump-sum offer has to beat.',
+    kind: 'model',
+    outputs: ['pension-election-annuity-present-value'],
+    statement:
+      'decisions/pensionElection.ts#analyzePensionElections publishes curveRatePct = curveNominalDiscountRatePct(max(5, planning age - current age), plan inflation): the embedded TIPS real-yield curve linearly interpolated at that horizon (flat outside the 5-to-30-year anchors) plus the plan\'s inflation percentage. presentValueAtCurveRate is pensionAnnuityPresentValue at that rate: for each owner age from max(start age, current age) through the horizon age, the annual benefit (monthly x 12) grown by COLA from the start age, paid in full while the owner lives and at survivorPct while a survivor lives (only if the owner reached the start age), discounted by (1 + rate/100)^(owner age - current age). Units: percent per year; valuation-year dollars. Rounding: none.',
+    formula: {
+      expression: 'PV = sum_t paid_t / (1 + r/100)^t, t = owner age - current age; r = realYield(max(5, planningAge - currentAge)) + inflation',
+      variables: [
+        { symbol: 'r', meaning: 'Curve-anchored nominal discount rate', unit: 'percent/year', domain: 'finite' },
+        { symbol: 'paid_t', meaning: 'Benefit paid at offset t: full while the owner lives, survivorPct of it while a survivor does', unit: 'usd/year', domain: 'nonnegative' },
+        { symbol: 'horizon age', meaning: 'max(owner death age, current age + the survivor\'s remaining years)', unit: 'years', domain: 'integer' },
+      ],
+      timing: 'once per pension carrying a lump-sum offer, valued at the projection start year',
+      rounding: 'none; the sensitivity table rounds its rate columns to 0.1 percentage points, the published curve rate is not rounded',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/accounts-and-growth/pension-election-annuity-present-value.md',
+    },
+    limits: [
+      'One number drives both horizons: analyzePensionElections passes ownerDeathAge = the owner\'s planning age, so planning age 70 against current age 64 gives the 3.95% rate AND the six payments the published presentValueAtCurveRate discounts, $63,008.166010097986. The first derivation valued the published field over three payments to a death age of 67 while taking its rate from planning age 70, which reports the helper\'s figure in the field\'s place; it was corrected on 2026-09-18, and that mismatch is now the worksheet\'s first wrong reading, asserted as not matching',
+      'The three-payment stream is a SECOND case, taken explicitly at the helper pensionAnnuityPresentValue with ownerDeathAge 67 at the same 3.95% rate, and is $33,332.7193407416; the helper accepts any death age, so that case says nothing about the field\'s payment count',
+      'Beyond the worksheet\'s inputs the evidence plan fixes: a single household (so no survivor extends the horizon), a 1962-born owner so the 2026 current age is 64, a pension with a lump-sum offer in the start year (the analysis skips pensions without one), zero return, and inflationPct 2 as the rate\'s inflation term',
+      'The curve is the embedded 2026 TIPS real-yield snapshot; the rate is a planning anchor, not a quote, and a corporate-spread view is left to the user',
+      'The stream is discounted at annual offsets from the valuation year with no mid-year convention, and COLA compounds from the start age rather than the valuation year',
+    ],
+    implementedBy: ['packages/engine/src/decisions/pensionElection.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/decisions/pensionElection.ts#analyzePensionElections',
+      'packages/engine/src/decisions/pensionElection.ts#pensionAnnuityPresentValue',
+      'packages/engine/src/decisions/pensionElection.ts#curveNominalDiscountRatePct',
+    ],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
 } satisfies Record<string, CalculationRecord>
