@@ -16,7 +16,7 @@ Executed 2026-09-18 and re-executed the same day against RetireGolden base `989f
      const consumedDollars = consumedCents / 100
 ```
 
-This caps the qualified slice at the pre-distribution balance instead of the aggregate includible amount, so $50,000 qualifies where the worksheet's ceiling allows $40,000 — the worksheet's first wrong reading.
+This caps the qualified slice at the pre-distribution balance instead of the aggregate includible amount, so $50,000 qualifies where the worksheet's ceiling allows $40,000. It is a ceiling misread rather than one of the worksheet's three listed wrong readings (which concern the allocation order, the §219 offset and the gross RMD); it kills the qualified-slice, income-offset and inclusion assertions.
 
 ## Command
 

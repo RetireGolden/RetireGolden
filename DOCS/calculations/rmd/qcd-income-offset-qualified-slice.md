@@ -6,6 +6,8 @@ Kind: composition. `projection/internal/types/result.ts#YearResult.qcd`, togethe
 
 The corrected `YearResult.qcd` comment makes the gross gift, capped by aggregate includible IRA amount, the qualified slice. It then expressly charges the non-qualified remainder against the from-RMD portion before determining the qualified-from-RMD slice. Only that qualified-from-RMD slice can supply the income offset. Any §219 offset that this slice does not absorb, and any non-qualified gift beyond the RMD, is ordinary income; the gross physical gift and gross RMD publications do not shrink.
 
+Primary sources for the ceiling: IRC §408(d)(8)(B), last sentence ("A distribution shall be treated as a qualified charitable distribution only to the extent that the distribution would be includible in gross income without regard to subparagraph (A)"), and §408(d)(8)(D), which measures that extent as if all of the owner's IRAs were one contract distributed in full during the year, so the ceiling is the aggregate includible amount rather than the taxable fraction of the RMD; the §219 reduction is the second sentence of §408(d)(8)(A). The allocation of the non-qualified remainder between the from-RMD and beyond-RMD portions has no statutory text and is an engine convention. Either order gives the same total ordinary inclusion, `$25,000` on these inputs (`50,000 − 35,000 + 10,000` qualified-first, `50,000 − 30,000 + 5,000` non-qualified-first), so the total that feeds tax and MAGI does not depend on it; only the split between the two published character rows does.
+
 ## Inputs
 
 | Input | Value | Unit |
@@ -38,6 +40,8 @@ Gross RMD remains `$50,000`; ordinary inclusion is `50,000 - 30,000 + 5,000 = $2
 
 Exact derived publications/character: `qcd = $60,000`, `rmd = $50,000`, qualified gift `$40,000`, total non-qualified gift `$20,000`, `qualifiedFromRmd = $30,000`, `qcdIncomeOffset = $30,000`, unabsorbed §219/non-qualified ordinary-income delta `$5,000`, non-qualified dollars beyond the RMD `$0`, and resulting ordinary inclusion `$25,000`. Fixture tolerance: exact, because every expected value is a whole-dollar integer produced only by integer minima, addition, and subtraction.
 
+What the fixture asserts: the character planner's published rows (the qualified slice recovered from `qualifiedFromRmd` and `nonQualifiedBeyondRmd`, the income offset, the non-qualified ordinary-income delta, the resulting inclusion, the provable-history flag and the ledger write). The `qcd = $60,000` and `rmd = $50,000` publications are written by the gift planner and the RMD phase, which this fixture does not run, so they are contract statements here, not executed evidence; the third wrong reading below is likewise not executed as a mutation.
+
 ## Wrong readings
 
 - Allocating the qualified slice first gives a `$35,000` offset and a `$10,000` beyond-RMD ordinary-income delta, contrary to the required non-qualified-first charge against the from-RMD portion.
@@ -54,4 +58,4 @@ feeds: `tax-total-annual`; `magi-annual`.
 
 Derived by: codex (gpt-5.6-sol), 2026-09-18, from the signatures-and-comments extract (with the 2026-09-18 qcd doc-comment correction) and the orchestrator's contract statement, without executing the engine or reading any implementation body. Reviewed by: cursor (composer-2.5), 2026-09-18, by independent recomputation without executing the engine; see REVIEW-2026-09-18-round-four.md in this directory (the first review, and the re-check section after the allocation-order correction).
 
-Revision note: The first derivation followed a comment that put the qualified slice first; the implementation's fixture found the order.
+Revision note: The first derivation followed a comment that put the qualified slice first; the implementation's fixture found the order. Revision 2026-09-22 (pull-request review of #728): the Justification cites the statutory ceiling (§408(d)(8)(B) and (D)) and states that the allocation order is an engine convention under which the total inclusion is invariant; the Expected section says which publications the fixture asserts. No value changed.

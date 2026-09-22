@@ -284,3 +284,33 @@ Reviewed by: cursor (composer), 2026-09-18, by independent recomputation without
 # Orchestrator note, 2026-09-18
 
 The one note, on pia-from-aime-bend-points, was applied: the second wrong reading's figure `$3,625.88` is what applying 32% instead of 15% to the AIME above the second bend point produces, while its wording said "32% to all AIME above the first bend" (which gives `$3,305.88`). The wording now matches the figure and names the other reading beside it; no value changed.
+
+---
+
+## Re-check 2026-09-22: medicare-magi-composition floor case
+
+Scope: re-derived floor case only, from the worksheet's stated contract (`max(0, ordinary income realized + realized gains + qualified dividends + taxable Social Security + tax-exempt interest)`) and Inputs table as revised 2026-09-22. Ordinary income realized is floored at zero per the field comment; the floor case exercises the only negative path (capital loss with no other realized income).
+
+**Recomputed values**
+
+| Case | Terms | Five-term sum | Published MAGI |
+|---|---|---:|---:|
+| Positive (unchanged) | `40,000 + 5,000 + 2,000 + 3,000 + 1,000` | `51,000` | `max(0, 51,000) = $51,000` |
+| Floor (re-derived) | `0 + (-3,000) + 0 + 0 + 0` | `-3,000` | `max(0, -3,000) = $0` |
+
+**Match:** yes — positive case `$51,000` and floor case `$0` match the worksheet Expected section.
+
+**Constants vs contract:** five-term composition and `max(0, …)` floor match the Claim and Justification; floor-case inputs (ordinary income realized `0`, realized gains `-3,000`, all other terms `0`) match the Inputs table.
+
+**Tolerance:** exact to the cent on exact currency inputs — justified.
+
+**Wrong readings (third recomputed):**
+1. Omit tax-exempt interest in positive case: `$50,000` ✓ (unchanged)
+2. Gross SS — qualitative ✓ (unchanged)
+3. No floor in floor case: five-term sum `-3,000` → published `-$3,000` ✓ (was `-$6,000` under the prior unreachable ordinary-income `-10,000` case)
+
+**Claim consistency:** revised floor case aligns with the corrected comment that ordinary income realized cannot be negative; capital loss is the sole negative contributor.
+
+**Verdict:** approve
+
+Reviewed by: cursor (composer-2.5), 2026-09-22 (re-check), by independent recomputation without executing the engine.

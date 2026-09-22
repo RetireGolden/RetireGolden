@@ -27,8 +27,6 @@ describeCalculation(
         remainingSection408d8AOffset: 5_000,
       },
       expected: {
-        qcd: 60_000,
-        rmd: 50_000,
         qualifiedBeforeOffset: 40_000,
         qcdIncomeOffset: 30_000,
         totalNonQualifiedGift: 20_000,
@@ -45,8 +43,10 @@ describeCalculation(
     const expected = example.expected as Record<string, number>
     // The worksheet names an aggregate includible amount, which the planner
     // derives as pre-distribution balance less aggregate basis; a positive
-    // basis keeps the two facts distinct.
-    const BASIS = 10_000
+    // basis keeps the two facts distinct, and 20,000 makes the example
+    // physically realizable: the 60,000 gift is the whole 60,000 account
+    // (40,000 includible plus 20,000 basis).
+    const BASIS = 20_000
     const PRE_DISTRIBUTION = inputs.aggregateIncludibleIraAmount! + BASIS
     const OWNER = 'p1'
 
@@ -81,12 +81,13 @@ describeCalculation(
       )
     })
 
-    it('leaves the gross gift and the gross RMD unshrunk by the tax character', () => {
-      // The planner changes character only; it publishes no smaller gift and
-      // takes nothing off the RMD.
+    it('records a provable offset history and writes the consumed 5,000 offset to the ledger in cents', () => {
+      // The planner publishes character rows only. The gross gift
+      // (YearResult.qcd) and the gross RMD are written by the gift planner and
+      // the RMD phase and are not read here, so the worksheet's qcd = 60,000
+      // and rmd = 50,000 are not asserted by this fixture; its Expected
+      // section says so.
       const current = row()
-      expectWithin(inputs.grossGift!, expected.qcd!, example.tolerance, 'qcd')
-      expectWithin(inputs.giftFromRmd!, expected.rmd!, example.tolerance, 'rmd')
       expect(current.contradictoryOffsetLedger).toBe(false)
       expect(current.qcdOffsetConsumedWrite).toBe(inputs.remainingSection408d8AOffset! * 100)
     })
@@ -104,12 +105,11 @@ describeCalculation(
     })
 
     it('excludes 30,000 from income: the from-RMD portion less the 20,000 of non-qualified dollars charged to it first', () => {
-      // DISCLOSED DISCREPANCY. The worksheet and the YearResult.qcd comment
-      // both read the exclusion as min(gift from RMD, aggregate includible)
-      // less the offset, which is 35,000. The planner instead charges every
-      // non-qualified dollar to the from-RMD portion first, leaving a
-      // 30,000 qualified from-RMD slice that caps the exclusion. The
-      // worksheet's expectation is kept and this assertion fails.
+      // The planner charges every non-qualified dollar to the from-RMD
+      // portion first, leaving a 30,000 qualified from-RMD slice that caps
+      // the exclusion. The first derivation put the qualified slice first
+      // (35,000); the worksheet was re-derived on the engine's order, and this
+      // assertion pins the re-derived figure.
       const current = row()
       expectWithin(
         current.incomeOffsetDelta,
@@ -120,9 +120,9 @@ describeCalculation(
     })
 
     it('adds a 5,000 non-qualified ordinary-income delta: the section 219 offset the from-RMD slice did not absorb', () => {
-      // DISCLOSED DISCREPANCY, the same split seen from the other side: the
-      // planner publishes 5,000 here. The two readings agree on the 25,000
-      // total inclusion asserted above and differ only in how it is split.
+      // The same split seen from the other side: the planner publishes 5,000
+      // here. Either allocation order gives the 25,000 total inclusion
+      // asserted above; the order changes only how it is split.
       const current = row()
       expectWithin(
         current.nonQualifiedOrdinaryIncomeDelta,

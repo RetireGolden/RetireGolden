@@ -55,11 +55,16 @@ describeCalculation(
           taxExemptInterest: 1_000,
         },
         floorCase: {
-          ordinaryIncomeRealized: -10_000,
-          realizedGains: 1_000,
-          qualifiedDividends: 1_000,
-          taxableSocialSecurity: 1_000,
-          taxExemptInterest: 1_000,
+          // The worksheet's Justification names the construction: a capital-loss
+          // carryforward carried into a year that realizes nothing else, so the
+          // netting deducts the annual limit on the capital line and floors
+          // ordinary income at zero.
+          carryforwardIntoYear: 20_000,
+          ordinaryIncomeRealized: 0,
+          realizedGains: -3_000,
+          qualifiedDividends: 0,
+          taxableSocialSecurity: 0,
+          taxExemptInterest: 0,
         },
       },
       expected: { positiveCase: 51_000, floorCase: 0 },
@@ -189,19 +194,41 @@ describeCalculation(
     })
 
     it('floors a negative sum at zero rather than publishing it', () => {
-      // The worksheet's floor case gives ordinary income realized as minus
-      // 10,000, which this ledger cannot produce: that term is the capital-loss
-      // netting's ordinaryAfter, floored at zero. The only negative sum the
-      // ledger can reach is a deductible capital loss on the capital line with
-      // nothing else realized, which is constructed here; the worksheet's third
-      // wrong reading would publish that negative figure.
+      // The worksheet's re-derived floor case: the ordinary-income term is the
+      // capital-loss netting's ordinaryAfter, floored at zero, so the only
+      // negative sum the ledger can reach is a deductible capital loss on the
+      // capital line with nothing else realized. The year is built from the
+      // worksheet's construction and each term is checked against the
+      // worksheet's floor-case inputs; the third wrong reading would publish
+      // the negative sum.
+      const floor = inputs.floorCase!
       const plan = singlePersonPlan({ dob: '1955-03-15', planningAge: 95 })
-      plan.household.capitalLossCarryforward = 20_000
+      plan.household.capitalLossCarryforward = floor.carryforwardIntoYear!
       const year = yearOf(plan)
-      const accepted = year.acceptedTaxInput!
-      expect(accepted.capitalGains).toBeLessThan(0)
-      expect(accepted.ordinaryIncome).toBe(0)
+      const accepted = year.acceptedTaxInput
+      if (accepted === undefined) throw new Error('the year published no accepted tax input')
+      const taxableSs = taxableSocialSecurity(
+        pack,
+        'single',
+        accepted.ordinaryIncome + accepted.capitalGains + (accepted.qualifiedDividends ?? 0),
+        accepted.ssBenefits,
+        accepted.taxExemptInterest,
+        accepted.foreignExclusionAddback,
+      )
+      expectWithin(accepted.ordinaryIncome, floor.ordinaryIncomeRealized!, example.tolerance, 'ordinaryIncomeRealized')
+      expectWithin(accepted.capitalGains, floor.realizedGains!, example.tolerance, 'realizedGains')
+      expectWithin(accepted.qualifiedDividends ?? 0, floor.qualifiedDividends!, example.tolerance, 'qualifiedDividends')
+      expectWithin(taxableSs, floor.taxableSocialSecurity!, example.tolerance, 'taxableSocialSecurity')
+      expectWithin(accepted.taxExemptInterest ?? 0, floor.taxExemptInterest!, example.tolerance, 'taxExemptInterest')
+      const sum =
+        accepted.ordinaryIncome +
+        accepted.capitalGains +
+        (accepted.qualifiedDividends ?? 0) +
+        taxableSs +
+        (accepted.taxExemptInterest ?? 0)
+      expect(sum).toBeLessThan(0)
       expectWithin(year.magi, expected.floorCase!, example.tolerance, 'magi')
+      expectWithin(year.magi, Math.max(0, sum), example.tolerance, 'magi against its own published components')
     })
   },
 )

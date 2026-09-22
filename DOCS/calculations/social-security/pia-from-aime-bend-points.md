@@ -30,7 +30,7 @@ Exact derived monthly PIAs: cross-both `$3,413.20`; below-first `$900.00`. Fixtu
 ## Wrong readings
 
 - Rounding `$3,413.21` to the nearest dime produces `$3,413.20` here accidentally; a fixture suite must retain a separate rounding discriminator even though this case does not distinguish it.
-- Applying 32% instead of 15% to the AIME above the second bend point produces `$3,625.88` before dime flooring (a flat 32% on everything above the first bend point gives `$3,305.88`).
+- Applying 32% instead of 15% to the AIME above the second bend point produces `$3,625.88` before dime flooring (a flat 15% on everything above the first bend point gives `$1,157.40 + 0.15 × 7,714 = $2,314.50`).
 - Using the 2026 tax pack for bend points fails because those constants live in `PIA_BEND_POINTS`, not `year2026`.
 
 ## Family
@@ -44,3 +44,6 @@ feeds: `social-security-benefit-annual`.
 Derived by: codex (gpt-5.6-sol), 2026-09-18, from the signatures-and-comments extract only, without executing the engine or reading any implementation body. Reviewed by: cursor (composer-2.5), 2026-09-18, by independent recomputation without executing the engine; see REVIEW-2026-09-18-round-four.md in this directory (approved with a note on a wrong reading's wording, applied below).
 
 Revision: the second wrong reading's wording was corrected on the reviewer's note to describe the misread that produces its figure; no value changed.
+
+Revision note (2026-09-22, pull-request review of #728): the second wrong reading's parenthetical stated a false figure for a flat 32% above the first bend point; that misread is the same as the one it accompanies and gives `$3,625.88`. It now names a distinct misread, a flat 15% above the first bend point, `
+,314.50`. No expected value changed.

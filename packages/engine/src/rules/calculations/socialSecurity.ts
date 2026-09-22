@@ -147,7 +147,7 @@ export const socialSecurityRecords = {
     outputs: [],
     feeds: ['social-security-benefit-annual'],
     statement:
-      'socialSecurity/nra.ts#fraForBirthYear assigns effective birth years after 2025 a normal retirement age of 67 years and 0 months under current law, and #fraTotalMonths converts that to 804 total month slots as twelve times the completed years plus the extra months. Units: years, months and total month slots. Rounding: none; integers.',
+      'socialSecurity/nra.ts#fraForBirthYear assigns effective birth years 1960 and later a normal retirement age of 67 years and 0 months under current law, the endpoint of the ramp whose last step is 66 years and 10 months at 1959, and #fraTotalMonths converts that to 804 total month slots as twelve times the completed years plus the extra months. Units: years, months and total month slots. Rounding: none; integers.',
     formula: {
       expression: 'fra(y >= 1960) = { years: 67, extraMonths: 0 }; totalMonths = years x 12 + extraMonths',
       variables: [

@@ -22,7 +22,7 @@ export interface FraComponents {
 
 /**
  * SSA NRA schedule (simplified to birth **year**; month-of-year refinements omitted).
- * Years before 1938: treated as 65 + 0 (legacy). Years after 2025: 67 + 0 (current law; may change).
+ * Years before 1938: treated as 65 + 0 (legacy). Years 1960 and later: 67 + 0 (current law; may change).
  */
 export function fraForBirthYear(birthYearEffective: number): FraComponents {
   const y = birthYearEffective
