@@ -264,4 +264,107 @@ export const spendingAndWithdrawalsRecords = {
     verifiedOn: '2026-09-17',
     provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'cursor' },
   },
+  'sepp-active-annual-rule': {
+    title: 'SEPP active in an attained-age year',
+    purpose: 'Decide whether a 72(t) series is still running in a given attained-age year.',
+    kind: 'model',
+    outputs: [],
+    feeds: ['sepp-distribution-annual'],
+    statement:
+      'strategies/sepp.ts#seppActive treats a SEPP as active in an attained-age year at or after the start age only while EITHER the age-60 boundary or the five-year duration is still unsatisfied, implementing the statutory "longer of five years or until 59.5" at annual granularity with age 60 as the engine\'s stated approximation of 59.5; projection/internal/annualSeppDistributions.ts#annualSeppDistributions consults it before distributing. Units: a boolean per owner-year. Rounding: none; whole attained ages.',
+    formula: {
+      expression: 'active(startAge, age) = age >= startAge and (age < 60 or age - startAge < 5)',
+      variables: [
+        { symbol: 'startAge', meaning: 'Attained age at which the series began', unit: 'years', domain: 'integer' },
+        { symbol: 'age', meaning: 'Attained age in the evaluated year', unit: 'years', domain: 'integer' },
+      ],
+      timing: 'once per owner-year',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/spending-and-withdrawals/sepp-active-annual-rule.md',
+    },
+    limits: [
+      'Age 60 is an explicit annual approximation of 59.5: the annual model carries no half-year ages, so a series statute would end midyear ends at the year boundary here',
+      'Busting the series is not modeled: the engine assumes the schedule is honored and charges no retroactive penalties',
+      'The rule decides whether the series runs, not how much it pays; the two method records carry the amounts',
+    ],
+    implementedBy: [
+      'packages/engine/src/strategies/sepp.ts',
+      'packages/engine/src/projection/internal/annualSeppDistributions.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/strategies/sepp.ts#seppActive',
+      'packages/engine/src/projection/internal/annualSeppDistributions.ts#annualSeppDistributions',
+    ],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
+  'sepp-amortization-method': {
+    title: 'SEPP amortization-method annual amount',
+    purpose: 'Fix the annual 72(t) payment from the first-year balance as an ordinary annuity over the Single Life term.',
+    kind: 'model',
+    outputs: ['sepp-distribution-annual'],
+    feeds: [],
+    statement:
+      'strategies/sepp.ts#seppAnnualAmount fixes the amortization-method annual SEPP from the first-year balance as an ordinary-annuity payment over the Single Life Table term at the selected annual rate, with the module\'s default 5% carried by SEPP_AMORTIZATION_RATE_PCT to satisfy the Notice 2022-6 section 3.02(c) greater-of-5%-or-120%-mid-term ceiling in every rate environment. A zero rate degenerates to balance divided by the term. Units: nominal USD per year. Rounding: none; the result is a binary float compared to cents.',
+    formula: {
+      expression: 'A = B r / (1 - (1 + r)^(-n)), and B / n when r = 0',
+      variables: [
+        { symbol: 'B', meaning: 'First SEPP year balance', unit: 'usd', domain: 'positive; a nonpositive balance pays 0' },
+        { symbol: 'r', meaning: 'Annual rate as a fraction, ratePct / 100', unit: '1', domain: 'r >= 0' },
+        { symbol: 'n', meaning: 'Single Life Table term for the start age, year2026.rmd.singleLifeTable', unit: 'years', domain: 'positive' },
+      ],
+      timing: 'fixed once at the first SEPP year and held for the series',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/spending-and-withdrawals/sepp-amortization-method.md',
+    },
+    limits: [
+      'The payment is FIXED at the first year: recomputing it from a later balance would make a supposedly fixed amortization payment vary',
+      'Single Life is the engine\'s stated convention among the three tables Notice 2022-6 permits, and it is the shortest at every age, so this sizes the largest payment any permitted table would allow rather than the smallest; no beneficiary-specific table election is claimed',
+      'The 5% rate is the module default and clears the statutory ceiling; a caller may pass a different permitted rate',
+    ],
+    implementedBy: ['packages/engine/src/strategies/sepp.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/strategies/sepp.ts#seppAnnualAmount',
+      'packages/engine/src/strategies/sepp.ts#SEPP_AMORTIZATION_RATE_PCT',
+    ],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'orchestrator' },
+  },
+  'sepp-rmd-method': {
+    title: 'SEPP RMD-method annual amount',
+    purpose: 'Recompute the annual 72(t) payment each year from the current balance and the Single Life divisor.',
+    kind: 'composition',
+    outputs: ['sepp-distribution-annual'],
+    feeds: [],
+    statement:
+      'strategies/sepp.ts#seppAnnualAmount computes the SEPP RMD-method annual payment as the current start-of-year balance divided by the Single Life Table entry for the attained age, recomputed every year. Because both the balance and the age are reread, the payment is not fixed. Units: nominal USD per year. Rounding: none.',
+    formula: {
+      expression: 'A = B / d, where d = singleLifeTable[floor(age)]',
+      variables: [
+        { symbol: 'B', meaning: 'Current start-of-year balance', unit: 'usd', domain: 'positive; a nonpositive balance pays 0' },
+        { symbol: 'd', meaning: 'Single Life Table divisor for the attained age', unit: 'years', domain: 'positive' },
+      ],
+      timing: 'once per SEPP year',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/spending-and-withdrawals/sepp-rmd-method.md',
+    },
+    limits: [
+      'The Uniform Lifetime Table is not an alternative here: the pack carries no age-55 entry for it, and the module adopts Single Life for both supported methods',
+      'The published entry is taken as published; a fractional age is floored to the table\'s whole age rather than interpolated',
+      'Unlike the amortization method this payment varies year to year, so a fixture that holds it constant is asserting the wrong method',
+    ],
+    implementedBy: ['packages/engine/src/strategies/sepp.ts'],
+    implementedByFunctions: ['packages/engine/src/strategies/sepp.ts#seppAnnualAmount'],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
 } satisfies Record<string, CalculationRecord>

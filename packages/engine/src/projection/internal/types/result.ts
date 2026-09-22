@@ -204,7 +204,20 @@ export interface YearResult {
    * Exclusion from income is a separate tax-character channel
    * (`qcdIncomeOffset` / MAGI), not a shrinkage of this total. The owned-IRA
    * source series reconciles this figure to the overlay plus every moving QCD
-   * occurrence.
+   * occurrence. The excludable slice (`qcdIncomeOffset`) is the qualified part
+   * of the from-RMD portion of the gift, allocated in this order: `qualified =
+   * min(gift, aggregate includible amount)`; the non-qualified remainder
+   * (`gift − qualified`) is charged against the from-RMD portion first, so
+   * `qualifiedFromRmd = fromRmd − min(fromRmd, gift − qualified)`; the offset is
+   * `min(qualifiedFromRmd, qualified − the §408(d)(8)(A) second-sentence offset
+   * for post-70½ deductible contributions)`. Whatever part of that §219 offset
+   * the from-RMD qualified slice does not absorb, plus any non-qualified
+   * dollars beyond the RMD, is `qcdNonQualifiedOrdinaryIncome`; dollars given
+   * beyond the RMD that are qualified never entered income. `rmd` stays gross;
+   * only the year's cash inflow is reduced by the from-RMD gift. The per-donor limit is the pack's
+   * `rmd.qcdAnnualLimit` indexed with the limit growth, and the age gate is an
+   * annual proxy for 70½ (age attained 71, or 70 with a birth month of June or
+   * earlier).
    */
   qcd: number
   /** Dollars moved traditional → Roth this year (taxed as ordinary income, no penalty). */
@@ -403,7 +416,19 @@ export interface YearResult {
   qcdActionExecution?: ExecuteAnnualQcdsResult
   /** Early-withdrawal penalties plus IRC §4974 RMD-shortfall excise; not in `tax`. */
   penalties: number
-  /** MAGI realized this year (drives IRMAA two years later and the ACA credit). */
+  /**
+   * MAGI realized this year: `max(0, ordinary income realized + realized
+   * gains + qualified dividends + taxable Social Security + tax-exempt
+   * interest)`, where the ordinary-income term is already floored at zero (it
+   * is ordinary income after the capital-loss carryforward), so a capital-loss
+   * deduction with nothing else realized is the only way the sum goes negative. It is the IRMAA base two years later (the premium year reads
+   * the ledger's `year − 2` value, or `year − 1` when an SSA-44 life-changing
+   * event makes that lower; the first two projection years fall back to the
+   * plan's `historicalAnnualMagiByYear[year]` or its `recentAnnualMagi`) and
+   * the ACA credit base in its own year. Untaxed Social Security and foreign
+   * income are not added back separately; foreign income enters only through
+   * the taxable-Social-Security provisional income.
+   */
   magi: number
   /** Present only in years with a credit-enabled Marketplace premium. */
   aca?: YearAcaResult

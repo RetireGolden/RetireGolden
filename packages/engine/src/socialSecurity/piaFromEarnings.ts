@@ -96,7 +96,9 @@ export function eligibilityYearFromDobParts(y: number, m: number, d: number): nu
 }
 
 /**
- * PIA from AIME using eligibility-year bend points (monthly formula).
+ * PIA from AIME using eligibility-year bend points (monthly formula): 90% of
+ * AIME up to the first bend point, plus 32% of AIME between the first and
+ * second, plus 15% of AIME above the second, then floored to the dime.
  * @see https://www.ssa.gov/oact/COLA/piaformula.html
  */
 export function piaMonthlyFromAime(aime: number, eligibilityYear: number): number {

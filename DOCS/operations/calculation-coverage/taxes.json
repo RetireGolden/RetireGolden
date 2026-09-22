@@ -4,6 +4,75 @@
   "group": "taxes",
   "records": [
     {
+      "id": "capital-loss-carryforward-netting",
+      "title": "Capital-loss carryforward netting",
+      "kind": "composition",
+      "outputs": [
+        "tax-loss-carryforward-remaining-annual",
+        "tax-loss-carryforward-used-against-gains-annual",
+        "tax-loss-carryforward-used-against-ordinary-annual"
+      ],
+      "feeds": [
+        "tax-total-annual"
+      ],
+      "purpose": "Spend a capital-loss pool against current gains first, then report the annual ordinary-offset slice on the capital-gain line.",
+      "statement": "tax/federalTax.ts#applyCapitalLossCarryforward applies an annual capital-loss pool first against current gains, then reports up to the annual ordinary-offset limit as a negative capital-gain-line amount without changing ordinary income, and carries the unused pool forward. The offset is not capped by ordinary income. Units: nominal USD. Rounding: none.",
+      "formula": {
+        "expression": "usedAgainstGains = min(C, max(G, 0)); availableLoss = C - usedAgainstGains + max(-G, 0); usedAgainstOrdinary = min(availableLoss, L); netCapitalGain = max(G, 0) - usedAgainstGains - usedAgainstOrdinary; remaining = availableLoss - usedAgainstOrdinary",
+        "variables": [
+          {
+            "symbol": "C",
+            "meaning": "Opening carryforward pool",
+            "unit": "usd",
+            "domain": "nonnegative after the max(0, .) floor"
+          },
+          {
+            "symbol": "G",
+            "meaning": "Signed current capital result; a loss is negative",
+            "unit": "usd",
+            "domain": "any finite number"
+          },
+          {
+            "symbol": "L",
+            "meaning": "Annual ordinary-offset limit, year2026.federalTax.capitalLossOrdinaryOffsetLimit",
+            "unit": "usd/year",
+            "domain": "nonnegative after the max(0, .) floor"
+          }
+        ],
+        "timing": "one tax year; the projection threads the depleting pool year to year",
+        "rounding": "none"
+      },
+      "limits": [
+        "Ordinary income is never reduced directly: the deductible loss rides the capital-gain line, so subtracting the offset from ordinary income instead publishes a different AGI cascade",
+        "One pool, no short-term / long-term split, and the section 1212 preservation of a deduction wasted in a year with no taxable income to absorb it is not modeled; both are stated planning simplifications on the function"
+      ],
+      "worksheet": "DOCS/calculations/taxes/capital-loss-carryforward-netting.md",
+      "mutation": "DOCS/calculations/taxes/capital-loss-carryforward-netting.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/tax/federalTax.ts"
+      ],
+      "provenance": {
+        "derivedBy": "codex",
+        "implementedBy": "claude",
+        "reviewedBy": "cursor"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/tax/federalTax.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
       "id": "conversion-tax-funding-gcd-reduction",
       "title": "Conversion tax funding gcd reduction",
       "kind": "formula",
@@ -51,6 +120,364 @@
       },
       "fixtureFiles": [
         "packages/engine/src/actions/conversionTaxFundingEvidence.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
+      "id": "federal-amt-screen",
+      "title": "Federal AMT screen",
+      "kind": "composition",
+      "outputs": [
+        "tax-amt-annual"
+      ],
+      "feeds": [
+        "tax-total-annual"
+      ],
+      "purpose": "Price the planning-grade alternative minimum tax as tentative minimum tax less regular tax, floored at zero.",
+      "statement": "tax/federalTax.ts#amtExemptionAmount, #amtOrdinaryRateTax, #tentativeMinimumTax and #computeFederalTax compute the 2026 single-filer AMT screen as tentative minimum tax on AMTI after its phased exemption, with preferential-rate awareness, less regular tax but not below zero. With no preferential income the tentative tax is 26% through the 28%-rate threshold and 28% above it. Units: nominal USD. Rounding: none stated.",
+      "formula": {
+        "expression": "E' = max(0, E - q x max(0, A - P)); X = max(0, A - E'); TMT = 0.26 x min(X, T28) + 0.28 x max(0, X - T28); AMT = max(0, TMT - regularTax)",
+        "variables": [
+          {
+            "symbol": "A",
+            "meaning": "Alternative minimum taxable income (taxable income plus modeled add-backs)",
+            "unit": "usd/year",
+            "domain": "nonnegative"
+          },
+          {
+            "symbol": "E",
+            "meaning": "Pack AMT exemption for the filing status",
+            "unit": "usd/year",
+            "domain": "positive"
+          },
+          {
+            "symbol": "P",
+            "meaning": "Pack exemption phase-out start",
+            "unit": "usd/year",
+            "domain": "positive"
+          },
+          {
+            "symbol": "q",
+            "meaning": "Pack exemption phase-out rate",
+            "unit": "fraction",
+            "domain": "0 <= q <= 1"
+          },
+          {
+            "symbol": "T28",
+            "meaning": "Pack 28%-rate threshold on taxable excess",
+            "unit": "usd/year",
+            "domain": "positive"
+          },
+          {
+            "symbol": "regularTax",
+            "meaning": "Ordinary bracket tax plus stacked preferential tax",
+            "unit": "usd/year",
+            "domain": "nonnegative"
+          }
+        ],
+        "timing": "one tax year",
+        "rounding": "none stated"
+      },
+      "limits": [
+        "A planning screen, not a full Form 6251 claim: modeled add-backs are the section 63(c) standard deduction or itemized SALT plus the section 151 senior deduction, and the rest of the Form 6251 adjustments are out of scope",
+        "The pinned rate and exemption helpers are not exported, so the evidence asserts them through computeFederalTax. The worksheet's AMTI of 200,000 and regular tax of 20,000 are not themselves calculator inputs: the fixture reaches them from real inputs (130,275 of ordinary income, which after the 16,100 standard deduction leaves 114,175 of taxable income and exactly 20,000 of bracket tax, plus 69,725 of advanced amtPreferenceItems, which with the 16,100 standard-deduction add-back makes AMTI 200,000). Any other construction of the same two figures is a different set of inputs."
+      ],
+      "worksheet": "DOCS/calculations/taxes/federal-amt-screen.md",
+      "mutation": "DOCS/calculations/taxes/federal-amt-screen.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/tax/federalTax.ts"
+      ],
+      "provenance": {
+        "derivedBy": "codex",
+        "implementedBy": "claude",
+        "reviewedBy": "cursor"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/tax/federalTax.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
+      "id": "federal-ltcg-stacking",
+      "title": "Federal long-term capital gain stacking",
+      "kind": "formula",
+      "outputs": [],
+      "feeds": [
+        "tax-total-annual"
+      ],
+      "purpose": "Tax preferential income in the taxable-income interval immediately above ordinary taxable income.",
+      "statement": "tax/federalTax.ts#capitalGainsTaxStacked and #computeFederalTax tax 2026 single-filer annual long-term capital gains and qualified dividends by stacking preferential income above ordinary taxable income across the 0%, 15% and 20% thresholds. Each rate applies to the intersection of the preferential interval with its rate band, so the ordinary base is never taxed again. Units: nominal USD. Rounding: none stated.",
+      "formula": {
+        "expression": "from = ordinaryTaxable; to = from + preferential; at15 = max(0, min(to, t20) - max(from, t15)); at20 = max(0, to - max(from, t20)); tax = 0.15 x at15 + 0.20 x at20",
+        "variables": [
+          {
+            "symbol": "ordinaryTaxable",
+            "meaning": "Taxable income other than preferential income",
+            "unit": "usd/year",
+            "domain": "nonnegative"
+          },
+          {
+            "symbol": "preferential",
+            "meaning": "Long-term gains plus qualified dividends inside taxable income",
+            "unit": "usd/year",
+            "domain": "nonnegative"
+          },
+          {
+            "symbol": "t15",
+            "meaning": "year2026.capitalGains.rate15StartsAbove for the filing status",
+            "unit": "usd/year",
+            "domain": "positive"
+          },
+          {
+            "symbol": "t20",
+            "meaning": "year2026.capitalGains.rate20StartsAbove for the filing status",
+            "unit": "usd/year",
+            "domain": "positive and above t15"
+          }
+        ],
+        "timing": "one tax year",
+        "rounding": "none stated"
+      },
+      "limits": [
+        "No direct census family: the stacked preferential tax is a component of the published annual tax, not a separately published figure",
+        "The helper is not exported; the evidence asserts the published capitalGainsTax of computeFederalTax, reaching the worksheet's 45,000 of ordinary taxable income and 10,000 of preferential income from real income inputs net of the 2026 single standard deduction"
+      ],
+      "worksheet": "DOCS/calculations/taxes/federal-ltcg-stacking.md",
+      "mutation": "DOCS/calculations/taxes/federal-ltcg-stacking.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/tax/federalTax.ts"
+      ],
+      "provenance": {
+        "derivedBy": "codex",
+        "implementedBy": "claude",
+        "reviewedBy": "cursor"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/tax/federalTax.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
+      "id": "federal-ordinary-bracket-tax",
+      "title": "Federal ordinary bracket tax",
+      "kind": "formula",
+      "outputs": [],
+      "feeds": [
+        "tax-total-annual"
+      ],
+      "purpose": "Apply each marginal rate to the part of ordinary taxable income that falls in its bracket.",
+      "statement": "tax/federalTax.ts#bracketTax and #computeFederalTax compute 2026 federal ordinary income tax by applying each single-filer marginal rate to the part of annual ordinary taxable income in that bracket, partitioning taxable income into nonoverlapping layers rather than applying the top marginal rate to every dollar. No rounding is stated. Units: nominal USD.",
+      "formula": {
+        "expression": "tax = sum over brackets i of r_i x max(0, min(T, L_(i+1)) - L_i)",
+        "variables": [
+          {
+            "symbol": "T",
+            "meaning": "Ordinary taxable income",
+            "unit": "usd/year",
+            "domain": "nonnegative"
+          },
+          {
+            "symbol": "L_i",
+            "meaning": "Lower bound of bracket i, from year2026.federalTax.brackets",
+            "unit": "usd/year",
+            "domain": "nondecreasing, first bound 0"
+          },
+          {
+            "symbol": "r_i",
+            "meaning": "Marginal rate of bracket i",
+            "unit": "fraction",
+            "domain": "0 < r_i < 1"
+          }
+        ],
+        "timing": "one tax year",
+        "rounding": "none stated"
+      },
+      "limits": [
+        "No direct census family: the ordinary bracket tax is a component of the published annual tax, not a separately published figure",
+        "bracketTax is not exported; the evidence asserts the published ordinaryTax of computeFederalTax, reaching the worksheet's 60,000 of ordinary taxable income from an ordinary income of 60,000 plus the 2026 single standard deduction"
+      ],
+      "worksheet": "DOCS/calculations/taxes/federal-ordinary-bracket-tax.md",
+      "mutation": "DOCS/calculations/taxes/federal-ordinary-bracket-tax.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/tax/federalTax.ts"
+      ],
+      "provenance": {
+        "derivedBy": "codex",
+        "implementedBy": "claude",
+        "reviewedBy": "cursor"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/tax/federalTax.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
+      "id": "federal-standard-deduction-age-65",
+      "title": "Federal standard deduction with the age-65 addition",
+      "kind": "composition",
+      "outputs": [],
+      "feeds": [
+        "tax-total-annual"
+      ],
+      "purpose": "Compose the basic standard deduction with the per-person age-65 addition.",
+      "statement": "params/index.ts#standardDeduction and #age65StandardDeductionAddition, consumed by tax/federalTax.ts#computeFederalTax, compute the 2026 single-filer standard deduction as the basic annual deduction plus the per-person age-65 addition times the number of qualifying people. This is distinct from the separate OBBBA senior deduction, which rides on top of whichever deduction base wins. Units: nominal USD. Rounding: none; the pack values and the head count are integers.",
+      "formula": {
+        "expression": "deduction = D + n x A",
+        "variables": [
+          {
+            "symbol": "D",
+            "meaning": "Basic standard deduction, year2026.federalTax.standardDeduction for the filing status",
+            "unit": "usd/year",
+            "domain": "positive"
+          },
+          {
+            "symbol": "A",
+            "meaning": "Per-person age-65 addition, year2026.federalTax.age65Addition for the filing status",
+            "unit": "usd/person/year",
+            "domain": "positive"
+          },
+          {
+            "symbol": "n",
+            "meaning": "Living household members aged 65 or older",
+            "unit": "people",
+            "domain": "integer >= 0"
+          }
+        ],
+        "timing": "one tax year",
+        "rounding": "none"
+      },
+      "limits": [
+        "No direct census family: the deduction is a component of the published annual tax, not a separately published figure",
+        "The OBBBA senior deduction is a separate allowance added to the elected base, so computeFederalTax's published `deduction` equals this composition only where the senior deduction is zero. The evidence asserts standardDeduction directly and then reads the composed figure back out of computeFederalTax at a MAGI past the senior-deduction phase-out, where the published seniorDeduction is 0."
+      ],
+      "worksheet": "DOCS/calculations/taxes/federal-standard-deduction-age-65.md",
+      "mutation": "DOCS/calculations/taxes/federal-standard-deduction-age-65.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/params/index.ts",
+        "packages/engine/src/tax/federalTax.ts"
+      ],
+      "provenance": {
+        "derivedBy": "codex",
+        "implementedBy": "claude",
+        "reviewedBy": "cursor"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/tax/federalTax.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
+      "id": "federal-taxable-social-security-tiers",
+      "title": "Federal taxable Social Security tiers",
+      "kind": "formula",
+      "outputs": [],
+      "feeds": [
+        "tax-total-annual"
+      ],
+      "purpose": "Tier the taxable share of Social Security benefits off provisional income.",
+      "statement": "tax/federalTax.ts#taxableSocialSecurity computes annual taxable Social Security from provisional income (AGI excluding Social Security, plus tax-exempt interest, plus the foreign-exclusion addback, plus half of gross benefits) using the 2026 pack's statutorily unindexed single-filer 50% and 85% tier thresholds. Units: nominal USD. Rounding: none stated.",
+      "formula": {
+        "expression": "P = agiExcludingSs + max(0, taxExemptInterest) + max(0, foreignAddback) + 0.5 x B; taxable = 0 when P <= a; min(0.5B, 0.5(P - a)) when a < P <= b; min(0.85B, 0.85(P - b) + min(0.5B, 0.5(b - a))) when P > b",
+        "variables": [
+          {
+            "symbol": "B",
+            "meaning": "Gross Social Security benefits",
+            "unit": "usd/year",
+            "domain": "positive; a nonpositive benefit returns 0"
+          },
+          {
+            "symbol": "P",
+            "meaning": "Provisional income",
+            "unit": "usd/year",
+            "domain": "any finite number"
+          },
+          {
+            "symbol": "a",
+            "meaning": "year2026.ssBenefitTaxation.tier50Start for the filing status",
+            "unit": "usd/year",
+            "domain": "positive"
+          },
+          {
+            "symbol": "b",
+            "meaning": "year2026.ssBenefitTaxation.tier85Start for the filing status",
+            "unit": "usd/year",
+            "domain": "positive and above a"
+          }
+        ],
+        "timing": "one tax year",
+        "rounding": "none stated"
+      },
+      "limits": [
+        "No direct census family: the taxable share is an input to the published annual tax and to AGI, not a separately published figure",
+        "The tier thresholds are unindexed by design, so more of a benefit becomes taxable as a nominal plan runs on; the record claims the tiering, not the threshold policy"
+      ],
+      "worksheet": "DOCS/calculations/taxes/federal-taxable-social-security-tiers.md",
+      "mutation": "DOCS/calculations/taxes/federal-taxable-social-security-tiers.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/tax/federalTax.ts"
+      ],
+      "provenance": {
+        "derivedBy": "codex",
+        "implementedBy": "claude",
+        "reviewedBy": "cursor"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/tax/federalTax.evidence.test.ts"
       ],
       "gates": {
         "fixtureRegistersTest": true,
