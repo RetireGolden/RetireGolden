@@ -1,6 +1,6 @@
 # Mutation receipt: monte-carlo-guardrail-action-counts
 
-Executed 2026-09-18 against RetireGolden base `f12eba6d` (branch claude/b1-p4-cards-slice-ten) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-ten` at base `f12eba6d`, and re-executed 2026-09-22 against RetireGolden base `4fe87f00` (branch `claude/b1-p4-cards-nine-ten`, pull request #729) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/montecarlo/run.ts`
 
@@ -29,10 +29,10 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/montecarlo/
 
 ## Captured failing output
 
-Executed 2026-09-18 by the orchestrator: the implementing session's writes to the production file were refused by its permission classifier, so the prepared diff was applied as written here. The baseline is green (run.evidence.test.ts passes on unmodified production). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed. Exit code: 1.
+Re-executed 2026-09-22 on the pull-request branch after the review of #729: the branch was renamed for the pull request and several fixtures changed, so every capture, blob hash and revert note is refreshed against this head. The baseline is green (run.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/TEMP/rg-s10/packages/engine
+RUN  v5.0.0 C:/TEMP/rg-rehearse2/packages/engine
 
  ❯ src/montecarlo/run.evidence.test.ts (16 tests | 1 failed) 9ms
    ❯ monte-carlo-guardrail-action-counts — Guardrail action counts summed across paths (1)
@@ -41,7 +41,7 @@ RUN  v5.0.0 C:/TEMP/rg-s10/packages/engine
  Test Files  1 failed (1)
       Tests  1 failed | 15 passed (16)
 
-  Transform  transforming modules took 2.06s · 42% of tracked time, re-done on every run
+  Transform  transforming modules took 2.17s · 44% of tracked time, re-done on every run
              persist transforms across runs with fsModuleCache: true
              learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
 
@@ -70,4 +70,4 @@ AssertionError: guardrailActionCounts.cut: expected 1.5 to be 6 // Object.is equ
 
 ## Revert
 
-Not needed: no production file was modified. `git diff --quiet -- packages/engine/src/montecarlo/run.ts` exits 0.
+The original bytes of `packages/engine/src/montecarlo/run.ts` were written back and compared byte for byte in the harness, and `git diff --quiet -- packages/engine/src/montecarlo/run.ts` then exited 0, confirming no production change remained. Re-ran the named command after restoration: the suite returned to its baseline state, green (exit 0).
