@@ -36,11 +36,11 @@
           "functions": [
             {
               "name": "rothAccountSchema",
-              "line": 1093
+              "line": 1101
             },
             {
               "name": "traditionalAccountSchema",
-              "line": 1039
+              "line": 1047
             }
           ]
         },
@@ -108,11 +108,11 @@
           "functions": [
             {
               "name": "rothAccountSchema",
-              "line": 1093
+              "line": 1101
             },
             {
               "name": "traditionalAccountSchema",
-              "line": 1039
+              "line": 1047
             }
           ]
         }
@@ -166,11 +166,11 @@
           "functions": [
             {
               "name": "rothAccountSchema",
-              "line": 1093
+              "line": 1101
             },
             {
               "name": "traditionalAccountSchema",
-              "line": 1039
+              "line": 1047
             }
           ]
         }
@@ -224,11 +224,11 @@
           "functions": [
             {
               "name": "rothAccountSchema",
-              "line": 1093
+              "line": 1101
             },
             {
               "name": "traditionalAccountSchema",
-              "line": 1039
+              "line": 1047
             }
           ]
         }
@@ -337,7 +337,7 @@
           "functions": [
             {
               "name": "rothAccountSchema",
-              "line": 1093
+              "line": 1101
             }
           ]
         },

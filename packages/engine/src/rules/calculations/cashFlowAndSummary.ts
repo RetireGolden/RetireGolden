@@ -474,4 +474,716 @@ export const cashFlowAndSummaryRecords = {
     verifiedOn: '2026-09-18',
     provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
   },
+  'income-total-annual': {
+    title: 'Annual cash-income total',
+    purpose: 'The year row\'s single spendable-income figure, and which published members compose it.',
+    kind: 'composition',
+    outputs: ['income-total-annual'],
+    feeds: ['portfolio-need-annual'],
+    statement:
+      'projection/internal/types/yearLedger.ts#YearIncomes.total is the year\'s cash income: wages + socialSecurity + pension + annuity + tipsLadder + recurring + oneTime + taxableYield + taxExemptInterest, folded in that operand order by projection/simulate.ts#simulatePlan after every income pass has committed. The separately published taxableInterest, ordinaryDividends and qualifiedDividends characterize taxableYield for tax purposes and never join the sum again. Units: nominal USD per year. Rounding: none; the sum is a binary float.',
+    formula: {
+      expression: 'total = wages + socialSecurity + pension + annuity + tipsLadder + recurring + oneTime + taxableYield + taxExemptInterest',
+      variables: [
+        { symbol: 'wages, socialSecurity, pension, annuity', meaning: 'Person-owned stream payments this year', unit: 'usd/year', domain: 'nonnegative' },
+        { symbol: 'tipsLadder', meaning: 'TIPS-ladder coupons and maturing principal', unit: 'usd/year', domain: 'nonnegative; 0 without ladders' },
+        { symbol: 'recurring, oneTime', meaning: 'Household streams inside their year window', unit: 'usd/year', domain: 'nonnegative' },
+        { symbol: 'taxableYield', meaning: 'Taxable interest plus all dividends distributed by taxable accounts', unit: 'usd/year', domain: 'nonnegative' },
+        { symbol: 'taxExemptInterest', meaning: 'Federally exempt municipal interest, cash-real but never ordinary income', unit: 'usd/year', domain: 'nonnegative' },
+      ],
+      timing: 'once per projection year, after the three income passes and the ladder pass',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/cash-flow-and-summary/income-total-annual.md',
+    },
+    limits: [
+      'Asserted on a real simulatePlan run whose single year realizes all nine members at the worksheet\'s amounts. Plan assumptions beyond the worksheet\'s inputs: zero general inflation, zero account returns, a single 68-year-old filing single in KY with a zero state rate, the Social Security stream claimed at that cohort\'s full retirement age so the claim factor is exactly 1 and the earnings test withholds nothing, and four separate taxable accounts so the interest, wholly qualified dividend, wholly ordinary dividend and municipal sleeves each carry one worksheet figure exactly',
+      'Reinvestment is switched off on those taxable accounts so the generated yield is visible as cash; the published total counts taxableYield either way, because the field sums characterized yield rather than yield that reached the household cash hub',
+      'The composition is the published members only. The year also carries realized gains, Roth conversions, forced distributions and loan proceeds, none of which are cash income members: they reach the ledger through withdrawals, transfers and the cash-flow report instead',
+    ],
+    implementedBy: [
+      'packages/engine/src/projection/internal/types/yearLedger.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/internal/types/yearLedger.ts#YearIncomes.total',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+    ],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
+  'income-wages-annual': {
+    title: 'Annual wage income for one stream',
+    purpose: 'What a wage stream pays in a projection year, after real raises and inflation.',
+    kind: 'formula',
+    outputs: ['income-wages-annual'],
+    feeds: ['income-total-annual', 'social-security-benefit-annual'],
+    statement:
+      'projection/internal/wageIncomeStreams.ts#wageIncomeStreams emits one row per wage stream that pays this year, in plan.incomes order, with amount = annualGross x (1 + realGrowthPct/100)^(year - startYear) x inflFactor, computed in that operand order; annualIncomeSetup folds those rows into the published projection/internal/types/result.ts#YearResult.incomes.wages. A stream is skipped when its owner is not alive, or when the owner has attained the stream\'s stop age — endAge when the stream names one, else the person\'s retirementAge, and neither when both are null. Wages run before Social Security because pass 3\'s earnings test reads the per-person wage totals. Units: nominal USD per year. Rounding: none.',
+    formula: {
+      expression: 'wages = annualGross * (1 + realGrowthPct/100)^(year - startYear) * inflFactor',
+      variables: [
+        { symbol: 'annualGross', meaning: 'Gross wage at the projection start year', unit: 'usd/year', domain: 'nonnegative' },
+        { symbol: 'realGrowthPct', meaning: 'Annual real raise, in percent', unit: 'percent/year', domain: 'absent reads as 0' },
+        { symbol: 'year - startYear', meaning: 'Elapsed projection years, computed operand for operand at the phase', unit: 'years', domain: 'integer at or above 0' },
+        { symbol: 'inflFactor', meaning: 'Cumulative general-inflation factor from the projection start year', unit: '1', domain: 'positive' },
+        { symbol: 'stopAge', meaning: 'endAge when present, else the person\'s retirementAge', unit: 'attained age', domain: 'either may be null; attaining it stops the row' },
+      ],
+      timing: 'income pass 1, once per projection year, before Social Security',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/cash-flow-and-summary/income-wages-annual.md',
+    },
+    limits: [
+      'Asserted on a real simulatePlan run over 2028-2030. Plan assumptions beyond the worksheet\'s inputs: a single person filing single in KY with a zero state rate, no accounts, and the worksheet\'s 1.08 cumulative inflation factor supplied as a per-year inflation path of 8 percent in the first projection year and 0 afterwards, because a single constant rate cannot give a two-year cumulative factor of exactly 1.08',
+      'The stop age is attained-age based: a stream with endAge 65 pays at attained age 64 and stops at 65, so the worksheet\'s paying year is the last one before the stop',
+      'The engine preserves plan order across wage rows rather than pre-summing them, so the last binary digit of a multi-row wage total depends on that order; the fixture asserts a single row',
+    ],
+    implementedBy: [
+      'packages/engine/src/projection/internal/wageIncomeStreams.ts',
+      'packages/engine/src/projection/internal/types/result.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/internal/wageIncomeStreams.ts#wageIncomeStreams',
+      'packages/engine/src/projection/internal/types/result.ts#YearResult.incomes',
+    ],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
+  'income-pension-annual': {
+    title: 'Annual pension income, with COLA and survivor continuation',
+    purpose: 'What a pension pays in a projection year, including the share a surviving spouse keeps.',
+    kind: 'model',
+    outputs: ['income-pension-annual'],
+    feeds: ['income-total-annual'],
+    statement:
+      'projection/internal/annualPensionAndAnnuityIncome.ts#annualPensionAndAnnuityIncome pays a pension from the owner\'s startAge onward as monthlyAmount x 12 compounded by its annual COLA over the years since the start age, and publishes it as projection/internal/types/result.ts#YearResult.incomes.pension. While the owner is alive the full amount pays; after the owner dies it continues to a surviving household member at survivorPct/100 of that full amount, and stops when no survivor is alive. A pension commuted by a lump-sum election pays nothing. Units: nominal USD per year. Rounding: none.',
+    formula: {
+      expression: 'full = monthlyAmount * 12 * (1 + colaPct/100)^(age - startAge); paid = full while the owner lives, full * survivorPct/100 to a survivor after the owner dies',
+      variables: [
+        { symbol: 'monthlyAmount', meaning: 'Monthly pension at the start age', unit: 'usd/month', domain: 'nonnegative' },
+        { symbol: 'colaPct', meaning: 'Annual cost-of-living adjustment', unit: 'percent/year', domain: '0 is a fixed-nominal pension' },
+        { symbol: 'age - startAge', meaning: 'COLA years elapsed since payments began', unit: 'years', domain: 'integer at or above 0' },
+        { symbol: 'survivorPct', meaning: 'Percent of the benefit continuing to a surviving spouse', unit: 'percent', domain: '0..100' },
+      ],
+      timing: 'income pass 2, once per projection year',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/cash-flow-and-summary/income-pension-annual.md',
+    },
+    limits: [
+      'Asserted on a real simulatePlan run over 2028-2030. Plan assumptions beyond the worksheet\'s inputs: a two-person household filing jointly in KY with a zero state rate, zero inflation and zero account returns, the owner\'s planning age set to 65 so the run\'s own longevity makes them dead from 2029 on, and the survivor\'s planning age set to 95 so the survivor continuation is the only thing being read',
+      'The COLA count is driven by the owner\'s would-be attained age, not by whether they are alive: the survivor keeps a benefit that has continued to compound',
+      'A lump-sum election is a separate path this record does not price; the fixture\'s pension carries no election',
+    ],
+    implementedBy: [
+      'packages/engine/src/projection/internal/annualPensionAndAnnuityIncome.ts',
+      'packages/engine/src/projection/internal/types/result.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualPensionAndAnnuityIncome.ts#annualPensionAndAnnuityIncome',
+      'packages/engine/src/projection/internal/types/result.ts#YearResult.incomes',
+    ],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
+  'income-annuity-annual': {
+    title: 'Annual annuity income under the joint-survivor payout form',
+    purpose: 'What an annuity contract pays in a projection year once the payout form is applied.',
+    kind: 'model',
+    outputs: ['income-annuity-annual'],
+    feeds: ['income-total-annual'],
+    statement:
+      'projection/internal/annualPensionAndAnnuityIncome.ts#annualPensionAndAnnuityIncome starts an annuity at its startAge, compounds monthlyAmount x 12 by its annual COLA over the years since that start age, applies the selected payout form, and publishes the result as projection/internal/types/result.ts#YearResult.incomes.annuity. Under payoutForm.kind "jointSurvivor" the payment continues after the owner\'s death to the other household member at survivorPct/100 of the full amount; "lifeOnly" stops at the owner\'s death and "periodCertain" continues only inside its guarantee window. Units: nominal USD per year. Rounding: none.',
+    formula: {
+      expression: 'full = monthlyAmount * 12 * (1 + colaPct/100)^(age - startAge); jointSurvivor pays full * survivorPct/100 after the owner dies',
+      variables: [
+        { symbol: 'monthlyAmount', meaning: 'Monthly payment at the start age', unit: 'usd/month', domain: 'nonnegative' },
+        { symbol: 'colaPct', meaning: 'Annual cost-of-living adjustment on the contract', unit: 'percent/year', domain: '0 is a level contract' },
+        { symbol: 'survivorPct', meaning: 'Percent continuing to the surviving joint annuitant', unit: 'percent', domain: '1..100; requires a two-person household' },
+      ],
+      timing: 'income pass 2, once per projection year',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/cash-flow-and-summary/income-annuity-annual.md',
+    },
+    limits: [
+      'Asserted on a real simulatePlan run over 2028-2029. Plan assumptions beyond the worksheet\'s inputs: a two-person household filing jointly in KY with a zero state rate, zero inflation and zero account returns, the owner\'s planning age set to 65 so the run makes them dead from 2029, the joint annuitant\'s planning age set to 95, and an already-owned contract with no purchase event so no exclusion ratio is derived',
+      'taxablePct is the contract\'s tax character, not its cash amount; the published income field is the same under any character',
+      'Period-certain and life-only are the other two forms and are not this record\'s claim',
+    ],
+    implementedBy: [
+      'packages/engine/src/projection/internal/annualPensionAndAnnuityIncome.ts',
+      'packages/engine/src/projection/internal/types/result.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualPensionAndAnnuityIncome.ts#annualPensionAndAnnuityIncome',
+      'packages/engine/src/projection/internal/types/result.ts#YearResult.incomes',
+    ],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
+  'income-recurring-annual': {
+    title: 'Annual recurring household income',
+    purpose: 'What a recurring income stream pays inside its year window.',
+    kind: 'formula',
+    outputs: ['income-recurring-annual'],
+    feeds: ['income-total-annual'],
+    statement:
+      'projection/internal/otherIncomeStreams.ts#otherIncomeStreams pays a recurring stream in every year inside its inclusive startYear..endYear window while any household member is alive, as annualAmount x inflFactor when inflationAdjusted is true and annualAmount alone when it is false; annualIncomeSetup folds the rows into the published projection/internal/types/result.ts#YearResult.incomes.recurring. A null startYear or endYear leaves that side of the window open. Tax treatment routes the income for tax and never changes the cash amount. Units: nominal USD per year. Rounding: none.',
+    formula: {
+      expression: 'recurring = annualAmount * (inflationAdjusted ? inflFactor : 1), paid when startYear <= year <= endYear and any household member is alive',
+      variables: [
+        { symbol: 'annualAmount', meaning: 'Stream amount in today\'s dollars', unit: 'usd/year', domain: 'nonnegative' },
+        { symbol: 'inflFactor', meaning: 'Cumulative general-inflation factor from the projection start year', unit: '1', domain: 'positive' },
+        { symbol: 'startYear, endYear', meaning: 'Inclusive calendar-year window; null leaves that side open', unit: 'calendar year', domain: 'integer or null' },
+      ],
+      timing: 'income pass 2, once per projection year',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/cash-flow-and-summary/income-recurring-annual.md',
+    },
+    limits: [
+      'Asserted on a real simulatePlan run over 2028-2030. Plan assumptions beyond the worksheet\'s inputs: a single person filing single in KY with a zero state rate, no accounts, and the worksheet\'s 1.08 cumulative inflation factor supplied as a per-year inflation path of 8 percent in the first projection year and 0 afterwards, because a single constant rate cannot give a two-year cumulative factor of exactly 1.08',
+      'The gate is household-wide, not person-owned: a recurring stream has no owner and stops only after the last household death',
+      'taxTreatment "none" is a tax-free row that still joins cash income; the field is cash, not taxable income',
+    ],
+    implementedBy: [
+      'packages/engine/src/projection/internal/otherIncomeStreams.ts',
+      'packages/engine/src/projection/internal/types/result.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/internal/otherIncomeStreams.ts#otherIncomeStreams',
+      'packages/engine/src/projection/internal/types/result.ts#YearResult.incomes',
+    ],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
+  'income-one-time-annual': {
+    title: 'Annual one-time income',
+    purpose: 'What a one-time income stream pays, and only in its named year.',
+    kind: 'formula',
+    outputs: ['income-one-time-annual'],
+    feeds: ['income-total-annual'],
+    statement:
+      'projection/internal/otherIncomeStreams.ts#otherIncomeStreams pays a one-time stream only in the calendar year it names, and only while any household member is alive, as amount x inflFactor when inflationAdjusted is true and amount alone when it is false; annualIncomeSetup folds the row into the published projection/internal/types/result.ts#YearResult.incomes.oneTime. Every other year publishes 0 for that stream. Tax treatment routes the income for tax and never changes the cash amount. Units: nominal USD in the payment year. Rounding: none.',
+    formula: {
+      expression: 'oneTime = amount * (inflationAdjusted ? inflFactor : 1) when year equals the stream\'s year and any household member is alive, else 0',
+      variables: [
+        { symbol: 'amount', meaning: 'Payment in today\'s dollars', unit: 'usd', domain: 'nonnegative' },
+        { symbol: 'inflFactor', meaning: 'Cumulative general-inflation factor from the projection start year', unit: '1', domain: 'positive' },
+        { symbol: 'year', meaning: 'The single calendar year the stream names', unit: 'calendar year', domain: 'integer' },
+      ],
+      timing: 'income pass 2, once per projection year',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/cash-flow-and-summary/income-one-time-annual.md',
+    },
+    limits: [
+      'Asserted on a real simulatePlan run over 2028-2032. Plan assumptions beyond the worksheet\'s inputs: a single person filing single in KY with a zero state rate, no accounts, and the worksheet\'s 1.12 cumulative inflation factor supplied as a per-year inflation path of 12 percent in the first projection year and 0 afterwards, so that every year from 2029 on carries exactly that factor',
+      'The neighbouring years are asserted too, because "pays only in its year" is half the claim',
+      'taxTreatment "capitalGain" is the row\'s character, not an exclusion from cash income',
+    ],
+    implementedBy: [
+      'packages/engine/src/projection/internal/otherIncomeStreams.ts',
+      'packages/engine/src/projection/internal/types/result.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/internal/otherIncomeStreams.ts#otherIncomeStreams',
+      'packages/engine/src/projection/internal/types/result.ts#YearResult.incomes',
+    ],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
+  'income-taxable-interest-annual': {
+    title: 'Annual taxable interest distributed by a taxable account',
+    purpose: 'The interest a taxable account generates on its start-of-year balance.',
+    kind: 'formula',
+    outputs: ['income-taxable-interest-annual'],
+    feeds: ['tax-total-annual', 'magi-annual'],
+    statement:
+      'projection/internal/distributedTaxableYieldRows.ts#distributedTaxableYieldRows computes, for each taxable account whose start-of-year balance is strictly positive, interest = startBalance x interestYieldPct / 100, and projection/internal/annualIncomeSetup.ts#annualIncomeSetup folds those rows into the published projection/internal/types/result.ts#YearResult.incomes.taxableInterest. The rate is the account\'s own interestYieldPct when set, else the allocation blend\'s interest yield, else 0, each floored at 0; the start-of-year balance is the prior year\'s closing balance, and a zero or negative one produces no yield row at all. reinvestDividends decides where the generated cash goes, never whether it is characterized as interest. Units: nominal USD per year. Rounding: none.',
+    formula: {
+      expression: 'interest = startBalance * max(0, interestYieldPct ?? blendedInterestYieldPct ?? 0) / 100',
+      variables: [
+        { symbol: 'startBalance', meaning: 'Start-of-year balance, the prior year\'s close', unit: 'usd', domain: 'strictly positive, else no row' },
+        { symbol: 'interestYieldPct', meaning: 'Account interest yield, in percent of the start balance', unit: 'percent/year', domain: 'nonnegative; overrides the allocation blend' },
+      ],
+      timing: 'once per taxable account per projection year, before the wage pass',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/cash-flow-and-summary/income-taxable-interest-annual.md',
+    },
+    limits: [
+      'Asserted on two real simulatePlan runs of the projection\'s first year, where the start-of-year balance is the plan balance. Plan assumptions beyond the worksheet\'s inputs: a single 51-year-old filing single in KY with a zero state rate, zero inflation, zero account return and cost basis equal to balance, so nothing but the stated yields can move the year; the account carries no allocation, so the defaults case exercises the no-blend fallback the worksheet names',
+      'A percent, not a fraction: 2.25 means 2.25 percent, and reading it as a fraction is one of the worksheet\'s wrong readings',
+      'The interest field is characterization, not cash delivery; with reinvestment on, the same dollars are credited back to the account and add nothing to the year\'s cash inflows',
+    ],
+    implementedBy: [
+      'packages/engine/src/projection/internal/distributedTaxableYieldRows.ts',
+      'packages/engine/src/projection/internal/annualIncomeSetup.ts',
+      'packages/engine/src/projection/internal/types/result.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/internal/distributedTaxableYieldRows.ts#distributedTaxableYieldRows',
+      'packages/engine/src/projection/internal/annualIncomeSetup.ts#annualIncomeSetup',
+      'packages/engine/src/projection/internal/types/result.ts#YearResult.incomes',
+    ],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
+  'income-qualified-dividends-annual': {
+    title: 'Annual qualified dividends distributed by a taxable account',
+    purpose: 'The qualified share of a taxable account\'s generated dividends.',
+    kind: 'formula',
+    outputs: ['income-qualified-dividends-annual'],
+    feeds: ['tax-total-annual', 'magi-annual'],
+    statement:
+      'projection/internal/distributedTaxableYieldRows.ts#distributedTaxableYieldRows computes, for each taxable account whose start-of-year balance is strictly positive, dividends = startBalance x dividendYieldPct / 100 and qualified = dividends x clamp(qualifiedRatio ?? blendedQualifiedRatio ?? DEFAULT_QUALIFIED_DIVIDEND_RATIO, 0, 1), and projection/internal/annualIncomeSetup.ts#annualIncomeSetup folds those rows into the published projection/internal/types/result.ts#YearResult.incomes.qualifiedDividends. DEFAULT_QUALIFIED_DIVIDEND_RATIO is 0.85, a fraction rather than a percent. Units: nominal USD per year. Rounding: none.',
+    formula: {
+      expression: 'qualified = (startBalance * dividendYieldPct / 100) * min(1, max(0, qualifiedRatio ?? blendedQualifiedRatio ?? 0.85))',
+      variables: [
+        { symbol: 'startBalance', meaning: 'Start-of-year balance, the prior year\'s close', unit: 'usd', domain: 'strictly positive, else no row' },
+        { symbol: 'dividendYieldPct', meaning: 'Account dividend yield, in percent of the start balance', unit: 'percent/year', domain: 'nonnegative' },
+        { symbol: 'qualifiedRatio', meaning: 'Qualified share of dividends', unit: '1', domain: 'clamped to [0, 1]; absent falls back to the blend, then to 0.85' },
+      ],
+      timing: 'once per taxable account per projection year, before the wage pass',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/cash-flow-and-summary/income-qualified-dividends-annual.md',
+    },
+    limits: [
+      'Asserted on two real simulatePlan runs of the projection\'s first year, where the start-of-year balance is the plan balance. Plan assumptions beyond the worksheet\'s inputs: a single 51-year-old filing single in KY with a zero state rate, zero inflation, zero account return and cost basis equal to balance; the account carries no allocation, so the defaults case exercises the 0.85 fallback rather than a blend',
+      'The default is 0.85 as a fraction; reading it as 85 percent of a percent is one of the worksheet\'s wrong readings and the clamp to [0, 1] is what stops it',
+      'An explicit account ratio wins over the blend and over the default, so the explicit case proves precedence, not just arithmetic',
+    ],
+    implementedBy: [
+      'packages/engine/src/projection/internal/distributedTaxableYieldRows.ts',
+      'packages/engine/src/projection/internal/annualIncomeSetup.ts',
+      'packages/engine/src/projection/internal/types/result.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/internal/distributedTaxableYieldRows.ts#distributedTaxableYieldRows',
+      'packages/engine/src/projection/internal/annualIncomeSetup.ts#annualIncomeSetup',
+      'packages/engine/src/projection/internal/types/result.ts#YearResult.incomes',
+    ],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
+  'income-ordinary-dividends-annual': {
+    title: 'Annual ordinary dividends distributed by a taxable account',
+    purpose: 'The non-qualified remainder of a taxable account\'s generated dividends.',
+    kind: 'formula',
+    outputs: ['income-ordinary-dividends-annual'],
+    feeds: ['tax-total-annual', 'magi-annual'],
+    statement:
+      'projection/internal/distributedTaxableYieldRows.ts#distributedTaxableYieldRows computes, for each taxable account whose start-of-year balance is strictly positive, ordinaryDividends = dividends - qualified, where dividends = startBalance x dividendYieldPct / 100 and qualified applies the resolved qualified ratio; projection/internal/annualIncomeSetup.ts#annualIncomeSetup folds those rows into the published projection/internal/types/result.ts#YearResult.incomes.ordinaryDividends. Qualified and ordinary dividends partition the same dividends and never add on top of them. Units: nominal USD per year. Rounding: none.',
+    formula: {
+      expression: 'ordinaryDividends = dividends - dividends * clamp(qualifiedRatio ?? blendedQualifiedRatio ?? 0.85, 0, 1), dividends = startBalance * dividendYieldPct / 100',
+      variables: [
+        { symbol: 'dividends', meaning: 'Generated dividends on the start balance', unit: 'usd/year', domain: 'nonnegative' },
+        { symbol: 'qualifiedRatio', meaning: 'Qualified share of dividends', unit: '1', domain: 'clamped to [0, 1]; absent falls back to the blend, then to 0.85' },
+      ],
+      timing: 'once per taxable account per projection year, before the wage pass',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/cash-flow-and-summary/income-ordinary-dividends-annual.md',
+    },
+    limits: [
+      'Asserted on two real simulatePlan runs of the projection\'s first year, where the start-of-year balance is the plan balance. Plan assumptions beyond the worksheet\'s inputs: a single 51-year-old filing single in KY with a zero state rate, zero inflation, zero account return and cost basis equal to balance; the account carries no allocation, so the defaults case exercises the 0.85 fallback',
+      'The subtraction is performed in binary floating point, so the explicit case\'s $700 arrives as 700.0000000000002 and is compared under the worksheet\'s half-cent tolerance rather than exactly',
+      'This is the ordinary share of dividends only; taxable interest is a separate member of taxable yield',
+    ],
+    implementedBy: [
+      'packages/engine/src/projection/internal/distributedTaxableYieldRows.ts',
+      'packages/engine/src/projection/internal/annualIncomeSetup.ts',
+      'packages/engine/src/projection/internal/types/result.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/internal/distributedTaxableYieldRows.ts#distributedTaxableYieldRows',
+      'packages/engine/src/projection/internal/annualIncomeSetup.ts#annualIncomeSetup',
+      'packages/engine/src/projection/internal/types/result.ts#YearResult.incomes',
+    ],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
+  'income-taxable-yield-annual': {
+    title: 'Annual taxable yield distributed by a taxable account',
+    purpose: 'Interest plus all dividends, the single taxable-yield figure the income total counts.',
+    kind: 'formula',
+    outputs: ['income-taxable-yield-annual'],
+    feeds: ['income-total-annual'],
+    statement:
+      'projection/internal/distributedTaxableYieldRows.ts#distributedTaxableYieldRows computes, for each taxable account whose start-of-year balance is strictly positive, taxableGross = interest + dividends, and projection/internal/annualIncomeSetup.ts#annualIncomeSetup folds those rows into the published projection/internal/types/result.ts#YearResult.incomes.taxableYield. Qualified and ordinary dividends partition dividends and are not added again; federally tax-exempt interest is computed on the same balance from taxExemptInterestYieldPct but is a separate published member and never joins taxable yield. Units: nominal USD per year. Rounding: none.',
+    formula: {
+      expression: 'taxableYield = startBalance * interestYieldPct / 100 + startBalance * dividendYieldPct / 100',
+      variables: [
+        { symbol: 'startBalance', meaning: 'Start-of-year balance, the prior year\'s close', unit: 'usd', domain: 'strictly positive, else no row' },
+        { symbol: 'interestYieldPct, dividendYieldPct', meaning: 'Account yields in percent of the start balance', unit: 'percent/year', domain: 'nonnegative' },
+        { symbol: 'taxExemptInterestYieldPct', meaning: 'Municipal sleeve yield, published separately', unit: 'percent/year', domain: 'nonnegative; never in taxable yield' },
+      ],
+      timing: 'once per taxable account per projection year, before the wage pass',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/cash-flow-and-summary/income-taxable-yield-annual.md',
+    },
+    limits: [
+      'Asserted on two real simulatePlan runs of the projection\'s first year, where the start-of-year balance is the plan balance. Plan assumptions beyond the worksheet\'s inputs: a single 51-year-old filing single in KY with a zero state rate, zero inflation, zero account return and cost basis equal to balance; the account carries no allocation, so the defaults case exercises the no-blend fallback',
+      'The dividend partition is asserted alongside the total, because the worksheet\'s first wrong reading is adding the partition back on top of its own parent',
+      'Taxable yield joins the income total whether or not it is reinvested; reinvestment only decides whether the same dollars reach the household cash hub',
+    ],
+    implementedBy: [
+      'packages/engine/src/projection/internal/distributedTaxableYieldRows.ts',
+      'packages/engine/src/projection/internal/annualIncomeSetup.ts',
+      'packages/engine/src/projection/internal/types/result.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/internal/distributedTaxableYieldRows.ts#distributedTaxableYieldRows',
+      'packages/engine/src/projection/internal/annualIncomeSetup.ts#annualIncomeSetup',
+      'packages/engine/src/projection/internal/types/result.ts#YearResult.incomes',
+    ],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
+  'spending-required-requested-annual': {
+    title: 'Annual required-layer requested spending',
+    purpose: 'The must-fund layer a guardrail policy never cuts below, including goals it skipped.',
+    kind: 'composition',
+    outputs: ['spending-required-requested-annual'],
+    feeds: ['spending-required-shortfall-annual'],
+    statement:
+      'projection/internal/annualExpenseSummary.ts#annualExpenseSummary publishes YearExpenses.requiredSpending as requiredSpendingBase + skippedRequiredNominal, where requiredSpendingBase = systemRequired + requiredLifestyle + requiredGoalsFunded. systemRequired is the five system-computed costs the caller has already folded — debt service, property costs, healthcare, insurance premiums and net long-term care, the last being gross care cost less the LTC policy benefit. A required-classified goal the flexible-goal scheduler skipped stays in this layer as intended spending that never happened. Units: nominal USD per year. Rounding: none.',
+    formula: {
+      expression: 'requiredSpending = (systemRequired + requiredLifestyle + requiredGoalsFunded) + skippedRequiredNominal; systemRequired = debtService + propertyCosts + healthcare + insurancePremiums + careCost - ltcBenefit',
+      variables: [
+        { symbol: 'systemRequired', meaning: 'The five system-computed costs, net of the LTC benefit', unit: 'usd/year', domain: 'nonnegative in practice' },
+        { symbol: 'requiredLifestyle', meaning: 'Required-floor lifestyle layer', unit: 'usd/year', domain: 'nonnegative' },
+        { symbol: 'requiredGoalsFunded', meaning: 'Required-classified goals funded this year', unit: 'usd/year', domain: 'nonnegative' },
+        { symbol: 'skippedRequiredNominal', meaning: 'Nominal amount of required-classified goals the scheduler skipped', unit: 'usd/year', domain: 'nonnegative; 0 outside guardrails' },
+      ],
+      timing: 'once per projection year, at the expense summary',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/cash-flow-and-summary/spending-required-requested-annual.md',
+    },
+    limits: [
+      'Asserted at the annualExpenseSummary seam, which is the function that computes the field, because the worksheet states its inputs as already-folded year-row components: a real plan cannot present a chosen debt service, property cost, healthcare charge, care cost, LTC benefit and skipped-goal amount simultaneously at those exact values. The five system costs enter the seam as the systemRequired scalar the caller folds, so the fixture folds them the way the caller does and asserts the published field against the worksheet',
+      'The net-LTC term is gross care cost less the benefit; adding the gross without the offset is one of the worksheet\'s wrong readings',
+      'The layer summaries are not additional members of expenses.total; this figure describes how baseSpending was built',
+    ],
+    implementedBy: ['packages/engine/src/projection/internal/annualExpenseSummary.ts'],
+    implementedByFunctions: ['packages/engine/src/projection/internal/annualExpenseSummary.ts#annualExpenseSummary'],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
+  'spending-target-requested-annual': {
+    title: 'Annual target-layer requested spending',
+    purpose: 'The full no-cut request through the target lifestyle layer.',
+    kind: 'composition',
+    outputs: ['spending-target-requested-annual'],
+    feeds: ['spending-target-shortfall-annual'],
+    statement:
+      'projection/internal/annualExpenseSummary.ts#annualExpenseSummary publishes YearExpenses.targetSpending as targetSpendingBase + skippedTargetNominal + skippedRequiredNominal, where targetSpendingBase = systemRequired + requiredLifestyle + targetLifestyle + targetGoalsFunded + requiredGoalsFunded. The base carries the FULL target lifestyle layer, not the guardrail-cut amount, and carries no skipped amount; the two skipped amounts are then added once each. Equivalently, published requiredSpending already contains skippedRequiredNominal, so targetSpending is requiredSpending + targetLifestyle + targetGoalsFunded + skippedTargetNominal. Units: nominal USD per year. Rounding: none.',
+    formula: {
+      expression: 'targetSpending = (systemRequired + requiredLifestyle + targetLifestyle + targetGoalsFunded + requiredGoalsFunded) + skippedTargetNominal + skippedRequiredNominal',
+      variables: [
+        { symbol: 'targetLifestyle', meaning: 'Full target lifestyle layer before any guardrail cut', unit: 'usd/year', domain: 'nonnegative' },
+        { symbol: 'targetGoalsFunded', meaning: 'Target-classified goals funded this year', unit: 'usd/year', domain: 'nonnegative' },
+        { symbol: 'skippedTargetNominal, skippedRequiredNominal', meaning: 'Nominal amounts of skipped goals in those two layers', unit: 'usd/year', domain: 'nonnegative; counted once each' },
+      ],
+      timing: 'once per projection year, at the expense summary',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/cash-flow-and-summary/spending-target-requested-annual.md',
+    },
+    limits: [
+      'Asserted at the annualExpenseSummary seam, which is the function that computes the field, because the worksheet states its inputs as already-folded year-row components rather than as plan inputs a single year could realize at those exact values',
+      'The full target lifestyle layer is used here even in a cutting year; the cut amount appears in baseSpending instead, so a fixture that substitutes the cut layer is asserting a different field',
+      'Both equivalent forms are asserted, so the "counted once each" clause is evidence rather than prose: starting from the published requiredSpending and adding skippedRequiredNominal again is one of the worksheet\'s wrong readings',
+    ],
+    implementedBy: ['packages/engine/src/projection/internal/annualExpenseSummary.ts'],
+    implementedByFunctions: ['packages/engine/src/projection/internal/annualExpenseSummary.ts#annualExpenseSummary'],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
+  'spending-ideal-requested-annual': {
+    title: 'Annual ideal-layer requested spending',
+    purpose: 'The incremental ideal layer above target spending.',
+    kind: 'composition',
+    outputs: ['spending-ideal-requested-annual'],
+    statement:
+      'projection/internal/annualExpenseSummary.ts#annualExpenseSummary publishes YearExpenses.idealSpending as idealSpendingBase + skippedIdealNominal, with idealSpendingBase = idealLifestyle + idealGoalsFunded. It is an increment, not a cumulative summary, so the identity the worksheet derives from the field comments holds exactly: idealSpending = intendedSpending - targetSpending - excessSpending, because intendedSpending adds the target base, the ideal base, the excess base and all four skipped amounts while targetSpending carries the target base with the target and required skips and excessSpending carries the excess base with the excess skip. Units: nominal USD per year. Rounding: none.',
+    formula: {
+      expression: 'idealSpending = idealLifestyle + idealGoalsFunded + skippedIdealNominal = intendedSpending - targetSpending - excessSpending',
+      variables: [
+        { symbol: 'idealLifestyle', meaning: 'Annual ideal lifestyle layer above target', unit: 'usd/year', domain: 'nonnegative' },
+        { symbol: 'idealGoalsFunded', meaning: 'Ideal-classified goals funded this year', unit: 'usd/year', domain: 'nonnegative' },
+        { symbol: 'skippedIdealNominal', meaning: 'Nominal amount of ideal-classified goals the scheduler skipped', unit: 'usd/year', domain: 'nonnegative' },
+      ],
+      timing: 'once per projection year, at the expense summary',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/cash-flow-and-summary/spending-ideal-requested-annual.md',
+    },
+    limits: [
+      'Asserted at the annualExpenseSummary seam, which is the function that computes all five layer fields at once, because the worksheet states its inputs as published year-row components. The seam call is given inputs that realize the worksheet\'s stated requiredSpending, targetSpending, excessSpending and intendedSpending exactly, and the published idealSpending is then read',
+      'The identity is asserted against the same call\'s other published fields, not against re-entered constants, so the subtraction is evidence about this year row rather than about the worksheet\'s arithmetic',
+      'Ideal is an increment above target; treating it as the cumulative amount through the ideal layer is one of the worksheet\'s wrong readings',
+    ],
+    implementedBy: ['packages/engine/src/projection/internal/annualExpenseSummary.ts'],
+    implementedByFunctions: ['packages/engine/src/projection/internal/annualExpenseSummary.ts#annualExpenseSummary'],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
+  'spending-excess-requested-annual': {
+    title: 'Annual excess-layer requested spending',
+    purpose: 'The incremental opportunistic layer above ideal spending.',
+    kind: 'composition',
+    outputs: ['spending-excess-requested-annual'],
+    statement:
+      'projection/internal/annualExpenseSummary.ts#annualExpenseSummary publishes YearExpenses.excessSpending as excessSpendingBase + skippedExcessNominal, with excessSpendingBase = excessLifestyle + excessGoalsFunded. It is an increment above ideal, so the identity the worksheet derives holds exactly: excessSpending = intendedSpending - targetSpending - idealSpending. Units: nominal USD per year. Rounding: none.',
+    formula: {
+      expression: 'excessSpending = excessLifestyle + excessGoalsFunded + skippedExcessNominal = intendedSpending - targetSpending - idealSpending',
+      variables: [
+        { symbol: 'excessLifestyle', meaning: 'Annual opportunistic lifestyle layer above ideal', unit: 'usd/year', domain: 'nonnegative' },
+        { symbol: 'excessGoalsFunded', meaning: 'Excess-classified goals funded this year', unit: 'usd/year', domain: 'nonnegative' },
+        { symbol: 'skippedExcessNominal', meaning: 'Nominal amount of excess-classified goals the scheduler skipped', unit: 'usd/year', domain: 'nonnegative' },
+      ],
+      timing: 'once per projection year, at the expense summary',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/cash-flow-and-summary/spending-excess-requested-annual.md',
+    },
+    limits: [
+      'Asserted at the annualExpenseSummary seam, which is the function that computes all five layer fields at once, because the worksheet states its inputs as published year-row components. The seam call is given inputs that realize the worksheet\'s stated requiredSpending, targetSpending, idealSpending and intendedSpending exactly, and the published excessSpending is then read',
+      'The identity is asserted against the same call\'s other published fields rather than re-entered constants',
+      'Failing to remove the ideal increment, or treating excess as everything above required, are the worksheet\'s two wrong readings and are asserted against',
+    ],
+    implementedBy: ['packages/engine/src/projection/internal/annualExpenseSummary.ts'],
+    implementedByFunctions: ['packages/engine/src/projection/internal/annualExpenseSummary.ts#annualExpenseSummary'],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
+  'spending-intended-annual': {
+    title: 'Annual intended spending with no guardrail cut',
+    purpose: 'The whole four-layer request, counted once per layer.',
+    kind: 'composition',
+    outputs: ['spending-intended-annual'],
+    statement:
+      'projection/internal/annualExpenseSummary.ts#annualExpenseSummary publishes YearExpenses.intendedSpending as targetSpendingBase + idealSpendingBase + excessSpendingBase + skippedTargetNominal + skippedRequiredNominal + skippedIdealNominal + skippedExcessNominal. The required layer is inside targetSpendingBase, so adding the published requiredSpending on top would double-count it; ideal and excess are increments, so their bases add once each. Every skipped goal stays in its own classification layer as intended spending that never happened. Units: nominal USD per year. Rounding: none.',
+    formula: {
+      expression: 'intendedSpending = targetSpendingBase + idealSpendingBase + excessSpendingBase + skippedTarget + skippedRequired + skippedIdeal + skippedExcess',
+      variables: [
+        { symbol: 'targetSpendingBase', meaning: 'System costs + required lifestyle + required funded goals + full target lifestyle + target funded goals', unit: 'usd/year', domain: 'nonnegative' },
+        { symbol: 'idealSpendingBase, excessSpendingBase', meaning: 'Incremental ideal and excess lifestyle plus their funded goals', unit: 'usd/year', domain: 'nonnegative' },
+        { symbol: 'skipped*', meaning: 'Nominal amounts of skipped goals, one per classification', unit: 'usd/year', domain: 'nonnegative; each counted once' },
+      ],
+      timing: 'once per projection year, at the expense summary',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/cash-flow-and-summary/spending-intended-annual.md',
+    },
+    limits: [
+      'Asserted at the annualExpenseSummary seam with the worksheet\'s component amounts, and cross-checked on a real simulatePlan run where the published intendedSpending equals its own year row\'s targetSpending plus idealSpending plus excessSpending',
+      'Required and target are cumulative summaries while ideal and excess are increments; adding all four published summaries double-counts the required base, which is the worksheet\'s second wrong reading',
+      'Intended spending is the no-cut request and need not equal the year\'s actual expenses.total',
+    ],
+    implementedBy: ['packages/engine/src/projection/internal/annualExpenseSummary.ts'],
+    implementedByFunctions: ['packages/engine/src/projection/internal/annualExpenseSummary.ts#annualExpenseSummary'],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
+  'cash-flow-reconciliation-totals': {
+    title: 'Annual cash-flow reconciliation: the three identity totals',
+    purpose: 'The three annual identities a published cash-flow report must satisfy, and the tolerance each is judged at.',
+    kind: 'composition',
+    outputs: ['cash-flow-reconciliation-totals'],
+    statement:
+      'projection/annualCashFlowReconciliation.ts#reconcileYearCashFlow publishes three identity totals. Cash: sourceTotal = spendableSources + portfolioFunding + loanProceeds, destinationTotal = fundedHouseholdUses + settledTax + penalties + contributions + surplusInvestment, difference = sourceTotal - destinationTotal, judged against cashIdentityTolerancePlanDollars, which capture sets to CASH_FLOW_CASH_IDENTITY_TOLERANCE_PLAN_DOLLARS (the annual funding tolerance, half a cent). Uses: dispositionTotal = fundedUses + unfundedUses, difference = requestedUses - dispositionTotal. Transfers: difference = debits - credits. Both use and transfer identities are judged against tolerancePlanDollars, which capture sets to CASH_FLOW_RECONCILIATION_TOLERANCE_PLAN_DOLLARS (1e-6). A comparison fails only when the absolute difference is STRICTLY GREATER than its tolerance, so a difference exactly at the bound reconciles. Units: nominal Plan dollars per year. Rounding: none; the totals are unrounded binary floats.',
+    formula: {
+      expression: 'cashDifference = (spendable + portfolioFunding + loanProceeds) - (fundedHouseholdUses + tax + penalties + contributions + surplus); useDifference = requested - (funded + unfunded); transferDifference = debits - credits',
+      variables: [
+        { symbol: 'spendable, portfolioFunding, loanProceeds', meaning: 'Source-line roles summed into the cash source total', unit: 'usd/year', domain: 'nonnegative' },
+        { symbol: 'fundedHouseholdUses', meaning: 'Funded lifestyle, goal, debt, property, healthcare, insurance and care uses', unit: 'usd/year', domain: 'nonnegative' },
+        { symbol: 'cashIdentityTolerance', meaning: 'Cash conservation bound, the annual funding tolerance', unit: 'usd', domain: '0.005 at capture' },
+        { symbol: 'tolerance', meaning: 'Strict structural bound for use, transfer and lineage checks', unit: 'usd', domain: '1e-6 at capture' },
+      ],
+      timing: 'once per captured projection year, after every economic commit',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/cash-flow-and-summary/cash-flow-reconciliation-totals.md',
+    },
+    limits: [
+      'Asserted at reconcileYearCashFlow, the production function that computes all three identities, with published lines carrying the worksheet\'s amounts, and with the two tolerances taken from the capture module\'s own exported constants rather than written in',
+      'The three identities are asserted on THREE separate line sets, not one. They cannot share a line set: the worksheet\'s cash destination total of $100,000 is the funded amount of the same use lines whose funded total it states as $90,000, so no single year can carry both. That is an internal inconsistency in the worksheet\'s illustration, not a disagreement with production; each identity is still asserted exactly as the worksheet states it',
+      'The "strictly greater" rule is asserted directly: a cash difference of exactly the tolerance reconciles, and the worksheet\'s first wrong reading — judging the cash residual at the structural 1e-6 bound — is asserted to be rejected',
+    ],
+    implementedBy: [
+      'packages/engine/src/projection/annualCashFlowReconciliation.ts',
+      'packages/engine/src/projection/annualCashFlowCapture.ts',
+      'packages/engine/src/projection/internal/types/cashFlow.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/annualCashFlowReconciliation.ts#reconcileYearCashFlow',
+      'packages/engine/src/projection/annualCashFlowCapture.ts#CASH_FLOW_RECONCILIATION_TOLERANCE_PLAN_DOLLARS',
+      'packages/engine/src/projection/annualCashFlowCapture.ts#CASH_FLOW_CASH_IDENTITY_TOLERANCE_PLAN_DOLLARS',
+      'packages/engine/src/projection/internal/types/cashFlow.ts#YearCashFlowCashIdentityTotals',
+      'packages/engine/src/projection/internal/types/cashFlow.ts#YearCashFlowUseIdentityTotals',
+      'packages/engine/src/projection/internal/types/cashFlow.ts#YearCashFlowTransferIdentityTotals',
+    ],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
+  'flexible-goal-outcomes-annual': {
+    title: 'Annual flexible-goal outcomes: four counts and two amounts',
+    purpose: 'What the goal scheduler decided this year, as the six numbers the year row publishes.',
+    kind: 'model',
+    outputs: [
+      'flexible-goals-funded-count-annual',
+      'flexible-goals-partially-funded-count-annual',
+      'flexible-goals-deferred-count-annual',
+      'flexible-goals-skipped-count-annual',
+      'flexible-goal-funded-amount-annual',
+      'flexible-goal-unfunded-amount-annual',
+    ],
+    feeds: ['spending-intended-annual'],
+    statement:
+      'spending/flexibleGoals.ts#createGoalScheduler visits unresolved goals by classification rank (required, target, ideal, excess), then explicit priority, then plan order, and resolves each against a hard flexible-goal budget. A fixed goal funds its inflated amount unconditionally in its target year and does NOT consume the budget. A movable or skippable goal funds fully when budget + 0.005 is at or above the inflated amount; else, when partial funding is allowed and the budget clears minFundingPct of the INFLATED amount, it partially funds for the remaining budget; else it defers while the year is before latestYear and is skipped at latestYear. projection/internal/annualOneTimeGoalFundingPhase.ts#annualOneTimeGoalFundingPhase folds those outcomes into the six counts and amounts published as projection/internal/types/result.ts#YearResult.flexibleGoals: funded and partiallyFunded both add fundedNominal to fundedAmount and unfundedNominal to unfundedAmount, a deferred goal only increments deferred, and a skipped goal adds its whole amountNominal to unfundedAmount and to its classification\'s skipped total. Outside guardrail mode the scheduler is absent and all six publish exactly 0 while every goal still funds in its target year. Units: counts, and nominal USD per year. Rounding: none.',
+    formula: {
+      expression: 'funded/partiallyFunded/deferred/skipped are outcome counts; fundedAmount = sum of fundedNominal over funded and partially funded goals; unfundedAmount = sum of unfundedNominal over those goals plus amountNominal of every skipped goal',
+      variables: [
+        { symbol: 'amountNominal', meaning: 'Goal amount inflated to the year, amountTodayDollars x inflFactor', unit: 'usd', domain: 'nonnegative' },
+        { symbol: 'budget', meaning: 'Hard flexible-goal budget for the year; null is unlimited', unit: 'usd', domain: 'nonnegative or null' },
+        { symbol: 'minFundingPct', meaning: 'Minimum share of the inflated amount a partial funding must clear', unit: 'percent', domain: '0..100' },
+        { symbol: 'EPSILON', meaning: 'Half-cent slack in the budget comparisons', unit: 'usd', domain: '0.005' },
+      ],
+      timing: 'once per projection year, before the funding fixed point',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/cash-flow-and-summary/flexible-goal-outcomes-annual.md',
+    },
+    limits: [
+      'Decision D-GOAL-FLEXIBILITY is queued: model/plan.ts#GoalFlexibility promises that a movable goal reports its unfunded amount as a layer shortfall at latestYear while a skippable goal is dropped entirely, but the scheduler and the published-field comments make both skip at latestYear with the amount folded into the layer totals. This record follows the scheduler, as the worksheet does',
+      'The worksheet\'s cutting year with a positive $1,700 flexible-goal budget is NOT a state annualOneTimeGoalFundingPhase produces: that phase passes availableBudget 0 whenever the guardrail is cutting, and passes the remaining upside budget only when it is not cutting, where the scheduler then treats the budget as unlimited. The evidence therefore drives the real createGoalScheduler at the worksheet\'s budget and hands its planning result to the real aggregator through a scheduler seam, and that seam is the only thing about the year that is not a plan-produced state',
+      'The zero-guardrail case is asserted on a real simulatePlan run instead, where the scheduler is absent: all six fields publish exactly 0 while the goal still funds and shows up in expenses.oneTimeGoals',
+      'A fixed goal does not consume the flexible budget; letting it do so changes every later goal\'s outcome, which is the worksheet\'s first wrong reading',
+    ],
+    implementedBy: [
+      'packages/engine/src/spending/flexibleGoals.ts',
+      'packages/engine/src/projection/internal/annualOneTimeGoalFundingPhase.ts',
+      'packages/engine/src/projection/internal/types/result.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/spending/flexibleGoals.ts#createGoalScheduler',
+      'packages/engine/src/projection/internal/annualOneTimeGoalFundingPhase.ts#annualOneTimeGoalFundingPhase',
+      'packages/engine/src/projection/internal/types/result.ts#YearResult.flexibleGoals',
+    ],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
+  'projection-result-ending-investable': {
+    title: 'Projection-result ending investable balance',
+    purpose: 'The terminal investable figure the whole-run result republishes from the last year row.',
+    kind: 'composition',
+    outputs: ['projection-result-ending-investable'],
+    statement:
+      'projection/simulate.ts#simulatePlan publishes projection/internal/types/result.ts#ProjectionResult.endingInvestable as the last year row\'s investableTotal, or exactly 0 when the projection has no rows. It is a terminal copy: no asset the annual investable total excludes can enter through it, and no earlier row contributes. Units: nominal USD. Rounding: none.',
+    formula: {
+      expression: 'endingInvestable = years[years.length - 1].investableTotal, or 0 when years is empty',
+      variables: [
+        { symbol: 'years', meaning: 'Ordered projection year rows', unit: 'rows', domain: 'possibly empty' },
+        { symbol: 'investableTotal', meaning: 'That row\'s year-end investable total', unit: 'usd', domain: 'nonnegative' },
+      ],
+      timing: 'once per projection, at the horizon',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/cash-flow-and-summary/projection-result-ending-investable.md',
+    },
+    limits: [
+      'Asserted on a real two-year simulatePlan run whose 2030 row closes at the worksheet\'s $510,000 and whose 2031 row closes at the worksheet\'s $487,250.125. Plan assumptions beyond the worksheet\'s inputs: a single 55-year-old filing single in KY with a zero state rate, zero inflation, zero account return, no healthcare charge (the person is under 65, with a zero pre-65 premium), a single cash account, and one uninflated 2031 one-time goal sized to spend the difference between the two rows',
+      'The empty-row case cannot be reached through simulatePlan, which always produces at least one row for a living household; it is asserted through the same field on a result whose years array is empty, the state the field comment names',
+    ],
+    implementedBy: [
+      'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/projection/internal/types/result.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/internal/types/result.ts#ProjectionResult.endingInvestable',
+    ],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
+  'projection-result-ending-net-worth': {
+    title: 'Projection-result ending net worth',
+    purpose: 'The terminal net-worth figure the whole-run result republishes from the last year row.',
+    kind: 'composition',
+    outputs: ['projection-result-ending-net-worth'],
+    statement:
+      'projection/simulate.ts#simulatePlan publishes projection/internal/types/result.ts#ProjectionResult.endingNetWorth as the last year row\'s netWorth, or exactly 0 when the projection has no rows. The annual row has already composed investable, property, insurance cash value, ladder value, debt and the non-recourse-capped HECM lines; the terminal field rebuilds none of that. Units: nominal USD. Rounding: none.',
+    formula: {
+      expression: 'endingNetWorth = years[years.length - 1].netWorth, or 0 when years is empty',
+      variables: [
+        { symbol: 'years', meaning: 'Ordered projection year rows', unit: 'rows', domain: 'possibly empty' },
+        { symbol: 'netWorth', meaning: 'That row\'s year-end net worth', unit: 'usd', domain: 'may be negative' },
+      ],
+      timing: 'once per projection, at the horizon',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/cash-flow-and-summary/projection-result-ending-net-worth.md',
+    },
+    limits: [
+      'Asserted on a real two-year simulatePlan run whose 2030 row closes at the worksheet\'s $925,000 and whose 2031 row closes at the worksheet\'s $901,375.625. Plan assumptions beyond the worksheet\'s inputs: a single 55-year-old filing single in KY with a zero state rate, zero inflation, zero account and property return, no healthcare charge, one cash account and one property with no carrying costs, and one uninflated 2031 one-time goal sized to spend the difference between the two rows',
+      'The empty-row case cannot be reached through simulatePlan; it is asserted through the same field on a result whose years array is empty',
+      'Substituting ending investable for net worth names a different quantity, which the fixture asserts against on a run where the two differ by the property value',
+    ],
+    implementedBy: [
+      'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/projection/internal/types/result.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/internal/types/result.ts#ProjectionResult.endingNetWorth',
+    ],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
 } satisfies Record<string, CalculationRecord>

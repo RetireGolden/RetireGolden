@@ -526,7 +526,12 @@ export interface YearResult {
   capitalLossCarryforwardRemaining: number
   /** Surplus cashflow invested (into cash, else taxable, else unassigned). */
   surplusInvested: number
-  /** Spending the portfolio could not cover this year. */
+  /**
+   * Spending the portfolio could not cover this year: the funding shortfall
+   * that remains after every withdrawal and any HECM backstop draw, in nominal
+   * dollars (0 when the year was fully funded). depletionYear is the first
+   * year this exceeds ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS.
+   */
   shortfall: number
   /**
    * Required-floor spending the portfolio could not cover this year — the
@@ -546,7 +551,26 @@ export interface YearResult {
   excessShortfall: number
   /** Guardrail action taken this year under a withdrawal-rate policy ('hold' when inactive). */
   guardrailAction: 'hold' | 'cut' | 'raise'
-  /** Flexible one-time-goal outcomes this year (all 0 outside guardrail mode). */
+  /**
+   * Flexible one-time-goal outcomes this year; all six are 0 when no guardrail
+   * policy is active (every goal then funds in its target year). The scheduler
+   * visits goals by classification rank (required, target, ideal, excess), then
+   * priority, then plan order. A `fixed` goal funds unconditionally in its
+   * target year. A movable or skippable goal is funded when the remaining
+   * flexible-goal budget covers its inflated amount, partially funded (for the
+   * budget) when partial funding is allowed and the budget clears its minimum
+   * funding share, otherwise deferred to the next year until `latestYear`,
+   * where it is skipped for good and its amount is added to the layer totals
+   * as intended spending that never happened. fundedAmount sums what funded
+   * and partially funded goals paid; unfundedAmount sums the unpaid remainder
+   * of partial fundings and the full amount of skipped goals; deferred goals
+   * count only in `deferred`. The budget the ledger hands the scheduler is 0
+   * whenever the guardrail is cutting (a movable or skippable goal then
+   * defers, or skips at `latestYear`); in a non-cutting year it is the
+   * remaining upside budget when goals may be pulled forward (a raise, or a
+   * multiplier above 1) and otherwise unlimited, so a partial funding can
+   * arise only in a pull-forward year. Nominal dollars of the year.
+   */
   flexibleGoals: {
     funded: number
     partiallyFunded: number
@@ -557,7 +581,15 @@ export interface YearResult {
   }
   /** End-of-year balance per account id (after flows and growth). */
   balances: Record<string, number>
-  /** Cash + taxable + traditional + roth + hsa (+ unassigned). */
+  /**
+   * Sum of every investable account balance at year end (cash, taxable,
+   * equity compensation, traditional, Roth and HSA accounts) plus unassigned
+   * cash. Unassigned cash is nonzero only when a surplus deposit finds no
+   * cash or taxable account to land in (it is then held at 0% growth and a
+   * warning is added); a plan with either account type publishes 0 there.
+   * Property, debts, insurance cash value and the TIPS ladder are not in
+   * it; `netWorth` adds them.
+   */
   investableTotal: number
   /** Permanent-life cash value at year end (an asset, but held out of withdrawals). */
   insuranceCashValue: number
@@ -604,7 +636,9 @@ export interface ProjectionResult {
    * depletion.
    */
   depletionYear: number | null
+  /** The last year row's `investableTotal` (0 when the projection has no rows). */
   endingInvestable: number
+  /** The last year row's `netWorth` (0 when the projection has no rows). */
   endingNetWorth: number
   /**
    * Remaining nondeductible (after-tax) traditional-IRA basis at the horizon,

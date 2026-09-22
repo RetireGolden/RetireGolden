@@ -428,7 +428,13 @@ export interface YearCashFlowCashIdentityTotals {
   readonly penaltiesPlanDollars: number
   readonly contributionsPlanDollars: number
   readonly surplusInvestmentPlanDollars: number
-  /** Funded household uses + tax + penalties + contributions + surplus investment. */
+  /**
+   * Funded household uses + tax + penalties + contributions + surplus
+   * investment. Each member is the sum of `fundedPlanDollars` over the use
+   * lines of its kinds, and the five groups cover the whole closed use
+   * vocabulary, so this total always equals the use identity's
+   * `fundedUsesPlanDollars` for the same year.
+   */
   readonly destinationTotalPlanDollars: number
   /** `sourceTotalPlanDollars - destinationTotalPlanDollars`, before display rounding. */
   readonly differencePlanDollars: number
@@ -436,8 +442,11 @@ export interface YearCashFlowCashIdentityTotals {
 
 /** Totals for requested-use conservation across every `useLines` member. */
 export interface YearCashFlowUseIdentityTotals {
+  /** Sum of `requestedPlanDollars` over every use line. */
   readonly requestedUsesPlanDollars: number
+  /** Sum of `fundedPlanDollars` over every use line; equals the cash identity's destination total. */
   readonly fundedUsesPlanDollars: number
+  /** Sum of `unfundedPlanDollars` over every use line. */
   readonly unfundedUsesPlanDollars: number
   /** `fundedUsesPlanDollars + unfundedUsesPlanDollars`. */
   readonly dispositionTotalPlanDollars: number

@@ -232,3 +232,138 @@ describeCalculation(
     })
   },
 )
+
+const WITHDRAWAL_YEAR = 2026
+
+/**
+ * The withdrawal worksheets' plan: five accounts holding exactly the
+ * worksheet's five category amounts, drained by a base lifestyle far above the
+ * portfolio under the sequential order cash to taxable to traditional to Roth
+ * to HSA. The owner is 76, so the traditional draw also carries a real RMD.
+ * Zero inflation, zero returns, no taxable yield and cost basis equal to
+ * balance, so nothing but the drain can move the year.
+ */
+function drainedYear(): YearResult {
+  const plan = singlePersonPlan({ dob: '1950-06-15', planningAge: 95 })
+  plan.accounts = [
+    { type: 'cash', id: 'cash', name: 'Cash', ownerPersonId: null, annualReturnPct: 0, balance: 4_000, annualContribution: 0 },
+    { type: 'taxable', id: 'taxable', name: 'Brokerage', ownerPersonId: null, annualReturnPct: 0, balance: 11_000, costBasis: 11_000, annualContribution: 0, interestYieldPct: 0, dividendYieldPct: 0 },
+    { type: 'traditional', id: 'traditional', name: 'IRA', ownerPersonId: 'p1', annualReturnPct: 0, kind: 'ira', balance: 18_000, annualContribution: 0 },
+    { type: 'roth', id: 'roth', name: 'Roth', ownerPersonId: 'p1', annualReturnPct: 0, kind: 'ira', balance: 7_000, annualContribution: 0 },
+    { type: 'hsa', id: 'hsa', name: 'HSA', ownerPersonId: 'p1', annualReturnPct: 0, balance: 2_000, annualContribution: 0 },
+  ]
+  plan.expenses.baseAnnual = 200_000
+  const result = simulatePlan(validated(plan), {
+    startYear: WITHDRAWAL_YEAR,
+    horizonEndYear: WITHDRAWAL_YEAR,
+    taxCalculator: createFederalTaxCalculator(),
+  })
+  const row = result.years.find((entry) => entry.year === WITHDRAWAL_YEAR)
+  if (row === undefined) throw new Error(`missing projection year ${WITHDRAWAL_YEAR}`)
+  return row
+}
+
+describeCalculation(
+  'withdrawals-total-annual',
+  {
+    example: {
+      inputs: { cash: 4_000, taxable: 11_000, traditional: 18_000, roth: 7_000, hsa: 2_000 },
+      expected: { total: 42_000, withoutHsaWrongReading: 40_000, rothSubtractedWrongReading: 28_000 },
+      tolerance: { abs: 0.005 },
+    },
+    worksheet: 'DOCS/calculations/spending-and-withdrawals/withdrawals-total-annual.md',
+    mutation: 'DOCS/calculations/spending-and-withdrawals/withdrawals-total-annual.mutation.md',
+  },
+  ({ example }) => {
+    const inputs = example.inputs as Record<string, number>
+    const expected = example.expected as Record<string, number>
+
+    it('sums the five categories to 42000', () => {
+      const row = drainedYear()
+      const withdrawals = row.withdrawals
+      // The constructed year really does publish the worksheet's five amounts.
+      for (const key of ['cash', 'taxable', 'traditional', 'roth', 'hsa'] as const) {
+        expectWithin(withdrawals[key], inputs[key]!, example.tolerance, `withdrawals.${key}`)
+      }
+      expectWithin(withdrawals.total, expected.total!, example.tolerance, 'withdrawals.total')
+      // ... and the published total is that sum of its own members.
+      expectWithin(
+        withdrawals.total,
+        withdrawals.cash + withdrawals.taxable + withdrawals.traditional + withdrawals.roth + withdrawals.hsa,
+        example.tolerance,
+        'withdrawals.total against its own published categories',
+      )
+      // The worksheet's two wrong readings.
+      expect(withinTolerance(withdrawals.total, expected.withoutHsaWrongReading!, example.tolerance)).toBe(false)
+      expect(withinTolerance(withdrawals.total, expected.rothSubtractedWrongReading!, example.tolerance)).toBe(false)
+    })
+  },
+)
+
+describeCalculation(
+  'withdrawals-by-category-annual',
+  {
+    example: {
+      inputs: {
+        cash: 4_000,
+        taxable: 11_000,
+        traditional: 18_000,
+        roth: 7_000,
+        hsa: 2_000,
+        rmdSubsetOfTraditional: 8_000,
+        seppSubsetOfTraditional: 3_000,
+        forcedInheritedTraditionalSubset: 2_000,
+        forcedInheritedRothSubset: 1_000,
+      },
+      expected: {
+        traditional: 18_000,
+        roth: 7_000,
+        hsa: 2_000,
+        subsetsAddedToTraditionalWrongReading: 31_000,
+        inheritedRothInTraditionalWrongReading: 19_000,
+      },
+      tolerance: { abs: 0.005 },
+    },
+    worksheet: 'DOCS/calculations/spending-and-withdrawals/withdrawals-by-category-annual.md',
+    mutation: 'DOCS/calculations/spending-and-withdrawals/withdrawals-by-category-annual.mutation.md',
+  },
+  ({ example }) => {
+    const inputs = example.inputs as Record<string, number>
+    const expected = example.expected as Record<string, number>
+
+    it('reports each account\'s draw in its own source category', () => {
+      const row = drainedYear()
+      const withdrawals = row.withdrawals
+      // Each category equals its own account's opening balance: the partition
+      // is by SOURCE account, in the sequential order the comment names.
+      expectWithin(withdrawals.cash, inputs.cash!, example.tolerance, 'withdrawals.cash')
+      expectWithin(withdrawals.taxable, inputs.taxable!, example.tolerance, 'withdrawals.taxable')
+      expectWithin(withdrawals.traditional, expected.traditional!, example.tolerance, 'withdrawals.traditional')
+      expectWithin(withdrawals.roth, expected.roth!, example.tolerance, 'withdrawals.roth')
+      // HSA is a withdrawal category, not a sixth non-withdrawal bucket.
+      expectWithin(withdrawals.hsa, expected.hsa!, example.tolerance, 'withdrawals.hsa')
+    })
+
+    it('keeps the RMD inside traditional rather than adding it again', () => {
+      const row = drainedYear()
+      // The worksheet's stated 8,000/3,000/2,000/1,000 subset split is not
+      // constructed: those amounts are derived by the engine from age, balance
+      // and beneficiary facts and cannot be set to chosen values inside a
+      // traditional draw that must also equal 18,000. This run's own RMD is a
+      // real, nonzero subset of the published traditional category.
+      expect(row.rmd).toBeGreaterThan(0)
+      expect(row.withdrawals.traditional).toBeGreaterThan(row.rmd)
+      expectWithin(row.withdrawals.traditional, expected.traditional!, example.tolerance, 'withdrawals.traditional')
+      expect(
+        withinTolerance(
+          row.withdrawals.traditional,
+          row.withdrawals.traditional + row.rmd + row.sepp + row.inheritedTraditionalDistribution,
+          example.tolerance,
+        ),
+      ).toBe(false)
+      // The worksheet's two wrong readings, as totals.
+      expect(withinTolerance(row.withdrawals.traditional, expected.subsetsAddedToTraditionalWrongReading!, example.tolerance)).toBe(false)
+      expect(withinTolerance(row.withdrawals.traditional, expected.inheritedRothInTraditionalWrongReading!, example.tolerance)).toBe(false)
+    })
+  },
+)

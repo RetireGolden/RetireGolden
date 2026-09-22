@@ -371,4 +371,84 @@ export const accountsAndGrowthRecords = {
     verifiedOn: '2026-09-18',
     provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
   },
+  'accounts-investable-total-annual': {
+    title: 'Annual investable total',
+    purpose: 'The year-end balance a plan can actually spend from, and what is deliberately left out.',
+    kind: 'composition',
+    outputs: ['accounts-investable-total-annual'],
+    feeds: ['accounts-net-worth-annual', 'projection-result-ending-investable'],
+    statement:
+      'projection/internal/annualSnapshot.ts#annualSnapshot opens the investable fold at unassignedCash and adds every investable balance in simulator order — cash, taxable, equity-compensation, traditional, Roth and HSA accounts — publishing the sum as projection/internal/types/result.ts#YearResult.investableTotal. Property values, ordinary debts, HECM loans and permanent-life cash values are folded into their own separate totals and are not members; the TIPS ladder value is computed outside the snapshot and is likewise not a member. netWorth adds those channels. Units: nominal USD at year end. Rounding: none; the additions are left in their original loop order because regrouping binary floats can move the last bit.',
+    formula: {
+      expression: 'investableTotal = unassignedCash + sum over investable balances of balance',
+      variables: [
+        { symbol: 'unassignedCash', meaning: 'Cash with no modeled account to land in; opens the fold', unit: 'usd', domain: 'nonnegative' },
+        { symbol: 'balance', meaning: 'One investable account\'s year-end balance', unit: 'usd', domain: 'nonnegative' },
+        { symbol: 'insuranceCashValueTotal, propertyTotal, debtTotal, ladderValue', meaning: 'Separate channels, excluded here', unit: 'usd', domain: 'nonnegative; members of netWorth only' },
+      ],
+      timing: 'once per projection year, at the end-of-pass snapshot',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/accounts-and-growth/accounts-investable-total-annual.md',
+    },
+    limits: [
+      'The worksheet\'s case is asserted at annualSnapshot, the function that computes the field, because unassigned cash and a cash or taxable account cannot coexist in a real plan: simulatePlan only tracks cash as unassigned when there is no cash or taxable account for surplus to land in, so the worksheet\'s $2,000 of unassigned cash alongside $15,000 of cash accounts and $120,000 of taxable accounts is not a state a plan produces',
+      'The member list is separately asserted on a real simulatePlan run carrying the worksheet\'s six account balances plus a permanent-life policy: the published investableTotal is the six balances and excludes the policy cash value and the property, both of which the same row publishes',
+      'Equity compensation is a member whether or not it has vested; the vesting mode gates spending, not the balance total',
+    ],
+    implementedBy: [
+      'packages/engine/src/projection/internal/annualSnapshot.ts',
+      'packages/engine/src/projection/internal/types/result.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualSnapshot.ts#annualSnapshot',
+      'packages/engine/src/projection/internal/types/result.ts#YearResult.investableTotal',
+    ],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
+  'accounts-net-worth-annual': {
+    title: 'Annual net worth, with the non-recourse HECM cap',
+    purpose: 'The year-end balance sheet, including the homes and the debts the investable total leaves out.',
+    kind: 'composition',
+    outputs: ['accounts-net-worth-annual'],
+    feeds: ['projection-result-ending-net-worth'],
+    statement:
+      'projection/internal/annualYearResultAssembly.ts#annualYearResultAssembly publishes projection/internal/types/result.ts#YearResult.netWorth as snapshot.investableTotal + snapshot.propertyTotal - snapshot.debtTotal + snapshot.insuranceCashValueTotal + ladderValue - snapshot.hecmEffectiveDebt, in that left-to-right association. projection/internal/annualSnapshot.ts#annualSnapshot supplies hecmEffectiveDebt as the sum over open HECM lines of min(loanBalance, the matching property value), the non-recourse limit; the uncapped loan total is published separately as hecmLoanBalance and is never the net-worth subtrahend. Units: nominal USD at year end. Rounding: none; the association is part of the contract.',
+    formula: {
+      expression: 'netWorth = investableTotal + propertyTotal - debtTotal + insuranceCashValueTotal + ladderValue - sum over HECM lines of min(loanBalance, propertyValue)',
+      variables: [
+        { symbol: 'propertyTotal', meaning: 'Sum of owned property values at year end', unit: 'usd', domain: 'nonnegative' },
+        { symbol: 'debtTotal', meaning: 'Sum of ordinary debt balances', unit: 'usd', domain: 'nonnegative; subtracted' },
+        { symbol: 'insuranceCashValueTotal', meaning: 'Permanent-life cash values', unit: 'usd', domain: 'nonnegative' },
+        { symbol: 'ladderValue', meaning: 'Remaining TIPS-ladder principal at nominal book value', unit: 'usd', domain: 'nonnegative' },
+        { symbol: 'hecmEffectiveDebt', meaning: 'HECM loans capped line by line at the matching home value', unit: 'usd', domain: 'nonnegative; subtracted' },
+      ],
+      timing: 'once per projection year, at the year-result assembly',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/accounts-and-growth/accounts-net-worth-annual.md',
+    },
+    limits: [
+      'The worksheet\'s case is asserted at annualSnapshot and annualYearResultAssembly, the two functions that compute the cap and the composition, because the worksheet states HECM loan balances of $420,000 and $50,000 as year-end facts: a HECM balance is an accrual of draws, interest and mortgage-insurance premium that no plan can set directly, so those two figures are not a state a plan produces',
+      'Only the cap is capped: a loan above its home\'s value is limited to that value, while a loan below it is subtracted in full, which is why the worksheet\'s two homes need two different branches of the same min',
+      'Ordinary debt is subtracted, not added; adding it is the worksheet\'s third wrong reading and moves the answer by twice the debt',
+    ],
+    implementedBy: [
+      'packages/engine/src/projection/internal/annualYearResultAssembly.ts',
+      'packages/engine/src/projection/internal/annualSnapshot.ts',
+      'packages/engine/src/projection/internal/types/result.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualYearResultAssembly.ts#annualYearResultAssembly',
+      'packages/engine/src/projection/internal/annualSnapshot.ts#annualSnapshot',
+      'packages/engine/src/projection/internal/types/result.ts#YearResult.netWorth',
+    ],
+    verifiedOn: '2026-09-18',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
 } satisfies Record<string, CalculationRecord>
