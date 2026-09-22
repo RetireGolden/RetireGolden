@@ -69,6 +69,348 @@
       }
     },
     {
+      "id": "scenario-nullable-scalar-comparison",
+      "title": "Scenario nullable scalar comparison",
+      "kind": "composition",
+      "outputs": [
+        "scenario-comparison-cell"
+      ],
+      "feeds": [],
+      "purpose": "Compare a nullable metric without turning absence into zero.",
+      "statement": "scenarios/comparison.ts#nullableScalar preserves nullable baseline and proposal values and publishes proposal-baseline only when both exist, otherwise publishing a null delta, in the metric's own units and with no stated rounding.",
+      "formula": {
+        "expression": "delta = proposal - baseline when baseline != null and proposal != null, else null",
+        "variables": [
+          {
+            "symbol": "baseline",
+            "meaning": "Baseline metric value or absence",
+            "unit": "the metric's own unit",
+            "domain": "finite number or null"
+          },
+          {
+            "symbol": "proposal",
+            "meaning": "Proposal metric value or absence",
+            "unit": "the metric's own unit",
+            "domain": "finite number or null"
+          }
+        ],
+        "timing": "one comparison cell",
+        "rounding": "none stated"
+      },
+      "limits": [
+        "Comparability is conjunctive: absence is not numerical zero, so coercing a null operand to zero would present a comparison that does not exist. The pin is a non-exported helper, so the evidence asserts it through the exported compareScenarioPlans on a metric whose comparison cell is the nullable one (the headline depletion year)."
+      ],
+      "worksheet": "DOCS/calculations/optimizer-and-comparisons/scenario-nullable-scalar-comparison.md",
+      "mutation": "DOCS/calculations/optimizer-and-comparisons/scenario-nullable-scalar-comparison.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/scenarios/comparison.ts"
+      ],
+      "provenance": {
+        "derivedBy": "codex",
+        "implementedBy": "claude",
+        "reviewedBy": "cursor"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/scenarios/comparisonCells.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
+      "id": "scenario-scalar-comparison",
+      "title": "Scenario scalar comparison",
+      "kind": "composition",
+      "outputs": [
+        "scenario-comparison-cell"
+      ],
+      "feeds": [],
+      "purpose": "Publish a scenario metric as baseline, proposal and a signed same-unit delta.",
+      "statement": "scenarios/comparison.ts#scalar publishes a finite numeric metric's baseline, proposal and delta in that metric's own units, with delta = proposal - baseline and no stated rounding.",
+      "formula": {
+        "expression": "delta = proposal - baseline",
+        "variables": [
+          {
+            "symbol": "baseline",
+            "meaning": "Baseline metric value",
+            "unit": "the metric's own unit",
+            "domain": "finite"
+          },
+          {
+            "symbol": "proposal",
+            "meaning": "Proposal metric value",
+            "unit": "the metric's own unit",
+            "domain": "finite"
+          }
+        ],
+        "timing": "one comparison cell",
+        "rounding": "none stated"
+      },
+      "limits": [
+        "The signed identity is fixed: baseline and proposal are preserved rather than reordered by magnitude, and the delta stays in the metric's own unit rather than becoming a relative change. The pin is a non-exported helper, so the evidence asserts it through the exported compareScenarioPlans on a headline money metric."
+      ],
+      "worksheet": "DOCS/calculations/optimizer-and-comparisons/scenario-scalar-comparison.md",
+      "mutation": "DOCS/calculations/optimizer-and-comparisons/scenario-scalar-comparison.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/scenarios/comparison.ts"
+      ],
+      "provenance": {
+        "derivedBy": "codex",
+        "implementedBy": "claude",
+        "reviewedBy": "cursor"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/scenarios/comparisonCells.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
+      "id": "swr-rule-depletion-year",
+      "title": "Swr rule depletion year",
+      "kind": "composition",
+      "outputs": [
+        "swr-rule-result-depletion-year"
+      ],
+      "feeds": [],
+      "purpose": "Name the first rule-run year whose post-HECM shortfall clears the ledger tolerance.",
+      "statement": "decisions/swrComparator.ts#compareSwrRules publishes, for each constant-real rule run, the projection's first calendar year whose funding shortfall after any HECM backstop draw is strictly greater than ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS, which is 0.005 nominal dollars, or null when no projection year crosses that gate.",
+      "formula": {
+        "expression": "depletionYear = min { y : shortfallAfterHecm_y > 0.005 }, else null",
+        "variables": [
+          {
+            "symbol": "shortfallAfterHecm_y",
+            "meaning": "Year y funding shortfall after any HECM backstop draw",
+            "unit": "nominal USD",
+            "domain": "nonnegative"
+          },
+          {
+            "symbol": "tolerance",
+            "meaning": "ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS",
+            "unit": "nominal USD",
+            "domain": "0.005"
+          }
+        ],
+        "timing": "ordered rule-run ledger years",
+        "rounding": "none; strict comparison against the residual budget"
+      },
+      "limits": [
+        "The comparison is strict, so a residual at or below half a cent is not depletion, and the explicit horizon keeps a shorter run from reading as depletion; the largest-shortfall year is not the answer either. The worksheet's third case, a sole shortfall of exactly 0.005 in one year, was not constructed from real inputs: the ledger funds to its own exact-cent fixed point, and no plan input reaches a residual of exactly half a cent in one year while leaving every other year funded, so the strictness of the comparison is evidenced by the claim and the first two cases only."
+      ],
+      "worksheet": "DOCS/calculations/optimizer-and-comparisons/swr-rule-depletion-year.md",
+      "mutation": "DOCS/calculations/optimizer-and-comparisons/swr-rule-depletion-year.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/decisions/swrComparator.ts"
+      ],
+      "provenance": {
+        "derivedBy": "codex",
+        "implementedBy": "claude",
+        "reviewedBy": "cursor"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/decisions/swrComparator.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
+      "id": "swr-rule-end-year",
+      "title": "Swr rule end year",
+      "kind": "composition",
+      "outputs": [
+        "swr-rule-result-end-year"
+      ],
+      "feeds": [],
+      "purpose": "Publish the rule run's ledger endpoint rather than its depletion year.",
+      "statement": "decisions/swrComparator.ts#compareSwrRules publishes ProjectionResult.endYear, the final calendar year actually used by that safe-withdrawal-rule ledger run, without treating an earlier depletion year as the endpoint.",
+      "formula": {
+        "expression": "SwrRuleResult.endYear = result.endYear",
+        "variables": [
+          {
+            "symbol": "result.endYear",
+            "meaning": "Final calendar year of the rule run",
+            "unit": "calendar year",
+            "domain": "integer"
+          },
+          {
+            "symbol": "result.depletionYear",
+            "meaning": "Depletion year, present only as a discriminator",
+            "unit": "calendar year or null",
+            "domain": "integer or null"
+          }
+        ],
+        "timing": "one completed rule run",
+        "rounding": "none; integer calendar year"
+      },
+      "limits": [
+        "The simulation horizon is not depletion: substituting the depletion year, or recomputing a 30-year inclusive horizon from the start year, each name a different quantity. The worksheet's ledger endpoint and its depletion-year discriminator are supplied as a ProjectionResult literal at the simulate seam, so this proves the comparator's selection only; the ledger's own horizon arithmetic is out of scope for this record."
+      ],
+      "worksheet": "DOCS/calculations/optimizer-and-comparisons/swr-rule-end-year.md",
+      "mutation": "DOCS/calculations/optimizer-and-comparisons/swr-rule-end-year.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/decisions/swrComparator.ts"
+      ],
+      "provenance": {
+        "derivedBy": "codex",
+        "implementedBy": "claude",
+        "reviewedBy": "cursor"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/decisions/swrComparator.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
+      "id": "swr-rule-ending-after-tax-estate",
+      "title": "Swr rule ending after tax estate",
+      "kind": "composition",
+      "outputs": [
+        "swr-rule-result-ending-after-tax-estate"
+      ],
+      "feeds": [],
+      "purpose": "Republish the rule run's already composed after-tax estate.",
+      "statement": "decisions/swrComparator.ts#compareSwrRules republishes the rule run's nominal ProjectionSummary.endingAfterTaxEstate as that rule's ending after-tax estate, without further discounting or recomputation.",
+      "formula": {
+        "expression": "SwrRuleResult.endingAfterTaxEstate = summary.endingAfterTaxEstate",
+        "variables": [
+          {
+            "symbol": "summary.endingAfterTaxEstate",
+            "meaning": "Rule-run after-tax estate from the upstream summary",
+            "unit": "nominal USD",
+            "domain": "finite"
+          },
+          {
+            "symbol": "summary.endingEstateHeirTax",
+            "meaning": "Heir-tax discount, present only as a discriminator",
+            "unit": "nominal USD",
+            "domain": "nonnegative"
+          }
+        ],
+        "timing": "one completed rule run",
+        "rounding": "none; copies the supplied summary value"
+      },
+      "limits": [
+        "Estate tax discounting belongs to the upstream summary and must not be applied twice; publishing ending net worth instead is a different quantity. The worksheet's rule-run ledger is supplied as a ProjectionResult literal at the simulate seam, so the summary composition and the comparator's publication are both the real functions while the ledger run itself is not exercised here."
+      ],
+      "worksheet": "DOCS/calculations/optimizer-and-comparisons/swr-rule-ending-after-tax-estate.md",
+      "mutation": "DOCS/calculations/optimizer-and-comparisons/swr-rule-ending-after-tax-estate.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/decisions/swrComparator.ts"
+      ],
+      "provenance": {
+        "derivedBy": "codex",
+        "implementedBy": "claude",
+        "reviewedBy": "cursor"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/decisions/swrComparator.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
+      "id": "swr-rule-lifetime-taxes-and-penalties",
+      "title": "Swr rule lifetime taxes and penalties",
+      "kind": "composition",
+      "outputs": [
+        "swr-rule-result-lifetime-taxes-and-penalties"
+      ],
+      "feeds": [],
+      "purpose": "Republish the rule run's combined lifetime taxes and penalties.",
+      "statement": "decisions/swrComparator.ts#compareSwrRules republishes the rule run's nominal ProjectionSummary.lifetimeTaxesAndPenalties as the taxes-and-penalties result for that constant-real spending rule, without another aggregation.",
+      "formula": {
+        "expression": "SwrRuleResult.lifetimeTaxesAndPenalties = summary.lifetimeTaxesAndPenalties",
+        "variables": [
+          {
+            "symbol": "summary.lifetimeTaxesAndPenalties",
+            "meaning": "Rule-run lifetime taxes and penalties from the upstream summary",
+            "unit": "nominal USD",
+            "domain": "finite"
+          }
+        ],
+        "timing": "one completed rule run",
+        "rounding": "none; copies the supplied summary value"
+      },
+      "limits": [
+        "The upstream summary already sums all annual taxes and penalties, so publishing tax alone, or adding the separately displayed penalty amount to the already combined figure, changes the published quantity. The worksheet's annual tax and penalty rows are supplied as a ProjectionResult literal at the simulate seam; the summary aggregation and the comparator's publication are the real functions."
+      ],
+      "worksheet": "DOCS/calculations/optimizer-and-comparisons/swr-rule-lifetime-taxes-and-penalties.md",
+      "mutation": "DOCS/calculations/optimizer-and-comparisons/swr-rule-lifetime-taxes-and-penalties.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/decisions/swrComparator.ts"
+      ],
+      "provenance": {
+        "derivedBy": "codex",
+        "implementedBy": "claude",
+        "reviewedBy": "cursor"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/decisions/swrComparator.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
       "id": "swr-rule-rate-and-initial-spend",
       "title": "Swr rule rate and initial spend",
       "kind": "model",
