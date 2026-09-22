@@ -39,4 +39,11 @@ Exact values: feasible-seed case `6`; infeasible-seed case `2`. Fixture toleranc
 outputs: `sustainable-spending-result-simulation-count`.
 
 feeds: none.
-(m, a) => a + "\n\nRevision note (2026-09-22, pull-request review of #730): the infeasible-seed case left the zero probe's outcome unstated; it is infeasible (the fixture makes zero spending unfundable with a one-time goal the balance cannot cover), which is what stops the search at two probes. No value changed.\n"
+
+## Provenance
+
+Derived by: codex (gpt-5.6-sol), 2026-09-18, from the signatures-and-comments extract only, without executing the engine or reading any implementation body. Reviewed by: cursor (composer-2.5), 2026-09-18, by independent recomputation without executing the engine; see REVIEW-2026-09-18-round-eleven.md in this directory.
+
+Revision: Corrected the kind label from `algorithm` to the catalog-supported `model`; no calculation changed.
+
+Revision note (2026-09-22, pull-request review of #730): the infeasible-seed case left the zero probe's outcome unstated; it is infeasible (the fixture makes zero spending unfundable with a one-time goal the balance cannot cover), which is what stops the search at two probes. No value changed.

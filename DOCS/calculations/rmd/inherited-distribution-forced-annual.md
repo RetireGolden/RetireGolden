@@ -38,4 +38,9 @@ Exact published `inheritedDistribution = $11,000`. Under the current-code limit 
 outputs: `inherited-distribution-forced-annual`.
 
 feeds: `withdrawals-by-category-annual`; `withdrawals-total-annual`.
-(m, a) => a + "\n\nRevision note (2026-09-22, pull-request review of #730): the Claim, Justification and fourth wrong reading described the inheritedTraditionalDistribution comment as excluding Roth dollars; the comment completed on this branch states the published composition, so those sentences now say so and name the decision as one about the intended meaning. No value changed.\n"
+
+## Provenance
+
+Derived by: codex (gpt-5.6-sol), 2026-09-18, from the signatures-and-comments extract only, without executing the engine or reading any implementation body. Reviewed by: cursor (composer-2.5), 2026-09-18, by independent recomputation without executing the engine; see REVIEW-2026-09-18-round-eight.md in this directory (the follow-up review section) (approved with a note restating decision D-INHERITED-ROTH-SLICE, which the worksheet already names).
+
+Revision note (2026-09-22, pull-request review of #730): the Claim, Justification and fourth wrong reading described the inheritedTraditionalDistribution comment as excluding Roth dollars; the comment completed on this branch states the published composition, so those sentences now say so and name the decision as one about the intended meaning. No value changed.
