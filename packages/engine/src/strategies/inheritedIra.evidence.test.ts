@@ -159,7 +159,7 @@ describeCalculation(
       },
       expected: {
         firstYearRequired: 10_000,
-        secondYearRequired: 10_724.637681159421,
+        secondYearRequired: 148_000 / 13.8,
         postRbdBeneficiaryGreaterRequired: 10_000,
         postRbdOwnerGreaterRequired: 148_000 / 6.6,
         noAnnualWindowRequired: 0,
