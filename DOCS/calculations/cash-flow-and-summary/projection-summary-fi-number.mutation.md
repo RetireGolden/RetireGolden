@@ -24,8 +24,6 @@ Price intended spending instead of published funded expenses.total.
 
 The assertion this record owns is the one reading `fiNumber: actual 266546.11437470664, worksheet 2043520.21020608`; the mutation also breaks a sibling record's assertion in the same file, because both read the mutated expression. The captured output shows every failure in full.
 
-The capture also carries this file's pre-existing `projection-summary-estate-heir-tax` failure (the engine's 56,320.00 against the worksheet's 61,600.00). That failure is present on unmutated production and is not caused by this mutation.
-
 ## Command
 
 ```

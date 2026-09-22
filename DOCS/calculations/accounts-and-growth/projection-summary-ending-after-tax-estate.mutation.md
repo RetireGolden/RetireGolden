@@ -22,8 +22,6 @@ index 893060b3..ad554895 100644
 
 Ignore the charity carve-out when netting the estate.
 
-The capture also carries this file's pre-existing `projection-summary-estate-heir-tax` failure (the engine's 56,320.00 against the worksheet's 61,600.00). That failure is present on unmutated production and is not caused by this mutation.
-
 ## Command
 
 ```

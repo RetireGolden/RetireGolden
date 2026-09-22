@@ -22,8 +22,6 @@ index 893060b3..f7525297 100644
 
 Substitute ending investable for the composed net-worth endpoint.
 
-The capture also carries this file's pre-existing `projection-summary-estate-heir-tax` failure (the engine's 56,320.00 against the worksheet's 61,600.00). That failure is present on unmutated production and is not caused by this mutation.
-
 ## Command
 
 ```

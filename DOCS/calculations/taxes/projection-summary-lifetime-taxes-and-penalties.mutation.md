@@ -22,8 +22,6 @@ index 893060b3..02fd34d2 100644
 
 Sum taxes only, dropping the separate penalties channel.
 
-The capture also carries this file's pre-existing `projection-summary-estate-heir-tax` failure (the engine's 56,320.00 against the worksheet's 61,600.00). That failure is present on unmutated production and is not caused by this mutation.
-
 ## Command
 
 ```
