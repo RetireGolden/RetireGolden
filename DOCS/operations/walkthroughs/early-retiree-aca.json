@@ -1,13 +1,13 @@
 {
   "kind": "retiregolden.walkthrough-evidence",
-  "version": 1,
+  "version": 2,
   "id": "early-retiree-aca",
   "title": "Early retiree and the ACA cliff",
   "exampleId": "early-retiree-aca",
   "derivation": "DOCS/walkthroughs/early-retiree-aca.md",
   "review": "DOCS/walkthroughs/REVIEW-2026-09-22.md",
   "testFile": "packages/planner-ui/src/planner/examples/walkthroughs/early-retiree-aca.test.ts",
-  "testName": "year 2026 of the early-retiree ACA example equals the hand table",
+  "testName": "years 2026 and 2027 of the early-retiree ACA example equal the hand tables",
   "inputs": "Casey, single, Florida, born 1964-01-01, retired at 58, planning to 92. Cash 200,000 at 2%; traditional IRA 450,000 and Roth IRA 120,000, both at the plan default return of 5%. Consulting income of 18,000 a year, inflation-adjusted, taxed as ordinary income. Spending 40,000 a year. A Marketplace premium of 1,000 a month with the premium tax credit applied, and the example sets the benchmark premium equal to the stated premium. Roth conversions filled to the top of the 10% bracket from 2026 to 2030. Inflation 2.5%, healthcare inflation 5.5%; no market series.",
   "contractNotes": [
     "The first projection year is a full calendar year on the entered balances: the projection takes a start year, never a date, and no year row has a proration term.",
@@ -17,8 +17,12 @@
     "The conversion is sized to the top of the 10% bracket on taxable income after the standard deduction; the credit's dependence on MAGI does not enter the sizing. The example chose the 10% target so the baseline stays under the 400% cliff (it lands 34,100 below it); filling the 12% bracket instead would cross the cliff.",
     "Consulting is ordinary income with no self-employment facts: no self-employment tax, no half-SE deduction, no self-employed health-insurance deduction.",
     "A cash account's growth is not taxable interest and does not enter MAGI; the conversion is not a withdrawal and is never penalized, at any age.",
-    "The conversion and the zero-rate gain headroom are sized by bisection to $0.01 (the contract's promise) and return the lower bound, so those two rows are held to at most $0.01 below the exact value and never above it; every other row is held to half a cent.",
-    "Florida's zero appears nowhere as a separate field: the year row publishes one composed tax."
+    "In 2026 the conversion and the zero-rate gain headroom are sized by bisection to $0.01 (the contract's promise) and return the lower bound, so those two rows are held to at most $0.01 below the exact value and never above it, and every other row to half a cent; the 2027 bands follow from the same promise and are stated in the next note.",
+    "Florida's zero appears nowhere as a separate field: the year row publishes one composed tax.",
+    "In 2027 the conversion's $0.01 bar reaches every figure computed from it (MAGI, taxable income, the ACA AGI component, the IRA and Roth year ends), and no contract says so; those rows carry the propagated bar (0.01 one-sided, 0.0105 on the grown balances) and the zero-rate headroom becomes two-sided, since the conversion's shortfall raises its root while its own search lands below.",
+    "A null row proves an absence: in 2027 the engine publishes the household MAGI, the poverty line, the percentage and the credit as null by contract, and the test holds each to null exactly. The MAGI probe's federal AGI is still published beside them as the input a credit would have been priced on, not as a household MAGI the engine vouches for.",
+    "In a stand-in year the ACA convergence flag reads false although the funding solve converged: the flag certifies a priced credit, not the solve; the year carries no non-convergence code or warning.",
+    "The projected 2027 figures (a 12,710 bracket top, a 16,502.50 deduction, a 50,686.25 breakpoint) are the 2026 figures at the plan's 2.5% with no statutory rounding; the IRS's 2027 figures will differ."
   ],
   "tables": [
     {
@@ -412,6 +416,477 @@
           "label": "Net worth",
           "hand": 777127.2692779553,
           "engine": 777127.2692779553,
+          "tolerance": 0.005,
+          "unit": "dollars",
+          "derivation": "investable only",
+          "contract": "worksheet accounts-net-worth-annual"
+        }
+      ]
+    },
+    {
+      "year": 2027,
+      "why": "The first stand-in year: every indexed federal figure is the 2026 figure at the plan's 2.5%, so the conversion grows with the bracket top; the Marketplace credit is not priced, not because of the cliff (the income is as far below it as in 2026 and the contract is complete) but because no 2027 tax-year parameters are published, so the engine budgets the gross premium and says so; and the conversion's search lands half a cent under the bracket top, which every figure downstream of it inherits.",
+      "rows": [
+        {
+          "key": "age",
+          "label": "Casey's age attained",
+          "hand": 63,
+          "engine": 63,
+          "tolerance": 0.005,
+          "unit": "count",
+          "derivation": "2027 − 1964",
+          "contract": "PersonYearState.ageAttained"
+        },
+        {
+          "key": "filing-status",
+          "label": "Filing status",
+          "hand": "single",
+          "engine": "single",
+          "tolerance": 0.005,
+          "unit": "text",
+          "derivation": "household filing status",
+          "contract": "YearResult.filingStatus"
+        },
+        {
+          "key": "consulting",
+          "label": "Consulting income",
+          "hand": 18450,
+          "engine": 18450,
+          "tolerance": 0.005,
+          "unit": "dollars",
+          "derivation": "18,000 × 1.025 (the general factor from the projection start)",
+          "contract": "worksheet income-recurring-annual"
+        },
+        {
+          "key": "income-total",
+          "label": "Total income",
+          "hand": 18450,
+          "engine": 18450,
+          "tolerance": 0.005,
+          "unit": "dollars",
+          "derivation": "consulting only",
+          "contract": "worksheet income-total-annual"
+        },
+        {
+          "key": "rmd",
+          "label": "Required minimum distribution",
+          "hand": 0,
+          "engine": 0,
+          "tolerance": 0.005,
+          "unit": "dollars",
+          "derivation": "RMDs start at 75, in 2039",
+          "contract": "params/index.ts#rmdStartAgeForBirthYear"
+        },
+        {
+          "key": "roth-conversion",
+          "label": "Roth conversion",
+          "hand": 10762.499999999998,
+          "engine": 10762.494868040083,
+          "tolerance": 0.01,
+          "unit": "dollars",
+          "derivation": "12,710 (the 10% bracket top, 12,400 × 1.025) − (18,450 − 16,502.50) = 10,762.50; the bisection lands 0.0051 below it, because 12,400 × 1.025 evaluates a hair under 12,710 in binary floating point while taxable income at the exact answer rounds to 12,710 and so tests as over the top",
+          "contract": "worksheet roth-conversion-annual (sized by bisection to $0.01, the lower bound); YearResult.rothConversion; aggregateRothConversionOwnerAllocation.ts#374 (one owner: the raw sized amount, not quantized to cents); params/index.ts#indexFederalTaxPack",
+          "bound": "below"
+        },
+        {
+          "key": "standard-deduction",
+          "label": "Standard deduction (projected)",
+          "hand": 16502.5,
+          "engine": 16502.5,
+          "tolerance": 0.005,
+          "unit": "dollars",
+          "derivation": "16,100 × 1.025; nobody is 65",
+          "contract": "FederalTaxDetail.deduction; params/index.ts#indexFederalTaxPack"
+        },
+        {
+          "key": "taxable-income",
+          "label": "Federal taxable income",
+          "hand": 12709.999999999998,
+          "engine": 12709.994868040085,
+          "tolerance": 0.01,
+          "unit": "dollars",
+          "derivation": "29,212.50 − 16,502.50 = 12,710, the bracket top the conversion fills to; it carries the conversion’s bar",
+          "contract": "FederalTaxDetail.taxableIncome; carries the conversion band (YearResult.rothConversion; single-owner clause at aggregateRothConversionOwnerAllocation.ts#374)",
+          "bound": "below"
+        },
+        {
+          "key": "stand-in-pack",
+          "label": "Tax-year pack",
+          "hand": "2026 pack standing in",
+          "engine": "2026 pack standing in",
+          "tolerance": 0.005,
+          "unit": "text",
+          "derivation": "no 2027 pack is published, so the 2026 figures are carried at the plan’s 2.5%: projections, not the IRS’s 2027 figures",
+          "contract": "FederalTaxDetail.usesStandInPack; params/index.ts#packForYear"
+        },
+        {
+          "key": "magi",
+          "label": "Modified adjusted gross income",
+          "hand": 29212.5,
+          "engine": 29212.494868040085,
+          "tolerance": 0.01,
+          "unit": "dollars",
+          "derivation": "18,450 consulting + 10,762.50 conversion; carries the conversion’s bar",
+          "contract": "worksheet medicare-magi-composition; YearResult.magi; single-owner clause at aggregateRothConversionOwnerAllocation.ts#374",
+          "bound": "below"
+        },
+        {
+          "key": "tax",
+          "label": "Income tax (federal plus Florida)",
+          "hand": 1271,
+          "engine": 1270.9994868040085,
+          "tolerance": 0.005,
+          "unit": "dollars",
+          "derivation": "taxable income 12,710, all at 10% = 1,271; Florida 0. The conversion costs exactly its 10% tax, 1,076.25: there is no credit to forfeit this year",
+          "contract": "worksheets federal-ordinary-bracket-tax, tax-total-annual"
+        },
+        {
+          "key": "amt",
+          "label": "Alternative minimum tax",
+          "hand": 0,
+          "engine": 0,
+          "tolerance": 0.005,
+          "unit": "dollars",
+          "derivation": "AMTI 29,212.50 is under the projected 92,352.50 exemption",
+          "contract": "worksheet federal-amt-screen"
+        },
+        {
+          "key": "ltcg-zero-headroom",
+          "label": "Room left in the 0% capital-gain band",
+          "hand": 37976.24999999999,
+          "engine": 37976.25260874628,
+          "tolerance": 0.01,
+          "unit": "dollars",
+          "derivation": "50,686.25 (the 15% breakpoint, 49,450 × 1.025) − 12,710 = 37,976.25; two-sided here: the conversion’s shortfall raises the root by up to $0.01 and the headroom’s own bisection lands up to $0.01 below it",
+          "contract": "worksheet year-result-ltcg-zero-headroom; params/index.ts#indexFederalTaxPack"
+        },
+        {
+          "key": "penalties",
+          "label": "Penalties",
+          "hand": 0,
+          "engine": 0,
+          "tolerance": 0.005,
+          "unit": "dollars",
+          "derivation": "no need-based traditional withdrawal; a conversion is never penalized",
+          "contract": "worksheet tax-penalties-annual"
+        },
+        {
+          "key": "realized-gains",
+          "label": "Realized capital gains",
+          "hand": 0,
+          "engine": 0,
+          "tolerance": 0.005,
+          "unit": "dollars",
+          "derivation": "no taxable account",
+          "contract": "worksheet tax-realized-gains-annual"
+        },
+        {
+          "key": "aca-readiness",
+          "label": "Marketplace credit readiness",
+          "hand": "nonActionable",
+          "engine": "nonActionable",
+          "tolerance": 0.005,
+          "unit": "text",
+          "derivation": "the 2027 contract is complete, but the year rides the 2026 pack, which is an unsupported material fact: no credit is priced",
+          "contract": "YearAcaResult.readiness; annualHealthcareExpenses.ts (tax-year-parameters-unsupported); domain rules §8"
+        },
+        {
+          "key": "aca-support-codes",
+          "label": "Support codes",
+          "hand": "tax-year-parameters-unsupported",
+          "engine": "tax-year-parameters-unsupported",
+          "tolerance": 0.005,
+          "unit": "text",
+          "derivation": "the one gate that fails; every other gate passes as in 2026",
+          "contract": "YearAcaResult.supportCodes"
+        },
+        {
+          "key": "aca-household-magi",
+          "label": "ACA household MAGI",
+          "hand": null,
+          "engine": null,
+          "tolerance": 0.005,
+          "unit": "dollars",
+          "derivation": "published only in an actionable year",
+          "contract": "YearAcaResult.householdMagi (null when material facts are unsupported)"
+        },
+        {
+          "key": "aca-magi-federal-agi",
+          "label": "The AGI a 2027 credit would be priced on",
+          "hand": 29212.5,
+          "engine": 29212.494868040085,
+          "tolerance": 0.01,
+          "unit": "dollars",
+          "derivation": "29,212.50, the MAGI probe’s federal AGI: the input a credit would have been priced on, not a household MAGI the engine vouches for",
+          "contract": "YearAcaResult.magiComponents.federalAgi; carries the conversion band (single-owner clause at aggregateRothConversionOwnerAllocation.ts#374)",
+          "bound": "below"
+        },
+        {
+          "key": "aca-poverty-line",
+          "label": "Federal poverty line (one person)",
+          "hand": null,
+          "engine": null,
+          "tolerance": 0.005,
+          "unit": "dollars",
+          "derivation": "withheld in a stand-in year: no inflation-scaled poverty line is exposed as evidence",
+          "contract": "YearAcaResult.federalPovertyLine; domain rules §8"
+        },
+        {
+          "key": "aca-fpl-pct",
+          "label": "MAGI as a percentage of the poverty line",
+          "hand": null,
+          "engine": null,
+          "tolerance": 0.005,
+          "unit": "percent",
+          "derivation": "no priced quote, so no percentage (it would be about 182%, the same distance from the cliff as 2026)",
+          "contract": "YearAcaResult.fplPct"
+        },
+        {
+          "key": "aca-cliff-state",
+          "label": "Position against the 400% cliff",
+          "hand": "unsupported",
+          "engine": "unsupported",
+          "tolerance": 0.005,
+          "unit": "text",
+          "derivation": "no cliff test is run in a non-actionable year: not above the cliff, unpriced",
+          "contract": "YearAcaResult.cliffState"
+        },
+        {
+          "key": "aca-gross-premium",
+          "label": "Gross Marketplace premium",
+          "hand": 12660,
+          "engine": 12660,
+          "tolerance": 0.005,
+          "unit": "dollars",
+          "derivation": "12 months × 1,000 × 1.055 (the health factor: general 2.5% plus 3%, additive)",
+          "contract": "worksheet aca-enrollment-and-applicable-slcsp-premium-annual; assumptionsSchema.healthcareExtraInflationPct"
+        },
+        {
+          "key": "aca-benchmark-premium",
+          "label": "Benchmark (SLCSP) premium",
+          "hand": 12660,
+          "engine": 12660,
+          "tolerance": 0.005,
+          "unit": "dollars",
+          "derivation": "12 × 1,055: the contract is present, so the field is published",
+          "contract": "YearAcaResult.applicableSlcspPremium"
+        },
+        {
+          "key": "aca-credit",
+          "label": "Premium tax credit",
+          "hand": null,
+          "engine": null,
+          "tolerance": 0.005,
+          "unit": "dollars",
+          "derivation": "not priced: a 2027 credit needs the 2027 applicable-percentage table and poverty guidelines, and neither is published. Priced on the 2026 schedule carried forward it would be about 10,984 (illustration only)",
+          "contract": "YearAcaResult.modeledAllowablePtc"
+        },
+        {
+          "key": "aca-net-premium",
+          "label": "Net premium after the credit",
+          "hand": 12660,
+          "engine": 12660,
+          "tolerance": 0.005,
+          "unit": "dollars",
+          "derivation": "the gross premium, 12,660: nothing is credited",
+          "contract": "YearAcaResult.economicNetPremium (the gross premium on a gross fallback)"
+        },
+        {
+          "key": "aca-gross-fallback",
+          "label": "Gross-premium fallback",
+          "hand": "gross premium budgeted",
+          "engine": "gross premium budgeted",
+          "tolerance": 0.005,
+          "unit": "text",
+          "derivation": "the year is not actionable, so the plan budgets the full premium and says so",
+          "contract": "YearAcaResult.convergence.grossPremiumFallback"
+        },
+        {
+          "key": "irmaa-lookback-magi",
+          "label": "IRMAA lookback MAGI (unused: no Medicare)",
+          "hand": 50000,
+          "engine": 50000,
+          "tolerance": 0.005,
+          "unit": "dollars",
+          "derivation": "2025 is before the ledger, so the plan’s recentAnnualMagi of 50,000 stands in; Casey has no Medicare, so it prices nothing",
+          "contract": "worksheet irmaa-lookback-selection"
+        },
+        {
+          "key": "irmaa-lookback-source",
+          "label": "IRMAA lookback source",
+          "hand": "planFallback",
+          "engine": "planFallback",
+          "tolerance": 0.005,
+          "unit": "text",
+          "derivation": "no historical MAGI entered",
+          "contract": "YearResult.irmaaLookbackMagiSource"
+        },
+        {
+          "key": "irmaa-lookback-year",
+          "label": "IRMAA lookback year",
+          "hand": 2025,
+          "engine": 2025,
+          "tolerance": 0.005,
+          "unit": "year",
+          "derivation": "2027 − 2",
+          "contract": "worksheet medicare-irmaa-two-year-lookback"
+        },
+        {
+          "key": "medicare-premiums",
+          "label": "Medicare premiums",
+          "hand": 0,
+          "engine": 0,
+          "tolerance": 0.005,
+          "unit": "dollars",
+          "derivation": "no Medicare months at 63",
+          "contract": "YearResult.medicarePremiums"
+        },
+        {
+          "key": "base-spending",
+          "label": "Base spending",
+          "hand": 41000,
+          "engine": 41000,
+          "tolerance": 0.005,
+          "unit": "dollars",
+          "derivation": "40,000 × 1.025",
+          "contract": "worksheet spending-base-annual"
+        },
+        {
+          "key": "healthcare",
+          "label": "Healthcare",
+          "hand": 12660,
+          "engine": 12660,
+          "tolerance": 0.005,
+          "unit": "dollars",
+          "derivation": "the gross premium 12,660; no Medicare, no extras",
+          "contract": "worksheet spending-healthcare-annual; YearExpenses.healthcare"
+        },
+        {
+          "key": "spending-total",
+          "label": "Total spending",
+          "hand": 53660,
+          "engine": 53660,
+          "tolerance": 0.005,
+          "unit": "dollars",
+          "derivation": "41,000 + 12,660",
+          "contract": "worksheet spending-total-annual"
+        },
+        {
+          "key": "portfolio-need",
+          "label": "Portfolio need after income",
+          "hand": 36481,
+          "engine": 36480.99948680401,
+          "tolerance": 0.005,
+          "unit": "dollars",
+          "derivation": "53,660 + tax 1,271 − consulting 18,450 = 36,481: 11,605.77 more than 2026, of which 10,364.77 is the 2026 credit not repeated",
+          "contract": "worksheet portfolio-need-annual"
+        },
+        {
+          "key": "withdrawal-cash",
+          "label": "Withdrawn from cash",
+          "hand": 36481,
+          "engine": 36480.99948680401,
+          "tolerance": 0.005,
+          "unit": "dollars",
+          "derivation": "the whole need; cash is first in the sequential order and 178,627.27 covers it",
+          "contract": "worksheet withdrawals-by-category-annual; withdrawalStrategySchema sequential order"
+        },
+        {
+          "key": "withdrawal-traditional",
+          "label": "Withdrawn from the IRA",
+          "hand": 0,
+          "engine": 0,
+          "tolerance": 0.005,
+          "unit": "dollars",
+          "derivation": "the conversion is not a withdrawal",
+          "contract": "YearWithdrawals.total composition"
+        },
+        {
+          "key": "withdrawal-roth",
+          "label": "Withdrawn from the Roth",
+          "hand": 0,
+          "engine": 0,
+          "tolerance": 0.005,
+          "unit": "dollars",
+          "derivation": "nothing drawn",
+          "contract": "worksheet withdrawals-by-category-annual"
+        },
+        {
+          "key": "withdrawal-total",
+          "label": "Total withdrawals",
+          "hand": 36481,
+          "engine": 36480.99948680401,
+          "tolerance": 0.005,
+          "unit": "dollars",
+          "derivation": "cash only",
+          "contract": "worksheet withdrawals-total-annual"
+        },
+        {
+          "key": "surplus",
+          "label": "Surplus invested",
+          "hand": 0,
+          "engine": 0,
+          "tolerance": 0.005,
+          "unit": "dollars",
+          "derivation": "inflows 18,450 − spending 53,660 − tax 1,271 < 0",
+          "contract": "worksheet surplus-invested-annual"
+        },
+        {
+          "key": "shortfall",
+          "label": "Shortfall",
+          "hand": 0,
+          "engine": 0,
+          "tolerance": 0.005,
+          "unit": "dollars",
+          "derivation": "fully funded",
+          "contract": "worksheet spending-shortfall-annual"
+        },
+        {
+          "key": "balance-cash",
+          "label": "Cash, year end",
+          "hand": 144989.19466351435,
+          "engine": 144989.19518697428,
+          "tolerance": 0.005,
+          "unit": "dollars",
+          "derivation": "(178,627.27 − 36,481) × 1.02",
+          "contract": "worksheet accounts-balance-per-account-annual"
+        },
+        {
+          "key": "balance-ira",
+          "label": "Traditional IRA, year end",
+          "hand": 473248.125,
+          "engine": 473248.1303885579,
+          "tolerance": 0.0105,
+          "unit": "dollars",
+          "derivation": "(461,475 − 10,762.50) × 1.05 = 473,248.125; the conversion’s $0.01 bar, grown at 5%, moves this up by at most 0.0105",
+          "contract": "worksheet accounts-balance-per-account-annual"
+        },
+        {
+          "key": "balance-roth",
+          "label": "Roth IRA, year end",
+          "hand": 155176.875,
+          "engine": 155176.8696114421,
+          "tolerance": 0.0105,
+          "unit": "dollars",
+          "derivation": "(137,025 + 10,762.50) × 1.05 = 155,176.875; the conversion’s $0.01 bar, grown at 5%, moves this down by at most 0.0105",
+          "contract": "worksheet accounts-balance-per-account-annual",
+          "bound": "below"
+        },
+        {
+          "key": "investable",
+          "label": "Investable total",
+          "hand": 773414.1946635144,
+          "engine": 773414.1951869742,
+          "tolerance": 0.005,
+          "unit": "dollars",
+          "derivation": "144,989.19 + 473,248.125 + 155,176.875; the IRA and Roth offsets cancel",
+          "contract": "worksheet accounts-investable-total-annual"
+        },
+        {
+          "key": "net-worth",
+          "label": "Net worth",
+          "hand": 773414.1946635144,
+          "engine": 773414.1951869742,
           "tolerance": 0.005,
           "unit": "dollars",
           "derivation": "investable only",

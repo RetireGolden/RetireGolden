@@ -468,3 +468,553 @@ conversions gives 10,500 + 10,762.50 + 11,031.5625 + 13,514.97734375 + 13,852.85
 example's published lifetime Roth total is 59,661.87. The 0.0216 gap fits four bisection-sized years each landing up
 to $0.01 low, with 2026 landing exactly. It supports three readings together: the conversion is sized on taxable
 income after the standard deduction; the age-65 addition applies from 2029; and no senior deduction applies.
+
+---
+
+# Part II: year 2027 by hand
+
+Independent hand derivation of the second projection year of the curated example `early-retiree-aca`
+(`packages/planner-ui/src/planner/examples/buildEarlyRetireeAca.ts`), for the public walkthrough page and the test
+that holds the engine to it. It continues part I above (year 2026, approved in
+`DOCS/walkthroughs/REVIEW-2026-09-22.md`), whose section 4 recommends 2027 as the second year. Section numbers below
+are part II's own; "the 2026 document" and "part I" both mean the sections above.
+
+**Provenance.** Derived 2026-09-22 by Claude (Opus 5.5 subagent) against the committed tree at `e814bd02` (the
+content of RetireGolden #732 as merged; the three files that differ at engine main `faa68edc` are not cited here).
+I did not run the engine, run any test, or execute any TypeScript or JavaScript, and I modified no repository file.
+I did the arithmetic by hand and checked it with exact rationals (Python `fractions`). I replayed the two bisections
+(`sizeRothConversion`, `zeroRateLtcgHeadroom`), the year-2026 float chain and the fixed-point coordinator in plain
+IEEE-754 doubles (Python floats), written from the loop text. That replay is my own arithmetic, not engine code. The
+rules come from the calculation worksheets (`DOCS/calculations/**`), the calculation records
+(`packages/engine/src/rules/calculations/*.ts`), the engine's doc comments, the parameter pack, and
+`DOCS/domain/domain-rules-reference/*`. Where no contract says enough I read the function body; the source column
+marks those "(body)". The 2027 openings are the approved 2026 closing balances (rows 87, 89 and 91 of the 2026 table).
+
+**Rounding, tolerance, and the one finding that changes the test.** As in 2026, no contract on this path states a
+rounding step. The ledger carries binary64 dollars, and the default fixture tolerance is an absolute $0.005
+(`ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS`, `projection/moneyTolerance.ts` line 11). Each figure is given as its exact
+value (a rational where it does not terminate) and rounded half-up to the cent for display.
+
+The 2026 recipe does **not** carry to 2027. That recipe is closed-form hand values, $0.005 everywhere, and $0.01
+one-sided below for the two bisection-sized fields. The problem is that the conversion does not land on 10,762.50.
+The indexed ceiling 12,400 × 1.025 evaluates in binary64 to 12,710 − 2⁻³⁹, one unit in the last place below 12,710.
+The metric at the exact root, however, rounds to exactly 12,710.0, so the root itself tests "over the ceiling". The
+bisection therefore never doubles its starting bound, and it returns 10,762.494868040083, **0.00513 below** the
+closed form (Appendix B1). Every figure that is affine in the conversion inherits that error bar, scaled by its slope:
+
+| Figure | Closed form | Traced engine landing | Gap | Passes $0.005? |
+|---|---|---|---|---|
+| `rothConversion` | 10,762.50 | 10,762.494868040083 | −0.005132 | yes, under the contract's one-sided $0.01 |
+| `magi`; `aca.magiComponents.federalAgi` | 29,212.50 | 29,212.494868040085 | −0.005132 | **no** |
+| `advisoryFederalTax.detail.taxableIncome` | 12,710.00 | 12,709.994868040085 | −0.005132 | **no** |
+| `balances[ira]` | 473,248.125 | 473,248.1303885579 | +0.005389 | **no** |
+| `balances[roth]` | 155,176.875 | 155,176.8696114421 | −0.005389 | **no** |
+| `ltcgZeroHeadroom` | 37,976.25 | 37,976.25260874628 | **+0.002609** | yes two-sided; **fails a one-sided `bound: 'below'`** |
+| `tax`, `netPortfolioNeed`, `withdrawals.cash`, `withdrawals.total` | 1,271.00; 36,481.00 | 1,270.99948680; 36,480.99948680 | −0.000513 | yes |
+| `balances[cash]`, `investableTotal`, `netWorth` | 144,989.19; 773,414.19 | 144,989.19518697; 773,414.19518697 | +0.000523 | yes |
+
+The headroom lands **above** its closed form because the taxable income it subtracts from is itself 0.00513 low; its
+own bisection then pulls it back down by 0.00252. Section 3 gives the per-row tolerance that follows from the
+contracts' own error bars, and section 5, B1, states the gap in the contracts. The displayed cents also differ in six
+rows (section 6).
+
+---
+
+**Revision 1 (2026-09-23).** Revised after the independent check (`REVIEW-2026-09-22.md`, the "year 2027" section
+for this example), which approved every figure: two citations corrected as its §3 lists (the indexing-scale rule's
+lines; the order of the two fragments quoted from the `rothConversion` doc), and the single-owner clause of the
+allocation module added beside that doc, since a literal reading of "exact cents" would quantize a single owner's
+conversion and move four rows outside their bands. No figure changed.
+
+## 1. What carries over, and every indexing rule applied
+
+The inputs are exactly those of the 2026 document, section 1. The plan is built by `createExamplePlan`,
+`buildEarlyRetireeAca` and `parseExamplePlan`, with start year 2026. The walkthrough harness calls
+`projectPlan(plan, { startYear: 2026 })`, which calls `simulatePlan` with `taxCalculatorFor(plan)` =
+`combineTaxCalculators(createFederalTaxCalculator(), createStateTaxCalculator({ overridePct: 0, localPct: 0 }))`
+(`packages/planner-ui/src/projection.ts`, `planTaxCalculator.ts`). There is no market series, and `exampleSourceId`
+is absent. The 2027 openings (2026 closing, approved):
+
+| Account | Opening 2027 | Exact | Source |
+|---|---|---|---|
+| Cash `early-retiree-aca--cash` | 178,627.27 | 13,977,583,821/78,250 = 178,627.269277955271… | 2026 table row 87 |
+| Traditional IRA `early-retiree-aca--ira` | 461,475.00 | 461,475 | 2026 row 89 |
+| Roth IRA `early-retiree-aca--roth` | 137,025.00 | 137,025 | 2026 row 91 |
+
+My binary64 replay of 2026 reproduces all three to within 1e-9 (178,627.26927795526; 461,475.0; 137,025.0).
+
+### 1a. Indexing rules applied in 2027
+
+| # | Figure | Rule applied in 2027 | Factor | Source |
+|---|---|---|---|---|
+| I1 | Which pack prices 2027 | `packForYear(2027)`: no 2027 pack is published, so the latest (2026) pack stands in, with `isStandIn: true` | n/a | `params/index.ts` header ("Future years resolve to the latest published pack with `isStandIn: true`") and lines 17, 48–53 |
+| I2 | General inflation factor | `inflFactorFrom(2026, 2027)` = cum[1]/cum[0] = 1 × (1 + 0.025) = **1.025** (binary64 1.0249999999999999111…) | 1.025 | `simulate.ts` lines 515–531 (body). Published as `YearResult.inflationScale` ("Exact cumulative general-inflation factor used by this simulation year"), set from `inflFactor` (`annualFundingApplicationAndClosePhase.ts` line 2102, body) |
+| I3 | Consulting income | general inflation **from the projection start year**: 18,000 × `inflFactorFrom(2026, 2027)` = **18,450** | 1.025 | worksheet `income-recurring-annual` ("multiplying by the supplied cumulative general-inflation factor only when `inflationAdjusted` is true"); `otherIncomeStreams.ts` (`inflFactor` doc: "`inflFactorFrom(startYear, year)`"; amount = `annualAmount × inflFactor`, body) |
+| I4 | Base spending | 40,000 × `lifestyleScale` = 40,000 × (1.025 × phase 1 × survivor 1) = **41,000** | 1.025 | `simulate.ts` header ("base spending … inflate at the general rate"); worksheet `spending-base-annual`; `annualLifestyleLayers.ts` lines 70–78 (body) |
+| I5 | Federal indexing scale | `limitScale(pack, isStandIn, 2027)` = `indexingScaleFor(2026, 2027, inflFactorFrom)` = `inflFactorFrom(2026, 2027)` = **1.025**. A year with its own pack gets exactly 1 | 1.025 | `params/indexingScale.ts` lines 15–17 (the header's rule: "at or below the latest pack year the scale is exactly 1, and above it the scale is the cumulative inflation factor from the pack year") and 49–63 (`indexingScaleFor`, whose line 62 returns `year <= latestPackYear ? 1 : inflationPath(packYear, year)`); `simulate.ts` lines 542–543 |
+| I6 | Rate-bracket lower bounds | × 1.025. The 12% bracket (the top of the 10% band) starts at 12,400 × 1.025 = **12,710** (binary64 12,710 − 2⁻³⁹) | 1.025 | `indexFederalTaxPack` doc ("rate-bracket lower bounds -- IRC 1(j)(3)(B)"), `params/index.ts` lines 55–134; domain rules §1, "Indexing in projected years"; `federalTax.ts` header; record `roth-conversion-annual` ("the NEXT bracket's lowerBound, indexed to the projected year", `rules/calculations/roth.ts` line 47); `rothConversion.ts` header ("the federal rate-bracket bounds all index at general inflation beyond the published pack") |
+| I7 | Standard deduction (single) | × 1.025: 16,100 × 1.025 = **16,502.50** (binary64 exactly 16,502.5) | 1.025 | same `indexFederalTaxPack` doc ("basic standard deduction -- IRC 63(c)(7)(B)(ii)"); domain rules §1 |
+| I8 | 15% capital-gain breakpoint (single) | × 1.025: 49,450 × 1.025 = **50,686.25** (binary64 50,686.24999999999) | 1.025 | same doc ("15% and 20% capital-gain breakpoints -- IRC 1(j)(5)(C)"); domain rules §1 |
+| I9 | AMT exemption (single) | × 1.025: 90,100 × 1.025 = **92,352.50** | 1.025 | same doc ("AMT exemption and its phase-out threshold -- IRC 55(d)(4)(B)") |
+| I10 | Left flat (no indexing provision) | the §86 tiers, the NIIT threshold, the §1211(b) offset, and the senior deduction with its MAGI threshold. None reaches this plan in 2027: no Social Security, no investment income, nobody 65 | 1 | `indexFederalTaxPack` doc ("Figures deliberately left alone"); domain rules §1 |
+| I11 | Health inflation factor | **additive**: 1 + 0.025 + 0.03 = **1.055**, from the start year | 1.055 | `simulate.ts` lines 516–520, 532–534 (`cumHealthInfl`, "general inflation + the healthcare premium"); `YearExpenses.healthcare` doc ("the marketplace premium use[s] the health inflation factor from the start year") |
+| I12 | 2027 Marketplace premium | The synthesized contract carries 1,000 × (1 + (2.5 + 3)/100)^(2027 − 2026) = **1,055** a month, for enrollment and SLCSP alike. The gross premium is read from the contract: 12 × 1,055 = **12,660** | 1.055 | `buildContext.ts#parseExamplePlan` lines 93–95 and 118–137 (body; doc: "The SLCSP equals the example's stated enrollment premium"); `YearAcaResult.grossEnrollmentPremium` doc; `annualHealthcareExpenses.ts` lines 231–240, 264–277 (body). Both routes give exactly 1,055.0 in binary64: `1000 × Math.pow(1 + 0.055, 1)` and `1000 × ((1 + 0.025) + 0.03)` |
+| I13 | Poverty line and ACA schedule | **Not indexed and not published.** A stand-in year "exposes no inflation-scaled FPL as actionable evidence". The engine never prices the credit, so its would-be pricing scale (`pricingInflationScale` = `inflFactorFrom(2026, 2027)`) is never applied | none | domain rules §8 ("Only years with sourced tax-year parameters can be actionable; a stand-in future pack reports `tax-year-parameters-unsupported`, exposes no inflation-scaled FPL as actionable evidence, and funds gross premium"); `annualAcaResultPublication.ts` lines 181–191 (body: `!input.isStandIn`) |
+| I14 | Florida | the 2026 state pack stands in, with no marker; FL has `hasIncomeTax: false` | n/a | `params/state/index.ts` header ("the latest pack for future years … no supported-year guard and no validity marker"); `params/state/data/year2026.ts` lines 337–343 |
+| I15 | IRMAA thresholds | not reached: no Medicare months | n/a | `annualHealthcareExpenses.ts` lines 155–199 (body) |
+| I16 | Growth | cash 2% (its own `annualReturnPct`); IRA and Roth 5% (`defaultReturnPct`). Applied at year end to post-flow balances | 1.02 / 1.05 | as in 2026 section 2k; `annualPostSolveAccountGrowth.ts` header and lines 128–139 (body) |
+
+---
+
+## 2. Year 2027 by hand
+
+The year runs in the same order as 2026 (`simulate.ts` header): ages, income, expenses (healthcare entered at gross),
+RMDs, the Roth conversion, and the fixed-point tax/withdrawal iteration, which would price the ACA credit if the year
+were actionable. Then come flows, growth and the snapshot.
+
+### 2a. Timeline, person, and the pack
+
+| # | Figure | Value | Derivation | Contract source | Tolerance |
+|---|---|---|---|---|---|
+| 1 | Casey's `ageAttained` | **63** | 2027 − 1964 | `PersonYearState.ageAttained` | exact |
+| 2 | `alive` / life age | true / 92 | 63 ≤ 92 | `PersonYearState.alive` | exact |
+| 3 | Full calendar year | yes | the second projection year; nothing prorates it | 2026 document A1 | n/a |
+| 4 | `filingStatus` | `single` | household | `YearResult.filingStatus` | exact |
+| 5 | People 65+ | 0 | 63 < 65: no age-65 addition, no senior deduction | `federalTax.ts` header, step 3 | exact |
+| 6 | Marketplace / Medicare months | **12 / 0** | attained age < 65 | `YearExpenses.healthcare` doc; `annualHealthcareExpenses.ts` lines 116–128 (body) | exact |
+| 7 | `rmd` | 0 (first RMD year 2039) | the 1964 cohort starts at 75 | `params/index.ts#rmdStartAgeForBirthYear` | exact |
+| 8 | Wages | 0 | no wage stream | | exact |
+| 9 | Pack pricing 2027 | the **2026** pack, `isStandIn: true`. Published as `advisoryFederalTax.detail.usesStandInPack` = **true** | I1 | `FederalTaxDetail.usesStandInPack` doc ("True when this year's figures use a stand-in parameter pack"); `YearResult.advisoryFederalTax` doc ("`simulatePlan` always publishes it") | exact |
+| 10 | `inflationScale` | **1.025** | I2 | `YearResult.inflationScale` doc | 1e-12 (a factor, not dollars) |
+| 11 | Health inflation factor | 1.055 | I11 | `simulate.ts` lines 516–534 | not published |
+
+### 2b. Income
+
+| # | Figure | Value | Derivation | Contract source | Tolerance |
+|---|---|---|---|---|---|
+| 12 | **`incomes.recurring`** | **18,450.00** | 18,000 × 1.025 (binary64 exactly 18,450.0) | I3 | 0.005 |
+| 13 | Ordinary income from it | 18,450 | `taxTreatment: 'ordinary'`; no self-employment tax is modeled (2026 A7) | `recurringIncomeSchema`; `DOCS/features/taxes.md` | not published |
+| 14 | `socialSecurity` / `taxableYield` / `taxExemptInterest` | 0 / 0 / 0 | as 2026 row 11 | | exact |
+| 15 | **`incomes.total`** | **18,450.00** | recurring only | worksheet `income-total-annual` | 0.005 |
+| 16 | `realizedGains` | 0 | no taxable account | worksheet `tax-realized-gains-annual` | exact |
+
+### 2c. Roth conversion (fill to the top of the 10% bracket, indexed)
+
+| # | Figure | Value | Derivation | Contract source | Tolerance |
+|---|---|---|---|---|---|
+| 17 | Strategy active | yes | `fillToTarget`, 2027 ∈ [2026, 2030], no named conversion action | `annualAggregateRothConversionTargetPlan.ts` lines 252–254 (body) | |
+| 18 | What counts toward the bracket top | **18,450** | `incomeBeforeConversion` is the consulting income alone. Need-based withdrawals cannot enter, because the conversion is sized before the withdrawal solve | `ConversionSizingInput.ordinaryIncomeBase` doc; `annualAggregateRothConversionPhase.ts` lines 310–325 (body) | not published |
+| 19 | Metric | federal taxable income after the deduction | `metricFor('topOfBracket')` returns `detail.taxableIncome` | `YearResult.rothConversion` doc; `rothConversion.ts` line 98 | |
+| 20 | Sizing scale | **1.025** | `inflationScale: inflFactorFrom(pack.year, year)` = `inflFactorFrom(2026, 2027)` | `annualAggregateRothConversionPhase.ts` line 494 (body); `ConversionSizingInput.inflationScale` doc ("Scale applied to … the indexed federal tax figures for years beyond the pack") | |
+| 21 | Deduction used in sizing | **16,502.50** | 16,100 × 1.025 (I7); nobody 65+; no itemized deductions; senior deduction 0 | `standardDeduction(indexFederalTaxPack(pack, 1.025), 'single', 0)`, reached through `computeFederalTax` line 512 | published at row 32 |
+| 22 | Taxable income before the conversion | **1,947.50** | 18,450 − 16,502.50 | | not published |
+| 23 | Ceiling (top of the 10% bracket) | **12,710** (binary64 **12,709.999999999998** = 12,710 − 2⁻³⁹) | 12,400 × 1.025: the next bracket's `lowerBound` in the indexed pack (I6) | `rothConversion.ts#ceilingFor` lines 117–124 ("the bracket bound as the tax engine will apply it in `input.year`") | not published |
+| 24 | **`rothConversion`** (exact rule) | **10,762.50** (exact 21,525/2) | 12,710 − (18,450 − 16,502.50) | `YearResult.rothConversion` doc, result.ts 245–248 ("A fill-to-target strategy sizes ONE household amount by bisection (to $0.01, the lower bound) as the largest that keeps its metric at or under the ceiling: topOfBracket holds federal taxable income at the bracket's upper bound"); `aggregateRothConversionOwnerAllocation.ts` 374–381 (one owner's slice is the raw sized amount, not quantized to cents, although the doc's "exact cents" reads as if it were); record `roth-conversion-annual` | **one-sided: (10,762.49, 10,762.50]** |
+| 25 | Bisection landing (traced) | **10,762.494868040083** = 5,916,744,125,644,799/2³⁹. That is **0.005131959917 below** 10,762.50, and it displays as **10,762.49** | The loop starts with `hi` = max(12,709.999999999998 − 1,947.5, 1,000) = 10,762.499999999998. For `metricAt(hi)`, the sum 18,450 + 10,762.499999999998 is a round-half-to-even tie and rounds to 29,212.5, so the metric is 29,212.5 − 16,502.5 = 12,710.0, which is **above** the ceiling. The doubling loop never runs. 21 halvings of [0, hi] follow, and every midpoint tests at or under the ceiling, so `lo` ends at hi × (1 − 2⁻²¹). **It does not land on 10,762.50.** | `rothConversion.ts#sizeRothConversion` lines 173–186 (body); Appendix B1 | |
+| 26 | Gross conversion | equals the taxable amount | No nondeductible basis, so the taxable fraction is 1. One owner, so the raw sized amount is used with no cent split | `grossAmountForTaxable` (TargetPlan lines 161–184, body); `aggregateRothConversionOwnerAllocation.ts` lines 374–388 ("A household with one convertible owner has nothing to split, and its slice is the sized amount itself") | |
+| 27 | Safety-net trim | none | the floor is 0 | TargetPlan lines 299–303 (body) | |
+| 28 | Does the ACA enter sizing? | **No** | `topOfBracket` reads only taxable income. In 2027 there is no credit to price anyway | `rothConversion.ts#metricFor` | |
+| 29 | Execution | IRA −10,762.50; Roth +10,762.50 | a pre-growth flow; not a withdrawal, and never penalized | 2026 rows 25 and 79 | |
+
+### 2d. Federal tax and Florida (indexed stand-in figures)
+
+| # | Figure | Value | Derivation | Contract source | Tolerance |
+|---|---|---|---|---|---|
+| 30 | Ordinary income (tax input) | **29,212.50** (exact 58,425/2); traced 29,212.494868040085 | 18,450 + 10,762.50 | `annualFundingApplicationAndClosePhase.ts` line 682 (body). The tax input carries `inflationScale: limitGrowth` = 1.025 (line 965, body) | one-sided 0.01 below |
+| 31 | AGI (= `agiBeforeFloor`) | **29,212.50** | ordinary income + 0 gains + 0 taxable Social Security | `federalTax.ts` header, step 2 | one-sided 0.01 below |
+| 32 | Standard deduction | **16,502.50**; published as `advisoryFederalTax.detail.deduction` | 16,100 × 1.025 (I7) | `indexFederalTaxPack` doc; `computeFederalTax` line 512 | 0.005 |
+| 33 | Senior deduction | 0 | nobody 65+ | `seniorDeductionAmount` | exact |
+| 34 | **Taxable income** | **12,710.00**; published as `advisoryFederalTax.detail.taxableIncome`; traced 12,709.994868040085 (displays 12,709.99) | 29,212.50 − 16,502.50. It sits exactly on the indexed 12% lower bound | `federalTax.ts` header, step 3 | one-sided 0.01 below |
+| 35 | 10% band / 12% band | 1,271.00 / 0 | 12,710 × 10%. Nothing lies above the bound (the landing is below it) | worksheet `federal-ordinary-bracket-tax`; `bracketTax` (body) | |
+| 36 | Federal regular income tax | **1,271.00**; traced 1,270.9994868040085 | | same | 0.005 |
+| 37 | LTCG tax / NIIT | 0 / 0 | no preferential or investment income | worksheet `federal-ltcg-stacking` | exact |
+| 38 | **`amt`** | **0** | AMTI = TI 12,710 + the disallowed standard deduction 16,502.50 = 29,212.50, which is under the 92,352.50 exemption (I9) | worksheet `federal-amt-screen` | exact |
+| 39 | Florida state and local tax | **0** | FL `hasIncomeTax: false` (I14) | `tax/stateTax.ts` header | exact |
+| 40 | **`tax`** | **1,271.00**; traced 1,270.9994868040085 | federal 1,271 + state 0 | worksheet `tax-total-annual`; `YearResult.tax` doc | 0.005 |
+| 41 | **`ltcgZeroHeadroom`** | closed form **37,976.25** (exact 151,905/4); traced **37,976.25260874628** = 5,219,416,415,334,399/2³⁷, **0.002609 above** the closed form | The closed form is the indexed breakpoint 50,686.25 (I8) − TI 12,710. The engine's TI is 12,709.994868 (row 34), so its own root is 37,976.255132. The bisection over [0, 50,686.24999999999] runs 23 halvings (final width 0.006042) and returns the lower bound, 0.002523 under that root | `YearResult.ltcgZeroHeadroom` doc; record `year-result-ltcg-zero-headroom` (`rules/calculations/cashFlowAndSummary.ts` line 1779: "bisection to $0.01, so the published figure sits at or just under the exact root"); `federalTax.ts#zeroRateLtcgHeadroom` lines 285–321 (body); the advisory input at FundingClose lines 1337–1355, with `inflationScale: limitGrowth` (body) | **two-sided 0.01**, not `below` (section 3) |
+
+### 2e. MAGI: which one is which
+
+| # | Figure | Value | Rule | Contract source | Tolerance |
+|---|---|---|---|---|---|
+| 42 | **`magi`** (published) | **29,212.50**; traced 29,212.494868040085 (displays 29,212.49) | max(0, ordinary realized 29,212.50 + 0 + 0 + 0 + 0) | `YearResult.magi` doc; worksheet `medicare-magi-composition` | one-sided 0.01 below |
+| 43 | ACA household MAGI, as computed | 29,212.50 (the probe) | The candidate evaluation still builds the MAGI probe, because the year is ACA-active and has a contract: signed AGI 29,212.50 + 0 + 0 + 0 + 0 | `annualFundingCandidateEvaluation.ts` lines 366–400 (body); worksheet `aca-household-magi-composition` | not published as `householdMagi` (row 52) |
+| 44 | `aca.magiComponents.federalAgi` | **29,212.50**; traced 29,212.494868040085 | Published from the probe even in a non-actionable year. The other four components are 0 | `annualAcaResultPublication.ts` lines 212–221 (body); `YearAcaResult.magiComponents` (no doc comment) | one-sided 0.01 below |
+| 45 | **`irmaaLookbackMagi` / source / year** | **50,000 / `planFallback` / 2025** | 2027 − 2 = 2025 is before the ledger and `historicalAnnualMagiByYear` is absent, so the seed `recentAnnualMagi` answers. Casey has no Medicare months, so it prices nothing. It is not an ACA input | `YearResult.irmaaLookbackMagi`, `…Source` and `…Year` docs; `simulate.ts#resolveMagiFor` lines 867–878; worksheet and record `irmaa-lookback-selection` | exact |
+| 46 | Federal-detail `magi` (senior-deduction MAGI) | 29,212.50 | AGI + 0; unused, because nobody is 65 | `FederalTaxDetail.magi` doc | not asserted |
+
+### 2f. The ACA year: contract present, credit not priced
+
+| # | Figure | Value | Derivation | Contract source | Tolerance |
+|---|---|---|---|---|---|
+| 47 | The 2027 contract | one contract: `year` 2027, `fplRegion` contiguous, tax family [p1, primary, required, `magi` 0], covered member p1 with enrollment **12 × 1,055** and SLCSP **12 × 1,055**, both addbacks `notApplicable`, every assertion supported or ruled out | I12. Casey is 63, so all 12 months are covered | `parseExamplePlan` lines 103–150 (body) | |
+| 48 | **The gate** | the initial support codes are **['tax-year-parameters-unsupported']** and nothing else | The year is ACA-active (credit on, gross 12,660 > 0) and `isStandIn`, which pushes the code. Every other gate passes, as in 2026: no spending policy; one contract; one primary and 0 spouses (single); no omitted living person; unique ids; 12 marketplace months with no enrolled month at or past month 12, so no Medicare overlap; the primary is modeled, alive and `required`; no dependents; tax-exempt and foreign items `notApplicable`; SLCSP > 0 in every enrolled month; no benchmark-only month; no example mismatch (`exampleSourceId` is absent, and 1,055.0 = 1,055.0 in any case); all six assertions pass | `annualHealthcareExpenses.ts` line 269 and **lines 284–287** (body); domain rules §8 | |
+| 49 | **Pricing refused** | no quote | The candidate evaluation drops the two informational tax-exempt codes, then prices only when no code is left (`blockingAcaCodes.length === 0 && acaMagiProbe.magi !== null && !request.forceGrossAca`). The list holds `tax-year-parameters-unsupported`, so `acaEconomicPremiumByMonth` is never called, `acaQuote` stays null, and candidate healthcare stays at healthcare excluding enrollment (0) + gross (12,660) | `annualFundingCandidateEvaluation.ts` lines 363–364 and **401–409** (body) | |
+| 50 | **`aca.readiness`** | **`nonActionable`** | actionable needs no blocking code **and** a non-null quote | `annualAcaResultPublication.ts` lines 114–121 and 205 (body); domain rules §8 | exact |
+| 51 | **`aca.supportCodes`** | **['tax-year-parameters-unsupported']** | the evaluation's codes. `fixed-point-nonconvergent` is not added, because the funding root converged (row 77). `conflicting-cliff-fixed-points` is not added, because no basin probe ran (row 78) | publication lines 101–108 and 206–208 (body) | exact |
+| 52 | **`aca.householdMagi`** | **null** | published only when the year is actionable | `YearAcaResult.householdMagi` doc ("null when material facts are unsupported"); publication lines 209–211 (body) | null |
+| 53 | `aca.magiComponents` | {federalAgi **29,212.50**, nontaxableSocialSecurity 0, taxExemptInterest 0, foreignExclusionAddback 0, requiredFilerDependentMagi 0} | row 44 | publication lines 212–221 (body) | as row 44 |
+| 54 | `aca.fplRegion` / `taxFamilySize` / `taxFamilyMembers` | `contiguous` / **1** / [{p1, primary, required, magi 0, includedMagi 0}] | from the contract | publication lines 135–142 and 222–226 (body) | exact |
+| 55 | **`aca.federalPovertyLine`** | **null** | The contract is present, but the year is a stand-in, so no inflation-scaled line is exposed | domain rules §8 ("exposes no inflation-scaled FPL as actionable evidence"); publication lines 181–191 (body: `!input.isStandIn`) | null |
+| 56 | **`aca.fplPct`** | **null** | taken from the priced quote, and there is none | publication line 192 (body) | null |
+| 57 | **`aca.cliffState`** | **`unsupported`** | the year is not actionable. It is **not** `above-cliff`: no cliff test is run | publication lines 193–202 (body) | exact |
+| 58 | `aca.coveredMembers` | [{p1, `coveredMonths` [1…12], `grossEnrollmentPremium` 12,660, `applicableSlcspPremium` 12,660}] | contract present, no mismatch | publication lines 143–158 (body) | 0.005 on the dollars |
+| 59 | **`aca.grossEnrollmentPremium`** | **12,660.00** | 12 × 1,055 (I12) | `YearAcaResult.grossEnrollmentPremium` doc; worksheet `aca-enrollment-and-applicable-slcsp-premium-annual` | 0.005 |
+| 60 | **`aca.applicableSlcspPremium`** | **12,660.00** | 12 × 1,055. Each month counts because its enrollment is > 0. The contract is present, so the field is not null | `YearAcaResult.applicableSlcspPremium` doc ("null without an ACA contract or when the example contract's inputs mismatch") | 0.005 |
+| 61 | **`aca.modeledAllowablePtc`** (the credit) | **null** | no quote | publication line 236 (body); `YearAcaResult.modeledAllowablePtc` doc | null |
+| 62 | **`aca.economicNetPremium`** | **12,660.00**, equal to the gross premium | published as `healthcare − healthcareExcludingAcaEnrollment` = 12,660 − 0 | publication lines 237–238 (body). No doc comment; the 2026 review's C13 says "On a gross fallback the field shows the gross premium" | 0.005 |
+| 63 | `aca.aptcModeled` / `form8962ReconciliationSupported` | false / false | constants | `YearAcaResult` | exact |
+| 64 | **`aca.convergence`** | **`grossPremiumFallback: true`**; `converged: false`; `maxIterations` 160; `residualDollars` 0; `iterations` 2 by my trace (**do not pin**) | `grossPremiumFallback` = `!actionable`. `converged` = `actionable && converged && !fixedPointFailed`, so it is false **although the funding solve converged** (row 77). Residual = \|36,481 − (36,481 + 0)\| = 0 | publication lines 242–253 (body); `ANNUAL_FUNDING_FIXED_POINT_MAX_EVALUATIONS` 160; section 5, B3 | fallback exact; residual ≤ 0.005 |
+| 65 | Run-level warning | "Some Marketplace years use gross enrollment premium because required ACA reconciliation facts are missing or unsupported." | pushed for every non-actionable ACA year. It lives on `ProjectionResult.warnings`, not on the year row | publication lines 255–259 (body) | |
+| 66 | Does the ACA feed the 2027 fixed point? | **No** | Healthcare is fixed at gross, and neither MAGI nor the cash draw can move it | row 49 | |
+
+### 2g. Healthcare and total spending
+
+| # | Figure | Value | Derivation | Contract source | Tolerance |
+|---|---|---|---|---|---|
+| 67 | `medicarePremiums` / `irmaaSurcharge` / `irmaaTier` / `irmaaNextTierThreshold` | 0 / 0 / 0 / **null** | no Medicare months | `YearResult` docs | exact |
+| 68 | Healthcare before the solve | 12,660 | the gross enrollment premium | `YearExpenses.healthcare` doc | not published |
+| 69 | **`expenses.healthcare`** | **12,660.00** | The solve leaves it at gross. `healthcareDelta` = 12,660 − 12,660 = 0, so nothing moves | worksheet `spending-healthcare-annual`; `YearExpenses.healthcare` doc ("… else + the gross premium"); FundingClose lines 1094–1106 (body) | 0.005 |
+| 70 | **`expenses.baseSpending`** | **41,000.00** | 40,000 × 1.025 (I4) | worksheet `spending-base-annual` | 0.005 |
+| 71 | Goals, debt, property, insurance, care, LTC | 0 each | | `YearExpenses` docs | exact |
+| 72 | **`expenses.total`** | **53,660.00** | 41,000 + 12,660 | worksheet `spending-total-annual`; `YearExpenses.total` doc | 0.005 |
+| 73 | required / target / intended; `guardrailFactor` | 53,660 each; 1 | healthcare counts as required; no spending policy | `YearExpenses` docs | 0.005 |
+
+### 2h. The fixed point and the cash flow
+
+| # | Figure | Value | Derivation | Contract source | Tolerance |
+|---|---|---|---|---|---|
+| 74 | Cash inflows before withdrawals | **18,450** | consulting only. The conversion brings in no cash | FundingClose lines 709–718 (body) | not published |
+| 75 | First guess | 35,210 | 53,660 − 18,450 | `annualFundingFixedPoint.ts` lines 206–211 (body) | not published |
+| 76 | Eval 1 | required need **36,481** | 53,660 + (12,660 − 12,660) + tax 1,271 + 0 − 18,450. It differs from 35,210 by 1,271 | candidate evaluation lines 468–475 (body) | |
+| 77 | Eval 2 (need 36,481) | the same tax, healthcare and MAGI, so **converged** | a cash draw adds no income | fixed point lines 115–126 (body) | |
+| 78 | Gross restart / opposite-basin probe | **neither runs** | There is no restart, because the solve converged. The basin probe needs `acaInitialSupportCodeCount === 0` and a quote; here the count is 1 and the quote is null. So `evaluationCount` = 2 | fixed point lines 267–289 (body) | |
+| 79 | **`netPortfolioNeed`** | **36,481.00**; traced 36,480.99948680401 | max(0, 53,660 + 1,271 + 0 − 18,450) | `YearResult.netPortfolioNeed` doc; worksheet `portfolio-need-annual` | 0.005 |
+| 80 | How the conversion's tax is paid | from cash, inside the need | Without the conversion, TI would be 1,947.50 and the tax 194.75. The conversion adds **1,076.25**, exactly 10% of 10,762.50. In 2027 there is no credit to forfeit, so the conversion costs only its tax (in 2026 it cost 21.97% of the amount converted) | `simulate.ts` header; domain rules §10 | not published |
+| 81 | Funding account | cash: 36,481 of 178,627.27 | sequential order, cash first | `withdrawalStrategySchema`; `annualWithdrawalPlanning.ts` lines 67–74 | |
+| 82 | Cash identity | 54,931 = 54,931 | inflows 18,450 + 36,481; outflows 53,660 + 1,271 | identity | |
+| 83 | `surplusInvested` / `shortfall` / `requiredShortfall` / `targetShortfall` | 0 / 0 / 0 / 0 | fully funded | worksheets `surplus-invested-annual`, `spending-shortfall-annual` | exact |
+| 84 | Need versus 2026 | **+11,605.77** (exact 18,163,036/1,565) | 36,481 − 24,875.226198. Base spending +1,000; premium growth +660 (12,000 to 12,660); **the 2026 credit not repeated, +10,364.77**; tax +31; consulting −450 | | counterfactual |
+
+### 2i. Withdrawals (published)
+
+| # | Figure | Value | Derivation | Contract source | Tolerance |
+|---|---|---|---|---|---|
+| 85 | **`withdrawals.cash`** | **36,481.00**; traced 36,480.99948680401 | row 79 | worksheet `withdrawals-by-category-annual` | 0.005 |
+| 86 | `withdrawals.taxable` / `.traditional` / `.roth` / `.hsa` | 0 / **0** / **0** / 0 | the conversion is not a withdrawal | `YearWithdrawals.total` doc | exact |
+| 87 | **`withdrawals.total`** | **36,481.00** | cash only | worksheet `withdrawals-total-annual` | 0.005 |
+| 88 | `rothConversion` | 10,762.50 | a separate field (row 24) | | as row 24 |
+
+### 2j. What the missing credit costs (counterfactuals; no published field)
+
+| # | Figure | Value | Derivation |
+|---|---|---|---|
+| 89 | 2027 priced with the 2026 schedule and the poverty line scaled by the engine's own would-be factor | FPL 16,041.25 (64,165/4). fplPct 57,000/313 = **182.11%**, identical to 2026, because MAGI and the line both scale by 1.025. Rate 44,897/7,825 = 5.7376%. Contribution 104,924,289/62,600 = **1,676.11**. Monthly credit 1,055 − 139.68 = 915.32. Credit 687,591,711/62,600 = **10,983.89**. Net premium 1,676.11; need 25,497.11; cash year-end 156,192.77 | the formulas of 2026 rows 50–56, with 1,055 a month and `pricingInflationScale` 1.025 |
+| 90 | Cost of the missing credit in 2027 | **10,983.89** of extra need and cash draw | 36,481 − 25,497.106853 |
+| 91 | The conversion's cost in 2027 | **1,076.25**, all of it tax | row 80 |
+
+### 2k. Year-end balances
+
+Growth is applied at year end to post-flow balances, as in 2026 section 2k.
+
+| # | Figure | Value | Derivation | Contract source | Tolerance |
+|---|---|---|---|---|---|
+| 92 | Cash, pre-growth / growth | 142,146.27 (exact 11,122,945,571/78,250 = 142,146.269277955271…) / 2,842.93 (2,842.925385559105…) | 178,627.269278 − 36,481; × 2%. The growth is untaxed and outside MAGI (2026 A8) | worksheet `accounts-balance-per-account-annual` | not published |
+| 93 | **`balances['early-retiree-aca--cash']`** | **144,989.19** (exact 567,270,224,121/3,912,500 = 144,989.194663514376…); traced 144,989.19518697428, which displays as **144,989.20** | × 1.02 | `YearResult.balances` doc | 0.005 |
+| 94 | IRA, pre-growth / growth | 450,712.50 / 22,535.625 | 461,475 − 10,762.50; × 5% | same | not published |
+| 95 | **`balances['early-retiree-aca--ira']`** | **473,248.125** (exact 3,785,985/8; displays 473,248.13); traced 473,248.1303885579 (+0.005389) | 450,712.50 × 1.05 | same | **two-sided 0.0105** (section 3) |
+| 96 | Roth, pre-growth / growth | 147,787.50 / 7,389.375 | 137,025 + 10,762.50; × 5% | same | not published |
+| 97 | **`balances['early-retiree-aca--roth']`** | **155,176.875** (exact 1,241,415/8; displays 155,176.88); traced 155,176.8696114421 (−0.005389), which displays as **155,176.87** | 147,787.50 × 1.05 | same | **one-sided 0.0105 below** |
+| 98 | Unassigned cash | 0 | | `YearResult.investableTotal` doc | exact |
+| 99 | **`investableTotal`** | **773,414.19** (exact 3,025,983,036,621/3,912,500 = 773,414.194663514376…); traced 773,414.1951869742, which displays as **773,414.20** | 144,989.194664 + 473,248.125 + 155,176.875. The IRA and Roth offsets from the bisection cancel, and only cash's +0.000523 remains. The cent-rounded parts (144,989.19 + 473,248.13 + 155,176.88 = 773,414.20) do **not** sum to the rounded total | worksheet `accounts-investable-total-annual` | 0.005 |
+| 100 | `netWorth` | 773,414.19 | investable only | worksheet `accounts-net-worth-annual` | 0.005 |
+| 101 | Other published zeros | `qcd`, `sepp`, `inheritedDistribution`, `contributions`, `employerMatch`, `hecmDraw`, `ladderValue`, `insuranceCashValue`, `deathBenefit` and the capital-loss fields are 0; `guardrailAction` is `hold` | none in the plan | `YearResult` docs | exact |
+
+### 2l. Penalties
+
+| # | Figure | Value | Rule | Contract source | Tolerance |
+|---|---|---|---|---|---|
+| 102 | **`penalties`** | **0** | No need-based traditional withdrawal. Casey is 63 (the < 60 proxy cleared in 2024). The conversion is never penalized | `simulate.ts` header; worksheet `tax-penalties-annual` | exact |
+
+---
+
+## 3. The rows as data (for the 2027 table in `earlyRetireeAca.walkthrough.ts`)
+
+Keys follow the 2026 table where the figure is the same; new keys are marked (new). "Hand" is written as the
+derivation states it. The conversion's contract returns a lower bound, and that error bar carries into every row
+that is affine in the conversion, scaled by the row's slope:
+- MAGI, AGI, taxable income and `magiComponents.federalAgi` have slope 1, so they are one-sided below, 0.01.
+- The IRA has slope −1.05, so it is one-sided **above**, 0.0105.
+- The Roth has slope +1.05, so it is one-sided below, 0.0105.
+- Tax, need, withdrawals and cash have slopes of at most 0.102, so they stay inside 0.005.
+- Investable total: the IRA and Roth terms cancel, so it stays inside 0.005.
+- The headroom's root moves up with the conversion's shortfall (slope −1), and its own bisection moves it down, so
+  its band is two-sided 0.01.
+
+| key | select (sketch) | hand | exact | display | tolerance / bound | traced engine | margin used |
+|---|---|---|---|---|---|---|---|
+| age | person `ageAttained` | 63 (count) | 63 | 63 | exact | 63 | 0 |
+| filing-status | `filingStatus` | 'single' | | | exact | | |
+| consulting | `incomes.recurring` | `18_000 * 1.025` | 18,450 | 18,450.00 | 0.005 | 18,450.0 | 0 |
+| income-total | `incomes.total` | `18_000 * 1.025` | 18,450 | 18,450.00 | 0.005 | 18,450.0 | 0 |
+| rmd | `rmd` | 0 | | | 0.005 | 0 | 0 |
+| roth-conversion | `rothConversion` | `12_400 * 1.025 - (18_000 * 1.025 - 16_100 * 1.025)` | 21,525/2 | 10,762.50 | 0.01, `bound: 'below'` | 10,762.494868040083 | −0.005132 |
+| standard-deduction (new) | `advisoryFederalTax?.detail.deduction` | `16_100 * 1.025` | 33,005/2 | 16,502.50 | 0.005 | 16,502.5 | 0 |
+| taxable-income (new) | `advisoryFederalTax?.detail.taxableIncome` | `12_400 * 1.025` | 12,710 | 12,710.00 | 0.01, `bound: 'below'` | 12,709.994868040085 | −0.005132 |
+| stand-in-pack (new) | `String(advisoryFederalTax?.detail.usesStandInPack)` | 'true' | | | exact | 'true' | |
+| magi | `magi` | `CONSULTING + ROTH_CONVERSION` | 58,425/2 | 29,212.50 | **0.01, `bound: 'below'`** | 29,212.494868040085 | −0.005132 |
+| tax | `tax` | `TAXABLE_INCOME * 0.1` | 1,271 | 1,271.00 | 0.005 | 1,270.9994868040085 | −0.000513 |
+| amt | `amt` | 0 | | | 0.005 | 0 | 0 |
+| ltcg-zero-headroom | `ltcgZeroHeadroom` | `49_450 * 1.025 - TAXABLE_INCOME` | 151,905/4 | 37,976.25 | **0.01, two-sided (no `bound`)** | 37,976.25260874628 | **+0.002609** |
+| penalties | `penalties` | 0 | | | 0.005 | 0 | 0 |
+| realized-gains | `realizedGains` | 0 | | | 0.005 | 0 | 0 |
+| aca-readiness | `aca?.readiness` | 'nonActionable' | | | exact | | |
+| aca-support-codes (new) | `aca?.supportCodes.join(',')` | 'tax-year-parameters-unsupported' | | | exact | | |
+| aca-household-magi | see B2 | null | | | null | null | |
+| aca-magi-federal-agi (new) | `aca?.magiComponents.federalAgi` | `CONSULTING + ROTH_CONVERSION` | 58,425/2 | 29,212.50 | 0.01, `bound: 'below'` | 29,212.494868040085 | −0.005132 |
+| aca-poverty-line | see B2 | null | | | null | null | |
+| aca-fpl-pct | see B2 | null | | | null | null | |
+| aca-cliff-state | `aca?.cliffState` | 'unsupported' | | | exact | | |
+| aca-gross-premium | `aca?.grossEnrollmentPremium` | `12 * 1_000 * 1.055` | 12,660 | 12,660.00 | 0.005 | 12,660.0 | 0 |
+| aca-benchmark-premium | `aca?.applicableSlcspPremium` | `12 * 1_000 * 1.055` | 12,660 | 12,660.00 | 0.005 | 12,660.0 | 0 |
+| aca-credit | see B2 | null | | | null | null | |
+| aca-net-premium | `aca?.economicNetPremium` | `GROSS_PREMIUM` | 12,660 | 12,660.00 | 0.005 | 12,660.0 | 0 |
+| aca-gross-fallback (new) | `String(aca?.convergence.grossPremiumFallback)` | 'true' | | | exact | 'true' | |
+| irmaa-lookback-magi | `irmaaLookbackMagi` | 50_000 | | 50,000.00 | 0.005 | 50,000 | 0 |
+| irmaa-lookback-source | `irmaaLookbackMagiSource` | 'planFallback' | | | exact | | |
+| irmaa-lookback-year (new) | `irmaaLookbackMagiYear` | 2025 (unit 'year') | | | exact | 2025 | |
+| medicare-premiums | `medicarePremiums` | 0 | | | 0.005 | 0 | 0 |
+| base-spending | `expenses.baseSpending` | `40_000 * 1.025` | 41,000 | 41,000.00 | 0.005 | 41,000.0 | 0 |
+| healthcare | `expenses.healthcare` | `GROSS_PREMIUM` | 12,660 | 12,660.00 | 0.005 | 12,660.0 | 0 |
+| spending-total | `expenses.total` | `BASE_SPENDING + HEALTHCARE` | 53,660 | 53,660.00 | 0.005 | 53,660.0 | 0 |
+| portfolio-need | `netPortfolioNeed` | `TOTAL_SPENDING + TAX - CONSULTING` | 36,481 | 36,481.00 | 0.005 | 36,480.99948680401 | −0.000513 |
+| withdrawal-cash | `withdrawals.cash` | `NET_PORTFOLIO_NEED` | 36,481 | 36,481.00 | 0.005 | 36,480.99948680401 | −0.000513 |
+| withdrawal-traditional | `withdrawals.traditional` | 0 | | | 0.005 | 0 | 0 |
+| withdrawal-roth | `withdrawals.roth` | 0 | | | 0.005 | 0 | 0 |
+| withdrawal-total | `withdrawals.total` | `NET_PORTFOLIO_NEED` | 36,481 | 36,481.00 | 0.005 | 36,480.99948680401 | −0.000513 |
+| surplus | `surplusInvested` | 0 | | | 0.005 | 0 | 0 |
+| shortfall | `shortfall` | 0 | | | 0.005 | 0 | 0 |
+| balance-cash | `balances[cash]` | `(CASH_END_2026 - CASH_DRAW) * 1.02` | 567,270,224,121/3,912,500 | 144,989.19 | 0.005 | 144,989.19518697428 | +0.000523 |
+| balance-ira | `balances[ira]` | `(IRA_END_2026 - ROTH_CONVERSION) * 1.05` | 3,785,985/8 | 473,248.13 | **0.0105 two-sided** (or a new `bound: 'above'`) | 473,248.1303885579 | +0.005389 |
+| balance-roth | `balances[roth]` | `(ROTH_END_2026 + ROTH_CONVERSION) * 1.05` | 1,241,415/8 | 155,176.88 | **0.0105, `bound: 'below'`** | 155,176.8696114421 | −0.005389 |
+| investable | `investableTotal` | `CASH_END + IRA_END + ROTH_END` | 3,025,983,036,621/3,912,500 | 773,414.19 | 0.005 | 773,414.1951869742 | +0.000523 |
+| net-worth | `netWorth` | `INVESTABLE` | same | 773,414.19 | 0.005 | same | +0.000523 |
+
+Optional rows, if the page wants them: `inflationScale` 1.025 (the format has no factor unit), `aca.taxFamilySize` 1
+(count), `aca.fplRegion` 'contiguous', `aca.coveredMembers[0].coveredMonths.length` 12 (count), and
+`aca.convergence.residualDollars` 0 (≤ 0.005). Do **not** pin `aca.convergence.iterations` (2 by my trace, with no
+contract), and do not assert `aca.convergence.converged` without the explanation in B3.
+
+A test that computes hand values from JS expressions (`16_100 * 1.025` and so on) gets binary64 results. These differ
+from the exact rationals by about 1e-12, and every tolerance above absorbs that. For `CASH_END_2026`, use the 2026
+table's own constant, which has the same binary64 value my replay produced.
+
+---
+
+## 4. Wrong readings a test should reject (all exact, from the same inputs)
+
+| Wrong reading | What it produces | Correct |
+|---|---|---|
+| **Price a credit from the 2026 percentages on the 2026 pack as published** (the 2026 applicable-percentage table, the 2026 poverty line 15,650, and the stand-in treated as actionable) | readiness `actionable`; FPL 15,650; fplPct 58,425/313 = 186.66%; rate 372,913/62,600 = 5.9571%; contribution **1,740.21**; credit **10,919.79**; healthcare 1,740.21; need 25,561.21; cash year-end 156,127.38 | `nonActionable`; FPL null; credit null; healthcare 12,660; need 36,481; cash 144,989.19 |
+| **Index the poverty line by 1.025 and price anyway** (the engine's would-be `pricingInflationScale`) | FPL **16,041.25** published; fplPct 182.11% (identical to 2026); contribution 1,676.11; credit **10,983.89**; net premium 1,676.11; need 25,497.11; cash 156,192.77 | as above: the stand-in year exposes no scaled poverty line and prices nothing |
+| Carry 2026's credit forward (10,364.77 against the 12,660 premium) | healthcare 2,295.23; need 26,116.23; cash 155,561.26 | healthcare 12,660 |
+| Read the lost credit as the cliff | `cliffState` `above-cliff`; the 400% warning | `cliffState` `unsupported`. MAGI 29,212.50 is 182% of any line scaled like the brackets, and a cliff scaled the same way (64,165) would sit 34,952.50 away |
+| Expect `householdMagi` because `magiComponents` is published | `householdMagi` 29,212.50 | null; only the components are published (B4) |
+| Read `convergence.converged: false` as a failed funding solve | expect `fixed-point-nonconvergent`, or the "could not reconcile within half a cent" warning | the solve converged in 2 evaluations; the only code is `tax-year-parameters-unsupported` (B3) |
+| **Forget the stand-in indexing of the bracket and the deduction** (2026 figures frozen) | conversion **10,050**; MAGI 28,500; taxable income 12,400; tax 1,240; deduction 16,100; need 36,450; IRA 473,996.25; Roth 154,428.75; cash 145,020.81; headroom 37,050 (breakpoint also frozen) or 38,286.25 (breakpoint indexed) | conversion 10,762.50; MAGI 29,212.50; tax 1,271; deduction 16,502.50; headroom 37,976.25 |
+| Index the bracket but not the deduction | conversion 10,360; MAGI 28,810; tax 1,271 | 10,762.50 |
+| Index the deduction but not the bracket | conversion 10,452.50; MAGI 28,902.50; TI 12,400; tax 1,240 | 10,762.50 |
+| **Index the premium at general inflation** (1.025) | gross **12,300**; healthcare 12,300; total spending 53,300; need 36,121; cash 145,356.39 | gross 12,660 at 1 + 0.025 + 0.03 |
+| Compound the health rate multiplicatively (1.025 × 1.03 = 1.05575) | gross **12,669.00**; need 36,490; cash 144,980.01 | additive 1.055: 12,660 |
+| Hold the premium at the 2026 level | gross 12,000; need 35,821; cash 145,662.39 | 12,660 |
+| **Grow before withdrawing** (beginning-of-year growth) | cash **145,718.81**; IRA **473,786.25**; Roth **154,638.75** | 144,989.19; 473,248.125; 155,176.875 |
+| Leave consulting at 18,000 (no inflation adjustment) | conversion **11,212.50**; need 36,931; income 18,000; cash 144,530.19. MAGI (29,212.50) and tax (1,271) do **not** move: filling the bracket pins AGI at ceiling + deduction whatever the other ordinary income is. Only the conversion, income and need rows catch this | 10,762.50; 36,481 |
+| Read the IRMAA lookback as the prior year | 28,500, `projected`, 2026 | 50,000, `planFallback`, 2025 |
+| Treat 10,762.50 as the engine's exact landing, and hold MAGI, IRA and Roth to half a cent, or the headroom to `bound: 'below'` | four false failures: MAGI −0.005132, `magiComponents.federalAgi` −0.005132, IRA +0.005389, Roth −0.005389; and the headroom lands +0.002609 above its hand value | the propagated tolerances of section 3 |
+
+---
+
+## 5. Contracts I could not find or found ambiguous
+
+Each item says what the contracts support, what the alternatives are, and which reading this document uses.
+
+**B1. The conversion's error bar propagates, and no contract says so.** `YearResult.rothConversion` promises "by
+bisection (to $0.01, the lower bound)", and the `roth-conversion-annual` record says "the bisection stops at a bracket
+width of $0.01". In 2026 the landing was exact. In 2027 it is 0.005131959917 below the closed form, for a reason no
+document anticipates. The indexed ceiling 12,400 × 1.025 is 12,710 − 2⁻³⁹ in binary64, while the metric at the exact
+root rounds (a tie, to even) to 12,710.0. So the root fails its own test, and the search converges from below onto a
+bound it never reaches (Appendix B1). No worksheet, record or doc comment says that figures computed from the
+conversion inherit the bar. Those figures are MAGI, AGI, taxable income, the ACA MAGI components, the IRA and Roth
+balances, and, through taxable income, the headroom. Candidate readings:
+- (a) closed-form hand values with propagated tolerances (**used**, section 3);
+- (b) pin the traced landings (10,762.494868040083 and 37,976.25260874628). These are reproducible, because the loops
+  are plain IEEE-754, but brittle against harmless changes;
+- (c) the 2026 recipe unchanged, which fails four rows and the headroom bound.
+
+This bears out the 2026 review's remark: "In stand-in years the pack scale is 1.025^n in binary floating point, so the
+closed forms (for example 10,762.50) are not guaranteed to be reproduced bit-exactly, and the $0.01 bracket applies".
+The 2026 document's section-4 estimate, "10,762.50 (to $0.01)", is right only in that sense. The loose whole-run
+cross-check in 2026 section 4 also fits: the published lifetime Roth total is 59,661.87 against 59,661.8916 of closed
+forms, a gap of 0.0166 to 0.0266 once the cent rounding is allowed for, and this year supplies 0.0051 of it.
+
+**B2. The walkthrough format cannot state a null, a boolean or a list.** *Resolved in the change that added this
+part: option (a) was implemented (`hand` may be null, held exactly; the evidence format moved to version 2); the text
+below records the state it was derived against.* `WalkthroughRow.hand` was `number | string`.
+`runWalkthrough` maps a null `select` result to `undefined` (`row.select(year, plan) ?? undefined`), and
+`walkthroughRowProblem` reports that as "not a number" for a numeric hand and as a mismatch for a string hand. Four
+published 2027 figures are null by contract (`householdMagi`, `federalPovertyLine`, `fplPct` and
+`modeledAllowablePtc`), and they are the point of this year. Options:
+- (a) let `hand` be `null`, and compare with `=== null` before the `?? undefined` (cleanest);
+- (b) produce a string sentinel inside `select`, for example `(year) => year.aca === undefined ? undefined :
+  year.aca.householdMagi === null ? 'null' : year.aca.householdMagi` with `hand: 'null'`. This still fails when `aca`
+  is absent, which is what the test wants.
+
+Booleans need `String(...)`, and the support-code list needs `join(',')`.
+
+**B3. `aca.convergence.converged` is false in a year whose funding solve converged.** *Resolved in the same change:
+`YearAcaResult.convergence` now carries a doc comment stating reading (a).* The publication sets
+`converged: actionable && input.converged && !input.fixedPointFailed`, and `YearAcaResult.convergence` has no doc
+comment. In 2027 the solve converged in 2 evaluations, no `fixed-point-nonconvergent` code is published, and the year
+carries no "could not reconcile" warning. Readings: (a) `converged` means "a priced fixed point is certified"
+(**consistent with the body**); (b) it means "the solve converged", which is what the name suggests. The page must not
+say the 2027 solve failed. Reading (a) is also the only one under which the `YearExpenses.healthcare` wording holds
+("publishes healthcare excluding enrollment + the economic net premium when it converges, else + the gross premium").
+The `spending-healthcare-annual` worksheet says "gross premium on failure", but a stand-in year is not a failure.
+
+**B4. `magiComponents` is published while `householdMagi` is null.** *Resolved in the same change: the field's doc
+comment states the reading used (and that the parts fall back to the year's federal figures when there is no probe).*
+The components come from the MAGI probe. The
+probe is built whenever the year is ACA-active with a contract (candidate evaluation line 366), before pricing is
+refused. No doc comment says whether the components are evidence in a non-actionable year. Reading used: they are the
+inputs the credit would have been priced on, not an ACA MAGI the engine vouches for. The page may show 29,212.50 as
+"the MAGI a 2027 credit would be based on", but should not call it the household MAGI.
+
+**B5. `federalPovertyLine` and `fplPct` have no doc comments.** *Resolved in the same change: both carry doc
+comments stating their gates.* Their nulls rest on domain rules §8 and on the body.
+The line is withheld on `isStandIn` alone (lines 181–191); `fplPct` is null because no quote exists (line 192). The
+statutory figure for 2027 coverage would come from the HHS 2026 poverty guidelines, which the pack does not carry.
+Scaling 15,650 by 1.025 (to 16,041.25) is exactly the "inflation-scaled FPL" that §8 refuses to expose.
+
+**B6. The headroom threshold in a stand-in year.** `YearResult.ltcgZeroHeadroom` and the
+`year-result-ltcg-zero-headroom` record name the threshold as `pack.capitalGains.rate15StartsAbove`, without saying
+that a stand-in year indexes it. The `indexFederalTaxPack` doc, domain rules §1 and the `federalTax.ts` header all list
+the 15% breakpoint as indexed, and `computeFederalTax` passes the indexed pack to `zeroRateLtcgHeadroom` (line 512,
+body). The record's own limits note that its evidence plan used "zero inflation … so the 2026 threshold is
+unindexed". Readings: (a) 49,450 × 1.025 = 50,686.25 (**used**; headroom 37,976.25); (b) 49,450 (headroom 36,740).
+
+**B7. The stand-in figures are not the IRS's 2027 figures.** 12,710, 16,502.50, 50,686.25 and 92,352.50 are the 2026
+figures times the plan's 2.5% assumption. They carry no statutory rounding step, and they are not indexed by the
+C-CPI-U. The `indexFederalTaxPack` doc says so: "What is NOT reproduced is the statutory rounding, and the index is
+the plan's assumed general inflation rather than the C-CPI-U". The IRS's published 2027 figures will be rounded
+amounts on a different index, so they will not match these. The page should call them projected figures.
+
+**B8. The worksheets never cover a stand-in year.** `roth-conversion-annual`, `federal-ordinary-bracket-tax`,
+`federal-amt-screen` and the ACA worksheets cite only the 2026 pack. The indexing rule lives in the
+`indexFederalTaxPack` doc, in domain rules §1 and §8, in the `roth-conversion-annual` record ("indexed to the
+projected year") and in the `ConversionSizingInput.inflationScale` doc. `DOCS/features/taxes.md` (lines 177–179) lists
+the non-actionable triggers without the stand-in pack: "Below 100%, missing/unknown material facts, unsupported
+filing/eligibility mechanics, and non-convergence". Domain rules §8 does include it.
+
+**B9. Additive health inflation is stated only in prose.** `simulate.ts` says "general inflation + the healthcare
+premium", and the `YearExpenses.healthcare` doc says "the health inflation factor from the start year"; neither
+writes 1 + g + h. `parseExamplePlan` uses (inflationPct + healthcareExtraInflationPct)/100. Both give 1.055, and
+exactly 1,055.0 in binary64. The multiplicative reading gives 12,669 (section 4).
+
+**B10. Carried from 2026, unchanged:**
+- the full calendar year (A1);
+- consulting as plain ordinary income, with no self-employment tax (A7);
+- cash growth is untaxed and outside MAGI; it is 2,842.93 in 2027 (A8);
+- Florida's zero exists only inside `tax` (A9);
+- `aca.convergence.iterations` has no contract (A10);
+- growth comes after the conversion and the draw (A11).
+
+The Medicare start (A6) first matters in 2028 and 2029, not in 2027.
+
+**B11. The recurring-income inflation base.** The `income-recurring-annual` worksheet says "the supplied cumulative
+general-inflation factor". The body supplies `inflFactorFrom(startYear, year)`, measured from the projection start
+and not from the stream's own `startYear`. The stream starts in 2026, the projection start, so both readings give
+18,450.
+
+---
+
+## 6. What the page should tell a reader
+
+**Why the credit is gone in 2027.** Say it plainly, in words close to these:
+
+> In 2027 the plan pays the full Marketplace premium, 12,660, with no premium tax credit. That is not the cliff.
+> Casey's 2027 income is about the same distance below the 400% line as in 2026: about 182% of the poverty line,
+> carried forward the same way. The example also still has a complete 2027 Marketplace contract. The credit is gone
+> because RetireGolden has published tax-year figures only for 2026. Pricing a 2027 credit needs the 2027
+> applicable-percentage table and the poverty guidelines for 2027 coverage, and neither is published yet. Rather than
+> guess by carrying 2026 figures forward, the engine marks 2027 "not actionable" (support code
+> `tax-year-parameters-unsupported`). It publishes no poverty line, percentage or credit, and it budgets the gross
+> premium. 2028 works the same way. When a 2027 parameter pack is published, 2027 will be priced the way 2026 is.
+
+Add the scale, labelled as illustration only. Priced on the 2026 schedule, with the poverty line carried forward at
+2.5%, the credit would be about 10,984 and the net premium about 1,676. So this cautious default adds about 10,984 to
+the 2027 cash draw (36,481 instead of about 25,497), and it lowers every later balance.
+
+Say also that the tax brackets and the standard deduction are projected at the plan's 2.5% inflation (12,710 and
+16,502.50). That is why the conversion grows to about 10,762.50. These are projections, not the IRS's 2027 figures.
+
+Two more consequences are worth one sentence each:
+- with no credit to lose, the 2027 conversion costs exactly its 10% tax (1,076.25);
+- the example's "look for a positive premium credit" holds only in 2026.
+
+**Why the engine column differs by a cent.** The page renders the engine's figures beside these, and the conversion
+lands half a cent under the bracket top (10,762.494868…, within the promised $0.01). So six engine figures display
+one cent away from the hand value:
+
+| Figure | Hand | Engine |
+|---|---|---|
+| Conversion | 10,762.50 | **10,762.49** |
+| MAGI and the ACA AGI component | 29,212.50 | **29,212.49** |
+| Taxable income | 12,710.00 | **12,709.99** |
+| Roth year-end | 155,176.88 | **155,176.87** |
+| Cash year-end | 144,989.19 | **144,989.20** |
+| Investable total and net worth | 773,414.19 | **773,414.20** |
+
+One sentence under the table should say that the conversion is found by a search that stops within a cent below the
+bracket top, and that these differences follow from it.
+
+---
+
+## Appendix A. Exact arithmetic (rationals)
+
+- s = 41/40. Consulting O = 18,450. Deduction D = 33,005/2. Ceiling C = 12,710. Breakpoint T = 202,745/4. AMT exemption 184,705/2.
+- Conversion = C − (O − D) = 12,710 − 3,895/2 = 21,525/2. MAGI = O + 21,525/2 = 58,425/2. TI = 58,425/2 − 33,005/2 = 12,710. Tax = 1,271.
+- Headroom = 202,745/4 − 12,710 = 151,905/4. AMTI = 12,710 + 33,005/2 = 58,425/2.
+- Gross premium = 12 × 1,055 = 12,660. Base = 41,000. Total = 53,660. Need = 53,660 + 1,271 − 18,450 = 36,481.
+- Cash: 13,977,583,821/78,250 − 36,481 = 11,122,945,571/78,250; × 51/50 = 567,270,224,121/3,912,500.
+- IRA: (461,475 − 21,525/2) × 21/20 = 901,425/2 × 21/20 = 3,785,985/8. Roth: (137,025 + 21,525/2) × 21/20 = 1,241,415/8.
+- Investable = 567,270,224,121/3,912,500 + 5,027,400/8 = 3,025,983,036,621/3,912,500.
+- Need change versus 2026: 36,481 − 38,929,729/1,565 = 18,163,036/1,565.
+- Priced counterfactual: F = 64,165/4; fplPct = (58,425/2) ÷ (64,165/4) × 100 = 57,000/313; rate = 44,897/7,825 %; contribution = 58,425/2 × 44,897/782,500 = 104,924,289/62,600; credit = 12,660 − 104,924,289/62,600 = 687,591,711/62,600; need = 41,000 + 104,924,289/62,600 + 1,271 − 18,450 = 1,596,118,889/62,600.
+- Pricing on the 2026 pack as published: fplPct = 58,425/313; rate = 372,913/62,600 %; contribution = 871,497,681/500,800; credit = 5,468,630,319/500,800.
+
+## Appendix B. Bisection replays (IEEE-754 doubles, written from the loop text)
+
+**B1. `sizeRothConversion`, topOfBracket, `rothConversion.ts` lines 173–186.**
+- s = 1.0249999999999999111821580299874767661094665527343750. O = 18,000 × s = 18,450.0 exactly. D = 16,100 × s = 16,502.5 exactly. C = 12,400 × s = 12,709.999999999998181… = 12,710 − 2⁻³⁹: the exact product, 12,710 − 1.10e-12, is 0.61 ulp below 12,710 and rounds down.
+- `metricAt(c)` = max(0, max(0, (O + c) + 0 + 0 + 0) − (max(D + 0, 0) + 0)). The base is 1,947.5, below C.
+- `hi` = max(C − 1,947.5, 1,000) = 10,762.499999999998 = 10,762.5 − 2⁻³⁹. For `metricAt(hi)`: O + hi = 29,212.5 − 2⁻³⁹ is exactly half an ulp (2⁻³⁸) below 29,212.5, a tie that rounds to even, 29,212.5. Minus D, that is 12,710.0 > C. The doubling loop does not run.
+- The halving loop runs while `hi − lo > 0.01`: 21 iterations (10,762.5/2²⁰ = 0.01026; /2²¹ = 0.00513). Every midpoint tests ≤ C, so each one sets `lo`. The final `lo` = hi × (1 − 2⁻²¹) = 5,916,744,125,644,799/2³⁹ = **10,762.494868040083**, and `hi − lo` = 0.005131959915.
+- Downstream (binary64): ordinary income = 29,212.494868040085; TI = 12,709.994868040085; tax = 1,270.9994868040085, all in the 10% band.
+
+**B2. `zeroRateLtcgHeadroom`, `federalTax.ts` lines 285–321**, fed from the advisory input (ordinary 29,212.494868040085, deduction 16,502.5, T = 50,686.24999999999).
+- `taxableIncomeAt(0)` = 12,709.994868040085 < T. `lo` = 0, `hi` = T.
+- 23 iterations (T/2²³ = 0.006042 ≤ 0.01). The final `lo` = 5,219,416,415,334,399/2³⁷ = **37,976.25260874628**. Its own root in binary64 terms is T − TI = 37,976.25513195991, 0.002523 above `lo`. The closed form 37,976.25 is 0.002609 below `lo`.
+
+**B3. The year-2026 float chain** (to confirm the openings): credit 10,364.773801916934; need 24,875.226198083066; cash
+178,627.26927795526; IRA 461,475.0; Roth 137,025.0. All match the approved exact values to within 1e-9.
+
+## Appendix C. Fixed-point trace for 2027 (`annualFundingFixedPoint.ts`)
+
+Inputs: `spendingUsesBeforeTax` 53,660; `baseCashInflows` 18,450; `currentHealthcare` 12,660; HECM capacity 0 (so the
+coordinated loop is skipped); `acaActive` true; `acaInitialSupportCodeCount` 1.
+1. Eval 1, need 35,210: tax 1,270.9994868. The MAGI probe is built (29,212.494868), but pricing is refused. Healthcare 12,660; `requiredNeed` 36,480.99948680401. |Δ| = 1,270.9995, more than 0.005.
+2. Eval 2, need 36,480.99948680401: identical, so converged.
+3. No gross restart (converged). No opposite-basin probe (support-code count 1, quote null).
+
+The accepted evaluation is Eval 2. `evaluationCount` = 2 and `residualDollars` = 0. By the publication rule (row 64),
+`aca.convergence.converged` is false and `grossPremiumFallback` is true.

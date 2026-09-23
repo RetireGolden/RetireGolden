@@ -1,13 +1,14 @@
 import { EXAMPLE_FIXED_YEAR } from '../buildContext'
 import { buildBracketFillRoth } from '../buildBracketFillRoth'
-import { accountIdOfType, type Walkthrough, type YearResult } from './walkthrough'
+import { accountIdOfType, type Walkthrough, type WalkthroughTable, type YearResult } from './walkthrough'
 
 /**
- * "Bracket-fill Roth conversions", year 2026 by hand.
+ * "Bracket-fill Roth conversions", years 2026 and 2029 by hand.
  *
  * Derived 2026-09-22 from the plan's inputs and the engine's documented
  * contracts without running the engine, and independently recomputed; the
- * full derivation with every citation is DOCS/walkthroughs/bracket-fill-roth.md.
+ * full derivation with every citation is DOCS/walkthroughs/bracket-fill-roth.md
+ * (2026 in part I; 2027 and 2028 as bridges, then 2029, in part II).
  * Morgan (born 1953-01-01, 73 in 2026) and Riley (born 1955-01-01, 71),
  * married filing jointly, Florida; the year's headline is that the household
  * conversion is split between the two owners by their IRA balances, and
@@ -104,6 +105,133 @@ const INVESTABLE = CASH_END + IRA_MORGAN_END + IRA_RILEY_END + ROTH_END // 1,212
 /** The household amount is sized by bisection to $0.01, returning the lower bound: at or below the root, never above. */
 const BISECTION_TOLERANCE = 0.01
 
+// ---- 2029 (DOCS/walkthroughs/bracket-fill-roth.md, part II; 2027 and 2028 bridged there) ----
+// Every indexed federal figure is the 2026 figure at 1.025 a year (the
+// brackets, the deduction and its age-65 additions, the AMT exemption, the
+// capital-gain breakpoint); the senior deduction ends after 2028; the QCD,
+// base spending and the COLA index at general inflation; Part B and the
+// extras at the health rate 1.055 a year; the IRMAA floors at general
+// inflation, unrounded. The year starts from the ledger's 2028 closes: the
+// 2027 and 2028 need-based draws are fixed points the ledger accepted within
+// half a cent of balancing, and the executed conversions of those years are
+// the cents of their bisection landings (109,869.91 and 93,519.25), so those
+// figures are written as the ledger holds them, with the closed forms beside
+// them in the derivation.
+const INFL_2029 = 1.025 * 1.025 * 1.025 // 1.076890625
+const HEALTH_2029 = 1.055 * 1.055 * 1.055 // 1.174241375
+const CONVERSION_2027 = 109_869.91 // the cents of the 2027 landing split (part II §2 B10–B11)
+const CONVERSION_2028 = 93_519.25 // the cents of the 2028 landing split (part II §3 C10–C11)
+const IRA_MORGAN_OPEN_2029 = 302_199.0464705796 // the 2028 close as the ledger holds it (part II §3 C18; closed form 302,199.0497)
+const IRA_RILEY_OPEN_2029 = (IRA_RILEY_END * 1.05 - (IRA_RILEY_END * 1.05) / 26.5) * 1.05 // 445,576.42: 441,000 at the end of 2027, then her first RMD (at 73) and growth in 2028
+const ROTH_OPEN_2029 = ((ROTH_END + CONVERSION_2027) * 1.05 + CONVERSION_2028) * 1.05 // 410,448.89
+const SS_MORGAN_2029 = SS_MORGAN * INFL_2029 // 34,891.26
+const SS_RILEY_2029 = SS_RILEY * INFL_2029 // 25,121.70
+const SOCIAL_SECURITY_2029 = SOCIAL_SECURITY * INFL_2029 // 60,012.96
+const RMD_MORGAN_2029 = IRA_MORGAN_OPEN_2029 / 23.7 // 12,751.01 at 76
+const RMD_RILEY_2029 = IRA_RILEY_OPEN_2029 / 25.5 // 17,473.58 at 74
+const RMD_2029 = RMD_MORGAN_2029 + RMD_RILEY_2029 // 30,224.60
+const QCD_2029 = 10_000 * INFL_2029 // 10,768.91, from both RMDs
+const NET_RMD_CASH_2029 = RMD_2029 - QCD_2029 // 19,455.69
+const TAXABLE_SS_CAP_2029 = 0.85 * SOCIAL_SECURITY_2029 // 51,011.02: the cap binds at the root and at the draw's fixed point (not at a zero conversion)
+const STANDARD_DEDUCTION_2029 = STANDARD_DEDUCTION * INFL_2029 // 38,229.62; no senior deduction
+const BRACKET_10_TOP_2029 = 24_800 * INFL_2029 // 26,706.89
+const BRACKET_12_TOP_2029 = 100_800 * INFL_2029 // 108,550.58
+const BRACKET_TOP_22_2029 = BRACKET_TOP_22 * INFL_2029 // 227,654.68, the sizing ceiling
+const HOUSEHOLD_ROOT_2029 = BRACKET_TOP_22_2029 + STANDARD_DEDUCTION_2029 - TAXABLE_SS_CAP_2029 - NET_RMD_CASH_2029 // 195,417.59
+const ROTH_CONVERSION_2029 = 78_828.19 // Morgan's cents of the landing 195,417.5787 split 28,944,803 : 42,810,283
+const ordinaryTax2029 = (ordinaryTaxable: number) =>
+  BRACKET_10_TOP_2029 * 0.1 + (BRACKET_12_TOP_2029 - BRACKET_10_TOP_2029) * 0.12 + (ordinaryTaxable - BRACKET_12_TOP_2029) * 0.22
+const PART_B_2029 = 2 * 202.9 * 12 * HEALTH_2029 // 5,718.09
+const HEALTHCARE_2029 = HEALTHCARE * HEALTH_2029 // 12,763.53
+const BASE_SPENDING_2029 = BASE_SPENDING * INFL_2029 // 96,920.16
+const TOTAL_SPENDING_2029 = BASE_SPENDING_2029 + HEALTHCARE_2029 // 109,683.69
+const IRMAA_FLOOR_2029 = 218_000 * INFL_2029 // 234,762.16
+
+// The need-based draw is a fixed point: need = pre-tax gap + tax(draw), where
+// each drawn dollar is ordinary income at 22% (the 85% cap on taxable Social
+// Security binds, the senior deduction has ended, and income stays inside the
+// 22% band), so draw = (gap + tax with no draw) / 0.78.
+const PRE_TAX_GAP_2029 = TOTAL_SPENDING_2029 - (SOCIAL_SECURITY_2029 + NET_RMD_CASH_2029) // 30,215.04
+const ORDINARY_BEFORE_DRAW_2029 = NET_RMD_CASH_2029 + ROTH_CONVERSION_2029 // 98,283.88
+const TAX_NO_DRAW_2029 = ordinaryTax2029(ORDINARY_BEFORE_DRAW_2029 + TAXABLE_SS_CAP_2029 - STANDARD_DEDUCTION_2029) // 12,491.93 + 22% of the excess
+const DRAW_2029 = (PRE_TAX_GAP_2029 + TAX_NO_DRAW_2029) / (1 - 0.22) // 55,461.80
+const MAGI_2029 = ORDINARY_BEFORE_DRAW_2029 + DRAW_2029 + TAXABLE_SS_CAP_2029 // 204,756.70
+const TAX_2029 = ordinaryTax2029(MAGI_2029 - STANDARD_DEDUCTION_2029) + 0 // 25,246.76
+const NET_PORTFOLIO_NEED_2029 = TOTAL_SPENDING_2029 + TAX_2029 - SOCIAL_SECURITY_2029 // 74,917.49
+const WITHDRAWALS_TRADITIONAL_2029 = RMD_2029 + DRAW_2029 // 85,686.40
+const IRA_MORGAN_END_2029 = (IRA_MORGAN_OPEN_2029 - RMD_MORGAN_2029 - ROTH_CONVERSION_2029 - DRAW_2029) * 1.05 // 162,915.94
+const IRA_RILEY_END_2029 = (IRA_RILEY_OPEN_2029 - RMD_RILEY_2029) * 1.05 // 449,507.97
+const ROTH_END_2029 = (ROTH_OPEN_2029 + ROTH_CONVERSION_2029) * 1.05 // 513,740.94
+const INVESTABLE_2029 = 0 + IRA_MORGAN_END_2029 + IRA_RILEY_END_2029 + ROTH_END_2029 // 1,126,164.85
+// 2027's MAGI at its exact fixed point (part II §2 B16, chain form): the
+// figure the 2029 premium reads. Its draw dollar cost 24.64% (22% plus the
+// senior phase-out's 12% of it), so the ledger's landing sits within
+// 0.005 / 0.7536 of it.
+const MAGI_2027 = 194_727.9301022473
+
+/**
+ * The bands the published contracts give. The funding fixed point is
+ * accepted within 0.005 of its residual, and each drawn dollar costs 22% in
+ * 2029, so the draw sits within 0.005 / 0.78 = 0.00641 of the exact root,
+ * as do MAGI and the withdrawals; grown at 5% for the year-end balances,
+ * 0.00673. In 2027 the marginal cost was 24.64%, so 0.005 / 0.7536 = 0.00664.
+ * Tax and the need move by 22% of the draw's band and keep half a cent. The
+ * executed conversion is held to $0.01: the earlier years' allowed draw
+ * landings can move Morgan's cent slice down by one (with a low 2029
+ * landing), and up by one once their conversion cents move too.
+ */
+const DRAW_FIXED_POINT_TOLERANCE = 0.0065
+const DRAW_FIXED_POINT_GROWN_TOLERANCE = 0.007
+const DRAW_FIXED_POINT_TOLERANCE_2027 = 0.007
+const CONVERSION_CENT_TOLERANCE = 0.01
+
+const TABLE_2029: WalkthroughTable = {
+  year: 2029,
+  why: "Three years on (2027 and 2028 bridged in the derivation): both spouses take RMDs and the gift is shared between them by RMD size; the household conversion is still split by IRA balance and Riley's share still dropped, so the bracket is still not filled; the senior deduction has ended; Medicare is priced on 2027's projected MAGI, which carries that year's conversion; and, with the cash gone since 2027, the year's need is drawn from Morgan's IRA as a taxed fixed point that the ledger accepts within half a cent of balancing, not within half a cent of the exact answer.",
+  rows: [
+      { key: 'age-morgan', label: "Morgan's age attained", hand: 76, unit: 'count', derivation: '2029 − 1953', contract: 'PersonYearState.ageAttained', select: (year, plan) => year.people.find((p) => p.personId === personId(plan, 0))?.ageAttained },
+      { key: 'age-riley', label: "Riley's age attained", hand: 74, unit: 'count', derivation: '2029 − 1955', contract: 'PersonYearState.ageAttained', select: (year, plan) => year.people.find((p) => p.personId === personId(plan, 1))?.ageAttained },
+      { key: 'filing-status', label: 'Filing status', hand: 'marriedFilingJointly', derivation: 'both alive', contract: 'YearResult.filingStatus', select: (year) => year.filingStatus },
+      { key: 'ss-morgan', label: "Morgan's Social Security", hand: SS_MORGAN_2029, derivation: '2,500 × 1.08 × 12 × 1.025³ (the COLA factor from the start year)', contract: 'worksheets social-security-benefit-annual, social-security-cola-factor', select: (year, plan) => streamOf(year, plan, 0) },
+      { key: 'ss-riley', label: "Riley's Social Security", hand: SS_RILEY_2029, derivation: '1,800 × 1.08 × 12 × 1.025³; the spousal candidate is still below her own benefit', contract: 'worksheets social-security-benefit-annual, social-security-spousal-top-up', select: (year, plan) => streamOf(year, plan, 1) },
+      { key: 'social-security', label: 'Social Security, gross for the year', hand: SOCIAL_SECURITY_2029, derivation: '55,728 × 1.025³', contract: 'YearIncomes.socialSecurity', select: (year) => year.incomes.socialSecurity },
+      { key: 'income-total', label: 'Total income', hand: SOCIAL_SECURITY_2029, derivation: 'Social Security only', contract: 'worksheet income-total-annual', select: (year) => year.incomes.total },
+      { key: 'rmd', label: 'Required minimum distributions, both IRAs', hand: RMD_2029, derivation: "Morgan 302,199.05 ÷ 23.7 (age 76) = 12,751.01 on the ledger's 2028 close; Riley 445,576.42 ÷ 25.5 (age 74) = 17,473.58, her second RMD year", contract: 'worksheet rmd-uniform-lifetime-divisor; simulate.ts (prior December 31 balances)', select: (year) => year.rmd },
+      { key: 'qcd', label: 'Qualified charitable distribution', hand: QCD_2029, derivation: '10,000 × 1.025³ = 10,768.91, taken from both RMDs in proportion to their size (Morgan 4,543.14, Riley 6,225.77: the owner sorted first by person id gets his share, the last takes the remainder)', contract: 'strategiesSchema.qcdAnnual; annualLegacyQcdGiftPlan (attribution across owners); worksheet qcd-limit-and-age-proxy', select: (year) => year.qcd },
+      { key: 'conversion-sized', label: 'Household conversion amount (sized)', hand: HOUSEHOLD_ROOT_2029, tolerance: BISECTION_TOLERANCE, bound: 'below', derivation: 'the amount that brings taxable income to the indexed 22% ceiling 227,654.68: AGI at the root = 227,654.68 + 38,229.62 (the indexed deduction with two age-65 additions; no senior deduction from 2029), less taxable Social Security at its 85% cap 51,011.02, less the 19,455.69 of net RMD cash = 195,417.59; the bisection returns the lower bound', contract: 'YearResult.aggregateRothConversionAllocationDesired; rothConversion.ts#sizeRothConversion (to $0.01, the lower bound); params/index.ts#indexFederalTaxPack', select: (year) => year.aggregateRothConversionAllocationDesired },
+      { key: 'roth-conversion', label: 'Roth conversion executed (Morgan)', hand: ROTH_CONVERSION_2029, tolerance: CONVERSION_CENT_TOLERANCE, derivation: "the household landing split in cents by the two IRAs' post-RMD balances (Morgan 289,448.03 against Riley 428,102.83): Morgan's 7,882,819 cents; Riley's 11,658,939 cents are dropped because she holds no Roth IRA. The cents are those of the ledger's landings; the earlier years' allowed draw landings can move Morgan's weight and the 2029 root together and lower the slice by a cent, and with their conversion cents free raise it by one, so the row is held to $0.01", contract: 'YearResult.rothConversion (the per-owner split and the dropped share); worksheets exact-cent-pro-rata-half-up, exact-cent-largest-remainder-slices', select: (year) => year.rothConversion },
+      { key: 'magi', label: 'Modified adjusted gross income', hand: MAGI_2029, tolerance: DRAW_FIXED_POINT_TOLERANCE, derivation: '19,455.69 net RMD cash + 78,828.19 conversion + 55,461.80 need-based IRA draw + 51,011.02 taxable Social Security (the 85% cap binds); the draw is a fixed point (each drawn dollar is taxed at 22% and the tax is drawn too), so the row carries the fixed-point band', contract: 'worksheet medicare-magi-composition; YearResult.magi; annualFundingFixedPoint.ts (accepted within 0.005 of its residual)', select: (year) => year.magi },
+      { key: 'tax', label: 'Income tax (federal plus Florida)', hand: TAX_2029, derivation: 'taxable income 204,756.70 − 38,229.62 = 166,527.08 on the indexed joint brackets 26,706.89 / 108,550.58: 2,670.69 + 9,821.24 + 12,754.83 = 25,246.76; no senior deduction (it ended after 2028); the fixed-point band scaled by 22% stays under half a cent; Florida 0', contract: 'worksheets federal-ordinary-bracket-tax, tax-total-annual; tax/federalTax.ts#seniorDeductionAmount (year > lastApplicableYear)', select: (year) => year.tax },
+      { key: 'amt', label: 'Alternative minimum tax', hand: 0, derivation: 'AMTI 204,756.70 less the indexed 150,980.07 exemption; tentative 13,981.92 is below the regular tax', contract: 'worksheet federal-amt-screen', select: (year) => year.amt },
+      { key: 'penalties', label: 'Penalties', hand: 0, derivation: 'both RMDs taken; both past 59½; a conversion is never penalized', contract: 'worksheet tax-penalties-annual', select: (year) => year.penalties },
+      { key: 'realized-gains', label: 'Realized capital gains', hand: 0, derivation: 'no taxable account', contract: 'worksheet tax-realized-gains-annual', select: (year) => year.realizedGains },
+      { key: 'ltcg-zero-headroom', label: 'Room left in the 0% capital-gain band', hand: 0, derivation: 'taxable income 166,527.08 is past the indexed 106,504.48 breakpoint', contract: 'worksheet year-result-ltcg-zero-headroom', select: (year) => year.ltcgZeroHeadroom },
+      { key: 'irmaa-lookback-year', label: 'IRMAA lookback year', hand: 2027, unit: 'year', derivation: '2029 − 2', contract: 'worksheet medicare-irmaa-two-year-lookback', select: (year) => year.irmaaLookbackMagiYear },
+      { key: 'irmaa-lookback-source', label: 'IRMAA lookback source', hand: 'projected', derivation: '2027 is in the ledger', contract: 'YearResult.irmaaLookbackMagiSource', select: (year) => year.irmaaLookbackMagiSource },
+      { key: 'irmaa-lookback-magi', label: 'IRMAA lookback MAGI', hand: MAGI_2027, tolerance: DRAW_FIXED_POINT_TOLERANCE_2027, derivation: "2027's MAGI at its exact fixed point, 194,727.93: net RMD cash 12,746.50 + the 109,869.91 conversion + the first need-based draw 23,558.50 + capped taxable Social Security 48,553.02; 2027's draw dollar cost 24.64% (22% plus the senior phase-out), so its band is 0.005 / 0.7536", contract: 'YearResult.irmaaLookbackMagi; annualFundingFixedPoint.ts', select: (year) => year.irmaaLookbackMagi },
+      { key: 'irmaa-tier', label: 'IRMAA tier', hand: 0, unit: 'count', derivation: '194,727.93 is not above the joint first-tier floor 218,000 × 1.025³ = 234,762.16', contract: 'worksheet medicare-irmaa-first-tier-boundary; params/index.ts#irmaaTierThreshold', select: (year) => year.irmaaTier },
+      { key: 'irmaa-next-threshold', label: 'Next IRMAA threshold', hand: IRMAA_FLOOR_2029, derivation: '218,000 × 1.025³, unrounded', contract: 'YearResult.irmaaNextTierThreshold; rule record usc-42-1395r-i-5-C-top-irmaa-threshold-frozen', select: (year) => year.irmaaNextTierThreshold ?? undefined },
+      { key: 'medicare-premiums', label: 'Medicare premiums, both', hand: PART_B_2029, derivation: '2 × 202.90 × 12 × 1.055³ (the health rate from the pack year); no surcharge', contract: 'worksheet medicare-base-part-b-premium', select: (year) => year.medicarePremiums },
+      { key: 'irmaa-surcharge', label: 'IRMAA surcharge', hand: 0, derivation: 'tier 0', contract: 'YearResult.irmaaSurcharge', select: (year) => year.irmaaSurcharge },
+      { key: 'base-spending', label: 'Base spending', hand: BASE_SPENDING_2029, derivation: '90,000 × 1.025³; the age-80 phase keys on Morgan and starts in 2033', contract: 'worksheet spending-base-annual', select: (year) => year.expenses.baseSpending },
+      { key: 'healthcare', label: 'Healthcare', hand: HEALTHCARE_2029, derivation: '10,869.60 × 1.055³: Part B and the extras for two', contract: 'worksheet spending-healthcare-annual', select: (year) => year.expenses.healthcare },
+      { key: 'spending-total', label: 'Total spending', hand: TOTAL_SPENDING_2029, derivation: '96,920.16 + 12,763.53', contract: 'worksheet spending-total-annual', select: (year) => year.expenses.total },
+      { key: 'portfolio-need', label: 'Portfolio need after income', hand: NET_PORTFOLIO_NEED_2029, derivation: '109,683.69 + tax 25,246.76 − Social Security 60,012.96', contract: 'worksheet portfolio-need-annual', select: (year) => year.netPortfolioNeed },
+      { key: 'withdrawal-cash', label: 'Withdrawn from cash', hand: 0, derivation: 'the cash account has been empty since 2027', contract: 'worksheet withdrawals-by-category-annual', select: (year) => year.withdrawals.cash },
+      { key: 'withdrawal-traditional', label: 'Withdrawn from the IRAs', hand: WITHDRAWALS_TRADITIONAL_2029, tolerance: DRAW_FIXED_POINT_TOLERANCE, derivation: "the RMDs 30,224.60 (QCD included) plus the need-based draw 55,461.80 from Morgan's IRA, the first traditional account in the plan (Riley's is not reached): the draw solves need = pre-tax gap 30,215.04 + tax(draw), so draw = (30,215.04 + 12,491.93 + 0.22 × (98,283.88 + 51,011.02 − 38,229.62 − 108,550.58)) ÷ 0.78; the ledger's bisection lands within 0.005 / 0.78 of it", contract: 'worksheets withdrawals-by-category-annual; withdrawalStrategySchema sequential order; annualFundingFixedPoint.ts', select: (year) => year.withdrawals.traditional },
+      { key: 'withdrawal-roth', label: 'Withdrawn from the Roth', hand: 0, derivation: 'the conversion is not a withdrawal', contract: 'YearWithdrawals.total composition', select: (year) => year.withdrawals.roth },
+      { key: 'withdrawal-total', label: 'Total withdrawals', hand: WITHDRAWALS_TRADITIONAL_2029, tolerance: DRAW_FIXED_POINT_TOLERANCE, derivation: 'the IRAs only (= need 74,917.49 + QCD 10,768.91)', contract: 'worksheet withdrawals-total-annual', select: (year) => year.withdrawals.total },
+      { key: 'surplus', label: 'Surplus invested', hand: 0, derivation: 'inflows 79,468.65 − spending 109,683.69 − tax < 0', contract: 'worksheet surplus-invested-annual', select: (year) => year.surplusInvested },
+      { key: 'shortfall', label: 'Shortfall', hand: 0, derivation: 'fully funded', contract: 'worksheet spending-shortfall-annual', select: (year) => year.shortfall },
+      { key: 'balance-cash', label: 'Cash, year end', hand: 0, derivation: 'empty since 2027', contract: 'worksheet accounts-balance-per-account-annual', select: (year, plan) => year.balances[accountIdOfType(plan, 'cash')] },
+      { key: 'balance-ira-morgan', label: "Morgan's traditional IRA, year end", hand: IRA_MORGAN_END_2029, tolerance: DRAW_FIXED_POINT_GROWN_TOLERANCE, derivation: '(302,199.05 − 12,751.01 − 78,828.19 − 55,461.80) × 1.05; carries the draw band grown at 5%', contract: 'worksheet accounts-balance-per-account-annual', select: (year, plan) => year.balances[traditionalOf(plan, 0)] },
+      { key: 'balance-ira-riley', label: "Riley's traditional IRA, year end", hand: IRA_RILEY_END_2029, derivation: '(445,576.42 − 17,473.58) × 1.05: no conversion, no draw, and her gift comes out of her RMD', contract: 'worksheet accounts-balance-per-account-annual', select: (year, plan) => year.balances[traditionalOf(plan, 1)] },
+      { key: 'balance-roth', label: 'Roth IRA, year end', hand: ROTH_END_2029, derivation: "(410,448.89 + 78,828.19) × 1.05, the 2028 close being ((173,353.38 + 109,869.91) × 1.05 + 93,519.25) × 1.05 on the ledger's executed conversions", contract: 'worksheet accounts-balance-per-account-annual', select: (year, plan) => year.balances[accountIdOfType(plan, 'roth')] },
+      { key: 'investable', label: 'Investable total', hand: INVESTABLE_2029, tolerance: DRAW_FIXED_POINT_GROWN_TOLERANCE, derivation: '0 + 162,915.95 + 449,507.97 + 513,740.94', contract: 'worksheet accounts-investable-total-annual', select: (year) => year.investableTotal },
+      { key: 'net-worth', label: 'Net worth', hand: INVESTABLE_2029, tolerance: DRAW_FIXED_POINT_GROWN_TOLERANCE, derivation: 'investable only', contract: 'worksheet accounts-net-worth-annual', select: (year) => year.netWorth },
+  ],
+}
+
 type BuiltPlan = ReturnType<Walkthrough['build']>
 const personId = (plan: BuiltPlan, index: 0 | 1) => plan.household.people[index]!.id
 const streamOf = (year: YearResult, plan: BuiltPlan, index: 0 | 1) =>
@@ -128,7 +256,7 @@ export const BRACKET_FILL_ROTH_WALKTHROUGH: Walkthrough = {
     'The household\'s 10,000 charitable distribution is routed from the RMD, and only Morgan has one in 2026, so the whole gift leaves his IRA and Riley gives nothing.',
     'The spending cut at 80 keys on the primary person, Morgan, and first applies in 2033.',
     'The first projection year is a full calendar year on the entered balances; both PIAs are read in start-year dollars (COLA factor 1); cash growth is untaxed; Florida\'s zero has no field; the funding fixed point is seeded with the pre-tax need and converges on its second evaluation.',
-    'The household conversion amount is sized by bisection to $0.01 below the exact root, so that row carries a $0.01 tolerance; the executed conversion is quantized to cents by the owner split and is exact.',
+    'The household conversion amount is sized by bisection to $0.01 below the exact root, so that row carries a $0.01 tolerance; the executed conversion is quantized to cents by the owner split: exact in 2026, where every landing the contract allows gives the same cents, and held to $0.01 in 2029, where the earlier years\' allowed landings can move Morgan\'s slice by a cent.',
   ],
   tables: [{
     year: EXAMPLE_FIXED_YEAR,
@@ -175,6 +303,6 @@ export const BRACKET_FILL_ROTH_WALKTHROUGH: Walkthrough = {
       { key: 'investable', label: 'Investable total', hand: INVESTABLE, derivation: '32,826.54 + 586,410.77 + 420,000 + 173,353.38', contract: 'worksheet accounts-investable-total-annual', select: (year) => year.investableTotal },
       { key: 'net-worth', label: 'Net worth', hand: INVESTABLE, derivation: 'investable only', contract: 'worksheet accounts-net-worth-annual', select: (year) => year.netWorth },
     ],
-  }],
+  }, TABLE_2029],
   build: buildBracketFillRoth,
 }

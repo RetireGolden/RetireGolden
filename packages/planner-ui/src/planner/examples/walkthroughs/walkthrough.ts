@@ -22,14 +22,22 @@ export type YearResult = ReturnType<typeof projectPlan>['result']['years'][numbe
  * figure's own contract promises less: a value sized by bisection "to $0.01"
  * states that tolerance, and where the bisection returns the lower bound the
  * row says so with `bound: 'below'`, which makes the comparison one-sided.
+ * A hand value of null states a published absence: the engine publishes the
+ * field as null in that year by contract, and the row passes only on a null
+ * (never on undefined, which means the engine published no figure at all).
  */
 export interface WalkthroughRow {
   /** Stable key, unique within the table; the site keys rows on it. */
   readonly key: string
   /** The figure's name as the page shows it. */
   readonly label: string
-  /** The hand value: a dollar amount, a count, or a published string or year. */
-  readonly hand: number | string
+  /**
+   * The hand value: a dollar amount, a count, a published string or year, or
+   * null when the contract says the engine publishes the field as null in
+   * this year (a credit that cannot be priced, for example); the row then
+   * proves the absence, and `unit` says what the figure would have been.
+   */
+  readonly hand: number | string | null
   /** The arithmetic, in words and numbers, that produces `hand` from the inputs. */
   readonly derivation: string
   /** The contract the derivation follows: a worksheet family, a doc comment path, a parameter. */
@@ -53,7 +61,9 @@ export interface WalkthroughRow {
   readonly unit?: 'dollars' | 'count' | 'percent' | 'year'
   /**
    * Reads the engine's figure off the year row (and the plan, for account
-   * ids); null and undefined both mean the engine published no figure.
+   * ids). null is a published null, which a null hand value expects;
+   * undefined means the engine published no figure at all, which no row
+   * accepts.
    */
   readonly select: (year: YearResult, plan: Plan) => number | string | null | undefined
 }
@@ -91,8 +101,8 @@ export interface Walkthrough {
 export interface WalkthroughRowResult {
   readonly key: string
   readonly label: string
-  readonly hand: number | string
-  readonly engine: number | string | undefined
+  readonly hand: number | string | null
+  readonly engine: number | string | null | undefined
   /** The absolute tolerance the test applies to this row (numbers only). */
   readonly tolerance: number
   /** Present when the band is one-sided: the engine figure is at or below the hand value. */
@@ -126,7 +136,7 @@ export function runWalkthrough(walkthrough: Walkthrough): {
           key: row.key,
           label: row.label,
           hand: row.hand,
-          engine: row.select(year, plan) ?? undefined,
+          engine: row.select(year, plan),
           tolerance: row.tolerance ?? WALKTHROUGH_DEFAULT_TOLERANCE,
           unit: typeof row.hand === 'string' ? 'text' : (row.unit ?? 'dollars'),
           derivation: row.derivation,
@@ -140,12 +150,16 @@ export function runWalkthrough(walkthrough: Walkthrough): {
 }
 
 /**
- * Whether the engine's figure holds the hand value: strings exactly; numbers
- * within the row's tolerance, one-sided (at or below the hand value, and
- * above hand − tolerance) when the row says `bound: 'below'`. Returns a
- * message naming the row when it does not, null when it does.
+ * Whether the engine's figure holds the hand value: a published null
+ * exactly; strings exactly; numbers within the row's tolerance, one-sided
+ * (at or below the hand value, and above hand − tolerance) when the row says
+ * `bound: 'below'`. Returns a message naming the row when it does not, null
+ * when it does.
  */
 export function walkthroughRowProblem(row: WalkthroughRowResult, at: string): string | null {
+  if (row.hand === null) {
+    return row.engine === null ? null : `${at}: engine published ${String(row.engine)}, not the null the contract promises`
+  }
   if (typeof row.hand === 'string') {
     return row.engine === row.hand ? null : `${at}: engine ${String(row.engine)} is not the hand value ${row.hand}`
   }

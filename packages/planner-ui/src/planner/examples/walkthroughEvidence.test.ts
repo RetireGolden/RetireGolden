@@ -22,7 +22,14 @@ import { WALKTHROUGHS, runWalkthrough, type Walkthrough } from './walkthroughs'
  */
 
 export const WALKTHROUGH_EVIDENCE_KIND = 'retiregolden.walkthrough-evidence'
-export const WALKTHROUGH_EVIDENCE_VERSION = 1
+/**
+ * Version 2 adds published nulls: a row's hand and engine figures may both be
+ * null, the engine publishing the field as null in that year by contract
+ * (held exactly; the row keeps the unit the figure would have had). A
+ * version-1 reader types figures as numbers or strings, so it must refuse
+ * version 2 rather than format an absence as a figure.
+ */
+export const WALKTHROUGH_EVIDENCE_VERSION = 2
 
 const here: string = dirname(fileURLToPath(import.meta.url))
 const repoRoot: string = resolve(here, '../../../../..')

@@ -11,9 +11,9 @@ import { runWalkthrough, walkthroughRowProblem } from './walkthrough'
  * the engine's walkthrough census publishes for this id.
  */
 describe('walkthrough: high balances, RMDs and IRMAA', () => {
-  it('year 2026 of the RMD-and-IRMAA example equals the hand table', () => {
+  it('years 2026 and 2028 of the RMD-and-IRMAA example equal the hand tables', () => {
     const { tables } = runWalkthrough(RMD_IRMAA_WALKTHROUGH)
-    expect(tables.map((table) => table.year)).toEqual([2026])
+    expect(tables.map((table) => table.year)).toEqual([2026, 2028])
     for (const table of tables) {
       expect(table.rows.length, String(table.year)).toBeGreaterThan(20)
       const keys = new Set(table.rows.map((row) => row.key))
