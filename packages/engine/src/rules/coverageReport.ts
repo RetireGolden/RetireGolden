@@ -1,3 +1,4 @@
+import type { ApproximationEntry, ApproximationKind } from './approximationKinds.js'
 import type {
   CoverageAttestation,
   CoverageAttestationStatus,
@@ -44,13 +45,34 @@ export interface CoverageReportInput {
    * nothing else, so two dispatches in different domains stop colliding.
    */
   readonly recordModules: readonly (readonly [string, Readonly<Record<string, unknown>>])[]
+  /**
+   * The kind of every approximated rule, keyed by rule id: inject
+   * `APPROXIMATION_KINDS` from approximationKinds.ts. The builder refuses an
+   * approximated rule with no entry, and an entry for a rule the registry does
+   * not classify `approximated`, so a published kind can neither go missing
+   * nor outlive a reclassification.
+   */
+  readonly approximationKinds: Readonly<Record<string, ApproximationEntry>>
 }
+
+/**
+ * An approximated rule's published kind: its approximationKinds.ts entry,
+ * copied field by field, with a fix's `implementation` pin (`<path>#<symbol>`,
+ * where the fix goes) also resolved to the symbol's 1-based declaration line
+ * for a deep link, the same way `implementations` carry lines.
+ */
+export type CoverageApproximation =
+  | { readonly kind: 'fix'; readonly implementation: string; readonly line: number }
+  | { readonly kind: 'needs-fact'; readonly missingInput: string }
+  | { readonly kind: 'convention'; readonly reason: string }
 
 export interface CoverageRule {
   readonly id: string
   readonly title: string
   readonly classification: TaxRuleClassification
   readonly errorDirection: TaxRuleErrorDirection | null
+  /** Null exactly when the rule is not approximated, like errorDirection. */
+  readonly approximation: CoverageApproximation | null
   /** The registry's publication rule: a convention-derived choice must be disclosed wherever the rule is published. */
   readonly conventionRationale: string | null
   readonly contraryReading: string | null
@@ -162,6 +184,11 @@ export interface CoverageReportManifest {
   readonly registry: {
     readonly total: number
     readonly byClassification: Readonly<Record<string, number>>
+    /**
+     * The approximated rules counted by kind. Every kind is present, at zero
+     * when none is left, and the three sum to byClassification.approximated.
+     */
+    readonly approximatedByKind: Readonly<Record<ApproximationKind, number>>
     readonly byVolatility: Readonly<Record<string, number>>
     readonly byJurisdiction: {
       readonly federal: number
@@ -579,6 +606,43 @@ function dedupeAuthorityIdentities(
   return identities
 }
 
+/**
+ * A rule's published approximation kind, or null for a rule that is not
+ * approximated. Fails closed both ways: an approximated rule with no entry
+ * would drop off the public known-limits table, and an entry on any other rule
+ * would publish a limit the engine no longer has.
+ */
+function publishedApproximation(
+  id: string,
+  classification: TaxRuleClassification,
+  kinds: Readonly<Record<string, ApproximationEntry>>,
+  symbolLineFor: (path: string, symbol: string) => number,
+): CoverageApproximation | null {
+  const entry = Object.hasOwn(kinds, id) ? kinds[id] : undefined
+  if (classification !== 'approximated') {
+    if (entry !== undefined) {
+      throw new Error('rule ' + id + ' is classified ' + classification + ' but carries an approximation kind')
+    }
+    return null
+  }
+  if (entry === undefined) {
+    throw new Error('approximated rule ' + id + ' has no approximation kind in approximationKinds.ts')
+  }
+  switch (entry.kind) {
+    case 'fix': {
+      const [path, symbol, ...rest] = entry.implementation.split('#')
+      if (path === undefined || path.length === 0 || symbol === undefined || symbol.length === 0 || rest.length > 0) {
+        throw new Error('approximated rule ' + id + ': fix implementation must be <path>#<symbol>, got ' + entry.implementation)
+      }
+      return { kind: 'fix', implementation: entry.implementation, line: symbolLineFor(path, symbol) }
+    }
+    case 'needs-fact':
+      return { kind: 'needs-fact', missingInput: entry.missingInput }
+    case 'convention':
+      return { kind: 'convention', reason: entry.reason }
+  }
+}
+
 function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
@@ -699,6 +763,8 @@ function buildMarkdown(manifest: CoverageReportManifest, rules: readonly Coverag
     markdownRow(['Total rules', manifest.registry.total]),
     ...countRows(manifest.registry.byClassification).map(([classification, count]) =>
       markdownRow(['Classification: ' + classification, count])),
+    ...countRows(manifest.registry.approximatedByKind).map(([kind, count]) =>
+      markdownRow(['Approximated kind: ' + kind, count])),
     ...countRows(manifest.registry.byVolatility).map(([volatility, count]) =>
       markdownRow(['Volatility: ' + volatility, count])),
     markdownRow(['Federal jurisdiction', manifest.registry.byJurisdiction.federal]),
@@ -768,7 +834,9 @@ function buildMarkdown(manifest: CoverageReportManifest, rules: readonly Coverag
     '',
     'The JSON ledger (version 5) is the machine contract, and it is split in two: rule-coverage.json is the INDEX — registry and attestation totals, the per-directory rollup, the unswept and partial lists, the quote-fidelity summary, and a shards array naming every shard with its path and rule count — while the per-rule payloads live in the shard files it names, one per record module. A consumer reads the index, then reads the shards it needs; the union of the shards\' rules arrays, sorted by id, is what version 4 published inline as manifest.rules.',
     '',
-    'Each rule carries title, errorDirection (null unless the rule is approximated), conventionRationale and contraryReading (null when unused), deduplicated authority identities (kind, citation, url), per-fixture detail (path, line, optional note, and the it() tests scanned from the fixture source, each with its own 1-based line), and implementations (per implementing file, the conformance-enforced operative function names with their 1-based declaration lines). Every line number is recomputed from source on each generation and the freshness suite fails when the committed index or any committed shard drifts from the sources in the same commit, so at any commit that passes CI the published lines are exact for that commit. This markdown file is the human summary and does not repeat them.',
+    'Each rule carries title, errorDirection (null unless the rule is approximated), approximation (null unless the rule is approximated; otherwise its kind from packages/engine/src/rules/approximationKinds.ts: fix with implementation, the path#symbol where the fix goes, and that symbol\'s 1-based declaration line; needs-fact with missingInput, the fact the plan does not collect; or convention with reason, why the approximation is kept), conventionRationale and contraryReading (null when unused), deduplicated authority identities (kind, citation, url), per-fixture detail (path, line, optional note, and the it() tests scanned from the fixture source, each with its own 1-based line), and implementations (per implementing file, the conformance-enforced operative function names with their 1-based declaration lines). Every line number is recomputed from source on each generation and the freshness suite fails when the committed index or any committed shard drifts from the sources in the same commit, so at any commit that passes CI the published lines are exact for that commit. This markdown file is the human summary and does not repeat them.',
+    '',
+    'The index\'s registry totals also carry approximatedByKind, the approximated rules counted by kind (convention, fix, needs-fact), every kind present and the three summing to byClassification.approximated. It and approximation are additive within version 5: a reader that does not know them ignores them, and one that needs them requires them.',
     '',
     'Version 5 is a breaking discriminator for strict version checks: manifest.rules moved out of the index into the shards. Version 4 added fixtures[].tests and per-function lines in place of the flat title and name lists of version 3.',
     '',
@@ -835,6 +903,7 @@ export function buildCoverageReport(input: CoverageReportInput): CoverageReport 
       title: rule.title,
       classification: rule.classification,
       errorDirection: rule.errorDirection,
+      approximation: publishedApproximation(id, rule.classification, input.approximationKinds, input.symbolLineFor),
       conventionRationale: rule.conventionRationale,
       contraryReading: rule.contraryReading,
       jurisdiction: rule.jurisdiction,
@@ -861,6 +930,21 @@ export function buildCoverageReport(input: CoverageReportInput): CoverageReport 
       authorities: dedupeAuthorityIdentities(rule.authority),
     }))
     .sort((left, right) => compareStrings(left.id, right.id))
+  // publishedApproximation has already refused a kind on a registered rule that
+  // is not approximated; a kind for an id the registry does not hold at all
+  // (a renamed or deleted rule) would otherwise be dropped without a word.
+  const unregisteredKinds = Object.keys(input.approximationKinds)
+    .filter((id) => !Object.hasOwn(input.registry, id))
+    .sort(compareStrings)
+  if (unregisteredKinds.length > 0) {
+    throw new Error('approximation kinds name rules the registry does not hold: ' + unregisteredKinds.join(', '))
+  }
+  // A typed literal, so a fourth kind cannot be added without a count here;
+  // key order is alphabetical, like every other count map in the ledger.
+  const approximatedByKind: Record<ApproximationKind, number> = { convention: 0, fix: 0, 'needs-fact': 0 }
+  for (const rule of rules) {
+    if (rule.approximation !== null) approximatedByKind[rule.approximation.kind] += 1
+  }
   const attestationEntries = Object.entries(input.attestations).sort(([left], [right]) => compareStrings(left, right))
   const unswept = attestationEntries
     .filter(([, attestation]) => attestation.status === 'unswept')
@@ -930,11 +1014,15 @@ export function buildCoverageReport(input: CoverageReportInput): CoverageReport 
     // testTitles list). 3 added implementations and per-fixture detail; 2 added
     // title/errorDirection/conventionRationale/contraryReading and deduplicated
     // authority identities. A consumer requiring these fields gates on the
-    // version.
+    // version. Still 5 with every rule's `approximation` (null unless the
+    // rule is approximated) and registry.approximatedByKind: both are
+    // additive, so a version 5 reader that does not know them ignores them,
+    // and a reader that needs them requires them.
     version: 5,
     registry: {
       total: rules.length,
       byClassification: countBy(rules.map(({ classification }) => classification)),
+      approximatedByKind,
       byVolatility: countBy(rules.map(({ volatility }) => volatility)),
       byJurisdiction: {
         federal: rules.filter(({ jurisdiction }) => jurisdiction === 'federal').length,

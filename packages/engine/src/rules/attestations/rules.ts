@@ -9,6 +9,7 @@
 import type { CoverageAttestation } from '../coverageAttestations.js'
 
 export const rulesAttestations: Readonly<Record<string, CoverageAttestation>> = Object.freeze({
+  'rules/approximationKinds.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-09-23', note: 'registry/coverage tooling; the kind of each approximated tax rule, published in the rule ledger; enforced by approximationKinds.conformance.test.ts' }),
   'rules/attestations/actions.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-09-03', note: 'registry/coverage tooling; one slice of the coverage attestation data, split out of coverageAttestations.ts; enforced by coverageAttestations.conformance.test.ts' }),
   'rules/attestations/allocation.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-09-03', note: 'registry/coverage tooling; one slice of the coverage attestation data, split out of coverageAttestations.ts; enforced by coverageAttestations.conformance.test.ts' }),
   'rules/attestations/decisions.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-09-03', note: 'registry/coverage tooling; one slice of the coverage attestation data, split out of coverageAttestations.ts; enforced by coverageAttestations.conformance.test.ts' }),

@@ -315,10 +315,12 @@ async function main() {
       taxRulesDueForVerification,
     },
     { COVERAGE_ATTESTATIONS, BASELINE_UNSWEPT },
+    { APPROXIMATION_KINDS },
     { buildCoverageReport },
   ] = await Promise.all([
     loadModule('taxRuleRegistry.ts'),
     loadModule('coverageAttestations.ts'),
+    loadModule('approximationKinds.ts'),
     loadModule('coverageReport.ts'),
   ])
 
@@ -362,6 +364,7 @@ async function main() {
     // resolver lives in rules-coverage.mjs, the only publisher.
     symbolLineFor: () => 1,
     recordModules: TAX_RULE_RECORD_MODULES,
+    approximationKinds: APPROXIMATION_KINDS,
   })
 
   const recordModuleOf = recordModuleOfFrom(TAX_RULE_RECORD_MODULES)

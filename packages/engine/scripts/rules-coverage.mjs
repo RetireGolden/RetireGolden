@@ -152,12 +152,14 @@ async function main() {
   const [
     { TAX_RULE_REGISTRY, TAX_RULE_RECORD_MODULES, taxRuleDueOn },
     { COVERAGE_ATTESTATIONS, BASELINE_UNSWEPT },
+    { APPROXIMATION_KINDS },
     { CALCULATION_REGISTRY, CALCULATION_RECORD_MODULES },
     { OUTPUT_FAMILIES },
     { buildCoverageReport, buildCalculationCoverageReport, walkthroughEntriesOf },
   ] = await Promise.all([
     loadModule('taxRuleRegistry.ts'),
     loadModule('coverageAttestations.ts'),
+    loadModule('approximationKinds.ts'),
     loadModule('calculationRegistry.ts'),
     loadModule('outputFamilies.ts'),
     loadModule('coverageReport.ts'),
@@ -174,6 +176,7 @@ async function main() {
     dueOnFor: taxRuleDueOn,
     symbolLineFor,
     recordModules: TAX_RULE_RECORD_MODULES,
+    approximationKinds: APPROXIMATION_KINDS,
   })
   const operationsDir = join(repositoryDir, 'DOCS', 'operations')
   writeFileSync(join(operationsDir, 'rule-coverage.md'), lf(report.markdown), 'utf8')

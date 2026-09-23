@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { APPROXIMATION_KINDS } from './approximationKinds.js'
 import {
   BASELINE_UNSWEPT,
   COVERAGE_ATTESTATIONS,
@@ -27,6 +28,7 @@ const report = buildCoverageReport({
   // suite free of the AST resolver the freshness suite exercises for real.
   symbolLineFor: () => 1,
   recordModules: TAX_RULE_RECORD_MODULES,
+  approximationKinds: APPROXIMATION_KINDS,
 })
 
 const PINNED_RULE_ID = 'usc-42-430-b-contribution-and-benefit-base'

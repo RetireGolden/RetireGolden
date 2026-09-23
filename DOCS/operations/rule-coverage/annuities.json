@@ -8,6 +8,10 @@
       "title": "Pension lump-sum direct-rollover eligibility is assumed",
       "classification": "approximated",
       "errorDirection": "understatesTax",
+      "approximation": {
+        "kind": "needs-fact",
+        "missingInput": "qualified-trust, eligible-rollover-distribution, and plan-permission facts for the pension offer"
+      },
       "conventionRationale": "DEFECT — no behavior change in this registry slice. checkAccountCrossFieldRules requires an election to have an offer and an existing non-inherited traditional destination, and pensionTakeLumpSumPatch selects or creates an owned traditional IRA destination, but neither can establish that the source is a qualified trust, that the offer is an eligible rollover distribution, or that a plan may distribute it. pensionLumpSumRollovers then selects every elected offer in its election year at its full amount; simulatePlan credits that amount; and annualPensionAndAnnuityIncome suppresses the pension stream from that year forward. The approximation fixture uses a 300,000 offer for a 60-year-old, deliberately outside the RMD regime: facts the Plan cannot encode hide a genuinely nonqualifying or ineligible offer, for which the statutory reading is a 300,000 currently taxable pension distribution with no rollover credit, while the engine instead credits 300,000 to the traditional destination with zero pension income and MAGI. The RMD-specific sibling remains the only record for a qualifying offer whose required-distribution portion must be carved out.",
       "contraryReading": null,
       "jurisdiction": "federal",
@@ -121,6 +125,7 @@
       "title": "Exclusion ratio for a non-qualified annuity, and the cap at unrecovered investment",
       "classification": "settled",
       "errorDirection": null,
+      "approximation": null,
       "conventionRationale": "Table V rather than Table I is the correct table because Tables V through VIII govern any contract whose investment includes post-June-1986 money, which is every contract a plan under this engine could be buying. The distinction is load-bearing and not cosmetic: at age 66 the Table I male multiple is 14.4 and the Table V multiple is 19.2, a difference of about a third in the expected return and therefore in the ratio.",
       "contraryReading": null,
       "jurisdiction": "federal",
@@ -250,6 +255,7 @@
       "title": "Employer-plan after-tax basis comes out pro rata, not first",
       "classification": "settled",
       "errorDirection": null,
+      "approximation": null,
       "conventionRationale": "The statute supplies the investment-to-account-balance ratio and is silent on rounding. Exact bigint nearest-cent half-up is the engine currency convention; the exact-cent fixture lands on whole cents independently of that rounding. The penalty-side validator recomputes that same ratio against an already-accepted characterization; it does not adjudicate external qualification.",
       "contraryReading": null,
       "jurisdiction": "federal",
@@ -322,6 +328,10 @@
       "title": "Pre-1987 employee contributions are recovered before the pro-rata rule bites",
       "classification": "approximated",
       "errorDirection": "bothDirections",
+      "approximation": {
+        "kind": "convention",
+        "reason": "administrator-only 1986 records are not reasonably recoverable for long-range household planning"
+      },
       "conventionRationale": "Approximated rather than out of scope because the engine applies the ordinary pro-rata rule and returns a number; it never refuses for want of the grandfathered layer. The direction is recorded as both because this is a timing error: tax is overstated in the early withdrawal years while basis the statute would return in full is instead spread across the account, and understated later as that basis comes out. It nets to zero over a full drawdown, but an annual projection is exactly where the year matters, and the overstated years are the ones a retiree is drawing on the account. Worth recording rather than dismissing as historical, because this engine audience is the cohort it reaches: a participant who made after-tax contributions to a plan that allowed in-service withdrawals in 1986 is in their late sixties or older today, and the balance has had forty years to grow, so the grandfathered layer can be large in dollars even where it is small as a fraction of the account. It is not modelled because the two facts it needs, the December 31, 1986 investment in the contract and whether the plan permitted pre-separation withdrawal on May 5, 1986, appear on no statement a household can produce and would have to come from the plan administrator.",
       "contraryReading": null,
       "jurisdiction": "federal",
@@ -379,6 +389,11 @@
       "title": "Expected return for a joint and survivor annuity paying a reduced survivor amount",
       "classification": "approximated",
       "errorDirection": "understatesTax",
+      "approximation": {
+        "kind": "fix",
+        "implementation": "packages/engine/src/projection/annuityForms.ts#annuityExclusionMultiple",
+        "line": 48
+      },
       "conventionRationale": null,
       "contraryReading": null,
       "jurisdiction": "federal",
@@ -465,6 +480,11 @@
       "title": "Adjustment for a period-certain guarantee on a life annuity",
       "classification": "approximated",
       "errorDirection": "bothDirections",
+      "approximation": {
+        "kind": "fix",
+        "implementation": "packages/engine/src/projection/annuityForms.ts#annuityExclusionMultiple",
+        "line": 48
+      },
       "conventionRationale": null,
       "contraryReading": null,
       "jurisdiction": "federal",
