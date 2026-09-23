@@ -946,7 +946,7 @@
       "file": "packages/planner-ui/src/planner/ssAnalysis.external.golden.test.ts",
       "count": 2,
       "tolerances": [
-        "exact on the claiming-age ranking (no present-value dollars are compared)"
+        "exact on the claiming-age ranking (no present-value dollar amounts are compared with the oracle's)"
       ],
       "oracles": [
         {

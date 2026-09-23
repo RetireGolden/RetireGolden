@@ -191,7 +191,13 @@ async function main() {
   )
 
   const packagesDir = join(repositoryDir, 'packages')
-  const externalGoldenSources = walkFiles(packagesDir, (name) => name.endsWith('.external.golden.test.ts'), repositoryDir)
+  // Fixtures live under packages/<package>/src/, the inventory the freshness
+  // suite globs too, so the two sides always read the same files.
+  const externalGoldenSources = Object.fromEntries(
+    Object.entries(walkFiles(packagesDir, (name) => name.endsWith('.external.golden.test.ts'), repositoryDir)).filter(
+      ([path]) => /^packages\/[^/]+\/src\//u.test(path),
+    ),
+  )
   const oracleRegistryPath = join(repositoryDir, 'DOCS', 'external-oracles.md')
   const oracleRegistryText = existsSync(oracleRegistryPath) ? readFileSync(oracleRegistryPath, 'utf8') : null
   const docsDir = join(repositoryDir, 'DOCS', 'calculations')

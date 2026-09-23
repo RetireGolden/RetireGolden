@@ -56,19 +56,12 @@ const committedCalculationShardSources = import.meta.glob(
     eager: true,
   },
 )
-const engineGoldenSources = import.meta.glob('../**/*.external.golden.test.ts', {
+// Every package's fixtures, the same inventory the generator reads (packages/*/src).
+const goldenSources = import.meta.glob('../../../*/src/**/*.external.golden.test.ts', {
   query: '?raw',
   import: 'default',
   eager: true,
 })
-const plannerGoldenSources = import.meta.glob(
-  '../../../../packages/planner-ui/src/**/*.external.golden.test.ts',
-  {
-    query: '?raw',
-    import: 'default',
-    eager: true,
-  },
-)
 // The walkthrough directory holds one test file per walkthrough (rmd-irmaa
 // and early-retiree-aca first); walkthroughEntriesOf turns their it() titles
 // into the computed census, and the generator lists the same directory, so
@@ -165,18 +158,19 @@ const committedCalculationJson =
   Object.entries(operationJsonSources).find(([path]) => path.endsWith('/calculation-coverage.json'))?.[1] ??
   null
 
-const externalGoldenSources = Object.fromEntries([
-  ...Object.entries(engineGoldenSources).map(([path, source]) => [
-    path.replace(/^\.\.\//u, 'packages/engine/src/'),
-    source as string,
-  ]),
-  ...Object.entries(plannerGoldenSources).map(([path, source]) => [
-    // Vite keys this glob relative to this file with a variable number of
-    // `../` segments; the generator keys the same files relative to the repo.
-    'packages/' + path.replace(/^(?:\.\.\/)+/u, '').replace(/^packages\//u, ''),
-    source as string,
-  ]),
-])
+/** Vite keys a glob match relative to this file; the generator keys it relative to the repository. */
+function repoPathOfGlobKey(key: string): string {
+  const parts = ['packages', 'engine', 'src', 'rules']
+  for (const segment of key.split('/')) {
+    if (segment === '..') parts.pop()
+    else if (segment !== '.') parts.push(segment)
+  }
+  return parts.join('/')
+}
+
+const externalGoldenSources = Object.fromEntries(
+  Object.entries(goldenSources).map(([path, source]) => [repoPathOfGlobKey(path), source as string]),
+)
 
 function calculationDocTextFor(path: string): string | null {
   const key = '../../../../' + path.replace(/\\/gu, '/')

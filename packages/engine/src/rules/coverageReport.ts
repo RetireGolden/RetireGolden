@@ -1099,7 +1099,7 @@ export interface OracleRegistryEntry {
   /** `ORACLE-001`, or a range such as `ORACLE-007/008` for one row naming several. */
   readonly id: string
   readonly domain: string
-  /** The primary source the fixture freezes, as the registry states it, Markdown emphasis removed. */
+  /** The primary source the fixture freezes, as the registry states it, as plain text (links as their text; code, bold and italic markers removed). */
   readonly source: string
 }
 
@@ -1107,8 +1107,9 @@ export interface OracleRegistryEntry {
  * One external-oracle fixture file: examples an independent source published,
  * frozen into a test the engine must reproduce. `count` is its code-level
  * it()/test() cases; `tolerances` are the distinct "Tolerance:" statements in
- * its comments, in order; `oracles` are the registry rows whose fixture is
- * this file.
+ * its comments (block or line comments), in order, each to the end of its
+ * sentence; `oracles` are the registry rows whose fixture is this file, and
+ * their ids are exactly the oracles the file declares.
  */
 export interface OracleExample {
   readonly file: string
@@ -1215,85 +1216,216 @@ function countOracleCalls(source: string): number {
 }
 
 const ORACLE_FIXTURES_HEADING = '## Implemented fixtures'
-const ORACLE_ID = /^ORACLE-\d{3}(?:\/\d{3})*$/u
+const ORACLE_TABLE_HEADER = ['ID', 'Domain', 'Fixture', 'Primary source'] as const
+const ORACLE_ID_CELL = /^ORACLE-\d{3}(?:\/\d{3})*$/u
 const ORACLE_FIXTURE_LINK = /^\[`([^`]+)`\]\([^)]*\)$/u
 const EXTERNAL_GOLDEN_SUFFIX = '.external.golden.test.ts'
+/**
+ * How a fixture declares an oracle it carries: `ORACLE-005 (DOCS/external-oracles.md)`.
+ * A bare `ORACLE-001` elsewhere in a fixture is a cross-reference, not a declaration.
+ */
+const ORACLE_DECLARATION = /ORACLE-(\d{3}) \(DOCS\/external-oracles\.md\)/gu
+
+/** A registry id cell as the ids it names: `ORACLE-007/008` is ORACLE-007 and ORACLE-008. */
+export function oracleIdsOf(cell: string): readonly string[] {
+  return cell
+    .slice('ORACLE-'.length)
+    .split('/')
+    .map((digits) => `ORACLE-${digits}`)
+}
+
+/** A Markdown table row's cells: split on unescaped pipes, `\\|` read as a literal pipe. */
+function markdownTableCells(row: string): string[] {
+  const closed = row.endsWith('|') && !row.endsWith('\\|')
+  const inner = row.slice(1, closed ? -1 : undefined)
+  const cells: string[] = []
+  let cell = ''
+  for (let index = 0; index < inner.length; index += 1) {
+    const char = inner[index]!
+    if (char === '\\' && inner[index + 1] === '|') {
+      cell += '|'
+      index += 1
+    } else if (char === '|') {
+      cells.push(cell.trim())
+      cell = ''
+    } else {
+      cell += char
+    }
+  }
+  cells.push(cell.trim())
+  return cells
+}
 
 /**
- * The rows of the "Implemented fixtures" table in DOCS/external-oracles.md
- * (`| ID | Domain | Fixture | Primary source |`, the fixture cell a Markdown
- * link whose text is the repo-relative path in backticks), for the rows whose
- * fixture is an external golden test. Rows for other fixtures (a
- * characterization benchmark, a hand-worksheet golden) are not published
- * examples and are skipped; a row for an external golden must carry an
- * ORACLE id and a parsable fixture link, or the registry is refused.
+ * Registry text as plain text for publication: a link becomes its text, and
+ * code spans, bold and italic lose their markers.
+ */
+export function plainMarkdownText(text: string): string {
+  return text
+    .replace(/\[([^\]]+)\]\([^)]*\)/gu, '$1')
+    .replace(/`+/gu, '')
+    .replace(/\*\*|__/gu, '')
+    .replace(/(^|[^\w*])\*(?=\S)([^*]*?\S)\*(?![\w*])/gu, '$1$2')
+    .replace(/(^|[^\w])_(?=\S)([^_]*?\S)_(?!\w)/gu, '$1$2')
+}
+
+/**
+ * The rows of the "Implemented fixtures" table in DOCS/external-oracles.md,
+ * for the rows whose fixture is an external golden test. The table is the
+ * one under that heading: its header must be
+ * `| ID | Domain | Fixture | Primary source |` followed by the delimiter row,
+ * and it runs to the first line that is not a row. Refused: a row with other
+ * than four cells (a pipe inside a cell is written `\\|`), a row without a
+ * fixture link, an external golden row without an ORACLE id, an id listed on
+ * two rows, and a table row anywhere in the section after the table has
+ * ended (a blank line ends a Markdown table, so such a row would silently
+ * drop out of it). Rows for other fixtures (a characterization benchmark, a
+ * hand-worksheet golden) are not published examples and are skipped.
  */
 export function oracleRegistryRowsOf(text: string): readonly (OracleRegistryEntry & { readonly file: string })[] {
   const lines = text.replace(/\r\n/gu, '\n').split('\n')
   const start = lines.findIndex((line) => line.trim() === ORACLE_FIXTURES_HEADING)
   if (start < 0) throw new Error(`external oracle registry: no "${ORACLE_FIXTURES_HEADING}" section`)
+  const next = lines.findIndex((line, index) => index > start && /^#{1,2} /u.test(line))
+  const section = lines.slice(start + 1, next < 0 ? undefined : next).map((line) => line.trim())
+  const first = section.findIndex((line) => line.startsWith('|'))
+  if (first < 0) throw new Error(`external oracle registry: no table under "${ORACLE_FIXTURES_HEADING}"`)
+  if (markdownTableCells(section[first]!).join('|') !== ORACLE_TABLE_HEADER.join('|')) {
+    throw new Error(`external oracle registry: the table's header must be | ${ORACLE_TABLE_HEADER.join(' | ')} |`)
+  }
+  if (!/^\|(?:\s*:?-+:?\s*\|){4}$/u.test(section[first + 1] ?? '')) {
+    throw new Error("external oracle registry: the table's header must be followed by its delimiter row")
+  }
   const rows: (OracleRegistryEntry & { readonly file: string })[] = []
-  let inTable = false
-  for (const line of lines.slice(start + 1)) {
-    const trimmed = line.trim()
-    if (!trimmed.startsWith('|')) {
-      if (inTable || trimmed.startsWith('#')) break
-      continue
-    }
-    inTable = true
-    const cells = trimmed.slice(1, trimmed.endsWith('|') ? -1 : undefined).split('|').map((cell) => cell.trim())
+  const seenIds = new Map<string, string>()
+  let index = first + 2
+  for (; index < section.length && section[index]!.startsWith('|'); index += 1) {
+    const line = section[index]!
+    const cells = markdownTableCells(line)
     if (cells.length !== 4) {
-      throw new Error(`external oracle registry: a row has ${cells.length} cells, not 4: ${trimmed.slice(0, 80)}`)
+      throw new Error(
+        `external oracle registry: a row has ${cells.length} cells, not 4 (write a pipe inside a cell as \\|): ${line.slice(0, 80)}`,
+      )
     }
     const [id, domain, fixture, source] = cells as [string, string, string, string]
-    if (id === 'ID' || /^-+$/u.test(id.replace(/:/gu, ''))) continue
     const link = ORACLE_FIXTURE_LINK.exec(fixture)
     if (link === null) throw new Error(`external oracle registry: row ${id} has no fixture link: ${fixture.slice(0, 80)}`)
     const file = link[1]!
+    if (ORACLE_ID_CELL.test(id)) {
+      for (const oracleId of oracleIdsOf(id)) {
+        const earlier = seenIds.get(oracleId)
+        if (earlier !== undefined) {
+          throw new Error(`external oracle registry: ${oracleId} is listed twice (for ${earlier} and for ${file})`)
+        }
+        seenIds.set(oracleId, file)
+      }
+    }
     if (!file.endsWith(EXTERNAL_GOLDEN_SUFFIX)) continue
-    if (!ORACLE_ID.test(id)) throw new Error(`external oracle registry: the row for ${file} has no ORACLE id: "${id}"`)
-    rows.push({ id, domain, source: source.replace(/\*\*/gu, '').replace(/`/gu, ''), file })
+    if (!ORACLE_ID_CELL.test(id)) throw new Error(`external oracle registry: the row for ${file} has no ORACLE id: "${id}"`)
+    rows.push({ id, domain: plainMarkdownText(domain), source: plainMarkdownText(source), file })
+  }
+  const stray = section.slice(index).find((line) => line.startsWith('|'))
+  if (stray !== undefined) {
+    throw new Error(
+      `external oracle registry: a table row appears after the table has ended (a blank line or text ends a Markdown table): ${stray.slice(0, 80)}`,
+    )
   }
   return rows
 }
 
+/** Every comment in a source file, block or line, as its lines with the comment markers removed; strings are skipped. */
+function commentLinesOf(source: string): readonly (readonly string[])[] {
+  const comments: string[][] = []
+  let index = 0
+  while (index < source.length) {
+    const skipped = skipNonCode(source, index, regexCanFollow(source, index))
+    if (skipped === index) {
+      index += 1
+      continue
+    }
+    if (source[index] === '/' && (source[index + 1] === '*' || source[index + 1] === '/')) {
+      comments.push(
+        source
+          .slice(index, skipped)
+          .replace(/\r\n/gu, '\n')
+          .split('\n')
+          .map((line) =>
+            line
+              .replace(/^\s*(?:\/\*\*?|\/\/+|\*(?!\/))?\s?/u, '')
+              .replace(/\s*\*\/\s*$/u, '')
+              .trim(),
+          ),
+      )
+    }
+    index = skipped
+  }
+  return comments
+}
+
+/** The first period that ends a sentence (followed by whitespace or the end), not one inside a number such as 0.10. */
+function sentenceEndOf(text: string): number {
+  for (let index = 0; index < text.length; index += 1) {
+    if (text[index] === '.' && (index + 1 === text.length || /\s/u.test(text[index + 1]!))) return index
+  }
+  return -1
+}
+
+/** A comment line that opens a new labelled field ("Access date: …"), which a wrapped statement never runs into. */
+const LABELLED_LINE = /^[A-Z][A-Za-z0-9 /()'-]{0,40}:(?:\s|$)/u
+const TOLERANCE_WRAP_LIMIT = 3
+
 /**
- * The distinct "Tolerance:" statements in a fixture's block comments, in
- * order: the text after the label to the end of its sentence (which may wrap
- * onto the next comment line), without the final period.
+ * The distinct "Tolerance:" statements in a fixture's comments (block or
+ * line comments; never code or strings), in order. A statement is the text
+ * after the label to the end of its sentence: the first period followed by a
+ * space or the end of the text, so the period in 0.10 does not end it. A
+ * statement that does not end on its line continues onto following comment
+ * lines, up to three, but never into a blank line or a line that opens a new
+ * labelled field; one that still has not ended is refused rather than
+ * published garbled, as is an empty statement.
  */
 export function oracleTolerancesOf(source: string): readonly string[] {
-  const lines = source.replace(/\r\n/gu, '\n').split('\n')
   const found: string[] = []
-  for (let index = 0; index < lines.length; index += 1) {
-    const line = lines[index]!
-    const at = line.indexOf('Tolerance:')
-    if (at < 0 || !/^\s*\*/u.test(line)) continue
-    let text = line.slice(at + 'Tolerance:'.length).trim()
-    let next = index + 1
-    while (!text.endsWith('.') && next < lines.length && /^\s*\*(?!\/)/u.test(lines[next]!)) {
-      const more = lines[next]!.replace(/^\s*\*\s?/u, '').trim()
-      if (more === '') break
-      text += ' ' + more
-      next += 1
+  for (const lines of commentLinesOf(source)) {
+    for (let index = 0; index < lines.length; index += 1) {
+      const line = lines[index]!
+      const at = line.indexOf('Tolerance:')
+      if (at < 0) continue
+      let text = line.slice(at + 'Tolerance:'.length).trim()
+      let wrapped = 0
+      while (sentenceEndOf(text) < 0 && wrapped < TOLERANCE_WRAP_LIMIT) {
+        const nextLine = lines[index + 1 + wrapped]
+        if (nextLine === undefined || nextLine === '' || LABELLED_LINE.test(nextLine)) break
+        text += ' ' + nextLine
+        wrapped += 1
+      }
+      const end = sentenceEndOf(text)
+      if (end < 0) {
+        throw new Error(`a "Tolerance:" statement must end its sentence with a period: "${text.slice(0, 80)}"`)
+      }
+      const statement = text.slice(0, end).trim()
+      if (statement === '') throw new Error('a "Tolerance:" statement is empty')
+      if (!found.includes(statement)) found.push(statement)
     }
-    text = text.replace(/\.$/u, '').trim()
-    if (text !== '' && !found.includes(text)) found.push(text)
   }
   return found
 }
 
 /**
  * Every external-oracle fixture with its cases, stated tolerances and
- * registry rows. Fails closed: a fixture with no registry row, a fixture
- * that states no tolerance, and a registry row naming an external golden
- * that is not in the tree each refuse the census, so the published table
- * cannot fall out of step with the fixtures.
+ * registry rows. Fails closed, so the published table cannot fall out of
+ * step with the fixtures: a fixture with no registry row; a registry row
+ * naming an external golden that is not in the tree (checked whenever the
+ * registry is given, fixtures or not); an oracle a fixture declares
+ * (`ORACLE-nnn (DOCS/external-oracles.md)`) that the registry does not list
+ * for that file, or one the registry lists for it that the file does not
+ * declare; a fixture that states no tolerance or states one that cannot be
+ * read; and fixtures with no registry at all.
  */
 function oracleExamplesOf(input: CalculationCoverageInput): readonly OracleExample[] {
   const files = Object.keys(input.externalGoldenSources)
-  if (files.length === 0) return []
   if (!input.oracleRegistryText) {
+    if (files.length === 0) return []
     throw new Error('external oracle registry: DOCS/external-oracles.md is required when external golden fixtures exist')
   }
   const rows = oracleRegistryRowsOf(input.oracleRegistryText)
@@ -1305,12 +1437,31 @@ function oracleExamplesOf(input: CalculationCoverageInput): readonly OracleExamp
   }
   return files
     .map((file) => {
-      const oracles = rows.filter((row) => row.file === file).map(({ id, domain, source }) => ({ id, domain, source }))
+      const source = input.externalGoldenSources[file]!
+      const oracles = rows.filter((row) => row.file === file).map(({ id, domain, source: text }) => ({ id, domain, source: text }))
       if (oracles.length === 0) {
         throw new Error(`external oracle registry: ${file} has no row in the "Implemented fixtures" table of DOCS/external-oracles.md`)
       }
-      const source = input.externalGoldenSources[file]!
-      const tolerances = oracleTolerancesOf(source)
+      const listed = new Set(oracles.flatMap((oracle) => oracleIdsOf(oracle.id)))
+      const declared = new Set([...source.matchAll(ORACLE_DECLARATION)].map((match) => `ORACLE-${match[1]}`))
+      for (const id of declared) {
+        if (!listed.has(id)) {
+          throw new Error(`external oracle registry: ${file} declares ${id}, which the "Implemented fixtures" table does not list for it`)
+        }
+      }
+      for (const id of listed) {
+        if (!declared.has(id)) {
+          throw new Error(
+            `external oracle registry: the "Implemented fixtures" table lists ${id} for ${file}, which the file does not declare as "${id} (DOCS/external-oracles.md)"`,
+          )
+        }
+      }
+      let tolerances: readonly string[]
+      try {
+        tolerances = oracleTolerancesOf(source)
+      } catch (error) {
+        throw new Error(`external oracle fixture ${file}: ${error instanceof Error ? error.message : String(error)}`, { cause: error })
+      }
       if (tolerances.length === 0) throw new Error(`external oracle fixture ${file} states no "Tolerance:" line in its comments`)
       return { file, count: countOracleCalls(source), tolerances, oracles }
     })

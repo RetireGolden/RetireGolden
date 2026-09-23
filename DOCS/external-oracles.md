@@ -151,10 +151,17 @@ If a tolerance has to be wider than this, the test should explain the reason.
 
 The external-oracle fixtures currently in the tree, each with its primary source frozen into the test. The
 calculation census (`DOCS/operations/calculation-coverage.json`, `oracleExamples`) publishes this table per
-`*.external.golden.test.ts` file, beside the file's case count and the "Tolerance:" statements in its comments; the
-public methodology site renders it as the published-examples table. The census refuses to build when an external
-golden fixture has no row here, when a row names a fixture that is not in the tree, or when a fixture states no
-tolerance, so add the row and the `Tolerance:` line with the fixture:
+`*.external.golden.test.ts` file under `packages/<package>/src/`, beside the file's case count and the "Tolerance:"
+statements in its comments, for the public methodology site's published-examples table. Adding a fixture means three
+things, and the census refuses to build until all three agree:
+
+- a row here for each oracle the fixture carries (one row may name several, `ORACLE-007/008`), in this one table:
+  header and delimiter first, no blank line inside it, a pipe inside a cell written `\|`, and no id listed twice;
+- a declaration in the fixture's comments for each of those ids, written `ORACLE-nnn (DOCS/external-oracles.md)`
+  (a bare `ORACLE-nnn` is a cross-reference and declares nothing); the declared ids and this table's ids for the
+  file must match exactly;
+- a `Tolerance:` statement in the fixture's comments, ending its sentence with a period (it may wrap onto the next
+  comment line, but not into a blank line or a new `Label:` line).
 
 | ID | Domain | Fixture | Primary source |
 |---|---|---|---|
