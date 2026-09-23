@@ -112,10 +112,10 @@ describe('approximation kinds conformance', () => {
     // edit here. The fix count should trend to zero: each landed fix removes
     // its entry (the rule is no longer approximated) and lowers it. The B1-P2
     // triage counted 77 / 26 / 19; the module doc lists each reclassification
-    // since, with its evidence.
+    // and each rule registered as approximated since, with its evidence.
     const counts: Record<ApproximationKind, number> = { fix: 0, 'needs-fact': 0, convention: 0 }
     for (const entry of Object.values(kinds)) counts[entry.kind] += 1
-    expect(counts).toEqual({ fix: 76, 'needs-fact': 24, convention: 22 })
+    expect(counts).toEqual({ fix: 77, 'needs-fact': 24, convention: 22 })
     expect(counts.fix + counts['needs-fact'] + counts.convention).toBe(approximatedIds.length)
   })
 

@@ -1,17 +1,18 @@
 {
-  "generatedAt": "2026-09-14T12:59:25.010Z",
-  "recordCount": 529,
-  "urlCount": 430,
+  "generatedAt": "2026-09-23T21:34:40.291Z",
+  "recordCount": 530,
+  "urlCount": 433,
   "fetched": 0,
-  "cached": 430,
-  "entryCount": 1529,
+  "cached": 433,
+  "entryCount": 1545,
   "counts": {
-    "EXACT": 1046,
-    "PDF-WORD-LEVEL": 347,
-    "ELISION-EXACT": 125,
+    "EXACT": 1060,
+    "UNFETCHABLE": 6,
+    "ELISION-EXACT": 126,
+    "PDF-WORD-LEVEL": 346,
     "PUNCTUATION": 4,
     "ELISION-PUNCTUATION": 1,
-    "UNFETCHABLE": 5,
+    "TRUNCATED": 1,
     "PDF-NOT-VERIFIABLE": 1
   },
   "hostConventions": {
@@ -113,8 +114,8 @@
       "host": "www.jct.gov",
       "url": "https://www.jct.gov/getattachment/16f5eded-d2f9-425e-80a2-83a930056c38/s-1-26.pdf",
       "quoteSha256": "255ce7a54486dcc7",
-      "verdict": "PDF-WORD-LEVEL",
-      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "verdict": "UNFETCHABLE",
+      "detail": "HTTP 404",
       "diagnosis": null
     },
     {
@@ -6741,6 +6742,36 @@
     },
     {
       "id": "usc-42-416-l-survivor-fra-age-60-attainment-cohorts",
+      "citation": "42 U.S.C. 416(l)(1)(A)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section416&num=0&edition=prelim",
+      "quoteSha256": "d0174d2eb330c2cc",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-416-l-survivor-fra-age-60-attainment-cohorts",
+      "citation": "42 U.S.C. 416(l)(1)(B)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section416&num=0&edition=prelim",
+      "quoteSha256": "8b7876fdf71e3078",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-416-l-survivor-fra-age-60-attainment-cohorts",
+      "citation": "42 U.S.C. 416(l)(1)(C)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section416&num=0&edition=prelim",
+      "quoteSha256": "fc2d015fda198847",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-416-l-survivor-fra-age-60-attainment-cohorts",
       "citation": "42 U.S.C. 416(l)(1)(D)",
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section416&num=0&edition=prelim",
@@ -6771,10 +6802,30 @@
     },
     {
       "id": "usc-42-416-l-survivor-fra-age-60-attainment-cohorts",
+      "citation": "42 U.S.C. 416(l)(3)(A)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section416&num=0&edition=prelim",
+      "quoteSha256": "545421fbe626a6d7",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-416-l-survivor-fra-age-60-attainment-cohorts",
       "citation": "42 U.S.C. 416(l)(3)(B)",
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section416&num=0&edition=prelim",
       "quoteSha256": "69d3ea57463cdec2",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-416-l-survivor-fra-age-60-attainment-cohorts",
+      "citation": "20 CFR 404.409(b)",
+      "host": "www.ecfr.gov",
+      "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-E/section-404.409",
+      "quoteSha256": "1cf04d330835a6a9",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null
@@ -6815,6 +6866,116 @@
       "host": "www.ecfr.gov",
       "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR219bf3e41a78e9f/section-404.338",
       "quoteSha256": "c6943886f30f6f7a",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-402-e-survivor-of-worker-who-died-before-claiming",
+      "citation": "42 U.S.C. 402(e)(1)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim",
+      "quoteSha256": "c6427ff859bc2b9d",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-402-e-survivor-of-worker-who-died-before-claiming",
+      "citation": "42 U.S.C. 402(e)(2)(A)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim",
+      "quoteSha256": "4097856f4bd5c541",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-402-e-survivor-of-worker-who-died-before-claiming",
+      "citation": "42 U.S.C. 402(e)(2)(B)(i), (iii)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim",
+      "quoteSha256": "0982add0ab589257",
+      "verdict": "ELISION-EXACT",
+      "detail": "2 elision segments, every one a literal substring",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-402-e-survivor-of-worker-who-died-before-claiming",
+      "citation": "42 U.S.C. 402(e)(2)(C)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim",
+      "quoteSha256": "eb4f11c82f65af61",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-402-e-survivor-of-worker-who-died-before-claiming",
+      "citation": "42 U.S.C. 402(e)(2)(D)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim",
+      "quoteSha256": "a64e12b80e80fd07",
+      "verdict": "ELISION-EXACT",
+      "detail": "3 elision segments, every one a literal substring",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-402-e-survivor-of-worker-who-died-before-claiming",
+      "citation": "20 CFR 404.313(a)",
+      "host": "www.ecfr.gov",
+      "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR545f4aa361a6356/section-404.313",
+      "quoteSha256": "74a6613affd88df6",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-402-e-survivor-of-worker-who-died-before-claiming",
+      "citation": "20 CFR 404.313(e)(1)",
+      "host": "www.ecfr.gov",
+      "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR545f4aa361a6356/section-404.313",
+      "quoteSha256": "bba02b8bda7ae9aa",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-402-e-survivor-of-worker-who-died-before-claiming",
+      "citation": "20 CFR 404.337(a)",
+      "host": "www.ecfr.gov",
+      "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR219bf3e41a78e9f/section-404.337",
+      "quoteSha256": "0d3514800fe0263e",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-402-e-survivor-of-worker-who-died-before-claiming",
+      "citation": "20 CFR 404.621(a)(2)",
+      "host": "www.ecfr.gov",
+      "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-G/subject-group-ECFR7863a9f033e7183/section-404.621",
+      "quoteSha256": "e4490b5e009aa996",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-402-e-survivor-of-worker-who-died-before-claiming",
+      "citation": "20 CFR 404.621(a)(3)",
+      "host": "www.ecfr.gov",
+      "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-G/subject-group-ECFR7863a9f033e7183/section-404.621",
+      "quoteSha256": "feb747264b8fc9c3",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-402-e-survivor-of-worker-who-died-before-claiming",
+      "citation": "20 CFR 404.621(a)(4)(ii)",
+      "host": "www.ecfr.gov",
+      "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-G/subject-group-ECFR7863a9f033e7183/section-404.621",
+      "quoteSha256": "808be0d07841a3f5",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null
@@ -9302,9 +9463,13 @@
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section63&num=0&edition=prelim",
       "quoteSha256": "b626ea03080fe6ed",
-      "verdict": "ELISION-EXACT",
-      "detail": "2 elision segments, every one a literal substring",
-      "diagnosis": null
+      "verdict": "TRUNCATED",
+      "detail": "the quote ends with a terminal period the source does not have there",
+      "diagnosis": {
+        "matchedWords": 19,
+        "totalWords": 19,
+        "continuation": ", and (8) so much of the deduction allowed by section 165(a) as is attributable to the qualified net disaster loss (as defined in section 165(h)(6)(b)). (c) standard deduction for"
+      }
     },
     {
       "id": "irc-56-b-1-D-section-151-deduction-disallowed-for-amt",

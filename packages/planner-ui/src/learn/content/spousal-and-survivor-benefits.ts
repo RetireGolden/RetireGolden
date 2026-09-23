@@ -56,14 +56,14 @@ export const blocks: ArticleBlock[] = [
   { type: 'heading', text: 'Survivor precision: early-claim reduction and the widow\u2019s limit' },
   {
     type: 'prose',
-    md: 'A survivor benefit is not always 100% of what the deceased would have received. Two SSA rules shape the amount, and RetireGolden models both:',
+    md: 'A survivor benefit is not always 100% of what the deceased would have received. Two SSA rules shape the amount, and RetireGolden models both, with the limits noted below:',
   },
   {
     type: 'list',
     items: [
-      '**Early-claim widow(er) reduction.** A survivor can claim as early as age 60, but claiming before the survivor\u2019s own full retirement age reduces the benefit by up to 28.5% at 60 (a floor of 71.5%). The survivor FRA is a separate, earlier schedule than the worker FRA \u2014 it tops out at 66 years and 8 months for those born 1960+, not 67.',
+      '**Early-claim widow(er) reduction.** A survivor can claim as early as age 60, but claiming before the survivor\u2019s own full retirement age reduces the benefit by up to 28.5% at 60 (a floor of 71.5%). The survivor full retirement age runs on its own schedule, set by the year the survivor turns 60: 66 for those born 1945 through 1956, rising two months a year to 67 for those born 1962 or later. RetireGolden\u2019s survivor table currently departs from that schedule for survivors born 1940 through 1950 and 1961 or later, so an early survivor claim in those years is reduced a little less than the law requires. It is a known limit, to be fixed.',
       '**RIB-LIM (the widow\u2019s limit).** If the deceased claimed reduced benefits early, the survivor is capped at the larger of the deceased\u2019s actual reduced benefit or 82.5% of the deceased\u2019s PIA. This usually lifts the survivor above the deceased\u2019s reduced amount but below 100% of the PIA.',
-      '**The base is the deceased\u2019s actual benefit.** If the deceased delayed past FRA, those delayed retirement credits pass through to the survivor.',
+      '**The base is the deceased\u2019s actual benefit.** If the deceased delayed past FRA, those delayed retirement credits pass through to the survivor. If the deceased died before claiming, the law uses the benefit earned by the death: no early reduction, and only the delayed credits earned by then, with survivor benefits available from the month of death. RetireGolden currently starts the survivor benefit at the claim age entered in the plan and prices it at that age instead, a known limit to be fixed.',
     ],
   },
   {

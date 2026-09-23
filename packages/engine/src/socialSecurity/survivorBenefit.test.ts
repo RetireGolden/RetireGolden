@@ -180,6 +180,38 @@ describeRule('usc-42-416-l-survivor-fra-age-60-attainment-cohorts', {
   })
 })
 
+// The early end of the same table. Effective birth years 1940 through 1950
+// attain the survivor early-retirement age of 60 in 2000 through 2010.
+// Section 416(l)(1)(B) with (l)(3)(A) gives 65 plus two-twelfths of the months
+// from January 2000 through December of the attainment year for 1940-1944
+// (12, 24, 36, 48, 60 months: 65y2m ... 65y10m), and 416(l)(1)(C) gives 66 for
+// 1945 onward (through 1956); 20 CFR 404.409(b) and POMS RS 00615.301 print
+// the same rows. The engine's rows for these years are the statutory ones
+// moved six birth years later: 65y0m through 1945, then 65y2m ... 65y10m for
+// 1946-1950. In months, statute against engine:
+//   1940 782/780  1941 784/780  1942 786/780  1943 788/780  1944 790/780
+//   1945 792/780  1946 792/782  1947 792/784  1948 792/786  1949 792/788
+//   1950 792/790
+// 1939 and earlier (780) and 1951-1960 agree, so they are not pinned here.
+const EARLY_SURVIVOR_COHORTS = [1940, 1941, 1942, 1943, 1944, 1945, 1946, 1947, 1948, 1949, 1950] as const
+
+describeRule('usc-42-416-l-survivor-fra-age-60-attainment-cohorts', {
+  note: 'age-60 cohorts born 1940 to 1950',
+  readings: {
+    statutory1940To1950SurvivorFraMonths: [782, 784, 786, 788, 790, 792, 792, 792, 792, 792, 792],
+    engine1940To1950SurvivorFraMonths: [780, 780, 780, 780, 780, 780, 782, 784, 786, 788, 790],
+  },
+  accepted: 'statutory1940To1950SurvivorFraMonths',
+  produced: 'engine1940To1950SurvivorFraMonths',
+}, ({ accepted, produced }) => {
+  it('pins the engine table for the 1940 to 1950 cohorts, 1946 at 782 months against the statutory 792', () => {
+    const months = EARLY_SURVIVOR_COHORTS.map((year) => fraTotalMonths(survivorFraForBirthYear(year)))
+
+    expect(months).toEqual(produced)
+    expect(months).not.toEqual(accepted)
+  })
+})
+
 describeRule('usc-42-402-e-2-a-survivor-own-delay-no-drc', {
   // The deceased has no delayed credits in either reading. At survivor FRA or
   // later, the statute leaves the survivor rate at the 2,000-dollar base; the

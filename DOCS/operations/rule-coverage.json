@@ -2,26 +2,26 @@
   "kind": "retiregolden.rules-coverage.manifest",
   "version": 5,
   "registry": {
-    "total": 529,
+    "total": 530,
     "byClassification": {
-      "approximated": 122,
+      "approximated": 123,
       "outOfScope": 87,
       "settled": 314,
       "unsettled": 6
     },
     "approximatedByKind": {
       "convention": 22,
-      "fix": 76,
+      "fix": 77,
       "needs-fact": 24
     },
     "byVolatility": {
       "annuallyIndexed": 86,
       "awaitingGuidance": 12,
-      "staticStatute": 424,
+      "staticStatute": 425,
       "sunsetting": 7
     },
     "byJurisdiction": {
-      "federal": 339,
+      "federal": 340,
       "states": {
         "AK": 1,
         "AL": 9,
@@ -779,7 +779,7 @@
     {
       "module": "socialSecurity",
       "path": "rule-coverage/socialSecurity.json",
-      "ruleCount": 49
+      "ruleCount": 50
     },
     {
       "module": "socialSecurityEarnings",
@@ -823,18 +823,19 @@
     }
   ],
   "quoteFidelity": {
-    "generatedAt": "2026-09-14T12:59:25.010Z",
-    "entryCount": 1529,
+    "generatedAt": "2026-09-23T21:34:40.291Z",
+    "entryCount": 1545,
     "fetched": 0,
-    "cached": 430,
+    "cached": 433,
     "counts": {
-      "ELISION-EXACT": 125,
+      "ELISION-EXACT": 126,
       "ELISION-PUNCTUATION": 1,
-      "EXACT": 1046,
+      "EXACT": 1060,
       "PDF-NOT-VERIFIABLE": 1,
-      "PDF-WORD-LEVEL": 347,
+      "PDF-WORD-LEVEL": 346,
       "PUNCTUATION": 4,
-      "UNFETCHABLE": 5
+      "TRUNCATED": 1,
+      "UNFETCHABLE": 6
     }
   }
 }
