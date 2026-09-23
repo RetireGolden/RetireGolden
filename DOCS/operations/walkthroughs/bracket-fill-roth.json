@@ -16,7 +16,7 @@
     "The household's 10,000 charitable distribution is routed from the RMD, and only Morgan has one in 2026, so the whole gift leaves his IRA and Riley gives nothing.",
     "The spending cut at 80 keys on the primary person, Morgan, and first applies in 2033.",
     "The first projection year is a full calendar year on the entered balances; both PIAs are read in start-year dollars (COLA factor 1); cash growth is untaxed; Florida's zero has no field; the funding fixed point is seeded with the pre-tax need and converges on its second evaluation.",
-    "The household conversion amount is sized by bisection to $0.01 below the exact root, so that row carries a $0.01 tolerance; the executed conversion is quantized to cents by the owner split and is exact."
+    "The household conversion amount is sized by bisection to $0.01 below the exact root, so that row carries a $0.01 tolerance; the executed conversion is quantized to cents by the owner split: exact in 2026, where every landing the contract allows gives the same cents, and held to $0.01 in 2029, where the earlier years' allowed landings can move Morgan's slice by a cent."
   ],
   "tables": [
     {
