@@ -97,7 +97,7 @@ The ledger is split into three buckets so the serious findings are not buried un
 | `ABSENT` | No arrangement of rendering differences makes the quote a substring of the cited page. The diagnosis prints how many words matched before divergence and what the source actually says at that point. | Read the diagnosis. Three common shapes: a **composed** sentence assembled from a table or an enumerated list (the dangerous one — it reads like a quotation and is not); a **rewritten** sentence in the registry's own words; a **de-symbolised** quote where only `$`, `%`, `§` or a possessive was changed. Re-quote from the source. |
 | `TRUNCATED` | The quote matches once the terminal punctuation it ends with is removed — i.e. the quote closes a sentence the source keeps writing. The mark is stripped from the quote only, never from the source, so this one *is* directional; the ledger names which mark it was (period, semicolon, colon or comma). | Check what was cut. This has hidden operative limbs before (`…is taken into account.` where the regulation reads `…is taken into account **in determining whether section 401(a)(9) is satisfied**`). Either restore the full sentence or mark the cut with `...`. |
 | `ELISION-BROKEN` | A quote uses `...` markers, but at least one segment between them is not in the source. | The elision is not the problem; the segment is. Treat as `ABSENT` for that segment. |
-| `UNFETCHABLE` | The page could not be retrieved, or returned a challenge/stub instead of the document. Only the network request can produce this — a cache or temp-directory failure warns and carries on, because it is a fact about your machine and this verdict is an accusation against a publisher. | Not a registry defect on its own, but the citation is unverified until it resolves. `www.jct.gov` sits behind a Cloudflare challenge and is expected here; the script does not attempt to defeat it. Consider citing a mirror that serves the same text. |
+| `UNFETCHABLE` | The page could not be retrieved, or returned a challenge/stub instead of the document. Only the network request can produce this — a cache or temp-directory failure warns and carries on, because it is a fact about your machine and this verdict is an accusation against a publisher. | Not a registry defect on its own, but the citation is unverified until it resolves. `www.jct.gov`'s HTML pages sit behind a Cloudflare challenge and are expected here; the script does not attempt to defeat it. Its `getattachment` PDF downloads are not challenged, so a jct.gov PDF that reports `UNFETCHABLE` with an HTTP 404 has moved: find it again from the publication's page in a browser and re-point the citation (JCS-1-26 was re-issued under a new attachment id on 2026-09-18). Consider citing a mirror that serves the same text. |
 
 Each committed ledger records the **latest** verifier observation for that run, not cumulative
 evidence across refreshes. A failed refreshed retrieval therefore replaces an earlier match with
@@ -188,7 +188,7 @@ notes column is prose and is not compared.
 | `www.ecfr.gov` | **U+0027** | **U+2014** em dash | `§` | Renders halves as `70 1⁄2` with U+2044 *and surrounding spaces*. Straight double quotes. |
 | `www.irs.gov` (HTML) | **inconsistent** — no assertion made | U+2014 | `§` | P969 and the Form 5329 instructions use U+2019 (`doesn’t`); P590-B uses U+0027 (`decedent's`). Contractions are the publication's own voice and must be quoted as written. |
 | `www.irs.gov` (PDF) | not recoverable | not recoverable | extracts as U+FFFD | Word-level matching only. See "Why PDF sources never PASS". |
-| `www.jct.gov` | unknown | unknown | unknown | Behind a Cloudflare challenge; the script reports it `UNFETCHABLE` rather than working around it. |
+| `www.jct.gov` | unknown | unknown | unknown | Its HTML pages are behind a Cloudflare challenge; the script reports them `UNFETCHABLE` rather than working around it, so how they render is unmeasured. Its `getattachment` PDF downloads are served without the challenge and verify at word level (checked 2026-09-23 on the re-issued JCS-1-26); a PDF says nothing about the HTML conventions in these columns. |
 
 ## The fetch identity ladder
 
@@ -217,9 +217,10 @@ silent: a row verified through it carries `fetchProfile:
 same plus a `fetchPolicyVersion` marker so older fallback rows that lacked
 redirect validation are refetched. The transparent identity always goes
 first because at least one publisher requires it - eCFR serves the full
-regulation only to the compatible-bot shape and a stub to browsers. www.jct.gov is deliberately outside the allowlist: it runs an
+regulation only to the compatible-bot shape and a stub to browsers. www.jct.gov is deliberately outside the allowlist: its HTML pages run an
 interactive challenge, and the stance recorded elsewhere in this document -
-report `UNFETCHABLE`, never work around it - is unchanged.
+report `UNFETCHABLE`, never work around it - is unchanged. Its PDF downloads
+are not challenged and need no retry.
 
 Hosts outside the allowlist behave exactly as before. nysenate.gov
 fingerprints the TLS client and refuses both identities, so its rows stay
