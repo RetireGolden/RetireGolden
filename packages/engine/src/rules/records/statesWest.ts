@@ -1753,7 +1753,6 @@ export const westStateRecords = {
       'packages/engine/src/params/state/data/year2026.ts#states.AR',
       'packages/engine/src/tax/stateTax.ts#computeStateTaxDetailResult',
       'packages/engine/src/tax/stateQcdHsa.ts#stateDirectQcdCollectionAdjustment',
-      'packages/engine/src/tax/stateQcdHsa.ts#newJerseyWorksheetCTaxableAmount',
     ],
   },
   'hi-direct-qcd-conformity': {
