@@ -64,7 +64,7 @@ export const socialSecurityRecords = {
       worksheet: 'DOCS/calculations/social-security/current-spouse-excess-poms-order.md',
     },
     limits: [
-      'A null result means the caller must keep its existing legacy path; the guard facts are configured dates and stream shape, and the helper decides no SSA eligibility, application, insured status or the first month for which a benefit is legally payable',
+      'A null result means the caller must keep its existing legacy path; the guard facts are configured dates and stream shape, and the helper decides no SSA eligibility, application, insured status or first month of legal right to the benefit',
       'Branch selection is tied to the original configured claim age, never to attained age, an ARF-credited age or the current benefit factor',
       'Spousal benefits earn no delayed retirement credits, so the factor is at most one',
     ],
