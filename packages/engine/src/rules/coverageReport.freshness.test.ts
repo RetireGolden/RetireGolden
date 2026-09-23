@@ -62,6 +62,11 @@ const goldenSources = import.meta.glob('../../../*/src/**/*.external.golden.test
   import: 'default',
   eager: true,
 })
+// Every external golden anywhere in the app or the packages, by path only: a
+// fixture outside packages/<package>/src would escape both inventories.
+const everyGoldenPath = Object.keys(
+  import.meta.glob('../../../../{app,packages}/**/*.external.golden.test.ts', { query: '?raw', import: 'default', eager: true }),
+)
 // The walkthrough directory holds one test file per walkthrough (rmd-irmaa
 // and early-retiree-aca first); walkthroughEntriesOf turns their it() titles
 // into the computed census, and the generator lists the same directory, so
@@ -351,6 +356,13 @@ function syntheticCalculationRecord(justification: CalculationRecord['justificat
 }
 
 describe('calculation coverage report artifacts', () => {
+  it('finds every external golden fixture under packages/<package>/src, where the census reads them', () => {
+    const paths = everyGoldenPath.map(repoPathOfGlobKey)
+    expect(paths.length).toBeGreaterThan(0)
+    expect(paths.filter((path) => !/^packages\/[^/]+\/src\//u.test(path))).toEqual([])
+    expect([...paths].sort()).toEqual(Object.keys(externalGoldenSources).sort())
+  })
+
   it('matches the deterministic calculation report builder', () => {
     if (committedCalculationJson === null) {
       throw new Error('committed calculation-coverage.json must be found by the glob')

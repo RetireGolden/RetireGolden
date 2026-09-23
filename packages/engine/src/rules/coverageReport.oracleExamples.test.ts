@@ -156,6 +156,12 @@ describe('the tolerance statements', () => {
     expect(oracleTolerancesOf('/**\n * Access date: 2026-06-29.\n * Tolerance: $1. */')).toEqual(['$1'])
     expect(oracleTolerancesOf('/** Tolerance: $2 a year. */')).toEqual(['$2 a year'])
     expect(oracleTolerancesOf('// Tolerance: $3.\n/* Tolerance: $4. */')).toEqual(['$3', '$4'])
+    // A citation abbreviation's period does not end the sentence; the last period always does.
+    expect(oracleTolerancesOf('/**\n * Tolerance: $1 per IRS Rev. Proc. 2025-32.\n */')).toEqual(['$1 per IRS Rev. Proc. 2025-32'])
+    expect(oracleTolerancesOf('/**\n * Tolerance: $1 per Pub. 590-B, as of Jan. 2026. Other prose.\n */')).toEqual([
+      '$1 per Pub. 590-B, as of Jan. 2026',
+    ])
+    expect(oracleTolerancesOf('/**\n * Tolerance: exact, per U.S. Treasury tables.\n */')).toEqual(['exact, per U.S. Treasury tables'])
     // In a string, the label is data, not a statement.
     expect(oracleTolerancesOf("const note = 'Tolerance: $5.'\nconst other = `Tolerance: $6.`")).toEqual([])
   })
@@ -217,6 +223,9 @@ describe('the published oracle examples', () => {
     expect(() => census({ externalGoldenSources: { [FEDERAL]: FEDERAL_SOURCE, [STATE]: missing } })).toThrow(
       `the "Implemented fixtures" table lists ORACLE-013 for ${STATE}, which the file does not declare as "ORACLE-013 (DOCS/external-oracles.md)"`,
     )
+    // Code and strings are never read for declarations: a citation in a string declares nothing.
+    const inString = STATE_SOURCE + "\nconst cite = 'ORACLE-018 (DOCS/external-oracles.md)'"
+    expect(census({ externalGoldenSources: { [FEDERAL]: FEDERAL_SOURCE, [STATE]: inString } }).oracleExamples).toHaveLength(2)
     // A bare mention of another file's oracle is a cross-reference, not a declaration (STATE_SOURCE mentions ORACLE-001).
     expect(census({}).oracleExamples.map((example) => example.oracles.map((oracle) => oracle.id))).toEqual([
       ['ORACLE-001'],

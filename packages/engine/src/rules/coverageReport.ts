@@ -1221,8 +1221,10 @@ const ORACLE_ID_CELL = /^ORACLE-\d{3}(?:\/\d{3})*$/u
 const ORACLE_FIXTURE_LINK = /^\[`([^`]+)`\]\([^)]*\)$/u
 const EXTERNAL_GOLDEN_SUFFIX = '.external.golden.test.ts'
 /**
- * How a fixture declares an oracle it carries: `ORACLE-005 (DOCS/external-oracles.md)`.
- * A bare `ORACLE-001` elsewhere in a fixture is a cross-reference, not a declaration.
+ * How a fixture declares an oracle it carries, in a comment:
+ * `ORACLE-005 (DOCS/external-oracles.md)`. A bare `ORACLE-001` is a
+ * cross-reference, not a declaration, and text in code or strings is never
+ * read, so a fixture cites another file's oracle in the bare form.
  */
 const ORACLE_DECLARATION = /ORACLE-(\d{3}) \(DOCS\/external-oracles\.md\)/gu
 
@@ -1362,10 +1364,26 @@ function commentLinesOf(source: string): readonly (readonly string[])[] {
   return comments
 }
 
-/** The first period that ends a sentence (followed by whitespace or the end), not one inside a number such as 0.10. */
+/**
+ * Abbreviations a citation puts inside a sentence (Rev. Proc., Pub., No.,
+ * Sec., a month, e.g., U.S., a single initial): the period after one does not
+ * end a tolerance statement.
+ */
+const CITATION_ABBREVIATION =
+  /(?:^|[\s(])(?:Rev|Proc|Pub|Publ|No|Nos|Sec|Secs|Reg|Regs|Rul|Treas|Dept|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec|vs|approx|e\.g|i\.e|[A-Z](?:\.[A-Z])*)$/u
+
+/**
+ * The first period that ends a sentence: followed by whitespace or the end,
+ * not inside a number such as 0.10, and not after a citation abbreviation
+ * such as "Rev. Proc." (the period ending the whole text always counts).
+ */
 function sentenceEndOf(text: string): number {
   for (let index = 0; index < text.length; index += 1) {
-    if (text[index] === '.' && (index + 1 === text.length || /\s/u.test(text[index + 1]!))) return index
+    if (text[index] !== '.') continue
+    if (index + 1 === text.length) return index
+    if (!/\s/u.test(text[index + 1]!)) continue
+    if (CITATION_ABBREVIATION.test(text.slice(0, index))) continue
+    return index
   }
   return -1
 }
@@ -1378,7 +1396,8 @@ const TOLERANCE_WRAP_LIMIT = 3
  * The distinct "Tolerance:" statements in a fixture's comments (block or
  * line comments; never code or strings), in order. A statement is the text
  * after the label to the end of its sentence: the first period followed by a
- * space or the end of the text, so the period in 0.10 does not end it. A
+ * space or the end of the text, so neither the period in 0.10 nor one after a
+ * citation abbreviation ("Rev. Proc.", "Pub.", "No.", "U.S.") ends it. A
  * statement that does not end on its line continues onto following comment
  * lines, up to three, but never into a blank line or a line that opens a new
  * labelled field; one that still has not ended is refused rather than
@@ -1443,7 +1462,10 @@ function oracleExamplesOf(input: CalculationCoverageInput): readonly OracleExamp
         throw new Error(`external oracle registry: ${file} has no row in the "Implemented fixtures" table of DOCS/external-oracles.md`)
       }
       const listed = new Set(oracles.flatMap((oracle) => oracleIdsOf(oracle.id)))
-      const declared = new Set([...source.matchAll(ORACLE_DECLARATION)].map((match) => `ORACLE-${match[1]}`))
+      const commentText = commentLinesOf(source)
+        .map((lines) => lines.join('\n'))
+        .join('\n')
+      const declared = new Set([...commentText.matchAll(ORACLE_DECLARATION)].map((match) => `ORACLE-${match[1]}`))
       for (const id of declared) {
         if (!listed.has(id)) {
           throw new Error(`external oracle registry: ${file} declares ${id}, which the "Implemented fixtures" table does not list for it`)

@@ -158,10 +158,13 @@ things, and the census refuses to build until all three agree:
 - a row here for each oracle the fixture carries (one row may name several, `ORACLE-007/008`), in this one table:
   header and delimiter first, no blank line inside it, a pipe inside a cell written `\|`, and no id listed twice;
 - a declaration in the fixture's comments for each of those ids, written `ORACLE-nnn (DOCS/external-oracles.md)`
-  (a bare `ORACLE-nnn` is a cross-reference and declares nothing); the declared ids and this table's ids for the
-  file must match exactly;
+  (a bare `ORACLE-nnn` is a cross-reference and declares nothing, so cite another file's oracle in the bare form;
+  code and strings are never read); the declared ids and this table's ids for the file must match exactly;
 - a `Tolerance:` statement in the fixture's comments, ending its sentence with a period (it may wrap onto the next
-  comment line, but not into a blank line or a new `Label:` line).
+  comment line, but not into a blank line or a new `Label:` line). The period after a citation abbreviation (Rev.,
+  Proc., Pub., No., Sec., a month, e.g., i.e., U.S., an initial) does not end it; spell out any other abbreviation.
+
+A fixture outside `packages/<package>/src/` is refused, not skipped.
 
 | ID | Domain | Fixture | Primary source |
 |---|---|---|---|

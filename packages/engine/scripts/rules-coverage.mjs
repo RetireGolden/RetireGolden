@@ -192,12 +192,21 @@ async function main() {
 
   const packagesDir = join(repositoryDir, 'packages')
   // Fixtures live under packages/<package>/src/, the inventory the freshness
-  // suite globs too, so the two sides always read the same files.
-  const externalGoldenSources = Object.fromEntries(
-    Object.entries(walkFiles(packagesDir, (name) => name.endsWith('.external.golden.test.ts'), repositoryDir)).filter(
-      ([path]) => /^packages\/[^/]+\/src\//u.test(path),
-    ),
-  )
+  // suite globs too, so the two sides always read the same files. One found
+  // anywhere else in the app or the packages is refused, not dropped: it
+  // would escape the registry and tolerance checks.
+  const isExternalGolden = (name) => name.endsWith('.external.golden.test.ts')
+  const everyExternalGolden = {
+    ...walkFiles(packagesDir, isExternalGolden, repositoryDir),
+    ...(existsSync(join(repositoryDir, 'app')) ? walkFiles(join(repositoryDir, 'app'), isExternalGolden, repositoryDir) : {}),
+  }
+  const misplacedGoldens = Object.keys(everyExternalGolden).filter((path) => !/^packages\/[^/]+\/src\//u.test(path))
+  if (misplacedGoldens.length > 0) {
+    throw new Error(
+      `external golden fixtures must live under packages/<package>/src/, where the census reads them: ${misplacedGoldens.join(', ')}`,
+    )
+  }
+  const externalGoldenSources = everyExternalGolden
   const oracleRegistryPath = join(repositoryDir, 'DOCS', 'external-oracles.md')
   const oracleRegistryText = existsSync(oracleRegistryPath) ? readFileSync(oracleRegistryPath, 'utf8') : null
   const docsDir = join(repositoryDir, 'DOCS', 'calculations')
