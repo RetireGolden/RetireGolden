@@ -52,14 +52,17 @@ const BRACKET_TOP_22 = 211_400
 const AGI_AT_ROOT = (BRACKET_TOP_22 + 65_500) / 1.12 // 247,232.14
 const HOUSEHOLD_ROOT = AGI_AT_ROOT - TAXABLE_SS_CAP - NET_RMD_CASH // 183,448.25
 
-// The split: the household amount, in cents, is shared between the owners in
-// proportion to their post-RMD traditional balances in exact cents, largest
-// remainder. Morgan's slice can convert into his Roth IRA; Riley has no Roth
-// account, so her slice is dropped with a warning naming her. Any landing the
-// bisection allows gives Morgan the same 11,509,846 cents.
+// The split: the household amount the bisection landed on (its lower bound,
+// traced: 0.0038 below the root), rounded half-up to cents, is shared between
+// the owners in proportion to their post-RMD traditional balances in exact
+// cents, largest remainder. Morgan's slice can convert into his Roth IRA;
+// Riley has no Roth account, so her slice is dropped with a warning naming
+// her. The root itself would round to 18,344,825 cents; any landing the
+// bisection's $0.01 allows gives Morgan the same 11,509,846 cents.
+const HOUSEHOLD_LANDING = 183_448.244678974151611328125 // the bisection's lower bound
 const MORGAN_WEIGHT_CENTS = Math.round((700_000 - RMD) * 100) // 67,358,491
 const RILEY_WEIGHT_CENTS = 400_000 * 100 // 40,000,000
-const HOUSEHOLD_CENTS = Math.round(HOUSEHOLD_ROOT * 100) // 18,344,825
+const HOUSEHOLD_CENTS = Math.round(HOUSEHOLD_LANDING * 100) // 18,344,824
 const ROTH_CONVERSION =
   Math.round((HOUSEHOLD_CENTS * MORGAN_WEIGHT_CENTS) / (MORGAN_WEIGHT_CENTS + RILEY_WEIGHT_CENTS)) / 100 // 115,098.46
 
@@ -141,7 +144,7 @@ export const BRACKET_FILL_ROTH_WALKTHROUGH: Walkthrough = {
       { key: 'rmd', label: 'Required minimum distribution (Morgan)', hand: RMD, derivation: '700,000 ÷ 26.5; Riley, 71, has none until 2028', contract: 'worksheet rmd-uniform-lifetime-divisor; params/index.ts#rmdStartAgeForBirthYear (the owner path: 73 for births 1951 to 1959) and domain rules §6', select: (year) => year.rmd },
       { key: 'qcd', label: 'Qualified charitable distribution', hand: QCD, derivation: '10,000 × inflation factor 1, all from Morgan\'s RMD, offsetting income in full', contract: 'worksheets qcd-limit-and-age-proxy, qcd-income-offset-qualified-slice', select: (year) => year.qcd },
       { key: 'conversion-sized', label: 'Conversion sized for the household', hand: HOUSEHOLD_ROOT, tolerance: BISECTION_TOLERANCE, bound: 'below', derivation: '(211,400 + 65,500) ÷ 1.12 − 47,368.80 − 16,415.09 = 183,448.25: the amount that brings joint taxable income to the top of the 22% bracket with the 85% cap binding and both senior deductions in phase-out; sized by bisection to $0.01 below', contract: 'YearResult.aggregateRothConversionAllocationDesired; strategies/rothConversion.ts (topOfBracket by bisection)', select: (year) => year.aggregateRothConversionAllocationDesired },
-      { key: 'roth-conversion', label: 'Roth conversion executed', hand: ROTH_CONVERSION, derivation: '18,344,825 cents × 67,358,491 ÷ 107,358,491 = 11,509,846 cents for Morgan (his post-RMD balance over the two IRAs\' total, largest remainder); Riley\'s 68,349.78 dropped, she holds no Roth', contract: 'worksheets exact-cent-pro-rata-half-up, roth-conversion-annual; registry irc-408-d-3-A-i-conversion-benefits-the-distributee; YearResult.rothConversion', select: (year) => year.rothConversion },
+      { key: 'roth-conversion', label: 'Roth conversion executed', hand: ROTH_CONVERSION, derivation: 'the bisection lands at 183,448.2447 (its lower bound), 18,344,824 cents; × 67,358,491 ÷ 107,358,491 = 11,509,846 cents for Morgan (his post-RMD balance over the two IRAs\' total, largest remainder); the root would round to 18,344,825 cents and give the same slice; Riley\'s 68,349.78 dropped, she holds no Roth', contract: 'worksheets exact-cent-pro-rata-half-up, roth-conversion-annual; registry irc-408-d-3-A-i-conversion-benefits-the-distributee; YearResult.rothConversion', select: (year) => year.rothConversion },
       { key: 'magi', label: 'Modified adjusted gross income', hand: MAGI, derivation: '16,415.09 net RMD + 115,098.46 conversion + 47,368.80 taxable Social Security (the 85% cap binds)', contract: 'worksheets federal-taxable-social-security-tiers, medicare-magi-composition; YearResult.magi', select: (year) => year.magi },
       { key: 'tax', label: 'Income tax (federal plus Florida)', hand: TAX, derivation: 'taxable income 178,882.35 − 35,500 − 8,534.12 (two senior deductions after phase-out) = 134,848.24; 10% of 24,800 + 12% of 76,000 + 22% of 34,048.24 = 19,090.61; Florida 0', contract: 'worksheets federal-standard-deduction-age-65, federal-ordinary-bracket-tax, tax-total-annual; tax/federalTax.ts#seniorDeductionAmount', select: (year) => year.tax },
       { key: 'amt', label: 'Alternative minimum tax', hand: 0, derivation: 'AMTI 178,882.35 − exemption 140,200 = 38,682.35 × 26% = 10,057.41, below the regular tax', contract: 'worksheet federal-amt-screen', select: (year) => year.amt },

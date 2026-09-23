@@ -131,7 +131,7 @@
           "engine": 115098.46,
           "tolerance": 0.005,
           "unit": "dollars",
-          "derivation": "18,344,825 cents × 67,358,491 ÷ 107,358,491 = 11,509,846 cents for Morgan (his post-RMD balance over the two IRAs' total, largest remainder); Riley's 68,349.78 dropped, she holds no Roth",
+          "derivation": "the bisection lands at 183,448.2447 (its lower bound), 18,344,824 cents; × 67,358,491 ÷ 107,358,491 = 11,509,846 cents for Morgan (his post-RMD balance over the two IRAs' total, largest remainder); the root would round to 18,344,825 cents and give the same slice; Riley's 68,349.78 dropped, she holds no Roth",
           "contract": "worksheets exact-cent-pro-rata-half-up, roth-conversion-annual; registry irc-408-d-3-A-i-conversion-benefits-the-distributee; YearResult.rothConversion"
         },
         {
