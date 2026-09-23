@@ -51,8 +51,11 @@ export interface WalkthroughRow {
    * percentage or a calendar year; a string row is text. The site formats on it.
    */
   readonly unit?: 'dollars' | 'count' | 'percent' | 'year'
-  /** Reads the engine's figure off the year row (and the plan, for account ids). */
-  readonly select: (year: YearResult, plan: Plan) => number | string | undefined
+  /**
+   * Reads the engine's figure off the year row (and the plan, for account
+   * ids); null and undefined both mean the engine published no figure.
+   */
+  readonly select: (year: YearResult, plan: Plan) => number | string | null | undefined
 }
 
 /** The ledger's own tolerance: ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS, half a cent. */
@@ -118,17 +121,19 @@ export function runWalkthrough(walkthrough: Walkthrough): {
     return {
       year: table.year,
       why: table.why,
-      rows: table.rows.map((row) => ({
-        key: row.key,
-        label: row.label,
-        hand: row.hand,
-        engine: row.select(year, plan),
-        tolerance: row.tolerance ?? WALKTHROUGH_DEFAULT_TOLERANCE,
-        ...(row.bound === 'below' ? { bound: 'below' as const } : {}),
-        unit: typeof row.hand === 'string' ? 'text' : (row.unit ?? 'dollars'),
-        derivation: row.derivation,
-        contract: row.contract,
-      })),
+      rows: table.rows.map((row): WalkthroughRowResult => {
+        const result: WalkthroughRowResult = {
+          key: row.key,
+          label: row.label,
+          hand: row.hand,
+          engine: row.select(year, plan) ?? undefined,
+          tolerance: row.tolerance ?? WALKTHROUGH_DEFAULT_TOLERANCE,
+          unit: typeof row.hand === 'string' ? 'text' : (row.unit ?? 'dollars'),
+          derivation: row.derivation,
+          contract: row.contract,
+        }
+        return row.bound === 'below' ? { ...result, bound: 'below' } : result
+      }),
     }
   })
   return { plan, tables }

@@ -81,10 +81,10 @@
           "hand": 10500,
           "engine": 10500,
           "tolerance": 0.01,
-          "bound": "below",
           "unit": "dollars",
           "derivation": "12,400 (top of the 10% bracket) − (18,000 − 16,100 standard deduction) = 10,500; sized by bisection to $0.01, which returns the lower bound and here lands exactly",
-          "contract": "worksheet roth-conversion-annual; YearResult.rothConversion; strategies/rothConversion.ts (topOfBracket holds federal taxable income at the bracket bound)"
+          "contract": "worksheet roth-conversion-annual; YearResult.rothConversion; strategies/rothConversion.ts (topOfBracket holds federal taxable income at the bracket bound)",
+          "bound": "below"
         },
         {
           "key": "magi",
@@ -122,10 +122,10 @@
           "hand": 37050,
           "engine": 37049.99665021896,
           "tolerance": 0.01,
-          "bound": "below",
           "unit": "dollars",
           "derivation": "49,450 (the 15% breakpoint, single) − 12,400 taxable income; sized by bisection to $0.01, which returns the lower bound: at or below 37,050, never above",
-          "contract": "worksheet year-result-ltcg-zero-headroom; YearResult.ltcgZeroHeadroom"
+          "contract": "worksheet year-result-ltcg-zero-headroom; YearResult.ltcgZeroHeadroom",
+          "bound": "below"
         },
         {
           "key": "penalties",

@@ -1,8 +1,11 @@
-import { existsSync, mkdirSync, readFileSync, readdirSync, unlinkSync, writeFileSync } from 'node:fs'
-import { dirname, join, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
-
 import { describe, expect, it } from 'vitest'
+
+// @ts-expect-error -- node builtin in a node-env test; the package tsconfig omits node types
+import { existsSync, mkdirSync, readFileSync, readdirSync, unlinkSync, writeFileSync } from 'node:fs'
+// @ts-expect-error -- node builtin in a node-env test; the package tsconfig omits node types
+import { dirname, join, resolve } from 'node:path'
+// @ts-expect-error -- node builtin in a node-env test; the package tsconfig omits node types
+import { fileURLToPath } from 'node:url'
 
 import { WALKTHROUGHS, runWalkthrough, type Walkthrough } from './walkthroughs'
 
@@ -21,10 +24,12 @@ import { WALKTHROUGHS, runWalkthrough, type Walkthrough } from './walkthroughs'
 export const WALKTHROUGH_EVIDENCE_KIND = 'retiregolden.walkthrough-evidence'
 export const WALKTHROUGH_EVIDENCE_VERSION = 1
 
-const here = dirname(fileURLToPath(import.meta.url))
-const repoRoot = resolve(here, '../../../../..')
-const evidenceDirectory = resolve(repoRoot, 'DOCS/operations/walkthroughs')
-const exporting = process.env.RG_WALKTHROUGH_EXPORT === '1'
+const here: string = dirname(fileURLToPath(import.meta.url))
+const repoRoot: string = resolve(here, '../../../../..')
+const evidenceDirectory: string = resolve(repoRoot, 'DOCS/operations/walkthroughs')
+// `process` is read off globalThis: the package tsconfig omits node types, and vitest runs in node.
+const exporting =
+  (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env?.RG_WALKTHROUGH_EXPORT === '1'
 
 /** Stable JSON: keys in insertion order, numbers as JavaScript prints them, LF line endings. */
 function render(value: unknown): string {
@@ -61,7 +66,8 @@ export function walkthroughTestTitlesOf(source: string): readonly string[] {
 }
 
 function walkthroughTestNameOf(id: string): string {
-  const titles = walkthroughTestTitlesOf(readFileSync(join(here, 'walkthroughs', `${id}.test.ts`), 'utf8'))
+  const source: string = readFileSync(join(here, 'walkthroughs', `${id}.test.ts`), 'utf8')
+  const titles = walkthroughTestTitlesOf(source)
   if (titles.length !== 1) {
     throw new Error(
       `walkthroughs/${id}.test.ts must carry exactly one it() or test() title (found ${titles.length}); ` +
@@ -74,11 +80,13 @@ function walkthroughTestNameOf(id: string): string {
 /** The committed evidence files that are ours: every .json of the evidence kind in the directory. */
 function committedEvidenceFiles(): readonly string[] {
   if (!existsSync(evidenceDirectory)) return []
-  return readdirSync(evidenceDirectory)
-    .filter((name) => name.endsWith('.json'))
-    .filter((name) => {
+  const names: string[] = readdirSync(evidenceDirectory)
+  return names
+    .filter((name: string) => name.endsWith('.json'))
+    .filter((name: string) => {
       try {
-        const parsed = JSON.parse(readFileSync(join(evidenceDirectory, name), 'utf8')) as { kind?: unknown }
+        const text: string = readFileSync(join(evidenceDirectory, name), 'utf8')
+        const parsed = JSON.parse(text) as { kind?: unknown }
         return parsed.kind === WALKTHROUGH_EVIDENCE_KIND
       } catch {
         return false
@@ -125,7 +133,8 @@ describe('walkthrough evidence files', () => {
         return
       }
       expect(existsSync(path), `${path} is missing: run pnpm walkthroughs:export`).toBe(true)
-      const committed = readFileSync(path, 'utf8').replace(/\r\n/g, '\n')
+      const text: string = readFileSync(path, 'utf8')
+      const committed = text.replace(/\r\n/g, '\n')
       expect(committed).toBe(computed)
     })
   }

@@ -119,10 +119,10 @@
           "hand": 183448.2485175202,
           "engine": 183448.24467897415,
           "tolerance": 0.01,
-          "bound": "below",
           "unit": "dollars",
           "derivation": "(211,400 + 65,500) ÷ 1.12 − 47,368.80 − 16,415.09 = 183,448.25: the amount that brings joint taxable income to the top of the 22% bracket with the 85% cap binding and both senior deductions in phase-out; sized by bisection to $0.01 below",
-          "contract": "YearResult.aggregateRothConversionAllocationDesired; strategies/rothConversion.ts (topOfBracket by bisection)"
+          "contract": "YearResult.aggregateRothConversionAllocationDesired; strategies/rothConversion.ts (topOfBracket by bisection)",
+          "bound": "below"
         },
         {
           "key": "roth-conversion",
