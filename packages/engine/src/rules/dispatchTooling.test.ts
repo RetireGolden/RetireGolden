@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { APPROXIMATION_KINDS } from './approximationKinds.js'
 import {
   BASELINE_UNSWEPT,
   COVERAGE_ATTESTATIONS,
@@ -27,6 +28,7 @@ const report = buildCoverageReport({
   // suite free of the AST resolver the freshness suite exercises for real.
   symbolLineFor: () => 1,
   recordModules: TAX_RULE_RECORD_MODULES,
+  approximationKinds: APPROXIMATION_KINDS,
 })
 
 const PINNED_RULE_ID = 'usc-42-430-b-contribution-and-benefit-base'
@@ -89,7 +91,9 @@ describe('dispatch tooling', () => {
       // The lock exists because two agents editing the SAME record collide. It
       // must not also stop two agents editing different domains: since the
       // split, `records/rothAccounts.ts` and `records/statesWest.ts` merge
-      // cleanly, and the tooling files under `rules/` hold no records at all.
+      // cleanly. The one tooling pair under `rules/` that holds per-rule data,
+      // the approximation kinds and their pinned counts, is locked for every
+      // dispatch; the rest of `rules/` is not.
       const ruleId = 'irc-4974-rmd-shortfall-excise-tax'
       const modulePath = 'packages/engine/src/rules/records/requiredMinimumDistributions.ts'
       const markdown = buildDispatchPrompt({
@@ -114,6 +118,27 @@ describe('dispatch tooling', () => {
       expect(lock).toContain('`DOCS/operations/rule-coverage/requiredMinimumDistributions.json`')
       expect(lock).not.toContain('`DOCS/operations/rule-coverage/`')
       expect(markdown).not.toContain('zero hits under `packages/engine/src/rules/`')
+      // Any re-reading can move a rule into or out of `approximated`, and that
+      // edits the kinds module and its pinned counts, so both are locked.
+      expect(lock).toContain('`packages/engine/src/rules/approximationKinds.ts`')
+      expect(lock).toContain('`packages/engine/src/rules/approximationKinds.conformance.test.ts`')
+      expect(lock).not.toContain('hold no records at all')
+      expect(lock).toContain('holds one entry per approximated rule')
+    })
+
+    it('binds a reclassification or a closed approximation to its kinds entry and the pinned counts', () => {
+      const markdown = buildDispatchPrompt({
+        asOf: '2026-12-01',
+        ruleIds: ['irc-4974-rmd-shortfall-excise-tax'],
+        registry: TAX_RULE_REGISTRY,
+        manifestRules: report.rules,
+      })
+      const steps = markdown.slice(markdown.indexOf('## The binding edit order'), markdown.indexOf('## Verification checklist'))
+      const step = steps.split('\n').find((line) => line.startsWith('6. '))
+      expect(step).toBeDefined()
+      expect(step).toContain('into or out of `approximated`')
+      expect(step).toContain('`packages/engine/src/rules/approximationKinds.ts`')
+      expect(step).toContain('pinned counts by kind in `packages/engine/src/rules/approximationKinds.conformance.test.ts`')
     })
 
     it('locks no other module\'s coverage shard', () => {

@@ -19,6 +19,11 @@ Four classifications:
 - `approximated` — the engine returns a figure that is knowably not the one the authority requires. A required
   typed `errorDirection` (`understatesTax` / `overstatesTax` / `bothDirections`) says which way, anchored on the
   **taxpayer's exposure to the fisc** rather than on the quantity the rule names.
+  Each one also carries a kind in
+  [`approximationKinds.ts`](../../packages/engine/src/rules/approximationKinds.ts): `fix` (the plan already holds
+  the facts, so the fix is owed in the rule's own implementing code), `needs-fact` (the figure turns on a fact the plan
+  does not collect), or `convention` (kept on purpose, with the reason). The coverage ledger publishes the kind with
+  the rule, and reclassifying or fixing the rule updates its entry in the same change.
 - `outOfScope` — the engine produces no figure from the rule at all. A required `outOfScope.shape`
   says which of the two ways that happens: `typedRefusal`, where the engine fails closed at a named site,
   or `inexpressibleInput`, where the fact the rule turns on cannot be expressed in `model/plan.ts` or

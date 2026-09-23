@@ -1465,7 +1465,7 @@ export const southCentralStateRecords = {
   },
 
   'al-form40-defined-benefit-414j-exemption': {
-    title: 'Alabama exempts any IRC 414(j) defined-benefit payment; the pack caps the private bucket at $6,000',
+    title: 'Alabama exempts any IRC 414(j) defined-benefit payment; the modeled state rules cap the private bucket at $6,000',
     statement:
       'The Form 40 booklet lists payments from any defined-benefit retirement plan in accordance with IRC 414(j) among the amounts a taxpayer does not report, whatever the employer. Approximated: the pack has no plan-identity test — `PUBLIC_PENSION_OVERRIDES` carries `AL: { kind: \'full\' }` for the public bucket, consistent with the booklet\'s exempt list of federal, Alabama-system, and military retirement, while `retirementPrivate` stays `{ kind: \'capped\', capPerPerson: 6000, minAge: 65 }` — so a private-employer 414(j) defined-benefit pension riding the private bucket is taxed above the age-65 cap the booklet exempts, overstating Alabama tax. Under the booklet\'s general rule a public-bucket draw not on the exempt list would be taxable, and the pack\'s full override would exempt it — an understating edge this record notes without pinning: which public plans fall outside the exempt list is not established by the staged sources, and the two independent verifiers of this slice split on whether the general rule reaches them. The registered, pinned direction is the private-bucket overstatement.',
     classification: 'approximated',
@@ -1729,7 +1729,7 @@ export const southCentralStateRecords = {
   },
 
   'al-form40-standard-deduction-agi-slide': {
-    title: 'Alabama\'s standard deduction slides down with AGI; the pack holds the maxima flat',
+    title: 'Alabama\'s standard deduction slides down with AGI; the state tax parameters hold the maxima flat',
     statement:
       'The Form 40 booklet requires a standard-deduction claimant to use the page-9 chart, which reduces the deduction as Alabama adjusted gross income rises — for a single filer from $3,000 at AGI $0–$25,999 down to $2,500 at AGI $35,500 and above, and for joint filers from $8,500 at AGI $0–$25,999 down to $5,000 at AGI $35,500 and above. Approximated: the pack\'s `standardDeduction: { single: 3000, marriedFilingJointly: 8500 }` grants those maxima at every income, understating tax wherever the chart has already slid. The chart-column quotes were checked against the staged booklet copy; the current live PDF quotations verify at PDF-WORD-LEVEL — words present in the extracted text, but not table-column layout.',
     classification: 'approximated',

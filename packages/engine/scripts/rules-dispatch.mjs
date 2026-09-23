@@ -29,6 +29,19 @@ const COVERAGE_LEDGER_PATHS = [
 ]
 
 /**
+ * The approximation-kinds module and its conformance suite, locked for every
+ * dispatch. Unlike the other tooling under `rules/` they hold per-rule data:
+ * one kind entry per approximated rule, and the pinned counts by kind. A
+ * dispatch that moves a rule into or out of `approximated`, or closes one,
+ * edits both, and which rules a re-reading will reclassify is not known in
+ * advance, so the lock stays too broad rather than too narrow.
+ */
+const APPROXIMATION_KINDS_PATHS = [
+  'packages/engine/src/rules/approximationKinds.ts',
+  'packages/engine/src/rules/approximationKinds.conformance.test.ts',
+]
+
+/**
  * Shard file for a record module path. `coverageShardPath` in coverageReport.ts
  * is the canonical layout and the only writer; this mirror exists because
  * `buildDispatchPrompt` stays synchronous and dependency-free for its tests.
@@ -146,6 +159,7 @@ export function buildDispatchPrompt({ asOf, ruleIds, registry, manifestRules, re
       path === null ? 'DOCS/operations/rule-coverage/' : coverageShardOf(path)),
     REGISTRY_FACADE_PATH,
     ...COVERAGE_LEDGER_PATHS,
+    ...APPROXIMATION_KINDS_PATHS,
   ])].sort()
 
   const lines = [
@@ -168,6 +182,7 @@ export function buildDispatchPrompt({ asOf, ruleIds, registry, manifestRules, re
     '3. Rewrite or confirm the discriminating fixture **from the authority** (never from code; fixtures name two candidate readings with different values). `fixtureFiles` below lists the files whose `describeRule(<id>)` blocks are this rule\'s discriminating fixtures — those blocks are the contract; other tests in the same files are ordinary coverage.',
     '4. Only then change implementation until the fixture passes.',
     '5. When the reading or behavior changed, update the DOCS/domain ground truth in the same PR (the section file under `DOCS/domain/domain-rules-reference/` — `domain-rules-reference.md` is only the index — and any feature doc that states the rule), citing the record id per repo convention — the generated coverage artifacts do not repair prose.',
+    '6. When a rule moves into or out of `approximated`, or a fix closes its approximation, update its entry in `' + APPROXIMATION_KINDS_PATHS[0] + '` in the same PR (add it with its kind, change its kind, or delete it) and the pinned counts by kind in `' + APPROXIMATION_KINDS_PATHS[1] + '`. A `needs-fact` or `convention` entry is published on the public methodology site, so write its text in plain words.',
     '',
     '## Verification checklist',
     '',
@@ -179,7 +194,7 @@ export function buildDispatchPrompt({ asOf, ruleIds, registry, manifestRules, re
     '- (network, manual; see `DOCS/operations/quote-fidelity.md`)',
     '- If any result moves: run `pnpm cases:diff`, review every delta, and add a `CHANGELOG.md` entry announcing the correction — corrections are announced, never silent.',
     '- `pnpm rules:coverage` and commit the refreshed `DOCS/operations/rule-coverage.md` plus the per-module shard(s) under `DOCS/operations/rule-coverage/` that changed (`verifiedOn` moves them). The index `DOCS/operations/rule-coverage.json` holds only counts and normally does not move; commit it when it does.',
-    '- Confirm no other open PR edits the files this dispatch touches: for each PR in `gh pr list --state open --limit 200 --json number -q .[].number`, run `gh pr diff <n> --name-only` and require zero hits for any of ' + contendedPaths.map((path) => '`' + path + '`').join(', ') + ' before pushing, excluding this branch\'s own PR. Only these paths — a rules PR editing a DIFFERENT record module merges cleanly alongside this one, and the tooling and conformance files under `packages/engine/src/rules/` hold no records at all.',
+    '- Confirm no other open PR edits the files this dispatch touches: for each PR in `gh pr list --state open --limit 200 --json number -q .[].number`, run `gh pr diff <n> --name-only` and require zero hits for any of ' + contendedPaths.map((path) => '`' + path + '`').join(', ') + ' before pushing, excluding this branch\'s own PR. Only these paths — a rules PR editing a DIFFERENT record module merges cleanly alongside this one. The approximation-kinds module holds one entry per approximated rule and its conformance suite pins the counts by kind, so both are in the lock for every dispatch; the other tooling and conformance files under `packages/engine/src/rules/` hold no per-rule data.',
     '- One PR; review-bot findings fixed on the same branch',
     '',
   ]
@@ -315,10 +330,12 @@ async function main() {
       taxRulesDueForVerification,
     },
     { COVERAGE_ATTESTATIONS, BASELINE_UNSWEPT },
+    { APPROXIMATION_KINDS },
     { buildCoverageReport },
   ] = await Promise.all([
     loadModule('taxRuleRegistry.ts'),
     loadModule('coverageAttestations.ts'),
+    loadModule('approximationKinds.ts'),
     loadModule('coverageReport.ts'),
   ])
 
@@ -362,6 +379,7 @@ async function main() {
     // resolver lives in rules-coverage.mjs, the only publisher.
     symbolLineFor: () => 1,
     recordModules: TAX_RULE_RECORD_MODULES,
+    approximationKinds: APPROXIMATION_KINDS,
   })
 
   const recordModuleOf = recordModuleOfFrom(TAX_RULE_RECORD_MODULES)

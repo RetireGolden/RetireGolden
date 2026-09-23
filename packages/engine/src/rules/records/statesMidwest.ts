@@ -974,7 +974,7 @@ export const midwestStateRecords = {
   },
 
   'ic-6-3-2-4-military-retirement-deduction': {
-    title: 'Indiana deducts military retirement in full, and the pack deducts none of it',
+    title: 'Indiana deducts military retirement in full, and the modeled state rules deduct none of it',
     statement:
       'For taxable years beginning after 2021, IC 6-3-2-4(a)(2) sets Indiana’s deduction for military retirement or survivor’s benefits at the lesser of the benefits included in adjusted gross income or $6,250 plus one hundred percent of the benefits above $6,250 — which is the whole amount. There is no age condition, no income phase-out, and the deduction reaches the individual’s surviving spouse; it is separate from and additional to the $5,000 for active or reserve service pay under (a)(1). Not modelled. The pack’s public bucket is one flag for every public pension the input model can carry, and in Indiana that bucket is dominated by INPRS/PERF, TRF, municipal police and fire retirees who get NOTHING, so the bucket carries `none` and a military pension is charged Indiana tax on income Indiana removes from the base entirely. The direction is chosen rather than inherited: the same flag set to `full` — which is what Indiana carried until 2026-08-05 — is exact for the military retiree and exempts every teacher, trooper and state employee’s pension in Indiana alongside them, which errs toward the taxpayer and across by far the larger population.',
     classification: 'approximated',
@@ -1070,7 +1070,7 @@ export const midwestStateRecords = {
   },
 
   'ic-6-3-6-2-2-county-income-tax-shares-the-state-base': {
-    title: 'Indiana’s county income tax is universal, and the pack has no default for it',
+    title: 'Indiana’s county income tax is universal, and the state tax parameters have no default for it',
     statement:
       'Every Indiana county levies a local income tax, imposed on "adjusted gross income" as IC 6-3-1-3.5 defines it — the same figure the state rate runs on, after both the Schedule 2 deductions and the Schedule 3 exemptions, which Schedule CT-40 reaches by starting from IT-40 line 7. Liability follows the taxpayer’s county of residence on January 1 of the year the taxable year begins, so a mid-year move between counties does not change the rate. Not modelled — and the gap is a missing DEFAULT rather than a missing mechanism. The engine’s shape is already exactly right: `computeStateTaxDetail` applies a flat `localRatePct` to state taxable income, which is the identical base. But that rate reaches the calculator only from the caller, through `assumptions.localIncomeTaxPct` or a relocation candidate, and both default to zero. No entry in `StateTaxParams` can carry a per-state default, and none is invented here: the 2026 county rates run from 0.005 to 0.03 with no published statewide figure to stand for them, and a synthetic average would be a number with no publisher. So an Indiana household priced without an explicit rate is under-charged by the whole county levy — roughly $1,400 a year on $70,000 of Indiana AGI at a mid-range 2% county rate, against $2,065 of state tax. Indiana is the worst case of this in the pack, because the levy is universal and the state rate is low, so the local share is the majority of the story.',
     classification: 'approximated',
@@ -1524,7 +1524,7 @@ export const midwestStateRecords = {
   },
 
   'mn-stat-290-0132-subd-26-social-security-inclusion': {
-    title: 'Minnesota subtracts federally taxable Social Security on an income-tested schedule the pack omits',
+    title: 'Minnesota subtracts federally taxable Social Security on an income-tested schedule the modeled state rules omit',
     statement:
       'For TY2026, Minnesota allows the greater of a simplified subtraction of federally taxable Social Security or an alternate subtraction. The simplified amount is reduced 10 percent for each $4,000 of AGI, or fraction, above $86,410 single/HOH or $110,780 MFJ/surviving spouse; MFS uses $55,390. The DOR table marks alternate maxima $4,560 single/HOH, $5,840 MFJ/surviving spouse, and $2,920 MFS as Not Indexed. Approximated: the pack encodes taxesSocialSecurity:true and subtracts nothing, so it overstates tax while either subtraction remains. Private retirement stays kind:none; subdivision 34\'s qualified-public-pension subtraction is separate and unmodeled.',
     classification: 'approximated',
@@ -1878,7 +1878,7 @@ export const midwestStateRecords = {
   },
 
   'wi-stat-71-05-retirement-income-subtraction': {
-    title: 'Wisconsin’s $24,000 age-67 retirement subtraction is per-recipient and credits-restricted; the pack caps pooled income and skips the election',
+    title: 'Wisconsin’s $24,000 age-67 retirement subtraction is per-recipient and credits-restricted; the modeled state rules cap pooled income and skip the election',
     statement:
       'The 2025 Schedule SB instructions let an individual aged 67 or older subtract up to $24,000 of federally taxable qualified-plan or IRA retirement income the individual received, and a joint couple who are both 67 subtract up to $48,000 regardless of which spouse received it, with no federal AGI ceiling; claiming forfeits every Schedule CR credit and the credits on Form 1 lines 13 through 20 and 30 through 35 for the year, and the separate income-restricted Line 17 allows up to $5,000 at age 65 or older only when federal AGI is under $15,000 single / $30,000 joint. Approximated: the pack encodes `{ kind: \'capped\', capPerPerson: 24000, minAge: 67 }` — min(household retirement income, $24,000 × members 67 or older) — with no per-spouse attribution, no credit forfeiture, and no Line 17 limb. A both-67 couple matches the pooled $48,000 rule exactly, but a mixed-age couple has the $24,000 cap run against pooled income, sheltering dollars the under-67 spouse received that the instructions withhold and understating Wisconsin tax, while the unmodeled credit forfeiture and the unmodeled Line 17 subtraction run the other way — the engine models no Wisconsin nonrefundable credits and grants a 65- or 66-year-old nothing — overstating tax for those households. Social Security remains excluded by the pack\'s `taxesSocialSecurity: false`, matching the Schedule SB Line 4 limb. The TY2026 Form 1-ES income-tested standard deduction and personal exemptions are modeled separately through `wisconsinStandardDeduction` / `wisconsinPersonalExemption` and are not this record. The separate 30% long-term capital-gain exclusion is registered at `wi-schedule-sb-line-5-long-term-capital-gain-exclusion`.',
     classification: 'approximated',
@@ -1934,7 +1934,7 @@ export const midwestStateRecords = {
   },
 
   'wi-schedule-sb-line-5-long-term-capital-gain-exclusion': {
-    title: 'Wisconsin excludes 30% of qualifying long-term capital gain; the pack taxes the whole gain as ordinary',
+    title: 'Wisconsin excludes 30% of qualifying long-term capital gain; the modeled state rules tax the whole gain as ordinary',
     statement:
       'Wisconsin Schedule SB instructions describe a 30% long-term capital-gain exclusion (60% for farm assets). Approximated: the pack\'s `capitalGainsAsOrdinary: true` omits that preference, so qualifying long-term gains enter the Wisconsin base in full and the engine overstates tax on those gains. The Social Security and age-67 retirement limbs are registered separately at `wi-stat-71-05-retirement-income-subtraction`.',
     classification: 'approximated',

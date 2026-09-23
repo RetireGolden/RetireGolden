@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { APPROXIMATION_KINDS, type ApproximationEntry, type ApproximationKind } from './approximationKinds.js'
 import {
   BASELINE_UNSWEPT,
   COVERAGE_ATTESTATIONS,
@@ -204,6 +205,7 @@ const report = buildCoverageReport({
   dueOnFor: taxRuleDueOn,
   symbolLineFor,
   recordModules: TAX_RULE_RECORD_MODULES,
+  approximationKinds: APPROXIMATION_KINDS,
 })
 
 describe('rules coverage report artifacts', () => {
@@ -265,6 +267,7 @@ describe('rules coverage report artifacts', () => {
         dueOnFor: taxRuleDueOn,
         symbolLineFor,
         recordModules: [],
+        approximationKinds: APPROXIMATION_KINDS,
       }),
     ).toThrow(/belongs to no record module/)
   })
@@ -988,6 +991,108 @@ describe('manifest rule projection contract', () => {
     }
   })
 
+  // The public known-limits table renders these entries, so the expected value
+  // is read from approximationKinds.ts itself, never from the builder.
+  it("publishes each approximated rule's kind from approximationKinds.ts, and null for every other rule", () => {
+    const kinds: Readonly<Record<string, ApproximationEntry>> = APPROXIMATION_KINDS
+    const published = new Map(
+      report.shards.flatMap(
+        (shard) => (JSON.parse(shard.json) as { rules: { id: string; approximation: Record<string, unknown> | null }[] }).rules,
+      ).map((rule) => [rule.id, rule.approximation]),
+    )
+    for (const rule of report.rules) {
+      const serialized = published.get(rule.id)
+      if (rule.classification !== 'approximated') {
+        expect(rule.approximation, rule.id).toBeNull()
+        expect(serialized, rule.id).toBeNull()
+        continue
+      }
+      const entry = kinds[rule.id]
+      expect(entry, rule.id).toBeDefined()
+      expect(rule.approximation, rule.id).toEqual(entry)
+      expect(serialized, rule.id).toEqual(entry)
+      // Exactly the kind's own keys reach the shard: a fix is its kind alone,
+      // since where the fix goes is the rule's published implementations.
+      expect(Object.keys(serialized ?? {}).sort(), rule.id).toEqual(
+        entry!.kind === 'fix' ? ['kind'] : entry!.kind === 'needs-fact' ? ['kind', 'missingInput'] : ['kind', 'reason'],
+      )
+    }
+  })
+
+  it('counts the approximated rules by kind in the index, every kind present, summing to the approximated total', () => {
+    const expected: Record<ApproximationKind, number> = { convention: 0, fix: 0, 'needs-fact': 0 }
+    for (const entry of Object.values(APPROXIMATION_KINDS)) expected[entry.kind] += 1
+    expect(report.manifest.registry.approximatedByKind).toEqual(expected)
+    // Serialized key order is the committed artifact's: alphabetical, like the
+    // other count maps.
+    const index = JSON.parse(report.json) as { registry: { approximatedByKind: Record<string, number> } }
+    expect(Object.keys(index.registry.approximatedByKind)).toEqual(['convention', 'fix', 'needs-fact'])
+    const sum = Object.values(report.manifest.registry.approximatedByKind).reduce((total, count) => total + count, 0)
+    expect(sum).toBe(report.manifest.registry.byClassification.approximated)
+  })
+
+  it('publishes each kind as its entry and nothing else, per a hand-written fixture', () => {
+    const fixtureRegistry = {
+      'fixture-approximated': { ...syntheticRule('Approximated'), classification: 'approximated', errorDirection: 'understatesTax' },
+      'fixture-needs-fact': { ...syntheticRule('Needs a fact'), classification: 'approximated', errorDirection: 'overstatesTax' },
+      'fixture-convention': { ...syntheticRule('Kept on purpose'), classification: 'approximated', errorDirection: 'bothDirections' },
+      'fixture-settled': syntheticRule('Settled'),
+    } as unknown as typeof TAX_RULE_REGISTRY
+    const fixtureReport = buildCoverageReport({
+      registry: fixtureRegistry,
+      attestations: COVERAGE_ATTESTATIONS,
+      baselineUnswept: BASELINE_UNSWEPT,
+      testSources: {},
+      quoteFidelityLedger: null,
+      dueOnFor: () => '2027-01-01',
+      symbolLineFor: () => 47,
+      recordModules: [['synthetic', fixtureRegistry]],
+      approximationKinds: {
+        'fixture-approximated': { kind: 'fix' },
+        'fixture-convention': { kind: 'convention', reason: 'kept on purpose for this test' },
+        'fixture-needs-fact': { kind: 'needs-fact', missingInput: 'the date each gift was made' },
+      },
+    })
+    const published = fixtureReport.shards.flatMap(
+      (shard) => (JSON.parse(shard.json) as { rules: { id: string; approximation: unknown }[] }).rules,
+    )
+    expect(published.map(({ id, approximation }) => [id, approximation])).toEqual([
+      ['fixture-approximated', { kind: 'fix' }],
+      ['fixture-convention', { kind: 'convention', reason: 'kept on purpose for this test' }],
+      ['fixture-needs-fact', { kind: 'needs-fact', missingInput: 'the date each gift was made' }],
+      ['fixture-settled', null],
+    ])
+    expect(fixtureReport.manifest.registry.approximatedByKind).toEqual({ convention: 1, fix: 1, 'needs-fact': 1 })
+  })
+
+  it('refuses a missing kind, a kind on a rule that is not approximated, and a kind for an unregistered rule', () => {
+    const build = (
+      registry: Record<string, unknown>,
+      approximationKinds: Parameters<typeof buildCoverageReport>[0]['approximationKinds'],
+    ) => () =>
+      buildCoverageReport({
+        registry: registry as unknown as typeof TAX_RULE_REGISTRY,
+        attestations: COVERAGE_ATTESTATIONS,
+        baselineUnswept: BASELINE_UNSWEPT,
+        testSources: {},
+        quoteFidelityLedger: null,
+        dueOnFor: () => '2027-01-01',
+        symbolLineFor: () => 1,
+        recordModules: [['synthetic', registry]],
+        approximationKinds,
+      })
+    const approximated = { ...syntheticRule('Approximated'), classification: 'approximated', errorDirection: 'understatesTax' }
+    expect(build({ 'fixture-approximated': approximated }, {}))
+      .toThrow(/approximated rule fixture-approximated has no approximation kind/u)
+    expect(build({ 'fixture-settled': syntheticRule('Settled') }, {
+      'fixture-settled': { kind: 'convention', reason: 'kept on purpose' },
+    })).toThrow(/fixture-settled is classified settled but carries an approximation kind/u)
+    expect(build({ 'fixture-approximated': approximated }, {
+      'fixture-approximated': { kind: 'convention', reason: 'kept on purpose' },
+      'fixture-renamed': { kind: 'convention', reason: 'kept on purpose' },
+    })).toThrow(/approximation kinds name rules the registry does not hold: fixture-renamed/u)
+  })
+
   it('keeps implementations aligned with implementedBy', () => {
     for (const rule of report.rules) {
       expect(rule.implementations.map(({ path }) => path), rule.id).toEqual(rule.implementedBy)
@@ -1167,6 +1272,7 @@ describe('manifest rule projection contract', () => {
       dueOnFor: () => '2027-01-01',
       symbolLineFor,
       recordModules: [['synthetic', syntheticRegistry]],
+      approximationKinds: {},
     })
     const alpha = syntheticReport.rules.find((rule) => rule.id === 'fixture-alpha')
     const beta = syntheticReport.rules.find((rule) => rule.id === 'fixture-beta')
@@ -1210,6 +1316,7 @@ describe('manifest rule projection contract', () => {
       dueOnFor: () => '2027-01-01',
       symbolLineFor,
       recordModules: [['synthetic', syntheticRegistry]],
+      approximationKinds: {},
     })
     const alpha = syntheticReport.rules.find((rule) => rule.id === 'fixture-alpha')
     expect(alpha!.fixtures[0]!.tests).toEqual([
@@ -1248,6 +1355,7 @@ describe('manifest rule projection contract', () => {
     )
     expect(published.length).toBe(report.rules.length)
     const documentedKeys = [
+      'approximation',
       'authorities',
       'classification',
       'contraryReading',
@@ -1317,6 +1425,7 @@ describe('manifest rule projection contract', () => {
       // publishes the injected resolver's line rather than deriving its own.
       symbolLineFor: () => 47,
       recordModules: [['synthetic', fixtureRegistry]],
+      approximationKinds: {},
     })
     const published = fixtureReport.shards.flatMap(
       (shard) => (JSON.parse(shard.json) as { rules: { id: string; authorities: unknown }[] }).rules,

@@ -28,9 +28,10 @@
        Every importer is a `*.test.ts`.
      - coverageAttestations.ts and its per-directory shards under
        src/rules/attestations/ (formerly one ~116 KB file, now composed from
-       the shards the same way taxRuleRegistry.ts composes records/*.ts) and
-       coverageReport.ts are the coverage publisher's inputs, read from
-       source by the tests and by rules-coverage.mjs, never from dist.
+       the shards the same way taxRuleRegistry.ts composes records/*.ts),
+       approximationKinds.ts, and coverageReport.ts are the coverage
+       publisher's inputs, read from source by the tests and by
+       rules-coverage.mjs, never from dist.
      - calculationRegistry.ts with its record slices under calculations/,
        and the generated output census (outputFamilies.ts,
        outputFieldCoverage.ts, and the census/ JSON they are regenerated
@@ -45,6 +46,7 @@
     "src/rules/describeCalculation.ts",
     "src/rules/describeRefusal.ts",
     "src/rules/describeRule.ts",
+    "src/rules/approximationKinds.ts",
     "src/rules/coverageAttestations.ts",
     "src/rules/attestations/**",
     "src/rules/coverageReport.ts",

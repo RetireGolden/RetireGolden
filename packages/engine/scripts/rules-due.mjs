@@ -93,10 +93,12 @@ async function main() {
   const [
     { TAX_RULE_REGISTRY, TAX_RULE_RECORD_MODULES, DEFAULT_REVERIFICATION_INTERVAL_DAYS, taxRulesDueForVerification, taxRuleDueOn },
     { COVERAGE_ATTESTATIONS, BASELINE_UNSWEPT },
+    { APPROXIMATION_KINDS },
     { buildCoverageReport },
   ] = await Promise.all([
     loadModule('taxRuleRegistry.ts'),
     loadModule('coverageAttestations.ts'),
+    loadModule('approximationKinds.ts'),
     loadModule('coverageReport.ts'),
   ])
 
@@ -113,6 +115,7 @@ async function main() {
     // resolves for real.
     symbolLineFor: () => 1,
     recordModules: TAX_RULE_RECORD_MODULES,
+    approximationKinds: APPROXIMATION_KINDS,
   })
   const totalRules = report.manifest.registry.total
 
