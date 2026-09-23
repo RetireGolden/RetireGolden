@@ -108,6 +108,10 @@ export const charitableDeductionRecords = {
     }, {
       kind: 'legislativeHistory',
       citation: 'JCT, General Explanation of P.L. 119-21 (JCS-1-26)',
+      // Re-pointed 2026-09-23: JCT re-issued JCS-1-26 on 2026-09-18 with its
+      // errata (JCS-1R-26) bound in, under a new attachment id; the old
+      // 16f5eded… PDF returns 404. The errata do not touch section 70425, and
+      // the quoted passage is unchanged.
       url: 'https://www.jct.gov/getattachment/968d7e03-275e-42f1-8252-b2f4b0873a7f/s-1-26.pdf',
       quotedText:
         'If a taxpayer has excess contributions in a taxable year, the taxpayer is permitted to carry forward the amount disallowed by the 0.5 percent floor.',

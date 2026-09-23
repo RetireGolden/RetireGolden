@@ -381,6 +381,10 @@ export const individualIncomeTaxRecords = {
       kind: 'statute',
       citation: 'IRC 63(b)(2)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section63&num=0&edition=prelim',
+      // Re-copied 2026-09-23: Pub. L. 119-108 added 63(b)(8) (qualified net
+      // disaster loss), so the list now continues past (7) and the quote ends
+      // with the elision marker. The new paragraph is not a senior-deduction
+      // paragraph, so conventionRationale's reading still holds.
       quotedText:
         'In the case of an individual who does not elect to itemize his deductions for the taxable year, for purposes of this subtitle, the term "taxable income" means adjusted gross income, minus- (1) the standard deduction, (2) the deduction for personal exemptions provided in section 151, (3) any deduction provided in section 199A, … (7) so much of the deduction allowed by section 163(a) as is attributable to the exception under section 163(h)(4)(A), …',
     }, {
