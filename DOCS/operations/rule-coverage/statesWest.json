@@ -2603,10 +2603,6 @@
           "path": "packages/engine/src/tax/stateQcdHsa.ts",
           "functions": [
             {
-              "name": "newJerseyWorksheetCTaxableAmount",
-              "line": 65
-            },
-            {
               "name": "stateDirectQcdCollectionAdjustment",
               "line": 263
             }
