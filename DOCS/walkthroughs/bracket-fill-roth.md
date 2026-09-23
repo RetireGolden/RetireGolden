@@ -616,7 +616,7 @@ line 11) unless the row says otherwise. Three things are new in these years:
    0.005/(1 − c) of the true fixed point: 0.00663 in 2027 and 2028 (c = 22% × 1.12 = 24.64%) and 0.00641 in 2029
    (c = 22%). In none of the three years does it converge within its 8 direct evaluations (the error shrinks only
    about 4× per evaluation), so every landing comes from its bisection. **The 2029 landing is 0.0063129 below the
-   closed-form fixed point**, with residual +0.0049241 (accepted with 0.0000759 to spare). Five 2029 rows therefore
+   closed-form fixed point**, with residual +0.0049241 (accepted with 0.0000759 to spare). Eight 2029 rows therefore
    sit more than 0.005 from their closed-form values: the need-based draw, `withdrawals.traditional`,
    `withdrawals.total`, AGI (= `magi`), taxable income, and, grown at 5%, Morgan's IRA close, `investableTotal` and
    `netWorth`. The table gives the exact consequences of the traced landing as its values and the closed form next
@@ -624,13 +624,15 @@ line 11) unless the row says otherwise. Three things are new in these years:
    band grown at 5% for the balances.
 2. **The household amount is the sizing bisection's lower bound.** As in 2026, hand = S\* with tolerance 0.01 and
    `bound: 'below'`.
-3. **The executed conversion is cent-quantized. It is robust in 2029, but not in 2027 or 2028.** 2029's 78,828.19
-   comes out the same for every landing the contracts allow, at both the sizing step and the three fixed points.
-   2027's 109,869.91 and 2028's 93,519.25 each depend on where that year's own bisection landed. A landing lower in
-   the one-cent band the contract allows gives 109,869.90 or 93,519.24. 2029 inherits the traced 2027 and 2028
-   values. The engine is deterministic and the replay follows its loop text, so pinning the traced chain is sound.
-   But any change to those loops, even one the contracts allow, can move 2029's Roth and IRA rows by about one to two
-   cents. If that happens, re-derive this table; do not loosen it (section 6, A2).
+3. **The executed conversion is cent-quantized, and no year's cents survive every landing the contracts allow.**
+   2029's 78,828.19 is the same for every 2029 sizing landing while Morgan's 2028 close is as the ledger holds it;
+   but the 2027 and 2028 draw landings the contracts allow can raise that close by 0.0095–0.0137, which with a low
+   2029 sizing landing gives 78,828.18, and with the 2027 and 2028 conversion cents also free 78,828.20 is reachable
+   (row 34; the check's §2). 2027's 109,869.91 and 2028's 93,519.25 each depend on where that year's own bisection
+   landed: a landing lower in the one-cent band the contract allows gives 109,869.90 or 93,519.24. 2029 inherits the
+   traced 2027 and 2028 values. The engine is deterministic and the replay follows its loop text, so the traced chain
+   is what the ledger holds; the rows module takes the 2028 closes and the executed 2027 and 2028 conversions as the
+   ledger holds them and holds 2029's executed conversion to $0.01 (section 6, A2).
 
 ---
 
@@ -638,12 +640,18 @@ line 11) unless the row says otherwise. Three things are new in these years:
 **Revision 1 (2026-09-23).** Revised after the independent check (`REVIEW-2026-09-22.md`, the "year 2029" section
 for this example), which agreed with every figure and rejected on four narrow points, each corrected here as its §2–§3
 state: row 34's robustness claim now says the executed conversion is robust only while the 2029 opening balance is
-pinned (the 2027 and 2028 draw landings the contracts allow can move it by one cent either way); two figures in the
+pinned (the 2027 and 2028 draw landings the contracts allow can move it down a cent with a low 2029 landing, and up
+a cent once the 2027 and 2028 conversion cents are free too); two figures in the
 wrong-readings table were each a cent off (221,150.83 and 3,527.55); the senior-deduction expiry test is on line 371
 of `federalTax.ts`; row 31's decimal spellings are not the shortest ones JavaScript prints (the cents are
 unaffected); and the list of rows more than 0.005 from their closed forms now includes Morgan's IRA close,
 `investableTotal` and `netWorth`. The rows module holds the closed forms within the bands the published contracts
 give (see the check's §1c) rather than pinning the ledger's landings. No figure changed.
+
+**Revision 2 (2026-09-23).** Revised after the re-check of revision 1: the three passages that still recommended
+pinning the traced values at 0.005 (rounding-note point 3, section 6 A1 and section 7's tolerances bullet) and the
+last wrong-readings row now say what the rows module does; the rows list reads eight; row 31's note says what row 30
+shows; and the one-cent wording matches row 34. No figure changed.
 
 ## 1. What changes after 2026
 
@@ -820,7 +828,7 @@ balances. "Chain" is the value with every year's fixed point exact, from 2026 on
 | 28 | Bisection trace | lo = **3,357,248,438,267,449/2³⁴ = 195,417.5786969396867789328…** | hi starts at 227,654.67812499998 and never doubles. 25 halvings, final width 0.0067846. The last two midpoints, 195,417.5922662 (TI +0.0068659 over the ceiling) and 195,417.5854816 (TI +0.0000812 over), both become `hi`. S\* − lo = 0.0067034. No comparison was within 1e-5 of a flip | `rothConversion.ts` lines 173–186 (body); `YearResult.rothConversion` doc ("to $0.01, the lower bound") | — |
 | 29 | **`aggregateRothConversionAllocationDesired`** | **195,417.58** (exact lo above) | lo; no safety-net trim (floor 0) | `YearResult.aggregateRothConversionAllocationDesired` doc | **hand S\* = 195,417.5854003278, tolerance 0.01, `bound: 'below'`** |
 | 30 | `aggregateRothConversionAllocationBalances` | `--ira-m` 289,448.0318515678; `--ira-r` 428,102.8301886792; `--roth` 410,448.8930325 (published, carries no weight) | post-RMD, before any drain | `YearResult.aggregateRothConversionAllocationBalances` doc; `annualAggregateRothConversionPlan.ts` lines 202–209 (body) | 0.005 each |
-| 31 | The split in cents | A = **19,541,758**; Morgan's weight **28,944,803**; Riley's **42,810,283**; total 71,755,086 | the shortest decimal spellings JavaScript prints for the three doubles (shown here rounded to thirteen places, which leaves the cents unchanged), rounded half-up | `planBalanceAdapter.ts` lines 25–54 (body) | — |
+| 31 | The split in cents | A = **19,541,758**; Morgan's weight **28,944,803**; Riley's **42,810,283**; total 71,755,086 | the shortest decimal spellings JavaScript prints for the three doubles (row 30 shows the exact values to ten places, not the stored doubles; the cents are unaffected), rounded half-up | `planBalanceAdapter.ts` lines 25–54 (body) | — |
 | 32 | Morgan's slice | **7,882,819 cents** | exact share 7,882,818.725681; remainder 52,071,326 ≥ half of 71,755,086 | worksheets `exact-cent-pro-rata-half-up`, `exact-cent-largest-remainder-slices` | — |
 | 33 | Riley's slice | 11,658,939 cents = **116,589.39, dropped** (`ownerHoldsNoRothAccount`); the year repeats the warning naming Riley | 7,882,819 + 11,658,939 = 19,541,758; no drift | registry `irc-408-d-3-A-i-conversion-benefits-the-distributee`; allocation module lines 396–404 (body) | — |
 | 34 | Robustness | **robust while the 2029 opening balance is pinned; ±1 cent otherwise** | With Morgan's 2028 close as the ledger holds it, the contract allows lo ∈ (S\* − 0.01, S\*], which gives A ∈ {19,541,758, 19,541,759}, and every combination with Morgan's weight in 28,944,802–28,944,805 gives 7,882,819. But the 2027 and 2028 draw landings the contracts allow move the 2029 root together with Morgan's weight: an opening 0.0095–0.0137 higher with a low 2029 landing gives 7,882,818, and with the 2027 and 2028 conversion cents also free 7,882,820 is reachable. A test that must survive every allowed landing holds this row to $0.01 | rows 28–32; section 6, A1–A2; the check's §2 | — |
@@ -952,7 +960,7 @@ A changed household amount is shown at its bisection landing.
 | Riley's RMD on her first-year divisor 26.5 | 16,814.20 | 17,473.58 (age 74: 25.5) |
 | Weight the owner split by the December 31 balances (before the RMD) | Morgan's slice 78,974.25 | 78,828.19 |
 | Count the conversion as a withdrawal | `withdrawals.traditional` 164,514.58 | 85,686.39 |
-| Hold the rows to the closed-form fixed point at 0.005 | fails on the draw, `withdrawals.traditional`, `withdrawals.total`, `magi` and TI (Δ 0.0063) | pin the traced landing (section 6, A1) |
+| Hold the rows to the closed-form fixed point at 0.005 | fails on the draw, `withdrawals.traditional`, `withdrawals.total`, `magi` and TI (Δ 0.0063), and on Morgan's IRA close, `investableTotal` and `netWorth` (Δ 0.0066) | hold the closed forms within the contract band 0.005 / (1 − c), grown at 5% for the balances (section 6, A1) |
 
 ---
 
@@ -968,10 +976,11 @@ within 0.005/(1 − c) of the fixed point: 0.00663 in 2027–2028, 0.00641 in 20
 (2027), −0.0001028 (2028) and −0.0063129 (2029) from n\*. The published cash identity misses by the residual: 2029
 withdraws 0.0049241 less than spending plus tax, and 2027 withdraws 0.0022639 more, which is never deposited
 (`surplusInvested` counts only inflows). *Reading used:* the engine's (body), with the landing replayed from the loop
-text. *Recommendation for the rows:* pin the traced values at 0.005; the closed forms are given beside them. A test
-that must survive any landing the contracts allow would need about ±0.0065 on the draw, `withdrawals.*`, `magi` and
-TI, ±0.0015 on `tax` and `netPortfolioNeed`, and about ±0.021 on Morgan's IRA and the investable total, since three
-years of landings compound there. *Documentation gap:* one sentence in the coordinator header ("the accepted need is
+text. *Recommendation for the rows (revision 2):* hold the closed forms within the contract band: ±0.0065 on the draw,
+`withdrawals.*`, `magi` and TI, half a cent on `tax` and `netPortfolioNeed` (their band is ±0.0015), and ±0.007 on
+Morgan's IRA and the investable total with the 2028 closes taken as the ledger holds them (with every year's landing
+free the balances would need about ±0.021, since three years of landings compound there). The closed forms are given
+beside the traced values. *Documentation gap:* one sentence in the coordinator header ("the accepted need is
 within tolerance/(1 − marginal rate) of the fixed point, and the withdrawal published is that need") would make this
 derivable from the contracts.
 
@@ -1069,8 +1078,10 @@ spending-withdrawal warning (A3) from 2027.
   close). Morgan's IRA needs the whole chain:
   `(((586_410.7679433962 − 22_996.5007036626 − 109_869.91 − 23_558.5024027165) × 1.05 − rmdM28 − 93_519.25 − 51_804.2271129729) × 1.05 − rmdM29 − 78_828.19 − 55_461.7926927994) × 1.05`,
   where each RMD is that year's opening balance over its divisor.
-- **Tolerances:** 0.005 on every dollar row at the traced value. `aggregateRothConversionAllocationDesired`:
-  hand S\* = 195,417.5854003278, tolerance 0.01, `bound: 'below'`. `rothConversion`: 0.005 (robust in 2029).
+- **Tolerances (revision 2):** the closed forms within the contract bands: 0.0065 on `magi` and the withdrawal rows,
+  0.007 on Morgan's IRA, `investableTotal` and `netWorth` (the 2028 closes as the ledger holds them) and on the 2027
+  lookback MAGI, 0.005 elsewhere. `aggregateRothConversionAllocationDesired`: hand S\* = 195,417.5854003278,
+  tolerance 0.01, `bound: 'below'`. `rothConversion`: 78,828.19 within 0.01 (row 34).
   `inflationScale`: 1e-12. Counts, years and strings are exact.
 - **Suggested 2029 rows** (the 2026 set moved forward, plus what is new): ages; filing status; `inflationScale`;
   both SS streams and the total; `rmd`; `qcd`; `aggregateRothConversionAllocationDesired`; `rothConversion`;

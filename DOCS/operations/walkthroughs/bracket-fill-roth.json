@@ -538,7 +538,7 @@
           "engine": 78828.19,
           "tolerance": 0.01,
           "unit": "dollars",
-          "derivation": "the household landing split in cents by the two IRAs' post-RMD balances (Morgan 289,448.03 against Riley 428,102.83): Morgan's 7,882,819 cents; Riley's 11,658,939 cents are dropped because she holds no Roth IRA. The cents are those of the ledger's landings; the earlier years' allowed landings can move Morgan's weight and the 2029 root together by one cent either way, so the row is held to $0.01",
+          "derivation": "the household landing split in cents by the two IRAs' post-RMD balances (Morgan 289,448.03 against Riley 428,102.83): Morgan's 7,882,819 cents; Riley's 11,658,939 cents are dropped because she holds no Roth IRA. The cents are those of the ledger's landings; the earlier years' allowed draw landings can move Morgan's weight and the 2029 root together and lower the slice by a cent, and with their conversion cents free raise it by one, so the row is held to $0.01",
           "contract": "YearResult.rothConversion (the per-owner split and the dropped share); worksheets exact-cent-pro-rata-half-up, exact-cent-largest-remainder-slices"
         },
         {
