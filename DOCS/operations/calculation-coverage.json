@@ -918,27 +918,27 @@
         {
           "id": "ORACLE-013",
           "domain": "State tax",
-          "source": "California FTB 2026 Form 540-ES deduction ($5,706 / $11,412) and the 2025 Schedule X/Y above $100,000; Social Security exempt while pensions stay in ordinary income."
+          "source": "California FTB 2026 Form 540-ES deduction ($5,706 / $11,412) and the 2025 Schedule X/Y above $100,000, carried into 2026 until the 2026 schedules are published; Social Security exempt while pensions stay in ordinary income. Not a whole-return comparison: personal exemption credits are left out, and incomes under $100,000, where the FTB publishes a tax table instead of the schedule, are not compared."
         },
         {
           "id": "ORACLE-014",
           "domain": "State tax",
-          "source": "Georgia Department of Revenue 2026: the flat 4.99% rate, the $15,000 / $30,000 deductions, and the 65+ retirement-income exclusion below, at and above the $65,000 per-person cap."
+          "source": "Georgia Department of Revenue 2026: the flat 4.99% rate, the $15,000 / $30,000 deductions, and the 65+ retirement-income exclusion below, at and above the $65,000 per-person cap. The exclusion's separate tier for ages 62 to 64 is simplified in the model."
         },
         {
           "id": "ORACLE-015",
           "domain": "State tax",
-          "source": "Illinois Department of Revenue: the flat 4.95% rate with the full retirement-income subtraction."
+          "source": "Illinois Department of Revenue: the flat 4.95% rate with the full retirement-income subtraction. The personal exemption is left out of the model, and the cases are chosen so it cannot change the answer."
         },
         {
           "id": "ORACLE-016",
           "domain": "State tax",
-          "source": "South Carolina Department of Revenue, H.4216 notice and ratified bill text: the 2026 two-tier schedule (1.99% under $30,000; 5.21% minus $966 at and above) and the $15,000 / $30,000 SCIAD deduction, below, at and above the $30,000 breakpoint."
+          "source": "South Carolina Department of Revenue, H.4216 notice and ratified bill text: the 2026 two-tier schedule (1.99% under $30,000; 5.21% minus $966 at and above), with cases below, at and above the $30,000 breakpoint, and the $15,000 / $30,000 SCIAD deduction. The deduction's phase-out is left out of the model, so every case keeps federal AGI at or below where it starts."
         },
         {
           "id": "ORACLE-017",
           "domain": "State tax",
-          "source": "Maine Revenue Services 2026 rate schedule: the basic $15,700 / $31,400 standard deduction and the 5.8%, 6.75% and 7.15% brackets with the 2% high-income surcharge (a 9.15% top bracket), for households under 65."
+          "source": "Maine Revenue Services 2026 rate schedule: the basic $15,700 / $31,400 standard deduction and the 5.8%, 6.75% and 7.15% brackets with the 2% high-income surcharge (a 9.15% top bracket), for households under 65. The personal exemption and the age-65 additional amount are outside the compared cases."
         }
       ]
     },
@@ -952,7 +952,7 @@
         {
           "id": "ORACLE-007/008",
           "domain": "Social Security claiming",
-          "source": "An open-source Social Security claiming calculator (pinned commit 6e177de): a single high-discount worker ranks 62 first; a low-discount couple delays the spouse with the larger benefit to 70."
+          "source": "An open-source Social Security claiming calculator (version 6e177de): a single high-discount worker ranks 62 first; a low-discount couple delays the spouse with the larger benefit to 70. The ranking of claiming ages is compared, not present-value dollar amounts."
         }
       ]
     }
