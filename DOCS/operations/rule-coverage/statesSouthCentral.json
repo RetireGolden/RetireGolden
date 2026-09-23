@@ -1031,7 +1031,7 @@
     },
     {
       "id": "al-form40-defined-benefit-414j-exemption",
-      "title": "Alabama exempts any IRC 414(j) defined-benefit payment; the pack caps the private bucket at $6,000",
+      "title": "Alabama exempts any IRC 414(j) defined-benefit payment; the modeled state rules cap the private bucket at $6,000",
       "classification": "approximated",
       "errorDirection": "overstatesTax",
       "approximation": {
@@ -1402,7 +1402,7 @@
     },
     {
       "id": "al-form40-standard-deduction-agi-slide",
-      "title": "Alabama's standard deduction slides down with AGI; the pack holds the maxima flat",
+      "title": "Alabama's standard deduction slides down with AGI; the state tax parameters hold the maxima flat",
       "classification": "approximated",
       "errorDirection": "understatesTax",
       "approximation": {

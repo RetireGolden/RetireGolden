@@ -413,7 +413,7 @@ export const westStateRecords = {
   },
 
   'ars-43-1022-2-government-pension-exclusion': {
-    title: 'Arizona caps a civil-service pension subtraction at $2,500, and the pack exempts it in full',
+    title: 'Arizona caps a civil-service pension subtraction at $2,500, and the modeled state rules exempt it in full',
     statement:
       'A.R.S. 43-1022(2) subtracts benefits, annuities and pensions "in an amount totaling not more than $2,500" received from the federal civil-service and foreign-service retirement systems and any other retirement system established by federal law other than uniformed-services retired pay, and from the Arizona State Retirement System, the Corrections Officer Retirement Plan, the Public Safety Personnel Retirement System, the Elected Officials\' Retirement Plan, the Arizona Board of Regents and community-college optional programs, and county, city or town plans. Each spouse may claim their own $2,500, and a public pension from another state qualifies for nothing. Not modelled. `retirementPublic` is one flag covering every public pension the input model can carry, and it is set to `full` for the sake of 43-1022(26)’s uniformed-services exclusion, so a federal, Arizona state or Arizona local government pension is exempted outright when Arizona exempts only $2,500 of it. The error runs toward the taxpayer: an Arizona civil-service retiree is shown a state tax lower than they owe, by 2.5% of everything above $2,500.',
     classification: 'approximated',
@@ -513,7 +513,7 @@ export const westStateRecords = {
   },
 
   'ars-43-1023-e-age-65-exemption': {
-    title: 'Arizona’s age-65 relief is a flat $2,100 exemption the pack does not model',
+    title: 'Arizona’s age-65 relief is a flat $2,100 exemption the state tax parameters do not model',
     statement:
       'A.R.S. 43-1023(E) allows an exemption of $2,100 to a taxpayer who has attained age 65 before the close of the taxable year, and a second $2,100 for a spouse who has on a joint return. It reaches the return through 43-1022(1), which subtracts the 43-1023 exemptions from Arizona gross income — so it sits above the deduction line, and it is not an addition to the standard deduction. Nothing in 43-1023 indexes it. Not modelled: the pack has one age-65 field, `standardDeductionAge65Addition`, and `conformStateStandardDeduction` attaches it only to a state whose deduction IS the federal one, which Arizona’s is not. So an Arizona household aged 65 or over is charged 2.5% on $2,100 per person that Arizona exempts. Modelling it through the conformity tag was the alternative and is worse: that path attaches the FEDERAL age-65 addition, a different figure under a different statute, indexed every year while Arizona’s $2,100 is frozen, so the gap between the two would widen in every projected year of a plan.',
     classification: 'approximated',
@@ -906,7 +906,7 @@ export const westStateRecords = {
   },
 
   'mt-mca-15-30-2120-3-g-age-65-subtraction': {
-    title: 'Montana subtracts $5,500 per taxpayer at 65, inflation-adjusted; the pack has no such knob',
+    title: 'Montana subtracts $5,500 per taxpayer at 65, inflation-adjusted; the state tax parameters have no such knob',
     statement:
       'For each taxpayer that has attained the age of 65, 15-30-2120(3)(g) subtracts an additional $5,500 from federal taxable income, and 15-30-2120(7) directs the department to multiply that subtraction by the inflation factor each year (rounded to the nearest $10), so the operative figure grows above the statutory floor. The pack carries `retirement: { kind: \'none\' }`, and while the schema does have one age-keyed relief path - the federal standard-deduction age-65 addition that flows through conformity against `peopleAged65Plus` - it has no state-subtraction knob, so beyond that federal addition the engine taxes the full base. Produced pin: on the fixture household (single, age 65, $90,000 ordinary income, $16,100 federal-conformed deduction) the engine leaves Montana taxable income at $73,900 where the statute reads at most $68,400 - overstating tax by the top-bracket rate on the subtraction, about $311 at 5.65% on the $5,500 floor alone, and by more once the (7) inflation factor lifts it. A married couple who have both attained 65 doubles the gap.',
     classification: 'approximated',

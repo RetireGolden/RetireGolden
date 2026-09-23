@@ -1242,7 +1242,7 @@
     },
     {
       "id": "nj-stat-54a-6-10-retirement-income-exclusion",
-      "title": "New Jersey's pension exclusion is age-62, per-return, and AGI-capped; the pack is a flat $50,000",
+      "title": "New Jersey's pension exclusion is age-62, per-return, and AGI-capped; the modeled state rules apply a flat $50,000",
       "classification": "approximated",
       "errorDirection": "bothDirections",
       "approximation": {

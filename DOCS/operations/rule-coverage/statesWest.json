@@ -229,7 +229,7 @@
     },
     {
       "id": "ars-43-1022-2-government-pension-exclusion",
-      "title": "Arizona caps a civil-service pension subtraction at $2,500, and the pack exempts it in full",
+      "title": "Arizona caps a civil-service pension subtraction at $2,500, and the modeled state rules exempt it in full",
       "classification": "approximated",
       "errorDirection": "understatesTax",
       "approximation": {
@@ -574,7 +574,7 @@
     },
     {
       "id": "ars-43-1023-e-age-65-exemption",
-      "title": "Arizona’s age-65 relief is a flat $2,100 exemption the pack does not model",
+      "title": "Arizona’s age-65 relief is a flat $2,100 exemption the state tax parameters do not model",
       "classification": "approximated",
       "errorDirection": "overstatesTax",
       "approximation": {
@@ -1888,7 +1888,7 @@
     },
     {
       "id": "mt-mca-15-30-2120-3-g-age-65-subtraction",
-      "title": "Montana subtracts $5,500 per taxpayer at 65, inflation-adjusted; the pack has no such knob",
+      "title": "Montana subtracts $5,500 per taxpayer at 65, inflation-adjusted; the state tax parameters have no such knob",
       "classification": "approximated",
       "errorDirection": "overstatesTax",
       "approximation": {

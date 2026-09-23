@@ -370,7 +370,7 @@
     },
     {
       "id": "ic-6-3-2-4-military-retirement-deduction",
-      "title": "Indiana deducts military retirement in full, and the pack deducts none of it",
+      "title": "Indiana deducts military retirement in full, and the modeled state rules deduct none of it",
       "classification": "approximated",
       "errorDirection": "overstatesTax",
       "approximation": {
@@ -558,7 +558,7 @@
     },
     {
       "id": "ic-6-3-6-2-2-county-income-tax-shares-the-state-base",
-      "title": "Indiana’s county income tax is universal, and the pack has no default for it",
+      "title": "Indiana’s county income tax is universal, and the state tax parameters have no default for it",
       "classification": "approximated",
       "errorDirection": "understatesTax",
       "approximation": {
@@ -1775,7 +1775,7 @@
     },
     {
       "id": "mn-stat-290-0132-subd-26-social-security-inclusion",
-      "title": "Minnesota subtracts federally taxable Social Security on an income-tested schedule the pack omits",
+      "title": "Minnesota subtracts federally taxable Social Security on an income-tested schedule the modeled state rules omit",
       "classification": "approximated",
       "errorDirection": "overstatesTax",
       "approximation": {
@@ -2265,7 +2265,7 @@
       "errorDirection": "understatesTax",
       "approximation": {
         "kind": "needs-fact",
-        "missingInput": "military or qualified-peace-officer versus other public-pension class"
+        "missingInput": "whether a public pension is a qualified retired law enforcement (peace officer) benefit"
       },
       "conventionRationale": null,
       "contraryReading": null,
@@ -3570,7 +3570,7 @@
     },
     {
       "id": "wi-schedule-sb-line-5-long-term-capital-gain-exclusion",
-      "title": "Wisconsin excludes 30% of qualifying long-term capital gain; the pack taxes the whole gain as ordinary",
+      "title": "Wisconsin excludes 30% of qualifying long-term capital gain; the modeled state rules tax the whole gain as ordinary",
       "classification": "approximated",
       "errorDirection": "overstatesTax",
       "approximation": {
@@ -3641,12 +3641,12 @@
     },
     {
       "id": "wi-stat-71-05-retirement-income-subtraction",
-      "title": "Wisconsin’s $24,000 age-67 retirement subtraction is per-recipient and credits-restricted; the pack caps pooled income and skips the election",
+      "title": "Wisconsin’s $24,000 age-67 retirement subtraction is per-recipient and credits-restricted; the modeled state rules cap pooled income and skip the election",
       "classification": "approximated",
       "errorDirection": "bothDirections",
       "approximation": {
         "kind": "needs-fact",
-        "missingInput": "per-recipient qualifying income and restricted-credit or election status"
+        "missingInput": "restricted-credit or election status"
       },
       "conventionRationale": "The sign depends on household facts: which spouse received the retirement dollars decides the attribution limb (understates), while forgone credits and the Line 17 cohort decide the election limbs (overstate).",
       "contraryReading": null,

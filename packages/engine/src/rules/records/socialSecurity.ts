@@ -409,7 +409,7 @@ export const socialSecurityRecords = {
     ],
   },
   'ssa-table-4c6-period-life-table-vintage': {
-    title: 'The longevity tables are the SSA period life table, one vintage behind the live host',
+    title: 'The longevity tables are the SSA period life table, one edition behind the live host',
     statement:
       'The engine\'s baseline life expectancies are SSA\'s Actuarial Life Table (Table 4C6) as published for the 2025 Trustees Report - the 2022 period table. The live page now presents the 2023 period table used in the 2026 Trustees Report, so the embedded vintage trails the published one until the next table refresh (life expectancy at 65: male 17.48 embedded versus 18.12 published, female 20.12 embedded versus 20.66 published).',
     classification: 'approximated',

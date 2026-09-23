@@ -25,6 +25,21 @@
  * irc-86-a-optimizer-taxable-social-security-linearization and
  * irc-1-h-optimizer-flat-fifteen-percent-preferential-rate.
  *
+ * Corrected because the triage's missingInput named a fact the plan does
+ * collect, so the published text now names only what it does not:
+ * - ndcc-57-38-30-3-2-closed-subtraction-list: a pension's `source` already
+ *   distinguishes military, federal civil-service and state or local public
+ *   pensions (model/stateTaxPlanFacts.ts, pensionSourceKindSchema); only the
+ *   qualified retired law enforcement class has no typed field.
+ * - irc-402-c-1-pension-lump-sum-direct-rollover-eligibility: a pension's
+ *   `stateEligibility.qualifiedPlanType` already records a 401(a) plan, so
+ *   the qualified-trust fact is collectable; eligible-rollover-distribution
+ *   and plan-permission facts are not.
+ * - wi-stat-71-05-retirement-income-subtraction: every account carries its
+ *   `ownerPersonId`, and the projection attributes each retirement
+ *   distribution to its recipient (annualStateRetirementEvents.ts), so
+ *   per-recipient income is known; the credit and election facts are not.
+ *
  * Reclassified from the triage, each against the rule's own record and code:
  * - ssa-table-4c6-period-life-table-vintage, fix to convention: the record
  *   says the table "is refreshed deliberately, not silently" in a reviewed
@@ -58,7 +73,9 @@
  * its rule in the ledger (`DOCS/operations/rule-coverage/`), and the public
  * methodology site renders it in its known-limits table, so every string must
  * read as plain words to a member of the public: no em dashes and none of the
- * internal test vocabulary `approximationKinds.conformance.test.ts` bans.
+ * internal test vocabulary `approximationKinds.conformance.test.ts` bans. The
+ * titles of these rules, which the site prints beside each entry, are held to
+ * the same rule there.
  *
  * A rule reclassified out of `approximated`, newly classified into it, or
  * fixed must update its entry here in the same change, and a change of kind
@@ -127,7 +144,7 @@ export const APPROXIMATION_KINDS: Readonly<Record<ApproximatedTaxRuleId, Approxi
   'irc-401-a-9-C-i-elected-deferral-ignores-attainment-year-distributions': { kind: 'fix' },
   'irc-401-a-9-E-ii-eligible-designated-beneficiary': { kind: 'fix' },
   'irc-401-c-2-earned-income-not-modeled': { kind: 'needs-fact', missingInput: 'annual net self-employment earnings eligible as section 219 compensation' },
-  'irc-402-c-1-pension-lump-sum-direct-rollover-eligibility': { kind: 'needs-fact', missingInput: 'qualified-trust, eligible-rollover-distribution, and plan-permission facts for the pension offer' },
+  'irc-402-c-1-pension-lump-sum-direct-rollover-eligibility': { kind: 'needs-fact', missingInput: 'eligible-rollover-distribution and plan-permission facts for the pension offer' },
   'irc-402-c-4-B-rmd-not-eligible-rollover-distribution': { kind: 'fix' },
   'irc-408-d-2-C-annuity-contract-close-of-year-value': { kind: 'convention', reason: 'future insurer FMV or actuarial reserve cannot be inferred without inventing contract economics' },
   'irc-408-d-2-C-projection-pro-rata-measurement-instant': { kind: 'convention', reason: "an IRA balance above about 90 trillion dollars cannot be held to the cent, so that year measures the IRA value before the year's growth instead of after it; no real household reaches that size" },
@@ -158,7 +175,7 @@ export const APPROXIMATION_KINDS: Readonly<Record<ApproximatedTaxRuleId, Approxi
   'ms-combined-return-runs-the-schedule-per-spouse': { kind: 'fix' },
   'ms-early-or-excess-distribution-not-exempt': { kind: 'fix' },
   'mt-mca-15-30-2120-3-g-age-65-subtraction': { kind: 'fix' },
-  'ndcc-57-38-30-3-2-closed-subtraction-list': { kind: 'needs-fact', missingInput: 'military or qualified-peace-officer versus other public-pension class' },
+  'ndcc-57-38-30-3-2-closed-subtraction-list': { kind: 'needs-fact', missingInput: 'whether a public pension is a qualified retired law enforcement (peace officer) benefit' },
   'ndcc-57-38-30-3-2-d-2-qualified-dividend-exclusion': { kind: 'fix' },
   'ne-stat-77-2716-public-pension-exemption': { kind: 'fix' },
   'nj-stat-54a-6-10-retirement-income-exclusion': { kind: 'fix' },
@@ -202,5 +219,5 @@ export const APPROXIMATION_KINDS: Readonly<Record<ApproximatedTaxRuleId, Approxi
   'va-code-58-1-322-03-age-deduction-and-social-security': { kind: 'fix' },
   'vt-stat-32-5830e-social-security-inclusion': { kind: 'fix' },
   'wi-schedule-sb-line-5-long-term-capital-gain-exclusion': { kind: 'fix' },
-  'wi-stat-71-05-retirement-income-subtraction': { kind: 'needs-fact', missingInput: 'per-recipient qualifying income and restricted-credit or election status' },
+  'wi-stat-71-05-retirement-income-subtraction': { kind: 'needs-fact', missingInput: 'restricted-credit or election status' },
 })

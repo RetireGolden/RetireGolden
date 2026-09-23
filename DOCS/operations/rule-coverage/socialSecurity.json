@@ -1270,7 +1270,7 @@
     },
     {
       "id": "ssa-table-4c6-period-life-table-vintage",
-      "title": "The longevity tables are the SSA period life table, one vintage behind the live host",
+      "title": "The longevity tables are the SSA period life table, one edition behind the live host",
       "classification": "approximated",
       "errorDirection": "bothDirections",
       "approximation": {

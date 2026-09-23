@@ -22,10 +22,11 @@ const EXPECTED_KEYS: Readonly<Record<ApproximationKind, readonly string[]>> = {
 /**
  * Words the public site must not show: internal test and tooling vocabulary a
  * reader of the known-limits table cannot be expected to know. Whole words,
- * any case; "exact ledger" is matched as a phrase so "ledger" alone stays
- * usable.
+ * any case; "exact ledger" (or "exact-ledger") is matched as a phrase so
+ * "ledger" alone stays usable. The same rule covers the published entries and
+ * the titles of the approximated rules they sit beside.
  */
-const BANNED_PUBLIC_WORDS = /\b(?:fixtures?|golden|regression|harness|exact\s+ledger|packs?|vintage)\b/giu
+const BANNED_PUBLIC_WORDS = /\b(?:fixtures?|golden|regression|harness|exact[\s-]+ledger|packs?|vintage)\b/giu
 const EM_DASH = '—'
 
 /** Every public-text problem in one string, empty when it reads as plain words. */
@@ -128,6 +129,15 @@ describe('approximation kinds conformance', () => {
     expect(violations).toEqual([])
   })
 
+  it('gives every approximated rule a title in plain public text, since the site prints it beside the kind', () => {
+    const violations: string[] = []
+    for (const id of approximatedIds) {
+      const title = TAX_RULE_REGISTRY[id as keyof typeof TAX_RULE_REGISTRY].title
+      for (const problem of publicTextProblems(title)) violations.push(id + ' title ' + problem)
+    }
+    expect(violations).toEqual([])
+  })
+
   it('flags the banned words as whole words in any case, and nothing that merely contains them', () => {
     // Probes for the checker itself, so a regex that silently matched nothing
     // could not pass the public-text test above.
@@ -137,6 +147,7 @@ describe('approximation kinds conformance', () => {
       'one fixture',
       'the Exact Ledger re-prices',
       'the exact  ledger',
+      'priced on the exact-ledger path',
       'a regression',
       'the test harness',
       'a parameter pack',
@@ -151,6 +162,7 @@ describe('approximation kinds conformance', () => {
       'packaging and unpacked backpacks',
       'the full year-by-year projection re-prices candidates',
       'a ledger of gifts',
+      'the exact-cent ledger',
       'goldenrod harnessing',
       'two parts, one clause',
     ]) {
