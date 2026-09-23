@@ -885,7 +885,7 @@ export const socialSecurityRecords = {
   'usc-42-416-l-survivor-fra-age-60-attainment-cohorts': {
     title: 'Survivor FRA follows age-60 attainment cohorts, reaching 67 for 1962+',
     statement:
-      'nra.ts correctly keeps a survivor FRA separate from retirement FRA, but it stops at 66 years and 8 months for every effective birth year from 1960 onward. Section 416(l) keys retirement age to the calendar year the claimant attains early retirement age, and sets that early age at 60 for survivor benefits: the statutory schedule is 66 years and 10 months for a 1961 cohort and 67 for a 1962-and-later cohort. The engine consequently makes a 1962-and-later survivor unreduced up to four months too early. The benefit error moves taxable Social Security income directly (at most 85 percent taxable), but when spending is instead funded from a traditional account the engine replaces each missing benefit dollar with a fully taxable withdrawal dollar, so the sign of the tax error depends on how the shortfall is funded (and symmetrically for the too-early-unreduced FRA case).',
+      'nra.ts correctly keeps a survivor FRA separate from retirement FRA, but its table departs from the statute at both ends. Section 416(l) keys retirement age to the calendar year the claimant attains early retirement age, and sets that early age at 60 for survivor benefits, so the statutory survivor schedule is: 65 for an effective birth year of 1939 or earlier (age 60 before 2000); 65 years and 2 months for 1940, rising by 2 months a year to 65 years and 10 months for 1944 (age 60 in 2000 through 2004); 66 for 1945 through 1956 (age 60 in 2005 through 2016); 66 years and 2 months for 1957, rising to 66 years and 10 months for 1961 (age 60 in 2017 through 2021); and 67 for 1962 and later. 20 CFR 404.409(b) prints the same schedule by date of birth for every birth from 1912 onward. The engine instead returns 65 for every effective birth year through 1945 and 65 years and 2 months through 65 years and 10 months for 1946 through 1950, so a survivor born 1940 through 1950 is unreduced 2 to 12 months too early (for 1946, 782 months against the statutory 792); and it stops at 66 years and 8 months for every effective birth year from 1960 onward, so a 1961 survivor is unreduced two months too early and a 1962-and-later survivor four months too early. The 1912 through 1939 and 1951 through 1960 cohorts match. The benefit error moves taxable Social Security income directly (at most 85 percent taxable), but when spending is instead funded from a traditional account the engine replaces each missing benefit dollar with a fully taxable withdrawal dollar, so the sign of the tax error depends on how the shortfall is funded (and symmetrically for the too-early-unreduced FRA case).',
     classification: 'approximated',
     contraryReading: null,
     errorDirection: 'bothDirections',
@@ -893,6 +893,24 @@ export const socialSecurityRecords = {
       'DEFECT — no behavior change in this registry slice. survivorFraForBirthYear returns 66y8m for 1960 and every later effective birth year. For an effective 1962 birth, age 60 is attained in 2022, so section 416(l)(1)(E) supplies age 67; the companion fixture pins the statute-derived 804 months against the observed engine value of 800 months.',
     jurisdiction: 'federal',
     authority: [{
+      kind: 'statute',
+      citation: '42 U.S.C. 416(l)(1)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section416&num=0&edition=prelim',
+      quotedText:
+        'with respect to an individual who attains early retirement age (as defined in paragraph (2)) before January 1, 2000, 65 years of age;',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 416(l)(1)(B)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section416&num=0&edition=prelim',
+      quotedText:
+        'with respect to an individual who attains early retirement age after December 31, 1999, and before January 1, 2005, 65 years of age plus the number of months in the age increase factor (as determined under paragraph (3)) for the calendar year in which such individual attains early retirement age;',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 416(l)(1)(C)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section416&num=0&edition=prelim',
+      quotedText:
+        'with respect to an individual who attains early retirement age after December 31, 2004, and before January 1, 2017, 66 years of age;',
+    }, {
       kind: 'statute',
       citation: '42 U.S.C. 416(l)(1)(D)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section416&num=0&edition=prelim',
@@ -912,15 +930,27 @@ export const socialSecurityRecords = {
         'The term "early retirement age" means age 62 in the case of an old-age, wife\'s, or husband\'s insurance benefit, and age 60 in the case of a widow\'s or widower\'s insurance benefit.',
     }, {
       kind: 'statute',
+      citation: '42 U.S.C. 416(l)(3)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section416&num=0&edition=prelim',
+      quotedText:
+        'With respect to an individual who attains early retirement age in the 5-year period consisting of the calendar years 2000 through 2004, the age increase factor shall be equal to two-twelfths of the number of months in the period beginning with January 2000 and ending with December of the year in which the individual attains early retirement age.',
+    }, {
+      kind: 'statute',
       citation: '42 U.S.C. 416(l)(3)(B)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section416&num=0&edition=prelim',
       quotedText:
         'With respect to an individual who attains early retirement age in the 5-year period consisting of the calendar years 2017 through 2021, the age increase factor shall be equal to two-twelfths of the number of months in the period beginning with January 2017 and ending with December of the year in which the individual attains early retirement age.',
+    }, {
+      kind: 'regulation',
+      citation: '20 CFR 404.409(b)',
+      url: 'https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-E/section-404.409',
+      quotedText:
+        'You may receive unreduced widow\'s or widower\'s benefits beginning with the month you attain the age shown. If your birth date is: Full retirement age is: Before 1/2/1912 62 years. 1/2/1912—1/1/1940 65 years. 1/2/1940—1/1/1941 65 years and 2 months. 1/2/1941—1/1/1942 65 years and 4 months. 1/2/1942—1/1/1943 65 years and 6 months. 1/2/1943—1/1/1944 65 years and 8 months. 1/2/1944—1/1/1945 65 years and 10 months. 1/2/1945—1/1/1957 66 years. 1/2/1957—1/1/1958 66 years and 2 months. 1/2/1958—1/1/1959 66 years and 4 months. 1/2/1959—1/1/1960 66 years and 6 months. 1/2/1960—1/1/1961 66 years and 8 months. 1/2/1961—1/1/1962 66 years and 10 months. 1/2/1962 and later 67 years.',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-26',
+    verifiedOn: '2026-09-23',
     implementedBy: ['packages/engine/src/socialSecurity/nra.ts'],
     implementedByFunctions: [
       'packages/engine/src/socialSecurity/nra.ts#survivorFraForBirthYear',
@@ -993,6 +1023,100 @@ export const socialSecurityRecords = {
     ],
     implementedByFunctions: [
       'packages/engine/src/projection/internal/annualSocialSecurity.ts#annualSocialSecurity',
+      'packages/engine/src/socialSecurity/survivorBenefit.ts#survivorBenefitMonthly',
+    ],
+  },
+
+  'usc-42-402-e-survivor-of-worker-who-died-before-claiming': {
+    title: 'When a worker dies before claiming, the survivor is paid from the death, on the benefit earned by then',
+    statement:
+      'When a worker dies before claiming, annualSocialSecurity.ts still prices the dead worker’s own benefit as a claim at the claim age configured on the worker’s Social Security stream: annualSocialSecurityPayableMonths records nothing until the calendar year the worker would have reached that age, and the amount is then the PIA times claimFactor at that age. The survivor step-up waits for that amount, so the surviving spouse receives no survivor benefit before that year, and survivorBenefit.ts then takes the larger of that amount and 82.5 percent of the PIA as the survivor base. Section 402(e)(1) instead entitles the widow(er) of an individual who died a fully insured individual, once the widow(er) is not married, has attained age 60 and has filed an application (and meets the provision’s other conditions), for each month beginning with the first month in which the widow(er) becomes so entitled; none of its conditions is that the worker had claimed. 20 CFR 404.337(a) starts entitlement with the first month the application covers in which every other requirement is met, and 404.621(a) lets an application reach back up to 6 months, but not into months that would be reduced for age unless the widow(er) was at least 60 in the month of death and applies in the following month, in which case entitlement can begin with the month of death. Under section 402(e)(2)(A) and (C) the base is the worker’s PIA, deemed up to the old-age benefit the worker would upon application have received for the month before the month of death; 20 CFR 404.313(e)(1) accordingly counts delayed retirement credits only up to but not including the month of death, and 404.313(a) earns them only from full retirement age through the month the worker attains 70. The section 402(e)(2)(D) limit, the larger of the worker’s reduced benefit and 82.5 percent of the PIA, applies only where the worker was at any time entitled to an old-age benefit reduced under subsection (q), so a worker who never claimed passes on neither an early-claim reduction nor that limit. Wherever the survivor amount is larger than the survivor’s own benefit, the engine therefore understates the survivor’s benefits from the death until the year of the configured claim age, overstates them afterwards when the configured age is past full retirement age (it counts credits the worker never earned), and understates them for life when the configured age is below full retirement age (it applies an early-claim reduction for a claim that was never made, floored at 82.5 percent of the PIA). The survivor’s own single claim age, which also gates the step-up, is registered separately at usc-42-402-r-survivor-deemed-filing-exemption. The benefit error moves taxable Social Security income directly (at most 85 percent taxable), but when spending is instead funded from a traditional account the engine replaces each missing benefit dollar with a fully taxable withdrawal dollar, so the sign of the tax error depends on how the shortfall is funded. The record covers a worker who dies at 62 or later: for a death before 62, section 402(e)(2)(B) determines the PIA a different way for survivor purposes, applying only where that does not lower it, and this record makes no claim about that case.',
+    classification: 'approximated',
+    contraryReading: null,
+    errorDirection: 'bothDirections',
+    conventionRationale:
+      'The engine works out a survivor benefit from the benefit the worker was set to collect at the claim age entered in the plan, and has no separate path for a worker who dies before reaching that age. The plan already holds what the right figure needs: both birth dates, the age at death, the worker’s primary insurance amount and both claim ages. An example, with no cost-of-living increases: a worker born in January 1962 has a 2,000 dollar primary insurance amount and a full retirement age of 67, plans to claim at 70, and dies at 64 in December 2026. The surviving spouse, born in January 1960, is 66, with her own 600 dollar benefit and a planned claim age of 67. The engine pays her own 600 dollars a month from 2027 through 2031, then 2,480 dollars a month from 2032, which is what the worker would have received at 70. The law pays her 2,000 dollars a month from December 2026 if she applies within six months: she is past her survivor full retirement age, so nothing is taken off, and the worker earned no delayed retirement credits before dying. Leaving aside December 2026, which the engine’s whole-year counting cannot reach, the engine pays 1,400 dollars a month too little for five years, 84,000 dollars in all, and then 480 dollars a month too much for the rest of her life.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: '42 U.S.C. 402(e)(1)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim',
+      quotedText:
+        '(1) The widow (as defined in section 416(c) of this title) and every surviving divorced wife (as defined in section 416(d) of this title) of an individual who died a fully insured individual, if such widow or such surviving divorced wife- (A) is not married, (B)(i) has attained age 60, or (ii) has attained age 50 but has not attained age 60 and is under a disability (as defined in section 423(d) of this title) which began before the end of the period specified in paragraph (4), (C)(i) has filed application for widow\'s insurance benefits, (ii) was entitled to wife\'s insurance benefits, on the basis of the wages and self-employment income of such individual, for the month preceding the month in which such individual died, and- (I) has attained retirement age (as defined in section 416(l) of this title), (II) is not entitled to benefits under subsection (a) or section 423 of this title, or (III) has in effect a certificate (described in paragraph (8)) filed by her with the Commissioner of Social Security, in accordance with regulations prescribed by the Commissioner of Social Security, in which she elects to receive widow\'s insurance benefits (subject to reduction as provided in subsection (q)), or (iii) was entitled, on the basis of such wages and self-employment income, to mother\'s insurance benefits for the month preceding the month in which she attained retirement age (as defined in section 416(l) of this title), and (D) is not entitled to old-age insurance benefits or is entitled to old-age insurance benefits each of which is less than the primary insurance amount (as determined after application of subparagraphs (B) and (C) of paragraph (2)) of such deceased individual, shall be entitled to a widow\'s insurance benefit for each month, beginning with- (E) if she satisfies subparagraph (B) by reason of clause (i) thereof, the first month in which she becomes so entitled to such insurance benefits, or',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 402(e)(2)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim',
+      quotedText:
+        'Except as provided in subsection (q) and subparagraph (D) of this paragraph, such widow\'s insurance benefit for each month shall be equal to the primary insurance amount (as determined for purposes of this subsection after application of subparagraphs (B) and (C)) of such deceased individual.',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 402(e)(2)(B)(i), (iii)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim',
+      quotedText:
+        '(B)(i) For purposes of this subsection, in any case in which such deceased individual dies before attaining age 62 and section 415(a)(1) of this title (as in effect after December 1978) is applicable in determining such individual\'s primary insurance amount- ... (iii) This subparagraph shall apply with respect to any benefit under this subsection only to the extent its application does not result in a primary insurance amount for purposes of this subsection which is less than the primary insurance amount otherwise determined for such deceased individual under section 415 of this title.',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 402(e)(2)(C)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim',
+      quotedText:
+        'If such deceased individual was (or upon application would have been) entitled to an old-age insurance benefit which was increased (or subject to being increased) on account of delayed retirement under the provisions of subsection (w), then, for purposes of this subsection, such individual\'s primary insurance amount, if less than the old-age insurance benefit (increased, where applicable, under paragraph (5) or (6) of section 415(f) of this title and under section 415(i) of this title as if such individual were still alive in the case of an individual who has died) which he was receiving (or would upon application have received) for the month prior to the month in which he died, shall be deemed to be equal to such old-age insurance benefit, and (notwithstanding the provisions of paragraph (3) of such subsection (w)) the number of increment months shall include any month in the months of the calendar year in which he died, prior to the month in which he died, which satisfy the conditions in paragraph (2) of such subsection (w).',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 402(e)(2)(D)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim',
+      quotedText:
+        'If the deceased individual (on the basis of whose wages and self-employment income a widow or surviving divorced wife is entitled to widow\'s insurance benefits under this subsection) was, at any time, entitled to an old-age insurance benefit which was reduced by reason of the application of subsection (q), the widow\'s insurance benefit of such widow or surviving divorced wife for any month shall, if the amount of the widow\'s insurance benefit of such widow or surviving divorced wife (as determined under subparagraph (A) and after application of subsection (q)) is greater than- ... (ii) 82½ percent of the primary insurance amount (as determined without regard to subparagraph (C)) of such deceased individual, ... be reduced to the amount referred to in clause (i), or (if greater) the amount referred to in clause (ii).',
+    }, {
+      kind: 'regulation',
+      citation: '20 CFR 404.313(a)',
+      url: 'https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR545f4aa361a6356/section-404.313',
+      quotedText:
+        'You may earn a credit for each month during the period beginning with the month you attain full retirement age (as defined in § 404.409) and ending with the month you attain age 70 (72 before 1984). You earn a credit for each month for which you are fully insured and eligible but do not receive an old-age benefit either because you do not apply for benefits or because you elect to voluntarily suspend your benefits to earn DRCs.',
+    }, {
+      kind: 'regulation',
+      citation: '20 CFR 404.313(e)(1)',
+      url: 'https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR545f4aa361a6356/section-404.313',
+      quotedText:
+        'If you earn delayed retirement credits during your lifetime, we will compute benefits for your surviving spouse or surviving divorced spouse based on your regular primary insurance amount plus the amount of those delayed retirement credits. All delayed retirement credits, including any earned during the year of death, can be used in computing the benefit amount for your surviving spouse or surviving divorced spouse beginning with the month of your death. We compute delayed retirement credits up to but not including the month of death.',
+    }, {
+      kind: 'regulation',
+      citation: '20 CFR 404.337(a)',
+      url: 'https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR219bf3e41a78e9f/section-404.337',
+      quotedText:
+        'We will find you entitled to widow\'s or widower\'s benefits under § 404.335 or § 404.336 beginning with the first month covered by your application in which you meet all other requirements for entitlement.',
+    }, {
+      kind: 'regulation',
+      citation: '20 CFR 404.621(a)(2)',
+      url: 'https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-G/subject-group-ECFR7863a9f033e7183/section-404.621',
+      quotedText:
+        'If you file an application for old-age benefits, widow\'s or widower\'s benefits not based on disability, wife\'s, husband\'s, or child\'s benefits based on the earnings record of a person not entitled to disability benefits, or mother\'s, father\'s, or parent\'s benefits, after the first month you could have been entitled to them, you may receive benefits for up to 6 months immediately before the month in which your application is filed. Your benefits may begin with the first month in this 6-month period in which you meet all the requirements for entitlement.',
+    }, {
+      kind: 'regulation',
+      citation: '20 CFR 404.621(a)(3)',
+      url: 'https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-G/subject-group-ECFR7863a9f033e7183/section-404.621',
+      quotedText:
+        'If the effect of the payment of benefits for a month before the month you file would be to reduce your benefits because of your age, you cannot be entitled to old-age, wife\'s, husband\'s, widow\'s, or widower\'s benefits for any month before the month in which your application is filed, unless you meet one of the conditions in paragraph (a)(4) of this section.',
+    }, {
+      kind: 'regulation',
+      citation: '20 CFR 404.621(a)(4)(ii)',
+      url: 'https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-G/subject-group-ECFR7863a9f033e7183/section-404.621',
+      quotedText:
+        'You are a widow, widower, or surviving divorced spouse of the insured person who died in the month before you applied and you were at least age 60 in the month of death of the insured person on whose earnings record you are claiming benefits. In this case, you can be entitled beginning with the month the insured person died if you choose and if you file your application on or after July 1, 1983.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-23',
+    implementedBy: [
+      'packages/engine/src/projection/internal/annualSocialSecurity.ts',
+      'packages/engine/src/socialSecurity/claimFactor.ts',
+      'packages/engine/src/socialSecurity/survivorBenefit.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualSocialSecurity.ts#annualSocialSecurity',
+      'packages/engine/src/projection/internal/annualSocialSecurity.ts#annualSocialSecurityPayableMonths',
+      'packages/engine/src/socialSecurity/claimFactor.ts#claimFactor',
       'packages/engine/src/socialSecurity/survivorBenefit.ts#survivorBenefitMonthly',
     ],
   },

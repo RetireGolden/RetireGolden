@@ -11,19 +11,19 @@ The registry is the machine-checked chain from a rule to its implementation and 
 
 | Metric | Count |
 | --- | ---: |
-| Total rules | 529 |
-| Classification: approximated | 122 |
+| Total rules | 530 |
+| Classification: approximated | 123 |
 | Classification: outOfScope | 87 |
 | Classification: settled | 314 |
 | Classification: unsettled | 6 |
 | Approximated kind: convention | 22 |
-| Approximated kind: fix | 76 |
+| Approximated kind: fix | 77 |
 | Approximated kind: needs-fact | 24 |
 | Volatility: annuallyIndexed | 86 |
 | Volatility: awaitingGuidance | 12 |
-| Volatility: staticStatute | 424 |
+| Volatility: staticStatute | 425 |
 | Volatility: sunsetting | 7 |
-| Federal jurisdiction | 339 |
+| Federal jurisdiction | 340 |
 | State jurisdiction total | 190 |
 
 | State jurisdiction | Count |
@@ -235,7 +235,7 @@ Per-rule payloads are sharded one file per record module under `DOCS/operations/
 | rule-coverage/medicareAndHealthCoverage.json | 18 |
 | rule-coverage/requiredMinimumDistributions.json | 47 |
 | rule-coverage/rothAccounts.json | 13 |
-| rule-coverage/socialSecurity.json | 49 |
+| rule-coverage/socialSecurity.json | 50 |
 | rule-coverage/socialSecurityEarnings.json | 3 |
 | rule-coverage/socialSecurityMaritalEligibility.json | 6 |
 | rule-coverage/statesMidwest.json | 43 |
@@ -247,7 +247,7 @@ Per-rule payloads are sharded one file per record module under `DOCS/operations/
 
 ## Re-verification due dates
 
-The 25 earliest due dates are shown below (529 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
+The 25 earliest due dates are shown below (530 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
 
 | Rule | Volatility | Verified on | Due on |
 | --- | --- | --- | --- |
@@ -289,19 +289,20 @@ Version 5 is a breaking discriminator for strict version checks: manifest.rules 
 
 ## Quote fidelity
 
-Committed ledger generated at 2026-09-14T12:59:25.010Z over 1529 authority entries (0 fetched live, 430 from cache).
+Committed ledger generated at 2026-09-23T21:34:40.291Z over 1545 authority entries (0 fetched live, 433 from cache).
 
-5 serious, 6 advisory, 1518 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
+7 serious, 6 advisory, 1532 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
 not treated as a CI gate; how to read each verdict: DOCS/operations/quote-fidelity.md.
 
 | Verdict | Class | Count |
 | --- | --- | ---: |
-| ELISION-EXACT | ok | 125 |
+| ELISION-EXACT | ok | 126 |
 | ELISION-PUNCTUATION | advisory | 1 |
-| EXACT | ok | 1046 |
+| EXACT | ok | 1060 |
 | PDF-NOT-VERIFIABLE | advisory | 1 |
-| PDF-WORD-LEVEL | ok | 347 |
+| PDF-WORD-LEVEL | ok | 346 |
 | PUNCTUATION | advisory | 4 |
-| UNFETCHABLE | serious | 5 |
+| TRUNCATED | serious | 1 |
+| UNFETCHABLE | serious | 6 |
 
 Regenerate: pnpm verify:quotes -- --json > DOCS/operations/quote-fidelity-ledger.json (network required), then pnpm rules:coverage.

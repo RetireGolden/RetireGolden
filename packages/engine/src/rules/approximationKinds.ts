@@ -69,6 +69,14 @@
  *   in hand where the engine rounds its ratio instead; months in a first
  *   (grace) year stay with cfr-20-404-435-grace-year-monthly-earnings-test.
  *
+ * Registered as approximated after the triage, with the kind chosen in the
+ * same change:
+ * - usc-42-402-e-survivor-of-worker-who-died-before-claiming, fix: the plan
+ *   already holds both birth dates, the worker's age at death, the PIA and
+ *   both claim ages, which is what the statutory start and base need under
+ *   the engine's existing whole-year death convention; the fix is in the
+ *   survivor step-up's own code.
+ *
  * This text is published. `scripts/rules-coverage.mjs` writes each entry onto
  * its rule in the ledger (`DOCS/operations/rule-coverage/`), and the public
  * methodology site renders it in its known-limits table, so every string must
@@ -207,6 +215,7 @@ export const APPROXIMATION_KINDS: Readonly<Record<ApproximatedTaxRuleId, Approxi
   'usc-42-1395r-i-4-a-i-irmaa-magi-foreign-exclusion-addback': { kind: 'fix' },
   'usc-42-1395r-i-5-optimizer-uniform-threshold-indexing': { kind: 'fix' },
   'usc-42-402-c-2-ssdi-spouse-auxiliary': { kind: 'fix' },
+  'usc-42-402-e-survivor-of-worker-who-died-before-claiming': { kind: 'fix' },
   'usc-42-403-a-6-ssdi-family-maximum': { kind: 'fix' },
   'usc-42-403-f-1-earnings-test-month-charging': { kind: 'fix' },
   'usc-42-415-b-2-a-i-computation-years-five-year-dropout': { kind: 'fix' },
