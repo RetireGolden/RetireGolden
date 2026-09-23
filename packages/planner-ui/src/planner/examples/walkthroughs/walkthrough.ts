@@ -37,12 +37,19 @@ export interface WalkthroughRow {
    * sized by bisection "to $0.01") states its contract's tolerance here.
    */
   readonly tolerance?: number
+  /**
+   * What the figure is: dollars (the default for a number), a count, a
+   * percentage or a calendar year; a string row is text. The site formats on it.
+   */
+  readonly unit?: 'dollars' | 'count' | 'percent' | 'year'
   /** Reads the engine's figure off the year row (and the plan, for account ids). */
   readonly select: (year: YearResult, plan: Plan) => number | string | undefined
 }
 
 /** The ledger's own tolerance: ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS, half a cent. */
 export const WALKTHROUGH_DEFAULT_TOLERANCE = 0.005
+
+export type WalkthroughUnit = 'dollars' | 'count' | 'percent' | 'year' | 'text'
 
 export interface WalkthroughTable {
   /** The projection year worked by hand. */
@@ -76,6 +83,7 @@ export interface WalkthroughRowResult {
   readonly engine: number | string | undefined
   /** The absolute tolerance the test applies to this row (numbers only). */
   readonly tolerance: number
+  readonly unit: WalkthroughUnit
   readonly derivation: string
   readonly contract: string
 }
@@ -105,6 +113,7 @@ export function runWalkthrough(walkthrough: Walkthrough): {
         hand: row.hand,
         engine: row.select(year, plan),
         tolerance: row.tolerance ?? WALKTHROUGH_DEFAULT_TOLERANCE,
+        unit: typeof row.hand === 'string' ? 'text' : (row.unit ?? 'dollars'),
         derivation: row.derivation,
         contract: row.contract,
       })),

@@ -31,6 +31,7 @@
           "hand": 62,
           "engine": 62,
           "tolerance": 0.005,
+          "unit": "count",
           "derivation": "2026 − 1964",
           "contract": "PersonYearState.ageAttained"
         },
@@ -40,6 +41,7 @@
           "hand": "single",
           "engine": "single",
           "tolerance": 0.005,
+          "unit": "text",
           "derivation": "household filing status",
           "contract": "YearResult.filingStatus"
         },
@@ -49,6 +51,7 @@
           "hand": 18000,
           "engine": 18000,
           "tolerance": 0.005,
+          "unit": "dollars",
           "derivation": "18,000 × inflation factor 1",
           "contract": "worksheet income-recurring-annual"
         },
@@ -58,6 +61,7 @@
           "hand": 18000,
           "engine": 18000,
           "tolerance": 0.005,
+          "unit": "dollars",
           "derivation": "consulting only: no wages, Social Security, pension or yield",
           "contract": "worksheet income-total-annual"
         },
@@ -67,6 +71,7 @@
           "hand": 0,
           "engine": 0,
           "tolerance": 0.005,
+          "unit": "dollars",
           "derivation": "a 1964 birth starts RMDs at 75, in 2039",
           "contract": "params/index.ts#rmdStartAgeForBirthYear"
         },
@@ -76,6 +81,7 @@
           "hand": 10500,
           "engine": 10500,
           "tolerance": 0.01,
+          "unit": "dollars",
           "derivation": "12,400 (top of the 10% bracket) − (18,000 − 16,100 standard deduction) = 10,500; sized by bisection to $0.01, landing exactly",
           "contract": "worksheet roth-conversion-annual; YearResult.rothConversion; strategies/rothConversion.ts (topOfBracket holds federal taxable income at the bracket bound)"
         },
@@ -85,6 +91,7 @@
           "hand": 28500,
           "engine": 28500,
           "tolerance": 0.005,
+          "unit": "dollars",
           "derivation": "18,000 consulting + 10,500 conversion; no gains, dividends or Social Security",
           "contract": "worksheet medicare-magi-composition; YearResult.magi"
         },
@@ -94,6 +101,7 @@
           "hand": 1240,
           "engine": 1240,
           "tolerance": 0.005,
+          "unit": "dollars",
           "derivation": "taxable income 28,500 − 16,100 = 12,400, all at 10% = 1,240; Florida 0",
           "contract": "worksheets federal-ordinary-bracket-tax, tax-total-annual; params/state/data/year2026.ts FL"
         },
@@ -103,6 +111,7 @@
           "hand": 0,
           "engine": 0,
           "tolerance": 0.005,
+          "unit": "dollars",
           "derivation": "AMTI 28,500 is under the 90,100 exemption",
           "contract": "worksheet federal-amt-screen"
         },
@@ -112,6 +121,7 @@
           "hand": 37050,
           "engine": 37049.99665021896,
           "tolerance": 0.01,
+          "unit": "dollars",
           "derivation": "49,450 (the 15% breakpoint, single) − 12,400 taxable income; sized by bisection to $0.01, lower bound",
           "contract": "worksheet year-result-ltcg-zero-headroom; YearResult.ltcgZeroHeadroom"
         },
@@ -121,6 +131,7 @@
           "hand": 0,
           "engine": 0,
           "tolerance": 0.005,
+          "unit": "dollars",
           "derivation": "no need-based traditional withdrawal; a conversion is never penalized; Casey is 62 in any case",
           "contract": "worksheet tax-penalties-annual; simulate.ts header"
         },
@@ -130,6 +141,7 @@
           "hand": 0,
           "engine": 0,
           "tolerance": 0.005,
+          "unit": "dollars",
           "derivation": "no taxable account",
           "contract": "worksheet tax-realized-gains-annual"
         },
@@ -139,6 +151,7 @@
           "hand": "actionable",
           "engine": "actionable",
           "tolerance": 0.005,
+          "unit": "text",
           "derivation": "one 2026 contract, a published 2026 pack, every gate supported",
           "contract": "YearAcaResult.readiness; domain rules §8"
         },
@@ -148,6 +161,7 @@
           "hand": 28500,
           "engine": 28500,
           "tolerance": 0.005,
+          "unit": "dollars",
           "derivation": "signed AGI 28,500 + untaxed Social Security 0 + tax-exempt interest 0 + foreign addback 0 + dependents 0",
           "contract": "worksheet aca-household-magi-composition; tax/aca.ts#buildAcaHouseholdMagi"
         },
@@ -157,6 +171,7 @@
           "hand": 15650,
           "engine": 15650,
           "tolerance": 0.005,
+          "unit": "dollars",
           "derivation": "15,650 for the first person, contiguous states; HHS 2025 guidelines for 2026 coverage",
           "contract": "params/data/year2026.ts federalPovertyLine.contiguous; tax/aca.ts#acaFederalPovertyLine"
         },
@@ -166,6 +181,7 @@
           "hand": 182.10862619808304,
           "engine": 182.10862619808304,
           "tolerance": 0.005,
+          "unit": "percent",
           "derivation": "28,500 ÷ 15,650 × 100 = 182.11",
           "contract": "worksheet aca-expected-contribution; YearAcaResult.fplPct"
         },
@@ -175,6 +191,7 @@
           "hand": "below-cliff",
           "engine": "below-cliff",
           "tolerance": 0.005,
+          "unit": "text",
           "derivation": "182.11% is at or below 400% and at least 100%; the cliff MAGI is 62,600, 34,100 away",
           "contract": "worksheet aca-400-percent-cliff; YearAcaResult.cliffState"
         },
@@ -184,6 +201,7 @@
           "hand": 12000,
           "engine": 12000,
           "tolerance": 0.005,
+          "unit": "dollars",
           "derivation": "12 months × 1,000 × health inflation factor 1",
           "contract": "worksheet aca-enrollment-and-applicable-slcsp-premium-annual"
         },
@@ -193,6 +211,7 @@
           "hand": 12000,
           "engine": 12000,
           "tolerance": 0.005,
+          "unit": "dollars",
           "derivation": "12 × 1,000: the example sets the benchmark equal to the stated premium",
           "contract": "worksheet aca-enrollment-and-applicable-slcsp-premium-annual; buildContext.ts parseExamplePlan"
         },
@@ -202,6 +221,7 @@
           "hand": 10364.773801916934,
           "engine": 10364.773801916934,
           "tolerance": 0.005,
+          "unit": "dollars",
           "derivation": "12,000 − 28,500 × 5.7376% (4.19% + (182.11 − 150)/50 × 2.41%) = 12,000 − 1,635.23 = 10,364.77; below the 12,000 enrollment cap",
           "contract": "worksheets aca-expected-contribution, aca-allowable-premium-tax-credit; tax/aca.ts#acaApplicablePct"
         },
@@ -211,6 +231,7 @@
           "hand": 1635.2261980830663,
           "engine": 1635.2261980830663,
           "tolerance": 0.005,
+          "unit": "dollars",
           "derivation": "12,000 − 10,364.77 = 1,635.23, which equals the expected contribution because benchmark equals premium",
           "contract": "worksheet aca-economic-net-premium"
         },
@@ -220,6 +241,7 @@
           "hand": 50000,
           "engine": 50000,
           "tolerance": 0.005,
+          "unit": "dollars",
           "derivation": "2024 is before the ledger, so the plan's recentAnnualMagi of 50,000 stands in; Casey has no Medicare months, so it prices nothing",
           "contract": "worksheet irmaa-lookback-selection; YearResult.irmaaLookbackMagi"
         },
@@ -229,6 +251,7 @@
           "hand": "planFallback",
           "engine": "planFallback",
           "tolerance": 0.005,
+          "unit": "text",
           "derivation": "no historical MAGI entered",
           "contract": "YearResult.irmaaLookbackMagiSource"
         },
@@ -238,6 +261,7 @@
           "hand": 0,
           "engine": 0,
           "tolerance": 0.005,
+          "unit": "dollars",
           "derivation": "no Medicare months at 62",
           "contract": "YearResult.medicarePremiums"
         },
@@ -247,6 +271,7 @@
           "hand": 40000,
           "engine": 40000,
           "tolerance": 0.005,
+          "unit": "dollars",
           "derivation": "40,000 × inflation factor 1",
           "contract": "worksheet spending-base-annual"
         },
@@ -256,6 +281,7 @@
           "hand": 1635.2261980830663,
           "engine": 1635.2261980830663,
           "tolerance": 0.005,
+          "unit": "dollars",
           "derivation": "the net premium 1,635.23; no Medicare, no extras",
           "contract": "worksheet spending-healthcare-annual; YearExpenses.healthcare"
         },
@@ -265,6 +291,7 @@
           "hand": 41635.226198083066,
           "engine": 41635.226198083066,
           "tolerance": 0.005,
+          "unit": "dollars",
           "derivation": "40,000 + 1,635.23",
           "contract": "worksheet spending-total-annual"
         },
@@ -274,6 +301,7 @@
           "hand": 24875.226198083066,
           "engine": 24875.226198083066,
           "tolerance": 0.005,
+          "unit": "dollars",
           "derivation": "41,635.23 + tax 1,240 − consulting 18,000 = 24,875.23; the conversion brings in no cash",
           "contract": "worksheet portfolio-need-annual"
         },
@@ -283,6 +311,7 @@
           "hand": 24875.226198083066,
           "engine": 24875.226198083066,
           "tolerance": 0.005,
+          "unit": "dollars",
           "derivation": "the whole need, tax included; cash is first in the sequential order",
           "contract": "worksheet withdrawals-by-category-annual; withdrawalStrategySchema sequential order"
         },
@@ -292,6 +321,7 @@
           "hand": 0,
           "engine": 0,
           "tolerance": 0.005,
+          "unit": "dollars",
           "derivation": "the conversion is not a withdrawal",
           "contract": "YearWithdrawals.total composition"
         },
@@ -301,6 +331,7 @@
           "hand": 0,
           "engine": 0,
           "tolerance": 0.005,
+          "unit": "dollars",
           "derivation": "nothing drawn",
           "contract": "worksheet withdrawals-by-category-annual"
         },
@@ -310,6 +341,7 @@
           "hand": 24875.226198083066,
           "engine": 24875.226198083066,
           "tolerance": 0.005,
+          "unit": "dollars",
           "derivation": "cash only",
           "contract": "worksheet withdrawals-total-annual"
         },
@@ -319,6 +351,7 @@
           "hand": 0,
           "engine": 0,
           "tolerance": 0.005,
+          "unit": "dollars",
           "derivation": "inflows 18,000 − spending 41,635.23 − tax 1,240 < 0",
           "contract": "worksheet surplus-invested-annual"
         },
@@ -328,6 +361,7 @@
           "hand": 0,
           "engine": 0,
           "tolerance": 0.005,
+          "unit": "dollars",
           "derivation": "fully funded",
           "contract": "worksheet spending-shortfall-annual"
         },
@@ -337,6 +371,7 @@
           "hand": 178627.26927795526,
           "engine": 178627.26927795526,
           "tolerance": 0.005,
+          "unit": "dollars",
           "derivation": "(200,000 − 24,875.23) × 1.02",
           "contract": "worksheet accounts-balance-per-account-annual; annualPostSolveAccountGrowth.ts (growth after flows)"
         },
@@ -346,6 +381,7 @@
           "hand": 461475,
           "engine": 461475,
           "tolerance": 0.005,
+          "unit": "dollars",
           "derivation": "(450,000 − 10,500) × 1.05",
           "contract": "worksheet accounts-balance-per-account-annual"
         },
@@ -355,6 +391,7 @@
           "hand": 137025,
           "engine": 137025,
           "tolerance": 0.005,
+          "unit": "dollars",
           "derivation": "(120,000 + 10,500) × 1.05",
           "contract": "worksheet accounts-balance-per-account-annual"
         },
@@ -364,6 +401,7 @@
           "hand": 777127.2692779553,
           "engine": 777127.2692779553,
           "tolerance": 0.005,
+          "unit": "dollars",
           "derivation": "178,627.27 + 461,475 + 137,025",
           "contract": "worksheet accounts-investable-total-annual"
         },
@@ -373,6 +411,7 @@
           "hand": 777127.2692779553,
           "engine": 777127.2692779553,
           "tolerance": 0.005,
+          "unit": "dollars",
           "derivation": "investable only",
           "contract": "worksheet accounts-net-worth-annual"
         }

@@ -28,6 +28,7 @@
           "hand": 73,
           "engine": 73,
           "tolerance": 0.005,
+          "unit": "count",
           "derivation": "2026 − 1953",
           "contract": "PersonYearState.ageAttained (year − birth year)"
         },
@@ -37,6 +38,7 @@
           "hand": "single",
           "engine": "single",
           "tolerance": 0.005,
+          "unit": "text",
           "derivation": "household filing status, no death in the year",
           "contract": "YearResult.filingStatus"
         },
@@ -46,6 +48,7 @@
           "hand": 50688,
           "engine": 50688,
           "tolerance": 0.005,
+          "unit": "dollars",
           "derivation": "3,200 × 1.32 (48 months of delayed retirement credit past FRA 66) × 12 payable months × COLA factor 1",
           "contract": "worksheets social-security-benefit-annual, delayed-retirement-credit-factor, social-security-payable-months, social-security-cola-factor"
         },
@@ -55,6 +58,7 @@
           "hand": 50688,
           "engine": 50688,
           "tolerance": 0.005,
+          "unit": "dollars",
           "derivation": "Social Security only: no wages, pension, annuity, recurring or yield income",
           "contract": "worksheet income-total-annual"
         },
@@ -64,6 +68,7 @@
           "hand": 69811.32075471699,
           "engine": 69811.32075471699,
           "tolerance": 0.005,
+          "unit": "dollars",
           "derivation": "1,850,000 ÷ 26.5 (Uniform Lifetime Table at 73; first RMD year for a 1953 birth)",
           "contract": "worksheets rmd-applicable-age-attain-year, rmd-uniform-lifetime-divisor; params/data/year2026.ts rmd.uniformLifetimeTable"
         },
@@ -73,6 +78,7 @@
           "hand": 15000,
           "engine": 15000,
           "tolerance": 0.005,
+          "unit": "dollars",
           "derivation": "15,000 requested × inflation factor 1, within the 111,000 cap and within the RMD",
           "contract": "worksheets qcd-limit-and-age-proxy, qcd-income-offset-qualified-slice"
         },
@@ -82,6 +88,7 @@
           "hand": 0,
           "engine": 0,
           "tolerance": 0.005,
+          "unit": "dollars",
           "derivation": "conversion mode none",
           "contract": "YearResult.rothConversion"
         },
@@ -91,6 +98,7 @@
           "hand": 97896.12075471698,
           "engine": 97896.12075471698,
           "tolerance": 0.005,
+          "unit": "dollars",
           "derivation": "(69,811.32 − 15,000 QCD offset) + 0.85 × 50,688 (the 85% cap on taxable Social Security binds)",
           "contract": "worksheets federal-taxable-social-security-tiers, medicare-magi-composition; YearResult.magi"
         },
@@ -100,6 +108,7 @@
           "hand": 11238.375359999998,
           "engine": 11238.375359999998,
           "tolerance": 0.005,
+          "unit": "dollars",
           "derivation": "taxable income 97,896.12 − 18,150 standard − 4,626.23 senior = 75,119.888; 10% of 12,400 + 12% of 38,000 + 22% of 24,719.888 = 11,238.38; Florida 0",
           "contract": "worksheets federal-standard-deduction-age-65, federal-ordinary-bracket-tax, tax-total-annual; tax/federalTax.ts#seniorDeductionAmount; params/state/data/year2026.ts FL"
         },
@@ -109,6 +118,7 @@
           "hand": 0,
           "engine": 0,
           "tolerance": 0.005,
+          "unit": "dollars",
           "derivation": "AMTI 97,896.12 − exemption 90,100 = 7,796.12 × 26% = 2,026.99, below the regular tax",
           "contract": "worksheet federal-amt-screen"
         },
@@ -118,6 +128,7 @@
           "hand": 0,
           "engine": 0,
           "tolerance": 0.005,
+          "unit": "dollars",
           "derivation": "RMD fully distributed; Dana is past 59½",
           "contract": "worksheet tax-penalties-annual"
         },
@@ -127,6 +138,7 @@
           "hand": 0,
           "engine": 0,
           "tolerance": 0.005,
+          "unit": "dollars",
           "derivation": "no taxable-account sale: cash covers the need",
           "contract": "worksheet tax-realized-gains-annual"
         },
@@ -136,6 +148,7 @@
           "hand": 2024,
           "engine": 2024,
           "tolerance": 0.005,
+          "unit": "year",
           "derivation": "2026 − 2, no SSA-44 election",
           "contract": "worksheets medicare-irmaa-two-year-lookback, irmaa-lookback-selection"
         },
@@ -145,6 +158,7 @@
           "hand": "planFallback",
           "engine": "planFallback",
           "tolerance": 0.005,
+          "unit": "text",
           "derivation": "2024 is before the ledger and no historical MAGI is entered, so the plan's recentAnnualMagi stands in",
           "contract": "YearResult.irmaaLookbackMagiSource; assumptionsSchema.recentAnnualMagi"
         },
@@ -154,6 +168,7 @@
           "hand": 0,
           "engine": 0,
           "tolerance": 0.005,
+          "unit": "dollars",
           "derivation": "the example baseline seeds recentAnnualMagi at 0",
           "contract": "YearResult.irmaaLookbackMagi; buildContext.ts EXAMPLE_BASELINE_ASSUMPTIONS"
         },
@@ -163,6 +178,7 @@
           "hand": 0,
           "engine": 0,
           "tolerance": 0.005,
+          "unit": "count",
           "derivation": "0 is not above the 109,000 tier-1 floor for a single filer",
           "contract": "worksheet medicare-irmaa-first-tier-boundary; params/index.ts#irmaaTierForMagi"
         },
@@ -172,6 +188,7 @@
           "hand": 0,
           "engine": 0,
           "tolerance": 0.005,
+          "unit": "dollars",
           "derivation": "tier 0",
           "contract": "YearResult.irmaaSurcharge"
         },
@@ -181,6 +198,7 @@
           "hand": 2434.8,
           "engine": 2434.8,
           "tolerance": 0.005,
+          "unit": "dollars",
           "derivation": "202.90 × 12 months of Part B at tier 0; no Part D surcharge",
           "contract": "worksheet medicare-base-part-b-premium; params/data/year2026.ts medicare.partBStandardMonthly"
         },
@@ -190,6 +208,7 @@
           "hand": 110000,
           "engine": 110000,
           "tolerance": 0.005,
+          "unit": "dollars",
           "derivation": "110,000 × inflation factor 1",
           "contract": "worksheet spending-base-annual"
         },
@@ -199,6 +218,7 @@
           "hand": 6634.8,
           "engine": 6634.8,
           "tolerance": 0.005,
+          "unit": "dollars",
           "derivation": "2,434.80 Part B + 350 × 12 extras × health inflation factor 1",
           "contract": "worksheet spending-healthcare-annual"
         },
@@ -208,6 +228,7 @@
           "hand": 116634.8,
           "engine": 116634.8,
           "tolerance": 0.005,
+          "unit": "dollars",
           "derivation": "110,000 + 6,634.80; no goals, debt, property, insurance or care",
           "contract": "worksheet spending-total-annual"
         },
@@ -217,6 +238,7 @@
           "hand": 77185.17536,
           "engine": 77185.17536,
           "tolerance": 0.005,
+          "unit": "dollars",
           "derivation": "116,634.80 + tax 11,238.38 − Social Security 50,688",
           "contract": "worksheet portfolio-need-annual"
         },
@@ -226,6 +248,7 @@
           "hand": 22373.854605283006,
           "engine": 22373.854605283006,
           "tolerance": 0.005,
+          "unit": "dollars",
           "derivation": "77,185.18 need − 54,811.32 net RMD cash; cash is first in the sequential order and covers it",
           "contract": "worksheet withdrawals-by-category-annual; withdrawalStrategySchema sequential order"
         },
@@ -235,6 +258,7 @@
           "hand": 0,
           "engine": 0,
           "tolerance": 0.005,
+          "unit": "dollars",
           "derivation": "cash covers the need",
           "contract": "worksheet withdrawals-by-category-annual"
         },
@@ -244,6 +268,7 @@
           "hand": 69811.32075471699,
           "engine": 69811.32075471699,
           "tolerance": 0.005,
+          "unit": "dollars",
           "derivation": "the gross RMD, QCD included; no need-based IRA draw",
           "contract": "worksheet withdrawals-by-category-annual; YearResult.rmd"
         },
@@ -253,6 +278,7 @@
           "hand": 92185.17536,
           "engine": 92185.17536,
           "tolerance": 0.005,
+          "unit": "dollars",
           "derivation": "22,373.85 + 69,811.32 (= need 77,185.18 + QCD 15,000)",
           "contract": "worksheet withdrawals-total-annual"
         },
@@ -262,6 +288,7 @@
           "hand": 0,
           "engine": 0,
           "tolerance": 0.005,
+          "unit": "dollars",
           "derivation": "max(0, inflows 105,499.32 (Social Security plus the net RMD cash) − spending 116,634.80 − tax 11,238.38) = 0; the cash draw is not an inflow",
           "contract": "worksheet surplus-invested-annual; YearResult.surplusInvested (accepted cash inflows)"
         },
@@ -271,6 +298,7 @@
           "hand": 0,
           "engine": 0,
           "tolerance": 0.005,
+          "unit": "dollars",
           "derivation": "fully funded",
           "contract": "worksheet spending-shortfall-annual"
         },
@@ -280,6 +308,7 @@
           "hand": 28178.668302611335,
           "engine": 28178.668302611335,
           "tolerance": 0.005,
+          "unit": "dollars",
           "derivation": "(50,000 − 22,373.85) × 1.02",
           "contract": "worksheet accounts-balance-per-account-annual; annualPostSolveAccountGrowth.ts (growth after flows)"
         },
@@ -289,6 +318,7 @@
           "hand": 1869198.1132075472,
           "engine": 1869198.1132075472,
           "tolerance": 0.005,
+          "unit": "dollars",
           "derivation": "(1,850,000 − 69,811.32) × 1.05",
           "contract": "worksheet accounts-balance-per-account-annual"
         },
@@ -298,6 +328,7 @@
           "hand": 420000,
           "engine": 420000,
           "tolerance": 0.005,
+          "unit": "dollars",
           "derivation": "400,000 × 1.05; no sale, no yield",
           "contract": "worksheet accounts-balance-per-account-annual"
         },
@@ -307,6 +338,7 @@
           "hand": 2317376.7815101584,
           "engine": 2317376.7815101584,
           "tolerance": 0.005,
+          "unit": "dollars",
           "derivation": "28,178.67 + 1,869,198.11 + 420,000",
           "contract": "worksheet accounts-investable-total-annual"
         },
@@ -316,6 +348,7 @@
           "hand": 2317376.7815101584,
           "engine": 2317376.7815101584,
           "tolerance": 0.005,
+          "unit": "dollars",
           "derivation": "investable only: no property, debt, insurance, ladder or reverse mortgage",
           "contract": "worksheet accounts-net-worth-annual"
         }
