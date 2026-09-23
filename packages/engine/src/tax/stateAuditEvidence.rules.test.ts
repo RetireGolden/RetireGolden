@@ -137,6 +137,19 @@ it('keeps New Jersey HSA lifecycle uncertainty visible and separates state QCD p
   expect(record('ks-direct-qcd-conformity').statement).toContain('charitable-credit')
 })
 
+it('keeps New Jersey\'s worksheet helper off the Arkansas conformity record', () => {
+  // Arkansas is conformsWithAdoptedCap, which never enters the Worksheet C
+  // arm; the helper belongs to nj-direct-qcd-ira-basis-treatment. A callee
+  // walk that "completes" the Arkansas trail put it back once, and the
+  // methodology site then carried a correction note for three pins.
+  const arkansas = record('state-direct-qcd-conformity-policies')
+  expect(arkansas.implementedByFunctions).toContain('packages/engine/src/tax/stateQcdHsa.ts#stateDirectQcdCollectionAdjustment')
+  expect(arkansas.implementedByFunctions.filter((fn) => /stateQcdHsa\.ts#newJerseyWorksheet/u.test(fn))).toEqual([])
+  expect(record('nj-direct-qcd-ira-basis-treatment').implementedByFunctions).toContain(
+    'packages/engine/src/tax/stateQcdHsa.ts#newJerseyWorksheetCTaxableAmount',
+  )
+})
+
 
 it('bounds Michigan Tier 3 non-conditioning evidence to its cohort and 2026–2028 window', () => {
   const temporary = record('mi-mcl-206-30-9-e-nonconditioning')
