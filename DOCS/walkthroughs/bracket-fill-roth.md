@@ -648,6 +648,10 @@ unaffected); and the list of rows more than 0.005 from their closed forms now in
 `investableTotal` and `netWorth`. The rows module holds the closed forms within the bands the published contracts
 give (see the check's §1c) rather than pinning the ledger's landings. No figure changed.
 
+**Revision 3 (2026-09-23).** After the pull-request review: section 7's hand-values bullet now says the rows module
+writes the closed forms and takes only the 2028 closes and the executed conversions from the ledger; the traced
+landings are listed for reference. No figure changed.
+
 **Revision 2 (2026-09-23).** Revised after the re-check of revision 1: the three passages that still recommended
 pinning the traced values at 0.005 (rounding-note point 3, section 6 A1 and section 7's tolerances bullet) and the
 last wrong-readings row now say what the rows module does; the rows list reads eight; row 31's note says what row 30
@@ -1067,12 +1071,14 @@ spending-withdrawal warning (A3) from 2027.
 
 ## 7. Notes for the rows author
 
-- **Hand values:** the "Value" column above (the traced chain). Rows whose value depends on a loop landing can be
-  written from the literal landing constants, as the 2026 file writes `HOUSEHOLD_LANDING`:
-  `LANDING_2027 = 191_772.97770470378`, `NEED_2027 = 56_385.04227766296`,
-  `LANDING_2028 = 185_144.14927251262`, `NEED_2028 = 51_804.227112972905`,
-  `LANDING_2029 = 195_417.5786969397`, `NEED_2029 = 55_461.79269279938`, and the conversions
-  `109_869.91`, `93_519.25`, `78_828.19`. Every other 2029 figure is an expression of those and the inputs, for
+- **Hand values (revision 3):** the closed forms, not the traced landings: the rows module writes the 2029 draw,
+  MAGI and withdrawals as their exact fixed point on the ledger's 2028 closes and holds them within the contract bands
+  below. The only ledger values it takes as given are the 2028 closes and the executed conversions, which are what
+  2029 starts from: Morgan's 2028 close 302,199.0464705796 and the conversions `109_869.91`, `93_519.25` and
+  `78_828.19`. For reference, the traced landings are `LANDING_2027 = 191_772.97770470378`,
+  `NEED_2027 = 56_385.04227766296`, `LANDING_2028 = 185_144.14927251262`, `NEED_2028 = 51_804.227112972905`,
+  `LANDING_2029 = 195_417.5786969397` and `NEED_2029 = 55_461.79269279938`. Other 2029 figures are expressions of the
+  inputs and those values, for
   example `SS = 55_728 * 1.025 ** 3`, `RMD_RILEY = 441_000 * (1 - 1 / 26.5) * 1.05 / 25.5`, and
   `ROTH_END = (((173_353.383 + 109_869.91) * 1.05 + 93_519.25) * 1.05 + 78_828.19) * 1.05` (starting from the 2026
   close). Morgan's IRA needs the whole chain:

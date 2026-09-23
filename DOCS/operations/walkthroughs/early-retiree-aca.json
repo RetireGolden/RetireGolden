@@ -1,6 +1,6 @@
 {
   "kind": "retiregolden.walkthrough-evidence",
-  "version": 1,
+  "version": 2,
   "id": "early-retiree-aca",
   "title": "Early retiree and the ACA cliff",
   "exampleId": "early-retiree-aca",
@@ -17,7 +17,7 @@
     "The conversion is sized to the top of the 10% bracket on taxable income after the standard deduction; the credit's dependence on MAGI does not enter the sizing. The example chose the 10% target so the baseline stays under the 400% cliff (it lands 34,100 below it); filling the 12% bracket instead would cross the cliff.",
     "Consulting is ordinary income with no self-employment facts: no self-employment tax, no half-SE deduction, no self-employed health-insurance deduction.",
     "A cash account's growth is not taxable interest and does not enter MAGI; the conversion is not a withdrawal and is never penalized, at any age.",
-    "The conversion and the zero-rate gain headroom are sized by bisection to $0.01 (the contract's promise) and return the lower bound, so those two rows are held to at most $0.01 below the exact value and never above it; every other row is held to half a cent.",
+    "In 2026 the conversion and the zero-rate gain headroom are sized by bisection to $0.01 (the contract's promise) and return the lower bound, so those two rows are held to at most $0.01 below the exact value and never above it, and every other row to half a cent; the 2027 bands follow from the same promise and are stated in the next note.",
     "Florida's zero appears nowhere as a separate field: the year row publishes one composed tax.",
     "In 2027 the conversion's $0.01 bar reaches every figure computed from it (MAGI, taxable income, the ACA AGI component, the IRA and Roth year ends), and no contract says so; those rows carry the propagated bar (0.01 one-sided, 0.0105 on the grown balances) and the zero-rate headroom becomes two-sided, since the conversion's shortfall raises its root while its own search lands below.",
     "A null row proves an absence: in 2027 the engine publishes the household MAGI, the poverty line, the percentage and the credit as null by contract, and the test holds each to null exactly. The MAGI probe's federal AGI is still published beside them as the input a credit would have been priced on, not as a household MAGI the engine vouches for.",

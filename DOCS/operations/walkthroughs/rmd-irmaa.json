@@ -1,6 +1,6 @@
 {
   "kind": "retiregolden.walkthrough-evidence",
-  "version": 1,
+  "version": 2,
   "id": "rmd-irmaa",
   "title": "High balances: RMDs and IRMAA",
   "exampleId": "rmd-irmaa",
@@ -15,6 +15,7 @@
     "A cash account's growth is not taxable interest: taxable-yield rows exist only for taxable accounts, and the cash schema has no yield fields. The brokerage grows as pure price return because it declares no yield.",
     "Florida's zero appears nowhere as a separate field: the year row publishes one composed tax; the state amount is zero because the Florida pack has no income tax.",
     "The surplus rule's \"cash inflows\" are the year's income plus the net RMD cash; a need-based withdrawal is not an inflow, so the surplus here is zero by a 22,373.85 margin rather than by two sides cancelling.",
+    "In 2028 the brokerage sale is a taxed fixed point: the ledger accepts it within half a cent of balancing, which bounds the sale within 0.0053 of the exact root (each sold dollar realizes 23/63 of gain, taxed at 0.1632 a gain dollar), so the sale, the total withdrawn and, grown at 5%, the brokerage, investable and net-worth figures are held to 0.006; every other 2028 row is held to half a cent, and the hand values are the exact roots.",
     "Two birth-year conventions coexist: the full retirement age uses the January-1 rule (a 1953-01-01 birth counts as 1952), while age attained, the RMD start and the Medicare months use the calendar birth year. No 2026 figure depends on the difference."
   ],
   "tables": [

@@ -22,6 +22,9 @@ export type YearResult = ReturnType<typeof projectPlan>['result']['years'][numbe
  * figure's own contract promises less: a value sized by bisection "to $0.01"
  * states that tolerance, and where the bisection returns the lower bound the
  * row says so with `bound: 'below'`, which makes the comparison one-sided.
+ * A hand value of null states a published absence: the engine publishes the
+ * field as null in that year by contract, and the row passes only on a null
+ * (never on undefined, which means the engine published no figure at all).
  */
 export interface WalkthroughRow {
   /** Stable key, unique within the table; the site keys rows on it. */

@@ -47,11 +47,13 @@ export interface YearAcaResult {
   /** Final return-year ACA household MAGI; null when material facts are unsupported. */
   householdMagi: number | null
   /**
-   * The MAGI probe's parts, published whenever the year is ACA-active with a
-   * contract, before pricing is refused: in a non-actionable year (a stand-in
-   * tax year, for one) they are the inputs a credit would have been priced
-   * on, not a household MAGI the engine vouches for, and householdMagi is
-   * null beside them.
+   * Always published. When the year is ACA-active with a contract, these are
+   * the MAGI probe's parts, built before pricing is refused, so in a
+   * non-actionable year (a stand-in tax year, for one) they are the inputs a
+   * credit would have been priced on, not a household MAGI the engine vouches
+   * for, and householdMagi is null beside them. Without a probe they fall
+   * back to the year's own federal AGI, untaxed Social Security, tax-exempt
+   * interest and foreign-exclusion addback.
    */
   magiComponents: {
     federalAgi: number
@@ -62,9 +64,12 @@ export interface YearAcaResult {
   }
   fplRegion: 'contiguous' | 'alaska' | 'hawaii' | null
   /**
-   * The poverty line the credit is priced on; null without a priced quote
-   * and in a stand-in tax year, where no inflation-scaled line is exposed as
-   * evidence (the guidelines for that coverage year are not published).
+   * The poverty line for the contract's tax family and region, published
+   * whenever there is a contract with a tax family and the year has its own
+   * parameter pack, priced quote or not; null without a contract, with an
+   * empty tax family, and in a stand-in tax year, where no inflation-scaled
+   * line is exposed as evidence (the guidelines for that coverage year are
+   * not published).
    */
   federalPovertyLine: number | null
   /** MAGI as a percentage of the poverty line, from the priced quote; null when none is priced. */

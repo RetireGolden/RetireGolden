@@ -857,7 +857,9 @@ The 2026 document's section-4 estimate, "10,762.50 (to $0.01)", is right only in
 cross-check in 2026 section 4 also fits: the published lifetime Roth total is 59,661.87 against 59,661.8916 of closed
 forms, a gap of 0.0166 to 0.0266 once the cent rounding is allowed for, and this year supplies 0.0051 of it.
 
-**B2. The walkthrough format cannot state a null, a boolean or a list.** `WalkthroughRow.hand` is `number | string`.
+**B2. The walkthrough format cannot state a null, a boolean or a list.** *Resolved in the change that added this
+part: option (a) was implemented (`hand` may be null, held exactly; the evidence format moved to version 2); the text
+below records the state it was derived against.* `WalkthroughRow.hand` was `number | string`.
 `runWalkthrough` maps a null `select` result to `undefined` (`row.select(year, plan) ?? undefined`), and
 `walkthroughRowProblem` reports that as "not a number" for a numeric hand and as a mismatch for a string hand. Four
 published 2027 figures are null by contract (`householdMagi`, `federalPovertyLine`, `fplPct` and
@@ -869,7 +871,8 @@ published 2027 figures are null by contract (`householdMagi`, `federalPovertyLin
 
 Booleans need `String(...)`, and the support-code list needs `join(',')`.
 
-**B3. `aca.convergence.converged` is false in a year whose funding solve converged.** The publication sets
+**B3. `aca.convergence.converged` is false in a year whose funding solve converged.** *Resolved in the same change:
+`YearAcaResult.convergence` now carries a doc comment stating reading (a).* The publication sets
 `converged: actionable && input.converged && !input.fixedPointFailed`, and `YearAcaResult.convergence` has no doc
 comment. In 2027 the solve converged in 2 evaluations, no `fixed-point-nonconvergent` code is published, and the year
 carries no "could not reconcile" warning. Readings: (a) `converged` means "a priced fixed point is certified"
@@ -878,13 +881,16 @@ say the 2027 solve failed. Reading (a) is also the only one under which the `Yea
 ("publishes healthcare excluding enrollment + the economic net premium when it converges, else + the gross premium").
 The `spending-healthcare-annual` worksheet says "gross premium on failure", but a stand-in year is not a failure.
 
-**B4. `magiComponents` is published while `householdMagi` is null.** The components come from the MAGI probe. The
+**B4. `magiComponents` is published while `householdMagi` is null.** *Resolved in the same change: the field's doc
+comment states the reading used (and that the parts fall back to the year's federal figures when there is no probe).*
+The components come from the MAGI probe. The
 probe is built whenever the year is ACA-active with a contract (candidate evaluation line 366), before pricing is
 refused. No doc comment says whether the components are evidence in a non-actionable year. Reading used: they are the
 inputs the credit would have been priced on, not an ACA MAGI the engine vouches for. The page may show 29,212.50 as
 "the MAGI a 2027 credit would be based on", but should not call it the household MAGI.
 
-**B5. `federalPovertyLine` and `fplPct` have no doc comments.** Their nulls rest on domain rules §8 and on the body.
+**B5. `federalPovertyLine` and `fplPct` have no doc comments.** *Resolved in the same change: both carry doc
+comments stating their gates.* Their nulls rest on domain rules §8 and on the body.
 The line is withheld on `isStandIn` alone (lines 181–191); `fplPct` is null because no quote exists (line 192). The
 statutory figure for 2027 coverage would come from the HHS 2026 poverty guidelines, which the pack does not carry.
 Scaling 15,650 by 1.025 (to 16,041.25) is exactly the "inflation-scaled FPL" that §8 refuses to expose.
