@@ -11,9 +11,9 @@ import { runWalkthrough, walkthroughRowProblem } from './walkthrough'
  * title is what the engine's walkthrough census publishes for this id.
  */
 describe('walkthrough: early retiree and the ACA cliff', () => {
-  it('year 2026 of the early-retiree ACA example equals the hand table', () => {
+  it('years 2026 and 2027 of the early-retiree ACA example equal the hand tables', () => {
     const { tables } = runWalkthrough(EARLY_RETIREE_ACA_WALKTHROUGH)
-    expect(tables.map((table) => table.year)).toEqual([2026])
+    expect(tables.map((table) => table.year)).toEqual([2026, 2027])
     for (const table of tables) {
       expect(table.rows.length, String(table.year)).toBeGreaterThan(20)
       const keys = new Set(table.rows.map((row) => row.key))

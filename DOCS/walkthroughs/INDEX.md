@@ -6,7 +6,7 @@ Each walkthrough has five parts, all pinned to the same commit:
 
 | Part | Where | What it holds |
 |---|---|---|
-| Derivation | `DOCS/walkthroughs/<id>.md` | the year by hand: inputs as built, every figure with its arithmetic and its contract, the wrong readings a test rejects, the contracts found ambiguous, a suggested later year |
+| Derivation | `DOCS/walkthroughs/<id>.md` | the year by hand: inputs as built, every figure with its arithmetic and its contract, the wrong readings a test rejects, the contracts found ambiguous, a suggested later year; a later year worked afterwards is a further part of the same file (part II, part III), with any bridge years in compact form |
 | Independent check | `DOCS/walkthroughs/REVIEW-<date>.md` | a second derivation of every figure and a check of every citation, with a verdict |
 | Rows | `packages/planner-ui/src/planner/examples/walkthroughs/<id>.walkthrough.ts` | the hand table as data: each row's value written as the expression the derivation states, its derivation, its contract, and the selector that reads the engine's figure |
 | Test | `packages/planner-ui/src/planner/examples/walkthroughs/<id>.test.ts` | holds the engine to every row: strings exactly, numbers to half a cent unless the figure's contract promises less (a value sized by bisection "to $0.01" states that tolerance, one-sided below the exact value where the bisection returns the lower bound); the file carries one `it()` title, which is what the engine's coverage index publishes under `walkthroughs` |
@@ -14,6 +14,6 @@ Each walkthrough has five parts, all pinned to the same commit:
 
 | Id | Example | Year | Derivation | Check | Rows and test |
 |---|---|---|---|---|---|
-| rmd-irmaa | High balances: RMDs and IRMAA (`buildRmdIrmaa.ts`) | 2026 | [rmd-irmaa.md](rmd-irmaa.md) | [REVIEW-2026-09-22.md](REVIEW-2026-09-22.md) | `rmdIrmaa.walkthrough.ts`, `rmd-irmaa.test.ts` |
-| early-retiree-aca | Early retiree and the ACA cliff (`buildEarlyRetireeAca.ts`) | 2026 | [early-retiree-aca.md](early-retiree-aca.md) | [REVIEW-2026-09-22.md](REVIEW-2026-09-22.md) | `earlyRetireeAca.walkthrough.ts`, `early-retiree-aca.test.ts` |
+| rmd-irmaa | High balances: RMDs and IRMAA (`buildRmdIrmaa.ts`) | 2026, 2028 (2027 as the bridge) | [rmd-irmaa.md](rmd-irmaa.md), part II for 2028 | [REVIEW-2026-09-22.md](REVIEW-2026-09-22.md), one section per year checked | `rmdIrmaa.walkthrough.ts`, `rmd-irmaa.test.ts` |
+| early-retiree-aca | Early retiree and the ACA cliff (`buildEarlyRetireeAca.ts`) | 2026, 2027 | [early-retiree-aca.md](early-retiree-aca.md), part II for 2027 | [REVIEW-2026-09-22.md](REVIEW-2026-09-22.md), one section per year checked | `earlyRetireeAca.walkthrough.ts`, `early-retiree-aca.test.ts` |
 | bracket-fill-roth | Bracket-fill Roth conversions (`buildBracketFillRoth.ts`) | 2026 | [bracket-fill-roth.md](bracket-fill-roth.md) | [REVIEW-2026-09-22.md](REVIEW-2026-09-22.md) | `bracketFillRoth.walkthrough.ts`, `bracket-fill-roth.test.ts` |

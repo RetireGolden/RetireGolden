@@ -859,11 +859,11 @@
     },
     {
       "id": "early-retiree-aca",
-      "testName": "year 2026 of the early-retiree ACA example equals the hand table"
+      "testName": "years 2026 and 2027 of the early-retiree ACA example equal the hand tables"
     },
     {
       "id": "rmd-irmaa",
-      "testName": "year 2026 of the RMD-and-IRMAA example equals the hand table"
+      "testName": "years 2026 and 2028 of the RMD-and-IRMAA example equal the hand tables"
     }
   ],
   "attestationsDerived": {

@@ -446,3 +446,526 @@ orient the next derivation*, not a derivation, and a test must not pin them from
 **Loose whole-run cross-check (not evidence for any year-one figure).** Carrying my estimate to 2048 gives an ending
 investable total within about 0.2% of the example's published whole-run golden. The residual is expected from my
 simplified forward loop. It suggests the reading of the contracts above is not systematically off.
+
+---
+
+# Part II: year 2028 by hand (2027 as the bridge)
+
+Independent hand derivation of a later projection year of the curated example `rmd-irmaa`
+(`packages/planner-ui/src/planner/examples/buildRmdIrmaa.ts`): 2027 in compact form as the bridge, then 2028 in
+full. It continues part I above (year 2026, approved in `DOCS/walkthroughs/REVIEW-2026-09-22.md`, re-check 2), and
+its rows are the second `tables[]` entry of
+`packages/planner-ui/src/planner/examples/walkthroughs/rmdIrmaa.walkthrough.ts`. Section numbers below are part II's
+own; "the 2026 document" and "part I" both mean the sections above.
+
+**Provenance.** Derived 2026-09-22 by Claude (Opus 5.5 subagent) against the committed tree at `e814bd02`
+(`e814bd02946c2f196e103311a8e873937b514ddb`, the content of RetireGolden #732 as merged), every source read with
+`git show HEAD:<path>`. I did not run the engine, run any test,
+or execute any TypeScript or JavaScript, and I modified no repository file. I did the arithmetic by hand and
+checked it with exact rational arithmetic (Python `fractions`) written from the contracts cited below, not from
+engine code. The only 2026 figures used are the approved table's closing balances (rows 92, 95, 97) and its
+published `magi` (row 42). I did not open `examples.golden.test.ts`, any walkthrough test, or any other
+derivation's check file. Section 4 of the 2026 document chose this year and gave rough figures. None of them is used
+here; §8 compares them after the fact.
+
+**Revision 1 (2026-09-23).** Revised after the independent check (`REVIEW-2026-09-22.md`, the "2027 bridge and year
+2028" section), which approved every figure: nine citations relocated or completed as its §3 lists, the half-cent list
+(C7) completed to five values, the rounded-parts list (C8) completed, the seed and evaluation-count sentence in §4j
+corrected (the count is published in ACA years; the seed never), and the rule record for the unrounded lower IRMAA
+floors added. No figure changed.
+
+**Rounding and tolerance.** These follow the 2026 document:
+- No contract used here states a rounding step. The ledger carries unrounded binary-floating-point dollars.
+- Every value below is the exact value, then its half-up cent display. The exact value is a fraction, a terminating
+  decimal where one exists, or else 12 decimals with "…".
+- **A test compares against the exact value**:
+  - dollar rows within `ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS` = 0.005 (`projection/moneyTolerance.ts`);
+  - integers and enumerations exactly;
+  - inflation factors within 1e-12.
+
+2028 adds one case the 2026 year did not have: figures sized by the funding fixed point while the tax changes with
+the candidate. Those rows are marked **(†)**. The note under §4k says why 0.005 still holds for them, and what bound
+the contract alone gives.
+
+The only bisection-sized field, `ltcgZeroHeadroom`, returns 0 before it bisects in both years (rows 80 and B25). No
+row here is therefore sized by bisection, and no one-sided $0.01 tolerance applies.
+
+---
+
+## 1. Starting point
+
+The plan inputs are unchanged from the 2026 document §1:
+- **Household:** Dana, single, Florida, born 1953-01-01.
+- **Accounts:** cash 50,000 at 2%. Traditional IRA 1,850,000 and brokerage 400,000 (basis 280,000), both at the
+  plan default of 5%.
+- **Income and giving:** PIA 3,200, claimed at 70y0m. `qcdAnnual` 15,000.
+- **Spending:** `baseAnnual` 110,000. Medicare extras 350 a month.
+- **Assumptions:** `inflationPct` 2.5, `healthcareExtraInflationPct` 3, `recentAnnualMagi` 0.
+- **Strategy:** sequential withdrawals, no conversions, no SSA-44, no market series.
+
+| Carried from the approved 2026 table | Exact value | Becomes |
+|---|---|---|
+| Cash close (row 92) | 28,178.668302611321… | 2027 cash opening |
+| IRA close (row 95) | 99,067,500/53 = 1,869,198.113207547170… | 2027 opening **and** the prior-Dec-31 base for the 2027 RMD |
+| Brokerage close (row 97), basis | 420,000; basis 280,000 | 2027 opening |
+| `magi` (row 42) | 25,942,472/265 = 97,896.120754716981… | the MAGI the **2028** premium reads (`magiHistory[2026]`) |
+
+---
+
+## 2. Indexing rules applied (2027 and 2028)
+
+2026 is the only published pack (`params/index.ts`, `const packs = [year2026]`). For 2027 and 2028, `packForYear`
+returns the 2026 pack with `isStandIn: true`. Its header reads "Future years resolve to the latest published pack
+with `isStandIn: true`". Every rule below uses factors measured from 2026. That is both the pack year and the start
+year, so "from the pack year" and "from the start year" give the same number in this plan (see §7, C2).
+
+| Rule | Factor 2027 / 2028 | Applies to | Source |
+|---|---|---|---|
+| General inflation factor, `inflFactorFrom(2026, y)` | 1.025 / 1.050625 (41/40, 1,681/1,600) | cumulative product of (1 + 2.5%) per year from the start year; deterministic run, so no series | `simulate.ts` l.531 (`inflFactorFrom`, "Cumulative general-inflation factor between two years"); published as `YearResult.inflationScale` ("Exact cumulative general-inflation factor used by this simulation year"; `annualFundingApplicationAndClosePhase.ts` l.2102 passes `inflFactor`) |
+| Health inflation factor, `healthInflFactorFrom(2026, y)` | 1.055 / 1.113025 (211/200, 44,521/40,000) | **additive** rate 2.5% + 3% = 5.5% per year, compounded | `assumptionsSchema.healthcareExtraInflationPct` doc ("Healthcare costs grow at inflationPct + this"); `simulate.ts` l.520 (`cumHealthInfl … * (1 + r + healthExtra)`) and the l.532 doc comment ("Same for healthcare (general inflation + the healthcare premium)") |
+| Statutory-limit and tax scale, `limitGrowth` = `indexingScaleFor(2026, y, inflFactorFrom)` | 1.025 / 1.050625 | passed as `TaxYearInput.inflationScale` (`annualFundingApplicationAndClosePhase.ts` l.965) and as the QCD per-donor limit growth | `params/indexingScale.ts` module header, l.15–17 ("above it the scale is the cumulative inflation factor from the pack year"; the in-body comment of `indexingScaleFor`, l.55–61, says the factor above the latest pack "is the whole inflation path"); `simulate.ts` l.542; `TaxYearInput.inflationScale` doc (`projection/internal/types/tax.ts`) |
+| **Indexed** federal figures (`indexFederalTaxPack`) | × 1.025 / × 1.050625 | bracket lower bounds; standard deduction; age-65 addition; 15% and 20% capital-gain breakpoints; AMT exemption, its phase-out start, and the 26/28% breakpoint | `params/index.ts#indexFederalTaxPack` doc (IRC 1(j)(3)(B), 63(c)(7)(B)(ii), 63(c)(4), 1(j)(5)(C), 55(d)(4)(B), 55(d)(3)(B)(i)); applied in `tax/federalTax.ts#computeFederalTax` l.512; domain rules §1, "Indexing in projected years" |
+| **Not indexed** | 1 | §86 provisional-income tiers 25,000 / 34,000; §1411 NIIT threshold 200,000; the senior deduction's 6,000 per person, 75,000 MAGI threshold and 6% rate; §1211(b) 3,000; §121; SALT cap (own schedule) | `indexFederalTaxPack` doc, "Figures deliberately left alone, because no provision indexes them" (l.81–87); `federalTax.ts` header ("The unindexed ones are not"); `TaxYearInput.inflationScale` doc ("Unindexed figures (sections 86, 1411, 121, 1211(b), 151(d)(5)(C) …) ignore it by construction"); domain rules §1 (record `irc-151-d-5-C-senior-deduction-not-indexed`) |
+| Senior deduction sunset | — | applies while `year ≤ lastApplicableYear` = 2028, so **2028 is its last year** | `year2026.ts` l.49–54 (`lastApplicableYear: 2028`); `federalTax.ts#seniorDeductionAmount` ("expiring after `lastApplicableYear`"; body: `year > rule.lastApplicableYear` returns 0) |
+| IRMAA tier floors (lower four rows) | `magiOver × inflFactorFrom(pack.year, premiumYear)`: tier 1 = 111,725 / 114,518.125 | general inflation, not health; unrounded | `params/index.ts#irmaaTierThreshold`, in-body comment l.285–288 ("Every row but the last indexes under (i)(5)(A) without interruption … and the engine does not [round]"); rule record `usc-42-1395r-i-5-C-top-irmaa-threshold-frozen` (`rules/records/medicareAndHealthCoverage.ts`, whose `conventionRationale` says the (i)(5)(B) rounding of the four lower rows "is not reproduced … and is named here rather than left as a silent asymmetry"), so the unrounded floor rests on a registered rule record, not code alone; `tax/medicare.ts` header ("bracket thresholds at general inflation"); `annualHealthcareExpenses.ts` l.166–167; domain rules §7 |
+| IRMAA top row | frozen at 500,000 through premium year 2027; 2028 = nearest 1,000 of 500,000 × 1.025 | not reached by this plan (see §7, C9) | `irmaaTierThreshold` doc; `IRMAA_TOP_TIER_FROZEN_THROUGH_YEAR = 2027` (l.248) |
+| Part B premium (and any Part D surcharge) | `premiumScale = healthInflFactorFrom(pack.year, y)` = 1.055 / 1.113025 | **health** rate, from the **pack** year | `tax/medicare.ts` header ("premiums are indexed at the healthcare inflation rate"); `medicareAnnualPremiumPerPerson(…, premiumScale)`; `annualHealthcareExpenses.ts` l.169; `YearExpenses.healthcare` doc ("the tier premium with IRMAA is inflated from the pack year"); calculation records `medicare-base-part-b-premium` (`premiumScale`: "Healthcare-inflation scale to the premium year") and `spending-healthcare-annual` ("scaled by the healthcare factor from the pack year to this year") |
+| Medicare extras | `healthInflFactorFrom(startYear, y)` = 1.055 / 1.113025 | **health** rate, from the **start** year | `YearExpenses.healthcare` doc ("the extras … use the health inflation factor from the start year"); `annualHealthcareExpenses.ts` l.185; calculation record `spending-healthcare-annual` |
+| Base spending | `inflFactor` = 1.025 / 1.050625 | general rate from the start year | `expensePlanSchema.baseAnnual` doc ("today's dollars"); `simulate.ts` header ("base spending … inflate at the general rate"); `annualLifestyleLayers.ts` (`lifestyleScale = inflFactor × phase × survivor`) |
+| QCD requested | 15,000 × `inflFactor` = 15,375 / 15,759.375 | general rate from the start year | `strategiesSchema.qcdAnnual` doc ("today's dollars"); `annualLegacyQcdGiftPlan` (`qcdAnnual * inflFactor`) |
+| QCD per-donor cap | 111,000 × `limitGrowth` = 113,775 / 116,619.375 | not binding | `YearResult.qcd` doc ("the pack's `rmd.qcdAnnualLimit` indexed with the limit growth"); `annualForcedDistributionQcdAndRetirementActionsPhase.ts` l.1243; worksheet `qcd-limit-and-age-proxy` |
+| Social Security COLA (`matchInflation`) | `inflFactorFrom(startYear, y)` = 1.025 / 1.050625 | no mode reads the pack's `colaPct` of 2.8 | `YearIncomes.socialSecurity` doc ("COLA factor: the inflation factor from the start year under matchInflation"); `simulate.ts` l.1653–1656; worksheet `social-security-cola-factor` |
+| RMD divisor | Uniform Lifetime Table, not indexed: age 74 → **25.5**, age 75 → **24.6** | divides the **prior-Dec-31** balance, i.e. the previous year's published close | `year2026.ts` l.103; `rmd/rmd.ts#requiredMinimumDistribution` ("`priorYearEndBalance` is the Dec 31 balance of the previous year"); `annualOwnerRmdPlan.ts` (`startOfYearBalance`: "Aggregate prior-Dec-31 balance"); `simulate.ts` l.1354; worksheet `rmd-uniform-lifetime-divisor` (its own example is age 75, divisor 24.6) |
+| Account returns | cash 2%, IRA and brokerage 5% | not inflation-linked; applied after the year's flows | 2026 document §2h; `annualPostSolveAccountGrowth.ts` |
+
+---
+
+## 3. Year 2027, the bridge
+
+In 2027 Dana is 74. The IRMAA premium still reads the plan fallback, the cash buffer still covers the need, and
+nothing is sold. Every row is a figure 2028 depends on, or, for B26, one 2029 will.
+
+| # | Figure | Value | Derivation | Contract source | Tol. |
+|---|---|---|---|---|---|
+| B1 | Age / factors | 74; general 1.025; health 1.055; tax scale 1.025 | 2027 − 1953; §2 | `PersonYearState.ageAttained`; §2 | exact / 1e-12 |
+| B2 | `incomes.socialSecurity` (= `incomes.total`) | **51,955.20** (259,776/5) | 3,200 × 1.32 × 12 × 1.025; monthly 4,329.60 | `YearIncomes.socialSecurity`; worksheets `social-security-benefit-annual`, `social-security-cola-factor` | 0.005 |
+| B3 | RMD base | 1,869,198.11 (99,067,500/53) | 2026 IRA close | `rmd.ts`; `annualOwnerRmdPlan.ts` `startOfYearBalance` | 0.005 |
+| B4 | **`rmd`** | **73,301.89** (3,885,000/53 = 73,301.886792452830…) | 1,869,198.113208 ÷ 25.5 (age 74) | worksheet `rmd-uniform-lifetime-divisor`; `year2026.ts` l.103 | 0.005 |
+| B5 | **`qcd`** (from the RMD) / income offset | **15,375.00** / 15,375.00 | 15,000 × 1.025, under the 113,775 cap and within the RMD | `YearResult.qcd`; worksheets `qcd-limit-and-age-proxy`, `qcd-income-offset-qualified-slice` | 0.005 |
+| B6 | Ordinary income = net RMD cash | 57,926.89 (3,070,125/53) | 73,301.886792 − 15,375 | `YearResult.qcd` ("`rmd` stays gross; only the year's cash inflow is reduced") | 0.005 |
+| B7 | Taxable Social Security | **44,161.92** | Provisional income 83,904.486792 = 57,926.886792 + 25,977.60. The 85% formula gives 0.85 × 49,904.486792 + 4,500 = 46,918.813774, above the cap 0.85 × 51,955.20 = 44,161.92. **The cap binds**: break-even ordinary income is 54,683.482353, and Dana is 3,243.404440 past it. | `federalTax.ts#taxableSocialSecurity`; worksheet `federal-taxable-social-security-tiers`; thresholds unindexed | 0.005 |
+| B8 | **AGI = `magi`** | **102,088.81** (135,267,669/1,325) | 57,926.886792 + 44,161.92 | worksheet `medicare-magi-composition`; `YearResult.magi` | 0.005 |
+| B9 | Standard deduction | 18,603.75 | (16,100 + 2,050) × 1.025 = 16,502.50 + 2,101.25 | `indexFederalTaxPack`; worksheet `federal-standard-deduction-age-65` | 0.005 |
+| B10 | Senior deduction | 4,374.67 (4,374.671592452830…) | 6,000 − 0.06 × (102,088.806792 − 75,000) = 6,000 − 1,625.328408. The threshold and the amount are **not** indexed. | `federalTax.ts#seniorDeductionAmount`; `year2026.ts` l.49–54 | 0.005 |
+| B11 | Taxable income | **79,110.3852** exactly | 102,088.806792 − 18,603.75 − 4,374.671592. It is exact because 1.06 × RMD = 77,700, so TI = 1.06·AGI − 29,103.75. | `federalTax.ts` header steps 2–3 | 0.005 |
+| B12 | **`tax`** (federal regular tax; FL 0) | **11,984.08** (11,984.084744 exactly) | Brackets × 1.025: 10% × 12,710 = 1,271; 12% × (51,660 − 12,710) = 4,674; 22% × (79,110.3852 − 51,660) = 6,039.084744. No gains; NIIT 0. AMT: AMTI 102,088.806792 less the 92,352.50 exemption gives TMT 2,531.439766, below the regular tax, so 0. | worksheets `federal-ordinary-bracket-tax`, `federal-amt-screen`, `tax-total-annual`; `indexFederalTaxPack` | 0.005 |
+| B13 | IRMAA lookback | year **2025**, source **`planFallback`**, MAGI **0**, tier **0** | 2025 is before the ledger, so the plan's `recentAnnualMagi` of 0 applies. Tier-1 floor 109,000 × 1.025 = 111,725 (`irmaaNextTierThreshold`). | `YearResult.magi` ("the first two projection years fall back"); worksheet `irmaa-lookback-selection` (its own second-year case) | exact |
+| B14 | `medicarePremiums` / extras / **`expenses.healthcare`** | 2,568.71 (2,568.714) / 4,431.00 / **6,999.71** (6,999.714) | 202.90 × 1.055 × 12 (214.0595 a month); 350 × 12 × 1.055; sum | worksheet `spending-healthcare-annual`; `tax/medicare.ts` | 0.005 |
+| B15 | `baseSpending` / **`expenses.total`** | 112,750.00 / **119,749.71** (119,749.714) | 110,000 × 1.025; + 6,999.714 | worksheets `spending-base-annual`, `spending-total-annual` | 0.005 |
+| B16 | **`netPortfolioNeed`** | **79,778.60** (79,778.598744 exactly) | 119,749.714 + 11,984.084744 − 51,955.20 | worksheet `portfolio-need-annual` | 0.005 |
+| B17 | **Cash draw** = `withdrawals.cash` | **21,851.71** (21,851.711951547170…) | 79,778.598744 − 57,926.886792 of net RMD cash. That is less than the 28,178.67 in cash, so nothing is sold. | `SEQUENTIAL_ORDER`; `annualWithdrawalPlanning.ts` | 0.005 |
+| B18 | Fixed point | second evaluation | The seed is the pre-tax gap, 119,749.714 − 109,882.086792 = 9,867.627208. Evaluation 1 returns 21,851.711952; evaluation 2 reproduces it, because a cash draw adds no income. The count is not published, so do not assert it. | `annualFundingFixedPoint.ts` header and body | — |
+| B19 | `withdrawals.taxable` / `.traditional` / **`.total`** | 0 / 73,301.89 / **95,153.60** (95,153.598744 exactly) | total = need + QCD = 79,778.598744 + 15,375 | worksheets `withdrawals-by-category-annual`, `withdrawals-total-annual` | 0.005 |
+| B20 | `surplusInvested` / `shortfall` / `realizedGains` | 0 / 0 / 0 | surplus: max(0, inflows 109,882.086792 − 119,749.714 − 11,984.084744) = max(0, −21,851.711952) | worksheet `surplus-invested-annual`; 2026 document B2 | exact |
+| B21 | **Cash close** | **6,453.50** (6,453.495478085434…) | (28,178.668303 − 21,851.711952) × 1.02 = 6,326.956351 + 126.539127 of growth | `YearResult.balances`; `annualPostSolveAccountGrowth.ts` | 0.005 |
+| B22 | **IRA close** (the 2028 RMD base) | **1,885,691.04** (99,941,625/53 = 1,885,691.037735849057…) | (1,869,198.113208 − 73,301.886792) × 1.05 = 95,182,500/53 + 4,759,125/53 | same | 0.005 |
+| B23 | **Brokerage close** / basis | **441,000.00** / 280,000 | 420,000 × 1.05; no sale, no yield | same | 0.005 |
+| B24 | `investableTotal` = `netWorth` | 2,333,144.53 (2,333,144.533213934491…) | 6,453.495478 + 1,885,691.037736 + 441,000. **Display drift:** the rounded components sum to 2,333,144.54. | worksheets `accounts-investable-total-annual`, `accounts-net-worth-annual` | 0.005 |
+| B25 | `ltcgZeroHeadroom` | 0 | TI of 79,110.39 is already at or above the 15% breakpoint, 49,450 × 1.025 = 50,686.25, so the field returns 0 before any bisection. | worksheet `year-result-ltcg-zero-headroom` | exact |
+| B26 | (2029 input) 2027 `magi` | 102,088.806792452830… | the MAGI the 2029 premium will read | `YearResult.magi` | 0.005 |
+
+---
+
+## 4. Year 2028 by hand
+
+The year runs in the same order as the 2026 document §2 (`simulate.ts` header). The brokerage sale is sized inside
+the funding fixed point, so the figures that do not depend on it come first (§4a–4e). Then come the fixed point
+(§4f), the tax at the root (§4g), the cash flow (§4h) and the balances (§4i).
+
+### 4a. Timeline, person and factors
+
+| # | Figure | Value | Derivation | Contract source | Tol. |
+|---|---|---|---|---|---|
+| 1 | Dana's `ageAttained` | **75** | 2028 − 1953 | `PersonYearState.ageAttained` | exact |
+| 2 | `alive` / `lifeAge` | true / 95 | 75 ≤ 95 | `PersonYearState.alive`, `.lifeAge` | exact |
+| 3 | Filing status / people 65+ | `single` / 1 | no death; Dana ≥ 65 | `YearResult.filingStatus`; worksheet `federal-standard-deduction-age-65` | exact |
+| 4 | Parameter pack | the 2026 pack, standing in (`isStandIn` true; `advisoryFederalTax.detail.usesStandInPack` true) | no 2028 pack is published | `params/index.ts#packForYear`; `FederalTaxDetail.usesStandInPack` | exact |
+| 5 | **`inflationScale`** (published) | **1.050625** (1,681/1,600) | 1.025 × 1.025 | `YearResult.inflationScale` | 1e-12 |
+| 6 | Health factor / tax scale | 1.113025 / 1.050625 | §2 | §2 | 1e-12 |
+
+### 4b. Social Security
+
+| # | Figure | Value | Derivation | Contract source | Tol. |
+|---|---|---|---|---|---|
+| 7 | Claim-age factor / payable months | 1.32 / 12 | unchanged from 2026 rows 9–10 (claimed 2023; every later year has 12 months) | worksheets `delayed-retirement-credit-factor`, `social-security-payable-months` | 1e-12 / exact |
+| 8 | COLA factor | **1.050625** | `matchInflation`: `inflFactorFrom(2026, 2028)`. Not 1.028², because the pack's 2.8% is never read. | `YearIncomes.socialSecurity` doc; `simulate.ts` l.1653–1656 | 1e-12 |
+| 9 | Monthly benefit | 4,437.84 | 3,200 × 1.32 × 1.050625 | same | 0.005 |
+| 10 | **`incomes.socialSecurity`** | **53,254.08** (1,331,352/25) | 4,437.84 × 12 | worksheet `social-security-benefit-annual` | 0.005 |
+| 11 | `taxableYield` / `taxExemptInterest` | 0 / 0 | The brokerage has no yield fields and no allocation, and the cash account produces no yield row. | 2026 document row 31, item A4 | exact |
+| 12 | **`incomes.total`** | **53,254.08** | Social Security only | worksheet `income-total-annual` | 0.005 |
+
+### 4c. RMD and QCD
+
+| # | Figure | Value | Derivation | Contract source | Tol. |
+|---|---|---|---|---|---|
+| 13 | RMD base (prior Dec 31) | 1,885,691.04 (99,941,625/53) | the 2027 IRA close, row B22, captured before any 2028 flow | `rmd.ts`; `annualOwnerRmdPlan.ts` `startOfYearBalance`; `simulate.ts` l.1354 | 0.005 |
+| 14 | Divisor | **24.6** | Uniform Lifetime Table at 75 (no spouse) | `year2026.ts` l.103; worksheet `rmd-uniform-lifetime-divisor` | exact |
+| 15 | **`rmd`** (gross) | **76,654.11** (166,569,375/2,173 = 76,654.107225034514…) | 1,885,691.037736 ÷ 24.6 | same; `YearResult.rmd` | 0.005 |
+| 16 | QCD age gate / cap | eligible (75 ≥ 71) / 116,619.375 | 111,000 × 1.050625 | worksheet `qcd-limit-and-age-proxy`; `YearResult.qcd` | exact / 0.005 |
+| 17 | **`qcd`** (all from the RMD) | **15,759.38** (126,075/8 = 15,759.375 exactly) | 15,000 × 1.050625. It is below the 76,654.11 RMD, so nothing is taken beyond the RMD. See §7 C7 on the half cent. | `strategiesSchema.qcdAnnual`; `annualLegacyQcdGiftPlan` | 0.005 |
+| 18 | QCD income offset | 15,759.375 | qualified = min(15,759.375, aggregate includible amount ≈ 1.886M, with no basis); §219 offset 0 | worksheet `qcd-income-offset-qualified-slice` | 0.005 |
+| 19 | Net RMD cash = taxable part of the distribution | **60,894.73** (1,058,594,025/17,384 = 60,894.732225034514…) | 76,654.107225 − 15,759.375; fully ordinary | `YearResult.qcd` doc | 0.005 |
+| 20 | `penalties` | 0 | RMD fully taken; Dana is past 59½ | worksheet `tax-penalties-annual` | exact |
+
+### 4d. IRMAA and healthcare
+
+| # | Figure | Value | Derivation | Contract source | Tol. |
+|---|---|---|---|---|---|
+| 21 | IRMAA lookback year | **2026** | 2028 − 2; no SSA-44 | worksheets `medicare-irmaa-two-year-lookback`, `irmaa-lookback-selection`; `annualHealthcareExpenses.ts` l.93 | exact |
+| 22 | **`irmaaLookbackMagiSource`** | **`projected`** | 2026 is in `magiHistory`, written at the close of 2026. This is the **first** year this plan's premium reads the ledger. | `YearResult.irmaaLookbackMagiSource` doc (chain `magiHistory` → `historicalAnnualMagiByYear` → `recentAnnualMagi`); `simulate.ts#resolveMagiFor` | exact |
+| 23 | **`irmaaLookbackMagi`** / `…Year` | **97,896.12** (25,942,472/265) / **2026** | 2026 row 42 | `YearResult.irmaaLookbackMagi`, `.irmaaLookbackMagiYear` | 0.005 / exact |
+| 24 | Tier-1 floor (single, 2028) | 114,518.13 (114,518.125 exactly) | 109,000 × 1.050625 (general rate from the pack year, unrounded) | `params/index.ts#irmaaTierThreshold`; `year2026.ts` l.193 | 0.005 |
+| 25 | **`irmaaTier`** | **0** | 97,896.12 is not > 114,518.125; headroom 16,622.004245 (35,238,649/2,120) | worksheet `medicare-irmaa-first-tier-boundary`; `params/index.ts#irmaaTierForMagi` | exact |
+| 26 | Medicare months | 12 | age ≥ 66 | `annualHealthcareExpenses.ts` body; 2026 document B6 | exact |
+| 27 | Part B, monthly / annual | 225.8327725 / **2,709.99** (2,709.99327 exactly) | 202.90 × (25/25) × 1.113025 × 12, at the health rate from the pack year | worksheet `medicare-base-part-b-premium`; calculation record `medicare-base-part-b-premium`; `tax/medicare.ts#medicareAnnualPremiumPerPerson` | 0.005 |
+| 28 | Part D surcharge / **`irmaaSurcharge`** | 0 / **0** | tier 0 | `YearResult.irmaaSurcharge` | exact |
+| 29 | **`medicarePremiums`** | **2,709.99** (2,709.99327) | (2,709.99327 + 0) × 12/12 | `YearResult.medicarePremiums` | 0.005 |
+| 30 | `irmaaNextTierThreshold` | 114,518.13 (114,518.125) | Medicare is active and the tier is 0, so this is tier 1's floor | `YearResult.irmaaNextTierThreshold` | 0.005 |
+| 31 | Medicare extras | 4,674.71 (4,674.705 exactly) | 350 × 12 × 1.113025, at the health rate from the start year | worksheet `spending-healthcare-annual`; `YearExpenses.healthcare` doc | 0.005 |
+| 32 | **`expenses.healthcare`** | **7,384.70** (7,384.69827 exactly) | 2,709.99327 + 4,674.705, which equals 6,634.80 × 1.113025 | same; calculation record `spending-healthcare-annual` | 0.005 |
+| 33 | (context) 2028's own MAGI vs the floor 2030 will use | 112,002.07 vs 120,315.61 | row 60 against 109,000 × 1.025⁴ = 120,315.605078125. 2028 does not read this figure. | `YearResult.magi` ("the IRMAA base two years later") | — |
+
+### 4e. Spending
+
+| # | Figure | Value | Derivation | Contract source | Tol. |
+|---|---|---|---|---|---|
+| 34 | **`expenses.baseSpending`** | **115,568.75** (462,275/4) | 110,000 × 1.050625; no phases, no policy | worksheet `spending-base-annual`; `YearExpenses.baseSpending` | 0.005 |
+| 35 | `oneTimeGoals`, `debtService`, `propertyCosts`, `insurancePremiums`, `careCost`, `ltcBenefit` | 0 each | none in the plan | `YearExpenses` docs | exact |
+| 36 | **`expenses.total`** | **122,953.45** (122,953.44827 exactly) | 115,568.75 + 7,384.69827 | worksheet `spending-total-annual` | 0.005 |
+| 37 | `requiredSpending` / `targetSpending` / `intendedSpending` / `idealSpending` / `excessSpending` / `guardrailFactor` | 122,953.44827 for each of the first three / 0 / 0 / 1 | as 2026 row 76 | `YearExpenses` layer docs | 0.005 |
+
+### 4f. The funding fixed point and the brokerage sale
+
+The gap left after Social Security and the net RMD cash is drawn in the sequential order: all of the cash first,
+then the brokerage. The sale sets off a loop:
+- a brokerage sale realizes a gain;
+- the gain raises the tax;
+- the higher tax widens the gap;
+- the wider gap needs a larger sale.
+
+The ledger resolves that loop in `annualFundingFixedPoint` (§4j). The exact root follows.
+
+| # | Figure | Value | Derivation | Contract source | Tol. |
+|---|---|---|---|---|---|
+| 38 | Accepted cash inflows (`baseCashInflows`) | 114,148.81 (114,148.812225034514…) | incomes 53,254.08 − reinvested yield 0 + `rmd` 76,654.107225 − `qcdFromRmd` 15,759.375 | `annualFundingApplicationAndClosePhase.ts` l.709; 2026 document B2 | 0.005 |
+| 39 | Pre-tax gap (the fixed point's seed) | 8,804.64 (8,804.636044965486…) | 122,953.44827 − 114,148.812225 (contributions 0) | `annualFundingFixedPoint.ts` header ("the pre-tax cash need"), `spendingUsesBeforeTax` doc | 0.005 |
+| 40 | Cash available (to the last dollar) | **6,453.50** (6,453.495478085434…) | the 2027 cash close, row B21; no safety-net floor | `SEQUENTIAL_ORDER` (cash first); `annualWithdrawalPlanning.ts`, the local `takeFrom` closure at l.182–187 (`take = min(available, wanted, remaining)`); `withdrawalStrategySchema` sequential doc | 0.005 |
+| 41 | Brokerage opening FMV / basis | 441,000 / 280,000 | row B23. The sale is priced at the opening value, before 2028's growth. | `annualWithdrawalPlanning.ts` l.296–298 (the `aggregateBasisSale` call: `openingFairMarketValue: state.balance`, `openingCostBasis: state.costBasis`) | exact |
+| 42 | **Basis-ratio rule** | recovered basis = basis × proceeds / FMV; gain = proceeds − recovered basis. Here gain = proceeds × (1 − 280,000/441,000) = proceeds × **23/63** (0.365079…) | aggregate basis, no lots | `tax/aggregateBasisSale.ts` body l.72–73 (`soldFraction = saleProceeds / openingFairMarketValue; recoveredCostBasis = openingCostBasis * soldFraction`); `taxableAccountSchema.costBasis` doc ("single basis-ratio model in v1; no lots"); domain rules §11 ("taxable (basis-ratio gains)") | exact |
+| 43 | Tax with no gain, T₀ | 12,695.82 (12,695.824667478049…) | AGI₀ = 60,894.732225 + 45,265.968 = 106,160.700225. Senior₀ = 6,000 − 0.06 × 31,160.700225 = 4,130.357986. TI₀ = 106,160.700225 − 19,068.84375 − 4,130.357986 = 82,961.498489. Tax = 1,302.775 + 4,790.85 + 0.22 × (82,961.498489 − 52,951.50). | rows 56–79 with a gain of 0 | 0.005 |
+| 44 | Marginal tax per gain dollar | **0.1632** (102/625) | Each gain dollar adds 1 to AGI and removes 0.06 of senior deduction, so TI rises 1.06. Of that, 1.00 is preferential at 15% and 0.06 is ordinary at 22%: 0.15 + 0.0132. The slope holds over the whole range: taxable SS is capped (row 57), the 22% band has room (row 71), the 15% LTCG band is in force (row 73), and the senior deduction stays positive. | rows 57, 64, 71, 73 | exact |
+| 45 | Marginal tax per **sold** dollar | 0.059580952… (782/13,125) | 0.1632 × 23/63 | — | exact |
+| 46 | **Fixed point, closed form** | P* = (seed + T₀ − cash) / (1 − 782/13,125) | The need after the net RMD cash, cash + P, must equal seed + tax(P), where tax(P) = T₀ + 0.1632 × 23/63 × P. | `annualFundingCandidateEvaluation.ts` (`requiredNeed` at l.468–475: spending + (candidate healthcare − current healthcare) + tax + penalties − cash inflows; the healthcare term is exactly 0 here, since the ACA is inactive and candidate healthcare equals healthcare excluding enrollment) | — |
+| 47 | **Brokerage sale proceeds** = `withdrawals.taxable` | **16,000.28** (16,000.276974880504…) (†) | (8,804.636045 + 12,695.824667 − 6,453.495478) × 13,125/12,343 = 15,046.965234 × 1.063355748… | rows 39–46 | 0.005 (†) |
+| 48 | Sold fraction | 0.0362818… | 16,000.276975 / 441,000 | row 42 | — |
+| 49 | **Recovered basis** | **10,158.91** (10,158.906015797146…) (†) | 280,000 × 16,000.276975 / 441,000 | row 42 | 0.005 |
+| 50 | **Realized gain** = **`realizedGains`** | **5,841.37** (5,841.370959083359…) (†) | 16,000.276975 − 10,158.906016 = 16,000.276975 × 23/63 | worksheet `tax-realized-gains-annual`; `YearResult.realizedGains` ("the gain embedded in taxable withdrawals") | 0.005 |
+| 51 | Basis remaining (not published) | 269,841.09 (269,841.093984202854…) | 280,000 − 10,158.906016 | `aggregateBasisSale` `remainingCostBasis` | — |
+| 52 | Need after the net RMD cash (cash + sale) | 22,453.77 (22,453.772452965938…) (†) | 6,453.495478 + 16,000.276975 | — | 0.005 (†) |
+| 53 | The sale's own tax | **953.31** (953.311740522404…) | Tax 13,649.136408 − T₀ 12,695.824667. This equals the sale's excess over the no-own-tax sizing, 16,000.276975 − 15,046.965234: sale dollars are taxed only through their gain, so the sale grows by exactly its own tax. | rows 43, 47, 79 | 0.005 |
+
+### 4g. Income, AGI, deductions and federal tax at the root
+
+| # | Figure | Value | Derivation | Contract source | Tol. |
+|---|---|---|---|---|---|
+| 54 | Ordinary income (tax input) | 60,894.73 (60,894.732225034514…) | row 19; no need-based IRA draw | `annualFundingCandidateEvaluation.ts` (ordinary = base + need-based traditional − nontaxable) | 0.005 |
+| 55 | Capital gains (tax input, all long-term) | 5,841.37 (†) | row 50; carryforward pool 0 | `federalTax.ts#applyCapitalLossCarryforward` doc ("Single pool, no short-/long-term split"); `computeFederalTax` (`preferentialIncome = min(gains + qualifiedDividends, taxableIncome)`) | 0.005 |
+| 56 | Provisional income | 93,363.14 (93,363.143184117873…) | 60,894.732225 + 5,841.370959 + ½ × 53,254.08 | `federalTax.ts#taxableSocialSecurity`; worksheet `federal-taxable-social-security-tiers` | 0.005 |
+| 57 | **Taxable Social Security** | **45,265.97** (45,265.968 exactly; 5,658,246/125) | The tier-1 base is min(26,627.04, 4,500) = 4,500. The 85% formula gives 0.85 × (93,363.143184 − 34,000) + 4,500 = 54,958.671707, above the cap of 0.85 × 53,254.08. **The cap binds**: break-even ordinary income is 55,332.922353, and AGI excluding SS, 66,736.103184, is 11,403.180831 past it. The gain therefore adds **nothing** to taxable SS. Thresholds unindexed. | same; `indexFederalTaxPack` doc | 0.005 |
+| 58 | AGI excluding Social Security | 66,736.10 (66,736.103184117873…) (†) | 60,894.732225 + 5,841.370959 | `federalTax.ts` header step 2 | 0.005 |
+| 59 | **AGI** | **112,002.07** (112,002.071184117873…) (†) | 66,736.103184 + 45,265.968 | same | 0.005 |
+| 60 | **`magi`** (published; the 2030 IRMAA input) | **112,002.07** (†) | max(0, 60,894.732225 + 5,841.370959 + 0 + 45,265.968 + 0) | worksheet `medicare-magi-composition`; `YearResult.magi`; `annualFundingApplicationAndClosePhase.ts` l.1321 | 0.005 |
+| 61 | Standard deduction, age-65 addition included | **19,068.84** (19,068.84375 exactly) | (16,100 + 2,050) × 1.050625 = 16,915.0625 + 2,153.78125 | `indexFederalTaxPack` (standard deduction and age-65 addition); worksheet `federal-standard-deduction-age-65`; `year2026.ts` l.40–41 | 0.005 |
+| 62 | Senior-deduction MAGI | 112,002.07 (†) | AGI + foreign addback 0 | `federalTax.ts` header step 2; domain rules §1 | 0.005 |
+| 63 | Senior phase-out | 2,220.12 (2,220.124271047072…) (†) | 0.06 × (112,002.071184 − 75,000); the 75,000 is **not** indexed | `federalTax.ts#seniorDeductionAmount`; `year2026.ts` l.49–54 | 0.005 |
+| 64 | **Senior deduction (last year)** | **3,779.88** (3,779.875728952928…) (†) | max(0, 6,000 − 2,220.124271) × 1 person. The gain alone costs 0.06 × 5,841.370959 = 350.482258 of it; without the sale it would be 4,130.357986. 2028 is `lastApplicableYear`, so 2029 has none. | same; domain rules §1 ("tax years 2025–2028") | 0.005 |
+| 65 | Total deduction | 22,848.72 (22,848.719478952928…) (†) | 19,068.84375 + 3,779.875729 | `federalTax.ts` header step 3 | 0.005 |
+| 66 | **Taxable income** | **89,153.35** (89,153.351705164946…) (†) | 112,002.071184 − 22,848.719479 | `federalTax.ts` header | 0.005 |
+| 67 | Preferential / ordinary taxable | 5,841.37 / 83,311.98 (83,311.980746081587…) (†) | preferential = min(5,841.370959, TI); ordinary taxable = TI − preferential | `FederalTaxDetail.preferentialIncome`, `.ordinaryTaxable` | 0.005 |
+| 68 | Indexed bracket bounds (single, 2028) | 13,027.75 / 52,951.50 / 111,051.0625 | 12,400 / 50,400 / 105,700 × 1.050625 | `indexFederalTaxPack`; `year2026.ts` l.21–29 | 0.005 |
+| 69 | Ordinary tax, 10% band | 1,302.78 (1,302.775 exactly) | 13,027.75 × 10% | worksheet `federal-ordinary-bracket-tax` | 0.005 |
+| 70 | Ordinary tax, 12% band | 4,790.85 | (52,951.50 − 13,027.75) × 12% | same | 0.005 |
+| 71 | Ordinary tax, 22% band | 6,679.31 (6,679.305764137949…) (†) | (83,311.980746 − 52,951.50) × 22%; the 24% bound of 111,051.0625 is not reached | same | 0.005 |
+| 72 | Ordinary tax | 12,772.93 (12,772.930764137949…) (†) | 1,302.775 + 4,790.85 + 6,679.305764 | same | 0.005 |
+| 73 | **LTCG stack** | 0% band: **empty**; 15%: **5,841.37**; 20%: none | The 15% breakpoint is 49,450 × 1.050625 = 51,953.40625. The gain stacks on 83,311.98 of ordinary taxable income, which is already above it, so every gain dollar is taxed at 15%. The 20% breakpoint, 573,115.9375, is far off. | worksheet `federal-ltcg-stacking`; `federalTax.ts#capitalGainsTaxStacked`; `indexFederalTaxPack` (breakpoints); `year2026.ts` l.66–67 | 0.005 |
+| 74 | Capital-gains tax | 876.21 (876.205643862504…) (†) | 5,841.370959 × 15% | same | 0.005 |
+| 75 | Federal regular tax | 13,649.14 (13,649.136408000453…) (†) | 12,772.930764 + 876.205644 | worksheet `tax-total-annual` | 0.005 |
+| 76 | NIIT | 0 | Investment income is 5,841.37, but MAGI of 112,002 is under the **unindexed** 200,000 threshold. | `year2026.ts` l.72; `indexFederalTaxPack` doc | exact |
+| 77 | **AMT screen**, **`amt`** | **0** | AMTI = TI + standard 19,068.84375 + senior 3,779.875729 = 112,002.071184. Exemption 90,100 × 1.050625 = 94,661.3125 (phase-out start 525,312.50, not reached); excess 17,340.758684. The preferential 5,841.370959 stacks inside the 0% band, since the top of the stack, 17,340.76, is below 51,953.41. The ordinary 11,499.387725 × 26% gives TMT 2,989.840809, below the regular tax of 13,649.14. | worksheet `federal-amt-screen`; `federalTax.ts` header step 7; `indexFederalTaxPack` (AMT figures) | exact |
+| 78 | Florida state and local tax | 0 | FL `hasIncomeTax: false`; the stand-in state pack for 2028 is the 2026 pack | `params/state/index.ts` header; `params/state/data/year2026.ts` FL; 2026 document row 56, A6 | exact |
+| 79 | **`tax`** | **13,649.14** (13,649.136408000453…) (†) | federal 13,649.136408 + 0 | `YearResult.tax` ("at the accepted funding fixed point") | 0.005 |
+| 80 | `ltcgZeroHeadroom` | 0 | TI with no extra gain, 89,153.35, is already at or above 51,953.40625, so the field returns 0 before any bisection | worksheet `year-result-ltcg-zero-headroom` | exact |
+| 81 | `rothConversion` | 0 | mode `none` | `YearResult.rothConversion` | exact |
+
+### 4h. Cash flow, withdrawals, surplus
+
+| # | Figure | Value | Derivation | Contract source | Tol. |
+|---|---|---|---|---|---|
+| 82 | **`netPortfolioNeed`** | **83,348.50** (83,348.504678000453…) (†) | max(0, 122,953.44827 + 13,649.136408 + 0 − 53,254.08) | worksheet `portfolio-need-annual` | 0.005 |
+| 83 | Net RMD cash applied first | 60,894.73 | row 19 | domain rules §11 ("RMDs always first") | 0.005 |
+| 84 | **Cash draw** = **`withdrawals.cash`** | **6,453.50** (6,453.495478085434…), **all of the cash** | min(cash 6,453.495478, need 22,453.772453) | row 40 | 0.005 |
+| 85 | **Brokerage sale** = **`withdrawals.taxable`** | **16,000.28** (†) | row 47 | worksheet `withdrawals-by-category-annual` | 0.005 (†) |
+| 86 | `withdrawals.traditional` | **76,654.11** | the gross RMD, QCD included; no need-based IRA draw | same; `YearResult.rmd` | 0.005 |
+| 87 | `withdrawals.roth` / `.hsa` | 0 / 0 | | same | exact |
+| 88 | **`withdrawals.total`** | **99,107.88** (99,107.879678000453…) (†) | 6,453.495478 + 16,000.276975 + 76,654.107225, which equals need 83,348.504678 + QCD 15,759.375 | worksheet `withdrawals-total-annual` | 0.005 (†) |
+| 89 | Inflows = outflows | 136,602.584678… = 136,602.584678… (†) | Inflows: SS 53,254.08 + net RMD cash 60,894.732225 + cash 6,453.495478 + sale 16,000.276975. Outflows: spending 122,953.44827 + tax 13,649.136408. | identity at the root | — |
+| 90 | **`surplusInvested`** | **0** | max(0, 114,148.812225 − 122,953.44827 − 0 − 13,649.136408 − 0) = max(0, −22,453.772453) | worksheet `surplus-invested-annual`; `YearResult.surplusInvested`; `annualFundingApplicationAndClosePhase.ts` l.1190 (draws are not inflows; 2026 document B2) | exact |
+| 91 | `shortfall` / `requiredShortfall` / `targetShortfall` | 0 / 0 / 0 | the brokerage covers the rest | worksheet `spending-shortfall-annual` | exact |
+
+### 4i. Year-end balances
+
+Each account grows after the year's flows, at its full annual rate (2026 document §2h). The cash account is empty,
+so it earns nothing.
+
+| # | Figure | Value | Derivation | Contract source | Tol. |
+|---|---|---|---|---|---|
+| 92 | Cash pre-growth / **`balances['rmd-irmaa--cash']`** | 0 / **0.00** | 6,453.495478 − 6,453.495478; × 1.02 | worksheet `accounts-balance-per-account-annual`; `YearResult.balances` | 0.005 |
+| 93 | IRA pre-growth | 1,809,036.93 (3,931,037,250/2,173 = 1,809,036.930510814542…) | 1,885,691.037736 − 76,654.107225 (the RMD, QCD included) | same | 0.005 |
+| 94 | IRA growth | 90,451.85 (393,103,725/4,346 = 90,451.846525540727…) | × 5% | `annualPostSolveAccountGrowth.ts` | 0.005 |
+| 95 | **`balances['rmd-irmaa--ira']`** | **1,899,488.78** (8,255,178,225/4,346 = 1,899,488.777036355269…) | × 1.05; this is also the 2029 RMD base | `YearResult.balances` | 0.005 |
+| 96 | Brokerage pre-growth / growth | 424,999.72 (424,999.723025119496…) / 21,249.99 (21,249.986151255975…) (†) | 441,000 − 16,000.276975; × 5%. Basis after the sale: 269,841.093984. | same; `aggregateBasisSale` `remainingFairMarketValue` | 0.005 |
+| 97 | **`balances['rmd-irmaa--brokerage']`** | **446,249.71** (446,249.709176375470…) (†) | 424,999.723025 × 1.05 | same | 0.005 (†) |
+| 98 | Unassigned cash | 0 | a cash account exists | `YearResult.investableTotal` | exact |
+| 99 | **`investableTotal`** | **2,345,738.49** (2,345,738.486212730740…) (†) | 0 + 1,899,488.777036 + 446,249.709176 | worksheet `accounts-investable-total-annual` | 0.005 (†) |
+| 100 | **`netWorth`** | **2,345,738.49** (†) | investable only | worksheet `accounts-net-worth-annual` | 0.005 (†) |
+| 101 | Other published zeros | `contributions`, `employerMatch`, `sepp`, `inheritedDistribution`, `hecmDraw`, `ladderValue`, `insuranceCashValue`, `deathBenefit`, `capitalLoss*` 0; `guardrailAction` `hold` | none in the plan | `YearResult` docs | exact |
+
+### 4j. How the ledger reaches the root (not published; for the reader and the tolerance)
+
+`annualFundingFixedPoint` seeds the root with the pre-tax gap (row 39) and iterates directly (`annualFundingFixedPoint.ts`
+l.19, l.115–123, l.208):
+1. Each evaluation plans the withdrawal for the candidate need, prices its tax, and returns `requiredNeed`.
+2. It stops when |`requiredNeed` − candidate| ≤ 0.005, within `DEFAULT_DIRECT_ITERATION_LIMIT` = 8 evaluations and
+   before any bisection.
+
+The error shrinks each step by the factor in row 45 (0.0596):
+
+| Eval | Candidate need | Cash | Sale P | Gain | Tax at candidate | Returned need | Residual |
+|---|---|---|---|---|---|---|---|
+| 1 | 8,804.636045 | 6,453.495478 | 2,351.140567 | 858.352905 | 12,835.907862 | 21,640.543907 | 12,835.907862 |
+| 2 | 21,640.543907 | 6,453.495478 | 15,187.048429 | 5,544.477998 | 13,600.683477 | 22,405.319522 | 764.775615 |
+| 3 | 22,405.319522 | 6,453.495478 | 15,951.824044 | 5,823.681794 | 13,646.249536 | 22,450.885581 | 45.566060 |
+| 4 | 22,450.885581 | 6,453.495478 | 15,997.390103 | 5,840.317022 | 13,648.964405 | 22,453.600450 | 2.714869 |
+| 5 | 22,453.600450 | 6,453.495478 | 16,000.104972 | 5,841.308164 | 13,649.126160 | 22,453.762205 | 0.161754 |
+| 6 | 22,453.762205 | 6,453.495478 | 16,000.266727 | 5,841.367218 | 13,649.135797 | 22,453.771842 | 0.009637 |
+| **7** | **22,453.771842** | 6,453.495478 | **16,000.276364** | **5,841.370736** | **13,649.136372** | 22,453.772417 | **0.000574 ≤ 0.005: accepted** |
+
+The ledger accepts the seventh evaluation. Its candidate need is 0.000610590 **below** the exact root. The published
+values at that evaluation, against the exact root:
+
+| Figure | Published (evaluation 7) | Exact root |
+|---|---|---|
+| Sale | 16,000.276364290318 | 16,000.276974880504 |
+| Gain | 5,841.370736169481 | 5,841.370959083359 |
+| Tax | 13,649.136371620908 | 13,649.136408000453 |
+| `netPortfolioNeed` | 83,348.504641620908 | 83,348.504678000453 |
+| `withdrawals.total` | 99,107.879067410266 | 99,107.879678000453 |
+| Brokerage close | 446,249.709817495166 | 446,249.709176375470 |
+| `investableTotal` | 2,345,738.486853850435 | 2,345,738.486212730740 |
+
+Every published value is within 0.00065 of the exact value. The evaluation count and a residual are published only in
+ACA-active years (`YearAcaResult.convergence.iterations` and `.residualDollars`); the seed is never published. No test
+should assert either.
+
+### 4k. Tolerance note for the (†) rows
+
+- **Against the exact root, 0.005 holds on every (†) row, with room to spare.** The largest gap between the ledger's
+  accepted evaluation and the root is 0.00064, on the brokerage close and the investable total.
+- **That margin comes from the iteration path** (seed, direct iteration, acceptance at evaluation 7). The path is
+  documented only inside `annualFundingFixedPoint.ts`.
+- **The published contract alone gives a looser bound.** `YearResult.tax` is "at the accepted funding fixed point",
+  with a residual of at most 0.005. That bounds the candidate's distance from the root by
+  0.005 / (1 − 782/13,125) = 0.005317:
+  - on the rows linear in the sale (rows 47, 52, 85, 88): 0.0053;
+  - times 1.05 on rows 97, 99 and 100: 0.0056;
+  - on the gain, AGI, deductions and tax: under 0.0021.
+- **Which tolerance to use:**
+  - A test that must not depend on the iteration path uses **0.006** on rows 47, 52, 85, 88, 97, 99 and 100, and
+    0.005 everywhere else.
+  - A test content to rest on the path, as the 2026 table's tests do, uses 0.005 throughout.
+
+---
+
+## 5. What the sale does, in one place
+
+Compared with the same year without a sale (tax T₀, row 43), selling 16,000.28 of brokerage:
+- **Realized gain:** 5,841.37 = 16,000.28 × 23/63. The other 10,158.91 is basis, returned tax-free.
+- **AGI and MAGI** rise by exactly the gain, from 106,160.70 to 112,002.07. 2028's MAGI is the 2030 IRMAA input.
+- **Taxable Social Security** does not move. It was already at the 85% cap (row 57).
+- **The senior deduction** loses 6% of the gain, 350.48, falling from 4,130.36 to 3,779.88 in its last year.
+- **Taxable income** rises by 1.06 × the gain, 6,191.85. The extra 0.06 is ordinary income taxed at 22%; the gain
+  itself is taxed at 15%. The 0% LTCG band is already filled by ordinary income.
+- **Tax** rises by 953.31, which is 16.32% of the gain and 5.96% of the proceeds. The sale is 953.31 larger than it
+  would be if it ignored its own tax.
+- **IRMAA for 2028** is unaffected: it reads 2026's projected MAGI. The 2030 premium will read the 2028 figure,
+  against a floor of about 120,316, a margin of about 8,314 before anything else changes.
+
+---
+
+## 6. Wrong readings a test should reject (2028, exact)
+
+Each row changes only the rule named and re-solves the fixed point exactly. Where a reading applies to every
+projected year, it is applied to 2027 as well, as a mis-implemented engine would. The last column gives the correct
+values.
+
+| Wrong reading | What it produces in 2028 | Correct |
+|---|---|---|
+| **Index an unindexed figure: the senior deduction** (6,000 and 75,000 × 1.025ⁿ) | senior 4,315.534195; tax 13,521.051628; sale 15,813.287195; gain 5,773.104849; cash drawn 6,512.400478 (2027 changes too); investable 2,345,934.825480 | senior 3,779.875729; tax 13,649.136408 |
+| … the senior threshold only (75,000 × 1.025ⁿ) | senior 4,009.443643; tax 13,594.242931; sale 15,920.138498 | same |
+| … the §86 thresholds (25,000 / 34,000 × 1.025ⁿ) | **no change**: the 85% cap binds either way (row 57). 2028's figures cannot tell these readings apart; testing §86 indexing needs a plan below the cap | — |
+| **Do not index an indexed figure** (brackets, the standard deduction with its age-65 addition, the LTCG breakpoints and the AMT figures held at 2026 values) | standard deduction 18,150; tax 14,163.748890; sale 16,751.554957; gain 6,115.647048; cash drawn 6,216.829978; investable 2,344,949.644330 | 19,068.84375; 13,649.136408; 16,000.276975 |
+| **Grow before withdrawing** (every year) | RMD 76,946.517946; cash drawn 7,600.958119; sale 14,618.390321; gain 5,778.849688; tax 13,707.123116; IRA close 1,910,582.040600; brokerage close 448,431.609678; investable 2,359,013.650278 | 76,654.107225; 6,453.495478; 16,000.276975; 13,649.136408; 1,899,488.777036; 446,249.709176; 2,345,738.486213 |
+| … in 2028 only, from the correct openings | cash available 6,582.565388; sale 15,946.699732 at a gain ratio of 1 − 280,000/463,050 (gain 6,303.948571); tax 13,724.629074; IRA close 1,903,321.482398; brokerage close 447,103.300268 | as above |
+| **Price 2028 IRMAA on 2027 instead of 2026** | `irmaaLookbackMagi` 102,088.806792, `…Year` 2027, source `projected`; tier still 0. **Premiums cannot tell these readings apart.** Neither can pricing on 2028's own MAGI (112,002.07 < 114,518.125) or keeping the plan fallback (0). Only the three lookback fields can. | 97,896.120755 / 2026 / `projected` |
+| **Treat the whole sale as gain** | sale 17,981.555012; gain 17,981.555012; AGI and MAGI 124,142.255237; senior 3,051.464685; tax 15,630.414445; investable 2,343,658.144273 | sale 16,000.276975; gain 5,841.370959 |
+| **Size the sale without its own tax** (need = seed + T₀, in one pass) | Sale 15,046.965234, which is 953.311741 short; gain 5,493.336514. That sale actually incurs 13,592.337186 of tax, against the 12,695.824667 it was sized for, so 896.512519 goes unfunded. That residual is far above 0.005, so the ledger would not accept it. | sale 16,000.276975; tax 13,649.136408 |
+| Apply the pack's 2.8% COLA | Social Security 53,566.267392; taxable SS 45,531.327283; tax 13,687.280953; sale 15,601.873816 | 53,254.08; 45,265.968 |
+| Part B at the general rate (202.90 × 12 × 1.050625) | Part B 2,558.06175; healthcare 7,232.76675; tax 13,634.790360; sale 15,759.494527 | 2,709.99327; 7,384.69827 |
+| Compound the health factor multiplicatively (1.025 × 1.03 = 1.05575 a year) | Part B 2,713.847710; healthcare 7,395.201573; sale 16,016.842914 | 1.055 a year (additive) |
+| Drop the senior deduction in 2028 (off by one on `lastApplicableYear`) | senior 0; tax 14,528.885821; sale 16,880.026388 | 3,779.875729; 13,649.136408 |
+| RMD divisor for age 74 (25.5) in 2028 | RMD 73,948.668146; tax 13,149.661458; sale 18,206.241104; IRA close 1,902,329.488068 | 76,654.107225 at 24.6 |
+| QCD not inflated (15,000 flat in every year) | QCD 15,000; tax 13,770.749014; cash drawn 6,746.796478; sale 15,069.213581 | 15,759.375 |
+| IRMAA floor unindexed (109,000) | tier still 0; only `irmaaNextTierThreshold` shows it (109,000) | 114,518.125 |
+
+---
+
+## 7. Contracts I could not find or found ambiguous
+
+Some items of the 2026 document carry over unchanged:
+- **A1:** a full calendar year, with the entered balances read as the prior Dec 31 balances.
+- **A2:** the PIA read in start-year dollars.
+- **A4:** cash growth is untaxed, including 2027's 126.54 of cash growth.
+- **B2:** need-based draws are not "cash inflows".
+- **B3–B5:** unchanged.
+
+The items below are new, or matter more, in 2027–2028.
+
+**C1. The health factor is additive, and it is stated only in prose.** The schema comment is "Healthcare costs grow at
+inflationPct + this" (`assumptionsSchema.healthcareExtraInflationPct`); the `simulate.ts` l.532 doc comment ("general
+inflation + the healthcare premium") and the `spending-healthcare-annual` calculation record's variable `h`
+("Cumulative healthcare inflation factor from the start year (general inflation plus the healthcare extra)") say the
+same. None writes 1 + g + h. The code compounds `1 + r + healthExtra` at `simulate.ts` l.520. No worksheet exercises a multi-year health factor with both parts non-zero:
+`spending-healthcare-annual` takes a factor of 1.10 as an input, and its evidence plan uses 0% general inflation.
+Candidate readings:
+- (a) (1 + 0.025 + 0.03)ⁿ (**used**);
+- (b) ((1.025)(1.03))ⁿ.
+
+Only (a) matches both the code and the comment. Reading (b) moves 2028 healthcare by 10.50 (§6).
+
+**C2. This plan cannot tell "from the pack year" apart from "from the start year".** The Part B premium scales from
+the pack year and the extras from the start year (`YearExpenses.healthcare` doc; calculation record
+`spending-healthcare-annual`). Both years are 2026 here, so a test on this plan cannot catch a swap. The
+`YearExpenses.healthcare` doc says the tier premium is "inflated from the pack year" without naming the rate; the
+health rate comes from the `tax/medicare.ts` header and the `medicare-base-part-b-premium` record's `premiumScale`.
+
+**C3. Only `annualFundingFixedPoint.ts` documents the fixed point's path.** The `YearResult` contract says only "at
+the accepted funding fixed point". The seed (the pre-tax gap), the direct iteration, the 8-evaluation limit and the
+fall-back to bisection are in the module's header and body. This is why §4k gives two tolerances. In this plan the
+ledger accepts evaluation 7 and never bisects.
+
+**C4. No contract says when in the year the sale happens, or at what price.** The phase order puts flows before
+growth, and the planner prices the sale on the account's balance at planning time (`openingFairMarketValue:
+state.balance`, `annualWithdrawalPlanning.ts` l.296). That is the Jan 1 value, 441,000; 2028's growth applies only
+to what remains. Candidate readings:
+- (a) sold at the opening value (**used**; the only reading the mechanics support);
+- (b) sold mid-year or at year-end, after some 2028 growth. That would raise the FMV, lower the gain ratio and
+  shrink the sale.
+
+The page should say (a) plainly.
+
+**C5. Every realized gain is long-term, by construction.** The model has no holding period. The
+`applyCapitalLossCarryforward` doc says "no short-/long-term split", and `computeFederalTax` sends every gain to the
+preferential stack. For Dana's long-held brokerage that is also the right answer, but the page should not imply that
+the engine checks holding periods.
+
+**C6. The basis-ratio rule lives in a function body.** `aggregateBasisSale`'s doc comment states no formula; it
+says only "planning-dollar aggregate-basis sale math … does not round to cents". The pro-rata recovery is at
+l.72–73. The supporting comments are `taxableAccountSchema.costBasis` ("single basis-ratio model in v1; no lots")
+and domain rules §11. The 2026 review raised this as its item C6. It matters now because 2028 exercises the rule.
+
+**C7. Five exact values sit on a half cent.** They are the QCD, 15,759.375; the IRMAA tier-1 floor and
+`irmaaNextTierThreshold`, 114,518.125; the Medicare extras, 4,674.705; the 10% band tax, 1,302.775; and the QCD
+per-donor cap, 116,619.375. Binary floating point computes every one a hair low: 15000 × 1.050625 gives
+15,759.374999999998, 109000 × 1.050625 gives 114,518.12499999999, and so on (and `1.025 * 1.025` is the same double as
+the literal `1.050625`, so a hand constant written either way carries the same low float). A cent formatter applied to
+the engine's number therefore shows .37, .12, .70 and .77, while the exact values round half-up to .38, .13, .71 and .78. Tests compare within tolerance, so
+both pass. The page should print the exact value (15,759.375) or its half-up rounding, not a formatter's output on
+the float.
+
+**C8. Cent-rounded components do not always sum to the rounded total** (the 2026 document's A7). In this derivation
+it happens at:
+- the 2027 investable total: 6,453.50 + 1,885,691.04 + 441,000.00 = 2,333,144.54, against 2,333,144.53;
+- the 2027 need: 119,749.71 + 11,984.08 − 51,955.20 = 79,778.59, against 79,778.60;
+- the 2028 ordinary tax: 1,302.78 + 4,790.85 + 6,679.31 = 12,772.94, against 12,772.93;
+- the 2028 need: 122,953.45 + 13,649.14 − 53,254.08 = 83,348.51, against 83,348.50;
+- the 2028 withdrawals total: 6,453.50 + 16,000.28 + 76,654.11 = 99,107.89, against 99,107.88;
+- row 25: 114,518.13 − 97,896.12 = 16,622.01, against 16,622.00;
+- row 52: 6,453.50 + 16,000.28 = 22,453.78, against 22,453.77;
+- row 53: 13,649.14 − 12,695.82 = 953.32, against 953.31;
+- rows 89–90: each side of the identity sums to 136,602.59 in rounded parts, against 136,602.58, and the surplus
+  margin to 22,453.78, against 22,453.77;
+- row 47's closed form: 8,804.64 + 12,695.82 − 6,453.50 = 15,046.96, against 15,046.97;
+- B12's 22% band: 0.22 × (79,110.39 − 51,660) = 6,039.09, against 6,039.08.
+
+In those derivations the page should either show exact values or say that the parts are rounded.
+
+**C9. The 2028 IRMAA top-tier floor sits on a floating-point knife edge.** This does not affect this plan.
+`irmaaTierThreshold` resumes the top row for 2028 at
+`roundToNearestThousand(500,000 × inflFactorFrom(2026, 2027))`:
+- In exact arithmetic the product is 512,500, which rounds half-up to 513,000.
+- In floating point it is 512,499.99999999994, so `Math.round` gives 512,000.
+
+The statute's (i)(5)(B) does not say which way a tie goes, and the engine's answer here depends on how 1.025 is
+stored in binary. Dana is at tier 0 and `irmaaNextTierThreshold` reads tier 1, so no figure here depends on it. It
+deserves one line on the rule record, or a fixture at a 2.5% inflation assumption.
+
+**C10. The senior deduction still has no worksheet** (the 2026 document's A3). That it is not indexed, and that it
+ends after 2028, rests on:
+- the `indexFederalTaxPack` doc;
+- the pack's `lastApplicableYear`;
+- the `seniorDeductionAmount` guard;
+- domain rules §1.
+
+Rows 63–64 and the "last year" claim therefore rest on comment and data contracts, not on a reviewed worksheet.
+
+**C11. The QCD request and the per-donor QCD cap grow from different base years.** The cap uses `limitGrowth`,
+measured from the pack year. The request uses `inflFactor`, measured from the start year. The two coincide here. This
+is the same kind of issue as C2; it is harmless for this plan, where the cap (116,619.375) is far from binding.
+
+**C12. No contract says a stand-in pack's RMD table is used as published.** 2027 and 2028 use the 2026 pack's Uniform
+Lifetime Table unchanged. That is correct: regulation fixes the table and nothing indexes it. The reading rests on
+`packForYear` returning the 2026 pack, and on `indexFederalTaxPack` touching only the federal-tax and capital-gains
+blocks.
+
+---
+
+## 8. Cross-check against the 2026 document's §4 estimate (after the derivation, not an input)
+
+Every estimate in §4 of the 2026 document agrees with the exact figure to the precision it states.
+
+| Figure | §4 estimate | Exact |
+|---|---|---|
+| RMD | ≈ 76,654 | 76,654.107225 |
+| QCD | 15,759.38 | 15,759.375 |
+| Social Security | ≈ 53,254.08 | 53,254.08 |
+| Healthcare | ≈ 7,384.70 | 7,384.69827 |
+| Spending | 115,568.75 | 115,568.75 |
+| Cash draw | ≈ 6,453 | 6,453.495478 |
+| Sale | ≈ 16,000 | 16,000.276975 |
+| Gain | ≈ 5,841 | 5,841.370959 |
+| AGI / MAGI | ≈ 112,002 | 112,002.071184 |
+| Senior deduction | ≈ 3,780 | 3,779.875729 |
+| Federal tax | ≈ 13,649 | 13,649.136408 |
+| 2027 cash draw | about 21,852 | 21,851.711952 |
+| 2027 cash left | roughly 6,450 | 6,453.495478 |
+| 2027 MAGI | about 102,089 | 102,088.806792 |
