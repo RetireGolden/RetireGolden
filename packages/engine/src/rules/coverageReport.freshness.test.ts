@@ -56,18 +56,16 @@ const committedCalculationShardSources = import.meta.glob(
     eager: true,
   },
 )
-const engineGoldenSources = import.meta.glob('../**/*.external.golden.test.ts', {
+// Every package's fixtures, the same inventory the generator reads (packages/*/src).
+const goldenSources = import.meta.glob('../../../*/src/**/*.external.golden.test.ts', {
   query: '?raw',
   import: 'default',
   eager: true,
 })
-const plannerGoldenSources = import.meta.glob(
-  '../../../../packages/planner-ui/src/**/*.external.golden.test.ts',
-  {
-    query: '?raw',
-    import: 'default',
-    eager: true,
-  },
+// Every external golden anywhere in the app or the packages, by path only: a
+// fixture outside packages/<package>/src would escape both inventories.
+const everyGoldenPath = Object.keys(
+  import.meta.glob('../../../../{app,packages}/**/*.external.golden.test.ts', { query: '?raw', import: 'default', eager: true }),
 )
 // The walkthrough directory holds one test file per walkthrough (rmd-irmaa
 // and early-retiree-aca first); walkthroughEntriesOf turns their it() titles
@@ -82,6 +80,11 @@ const walkthroughSources = import.meta.glob(
     eager: true,
   },
 )
+const oracleRegistrySources = import.meta.glob('../../../../DOCS/external-oracles.md', {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+})
 const calculationDocSources = import.meta.glob('../../../../DOCS/calculations/**/*.md', {
   query: '?raw',
   import: 'default',
@@ -160,18 +163,19 @@ const committedCalculationJson =
   Object.entries(operationJsonSources).find(([path]) => path.endsWith('/calculation-coverage.json'))?.[1] ??
   null
 
-const externalGoldenSources = Object.fromEntries([
-  ...Object.entries(engineGoldenSources).map(([path, source]) => [
-    path.replace(/^\.\.\//u, 'packages/engine/src/'),
-    source as string,
-  ]),
-  ...Object.entries(plannerGoldenSources).map(([path, source]) => [
-    // Vite keys this glob relative to this file with a variable number of
-    // `../` segments; the generator keys the same files relative to the repo.
-    'packages/' + path.replace(/^(?:\.\.\/)+/u, '').replace(/^packages\//u, ''),
-    source as string,
-  ]),
-])
+/** Vite keys a glob match relative to this file; the generator keys it relative to the repository. */
+function repoPathOfGlobKey(key: string): string {
+  const parts = ['packages', 'engine', 'src', 'rules']
+  for (const segment of key.split('/')) {
+    if (segment === '..') parts.pop()
+    else if (segment !== '.') parts.push(segment)
+  }
+  return parts.join('/')
+}
+
+const externalGoldenSources = Object.fromEntries(
+  Object.entries(goldenSources).map(([path, source]) => [repoPathOfGlobKey(path), source as string]),
+)
 
 function calculationDocTextFor(path: string): string | null {
   const key = '../../../../' + path.replace(/\\/gu, '/')
@@ -185,6 +189,7 @@ const calculationReport = buildCalculationCoverageReport({
   attestations: COVERAGE_ATTESTATIONS,
   testSources,
   externalGoldenSources,
+  oracleRegistryText: (Object.values(oracleRegistrySources)[0] as string | undefined) ?? null,
   walkthroughs: walkthroughEntriesOf(walkthroughSources as Record<string, string>),
   symbolLineFor,
   docTextFor: calculationDocTextFor,
@@ -351,6 +356,13 @@ function syntheticCalculationRecord(justification: CalculationRecord['justificat
 }
 
 describe('calculation coverage report artifacts', () => {
+  it('finds every external golden fixture under packages/<package>/src, where the census reads them', () => {
+    const paths = everyGoldenPath.map(repoPathOfGlobKey)
+    expect(paths.length).toBeGreaterThan(0)
+    expect(paths.filter((path) => !/^packages\/[^/]+\/src\//u.test(path))).toEqual([])
+    expect([...paths].sort()).toEqual(Object.keys(externalGoldenSources).sort())
+  })
+
   it('matches the deterministic calculation report builder', () => {
     if (committedCalculationJson === null) {
       throw new Error('committed calculation-coverage.json must be found by the glob')

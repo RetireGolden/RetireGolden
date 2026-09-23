@@ -12,6 +12,7 @@ import { benefitsOnlyRanking } from './ssAnalysis'
  * Source fixture: src/app/maximize-pv.service.spec.ts,
  *   "should tell a single person to file ASAP with very high discount rate".
  * Access date: 2026-06-30. License: MIT.
+ * Tolerance: exact on the claiming-age ranking (no present-value dollar amounts are compared with the oracle's).
  *
  * Oracle inputs:
  *   Marital status: single; no spouse, children, disability, WEP/GPO, earnings test,
@@ -60,6 +61,7 @@ describe('ORACLE-007: single-person claiming vs Open Social Security', () => {
  *   "should tell a high-PIA spouse to wait until 70, with low discount rate and
  *   long lifespans".
  * Access date: 2026-06-30. License: MIT.
+ * Tolerance: exact on the claiming-age ranking (no present-value dollar amounts are compared with the oracle's).
  *
  * Oracle inputs:
  *   Marital status: married; no children, disability, WEP/GPO, prior filing,

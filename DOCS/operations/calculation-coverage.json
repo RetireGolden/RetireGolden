@@ -821,35 +821,140 @@
   "oracleExamples": [
     {
       "file": "packages/engine/src/rmd/rmd.external.golden.test.ts",
-      "count": 4
+      "count": 4,
+      "tolerances": [
+        "$1 (Pub 590-B rounds RMDs to whole dollars)"
+      ],
+      "oracles": [
+        {
+          "id": "ORACLE-005",
+          "domain": "RMD",
+          "source": "IRS Pub 590-B — full Uniform Lifetime table and worked examples, including the Joint Life Table II spouse example."
+        }
+      ]
     },
     {
       "file": "packages/engine/src/socialSecurity/piaFromEarnings.external.golden.test.ts",
-      "count": 5
+      "count": 5,
+      "tolerances": [
+        "$0.10 (PIA is published to the dime)"
+      ],
+      "oracles": [
+        {
+          "id": "ORACLE-006",
+          "domain": "Social Security PIA",
+          "source": "SSA bend points + Annual Statistical Supplement 2025 Appendix C worked example."
+        }
+      ]
     },
     {
       "file": "packages/engine/src/tax/aca.external.golden.test.ts",
-      "count": 5
+      "count": 5,
+      "tolerances": [
+        "$1 / 0.01 pct-pt"
+      ],
+      "oracles": [
+        {
+          "id": "ORACLE-003",
+          "domain": "ACA",
+          "source": "IRS Rev. Proc. 2025-25 + HHS 2025 FPL — applicable-percentage schedule and the 400%-FPL cliff."
+        }
+      ]
     },
     {
       "file": "packages/engine/src/tax/federalTax.external.golden.test.ts",
-      "count": 4
+      "count": 4,
+      "tolerances": [
+        "$1"
+      ],
+      "oracles": [
+        {
+          "id": "ORACLE-001",
+          "domain": "Federal tax",
+          "source": "IRS Rev. Proc. 2025-32 — brackets, standard deduction, age-65 add, LTCG breakpoints."
+        }
+      ]
     },
     {
       "file": "packages/engine/src/tax/federalTaxSocialSecurity.external.golden.test.ts",
-      "count": 4
+      "count": 4,
+      "tolerances": [
+        "$1"
+      ],
+      "oracles": [
+        {
+          "id": "ORACLE-002",
+          "domain": "Federal tax + Social Security",
+          "source": "IRS Pub 915 Worksheet 1 + Rev. Proc. 2025-32 — retired MFJ pension+SS across all SS tiers (0%/50%/85%/85%-cap)."
+        }
+      ]
     },
     {
       "file": "packages/engine/src/tax/medicare.external.golden.test.ts",
-      "count": 5
+      "count": 5,
+      "tolerances": [
+        "$1/yr"
+      ],
+      "oracles": [
+        {
+          "id": "ORACLE-004",
+          "domain": "Medicare / IRMAA",
+          "source": "CMS CY2026 — thresholds, Part B premiums, all Part D surcharge tiers."
+        }
+      ]
     },
     {
       "file": "packages/engine/src/tax/stateTax.external.golden.test.ts",
-      "count": 26
+      "count": 26,
+      "tolerances": [
+        "$1, asserted to cents where the model is exact"
+      ],
+      "oracles": [
+        {
+          "id": "ORACLE-009/010",
+          "domain": "State tax",
+          "source": "NJ Division of Taxation graduated brackets; KY DOR flat rate + $31,110 retirement exclusion below/at/above cap."
+        },
+        {
+          "id": "ORACLE-013",
+          "domain": "State tax",
+          "source": "CA FTB 2026 Form 540-ES deduction ($5,706/$11,412) plus retained 2025 Schedule X/Y above $100,000; Social Security exempt while pensions remain in ordinary income; personal exemption credits and whole-return accuracy outside scope. Lower-income continuous-schedule behavior is not an FTB table oracle."
+        },
+        {
+          "id": "ORACLE-014",
+          "domain": "State tax",
+          "source": "GA DOR 2026 — flat 4.99% + $15k/$30k deductions and the 65+ retirement-income exclusion below/at/above the $65,000 per-person cap (the 62–64 tier is a documented model simplification). This fixture's review caught the pack carrying GA's stale 2025 vintage — the oracle process working as intended."
+        },
+        {
+          "id": "ORACLE-015",
+          "domain": "State tax",
+          "source": "IL DOR — flat 4.95% with the full retirement-income subtraction; cases chosen so the unmodeled personal exemption cannot change the answer."
+        },
+        {
+          "id": "ORACLE-016",
+          "domain": "State tax",
+          "source": "SCDOR H.4216 (notice + ratified bill text) — the rewritten 2026 two-tier schedule (1.99% under $30,000 / \"5.21% minus $966\" at-and-above) plus the SCIAD $15,000/$30,000 standard deduction; below/at/above the $30,000 breakpoint with the $966 continuity identity asserted in the worksheet. Every case pins federal AGI at or below the SCIAD phase-out floor ($40,000 single / $80,000 MFJ) so the full deduction is the DOR answer; the unmodeled phase-out is a documented simplification."
+        },
+        {
+          "id": "ORACLE-017",
+          "domain": "State tax",
+          "source": "MRS 2026 rate schedule — Maine's decoupled basic $15,700/$31,400 standard deduction (asserted as pack parameters), with each worksheet an explicit taxable-income evaluation of the published schedule: the 5.8%/6.75%/7.15% bracket stack and the 2% high-income surcharge modeled as a 9.15% top bracket (cases at $1.2M single / $1.6M MFJ taxable). Under-65 scope only (peopleAged65Plus: 0); Maine's federal age-65 additional amount ($2,050 unmarried / $1,650 per eligible person married) is outside this subset — a future 65+ case must resolve the addition through the production path before back-constructing wages. High-income surcharge fixtures use wages equal to the asserted taxable income because the modeled phase-out yields zero deduction there; the $5,300 personal exemption remains outside the asserted subset."
+        }
+      ]
     },
     {
       "file": "packages/planner-ui/src/planner/ssAnalysis.external.golden.test.ts",
-      "count": 2
+      "count": 2,
+      "tolerances": [
+        "exact on the claiming-age ranking (no present-value dollar amounts are compared with the oracle's)"
+      ],
+      "oracles": [
+        {
+          "id": "ORACLE-007/008",
+          "domain": "Social Security claiming",
+          "source": "Open Social Security (pinned commit 6e177de) — single high-discount worker ranks 62 first; low-discount couple delays the higher-PIA spouse to 70."
+        }
+      ]
     }
   ],
   "walkthroughs": [
