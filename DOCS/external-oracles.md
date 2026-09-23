@@ -164,7 +164,7 @@ things, and the census refuses to build until all three agree:
   comment line, but not into a blank line or a new `Label:` line). The period after a citation abbreviation (Rev.,
   Proc., Pub., No., Sec., a month, e.g., i.e., U.S., an initial) does not end it; spell out any other abbreviation.
 
-A fixture outside `packages/<package>/src/` is refused, not skipped.
+A fixture outside `packages/<package>/src/` is refused, not skipped. Only rows whose fixture is an `*.external.golden.test.ts` file are published; the rows for other kinds of test (the ORACLE-011/012 characterization benchmark, the TIPS ladder hand worksheet) stay in this table for readers of the repository but never reach the census or the site, so their wording is not bound by the site's copy rules.
 
 | ID | Domain | Fixture | Primary source |
 |---|---|---|---|
