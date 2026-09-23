@@ -235,7 +235,7 @@ const TABLE_2028: WalkthroughTable = {
       key: 'amt',
       label: 'Alternative minimum tax',
       hand: 0,
-      derivation: 'AMTI 112,002.07 less the indexed exemption 94,661.31 = 17,340.76; tentative minimum tax 2,989.84 is below the regular tax',
+      derivation: 'AMTI 112,002.07 less the indexed exemption 94,661.31 leaves 17,340.76; the 5,841.37 gain keeps its capital-gain rate and, stacked on top at 17,340.76, stays inside the 0% band (below the indexed 51,953.41), so the tentative minimum tax is 26% of the ordinary 11,499.39 = 2,989.84, below the regular tax 13,649.14',
       contract: 'worksheet federal-amt-screen',
       select: (year) => year.amt,
     },
