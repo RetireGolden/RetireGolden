@@ -57,12 +57,12 @@ export interface CoverageReportInput {
 
 /**
  * An approximated rule's published kind: its approximationKinds.ts entry,
- * copied field by field, with a fix's `implementation` pin (`<path>#<symbol>`,
- * where the fix goes) also resolved to the symbol's 1-based declaration line
- * for a deep link, the same way `implementations` carry lines.
+ * copied field by field. A fix carries nothing but its kind, because where the
+ * fix goes is the rule's own `implementations`, already published with their
+ * declaration lines.
  */
 export type CoverageApproximation =
-  | { readonly kind: 'fix'; readonly implementation: string; readonly line: number }
+  | { readonly kind: 'fix' }
   | { readonly kind: 'needs-fact'; readonly missingInput: string }
   | { readonly kind: 'convention'; readonly reason: string }
 
@@ -616,7 +616,6 @@ function publishedApproximation(
   id: string,
   classification: TaxRuleClassification,
   kinds: Readonly<Record<string, ApproximationEntry>>,
-  symbolLineFor: (path: string, symbol: string) => number,
 ): CoverageApproximation | null {
   const entry = Object.hasOwn(kinds, id) ? kinds[id] : undefined
   if (classification !== 'approximated') {
@@ -629,13 +628,8 @@ function publishedApproximation(
     throw new Error('approximated rule ' + id + ' has no approximation kind in approximationKinds.ts')
   }
   switch (entry.kind) {
-    case 'fix': {
-      const [path, symbol, ...rest] = entry.implementation.split('#')
-      if (path === undefined || path.length === 0 || symbol === undefined || symbol.length === 0 || rest.length > 0) {
-        throw new Error('approximated rule ' + id + ': fix implementation must be <path>#<symbol>, got ' + entry.implementation)
-      }
-      return { kind: 'fix', implementation: entry.implementation, line: symbolLineFor(path, symbol) }
-    }
+    case 'fix':
+      return { kind: 'fix' }
     case 'needs-fact':
       return { kind: 'needs-fact', missingInput: entry.missingInput }
     case 'convention':
@@ -834,7 +828,7 @@ function buildMarkdown(manifest: CoverageReportManifest, rules: readonly Coverag
     '',
     'The JSON ledger (version 5) is the machine contract, and it is split in two: rule-coverage.json is the INDEX — registry and attestation totals, the per-directory rollup, the unswept and partial lists, the quote-fidelity summary, and a shards array naming every shard with its path and rule count — while the per-rule payloads live in the shard files it names, one per record module. A consumer reads the index, then reads the shards it needs; the union of the shards\' rules arrays, sorted by id, is what version 4 published inline as manifest.rules.',
     '',
-    'Each rule carries title, errorDirection (null unless the rule is approximated), approximation (null unless the rule is approximated; otherwise its kind from packages/engine/src/rules/approximationKinds.ts: fix with implementation, the path#symbol where the fix goes, and that symbol\'s 1-based declaration line; needs-fact with missingInput, the fact the plan does not collect; or convention with reason, why the approximation is kept), conventionRationale and contraryReading (null when unused), deduplicated authority identities (kind, citation, url), per-fixture detail (path, line, optional note, and the it() tests scanned from the fixture source, each with its own 1-based line), and implementations (per implementing file, the conformance-enforced operative function names with their 1-based declaration lines). Every line number is recomputed from source on each generation and the freshness suite fails when the committed index or any committed shard drifts from the sources in the same commit, so at any commit that passes CI the published lines are exact for that commit. This markdown file is the human summary and does not repeat them.',
+    'Each rule carries title, errorDirection (null unless the rule is approximated), approximation (null unless the rule is approximated; otherwise its kind from packages/engine/src/rules/approximationKinds.ts: fix alone, since where the fix goes is the rule\'s own implementations; needs-fact with missingInput, the fact the plan does not collect; or convention with reason, why the approximation is kept), conventionRationale and contraryReading (null when unused), deduplicated authority identities (kind, citation, url), per-fixture detail (path, line, optional note, and the it() tests scanned from the fixture source, each with its own 1-based line), and implementations (per implementing file, the conformance-enforced operative function names with their 1-based declaration lines). Every line number is recomputed from source on each generation and the freshness suite fails when the committed index or any committed shard drifts from the sources in the same commit, so at any commit that passes CI the published lines are exact for that commit. This markdown file is the human summary and does not repeat them.',
     '',
     'The index\'s registry totals also carry approximatedByKind, the approximated rules counted by kind (convention, fix, needs-fact), every kind present and the three summing to byClassification.approximated. It and approximation are additive within version 5: a reader that does not know them ignores them, and one that needs them requires them.',
     '',
@@ -903,7 +897,7 @@ export function buildCoverageReport(input: CoverageReportInput): CoverageReport 
       title: rule.title,
       classification: rule.classification,
       errorDirection: rule.errorDirection,
-      approximation: publishedApproximation(id, rule.classification, input.approximationKinds, input.symbolLineFor),
+      approximation: publishedApproximation(id, rule.classification, input.approximationKinds),
       conventionRationale: rule.conventionRationale,
       contraryReading: rule.contraryReading,
       jurisdiction: rule.jurisdiction,

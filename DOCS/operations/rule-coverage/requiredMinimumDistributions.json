@@ -384,9 +384,7 @@
       "classification": "approximated",
       "errorDirection": "overstatesTax",
       "approximation": {
-        "kind": "fix",
-        "implementation": "packages/engine/src/projection/internal/annualOwnerRmdPlan.ts#annualOwnerRmdPlan",
-        "line": 84
+        "kind": "fix"
       },
       "conventionRationale": null,
       "contraryReading": null,
@@ -686,9 +684,7 @@
       "classification": "approximated",
       "errorDirection": "overstatesTax",
       "approximation": {
-        "kind": "fix",
-        "implementation": "packages/engine/src/projection/internal/annualInheritedIraDistributions.ts#annualInheritedIraDistributions",
-        "line": 179
+        "kind": "fix"
       },
       "conventionRationale": null,
       "contraryReading": null,
@@ -1064,9 +1060,7 @@
       "classification": "approximated",
       "errorDirection": "understatesTax",
       "approximation": {
-        "kind": "fix",
-        "implementation": "packages/engine/src/projection/internal/pensionLumpSumRollovers.ts#pensionLumpSumRollovers",
-        "line": 153
+        "kind": "fix"
       },
       "conventionRationale": "DEFECT — no behavior change in this registry slice. projection/simulate.ts's pension lump-sum rollover phase (model/plan.ts validates the election into an owned traditional account; projection/internal/pensionLumpSumRollovers.ts selects and sizes it and projection/simulate.ts credits it) moves the entire lumpSumOffer.amount as a tax-free direct rollover. Section 402(c)(4)(B) excludes the §401(a)(9)-required portion from the eligible-rollover-distribution definition; on the fixture an owner past the RBD with a 237,000 offer has a 10,000 RMD portion (237,000 ÷ Uniform Lifetime 23.7 at age 76) that should stay taxable and only 227,000 should roll. The engine rolls the full 237,000 and pays no taxable pension income in the election year. The fixture pins the produced zero taxable pension income and bounds the rolled balance above the eligible 227,000 until a separately authorized implementation fix changes it.",
       "contraryReading": null,
@@ -1575,9 +1569,7 @@
       "classification": "approximated",
       "errorDirection": "bothDirections",
       "approximation": {
-        "kind": "fix",
-        "implementation": "packages/engine/src/strategies/accountEligibility.ts#isTreatAsOwnEffective",
-        "line": 1232
+        "kind": "fix"
       },
       "conventionRationale": "Pub. L. 116-94 section 401(b)(1) is the statutory effective date the helper reuses; current Treas. Reg. 1.408-8(c)(1) supplies the spouse election without that owner-death-year condition. The fixture’s accepted reading is boundary-only: current regulation carries no owner-death-year bar on a spouse election, but it does not certify that a late election year satisfies (c)(1)(iii)-(iv) timing, §1.402(c)-2(j)(4) catch-up prerequisites, or historical pre-effective-date regimes for a pre-2020 death. Keeping the account outside the spouse’s owned pool can raise or lower modeled tax depending on age, basis, RMD position, and later withdrawals, so the direction is not one-sided.",
       "contraryReading": null,
@@ -2036,9 +2028,7 @@
       "classification": "approximated",
       "errorDirection": "overstatesTax",
       "approximation": {
-        "kind": "fix",
-        "implementation": "packages/engine/src/projection/internal/annualInheritedIraDistributions.ts#annualInheritedIraDistributions",
-        "line": 179
+        "kind": "fix"
       },
       "conventionRationale": null,
       "contraryReading": null,
@@ -2580,9 +2570,7 @@
       "classification": "approximated",
       "errorDirection": "understatesTax",
       "approximation": {
-        "kind": "fix",
-        "implementation": "packages/engine/src/projection/internal/annualAnnuityPurchaseFunding.ts#annualAnnuityPurchaseFunding",
-        "line": 72
+        "kind": "fix"
       },
       "conventionRationale": "PINNED FIGURES. A 76-year-old with a 1,000,000 dollar traditional IRA and a 0 percent return pays two 150,000 dollar QLAC premiums in 2026 out of that IRA, 300,000 together against a 210,000 cap. Neither premium exceeds the cap alone, so the per-contract test the engine applies is silent and no warning fires. The 2026 requirement is unaffected either way, resting on the prior December 31 balance. In 2027 the accepted reading has 210,000 of QLAC-eligible premium outside the base and the excess 90,000 still inside it, for a base of 747,805.91 and a requirement of 32,655.28; the engine puts the whole 300,000 outside, for a base of 657,805.91 and a requirement of 28,725.15. The gap is 3,930.13 in that year and it recurs. DIRECTION. Understates tax, by the same route the QLAC carve-out itself runs: a smaller base is a smaller required distribution, less ordinary income in the year, and a larger balance compounding into later years. WHAT THE ACCEPTED READING TAKES AS GIVEN. The regulation says a premium above the limitation means the contract is not a QLAC, and it supplies a correction mechanism rather than an arithmetic haircut. This record does not re-derive that; it takes the engine’s OWN convention for a single over-cap contract — reduce the premium to the cap, warn, and treat the excess as ineligible, which treas-reg-1-401-a-9-6-q-2-qlac-premium-dollar-limit registers as settled — and asks only that the cap be the running total the subsection defines rather than a fresh allowance per contract. The departure is therefore about the AGGREGATION and nothing else, which is why the fixture holds every other term fixed and varies only the number of contracts. NOT THE SAME RULE AS THE CAP’S VALUE. That the pack carries 210,000 for 2026, and that a projected year multiplies it by a continuous inflation factor rather than stepping it, are both settled at treas-reg-1-401-a-9-6-q-2-qlac-premium-dollar-limit and are not restated here. WHAT IT WOULD TAKE TO FIX. A per-owner running total carried across the purchase pass and reduced by every QLAC premium already funded in the projection, ordered by purchase year and then by a stable account order so the reduction is deterministic; premiums in the same year would have to agree on an order before the second one could be measured against the first. It is not done here. This record was opened on 2026-08-07 while the neighbouring commence-by-the-required-beginning-date defect was being closed, because the reg was open and the gap was found rather than because it was in that slice’s scope.",
       "contraryReading": null,

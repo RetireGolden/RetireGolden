@@ -235,9 +235,7 @@
       "classification": "approximated",
       "errorDirection": "bothDirections",
       "approximation": {
-        "kind": "fix",
-        "implementation": "packages/engine/src/tax/stateNortheastExtras.ts#delawareUnder60PensionDeduction",
-        "line": 16
+        "kind": "fix"
       },
       "conventionRationale": null,
       "contraryReading": null,
@@ -484,9 +482,7 @@
       "classification": "approximated",
       "errorDirection": "understatesTax",
       "approximation": {
-        "kind": "fix",
-        "implementation": "packages/engine/src/projection/internal/types/tax.ts#taxParameterFilingStatus",
-        "line": 26
+        "kind": "fix"
       },
       "conventionRationale": "DISCLOSED APPROXIMATION. ProjectedFilingStatus can express qualifyingSurvivingSpouse, but taxParameterFilingStatus maps every non-single status to marriedFilingJointly before computeStateTaxableIncome selects the Delaware deduction row. The $3,250 excess deduction can understate Delaware tax where it reduces positive taxable income; tax can be unchanged at a floor. `effectiveFrom: 2026` is the first observed and fixture-backed modeled year. `effectiveThrough: null` means the current mapper and unsunset statutory comparison have no scheduled expiry. Later-year persistence depends on latest-pack fallback and must be rechecked when a new state pack, form, or amendment appears. Earlier years, QSS brackets, itemization, credits, blindness, other return lines, and whole-return accuracy remain outside this record.",
       "contraryReading": null,
@@ -665,9 +661,7 @@
       "classification": "approximated",
       "errorDirection": "overstatesTax",
       "approximation": {
-        "kind": "fix",
-        "implementation": "packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult",
-        "line": 844
+        "kind": "fix"
       },
       "conventionRationale": "Georgia's official Code host is script-rendered and did not yield quote-verifiable operative text. The Department of Revenue is deliberately admitted as the state's own publisher because its retirement page supplies the operative filing instruction and points taxpayers to its own IT-511 booklet and worksheet, which supplies the two dollar amounts. This is the same primary-agency-publication boundary used where a usable code text is unavailable, not a secondary summary substituted for one.",
       "contraryReading": null,
@@ -830,9 +824,7 @@
       "classification": "approximated",
       "errorDirection": "understatesTax",
       "approximation": {
-        "kind": "fix",
-        "implementation": "packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult",
-        "line": 844
+        "kind": "fix"
       },
       "conventionRationale": null,
       "contraryReading": null,
@@ -1350,9 +1342,7 @@
       "classification": "approximated",
       "errorDirection": "bothDirections",
       "approximation": {
-        "kind": "fix",
-        "implementation": "packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult",
-        "line": 844
+        "kind": "fix"
       },
       "conventionRationale": null,
       "contraryReading": null,
@@ -1882,9 +1872,7 @@
       "classification": "approximated",
       "errorDirection": "bothDirections",
       "approximation": {
-        "kind": "fix",
-        "implementation": "packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult",
-        "line": 844
+        "kind": "fix"
       },
       "conventionRationale": null,
       "contraryReading": null,

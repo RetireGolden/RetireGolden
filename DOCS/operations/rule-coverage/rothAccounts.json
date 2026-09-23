@@ -324,9 +324,7 @@
       "classification": "approximated",
       "errorDirection": "understatesTax",
       "approximation": {
-        "kind": "fix",
-        "implementation": "packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts#annualContributionsAndEmployerMatch",
-        "line": 213
+        "kind": "fix"
       },
       "conventionRationale": "Recorded as an explicit gap rather than left silent, because the direction of the error is knowable: a high income household will show Roth contributions it could not actually make, and the overstatement grows with income. The engine never applies the section 408A(c)(3) phase-out in any pass; there is no later clawback once adjusted gross income is known, and the classification stays approximated.",
       "contraryReading": null,
@@ -813,9 +811,7 @@
       "classification": "approximated",
       "errorDirection": "understatesTax",
       "approximation": {
-        "kind": "fix",
-        "implementation": "packages/engine/src/strategies/rothBasis.ts#splitRothWithdrawal",
-        "line": 75
+        "kind": "fix"
       },
       "conventionRationale": "DEFECT — no behavior change in this registry slice. `splitRothWithdrawal` computes each partial taxable take as take × taxableAmount / layer.amount, so it leaves 2,400 taxable principal after a 4,000 withdrawal from the 10,000/4,000 layer. Section 408A(d)(4)(B) instead allocates that withdrawal entirely to the taxable portion first. The 240 of additional tax that reading would have imposed is deferred only if the remaining taxable principal is tapped while still unseasoned and pre-59½; otherwise it is permanently omitted. The same pro-rata take lives in `applyConversionPrincipalDebt` and `assumedSeedConsequentialSpill` in this file — a fix must change those copies together. The fixture pins the current 160 produced value until a separately authorized implementation fix changes it.",
       "contraryReading": null,
@@ -970,9 +966,7 @@
       "classification": "approximated",
       "errorDirection": "understatesTax",
       "approximation": {
-        "kind": "fix",
-        "implementation": "packages/engine/src/projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts#annualForcedDistributionQcdAndRetirementActionsPhase",
-        "line": 346
+        "kind": "fix"
       },
       "conventionRationale": "DEFECT — no behavior change in this registry slice. Pub 590-B’s year-aggregate reading takes the year’s taxable conversion principal before any nontaxable principal from that year. The engine records one layer per named conversion action (projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts) and `splitRothWithdrawal` walks those layers in array order, so a nontaxable 2024 layer ahead of a taxable 2024 layer can be fully consumed first. On the fixture — two same-year $5,000 layers with the nontaxable one first, then a $5,000 draw at age 50 — year-aggregate taxable-first yields $500 of additional tax; array order yields $0. The per-contribution FIFO record cannot carry this gap because both layers share a year.",
       "contraryReading": null,

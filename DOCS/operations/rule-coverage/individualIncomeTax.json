@@ -589,9 +589,7 @@
       "classification": "approximated",
       "errorDirection": "understatesTax",
       "approximation": {
-        "kind": "fix",
-        "implementation": "packages/engine/src/tax/federalTax.ts#computeFederalTax",
-        "line": 495
+        "kind": "fix"
       },
       "conventionRationale": "DEFECT — no behavior change in this registry slice. A research bot's 2026-08-26 change alert surfaced the OBBBA MAGI phasedown, and review verified that `saltCapForYear(pack, year)` takes only a pack and year while `itemizedTotal` applies that result without the phasedown. The calculator does compute MAGI for other rules, but neither function carries it into the SALT limitation. The fixture pins the current full-cap result until a separately authorized implementation fix changes it.",
       "contraryReading": null,

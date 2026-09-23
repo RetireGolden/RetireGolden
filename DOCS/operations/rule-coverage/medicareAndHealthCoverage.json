@@ -831,9 +831,7 @@
       "classification": "approximated",
       "errorDirection": "understatesTax",
       "approximation": {
-        "kind": "fix",
-        "implementation": "packages/engine/src/projection/internal/annualFundingApplicationAndClosePhase.ts#annualFundingApplicationAndClosePhase",
-        "line": 442
+        "kind": "fix"
       },
       "conventionRationale": "Matches the shipped usc-42-1395r-* premium-direction pattern: understatesTax names fisc exposure that includes the Medicare premium surcharge (the type’s fisc referent already spans that channel; the statement’s premium understatement is the same sign).",
       "contraryReading": null,
@@ -1164,9 +1162,7 @@
       "classification": "approximated",
       "errorDirection": "bothDirections",
       "approximation": {
-        "kind": "fix",
-        "implementation": "packages/engine/src/strategies/optimizer.ts#buildOptimizerModel",
-        "line": 557
+        "kind": "fix"
       },
       "conventionRationale": "The LP carries one inflationScale per premium year and has no separate top-row path. The exact-ledger helper already implements the freeze and the one-year-earlier resumed base (usc-42-1395r-i-5-C-top-irmaa-threshold-frozen); this record pins only buildOptimizerModel's uniform multiply and does not add a formula to that helper. Uniform scaling omits lower-row (i)(5)(B) rounding: when statutory rounding lowers a floor the unrounded LP can understate surcharge, and when it raises a floor it can overstate surcharge. The fixture's 113,200/1.04 case demonstrates the former; existing top-freeze cases establish both directions. The fixture does not cover every possible threshold boundary. The fixture holds 2026 pack prices and compares local LP surcharge cost, not recommendation quality, a complete household premium, or a promulgated future table.",
       "contraryReading": null,

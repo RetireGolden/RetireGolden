@@ -447,9 +447,7 @@
       "classification": "approximated",
       "errorDirection": "understatesTax",
       "approximation": {
-        "kind": "fix",
-        "implementation": "packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts#annualContributionsAndEmployerMatch",
-        "line": 213
+        "kind": "fix"
       },
       "conventionRationale": "DEFECT — no behavior change in this registration slice. The Plan can carry a traditional IRA, wages, filing status, and an employer account, but has no active-participant fact or section 219(g) MAGI calculation. projection/simulate.ts nevertheless adds an allowed traditional IRA deposit to preTaxContributions. The fixture supplies a one-dollar employer deferral to establish actual participation, uses 100,000 dollars of wages, and derives the accepted 99,999-dollar 100-percent-flat-tax base by allowing the employer deferral but no 100-dollar IRA deduction; the observed engine output is 99,899 — the deposit is deducted despite the phaseout — pinned until a separately authorized implementation fix changes it.",
       "contraryReading": null,
@@ -535,9 +533,7 @@
       "classification": "approximated",
       "errorDirection": "understatesTax",
       "approximation": {
-        "kind": "fix",
-        "implementation": "packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts#annualContributionsAndEmployerMatch",
-        "line": 213
+        "kind": "fix"
       },
       "conventionRationale": "DEFECT — no behavior change in this registration slice. The match dollars are not current-year taxable income; they inflate tax-deferred balances and therefore defer and understate future tax while overstating resources. That is the same resource-inflating / future-tax-understating shape as irc-414-v-1-plan-permitted-catch-up and irc-408A-c-3-roth-contribution-agi-phase-out, which also use understatesTax when the engine admits more tax-advantaged contribution than the authority allows. The fixture pins employerMatch at the uncapped 24,500 against the statute's 21,600 until a separately authorized implementation fix changes it. model/plan.test.ts still gates the absent plan-defined compensation field.",
       "contraryReading": null,
@@ -2650,9 +2646,7 @@
       "classification": "approximated",
       "errorDirection": "understatesTax",
       "approximation": {
-        "kind": "fix",
-        "implementation": "packages/engine/src/projection/internal/annualContributionsAndEmployerMatch.ts#annualContributionsAndEmployerMatch",
-        "line": 213
+        "kind": "fix"
       },
       "conventionRationale": "DEFECT — no behavior change in this registration slice. projection/simulate.ts has a Roth contribution path and a penalties total, but no section 4973 IRA/Roth excess-contribution term. The companion fixture uses a 100-dollar Roth contribution at income already above the 2026 Roth phase-out and derives 6 dollars as 100 × 0.06; the observed produced value is 0 — no excise term exists, so penalties stay untouched — pinned until a separately authorized implementation fix changes it.",
       "contraryReading": null,
@@ -2954,9 +2948,7 @@
       "classification": "approximated",
       "errorDirection": "bothDirections",
       "approximation": {
-        "kind": "fix",
-        "implementation": "packages/engine/src/actions/execution.ts#executeOrdinaryWithdrawals",
-        "line": 2134
+        "kind": "fix"
       },
       "conventionRationale": "DEFECT — no behavior change in this registration slice. actions/execution.ts emits fullyTaxableCompensationAtExecution with ordinaryIncomeAmount equal to the whole executed amount. One structured fixture drives both alreadyVested and sameYearCliff readings, exercised by two preserved observation tests. The alreadyVested test derives a zero section 83(a) compensation amount in the later execution year while the engine classifies the whole 75-dollar execution as ordinary income (overstates tax). The sameYearCliff test stipulates a zero-basis cliff vesting 100 dollars in the execution year with only 75 executed: section 83(a) includes the full 100 of vested value, but the executor reports ordinary income only on the executed 75 (understates tax). Both signs are pinned until a separately authorized implementation fix changes them.",
       "contraryReading": null,

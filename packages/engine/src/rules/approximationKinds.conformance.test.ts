@@ -4,29 +4,7 @@ import {
   type ApproximationEntry,
   type ApproximationKind,
 } from './approximationKinds.js'
-import { declaredSymbolLinesOf, symbolAnchorLine, type DeclaredSymbol } from './symbolLines.js'
 import { TAX_RULE_REGISTRY } from './taxRuleRegistry.js'
-
-// Vite requires the options to be an inline object literal.
-const engineSources = import.meta.glob('../**/*.ts', { query: '?raw', import: 'default', eager: true })
-
-/**
- * Glob keys are relative to this directory; pins are repo-relative. Vite emits
- * same-directory files as `./name`, not `../rules/name`, so both folds are
- * needed, the same as the registry conformance suite.
- */
-const engineGlobKeyOf = (repoPath: string): string =>
-  repoPath.replace(/^packages\/engine\/src\/rules\//u, './').replace(/^packages\/engine\/src\//u, '../')
-
-const declaredSymbolCache = new Map<string, ReadonlyMap<string, DeclaredSymbol>>()
-
-function declaredSymbolsOf(globKey: string, source: string): ReadonlyMap<string, DeclaredSymbol> {
-  const cached = declaredSymbolCache.get(globKey)
-  if (cached !== undefined) return cached
-  const table = declaredSymbolLinesOf(globKey, source)
-  declaredSymbolCache.set(globKey, table)
-  return table
-}
 
 const kinds: Readonly<Record<string, ApproximationEntry>> = APPROXIMATION_KINDS
 
@@ -36,7 +14,7 @@ const approximatedIds = Object.entries(TAX_RULE_REGISTRY)
   .sort()
 
 const EXPECTED_KEYS: Readonly<Record<ApproximationKind, readonly string[]>> = {
-  fix: ['implementation', 'kind'],
+  fix: ['kind'],
   'needs-fact': ['kind', 'missingInput'],
   convention: ['kind', 'reason'],
 }
@@ -57,11 +35,11 @@ function publicTextProblems(text: string): readonly string[] {
   return problems
 }
 
-/** The strings an entry publishes, by field name. */
+/** The strings an entry publishes, by field name. A fix publishes none. */
 function publishedStrings(entry: ApproximationEntry): readonly (readonly [string, string])[] {
   switch (entry.kind) {
     case 'fix':
-      return [['implementation', entry.implementation]]
+      return []
     case 'needs-fact':
       return [['missingInput', entry.missingInput]]
     case 'convention':
@@ -110,45 +88,33 @@ describe('approximation kinds conformance', () => {
     expect(violations).toEqual([])
   })
 
-  it('pins every fix to an engine source file that exists and a symbol declared in it', () => {
-    // The pin is published as a deep link to where the fix goes, so it
-    // resolves through symbolLines' two-tier rule exactly like the registry's
-    // own function pins: a moved, deleted, or ambiguous symbol fails here.
-    const violations: string[] = []
-    let resolved = 0
-    for (const [id, entry] of Object.entries(kinds)) {
-      if (entry.kind !== 'fix') continue
-      const parts = entry.implementation.split('#')
-      if (parts.length !== 2 || parts[0]!.length === 0 || parts[1]!.length === 0) {
-        violations.push(id + ': ' + entry.implementation + ' must be <path>#<symbol>')
-        continue
-      }
-      const [path, symbol] = parts as [string, string]
-      const globKey = engineGlobKeyOf(path)
-      const source = engineSources[globKey] as string | undefined
-      if (!path.startsWith('packages/engine/src/') || source === undefined) {
-        violations.push(id + ': ' + path + ' is not an engine source file')
-        continue
-      }
-      try {
-        const line = symbolAnchorLine(declaredSymbolsOf(globKey, source), path, symbol)
-        if (Number.isInteger(line) && line >= 1) resolved += 1
-        else violations.push(id + ': ' + entry.implementation + ' resolved to line ' + line)
-      } catch (error) {
-        violations.push(id + ': ' + (error instanceof Error ? error.message : String(error)))
-      }
-    }
-    expect(violations).toEqual([])
-    expect(resolved).toBe(Object.values(kinds).filter(({ kind }) => kind === 'fix').length)
+  it('gives every fix a home in the rule\'s own registered implementations', () => {
+    // A fix entry names no location of its own: the public page links the
+    // rule's registered implementations (published with their lines) as where
+    // the fix goes, so every fix rule must have at least one pinned function.
+    const homeless = Object.entries(kinds)
+      .filter(([, entry]) => entry.kind === 'fix')
+      .map(([id]) => id)
+      .filter((id) => {
+        const record = TAX_RULE_REGISTRY[id as keyof typeof TAX_RULE_REGISTRY]
+        // The record type already demands non-empty lists; widened here so the
+        // runtime check still stands if that type is ever loosened.
+        const files: readonly string[] = record.implementedBy
+        const functions: readonly string[] = record.implementedByFunctions
+        return files.length === 0 || functions.length === 0
+      })
+    expect(homeless).toEqual([])
   })
 
   it('pins the counts by kind', () => {
     // Pinned so a reclassification or a landed fix is a visible, deliberate
     // edit here. The fix count should trend to zero: each landed fix removes
-    // its entry (the rule is no longer approximated) and lowers it.
+    // its entry (the rule is no longer approximated) and lowers it. The B1-P2
+    // triage counted 77 / 26 / 19; the module doc lists each reclassification
+    // since, with its evidence.
     const counts: Record<ApproximationKind, number> = { fix: 0, 'needs-fact': 0, convention: 0 }
     for (const entry of Object.values(kinds)) counts[entry.kind] += 1
-    expect(counts).toEqual({ fix: 77, 'needs-fact': 26, convention: 19 })
+    expect(counts).toEqual({ fix: 76, 'needs-fact': 24, convention: 22 })
     expect(counts.fix + counts['needs-fact'] + counts.convention).toBe(approximatedIds.length)
   })
 

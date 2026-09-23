@@ -177,9 +177,7 @@
       "classification": "approximated",
       "errorDirection": "overstatesTax",
       "approximation": {
-        "kind": "fix",
-        "implementation": "packages/engine/src/tax/propertySale.ts#propertySaleTax",
-        "line": 50
+        "kind": "fix"
       },
       "conventionRationale": null,
       "contraryReading": null,
@@ -472,9 +470,7 @@
       "classification": "approximated",
       "errorDirection": "bothDirections",
       "approximation": {
-        "kind": "fix",
-        "implementation": "packages/engine/src/projection/compare.ts#summarizeProjection",
-        "line": 222
+        "kind": "fix"
       },
       "conventionRationale": "Approximated rather than out of scope because both surfaces produce figures the rule touches. compare.ts's after-tax estate treats taxable (and equity-comp) balances as stepped-up and untaxed to heirs, while simulate.ts leaves costBasis unchanged through a death year, so the surviving path can realize the pre-death embedded gain. One half understates heir tax relative to a no-step-up reading; the other overstates tax on a post-death sale relative to a consistent step-up. The companion fixture discriminates those readings through simulatePlan and summarizeProjection.",
       "contraryReading": null,
@@ -980,9 +976,7 @@
       "classification": "approximated",
       "errorDirection": "overstatesTax",
       "approximation": {
-        "kind": "fix",
-        "implementation": "packages/engine/src/tax/federalTax.ts#computeFederalTax",
-        "line": 495
+        "kind": "fix"
       },
       "conventionRationale": "applyCapitalLossCarryforward burns up to the annual ordinary-income allowance from the pool whenever a loss remains, even when ordinary income is zero and there is no taxable income for a section 1211(b) deduction to offset. A smaller remaining pool overstates tax when a later year's gains would otherwise have been absorbed. The companion fixture pins a zero-income year's remaining pool against statutory preservation.",
       "contraryReading": null,
@@ -1380,9 +1374,8 @@
       "classification": "approximated",
       "errorDirection": "overstatesTax",
       "approximation": {
-        "kind": "fix",
-        "implementation": "packages/engine/src/tax/federalTax.ts#computeFederalTax",
-        "line": 495
+        "kind": "convention",
+        "reason": "when the plan leaves out the foreign exclusion amount specific to the net investment income tax, the broader foreign exclusion amount stands in for it; an amount the plan gives is used as given"
       },
       "conventionRationale": "DISCLOSED APPROXIMATION. TaxYearInput carries a broad foreignExclusionAddback for section 151 senior MAGI and an optional niitSection911A1NetAddback for the NIIT threshold leg; omission of the narrow member reuses the broad amount. The fixture's established $20,000 earned-income and $10,000 housing exclusions have no allocable deductions, so the broad amount is $30,000 and the narrow NIIT net addback is $20,000. At $180,000 AGI and $10,000 included investment income, omitting the narrow input overstates NIIT by $380 (see sibling irc-1411-a-net-investment-income-tax for the 3.8% lesser-of and $200,000 single threshold). At $70,000 AGI the broad addback preserves the legally correct $4,500 senior deduction (see sibling irc-151-d-5-C-iii-I-senior-deduction-per-individual-phase-out for the $6,000 / 6% / $75,000 parameters); supplying the narrow amount for both rules would instead overstate that deduction to $5,100. The overstatesTax direction applies only to this characterized extra-housing omitted-narrow fallback; unknown, missing, or conflicting annual evidence does not establish a direction. The calculator accepts characterized amounts as inputs and does not determine exclusion eligibility or section 911(d)(6) allocation; this record does not certify a gross/net mapping for other compositions. Schedule 1-A's Form 2555 line 45 carrier is already net of line 44; the broad senior definition is not an instruction to add gross amounts or net them twice.",
       "contraryReading": null,
@@ -1954,9 +1947,7 @@
       "classification": "approximated",
       "errorDirection": "overstatesTax",
       "approximation": {
-        "kind": "fix",
-        "implementation": "packages/engine/src/projection/internal/tipsLadderAnnualCashFlow.ts#tipsLadderAnnualCashFlows",
-        "line": 98
+        "kind": "fix"
       },
       "conventionRationale": "DEFECT — no behavior change in this registration slice. projection/internal/tipsLadderAnnualCashFlow.ts computes `accretion` as `outstandingFace * Math.max(0, inflFactor - prevInflFactor)`, so a deflation year contributes no negative adjustment, no ordinary-loss carry, and no interest reduction. A paired market path with prior positive inflation followed by deflation drives the gap: the authority reduces current interest (and may permit a bounded ordinary loss), while the engine still reports the coupon as taxable ordinary income. The fixture adds 100,000 of ordinary wages so the tax line remains above zero and pins the produced annual MAGI. The basis decrease under (f)(2) is registered separately at treas-reg-1-1275-7-f-2-deflation-basis-decrease-not-modeled.",
       "contraryReading": null,

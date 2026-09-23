@@ -390,9 +390,7 @@
       "classification": "approximated",
       "errorDirection": "understatesTax",
       "approximation": {
-        "kind": "fix",
-        "implementation": "packages/engine/src/projection/annuityForms.ts#annuityExclusionMultiple",
-        "line": 48
+        "kind": "fix"
       },
       "conventionRationale": null,
       "contraryReading": null,
@@ -481,9 +479,7 @@
       "classification": "approximated",
       "errorDirection": "bothDirections",
       "approximation": {
-        "kind": "fix",
-        "implementation": "packages/engine/src/projection/annuityForms.ts#annuityExclusionMultiple",
-        "line": 48
+        "kind": "fix"
       },
       "conventionRationale": null,
       "contraryReading": null,

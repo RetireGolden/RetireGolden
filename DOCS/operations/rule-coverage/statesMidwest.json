@@ -82,9 +82,7 @@
       "classification": "approximated",
       "errorDirection": "overstatesTax",
       "approximation": {
-        "kind": "fix",
-        "implementation": "packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult",
-        "line": 844
+        "kind": "fix"
       },
       "conventionRationale": null,
       "contraryReading": null,
@@ -281,9 +279,7 @@
       "classification": "approximated",
       "errorDirection": "overstatesTax",
       "approximation": {
-        "kind": "fix",
-        "implementation": "packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult",
-        "line": 844
+        "kind": "fix"
       },
       "conventionRationale": null,
       "contraryReading": null,
@@ -378,9 +374,7 @@
       "classification": "approximated",
       "errorDirection": "overstatesTax",
       "approximation": {
-        "kind": "fix",
-        "implementation": "packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult",
-        "line": 844
+        "kind": "fix"
       },
       "conventionRationale": null,
       "contraryReading": null,
@@ -568,8 +562,8 @@
       "classification": "approximated",
       "errorDirection": "understatesTax",
       "approximation": {
-        "kind": "needs-fact",
-        "missingInput": "Indiana county of residence or applicable county rate"
+        "kind": "convention",
+        "reason": "the county tax uses the local income tax rate set in the plan, which is zero unless entered, because county rates vary and there is no published statewide rate to use instead"
       },
       "conventionRationale": null,
       "contraryReading": null,
@@ -1525,9 +1519,7 @@
       "classification": "approximated",
       "errorDirection": "bothDirections",
       "approximation": {
-        "kind": "fix",
-        "implementation": "packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult",
-        "line": 844
+        "kind": "fix"
       },
       "conventionRationale": null,
       "contraryReading": null,
@@ -1787,9 +1779,7 @@
       "classification": "approximated",
       "errorDirection": "overstatesTax",
       "approximation": {
-        "kind": "fix",
-        "implementation": "packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult",
-        "line": 844
+        "kind": "fix"
       },
       "conventionRationale": "The existing subdivision 26(c)(1)-(2) quotations are statutory-year base amounts. Subdivision 26(j) requires annual adjustment of the simplified-subtraction thresholds, and the DOR TY2026 table supplies the operative values. The quoted DOR table marks the alternate maxima as Not Indexed. The engine has no field or enforcer for either subtraction; later pack fallback remains an annually stale stand-in.",
       "contraryReading": null,
@@ -1885,9 +1875,7 @@
       "classification": "approximated",
       "errorDirection": "bothDirections",
       "approximation": {
-        "kind": "fix",
-        "implementation": "packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult",
-        "line": 844
+        "kind": "fix"
       },
       "conventionRationale": "The MO-1040ES chart quotes accumulated tax at band floors; bracketTax applies continuous marginal rates between breakpoints. Intermediate chart comparison is therefore stated at pre-return precision with whole-dollar return rounding omitted. The signed gaps at the pinned taxable-income coordinates are preserved rather than closed by parameter edits.",
       "contraryReading": null,
@@ -2406,8 +2394,7 @@
       "classification": "approximated",
       "errorDirection": "overstatesTax",
       "approximation": {
-        "kind": "needs-fact",
-        "missingInput": "annual qualified-dividend amount"
+        "kind": "fix"
       },
       "conventionRationale": null,
       "contraryReading": null,
@@ -3029,9 +3016,7 @@
       "classification": "approximated",
       "errorDirection": "understatesTax",
       "approximation": {
-        "kind": "fix",
-        "implementation": "packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult",
-        "line": 844
+        "kind": "fix"
       },
       "conventionRationale": null,
       "contraryReading": null,
@@ -3197,9 +3182,7 @@
       "classification": "approximated",
       "errorDirection": "bothDirections",
       "approximation": {
-        "kind": "fix",
-        "implementation": "packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult",
-        "line": 844
+        "kind": "fix"
       },
       "conventionRationale": null,
       "contraryReading": null,
@@ -3591,9 +3574,7 @@
       "classification": "approximated",
       "errorDirection": "overstatesTax",
       "approximation": {
-        "kind": "fix",
-        "implementation": "packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult",
-        "line": 844
+        "kind": "fix"
       },
       "conventionRationale": null,
       "contraryReading": null,

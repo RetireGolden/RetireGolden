@@ -1756,9 +1756,7 @@
       "classification": "approximated",
       "errorDirection": "understatesTax",
       "approximation": {
-        "kind": "fix",
-        "implementation": "packages/engine/src/projection/simulate.ts#simulatePlan",
-        "line": 393
+        "kind": "fix"
       },
       "conventionRationale": "Left as it stands because the two available repairs are product decisions rather than engineering ones, and each is wrong in a way the engine cannot adjudicate. Refusing the contribution keeps the series intact but silently overrides a stated plan input, and would change every projection that carries both facts without telling the user which of their two instructions was dropped. Treating the series as modified is the statutory consequence, but it needs the 72(t)(4) recapture and the interest for the deferral period, which is machinery this engine does not have and which the modification-trigger record already reports as absent. A third option, computing as now and warning, still publishes a penalty-free series the statute has already busted. The decision belongs with the product: which of two contradictory instructions wins, and what the planner tells the user when it drops one. Note that the actions layer does not share this defect for its own reason rather than a better one, recorded under notice-2022-6-3-02-e-modification-trigger-detection: it consumes a caller attestation instead of deriving anything from account history.",
       "contraryReading": null,

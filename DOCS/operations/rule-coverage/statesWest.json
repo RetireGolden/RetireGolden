@@ -233,9 +233,7 @@
       "classification": "approximated",
       "errorDirection": "understatesTax",
       "approximation": {
-        "kind": "fix",
-        "implementation": "packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult",
-        "line": 844
+        "kind": "fix"
       },
       "conventionRationale": null,
       "contraryReading": null,
@@ -580,9 +578,7 @@
       "classification": "approximated",
       "errorDirection": "overstatesTax",
       "approximation": {
-        "kind": "fix",
-        "implementation": "packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult",
-        "line": 844
+        "kind": "fix"
       },
       "conventionRationale": null,
       "contraryReading": null,
@@ -1500,9 +1496,7 @@
       "classification": "approximated",
       "errorDirection": "overstatesTax",
       "approximation": {
-        "kind": "fix",
-        "implementation": "packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult",
-        "line": 844
+        "kind": "fix"
       },
       "conventionRationale": null,
       "contraryReading": null,
@@ -1898,9 +1892,7 @@
       "classification": "approximated",
       "errorDirection": "overstatesTax",
       "approximation": {
-        "kind": "fix",
-        "implementation": "packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult",
-        "line": 844
+        "kind": "fix"
       },
       "conventionRationale": "The record pins the $5,500 statutory floor rather than the department's inflation-adjusted figure for the tax year: the floor is in the quoted statute, while the adjusted amount is published administratively under 15-30-2120(7) and no primary source for the 2026 figure is staged. The floor understates the size of the overstatement, never the direction.",
       "contraryReading": null,
@@ -2175,9 +2167,7 @@
       "classification": "approximated",
       "errorDirection": "understatesTax",
       "approximation": {
-        "kind": "fix",
-        "implementation": "packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult",
-        "line": 844
+        "kind": "fix"
       },
       "conventionRationale": null,
       "contraryReading": null,
@@ -2407,9 +2397,7 @@
       "classification": "approximated",
       "errorDirection": "bothDirections",
       "approximation": {
-        "kind": "fix",
-        "implementation": "packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult",
-        "line": 844
+        "kind": "fix"
       },
       "conventionRationale": "The signed gap at LRO boundary coordinates is +$0.125 at single $4,550 taxable, −$0.50 at single $11,400, +$0.25 at joint $9,100, and $0 at joint $22,800 — so the continuous engine neither uniformly over- nor under-states relative to LRO's printed whole-dollar table. This record registers the continuous-breakpoint representation authorized for the current single/MFJ pack fields and does not claim exact replication of Oregon's printed table or whole-return fidelity. Primary gate evidence is LRO Report #1-26; final resident-return closure is outside this record. The record expires after TY2026.",
       "contraryReading": null,

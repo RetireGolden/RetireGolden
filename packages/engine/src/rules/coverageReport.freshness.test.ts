@@ -992,9 +992,8 @@ describe('manifest rule projection contract', () => {
   })
 
   // The public known-limits table renders these entries, so the expected value
-  // is read from approximationKinds.ts itself and the fix line from the live
-  // source, never from the builder.
-  it('publishes each approximated rule its kind from approximationKinds.ts, and null for every other rule', () => {
+  // is read from approximationKinds.ts itself, never from the builder.
+  it("publishes each approximated rule's kind from approximationKinds.ts, and null for every other rule", () => {
     const kinds: Readonly<Record<string, ApproximationEntry>> = APPROXIMATION_KINDS
     const published = new Map(
       report.shards.flatMap(
@@ -1010,21 +1009,13 @@ describe('manifest rule projection contract', () => {
       }
       const entry = kinds[rule.id]
       expect(entry, rule.id).toBeDefined()
-      if (entry!.kind === 'fix') {
-        const [path, symbol] = entry!.implementation.split('#') as [string, string]
-        const line = symbolLineFor(path, symbol)
-        expect(rule.approximation, rule.id).toEqual({ kind: 'fix', implementation: entry!.implementation, line })
-        expect(serialized, rule.id).toEqual({ kind: 'fix', implementation: entry!.implementation, line })
-        // The line is a deep link on the public page: it must show the symbol
-        // in declaration position, the same bind the implementation lines get.
-        const memberName = symbol.includes('.') ? symbol.slice(symbol.lastIndexOf('.') + 1) : symbol
-        const declares = new RegExp(`(?:^|[^\\w$.])${memberName}\\s*(?:[:(=<,{]|$)`, 'u')
-        expect(declares.test(engineSourceOf(path).split('\n')[line - 1] ?? ''), `${rule.id}: ${entry!.implementation} line ${line}`)
-          .toBe(true)
-      } else {
-        expect(rule.approximation, rule.id).toEqual(entry)
-        expect(serialized, rule.id).toEqual(entry)
-      }
+      expect(rule.approximation, rule.id).toEqual(entry)
+      expect(serialized, rule.id).toEqual(entry)
+      // Exactly the kind's own keys reach the shard: a fix is its kind alone,
+      // since where the fix goes is the rule's published implementations.
+      expect(Object.keys(serialized ?? {}).sort(), rule.id).toEqual(
+        entry!.kind === 'fix' ? ['kind'] : entry!.kind === 'needs-fact' ? ['kind', 'missingInput'] : ['kind', 'reason'],
+      )
     }
   })
 
@@ -1040,10 +1031,11 @@ describe('manifest rule projection contract', () => {
     expect(sum).toBe(report.manifest.registry.byClassification.approximated)
   })
 
-  it('publishes a fix kind with the injected resolver line, per a hand-written fixture', () => {
+  it('publishes each kind as its entry and nothing else, per a hand-written fixture', () => {
     const fixtureRegistry = {
       'fixture-approximated': { ...syntheticRule('Approximated'), classification: 'approximated', errorDirection: 'understatesTax' },
       'fixture-needs-fact': { ...syntheticRule('Needs a fact'), classification: 'approximated', errorDirection: 'overstatesTax' },
+      'fixture-convention': { ...syntheticRule('Kept on purpose'), classification: 'approximated', errorDirection: 'bothDirections' },
       'fixture-settled': syntheticRule('Settled'),
     } as unknown as typeof TAX_RULE_REGISTRY
     const fixtureReport = buildCoverageReport({
@@ -1053,14 +1045,11 @@ describe('manifest rule projection contract', () => {
       testSources: {},
       quoteFidelityLedger: null,
       dueOnFor: () => '2027-01-01',
-      // A sentinel keyed on the exact path and symbol, so the expectation
-      // proves the builder split the pin at # and published the resolver's
-      // answer rather than deriving a line of its own.
-      symbolLineFor: (path, symbol) =>
-        path === 'packages/engine/src/rules/coverageReport.ts' && symbol === 'buildCoverageReport' ? 47 : 0,
+      symbolLineFor: () => 47,
       recordModules: [['synthetic', fixtureRegistry]],
       approximationKinds: {
-        'fixture-approximated': { kind: 'fix', implementation: 'packages/engine/src/rules/coverageReport.ts#buildCoverageReport' },
+        'fixture-approximated': { kind: 'fix' },
+        'fixture-convention': { kind: 'convention', reason: 'kept on purpose for this test' },
         'fixture-needs-fact': { kind: 'needs-fact', missingInput: 'the date each gift was made' },
       },
     })
@@ -1068,14 +1057,12 @@ describe('manifest rule projection contract', () => {
       (shard) => (JSON.parse(shard.json) as { rules: { id: string; approximation: unknown }[] }).rules,
     )
     expect(published.map(({ id, approximation }) => [id, approximation])).toEqual([
-      [
-        'fixture-approximated',
-        { kind: 'fix', implementation: 'packages/engine/src/rules/coverageReport.ts#buildCoverageReport', line: 47 },
-      ],
+      ['fixture-approximated', { kind: 'fix' }],
+      ['fixture-convention', { kind: 'convention', reason: 'kept on purpose for this test' }],
       ['fixture-needs-fact', { kind: 'needs-fact', missingInput: 'the date each gift was made' }],
       ['fixture-settled', null],
     ])
-    expect(fixtureReport.manifest.registry.approximatedByKind).toEqual({ convention: 0, fix: 1, 'needs-fact': 1 })
+    expect(fixtureReport.manifest.registry.approximatedByKind).toEqual({ convention: 1, fix: 1, 'needs-fact': 1 })
   })
 
   it('refuses a missing kind, a kind on a rule that is not approximated, and a kind for an unregistered rule', () => {
@@ -1104,9 +1091,6 @@ describe('manifest rule projection contract', () => {
       'fixture-approximated': { kind: 'convention', reason: 'kept on purpose' },
       'fixture-renamed': { kind: 'convention', reason: 'kept on purpose' },
     })).toThrow(/approximation kinds name rules the registry does not hold: fixture-renamed/u)
-    expect(build({ 'fixture-approximated': approximated }, {
-      'fixture-approximated': { kind: 'fix', implementation: 'packages/engine/src/rules/coverageReport.ts' },
-    })).toThrow(/fix implementation must be <path>#<symbol>/u)
   })
 
   it('keeps implementations aligned with implementedBy', () => {

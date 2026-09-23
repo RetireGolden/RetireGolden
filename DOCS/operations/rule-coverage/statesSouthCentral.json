@@ -699,9 +699,8 @@
       "classification": "approximated",
       "errorDirection": "overstatesTax",
       "approximation": {
-        "kind": "fix",
-        "implementation": "packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult",
-        "line": 844
+        "kind": "convention",
+        "reason": "a single gain above $10 million is outside the households the planner is built for, so the exemption above that amount is left out on purpose"
       },
       "conventionRationale": null,
       "contraryReading": null,
@@ -1036,9 +1035,7 @@
       "classification": "approximated",
       "errorDirection": "overstatesTax",
       "approximation": {
-        "kind": "fix",
-        "implementation": "packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult",
-        "line": 844
+        "kind": "fix"
       },
       "conventionRationale": null,
       "contraryReading": null,
@@ -1209,9 +1206,7 @@
       "classification": "approximated",
       "errorDirection": "overstatesTax",
       "approximation": {
-        "kind": "fix",
-        "implementation": "packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult",
-        "line": 844
+        "kind": "fix"
       },
       "conventionRationale": null,
       "contraryReading": null,
@@ -1411,9 +1406,7 @@
       "classification": "approximated",
       "errorDirection": "understatesTax",
       "approximation": {
-        "kind": "fix",
-        "implementation": "packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult",
-        "line": 844
+        "kind": "fix"
       },
       "conventionRationale": null,
       "contraryReading": null,
@@ -1886,9 +1879,7 @@
       "classification": "approximated",
       "errorDirection": "understatesTax",
       "approximation": {
-        "kind": "fix",
-        "implementation": "packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult",
-        "line": 844
+        "kind": "fix"
       },
       "conventionRationale": null,
       "contraryReading": null,
@@ -2235,9 +2226,7 @@
       "classification": "approximated",
       "errorDirection": "overstatesTax",
       "approximation": {
-        "kind": "fix",
-        "implementation": "packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult",
-        "line": 844
+        "kind": "fix"
       },
       "conventionRationale": null,
       "contraryReading": null,
@@ -2511,9 +2500,7 @@
       "classification": "approximated",
       "errorDirection": "overstatesTax",
       "approximation": {
-        "kind": "fix",
-        "implementation": "packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult",
-        "line": 844
+        "kind": "fix"
       },
       "conventionRationale": null,
       "contraryReading": null,
@@ -2608,9 +2595,7 @@
       "classification": "approximated",
       "errorDirection": "understatesTax",
       "approximation": {
-        "kind": "fix",
-        "implementation": "packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult",
-        "line": 844
+        "kind": "fix"
       },
       "conventionRationale": null,
       "contraryReading": null,
@@ -2700,9 +2685,7 @@
       "classification": "approximated",
       "errorDirection": "overstatesTax",
       "approximation": {
-        "kind": "fix",
-        "implementation": "packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult",
-        "line": 844
+        "kind": "fix"
       },
       "conventionRationale": null,
       "contraryReading": null,

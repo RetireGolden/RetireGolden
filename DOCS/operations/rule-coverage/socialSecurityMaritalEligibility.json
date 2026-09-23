@@ -226,9 +226,7 @@
       "classification": "approximated",
       "errorDirection": "bothDirections",
       "approximation": {
-        "kind": "fix",
-        "implementation": "packages/engine/src/socialSecurity/maritalBenefits.ts#maritalBenefitFor",
-        "line": 155
+        "kind": "fix"
       },
       "conventionRationale": "DEFECT — no behavior change in this registry slice. 20 CFR 404.335(e) starts from currently unmarried; a later marriage that has ended leaves the claimant unmarried and inside that lead-in. isWidowEligible instead rejects whenever remarriedAtAge is below 60, including when claimantIsSingle is true. Independently, isWidowEligible never reads claimantIsSingle, so a schema-valid coupled context with remarriedAtAge null still receives a candidate; a null remarriedAtAge lacks the facts of any 404.335(e) exception and does not prove a marriage before 60. maritalBenefits.test.ts already characterizes that coupled-null admission. The companion fixture holds the deceased at FRA so RIB-LIM and the survivor-FRA cohort error are not in play: 9-month ordinary, 8-month with no duration exception, remarried at 59 now single, remarried at 60 still married, the same 9-month no-remarriage facts at claimant age 59 and 60, then the same FRA-67 9-month facts with claimantIsSingle false and remarriedAtAge null where the worksheet current pre-60 marriage is projected out. The age-60 gate is the helper's own claimantAge test. The age-59 and age-60 cells use a direct helper contract (claimantClaimAge equal to claimantAge so the claim-age guard passes and age 59 is refused by isWidowEligible); a whole-plan stream claimAge is clamped to 62–70 and is outside this fixture. Fully-insured status, application (including the 404.335(b)(1) through (4) exceptions), and the 404.335(d) own-old-age-benefit restriction have no formerSpouse or stream fields and are not adjudicated here; the dual-entitlement offset is a pricing comparison elsewhere. The disabled-widow age-50 limb is `usc-42-402-e-1-b-ii-cfr-20-404-335-disabled-widow-age-50-prescribed-period`; the 9-month statutory exceptions are `cfr-20-404-335-a-widow-duration-exceptions`.",
       "contraryReading": null,
@@ -338,9 +336,7 @@
       "classification": "approximated",
       "errorDirection": "bothDirections",
       "approximation": {
-        "kind": "fix",
-        "implementation": "packages/engine/src/socialSecurity/maritalBenefits.ts#maritalBenefitFor",
-        "line": 155
+        "kind": "fix"
       },
       "conventionRationale": "DEFECT — no behavior change in this registry slice. 20 CFR 404.336(e) starts from currently unmarried; a later marriage that has ended leaves the claimant unmarried and inside that lead-in. passesSurvivorRemarriageGate instead rejects whenever remarriedAtAge is below 60, including when claimantIsSingle is true. Independently, passesSurvivorRemarriageGate never reads claimantIsSingle, so a schema-valid coupled context with remarriedAtAge null still receives a candidate; a null remarriedAtAge lacks the facts of any 404.336(e) exception and does not prove a marriage before 60. The companion fixture holds ten-year duration, claimant age 67, deceased ex at FRA, and PIA 2,400 so the unreduced survivor amount is 2,400 when the gate passes: remarried at 55 now single (worksheet currently unmarried pays; engine null), then remarried at 60 still married ((e)(1) pays; engine 2,400). Paragraph (e)(2) and (e)(3) disabled-remarriage facts have no formerSpouse fields and are not adjudicated here.",
       "contraryReading": null,

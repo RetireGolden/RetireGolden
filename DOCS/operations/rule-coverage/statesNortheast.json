@@ -9,9 +9,7 @@
       "classification": "approximated",
       "errorDirection": "bothDirections",
       "approximation": {
-        "kind": "fix",
-        "implementation": "packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult",
-        "line": 844
+        "kind": "fix"
       },
       "conventionRationale": null,
       "contraryReading": null,
@@ -611,9 +609,7 @@
       "classification": "approximated",
       "errorDirection": "bothDirections",
       "approximation": {
-        "kind": "fix",
-        "implementation": "packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult",
-        "line": 844
+        "kind": "fix"
       },
       "conventionRationale": "The July 2026 MRS Form 1040ES-ME instructions publish the exact 2026 maximum; the parameter refresh aligned the flat cap to $49,824. The statutory limbs in §5122(2)(M-2) and (M-3) still bound what the flat cap omits. M-3 phases on federal AGI against an indexed applicable amount defined in the quoted authority, not Maine's §5124-C standard-deduction phaseout. This record settles only that published TY2026 maximum and the lesser-of-benefits-included-in-federal-AGI limb for the nonmilitary deduction before offset and phaseout. It does not certify plan qualification under M-2, military separation under M-2(1)(b), the gross Social Security/RRB reduction, the M-3 AGI phaseout, per-recipient MFJ attribution, personal exemption, blindness, unsupported filing statuses, historical or future years, or whole Form 1040ME accuracy. A fixture taxable income here is modeled pack taxable income after the flat cap, not Form 1040ME taxable income. The gross-benefit offset remains unmodeled, so the with-offset fixture stays discriminating; `agesAlive.length` doubling remains unmodeled for MFJ one-recipient cases.",
       "contraryReading": null,
@@ -1250,9 +1246,7 @@
       "classification": "approximated",
       "errorDirection": "bothDirections",
       "approximation": {
-        "kind": "fix",
-        "implementation": "packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult",
-        "line": 844
+        "kind": "fix"
       },
       "conventionRationale": null,
       "contraryReading": null,
@@ -1583,9 +1577,7 @@
       "classification": "approximated",
       "errorDirection": "understatesTax",
       "approximation": {
-        "kind": "fix",
-        "implementation": "packages/engine/src/projection/internal/annualPensionAndAnnuityIncome.ts#annualPensionAndAnnuityIncome",
-        "line": 187
+        "kind": "fix"
       },
       "conventionRationale": "The public bucket is one `{ kind: 'full' }` flag because `pensionSchema.source` carries no issuer, plan, or ORP portion facts and `annualPensionAndAnnuityIncome` routes explicit `source: 'public'` to `publicPensionIncome` without validating them. The pin uses the 2026 observed model window — baseline ordinary income $90,000 at age 40, scenario ordinary income $150,000 with $60,000 routed `publicPensionIncome` — not a new enactment. Absolute totals of $82,000 in both limbs on main are a routing observation, not the legal oracle.",
       "contraryReading": "Department guidance ties the full subtraction to qualifying New York State, local, or federal-government issuers and, for Optional Retirement Program members, to the employment-attributable portion only. A $60,000 ORP distribution fully included in federal adjusted gross income but entirely outside SUNY, CUNY, or New York State Education Department employment adds $60,000 to New York adjusted gross income relative to the same household without that distribution; age 40 keeps the private $20,000 exclusion from applying.",
@@ -2208,9 +2200,7 @@
       "classification": "approximated",
       "errorDirection": "bothDirections",
       "approximation": {
-        "kind": "fix",
-        "implementation": "packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult",
-        "line": 844
+        "kind": "fix"
       },
       "conventionRationale": null,
       "contraryReading": null,
@@ -2786,9 +2776,7 @@
       "classification": "approximated",
       "errorDirection": "overstatesTax",
       "approximation": {
-        "kind": "fix",
-        "implementation": "packages/engine/src/tax/stateTax.ts#computeStateTaxableIncomeResult",
-        "line": 844
+        "kind": "fix"
       },
       "conventionRationale": null,
       "contraryReading": null,

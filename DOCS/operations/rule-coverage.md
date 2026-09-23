@@ -16,9 +16,9 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | Classification: outOfScope | 87 |
 | Classification: settled | 314 |
 | Classification: unsettled | 6 |
-| Approximated kind: convention | 19 |
-| Approximated kind: fix | 77 |
-| Approximated kind: needs-fact | 26 |
+| Approximated kind: convention | 22 |
+| Approximated kind: fix | 76 |
+| Approximated kind: needs-fact | 24 |
 | Volatility: annuallyIndexed | 86 |
 | Volatility: awaitingGuidance | 12 |
 | Volatility: staticStatute | 424 |
@@ -281,7 +281,7 @@ The 25 earliest due dates are shown below (529 rules total). Comparing dueOn to 
 
 The JSON ledger (version 5) is the machine contract, and it is split in two: rule-coverage.json is the INDEX — registry and attestation totals, the per-directory rollup, the unswept and partial lists, the quote-fidelity summary, and a shards array naming every shard with its path and rule count — while the per-rule payloads live in the shard files it names, one per record module. A consumer reads the index, then reads the shards it needs; the union of the shards' rules arrays, sorted by id, is what version 4 published inline as manifest.rules.
 
-Each rule carries title, errorDirection (null unless the rule is approximated), approximation (null unless the rule is approximated; otherwise its kind from packages/engine/src/rules/approximationKinds.ts: fix with implementation, the path#symbol where the fix goes, and that symbol's 1-based declaration line; needs-fact with missingInput, the fact the plan does not collect; or convention with reason, why the approximation is kept), conventionRationale and contraryReading (null when unused), deduplicated authority identities (kind, citation, url), per-fixture detail (path, line, optional note, and the it() tests scanned from the fixture source, each with its own 1-based line), and implementations (per implementing file, the conformance-enforced operative function names with their 1-based declaration lines). Every line number is recomputed from source on each generation and the freshness suite fails when the committed index or any committed shard drifts from the sources in the same commit, so at any commit that passes CI the published lines are exact for that commit. This markdown file is the human summary and does not repeat them.
+Each rule carries title, errorDirection (null unless the rule is approximated), approximation (null unless the rule is approximated; otherwise its kind from packages/engine/src/rules/approximationKinds.ts: fix alone, since where the fix goes is the rule's own implementations; needs-fact with missingInput, the fact the plan does not collect; or convention with reason, why the approximation is kept), conventionRationale and contraryReading (null when unused), deduplicated authority identities (kind, citation, url), per-fixture detail (path, line, optional note, and the it() tests scanned from the fixture source, each with its own 1-based line), and implementations (per implementing file, the conformance-enforced operative function names with their 1-based declaration lines). Every line number is recomputed from source on each generation and the freshness suite fails when the committed index or any committed shard drifts from the sources in the same commit, so at any commit that passes CI the published lines are exact for that commit. This markdown file is the human summary and does not repeat them.
 
 The index's registry totals also carry approximatedByKind, the approximated rules counted by kind (convention, fix, needs-fact), every kind present and the three summing to byClassification.approximated. It and approximation are additive within version 5: a reader that does not know them ignores them, and one that needs them requires them.
 

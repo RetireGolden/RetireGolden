@@ -9,9 +9,7 @@
       "classification": "approximated",
       "errorDirection": "bothDirections",
       "approximation": {
-        "kind": "fix",
-        "implementation": "packages/engine/src/socialSecurity/piaFromEarnings.ts#computePiaFromEarnings",
-        "line": 138
+        "kind": "fix"
       },
       "conventionRationale": "A 1962-06-15 worker with 2020 earnings of 55,628.60 (that year's AWI) and 2023 earnings of 44.88, last year 2023, indexes 2020 to 63,795.13 and leaves 2023 nominal. Authority AIME is floor((63,795.13 + 44.88) / 420) = floor(63,840.01 / 420) = 152. The annual whole-dollar floor yields 63,795 + 44.88 = 63,839.88 and observably 151. Using unindexed nominals instead predicts floor((55,628.60 + 44.88) / 420) = 132. A lower or higher Social Security benefit can alter taxable benefits or the tax character of replacement withdrawals, so the taxpayer-tax sign varies.",
       "contraryReading": null,
@@ -96,9 +94,7 @@
       "classification": "approximated",
       "errorDirection": "bothDirections",
       "approximation": {
-        "kind": "fix",
-        "implementation": "packages/engine/src/socialSecurity/piaFromEarnings.ts#computePiaFromEarnings",
-        "line": 138
+        "kind": "fix"
       },
       "conventionRationale": "A 1962-06-15 worker with official AWI in 1984-2023 except zeros in 1984, 1992, 2000, 2008, and 2016 has 35 positive years: 34 index to 63,795.13 and 2023 stays 66,621.80, so authority and the always-35 path both give floor((34 × 63,795.13 + 66,621.80) / 420) = 5,322. A 1928-06-15 worker with 1979-1988 AWI has 39 elapsed years 1951-1989 and 34 computation years: floor(10 × 19,334.04 / 408) = 473, while the engine still uses 35 years and observably 460. Dropping no years predicts floor(2,235,656.22 / 480) = 4,657 and floor(193,340.40 / 468) = 413. Dropping the first five calendar years of each elapsed span predicts 4,715 and 473. A lower or higher Social Security benefit can alter taxable benefits or the tax character of replacement withdrawals, so the taxpayer-tax sign varies.",
       "contraryReading": null,
@@ -179,9 +175,7 @@
       "classification": "approximated",
       "errorDirection": "bothDirections",
       "approximation": {
-        "kind": "fix",
-        "implementation": "packages/engine/src/socialSecurity/piaFromEarnings.ts#computePiaFromEarnings",
-        "line": 138
+        "kind": "fix"
       },
       "conventionRationale": "A 1962-06-15 worker has first entitlement in 2029 at FRA 67 on the stream, which this helper projects out and treats as 2024 age-62 eligibility; indexing year 2022 AWI is 63,795.13. One three-cell fixture shares ten published-AWI years 2013-2022. Cell 1 adds 1983 (age 21, AWI 15,239.24) for authority AIME floor(11 × 63,795.13 / 420) = 1,670. Cell 2 adds explicit 2024 (age 62, pre-entitlement) at 42,000 unindexed for floor((10 × 63,795.13 + 42,000) / 420) = 1,618 and pins piaInputFromEarnings, which clamps lastEarningsYear to the age-61 year (2023) even when reported earnings include 2024. Cell 3 keeps last reported year 2023 with zero 2023 earnings and projects 42,000 through age 63 (only 2024), giving the same authority 1,618 while independently pinning computePiaFromEarnings, which iterates only 1984-2023 and ignores projected 2024 unless lastBaseYear is widened (mutation to 2028 yields 1,618 with projectedYearCount 1). Both clamps exclude age-21 and age-62 pre-entitlement earnings, so all three cells observably return 1,518. A competing lower-boundary-only reading includes 1983 but still ends at the year before 62, predicting 1,670, 1,518, 1,518. claimAge is expressible on the stream and unused by this helper. A lower or higher Social Security benefit can alter taxable benefits or the tax character of replacement withdrawals, so the taxpayer-tax sign varies.",
       "contraryReading": null,
