@@ -1,0 +1,689 @@
+{
+  "kind": "retiregolden.walkthrough-evidence",
+  "version": 1,
+  "id": "early-retiree-aca",
+  "title": "Early retiree and the ACA cliff",
+  "exampleId": "early-retiree-aca",
+  "derivation": "DOCS/walkthroughs/early-retiree-aca.md",
+  "review": "DOCS/walkthroughs/REVIEW-2026-09-22.md",
+  "testFile": "packages/planner-ui/src/planner/examples/walkthroughs/early-retiree-aca.test.ts",
+  "testName": "year 2026 of the early-retiree ACA example equals the hand table",
+  "inputs": "Casey, single, Florida, born 1964-01-01, retired at 58, planning to 92. Cash 200,000 at 2%; traditional IRA 450,000 and Roth IRA 120,000, both at the plan default return of 5%. Consulting income of 18,000 a year, inflation-adjusted, taxed as ordinary income. Spending 40,000 a year. A Marketplace premium of 1,000 a month with the premium tax credit applied, and the example sets the benchmark premium equal to the stated premium. Roth conversions filled to the top of the 10% bracket from 2026 to 2030. Inflation 2.5%, healthcare inflation 5.5%; no market series.",
+  "contractNotes": [
+    "The first projection year is a full calendar year on the entered balances: the projection takes a start year, never a date, and no year row has a proration term.",
+    "The premium tax credit is priced on the year's own household MAGI, solved together with tax and withdrawals; the plan's recentAnnualMagi of 50,000 is an IRMAA input for the first two years and plays no part in the credit.",
+    "The benchmark (second-lowest-cost silver) premium is an example assumption set equal to the stated premium, not an engine estimate: the engine reads a benchmark only from a Marketplace contract and otherwise funds the gross premium. With benchmark equal to premium, the net premium equals the expected contribution for any premium at which the monthly share of the contribution does not exceed the premium, with twelve covered months.",
+    "Only 2026 is a credit year for this example: 2027 and 2028 carry contracts but no published tax-year pack, so the engine funds the gross premium there and says so; the credit does not vanish at the cliff, it vanishes for want of parameters.",
+    "The conversion is sized to the top of the 10% bracket on taxable income after the standard deduction; the credit's dependence on MAGI does not enter the sizing. The example chose the 10% target so the baseline stays under the 400% cliff (it lands 34,100 below it); filling the 12% bracket instead would cross the cliff.",
+    "Consulting is ordinary income with no self-employment facts: no self-employment tax, no half-SE deduction, no self-employed health-insurance deduction.",
+    "A cash account's growth is not taxable interest and does not enter MAGI; the conversion is not a withdrawal and is never penalized, at any age.",
+    "The conversion and the zero-rate gain headroom are sized by bisection to $0.01 (the contract's promise), so those two rows carry a $0.01 tolerance; every other row is held to half a cent.",
+    "Florida's zero appears nowhere as a separate field: the year row publishes one composed tax."
+  ],
+  "tables": [
+    {
+      "year": 2026,
+      "why": "The first projection year and the only year the example's premium credit is priced: a Roth conversion filled to the top of the 10% bracket raises MAGI, the credit is priced on that MAGI, and the conversion's tax and the net premium are both paid from cash.",
+      "rows": [
+        {
+          "key": "age",
+          "label": "Casey's age attained",
+          "hand": 62,
+          "engine": 62,
+          "tolerance": 0.005,
+          "derivation": "2026 − 1964",
+          "contract": "PersonYearState.ageAttained"
+        },
+        {
+          "key": "filing-status",
+          "label": "Filing status",
+          "hand": "single",
+          "engine": "single",
+          "tolerance": 0.005,
+          "derivation": "household filing status",
+          "contract": "YearResult.filingStatus"
+        },
+        {
+          "key": "consulting",
+          "label": "Consulting income",
+          "hand": 18000,
+          "engine": 18000,
+          "tolerance": 0.005,
+          "derivation": "18,000 × inflation factor 1",
+          "contract": "worksheet income-recurring-annual"
+        },
+        {
+          "key": "income-total",
+          "label": "Total income",
+          "hand": 18000,
+          "engine": 18000,
+          "tolerance": 0.005,
+          "derivation": "consulting only: no wages, Social Security, pension or yield",
+          "contract": "worksheet income-total-annual"
+        },
+        {
+          "key": "rmd",
+          "label": "Required minimum distribution",
+          "hand": 0,
+          "engine": 0,
+          "tolerance": 0.005,
+          "derivation": "a 1964 birth starts RMDs at 75, in 2039",
+          "contract": "params/index.ts#rmdStartAgeForBirthYear"
+        },
+        {
+          "key": "roth-conversion",
+          "label": "Roth conversion",
+          "hand": 10500,
+          "engine": 10500,
+          "tolerance": 0.01,
+          "derivation": "12,400 (top of the 10% bracket) − (18,000 − 16,100 standard deduction) = 10,500; sized by bisection to $0.01, landing exactly",
+          "contract": "worksheet roth-conversion-annual; YearResult.rothConversion; strategies/rothConversion.ts (topOfBracket holds federal taxable income at the bracket bound)"
+        },
+        {
+          "key": "magi",
+          "label": "Modified adjusted gross income",
+          "hand": 28500,
+          "engine": 28500,
+          "tolerance": 0.005,
+          "derivation": "18,000 consulting + 10,500 conversion; no gains, dividends or Social Security",
+          "contract": "worksheet medicare-magi-composition; YearResult.magi"
+        },
+        {
+          "key": "tax",
+          "label": "Income tax (federal plus Florida)",
+          "hand": 1240,
+          "engine": 1240,
+          "tolerance": 0.005,
+          "derivation": "taxable income 28,500 − 16,100 = 12,400, all at 10% = 1,240; Florida 0",
+          "contract": "worksheets federal-ordinary-bracket-tax, tax-total-annual; params/state/data/year2026.ts FL"
+        },
+        {
+          "key": "amt",
+          "label": "Alternative minimum tax",
+          "hand": 0,
+          "engine": 0,
+          "tolerance": 0.005,
+          "derivation": "AMTI 28,500 is under the 90,100 exemption",
+          "contract": "worksheet federal-amt-screen"
+        },
+        {
+          "key": "ltcg-zero-headroom",
+          "label": "Room left in the 0% capital-gain band",
+          "hand": 37050,
+          "engine": 37049.99665021896,
+          "tolerance": 0.01,
+          "derivation": "49,450 (the 15% breakpoint, single) − 12,400 taxable income; sized by bisection to $0.01, lower bound",
+          "contract": "worksheet year-result-ltcg-zero-headroom; YearResult.ltcgZeroHeadroom"
+        },
+        {
+          "key": "penalties",
+          "label": "Penalties",
+          "hand": 0,
+          "engine": 0,
+          "tolerance": 0.005,
+          "derivation": "no need-based traditional withdrawal; a conversion is never penalized; Casey is 62 in any case",
+          "contract": "worksheet tax-penalties-annual; simulate.ts header"
+        },
+        {
+          "key": "realized-gains",
+          "label": "Realized capital gains",
+          "hand": 0,
+          "engine": 0,
+          "tolerance": 0.005,
+          "derivation": "no taxable account",
+          "contract": "worksheet tax-realized-gains-annual"
+        },
+        {
+          "key": "aca-readiness",
+          "label": "Marketplace credit readiness",
+          "hand": "actionable",
+          "engine": "actionable",
+          "tolerance": 0.005,
+          "derivation": "one 2026 contract, a published 2026 pack, every gate supported",
+          "contract": "YearAcaResult.readiness; domain rules §8"
+        },
+        {
+          "key": "aca-household-magi",
+          "label": "ACA household MAGI",
+          "hand": 28500,
+          "engine": 28500,
+          "tolerance": 0.005,
+          "derivation": "signed AGI 28,500 + untaxed Social Security 0 + tax-exempt interest 0 + foreign addback 0 + dependents 0",
+          "contract": "worksheet aca-household-magi-composition; tax/aca.ts#buildAcaHouseholdMagi"
+        },
+        {
+          "key": "aca-poverty-line",
+          "label": "Federal poverty line (one person)",
+          "hand": 15650,
+          "engine": 15650,
+          "tolerance": 0.005,
+          "derivation": "15,650 for the first person, contiguous states; HHS 2025 guidelines for 2026 coverage",
+          "contract": "params/data/year2026.ts federalPovertyLine.contiguous; tax/aca.ts#acaFederalPovertyLine"
+        },
+        {
+          "key": "aca-fpl-pct",
+          "label": "MAGI as a percentage of the poverty line",
+          "hand": 182.10862619808304,
+          "engine": 182.10862619808304,
+          "tolerance": 0.005,
+          "derivation": "28,500 ÷ 15,650 × 100 = 182.11",
+          "contract": "worksheet aca-expected-contribution; YearAcaResult.fplPct"
+        },
+        {
+          "key": "aca-cliff-state",
+          "label": "Position against the 400% cliff",
+          "hand": "below-cliff",
+          "engine": "below-cliff",
+          "tolerance": 0.005,
+          "derivation": "182.11% is at or below 400% and at least 100%; the cliff MAGI is 62,600, 34,100 away",
+          "contract": "worksheet aca-400-percent-cliff; YearAcaResult.cliffState"
+        },
+        {
+          "key": "aca-gross-premium",
+          "label": "Gross Marketplace premium",
+          "hand": 12000,
+          "engine": 12000,
+          "tolerance": 0.005,
+          "derivation": "12 months × 1,000 × health inflation factor 1",
+          "contract": "worksheet aca-enrollment-and-applicable-slcsp-premium-annual"
+        },
+        {
+          "key": "aca-benchmark-premium",
+          "label": "Benchmark (SLCSP) premium",
+          "hand": 12000,
+          "engine": 12000,
+          "tolerance": 0.005,
+          "derivation": "12 × 1,000: the example sets the benchmark equal to the stated premium",
+          "contract": "worksheet aca-enrollment-and-applicable-slcsp-premium-annual; buildContext.ts parseExamplePlan"
+        },
+        {
+          "key": "aca-credit",
+          "label": "Premium tax credit",
+          "hand": 10364.773801916934,
+          "engine": 10364.773801916934,
+          "tolerance": 0.005,
+          "derivation": "12,000 − 28,500 × 5.7376% (4.19% + (182.11 − 150)/50 × 2.41%) = 12,000 − 1,635.23 = 10,364.77; below the 12,000 enrollment cap",
+          "contract": "worksheets aca-expected-contribution, aca-allowable-premium-tax-credit; tax/aca.ts#acaApplicablePct"
+        },
+        {
+          "key": "aca-net-premium",
+          "label": "Net premium after the credit",
+          "hand": 1635.2261980830663,
+          "engine": 1635.2261980830663,
+          "tolerance": 0.005,
+          "derivation": "12,000 − 10,364.77 = 1,635.23, which equals the expected contribution because benchmark equals premium",
+          "contract": "worksheet aca-economic-net-premium"
+        },
+        {
+          "key": "irmaa-lookback-magi",
+          "label": "IRMAA lookback MAGI (unused: no Medicare)",
+          "hand": 50000,
+          "engine": 50000,
+          "tolerance": 0.005,
+          "derivation": "2024 is before the ledger, so the plan's recentAnnualMagi of 50,000 stands in; Casey has no Medicare months, so it prices nothing",
+          "contract": "worksheet irmaa-lookback-selection; YearResult.irmaaLookbackMagi"
+        },
+        {
+          "key": "irmaa-lookback-source",
+          "label": "IRMAA lookback source",
+          "hand": "planFallback",
+          "engine": "planFallback",
+          "tolerance": 0.005,
+          "derivation": "no historical MAGI entered",
+          "contract": "YearResult.irmaaLookbackMagiSource"
+        },
+        {
+          "key": "medicare-premiums",
+          "label": "Medicare premiums",
+          "hand": 0,
+          "engine": 0,
+          "tolerance": 0.005,
+          "derivation": "no Medicare months at 62",
+          "contract": "YearResult.medicarePremiums"
+        },
+        {
+          "key": "base-spending",
+          "label": "Base spending",
+          "hand": 40000,
+          "engine": 40000,
+          "tolerance": 0.005,
+          "derivation": "40,000 × inflation factor 1",
+          "contract": "worksheet spending-base-annual"
+        },
+        {
+          "key": "healthcare",
+          "label": "Healthcare",
+          "hand": 1635.2261980830663,
+          "engine": 1635.2261980830663,
+          "tolerance": 0.005,
+          "derivation": "the net premium 1,635.23; no Medicare, no extras",
+          "contract": "worksheet spending-healthcare-annual; YearExpenses.healthcare"
+        },
+        {
+          "key": "spending-total",
+          "label": "Total spending",
+          "hand": 41635.226198083066,
+          "engine": 41635.226198083066,
+          "tolerance": 0.005,
+          "derivation": "40,000 + 1,635.23",
+          "contract": "worksheet spending-total-annual"
+        },
+        {
+          "key": "portfolio-need",
+          "label": "Portfolio need after income",
+          "hand": 24875.226198083066,
+          "engine": 24875.226198083066,
+          "tolerance": 0.005,
+          "derivation": "41,635.23 + tax 1,240 − consulting 18,000 = 24,875.23; the conversion brings in no cash",
+          "contract": "worksheet portfolio-need-annual"
+        },
+        {
+          "key": "withdrawal-cash",
+          "label": "Withdrawn from cash",
+          "hand": 24875.226198083066,
+          "engine": 24875.226198083066,
+          "tolerance": 0.005,
+          "derivation": "the whole need, tax included; cash is first in the sequential order",
+          "contract": "worksheet withdrawals-by-category-annual; withdrawalStrategySchema sequential order"
+        },
+        {
+          "key": "withdrawal-traditional",
+          "label": "Withdrawn from the IRA",
+          "hand": 0,
+          "engine": 0,
+          "tolerance": 0.005,
+          "derivation": "the conversion is not a withdrawal",
+          "contract": "YearWithdrawals.total composition"
+        },
+        {
+          "key": "withdrawal-roth",
+          "label": "Withdrawn from the Roth",
+          "hand": 0,
+          "engine": 0,
+          "tolerance": 0.005,
+          "derivation": "nothing drawn",
+          "contract": "worksheet withdrawals-by-category-annual"
+        },
+        {
+          "key": "withdrawal-total",
+          "label": "Total withdrawals",
+          "hand": 24875.226198083066,
+          "engine": 24875.226198083066,
+          "tolerance": 0.005,
+          "derivation": "cash only",
+          "contract": "worksheet withdrawals-total-annual"
+        },
+        {
+          "key": "surplus",
+          "label": "Surplus invested",
+          "hand": 0,
+          "engine": 0,
+          "tolerance": 0.005,
+          "derivation": "inflows 18,000 − spending 41,635.23 − tax 1,240 < 0",
+          "contract": "worksheet surplus-invested-annual"
+        },
+        {
+          "key": "shortfall",
+          "label": "Shortfall",
+          "hand": 0,
+          "engine": 0,
+          "tolerance": 0.005,
+          "derivation": "fully funded",
+          "contract": "worksheet spending-shortfall-annual"
+        },
+        {
+          "key": "balance-cash",
+          "label": "Cash, year end",
+          "hand": 178627.26927795526,
+          "engine": 178627.26927795526,
+          "tolerance": 0.005,
+          "derivation": "(200,000 − 24,875.23) × 1.02",
+          "contract": "worksheet accounts-balance-per-account-annual; annualPostSolveAccountGrowth.ts (growth after flows)"
+        },
+        {
+          "key": "balance-ira",
+          "label": "Traditional IRA, year end",
+          "hand": 461475,
+          "engine": 461475,
+          "tolerance": 0.005,
+          "derivation": "(450,000 − 10,500) × 1.05",
+          "contract": "worksheet accounts-balance-per-account-annual"
+        },
+        {
+          "key": "balance-roth",
+          "label": "Roth IRA, year end",
+          "hand": 137025,
+          "engine": 137025,
+          "tolerance": 0.005,
+          "derivation": "(120,000 + 10,500) × 1.05",
+          "contract": "worksheet accounts-balance-per-account-annual"
+        },
+        {
+          "key": "investable",
+          "label": "Investable total",
+          "hand": 777127.2692779553,
+          "engine": 777127.2692779553,
+          "tolerance": 0.005,
+          "derivation": "178,627.27 + 461,475 + 137,025",
+          "contract": "worksheet accounts-investable-total-annual"
+        },
+        {
+          "key": "net-worth",
+          "label": "Net worth",
+          "hand": 777127.2692779553,
+          "engine": 777127.2692779553,
+          "tolerance": 0.005,
+          "derivation": "investable only",
+          "contract": "worksheet accounts-net-worth-annual"
+        }
+      ]
+    }
+  ],
+  "plan": {
+    "schemaVersion": 5,
+    "id": "early-retiree-aca--seq-1",
+    "name": "Early retiree & the ACA cliff",
+    "origin": "user",
+    "createdAtIso": "2026-06-29T12:00:00.000Z",
+    "updatedAtIso": "2026-06-29T12:00:00.000Z",
+    "household": {
+      "filingStatus": "single",
+      "hasQualifyingDependent": false,
+      "state": "FL",
+      "stateMoves": [],
+      "capitalLossCarryforward": 0,
+      "people": [
+        {
+          "id": "early-retiree-aca--p1",
+          "name": "Casey",
+          "dob": "1964-01-01",
+          "sex": "female",
+          "retirementAge": 58,
+          "longevity": {
+            "planningAge": 92,
+            "source": "manual"
+          }
+        }
+      ]
+    },
+    "accounts": [
+      {
+        "id": "early-retiree-aca--cash",
+        "name": "Cash",
+        "ownerPersonId": null,
+        "annualReturnPct": 2,
+        "type": "cash",
+        "balance": 200000,
+        "annualContribution": 0
+      },
+      {
+        "id": "early-retiree-aca--ira",
+        "name": "Traditional IRA",
+        "ownerPersonId": "early-retiree-aca--p1",
+        "annualReturnPct": null,
+        "type": "traditional",
+        "kind": "ira",
+        "balance": 450000,
+        "annualContribution": 0
+      },
+      {
+        "id": "early-retiree-aca--roth",
+        "name": "Roth IRA",
+        "ownerPersonId": "early-retiree-aca--p1",
+        "annualReturnPct": null,
+        "type": "roth",
+        "kind": "ira",
+        "balance": 120000,
+        "annualContribution": 0
+      }
+    ],
+    "insurance": [],
+    "careEvents": [],
+    "incomes": [
+      {
+        "type": "recurring",
+        "id": "early-retiree-aca--consulting",
+        "label": "Consulting",
+        "annualAmount": 18000,
+        "startYear": 2026,
+        "endYear": null,
+        "inflationAdjusted": true,
+        "taxTreatment": "ordinary"
+      }
+    ],
+    "expenses": {
+      "baseAnnual": 40000,
+      "phases": [],
+      "oneTimeGoals": [],
+      "healthcare": {
+        "pre65MonthlyPremiumPerPerson": 1000,
+        "applyAcaCredit": true,
+        "acaYears": [
+          {
+            "year": 2026,
+            "fplRegion": "contiguous",
+            "taxFamilyMembers": [
+              {
+                "personId": "early-retiree-aca--p1",
+                "relationship": "primary",
+                "requiredToFile": "required",
+                "magi": 0
+              }
+            ],
+            "coveredMembers": [
+              {
+                "personId": "early-retiree-aca--p1",
+                "enrollmentPremiumByMonth": [
+                  1000,
+                  1000,
+                  1000,
+                  1000,
+                  1000,
+                  1000,
+                  1000,
+                  1000,
+                  1000,
+                  1000,
+                  1000,
+                  1000
+                ],
+                "slcspBenchmarkPremiumByMonth": [
+                  1000,
+                  1000,
+                  1000,
+                  1000,
+                  1000,
+                  1000,
+                  1000,
+                  1000,
+                  1000,
+                  1000,
+                  1000,
+                  1000
+                ]
+              }
+            ],
+            "taxExemptInterest": {
+              "state": "notApplicable",
+              "amount": null
+            },
+            "foreignExclusionAddback": {
+              "state": "notApplicable",
+              "amount": null
+            },
+            "assertions": {
+              "coverageEligibility": "supported",
+              "form8814": "notApplicable",
+              "specialAllocation": "notApplicable",
+              "marriedFilingSeparatelyException": "notApplicable",
+              "selfEmployedHealthInsuranceDeduction": "notApplicable",
+              "otherMaterialFacts": "none"
+            }
+          },
+          {
+            "year": 2027,
+            "fplRegion": "contiguous",
+            "taxFamilyMembers": [
+              {
+                "personId": "early-retiree-aca--p1",
+                "relationship": "primary",
+                "requiredToFile": "required",
+                "magi": 0
+              }
+            ],
+            "coveredMembers": [
+              {
+                "personId": "early-retiree-aca--p1",
+                "enrollmentPremiumByMonth": [
+                  1055,
+                  1055,
+                  1055,
+                  1055,
+                  1055,
+                  1055,
+                  1055,
+                  1055,
+                  1055,
+                  1055,
+                  1055,
+                  1055
+                ],
+                "slcspBenchmarkPremiumByMonth": [
+                  1055,
+                  1055,
+                  1055,
+                  1055,
+                  1055,
+                  1055,
+                  1055,
+                  1055,
+                  1055,
+                  1055,
+                  1055,
+                  1055
+                ]
+              }
+            ],
+            "taxExemptInterest": {
+              "state": "notApplicable",
+              "amount": null
+            },
+            "foreignExclusionAddback": {
+              "state": "notApplicable",
+              "amount": null
+            },
+            "assertions": {
+              "coverageEligibility": "supported",
+              "form8814": "notApplicable",
+              "specialAllocation": "notApplicable",
+              "marriedFilingSeparatelyException": "notApplicable",
+              "selfEmployedHealthInsuranceDeduction": "notApplicable",
+              "otherMaterialFacts": "none"
+            }
+          },
+          {
+            "year": 2028,
+            "fplRegion": "contiguous",
+            "taxFamilyMembers": [
+              {
+                "personId": "early-retiree-aca--p1",
+                "relationship": "primary",
+                "requiredToFile": "required",
+                "magi": 0
+              }
+            ],
+            "coveredMembers": [
+              {
+                "personId": "early-retiree-aca--p1",
+                "enrollmentPremiumByMonth": [
+                  1113.0249999999999,
+                  1113.0249999999999,
+                  1113.0249999999999,
+                  1113.0249999999999,
+                  1113.0249999999999,
+                  1113.0249999999999,
+                  1113.0249999999999,
+                  1113.0249999999999,
+                  1113.0249999999999,
+                  1113.0249999999999,
+                  1113.0249999999999,
+                  1113.0249999999999
+                ],
+                "slcspBenchmarkPremiumByMonth": [
+                  1113.0249999999999,
+                  1113.0249999999999,
+                  1113.0249999999999,
+                  1113.0249999999999,
+                  1113.0249999999999,
+                  1113.0249999999999,
+                  1113.0249999999999,
+                  1113.0249999999999,
+                  1113.0249999999999,
+                  1113.0249999999999,
+                  1113.0249999999999,
+                  1113.0249999999999
+                ]
+              }
+            ],
+            "taxExemptInterest": {
+              "state": "notApplicable",
+              "amount": null
+            },
+            "foreignExclusionAddback": {
+              "state": "notApplicable",
+              "amount": null
+            },
+            "assertions": {
+              "coverageEligibility": "supported",
+              "form8814": "notApplicable",
+              "specialAllocation": "notApplicable",
+              "marriedFilingSeparatelyException": "notApplicable",
+              "selfEmployedHealthInsuranceDeduction": "notApplicable",
+              "otherMaterialFacts": "none"
+            }
+          }
+        ],
+        "medicareExtrasMonthlyPerPerson": 0
+      }
+    },
+    "strategies": {
+      "withdrawalOrder": {
+        "mode": "sequential"
+      },
+      "rothConversion": {
+        "mode": "fillToTarget",
+        "target": "topOfBracket",
+        "targetValue": 10,
+        "startYear": 2026,
+        "endYear": 2030
+      },
+      "qcdAnnual": 0,
+      "retirementActions": []
+    },
+    "assumptions": {
+      "inflationPct": 2.5,
+      "healthcareExtraInflationPct": 3,
+      "defaultReturnPct": 5,
+      "ssCola": {
+        "mode": "matchInflation"
+      },
+      "ssHaircut": null,
+      "stateEffectiveTaxPct": 0,
+      "localIncomeTaxPct": 0,
+      "recentAnnualMagi": 50000,
+      "heirTaxRatePct": 22,
+      "safeWithdrawalRatePct": 4
+    },
+    "annualFederalTaxFacts": {
+      "foreignIncomeAdjustments": []
+    },
+    "stateTaxFacts": {
+      "householdYearFacts": [],
+      "hsaYearEvidence": [],
+      "iraBasisYearEvidence": []
+    },
+    "inheritedRothTaxCharacterPools": [],
+    "employerElectiveDeferralHistory": [],
+    "scenarios": []
+  }
+}

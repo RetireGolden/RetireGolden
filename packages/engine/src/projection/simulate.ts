@@ -38,7 +38,7 @@ import { inheritedRothFactsToOwnerRothBasis } from './internal/inheritedRothTaxC
  *   IRC §4974 prices any RMD shortfall at 25% by default, with explicit
  *   correction/waiver evidence seams. Early-withdrawal penalties: 10%
  *   traditional pre-59½ (≈ age < 60), 20% HSA non-medical pre-65. Healthcare expenses: ACA-credited marketplace
- *   premiums pre-65 (credit vs prior-year MAGI; 400% FPL cliff), Medicare
+ *   premiums pre-65 (credit vs the year's own household MAGI; 400% FPL cliff), Medicare
  *   Part B + IRMAA (MAGI 2-year lookback) + Part D surcharge + extras from
  *   65. Roth conversions run after RMDs (manual amounts or fill-to-target
  *   sized against the federal engine; conversion taxes ride the normal

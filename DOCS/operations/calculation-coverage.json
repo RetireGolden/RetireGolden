@@ -852,7 +852,16 @@
       "count": 2
     }
   ],
-  "walkthroughs": [],
+  "walkthroughs": [
+    {
+      "id": "early-retiree-aca",
+      "testName": "year 2026 of the early-retiree ACA example equals the hand table"
+    },
+    {
+      "id": "rmd-irmaa",
+      "testName": "year 2026 of the RMD-and-IRMAA example equals the hand table"
+    }
+  ],
   "attestationsDerived": {
     "catalogued": 60,
     "excludedWithReason": 0,

@@ -1,0 +1,444 @@
+{
+  "kind": "retiregolden.walkthrough-evidence",
+  "version": 1,
+  "id": "rmd-irmaa",
+  "title": "High balances: RMDs and IRMAA",
+  "exampleId": "rmd-irmaa",
+  "derivation": "DOCS/walkthroughs/rmd-irmaa.md",
+  "review": "DOCS/walkthroughs/REVIEW-2026-09-22.md",
+  "testFile": "packages/planner-ui/src/planner/examples/walkthroughs/rmd-irmaa.test.ts",
+  "testName": "year 2026 of the RMD-and-IRMAA example equals the hand table",
+  "inputs": "Dana, single, Florida, born 1953-01-01, planning to 95. Cash 50,000 at 2%; traditional IRA 1,850,000 and a taxable brokerage of 400,000 (cost basis 280,000), both at the plan default return of 5%. Social Security PIA 3,200 a month, claimed at 70. A 15,000 qualified charitable distribution each year. Spending 110,000 a year plus 350 a month of Medicare extras. Inflation 2.5%, healthcare inflation 5.5%; no market series, so every year uses the plan assumptions.",
+  "contractNotes": [
+    "The first projection year is a full calendar year and the entered balances are the prior December 31 balances: the projection takes a start year, never a date, and no year row has a proration term; the plan's June 2026 timestamp does not reach the ledger.",
+    "The entered PIA is read in start-year dollars: the COLA factor compounds from the projection start and is 1 in 2026, so a benefit already being paid earns no cost-of-living adjustment for the years before the projection. Enter a PIA restated in current dollars.",
+    "A cash account's growth is not taxable interest: taxable-yield rows exist only for taxable accounts, and the cash schema has no yield fields. The brokerage grows as pure price return because it declares no yield.",
+    "Florida's zero appears nowhere as a separate field: the year row publishes one composed tax; the state amount is zero because the Florida pack has no income tax.",
+    "The surplus rule's \"cash inflows\" are the year's income plus the net RMD cash; a need-based withdrawal is not an inflow, so the surplus here is zero by a 22,373.85 margin rather than by two sides cancelling.",
+    "Two birth-year conventions coexist: the full retirement age uses the January-1 rule (a 1953-01-01 birth counts as 1952), while age attained, the RMD start and the Medicare months use the calendar birth year. No 2026 figure depends on the difference."
+  ],
+  "tables": [
+    {
+      "year": 2026,
+      "why": "The first projection year: the first required minimum distribution, the charitable distribution taken from it, Social Security at the full delayed-credit factor, the 2026 senior deduction, and a Medicare premium priced on a lookback year before the ledger.",
+      "rows": [
+        {
+          "key": "age",
+          "label": "Dana's age attained",
+          "hand": 73,
+          "engine": 73,
+          "tolerance": 0.005,
+          "derivation": "2026 − 1953",
+          "contract": "PersonYearState.ageAttained (year − birth year)"
+        },
+        {
+          "key": "filing-status",
+          "label": "Filing status",
+          "hand": "single",
+          "engine": "single",
+          "tolerance": 0.005,
+          "derivation": "household filing status, no death in the year",
+          "contract": "YearResult.filingStatus"
+        },
+        {
+          "key": "social-security",
+          "label": "Social Security, gross for the year",
+          "hand": 50688,
+          "engine": 50688,
+          "tolerance": 0.005,
+          "derivation": "3,200 × 1.32 (48 months of delayed retirement credit past FRA 66) × 12 payable months × COLA factor 1",
+          "contract": "worksheets social-security-benefit-annual, delayed-retirement-credit-factor, social-security-payable-months, social-security-cola-factor"
+        },
+        {
+          "key": "income-total",
+          "label": "Total income",
+          "hand": 50688,
+          "engine": 50688,
+          "tolerance": 0.005,
+          "derivation": "Social Security only: no wages, pension, annuity, recurring or yield income",
+          "contract": "worksheet income-total-annual"
+        },
+        {
+          "key": "rmd",
+          "label": "Required minimum distribution",
+          "hand": 69811.32075471699,
+          "engine": 69811.32075471699,
+          "tolerance": 0.005,
+          "derivation": "1,850,000 ÷ 26.5 (Uniform Lifetime Table at 73; first RMD year for a 1953 birth)",
+          "contract": "worksheets rmd-applicable-age-attain-year, rmd-uniform-lifetime-divisor; params/data/year2026.ts rmd.uniformLifetimeTable"
+        },
+        {
+          "key": "qcd",
+          "label": "Qualified charitable distribution",
+          "hand": 15000,
+          "engine": 15000,
+          "tolerance": 0.005,
+          "derivation": "15,000 requested × inflation factor 1, within the 111,000 cap and within the RMD",
+          "contract": "worksheets qcd-limit-and-age-proxy, qcd-income-offset-qualified-slice"
+        },
+        {
+          "key": "roth-conversion",
+          "label": "Roth conversion",
+          "hand": 0,
+          "engine": 0,
+          "tolerance": 0.005,
+          "derivation": "conversion mode none",
+          "contract": "YearResult.rothConversion"
+        },
+        {
+          "key": "magi",
+          "label": "Modified adjusted gross income",
+          "hand": 97896.12075471698,
+          "engine": 97896.12075471698,
+          "tolerance": 0.005,
+          "derivation": "(69,811.32 − 15,000 QCD offset) + 0.85 × 50,688 (the 85% cap on taxable Social Security binds)",
+          "contract": "worksheets federal-taxable-social-security-tiers, medicare-magi-composition; YearResult.magi"
+        },
+        {
+          "key": "tax",
+          "label": "Income tax (federal plus Florida)",
+          "hand": 11238.375359999998,
+          "engine": 11238.375359999998,
+          "tolerance": 0.005,
+          "derivation": "taxable income 97,896.12 − 18,150 standard − 4,626.23 senior = 75,119.888; 10% of 12,400 + 12% of 38,000 + 22% of 24,719.888 = 11,238.38; Florida 0",
+          "contract": "worksheets federal-standard-deduction-age-65, federal-ordinary-bracket-tax, tax-total-annual; tax/federalTax.ts#seniorDeductionAmount; params/state/data/year2026.ts FL"
+        },
+        {
+          "key": "amt",
+          "label": "Alternative minimum tax",
+          "hand": 0,
+          "engine": 0,
+          "tolerance": 0.005,
+          "derivation": "AMTI 97,896.12 − exemption 90,100 = 7,796.12 × 26% = 2,026.99, below the regular tax",
+          "contract": "worksheet federal-amt-screen"
+        },
+        {
+          "key": "penalties",
+          "label": "Penalties",
+          "hand": 0,
+          "engine": 0,
+          "tolerance": 0.005,
+          "derivation": "RMD fully distributed; Dana is past 59½",
+          "contract": "worksheet tax-penalties-annual"
+        },
+        {
+          "key": "realized-gains",
+          "label": "Realized capital gains",
+          "hand": 0,
+          "engine": 0,
+          "tolerance": 0.005,
+          "derivation": "no taxable-account sale: cash covers the need",
+          "contract": "worksheet tax-realized-gains-annual"
+        },
+        {
+          "key": "irmaa-lookback-year",
+          "label": "IRMAA lookback year",
+          "hand": 2024,
+          "engine": 2024,
+          "tolerance": 0.005,
+          "derivation": "2026 − 2, no SSA-44 election",
+          "contract": "worksheets medicare-irmaa-two-year-lookback, irmaa-lookback-selection"
+        },
+        {
+          "key": "irmaa-lookback-source",
+          "label": "IRMAA lookback source",
+          "hand": "planFallback",
+          "engine": "planFallback",
+          "tolerance": 0.005,
+          "derivation": "2024 is before the ledger and no historical MAGI is entered, so the plan's recentAnnualMagi stands in",
+          "contract": "YearResult.irmaaLookbackMagiSource; assumptionsSchema.recentAnnualMagi"
+        },
+        {
+          "key": "irmaa-lookback-magi",
+          "label": "IRMAA lookback MAGI",
+          "hand": 0,
+          "engine": 0,
+          "tolerance": 0.005,
+          "derivation": "the example baseline seeds recentAnnualMagi at 0",
+          "contract": "YearResult.irmaaLookbackMagi; buildContext.ts EXAMPLE_BASELINE_ASSUMPTIONS"
+        },
+        {
+          "key": "irmaa-tier",
+          "label": "IRMAA tier",
+          "hand": 0,
+          "engine": 0,
+          "tolerance": 0.005,
+          "derivation": "0 is not above the 109,000 tier-1 floor for a single filer",
+          "contract": "worksheet medicare-irmaa-first-tier-boundary; params/index.ts#irmaaTierForMagi"
+        },
+        {
+          "key": "irmaa-surcharge",
+          "label": "IRMAA surcharge",
+          "hand": 0,
+          "engine": 0,
+          "tolerance": 0.005,
+          "derivation": "tier 0",
+          "contract": "YearResult.irmaaSurcharge"
+        },
+        {
+          "key": "medicare-premiums",
+          "label": "Medicare premiums",
+          "hand": 2434.8,
+          "engine": 2434.8,
+          "tolerance": 0.005,
+          "derivation": "202.90 × 12 months of Part B at tier 0; no Part D surcharge",
+          "contract": "worksheet medicare-base-part-b-premium; params/data/year2026.ts medicare.partBStandardMonthly"
+        },
+        {
+          "key": "base-spending",
+          "label": "Base spending",
+          "hand": 110000,
+          "engine": 110000,
+          "tolerance": 0.005,
+          "derivation": "110,000 × inflation factor 1",
+          "contract": "worksheet spending-base-annual"
+        },
+        {
+          "key": "healthcare",
+          "label": "Healthcare",
+          "hand": 6634.8,
+          "engine": 6634.8,
+          "tolerance": 0.005,
+          "derivation": "2,434.80 Part B + 350 × 12 extras × health inflation factor 1",
+          "contract": "worksheet spending-healthcare-annual"
+        },
+        {
+          "key": "spending-total",
+          "label": "Total spending",
+          "hand": 116634.8,
+          "engine": 116634.8,
+          "tolerance": 0.005,
+          "derivation": "110,000 + 6,634.80; no goals, debt, property, insurance or care",
+          "contract": "worksheet spending-total-annual"
+        },
+        {
+          "key": "portfolio-need",
+          "label": "Portfolio need after income",
+          "hand": 77185.17536,
+          "engine": 77185.17536,
+          "tolerance": 0.005,
+          "derivation": "116,634.80 + tax 11,238.38 − Social Security 50,688",
+          "contract": "worksheet portfolio-need-annual"
+        },
+        {
+          "key": "withdrawal-cash",
+          "label": "Withdrawn from cash",
+          "hand": 22373.854605283006,
+          "engine": 22373.854605283006,
+          "tolerance": 0.005,
+          "derivation": "77,185.18 need − 54,811.32 net RMD cash; cash is first in the sequential order and covers it",
+          "contract": "worksheet withdrawals-by-category-annual; withdrawalStrategySchema sequential order"
+        },
+        {
+          "key": "withdrawal-taxable",
+          "label": "Withdrawn from the brokerage",
+          "hand": 0,
+          "engine": 0,
+          "tolerance": 0.005,
+          "derivation": "cash covers the need",
+          "contract": "worksheet withdrawals-by-category-annual"
+        },
+        {
+          "key": "withdrawal-traditional",
+          "label": "Withdrawn from the IRA",
+          "hand": 69811.32075471699,
+          "engine": 69811.32075471699,
+          "tolerance": 0.005,
+          "derivation": "the gross RMD, QCD included; no need-based IRA draw",
+          "contract": "worksheet withdrawals-by-category-annual; YearResult.rmd"
+        },
+        {
+          "key": "withdrawal-total",
+          "label": "Total withdrawals",
+          "hand": 92185.17536,
+          "engine": 92185.17536,
+          "tolerance": 0.005,
+          "derivation": "22,373.85 + 69,811.32 (= need 77,185.18 + QCD 15,000)",
+          "contract": "worksheet withdrawals-total-annual"
+        },
+        {
+          "key": "surplus",
+          "label": "Surplus invested",
+          "hand": 0,
+          "engine": 0,
+          "tolerance": 0.005,
+          "derivation": "max(0, inflows 105,499.32 (Social Security plus the net RMD cash) − spending 116,634.80 − tax 11,238.38) = 0; the cash draw is not an inflow",
+          "contract": "worksheet surplus-invested-annual; YearResult.surplusInvested (accepted cash inflows)"
+        },
+        {
+          "key": "shortfall",
+          "label": "Shortfall",
+          "hand": 0,
+          "engine": 0,
+          "tolerance": 0.005,
+          "derivation": "fully funded",
+          "contract": "worksheet spending-shortfall-annual"
+        },
+        {
+          "key": "balance-cash",
+          "label": "Cash, year end",
+          "hand": 28178.668302611335,
+          "engine": 28178.668302611335,
+          "tolerance": 0.005,
+          "derivation": "(50,000 − 22,373.85) × 1.02",
+          "contract": "worksheet accounts-balance-per-account-annual; annualPostSolveAccountGrowth.ts (growth after flows)"
+        },
+        {
+          "key": "balance-ira",
+          "label": "Traditional IRA, year end",
+          "hand": 1869198.1132075472,
+          "engine": 1869198.1132075472,
+          "tolerance": 0.005,
+          "derivation": "(1,850,000 − 69,811.32) × 1.05",
+          "contract": "worksheet accounts-balance-per-account-annual"
+        },
+        {
+          "key": "balance-brokerage",
+          "label": "Brokerage, year end",
+          "hand": 420000,
+          "engine": 420000,
+          "tolerance": 0.005,
+          "derivation": "400,000 × 1.05; no sale, no yield",
+          "contract": "worksheet accounts-balance-per-account-annual"
+        },
+        {
+          "key": "investable",
+          "label": "Investable total",
+          "hand": 2317376.7815101584,
+          "engine": 2317376.7815101584,
+          "tolerance": 0.005,
+          "derivation": "28,178.67 + 1,869,198.11 + 420,000",
+          "contract": "worksheet accounts-investable-total-annual"
+        },
+        {
+          "key": "net-worth",
+          "label": "Net worth",
+          "hand": 2317376.7815101584,
+          "engine": 2317376.7815101584,
+          "tolerance": 0.005,
+          "derivation": "investable only: no property, debt, insurance, ladder or reverse mortgage",
+          "contract": "worksheet accounts-net-worth-annual"
+        }
+      ]
+    }
+  ],
+  "plan": {
+    "schemaVersion": 5,
+    "id": "rmd-irmaa--seq-1",
+    "name": "High balances: RMDs & IRMAA",
+    "origin": "user",
+    "createdAtIso": "2026-06-29T12:00:00.000Z",
+    "updatedAtIso": "2026-06-29T12:00:00.000Z",
+    "household": {
+      "filingStatus": "single",
+      "hasQualifyingDependent": false,
+      "state": "FL",
+      "stateMoves": [],
+      "capitalLossCarryforward": 0,
+      "people": [
+        {
+          "id": "rmd-irmaa--p1",
+          "name": "Dana",
+          "dob": "1953-01-01",
+          "sex": "female",
+          "retirementAge": 65,
+          "longevity": {
+            "planningAge": 95,
+            "source": "manual"
+          }
+        }
+      ]
+    },
+    "accounts": [
+      {
+        "id": "rmd-irmaa--cash",
+        "name": "Cash",
+        "ownerPersonId": null,
+        "annualReturnPct": 2,
+        "type": "cash",
+        "balance": 50000,
+        "annualContribution": 0
+      },
+      {
+        "id": "rmd-irmaa--ira",
+        "name": "Traditional IRA",
+        "ownerPersonId": "rmd-irmaa--p1",
+        "annualReturnPct": null,
+        "type": "traditional",
+        "kind": "ira",
+        "balance": 1850000,
+        "annualContribution": 0
+      },
+      {
+        "id": "rmd-irmaa--brokerage",
+        "name": "Brokerage",
+        "ownerPersonId": null,
+        "annualReturnPct": null,
+        "type": "taxable",
+        "balance": 400000,
+        "costBasis": 280000,
+        "annualContribution": 0
+      }
+    ],
+    "insurance": [],
+    "careEvents": [],
+    "incomes": [
+      {
+        "type": "socialSecurity",
+        "id": "rmd-irmaa--ss",
+        "personId": "rmd-irmaa--p1",
+        "piaMonthly": 3200,
+        "earnings": null,
+        "claimAge": {
+          "years": 70,
+          "months": 0
+        }
+      }
+    ],
+    "expenses": {
+      "baseAnnual": 110000,
+      "phases": [],
+      "oneTimeGoals": [],
+      "healthcare": {
+        "pre65MonthlyPremiumPerPerson": 0,
+        "applyAcaCredit": false,
+        "medicareExtrasMonthlyPerPerson": 350
+      }
+    },
+    "strategies": {
+      "withdrawalOrder": {
+        "mode": "sequential"
+      },
+      "rothConversion": {
+        "mode": "none"
+      },
+      "qcdAnnual": 15000,
+      "retirementActions": []
+    },
+    "assumptions": {
+      "inflationPct": 2.5,
+      "healthcareExtraInflationPct": 3,
+      "defaultReturnPct": 5,
+      "ssCola": {
+        "mode": "matchInflation"
+      },
+      "ssHaircut": null,
+      "stateEffectiveTaxPct": 0,
+      "localIncomeTaxPct": 0,
+      "recentAnnualMagi": 0,
+      "heirTaxRatePct": 28,
+      "safeWithdrawalRatePct": 4
+    },
+    "annualFederalTaxFacts": {
+      "foreignIncomeAdjustments": []
+    },
+    "stateTaxFacts": {
+      "householdYearFacts": [],
+      "hsaYearEvidence": [],
+      "iraBasisYearEvidence": []
+    },
+    "inheritedRothTaxCharacterPools": [],
+    "employerElectiveDeferralHistory": [],
+    "scenarios": []
+  }
+}
