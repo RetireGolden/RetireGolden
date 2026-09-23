@@ -82,6 +82,11 @@ const walkthroughSources = import.meta.glob(
     eager: true,
   },
 )
+const oracleRegistrySources = import.meta.glob('../../../../DOCS/external-oracles.md', {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+})
 const calculationDocSources = import.meta.glob('../../../../DOCS/calculations/**/*.md', {
   query: '?raw',
   import: 'default',
@@ -185,6 +190,7 @@ const calculationReport = buildCalculationCoverageReport({
   attestations: COVERAGE_ATTESTATIONS,
   testSources,
   externalGoldenSources,
+  oracleRegistryText: (Object.values(oracleRegistrySources)[0] as string | undefined) ?? null,
   walkthroughs: walkthroughEntriesOf(walkthroughSources as Record<string, string>),
   symbolLineFor,
   docTextFor: calculationDocTextFor,

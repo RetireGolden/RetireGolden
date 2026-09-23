@@ -149,7 +149,12 @@ If a tolerance has to be wider than this, the test should explain the reason.
 
 ## Implemented fixtures
 
-The external-oracle fixtures currently in the tree, each with its primary source frozen into the test:
+The external-oracle fixtures currently in the tree, each with its primary source frozen into the test. The
+calculation census (`DOCS/operations/calculation-coverage.json`, `oracleExamples`) publishes this table per
+`*.external.golden.test.ts` file, beside the file's case count and the "Tolerance:" statements in its comments; the
+public methodology site renders it as the published-examples table. The census refuses to build when an external
+golden fixture has no row here, when a row names a fixture that is not in the tree, or when a fixture states no
+tolerance, so add the row and the `Tolerance:` line with the fixture:
 
 | ID | Domain | Fixture | Primary source |
 |---|---|---|---|

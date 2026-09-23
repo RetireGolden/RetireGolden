@@ -192,6 +192,8 @@ async function main() {
 
   const packagesDir = join(repositoryDir, 'packages')
   const externalGoldenSources = walkFiles(packagesDir, (name) => name.endsWith('.external.golden.test.ts'), repositoryDir)
+  const oracleRegistryPath = join(repositoryDir, 'DOCS', 'external-oracles.md')
+  const oracleRegistryText = existsSync(oracleRegistryPath) ? readFileSync(oracleRegistryPath, 'utf8') : null
   const docsDir = join(repositoryDir, 'DOCS', 'calculations')
   const calculationDocs = existsSync(docsDir)
     ? walkFiles(docsDir, (name) => name.endsWith('.md'), join(repositoryDir, 'DOCS', 'calculations'))
@@ -209,6 +211,7 @@ async function main() {
     attestations: COVERAGE_ATTESTATIONS,
     testSources: testSourcesInGlobShape(),
     externalGoldenSources,
+    oracleRegistryText,
     walkthroughs: walkthroughEntriesOf(walkthroughTestSources(walkthroughDir)),
     symbolLineFor,
     docTextFor,

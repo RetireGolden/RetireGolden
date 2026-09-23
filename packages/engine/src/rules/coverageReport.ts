@@ -971,6 +971,14 @@ export interface CalculationCoverageInput {
   readonly testSources: Readonly<Record<string, string>>
   /** Repo-relative path → source, for every `*.external.golden.test.ts` under packages/. */
   readonly externalGoldenSources: Readonly<Record<string, string>>
+  /**
+   * The text of DOCS/external-oracles.md, whose "Implemented fixtures" table
+   * names each oracle's id, domain and primary source against its fixture
+   * file. Required whenever `externalGoldenSources` is non-empty: every
+   * fixture must have a row there and state its tolerance, or the census
+   * refuses to build.
+   */
+  readonly oracleRegistryText?: string | null
   readonly walkthroughs: readonly { readonly id: string; readonly testName: string }[]
   readonly symbolLineFor: (path: string, symbol: string) => number
   readonly docTextFor: (path: string) => string | null
@@ -1086,6 +1094,29 @@ export function walkthroughEntriesOf(sources: Readonly<Record<string, string>>):
  */
 export const CALCULATION_COVERAGE_VERSION = 2
 
+/** One row of the oracle registry's "Implemented fixtures" table, as a fixture file carries it. */
+export interface OracleRegistryEntry {
+  /** `ORACLE-001`, or a range such as `ORACLE-007/008` for one row naming several. */
+  readonly id: string
+  readonly domain: string
+  /** The primary source the fixture freezes, as the registry states it, Markdown emphasis removed. */
+  readonly source: string
+}
+
+/**
+ * One external-oracle fixture file: examples an independent source published,
+ * frozen into a test the engine must reproduce. `count` is its code-level
+ * it()/test() cases; `tolerances` are the distinct "Tolerance:" statements in
+ * its comments, in order; `oracles` are the registry rows whose fixture is
+ * this file.
+ */
+export interface OracleExample {
+  readonly file: string
+  readonly count: number
+  readonly tolerances: readonly string[]
+  readonly oracles: readonly OracleRegistryEntry[]
+}
+
 export interface CalculationCoverageShard {
   readonly kind: 'retiregolden.calculation-coverage.shard'
   readonly version: typeof CALCULATION_COVERAGE_VERSION
@@ -1116,7 +1147,7 @@ export interface CalculationCoverageManifest {
     readonly byKind: Readonly<Record<string, number>>
     readonly byJustificationKind: Readonly<Record<string, number>>
   }
-  readonly oracleExamples: readonly { readonly file: string; readonly count: number }[]
+  readonly oracleExamples: readonly OracleExample[]
   readonly walkthroughs: readonly { readonly id: string; readonly testName: string }[]
   readonly attestationsDerived: {
     readonly catalogued: number
@@ -1171,6 +1202,109 @@ function countOracleCalls(source: string): number {
     index += 1
   }
   return count
+}
+
+const ORACLE_FIXTURES_HEADING = '## Implemented fixtures'
+const ORACLE_ID = /^ORACLE-\d{3}(?:\/\d{3})*$/u
+const ORACLE_FIXTURE_LINK = /^\[`([^`]+)`\]\([^)]*\)$/u
+const EXTERNAL_GOLDEN_SUFFIX = '.external.golden.test.ts'
+
+/**
+ * The rows of the "Implemented fixtures" table in DOCS/external-oracles.md
+ * (`| ID | Domain | Fixture | Primary source |`, the fixture cell a Markdown
+ * link whose text is the repo-relative path in backticks), for the rows whose
+ * fixture is an external golden test. Rows for other fixtures (a
+ * characterization benchmark, a hand-worksheet golden) are not published
+ * examples and are skipped; a row for an external golden must carry an
+ * ORACLE id and a parsable fixture link, or the registry is refused.
+ */
+export function oracleRegistryRowsOf(text: string): readonly (OracleRegistryEntry & { readonly file: string })[] {
+  const lines = text.replace(/\r\n/gu, '\n').split('\n')
+  const start = lines.findIndex((line) => line.trim() === ORACLE_FIXTURES_HEADING)
+  if (start < 0) throw new Error(`external oracle registry: no "${ORACLE_FIXTURES_HEADING}" section`)
+  const rows: (OracleRegistryEntry & { readonly file: string })[] = []
+  let inTable = false
+  for (const line of lines.slice(start + 1)) {
+    const trimmed = line.trim()
+    if (!trimmed.startsWith('|')) {
+      if (inTable || trimmed.startsWith('#')) break
+      continue
+    }
+    inTable = true
+    const cells = trimmed.slice(1, trimmed.endsWith('|') ? -1 : undefined).split('|').map((cell) => cell.trim())
+    if (cells.length !== 4) {
+      throw new Error(`external oracle registry: a row has ${cells.length} cells, not 4: ${trimmed.slice(0, 80)}`)
+    }
+    const [id, domain, fixture, source] = cells as [string, string, string, string]
+    if (id === 'ID' || /^-+$/u.test(id.replace(/:/gu, ''))) continue
+    const link = ORACLE_FIXTURE_LINK.exec(fixture)
+    if (link === null) throw new Error(`external oracle registry: row ${id} has no fixture link: ${fixture.slice(0, 80)}`)
+    const file = link[1]!
+    if (!file.endsWith(EXTERNAL_GOLDEN_SUFFIX)) continue
+    if (!ORACLE_ID.test(id)) throw new Error(`external oracle registry: the row for ${file} has no ORACLE id: "${id}"`)
+    rows.push({ id, domain, source: source.replace(/\*\*/gu, '').replace(/`/gu, ''), file })
+  }
+  return rows
+}
+
+/**
+ * The distinct "Tolerance:" statements in a fixture's block comments, in
+ * order: the text after the label to the end of its sentence (which may wrap
+ * onto the next comment line), without the final period.
+ */
+export function oracleTolerancesOf(source: string): readonly string[] {
+  const lines = source.replace(/\r\n/gu, '\n').split('\n')
+  const found: string[] = []
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index]!
+    const at = line.indexOf('Tolerance:')
+    if (at < 0 || !/^\s*\*/u.test(line)) continue
+    let text = line.slice(at + 'Tolerance:'.length).trim()
+    let next = index + 1
+    while (!text.endsWith('.') && next < lines.length && /^\s*\*(?!\/)/u.test(lines[next]!)) {
+      const more = lines[next]!.replace(/^\s*\*\s?/u, '').trim()
+      if (more === '') break
+      text += ' ' + more
+      next += 1
+    }
+    text = text.replace(/\.$/u, '').trim()
+    if (text !== '' && !found.includes(text)) found.push(text)
+  }
+  return found
+}
+
+/**
+ * Every external-oracle fixture with its cases, stated tolerances and
+ * registry rows. Fails closed: a fixture with no registry row, a fixture
+ * that states no tolerance, and a registry row naming an external golden
+ * that is not in the tree each refuse the census, so the published table
+ * cannot fall out of step with the fixtures.
+ */
+function oracleExamplesOf(input: CalculationCoverageInput): readonly OracleExample[] {
+  const files = Object.keys(input.externalGoldenSources)
+  if (files.length === 0) return []
+  if (!input.oracleRegistryText) {
+    throw new Error('external oracle registry: DOCS/external-oracles.md is required when external golden fixtures exist')
+  }
+  const rows = oracleRegistryRowsOf(input.oracleRegistryText)
+  const present = new Set(files)
+  for (const row of rows) {
+    if (!present.has(row.file)) {
+      throw new Error(`external oracle registry: row ${row.id} names ${row.file}, which is not an external golden fixture in the tree`)
+    }
+  }
+  return files
+    .map((file) => {
+      const oracles = rows.filter((row) => row.file === file).map(({ id, domain, source }) => ({ id, domain, source }))
+      if (oracles.length === 0) {
+        throw new Error(`external oracle registry: ${file} has no row in the "Implemented fixtures" table of DOCS/external-oracles.md`)
+      }
+      const source = input.externalGoldenSources[file]!
+      const tolerances = oracleTolerancesOf(source)
+      if (tolerances.length === 0) throw new Error(`external oracle fixture ${file} states no "Tolerance:" line in its comments`)
+      return { file, count: countOracleCalls(source), tolerances, oracles }
+    })
+    .sort((left, right) => compareStrings(left.file, right.file))
 }
 
 function docPresent(text: string | null): boolean {
@@ -1450,9 +1584,7 @@ export function buildCalculationCoverageReport(input: CalculationCoverageInput):
       }
     })
 
-  const oracleExamples = Object.entries(input.externalGoldenSources)
-    .map(([file, source]) => ({ file, count: countOracleCalls(source) }))
-    .sort((left, right) => compareStrings(left.file, right.file))
+  const oracleExamples = oracleExamplesOf(input)
 
   const familyList = Object.values(input.families)
   const manifest: CalculationCoverageManifest = {
