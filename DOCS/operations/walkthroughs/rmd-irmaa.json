@@ -456,7 +456,7 @@
           "engine": 0,
           "tolerance": 0.005,
           "unit": "dollars",
-          "derivation": "AMTI 112,002.07 less the indexed exemption 94,661.31 = 17,340.76; tentative minimum tax 2,989.84 is below the regular tax",
+          "derivation": "AMTI 112,002.07 less the indexed exemption 94,661.31 leaves an excess of 17,340.76, of which 5,841.37 is the gain; the ordinary remainder 17,340.76 − 5,841.37 = 11,499.39 is taxed at 26% = 2,989.84, and the gain, taxed at capital-gain rates stacked above that remainder, ends at 17,340.76, inside the 0% band (below the indexed 51,953.41), so it adds nothing; the tentative minimum tax 2,989.84 is below the regular tax 13,649.14",
           "contract": "worksheet federal-amt-screen"
         },
         {

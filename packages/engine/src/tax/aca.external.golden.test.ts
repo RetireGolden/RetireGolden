@@ -17,7 +17,7 @@ import { acaApplicablePct, acaNetAnnualPremium } from './aca.js'
  *   Applicable percentages: IRS Rev. Proc. 2025-25 (https://www.irs.gov/pub/irs-drop/rp-25-25.pdf).
  *   Poverty guidelines: HHS 2025 (https://aspe.hhs.gov/topics/poverty-economic-mobility/poverty-guidelines).
  *   Cross-checked against thefinancebuff.com and CRS R48290.
- * Access date: 2026-06-29. Coverage year: 2026. Tolerance: $1 / 0.01 pct-pt.
+ * Access date: 2026-06-29. Coverage year: 2026. Tolerance: $1, or 0.01 percentage point.
  *
  * IRS Rev. Proc. 2025-25 — 2026 applicable percentage table (linear within band):
  *   < 133% FPL ............. 2.10%
