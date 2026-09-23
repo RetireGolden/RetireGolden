@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-23T21:34:40.291Z",
+  "generatedAt": "2026-09-23T22:50:50.754Z",
   "recordCount": 530,
   "urlCount": 433,
   "fetched": 0,
@@ -7,12 +7,11 @@
   "entryCount": 1545,
   "counts": {
     "EXACT": 1060,
-    "UNFETCHABLE": 6,
-    "ELISION-EXACT": 126,
-    "PDF-WORD-LEVEL": 346,
+    "PDF-WORD-LEVEL": 347,
+    "ELISION-EXACT": 127,
     "PUNCTUATION": 4,
     "ELISION-PUNCTUATION": 1,
-    "TRUNCATED": 1,
+    "UNFETCHABLE": 5,
     "PDF-NOT-VERIFIABLE": 1
   },
   "hostConventions": {
@@ -112,10 +111,10 @@
       "id": "irc-170-d-1-C-floor-carryforward-gate",
       "citation": "JCT, General Explanation of P.L. 119-21 (JCS-1-26)",
       "host": "www.jct.gov",
-      "url": "https://www.jct.gov/getattachment/16f5eded-d2f9-425e-80a2-83a930056c38/s-1-26.pdf",
+      "url": "https://www.jct.gov/getattachment/968d7e03-275e-42f1-8252-b2f4b0873a7f/s-1-26.pdf",
       "quoteSha256": "255ce7a54486dcc7",
-      "verdict": "UNFETCHABLE",
-      "detail": "HTTP 404",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
       "diagnosis": null
     },
     {
@@ -9462,14 +9461,10 @@
       "citation": "IRC 63(b)(2)",
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section63&num=0&edition=prelim",
-      "quoteSha256": "b626ea03080fe6ed",
-      "verdict": "TRUNCATED",
-      "detail": "the quote ends with a terminal period the source does not have there",
-      "diagnosis": {
-        "matchedWords": 19,
-        "totalWords": 19,
-        "continuation": ", and (8) so much of the deduction allowed by section 165(a) as is attributable to the qualified net disaster loss (as defined in section 165(h)(6)(b)). (c) standard deduction for"
-      }
+      "quoteSha256": "f5d4051d90e4bc4a",
+      "verdict": "ELISION-EXACT",
+      "detail": "2 elision segments, every one a literal substring",
+      "diagnosis": null
     },
     {
       "id": "irc-56-b-1-D-section-151-deduction-disallowed-for-amt",
