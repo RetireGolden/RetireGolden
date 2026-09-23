@@ -1149,6 +1149,16 @@ export interface CalculationCoverageManifest {
   }
   readonly oracleExamples: readonly OracleExample[]
   readonly walkthroughs: readonly { readonly id: string; readonly testName: string }[]
+  /**
+   * The engine source files the tax-rule sweep attested `rule-free` (swept,
+   * no claim that needs a tax rule; coverageAttestations.ts), counted against
+   * the calculation catalog: `catalogued` files implement at least one
+   * calculation record (a record lists them in `implementedBy`);
+   * `excludedWithReason` files implement none and carry an `exclusionReason`
+   * saying why none is owed; `notYetReviewed` files implement none and carry
+   * no reason yet. The three sum to the rule-free files. They count files,
+   * not records or families, and no family status depends on them.
+   */
   readonly attestationsDerived: {
     readonly catalogued: number
     readonly excludedWithReason: number
