@@ -242,15 +242,15 @@ export interface YearResult {
   qcd: number
   /**
    * Dollars moved traditional → Roth this year (taxed as ordinary income, no
-   * penalty). A fill-to-target strategy sizes it by bisection (to $0.01) as the
-   * largest amount that keeps its metric at or under the ceiling: topOfBracket
-   * holds federal taxable income at the chosen bracket's upper bound;
-   * irmaaTier, acaCliff and fixedMagi hold MAGI under the tier threshold, 400%
-   * of the FPL, or the entered ceiling. The metric is modeled on the federal
-   * engine with the Social Security phase-in, so without benefits the
-   * topOfBracket amount is the bracket bound − (ordinary income − deduction).
-   * The amount is drawn from traditional balances after any unsatisfied RMD is
-   * reserved from them. An optimized schedule comes from the tournament.
+   * penalty). A fill-to-target strategy sizes ONE household amount by bisection
+   * (to $0.01, the lower bound) as the largest that keeps its metric at or under
+   * the ceiling: topOfBracket holds federal taxable income at the bracket's
+   * upper bound; irmaaTier, acaCliff and fixedMagi hold MAGI under the tier
+   * threshold, 400% of the FPL, or the entered ceiling (federal engine with the
+   * Social Security phase-in). That amount is then split between the owners of
+   * traditional balances pro rata (exact cents, after any unsatisfied RMD is
+   * reserved), and each share converts only into that owner's own Roth IRA: an
+   * owner with none loses the share (a warning names them), so this can be less.
    */
   rothConversion: number
   /**

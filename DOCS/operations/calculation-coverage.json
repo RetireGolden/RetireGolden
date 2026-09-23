@@ -854,6 +854,10 @@
   ],
   "walkthroughs": [
     {
+      "id": "bracket-fill-roth",
+      "testName": "year 2026 of the bracket-fill Roth example equals the hand table"
+    },
+    {
       "id": "early-retiree-aca",
       "testName": "year 2026 of the early-retiree ACA example equals the hand table"
     },

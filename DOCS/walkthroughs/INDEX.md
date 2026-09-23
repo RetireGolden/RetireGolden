@@ -16,3 +16,4 @@ Each walkthrough has five parts, all pinned to the same commit:
 |---|---|---|---|---|---|
 | rmd-irmaa | High balances: RMDs and IRMAA (`buildRmdIrmaa.ts`) | 2026 | [rmd-irmaa.md](rmd-irmaa.md) | [REVIEW-2026-09-22.md](REVIEW-2026-09-22.md) | `rmdIrmaa.walkthrough.ts`, `rmd-irmaa.test.ts` |
 | early-retiree-aca | Early retiree and the ACA cliff (`buildEarlyRetireeAca.ts`) | 2026 | [early-retiree-aca.md](early-retiree-aca.md) | [REVIEW-2026-09-22.md](REVIEW-2026-09-22.md) | `earlyRetireeAca.walkthrough.ts`, `early-retiree-aca.test.ts` |
+| bracket-fill-roth | Bracket-fill Roth conversions (`buildBracketFillRoth.ts`) | 2026 | [bracket-fill-roth.md](bracket-fill-roth.md) | [REVIEW-2026-09-22.md](REVIEW-2026-09-22.md) | `bracketFillRoth.walkthrough.ts`, `bracket-fill-roth.test.ts` |
