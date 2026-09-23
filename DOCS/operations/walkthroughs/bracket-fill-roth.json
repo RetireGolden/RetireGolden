@@ -7,7 +7,7 @@
   "derivation": "DOCS/walkthroughs/bracket-fill-roth.md",
   "review": "DOCS/walkthroughs/REVIEW-2026-09-22.md",
   "testFile": "packages/planner-ui/src/planner/examples/walkthroughs/bracket-fill-roth.test.ts",
-  "testName": "year 2026 of the bracket-fill Roth example equals the hand table",
+  "testName": "years 2026 and 2029 of the bracket-fill Roth example equal the hand tables",
   "inputs": "Morgan (born 1953-01-01, planning to 92) and Riley (born 1955-01-01, planning to 94), married filing jointly, Florida. Cash reserve 80,000 at 2%; Morgan's traditional IRA 700,000, Riley's traditional IRA 400,000 and Morgan's Roth IRA 50,000, all at the plan default return of 5%; Riley holds no Roth account. Social Security PIAs of 2,500 (Morgan) and 1,800 (Riley) a month, each claimed at 67. Roth conversions filled to the top of the 22% bracket from 2026 to 2034 and a 10,000 qualified charitable distribution each year. Spending 90,000 a year, cut to 85% from Morgan's age 80, plus 250 a month of Medicare extras each. Inflation 2.5%, healthcare inflation 5.5%; no market series.",
   "contractNotes": [
     "The conversion is sized once for the household, then split between the owners in proportion to their traditional balances after the RMD, in exact cents; each share can convert only into that owner's own Roth IRA. Riley holds none, so her share (68,349.78 in 2026) is dropped with a warning naming her, and only Morgan's 115,098.46 converts. Taxable income ends 76,551.76 below the top of the 22% bracket the strategy targets. This is the engine's documented rule for a conversion's destination, not a defect; the example's description promises a filled bracket that its accounts cannot deliver.",
@@ -420,6 +420,413 @@
           "hand": 1212590.6908183428,
           "engine": 1212590.6908183428,
           "tolerance": 0.005,
+          "unit": "dollars",
+          "derivation": "investable only",
+          "contract": "worksheet accounts-net-worth-annual"
+        }
+      ]
+    },
+    {
+      "year": 2029,
+      "why": "Three years on (2027 and 2028 bridged in the derivation): both spouses take RMDs and the gift is shared between them by RMD size; the household conversion is still split by IRA balance and Riley's share still dropped, so the bracket is still not filled; the senior deduction has ended; Medicare is priced on 2027's projected MAGI, which carries that year's conversion; and, with the cash gone since 2027, the year's need is drawn from Morgan's IRA as a taxed fixed point that the ledger accepts within half a cent of balancing, not within half a cent of the exact answer.",
+      "rows": [
+        {
+          "key": "age-morgan",
+          "label": "Morgan's age attained",
+          "hand": 76,
+          "engine": 76,
+          "tolerance": 0.005,
+          "unit": "count",
+          "derivation": "2029 − 1953",
+          "contract": "PersonYearState.ageAttained"
+        },
+        {
+          "key": "age-riley",
+          "label": "Riley's age attained",
+          "hand": 74,
+          "engine": 74,
+          "tolerance": 0.005,
+          "unit": "count",
+          "derivation": "2029 − 1955",
+          "contract": "PersonYearState.ageAttained"
+        },
+        {
+          "key": "filing-status",
+          "label": "Filing status",
+          "hand": "marriedFilingJointly",
+          "engine": "marriedFilingJointly",
+          "tolerance": 0.005,
+          "unit": "text",
+          "derivation": "both alive",
+          "contract": "YearResult.filingStatus"
+        },
+        {
+          "key": "ss-morgan",
+          "label": "Morgan's Social Security",
+          "hand": 34891.25625,
+          "engine": 34891.25625,
+          "tolerance": 0.005,
+          "unit": "dollars",
+          "derivation": "2,500 × 1.08 × 12 × 1.025³ (the COLA factor from the start year)",
+          "contract": "worksheets social-security-benefit-annual, social-security-cola-factor"
+        },
+        {
+          "key": "ss-riley",
+          "label": "Riley's Social Security",
+          "hand": 25121.7045,
+          "engine": 25121.7045,
+          "tolerance": 0.005,
+          "unit": "dollars",
+          "derivation": "1,800 × 1.08 × 12 × 1.025³; the spousal candidate is still below her own benefit",
+          "contract": "worksheets social-security-benefit-annual, social-security-spousal-top-up"
+        },
+        {
+          "key": "social-security",
+          "label": "Social Security, gross for the year",
+          "hand": 60012.96074999999,
+          "engine": 60012.96075,
+          "tolerance": 0.005,
+          "unit": "dollars",
+          "derivation": "55,728 × 1.025³",
+          "contract": "YearIncomes.socialSecurity"
+        },
+        {
+          "key": "income-total",
+          "label": "Total income",
+          "hand": 60012.96074999999,
+          "engine": 60012.96075,
+          "tolerance": 0.005,
+          "unit": "dollars",
+          "derivation": "Social Security only",
+          "contract": "worksheet income-total-annual"
+        },
+        {
+          "key": "rmd",
+          "label": "Required minimum distributions, both IRAs",
+          "hand": 30224.599524672172,
+          "engine": 30224.599524672172,
+          "tolerance": 0.005,
+          "unit": "dollars",
+          "derivation": "Morgan 302,199.05 ÷ 23.7 (age 76) = 12,751.01 on the ledger's 2028 close; Riley 445,576.42 ÷ 25.5 (age 74) = 17,473.58, her second RMD year",
+          "contract": "worksheet rmd-uniform-lifetime-divisor; simulate.ts (prior December 31 balances)"
+        },
+        {
+          "key": "qcd",
+          "label": "Qualified charitable distribution",
+          "hand": 10768.906249999998,
+          "engine": 10768.906249999998,
+          "tolerance": 0.005,
+          "unit": "dollars",
+          "derivation": "10,000 × 1.025³ = 10,768.91, taken from both RMDs in proportion to their size (Morgan 4,543.14, Riley 6,225.77: the owner sorted first by person id gets his share, the last takes the remainder)",
+          "contract": "strategiesSchema.qcdAnnual; annualLegacyQcdGiftPlan (attribution across owners); worksheet qcd-limit-and-age-proxy"
+        },
+        {
+          "key": "conversion-sized",
+          "label": "Household conversion amount (sized)",
+          "hand": 195417.5854003278,
+          "engine": 195417.5786969397,
+          "tolerance": 0.01,
+          "unit": "dollars",
+          "derivation": "the amount that brings taxable income to the indexed 22% ceiling 227,654.68: AGI at the root = 227,654.68 + 38,229.62 (the indexed deduction with two age-65 additions; no senior deduction from 2029), less taxable Social Security at its 85% cap 51,011.02, less the 19,455.69 of net RMD cash = 195,417.59; the bisection returns the lower bound",
+          "contract": "YearResult.aggregateRothConversionAllocationDesired; rothConversion.ts#sizeRothConversion (to $0.01, the lower bound); params/index.ts#indexFederalTaxPack",
+          "bound": "below"
+        },
+        {
+          "key": "roth-conversion",
+          "label": "Roth conversion executed (Morgan)",
+          "hand": 78828.19,
+          "engine": 78828.19,
+          "tolerance": 0.01,
+          "unit": "dollars",
+          "derivation": "the household landing split in cents by the two IRAs' post-RMD balances (Morgan 289,448.03 against Riley 428,102.83): Morgan's 7,882,819 cents; Riley's 11,658,939 cents are dropped because she holds no Roth IRA. The cents are those of the ledger's landings; the earlier years' allowed landings can move Morgan's weight and the 2029 root together by one cent either way, so the row is held to $0.01",
+          "contract": "YearResult.rothConversion (the per-owner split and the dropped share); worksheets exact-cent-pro-rata-half-up, exact-cent-largest-remainder-slices"
+        },
+        {
+          "key": "magi",
+          "label": "Modified adjusted gross income",
+          "hand": 204756.69891788458,
+          "engine": 204756.69260497155,
+          "tolerance": 0.0065,
+          "unit": "dollars",
+          "derivation": "19,455.69 net RMD cash + 78,828.19 conversion + 55,461.80 need-based IRA draw + 51,011.02 taxable Social Security (the 85% cap binds); the draw is a fixed point (each drawn dollar is taxed at 22% and the tax is drawn too), so the row carries the fixed-point band",
+          "contract": "worksheet medicare-magi-composition; YearResult.magi; annualFundingFixedPoint.ts (accepted within 0.005 of its residual)"
+        },
+        {
+          "key": "tax",
+          "label": "Income tax (federal plus Florida)",
+          "hand": 25246.76273068461,
+          "engine": 25246.761341843743,
+          "tolerance": 0.005,
+          "unit": "dollars",
+          "derivation": "taxable income 204,756.70 − 38,229.62 = 166,527.08 on the indexed joint brackets 26,706.89 / 108,550.58: 2,670.69 + 9,821.24 + 12,754.83 = 25,246.76; no senior deduction (it ended after 2028); the fixed-point band scaled by 22% stays under half a cent; Florida 0",
+          "contract": "worksheets federal-ordinary-bracket-tax, tax-total-annual; tax/federalTax.ts#seniorDeductionAmount (year > lastApplicableYear)"
+        },
+        {
+          "key": "amt",
+          "label": "Alternative minimum tax",
+          "hand": 0,
+          "engine": 0,
+          "tolerance": 0.005,
+          "unit": "dollars",
+          "derivation": "AMTI 204,756.70 less the indexed 150,980.07 exemption; tentative 13,981.92 is below the regular tax",
+          "contract": "worksheet federal-amt-screen"
+        },
+        {
+          "key": "penalties",
+          "label": "Penalties",
+          "hand": 0,
+          "engine": 0,
+          "tolerance": 0.005,
+          "unit": "dollars",
+          "derivation": "both RMDs taken; both past 59½; a conversion is never penalized",
+          "contract": "worksheet tax-penalties-annual"
+        },
+        {
+          "key": "realized-gains",
+          "label": "Realized capital gains",
+          "hand": 0,
+          "engine": 0,
+          "tolerance": 0.005,
+          "unit": "dollars",
+          "derivation": "no taxable account",
+          "contract": "worksheet tax-realized-gains-annual"
+        },
+        {
+          "key": "ltcg-zero-headroom",
+          "label": "Room left in the 0% capital-gain band",
+          "hand": 0,
+          "engine": 0,
+          "tolerance": 0.005,
+          "unit": "dollars",
+          "derivation": "taxable income 166,527.08 is past the indexed 106,504.48 breakpoint",
+          "contract": "worksheet year-result-ltcg-zero-headroom"
+        },
+        {
+          "key": "irmaa-lookback-year",
+          "label": "IRMAA lookback year",
+          "hand": 2027,
+          "engine": 2027,
+          "tolerance": 0.005,
+          "unit": "year",
+          "derivation": "2029 − 2",
+          "contract": "worksheet medicare-irmaa-two-year-lookback"
+        },
+        {
+          "key": "irmaa-lookback-source",
+          "label": "IRMAA lookback source",
+          "hand": "projected",
+          "engine": "projected",
+          "tolerance": 0.005,
+          "unit": "text",
+          "derivation": "2027 is in the ledger",
+          "contract": "YearResult.irmaaLookbackMagiSource"
+        },
+        {
+          "key": "irmaa-lookback-magi",
+          "label": "IRMAA lookback MAGI",
+          "hand": 194727.9301022473,
+          "engine": 194727.93310637915,
+          "tolerance": 0.007,
+          "unit": "dollars",
+          "derivation": "2027's MAGI at its exact fixed point, 194,727.93: net RMD cash 12,746.50 + the 109,869.91 conversion + the first need-based draw 23,558.50 + capped taxable Social Security 48,553.02; 2027's draw dollar cost 24.64% (22% plus the senior phase-out), so its band is 0.005 / 0.7536",
+          "contract": "YearResult.irmaaLookbackMagi; annualFundingFixedPoint.ts"
+        },
+        {
+          "key": "irmaa-tier",
+          "label": "IRMAA tier",
+          "hand": 0,
+          "engine": 0,
+          "tolerance": 0.005,
+          "unit": "count",
+          "derivation": "194,727.93 is not above the joint first-tier floor 218,000 × 1.025³ = 234,762.16",
+          "contract": "worksheet medicare-irmaa-first-tier-boundary; params/index.ts#irmaaTierThreshold"
+        },
+        {
+          "key": "irmaa-next-threshold",
+          "label": "Next IRMAA threshold",
+          "hand": 234762.15624999997,
+          "engine": 234762.15624999997,
+          "tolerance": 0.005,
+          "unit": "dollars",
+          "derivation": "218,000 × 1.025³, unrounded",
+          "contract": "YearResult.irmaaNextTierThreshold; rule record usc-42-1395r-i-5-C-top-irmaa-threshold-frozen"
+        },
+        {
+          "key": "medicare-premiums",
+          "label": "Medicare premiums, both",
+          "hand": 5718.085799699999,
+          "engine": 5718.085799699999,
+          "tolerance": 0.005,
+          "unit": "dollars",
+          "derivation": "2 × 202.90 × 12 × 1.055³ (the health rate from the pack year); no surcharge",
+          "contract": "worksheet medicare-base-part-b-premium"
+        },
+        {
+          "key": "irmaa-surcharge",
+          "label": "IRMAA surcharge",
+          "hand": 0,
+          "engine": 0,
+          "tolerance": 0.005,
+          "unit": "dollars",
+          "derivation": "tier 0",
+          "contract": "YearResult.irmaaSurcharge"
+        },
+        {
+          "key": "base-spending",
+          "label": "Base spending",
+          "hand": 96920.15624999999,
+          "engine": 96920.15624999999,
+          "tolerance": 0.005,
+          "unit": "dollars",
+          "derivation": "90,000 × 1.025³; the age-80 phase keys on Morgan and starts in 2033",
+          "contract": "worksheet spending-base-annual"
+        },
+        {
+          "key": "healthcare",
+          "label": "Healthcare",
+          "hand": 12763.534049699998,
+          "engine": 12763.534049699998,
+          "tolerance": 0.005,
+          "unit": "dollars",
+          "derivation": "10,869.60 × 1.055³: Part B and the extras for two",
+          "contract": "worksheet spending-healthcare-annual"
+        },
+        {
+          "key": "spending-total",
+          "label": "Total spending",
+          "hand": 109683.69029969999,
+          "engine": 109683.69029969999,
+          "tolerance": 0.005,
+          "unit": "dollars",
+          "derivation": "96,920.16 + 12,763.53",
+          "contract": "worksheet spending-total-annual"
+        },
+        {
+          "key": "portfolio-need",
+          "label": "Portfolio need after income",
+          "hand": 74917.49228038461,
+          "engine": 74917.49089154374,
+          "tolerance": 0.005,
+          "unit": "dollars",
+          "derivation": "109,683.69 + tax 25,246.76 − Social Security 60,012.96",
+          "contract": "worksheet portfolio-need-annual"
+        },
+        {
+          "key": "withdrawal-cash",
+          "label": "Withdrawn from cash",
+          "hand": 0,
+          "engine": 0,
+          "tolerance": 0.005,
+          "unit": "dollars",
+          "derivation": "the cash account has been empty since 2027",
+          "contract": "worksheet withdrawals-by-category-annual"
+        },
+        {
+          "key": "withdrawal-traditional",
+          "label": "Withdrawn from the IRAs",
+          "hand": 85686.39853038458,
+          "engine": 85686.39221747156,
+          "tolerance": 0.0065,
+          "unit": "dollars",
+          "derivation": "the RMDs 30,224.60 (QCD included) plus the need-based draw 55,461.80 from Morgan's IRA, the first traditional account in the plan (Riley's is not reached): the draw solves need = pre-tax gap 30,215.04 + tax(draw), so draw = (30,215.04 + 12,491.93 + 0.22 × (98,283.88 + 51,011.02 − 38,229.62 − 108,550.58)) ÷ 0.78; the ledger's bisection lands within 0.005 / 0.78 of it",
+          "contract": "worksheets withdrawals-by-category-annual; withdrawalStrategySchema sequential order; annualFundingFixedPoint.ts"
+        },
+        {
+          "key": "withdrawal-roth",
+          "label": "Withdrawn from the Roth",
+          "hand": 0,
+          "engine": 0,
+          "tolerance": 0.005,
+          "unit": "dollars",
+          "derivation": "the conversion is not a withdrawal",
+          "contract": "YearWithdrawals.total composition"
+        },
+        {
+          "key": "withdrawal-total",
+          "label": "Total withdrawals",
+          "hand": 85686.39853038458,
+          "engine": 85686.39221747156,
+          "tolerance": 0.0065,
+          "unit": "dollars",
+          "derivation": "the IRAs only (= need 74,917.49 + QCD 10,768.91)",
+          "contract": "worksheet withdrawals-total-annual"
+        },
+        {
+          "key": "surplus",
+          "label": "Surplus invested",
+          "hand": 0,
+          "engine": 0,
+          "tolerance": 0.005,
+          "unit": "dollars",
+          "derivation": "inflows 79,468.65 − spending 109,683.69 − tax < 0",
+          "contract": "worksheet surplus-invested-annual"
+        },
+        {
+          "key": "shortfall",
+          "label": "Shortfall",
+          "hand": 0,
+          "engine": 0,
+          "tolerance": 0.005,
+          "unit": "dollars",
+          "derivation": "fully funded",
+          "contract": "worksheet spending-shortfall-annual"
+        },
+        {
+          "key": "balance-cash",
+          "label": "Cash, year end",
+          "hand": 0,
+          "engine": 0,
+          "tolerance": 0.005,
+          "unit": "dollars",
+          "derivation": "empty since 2027",
+          "contract": "worksheet accounts-balance-per-account-annual"
+        },
+        {
+          "key": "balance-ira-morgan",
+          "label": "Morgan's traditional IRA, year end",
+          "hand": 162915.94498814814,
+          "engine": 162915.95161670676,
+          "tolerance": 0.007,
+          "unit": "dollars",
+          "derivation": "(302,199.05 − 12,751.01 − 78,828.19 − 55,461.80) × 1.05; carries the draw band grown at 5%",
+          "contract": "worksheet accounts-balance-per-account-annual"
+        },
+        {
+          "key": "balance-ira-riley",
+          "label": "Riley's traditional IRA, year end",
+          "hand": 449507.97169811325,
+          "engine": 449507.97169811325,
+          "tolerance": 0.005,
+          "unit": "dollars",
+          "derivation": "(445,576.42 − 17,473.58) × 1.05: no conversion, no draw, and her gift comes out of her RMD",
+          "contract": "worksheet accounts-balance-per-account-annual"
+        },
+        {
+          "key": "balance-roth",
+          "label": "Roth IRA, year end",
+          "hand": 513740.93718412507,
+          "engine": 513740.93718412507,
+          "tolerance": 0.005,
+          "unit": "dollars",
+          "derivation": "(410,448.89 + 78,828.19) × 1.05, the 2028 close being ((173,353.38 + 109,869.91) × 1.05 + 93,519.25) × 1.05 on the ledger's executed conversions",
+          "contract": "worksheet accounts-balance-per-account-annual"
+        },
+        {
+          "key": "investable",
+          "label": "Investable total",
+          "hand": 1126164.8538703865,
+          "engine": 1126164.8604989452,
+          "tolerance": 0.007,
+          "unit": "dollars",
+          "derivation": "0 + 162,915.95 + 449,507.97 + 513,740.94",
+          "contract": "worksheet accounts-investable-total-annual"
+        },
+        {
+          "key": "net-worth",
+          "label": "Net worth",
+          "hand": 1126164.8538703865,
+          "engine": 1126164.8604989452,
+          "tolerance": 0.007,
           "unit": "dollars",
           "derivation": "investable only",
           "contract": "worksheet accounts-net-worth-annual"

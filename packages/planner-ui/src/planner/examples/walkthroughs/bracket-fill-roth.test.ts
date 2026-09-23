@@ -11,9 +11,9 @@ import { runWalkthrough, walkthroughRowProblem } from './walkthrough'
  * The it() title is what the engine's walkthrough census publishes for this id.
  */
 describe('walkthrough: bracket-fill Roth conversions', () => {
-  it('year 2026 of the bracket-fill Roth example equals the hand table', () => {
+  it('years 2026 and 2029 of the bracket-fill Roth example equal the hand tables', () => {
     const { tables } = runWalkthrough(BRACKET_FILL_ROTH_WALKTHROUGH)
-    expect(tables.map((table) => table.year)).toEqual([2026])
+    expect(tables.map((table) => table.year)).toEqual([2026, 2029])
     for (const table of tables) {
       expect(table.rows.length, String(table.year)).toBeGreaterThan(20)
       const keys = new Set(table.rows.map((row) => row.key))

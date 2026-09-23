@@ -574,3 +574,511 @@ supports the readings used here together: the owner split with Riley's share tri
 the QCD routed from Morgan's RMD, cash first, then Morgan's IRA before Riley's for need-based draws. Agreement to the
 cent is partly luck: the loop rounds each Morgan share from a float product rather than through the engine's integer
 cent weights. I did not check `lifetimeTax` or `endingInvestable`, which need the survivor years 2046–2049.
+
+---
+
+# Part II: year 2029 by hand (with 2027 and 2028 as bridges)
+
+Independent hand derivation of the later year that section 4 of part I above recommends for the curated example
+`bracket-fill-roth`, whose rows are the second table in
+`packages/planner-ui/src/planner/examples/walkthroughs/bracketFillRoth.walkthrough.ts`. Section numbers below are
+part II's own; "the 2026 document" and "part I" both mean the sections above.
+
+**Provenance.** Derived 2026-09-22 by Claude (Opus 5.5 subagent) against the committed tree at `e814bd02` (the
+content of RetireGolden #732 as merged, "the owner split starts from the bisection landing's cents, as the engine
+does"; the three files that differ at engine main `faa68edc` are not on this plan's path). I start
+from the approved 2026 table (`bracket-fill-roth.md` rows 1–128, approved in `REVIEW-2026-09-22.md`) and take its
+closing balances as given. I did not run the engine, run any test, or execute any TypeScript or JavaScript, and I
+modified no repository file. I did the arithmetic by hand and checked it in exact rationals (Python `fractions`).
+
+Three steps in these years land where a loop stops, not where a closed form says: the conversion sizer's bisection
+(`strategies/rothConversion.ts#sizeRothConversion`), the funding coordinator's direct iteration and bisection
+(`projection/internal/annualFundingFixedPoint.ts`), and the exact-cent owner split
+(`actions/aggregateRothConversionOwnerAllocation.ts`). I replayed those three in Python IEEE-754 doubles and integers,
+written from the loop text. The replay is my own arithmetic, not engine code. **Calibration:** the same replay
+reproduces the approved 2026 figures bit for bit: household landing 384,718,853,225/2,097,152, cent split
+11,509,846 / 6,834,978, closing balances 32,826.53987494642 / 586,410.7679433962 / 420,000 / 173,353.383, investable
+1,212,590.6908183428.
+
+I did not open `examples.golden.test.ts`, the evidence JSON under `DOCS/operations/walkthroughs/`, the example's
+test file, or anything else that could carry engine output for this example. The one engine-output figure I use is
+the whole-run `lifetimeRoth` of 472,533.42, as quoted in the approved derivation's section 4, and I use it only as a
+loose after-the-fact check (section 6, A2). Where no contract says enough I read the function body, and the source
+column says "(body)".
+
+**Rounding and tolerance (read this before writing rows).** The convention is the same as 2026: the ledger carries
+unrounded binary-float dollars, and each figure below is given exact, then rounded half-up to the cent for display.
+A test compares the exact value at `ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS` = 0.005 (`projection/moneyTolerance.ts`
+line 11) unless the row says otherwise. Three things are new in these years:
+
+1. **The funding fixed point accepts a half-cent residual, not a half-cent withdrawal.** The coordinator stops when
+   |requiredNeed − need| ≤ 0.005. With a marginal tax cost c per withdrawn dollar, that puts the accepted need within
+   0.005/(1 − c) of the true fixed point: 0.00663 in 2027 and 2028 (c = 22% × 1.12 = 24.64%) and 0.00641 in 2029
+   (c = 22%). In none of the three years does it converge within its 8 direct evaluations (the error shrinks only
+   about 4× per evaluation), so every landing comes from its bisection. **The 2029 landing is 0.0063129 below the
+   closed-form fixed point**, with residual +0.0049241 (accepted with 0.0000759 to spare). Five 2029 rows therefore
+   sit more than 0.005 from their closed-form values: the need-based draw, `withdrawals.traditional`,
+   `withdrawals.total`, AGI (= `magi`), taxable income, and, grown at 5%, Morgan's IRA close, `investableTotal` and
+   `netWorth`. The table gives the exact consequences of the traced landing as its values and the closed form next
+   to every affected row (section 6, A1); the rows module holds the closed forms within 0.005 / (1 − c), and that
+   band grown at 5% for the balances.
+2. **The household amount is the sizing bisection's lower bound.** As in 2026, hand = S\* with tolerance 0.01 and
+   `bound: 'below'`.
+3. **The executed conversion is cent-quantized. It is robust in 2029, but not in 2027 or 2028.** 2029's 78,828.19
+   comes out the same for every landing the contracts allow, at both the sizing step and the three fixed points.
+   2027's 109,869.91 and 2028's 93,519.25 each depend on where that year's own bisection landed. A landing lower in
+   the one-cent band the contract allows gives 109,869.90 or 93,519.24. 2029 inherits the traced 2027 and 2028
+   values. The engine is deterministic and the replay follows its loop text, so pinning the traced chain is sound.
+   But any change to those loops, even one the contracts allow, can move 2029's Roth and IRA rows by about one to two
+   cents. If that happens, re-derive this table; do not loosen it (section 6, A2).
+
+---
+
+
+**Revision 1 (2026-09-23).** Revised after the independent check (`REVIEW-2026-09-22.md`, the "year 2029" section
+for this example), which agreed with every figure and rejected on four narrow points, each corrected here as its §2–§3
+state: row 34's robustness claim now says the executed conversion is robust only while the 2029 opening balance is
+pinned (the 2027 and 2028 draw landings the contracts allow can move it by one cent either way); two figures in the
+wrong-readings table were each a cent off (221,150.83 and 3,527.55); the senior-deduction expiry test is on line 371
+of `federalTax.ts`; row 31's decimal spellings are not the shortest ones JavaScript prints (the cents are
+unaffected); and the list of rows more than 0.005 from their closed forms now includes Morgan's IRA close,
+`investableTotal` and `netWorth`. The rows module holds the closed forms within the bands the published contracts
+give (see the check's §1c) rather than pinning the ledger's landings. No figure changed.
+
+## 1. What changes after 2026
+
+The inputs are those of `bracket-fill-roth.md` section 1 (Morgan born 1953-01-01, Riley born 1955-01-01, MFJ,
+Florida; cash 80,000 at 2%; Morgan's IRA 700,000, Riley's IRA 400,000 and Morgan's Roth IRA 50,000, all at 5%; PIAs
+of 2,500 and 1,800 claimed at 67; fill to the top of the 22% bracket from 2026 to 2034; QCD 10,000 in today's dollars;
+spending 90,000 with the 0.85 phase from Morgan's 80; Medicare extras 250 a month each; inflation 2.5%, health extra 3%).
+
+### 1a. Factors and the stand-in pack
+
+| Year | n | General factor `inflFactorFrom(2026, y)` | Health factor `healthInflFactorFrom(2026, y)` | Pack |
+|---|---|---|---|---|
+| 2027 | 1 | 1.025 | 1.055 | 2026 pack as stand-in (`isStandIn` true), indexing scale 1.025 |
+| 2028 | 2 | 1.050625 | 1.113025 | same, scale 1.050625 |
+| 2029 | 3 | **1.076890625** (float 1.0768906249999999) | **1.174241375** (float 1.1742413749999998) | same, scale 1.076890625 |
+
+Sources: `simulate.ts` lines 515–535 (a per-year product of 1 + 0.025, and of 1 + 0.025 + 0.03 for health);
+`params/index.ts#packForYear` (line 48: a year past the latest pack gets the latest pack with `isStandIn: true`);
+`simulate.ts#limitScale` (line 542) → `params/indexingScale.ts#indexingScaleFor` (above the latest pack year the scale
+is the cumulative general factor from the pack year). The conversion sizer receives
+`inflFactorFrom(pack.year, year)` (`annualAggregateRothConversionPhase.ts` line 494) and the funding solve receives
+`limitGrowth`. With one pack and no market series the two are the same number. The factor is published as
+`YearResult.inflationScale` (`types/result.ts` lines 77–82).
+
+The general factor carries the Social Security COLA under `matchInflation` (`simulate.ts` lines 1653–1656), base
+spending, the QCD request, the QCD per-donor cap (`limitGrowth`), and the lower IRMAA floors. The health factor
+carries the Part B premium (`healthInflFactorFrom(pack.year, year)`, `annualHealthcareExpenses.ts` line 169) and the
+extras (from the start year, line 185). The start year is the pack year, so the two agree (`YearExpenses.healthcare`
+doc, `yearLedger.ts` lines 100–115).
+
+### 1b. Indexed and unindexed figures (married filing jointly)
+
+| Figure | 2026 | 2027 | 2028 | 2029 | Rule |
+|---|---|---|---|---|---|
+| 12% bracket starts | 24,800 | 25,420 | 26,055.50 | 26,706.8875 | `indexFederalTaxPack` (brackets) |
+| 22% bracket starts | 100,800 | 103,320 | 105,903 | 108,550.575 | same |
+| 24% bracket starts (**the conversion ceiling**) | 211,400 | 216,685 | 222,102.125 | **227,654.678125** | same; `ceilingFor` indexes the ladder the same way (`rothConversion.ts` lines 114–124) |
+| Standard deduction + 2 × age-65 addition | 32,200 + 3,300 = 35,500 | 33,005 + 3,382.50 = 36,387.50 | 33,830.125 + 3,467.0625 = 37,297.1875 | 34,675.878125 + 3,553.7390625 = **38,229.6171875** | both indexed |
+| AMT exemption (phase-out start) | 140,200 (1,000,000) | 143,705 (1,025,000) | 147,297.625 (1,050,625) | 150,980.065625 (1,076,890.625) | indexed |
+| 15% LTCG rate starts | 98,900 | 101,372.50 | 103,906.8125 | 106,504.4828125 | indexed |
+| IRMAA tier-1 floor | 218,000 | 223,450 | 229,036.25 | **234,762.15625** | × general factor, unrounded (`irmaaTierThreshold`, lower-row branch) |
+| QCD request (household) | 10,000 | 10,250 | 10,506.25 | 10,768.90625 | `qcdAnnual × inflFactor` |
+| QCD cap per donor | 111,000 | 113,775 | 116,619.375 | 119,534.859375 | `qcdAnnualLimit × limitGrowth` |
+| Part B per person per year (tier 0) | 2,434.80 | 2,568.714 | 2,709.99327 | 2,859.04289985 | 202.90 × 12 × health factor |
+| Medicare extras per person per year | 3,000 | 3,165 | 3,339.075 | 3,522.724125 | 250 × 12 × health factor |
+
+**Not indexed** (the `indexFederalTaxPack` doc, `params/index.ts` lines 54–101, "Figures deliberately left alone";
+domain rules §1, "Indexing in projected years"): the §86 tiers 32,000 / 44,000; the senior deduction (6,000 per
+person, phase-out from 150,000 MAGI at 6%) **and its `lastApplicableYear` 2028**; the NIIT threshold 250,000.
+
+### 1c. Order of the year, and the three loops
+
+The year runs ages → income → expenses → contributions → RMDs and QCDs → Roth conversions → the fixed-point
+tax/withdrawal iteration → flows → growth → snapshot (`simulate.ts` header, lines 13–17). **The conversion is sized
+before the funding solve, so it never sees the need-based IRA draw.**
+
+- **Sizing** (`rothConversion.ts` lines 146–186, body): `hi = max(ceiling − metric(0), 1,000)`, doubled while
+  `metric(hi) ≤ ceiling` (never here), then halved while `hi − lo > 0.01`. It returns `lo`.
+- **Owner split** (allocation module lines 343–408, body): the household amount and each owner's post-RMD
+  convertible balance are converted to cents (the float's decimal spelling rounded half-up,
+  `planBalanceAdapter.ts` lines 25–54), then split by `exactCentLargestRemainderSlices`. An owner with no Roth IRA is
+  trimmed.
+- **Funding fixed point** (`annualFundingFixedPoint.ts` lines 19 and 105–206, body): it is seeded with the pre-tax
+  need and runs up to 8 direct evaluations. If none has |residual| ≤ 0.005, it bisects over [0, U], where
+  U = max(1, n₇, f(n₇)) is doubled while its residual exceeds 0.005. It returns the first midpoint with
+  |f(n) − n| ≤ 0.005.
+
+---
+
+## 2. Bridge: 2027 (every figure 2029 depends on)
+
+| # | Figure | Value | Derivation | Contract source |
+|---|---|---|---|---|
+| B1 | Ages; filing; people 65+ | Morgan 74, Riley 72; MFJ; 2 | 2027 − 1953; 2027 − 1955 | as 2026 rows 1–6 |
+| B2 | Social Security | 33,210.00 + 23,911.20 = **57,121.20** | 32,400 × 1.025; 23,328 × 1.025. Half of Morgan's PIA stays below Riley's own benefit, so there is no spousal top-up | `YearIncomes.socialSecurity` doc (`yearLedger.ts` lines 35–49); `simulate.ts` 1653–1656 |
+| B3 | Base spending / healthcare / `expenses.total` | 92,250.00 / 11,467.428 / **103,717.428** | 90,000 × 1.025; 2 × (2,568.714 + 3,165) | worksheets `spending-base-annual`, `spending-healthcare-annual` |
+| B4 | IRMAA | lookback 2025, `planFallback`, 0; floor 223,450; tier 0 | 2025 is before the ledger; `recentAnnualMagi` is 0 | `YearResult.magi` doc ("the first two projection years fall back"); worksheet `irmaa-lookback-selection` (its second-year case) |
+| B5 | RMD | Morgan **22,996.5007036626** (586,410.7679433962 ÷ 25.5, age 74); Riley none (72) | prior December 31 = the 2026 close | `rmd/rmd.ts` line 51; `year2026.rmd.uniformLifetimeTable` |
+| B6 | QCD | **10,250**, all from Morgan's RMD | request 10,000 × 1.025; cap 2 × 113,775. Both are donors (74 and 72), but only Morgan has an owned-IRA RMD, so the whole from-RMD gift is his. Beyond-RMD part 0, so Riley's IRA is not debited | `annualLegacyQcdGiftPlan.ts` lines 104–160 (body) |
+| B7 | Income before conversion | **12,746.5007036626** | 22,996.5007036626 − 10,250 | `annualAggregateRothConversionPhase.ts` lines 310–325 (body) |
+| B8 | Closed-form sizing root | S\* = **191,772.9792963374** | Taxable income at zero conversion is 0. At the root, taxable Social Security is capped (0.85 × 57,121.20 = 48,553.02) and MAGI exceeds 250,000, so both senior deductions are 0 and TI = AGI − 36,387.50. So AGI\* = 216,685 + 36,387.50 = 253,072.50, and S\* = 253,072.50 − 48,553.02 − 12,746.5007036626 | `federalTax.ts#seniorDeductionAmount` (line 363); `rothConversion.ts#metricFor` |
+| B9 | Bisection landing = `aggregateRothConversionAllocationDesired` | **191,772.97770470378** (= 6,589,269,339,985,919/2³⁵); S\* − lo = 0.0015916 | hi = 216,684.99999999997 (the float of 211,400 × 1.025); no doubling; 25 halvings; final width 0.0064577 | `rothConversion.ts` lines 173–186 (body) |
+| B10 | Owner split | A = 19,177,298 cents; weights 56,341,427 (563,414.2672397336) and 42,000,000; Morgan **10,986,991** (exact share 10,986,990.6131); Riley 8,190,307 (81,903.07), dropped | largest remainder; Riley holds no Roth | allocation module lines 343–408 (body); registry `irc-408-d-3-A-i-conversion-benefits-the-distributee` |
+| B11 | **`rothConversion`** | **109,869.91**, out of `--ira-m` into `--roth` | **Not robust.** The contract allows any lo in (S\* − 0.01, S\*]. A landing below 191,772.975 rounds to A = 19,177,297, which gives 10,986,990 (**109,869.90**) | section 6, A2 |
+| B12 | Ordinary base / cash inflows / pre-tax need | 122,616.4107036626 / 69,867.7007036626 / 33,849.7272963374 | 12,746.5007 + 109,869.91; 57,121.20 + 22,996.5007 − 10,250; 103,717.428 − 69,867.7007 | `annualFundingApplicationAndClosePhase.ts` lines 682, 709–718, 1058 |
+| B13 | Which accounts fund the need | **All of the cash** (32,826.5398749464), then **Morgan's IRA** (`--ira-m`, the first traditional account in Plan order). Riley's IRA is not touched | cash runs out this year | `annualWithdrawalPlanning.ts` lines 67, 225–270 (body) |
+| B14 | Fixed point | closed form n\* = 56,385.0392735311; **engine landing 56,385.0422776630** (= 968,687,650,264,559/2³⁴), residual −0.0022639 | Each drawn dollar costs 24.64% (22% × 1.12, senior phase-out). 8 direct evaluations; the last residual is 0.9365. U = 2 × 56,384.7330848 = 112,769.4661696; the 23rd midpoint is accepted; 34 evaluations in all | `annualFundingFixedPoint.ts` lines 105–206 (body) |
+| B15 | Need-based traditional draw | **23,558.5024027165** (closed form 23,558.4993985847) | landing − cash | — |
+| B16 | Taxable SS; AGI = `magi` | 48,553.02 (cap; the formula gives 117,125.19); **194,727.9331063791** | ordinary 146,174.9131063791 + 48,553.02 | `federalTax.ts#taxableSocialSecurity`; `YearResult.magi` doc |
+| B17 | Senior; deduction; taxable income | 6,632.6480272345; 43,020.1480272345; **151,707.7850791446** | senior = 2 × (6,000 − 0.06 × 44,727.9331) | `federalTax.ts` lines 363–380 |
+| B18 | `tax` | 2,542 + 9,348 + 10,645.3127174118 = **22,535.3127174118** (closed form 22,535.3119771937) | AMT 0 (26% × (194,727.93 − 143,705) = 13,265.96); Florida 0 | worksheets `federal-ordinary-bracket-tax`, `federal-amt-screen` (method) |
+| B19 | 22% band left empty | 64,977.21 | 216,685 − 151,707.785 | — |
+| B20 | Need; withdrawals | `netPortfolioNeed` 69,131.5407174118; cash 32,826.5398749464; traditional 46,555.0031063791 (23,558.5024 + 22,996.5007); total 79,381.5429813255; surplus 0 | The landing withdraws 0.0022639 more than needed. No account receives it, because `surplusInvested` counts only inflows | `YearWithdrawals.total` doc; `annualFundingApplicationAndClosePhase.ts` line 1190 |
+| B21 | Closing balances | cash **0**; Morgan **451,485.1475788680** (= 429,985.8548370171 × 1.05); Riley **441,000**; Roth **297,384.45765** (= (173,353.383 + 109,869.91) × 1.05); investable 1,189,869.6052288678 | Morgan pre-growth = 586,410.7679433962 − 22,996.5007036626 − 109,869.91 − 23,558.5024027165. At the closed-form n\*, Morgan's close would be 451,485.1507332064 | `annualPostSolveAccountGrowth.ts` line 137 |
+| B22 | Carried into 2029 | the 2027 `magi` 194,727.9331063791 is the 2029 IRMAA base; Riley's 441,000 is her first-RMD base | | `YearResult.magi` doc |
+
+## 3. Bridge: 2028
+
+| # | Figure | Value | Derivation | Contract source |
+|---|---|---|---|---|
+| C1 | Ages; filing; people 65+ | Morgan 75, Riley **73** (her first RMD year); MFJ; 2 | 1955 cohort applicable age 73 | `params/index.ts#rmdStartAgeForBirthYear` (line 137); domain rules §6 |
+| C2 | Social Security | 34,040.25 + 24,508.98 = **58,549.23** | × 1.050625 | as B2 |
+| C3 | Base / healthcare / total | 94,556.25 / 12,098.13654 / **106,654.38654** | 2 × (2,709.99327 + 3,339.075) | as B3 |
+| C4 | IRMAA | lookback **2026, `projected`, 178,882.3543396226** (2026 row 68); floor 229,036.25; tier 0; headroom 50,153.8957 | the first year that reads a ledger MAGI | `simulate.ts#resolveMagiFor` (lines 867–878) |
+| C5 | RMDs | Morgan **18,353.0547796288** (451,485.1475788680 ÷ 24.6); Riley **16,641.5094339623** (= 882,000/53 = 441,000 ÷ 26.5), taken in 2028; total 34,994.5642135910 | No first-year deferral election is passed, so the first-year amount is taken in the year it arises | `SimulateOptions.rmdFirstYearDeferrals` doc; `annualOwnerRmdPlan.ts` line 226 (body); domain rules §6 ("First-year April 1 split") |
+| C6 | QCD 10,506.25 | Morgan **5,510.0495208792**, Riley **4,996.2004791208** | Morgan (`--p1`, first in sorted id order) gets 10,506.25 × 18,353.0548 / 34,994.5642; Riley (last) gets the remainder | `annualLegacyQcdGiftPlan.ts` lines 108–150 (body) |
+| C7 | Income before conversion | **24,488.3142135910** | 34,994.5642 − 10,506.25 | as B7 |
+| C8 | Closed-form root | S\* = **185,144.1527864090** | AGI\* = 222,102.125 + 37,297.1875 = 259,399.3125 (> 250,000, so no senior deduction at the root); cap 49,766.8455 | as B8 |
+| C9 | Landing | **185,144.14927251262** (= 6,361,504,529,369,471/2³⁵); S\* − lo = 0.0035139; width 0.0066192 | 25 halvings | as B9 |
+| C10 | Owner split | A = 18,514,415; weights 43,313,209 (433,132.0927992392) and 42,435,849 (424,358.4905660377); Morgan **9,351,925** (exact 9,351,924.6172); Riley 9,162,490 (91,624.90), dropped | | as B10 |
+| C11 | **`rothConversion`** | **93,519.25** | Robust to the 2027 landing (a weight of 43,313,209 or 43,313,210 gives the same slice), **not** to its own: a landing below 185,144.145 gives A = 18,514,414 and **93,519.24** | section 6, A2 |
+| C12 | Ordinary base / inflows / pre-tax need | 118,007.5642135910 / 83,037.5442135910 / 23,616.8423264090 | cash is 0, so the whole need comes from Morgan's IRA | as B12–B13 |
+| C13 | Fixed point | closed form n\* = 51,804.2272158145; **landing 51,804.2271129729** (= 1,779,979,689,958,201/2³⁵), residual +0.0000775 | 34 evaluations | as B14 |
+| C14 | Taxable SS; AGI = `magi` | 49,766.8455 (cap); **219,578.6368265639** | ordinary 169,811.7913265639 | as B16 |
+| C15 | Senior; deduction; TI | **3,650.5635808123** (the senior deduction's last year); 40,947.7510808123; **178,630.8857457516** | 2 × (6,000 − 0.06 × 69,578.6368) | as B17 |
+| C16 | `tax` | 2,605.55 + 9,581.70 + 16,000.1348640654 = **28,187.3848640654** | AMT 0 (18,793.06 < 28,187.38) | as B18 |
+| C17 | Need; withdrawals | `netPortfolioNeed` 76,292.5414040654; traditional = total = 86,798.7913265640 (51,804.2271 + 34,994.5642); cash 0 | | |
+| C18 | Closing balances | Morgan **302,199.0464705796** (= 287,808.6156862663 × 1.05); Riley **445,576.4150943396** (= 23,615,550/53); Roth **410,448.8930325**; cash 0; investable 1,158,224.3545974193 | At the closed-form fixed points of 2027 and 2028, Morgan's close would be 302,199.0496746512 (+0.0032) | |
+
+---
+
+## 4. Year 2029 in full
+
+"Tol." is the absolute tolerance for a test row, against the **Value** column, which is the exact value under the
+traced landings. A "closed form" entry is the value at the exact fixed point (or root) with the same opening
+balances. "Chain" is the value with every year's fixed point exact, from 2026 on.
+
+### 4a. Timeline and pack
+
+| # | Figure | Value | Derivation | Contract source | Tol. |
+|---|---|---|---|---|---|
+| 1 | Morgan's `ageAttained` | **76** | 2029 − 1953 | `PersonYearState.ageAttained` | exact |
+| 2 | Riley's `ageAttained` | **74** | 2029 − 1955 | same | exact |
+| 3 | `filingStatus`; people 65+ | `marriedFilingJointly`; 2 | both alive | `YearResult.filingStatus` doc; `annualAggregateRothConversionPhase.ts` line 302 | exact |
+| 4 | Pack | the 2026 pack standing in (`isStandIn`) | no 2029 pack is published | `params/index.ts#packForYear` (line 48) | — |
+| 5 | **`inflationScale`** | **1.076890625** | 1.025³, a per-year product | `YearResult.inflationScale` doc; `simulate.ts` 515–531 | 1e-12 |
+| 6 | Health factor | 1.174241375 | 1.055³ | `simulate.ts` 533–535 | — |
+| 7 | Indexed federal figures | ceiling 227,654.678125; deduction 38,229.6171875; AMT exemption 150,980.065625; LTCG 15% start 106,504.4828125 | table 1b | `params/index.ts#indexFederalTaxPack` (line 102 and its doc); `federalTax.ts` line 512 | — |
+| 8 | Senior deduction | **none** | 2029 > `lastApplicableYear` 2028 (`indexFederalTaxPack` copies the rule unchanged) | `federalTax.ts#seniorDeductionAmount` line 371 ("`year > rule.lastApplicableYear`", the guard that returns 0); `year2026.ts` `seniorDeduction`; domain rules §1 ("tax years 2025–2028") | — |
+| 9 | Spending phase | **inactive** | keyed on Morgan, the primary person: 76 < 80; first applies in 2033 | `annualLifestyleLayers.ts` (body, `primaryAge >= phase.fromAge`); `expensePhaseSchema.fromAge` doc | — |
+
+### 4b. Social Security
+
+| # | Figure | Value | Derivation | Contract source | Tol. |
+|---|---|---|---|---|---|
+| 10 | COLA factor | 1.076890625 | `matchInflation`: the general factor from the start year | `YearIncomes.socialSecurity` doc; worksheet `social-security-cola-factor` (fixed-rate case, method) | — |
+| 11 | Morgan's stream (`--ss-m`, `own-retirement`) | **34,891.26** (exact 34,891.25625) | 2,500 × 1.08 × 12 × 1.076890625 | worksheet `social-security-benefit-annual`; 2026 rows 8–11 | 0.005 |
+| 12 | Riley's stream (`--ss-r`, `own-retirement`) | **25,121.70** (exact 25,121.7045) | 1,800 × 1.08 × 12 × 1.076890625. The spousal candidate is still below her own benefit (half of Morgan's PIA, 1,250, against her 1,944, both × COLA) | 2026 rows 12–19 | 0.005 |
+| 13 | **`incomes.socialSecurity`** = **`incomes.total`** | **60,012.96** (exact 60,012.96075) | 55,728 × 1.076890625; no other income | `YearIncomes.total` doc; worksheet `income-total-annual` | 0.005 |
+
+### 4c. RMDs and the QCD
+
+| # | Figure | Value | Derivation | Contract source | Tol. |
+|---|---|---|---|---|---|
+| 14 | Morgan's RMD | **12,751.01** (exact 12,751.0146190118) | 302,199.0464705796 (row C18) ÷ 23.7 (Uniform Lifetime, age 76) | `rmd/rmd.ts` line 51; `simulate.ts` line 1354 ("Prior Dec 31 balances"); worksheet `rmd-uniform-lifetime-divisor` | 0.005 |
+| 15 | Riley's RMD | **17,473.58** (exact 926,100/53 = 17,473.5849056604) | 445,576.4150943396 (= 23,615,550/53) ÷ 25.5 (age 74). Her second RMD year. Uniform table, because `spouseSoleBeneficiary` is absent | as row 14; 2026 row 25 | 0.005 |
+| 16 | **`rmd`** | **30,224.60** (exact 30,224.5995246722) | 12,751.0146 + 17,473.5849 | `YearResult.rmd` doc | 0.005 |
+| 17 | QCD request, donors, caps | 10,768.90625; donors both (76, 74); cap 119,534.859375 each | 10,000 × 1.076890625; `qcdAnnual` is one household figure | worksheet `qcd-limit-and-age-proxy`; `annualLegacyQcdGiftPlan.ts` lines 92–107 (body); 2026 A6 | — |
+| 18 | **QCD routing rule** (both owners now have an RMD) | Morgan **4,543.1364909377**; Riley **6,225.7697590623**; beyond-RMD 0 | The from-RMD gift is min(request, owned-IRA RMD total) = 10,768.90625. It is attributed to owners in person-id order (`--p1` Morgan, then `--p2` Riley). Each owner except the last gets gift × own RMD ÷ RMD total, capped by that owner's own RMD and remaining donor limit; the last owner takes the remainder. Morgan: 10,768.90625 × 12,751.0146 / 30,224.5995 | `annualLegacyQcdGiftPlan.ts` lines 108–150 (body); call-site comment `annualForcedDistributionQcdAndRetirementActionsPhase.ts` lines 1231–1239 | 0.005 (not a year-row field) |
+| 19 | **`qcd`** | **10,768.91** (exact 10,768.90625) | 4,543.1365 + 6,225.7698 | `YearResult.qcd` doc | 0.005 |
+| 20 | QCD income offset | 10,768.90625 | Each owner's qualified slice is their whole gift (no basis) | worksheet `qcd-income-offset-qualified-slice`; `YearResult.qcd` doc | — |
+| 21 | RMD cash reaching the household | 19,455.6932746722 | 30,224.5995 − 10,768.90625 | `YearResult.qcd` doc ("`rmd` stays gross") | — |
+
+### 4d. The Roth conversion: sized for the household, executed for Morgan only
+
+| # | Figure | Value | Derivation | Contract source | Tol. |
+|---|---|---|---|---|---|
+| 22 | Strategy active | yes | 2029 ∈ [2026, 2034]; no named conversion | `annualAggregateRothConversionTargetPlan.ts` (body) | — |
+| 23 | Ordinary income before the conversion | **19,455.6932746722** | RMD 30,224.5995 − QCD offset 10,768.90625, nothing else | `ConversionSizingInput.ordinaryIncomeBase` doc; `annualAggregateRothConversionPhase.ts` lines 310–325 (body) | — |
+| 24 | Other sizing inputs | gross SS 60,012.96075; people 65+ 2; scale 1.076890625; no itemized deductions; gains 0. **The need-based draw and the year's tax are not inputs** | sizing runs before the funding solve | the sizing block, `annualAggregateRothConversionPhase.ts` lines 484–504 (body); `simulate.ts` header | — |
+| 25 | Metric at zero conversion | **0** | provisional 49,462.1736 → taxable SS = 0.85 × 5,462.1736 + 6,000 = 10,642.8476; AGI 30,098.5409 < 38,229.6172 | `federalTax.ts#computeFederalTax` | — |
+| 26 | Ceiling | **227,654.678125** | the 24% bracket's lower bound × 1.076890625 | `rothConversion.ts#ceilingFor` lines 114–124 | — |
+| 27 | Closed-form root | **S\* = 195,417.5854003278** | At every candidate there is no senior deduction (expired) and taxable SS is capped at 0.85 × 60,012.96075 = 51,011.0166375, so TI = AGI − 38,229.6171875. AGI\* = 227,654.678125 + 38,229.6171875 = 265,884.2953125; S\* = 265,884.2953125 − 51,011.0166375 − 19,455.6932746722 | rows 23–26 | — |
+| 28 | Bisection trace | lo = **3,357,248,438,267,449/2³⁴ = 195,417.5786969396867789328…** | hi starts at 227,654.67812499998 and never doubles. 25 halvings, final width 0.0067846. The last two midpoints, 195,417.5922662 (TI +0.0068659 over the ceiling) and 195,417.5854816 (TI +0.0000812 over), both become `hi`. S\* − lo = 0.0067034. No comparison was within 1e-5 of a flip | `rothConversion.ts` lines 173–186 (body); `YearResult.rothConversion` doc ("to $0.01, the lower bound") | — |
+| 29 | **`aggregateRothConversionAllocationDesired`** | **195,417.58** (exact lo above) | lo; no safety-net trim (floor 0) | `YearResult.aggregateRothConversionAllocationDesired` doc | **hand S\* = 195,417.5854003278, tolerance 0.01, `bound: 'below'`** |
+| 30 | `aggregateRothConversionAllocationBalances` | `--ira-m` 289,448.0318515678; `--ira-r` 428,102.8301886792; `--roth` 410,448.8930325 (published, carries no weight) | post-RMD, before any drain | `YearResult.aggregateRothConversionAllocationBalances` doc; `annualAggregateRothConversionPlan.ts` lines 202–209 (body) | 0.005 each |
+| 31 | The split in cents | A = **19,541,758**; Morgan's weight **28,944,803**; Riley's **42,810,283**; total 71,755,086 | the shortest decimal spellings JavaScript prints for the three doubles (shown here rounded to thirteen places, which leaves the cents unchanged), rounded half-up | `planBalanceAdapter.ts` lines 25–54 (body) | — |
+| 32 | Morgan's slice | **7,882,819 cents** | exact share 7,882,818.725681; remainder 52,071,326 ≥ half of 71,755,086 | worksheets `exact-cent-pro-rata-half-up`, `exact-cent-largest-remainder-slices` | — |
+| 33 | Riley's slice | 11,658,939 cents = **116,589.39, dropped** (`ownerHoldsNoRothAccount`); the year repeats the warning naming Riley | 7,882,819 + 11,658,939 = 19,541,758; no drift | registry `irc-408-d-3-A-i-conversion-benefits-the-distributee`; allocation module lines 396–404 (body) | — |
+| 34 | Robustness | **robust while the 2029 opening balance is pinned; ±1 cent otherwise** | With Morgan's 2028 close as the ledger holds it, the contract allows lo ∈ (S\* − 0.01, S\*], which gives A ∈ {19,541,758, 19,541,759}, and every combination with Morgan's weight in 28,944,802–28,944,805 gives 7,882,819. But the 2027 and 2028 draw landings the contracts allow move the 2029 root together with Morgan's weight: an opening 0.0095–0.0137 higher with a low 2029 landing gives 7,882,818, and with the 2027 and 2028 conversion cents also free 7,882,820 is reachable. A test that must survive every allowed landing holds this row to $0.01 | rows 28–32; section 6, A1–A2; the check's §2 | — |
+| 35 | **`rothConversion`** | **78,828.19** (exact 7,882,819/100) | Out of Morgan's IRA (`--ira-m`) into Morgan's Roth IRA (`--roth`); Riley's IRA is not touched. Morgan's share of the household amount is now 40.3% (it was 62.7% in 2026) | `YearResult.rothConversion` doc (lines 243–255, "an owner with none loses the share … so this can be less") | 0.005 |
+
+### 4e. IRMAA and healthcare
+
+| # | Figure | Value | Derivation | Contract source | Tol. |
+|---|---|---|---|---|---|
+| 36 | **`irmaaLookbackMagiYear`** | **2027** | 2029 − 2; no SSA-44 | `annualHealthcareExpenses.ts` line 93; worksheets `medicare-irmaa-two-year-lookback`, `irmaa-lookback-selection` | exact |
+| 37 | **`irmaaLookbackMagiSource`** | **`projected`** | 2027 is in the ledger's MAGI history | `simulate.ts#resolveMagiFor` lines 867–878; `YearResult.irmaaLookbackMagiSource` doc | exact |
+| 38 | **`irmaaLookbackMagi`** | **194,727.93** (exact 194,727.9331063791, row B16) | the 2027 MAGI, which includes that year's 109,869.91 conversion and its first traditional draw. Chain: 194,727.9301022473 | `YearResult.irmaaLookbackMagi` doc | 0.005 |
+| 39 | Floor; **`irmaaTier`** | 234,762.15625; **0** | 218,000 × 1.076890625, unrounded; 194,727.93 is not above it (headroom 40,034.2231) | `params/index.ts#irmaaTierThreshold` (lower-row branch, "the engine does not" round); `irmaaTierForMagi` (strict "greater than") | exact (tier) |
+| 40 | Medicare months | 12 each | both past 65 | `annualHealthcareExpenses.ts` lines 116–128 (body) | — |
+| 41 | **`medicarePremiums`** / **`irmaaSurcharge`** | **5,718.09** (exact 5,718.0857997) / **0** | Part B 202.90 × 12 × 1.174241375 = 2,859.04289985 per person, × 2; no Part D surcharge | `tax/medicare.ts#medicareAnnualPremiumPerPerson` (`premiumScale`); worksheet `medicare-base-part-b-premium` (method) | 0.005 |
+| 42 | **`irmaaNextTierThreshold`** | **234,762.16** (exact 234,762.15625) | Medicare is active and the tier is 0, so this is tier 1's floor | `YearResult.irmaaNextTierThreshold` doc | 0.005 |
+| 43 | Medicare extras | 7,045.45 (exact 7,045.44825) | 250 × 12 × 1.174241375 × 2 | `YearExpenses.healthcare` doc | — |
+| 44 | **`expenses.healthcare`** | **12,763.53** (exact 12,763.5340497) | 5,718.0857997 + 7,045.44825 = 10,869.60 × 1.174241375 | worksheet `spending-healthcare-annual` | 0.005 |
+
+### 4f. Spending and the pre-tax need
+
+| # | Figure | Value | Derivation | Contract source | Tol. |
+|---|---|---|---|---|---|
+| 45 | **`expenses.baseSpending`** | **96,920.16** (exact 96,920.15625) | 90,000 × 1.076890625 × phase 1 × survivor 1 | worksheet `spending-base-annual`; row 9 | 0.005 |
+| 46 | **`expenses.total`** | **109,683.69** (exact 109,683.6902997) | 96,920.15625 + 12,763.5340497 | worksheet `spending-total-annual` | 0.005 |
+| 47 | Cash inflows (`baseCashInflows`) | 79,468.6540246722 | SS 60,012.96075 + RMD 30,224.5995 − QCD from RMD 10,768.90625 | `annualFundingApplicationAndClosePhase.ts` lines 709–718 (body) | — |
+| 48 | Pre-tax need (the fixed point's seed) | 30,215.0362750278 | 109,683.6902997 − 79,468.6540247 | `annualFundingFixedPoint.ts` header, `spendingUsesBeforeTax` doc | — |
+
+### 4g. The need-based IRA draw
+
+| # | Figure | Value | Derivation | Contract source | Tol. |
+|---|---|---|---|---|---|
+| 49 | Which IRA, in which order | **Morgan's IRA (`--ira-m`) only.** Cash is 0 (spent in 2027); there is no taxable or equity-compensation account; so the draw comes from the traditional category, in Plan order: `--ira-m` first (210,619.8418515678 available after the RMD and the conversion), and `--ira-r` is never reached | sequential order cash → taxable → equity comp → traditional → Roth → HSA; within a category, Plan account order | `annualWithdrawalPlanning.ts#SEQUENTIAL_ORDER` (line 67), `drainCategory` (lines 225–270, body); `YearWithdrawals` doc (category order only); domain rules §11 | — |
+| 50 | Is the draw taxable, and does it feed back? | **Yes, ordinary income** (no basis), so each drawn dollar adds 22% tax, which is drawn too: a fixed point. **It does not change the conversion:** sizing ran first (row 24) | tax input = ordinary base + need-based traditional draw | `annualFundingCandidateEvaluation.ts` lines 266–275 (body); `annualFundingApplicationAndClosePhase.ts` line 682 | — |
+| 51 | Closed-form fixed point | **n\* = 55,461.7990057124** | n = 30,215.0362750278 + T, where T = 12,491.93125 + 0.22 × (98,283.8832746722 + n + 51,011.0166375 − 38,229.6171875 − 108,550.575). So 0.78 n = 30,215.0362750278 + 12,491.93125 + 553.2356994279 = 43,260.2032244557 | rows 26, 47–50 | — |
+| 52 | **Engine landing** | **55,461.79269279938** (= 1,905,652,686,344,841/2³⁵); n\* − landing = **0.0063129** | 8 direct evaluations: 30,215.0363 → 49,907.5112 → 54,239.8557 → 55,192.9715 → 55,402.6569 → 55,448.7878 → 55,458.9365 → 55,461.1693; the last residual is 0.4912. U = 55,461.6605 (residual 0.108) doubled to 110,923.3209237931. Bisection: the 22nd midpoint has residual +0.0049240722 ≤ 0.005 and is accepted; 33 evaluations in all | `annualFundingFixedPoint.ts` line 19 (`DEFAULT_DIRECT_ITERATION_LIMIT = 8`) and lines 105–206 (body); section 6, A1 | — |
+| 53 | Need-based traditional draw | **55,461.79** (exact 55,461.7926927994) | the landing; there is no cash | closed form 55,461.7990057 (Δ 0.0063) | 0.005 against this value |
+
+### 4h. Income, AGI, deductions, federal tax (at the accepted landing)
+
+| # | Figure | Value | Derivation | Contract source | Tol. |
+|---|---|---|---|---|---|
+| 54 | Ordinary income (the tax input) | **153,745.68** (exact 153,745.6759674716) | 19,455.6932746722 + 78,828.19 + 55,461.7926927994 | `annualFundingCandidateEvaluation.ts` (body) | — |
+| 55 | Provisional income / 85% formula | 183,752.1563424716 / 124,789.3328911008 | + ½ × 60,012.96075; 0.85 × (183,752.16 − 44,000) + 6,000 (the 32,000/44,000 tiers are unindexed) | `federalTax.ts#taxableSocialSecurity`; worksheet `federal-taxable-social-security-tiers` (method) | — |
+| 56 | Taxable Social Security | **51,011.02** (exact 51,011.0166375) | min(0.85 × 60,012.96075, 124,789.33): **the 85% cap binds**, as it does from ordinary income of 66,947.66 up | same | 0.005 (not a year-row field) |
+| 57 | AGI = **`magi`** | **204,756.69** (exact 204,756.6926049716) | 153,745.6759674716 + 51,011.0166375. Closed form 204,756.6989179 (Δ 0.0063). This is the 2031 IRMAA base (below 2031's floor of 246,646.99) | `YearResult.magi` doc; worksheet `medicare-magi-composition`; `annualFundingApplicationAndClosePhase.ts` lines 1321–1330 (body) | 0.005 against this value |
+| 58 | Deduction | **38,229.62** (exact 38,229.6171875) | 34,675.878125 + 2 × 1,776.86953125; no senior deduction | `params/index.ts#standardDeduction` (line 391); worksheet `federal-standard-deduction-age-65` (method) | — |
+| 59 | Taxable income | **166,527.08** (exact 166,527.0754174716) | 204,756.6926 − 38,229.6172. Closed form 166,527.0817304 (Δ 0.0063) | `federalTax.ts#computeFederalTax` | 0.005 (not a year-row field) |
+| 60 | Tax by bracket (joint 2029) | 10%: 2,670.68875; 12%: 9,821.2425; 22%: 12,754.8300918437 | 26,706.8875 × 10%; 81,843.6875 × 12%; (166,527.0754 − 108,550.575) × 22% | worksheet `federal-ordinary-bracket-tax` (method); `federalTax.ts#bracketTax` | — |
+| 61 | Federal regular tax | **25,246.76** (exact 25,246.7613418437) | the sum. Marginal rate 22%, no senior phase-out, SS capped. Closed form 25,246.7627307 (Δ 0.0014) | same | — |
+| 62 | LTCG / NIIT | 0 / 0 | no preferential income or net investment income | `federalTax.ts` header steps 5–6 | — |
+| 63 | AMT screen, **`amt`** | **0** | AMTI = TI + deduction = 204,756.6926; exemption 150,980.065625 (no phase-out below 1,076,890.625); TMT = 26% × 53,776.6270 = 13,981.9230 < 25,246.76 | worksheet `federal-amt-screen` (method); `federalTax.ts` lines 590–605 | exact 0 |
+| 64 | Florida | 0 | `hasIncomeTax: false` | 2026 row 77 | — |
+| 65 | **`tax`** | **25,246.76** (exact 25,246.7613418437) | federal + 0 | `YearResult.tax` doc ("at the accepted funding fixed point"); worksheet `tax-total-annual` | 0.005 |
+| 66 | `ltcgZeroHeadroom` | 0 | TI 166,527.08 > 106,504.48 | worksheet `year-result-ltcg-zero-headroom` | exact 0 |
+| 67 | 22% band left empty (context) | 61,127.60 | 227,654.678125 − 166,527.0754. The draw adds income, but Riley's dropped 116,589.39 leaves more room than the draw fills | rows 33, 59 | — |
+
+### 4i. Cash flow and withdrawals
+
+| # | Figure | Value | Derivation | Contract source | Tol. |
+|---|---|---|---|---|---|
+| 68 | **`netPortfolioNeed`** | **74,917.49** (exact 74,917.4908915437) | max(0, 109,683.6902997 + 25,246.7613418 + 0 − 60,012.96075). Closed form 74,917.4922804 (Δ 0.0014) | `YearResult.netPortfolioNeed` doc; worksheet `portfolio-need-annual` | 0.005 |
+| 69 | The fixed point's `requiredNeed` at the landing (not published) | 55,461.7976168716 | 74,917.4908915 − 19,455.6932747. The draw falls short of it by the accepted residual, 0.0049240722, and no account absorbs the difference | `annualFundingCandidateEvaluation.ts` line 468 (body) | — |
+| 70 | `withdrawals.cash` / `.taxable` / `.roth` / `.hsa` | 0 / 0 / 0 / 0 | the conversion is not a withdrawal | `YearWithdrawals.total` doc (`yearLedger.ts` lines 166–180) | exact 0 |
+| 71 | **`withdrawals.traditional`** | **85,686.39** (exact 85,686.3922174716) | need-based 55,461.7926928 + RMD 30,224.5995247 (the QCD included). Closed form 85,686.3985304 (Δ 0.0063) | `YearResult.rmd` doc ("included in withdrawals.traditional"); worksheet `withdrawals-by-category-annual` | 0.005 against this value |
+| 72 | **`withdrawals.total`** | **85,686.39** (exact 85,686.3922174716) | = need 74,917.4908915 + QCD 10,768.90625 − residual 0.0049240722 | worksheet `withdrawals-total-annual` | 0.005 against this value |
+| 73 | `surplusInvested` / `shortfall` / `requiredShortfall` / `targetShortfall` | 0 / 0 / 0 / 0 | max(0, 79,468.65 − 109,683.69 − 25,246.76) = 0; fully funded | worksheets `surplus-invested-annual`, `spending-shortfall-annual` | exact 0 |
+
+### 4j. Year-end balances (growth after flows: cash 2%, IRAs and Roth 5%)
+
+| # | Figure | Value | Derivation | Contract source | Tol. |
+|---|---|---|---|---|---|
+| 74 | Morgan's IRA pre-growth | 155,158.0491587684 | 302,199.0464705796 − 12,751.0146190118 − 78,828.19 − 55,461.7926927994 | `annualPostSolveAccountGrowth.ts` header, line 137 | — |
+| 75 | **`balances['bracket-fill-roth--ira-m']`** | **162,915.95** (exact 162,915.9516167068) | × 1.05. At the closed-form 2029 fixed point: 162,915.9449881 (Δ 0.0066). Chain: 162,915.9483524 (Δ 0.0033) | worksheet `accounts-balance-per-account-annual`; `YearResult.balances` doc | 0.005 against this value |
+| 76 | **`balances['bracket-fill-roth--ira-r']`** | **449,507.97** (exact 47,647,845/106 = 449,507.9716981132) | (445,576.4150943396 − 17,473.5849056604) × 1.05; no gift beyond her RMD, no conversion, no draw | same | 0.005 |
+| 77 | **`balances['bracket-fill-roth--roth']`** | **513,740.94** (exact 513,740.937184125) | (410,448.8930325 + 78,828.19) × 1.05. The Roth closes: 2026 173,353.383; 2027 297,384.45765; 2028 410,448.8930325 | same | 0.005 |
+| 78 | **`balances['bracket-fill-roth--cash']`** | **0** | empty since 2027; 0 × 1.02 | same | 0.005 |
+| 79 | **`investableTotal`** | **1,126,164.86** (exact 1,126,164.8604989450) | 0 + 162,915.9516 + 449,507.9717 + 513,740.9372; unassigned cash 0. At the closed-form 2029 fixed point: 1,126,164.8538704 | worksheet `accounts-investable-total-annual` | 0.005 against this value |
+| 80 | `netWorth` | 1,126,164.86 | no property, debt, insurance, ladder or HECM | worksheet `accounts-net-worth-annual` | 0.005 |
+
+### 4k. Penalties, zeros and warnings
+
+| # | Figure | Value | Derivation | Contract source | Tol. |
+|---|---|---|---|---|---|
+| 81 | **`penalties`** | **0** | both RMDs fully taken; both owners past 59½; a conversion is never penalized | worksheet `tax-penalties-annual` | exact 0 |
+| 82 | Other published zeros | `contributions`, `employerMatch`, `sepp`, `inheritedDistribution`, `hecmDraw`, `realizedGains`, `taxableYield`, `taxExemptInterest` all 0; `guardrailAction` `hold`; no `aca` | none in the plan | `YearResult` docs | exact |
+| 83 | Warnings (projection-level, not assertable from a row) | Riley's trim warning, as in 2026. **And "Spending withdrawals from traditional accounts pushed income above the Roth-conversion target in some years."**, raised from 2027 on | The second warning's condition checks only fill-to-target, `rothConversion > 0` and a need-based traditional draw > 0.01. **Its text is false here:** taxable income stays 64,977.21 / 43,471.24 / 61,127.60 below the ceiling in 2027 / 2028 / 2029 | `annualFundingApplicationAndClosePhase.ts` lines 1276–1284 (body); section 6, A3 | — |
+
+**The 2029 rule, stated plainly.** Everything federal that Congress indexes is carried forward from the 2026 pack at
+2.5% a year. The §86 thresholds and the senior deduction are not, and the senior deduction ends after 2028. The
+household amount is sized, before any spending withdrawal, as the conversion that would bring taxable income to
+227,654.68. It is split between the spouses by their IRA balances after both RMDs; Riley holds no Roth, so her
+116,589.39 is dropped and Morgan converts 78,828.19. The 10,768.91 gift comes out of both RMDs in proportion to their
+size. Cash ran out in 2027, so the year's shortfall (spending plus tax, less Social Security and the RMD cash) comes
+out of Morgan's IRA, the first IRA in the plan. That draw is taxed, so it is solved as a fixed point, and the
+engine's solver stops within half a cent of balance, not within half a cent of the exact answer. Medicare is priced
+on 2027's MAGI against a 234,762.16 floor: tier 0.
+
+---
+
+## 5. Wrong readings a test should reject
+
+The 2029 opening balances are held at the traced 2028 close unless the row says "2027–2029". A figure shown as
+"about" was computed at the reading's own exact fixed point; the engine's landing could put it within about a cent.
+A changed household amount is shown at its bisection landing.
+
+| Wrong reading | What it produces in 2029 | Correct |
+|---|---|---|
+| **Keep the senior deduction in 2029** (ignore `lastApplicableYear` 2028) | senior 5,619.39; about: draw 53,876.84, tax 23,661.81, TI 159,322.73, MAGI 203,171.74, Morgan's IRA 164,580.15. The conversion is unchanged (78,828.19), because at the sizing root MAGI is 265,884 and the deduction would be 0 anyway | senior 0; draw 55,461.79; tax 25,246.76; TI 166,527.08; MAGI 204,756.69; 162,915.95 |
+| **Price IRMAA on 2028's MAGI (219,578.64) or 2029's own (204,756.69)**, against the indexed floor | tier 0 either way, **so premiums cannot tell them apart**. Only the lookback fields do: `irmaaLookbackMagi` 219,578.64 or 204,756.69, `irmaaLookbackMagiYear` 2028 or 2029 | 194,727.93, 2027, `projected` |
+| Price IRMAA on 2028's MAGI against the **unindexed** 218,000 floor | **tier 1**: `medicarePremiums` 8,413.96, `irmaaSurcharge` 2,695.87, healthcare 15,459.40; about: draw 58,918.04, tax 26,007.14 | tier 0; 5,718.09; 0; 12,763.53 |
+| Price IRMAA on 2027's MAGI against the unindexed 218,000 floor | tier 0 (194,727.93 < 218,000): **indistinguishable** in 2029 | — |
+| Round the lower IRMAA floors to the nearest 1,000, as the statute's (i)(5)(B) would | `irmaaNextTierThreshold` 235,000 | 234,762.16 (the engine rounds only the top row) |
+| **Index the §86 thresholds** (32,000 / 44,000 × 1.076890625 = 34,460.50 / 47,383.19) | **no 2029 figure changes, so this row cannot reject it.** The 85% cap binds at the year (ordinary 153,745.68, against a cap point of 66,947.66, or 69,788.08 if indexed) and at every sizing candidate that matters; at zero conversion TI is 0 either way. The same holds in 2027 and 2028. A year below the cap point (the approved section 4 estimates 2033) would show it | taxable SS 51,011.02 |
+| **Route the whole QCD from Morgan's RMD** once Riley has one | **no year-row scalar changes**: the gift fits inside Morgan's 12,751.01 RMD, and the total offset, income, conversion, tax and balances are the same. The split is visible only in per-owner channels I did not derive (the `ownedTraditionalIraAggregateActivity` assumed-basis `distributions`, and the capture-only cash-flow maps) | Morgan 4,543.14, Riley 6,225.77 (row 18) |
+| Read `qcdAnnual` as 10,768.91 **per donor** | `qcd` 21,537.81; household amount 206,186.49; conversion 83,172.19; about: draw 67,455.94, tax 26,471.99 | 10,768.91; 195,417.58; 78,828.19 |
+| **Convert Riley's share** (as if she held a Roth IRA) | conversions 195,417.58 (78,828.19 + 116,589.39); about: draw 90,670.88, TI 318,325.55 (into the 24% bracket), tax 60,455.84, MAGI 356,555.17 (which would put 2031 in IRMAA tier 2: floor 310,005.85), Riley's IRA 327,089.11, Roth 636,159.80 | 78,828.19; TI 166,527.08; tax 25,246.76 |
+| Convert the whole household amount out of Morgan's IRA | `rothConversion` 195,417.58; Morgan's IRA about 3,527.55; the tax as in the row above | 78,828.19 (a cross-owner conversion is unlawful) |
+| **Draw the need from Riley's IRA first** (2029 only) | tax unchanged; Morgan's IRA 221,150.83, Riley's 391,273.08 | 162,915.95; 449,507.97 |
+| The same, 2027–2029 | 2029 conversion 99,122.98 (Morgan's weight grows); draw 61,244.00 from Riley's IRA; tax 30,970.93; Morgan 274,226.09, Riley 303,425.95, Roth 540,666.27 | as the table |
+| **Grow before withdrawing** (2029 only) | Morgan 170,268.00, Riley 450,381.65, Roth 509,799.53, investable 1,130,449.18 | 162,915.95; 449,507.97; 513,740.94; 1,126,164.86 |
+| **Size the conversion net of the need-based draw** (the draw in the sizing base) | household amount 145,621.34; conversion 58,741.22; about: draw 49,796.24, tax 19,581.21 | 195,417.58; 78,828.19 |
+| Treat the need-based draw as untaxed, or stop the fixed point after one pass | draw 43,260.20 and tax 13,045.17; or draw 49,907.51 and tax 19,692.47 | 55,461.79; 25,246.76 |
+| No stand-in indexing in 2029 (the 2026 figures at face value) | household amount 176,433.29; conversion 71,170.24; about: draw 55,114.31, tax 24,899.28 | 195,417.58; 78,828.19 |
+| Inflate Part B and the extras at general inflation, not the health rate | healthcare 11,705.37; about: draw 54,105.18, tax 24,948.31 | 12,763.53 |
+| Apply the pack's 2.8% COLA from 2026 | SS 60,541.45; conversion 78,646.98 | 60,012.96; 78,828.19 |
+| Apply the age-80 spending cut already | base 82,382.13; about: draw 36,823.31 | 96,920.16 (Morgan is 76; first in 2033) |
+| Riley's RMD on Morgan's age-76 divisor (or one aggregated RMD at 23.7) | Riley's RMD 18,800.69; `rmd` 31,551.70 | 17,473.58; 30,224.60 |
+| Riley's RMD on her first-year divisor 26.5 | 16,814.20 | 17,473.58 (age 74: 25.5) |
+| Weight the owner split by the December 31 balances (before the RMD) | Morgan's slice 78,974.25 | 78,828.19 |
+| Count the conversion as a withdrawal | `withdrawals.traditional` 164,514.58 | 85,686.39 |
+| Hold the rows to the closed-form fixed point at 0.005 | fails on the draw, `withdrawals.traditional`, `withdrawals.total`, `magi` and TI (Δ 0.0063) | pin the traced landing (section 6, A1) |
+
+---
+
+## 6. Contracts I could not find or found ambiguous
+
+**A1. The funding fixed point's acceptance is on the residual, and the published withdrawal is the landing, not the
+fixed point.** *Documented:* `YearResult.tax` says "at the accepted funding fixed point"; the
+`projection-money-tolerance-thresholds` worksheet says half a cent is "the annual fixed-point acceptance budget";
+the `annualFundingFixedPoint.ts` header promises "convergence evidence". *Stated only in the body:* the 8-evaluation
+direct limit (line 19), the bisection over [0, U] with U doubled (lines 128–195), and the acceptance test
+|requiredNeed − need| ≤ 0.005. *Consequence:* with marginal cost c, the published need-based draw can sit anywhere
+within 0.005/(1 − c) of the fixed point: 0.00663 in 2027–2028, 0.00641 in 2029. The traced landings are +0.0030041
+(2027), −0.0001028 (2028) and −0.0063129 (2029) from n\*. The published cash identity misses by the residual: 2029
+withdraws 0.0049241 less than spending plus tax, and 2027 withdraws 0.0022639 more, which is never deposited
+(`surplusInvested` counts only inflows). *Reading used:* the engine's (body), with the landing replayed from the loop
+text. *Recommendation for the rows:* pin the traced values at 0.005; the closed forms are given beside them. A test
+that must survive any landing the contracts allow would need about ±0.0065 on the draw, `withdrawals.*`, `magi` and
+TI, ±0.0015 on `tax` and `netPortfolioNeed`, and about ±0.021 on Morgan's IRA and the investable total, since three
+years of landings compound there. *Documentation gap:* one sentence in the coordinator header ("the accepted need is
+within tolerance/(1 − marginal rate) of the fixed point, and the withdrawal published is that need") would make this
+derivable from the contracts.
+
+**A2. The executed conversion is grid-dependent in 2027 and 2028.** The `rothConversion` contract fixes the household
+amount only to (S\* − 0.01, S\*], and the cent split then rounds. In 2026 every allowed landing gave the same cents,
+by luck. In 2027 the traced landing (S\* − 0.0015916) gives A = 19,177,298 and **109,869.91**; any allowed landing
+below 191,772.975 gives 109,869.90. In 2028 the traced landing gives **93,519.25**, and one below 185,144.145 gives
+93,519.24. 2029 is robust given the traced 2027 and 2028 values (row 34). *Reading used:* the traced landings.
+
+*A discrepancy with the approved derivation's estimate:* its section 4 shows 2027 as 109,869.90. That rough loop, by
+its own note, rounded Morgan's share "from a float product rather than through the engine's integer cent weights":
+191,772.9777 × 563,414.2672 / 983,414.2672 = 109,869.9047. The engine rounds the household amount to cents first
+(19,177,298, up by 0.23 of a cent), and that lifts the slice to 10,986,990.61 cents, hence .91. *After-the-fact
+check:* extending my replay to 2034 gives 115,098.46 + 109,869.91 + 93,519.25 + 78,828.19 + 54,645.62 + 20,571.99 =
+**472,533.42**, the golden `lifetimeRoth` the approved section 4 quotes. The rough loop's figures (109,869.90 and
+20,572.00) sum to the same total, so this check agrees but **does not discriminate the 2027 cent**. The 2027 cent
+rests on the replay of `sizeRothConversion`: every comparison there was at least 0.0016 from a flip, and the
+cent-rounding of lo has 0.27 of a cent to spare.
+
+**A3. The sizing ignores the need-based draw, and the warning about it is false for this household.** The
+`rothConversion` doc says topOfBracket "holds federal taxable income at the bracket's upper bound". That is true of
+the sizing metric (which excludes the draw), not of the year's taxable income. The warning at
+`annualFundingApplicationAndClosePhase.ts` lines 1276–1284 fires whenever a fill-to-target conversion and a
+need-based traditional draw happen in the same year, without comparing income with the ceiling. Here the trim leaves
+room, so the claim "pushed income above the Roth-conversion target" is false in 2027, 2028 and 2029 (TI 64,977.21,
+43,471.24 and 61,127.60 below). Had Riley held a Roth IRA, the draw would have put 2029's TI 90,670.87 above the
+ceiling (section 5). *Recommendation:* gate the warning on the year's TI exceeding the ceiling, or reword it as "may
+have pushed". The warning is projection-level (`ProjectionResult.warnings`), so a row cannot assert it (2026 B6).
+
+**A4. Which IRA the need comes from.** The category order is documented (`YearWithdrawals` doc,
+`withdrawalStrategySchema` doc, domain rules §11). The order within the traditional category is body-only:
+`drainCategory` walks `states` in Plan first-ID order (`annualWithdrawalPlanning.ts` lines 225–234;
+`annualLogicalBalanceLedger.ts`, "ID order comes from the first"). *Reading used:* Morgan's IRA first, which leaves
+Riley's IRA untouched from 2027 to 2029. (In my forward replay Morgan's IRA empties in 2031 and the draws then move
+to Riley's.) Nothing documents that one spouse's IRA is drained before the other's in this order; the page should
+say so.
+
+**A5. QCD routing between two RMD owners.** `YearResult.qcd` states the per-donor cap and the age proxy only. The
+household scalar, the from-RMD attribution in proportion to each owner's RMD share, the person-id sort, the
+last-owner remainder and the redistribution of a capped owner's share are in the `annualLegacyQcdGiftPlan` header
+and body and in a call-site comment. *Reading used:* those. No scalar row can observe the split (section 5).
+
+**A6. Stand-in indexing.** This is documented and unambiguous (`indexFederalTaxPack` doc, `federalTax.ts` header,
+`rothConversion.ts` header, domain rules §1). Two approximations are named there and used here: plan inflation
+instead of C-CPI-U, and no statutory rounding (so 26,706.8875, not a rounded bracket). The lower IRMAA floors are
+also left unrounded (the `irmaaTierThreshold` comment names the (i)(5)(B) rounding it does not apply to them). The
+sizer's `inflFactorFrom(pack.year, year)` and the tax's `limitGrowth` are the same number here; they are different
+expressions of one path.
+
+**A7. The senior deduction in the bridge years.** Under the engine's per-person rule, the deduction is **zero at the
+sizing root** in 2027 and 2028 (MAGI 253,072.50 and 259,399.31, both above 250,000) but positive in the year actually
+taxed (6,632.65 and 3,650.56), because Riley's share is dropped. The combined misreading of 2026 A11, which reaches
+zero only at 350,000, would still give 5,815.65 at 2027's root and 5,436.04 at 2028's, so it would move those
+conversions, their taxes and draws, and through them the 2029 opening balances. In 2029 the deduction has expired
+under either reading. The rule is unambiguous (registry record and domain rules §1), but no worksheet derives it
+(2026 A11).
+
+**A8. IRMAA in the third projection year.** The lookback resolves through `magiHistory`, with source `projected`.
+Only the `YearResult.magi` doc states the fallback for the first two years, and 2029 is past both. The floor indexes
+at the general factor from the pack year, and the premium at the health factor from the pack year. The
+`YearExpenses.healthcare` doc states that split, and the extras use the start year, which is the same year here.
+Unambiguous.
+
+**A9. No worksheet covers a stand-in year, a two-owner QCD, a traditional-draw fixed point, or the draw order within
+a category.** The worksheets cited derive 2026 single-filer cases (2026 A5). The COLA worksheet derives the
+fixed-rate path only, and the QCD worksheet uses limit growth 1. Every 2029 citation to a worksheet is a method
+citation.
+
+**B1. The evaluation counts** (34, 34, 33) are not published without ACA. Rows must not assert them.
+
+**B2. Knife-edges.** Two comparisons in the three years are close. 2029's accepted funding residual is 0.0049240722,
+which is 0.0000759 below the 0.005 threshold. 2029's last sizing midpoint puts TI 0.0000812 over the ceiling. Float
+noise at these magnitudes is about 1e-10, five orders of magnitude smaller, so the replay's decision is the engine's
+in both cases. Every other loop comparison is at least 0.0016 from a flip, and every cent rounding has at least 0.1 of
+a cent to spare.
+
+**B3. The cash identity residuals** (A1) are not in any published field; `surplusInvested` stays 0 by a wide margin
+every year.
+
+**B4. Warnings are not assertable from a row** (2026 B6): Riley's trim warning every year from 2026 to 2031, and the
+spending-withdrawal warning (A3) from 2027.
+
+---
+
+## 7. Notes for the rows author
+
+- **Hand values:** the "Value" column above (the traced chain). Rows whose value depends on a loop landing can be
+  written from the literal landing constants, as the 2026 file writes `HOUSEHOLD_LANDING`:
+  `LANDING_2027 = 191_772.97770470378`, `NEED_2027 = 56_385.04227766296`,
+  `LANDING_2028 = 185_144.14927251262`, `NEED_2028 = 51_804.227112972905`,
+  `LANDING_2029 = 195_417.5786969397`, `NEED_2029 = 55_461.79269279938`, and the conversions
+  `109_869.91`, `93_519.25`, `78_828.19`. Every other 2029 figure is an expression of those and the inputs, for
+  example `SS = 55_728 * 1.025 ** 3`, `RMD_RILEY = 441_000 * (1 - 1 / 26.5) * 1.05 / 25.5`, and
+  `ROTH_END = (((173_353.383 + 109_869.91) * 1.05 + 93_519.25) * 1.05 + 78_828.19) * 1.05` (starting from the 2026
+  close). Morgan's IRA needs the whole chain:
+  `(((586_410.7679433962 − 22_996.5007036626 − 109_869.91 − 23_558.5024027165) × 1.05 − rmdM28 − 93_519.25 − 51_804.2271129729) × 1.05 − rmdM29 − 78_828.19 − 55_461.7926927994) × 1.05`,
+  where each RMD is that year's opening balance over its divisor.
+- **Tolerances:** 0.005 on every dollar row at the traced value. `aggregateRothConversionAllocationDesired`:
+  hand S\* = 195,417.5854003278, tolerance 0.01, `bound: 'below'`. `rothConversion`: 0.005 (robust in 2029).
+  `inflationScale`: 1e-12. Counts, years and strings are exact.
+- **Suggested 2029 rows** (the 2026 set moved forward, plus what is new): ages; filing status; `inflationScale`;
+  both SS streams and the total; `rmd`; `qcd`; `aggregateRothConversionAllocationDesired`; `rothConversion`;
+  `magi`; `tax`; `amt`; `penalties`; `ltcgZeroHeadroom`; the three lookback fields; `irmaaTier`;
+  `irmaaNextTierThreshold`; `medicarePremiums`; `irmaaSurcharge`; `baseSpending`; `healthcare`; `expenses.total`;
+  `netPortfolioNeed`; `withdrawals.cash`, `.traditional`, `.roth`, `.total`; `surplusInvested`; `shortfall`; all
+  four balances; `investableTotal`; `netWorth`.
+- **Page copy points this year teaches:** the senior deduction's expiry (it cannot be seen in the conversion, only
+  in the tax); Medicare priced on 2027 with the conversion inside it; the QCD shared by RMD size; the draw coming
+  from Morgan's IRA because it is first in the plan; the solver's half-cent; and the unfilled bracket, now
+  61,127.60 wide even after the draw.
