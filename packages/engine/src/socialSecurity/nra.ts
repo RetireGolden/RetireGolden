@@ -55,9 +55,9 @@ export function fraTotalMonths(fra: FraComponents): number {
  * retirement FRA above. The widow(er) early-claim reduction (up to 28.5% at 60)
  * is measured against it, not the worker FRA.
  *
- * What this table returns is NOT the statutory schedule. 42 U.S.C. 416(l), with
- * (l)(3) substituting age 60, and 20 CFR 404.409(b) shift the retirement
- * schedule two years: 65 for born 1939 or earlier, 65y2m to 65y10m for
+ * What this table returns is NOT the statutory schedule. 42 U.S.C. 416(l)(1),
+ * with (l)(2) setting the early retirement age at 60 for a widow(er), and
+ * 20 CFR 404.409(b) shift the retirement schedule two years:65 for born 1939 or earlier, 65y2m to 65y10m for
  * 1940-44, 66 for 1945-56, 66y2m to 66y10m for 1957-61, and 67 for 1962 and
  * later. This table returns 65 through 1945, 65y2m to 65y10m for 1946-50, and
  * stops at 66y8m from 1960 on. Both departures are registered in
