@@ -85,6 +85,7 @@
   "scripts": {
     "build": "tsc -b",
     "lint": "eslint .",
+    "walkthroughs:export": "node scripts/walkthrough-evidence.mjs",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "benchmark:documents": "node scripts/document-benchmark.mjs"

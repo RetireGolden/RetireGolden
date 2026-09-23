@@ -194,6 +194,7 @@ hosts use the `importEnabled` / `importResolved` props. Omitted configuration pr
 | How a plan is saved/loaded | `data/planStoreContext.ts` (the `PlanStore` seam) over `data/planStore.ts` (IndexedDB default); export in `data/planFormat.ts` / `data/v2Backup.ts` (format contract: `DOCS/features/plan-file-format.md`) |
 | Importing from other tools / broker CSVs / a 1040 | `import/` (`ImportPage.tsx`, per-source mappers); balance refresh/reconciliation engine in `import/refresh.ts` (`import-refresh` subpath), its panel in `planner/sections/UpdateBalancesPanel.tsx`; which incumbent tool a file came from in `import/migrationSource.ts` (`migration-source` subpath) |
 | Example library demos | `planner/examples/registry.ts`, `planner/examples/loadExample.ts`, `planner/examples/ExamplesPage.tsx`; `origin` on `Plan` in `engine: model/plan.ts` |
+| Walkthroughs (example years worked by hand, held against the engine) | `planner/examples/walkthroughs/` (`walkthrough.ts` runner and row types, `<id>.walkthrough.ts` rows, `<id>.test.ts` one test per walkthrough whose title the engine's coverage index publishes), `planner/examples/walkthroughEvidence.test.ts` (holds `DOCS/operations/walkthroughs/<id>.json` fresh; `pnpm --filter @retiregolden/planner-ui walkthroughs:export` writes them), derivations and checks in `DOCS/walkthroughs/` |
 | Local engine-regression manifests | `cases/caseRunner.ts`, `cases/caseDiff.ts`, `scripts/cases.mjs` |
 | Self-contained HTML reports | `report/reportHtml.ts` (renders the model), `report/downloadReport.ts`; UI buttons in `planner/ResultsPage.tsx`, `planner/ReportPage.tsx`, `planner/OptimizePage.tsx` |
 | The edition-neutral report data model | `report/reportModel.ts` (`buildReportModel`, stable block ids, JSON/CSV export; published as `@retiregolden/planner-ui/report-model`); goldens in `report/goldens/` |
@@ -223,7 +224,7 @@ these across all three workspace packages (engine, then planner-ui, then app); t
 | `pnpm owl-parity` | Run the Owl parity oracle harness |
 | `pnpm bundle-budget` | Print `app/dist/` against the size budget without failing ([operations/bundle-budget.md](operations/bundle-budget.md)); the build runs the failing form |
 
-Package-only: `pnpm --filter @retiregolden/planner-ui benchmark:documents` prints the WS5 PDF
+Package-only: `pnpm --filter @retiregolden/planner-ui walkthroughs:export` writes the walkthrough evidence files under `DOCS/operations/walkthroughs/` (and sweeps leftovers); `pnpm --filter @retiregolden/planner-ui benchmark:documents` prints the WS5 PDF
 text-extraction accuracy report (per-field precision/recall over a hand-built synthetic corpus; add
 `-- --json` for the machine-readable form). Findings:
 [features/document-parsing-spike.md](features/document-parsing-spike.md); the extractor's design record is
