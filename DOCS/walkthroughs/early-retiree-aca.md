@@ -298,7 +298,7 @@ balance states"); the `YearResult.balances` doc ("after flows and growth"). Rate
 
 | Wrong reading | What it produces | Correct |
 |---|---|---|
-| Price the credit on `recentAnnualMagi` 50,000, or on "prior-year MAGI" (the `simulate.ts` header's wording; for 2026 that resolves to the same 50,000 seed) | fplPct 319.49; rate 9.96%; contribution 4,980; credit **7,020**; healthcare 4,980; need 28,220 | current-year MAGI 28,500; credit 10,364.773802; need 24,875.226198 |
+| Price the credit on `recentAnnualMagi` 50,000, or on "prior-year MAGI" (the `simulate.ts` header's former wording, corrected in the change that ships this walkthrough; for 2026 that resolves to the same 50,000 seed) | fplPct 319.49; rate 9.96%; contribution 4,980; credit **7,020**; healthcare 4,980; need 28,220 | current-year MAGI 28,500; credit 10,364.773802; need 24,875.226198 |
 | Size the conversion without the standard deduction (fill AGI to 12,400) | 12,400 − 18,000 < 0, so conversion **0**; MAGI 18,000; rate 2.10%; credit 11,622; tax 190; need 22,568 | conversion 10,500 |
 | Read `targetValue: 10` as "fill through the 12% bracket" (the next bracket's top) | conversion 48,500; AGI 66,500; fplPct 424.92, **over the cliff**; credit **0**; healthcare 12,000; tax 5,800; need 39,800. This is the example's intended demo of a one-bracket raise, not its baseline. | 10,500; credit 10,364.77 |
 | Size to the ACA cliff instead of the bracket (`acaCliff`) | conversion 44,600; MAGI 62,600 (exactly 400%, `at-cliff`); tax 5,332; contribution 6,234.96; credit 5,765.04; need 33,566.96 | `topOfBracket` sizing ignores the ACA |
@@ -325,14 +325,15 @@ year-row contract carrying a proration term, and on `DOCS/architecture.md` ("fro
 "now" is 2026-06-29. Candidate readings: (a) full-year 2026 on the entered balances (**used**); (b) the half year
 remaining. The page should state (a) out loud.
 
-**A2. Current-year MAGI, not prior-year.** The `simulate.ts` header (line 41) still says the ACA credit is priced
-"vs prior-year MAGI". Every other source says current year: domain rules §8 ("current-year ACA household MAGI";
+**A2. Current-year MAGI, not prior-year.** The `simulate.ts` header (line 41) said, when this was derived, that the
+ACA credit is priced "vs prior-year MAGI"; the change that ships this walkthrough corrects it to "the year's own
+household MAGI". Every other source already said current year: domain rules §8 ("current-year ACA household MAGI";
 "solved together on the current-year ledger"), the `YearResult.magi` doc ("the ACA credit base in its own year"), the
 `aca-household-magi-composition` worksheet, and the evaluator, which prices the quote from the candidate's own AGI.
 The `recentAnnualMagi` schema doc names IRMAA only. Candidate readings: (a) current-year MAGI 28,500, credit
 10,364.77 (**used**); (b) prior-year MAGI, which resolves to the 50,000 seed in 2026 and gives a credit of 7,020. The
-header line is stale and is worth a one-line fix. It is also why `recentAnnualMagi` 50,000 in this plan looks like an
-ACA input when it is not.
+header line was stale and is now corrected. The `recentAnnualMagi` 50,000 in this plan still looks like an ACA input
+when it is not; its schema doc names IRMAA only.
 
 **A3. Bisection-sized figures versus worksheet tolerances.** The `YearResult.rothConversion` doc says "by bisection
 (to $0.01)", but the `roth-conversion-annual` worksheet asserts tolerance $0.005. Likewise, `ltcgZeroHeadroom` is "by
@@ -413,7 +414,9 @@ from the check: row 43 (the published MAGI floors the ordinary term and the tota
 poverty-line comment sits on the line above the value), row 51 (the cliff rule is paraphrased, not quoted), row 56
 (the net-premium identity holds for any premium at which the monthly contribution share does not exceed the premium,
 with twelve covered months), and A5 (the 10% target was chosen to stay under the cliff; the copy is right about the
-intent and loose about the mechanism). No figure changed.
+intent and loose about the mechanism). No figure changed. Revision 2 (2026-09-23, pull-request review of #732): A2
+and the first wrong reading now say the header was corrected in this change rather than that it is still stale. No
+figure changed.
 
 ---
 

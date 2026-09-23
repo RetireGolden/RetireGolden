@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, readdirSync, unlinkSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -12,15 +12,18 @@ import { WALKTHROUGHS, runWalkthrough, type Walkthrough } from './walkthroughs'
  * commit the site pins, plus the plan as built. This suite computes each file
  * from the walkthrough definitions and the engine and holds the committed copy
  * to it, the same way the engine's coverage freshness suite holds the
- * calculation index. `pnpm walkthroughs:export` runs this suite with
- * RG_WALKTHROUGH_EXPORT=1, which writes the files instead of comparing them.
+ * calculation index; it also refuses a leftover file for a walkthrough that
+ * is no longer registered, since the site would keep rendering it.
+ * `pnpm walkthroughs:export` runs this suite with RG_WALKTHROUGH_EXPORT=1,
+ * which writes the files (and sweeps leftovers) instead of comparing them.
  */
 
 export const WALKTHROUGH_EVIDENCE_KIND = 'retiregolden.walkthrough-evidence'
 export const WALKTHROUGH_EVIDENCE_VERSION = 1
 
 const here = dirname(fileURLToPath(import.meta.url))
-const evidenceDirectory = resolve(here, '../../../../../DOCS/operations/walkthroughs')
+const repoRoot = resolve(here, '../../../../..')
+const evidenceDirectory = resolve(repoRoot, 'DOCS/operations/walkthroughs')
 const exporting = process.env.RG_WALKTHROUGH_EXPORT === '1'
 
 /** Stable JSON: keys in insertion order, numbers as JavaScript prints them, LF line endings. */
@@ -47,25 +50,69 @@ export function walkthroughEvidenceOf(walkthrough: Walkthrough, testName: string
   }
 }
 
-/** The it() title of the walkthrough's own test file, read from its source so the two cannot drift. */
+/**
+ * Every it() or test() title in a walkthrough test file, single- or
+ * double-quoted, in source order: what the engine's walkthrough census
+ * publishes for that id. A walkthrough test file carries exactly one, so the
+ * evidence file's `testName` and the census entry cannot drift.
+ */
+export function walkthroughTestTitlesOf(source: string): readonly string[] {
+  return [...source.matchAll(/^\s*(?:it|test)\((['"])((?:(?!\1).)+)\1/gmu)].map((match) => match[2]!)
+}
+
 function walkthroughTestNameOf(id: string): string {
-  const source = readFileSync(join(here, 'walkthroughs', `${id}.test.ts`), 'utf8')
-  const match = /^\s*it\('([^']+)'/mu.exec(source)
-  if (!match) throw new Error(`walkthroughs/${id}.test.ts has no it() title`)
-  return match[1]!
+  const titles = walkthroughTestTitlesOf(readFileSync(join(here, 'walkthroughs', `${id}.test.ts`), 'utf8'))
+  if (titles.length !== 1) {
+    throw new Error(
+      `walkthroughs/${id}.test.ts must carry exactly one it() or test() title (found ${titles.length}); ` +
+        'the census publishes every title and the evidence file names one',
+    )
+  }
+  return titles[0]!
+}
+
+/** The committed evidence files that are ours: every .json of the evidence kind in the directory. */
+function committedEvidenceFiles(): readonly string[] {
+  if (!existsSync(evidenceDirectory)) return []
+  return readdirSync(evidenceDirectory)
+    .filter((name) => name.endsWith('.json'))
+    .filter((name) => {
+      try {
+        const parsed = JSON.parse(readFileSync(join(evidenceDirectory, name), 'utf8')) as { kind?: unknown }
+        return parsed.kind === WALKTHROUGH_EVIDENCE_KIND
+      } catch {
+        return false
+      }
+    })
+    .sort()
 }
 
 describe('walkthrough evidence files', () => {
-  it('lists every walkthrough once, each with a test file and a derivation of its id', () => {
+  it('lists every walkthrough once, each with a test file, a derivation and a check of its id', () => {
     const ids = WALKTHROUGHS.map((walkthrough) => walkthrough.id)
     expect(new Set(ids).size).toBe(ids.length)
-    for (const id of ids) {
-      expect(existsSync(join(here, 'walkthroughs', `${id}.test.ts`)), `${id}.test.ts`).toBe(true)
-      expect(existsSync(resolve(here, '../../../../../DOCS/walkthroughs', `${id}.md`)), `DOCS/walkthroughs/${id}.md`).toBe(true)
-    }
     for (const walkthrough of WALKTHROUGHS) {
-      expect(existsSync(resolve(here, '../../../../..', walkthrough.review)), walkthrough.review).toBe(true)
+      expect(existsSync(join(here, 'walkthroughs', `${walkthrough.id}.test.ts`)), `${walkthrough.id}.test.ts`).toBe(true)
+      expect(existsSync(resolve(repoRoot, 'DOCS/walkthroughs', `${walkthrough.id}.md`)), `DOCS/walkthroughs/${walkthrough.id}.md`).toBe(true)
+      expect(existsSync(resolve(repoRoot, walkthrough.review)), walkthrough.review).toBe(true)
     }
+  })
+
+  it('reads it() and test() titles in either quote style', () => {
+    expect(walkthroughTestTitlesOf(`it('year 2026 equals the hand table', () => {})`)).toEqual(['year 2026 equals the hand table'])
+    expect(walkthroughTestTitlesOf(`  test("year 2028's table", () => {})`)).toEqual(["year 2028's table"])
+    expect(walkthroughTestTitlesOf(`it('a', () => {})\nit("b", () => {})`)).toEqual(['a', 'b'])
+    expect(walkthroughTestTitlesOf(`describe('walkthrough', () => {})`)).toEqual([])
+  })
+
+  it(`${exporting ? 'sweeps' : 'refuses'} an evidence file for a walkthrough that is no longer registered`, () => {
+    const registered = new Set(WALKTHROUGHS.map((walkthrough) => `${walkthrough.id}.json`))
+    const leftovers = committedEvidenceFiles().filter((name) => !registered.has(name))
+    if (exporting) {
+      for (const name of leftovers) unlinkSync(join(evidenceDirectory, name))
+      return
+    }
+    expect(leftovers, 'evidence files with no registered walkthrough: run pnpm walkthroughs:export').toEqual([])
   })
 
   for (const walkthrough of WALKTHROUGHS) {

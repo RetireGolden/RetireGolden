@@ -18,7 +18,10 @@ export type YearResult = ReturnType<typeof projectPlan>['result']['years'][numbe
  * The hand values are written as the expressions the derivation states
  * (`1_850_000 / 26.5`, not `69811.32`), so the test compares exact values and
  * the reader can redo the arithmetic. No contract used by a walkthrough states
- * a rounding step, so a numeric row is compared to half a cent.
+ * a rounding step, so a numeric row is compared to half a cent unless the
+ * figure's own contract promises less: a value sized by bisection "to $0.01"
+ * states that tolerance, and where the bisection returns the lower bound the
+ * row says so with `bound: 'below'`, which makes the comparison one-sided.
  */
 export interface WalkthroughRow {
   /** Stable key, unique within the table; the site keys rows on it. */
@@ -37,6 +40,12 @@ export interface WalkthroughRow {
    * sized by bisection "to $0.01") states its contract's tolerance here.
    */
   readonly tolerance?: number
+  /**
+   * `'below'` when the contract returns a lower bound: the engine's figure is
+   * then held to the half-open band (hand − tolerance, hand], never above the
+   * hand value. Absent means the two-sided band |engine − hand| ≤ tolerance.
+   */
+  readonly bound?: 'below'
   /**
    * What the figure is: dollars (the default for a number), a count, a
    * percentage or a calendar year; a string row is text. The site formats on it.
@@ -83,6 +92,8 @@ export interface WalkthroughRowResult {
   readonly engine: number | string | undefined
   /** The absolute tolerance the test applies to this row (numbers only). */
   readonly tolerance: number
+  /** Present when the band is one-sided: the engine figure is at or below the hand value. */
+  readonly bound?: 'below'
   readonly unit: WalkthroughUnit
   readonly derivation: string
   readonly contract: string
@@ -113,6 +124,7 @@ export function runWalkthrough(walkthrough: Walkthrough): {
         hand: row.hand,
         engine: row.select(year, plan),
         tolerance: row.tolerance ?? WALKTHROUGH_DEFAULT_TOLERANCE,
+        ...(row.bound === 'below' ? { bound: 'below' as const } : {}),
         unit: typeof row.hand === 'string' ? 'text' : (row.unit ?? 'dollars'),
         derivation: row.derivation,
         contract: row.contract,
@@ -120,6 +132,26 @@ export function runWalkthrough(walkthrough: Walkthrough): {
     }
   })
   return { plan, tables }
+}
+
+/**
+ * Whether the engine's figure holds the hand value: strings exactly; numbers
+ * within the row's tolerance, one-sided (at or below the hand value, and
+ * above hand − tolerance) when the row says `bound: 'below'`. Returns a
+ * message naming the row when it does not, null when it does.
+ */
+export function walkthroughRowProblem(row: WalkthroughRowResult, at: string): string | null {
+  if (typeof row.hand === 'string') {
+    return row.engine === row.hand ? null : `${at}: engine ${String(row.engine)} is not the hand value ${row.hand}`
+  }
+  if (typeof row.engine !== 'number') return `${at}: engine published ${String(row.engine)}, not a number`
+  const gap = row.engine - row.hand
+  if (row.bound === 'below') {
+    return gap <= 0 && gap > -row.tolerance
+      ? null
+      : `${at}: engine ${row.engine} is not within (${row.hand} − ${row.tolerance}, ${row.hand}]`
+  }
+  return Math.abs(gap) <= row.tolerance ? null : `${at}: engine ${row.engine} is more than ${row.tolerance} from the hand value ${row.hand}`
 }
 
 /** Account id by type, for rows that read `balances`; throws if the type is absent. */

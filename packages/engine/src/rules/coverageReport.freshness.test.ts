@@ -69,10 +69,11 @@ const plannerGoldenSources = import.meta.glob(
     eager: true,
   },
 )
-// The walkthrough directory does not exist yet; Vite expands a glob over a
-// missing directory to {}, which walkthroughEntriesOf turns into the computed
-// empty census — the generator lists the same directory, so the day the
-// first walkthrough test lands both sides publish it.
+// The walkthrough directory holds one test file per walkthrough (rmd-irmaa
+// and early-retiree-aca first); walkthroughEntriesOf turns their it() titles
+// into the computed census, and the generator lists the same directory, so
+// both sides publish the same entries. Were the directory ever empty, Vite
+// would expand the glob to {} and both sides would publish an empty census.
 const walkthroughSources = import.meta.glob(
   '../../../../packages/planner-ui/src/planner/examples/walkthroughs/*.test.{ts,tsx}',
   {

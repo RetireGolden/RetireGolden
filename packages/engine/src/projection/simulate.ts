@@ -13,8 +13,8 @@ import { inheritedRothFactsToOwnerRothBasis } from './internal/inheritedRothTaxC
  * Deterministic annual-ledger simulation (roadmap V1).
  *
  * Year ordering: ages → income → expenses (incl. debt service) → capped
- * contributions → fixed-point tax/withdrawal iteration → apply flows →
- * property events → growth → snapshot. All amounts are nominal dollars;
+ * contributions → RMDs and QCDs → Roth conversions → fixed-point tax/withdrawal
+ * iteration → apply flows → property events → growth → snapshot. Nominal dollars;
  * today's-dollar display is a render-time transform.
  *
  * V1 simplifications (each lifts in a later roadmap phase):

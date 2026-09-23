@@ -9,7 +9,7 @@ Each walkthrough has five parts, all pinned to the same commit:
 | Derivation | `DOCS/walkthroughs/<id>.md` | the year by hand: inputs as built, every figure with its arithmetic and its contract, the wrong readings a test rejects, the contracts found ambiguous, a suggested later year |
 | Independent check | `DOCS/walkthroughs/REVIEW-<date>.md` | a second derivation of every figure and a check of every citation, with a verdict |
 | Rows | `packages/planner-ui/src/planner/examples/walkthroughs/<id>.walkthrough.ts` | the hand table as data: each row's value written as the expression the derivation states, its derivation, its contract, and the selector that reads the engine's figure |
-| Test | `packages/planner-ui/src/planner/examples/walkthroughs/<id>.test.ts` | holds the engine to every row (numbers to half a cent, strings exactly); its `it()` title is what the engine's coverage index publishes under `walkthroughs` |
+| Test | `packages/planner-ui/src/planner/examples/walkthroughs/<id>.test.ts` | holds the engine to every row: strings exactly, numbers to half a cent unless the figure's contract promises less (a value sized by bisection "to $0.01" states that tolerance, one-sided below the exact value where the bisection returns the lower bound); the file carries one `it()` title, which is what the engine's coverage index publishes under `walkthroughs` |
 | Evidence | `DOCS/operations/walkthroughs/<id>.json` | the rows with the engine's figures beside the hand values, the reading notes and the plan as built; written by `pnpm walkthroughs:export` in `packages/planner-ui` and held fresh by `walkthroughEvidence.test.ts` |
 
 | Id | Example | Year | Derivation | Check | Rows and test |

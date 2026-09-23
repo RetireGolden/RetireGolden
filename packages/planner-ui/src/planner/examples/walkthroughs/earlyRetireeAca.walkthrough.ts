@@ -71,7 +71,7 @@ const IRA_END = (450_000 - ROTH_CONVERSION) * 1.05 // 461,475
 const ROTH_END = (120_000 + ROTH_CONVERSION) * 1.05 // 137,025
 const INVESTABLE = CASH_END + IRA_END + ROTH_END // 777,127.27
 
-/** The contract promises these two figures only to $0.01 (bisection, lower bound). */
+/** The contract promises these two figures only to $0.01, as the bisection's lower bound: at or below the exact value. */
 const BISECTION_TOLERANCE = 0.01
 
 export const EARLY_RETIREE_ACA_WALKTHROUGH: Walkthrough = {
@@ -89,7 +89,7 @@ export const EARLY_RETIREE_ACA_WALKTHROUGH: Walkthrough = {
     'The conversion is sized to the top of the 10% bracket on taxable income after the standard deduction; the credit\'s dependence on MAGI does not enter the sizing. The example chose the 10% target so the baseline stays under the 400% cliff (it lands 34,100 below it); filling the 12% bracket instead would cross the cliff.',
     'Consulting is ordinary income with no self-employment facts: no self-employment tax, no half-SE deduction, no self-employed health-insurance deduction.',
     'A cash account\'s growth is not taxable interest and does not enter MAGI; the conversion is not a withdrawal and is never penalized, at any age.',
-    'The conversion and the zero-rate gain headroom are sized by bisection to $0.01 (the contract\'s promise), so those two rows carry a $0.01 tolerance; every other row is held to half a cent.',
+    'The conversion and the zero-rate gain headroom are sized by bisection to $0.01 (the contract\'s promise) and return the lower bound, so those two rows are held to at most $0.01 below the exact value and never above it; every other row is held to half a cent.',
     'Florida\'s zero appears nowhere as a separate field: the year row publishes one composed tax.',
   ],
   tables: [{
@@ -101,11 +101,11 @@ export const EARLY_RETIREE_ACA_WALKTHROUGH: Walkthrough = {
       { key: 'consulting', label: 'Consulting income', hand: CONSULTING, derivation: '18,000 × inflation factor 1', contract: 'worksheet income-recurring-annual', select: (year) => year.incomes.recurring },
       { key: 'income-total', label: 'Total income', hand: CONSULTING, derivation: 'consulting only: no wages, Social Security, pension or yield', contract: 'worksheet income-total-annual', select: (year) => year.incomes.total },
       { key: 'rmd', label: 'Required minimum distribution', hand: 0, derivation: 'a 1964 birth starts RMDs at 75, in 2039', contract: 'params/index.ts#rmdStartAgeForBirthYear', select: (year) => year.rmd },
-      { key: 'roth-conversion', label: 'Roth conversion', hand: ROTH_CONVERSION, tolerance: BISECTION_TOLERANCE, derivation: '12,400 (top of the 10% bracket) − (18,000 − 16,100 standard deduction) = 10,500; sized by bisection to $0.01, landing exactly', contract: 'worksheet roth-conversion-annual; YearResult.rothConversion; strategies/rothConversion.ts (topOfBracket holds federal taxable income at the bracket bound)', select: (year) => year.rothConversion },
+      { key: 'roth-conversion', label: 'Roth conversion', hand: ROTH_CONVERSION, tolerance: BISECTION_TOLERANCE, bound: 'below', derivation: '12,400 (top of the 10% bracket) − (18,000 − 16,100 standard deduction) = 10,500; sized by bisection to $0.01, which returns the lower bound and here lands exactly', contract: 'worksheet roth-conversion-annual; YearResult.rothConversion; strategies/rothConversion.ts (topOfBracket holds federal taxable income at the bracket bound)', select: (year) => year.rothConversion },
       { key: 'magi', label: 'Modified adjusted gross income', hand: MAGI, derivation: '18,000 consulting + 10,500 conversion; no gains, dividends or Social Security', contract: 'worksheet medicare-magi-composition; YearResult.magi', select: (year) => year.magi },
       { key: 'tax', label: 'Income tax (federal plus Florida)', hand: TAX, derivation: 'taxable income 28,500 − 16,100 = 12,400, all at 10% = 1,240; Florida 0', contract: 'worksheets federal-ordinary-bracket-tax, tax-total-annual; params/state/data/year2026.ts FL', select: (year) => year.tax },
       { key: 'amt', label: 'Alternative minimum tax', hand: 0, derivation: 'AMTI 28,500 is under the 90,100 exemption', contract: 'worksheet federal-amt-screen', select: (year) => year.amt },
-      { key: 'ltcg-zero-headroom', label: 'Room left in the 0% capital-gain band', hand: LTCG_ZERO_HEADROOM, tolerance: BISECTION_TOLERANCE, derivation: '49,450 (the 15% breakpoint, single) − 12,400 taxable income; sized by bisection to $0.01, lower bound', contract: 'worksheet year-result-ltcg-zero-headroom; YearResult.ltcgZeroHeadroom', select: (year) => year.ltcgZeroHeadroom },
+      { key: 'ltcg-zero-headroom', label: 'Room left in the 0% capital-gain band', hand: LTCG_ZERO_HEADROOM, tolerance: BISECTION_TOLERANCE, bound: 'below', derivation: '49,450 (the 15% breakpoint, single) − 12,400 taxable income; sized by bisection to $0.01, which returns the lower bound: at or below 37,050, never above', contract: 'worksheet year-result-ltcg-zero-headroom; YearResult.ltcgZeroHeadroom', select: (year) => year.ltcgZeroHeadroom },
       { key: 'penalties', label: 'Penalties', hand: 0, derivation: 'no need-based traditional withdrawal; a conversion is never penalized; Casey is 62 in any case', contract: 'worksheet tax-penalties-annual; simulate.ts header', select: (year) => year.penalties },
       { key: 'realized-gains', label: 'Realized capital gains', hand: 0, derivation: 'no taxable account', contract: 'worksheet tax-realized-gains-annual', select: (year) => year.realizedGains },
       { key: 'aca-readiness', label: 'Marketplace credit readiness', hand: 'actionable', derivation: 'one 2026 contract, a published 2026 pack, every gate supported', contract: 'YearAcaResult.readiness; domain rules §8', select: (year) => year.aca?.readiness },

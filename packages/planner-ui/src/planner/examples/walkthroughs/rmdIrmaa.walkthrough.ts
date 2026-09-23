@@ -126,7 +126,7 @@ export const RMD_IRMAA_WALKTHROUGH: Walkthrough = {
       label: 'Required minimum distribution',
       hand: RMD,
       derivation: '1,850,000 ÷ 26.5 (Uniform Lifetime Table at 73; first RMD year for a 1953 birth)',
-      contract: 'worksheets rmd-applicable-age-attain-year, rmd-uniform-lifetime-divisor; params/data/year2026.ts rmd.uniformLifetimeTable',
+      contract: 'worksheet rmd-uniform-lifetime-divisor; params/index.ts#rmdStartAgeForBirthYear (73 for births 1951 to 1959, the owner path) and domain rules §6; params/data/year2026.ts rmd.uniformLifetimeTable',
       select: (year) => year.rmd,
     },
     {
