@@ -625,7 +625,7 @@ export const socialSecurityRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'This record is confined to the reduction curve after a survivor FRA has been supplied. The nra.ts age-60-cohort error for 1961-and-later survivors is recorded separately at usc-42-416-l-survivor-fra-age-60-attainment-cohorts; it is not a competing reading of this helper’s month interpolation.',
+      'This record is confined to the reduction curve after a survivor FRA has been supplied. The nra.ts age-60-cohort error for survivors born 1940 through 1950 and 1961 and later is recorded separately at usc-42-416-l-survivor-fra-age-60-attainment-cohorts; it is not a competing reading of this helper’s month interpolation.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -993,7 +993,7 @@ export const socialSecurityRecords = {
   'cfr-20-404-338-survivor-deceased-drc-pass-through': {
     title: 'The deceased worker’s delayed-retirement credits pass through to the survivor base',
     statement:
-      'survivorBenefit.ts accepts the deceased worker’s actual claim-age-adjusted amount as the survivor base and preserves it when it exceeds 82.5 percent of PIA. Section 404.338 expressly permits an increased survivor monthly amount where the insured person delayed filing and earned delayed-retirement credits. The engine therefore carries a deceased worker’s earned DRCs into the survivor base; it does not grant DRCs for the survivor’s own delay.',
+      'survivorBenefit.ts accepts the deceased worker’s actual claim-age-adjusted amount as the survivor base and preserves it when it exceeds 82.5 percent of PIA. Section 404.338 expressly permits an increased survivor monthly amount where the insured person delayed filing and earned delayed-retirement credits. The engine therefore carries a deceased worker’s earned DRCs into the survivor base; it does not grant DRCs for the survivor’s own delay. This record covers a worker who claimed before death. For a worker who died before claiming, the engine prices the base at the claim age entered in the plan rather than on the credits earned by the death, which is the departure registered as usc-42-402-e-survivor-of-worker-who-died-before-claiming.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,

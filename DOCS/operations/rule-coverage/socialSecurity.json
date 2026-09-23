@@ -2101,7 +2101,7 @@
       "classification": "settled",
       "errorDirection": null,
       "approximation": null,
-      "conventionRationale": "This record is confined to the reduction curve after a survivor FRA has been supplied. The nra.ts age-60-cohort error for 1961-and-later survivors is recorded separately at usc-42-416-l-survivor-fra-age-60-attainment-cohorts; it is not a competing reading of this helper’s month interpolation.",
+      "conventionRationale": "This record is confined to the reduction curve after a survivor FRA has been supplied. The nra.ts age-60-cohort error for survivors born 1940 through 1950 and 1961 and later is recorded separately at usc-42-416-l-survivor-fra-age-60-attainment-cohorts; it is not a competing reading of this helper’s month interpolation.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -3257,7 +3257,7 @@
           "functions": [
             {
               "name": "survivorFraForBirthYear",
-              "line": 62
+              "line": 67
             }
           ]
         }

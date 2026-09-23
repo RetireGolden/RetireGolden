@@ -51,13 +51,18 @@ export function fraTotalMonths(fra: FraComponents): number {
 }
 
 /**
- * Survivor (widow(er)) full retirement age — a separate, **earlier** schedule
- * than the worker retirement FRA above: 65y0m for born ≤1945, ramping to 66y0m
- * for 1951–56, then 66y2m→66y8m for 1957–60, topping out at **66y8m** for born
- * 1960+ (it never reaches 67). The widow(er) early-claim reduction (up to 28.5%
- * at 60) is measured against this FRA, not the worker FRA.
+ * Survivor (widow(er)) full retirement age, a separate schedule from the worker
+ * retirement FRA above. The widow(er) early-claim reduction (up to 28.5% at 60)
+ * is measured against it, not the worker FRA.
  *
- * @see https://www.ssa.gov/oact/ProgData/nra.html (Full Retirement Age for Survivors)
+ * What this table returns is NOT the statutory schedule. 42 U.S.C. 416(l), with
+ * (l)(3) substituting age 60, and 20 CFR 404.409(b) shift the retirement
+ * schedule two years: 65 for born 1939 or earlier, 65y2m to 65y10m for
+ * 1940-44, 66 for 1945-56, 66y2m to 66y10m for 1957-61, and 67 for 1962 and
+ * later. This table returns 65 through 1945, 65y2m to 65y10m for 1946-50, and
+ * stops at 66y8m from 1960 on. Both departures are registered in
+ * usc-42-416-l-survivor-fra-age-60-attainment-cohorts (to be fixed); the
+ * companion fixture in survivorBenefit.test.ts pins both schedules.
  */
 export function survivorFraForBirthYear(birthYearEffective: number): FraComponents {
   const y = birthYearEffective
