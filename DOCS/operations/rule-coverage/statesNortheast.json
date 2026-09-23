@@ -1091,7 +1091,7 @@
       "classification": "unsettled",
       "errorDirection": null,
       "approximation": null,
-      "conventionRationale": "Apply the enumerated ordinary income categories with separate state basis and no automatic second cash-withdrawal inclusion; unknown classification remains incomplete. The official August 19, 2010 archive index (https://www.nj.gov/treasury/taxation/whatsnewarc/august2010.shtml) authenticates the preserved Summer 2010 publication; its headline is not operative tax authority. The original summer10.pdf URL returned HTTP 404 during the September 12, 2026 research check, so the historical quoted answer is retained with that fetch limitation rather than represented as a fresh successful download.",
+      "conventionRationale": "Apply the enumerated ordinary income categories with separate state basis and no automatic second cash-withdrawal inclusion; unknown classification remains incomplete. The official August 2010 archive index (https://www.nj.gov/treasury/taxation/enewsarc/august2010.shtml, which moved from the whatsnewarc path) lists the Summer 2010 publication under August 19, 2010, authenticating it; its headline is not operative tax authority. The original summer10.pdf URL returned HTTP 404 during the September 12, 2026 research check and again on September 23, 2026, when the whole State Tax News PDF folder was gone from nj.gov with no official copy elsewhere, so the historical quoted answer is retained with that fetch limitation rather than represented as a fresh successful download.",
       "contraryReading": "A future HSA-specific Division ruling could classify distributions independently of underlying ordinary category income.",
       "jurisdiction": "state:NJ",
       "volatility": "awaitingGuidance",
