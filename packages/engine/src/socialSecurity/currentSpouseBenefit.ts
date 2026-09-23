@@ -60,7 +60,9 @@ function strictConfiguredClaimDate(
  *
  * `null` means the caller must preserve its existing legacy path. Configured
  * dates are guard facts only; this helper does not determine SSA eligibility,
- * application, insured status, or a legal month of entitlement.
+ * application, insured status, or the first month of legal right to the
+ * benefit (the statute's month of entitlement, a term the published catalog
+ * does not carry).
  */
 export function ordinarySimultaneousEarlyCurrentSpouseComponents(
   input: Readonly<OrdinarySimultaneousEarlyCurrentSpouseComponentsInput>,
