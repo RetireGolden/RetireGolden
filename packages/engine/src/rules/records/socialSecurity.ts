@@ -890,7 +890,7 @@ export const socialSecurityRecords = {
     contraryReading: null,
     errorDirection: 'bothDirections',
     conventionRationale:
-      'The engine\'s survivor full retirement age table departs from the statute at both ends. For an effective birth year of 1962 or later, the survivor turns 60 in 2022 or later, so section 416(l)(1)(E) gives 67, but the table stops at 66 years and 8 months (800 months against 804). For 1940 through 1950 the table runs early: it returns 65 through 1945 and 65 years and 2 months through 65 years and 10 months for 1946 through 1950, where the statute gives 65 years and 2 months through 66 (for 1946, 782 months against 792). In both ranges a survivor who claims before the statutory age is reduced less than the law requires. The companion tests pin both schedules against the table.',
+      'The engine\'s survivor full retirement age table departs from the statute at both ends. From an effective birth year of 1960 on, the table stops at 66 years and 8 months, where the statute gives 66 years and 10 months for 1961 (800 months against 802) and, for 1962 or later, when the survivor turns 60 in 2022 or later, 67 under section 416(l)(1)(E) (800 months against 804). For 1940 through 1950 the table runs early: it returns 65 through 1945 and 65 years and 2 months through 65 years and 10 months for 1946 through 1950, where the statute gives 65 years and 2 months through 66 (for 1946, 782 months against 792). In both ranges a survivor who claims before the statutory age is reduced less than the law requires. The companion tests pin both schedules against the table.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
