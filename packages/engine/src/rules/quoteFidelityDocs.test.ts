@@ -128,9 +128,10 @@ describe('DOCS/operations/quote-fidelity.md host conventions', () => {
   it('keeps hosts the doc calls unmeasured out of HOST_CONVENTIONS', () => {
     const measuredHosts = new Set(measuredRows.map((row) => row.host))
     const unmeasuredOnly = docRows.map((row) => row.host).filter((host) => !measuredHosts.has(host))
-    // www.jct.gov is the live case: it sits behind a Cloudflare challenge, so
-    // nothing about how it renders has ever been observed. An entry in
-    // HOST_CONVENTIONS would be a measurement nobody took.
+    // www.jct.gov is the live case: its HTML pages sit behind a Cloudflare
+    // challenge, so nothing about how they render has ever been observed (its
+    // PDFs are fetched, but a PDF says nothing about HTML conventions). An
+    // entry in HOST_CONVENTIONS would be a measurement nobody took.
     for (const host of unmeasuredOnly) {
       expect(
         HOST_CONVENTIONS[host],

@@ -109,8 +109,10 @@ const FALLBACK_STATUSES = new Set([401, 403, 406])
  * Hosts admitted to the retry, one by one, each with its robots.txt read
  * first. Admission requires an official publisher whose robots policy permits
  * the cited paths while its perimeter still refuses the transparent identity.
- * www.jct.gov is deliberately NOT here: it runs an interactive challenge and
- * the documented stance — report UNFETCHABLE, never work around it — stands.
+ * www.jct.gov is deliberately NOT here: its HTML pages run an interactive
+ * challenge and the documented stance — report UNFETCHABLE, never work around
+ * it — stands. Its getattachment PDF downloads are not challenged and need no
+ * retry.
  *
  * 2026-09-05: www.michigan.gov — robots.txt wildcard group excludes only
  * /rss/, /podcast/, /emichigan/, /minewswire/; cited Treasury paths RAB

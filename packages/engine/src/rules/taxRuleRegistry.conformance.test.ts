@@ -970,7 +970,8 @@ const STATE_EXACT_PUBLICATION_URLS: Readonly<Partial<Record<UsStateCode, readonl
     'https://www.nj.gov/treasury/taxation/military/taxinformation.shtml',
     'https://www.nj.gov/treasury/taxation/pdf/pubs/stn/summer10.pdf',
     'https://www.nj.gov/treasury/taxation/individuals/obbba.shtml',
-    'https://www.nj.gov/treasury/taxation/whatsnewarc/august2010.shtml',
+    // The archive index moved from whatsnewarc/ (404 as of 2026-09-23).
+    'https://www.nj.gov/treasury/taxation/enewsarc/august2010.shtml',
     'https://www.nj.gov/treasury/taxation/pdf/pubs/tgi-ee/git1%262.pdf',
     'https://www.nj.gov/treasury/taxation/njit12.shtml',
   ],
