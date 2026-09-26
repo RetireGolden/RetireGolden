@@ -1,6 +1,6 @@
 # Mutation receipt: display-dollar-basis-conversion
 
-Executed 2026-09-26 against RetireGolden base `6b01db8d` (branch `claude/b2p1-slice1-ledger-figures`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-26 against RetireGolden base `7cf64e57` (branch `claude/b2p1-slice1-ledger-figures`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/projection/dollarBasis.ts`
 
@@ -32,7 +32,7 @@ The baseline is green (dollarBasis.evidence.test.ts passes on unmodified product
 ```
 RUN  v5.0.0 C:/rgwt/engine4/packages/engine
 
- ❯ src/projection/dollarBasis.evidence.test.ts (6 tests | 1 failed) 50ms
+ ❯ src/projection/dollarBasis.evidence.test.ts (6 tests | 1 failed) 51ms
    ❯ display-dollar-basis-conversion — Today's dollars by the ledger's own inflation factor (6)
      × converts 1,000,000 to start-year dollars and back 3ms
 

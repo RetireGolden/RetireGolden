@@ -4,6 +4,108 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## Unreleased
 
+- **Changed: the eleven ledger figures the planner pages computed are now
+  published by the engine** (owner decision D-UI-SS; B2-P1 slice 1). The
+  pages only format and select them. Six move as they were and no displayed
+  number changes: tax plus penalties, spending with tax and penalties, net
+  long-term-care cost, upside spending, the upside miss, and the capital-loss
+  carryforward used. Five change, below. New engine modules:
+  `@retiregolden/engine/projection/dollarBasis`, `/projection/yearFigures`,
+  `/projection/moneyLasts` and `/insights/detectorProjection`, and a new
+  ledger field, `YearResult.unassignedCash`.
+
+- **Fixed: "Tax-free gains room" showed gains that cost federal tax**
+  (owner decision R2). The Results column added the room left in the 0%
+  long-term bracket to the remaining capital-loss carryforward. That is not
+  the room at no tax: an extra gain can use up the $3,000 loss deduction,
+  make more Social Security taxable, shrink the senior deduction, or reach
+  the 3.8% net investment income tax, whose thresholds are not indexed while
+  the 0% bracket is. The column now shows the largest extra long-term gain
+  that raises the year's federal income tax (regular tax, AMT and NIIT) by
+  $0, found by recomputing the year's federal tax with the gain netted
+  through the carryforward first. A single filer in 2026 with $40,000 of
+  pension and a $10,000 carryforward saw $35,550 and now sees $7,000
+  (realizing $35,550 would have cost $360); one with $10,000 of pension and
+  $30,000 of Social Security saw $38,100 and now sees $20,353 (the old figure
+  would have cost $1,135). On the 29 example plans the figure is lower in
+  370 of 1,210 plan-years and higher in none. The largest drop is $216,148
+  (`all-401k-no-bridge` and `brokerage-bridge-401k`, 2078: $303,767 became
+  $87,620), where realizing the old figure would have cost $11,599.64 of
+  federal tax. Most of those years hold no taxable account to realize a gain
+  from; in the 51 that end the year with a taxable-account balance, the
+  largest drop is $59,276 (`salary-growth-escalation`, 2070) and the largest
+  cost at the old figure $2,628.59 (`aggressive-saver`, 2063). In 150 of the
+  370 the room is $0. The column's tooltip, the
+  table explainer and the Learning Center article on harvesting say what the
+  room includes and what it leaves out (state tax, the ACA premium credit,
+  Medicare premiums two years later), and a year with an ACA premium credit
+  carries a marker, since losing part of the credit is repaid as federal
+  tax at filing. The room in the 0% bracket stays published
+  (`YearResult.ltcgZeroHeadroom`).
+
+- **Fixed: an account held in two plan rows was counted twice in the
+  balance charts** (owner decision R1). The Results balance chart, the report
+  chart data and the printed report added an account's balance once per plan
+  row, although the engine publishes one balance per account: an IRA recorded
+  as two $50,000 rows under one id showed $200,000 of traditional money
+  instead of $100,000. Each category now counts every account once. No
+  example plan holds such an account, so none of their charts change.
+
+- **Added: unassigned cash is drawn on the balance chart** (owner answer to
+  Q9). When a surplus has no cash or taxable account to land in, the ledger
+  holds it outside every account (and warns); it is in investable assets but
+  in no account type, so the stacked chart stopped short of the investable
+  total by that amount, silently. The engine now publishes it
+  (`YearResult.unassignedCash`); the Results chart and the printed report
+  draw it as its own band, and the downloadable report's chart data carries
+  it as an extra column, when a plan has any. In the `coast-fire` example it
+  starts in 2026 and reaches about 45% of investable assets in 2055.
+
+- **Changed: one "money lasts" convention** (owner decision R15). The Results
+  sentence counted the years between the depletion year and the plan's last
+  year, so a plan short only in its final year read "depletes 0 years before
+  the end of the plan". It now names the last fully funded year and counts
+  the years short of the plan's end: "Money lasts through 2045, 7 years
+  short of the plan's end in 2052" for the `under-saved-single` example,
+  which used to say 6. The count is one higher than before in every plan
+  that runs short (10 of the 29 examples). The KPI bar and the printed report
+  now say "through" the last funded year where they said "until" or "to" the
+  first short year: the same fact, one year earlier ("until 2046" is now
+  "through 2045"). A plan short from its first year says so ("not funded" on
+  the KPI bar, "short from 2026" in the printed report) instead of naming the
+  year before it.
+
+- **Changed: today's dollars divide by the ledger's own inflation factor**
+  (owner decision R19). The pages compounded the plan's inflation rate with
+  a power from their own start year; they now read the factor the ledger
+  grew each year's amounts by. The two differ only in the last binary digit
+  (21 of 41 years at 2.5%, one unit each), so a whole-dollar figure can move
+  only on an exact half-dollar tie, and the FI target line in today's
+  dollars is now exactly the FI number. The relocation page converts from
+  its comparison's own start year and the spending page from its solve's,
+  not from the clock when the page renders.
+
+- **Removed from the engine API: `lastsThroughYear`**
+  (`@retiregolden/engine/decisions`). It counted a plan that never runs short
+  as lasting through the year after its end. Use `lastFundedYear` from
+  `@retiregolden/engine/projection/moneyLasts`; every difference between two
+  results is the same under both (each result moves by one year), so the
+  decision and optimizer money-lasts deltas do not change. No package in this
+  repository, RetireGolden-MCP or RetireGolden-Pro called it.
+  `summarizeProjection` now reads its ending categories through
+  `balancesByCategory`, which refuses a plan whose account id is also a
+  property, debt or permanent-life policy id (the plan checks already refuse
+  those plans and repair stored ones).
+
+- **Removed from `@retiregolden/planner-ui/projection`: `inflationView`**
+  (no caller outside the package). `ProjectionView` gains `basis`, the
+  engine's dollar basis for the run; `deflate` and `inflate` stay, as
+  one-line calls to the engine, and they now refuse a year outside the
+  projection instead of extrapolating. RetireGolden-Pro reads `deflate` in its
+  review-queue worker and fleet scan to hand to the insight cards; a follow-up
+  there should switch those to `detectorProjection`. The row builders in
+  `planner/resultsRows` take the page's dollar mode instead of an adjuster.
+
 - **Fixed: a value lost or shown under another row when two rows shared an
   id** (decision D-CASH-PROPERTY-ALIAS): the year's balances, and the
   property, debt and policy values behind them, keep one value per id. The
