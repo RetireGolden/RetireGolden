@@ -726,7 +726,12 @@ function comparisons(): Comparison[] {
   }
   const correlations = [undefined, -1, -0.2, 0, 0.35, 1] as const
 
-  for (const row of grid({ returnVolPct: [undefined, 0, 12, 25], correlation: correlations, classShocks: CLASS_SHOCK_VARIANTS })) {
+  for (const row of grid({
+    returnVolPct: [undefined, 0, 12, 25],
+    inflationVolPct: [undefined, 0, 2],
+    correlation: correlations,
+    classShocks: CLASS_SHOCK_VARIANTS,
+  })) {
     add('lognormal', defined<LognormalModelConfig>({ type: 'lognormal', inflationMeanPct: 2.5, ...row }), oldCreateLognormalModel, createLognormalModel)
   }
   for (const row of grid({
@@ -737,13 +742,20 @@ function comparisons(): Comparison[] {
   })) {
     add('historical', defined<HistoricalModelConfig>({ type: 'historical', ...row }), oldCreateHistoricalModel, createHistoricalModel)
   }
-  for (const row of grid({ switchProb: [undefined, 0.001, 0.2, 0.5], bearVolPct: [undefined, 0], classShocks: CLASS_SHOCK_VARIANTS })) {
+  for (const row of grid({
+    switchProb: [undefined, 0.001, 0.2, 0.5],
+    bullVolPct: [undefined, 0, 15],
+    bearVolPct: [undefined, 0, 25],
+    inflationVolPct: [undefined, 0, 2],
+    classShocks: CLASS_SHOCK_VARIANTS,
+  })) {
     add('regime-switch', defined<RegimeSwitchModelConfig>({ type: 'regime-switch', inflationMeanPct: 2.5, ...row }), oldCreateRegimeSwitchModel, createRegimeSwitchModel)
   }
   for (const row of grid({
     startingCape: [undefined, 10, 50],
     capeSensitivity: [undefined, 0.3],
     returnVolPct: [undefined, 0, 7],
+    inflationVolPct: [undefined, 0, 2],
     correlation: [undefined, -1, 1],
     classShocks: CLASS_SHOCK_VARIANTS,
   })) {
@@ -770,12 +782,18 @@ function comparisons(): Comparison[] {
   for (const row of grid({ shockYear: [undefined, 1, 3, 60, 200], baseReturnVolPct: [undefined, 0, 7], classShocks: CLASS_SHOCK_VARIANTS })) {
     add('user-shock', defined<UserShockModelConfig>({ type: 'user-shock', inflationMeanPct: 2.5, ...row }), oldCreateUserShockModel, createUserShockModel)
   }
-  for (const row of grid({ returnVolPct: [undefined, 0, 20], correlation: correlations, classShocks: CLASS_SHOCK_VARIANTS })) {
+  for (const row of grid({
+    returnVolPct: [undefined, 0, 20],
+    inflationVolPct: [undefined, 0, 2],
+    correlation: correlations,
+    classShocks: CLASS_SHOCK_VARIANTS,
+  })) {
     add('gaussian', defined<GaussianModelConfig>({ type: 'gaussian', inflationMeanPct: 2.5, ...row }), oldCreateGaussianModel, createGaussianModel)
   }
   for (const row of grid({
     phi: [undefined, -0.9, 0, 0.95],
     returnVolPct: [undefined, 0, 7],
+    inflationVolPct: [undefined, 0, 2],
     correlation: [undefined, -1, 1],
     classShocks: CLASS_SHOCK_VARIANTS,
   })) {
@@ -855,6 +873,27 @@ describe('inputs the market models used to change without a word are refused', (
     ['Gaussian returnVolPct', (returnVolPct) => createGaussianModel({ type: 'gaussian', inflationMeanPct: 2.5, returnVolPct })],
     ['AR(1) returnVolPct', (returnVolPct) => createAR1Model({ type: 'ar1', inflationMeanPct: 2.5, returnVolPct })],
   ]
+
+  // The other volatility inputs: every model's inflationVolPct, and the regime-switch bull and bear
+  // volatilities, are standard deviations too (review of #746).
+  const otherVolatilityInputs: readonly [string, (volPct: number) => MarketModel][] = [
+    ['Lognormal inflationVolPct', (inflationVolPct) => createLognormalModel({ type: 'lognormal', inflationMeanPct: 2.5, inflationVolPct })],
+    ['Student-t inflationVolPct', (inflationVolPct) => createStudentTModel({ type: 'student-t', inflationMeanPct: 2.5, inflationVolPct })],
+    ['Regime-switch inflationVolPct', (inflationVolPct) => createRegimeSwitchModel({ type: 'regime-switch', inflationMeanPct: 2.5, inflationVolPct })],
+    ['Regime-switch bullVolPct', (bullVolPct) => createRegimeSwitchModel({ type: 'regime-switch', inflationMeanPct: 2.5, bullVolPct })],
+    ['Regime-switch bearVolPct', (bearVolPct) => createRegimeSwitchModel({ type: 'regime-switch', inflationMeanPct: 2.5, bearVolPct })],
+    ['CAPE-conditioned inflationVolPct', (inflationVolPct) => createCapeConditionedModel({ type: 'cape-conditioned', inflationMeanPct: 2.5, inflationVolPct })],
+    ['GARCH inflationVolPct', (inflationVolPct) => createGarchModel({ type: 'garch', inflationMeanPct: 2.5, inflationVolPct })],
+    ['Gaussian inflationVolPct', (inflationVolPct) => createGaussianModel({ type: 'gaussian', inflationMeanPct: 2.5, inflationVolPct })],
+    ['AR(1) inflationVolPct', (inflationVolPct) => createAR1Model({ type: 'ar1', inflationMeanPct: 2.5, inflationVolPct })],
+  ]
+
+  it.each(otherVolatilityInputs)('refuses a negative or non-finite %s, and accepts 0', (label, build) => {
+    for (const volPct of [-1, -0.0001, Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY]) {
+      expect(() => build(volPct)).toThrow(new RangeError(`${label} must be a finite number of at least 0; got ${volPct}.`))
+    }
+    for (const volPct of [0, 1.5, 20]) expect(() => build(volPct)).not.toThrow()
+  })
 
   it.each(volatilityModels)('refuses a negative or non-finite %s, and accepts 0', (label, build) => {
     for (const volPct of [-1, -0.0001, Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY]) {

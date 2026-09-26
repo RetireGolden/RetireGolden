@@ -61,7 +61,7 @@ export interface LognormalModelConfig {
   returnVolPct?: number
   /** Mean inflation, percent (default: the plan's assumption — pass it explicitly). */
   inflationMeanPct: number
-  /** Annual volatility of inflation, percentage points (default 1.5). */
+  /** Annual volatility of inflation, percentage points (default 1.5): a finite number of at least 0, refused otherwise. */
   inflationVolPct?: number
   /** Correlation between the return shock and inflation (default −0.2); a finite number from −1 to 1, refused otherwise. */
   correlation?: number
@@ -104,6 +104,7 @@ export interface StudentTModelConfig {
   /** Standard deviation of the annual return shock, percentage points (default 12): a finite number of at least 0, refused otherwise. */
   returnVolPct?: number
   inflationMeanPct: number
+  /** Annual volatility of inflation, percentage points (default 1.5): a finite number of at least 0, refused otherwise. */
   inflationVolPct?: number
   /** Correlation between the return shock and inflation (default −0.2); a finite number from −1 to 1, refused otherwise. */
   correlation?: number
@@ -116,13 +117,14 @@ export interface RegimeSwitchModelConfig {
   bullMeanPct?: number
   /** Bear regime mean *deviation* (real, %; default -4). */
   bearMeanPct?: number
-  /** Bull vol (default 10). */
+  /** Bull regime volatility, percentage points (default 10): a finite number of at least 0, refused otherwise. */
   bullVolPct?: number
-  /** Bear vol (default 20). */
+  /** Bear regime volatility, percentage points (default 20): a finite number of at least 0, refused otherwise. */
   bearVolPct?: number
   /** Probability of switching regime each year (default 0.05): a probability from 0 to 1, refused otherwise. */
   switchProb?: number
   inflationMeanPct: number
+  /** Annual volatility of inflation, percentage points (default 1.5): a finite number of at least 0, refused otherwise. */
   inflationVolPct?: number
   classShocks?: ClassShockConfig
 }
@@ -140,6 +142,7 @@ export interface CapeConditionedModelConfig {
   /** Lognormal volatility of the base return shock, percentage points (default 12): a finite number of at least 0, refused otherwise. */
   returnVolPct?: number
   inflationMeanPct: number
+  /** Annual volatility of inflation, percentage points (default 1.5): a finite number of at least 0, refused otherwise. */
   inflationVolPct?: number
   /** Correlation between the return shock and inflation (default −0.2); a finite number from −1 to 1, refused otherwise. */
   correlation?: number
@@ -175,6 +178,7 @@ export interface GarchModelConfig {
    */
   returnVolPct?: number
   inflationMeanPct: number
+  /** Annual volatility of inflation, percentage points (default 1.5): a finite number of at least 0, refused otherwise. */
   inflationVolPct?: number
   /** Correlation between the return shock and inflation (default −0.2); a finite number from −1 to 1, refused otherwise. */
   correlation?: number
@@ -223,6 +227,7 @@ export interface GaussianModelConfig {
   /** Annual volatility of the portfolio return shock, percentage points (default 12): a finite number of at least 0, refused otherwise. */
   returnVolPct?: number
   inflationMeanPct: number
+  /** Annual volatility of inflation, percentage points (default 1.5): a finite number of at least 0, refused otherwise. */
   inflationVolPct?: number
   /** Correlation between the return shock and inflation (default −0.2); a finite number from −1 to 1, refused otherwise. */
   correlation?: number
@@ -240,6 +245,7 @@ export interface AR1ModelConfig {
   /** Standard deviation of each year's innovation, percentage points (default 12): a finite number of at least 0, refused otherwise. */
   returnVolPct?: number
   inflationMeanPct: number
+  /** Annual volatility of inflation, percentage points (default 1.5): a finite number of at least 0, refused otherwise. */
   inflationVolPct?: number
   /** Correlation between the return shock and inflation (default −0.2); a finite number from −1 to 1, refused otherwise. */
   correlation?: number
@@ -389,15 +395,21 @@ function returnInflationCorrelation(modelName: string, correlation: number | und
 }
 
 /**
- * A model's return volatility in percentage points (default 12). A negative or non-finite value
- * is refused: it is a standard deviation, and a negative one would silently mirror every draw.
+ * A volatility input in percentage points (a return, regime or inflation standard deviation),
+ * defaulting to `fallback`. A negative or non-finite value is refused: it is a standard deviation,
+ * and a negative one would silently mirror every draw it scales.
  */
-function returnVolatility(label: string, volPct: number | undefined): number {
-  const value = volPct ?? 12
+function volatilityInput(label: string, volPct: number | undefined, fallback: number): number {
+  const value = volPct ?? fallback
   if (!(Number.isFinite(value) && value >= 0)) {
     throw new RangeError(`${label} must be a finite number of at least 0; got ${value}.`)
   }
   return value
+}
+
+/** A model's return volatility in percentage points (default 12); see volatilityInput. */
+function returnVolatility(label: string, volPct: number | undefined): number {
+  return volatilityInput(label, volPct, 12)
 }
 
 /** Refuses a model parameter outside its documented closed range [min, max], or not finite. */
@@ -460,7 +472,7 @@ function makeClassShockSampler(classCfg: ClassShockConfig | undefined): ClassSho
 export function createLognormalModel(config: LognormalModelConfig): MarketModel {
   const sigma = returnVolatility('Lognormal returnVolPct', config.returnVolPct) / 100
   const inflMean = config.inflationMeanPct
-  const inflVol = config.inflationVolPct ?? 1.5
+  const inflVol = volatilityInput('Lognormal inflationVolPct', config.inflationVolPct, 1.5)
   const rho = returnInflationCorrelation('Lognormal', config.correlation)
   // Per-class correlated shocks (optional). z1 — the single market factor —
   // doubles as the first Gaussian source, so class shocks co-move with the
@@ -626,7 +638,7 @@ export function createStudentTModel(config: StudentTModelConfig): MarketModel {
   }
   const sigma = returnVolatility('Student-t returnVolPct', config.returnVolPct) / 100
   const inflMean = config.inflationMeanPct
-  const inflVol = config.inflationVolPct ?? 1.5
+  const inflVol = volatilityInput('Student-t inflationVolPct', config.inflationVolPct, 1.5)
   const rho = returnInflationCorrelation('Student-t', config.correlation)
   const classCfg = config.classShocks
   const classShocks = makeClassShockSampler(classCfg)
@@ -667,11 +679,11 @@ export function createStudentTModel(config: StudentTModelConfig): MarketModel {
 export function createRegimeSwitchModel(config: RegimeSwitchModelConfig): MarketModel {
   const bullMean = (config.bullMeanPct ?? 4) / 100
   const bearMean = (config.bearMeanPct ?? -4) / 100
-  const bullVol = (config.bullVolPct ?? 10) / 100
-  const bearVol = (config.bearVolPct ?? 20) / 100
+  const bullVol = volatilityInput('Regime-switch bullVolPct', config.bullVolPct, 10) / 100
+  const bearVol = volatilityInput('Regime-switch bearVolPct', config.bearVolPct, 20) / 100
   const pSwitch = requireInRange('Regime-switch switchProb', config.switchProb ?? 0.05, 0, 1)
   const inflMean = config.inflationMeanPct
-  const inflVol = config.inflationVolPct ?? 1.5
+  const inflVol = volatilityInput('Regime-switch inflationVolPct', config.inflationVolPct, 1.5)
   const classCfg = config.classShocks
   const classShocks = makeClassShockSampler(classCfg)
   return {
@@ -716,7 +728,7 @@ export function createCapeConditionedModel(config: CapeConditionedModelConfig): 
   const baseMuAdj = Math.max(-4, Math.min(2, -(startCape - 20) * sens)) // pp adjustment
   const sigma = returnVolatility('CAPE-conditioned returnVolPct', config.returnVolPct) / 100
   const inflMean = config.inflationMeanPct
-  const inflVol = config.inflationVolPct ?? 1.5
+  const inflVol = volatilityInput('CAPE-conditioned inflationVolPct', config.inflationVolPct, 1.5)
   const rho = returnInflationCorrelation('CAPE-conditioned', config.correlation)
   const classCfg = config.classShocks
   const classShocks = makeClassShockSampler(classCfg)
@@ -903,7 +915,7 @@ export function createGarchModel(config: GarchModelConfig): MarketModel {
   const longRunVariance = sigmaBar * sigmaBar
   const omega = longRunVariance * (1 - alpha - beta)
   const inflMean = config.inflationMeanPct
-  const inflVol = config.inflationVolPct ?? 1.5
+  const inflVol = volatilityInput('GARCH inflationVolPct', config.inflationVolPct, 1.5)
   const rho = returnInflationCorrelation('GARCH', config.correlation)
   const classCfg = config.classShocks
   const classShocks = makeClassShockSampler(classCfg)
@@ -1089,7 +1101,7 @@ export function createUserShockModel(config: UserShockModelConfig): MarketModel 
 export function createGaussianModel(config: GaussianModelConfig): MarketModel {
   const sigma = returnVolatility('Gaussian returnVolPct', config.returnVolPct) / 100
   const inflMean = config.inflationMeanPct
-  const inflVol = config.inflationVolPct ?? 1.5
+  const inflVol = volatilityInput('Gaussian inflationVolPct', config.inflationVolPct, 1.5)
   const rho = returnInflationCorrelation('Gaussian', config.correlation)
   const classCfg = config.classShocks
   const classShocks = makeClassShockSampler(classCfg)
@@ -1132,7 +1144,7 @@ export function createAR1Model(config: AR1ModelConfig): MarketModel {
   }
   const sigma = returnVolatility('AR(1) returnVolPct', config.returnVolPct) / 100
   const inflMean = config.inflationMeanPct
-  const inflVol = config.inflationVolPct ?? 1.5
+  const inflVol = volatilityInput('AR(1) inflationVolPct', config.inflationVolPct, 1.5)
   const rho = returnInflationCorrelation('AR(1)', config.correlation)
   const classCfg = config.classShocks
   const classShocks = makeClassShockSampler(classCfg)
