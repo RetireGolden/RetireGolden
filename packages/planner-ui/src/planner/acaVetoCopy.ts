@@ -7,9 +7,9 @@
  * the projection could not price, never an instruction — per the
  * decision-support boundary (guarded by app/src/boundaryLanguage.test.ts).
  *
- * The spending answer's note (the "How much can I spend?" page, its spending
- * shapes and the spending-headroom Insight) lives here too: the same unpriced
- * years, told from the side of a spending level instead of a conversion.
+ * The spending answer's note (the "How much can I spend?" page and the
+ * Scenarios capacity section) lives here too: the same unpriced years, told
+ * from the side of a spending level instead of a conversion.
  */
 
 import type { AcaActionabilityVeto } from '@retiregolden/engine/projection/optimizePlan'
@@ -123,7 +123,7 @@ export function unpricedCreditSpendingNote(facts: UnpricedCreditFacts, answered:
 /**
  * A solve's diagnostics without its unpriced-credit sentence, which the engine
  * appends last whenever it names such years; surfaces that show the plain
- * note above print the rest verbatim.
+ * note in its place print the rest verbatim.
  */
 export function diagnosticsWithoutUnpricedCreditSentence(diagnostics: string[], acaGrossPremiumYears: number[]): string[] {
   return acaGrossPremiumYears.length > 0 ? diagnostics.slice(0, -1) : diagnostics
