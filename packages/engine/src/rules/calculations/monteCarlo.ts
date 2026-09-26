@@ -1014,6 +1014,43 @@ export const monteCarloRecords = {
     verifiedOn: '2026-09-17',
     provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'cursor' },
   },
+  'risk-based-guardrail-threshold-solver': {
+    title: 'Risk-based guardrail thresholds and suggested adjustments by bisection',
+    purpose: 'Finds the portfolio levels where the plan\'s Monte Carlo success meets each edge of its success band, and the spending change that brings success back to the middle of the band there.',
+    kind: 'model',
+    outputs: ['risk-based-guardrail-solved-balance-thresholds', 'risk-based-guardrail-suggested-adjustment-monthly'],
+    feeds: ['display-guardrail-balance-thresholds', 'spending-guardrail-factor-annual'],
+    statement:
+      'Let S(f, m) be the success rate of the plan with fixed target spending, with every investable balance scaled by f and target spending by m, on shared seeded Monte Carlo paths (or the value of the optional successProbe(f, m), which replaces that run). The band is L/U percent (the plan\'s policy, else 70/95) and the recovery target is (L + U)/200. For each edge p = L/100 and U/100: if S(0.02, 1) >= p the outcome is always-above-band; if S(4, 1) < p it is never-reaches-band; otherwise ten bisections on [0.02, 4] move hi to the midpoint when S(mid, 1) >= p and lo otherwise, and the edge is hi, a point 0.02 + k · 3.98/1024 with k a whole number from 1 to 1024 (the smallest such point meeting p), with balanceDollars = hi · starting investable. At a solved lower edge f_L the suggested cut bisects m eight times on [max(0.3, required/base), 1], moving lo when S(f_L, m) >= the recovery target, and returns lo, provided the best case S(f_L, lowest m) reaches the target; at a solved upper edge the raise does the same on [1, 2], and reports m = 2 when even S(f_U, 2) stays above the target. annualDollars = |1 − m| · base spending and monthlyDollars = annualDollars / 12. For S(f, m) = min(1, f/(2m)), one $500,000 taxable account, base spending $40,000, no required spending and a 70/95 band: successAtCurrent is 0.5; the edges are k = 356 and 484, balanceFrac 1.403671875 and 1.901171875, balanceDollars $701,835.9375 and $950,585.9375; the cut multiplier is 0.849609375 ($6,015.625 a year, $501.3020833333333 a month, success after 0.8260689655172412) and the raise multiplier 1.1484375 ($5,937.50 a year, $494.7916666666667 a month, success after 0.8277210884353741); the probe is called 40 times. Units: fractions of starting investable, multipliers, today\'s dollars. Rounding: none; absolute tolerance 1e-12 on fractions and multipliers and 1e-6 on dollars.',
+    formula: {
+      expression: 'edge(p) = min { 0.02 + k · 3.98/1024 : k = 1..1024, S(·, 1) >= p } by ten bisections; m_cut = max { m on the eight-step lattice of [m_min, 1] : S(f_L, m) >= (L + U)/200 }; m_raise likewise on [1, 2]; monthly = |1 − m| · base / 12',
+      variables: [
+        { symbol: 'S(f, m)', meaning: 'Fixed-target success rate at balance scale f and spending multiplier m', unit: '1', domain: '[0, 1], nondecreasing in f and nonincreasing in m; worksheet min(1, f/(2m))' },
+        { symbol: 'L, U', meaning: 'Success band edges', unit: 'percent', domain: 'L < U; worksheet 70 and 95' },
+        { symbol: 'k', meaning: 'Lattice index of a solved edge', unit: '1', domain: 'whole number 1 to 1024; worksheet 356 and 484' },
+        { symbol: 'm', meaning: 'Spending multiplier of a suggested adjustment', unit: '1', domain: 'cut [max(0.3, required/base), 1], raise [1, 2]; worksheet 0.849609375 and 1.1484375' },
+        { symbol: 'base', meaning: 'Base annual target spending', unit: 'usd', domain: '> 0; worksheet 40,000' },
+        { symbol: 'B', meaning: 'Starting investable (risk-based-starting-investable)', unit: 'usd', domain: 'worksheet 500,000' },
+      ],
+      timing: 'once per solve, on today\'s balances and today\'s spending',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/monte-carlo/risk-based-guardrail-threshold-solver.md',
+    },
+    limits: [
+      'Monotonicity of success in f and m is assumed, not checked; with a curve that is not monotone the result is a lattice point but not a meaningful edge',
+      'The Spending card always solves under the headline lognormal model (12 percent volatility, 60/40) with 200 paths and the plan-id seed, whatever model the Monte Carlo page shows',
+      'Successes are cached by the balance scale rounded to 1e-6; the lattice step is about 3.9e-3, so two lattice points never share a key. The spending phase is not cached, so successAfter re-evaluates a multiplier the bisection has usually tried already',
+      'With a single path S is 0 or 1, so the two band edges are the same test and return the same point',
+      'The planner persists each edge as a percent of today\'s investable rounded to two decimals (140.37 and 190.12 in the worked example), and the callouts print that percent of today\'s balances, so the printed dollars can differ from balanceDollars by that rounding and by any balance change since the solve',
+    ],
+    implementedBy: ['packages/engine/src/montecarlo/riskBasedGuardrails.ts'],
+    implementedByFunctions: ['packages/engine/src/montecarlo/riskBasedGuardrails.ts#solveRiskBasedGuardrails'],
+    verifiedOn: '2026-09-26',
+    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+  },
   'risk-based-starting-investable': {
     title: 'Starting investable: sum of listed account balances',
     purpose: 'The dollar base the risk-based guardrail fractions and SWR initial spend apply to.',
