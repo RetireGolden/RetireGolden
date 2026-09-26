@@ -274,8 +274,8 @@ const GROUP_LABELS: Record<string, string> = {
 const NESTED_LEAF_LABELS: Record<string, string> = {
   'claimAge.years': 'Claim age (years)',
   'claimAge.months': 'Claim age (+ months)',
-  'deceasedClaimAge.years': 'When they claimed (age)',
-  'deceasedClaimAge.months': 'When they claimed (+ months)',
+  'deceasedClaimAge.years': 'Age they claimed, or died unclaimed (years)',
+  'deceasedClaimAge.months': 'Age they claimed, or died unclaimed (plus months)',
   'purchase.year': 'Purchase year',
   'sepp.startAge': 'SEPP start age',
   'hecm.openYear': 'Line opens in',

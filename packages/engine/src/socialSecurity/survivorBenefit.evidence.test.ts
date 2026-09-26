@@ -45,7 +45,7 @@ describeCalculation(
   ({ example }) => {
     const inputs = example.inputs as Record<string, number>
     const expected = example.expected as Record<string, number>
-    // The worksheet's 66y8m survivor FRA is the schedule's endpoint, read from
+    // The worksheet's 66y8m survivor FRA is the 1960 row of the schedule, read from
     // the production table rather than written in.
     const survivorFra = survivorFraForBirthYear(1960)
     const survivorFraMonths = fraTotalMonths(survivorFra)

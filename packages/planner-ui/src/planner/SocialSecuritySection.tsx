@@ -282,9 +282,9 @@ export function FormerSpousesEditor({
               ) : null}
               {isSurvivorRecord ? (
                 <NumberField
-                  label="When they claimed (age)"
-                  hint="Leave blank if they claimed at/after FRA."
-                  help="The age the deceased claimed their own benefit. If they claimed early (before FRA), the widow's-limit (RIB-LIM) caps your survivor benefit at the larger of their reduced benefit or 82.5% of their PIA, usually higher than their reduced amount. Leave blank if they claimed at or after FRA (the safe default)."
+                  label="Age they claimed, or died unclaimed (years)"
+                  hint="Blank means they claimed at FRA."
+                  help="Their age, in years and months, when they started their own benefit. If they claimed early (before FRA), the widow's limit (RIB-LIM) caps your survivor benefit at the larger of their reduced benefit or 82.5% of their PIA. If they claimed after FRA, enter that age so their delayed credits count. If they died after FRA without claiming, enter their age in years and months in the month they died (70 at most), so the credits they earned count. If they died before FRA without claiming, leave it blank."
                   path={`incomes.${streamIndex}.formerSpouses.${i}.deceasedClaimAge.years`}
                   value={r.deceasedClaimAge?.years ?? null}
                   allowNull
@@ -298,7 +298,7 @@ export function FormerSpousesEditor({
               ) : null}
               {isSurvivorRecord && r.deceasedClaimAge ? (
                 <NumberField
-                  label="When they claimed (+ months)"
+                  label="Plus months"
                   path={`incomes.${streamIndex}.formerSpouses.${i}.deceasedClaimAge.months`}
                   value={r.deceasedClaimAge.months}
                   onCommit={(v) =>

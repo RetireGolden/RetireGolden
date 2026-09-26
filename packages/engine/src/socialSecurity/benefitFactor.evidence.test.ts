@@ -1,7 +1,7 @@
 import { expect, it } from 'vitest'
 
 import { describeCalculation, withinTolerance } from '../rules/describeCalculation.js'
-import { delayedRetirementFactor, earlyRetirementFactor } from './benefitFactor.js'
+import { delayedCreditMonthlyPct, delayedRetirementFactor, earlyRetirementFactor } from './benefitFactor.js'
 
 function expectWithin(
   actual: number,
@@ -44,6 +44,14 @@ describeCalculation(
     it('returns 1 for a claim at or before the normal retirement age', () => {
       expect(delayedRetirementFactor(0, inputs.maxMonthsToAge70!)).toBe(1)
       expect(delayedRetirementFactor(-6, inputs.maxMonthsToAge70!)).toBe(1)
+    })
+
+    it('uses the birth-date rate: the worked 2/3 of 1% for a 1943 birth, 5/8 of 1% for 1941', () => {
+      // The worksheet's third wrong reading: 24 months at 5/8 of 1% is 1.15, not 1.16.
+      expect(delayedCreditMonthlyPct(1943)).toBe(2 / 3)
+      expect(
+        delayedRetirementFactor(inputs.monthsAfterNra!, inputs.maxMonthsToAge70!, delayedCreditMonthlyPct(1941)),
+      ).toBeCloseTo(1.15, 12)
     })
   },
 )

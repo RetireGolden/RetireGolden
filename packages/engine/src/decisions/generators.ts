@@ -8,6 +8,8 @@
  */
 
 import { formatWholeUsd } from '../internal/evidenceFormat.js'
+import { socialSecurityDobParts } from '../socialSecurity/annualTiming.js'
+import { effectiveBirthYear, fraForBirthYear } from '../socialSecurity/nra.js'
 import type { Account, AllocationWeights, IncomeStream, Plan, TipsLadder } from '../model/plan.js'
 import { packForYear, rmdStartAgeForBirthYear, LATEST_PACK_YEAR, EMBEDDED_REAL_YIELD_CURVE } from '../params/index.js'
 import { BRIDGE_FUNDING_MIN_FRACTION, sizeBridge } from '../ladder/bridge.js'
@@ -262,11 +264,23 @@ export function probabilityBandSpendingGuardrailGenerator(
   }
 }
 
-const SS_CLAIM_AGES: Array<{ years: number; months: number; suffix: string }> = [
-  { years: 62, months: 0, suffix: 'at 62' },
-  { years: 67, months: 0, suffix: 'at 67 (FRA)' },
-  { years: 70, months: 0, suffix: 'at 70' },
-]
+/**
+ * The three canonical claim ages for one person: 62, their own full
+ * retirement age and 70. Full retirement age depends on the effective birth
+ * year (42 U.S.C. 416(l), 20 CFR 404.409): 67 from 1960, and below 67 for
+ * every earlier year (66 and some months for 1955 to 1959, 66 for 1943 to
+ * 1954), so the middle candidate is computed, not fixed at 67.
+ */
+function canonicalClaimAges(person: Plan['household']['people'][number] | undefined): Array<{ years: number; months: number; suffix: string }> {
+  const dob = person === undefined ? null : socialSecurityDobParts(person)
+  const fra = dob === null ? { years: 67, extraMonths: 0 } : fraForBirthYear(effectiveBirthYear(dob.y, dob.m, dob.d))
+  const fraLabel = fra.extraMonths === 0 ? `${fra.years}` : `${fra.years} and ${fra.extraMonths} months`
+  return [
+    { years: 62, months: 0, suffix: 'at 62' },
+    { years: fra.years, months: fra.extraMonths, suffix: `at ${fraLabel} (FRA)` },
+    { years: 70, months: 0, suffix: 'at 70' },
+  ]
+}
 
 const SS_GRID_CLAIM_AGES = [62, 63, 64, 65, 66, 67, 68, 69, 70] as const
 
@@ -296,7 +310,7 @@ export const socialSecurityClaimGenerator: CandidateGenerator = {
     for (const stream of ssStreams.slice(0, 2)) {
       const person = ctx.plan.household.people.find((p) => p.id === stream.personId)
       const personLabel = person?.name ?? 'household member'
-      for (const claim of SS_CLAIM_AGES) {
+      for (const claim of canonicalClaimAges(person)) {
         if (stream.claimAge.years === claim.years && stream.claimAge.months === claim.months) continue
         const incomes = ctx.plan.incomes.map((income) =>
           income === stream ? { ...stream, claimAge: { years: claim.years, months: claim.months } } : income,

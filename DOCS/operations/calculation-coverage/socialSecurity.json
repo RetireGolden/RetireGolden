@@ -156,10 +156,10 @@
       "feeds": [
         "social-security-benefit-annual"
       ],
-      "purpose": "Credit 2/3 of 1% per month after full retirement age, stopping at age 70.",
-      "statement": "socialSecurity/benefitFactor.ts#delayedRetirementFactor increases the retirement benefit by 2/3 of 1% of PIA per month after the normal retirement age, capped at the months available through age 70, so there is no credit past 70. Claiming at or before NRA returns a factor of 1. Units: a dimensionless factor on PIA. Rounding: none.",
+      "purpose": "Credit a percentage of PIA per month after full retirement age, stopping at age 70, at the rate for the date of birth.",
+      "statement": "socialSecurity/benefitFactor.ts#delayedRetirementFactor increases the retirement benefit by r percent of PIA per month after the normal retirement age, capped at the months available through age 70, so there is no credit past 70. Claiming at or before NRA returns a factor of 1. The rate r is the 20 CFR 404.313(b)(2) credit for the effective birth year, from #delayedCreditMonthlyPct: 2/3 of 1 percent for births after January 1, 1943, and from 5/8 down to 1/12 of 1 percent for earlier births; claimFactor and the survivor base pass it, and the function defaults to 2/3. Units: a dimensionless factor on PIA. Rounding: none.",
       "formula": {
-        "expression": "factor = 1 + min(m, max(0, c)) x (2/3) / 100, and 1 when m <= 0",
+        "expression": "factor = 1 + min(m, max(0, c)) x r / 100, and 1 when m <= 0",
         "variables": [
           {
             "symbol": "m",
@@ -172,6 +172,12 @@
             "meaning": "Maximum credited months from NRA through age 70",
             "unit": "months",
             "domain": "integer >= 0"
+          },
+          {
+            "symbol": "r",
+            "meaning": "Credit per month for the effective birth year (2/3 for births after January 1, 1943)",
+            "unit": "percent of PIA per month",
+            "domain": "a rate from the 20 CFR 404.313(b)(2) table"
           }
         ],
         "timing": "once per claim",
@@ -354,7 +360,7 @@
       },
       "limits": [
         "Simplified to the birth year: the month-of-year refinements of the SSA schedule are not modeled, and a January 1 birth is handled by the separate effective-birth-year rule",
-        "The survivor (widow(er)) full retirement age is a different schedule, keyed to the year the survivor turns 60; the engine's survivor table departs from it for survivors born 1940 through 1950 and 1961 and later, registered as usc-42-416-l-survivor-fra-age-60-attainment-cohorts",
+        "The survivor (widow(er)) full retirement age is a different schedule, keyed to the year the survivor turns 60, so it runs two birth years behind this one and reaches 67 for survivors born 1962 and later; registered as usc-42-416-l-survivor-fra-age-60-attainment-cohorts",
         "Current law may change; the record pins what the module states today"
       ],
       "worksheet": "DOCS/calculations/social-security/normal-retirement-age.md",
@@ -778,8 +784,10 @@
         "rounding": "none"
       },
       "limits": [
-        "The survivor FRA is a separate schedule from the worker FRA, and using the worker FRA would change every reduction between 60 and FRA; the engine's survivor table departs from the statute for survivors born 1940 through 1950 and 1961 and later, registered as usc-42-416-l-survivor-fra-age-60-attainment-cohorts",
-        "The deceased's actual benefit is taken as the caller supplies it; for a worker who died before claiming, the projection supplies the benefit at the claim age entered in the plan rather than the credits earned by the death, registered as usc-42-402-e-survivor-of-worker-who-died-before-claiming",
+        "The survivor FRA is a separate schedule from the worker FRA, and using the worker FRA would change every reduction between 60 and FRA; the survivor schedule is registered as usc-42-416-l-survivor-fra-age-60-attainment-cohorts",
+        "The deceased's actual benefit is taken as the caller supplies it; for a worker who died before claiming, the projection supplies the benefit the worker would have received for the month before the death, with the credits earned by then, registered as usc-42-402-e-survivor-of-worker-who-died-before-claiming",
+        "For a worker who dies before 62, the projection uses the PIA as entered; the law computes that PIA with the death as the eligibility event (20 CFR 404.211 and 404.212) and, for a survivor, can raise it by indexing the worker's earnings to a later year (42 U.S.C. 402(e)(2)(B)), which is not modeled",
+        "For a former spouse who died, the survivor base is priced at the claim age entered for that person, or at full retirement age when none is entered; for a former spouse who died after full retirement age without claiming, entering the age in years and months in the month of death counts the credits earned by then, while a whole-year age drops the months since the last birthday",
         "Inputs are monthly, in today's dollars, before COLA and any benefit haircut; callers scale to their own annual frame",
         "RIB-LIM here is the widow's-limit floor at 82.5% of PIA; the full RIB-LIM family of provisions is broader and illustrative only"
       ],

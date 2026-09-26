@@ -154,6 +154,16 @@ interface QuoteFidelitySummary {
   readonly fetched: number | null
   readonly cached: number | null
   readonly counts: Readonly<Record<string, number>>
+  /**
+   * Entries verified individually after the run that `generatedAt` names,
+   * each with its date and a reason, so the ledger never passes a merged
+   * entry off as part of that run. Empty when the ledger is one run's output.
+   */
+  readonly amendments: readonly {
+    readonly on: string
+    readonly note: string
+    readonly entries: readonly { readonly id: string; readonly citation: string }[]
+  }[]
 }
 
 // Mirrors verify-quotes.mjs's non-zero-exit set (its exported `SERIOUS`).
@@ -717,12 +727,44 @@ function quoteFidelitySummary(
         ')',
     )
   }
+  const amendments: QuoteFidelitySummary['amendments'][number][] = []
+  if (parsed.amendments !== undefined) {
+    if (!Array.isArray(parsed.amendments)) throw new Error('quote-fidelity amendments must be an array')
+    const resultKeys = new Set(
+      ledgerResults.map((result: unknown) =>
+        isRecord(result) ? String(result.id) + '\u0000' + String(result.citation) : ''),
+    )
+    for (const amendment of parsed.amendments as unknown[]) {
+      if (
+        !isRecord(amendment) ||
+        typeof amendment.on !== 'string' ||
+        !/^\d{4}-\d{2}-\d{2}$/u.test(amendment.on) ||
+        typeof amendment.note !== 'string' ||
+        amendment.note.trim() === '' ||
+        !Array.isArray(amendment.entries) ||
+        amendment.entries.length === 0
+      ) {
+        throw new Error('every quote-fidelity amendment must carry an ISO date, a note and at least one entry')
+      }
+      const entries = (amendment.entries as unknown[]).map((entry) => {
+        if (!isRecord(entry) || typeof entry.id !== 'string' || typeof entry.citation !== 'string') {
+          throw new Error('every quote-fidelity amendment entry must carry id and citation')
+        }
+        if (!resultKeys.has(entry.id + '\u0000' + entry.citation)) {
+          throw new Error('quote-fidelity amendment names an entry the ledger does not hold: ' + entry.id + ' / ' + entry.citation)
+        }
+        return { id: entry.id, citation: entry.citation }
+      })
+      amendments.push({ on: amendment.on, note: amendment.note, entries })
+    }
+  }
   return {
     generatedAt: parsed.generatedAt,
     entryCount: parsed.entryCount,
     fetched: typeof parsed.fetched === 'number' && Number.isFinite(parsed.fetched) ? parsed.fetched : null,
     cached: typeof parsed.cached === 'number' && Number.isFinite(parsed.cached) ? parsed.cached : null,
     counts: Object.fromEntries(Object.entries(counts).sort(([left], [right]) => compareStrings(left, right))),
+    amendments,
   }
 }
 
@@ -858,11 +900,24 @@ function buildMarkdown(manifest: CoverageReportManifest, rules: readonly Coverag
     lines.push(
       'Committed ledger generated at ' +
         fidelity.generatedAt +
-        ' over ' +
-        fidelity.entryCount +
-        ' authority entries' +
         provenance +
-        '.',
+        (fidelity.amendments.length === 0 ? '' : ' and amended afterwards') +
+        ', over ' +
+        fidelity.entryCount +
+        ' authority entries.',
+      ...fidelity.amendments.map(
+        (amendment) =>
+          'Amended on ' +
+          amendment.on +
+          ': ' +
+          amendment.entries.length +
+          ' ' +
+          (amendment.entries.length === 1 ? 'entry' : 'entries') +
+          ' verified individually after that run (' +
+          amendment.entries.map((entry) => entry.id + ', ' + entry.citation).join('; ') +
+          '). ' +
+          amendment.note,
+      ),
       '',
       classTotal('serious') +
         ' serious, ' +

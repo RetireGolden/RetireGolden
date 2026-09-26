@@ -70,7 +70,7 @@
       "file": "projection/internal/annualSocialSecurity.ts",
       "lines": [
         71,
-        193
+        208
       ],
       "anchors": [
         {
@@ -86,7 +86,7 @@
           "text": "const onsetAge = stream.disability?.onsetAge"
         },
         {
-          "line": 186,
+          "line": 201,
           "text": "ssOwnByPerson.set(stream.personId, (ssOwnByPerson.get(stream.personId) ?? 0) + annual)"
         }
       ]
@@ -96,20 +96,20 @@
       "label": "former-spouse divorced and survivor replacement menu",
       "file": "projection/internal/annualSocialSecurity.ts",
       "lines": [
-        195,
-        231
+        210,
+        246
       ],
       "anchors": [
         {
-          "line": 195,
+          "line": 210,
           "text": "const householdIsSingle = people.length === 1"
         },
         {
-          "line": 206,
+          "line": 221,
           "text": "const best = bestMaritalBenefit(stream.formerSpouses, {"
         },
         {
-          "line": 215,
+          "line": 230,
           "text": "const annual = best.monthly * payableMonths * ssColaFactor * ssHaircutFactor"
         }
       ]
@@ -119,20 +119,20 @@
       "label": "current-spouse top-up and worker family-maximum cap",
       "file": "projection/internal/annualSocialSecurity.ts",
       "lines": [
-        233,
-        317
+        248,
+        332
       ],
       "anchors": [
         {
-          "line": 233,
+          "line": 248,
           "text": "if (people.length === 2) {"
         },
         {
-          "line": 242,
+          "line": 257,
           "text": "const lowerPayableMonths = annualSocialSecurityPayableMonths(lowerState.ageAttained, lower.ss.claimAge)"
         },
         {
-          "line": 298,
+          "line": 313,
           "text": "const spousalAnnual = spousalTotalMonthly * spousalPayableMonths * ssColaFactor * ssHaircutFactor"
         }
       ]
@@ -142,20 +142,20 @@
       "label": "current-household survivor step-up and stream publication",
       "file": "projection/internal/annualSocialSecurity.ts",
       "lines": [
-        319,
-        363
+        334,
+        378
       ],
       "anchors": [
         {
-          "line": 319,
+          "line": 334,
           "text": "if (people.length === 2) {"
         },
         {
-          "line": 331,
+          "line": 346,
           "text": "const payableMonths = annualSocialSecurityPayableMonths(survivorState.ageAttained, survivorStream.claimAge)"
         },
         {
-          "line": 337,
+          "line": 352,
           "text": "const survivorAnnual ="
         }
       ]
@@ -165,20 +165,20 @@
       "label": "SSDI SGA gate, retirement earnings test, withheld-month writes and warnings",
       "file": "projection/internal/annualSocialSecurity.ts",
       "lines": [
-        365,
-        417
+        380,
+        432
       ],
       "anchors": [
         {
-          "line": 365,
+          "line": 380,
           "text": "let ssEarningsTestWithheld = 0"
         },
         {
-          "line": 376,
+          "line": 391,
           "text": "if (wages > 0 && ssdiSuspendedBySga(wages, annualSga)) {"
         },
         {
-          "line": 408,
+          "line": 423,
           "text": "const monthsWithheld = Math.min(payableMonths, Math.round((withheld / benefit) * payableMonths))"
         }
       ]
@@ -188,24 +188,24 @@
       "label": "living-household total and ordered per-stream publication",
       "file": "projection/internal/annualSocialSecurity.ts",
       "lines": [
-        419,
-        487
+        434,
+        502
       ],
       "anchors": [
         {
-          "line": 419,
+          "line": 434,
           "text": "let socialSecurity = 0"
         },
         {
-          "line": 431,
+          "line": 446,
           "text": "const preWithholdingSumByPerson = new Map<string, number>()"
         },
         {
-          "line": 447,
+          "line": 462,
           "text": "(entry.preWithholdingAnnual > 0 || entry.claimInForce)"
         },
         {
-          "line": 479,
+          "line": 494,
           "text": "return {"
         }
       ],
