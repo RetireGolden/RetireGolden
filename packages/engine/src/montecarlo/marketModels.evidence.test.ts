@@ -842,6 +842,23 @@ describeCalculation(
       expect(year.normalsRead).toBe(2)
     })
 
+    it('inflation reads t, not Z: B1 draws with rho −0.2, inflation vol 1.5 and z2 = 0.5 give 0.5597430575050444', () => {
+      // inflation = 0 + 1.5 · (−0.2 · t + sqrt(1 − 0.04) · 0.5) with t = m · Z = 0.5836795510996967.
+      // Reading Z = 1 in place of t would give 1.5 · (−0.2 + sqrt(0.96) · 0.5) = 0.4348469228349534.
+      const path = seriesOf(
+        createStudentTModel({ ...base, correlation: -0.2, inflationVolPct: 1.5, inflationMeanPct: 0, df: 5 }).generatePath(
+          scriptedRng({ normals: [1, 0.5], uniforms: example.inputs.uniforms as number[] }),
+          1,
+        ),
+      )
+      expectShock(path.returnShockPct[0]!, example.expected.returnShockPct as number)
+      expect(
+        withinTolerance(path.inflationPct[0]!, 0.5597430575050444, example.tolerance),
+        `inflationPct ${path.inflationPct[0]} is not within ${JSON.stringify(example.tolerance)} of 0.5597430575050444`,
+      ).toBe(true)
+      expect(withinTolerance(path.inflationPct[0]!, 0.4348469228349534, example.tolerance)).toBe(false)
+    })
+
     it('B2, an attempt rejected at s <= 0 reads two uniforms and retries: shock 7.00415461319636 after 5 uniforms', () => {
       const year = oneYear(5, 1, [1e-5, 0.5, 0.5, 0, 0.5])
       expectShock(year.path.returnShockPct[0]!, example.expected.returnShockPct as number)

@@ -55,10 +55,11 @@ Further scripted cases (same `returnVolPct`, `Z = 1` unless stated):
 - **B2**, uniforms `1e-5, 0.5, 0.5, 0, 0.5`: the first attempt has `x = sqrt(-2 ln 1e-5) cos(pi) = -4.798525912188081`, `s = -0.0866521376236622 <= 0`, so it rejects after two uniforms; the second attempt is B1's. Shock `7.00415461319636`, five uniforms.
 - **B3**, uniforms `0.5, 0, 0.999, 0.5, 0, 0.95`: attempt 1 fails the squeeze (`0.999 >= 0.93639`) and the exact test (`ln 0.999 = -0.0010005003335835344` is not below `x^2/2 + d(1 - v + ln v) = -0.006778101415568449`); attempt 2 fails the squeeze and passes the exact test (`ln 0.95 = -0.05129329438755058`). Shock `7.00415461319636`, six uniforms; a seventh read is not scripted.
 - **B4**, `df = 2.5`, `Z = -2`, uniforms `0.5, 0, 0.5`: `d = 0.9166666666666667`, `c = 0.3481553119113957`, `v = 2.802753148384276`, squeeze accepts, `V = 5.13838077203784`, `m = 0.3119405691687425`, shock `-7.486573660049821`.
+- **Inflation reads t**: B1 draws with `correlation = -0.2`, `inflationVolPct = 1.5`, `inflationMeanPct = 0` and `z2 = 0.5` give inflation `1.5 (-0.2 (0.5836795510996967) + sqrt(0.96)(0.5)) = 0.5597430575050444`.
 
 ## Expected
 
-For the inputs above: `V = 8.805870575472607`, `m = 0.5836795510996967`, published shock `7.00415461319636` percentage points, inflation `0`, with absolute tolerance `1e-12`; three uniforms and two normals consumed. B2 and B3 give the same shock after five and six uniforms; B4 gives `-7.486573660049821`.
+For the inputs above: `V = 8.805870575472607`, `m = 0.5836795510996967`, published shock `7.00415461319636` percentage points, inflation `0`, with absolute tolerance `1e-12`; three uniforms and two normals consumed. B2 and B3 give the same shock after five and six uniforms; B4 gives `-7.486573660049821`. With correlation -0.2, inflation volatility 1.5 and `z2 = 0.5`, inflation is `0.5597430575050444`.
 
 Refusals: `df` of 2, 1.5, 0, -3, NaN and Infinity each throw `RangeError: Student-t degrees of freedom must be a finite number greater than 2 (at 2 or below the variance is infinite, so no volatility can be matched); got <df>.`; `df` 2.0000001, 2.5 and 3 are accepted.
 
@@ -75,6 +76,8 @@ Case B1:
 | Shape `a = df` instead of `df/2` | 5.296324532431464 |
 | Sine branch for the private normal (`x = 0`, `V = 2d`) | `36 / sqrt(13) = 9.984603532054125` |
 | The earlier normal-with-mixture model at `u = 0.5` | 12 |
+
+For inflation, reading `Z` in place of `t` (`rho Z + sqrt(1 - rho^2) z2`) gives `0.4348469228349534` instead of `0.5597430575050444` in the inflation case above.
 
 The seeded bands also reject the earlier mixture (variance 1.2625, 41 standard errors out), an unscaled t (variance 5/3, 105 out) and a plain normal (tail share 0.0027, 37 out, although its variance would pass).
 
