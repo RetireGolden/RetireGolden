@@ -9,6 +9,7 @@ import { packForYear } from '@retiregolden/engine/params'
 import { applyScenarioPatch } from '@retiregolden/engine/scenarios/scenarios'
 import { createDecisionContext, evaluateInsightAction } from '@retiregolden/engine/decisions'
 import { runMonteCarlo } from '../../mc/pool'
+import { detectorProjection } from '@retiregolden/engine/insights/detectorProjection'
 import { registry } from '@retiregolden/engine/insights/registry'
 import type { InsightAction, InsightCard, InsightImpact } from '@retiregolden/engine/insights/types'
 import { LearnLink } from '../../learn/LearnLink'
@@ -66,12 +67,9 @@ export function InsightCardView({ card, onDismiss }: { card: InsightCard; onDism
         const paramsLookup = packForYear(projectionView.startYear)
         const ctx = {
           plan,
-          projection: {
-            result: projectionView.result,
-            summary: projectionView.summary,
-            startYear: projectionView.startYear,
-            deflate: projectionView.deflate,
-          },
+          // The engine's own projection view, deflating by the run's own
+          // published inflation factor.
+          projection: detectorProjection(projectionView.result, projectionView.summary),
           params: paramsLookup.pack,
         }
 

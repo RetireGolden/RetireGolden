@@ -6,6 +6,12 @@
 
 import type { Plan } from '@retiregolden/engine/model/plan'
 import { summarizeProjection, type ProjectionSummary } from '@retiregolden/engine/projection/compare'
+import {
+  projectionDollarBasis,
+  toNominalDollars,
+  toTodayDollars,
+  type DollarBasis,
+} from '@retiregolden/engine/projection/dollarBasis'
 import { simulatePlan } from '@retiregolden/engine/projection/simulate'
 import type { ProjectionResult } from '@retiregolden/engine/projection/types'
 import { taxCalculatorFor } from './planTaxCalculator'
@@ -15,14 +21,12 @@ export function currentStartYear(): number {
 }
 
 /**
- * The one place the app moves an amount between today's dollars and a year's
- * nominal dollars.
+ * Moving an amount between today's dollars and a year's nominal dollars.
  *
- * Not a second model of anything: the engine already ran the ledger in nominal
- * dollars, and both directions here are the same single compounding of the
- * plan's own `inflationPct` from one base year. It exists because that
- * conversion was being re-derived by hand at four call sites, which is four
- * chances to take the wrong base year and nowhere to test it once.
+ * The planner does no inflation math of its own: both directions divide or
+ * multiply by the factor the engine's ledger published for that year
+ * (`YearResult.inflationScale`, read through the engine's dollar basis). A
+ * year outside the projection is refused, never extrapolated.
  */
 export interface InflationView {
   /** A nominal amount in `year`, expressed in `startYear` dollars. */
@@ -31,19 +35,12 @@ export interface InflationView {
   inflate: (year: number, amount: number) => number
 }
 
-/** `deflate` and `inflate` for one inflation rate compounded from one base year. */
-export function inflationView(inflationPct: number, startYear: number): InflationView {
-  const r = 1 + inflationPct / 100
-  return {
-    deflate: (year, amount) => amount / Math.pow(r, year - startYear),
-    inflate: (year, amount) => amount * Math.pow(r, year - startYear),
-  }
-}
-
 export interface ProjectionView extends InflationView {
   result: ProjectionResult
   summary: ProjectionSummary
   startYear: number
+  /** The run's own dollar basis: the ledger's published inflation factor for each projected year. */
+  basis: DollarBasis
 }
 
 export interface ProjectPlanOptions {
@@ -78,5 +75,13 @@ export function projectPlan(
     ...(opts.captureAnnualCashFlow === true ? { captureAnnualCashFlow: true } : {}),
   })
   const summary = summarizeProjection(plan, result)
-  return { result, summary, startYear, ...inflationView(plan.assumptions.inflationPct, startYear) }
+  const basis = projectionDollarBasis(result)
+  return {
+    result,
+    summary,
+    startYear,
+    basis,
+    deflate: (year, amount) => toTodayDollars(basis, year, amount),
+    inflate: (year, amount) => toNominalDollars(basis, year, amount),
+  }
 }

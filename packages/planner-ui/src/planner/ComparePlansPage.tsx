@@ -9,13 +9,14 @@ import { Link } from 'react-router'
 
 import { listPlansVia, loadPlanVia, usePlanStore, type PlanSummary } from '../data/planStoreContext'
 import type { Plan } from '@retiregolden/engine/model/plan'
-import type { ProjectionSummary } from '@retiregolden/engine/projection/compare'
+import { moneyLasts } from '@retiregolden/engine/projection/moneyLasts'
 import { SelectField } from './fields'
 import { fmtMoneyCompact } from './format'
 import { LiveStatus } from './LiveStatus'
 import { projectPlan, type ProjectionView } from './useProjection'
 import { ScrollRegion } from './ScrollRegion'
 import { ageDelta, deterministicSuccessPct, formatDelta, moneyLastsDelta, type DeltaUnit } from './compareDeltas'
+import { moneyLastsValue } from './format'
 
 const SAME_PLAN_NOTICE = 'Choose two different plans to compare.'
 
@@ -24,8 +25,16 @@ interface ComparedPlan {
   view: ProjectionView
 }
 
-function resultLabel(summary: ProjectionSummary, endYear: number): string {
-  return summary.depletionYear === null ? `Full plan through ${endYear}` : `Depletes in ${summary.depletionYear}`
+/**
+ * The "Money lasts" cell in the one wording every surface uses (owner decision
+ * R15), from the engine's moneyLasts for the plan: "through L", "short from
+ * S", or "full plan", which here also names the end year, since two compared
+ * plans can end in different years.
+ */
+function lastsLabel(view: ProjectionView): string {
+  const lasts = moneyLasts(view.result)
+  const value = moneyLastsValue(lasts, view.result.startYear)
+  return lasts.depletionYear === null ? `${value} through ${lasts.endYear}` : value
 }
 
 function primaryAgeIn(plan: Plan, year: number | null): number | null {
@@ -152,8 +161,8 @@ export function ComparePlansPage() {
     return [
       {
         label: 'Money lasts',
-        a: resultLabel(l, left.view.result.endYear),
-        b: resultLabel(r, right.view.result.endYear),
+        a: lastsLabel(left.view),
+        b: lastsLabel(right.view),
         delta: lasts.value,
         deltaLabel: lasts.label,
         unit: 'years',

@@ -11,6 +11,7 @@
 import { objectivePolicies } from '@retiregolden/engine/decisions'
 import type { Plan } from '@retiregolden/engine/model/plan'
 import type { ProjectionSummary } from '@retiregolden/engine/projection/compare'
+import { moneyLasts } from '@retiregolden/engine/projection/moneyLasts'
 import type { ProjectionResult } from '@retiregolden/engine/projection/types'
 import type {
   ExactLedgerTournamentSummary,
@@ -159,12 +160,20 @@ function headlineSection(model: ReportModel): string {
   const headline = model.blocks['headline-results']
   // An unfunded plan's depletion year is a fact about missing data, not a
   // funded plan's failure — qualify it so the headline can't read as doom.
+  // The engine's money-lasts convention: "Through" names the last fully
+  // funded year and "runs short in" the first short year.
+  const moneyLastsFigures = moneyLasts({
+    startYear: model.startYear,
+    depletionYear: headline.depletionYear,
+    endYear: model.endYear,
+  })
+  const note = model.blocks['household'].incompleteData ? 'plan setup incomplete, see missing-data note' : null
   const lasts =
     headline.depletionYear === null
       ? `Full plan through ${model.endYear}`
-      : model.blocks['household'].incompleteData
-        ? `Depletes in ${headline.depletionYear} (plan setup incomplete; see missing-data note)`
-        : `Depletes in ${headline.depletionYear}`
+      : moneyLastsFigures.lastFundedYear < model.startYear
+        ? `Short from ${model.startYear}${note !== null ? ` (${note})` : ''}`
+        : `Through ${moneyLastsFigures.lastFundedYear} (runs short in ${headline.depletionYear}${note !== null ? `; ${note}` : ''})`
   const rows = [
     ['Ending net worth', fmtMoney(headline.endingNetWorth), `in ${model.endYear}`],
     ['Ending after-tax estate', fmtMoney(headline.endingAfterTaxEstate), 'net of heir tax on pre-tax balances'],

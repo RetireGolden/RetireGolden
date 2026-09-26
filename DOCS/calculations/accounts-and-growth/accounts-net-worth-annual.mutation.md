@@ -1,6 +1,6 @@
 # Mutation receipt: accounts-net-worth-annual
 
-Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-nine` at base `39f8f460`, and re-executed 2026-09-22 against RetireGolden base `4fe87f00` (branch `claude/b1-p4-cards-nine-ten`, pull request #729) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-nine` at base `39f8f460`, and re-executed 2026-09-22 against RetireGolden base `4fe87f00` (branch `claude/b1-p4-cards-nine-ten`, pull request #729), and re-executed 2026-09-26 against RetireGolden base `fff2423b` (branch `claude/b2p1-slice1-ledger-figures`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/projection/internal/annualSnapshot.ts`
 
@@ -26,19 +26,18 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-Re-executed 2026-09-22 on the pull-request branch after the review of #729: the branch was renamed for the pull request and several fixtures changed, so every capture, blob hash and revert note is refreshed against this head. The baseline is green (annualYearResultAssembly.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed. Exit code: 1.
+Re-executed 2026-09-26 for B2-P1 slice 1, which moved the lines this receipt's mutation anchors on in its production file (the mutated code itself is unchanged), so every capture, blob hash and revert note is refreshed against this head. The baseline is green (annualYearResultAssembly.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/TEMP/rg-rehearse2/packages/engine
+RUN  v5.0.0 C:/rgwt/engine4/packages/engine
 
- ❯ src/projection/internal/annualYearResultAssembly.evidence.test.ts (5 tests | 1 failed) 30ms
+ ❯ src/projection/internal/annualYearResultAssembly.evidence.test.ts (7 tests | 1 failed) 33ms
    ❯ accounts-net-worth-annual — Annual net worth, with the non-recourse HECM cap (2)
      × caps each HECM at its own home and composes 664000 4ms
 
  Test Files  1 failed (1)
-      Tests  1 failed | 4 passed (5)
+      Tests  1 failed | 6 passed (7)
 
-  Transform  transforming modules took 2.15s · 43% of tracked time, re-done on every run
              persist transforms across runs with fsModuleCache: true
              learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
 

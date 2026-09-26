@@ -40,3 +40,5 @@ feeds: `none yet`.
 ## Provenance
 
 Derived by: codex (gpt-5.6-sol), 2026-09-18, from the signatures-and-comments extract only, without executing the engine or reading any implementation body. Reviewed by: cursor (composer-2.5), 2026-09-18, by independent recomputation without executing the engine; see REVIEW-2026-09-18-round-eight.md in this directory.
+
+Revision (2026-09-26, B2-P1 slice 1): the record now names `projection/yearFigures.ts#balancesByCategory`, the one roll-up this summary reads for the last row (the same sums in the same order), and states that it refuses a plan whose account id is also a property, debt or permanent-life policy id. No expected value in this worksheet changed. The record's restatement has not been reviewed; the review above covers this worksheet's derivation.

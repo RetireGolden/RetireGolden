@@ -12,6 +12,7 @@ import { Link, useNavigate } from 'react-router'
 
 import { compareSwrRules } from '@retiregolden/engine/decisions/swrComparator'
 import { startingInvestableOf } from '@retiregolden/engine/montecarlo/riskBasedGuardrails'
+import { planDollarBasis, toTodayDollars } from '@retiregolden/engine/projection/dollarBasis'
 import { spendingShapePhases, type SpendingShapeId } from '@retiregolden/engine/spending/shapePresets'
 import type { Plan } from '@retiregolden/engine/model/plan'
 import type { SpendingSolveResult } from '../optimize/spendingMessages'
@@ -23,9 +24,18 @@ import { LearnAboutScreen } from '../learn/LearnAboutScreen'
 import { LearnLink } from '../learn/LearnLink'
 import { fmtMoney } from './format'
 import { LEARN } from './learnLinks'
-import { inflationView } from '../projection'
 import { currentStartYear, taxCalculatorFor } from './useProjection'
 import { ScrollRegion } from './ScrollRegion'
+
+/**
+ * A nominal amount of `year` in `startYear` dollars, by the engine's dollar
+ * basis for a run at `inflationPct` (the ledger's own recurrence). Null when
+ * `year` falls before `startYear`, where a run has no factor to divide by.
+ */
+function todayDollarsOf(inflationPct: number, startYear: number, year: number, amount: number): number | null {
+  if (year < startYear) return null
+  return toTodayDollars(planDollarBasis(inflationPct, startYear, year), year, amount)
+}
 
 function makeScenarioId(): string {
   return typeof crypto !== 'undefined' && 'randomUUID' in crypto
@@ -75,7 +85,13 @@ export function SpendingSolverPage() {
   const navigate = useNavigate()
   const startYear = currentStartYear()
 
-  const [result, setResult] = useState<SpendingSolveResult | null>(null)
+  // The solve's answer kept beside the start year and inflation rate it ran
+  // with, so its today's-dollar evidence is anchored on that run rather than
+  // on the clock (or the plan) at render.
+  const [solve, setSolve] = useState<{ result: SpendingSolveResult; startYear: number; inflationPct: number } | null>(
+    null,
+  )
+  const result = solve?.result ?? null
   const [running, setRunning] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const runToken = useRef(0)
@@ -134,24 +150,33 @@ export function SpendingSolverPage() {
   }
 
   // --- published SWR rules on this plan (three deterministic ledger runs) --
-  const swrRows = useMemo(
-    () => compareSwrRules(plan, { startYear, taxCalculator: taxCalculatorFor(plan) }),
+  // The rows are kept beside the start year and rate they ran with, which is
+  // the base year their today's-dollar estate column divides back to.
+  const swr = useMemo(
+    () => ({
+      startYear,
+      inflationPct: plan.assumptions.inflationPct,
+      rows: compareSwrRules(plan, { startYear, taxCalculator: taxCalculatorFor(plan) }),
+    }),
     [plan, startYear],
   )
+  const swrRows = swr.rows
   const startingInvestable = useMemo(() => startingInvestableOf(plan), [plan])
 
   const run = useCallback(() => {
     const token = ++runToken.current
+    const runStartYear = startYear
+    const runInflationPct = plan.assumptions.inflationPct
     setRunning(true)
     setError(null)
-    runSpendingSolve({ plan, startYear })
+    runSpendingSolve({ plan, startYear: runStartYear })
       .then((r) => {
-        if (token === runToken.current) setResult(r)
+        if (token === runToken.current) setSolve({ result: r, startYear: runStartYear, inflationPct: runInflationPct })
       })
       .catch((e: unknown) => {
         if (token === runToken.current) {
           setError(e instanceof Error ? e.message : String(e))
-          setResult(null)
+          setSolve(null)
         }
       })
       .finally(() => {
@@ -198,14 +223,18 @@ export function SpendingSolverPage() {
 
   // Slack measured against the rounded display value so the two tiles agree.
   const slack = result && solvedRounded !== null ? solvedRounded - result.currentBaseAnnual : null
-  // Deflate nominal end-of-plan evidence back to today's dollars so it reads
-  // on the same scale as the today's-dollars spending answer.
-  // One inflation seam for the page: the end-of-plan evidence and the SWR
-  // table both read today's dollars off the same base year. Built below the
-  // memos above, which take startYear as a dependency the React Compiler must
-  // be able to see is never handed to anything that could change it.
-  const money = inflationView(plan.assumptions.inflationPct, startYear)
-  const deflator = result?.evidence != null ? money.deflate(result.evidence.endYear, 1) : 1
+  // The nominal end-of-plan estate in today's dollars, so it reads on the same
+  // scale as the today's-dollars spending answer: divided by the factor the
+  // solve's own run grew it with (its start year and rate).
+  const evidenceEstateToday =
+    solve !== null && solve.result.evidence !== null
+      ? todayDollarsOf(
+          solve.inflationPct,
+          solve.startYear,
+          solve.result.evidence.endYear,
+          solve.result.evidence.endingAfterTaxEstate,
+        )
+      : null
 
   return (
     <section>
@@ -337,8 +366,17 @@ export function SpendingSolverPage() {
                     {result.evidence.depletionYear === null ? ', never depleting' : ''}).
                   </li>
                   <li>
-                    Ending after-tax estate: <strong>{fmtMoney(result.evidence.endingAfterTaxEstate * deflator)}</strong>{' '}
-                    today's dollars ({fmtMoney(result.evidence.endingAfterTaxEstate)} nominal)
+                    Ending after-tax estate:{' '}
+                    {evidenceEstateToday !== null ? (
+                      <>
+                        <strong>{fmtMoney(evidenceEstateToday)}</strong> today's dollars (
+                        {fmtMoney(result.evidence.endingAfterTaxEstate)} nominal)
+                      </>
+                    ) : (
+                      <>
+                        <strong>{fmtMoney(result.evidence.endingAfterTaxEstate)}</strong> nominal
+                      </>
+                    )}
                     {result.estateFloorTodayDollars > 0 ? ` vs. the ${fmtMoney(result.estateFloorTodayDollars)} floor` : ''}.
                   </li>
                   <li>
@@ -480,7 +518,10 @@ export function SpendingSolverPage() {
             </thead>
             <tbody>
               {swrRows.map((row) => {
-                const deflate = money.deflate(row.endYear, 1)
+                const estateToday =
+                  row.depletionYear === null
+                    ? todayDollarsOf(swr.inflationPct, swr.startYear, row.endYear, row.endingAfterTaxEstate)
+                    : null
                 return (
                   <tr key={row.id}>
                     <td>
@@ -496,7 +537,7 @@ export function SpendingSolverPage() {
                       )}
                     </td>
                     <td style={{ textAlign: 'right' }}>
-                      {row.depletionYear === null ? fmtMoney(row.endingAfterTaxEstate * deflate) : '—'}
+                      {estateToday !== null ? fmtMoney(estateToday) : '—'}
                     </td>
                   </tr>
                 )

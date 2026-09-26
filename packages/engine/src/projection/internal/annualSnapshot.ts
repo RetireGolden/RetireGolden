@@ -70,6 +70,8 @@ export interface AnnualSnapshot {
   /** HECM debt capped line-by-line at the matching property value. */
   readonly hecmEffectiveDebt: number
   readonly insuranceCashValueTotal: number
+  /** The input's unassigned cash, carried through so the year can publish it beside the categories. */
+  readonly unassignedCash: number
 }
 
 /** Build one eager, fresh annual snapshot without mutating any input. */
@@ -122,5 +124,6 @@ export function annualSnapshot(input: AnnualSnapshotInput): AnnualSnapshot {
     hecmLoanTotal,
     hecmEffectiveDebt,
     insuranceCashValueTotal,
+    unassignedCash,
   }
 }

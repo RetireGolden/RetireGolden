@@ -195,28 +195,28 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/insurance.test.ts",
-          "line": 144,
+          "line": 145,
           "note": null,
           "tests": [
             {
               "title": "pays the face amount on the insured death, income-tax-free",
-              "line": 157
+              "line": 158
             },
             {
               "title": "pays a single-person plan its benefit in the final year, into the estate",
-              "line": 185
+              "line": 186
             },
             {
               "title": "pays the benefit on a policy held by the last survivor",
-              "line": 196
+              "line": 197
             },
             {
               "title": "never pays less than the accumulated cash value",
-              "line": 203
+              "line": 204
             },
             {
               "title": "pays the benefit exactly once",
-              "line": 212
+              "line": 213
             }
           ]
         }

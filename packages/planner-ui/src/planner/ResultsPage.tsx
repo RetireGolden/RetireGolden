@@ -24,8 +24,19 @@ import {
 
 import type { Plan } from '@retiregolden/engine/model/plan'
 import { startingInvestableOf } from '@retiregolden/engine/montecarlo/riskBasedGuardrails'
+import { nominalForDisplay, toTodayDollars } from '@retiregolden/engine/projection/dollarBasis'
+import { moneyLasts } from '@retiregolden/engine/projection/moneyLasts'
 import type { InheritedIraRefusalCode, YearResult } from '@retiregolden/engine/projection/types'
-import { ACCOUNT_CATEGORIES, ACCOUNT_CATEGORY_COLOR, ACCOUNT_CATEGORY_LABEL } from './accountCategories'
+import { projectionDisplayFigures, type YearDisplayFigures } from '@retiregolden/engine/projection/yearFigures'
+import {
+  ACCOUNT_CATEGORIES,
+  ACCOUNT_CATEGORY_COLOR,
+  ACCOUNT_CATEGORY_LABEL,
+  hasUnassignedCash,
+  UNASSIGNED_CASH_COLOR,
+  UNASSIGNED_CASH_KEY,
+  UNASSIGNED_CASH_LABEL,
+} from './accountCategories'
 import { serializeSinglePlan } from '../data/planFormat'
 import { buildExpenseRows, buildIncomeRows, buildLedgerCsv, buildResultsRows } from './resultsRows'
 import { CopyButton } from './CopyButton'
@@ -378,6 +389,31 @@ const tooltipProps = {
 // by nulling zeros in the data, see NonZeroTooltipContent.
 const stackTooltipProps = { ...tooltipProps, content: NonZeroTooltipContent } as const
 
+/**
+ * The Tax-free gains room column's meaning, shared by the header tooltip and
+ * the keyboard/touch explainer so the two cannot drift. The figure is the
+ * engine's `taxFreeGainsRoom`: the extra long-term gain that raises the year's
+ * federal income tax by $0.
+ */
+const TAX_FREE_GAINS_ROOM_TOOLTIP =
+  "Extra long-term gains you could realize this year without raising this year's federal income tax. " +
+  'Your remaining loss carryforward absorbs gains first. After that, gains count only while they add no ' +
+  'federal tax: they stay in the 0% bracket and do not make more of your Social Security taxable, use up a ' +
+  'loss deduction your other income was using, shrink a deduction, or reach the 3.8% net investment income ' +
+  'tax or the AMT. State tax, the ACA premium credit, and Medicare premiums are not included. The figure is ' +
+  'rounded down to the dollar.'
+
+/** The per-year marker beside the gains room in a year with an ACA premium credit. */
+const ACA_CREDIT_MARKER = '†'
+
+const ACA_CREDIT_MARKER_TEXT =
+  'This year has an ACA premium credit. Realizing gains this year can also shrink the credit; if it was paid ' +
+  'in advance, the part you lose is paid back as federal tax when you file. The room does not include that.'
+
+const ACA_CREDIT_MARKER_EXPLAINER =
+  'marks a year with an ACA premium credit. Realizing gains that year can also shrink the credit; if it was ' +
+  'paid in advance, the part you lose is paid back as federal tax when you file. The room does not include that.'
+
 
 /**
  * The FIRE metrics + FI-target chart. Rendered as the leading card only for
@@ -458,6 +494,7 @@ export function YearByYearLedger({
   hasLayeredSpending,
   hasAmt,
   hasCarryforward,
+  figures: figuresProp,
 }: {
   plan: Plan
   years: readonly YearResult[]
@@ -467,7 +504,17 @@ export function YearByYearLedger({
   hasLayeredSpending: boolean
   hasAmt: boolean
   hasCarryforward: boolean
+  /**
+   * The engine's display figures for `years`, one per row in the same order.
+   * The page computes them once per projection (the gains room runs a search)
+   * and hands them in; without them the table computes its own.
+   */
+  figures?: readonly YearDisplayFigures[]
 }) {
+  const figures = useMemo(
+    () => figuresProp ?? projectionDisplayFigures(plan, { years: [...years] }),
+    [figuresProp, plan, years],
+  )
   const location = useLocation()
   const [searchParams, setSearchParams] = useSearchParams()
   const [showAllFlowYear, setShowAllFlowYear] = useState<number | null>(null)
@@ -562,7 +609,7 @@ export function YearByYearLedger({
               <th scope="col" title="Displayed in the active dollar mode. IRMAA and ACA threshold checks use the nominal dollars for each rule.">
                 MAGI ({dollarLabel})
               </th>
-              <th scope="col" title="Additional long-term gains you could realize this year at $0 federal tax: your remaining loss carryforward absorbs gains dollar-for-dollar, then the 0% long-term bracket covers more on top.">Tax-free gains room</th>
+              <th scope="col" title={TAX_FREE_GAINS_ROOM_TOOLTIP}>Tax-free gains room</th>
               {hasCarryforward ? <th scope="col" title="Capital-loss carryforward remaining at year end.">Loss carryf'd</th> : null}
               <th scope="col">Shortfall</th>
               {hasLayeredSpending ? <th scope="col" title="Required-floor shortfall / target-lifestyle shortfall / upside miss.">Layer miss</th> : null}
@@ -573,7 +620,13 @@ export function YearByYearLedger({
             </tr>
           </thead>
           <tbody>
-            {years.map((y) => (
+            {years.map((y, index) => {
+              const f = figures[index]!
+              const room = f.taxFreeGainsRoom
+              // Rounded down to the whole dollar in the page's dollars, so the
+              // cell never shows more room than the engine computed.
+              const roomShown = room === null ? null : Math.floor(adj(y.year, room))
+              return (
               <tr key={y.year} className={y.shortfall > 0.005 ? 'row-depleted' : undefined}>
                 <td className="year-table-year">{y.year}</td>
                 <td>{y.people.map((p) => (p.alive ? p.ageAttained : '—')).join(' / ')}</td>
@@ -582,11 +635,7 @@ export function YearByYearLedger({
                 {hasLayeredSpending ? <td>{fmtMoney(adj(y.year, y.expenses.requiredSpending))}</td> : null}
                 {hasLayeredSpending ? <td>{fmtMoney(adj(y.year, y.expenses.targetSpending))}</td> : null}
                 {hasLayeredSpending ? (
-                  <td>
-                    {y.expenses.idealSpending + y.expenses.excessSpending > 0.5
-                      ? fmtMoney(adj(y.year, y.expenses.idealSpending + y.expenses.excessSpending))
-                      : ''}
-                  </td>
+                  <td>{f.upsideSpending > 0.5 ? fmtMoney(adj(y.year, f.upsideSpending)) : ''}</td>
                 ) : null}
                 {/* Zero prints as $0, the convention the RMD / Conversion / Withdrawals
                     columns already follow; a blank read as missing data (#483). */}
@@ -595,21 +644,27 @@ export function YearByYearLedger({
                 <td>{fmtMoney(adj(y.year, y.rmd))}</td>
                 <td>{fmtMoney(adj(y.year, y.rothConversion))}</td>
                 <td>{fmtMoney(adj(y.year, y.withdrawals.total))}</td>
-                <td>{fmtMoney(adj(y.year, y.tax + y.penalties))}</td>
+                <td>{fmtMoney(adj(y.year, f.taxAndPenalties))}</td>
                 {hasAmt ? <td>{y.amt > 0.5 ? fmtMoney(adj(y.year, y.amt)) : ''}</td> : null}
                 <td>{fmtMoney(adj(y.year, y.magi))}</td>
-                <td>{y.ltcgZeroHeadroom + y.capitalLossCarryforwardRemaining > 0.5 ? fmtMoney(adj(y.year, y.ltcgZeroHeadroom + y.capitalLossCarryforwardRemaining)) : ''}</td>
+                <td>
+                  {roomShown !== null && roomShown >= 1 ? fmtMoney(roomShown) : ''}
+                  {f.premiumTaxCreditYear ? (
+                    <span className="gains-room-aca-marker" title={ACA_CREDIT_MARKER_TEXT}>
+                      <span aria-hidden="true">{ACA_CREDIT_MARKER}</span>
+                      <span className="sr-only">{ACA_CREDIT_MARKER_TEXT}</span>
+                    </span>
+                  ) : null}
+                </td>
                 {hasCarryforward ? <td>{y.capitalLossCarryforwardRemaining > 0.5 ? fmtMoney(adj(y.year, y.capitalLossCarryforwardRemaining)) : '—'}</td> : null}
                 <td>{fmtMoney(adj(y.year, y.shortfall))}</td>
                 {hasLayeredSpending ? (
                   <td>
-                    {y.requiredShortfall + y.targetShortfall + y.idealShortfall + y.excessShortfall > 0.5 ? (
+                    {y.requiredShortfall > 0.5 || y.targetShortfall > 0.5 || f.upsideShortfall > 0.5 ? (
                       <>
                         {y.requiredShortfall > 0.5 ? `Req ${fmtMoney(adj(y.year, y.requiredShortfall))} ` : ''}
                         {y.targetShortfall > 0.5 ? `Target ${fmtMoney(adj(y.year, y.targetShortfall))} ` : ''}
-                        {y.idealShortfall + y.excessShortfall > 0.5
-                          ? `Upside ${fmtMoney(adj(y.year, y.idealShortfall + y.excessShortfall))}`
-                          : ''}
+                        {f.upsideShortfall > 0.5 ? `Upside ${fmtMoney(adj(y.year, f.upsideShortfall))}` : ''}
                       </>
                     ) : (
                       ''
@@ -619,7 +674,7 @@ export function YearByYearLedger({
                 {hasLayeredSpending ? (
                   <td>
                     {y.guardrailAction !== 'hold' ? y.guardrailAction : ''}
-                    {y.flexibleGoals.funded + y.flexibleGoals.partiallyFunded + y.flexibleGoals.deferred + y.flexibleGoals.skipped > 0 ? (
+                    {[y.flexibleGoals.funded, y.flexibleGoals.partiallyFunded, y.flexibleGoals.deferred, y.flexibleGoals.skipped].some((count) => count > 0) ? (
                       <span
                         title={`Goals: ${y.flexibleGoals.funded} funded, ${y.flexibleGoals.partiallyFunded} partially funded, ${y.flexibleGoals.deferred} deferred, ${y.flexibleGoals.skipped} skipped`}
                         aria-label={`Goals: ${y.flexibleGoals.funded} funded, ${y.flexibleGoals.partiallyFunded} partially funded, ${y.flexibleGoals.deferred} deferred, ${y.flexibleGoals.skipped} skipped`}
@@ -643,7 +698,8 @@ export function YearByYearLedger({
                   </button>
                 </td>
               </tr>
-            ))}
+              )
+            })}
           </tbody>
         </table>
       </ScrollRegion>
@@ -671,10 +727,17 @@ export function ResultsPage() {
   const view = useProjection(plan, { captureAnnualCashFlow: true })
   const [dollars, setDollars] = useState<Dollars>('today')
   const dollarLabel = dollars === 'today' ? 'today\'s $' : 'nominal $'
+  // The page's dollar adjuster, on the projection's own published inflation
+  // factors (the engine's dollar basis); also the cash-flow dialog's
+  // displayAmount, so the Sankey and the table can never disagree.
   const adj = useMemo(
-    () => (year: number, v: number) => (dollars === 'today' ? view.deflate(year, v) : v),
+    () => (year: number, v: number) => nominalForDisplay(view.basis, dollars, year, v),
     [dollars, view],
   )
+  // The engine's per-year display figures, once per projection: the table's
+  // Tax, Upside, Tax-free gains room and Layer miss cells read these, and the
+  // gains room runs a search, so it is never recomputed on a dollar toggle.
+  const figures = useMemo(() => projectionDisplayFigures(plan, view.result), [plan, view])
 
   const hasCarryforward = hasCapitalLossCarryforward(
     plan.household.capitalLossCarryforward,
@@ -702,9 +765,11 @@ export function ResultsPage() {
     view.result.years,
   )
 
-  const rows = useMemo(() => buildResultsRows(view, plan, adj), [view, plan, adj])
-  const incomeRows = useMemo(() => buildIncomeRows(view, adj), [view, adj])
-  const expenseRows = useMemo(() => buildExpenseRows(view, adj), [view, adj])
+  const rows = useMemo(() => buildResultsRows(view, plan, dollars), [view, plan, dollars])
+  const incomeRows = useMemo(() => buildIncomeRows(view, dollars), [view, dollars])
+  const expenseRows = useMemo(() => buildExpenseRows(view, dollars), [view, dollars])
+  const showUnassignedCash = hasUnassignedCash(view.result.years)
+  const hasAcaCreditYears = figures.some((f) => f.premiumTaxCreditYear)
 
   const handleCsv = () => {
     const blob = new Blob([buildLedgerCsv(plan, view)], { type: 'text/csv' })
@@ -725,9 +790,16 @@ export function ResultsPage() {
     })
   }
 
-  const depletionYear = view.summary.depletionYear
+  // How long the money lasts, as the engine publishes it: the last funded
+  // year L, the first short year D, and the N = E - L years short of the end.
+  const lasts = moneyLasts(view.result)
+  const depletionYear = lasts.depletionYear
   const endYear = view.result.endYear
-  const endingToday = view.deflate(endYear, view.result.endingNetWorth)
+  const planStartYear = view.result.startYear
+  // A projection whose horizon ended before it started has no rows, so no
+  // factor for its end year; say nothing in today's dollars then.
+  const endingToday =
+    view.result.years.length > 0 ? toTodayDollars(view.basis, endYear, view.result.endingNetWorth) : null
   // Same debounced, plan-keyed run the KPI bar uses (shared in-flight, so this
   // never adds a second simulation) — the verdict must speak with both of the
   // engine's voices, not just the steady-markets ledger.
@@ -770,17 +842,19 @@ export function ResultsPage() {
           <p className="muted">
             {depletionYear !== null ? (
               <>
-                The portfolio depletes {endYear - depletionYear} year{endYear - depletionYear === 1 ? '' : 's'} before
-                the end of the plan.
+                {lasts.lastFundedYear < planStartYear
+                  ? `The plan is short of money from its first year, ${planStartYear}.`
+                  : `Money lasts through ${lasts.lastFundedYear}, ${lasts.yearsShortOfPlanEnd} year${lasts.yearsShortOfPlanEnd === 1 ? '' : 's'} short of the plan's end in ${endYear}.`}
                 {floorYear !== undefined && floorYear.incomes.total > 0.5 ? (
                   <>
                     {' '}
-                    Income doesn't stop: about {fmtMoneyCompact(view.deflate(floorYear.year, floorYear.incomes.total))}
+                    Income doesn't stop: about{' '}
+                    {fmtMoneyCompact(toTodayDollars(view.basis, floorYear.year, floorYear.incomes.total))}
                     /yr (today's dollars) of Social Security, pensions, and other income keeps arriving
                     {floorYear.shortfall > 0.5 ? (
                       <>
                         , leaving an uncovered spending gap of about{' '}
-                        {fmtMoneyCompact(view.deflate(floorYear.year, floorYear.shortfall))}/yr
+                        {fmtMoneyCompact(toTodayDollars(view.basis, floorYear.year, floorYear.shortfall))}/yr
                       </>
                     ) : null}
                     .
@@ -797,8 +871,8 @@ export function ResultsPage() {
               </>
             ) : (
               <>
-                In steady markets, ending net worth is {fmtMoneyCompact(view.result.endingNetWorth)} (
-                {fmtMoneyCompact(endingToday)} in today's dollars).
+                In steady markets, ending net worth is {fmtMoneyCompact(view.result.endingNetWorth)}
+                {endingToday !== null ? <> ({fmtMoneyCompact(endingToday)} in today's dollars)</> : null}.
                 {mcRate !== null ? (
                   <>
                     {' '}
@@ -928,6 +1002,13 @@ export function ResultsPage() {
         <h2>Investable balances by account type</h2>
         <p className="card-hint">
           End-of-year balances, shown in {dollarLabel}.
+          {showUnassignedCash ? (
+            <>
+              {' '}
+              The top band, {UNASSIGNED_CASH_LABEL}, is surplus cash the plan had no cash or taxable account to hold.
+              It still counts toward your investable total.
+            </>
+          ) : null}
           {view.summary.depletionYear !== null ? (
             <>
               {' '}
@@ -949,6 +1030,9 @@ export function ResultsPage() {
               {ACCOUNT_CATEGORIES.map((c) => (
                 <Area key={c} dataKey={c} stackId="bal" name={ACCOUNT_CATEGORY_LABEL[c]} stroke={ACCOUNT_CATEGORY_COLOR[c]} fill={ACCOUNT_CATEGORY_COLOR[c]} fillOpacity={0.55} />
               ))}
+              {showUnassignedCash ? (
+                <Area key={UNASSIGNED_CASH_KEY} dataKey={UNASSIGNED_CASH_KEY} stackId="bal" name={UNASSIGNED_CASH_LABEL} stroke={UNASSIGNED_CASH_COLOR} fill={UNASSIGNED_CASH_COLOR} fillOpacity={0.55} />
+              ) : null}
               {view.summary.depletionYear !== null ? (
                 <ReferenceLine x={view.summary.depletionYear} stroke="var(--bad)" strokeDasharray="4 4" label={{ value: 'depleted', fill: 'var(--bad)', fontSize: 12 }} />
               ) : null}
@@ -1080,6 +1164,7 @@ export function ResultsPage() {
           hasLayeredSpending={hasLayeredSpending}
           hasAmt={hasAmt}
           hasCarryforward={hasCarryforward}
+          figures={figures}
         />
         {/* Column semantics used to live only in title= tooltips — invisible on
             touch and unreliable for screen readers. This legend is the
@@ -1114,9 +1199,15 @@ export function ResultsPage() {
               ACA threshold checks always use each year's nominal dollars.
             </li>
             <li>
-              <strong>Tax-free gains room</strong>: additional long-term gains you could realize this year at $0
-              federal tax: remaining loss carryforward absorbs gains first, then the 0% long-term bracket covers more.
+              <strong>Tax-free gains room</strong>: {TAX_FREE_GAINS_ROOM_TOOLTIP} The room left in the 0% long-term
+              bracket can be larger than this figure, because gains in that bracket can still raise tax in the ways
+              above; this column is the room at no extra federal tax.
             </li>
+            {hasAcaCreditYears ? (
+              <li>
+                <strong>{ACA_CREDIT_MARKER}</strong> beside the gains room {ACA_CREDIT_MARKER_EXPLAINER}
+              </li>
+            ) : null}
             {hasCarryforward ? (
               <li>
                 <strong>Loss carryf&apos;d</strong>: capital-loss carryforward remaining at year end.

@@ -1,12 +1,12 @@
 # Mutation receipt: exact-ledger-tournament-margin
 
-Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-fourteen` at base `a4a278ef`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-fourteen` at base `a4a278ef`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730), and re-executed 2026-09-26 against RetireGolden base `fff2423b` (branch `claude/b2p1-slice1-ledger-figures`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/projection/optimizePlan.ts`
 
 ```diff
 diff --git a/packages/engine/src/projection/optimizePlan.ts b/packages/engine/src/projection/optimizePlan.ts
-index 930a11ac..3823cc5e 100644
+index 1764ef96..ab5a02a0 100644
 --- a/packages/engine/src/projection/optimizePlan.ts
 +++ b/packages/engine/src/projection/optimizePlan.ts
 @@ -1859,7 +1859,7 @@ function fallbackTournament(
@@ -32,10 +32,10 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-Re-executed 2026-09-22 on the pull-request branch after the review of #730: the branch was renamed for the pull request, so every capture, blob hash and revert note is refreshed against this head. The baseline is green (optimizePlan.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed. Exit code: 1.
+Re-executed 2026-09-26 for B2-P1 slice 1, which moved the lines this receipt's mutation anchors on in its production file (the mutated code itself is unchanged), so every capture, blob hash and revert note is refreshed against this head. The baseline is green (optimizePlan.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/TEMP/rg-rehearse2/packages/engine
+RUN  v5.0.0 C:/rgwt/engine4/packages/engine
 
  ❯ src/projection/optimizePlan.evidence.test.ts (17 tests | 1 failed) 292ms
    ❯ exact-ledger-tournament-margin — Exact ledger tournament margin (2)
@@ -44,7 +44,6 @@ RUN  v5.0.0 C:/TEMP/rg-rehearse2/packages/engine
  Test Files  1 failed (1)
       Tests  1 failed | 16 passed (17)
 
-  Transform  transforming modules took 2.51s · 42% of tracked time, re-done on every run
              persist transforms across runs with fsModuleCache: true
              learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
 
@@ -60,13 +59,13 @@ AssertionError: incumbent marginOverMilpDollars: actual 90702.09287729522, works
 - true
 + false
 
- ❯ src/projection/optimizePlan.evidence.test.ts:761:9
-    759|         withinTolerance(tournament.marginOverMilpDollars, expectedMarg…
-    760|         `incumbent marginOverMilpDollars: actual ${tournament.marginOv…
-    761|       ).toBe(true)
+ ❯ src/projection/optimizePlan.evidence.test.ts:762:9
+    760|         withinTolerance(tournament.marginOverMilpDollars, expectedMarg…
+    761|         `incumbent marginOverMilpDollars: actual ${tournament.marginOv…
+    762|       ).toBe(true)
        |         ^
-    762|       // The worksheet's first wrong reading: candidates on this plan …
-    763|       // nonzero estate deltas, and publishing one of them as the marg…
+    763|       // The worksheet's first wrong reading: candidates on this plan …
+    764|       // nonzero estate deltas, and publishing one of them as the marg…
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 ```

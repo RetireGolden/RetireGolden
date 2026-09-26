@@ -6,8 +6,10 @@
 import { selectedLogicalBalanceAccounts, type Account, type Plan } from '../model/plan.js'
 import { estateTraditionalTaxableBase } from './estateTraditionalBasis.js'
 import { estateHsaIncomeBase } from './estateHsaIncome.js'
+import { moneyLasts, type MoneyLasts } from './moneyLasts.js'
 import { simulatePlan, type SimulateOptions } from './simulate.js'
 import type { ProjectionResult } from './types.js'
+import { balancesByCategory, spendingWithTaxAndPenalties } from './yearFigures.js'
 
 function isoYear(isoDate: string): number {
   return Number(isoDate.slice(0, 4))
@@ -229,11 +231,14 @@ export function summarizeProjection(plan: Plan, result: ProjectionResult): Proje
   const endingByCategory = { cash: 0, taxable: 0, traditional: 0, roth: 0, hsa: 0 }
   const last = result.years[result.years.length - 1]
   if (last) {
-    for (const account of selectedLogicalBalanceAccounts(plan.accounts)) {
-      if (account.type in endingByCategory) {
-        endingByCategory[account.type as keyof typeof endingByCategory] += last.balances[account.id] ?? 0
-      }
-    }
+    // The one roll-up of balances by category (one value per logical account
+    // id), read for the last row; equity compensation is not one of these five.
+    const lastByCategory = balancesByCategory(plan, last)
+    endingByCategory.cash = lastByCategory.cash
+    endingByCategory.taxable = lastByCategory.taxable
+    endingByCategory.traditional = lastByCategory.traditional
+    endingByCategory.roth = lastByCategory.roth
+    endingByCategory.hsa = lastByCategory.hsa
   }
 
   // --- estate depth (guaranteed-income-and-estate-depth) --------------------
@@ -337,7 +342,7 @@ export function summarizeProjection(plan: Plan, result: ProjectionResult): Proje
   // 3. FI Number
   const targetResult = result.years.find((y) => y.year === Math.max(startYear, targetYear)) ?? result.years[0]
   const nominalSpendingAtFI = targetResult
-    ? targetResult.expenses.total + targetResult.tax + targetResult.penalties
+    ? spendingWithTaxAndPenalties(targetResult)
     : plan.expenses.baseAnnual
   const yearsToFIYear = targetResult ? targetResult.year - startYear : 0
   const annualSpendingAtFIToday = nominalSpendingAtFI / Math.pow(1 + inflationRate, yearsToFIYear)
@@ -409,6 +414,12 @@ export interface LtcStressComparison {
   careUninsured: ProjectionSummary
   /** The care episode occurs with the plan's LTC policies (premiums + benefits). */
   careInsured: ProjectionSummary
+  /**
+   * How long the money lasts in each of the three runs, in the one published
+   * convention (projection/moneyLasts.ts): the last fully funded year and the
+   * first short year, so the page names the same years every other surface does.
+   */
+  lasts: { noCare: MoneyLasts; careUninsured: MoneyLasts; careInsured: MoneyLasts }
   hasCareEvents: boolean
   hasLtcPolicy: boolean
 }
@@ -424,14 +435,19 @@ export interface LtcStressComparison {
  * premiums exceed the benefits paid). The UI labels it as such.
  */
 export function compareLtcStress(plan: Plan, opts: SimulateOptions): LtcStressComparison {
-  const run = (p: Plan) => summarizeProjection(p, simulatePlan(p, opts))
+  const run = (p: Plan) => {
+    const result = simulatePlan(p, opts)
+    return { summary: summarizeProjection(p, result), lasts: moneyLasts(result) }
+  }
   const withoutLtc = plan.insurance.filter((i) => i.kind !== 'ltc')
-  const noCare: Plan = { ...plan, careEvents: [], insurance: withoutLtc }
-  const careUninsured: Plan = { ...plan, insurance: withoutLtc }
+  const noCare = run({ ...plan, careEvents: [], insurance: withoutLtc })
+  const careUninsured = run({ ...plan, insurance: withoutLtc })
+  const careInsured = run(plan)
   return {
-    noCare: run(noCare),
-    careUninsured: run(careUninsured),
-    careInsured: run(plan),
+    noCare: noCare.summary,
+    careUninsured: careUninsured.summary,
+    careInsured: careInsured.summary,
+    lasts: { noCare: noCare.lasts, careUninsured: careUninsured.lasts, careInsured: careInsured.lasts },
     hasCareEvents: plan.careEvents.length > 0,
     hasLtcPolicy: plan.insurance.some((i) => i.kind === 'ltc'),
   }

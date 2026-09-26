@@ -693,6 +693,17 @@
   white-space: normal;
 }
 
+/* A worded KPI value may wrap between its words instead of painting past its
+   cell. "short from 2026" (the Money lasts value for a plan short in its first
+   year, owner decision R15) measured 172px of bold text at 22.5px in a 160px
+   track at 1024 (bars 712-888px wide overflowed by up to 11px); wrapped, the
+   longest line is one word pair and stays inside the track at every width
+   swept. A number never gets this class: it keeps the no-wrap rule above. */
+.kpi-value--wrap {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
 /* A KPI value that routes somewhere ("what would change this", Monte Carlo).
    Decoration follows the value's own tone via currentColor. */
 .kpi-value-link {

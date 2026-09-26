@@ -1,12 +1,12 @@
 # Mutation receipt: exact-ledger-conversion-execution
 
-Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-twelve` at base `2c07f0d7`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-twelve` at base `2c07f0d7`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730), and re-executed 2026-09-26 against RetireGolden base `fff2423b` (branch `claude/b2p1-slice1-ledger-figures`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/decisions/evaluateCandidate.ts`
 
 ```diff
 diff --git a/packages/engine/src/decisions/evaluateCandidate.ts b/packages/engine/src/decisions/evaluateCandidate.ts
-index f18d4c86..eeea7384 100644
+index dde03d4c..ab8b4d05 100644
 --- a/packages/engine/src/decisions/evaluateCandidate.ts
 +++ b/packages/engine/src/decisions/evaluateCandidate.ts
 @@ -659,7 +659,7 @@ function buildConversionExecution(
@@ -32,19 +32,18 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-Re-executed 2026-09-22 on the pull-request branch after the review of #730: the branch was renamed for the pull request, so every capture, blob hash and revert note is refreshed against this head. The baseline is green (optimizePlan.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed. Exit code: 1.
+Re-executed 2026-09-26 for B2-P1 slice 1, which moved the lines this receipt's mutation anchors on in its production file (the mutated code itself is unchanged), so every capture, blob hash and revert note is refreshed against this head. The baseline is green (optimizePlan.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/TEMP/rg-rehearse2/packages/engine
+RUN  v5.0.0 C:/rgwt/engine4/packages/engine
 
- ❯ src/projection/optimizePlan.evidence.test.ts (17 tests | 1 failed) 290ms
+ ❯ src/projection/optimizePlan.evidence.test.ts (17 tests | 1 failed) 294ms
    ❯ exact-ledger-conversion-execution — Exact ledger conversion execution (4)
-     × returns null when the only shortfall equals its own margin 3ms
+     × returns null when the only shortfall equals its own margin 4ms
 
  Test Files  1 failed (1)
       Tests  1 failed | 16 passed (17)
 
-  Transform  transforming modules took 2.52s · 42% of tracked time, re-done on every run
              persist transforms across runs with fsModuleCache: true
              learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
 
@@ -60,13 +59,13 @@ null
 + Received:
 2040
 
- ❯ src/projection/optimizePlan.evidence.test.ts:327:56
-    325|       // 20000 requested, 19000 executed: the shortfall is 1000 and th…
-    326|       // is max(1000, 1000); "more than" is strict, so 2040 does not q…
-    327|       expect(validation.firstMateriallyUnexecutedYear).toBe(example.ex…
+ ❯ src/projection/optimizePlan.evidence.test.ts:328:56
+    326|       // 20000 requested, 19000 executed: the shortfall is 1000 and th…
+    327|       // is max(1000, 1000); "more than" is strict, so 2040 does not q…
+    328|       expect(validation.firstMateriallyUnexecutedYear).toBe(example.ex…
        |                                                        ^
-    328|     })
-    329|
+    329|     })
+    330|
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 ```

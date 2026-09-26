@@ -40,7 +40,14 @@ import type {
   ProjectionResult,
   YearResult,
 } from '@retiregolden/engine/projection/types'
+import {
+  balancesByCategory,
+  spendingWithTaxAndPenalties,
+  taxAndPenalties,
+  unassignedCash,
+} from '@retiregolden/engine/projection/yearFigures'
 import { csvCell } from '../csvCell'
+import { hasUnassignedCash } from '../planner/accountCategories'
 import { acaLedgerSummary } from '../planner/acaReportStatus'
 import { fmtMoney } from '../planner/format'
 import { isPlanIncomplete } from '../planner/planCompleteness'
@@ -322,7 +329,11 @@ export const REPORT_CHART_CATEGORIES = ['cash', 'taxable', 'equityComp', 'tradit
 
 export type ReportChartCategory = (typeof REPORT_CHART_CATEGORIES)[number]
 
-/** Whole-dollar per-year series behind the balance/income chart and CSV. */
+/**
+ * Whole-dollar per-year series behind the balance/income chart and CSV. The
+ * six categories are the engine's `balancesByCategory` (one value per logical
+ * account) and `spendingPlusTax` its `spendingWithTaxAndPenalties`.
+ */
 export interface ReportChartDataRow {
   year: number
   cash: number
@@ -333,6 +344,13 @@ export interface ReportChartDataRow {
   hsa: number
   income: number
   spendingPlusTax: number
+  /**
+   * The engine's `unassignedCash`: surplus the ledger had no cash or taxable
+   * account to hold, part of the investable total and of no category. Present
+   * on every row only when some year of the plan holds more than $0.50 of it,
+   * absent otherwise.
+   */
+  unassignedCash?: number
 }
 
 export interface ReportChartDataBlock {
@@ -572,16 +590,9 @@ function spendingPolicySummary(plan: Plan): string {
 }
 
 function chartDataRows(plan: Plan, result: ProjectionResult): ReportChartDataRow[] {
+  const withUnassignedCash = hasUnassignedCash(result.years)
   return result.years.map((year) => {
-    const categories = Object.fromEntries(REPORT_CHART_CATEGORIES.map((category) => [category, 0])) as Record<
-      ReportChartCategory,
-      number
-    >
-    for (const account of plan.accounts) {
-      if ((REPORT_CHART_CATEGORIES as readonly string[]).includes(account.type)) {
-        categories[account.type as ReportChartCategory] += year.balances[account.id] ?? 0
-      }
-    }
+    const categories = balancesByCategory(plan, year)
     return {
       year: year.year,
       cash: roundDollar(categories.cash),
@@ -591,7 +602,8 @@ function chartDataRows(plan: Plan, result: ProjectionResult): ReportChartDataRow
       roth: roundDollar(categories.roth),
       hsa: roundDollar(categories.hsa),
       income: roundDollar(year.incomes.total),
-      spendingPlusTax: roundDollar(year.expenses.total + year.tax + year.penalties),
+      spendingPlusTax: roundDollar(spendingWithTaxAndPenalties(year)),
+      ...(withUnassignedCash ? { unassignedCash: roundDollar(unassignedCash(year) ?? 0) } : {}),
     }
   })
 }
@@ -620,7 +632,7 @@ function yearLedgerRow(y: YearResult): ReportYearLedgerRow {
     contributions: roundDollar(y.contributions),
     rmd: roundDollar(y.rmd),
     rothConversion: roundDollar(y.rothConversion),
-    taxAndPenalties: roundDollar(y.tax + y.penalties),
+    taxAndPenalties: roundDollar(taxAndPenalties(y)),
     magi: roundDollar(y.magi),
     withdrawals: roundDollar(y.withdrawals.total),
     investable: roundDollar(y.investableTotal),
@@ -1337,16 +1349,20 @@ function csvTable(header: string[], rows: (string | number | null)[][]): string 
 
 /**
  * The chart/automation series as CSV — byte-identical to the CSV embedded in
- * the standalone HTML report for the same projection.
+ * the standalone HTML report for the same projection. An `unassignedCash`
+ * column is appended, after every existing column, only when the rows carry
+ * it (a plan with surplus cash no account could hold).
  */
 export function chartDataCsv(block: ReportChartDataBlock): string {
+  const withUnassignedCash = block.rows.some((row) => row.unassignedCash !== undefined)
   return csvTable(
-    ['year', ...REPORT_CHART_CATEGORIES, 'income', 'spendingPlusTax'],
+    ['year', ...REPORT_CHART_CATEGORIES, 'income', 'spendingPlusTax', ...(withUnassignedCash ? ['unassignedCash'] : [])],
     block.rows.map((row) => [
       row.year,
       ...REPORT_CHART_CATEGORIES.map((category) => row[category]),
       row.income,
       row.spendingPlusTax,
+      ...(withUnassignedCash ? [row.unassignedCash ?? 0] : []),
     ]),
   )
 }

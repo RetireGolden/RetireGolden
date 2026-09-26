@@ -85,8 +85,9 @@ describe('ComparePlansPage delta column (#499)', () => {
     await waitFor(() => container.querySelector('.compare-table tbody') !== null, { what: 'compare table' })
 
     const lasts = rowByLabel('Money lasts')
-    expect(lasts[0]).toMatch(/^Full plan through \d{4}$/)
-    expect(lasts[1]).toMatch(/^Depletes in \d{4}$/)
+    // The one money-lasts wording (R15): the last funded year, never the first short one.
+    expect(lasts[0]).toMatch(/^full plan through \d{4}$/)
+    expect(lasts[1]).toMatch(/^(through|short from) \d{4}$/)
     // Plan A never runs out, so Plan B's shortfall is an upper bound: at most that many years, in red.
     expect(lasts[2]).toMatch(/^≤ −\d+ yrs?$/)
 

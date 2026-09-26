@@ -20,6 +20,7 @@ import {
 import { canonicalScenarioJson } from '../scenarios/patch.js'
 import { applyScenarioPatch } from '../scenarios/scenarios.js'
 import { summarizeProjection, type ProjectionSummary } from '../projection/compare.js'
+import { lastFundedYear } from '../projection/moneyLasts.js'
 import { simulatePlan } from '../projection/simulate.js'
 import type { ProjectionResult } from '../projection/types.js'
 import { isLegacyAggregateDecisionCalculation } from '../projection/internal/legacyAggregateDecisionCalculation.js'
@@ -585,11 +586,6 @@ export const DECISION_MINIMUM_REQUESTED_CONVERSION_DOLLARS = 1
 export const DECISION_MATERIAL_SHORTFALL_DOLLARS = 1_000
 export const DECISION_MATERIAL_SHORTFALL_PCT = 0.05
 
-/** Years the money lasts: depletion year, or one past the horizon when it never depletes. */
-export function lastsThroughYear(result: ProjectionResult): number {
-  return result.depletionYear ?? result.endYear + 1
-}
-
 /** Build a fresh decision context, running the shared baseline once (or reusing a caller's run). */
 export function createDecisionContext(
   plan: Plan,
@@ -776,7 +772,7 @@ export function evaluateCandidate(
     endingAfterTaxEstate: candidateSummary.endingAfterTaxEstate - ctx.baselineSummary.endingAfterTaxEstate,
     endingNetWorth: candidateSummary.endingNetWorth - ctx.baselineSummary.endingNetWorth,
     lifetimeTax: candidateSummary.lifetimeTaxesAndPenalties - ctx.baselineSummary.lifetimeTaxesAndPenalties,
-    moneyLastsYears: lastsThroughYear(candidateResult) - lastsThroughYear(ctx.baselineResult),
+    moneyLastsYears: lastFundedYear(candidateResult) - lastFundedYear(ctx.baselineResult),
   }
 
   const diagnostics: string[] = []

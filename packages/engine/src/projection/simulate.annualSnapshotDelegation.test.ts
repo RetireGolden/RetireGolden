@@ -48,6 +48,7 @@ vi.mock('./internal/annualSnapshot.js', async (importOriginal) =>
           hecmLoanTotal: 400_000,
           hecmEffectiveDebt: 1,
           insuranceCashValueTotal: 1,
+          unassignedCash: 13,
         },
         {
           investableTotal: 100,
@@ -56,6 +57,7 @@ vi.mock('./internal/annualSnapshot.js', async (importOriginal) =>
           hecmLoanTotal: 500_000,
           hecmEffectiveDebt: 5,
           insuranceCashValueTotal: 3,
+          unassignedCash: 17,
         },
         {
           investableTotal: 250,
@@ -64,6 +66,7 @@ vi.mock('./internal/annualSnapshot.js', async (importOriginal) =>
           hecmLoanTotal: 600_000,
           hecmEffectiveDebt: 6,
           insuranceCashValueTotal: 4,
+          unassignedCash: 19,
         },
       ] as const
       // Re-entry can produce more annual passes than projected years. Cycle
@@ -266,6 +269,7 @@ describe('simulatePlan delegates the annual snapshot', () => {
         hecmLoanTotal: hecmLoanBalance,
         hecmEffectiveDebt: hecmLoanBalance,
         insuranceCashValueTotal: insuranceCashValue,
+        unassignedCash: 0,
       })
     }
   })
@@ -295,6 +299,7 @@ describe('simulatePlan delegates the annual snapshot', () => {
       expect(year.investableTotal).toBe(output.investableTotal)
       expect(year.insuranceCashValue).toBe(output.insuranceCashValueTotal)
       expect(year.hecmLoanBalance).toBe(output.hecmLoanTotal)
+      expect(year.unassignedCash).toBe(output.unassignedCash)
 
       // The three otherwise-unpublished snapshot scalars are observable only
       // through this caller-owned fold. The fixture has no TIPS ladder value.

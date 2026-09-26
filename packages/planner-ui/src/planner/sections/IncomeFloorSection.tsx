@@ -12,6 +12,7 @@ import type { TipsLadder } from '@retiregolden/engine/model/plan'
 import { EMBEDDED_REAL_YIELD_CURVE } from '@retiregolden/engine/params'
 import { buildLadder, type LadderBuild } from '@retiregolden/engine/ladder/ladderMath'
 import { computeFundedRatio } from '@retiregolden/engine/ladder/fundedRatio'
+import { toTodayDollars } from '@retiregolden/engine/projection/dollarBasis'
 import {
   FEDINVEST_PAGE_URL,
   latestPriceDateIso,
@@ -269,7 +270,7 @@ export function FundedRatioCard() {
 /** The live readout: projects the (valid) plan and renders nothing when it has no measurable essential spending. */
 function FundedRatioReadout() {
   const { plan } = usePlan()
-  const { result, deflate } = useProjection(plan)
+  const { result, basis } = useProjection(plan)
   const startYear = result.startYear
   const fr = useMemo(() => {
     const primary = plan.household.people[0]
@@ -278,11 +279,12 @@ function FundedRatioReadout() {
     return computeFundedRatio({
       years: result.years,
       startYear,
-      deflate,
+      // Today's dollars by the run's own published inflation factor.
+      deflate: (y, a) => toTodayDollars(basis, y, a),
       curve: CURVE,
       fromYear: Math.max(retirementYear, startYear),
     })
-  }, [plan, result, deflate, startYear])
+  }, [plan, result, basis, startYear])
 
   if (!fr) return null
   return (

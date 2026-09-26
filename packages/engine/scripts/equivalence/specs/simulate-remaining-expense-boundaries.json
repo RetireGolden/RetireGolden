@@ -31,23 +31,24 @@
       "label": "ordered care episodes, policy benefit limits, elimination/rider, duplicate-id shadow writes and reporting",
       "file": "projection/internal/annualDebtAndLongTermCare.ts",
       "lines": [
-        83,
-        178
+        88,
+        183
       ],
       "anchors": [
         {
-          "line": 83,
+          "line": 88,
           "text": "readonly careEvents: readonly CareEvent[]"
         },
         {
-          "line": 105,
+          "line": 110,
           "text": "for (const event of input.careEvents) {"
         },
         {
-          "line": 178,
+          "line": 183,
           "text": "}"
         }
-      ]
+      ],
+      "note": "REPINNED on 2026-09-26 (B2-P1 slice 1), +5 lines: the helper's doc comment now says the summed LTC payments can exceed the summed cost by a unit in the last place, which projection/yearFigures.ts#netCareCost floors. The lone entry in this file that moved, so nothing corroborates the shift; the block itself is unchanged, operand for operand."
     },
     {
       "id": "R.healthcare.helperPricing",

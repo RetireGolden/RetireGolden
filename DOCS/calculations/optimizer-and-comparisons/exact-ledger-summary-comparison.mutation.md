@@ -1,12 +1,12 @@
 # Mutation receipt: exact-ledger-summary-comparison
 
-Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-twelve` at base `2c07f0d7`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-twelve` at base `2c07f0d7`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730), and re-executed 2026-09-26 against RetireGolden base `fff2423b` (branch `claude/b2p1-slice1-ledger-figures`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/projection/optimizePlan.ts`
 
 ```diff
 diff --git a/packages/engine/src/projection/optimizePlan.ts b/packages/engine/src/projection/optimizePlan.ts
-index 930a11ac..49baca31 100644
+index 1764ef96..cb7ebaca 100644
 --- a/packages/engine/src/projection/optimizePlan.ts
 +++ b/packages/engine/src/projection/optimizePlan.ts
 @@ -2229,7 +2229,7 @@ function evaluateExactLedgerScheduleCalculation(
@@ -30,19 +30,18 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-Re-executed 2026-09-22 on the pull-request branch after the review of #730: the branch was renamed for the pull request, so every capture, blob hash and revert note is refreshed against this head. The baseline is green (optimizePlan.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed. Exit code: 1.
+Re-executed 2026-09-26 for B2-P1 slice 1, which moved the lines this receipt's mutation anchors on in its production file (the mutated code itself is unchanged), so every capture, blob hash and revert note is refreshed against this head. The baseline is green (optimizePlan.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/TEMP/rg-rehearse2/packages/engine
+RUN  v5.0.0 C:/rgwt/engine4/packages/engine
 
- ❯ src/projection/optimizePlan.evidence.test.ts (17 tests | 1 failed) 299ms
+ ❯ src/projection/optimizePlan.evidence.test.ts (17 tests | 1 failed) 298ms
    ❯ exact-ledger-summary-comparison — Exact ledger summary comparison (1)
-     × publishes 500000.00 and 535500.25 from their own results and 28250.50 of net worth 12ms
+     × publishes 500000.00 and 535500.25 from their own results and 28250.50 of net worth 13ms
 
  Test Files  1 failed (1)
       Tests  1 failed | 16 passed (17)
 
-  Transform  transforming modules took 2.53s · 41% of tracked time, re-done on every run
              persist transforms across runs with fsModuleCache: true
              learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
 
@@ -58,13 +57,13 @@ AssertionError: endingNetWorthDelta: actual 35500.25, worksheet 28250.5: expecte
 - true
 + false
 
- ❯ src/projection/optimizePlan.evidence.test.ts:242:9
-    240|         withinTolerance(validation.endingNetWorthDelta, expectedDelta,…
-    241|         `endingNetWorthDelta: actual ${validation.endingNetWorthDelta}…
-    242|       ).toBe(true)
+ ❯ src/projection/optimizePlan.evidence.test.ts:243:9
+    241|         withinTolerance(validation.endingNetWorthDelta, expectedDelta,…
+    242|         `endingNetWorthDelta: actual ${validation.endingNetWorthDelta}…
+    243|       ).toBe(true)
        |         ^
-    243|       // The wrong readings the worksheet names: the reversed subtract…
-    244|       // after-tax-estate difference standing in for the net-worth del…
+    244|       // The wrong readings the worksheet names: the reversed subtract…
+    245|       // after-tax-estate difference standing in for the net-worth del…
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 ```

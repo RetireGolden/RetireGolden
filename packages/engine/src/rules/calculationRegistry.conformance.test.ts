@@ -49,6 +49,13 @@ const RECORD_MODULES: readonly (readonly [string, Readonly<Record<string, unknow
 
 const testSources = import.meta.glob('../**/*.test.ts', { query: '?raw', import: 'default', eager: true })
 const engineSources = import.meta.glob('../**/*.ts', { query: '?raw', import: 'default', eager: true })
+// The census copy itself, for the fields the generated OUTPUT_FAMILIES module
+// does not carry (uiSources).
+const censusFamiliesCopy = import.meta.glob('./census/output-families.json', {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+})
 function plannerUiSourceText(censusPath: string): string | undefined {
   // Read through the scripts helper: glob keys outside this package's root are
   // not stable across Vite roots, and the census names files relative to packages/.
@@ -1428,6 +1435,89 @@ describe('calculation registry conformance', () => {
       if (!isUi && family.relocation !== null) violations.push(`${id} (${family.kind}): relocation must be null`)
     }
     expect(violations).toEqual([])
+  })
+
+  it('names, on every done relocation, UI sources that exist: the symbols that now read the engine value', () => {
+    // A relocated family keeps uiSources as its current consumers (the UI
+    // symbols that read the engine value); the retired computing symbol is
+    // history in its notes. A uiSource naming a deleted symbol fails here, and
+    // the Docs validator cannot see source, so this is the only guard.
+    const texts = Object.values(censusFamiliesCopy) as string[]
+    expect(texts).toHaveLength(1)
+    const census = JSON.parse(texts[0]!) as {
+      id: string
+      relocation?: { status?: string }
+      uiSources?: { path: string; symbol: string }[]
+    }[]
+    const done = census.filter((family) => family.relocation?.status === 'done')
+    expect(done.length).toBeGreaterThan(0)
+    const violations: string[] = []
+    for (const family of done) {
+      if (!family.uiSources || family.uiSources.length === 0) violations.push(`${family.id}: no uiSources`)
+      for (const { path, symbol } of family.uiSources ?? []) {
+        const text = plannerUiSourceText(path)
+        if (text === undefined) {
+          violations.push(`${family.id}: ${path} does not exist`)
+          continue
+        }
+        if (locateOwnerBlock(text, symbol) === null) violations.push(`${family.id}: ${path} declares no ${symbol}`)
+      }
+    }
+    expect(violations).toEqual([])
+  })
+
+  it('names a resolvable engine target on every done relocation, and none on a pending one', () => {
+    // The Docs validator cannot read source, so it checks only the target's
+    // shape; this resolves each done target to a declared engine symbol the
+    // same way implementedByFunctions pins resolve.
+    const violations: string[] = []
+    const families: Readonly<Record<string, OutputFamily>> = OUTPUT_FAMILIES
+    const shape = /^engine\/src\/[\w/.-]+\.ts#[A-Za-z_$][\w$]*(\.[A-Za-z_$][\w$]*)*$/u
+    for (const [id, family] of Object.entries(families)) {
+      const relocation = family.relocation
+      if (relocation === null) continue
+      if (relocation.status === 'pending') {
+        if (relocation.target !== null) violations.push(`${id}: a pending relocation names a target (${relocation.target})`)
+        continue
+      }
+      if (relocation.target === null || !shape.test(relocation.target) || relocation.target.split(/[/#]/u).includes('..')) {
+        violations.push(`${id}: a done relocation must name engine/src/<path>.ts#<symbol> with no .. segment, got ${String(relocation.target)}`)
+        continue
+      }
+      const [censusPath, symbol] = relocation.target.split('#') as [string, string]
+      const path = 'packages/' + censusPath
+      const globKey = engineGlobKeyOf(path)
+      const source = engineSources[globKey]
+      if (source === undefined) {
+        violations.push(`${id}: ${path} not found among engine sources`)
+        continue
+      }
+      try {
+        symbolAnchorLine(declaredSymbolsOf(globKey, source), path, symbol)
+      } catch (error) {
+        violations.push(`${id}: ${error instanceof Error ? error.message : String(error)}`)
+      }
+    }
+    expect(violations).toEqual([])
+    // Slice 1 of B2-P1 moved these eleven; a later slice adds to the list.
+    expect(
+      Object.entries(families)
+        .filter(([, family]) => family.relocation?.status === 'done')
+        .map(([id]) => id)
+        .sort(),
+    ).toEqual([
+      'display-balance-by-category-annual',
+      'display-dollar-basis-conversion',
+      'display-fi-target-annual',
+      'display-loss-carryforward-used-annual',
+      'display-net-care-cost-annual',
+      'display-tax-free-gains-room-annual',
+      'display-tax-plus-penalties-annual',
+      'display-total-spending-annual',
+      'display-upside-shortfall-annual',
+      'display-upside-spending-annual',
+      'display-years-before-plan-end',
+    ])
   })
 
   it('publishes relocation-pending for exactly the ui families whose relocation is pending, and counts none of them complete', () => {

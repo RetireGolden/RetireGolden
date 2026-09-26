@@ -1,6 +1,6 @@
 ## Claim
 
-Kind: formula. `projection/optimizePlan.ts#SimpleCandidateEvaluation` sums the candidate result's `YearResult.rothConversion`; computes `afterTaxEstateDelta`, `lifetimeTaxDelta`, and `moneyLastsYearsDelta` candidate minus baseline using the two `summarizeProjection` results; and reports `incompleteComputationYears`, only when non-empty, as the sorted union of years across both results where `taxComputation.status` or `hecmComputation.status` is `incomplete`, omitting the key when no year qualifies. For money-lasts, the field comment defines `lastsThrough` as `depletionYear` when present and `endYear + 1` otherwise. The sum, differences, and sorted-union formulas are derived from those field conventions.
+Kind: formula. `projection/optimizePlan.ts#SimpleCandidateEvaluation` sums the candidate result's `YearResult.rothConversion`; computes `afterTaxEstateDelta`, `lifetimeTaxDelta`, and `moneyLastsYearsDelta` candidate minus baseline using the two `summarizeProjection` results; and reports `incompleteComputationYears`, only when non-empty, as the sorted union of years across both results where `taxComputation.status` or `hecmComputation.status` is `incomplete`, omitting the key when no year qualifies. For money-lasts, the delta is the difference of the two results' last fully funded years, `lastFundedYear` (`projection/moneyLasts.ts`): `depletionYear − 1` when the result depletes and `endYear` otherwise (owner decision R15; until 2026-09-26 the field comment counted `depletionYear` or `endYear + 1`, which shifts both results by the same year and gives the same delta). The sum, differences, and sorted-union formulas are derived from those field conventions.
 
 ## Justification
 
@@ -27,7 +27,7 @@ After-tax-estate delta `= $525,250.25 − $500,000.00 = $25,250.25`.
 
 Lifetime-tax delta `= $127,500.75 − $120,000.00 = $7,500.75`.
 
-Baseline depletes, so `lastsThrough(baseline) = depletionYear = 2034`. Candidate never depletes, so `lastsThrough(candidate) = endYear + 1 = 2035 + 1 = 2036`. Money-lasts delta `= 2036 − 2034 = 2 years`.
+Baseline depletes, so `lastFundedYear(baseline) = depletionYear − 1 = 2033`. Candidate never depletes, so `lastFundedYear(candidate) = endYear = 2035`. Money-lasts delta `= 2035 − 2033 = 2 years` (the retired count gave `2036 − 2034`, the same 2).
 
 Incomplete years before union are baseline `{2031}` and candidate `{2030, 2031}`. Set union removes the repeated 2031 and ascending sort gives `[2030, 2031]`. In the all-complete/absent branch, the union is `[]`.
 
@@ -42,7 +42,7 @@ Incomplete years before union are baseline `{2031}` and candidate `{2030, 2031}`
 ## Wrong readings
 
 - Reversing candidate minus baseline gives estate `−$25,250.25`, lifetime tax `−$7,500.75`, and money-lasts `−2`.
-- Using `endYear` instead of `endYear + 1` for the non-depleting candidate gives `2035 − 2034 = 1` year instead of `2`.
+- Mixing the conventions, the depleting baseline counted through its depletion year (`2034`) while the non-depleting candidate is funded through its `endYear` (`2035`), gives `2035 − 2034 = 1` year instead of `2`.
 - Summing baseline conversions too would add amounts that the field comment restricts to the candidate result.
 - Concatenating incomplete years without a set union gives `[2031, 2030, 2031]`; unioning without ascending sort can give `[2031, 2030]`, rather than `[2030, 2031]`.
 - Publishing `incompleteComputationYears: []` in the no-incomplete-status branch instead of omitting the key.
@@ -58,3 +58,5 @@ feeds: none.
 Derived by: codex (gpt-5.6-sol), 2026-09-18, from the signatures-and-comments extract (with the 2026-09-18 incomplete-years doc-comment completion), without executing the engine or reading any implementation body. Reviewed by: cursor (composer-2.5), 2026-09-18, by independent recomputation without executing the engine; see REVIEW-2026-09-18-round-nine.md in this directory (the re-check section named "Re-check, 2026-09-18 (the incomplete-years branch after the comment completion)").
 
 Revision note: The first derivation expected an empty list where production omits the key, found by the implementation's fixture.
+
+Revision (2026-09-26; owner decision R15 of 2026-09-25, B2-P1 slice 1): the money-lasts convention was restated from `depletionYear` or `endYear + 1` to the last fully funded year, `depletionYear − 1` or `endYear`, by claude (the slice's implementer). No expected value changed; the second wrong reading was rewritten to one that is still wrong under the new convention. The restated text has not been reviewed: the review above covers the first derivation, and the record now says reviewedBy unreviewed.

@@ -112,7 +112,10 @@ describe('cluster J: the KPI bar never paints raw exponentials (#572)', () => {
     for (const v of bar.querySelectorAll('.kpi-value')) {
       const text = v.textContent ?? ''
       expect(text, text).not.toMatch(EXPONENTIAL)
-      expect(text.length, text).toBeLessThanOrEqual(KPI_VALUE_MAX_CHARS)
+      // A worded value marked kpi-value--wrap may wrap between its words
+      // (designQa.kpiWrap), so each line, not the whole, must fit the budget.
+      const lines = v.classList.contains('kpi-value--wrap') ? text.split(/\s+/) : [text]
+      for (const line of lines) expect(line.length, text).toBeLessThanOrEqual(KPI_VALUE_MAX_CHARS)
     }
     for (const s of bar.querySelectorAll('.kpi-sub')) {
       expect(s.textContent ?? '', s.textContent ?? '').not.toMatch(EXPONENTIAL)

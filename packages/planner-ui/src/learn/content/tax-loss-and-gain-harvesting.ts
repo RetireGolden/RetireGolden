@@ -15,7 +15,7 @@ export const blocks: ArticleBlock[] = [
     items: [
       'Tax-loss harvesting can create useful losses, but wash-sale and replacement-investment rules matter.',
       'Gain harvesting can use low-income years or 0% capital-gain room to reset basis.',
-      'RetireGolden estimates realized gains from taxable withdrawals and reports zero-rate gain headroom; it does not choose tax lots or execute harvesting trades.',
+      'RetireGolden estimates realized gains from taxable withdrawals and shows a tax-free gains room for each year; it does not choose tax lots or execute harvesting trades.',
     ],
   },
   { type: 'heading', text: 'The basic idea' },
@@ -55,7 +55,7 @@ export const blocks: ArticleBlock[] = [
   { type: 'heading', text: 'Why it matters in RetireGolden' },
   {
     type: 'prose',
-    md: 'RetireGolden models taxable and equity-comp withdrawals using aggregate cost basis, so realized gains appear when those accounts are sold for spending. The federal tax detail also calculates advisory 0% long-term capital-gain headroom. RetireGolden does not model individual tax lots, wash sales, short-term gain timing, or broker-level harvesting transactions.',
+    md: 'RetireGolden models taxable and equity-comp withdrawals using aggregate cost basis, so realized gains appear when those accounts are sold for spending. The year-by-year table on **Results** also shows a **tax-free gains room**: the extra long-term gains you could realize that year without raising that year\'s federal income tax. Your remaining loss carryforward absorbs gains first. After that, gains count only while they add no federal tax: they stay in the 0% bracket and do not make more of your Social Security taxable, use up a loss deduction your other income was using, shrink a deduction, or reach the 3.8% net investment income tax or the AMT. That is why the room can be smaller than the space left in the 0% bracket. State tax, the ACA premium credit, and Medicare premiums are not included. RetireGolden does not model individual tax lots, wash sales, short-term gain timing, or broker-level harvesting transactions.',
   },
   { type: 'heading', text: 'Common mistakes' },
   {
@@ -70,6 +70,6 @@ export const blocks: ArticleBlock[] = [
   { type: 'heading', text: 'Where to use this in the app' },
   {
     type: 'prose',
-    md: 'Use **Accounts** to keep taxable basis realistic. Use **Results** to inspect realized gains and zero-rate gain headroom. Use **Scenarios** or one-time capital-gain inputs to approximate a planned harvest year, then verify the real transaction details outside the planner.',
+    md: 'Use **Accounts** to keep taxable basis realistic. Use **Results** to inspect realized gains and each year\'s tax-free gains room. Use **Scenarios** or one-time capital-gain inputs to approximate a planned harvest year, then verify the real transaction details outside the planner.',
   },
 ]

@@ -1,19 +1,20 @@
 # Mutation receipt: portfolio-need-annual
 
-Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-nine` at base `39f8f460`, and re-executed 2026-09-22 against RetireGolden base `4fe87f00` (branch `claude/b1-p4-cards-nine-ten`, pull request #729) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-nine` at base `39f8f460`, and re-executed 2026-09-22 against RetireGolden base `4fe87f00` (branch `claude/b1-p4-cards-nine-ten`, pull request #729), and re-executed 2026-09-26 against RetireGolden base `89bdd105` (branch `claude/b2p1-slice1-ledger-figures`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/projection/internal/annualYearResultAssembly.ts`
 
 ```diff
-@@ -307,7 +307,7 @@ export function annualYearResultAssembly(
+@@ -307,8 +307,8 @@ export function annualYearResultAssembly(
      // no existing key moves position — key order is observable output here.
      netPortfolioNeed: Math.max(
        0,
 -      ledger.expenses.total + tax.tax + tax.penalties - ledger.incomes.total,
 +      ledger.expenses.total + tax.tax - ledger.incomes.total,
      ),
+     // Published after netPortfolioNeed for the same reason: no existing key moves.
+     unassignedCash: snapshot.unassignedCash,
    }
- }
 ```
 
 This omits penalties from the need, publishing $16,000 — the worksheet's first wrong reading.
@@ -26,19 +27,18 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-Re-executed 2026-09-22 on the pull-request branch after the review of #729: the branch was renamed for the pull request and several fixtures changed, so every capture, blob hash and revert note is refreshed against this head. The baseline is green (annualYearResultAssembly.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed. Exit code: 1.
+Re-executed 2026-09-26 for B2-P1 slice 1, which publishes YearResult.unassignedCash right after netPortfolioNeed, so the diff's trailing context now shows that line and every capture, blob hash and revert note is refreshed against this head. The baseline is green (annualYearResultAssembly.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/TEMP/rg-rehearse2/packages/engine
+RUN  v5.0.0 C:/rgwt/engine4/packages/engine
 
- ❯ src/projection/internal/annualYearResultAssembly.evidence.test.ts (5 tests | 1 failed) 31ms
+ ❯ src/projection/internal/annualYearResultAssembly.evidence.test.ts (7 tests | 1 failed) 32ms
    ❯ portfolio-need-annual — Annual net portfolio need (3)
-     × publishes 17000 of uncovered outflow 3ms
+     × publishes 17000 of uncovered outflow 4ms
 
  Test Files  1 failed (1)
-      Tests  1 failed | 4 passed (5)
+      Tests  1 failed | 6 passed (7)
 
-  Transform  transforming modules took 2.14s · 44% of tracked time, re-done on every run
              persist transforms across runs with fsModuleCache: true
              learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
 

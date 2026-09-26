@@ -1,5 +1,7 @@
 /** Number formatting for the planner. All engine amounts are nominal dollars. */
 
+import type { MoneyLasts } from '@retiregolden/engine/projection/moneyLasts'
+
 const money0 = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
 const money2 = new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -121,4 +123,25 @@ export function parseAmount(text: string): number | null {
   if (core === '') return null
   const n = Number(core)
   return Number.isFinite(n) ? n * mult : null
+}
+
+/**
+ * The "Money lasts" wording every surface prints for one fact, read off the
+ * engine's published convention (projection/moneyLasts.ts, owner decision
+ * R15): "through" always names the last fully funded year, "in" the first
+ * short year. Presentation only: the years are the engine's.
+ *
+ * The short value: "full plan" when the money never runs short, "through L"
+ * otherwise, and "short from S" when the first plan year is already short (so
+ * no surface names the year before the plan as the year the money lasts to).
+ *
+ * It lives here, beside the other shared formatters, rather than in a module
+ * of its own: every importer also loads the engine simulation chunk, so a
+ * module of its own was merged into that chunk and gave it its name, which
+ * moved the chunk out from under its budget row (app/scripts/bundleBudget.mjs).
+ */
+export function moneyLastsValue(lasts: Pick<MoneyLasts, 'depletionYear' | 'lastFundedYear'>, startYear: number): string {
+  if (lasts.depletionYear === null) return 'full plan'
+  if (lasts.lastFundedYear < startYear) return `short from ${startYear}`
+  return `through ${lasts.lastFundedYear}`
 }

@@ -10,6 +10,7 @@ import {
   type Plan,
 } from '../model/plan.js'
 import { compareLtcStress } from './compare.js'
+import { moneyLasts } from './moneyLasts.js'
 import { createFlatTaxCalculator } from '../testing/flatTax.js'
 import { simulatePlan } from './simulate.js'
 
@@ -296,6 +297,27 @@ describe('LTC care episode', () => {
     expect(cmp.noCare.endingNetWorth).toBeGreaterThan(cmp.careUninsured.endingNetWorth)
     expect(cmp.careInsured.endingNetWorth).toBeGreaterThan(cmp.careUninsured.endingNetWorth)
     expect(cmp.careInsured.endingNetWorth).toBeLessThanOrEqual(cmp.noCare.endingNetWorth)
+  })
+
+  it("publishes each run's money-lasts figures in the one convention", () => {
+    const plan = basePlan()
+    plan.accounts = [
+      { type: 'cash', id: 'stress-cash', name: 'Cash', ownerPersonId: null, annualReturnPct: null, balance: 300_000, annualContribution: 0 },
+    ]
+    plan.expenses.baseAnnual = 10_000
+    plan.careEvents = [careEvent({ startAge: 61, annualCost: 150_000, durationYears: 3 })]
+    plan.insurance = [ltc({ benefitMonthly: 5_000, premiumMode: 'paidUp' })]
+    const opts = { startYear: 2026, taxCalculator: noTax }
+    const cmp = compareLtcStress(validate(plan), opts)
+    const selfFunded = simulatePlan(validate({ ...plan, insurance: [] }), opts)
+    expect(cmp.lasts.careUninsured).toEqual(moneyLasts(selfFunded))
+    expect(cmp.lasts.careUninsured.depletionYear).toBe(cmp.careUninsured.depletionYear)
+    expect(cmp.lasts.careUninsured.depletionYear).not.toBeNull()
+    expect(cmp.lasts.careUninsured.lastFundedYear).toBe(cmp.careUninsured.depletionYear! - 1)
+    expect(cmp.lasts.careInsured.lastFundedYear).toBeGreaterThan(cmp.lasts.careUninsured.lastFundedYear)
+    for (const lasts of [cmp.lasts.noCare, cmp.lasts.careUninsured, cmp.lasts.careInsured]) {
+      expect(lasts.endYear).toBe(selfFunded.endYear)
+    }
   })
 
   it('keeps the raw care shock premium-neutral and reports net-of-premiums value', () => {

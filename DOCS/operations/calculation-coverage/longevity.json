@@ -4,6 +4,80 @@
   "group": "longevity",
   "records": [
     {
+      "id": "display-years-before-plan-end",
+      "title": "Money lasts: the last funded year and the years short of the plan's end",
+      "kind": "formula",
+      "outputs": [
+        "display-years-before-plan-end",
+        "longevity-last-funded-year"
+      ],
+      "feeds": [],
+      "purpose": "One convention for how long the money lasts: the last fully funded year, and how many plan years the money falls short of the plan's end.",
+      "statement": "projection/moneyLasts.ts#moneyLasts publishes lastFundedYear = depletionYear - 1, or endYear when the projection never depletes, and yearsShortOfPlanEnd = endYear - lastFundedYear: 0 when it never depletes and endYear - depletionYear + 1 when it does, so a plan short only in its final year reads 1. A depletion year outside the projection's years is refused. The decision and optimizer money-lasts deltas are differences of lastFundedYear. Units: calendar year; count of years. Rounding: none.",
+      "formula": {
+        "expression": "L = D - 1 when D is not null, else E; N = E - L",
+        "variables": [
+          {
+            "symbol": "D",
+            "meaning": "Depletion year: first year with a funding shortfall above half a cent after any HECM backstop",
+            "unit": "calendar year",
+            "domain": "integer in [startYear, E], or null"
+          },
+          {
+            "symbol": "E",
+            "meaning": "The plan's inclusive last year",
+            "unit": "calendar year",
+            "domain": "integer"
+          },
+          {
+            "symbol": "L",
+            "meaning": "Last fully funded year",
+            "unit": "calendar year",
+            "domain": "startYear - 1 when the first year is short"
+          },
+          {
+            "symbol": "N",
+            "meaning": "Years short of the plan's end",
+            "unit": "years",
+            "domain": "integer, 0 when D is null"
+          }
+        ],
+        "timing": "the ledger's annual rows",
+        "rounding": "none"
+      },
+      "limits": [
+        "A distance, not a count of shortfall years: a year after the depletion year can be funded again if income resumes",
+        "Deterministic ledger only; the Monte Carlo pages have their own depletion distribution",
+        "Owner decision R15 (2026-09-25): the Results sentence used to read endYear - depletionYear years before the end (0 for a plan short only in its final year), the KPI bar and the printed report named the depletion year as the year the money lasts until, and the decision code counted a non-depleting plan as lasting through endYear + 1. Every surface now names the last funded year and counts endYear - lastFundedYear. The decision and optimizer deltas did not move: both conventions shift every result by the same one year"
+      ],
+      "worksheet": "DOCS/calculations/longevity/display-years-before-plan-end.md",
+      "mutation": "DOCS/calculations/longevity/display-years-before-plan-end.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/projection/moneyLasts.ts",
+        "packages/engine/src/decisions/evaluateCandidate.ts"
+      ],
+      "provenance": {
+        "derivedBy": "claude",
+        "implementedBy": "claude-subagent",
+        "reviewedBy": "unreviewed"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/projection/moneyLasts.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": false,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
       "id": "joint-survival-percentile-age",
       "title": "Joint (either-survives) percentile age on the primary's age clock",
       "kind": "formula",
@@ -83,7 +157,10 @@
       "outputs": [
         "longevity-depletion-year"
       ],
-      "feeds": [],
+      "feeds": [
+        "display-years-before-plan-end",
+        "longevity-last-funded-year"
+      ],
       "purpose": "The year the headline results call the plan depleted, or null when every year was funded.",
       "statement": "ProjectionResult.depletionYear is the first projection year, in year order, whose YearResult.shortfall — the funding shortfall left after every withdrawal and any HECM backstop draw — is strictly greater than projection/moneyTolerance.ts#ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS ($0.005, the ledger's own residual budget). A residual at or below that budget is not depletion; once a year is recorded the value is never replaced by a later one; and the field is null when no year exceeds the tolerance. Units: calendar year, or null. Rounding: none; the comparison is strict.",
       "formula": {
