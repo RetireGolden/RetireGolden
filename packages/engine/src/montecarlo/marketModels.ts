@@ -120,7 +120,7 @@ export interface RegimeSwitchModelConfig {
   bullVolPct?: number
   /** Bear vol (default 20). */
   bearVolPct?: number
-  /** Probability of switching regime each year (default 0.05): a number from 0.001 to 0.5, refused otherwise. */
+  /** Probability of switching regime each year (default 0.05): a probability from 0 to 1, refused otherwise. */
   switchProb?: number
   inflationMeanPct: number
   inflationVolPct?: number
@@ -184,7 +184,7 @@ export interface InflationRegimeModelConfig {
   type: 'inflation-regime'
   /** Mean inflation in the high regime, percent (default 8). */
   highInflationMean?: number
-  /** Probability of entering the high regime from the normal one each year (default 0.08): a number from 0.01 to 0.3, refused otherwise. */
+  /** Probability of entering the high regime from the normal one each year (default 0.08): a probability from 0 to 1, refused otherwise. */
   highInflationProb?: number
   returnVolPct?: number
   baseInflationMeanPct: number
@@ -230,7 +230,8 @@ export interface GaussianModelConfig {
 export interface AR1ModelConfig {
   type: 'ar1'
   /**
-   * Autoregression coefficient phi (default 0.25): a number from -0.9 to 0.95, refused otherwise.
+   * Autoregression coefficient phi (default 0.25): a number strictly between -1 and 1, where the
+   * process is stationary; anything else is refused.
    * Note: an earlier comment said 0.2; the code has always applied 0.25.
    */
   phi?: number
@@ -641,15 +642,16 @@ export function createStudentTModel(config: StudentTModelConfig): MarketModel {
  * State persists with 1-p switch. Regime means (bullMeanPct / bearMeanPct) are *deviations*
  * from zero so the unconditional expected shock is near zero when bull/bear are symmetric.
  * Inflation is always centered on the provided mean (no regime bias).
- * switchProb (default 0.05) must be a number from 0.001 to 0.5; any other value is refused with a
- * RangeError (it used to be clamped into that range without a word).
+ * switchProb (default 0.05) may be any probability from 0 to 1 (0 never switches, 1 switches every
+ * year); a value outside [0, 1] or not finite is refused with a RangeError. It used to be clamped to
+ * [0.001, 0.5] without a word; a value inside that range runs exactly as before.
  */
 export function createRegimeSwitchModel(config: RegimeSwitchModelConfig): MarketModel {
   const bullMean = (config.bullMeanPct ?? 4) / 100
   const bearMean = (config.bearMeanPct ?? -4) / 100
   const bullVol = (config.bullVolPct ?? 10) / 100
   const bearVol = (config.bearVolPct ?? 20) / 100
-  const pSwitch = requireInRange('Regime-switch switchProb', config.switchProb ?? 0.05, 0.001, 0.5)
+  const pSwitch = requireInRange('Regime-switch switchProb', config.switchProb ?? 0.05, 0, 1)
   const inflMean = config.inflationMeanPct
   const inflVol = config.inflationVolPct ?? 1.5
   const classCfg = config.classShocks
@@ -902,13 +904,13 @@ export function createGarchModel(config: GarchModelConfig): MarketModel {
 }
 
 /**
- * Fat-tailed / regime inflation correlated to returns. highInflationProb (default 0.08) must be a
- * number from 0.01 to 0.3; any other value is refused with a RangeError (it used to be clamped into
- * that range without a word).
+ * Fat-tailed / regime inflation correlated to returns. highInflationProb (default 0.08) may be any
+ * probability from 0 to 1; a value outside [0, 1] or not finite is refused with a RangeError. It used
+ * to be clamped to [0.01, 0.3] without a word; a value inside that range runs exactly as before.
  */
 export function createInflationRegimeModel(config: InflationRegimeModelConfig): MarketModel {
   const highMu = config.highInflationMean ?? 8
-  const pHigh = requireInRange('Inflation-regime highInflationProb', config.highInflationProb ?? 0.08, 0.01, 0.3)
+  const pHigh = requireInRange('Inflation-regime highInflationProb', config.highInflationProb ?? 0.08, 0, 1)
   const sigma = (config.returnVolPct ?? 12) / 100
   const baseInfl = config.baseInflationMeanPct
   const rho = returnInflationCorrelation('Inflation-regime', config.correlation)
@@ -1086,11 +1088,17 @@ export function createGaussianModel(config: GaussianModelConfig): MarketModel {
 /**
  * AR(1) mean-reverting shocks. Introduces serial correlation (momentum or reversion)
  * controlled by phi. Distinct dynamics from iid models. Shocks remain mean-zero.
- * phi (default 0.25) must be a number from -0.9 to 0.95; any other value is refused with a
- * RangeError (it used to be clamped into that range without a word).
+ * phi (default 0.25) must be a number strictly between -1 and 1, where the process is stationary;
+ * |phi| of 1 or more, or a value that is not finite, is refused with a RangeError. It used to be
+ * clamped to [-0.9, 0.95] without a word; a value inside that range runs exactly as before.
  */
 export function createAR1Model(config: AR1ModelConfig): MarketModel {
-  const phi = requireInRange('AR(1) phi', config.phi ?? 0.25, -0.9, 0.95)
+  const phi = config.phi ?? 0.25
+  if (!(Number.isFinite(phi) && phi > -1 && phi < 1)) {
+    throw new RangeError(
+      `AR(1) phi must be a number strictly between -1 and 1 (at |phi| of 1 or more the process is not stationary); got ${phi}.`,
+    )
+  }
   const sigma = (config.returnVolPct ?? 12) / 100
   const inflMean = config.inflationMeanPct
   const inflVol = config.inflationVolPct ?? 1.5

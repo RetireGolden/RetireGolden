@@ -36,9 +36,8 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   error with a message instead of being changed quietly, for the return-inflation
   correlation (outside −1 to 1, in seven models), a class volatility (missing, negative
   or not finite), the historical block length (not a whole number of at least 1), the
-  regime switch probability (outside 0.001 to 0.5), the high-inflation probability
-  (outside 0.01 to 0.3), AR(1) phi (outside −0.9 to 0.95), the stationary mean block
-  length (below 2), the user-shock year (not a whole number of at least 1; a fractional
+  regime switch and high-inflation probabilities (outside 0 to 1), AR(1) phi (1 or more in
+  size, where the process is not stationary), the stationary mean block length (below 2), the user-shock year (not a whole number of at least 1; a fractional
   year used to give no shock at all), an explicit historical stress window (not a whole
   number from 1 to 96), the historical stress suite's worst-window count (not a whole
   number of at least 1), and a custom class correlation matrix that is not positive
@@ -48,6 +47,11 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   each unchanged model against a copy of the previous code over a grid of valid inputs. The
   CAPE adjustment cap (a cap on a derived value), the stationary bootstrap's minimum
   block of one year, and the random-number and balance floors stay, and are documented.
+  The regime switch and high-inflation probabilities and AR(1) phi now accept their whole
+  mathematical range instead of the old arbitrary bounds (0.001 to 0.5, 0.01 to 0.3, and
+  −0.9 to 0.95): a value outside the old bounds now runs as set instead of being moved to
+  the nearest bound. The planner never sets the two probabilities and passes phi 0.3, so
+  no displayed figure moves.
 - **Guardrail solver success probe:** `solveRiskBasedGuardrails` takes an optional
   `successProbe(balanceFrac, spendingMultiplier)` that replaces its Monte Carlo runs (a
   test seam; the default is unchanged). With it the band-edge thresholds and the
@@ -386,9 +390,8 @@ has — rather than the runtime contract a consumer needs on the landing page.
   whole number from 5 to 96; a return-inflation correlation outside −1 to 1; a missing,
   negative or non-finite class volatility; a class correlation matrix that is not
   positive definite (also from `choleskyDecompose`); a historical block length that is
-  not a whole number of at least 1; a regime switch probability outside 0.001 to 0.5; a
-  high-inflation probability outside 0.01 to 0.3; AR(1) phi outside −0.9 to 0.95; a
-  stationary mean block length below 2; a user-shock year that is not a whole number of
+  not a whole number of at least 1; a regime switch or high-inflation probability outside
+  0 to 1; AR(1) phi of 1 or more in size; a stationary mean block length below 2; a user-shock year that is not a whole number of
   at least 1. `runHistoricalStressSuites` refuses an explicit window that is not a whole
   number from 1 to 96 and a `worstWindowCount` that is not a whole number of at least 1,
   and `solveRiskBasedGuardrails` refuses a `successProbe` value outside 0 to 1.

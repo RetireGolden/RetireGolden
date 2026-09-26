@@ -198,11 +198,11 @@ export const monteCarloRecords = {
     outputs: [],
     feeds: [...PATH_FAMILIES],
     statement:
-      'Let phi be the configured persistence (default 0.25; a number from −0.9 to 0.95, and anything else is refused with a message) and sigma = returnVolPct/100. Starting from prev = 0, each year draws an innovation eps ~ N(0, 1) and sets shock = phi · prev + sigma · eps, then prev = shock; the published return shock is 100 · shock percentage points. With phi = 0.2, sigma = 0.10 and a first-year eps that produces a 10-point shock, the next two zero-innovation years are 2 then 0.4 points. Units: percentage points. Rounding: none.',
+      'Let phi be the configured persistence (default 0.25; a number strictly between −1 and 1, where the process is stationary, and anything else is refused with a message) and sigma = returnVolPct/100. Starting from prev = 0, each year draws an innovation eps ~ N(0, 1) and sets shock = phi · prev + sigma · eps, then prev = shock; the published return shock is 100 · shock percentage points. With phi = 0.2, sigma = 0.10 and a first-year eps that produces a 10-point shock, the next two zero-innovation years are 2 then 0.4 points. Units: percentage points. Rounding: none.',
     formula: {
       expression: 'x_0 = 0; x_t = phi x_{t-1} + sigma eps_t; returnShockPct_t = 100 x_t',
       variables: [
-        { symbol: 'phi', meaning: 'AR(1) persistence', unit: '1', domain: 'from −0.9 to 0.95, refused otherwise; worksheet case 0.2' },
+        { symbol: 'phi', meaning: 'AR(1) persistence', unit: '1', domain: 'strictly between −1 and 1, refused otherwise; worksheet case 0.2' },
         { symbol: 'sigma', meaning: 'Innovation scale, returnVolPct/100', unit: '1', domain: '>= 0' },
         { symbol: 'eps_t', meaning: 'Standard-normal innovation', unit: '1', domain: 'finite' },
         { symbol: 'returnShockPct_t', meaning: 'Additive return shock', unit: 'percentage points', domain: 'finite' },
@@ -218,6 +218,7 @@ export const monteCarloRecords = {
       'A dynamics assumption, not evidence of a true return process',
       'The path always starts from prev = 0; a prior shock of 10 is realized as year 1 of the path, and the worksheet\'s "next two shocks" are years 2 and 3 with zero innovations',
       'The phi default comment was corrected to the code\'s 0.25 on 2026-09-18 (D-STUDENT-T-MIXTURE notes the related decision). The worksheet case passes 0.2 explicitly',
+      'A phi of 1 or more in size, where the process is not stationary, is refused with a message; phi used to be clamped to [−0.9, 0.95] without a word, and values inside that range run exactly as before',
       'A return-inflation correlation outside [−1, 1], or not finite, is refused with a message rather than clamped',
     ],
     implementedBy: ['packages/engine/src/montecarlo/marketModels.ts'],
@@ -404,7 +405,7 @@ export const monteCarloRecords = {
     formula: {
       expression: 'start low; if U < p_high then high; inflation = (high ? mu_high : mu_base) + 1.5 · copula(Z)',
       variables: [
-        { symbol: 'p_high', meaning: 'Probability of switching into the high regime from low', unit: '1', domain: 'from 0.01 to 0.3, refused otherwise; worksheet 0.20' },
+        { symbol: 'p_high', meaning: 'Probability of switching into the high regime from low', unit: '1', domain: 'a probability from 0 to 1, refused otherwise; worksheet 0.20' },
         { symbol: 'U', meaning: 'Regime uniform draw', unit: '1', domain: '[0, 1); worksheet 0.10' },
         { symbol: 'mu_high, mu_base', meaning: 'High and base inflation means', unit: 'percent/year', domain: 'worksheet 8 and 3' },
       ],
@@ -418,7 +419,7 @@ export const monteCarloRecords = {
     limits: [
       'A stress model, not a forecast of regime incidence',
       'Inflation volatility is hardcoded at 1.5 percentage points; zero-innovation inflation requires Z = 0, not a configured vol of 0',
-      'A high-inflation probability outside [0.01, 0.3] is refused with a message rather than clamped',
+      'A high-inflation probability outside [0, 1] is refused with a message; it used to be clamped to [0.01, 0.3] without a word, and values inside that range run exactly as before',
       'A return-inflation correlation outside [−1, 1], or not finite, is refused with a message rather than clamped',
     ],
     implementedBy: ['packages/engine/src/montecarlo/marketModels.ts'],
@@ -470,7 +471,7 @@ export const monteCarloRecords = {
       expression: 'stay if U >= p; shock = 100 (mu_state + sigma_state Z)',
       variables: [
         { symbol: 'mu_bull, mu_bear', meaning: 'State mean deviations as percents, divided by 100 in the recursion', unit: 'percent', domain: 'worksheet +4 / −4' },
-        { symbol: 'p', meaning: 'Annual switch probability', unit: '1', domain: 'from 0.001 to 0.5, refused otherwise; worksheet 0.05' },
+        { symbol: 'p', meaning: 'Annual switch probability', unit: '1', domain: 'a probability from 0 to 1, refused otherwise; worksheet 0.05' },
         { symbol: 'U', meaning: 'Switch uniform draw', unit: '1', domain: '[0, 1); worksheet 0.9' },
       ],
       timing: 'annual; the state bit persists along the path',
@@ -484,7 +485,7 @@ export const monteCarloRecords = {
       'A scenario model, not evidence markets have two regimes',
       'Symmetric +a/−a deviations are near zero only under equal long-run state mass',
       'The start state is a coin flip (U > 0.5), so the worksheet\'s "current state bull" is realized by scripting that first draw',
-      'A switch probability outside [0.001, 0.5] is refused with a message rather than clamped',
+      'A switch probability outside [0, 1] is refused with a message; it used to be clamped to [0.001, 0.5] without a word, and values inside that range run exactly as before',
     ],
     implementedBy: ['packages/engine/src/montecarlo/marketModels.ts'],
     implementedByFunctions: ['packages/engine/src/montecarlo/marketModels.ts#createRegimeSwitchModel'],

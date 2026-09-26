@@ -884,33 +884,124 @@ describe('inputs the market models used to change without a word are refused', (
     }
   })
 
-  it('refuses a regime switch probability outside [0.001, 0.5]', () => {
-    for (const switchProb of [0, 0.0009, 0.51, 1, Number.NaN]) {
+  // Owner decision (review finding F6): the two probabilities accept any probability in [0, 1] and
+  // AR(1) phi any value strictly between -1 and 1, the mathematical domains, instead of the old
+  // arbitrary clamp bounds. Values inside the old bounds stay in the byte-identity grid above; the
+  // new edges run as set, where origin/main moved them to the nearest old bound.
+  function scripted(script: { uniforms?: readonly number[]; normals?: readonly number[] }): Rng {
+    let u = 0
+    let n = 0
+    return {
+      next: () => {
+        const draw = script.uniforms?.[u]
+        if (draw === undefined) throw new RangeError(`uniform ${u} was not scripted`)
+        u += 1
+        return draw
+      },
+      nextNormal: () => {
+        const draw = script.normals?.[n]
+        if (draw === undefined) throw new RangeError(`normal ${n} was not scripted`)
+        n += 1
+        return draw
+      },
+      nextInt: () => {
+        throw new RangeError('no integer draw was scripted')
+      },
+    }
+  }
+  const zeros = (count: number) => new Array<number>(count).fill(0)
+
+  it('refuses a regime switch probability outside [0, 1] or not finite, and accepts 0 and 1', () => {
+    for (const switchProb of [-0.01, 1.01, 2, Number.NaN, Number.POSITIVE_INFINITY]) {
       expect(() => createRegimeSwitchModel({ type: 'regime-switch', inflationMeanPct: 2.5, switchProb })).toThrow(
-        new RangeError(`Regime-switch switchProb must be a number from 0.001 to 0.5; got ${switchProb}.`),
+        new RangeError(`Regime-switch switchProb must be a number from 0 to 1; got ${switchProb}.`),
       )
     }
-    for (const switchProb of [0.001, 0.5]) expect(() => createRegimeSwitchModel({ type: 'regime-switch', inflationMeanPct: 2.5, switchProb })).not.toThrow()
+    for (const switchProb of [0, 0.001, 0.5, 1]) {
+      expect(() => createRegimeSwitchModel({ type: 'regime-switch', inflationMeanPct: 2.5, switchProb })).not.toThrow()
+    }
   })
 
-  it('refuses a high-inflation probability outside [0.01, 0.3]', () => {
-    for (const highInflationProb of [0, 0.009, 0.31, Number.NaN]) {
+  it('runs switchProb 0 as never switching and 1 as switching every year (origin/main ran 0.001 and 0.5)', () => {
+    // Zero volatilities: each year's shock is the regime mean, +4 bull or -4 bear. The first uniform
+    // 0.6 starts bull; each later uniform is that year's switch draw.
+    const flat = { type: 'regime-switch' as const, inflationMeanPct: 0, inflationVolPct: 0, bullVolPct: 0, bearVolPct: 0 }
+    const never = { uniforms: [0.6, 0, 0, 0], normals: zeros(6) }
+    const always = { uniforms: [0.6, 0.999, 0.999, 0.999], normals: zeros(6) }
+    expect(createRegimeSwitchModel({ ...flat, switchProb: 0 }).generatePath(scripted(never), 3).returnShockPct).toEqual([4, 4, 4])
+    expect(oldCreateRegimeSwitchModel({ ...flat, switchProb: 0 }).generatePath(scripted(never), 3).returnShockPct).toEqual([-4, 4, -4])
+    expect(createRegimeSwitchModel({ ...flat, switchProb: 1 }).generatePath(scripted(always), 3).returnShockPct).toEqual([-4, 4, -4])
+    expect(oldCreateRegimeSwitchModel({ ...flat, switchProb: 1 }).generatePath(scripted(always), 3).returnShockPct).toEqual([4, 4, 4])
+  })
+
+  it('refuses a high-inflation probability outside [0, 1] or not finite, and accepts 0 and 1', () => {
+    for (const highInflationProb of [-0.01, 1.0001, Number.NaN, Number.NEGATIVE_INFINITY]) {
       expect(() => createInflationRegimeModel({ type: 'inflation-regime', baseInflationMeanPct: 2.5, highInflationProb })).toThrow(
-        new RangeError(`Inflation-regime highInflationProb must be a number from 0.01 to 0.3; got ${highInflationProb}.`),
+        new RangeError(`Inflation-regime highInflationProb must be a number from 0 to 1; got ${highInflationProb}.`),
       )
     }
-    for (const highInflationProb of [0.01, 0.3]) {
+    for (const highInflationProb of [0, 0.01, 0.3, 1]) {
       expect(() => createInflationRegimeModel({ type: 'inflation-regime', baseInflationMeanPct: 2.5, highInflationProb })).not.toThrow()
     }
   })
 
-  it('refuses an AR(1) phi outside [-0.9, 0.95]', () => {
-    for (const phi of [-0.91, 0.96, 1, Number.NaN]) {
+  it('runs highInflationProb 0 as never entering the high regime and 1 as entering it at once (origin/main ran 0.01 and 0.3)', () => {
+    // Zero normals: inflation is the regime mean, 8 high or 3 normal. The high regime is left when a
+    // year's uniform is below 0.7.
+    const base = { type: 'inflation-regime' as const, baseInflationMeanPct: 3, highInflationMean: 8, returnVolPct: 0 }
+    const low = { uniforms: [0, 0, 0], normals: zeros(6) }
+    const high = { uniforms: [0.999, 0.9, 0.999], normals: zeros(6) }
+    expect(createInflationRegimeModel({ ...base, highInflationProb: 0 }).generatePath(scripted(low), 3).inflationPct).toEqual([3, 3, 3])
+    expect(oldCreateInflationRegimeModel({ ...base, highInflationProb: 0 }).generatePath(scripted(low), 3).inflationPct).toEqual([8, 3, 8])
+    expect(createInflationRegimeModel({ ...base, highInflationProb: 1 }).generatePath(scripted(high), 3).inflationPct).toEqual([8, 8, 8])
+    expect(oldCreateInflationRegimeModel({ ...base, highInflationProb: 1 }).generatePath(scripted(high), 3).inflationPct).toEqual([3, 3, 3])
+  })
+
+  it('refuses an AR(1) phi of 1 or more in size, or not finite, and accepts values strictly inside', () => {
+    for (const phi of [1, -1, 1.5, -2, Number.NaN, Number.POSITIVE_INFINITY]) {
       expect(() => createAR1Model({ type: 'ar1', inflationMeanPct: 2.5, phi })).toThrow(
-        new RangeError(`AR(1) phi must be a number from -0.9 to 0.95; got ${phi}.`),
+        new RangeError(
+          `AR(1) phi must be a number strictly between -1 and 1 (at |phi| of 1 or more the process is not stationary); got ${phi}.`,
+        ),
       )
     }
-    for (const phi of [-0.9, 0.95]) expect(() => createAR1Model({ type: 'ar1', inflationMeanPct: 2.5, phi })).not.toThrow()
+    for (const phi of [-0.97, -0.9, 0, 0.95, 0.97, 0.9999]) {
+      expect(() => createAR1Model({ type: 'ar1', inflationMeanPct: 2.5, phi })).not.toThrow()
+    }
+  })
+
+  it('runs phi 0.97 and −0.97 as set: a 10-point shock is followed by 9.7 and −9.7 (origin/main ran 0.95 and −0.9)', () => {
+    const base = { type: 'ar1' as const, inflationMeanPct: 0, inflationVolPct: 0, returnVolPct: 10 }
+    const draws = { normals: [1, 0, 0, 0] }
+    for (const [phi, next, oldNext] of [
+      [0.97, 9.7, 9.5],
+      [-0.97, -9.7, -9],
+    ] as const) {
+      const now = createAR1Model({ ...base, phi }).generatePath(scripted(draws), 2).returnShockPct!
+      const before = oldCreateAR1Model({ ...base, phi }).generatePath(scripted(draws), 2).returnShockPct!
+      expect(now[0]).toBe(10)
+      expect(Math.abs(now[1]! - next)).toBeLessThan(1e-12)
+      expect(Math.abs(before[1]! - oldNext)).toBeLessThan(1e-12)
+    }
+  })
+
+  it('the new edges run on seeded paths with class shocks, and every value is finite', () => {
+    const classShocks = { volatilityPctByClass: classVols }
+    const models = [
+      createRegimeSwitchModel({ type: 'regime-switch', inflationMeanPct: 2.5, switchProb: 0, classShocks }),
+      createRegimeSwitchModel({ type: 'regime-switch', inflationMeanPct: 2.5, switchProb: 1, classShocks }),
+      createInflationRegimeModel({ type: 'inflation-regime', baseInflationMeanPct: 2.5, highInflationProb: 0, classShocks }),
+      createInflationRegimeModel({ type: 'inflation-regime', baseInflationMeanPct: 2.5, highInflationProb: 1, classShocks }),
+      createAR1Model({ type: 'ar1', inflationMeanPct: 2.5, phi: 0.97, classShocks }),
+      createAR1Model({ type: 'ar1', inflationMeanPct: 2.5, phi: -0.97, classShocks }),
+    ]
+    for (const model of models) {
+      for (const seed of SEEDS) {
+        const path = model.generatePath(createRng(seed), 60)
+        const values = [...path.returnShockPct!, ...path.inflationPct!, ...ASSET_CLASS_IDS.flatMap((id) => path.classReturnShockPct![id]!)]
+        expect(values.every(Number.isFinite)).toBe(true)
+      }
+    }
   })
 
   it('refuses a stationary mean block length below 2 or not finite', () => {
