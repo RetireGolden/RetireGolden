@@ -4,6 +4,17 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## Unreleased
 
+- **Fixed: 0% capital-gains room when income is below the deduction**
+  (decision D-ZERO-RATE-HEADROOM): the search for the room stopped at the 15%
+  threshold, so a year whose ordinary income (with gains, qualified dividends
+  and the taxable Social Security they bring) was below the deduction showed
+  the threshold alone. It now adds the unused deduction, as IRC 1(h)(1)(B) and
+  63 give it. The year's `ltcgZeroHeadroom` and the tax-opportunity view's
+  gain-harvesting room move up in those years only: single, 2026, no Social
+  Security, $10,000 of ordinary income shows $55,550 instead of $49,450, and
+  $0 shows $65,550 instead of $49,450. Years whose income already covers the
+  deduction are unchanged to the last bit.
+
 - **Bundle budget aggregate rows:** raised `all JS` 4400 → 4800 KiB and
   PWA precache 4550 → 4900 KiB. Azure `build` on head `03bb93cc` measured
   4431.7 and 4579.6 KiB; the previous ~30–46 KiB of slack was tripping every
