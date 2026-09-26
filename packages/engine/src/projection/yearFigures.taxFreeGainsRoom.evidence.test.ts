@@ -32,7 +32,9 @@ function householdRow(h: Household): YearResult {
   plan.accounts = [cashAccount('cash', 1_000)]
   plan.incomes = [recurringOrdinaryIncome('pension', h.pension)]
   if (h.socialSecurity) {
-    plan.incomes.push({ ...socialSecurityIncome('ss', 2_500, 66), claimAge: { years: 66, months: 10 } })
+    const benefit = socialSecurityIncome('ss', 2_500, 66)
+    if (benefit.type === 'socialSecurity') benefit.claimAge = { years: 66, months: 10 }
+    plan.incomes.push(benefit)
   }
   plan.household.capitalLossCarryforward = h.carryforward
   const result = simulatePlan(validatePlan(plan), {
