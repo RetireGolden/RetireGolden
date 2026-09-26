@@ -4,6 +4,24 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## Unreleased
 
+- **Fixed: a home reported as cash when it shared an id with a cash account**
+  (decision D-CASH-PROPERTY-ALIAS): the plan checks accepted a cash account
+  and a property under one account id, and the year's balances, keyed by id,
+  then published the property's value in place of the cash balance (cash
+  $10,000 and a $300,000 home under `home` showed $300,000 of cash in the
+  ending balances by category and the balance-by-category chart). The checks
+  now refuse the pair with "account id ... is shared by a cash account and a
+  property; give the property its own id". A saved plan that has one is
+  repaired when it opens: the property gets a new id (`<id>-property`, or a
+  numbered variant when that is taken), the cash account keeps its id, which
+  every other account reference in the plan could only have meant, stored
+  scenarios follow the rename, and the load notice (new repair kind
+  `propertyAccountIdSeparatedFromCash`) tells the household. For such a plan
+  the cash balance, the cash totals and the cash account's row in the estate
+  breakdown drop to the cash actually held, and the property appears under its
+  own entry; investable assets and net worth were summed from the right
+  amounts before and do not change.
+
 - **Fixed: a false Roth-conversion warning** (decision
   D-ROTH-TARGET-WARNING): "Spending withdrawals from traditional accounts
   pushed income above the Roth-conversion target in some years." was raised

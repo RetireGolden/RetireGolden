@@ -1549,8 +1549,11 @@ describe('Plan retirement-action persistence', () => {
     expect(parsePlan(plan).ok).toBe(true)
   })
 
-  it('preserves unreferenced cross-type duplicates outside retirement identity', () => {
+  it('refuses a cash account and a property that share one id, naming the collision on both rows', () => {
+    // D-CASH-PROPERTY-ALIAS: this pair used to parse, and the year's balances,
+    // keyed by id, then published the property's value as the cash balance.
     const plan = validCouplePlan()
+    const firstIndex = plan.accounts.length
     plan.accounts.push({
       type: 'cash',
       id: 'legacy-position',
@@ -1570,7 +1573,13 @@ describe('Plan retirement-action persistence', () => {
       expectedNetProceeds: null,
     })
 
-    expect(parsePlan(plan).ok).toBe(true)
+    const parsed = parsePlan(plan)
+    expect(parsed.ok).toBe(false)
+    const message = 'account id "legacy-position" is shared by a cash account and a property; give the property its own id'
+    expect(parsed.ok ? [] : parsed.issues).toEqual([
+      `accounts.${firstIndex}.id: ${message}`,
+      `accounts.${firstIndex + 1}.id: ${message}`,
+    ])
   })
 
   it('rejects a cash/property channel that aliases two physical cash rows', () => {

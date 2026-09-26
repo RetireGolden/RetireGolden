@@ -1612,14 +1612,12 @@ export function duplicateAccountIdentityFacts(
   )
   const isRetirementAccount =
     account.type === 'traditional' || account.type === 'roth'
-  // Cash/property duplicates are the one legacy cross-channel pair that never
-  // becomes two BalanceState rows. Every balance-bearing account type keeps
-  // its own identity so row order cannot choose tax character.
-  const accountIdentityClass = isRetirementAccount
-    ? account.type
-    : account.type === 'cash' || account.type === 'property'
-      ? 'legacy-cash-property'
-      : account.type
+  // Every account type keeps its own identity so row order cannot choose tax
+  // character. Cash and property once shared one class here, for the cash and
+  // property pair plans accepted under one id; the plan checks now refuse
+  // that pair (D-CASH-PROPERTY-ALIAS), and these facts are only ever compared
+  // between balance-bearing rows, so the shared class had no other effect.
+  const accountIdentityClass = account.type
   return [
     accountIdentityClass,
     isRetirementAccount ? account.kind : null,

@@ -76,5 +76,14 @@ export function planRepairMessage(repair: PlanLoadRepair, plan: Plan): string {
       return repair.startAge <= repair.latestPermittedStartAgeIfToggled
         ? `${account} was bought as a QLAC and set to start paying at age ${repair.startAge}. A QLAC has to start by age ${repair.latestPermittedStartAge} — the IRA rules put the last start on the first of the month after your 85th birthday. Bought as late as this one was, an ordinary pre-tax purchase could still start at ${repair.startAge}. The purchase was cleared and ${account} pays nothing, so the premium stayed in the account it would have come from. Open Accounts to set it up again with an earlier start age, or without the QLAC box ticked.`
         : `${account} was bought as a QLAC and set to start paying at age ${repair.startAge}. A QLAC is the longest a pre-tax purchase can wait, but it still has to start by age ${repair.latestPermittedStartAge} — the IRA rules put the last start on the first of the month after your 85th birthday. The purchase was cleared and ${account} pays nothing, so the premium stayed in the account it would have come from. Open Accounts to set it up again with an earlier start age.`
+    // The account list never shows ids, so the copy speaks of an internal
+    // reference; what the household saw was the property's value reported as
+    // cash.
+    case 'propertyAccountIdSeparatedFromCash': {
+      const cash = repair.cashAccountName.trim().length > 0
+        ? `the cash account ${repair.cashAccountName}`
+        : 'a cash account'
+      return `${named(repair.accountName, 'A property')} and ${cash} were stored under one internal reference, so the plan showed the property's value as cash. The property now has a reference of its own. Its value and the cash balance are as you entered them, and cash totals no longer include the property. Open Accounts to check both.`
+    }
   }
 }

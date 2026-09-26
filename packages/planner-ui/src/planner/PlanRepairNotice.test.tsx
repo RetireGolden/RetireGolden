@@ -237,6 +237,29 @@ describe('PlanRepairNotice', () => {
     ])
   })
 
+  it('says a property that shared its id with a cash account was given its own', async () => {
+    await mount([
+      {
+        kind: 'propertyAccountIdSeparatedFromCash',
+        accountId: 'home',
+        accountName: 'Home',
+        newAccountId: 'home-property',
+        cashAccountName: 'Checking',
+      },
+      {
+        kind: 'propertyAccountIdSeparatedFromCash',
+        accountId: 'cabin',
+        accountName: '',
+        newAccountId: 'cabin-property',
+        cashAccountName: '',
+      },
+    ])
+    expect(items()).toEqual([
+      "Home and the cash account Checking were stored under one internal reference, so the plan showed the property's value as cash. The property now has a reference of its own. Its value and the cash balance are as you entered them, and cash totals no longer include the property. Open Accounts to check both.",
+      "A property and a cash account were stored under one internal reference, so the plan showed the property's value as cash. The property now has a reference of its own. Its value and the cash balance are as you entered them, and cash totals no longer include the property. Open Accounts to check both.",
+    ])
+  })
+
   it('shows the heading and lead once, above one item per repair', async () => {
     await mount([
       { kind: 'lumpSumElectionDroppedUnreadableSaveDate', accountId: 'pen', accountName: 'Pension' },

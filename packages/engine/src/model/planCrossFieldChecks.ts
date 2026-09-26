@@ -271,8 +271,9 @@ export function checkAmbiguousActionPersonIds(
 }
 
 /**
- * Refuses a duplicate account id when an action names it, or when the rows
- * sharing it disagree on the facts that drive a forced distribution.
+ * Refuses a duplicate account id when an action names it, when the rows
+ * sharing it disagree on the facts that drive a forced distribution, or when
+ * it is shared by a cash account and a property.
  *
  * @returns whether any ambiguous account id was reported.
  */
@@ -290,13 +291,29 @@ export function checkAmbiguousAccountIds(
     // Non-balance aliases retain their historical last-row publication
     // semantics unless an explicit action references the ambiguous ID.
     const duplicateBalanceAccounts = duplicateAccounts.filter(isLogicalBalanceAccount)
-    const isLegacyCashPropertyPair = duplicateAccounts.length === 2 &&
+    // A cash account and a property under one id publish one entry in the
+    // year's balances, keyed by id, so the property's value overwrote the cash
+    // balance. Plans once accepted exactly this pair; decision
+    // D-CASH-PROPERTY-ALIAS refuses it with a message naming the collision,
+    // and model/migrations.ts gives a stored plan's property its own id on
+    // load (`propertyAccountIdSeparatedFromCash`).
+    const isCashPropertyPair = duplicateAccounts.length === 2 &&
       duplicateAccounts.filter((account) => account.type === 'cash').length === 1 &&
       duplicateAccounts.filter((account) => account.type === 'property').length === 1
+    if (isCashPropertyPair) {
+      hasAmbiguousAccountIds = true
+      indexes.forEach((index) => {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['accounts', index, 'id'],
+          message: `account id "${accountId}" is shared by a cash account and a property; give the property its own id`,
+        })
+      })
+      continue
+    }
     const hasUnsupportedMixedAccountChannel =
       duplicateBalanceAccounts.length > 0 &&
-      duplicateBalanceAccounts.length < duplicateAccounts.length &&
-      !isLegacyCashPropertyPair
+      duplicateBalanceAccounts.length < duplicateAccounts.length
     const firstForcedDistributionFacts = duplicateBalanceAccounts[0] === undefined
       ? null
       : duplicateAccountIdentityFacts(duplicateBalanceAccounts[0])

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { createEmptyPlan, type Plan } from './plan.js'
+import { summarizeProjection } from '../projection/compare.js'
 import { simulatePlan } from '../projection/simulate.js'
 import { createFlatTaxCalculator } from '../testing/flatTax.js'
 import {
@@ -656,6 +657,142 @@ describe('migratePlanToCurrent', () => {
       expect(result.reason).toBe('invalid_after_migration')
       expect(result.issues).toBeDefined()
     }
+  })
+})
+
+describe('load-time repair: a cash account and a property stored under one id (D-CASH-PROPERTY-ALIAS)', () => {
+  /**
+   * The pair plans accepted until the plan checks began refusing it: a
+   * 300,000 home and 10,000 of cash, both under the id `home`, in a plan with
+   * no growth, no inflation, no spending and no income, so a projection year
+   * publishes exactly the entered amounts. The property is stored first: in
+   * that order a TIPS ladder funded from `home` resolved to the cash account
+   * under the old checks, which read the last row.
+   */
+  function storedAliasPlan(): Plan {
+    const plan = createEmptyPlan({ newId: testIds, now: fixedNow })
+    plan.assumptions.inflationPct = 0
+    plan.assumptions.defaultReturnPct = 0
+    plan.expenses.baseAnnual = 0
+    plan.expenses.healthcare = { pre65MonthlyPremiumPerPerson: 0, applyAcaCredit: false, medicareExtrasMonthlyPerPerson: 0 }
+    plan.incomes = []
+    const owner = plan.household.people[0]!.id
+    plan.accounts = [
+      { type: 'property', id: 'home', name: 'Home', ownerPersonId: owner, annualReturnPct: 0, value: 300_000, plannedSaleYear: null, expectedNetProceeds: null },
+      { type: 'cash', id: 'home', name: 'Checking', ownerPersonId: null, annualReturnPct: 0, balance: 10_000, annualContribution: 0 },
+    ]
+    return plan
+  }
+  const stored = (plan: Plan): Record<string, unknown> => JSON.parse(JSON.stringify(plan)) as Record<string, unknown>
+
+  it('gives the property its own id on load, keeps the cash id, and reports the repair', () => {
+    const result = migratePlanToCurrent(stored(storedAliasPlan()))
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.plan.accounts.map((account) => [account.type, account.id])).toEqual([
+      ['property', 'home-property'],
+      ['cash', 'home'],
+    ])
+    const [property, cash] = result.plan.accounts
+    expect(property!.type === 'property' ? property!.value : null).toBe(300_000)
+    expect(cash!.type === 'cash' ? cash!.balance : null).toBe(10_000)
+    expect(result.repairs).toEqual([
+      {
+        kind: 'propertyAccountIdSeparatedFromCash',
+        accountId: 'home',
+        accountName: 'Home',
+        newAccountId: 'home-property',
+        cashAccountName: 'Checking',
+      },
+    ])
+  })
+
+  it('publishes the cash balance and the property value separately once repaired', () => {
+    const result = migratePlanToCurrent(stored(storedAliasPlan()))
+    if (!result.ok) throw new Error(`load failed: ${result.reason}`)
+    const projection = simulatePlan(result.plan, {
+      startYear: 2026,
+      horizonEndYear: 2026,
+      taxCalculator: createFlatTaxCalculator(0),
+    })
+    const year = projection.years[0]!
+    // Before the repair the one `home` entry was the property's 300,000 and
+    // the cash category reported it; now each is its own entry.
+    expect(year.balances['home']).toBe(10_000)
+    expect(year.balances['home-property']).toBe(300_000)
+    expect(year.investableTotal).toBe(10_000)
+    expect(summarizeProjection(result.plan, projection).endingByCategory.cash).toBe(10_000)
+  })
+
+  it('leaves a reference to the shared id on the cash account, the only account it could name', () => {
+    const plan = storedAliasPlan()
+    plan.incomeFloor = {
+      ladders: [{
+        id: 'ladder',
+        name: 'Bridge ladder',
+        purpose: 'bridge',
+        startYear: 2028,
+        endYear: 2029,
+        annualRealAmount: 1_000,
+        purchase: { year: 2027, fundingAccountId: 'home' },
+      }],
+    }
+    const result = migratePlanToCurrent(stored(plan))
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.plan.incomeFloor?.ladders[0]!.purchase?.fundingAccountId).toBe('home')
+    expect(result.plan.accounts.find((account) => account.id === 'home')!.type).toBe('cash')
+  })
+
+  it('picks a new id that appears nowhere in the stored document', () => {
+    const plan = storedAliasPlan()
+    plan.expenses.oneTimeGoals = [{ id: 'home-property', label: 'Roof', year: 2030, amount: 1_000 }]
+    const result = migratePlanToCurrent(stored(plan))
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.repairs.map((repair) => repair.kind === 'propertyAccountIdSeparatedFromCash' && repair.newAccountId))
+      .toEqual(['home-property-2'])
+    expect(result.plan.accounts.map((account) => account.id)).toEqual(['home-property-2', 'home'])
+  })
+
+  it('carries the rename into stored scenarios, so a scenario over the accounts still applies', () => {
+    const plan = storedAliasPlan()
+    const storedAccounts = stored(plan)['accounts'] as Record<string, unknown>[]
+    const editedAccounts = storedAccounts.map((row) => (row['type'] === 'property' ? { ...row, value: 350_000 } : row))
+    plan.scenarios = [
+      {
+        id: 's-canonical',
+        name: 'Home at 350,000',
+        patch: {
+          kind: 'retiregolden.scenario-patch',
+          version: 1,
+          base: { planId: plan.id, planSchemaVersion: plan.schemaVersion, snapshotHash: 'fnv1a64:0000000000000000' },
+          title: 'Home at 350,000',
+          rationale: null,
+          createdAtIso: '2026-06-11T00:00:00.000Z',
+          actor: { kind: 'user' },
+          operations: [{ op: 'set', path: '/accounts', before: { present: true, value: storedAccounts }, value: editedAccounts }],
+        },
+      },
+      { id: 's-legacy', name: 'Legacy edit', patch: { accounts: editedAccounts } },
+    ]
+    const result = migratePlanToCurrent(stored(plan))
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+
+    const legacy = result.plan.scenarios[1]!.patch as { accounts: { type: string; id: string }[] }
+    expect(legacy.accounts.map((row) => [row.type, row.id])).toEqual([['property', 'home-property'], ['cash', 'home']])
+
+    const parsed = parseScenarioPatch(result.plan.scenarios[0]!.patch)
+    expect(parsed.ok).toBe(true)
+    if (!parsed.ok) return
+    const applied = applyScenarioPatchDocument(result.plan, parsed.patch)
+    expect(applied.ok, applied.ok ? '' : applied.issues.join('; ')).toBe(true)
+    if (!applied.ok) return
+    const property = applied.plan.accounts.find((account) => account.id === 'home-property')
+    const cash = applied.plan.accounts.find((account) => account.id === 'home')
+    expect(property?.type === 'property' ? property.value : null).toBe(350_000)
+    expect(cash?.type === 'cash' ? cash.balance : null).toBe(10_000)
   })
 })
 

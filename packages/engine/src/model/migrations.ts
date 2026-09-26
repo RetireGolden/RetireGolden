@@ -715,6 +715,21 @@ export type PlanLoadRepair =
        */
       latestPermittedStartAgeIfToggled: number
     }
+  /**
+   * A cash account and a property stored under one account id, the pair plans
+   * once accepted. The year's balances are keyed by id, so the property's
+   * value was published as the cash balance. The property now carries
+   * `newAccountId`, a string the stored document did not contain anywhere; the
+   * cash account keeps `accountId`. `accountName` is the property's name and
+   * `cashAccountName` the cash account's.
+   */
+  | {
+      kind: 'propertyAccountIdSeparatedFromCash'
+      accountId: string
+      accountName: string
+      newAccountId: string
+      cashAccountName: string
+    }
 
 /** The document as repaired, plus what the repairs were. */
 interface NormalizedPlan {
@@ -739,6 +754,126 @@ function isOwnedTraditionalRecord(account: unknown): boolean {
   if (typeof account !== 'object' || account === null || Array.isArray(account)) return false
   const record = account as Record<string, unknown>
   return record['type'] === 'traditional' && (record['inherited'] === undefined || record['inherited'] === null)
+}
+
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+/** Every string value anywhere in a stored document, keys excluded. */
+function collectDocumentStrings(value: unknown, into: Set<string> = new Set()): Set<string> {
+  if (typeof value === 'string') into.add(value)
+  else if (Array.isArray(value)) value.forEach((item) => collectDocumentStrings(item, into))
+  else if (isPlainRecord(value)) Object.values(value).forEach((item) => collectDocumentStrings(item, into))
+  return into
+}
+
+/**
+ * The new id for each property that shares its id with exactly one cash
+ * account (and nothing else), keyed by that shared id: `<id>-property`, or
+ * `<id>-property-2`, `-3`, and so on while the candidate already appears as a
+ * string anywhere in the stored document, so it cannot collide with any id
+ * or reference the document holds.
+ */
+function cashPropertyAliasRenames(
+  raw: Record<string, unknown>,
+  accounts: readonly unknown[],
+): ReadonlyMap<string, string> {
+  const typesById = new Map<string, string[]>()
+  for (const account of accounts) {
+    if (!isPlainRecord(account)) continue
+    const id = account['id']
+    const type = account['type']
+    if (typeof id !== 'string' || typeof type !== 'string') continue
+    const types = typesById.get(id)
+    if (types === undefined) typesById.set(id, [type])
+    else types.push(type)
+  }
+  const renames = new Map<string, string>()
+  let used: Set<string> | null = null
+  for (const [id, types] of typesById) {
+    if (types.length !== 2 || !types.includes('cash') || !types.includes('property')) continue
+    used ??= collectDocumentStrings(raw)
+    let candidate = `${id}-property`
+    for (let suffix = 2; used.has(candidate); suffix++) candidate = `${id}-property-${suffix}`
+    used.add(candidate)
+    renames.set(id, candidate)
+  }
+  return renames
+}
+
+/** A stored accounts list with each renamed property's id replaced; the same array when nothing matched. */
+function renamePropertiesInAccountList(
+  list: unknown,
+  renames: ReadonlyMap<string, string>,
+): unknown {
+  if (!Array.isArray(list)) return list
+  let changed = false
+  const renamed = list.map((row) => {
+    if (!isPlainRecord(row) || row['type'] !== 'property' || typeof row['id'] !== 'string') return row
+    const newId = renames.get(row['id'])
+    if (newId === undefined) return row
+    changed = true
+    return { ...row, id: newId }
+  })
+  return changed ? renamed : list
+}
+
+/**
+ * Carries a property rename into stored scenarios. A scenario can hold
+ * account rows in two places only: a canonical patch's operation on
+ * `/accounts` (paths never traverse an array, so account rows are set as the
+ * whole list, in both its `before` state and its `value`; a stored operation
+ * on one element is renamed too, though it cannot apply), and a legacy
+ * deep-merge patch's `accounts` list. Renaming the property there too keeps a
+ * scenario's recorded `before` equal to the repaired plan, so it still
+ * applies, and keeps it from putting the shared id back.
+ */
+function renamePropertiesInScenarios(
+  scenarios: unknown,
+  renames: ReadonlyMap<string, string>,
+): unknown {
+  if (renames.size === 0 || !Array.isArray(scenarios)) return scenarios
+  let changed = false
+  const repaired = scenarios.map((scenario) => {
+    if (!isPlainRecord(scenario) || !isPlainRecord(scenario['patch'])) return scenario
+    const patch = scenario['patch']
+    let nextPatch = patch
+    if (Array.isArray(patch['operations'])) {
+      let operationsChanged = false
+      const operations = patch['operations'].map((operation: unknown) => {
+        if (!isPlainRecord(operation) || typeof operation['path'] !== 'string') return operation
+        // `/accounts` holds the list. A stored operation on one element
+        // (`/accounts/2`) cannot apply, since paths never traverse an array,
+        // but its row is renamed all the same so it never carries the old id.
+        const path = operation['path']
+        const holdsOneRow = /^\/accounts\/[^/]+$/u.test(path)
+        if (path !== '/accounts' && !holdsOneRow) return operation
+        const rename = (value: unknown): unknown => {
+          if (!holdsOneRow) return renamePropertiesInAccountList(value, renames)
+          return (renamePropertiesInAccountList([value], renames) as unknown[])[0]
+        }
+        let next = operation
+        const value = rename(operation['value'])
+        if (value !== operation['value']) next = { ...next, value }
+        const before = operation['before']
+        if (isPlainRecord(before) && before['present'] === true) {
+          const beforeValue = rename(before['value'])
+          if (beforeValue !== before['value']) next = { ...next, before: { ...before, value: beforeValue } }
+        }
+        if (next !== operation) operationsChanged = true
+        return next
+      })
+      if (operationsChanged) nextPatch = { ...patch, operations }
+    } else if (Array.isArray(patch['accounts'])) {
+      const accounts = renamePropertiesInAccountList(patch['accounts'], renames)
+      if (accounts !== patch['accounts']) nextPatch = { ...patch, accounts }
+    }
+    if (nextPatch === patch) return scenario
+    changed = true
+    return { ...scenario, patch: nextPatch }
+  })
+  return changed ? repaired : scenarios
 }
 
 /**
@@ -839,11 +974,43 @@ function normalizeCurrentPlan(raw: Record<string, unknown>): NormalizedPlan {
     return { year, month }
   }
 
+  // A cash account and a property under one id (decision
+  // D-CASH-PROPERTY-ALIAS). Plans accepted exactly this pair until parse began
+  // refusing it, and the year's balances, keyed by id, published the
+  // property's value as the cash balance. The property takes a new id and the
+  // cash account keeps the stored one, because every other field that can
+  // hold an account id takes only an investable or retirement account: a TIPS
+  // ladder's funding account (cash, taxable or equity compensation), an
+  // annuity's premium source, a pension rollover target, a retirement
+  // action's source or destination, and the IRA classification and annual
+  // tax-fact sources. A stored reference to the shared id can therefore only
+  // have meant the cash account, and none needs to move. No plan field names a
+  // property by id; the one other place a property row is stored is a
+  // scenario's accounts list, which follows the rename below.
+  const propertyRenames = cashPropertyAliasRenames(raw, accounts)
+
   const repairs: PlanLoadRepair[] = []
   let changed = false
   const normalizedAccounts = accounts.map((account) => {
     if (typeof account !== 'object' || account === null || Array.isArray(account)) return account
     const accountRecord = account as Record<string, unknown>
+    const renamedPropertyId = accountRecord['type'] === 'property' && typeof accountRecord['id'] === 'string'
+      ? propertyRenames.get(accountRecord['id'])
+      : undefined
+    if (renamedPropertyId !== undefined) {
+      changed = true
+      const accountId = stringField(accountRecord, 'id')
+      const cash = accounts.find((candidate) =>
+        isPlainRecord(candidate) && candidate['type'] === 'cash' && candidate['id'] === accountId)
+      repairs.push({
+        kind: 'propertyAccountIdSeparatedFromCash',
+        accountId,
+        accountName: stringField(accountRecord, 'name'),
+        newAccountId: renamedPropertyId,
+        cashAccountName: isPlainRecord(cash) ? stringField(cash, 'name') : '',
+      })
+      return { ...accountRecord, id: renamedPropertyId }
+    }
     if (
       (accountRecord['type'] === 'traditional' || accountRecord['type'] === 'roth' || accountRecord['type'] === 'hsa') &&
       accountRecord['ownerPersonId'] === null
@@ -1111,7 +1278,14 @@ function normalizeCurrentPlan(raw: Record<string, unknown>): NormalizedPlan {
     return account
   })
 
-  return { raw: changed ? { ...raw, accounts: normalizedAccounts } : raw, repairs }
+  if (!changed) return { raw, repairs }
+  const scenarios = renamePropertiesInScenarios(raw['scenarios'], propertyRenames)
+  return {
+    raw: scenarios === raw['scenarios']
+      ? { ...raw, accounts: normalizedAccounts }
+      : { ...raw, accounts: normalizedAccounts, scenarios },
+    repairs,
+  }
 }
 
 /**
