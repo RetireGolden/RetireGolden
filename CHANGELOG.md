@@ -91,9 +91,12 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   included, where an inherited account's published row can show an amount
   that did not move), so the candidates it offers do not change either.
   Those movements come from the year's `retirementRuntimeSource`, which
-  `simulatePlan` always publishes; a decision context whose baseline year
-  lacks them (a result not built by `simulatePlan`) is refused with an error
-  naming the missing field rather than read from another figure.
+  `simulatePlan` always publishes. For a baseline year built elsewhere
+  without it, the forced amount is read only where the published figures fix
+  it: nothing when no inherited distribution moved, otherwise the inherited
+  traditional rows' executed amounts when every row's executed amount adds
+  up to `inheritedDistribution`; a year they cannot fix counts as having no
+  spending draw, rather than being read from the ordinary-income figure.
 
 - **Fixed: 0% capital-gains room when income is below the deduction**
   (decision D-ZERO-RATE-HEADROOM): the search for the room stopped at the 15%

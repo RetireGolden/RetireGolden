@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { AllocationWeights, Plan } from '../model/plan.js'
 import { ASSET_CLASS_IDS, createEmptyPlan, parsePlan } from '../model/plan.js'
+import type { YearResult } from '../projection/types.js'
 import { createFlatTaxCalculator } from '../testing/flatTax.js'
 import { createDecisionContext, evaluateCandidate } from './evaluateCandidate.js'
 import {
@@ -31,15 +32,8 @@ describe('simpleRothConversionGenerator ACA evidence gate', () => {
     expect(simpleRothConversionGenerator.generate(actionable).some((candidate) => candidate.id === 'aca-cliff-cap')).toBe(true)
   })
 
-  it('finds the first spending draw on traditional accounts even beside a non-qualified inherited Roth slice', () => {
-    // D-INHERITED-ROTH-SLICE. A disabled beneficiary born 1965 takes 100 a
-    // year from an inherited Roth (2,610 over 26.1, then 2,510 over 25.1); the
-    // decedent's first Roth year is 2024, so neither draw is qualified, and
-    // with 60 of basis the 2027 draw is 100 of taxable earnings. Spending of
-    // 1,000 with 1,750 of cash and no tax leaves 850 of cash for 2027, so the
-    // owned IRA pays a 50 spending draw that year. inheritedTraditionalDistribution
-    // is 100 then, so reading it as the forced traditional amount gave
-    // 50 - 0 - 100 < 1 and no "while cash and taxable cover spending" window.
+  /** The D-INHERITED-ROTH-SLICE plan of the next test. */
+  function inheritedRothSlicePlan(): Plan {
     const plan = createEmptyPlan({ newId: () => 'slice-generator', now: () => new Date('2026-01-01T00:00:00.000Z') })
     plan.household.people[0] = {
       id: 'beneficiary', name: 'Beneficiary', dob: '1965-06-15',
@@ -72,7 +66,19 @@ describe('simpleRothConversionGenerator ACA evidence gate', () => {
     }]
     const parsed = parsePlan(plan)
     if (!parsed.ok) throw new Error(parsed.issues.join('; '))
-    const ctx = createDecisionContext(parsed.plan, { startYear: 2026, taxCalculator: createFlatTaxCalculator(0) })
+    return parsed.plan
+  }
+
+  it('finds the first spending draw on traditional accounts even beside a non-qualified inherited Roth slice', () => {
+    // D-INHERITED-ROTH-SLICE. A disabled beneficiary born 1965 takes 100 a
+    // year from an inherited Roth (2,610 over 26.1, then 2,510 over 25.1); the
+    // decedent's first Roth year is 2024, so neither draw is qualified, and
+    // with 60 of basis the 2027 draw is 100 of taxable earnings. Spending of
+    // 1,000 with 1,750 of cash and no tax leaves 850 of cash for 2027, so the
+    // owned IRA pays a 50 spending draw that year. inheritedTraditionalDistribution
+    // is 100 then, so reading it as the forced traditional amount gave
+    // 50 - 0 - 100 < 1 and no "while cash and taxable cover spending" window.
+    const ctx = createDecisionContext(inheritedRothSlicePlan(), { startYear: 2026, taxCalculator: createFlatTaxCalculator(0) })
     const [year2026, year2027] = ctx.baselineResult.years
     // The facts the window reads: no spending draw on the IRA in 2026, a 50
     // one in 2027, and a Roth slice larger than it.
@@ -182,20 +188,45 @@ describe('simpleRothConversionGenerator ACA evidence gate', () => {
     expect(windowedIds(plan)).toEqual([])
   })
 
-  it('refuses a baseline year without the recorded movements instead of reading the ordinary-income figure', () => {
-    // The inherited Roth plan's 2027 inheritedTraditionalDistribution carries
-    // the Roth slice's taxable earnings; with the recorded movements removed
-    // no figure can stand in for them, so the generator names what is missing.
-    const plan = spousalElectionPlan('roth', 5_000, false)
-    const ctx = createDecisionContext(plan, { startYear: 2026, taxCalculator: createFlatTaxCalculator(0) })
+  /**
+   * A baseline as a caller might build it outside simulatePlan: every year
+   * without the recorded movements, and optionally one year edited.
+   */
+  function withoutRecordedMovements(
+    ctx: ReturnType<typeof createDecisionContext>,
+    edit: (year: YearResult) => YearResult = (year) => year,
+  ): ReturnType<typeof createDecisionContext> {
     const years = ctx.baselineResult.years.map((year) => {
-      if (year.year !== 2026) return year
       const stripped = { ...year }
       delete stripped.retirementRuntimeSource
-      return stripped
+      return edit(stripped)
     })
-    expect(() => simpleRothConversionGenerator.generate({ ...ctx, baselineResult: { ...ctx.baselineResult, years } }))
-      .toThrow('baseline year 2026 has no retirementRuntimeSource.runtimeOccurrences')
+    return { ...ctx, baselineResult: { ...ctx.baselineResult, years } }
+  }
+
+  it('reads the forced amount from the published rows when a baseline carries no recorded movements', () => {
+    // The Roth slice plan again. Its 2027 rows reconcile with
+    // inheritedDistribution (the one inherited Roth row's 100), and no row is
+    // traditional, so the forced traditional amount is 0 and the 50 draw
+    // opens the window, as it does with the recorded movements. The
+    // ordinary-income figure (100) would have hidden it.
+    const ctx = createDecisionContext(inheritedRothSlicePlan(), { startYear: 2026, taxCalculator: createFlatTaxCalculator(0) })
+    const ids = simpleRothConversionGenerator.generate(withoutRecordedMovements(ctx)).map((candidate) => candidate.id)
+    expect(ids).toContain('bracket-12-until-2027')
+  })
+
+  it('counts a year whose forced amount the published figures cannot fix as having no spending draw', () => {
+    // The same 2027, with its rows no longer reconciling with
+    // inheritedDistribution (as in a spousal election year, where a row can
+    // publish an amount that did not move). The forced traditional amount is
+    // then unknown, so 2027 opens no window.
+    const ctx = createDecisionContext(inheritedRothSlicePlan(), { startYear: 2026, taxCalculator: createFlatTaxCalculator(0) })
+    const edited = withoutRecordedMovements(ctx, (year) => year.year !== 2027 ? year : {
+      ...year,
+      inheritedAccounts: (year.inheritedAccounts ?? []).map((row) => ({ ...row, executedRequiredAmount: row.executedRequiredAmount + 25 })),
+    })
+    const ids = simpleRothConversionGenerator.generate(edited).map((candidate) => candidate.id)
+    expect(ids).not.toContain('bracket-12-until-2027')
   })
 
   it('marks every aggregate fill candidate explicitly exploratory', () => {

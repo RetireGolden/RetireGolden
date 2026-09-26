@@ -64,32 +64,47 @@ function conversionWindowBoundaries(ctx: DecisionContext, startYear: number, end
   // captured inherited-distribution movements whose source is a traditional
   // account, the same figures internal/ownedNonRothIraRuntimeSourceSeries.ts
   // reconciles exactly against withdrawals.traditional. simulatePlan always
-  // publishes them, and every caller hands the generators a simulatePlan
-  // result. A year without them is refused: no published figure stands in
-  // for them exactly, and a stand-in would silently move the window.
+  // publishes them.
+  //
+  // A result built elsewhere can lack them: the optimizer's exported
+  // evaluators take a caller's baseline, and YearResult keeps the field
+  // optional for results constructed outside simulatePlan. For such a year
+  // the forced amount is read only where the published figures fix it
+  // exactly: 0 when no inherited distribution moved at all
+  // (inheritedDistribution is 0); otherwise the traditional rows' executed
+  // amounts, but only when the rows' executed amounts reconcile with
+  // inheritedDistribution to the cent, so no row carries an amount that did
+  // not move. A year whose forced traditional amount cannot be fixed that way
+  // counts as having no spending draw: it never opens the window, rather than
+  // opening it on a guessed figure.
   const traditionalIds = new Set(
     plan.accounts.filter((account) => account.type === 'traditional').map((account) => account.id),
   )
-  const inheritedTraditionalForced = (year: (typeof ctx.baselineResult.years)[number]): number => {
+  const inheritedTraditionalForced = (year: (typeof ctx.baselineResult.years)[number]): number | null => {
     const occurrences = year.retirementRuntimeSource?.runtimeOccurrences
-    if (occurrences === undefined) {
-      throw new Error(
-        `Roth conversion windows: baseline year ${year.year} has no retirementRuntimeSource.runtimeOccurrences; ` +
-          'the decision context must carry a simulatePlan result',
-      )
-    }
-    let forced = 0
-    for (const occurrence of occurrences) {
-      if (occurrence.kind === 'inheritedIraRmd' && traditionalIds.has(occurrence.sourceAccountId ?? '')) {
-        forced += occurrence.grossAmountPlanDollars
+    if (occurrences !== undefined) {
+      let forced = 0
+      for (const occurrence of occurrences) {
+        if (occurrence.kind === 'inheritedIraRmd' && traditionalIds.has(occurrence.sourceAccountId ?? '')) {
+          forced += occurrence.grossAmountPlanDollars
+        }
       }
+      return forced
     }
-    return forced
+    if (year.inheritedDistribution === 0) return 0
+    if (year.inheritedAccounts === undefined) return null
+    let executed = 0
+    let traditional = 0
+    for (const row of year.inheritedAccounts) {
+      executed += row.executedRequiredAmount
+      if (traditionalIds.has(row.accountId)) traditional += row.executedRequiredAmount
+    }
+    return Math.abs(executed - year.inheritedDistribution) <= 0.01 ? traditional : null
   }
-  const firstTraditionalDrawYear = ctx.baselineResult.years.find(
-    (year) =>
-      year.withdrawals.traditional - year.rmd - inheritedTraditionalForced(year) > 1,
-  )?.year
+  const firstTraditionalDrawYear = ctx.baselineResult.years.find((year) => {
+    const forced = inheritedTraditionalForced(year)
+    return forced !== null && year.withdrawals.traditional - year.rmd - forced > 1
+  })?.year
   if (firstTraditionalDrawYear !== undefined && firstTraditionalDrawYear > startYear && firstTraditionalDrawYear <= endYear) {
     boundaries.set(firstTraditionalDrawYear, `while cash and taxable cover spending (through ${firstTraditionalDrawYear - 1})`)
   }
