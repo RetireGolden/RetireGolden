@@ -1,6 +1,6 @@
 # Mutation receipt: market-model-reversed-history
 
-Re-executed 2026-09-18 after the second #719 review against RetireGolden base `33e7d546` (branch grok/b1-p4-cards-monte-carlo) in `packages/engine`.
+Executed 2026-09-26 against RetireGolden base `8ff951e4` (branch claude/monte-carlo-models) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/montecarlo/marketModels.ts`
 
@@ -8,16 +8,21 @@ Re-executed 2026-09-18 after the second #719 review against RetireGolden base `3
 --- a/packages/engine/src/montecarlo/marketModels.ts
 +++ b/packages/engine/src/montecarlo/marketModels.ts
 @@ mutation @@
--const winLen = Math.max(5, Math.min(HISTORICAL_YEARS.length, config.windowLengthYears ?? 10))
-+const winLen = Math.max(1, Math.min(HISTORICAL_YEARS.length, config.windowLengthYears ?? 10))
+-  const winLen = config.windowLengthYears ?? 10
+-  if (!(Number.isInteger(winLen) && winLen >= MIN_REVERSED_WINDOW_YEARS && winLen <= n)) {
+-    throw new RangeError(
+-      `Reversed-history windowLengthYears must be a whole number of years from ${MIN_REVERSED_WINDOW_YEARS} to ${n} (the length of the historical series); got ${winLen}.`,
+-    )
+-  }
++  const winLen = Math.max(MIN_REVERSED_WINDOW_YEARS, Math.min(n, config.windowLengthYears ?? 10))
 ```
 
-Drops the five-year floor so requested length 3 is honored, selecting 2000–2002 and replaying [2002, 2001, 2000] instead of [2004, 2003, 2002] (the worksheet's first wrong reading).
+Restores the silent clamp to [5, 96] in place of the refusal, the worksheet's first wrong reading: a requested window of 3 then runs as 5 and nothing is thrown.
 
 ## Command
 
 ```
-NO_COLOR=1 FORCE_COLOR=0 npx.cmd vitest run src/montecarlo/marketModels.evidence.test.ts
+NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/montecarlo/marketModels.evidence.test.ts
 ```
 
 ## Captured failing output
@@ -25,39 +30,32 @@ NO_COLOR=1 FORCE_COLOR=0 npx.cmd vitest run src/montecarlo/marketModels.evidence
 Captured with `NO_COLOR=1 FORCE_COLOR=0`. The `Start at` and `Duration` lines are the only lines removed.
 
 ```
- RUN  v5.0.0 C:/TEMP/rg-s3/packages/engine
 
- ❯ src/montecarlo/marketModels.evidence.test.ts (16 tests | 1 failed) 9ms
-   ❯ market-model-reversed-history — Reversed-history window replay (1)
-     × floors windowLengthYears 3 to 5 and replays 2004, 2003, 2002 with the worksheet shocks 4ms
+ RUN  v5.0.0 C:/rgwt/engine3/packages/engine
+
+ ❯ src/montecarlo/marketModels.evidence.test.ts (28 tests | 1 failed) 55ms
+   ❯ market-model-reversed-history — Reversed-history window replay (4)
+     × refuses a window that is not a whole number from 5 to 96, instead of clamping it 4ms
 
  Test Files  1 failed (1)
-      Tests  1 failed | 15 passed (16)
+      Tests  1 failed | 27 passed (28)
 
 
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
 
- FAIL  src/montecarlo/marketModels.evidence.test.ts > market-model-reversed-history — Reversed-history window replay > floors windowLengthYears 3 to 5 and replays 2004, 2003, 2002 with the worksheet shocks
-AssertionError: returnShockPct[0] (year 2004) -16.097291666666667 is not within {"abs":1e-12} of the worksheet's -0.7172916666666698: expected false to be true // Object.is equality
-
-- Expected
-+ Received
-
-- true
-+ false
-
- ❯ src/montecarlo/marketModels.evidence.test.ts:477:11
-    475|           withinTolerance(shock, value, example.tolerance),
-    476|           `returnShockPct[${index}] (year ${year}) ${shock} is not wit…
-    477|         ).toBe(true)
-       |           ^
-    478|         expect(
-    479|           withinTolerance(inflation, expectedInflation[index]!, exampl…
- ❯ src/montecarlo/marketModels.evidence.test.ts:470:22
+ FAIL  src/montecarlo/marketModels.evidence.test.ts > market-model-reversed-history — Reversed-history window replay > refuses a window that is not a whole number from 5 to 96, instead of clamping it
+AssertionError: expected function to throw an error, but it didn't
+ ❯ src/montecarlo/marketModels.evidence.test.ts:634:99
+    632|     it('refuses a window that is not a whole number from 5 to 96, inst…
+    633|       for (const windowLengthYears of [3, 4, 4.999, 5.5, 97, 0, -5, Nu…
+    634|         expect(() => createReversedHistoryModel({ type: 'reversed-hist…
+       |                                                                                                   ^
+    635|           new RangeError(
+    636|             `Reversed-history windowLengthYears must be a whole number…
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 ```
 
 ## Revert
 
-`git checkout -- packages/engine/src/montecarlo/marketModels.ts`, then `git diff --quiet -- packages/engine/src/montecarlo/marketModels.ts` exited 0, confirming no change to production code after the run.
+The mutated file was restored from a byte copy taken before the edit, and the restored bytes were compared with that copy and found identical, so no production code changed after the run. The evidence file then passes again on the unmutated code.
