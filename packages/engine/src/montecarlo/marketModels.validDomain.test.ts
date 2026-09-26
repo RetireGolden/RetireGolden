@@ -7,10 +7,13 @@
  * quietly is now refused with a RangeError. This file checks both halves of
  * that change.
  *
- * 1. Every valid input produces byte-identical paths, with one stated
- *    exception: a positive-definite class correlation matrix whose Cholesky
- *    pivot is positive but below 1e-12 is now factored exactly, where
- *    origin/main raised that pivot to 1e-12 (pinned below). The functions below the
+ * 1. Every value the earlier code ran as given produces byte-identical
+ *    paths, except a positive-definite class correlation matrix with a
+ *    Cholesky pivot below 1e-12, which is now factored exactly where
+ *    origin/main raised that pivot to 1e-12 (pinned below). Values the earlier
+ *    code clamped are now refused, or run as set where the new range admits
+ *    them (the switch and high-inflation probabilities and AR(1) phi, tested
+ *    at their new edges below). The functions below the
  *    "frozen" marker are a verbatim copy of origin/main aeb2861a
  *    (packages/engine/src/montecarlo/marketModels.ts lines 292-367, 369-468,
  *    520-700 and 760-958, and allocation/assetClasses.ts lines 256-277), with
