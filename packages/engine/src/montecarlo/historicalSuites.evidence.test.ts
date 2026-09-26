@@ -140,5 +140,18 @@ describeCalculation(
       expect(result.suites[0]!.worstByTotalShortfall).toHaveLength(1)
       expect(result.suites[0]!.worstByEndingAfterTaxEstate).toHaveLength(1)
     })
+
+    it('does not read the worst-window count when no suite is requested: suites [] with a count of 0 returns no suites', () => {
+      const plan = singlePersonPlan({ dob: '1968-06-15', planningAge: 60 })
+      plan.accounts = [cashAccount('cash', inputs.openingBalance as number)]
+      const result = runHistoricalStressSuites(validatePlan(plan), {
+        startYear: START_YEAR,
+        taxCalculator: createFlatTaxCalculator(0),
+        windowLengthYears: 3,
+        suites: [],
+        worstWindowCount: 0,
+      })
+      expect(result).toEqual({ windowLengthYears: 3, suites: [] })
+    })
   },
 )

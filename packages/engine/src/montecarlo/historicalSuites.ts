@@ -116,9 +116,10 @@ function suiteName(kind: HistoricalStressSuiteKind, windowLength: number): strin
  * without a word, and a fractional value read past the end of the series.
  *
  * worstWindowCount (default 5), the length of each worst-window list, must be a whole
- * number of at least 1; any other value is likewise refused before anything is simulated
- * (a value below 1 used to be raised to 1 without a word). A count above the number of
- * windows lists every window.
+ * number of at least 1 whenever a suite is requested; any other value is then likewise
+ * refused before anything is simulated (a value below 1 used to be raised to 1 without a
+ * word). With suites: [] no worst-window list is built, so the count is not read. A count
+ * above the number of windows lists every window.
  */
 export function runHistoricalStressSuites(plan: Plan, opts: HistoricalStressSuiteOptions): HistoricalStressSuiteResult {
   const seriesLength = HISTORICAL_YEARS.length
@@ -131,14 +132,15 @@ export function runHistoricalStressSuites(plan: Plan, opts: HistoricalStressSuit
       `Historical stress windowLengthYears must be a whole number of years from 1 to ${seriesLength} (the length of the historical series); got ${requestedWindow}.`,
     )
   }
+  const kinds = opts.suites ?? (['rolling', 'reversed'] as const)
   const worstWindowCount = opts.worstWindowCount ?? 5
-  if (!(Number.isInteger(worstWindowCount) && worstWindowCount >= 1)) {
+  // Only a requested suite builds worst-window lists, so only then is the count read and checked.
+  if (kinds.length > 0 && !(Number.isInteger(worstWindowCount) && worstWindowCount >= 1)) {
     throw new RangeError(`Historical stress worstWindowCount must be a whole number of at least 1; got ${worstWindowCount}.`)
   }
   const baseline = simulatePlan(plan, { startYear: opts.startYear, taxCalculator: opts.taxCalculator })
   const projectionYears = baseline.years.length
   const windowLength = requestedWindow ?? Math.max(1, Math.min(projectionYears, seriesLength))
-  const kinds = opts.suites ?? (['rolling', 'reversed'] as const)
   const lastStart = HISTORICAL_YEARS.length - windowLength
   const suites: HistoricalStressSuite[] = []
 
