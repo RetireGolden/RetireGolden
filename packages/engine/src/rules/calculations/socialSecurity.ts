@@ -82,17 +82,18 @@ export const socialSecurityRecords = {
   },
   'delayed-retirement-credit-factor': {
     title: 'Delayed retirement credit factor',
-    purpose: 'Credit 2/3 of 1% per month after full retirement age, stopping at age 70.',
+    purpose: 'Credit a percentage of PIA per month after full retirement age, stopping at age 70, at the rate for the date of birth.',
     kind: 'formula',
     outputs: [],
     feeds: ['social-security-benefit-annual'],
     statement:
-      'socialSecurity/benefitFactor.ts#delayedRetirementFactor increases the retirement benefit by 2/3 of 1% of PIA per month after the normal retirement age, capped at the months available through age 70, so there is no credit past 70. Claiming at or before NRA returns a factor of 1. Units: a dimensionless factor on PIA. Rounding: none.',
+      'socialSecurity/benefitFactor.ts#delayedRetirementFactor increases the retirement benefit by r percent of PIA per month after the normal retirement age, capped at the months available through age 70, so there is no credit past 70. Claiming at or before NRA returns a factor of 1. The rate r is the 20 CFR 404.313(b)(2) credit for the effective birth year, from #delayedCreditMonthlyPct: 2/3 of 1 percent for births after January 1, 1943, and from 5/8 down to 1/12 of 1 percent for earlier births; claimFactor and the survivor base pass it, and the function defaults to 2/3. Units: a dimensionless factor on PIA. Rounding: none.',
     formula: {
-      expression: 'factor = 1 + min(m, max(0, c)) x (2/3) / 100, and 1 when m <= 0',
+      expression: 'factor = 1 + min(m, max(0, c)) x r / 100, and 1 when m <= 0',
       variables: [
         { symbol: 'm', meaning: 'Months claimed after the normal retirement age', unit: 'months', domain: 'integer' },
         { symbol: 'c', meaning: 'Maximum credited months from NRA through age 70', unit: 'months', domain: 'integer >= 0' },
+        { symbol: 'r', meaning: 'Credit per month for the effective birth year (2/3 for births after January 1, 1943)', unit: 'percent of PIA per month', domain: 'a rate from the 20 CFR 404.313(b)(2) table' },
       ],
       timing: 'once per claim',
       rounding: 'none',
@@ -107,8 +108,11 @@ export const socialSecurityRecords = {
       'The cap is supplied by the caller as the months from that person\'s NRA to age 70, so the record claims the credit rate and the cap behaviour, not the NRA schedule',
     ],
     implementedBy: ['packages/engine/src/socialSecurity/benefitFactor.ts'],
-    implementedByFunctions: ['packages/engine/src/socialSecurity/benefitFactor.ts#delayedRetirementFactor'],
-    verifiedOn: '2026-09-18',
+    implementedByFunctions: [
+      'packages/engine/src/socialSecurity/benefitFactor.ts#delayedCreditMonthlyPct',
+      'packages/engine/src/socialSecurity/benefitFactor.ts#delayedRetirementFactor',
+    ],
+    verifiedOn: '2026-09-26',
     provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
   },
   'early-claim-factor': {

@@ -57,7 +57,7 @@ Income tab shows it read-only and links there.
 
 Monthly granularity from 62 to 70 ([benefitFactor.ts](../../packages/engine/src/socialSecurity/benefitFactor.ts),
 [socialSecurity/claimFactor.ts](../../packages/engine/src/socialSecurity/claimFactor.ts)): early
-reduction 5/9%/mo for the first 36 months then 5/12%/mo; delayed credits 2/3%/mo to 70. FRA by birth year
+reduction 5/9%/mo for the first 36 months then 5/12%/mo; delayed credits 2/3%/mo to 70 (a lower rate by birth date before 1943). FRA by birth year
 with the Jan-1 rule ([nra.ts](../../packages/engine/src/socialSecurity/nra.ts)).
 
 ## The benefit menu
