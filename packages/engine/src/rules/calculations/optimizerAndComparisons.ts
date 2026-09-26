@@ -365,11 +365,11 @@ export const optimizerAndComparisonsRecords = {
       'simple-candidate-evaluation-money-lasts-years-delta',
     ],
     feeds: [],
-    statement: 'projection/optimizePlan.ts#evaluateSimpleConversionCandidates publishes each SimpleCandidateEvaluation as the sum of the candidate result\'s YearResult.rothConversion, the candidate-minus-baseline differences of summarizeProjection\'s endingAfterTaxEstate and lifetimeTaxesAndPenalties, the candidate-minus-baseline difference of lastsThrough (a result\'s depletionYear, or its endYear + 1 when it never depletes), and the ascending sorted union across both results of the years whose taxComputation.status or hecmComputation.status is incomplete.',
+    statement: 'projection/optimizePlan.ts#evaluateSimpleConversionCandidates publishes each SimpleCandidateEvaluation as the sum of the candidate result\'s YearResult.rothConversion, the candidate-minus-baseline differences of summarizeProjection\'s endingAfterTaxEstate and lifetimeTaxesAndPenalties, the candidate-minus-baseline difference of lastFundedYear (a result\'s depletionYear - 1, or its endYear when it never depletes), and the ascending sorted union across both results of the years whose taxComputation.status or hecmComputation.status is incomplete.',
     formula: {
-      expression: 'executedConversionTotal = sum(candidate.years.rothConversion); afterTaxEstateDelta = candidate.endingAfterTaxEstate - baseline.endingAfterTaxEstate; lifetimeTaxDelta = candidate.lifetimeTaxesAndPenalties - baseline.lifetimeTaxesAndPenalties; moneyLastsYearsDelta = lastsThrough(candidate) - lastsThrough(baseline); incompleteComputationYears = sorted union of the incomplete years of both results',
+      expression: 'executedConversionTotal = sum(candidate.years.rothConversion); afterTaxEstateDelta = candidate.endingAfterTaxEstate - baseline.endingAfterTaxEstate; lifetimeTaxDelta = candidate.lifetimeTaxesAndPenalties - baseline.lifetimeTaxesAndPenalties; moneyLastsYearsDelta = lastFundedYear(candidate) - lastFundedYear(baseline); incompleteComputationYears = sorted union of the incomplete years of both results',
       variables: [
-        { symbol: 'lastsThrough(result)', meaning: 'Result depletionYear, or endYear + 1 when it never depletes', unit: 'calendar year', domain: 'integer' },
+        { symbol: 'lastFundedYear(result)', meaning: 'Last fully funded year: the result\'s depletionYear - 1, or its endYear when it never depletes (projection/moneyLasts.ts)', unit: 'calendar year', domain: 'integer' },
         { symbol: 'candidate.endingAfterTaxEstate', meaning: 'Candidate result summary ending after-tax estate', unit: 'nominal USD at horizon', domain: 'finite' },
         { symbol: 'candidate.lifetimeTaxesAndPenalties', meaning: 'Candidate result summary lifetime taxes and penalties', unit: 'nominal USD over projection', domain: 'finite' },
         { symbol: 'incomplete(result)', meaning: 'Years whose taxComputation.status or hecmComputation.status is incomplete', unit: 'calendar years', domain: 'set of integers' },
@@ -382,18 +382,19 @@ export const optimizerAndComparisonsRecords = {
       worksheet: 'DOCS/calculations/optimizer-and-comparisons/simple-candidate-evaluation-comparison.md',
     },
     limits: [
-      'Every difference is candidate minus baseline, the conversion sum is the candidate result\'s rows alone, a non-depleting result lasts through endYear + 1 rather than endYear, and the incomplete years are a de-duplicated ascending union across both results rather than a concatenation. Beyond the worksheet\'s inputs the smallest exported entry that publishes these fields generates its own fixed set of fill-to-target candidates and runs each one through the ledger, so the fixture supplies the candidate result at the simulate seam and the baseline result directly; it also assumes a validated plan whose only estate-discounted holding is one non-inherited traditional account at a 20 percent flat heir rate, so each result\'s final-year balance for that account is what turns its ending net worth into the worksheet\'s after-tax estate. In the no-incomplete-status branch the optional incompleteComputationYears key is omitted, not set to an empty list, as the worksheet states since its 2026-09-18 revision (the first derivation expected an empty list, which the fixture found); the fixture asserts the omission and the empty union it stands for. recommendationState has no census family this round and is not published by this record.',
+      'Every difference is candidate minus baseline, the conversion sum is the candidate result\'s rows alone, a non-depleting result is funded through its endYear and a depleting one through its depletionYear - 1 (owner decision R15, 2026-09-26, replaced the earlier count of depletionYear or endYear + 1; both shift every result by one year, so every delta is unchanged), and the incomplete years are a de-duplicated ascending union across both results rather than a concatenation. Beyond the worksheet\'s inputs the smallest exported entry that publishes these fields generates its own fixed set of fill-to-target candidates and runs each one through the ledger, so the fixture supplies the candidate result at the simulate seam and the baseline result directly; it also assumes a validated plan whose only estate-discounted holding is one non-inherited traditional account at a 20 percent flat heir rate, so each result\'s final-year balance for that account is what turns its ending net worth into the worksheet\'s after-tax estate. In the no-incomplete-status branch the optional incompleteComputationYears key is omitted, not set to an empty list, as the worksheet states since its 2026-09-18 revision (the first derivation expected an empty list, which the fixture found); the fixture asserts the omission and the empty union it stands for. recommendationState has no census family this round and is not published by this record.',
     ],
     implementedBy: [
       'packages/engine/src/projection/optimizePlan.ts',
       'packages/engine/src/decisions/evaluateCandidate.ts',
+      'packages/engine/src/projection/moneyLasts.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/projection/optimizePlan.ts#evaluateSimpleConversionCandidates',
       'packages/engine/src/projection/optimizePlan.ts#buildRichCandidates',
       'packages/engine/src/projection/optimizePlan.ts#incompleteComputationYears',
       'packages/engine/src/decisions/evaluateCandidate.ts#evaluateCandidate',
-      'packages/engine/src/decisions/evaluateCandidate.ts#lastsThroughYear',
+      'packages/engine/src/projection/moneyLasts.ts#lastFundedYear',
     ],
     verifiedOn: '2026-09-18',
     provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },

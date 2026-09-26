@@ -1,23 +1,19 @@
 # Mutation receipt: projection-summary-fi-number
 
-Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-seven` at base `74916a7e`, and re-executed 2026-09-22 against RetireGolden base `7ae019a8` (branch `claude/b1-p4-cards-seven`, pull request #727) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-seven` at base `74916a7e` and 2026-09-22 against base `7ae019a8` (pull request #727) on the inline spending sum, which B2-P1 slice 1 replaced on 2026-09-26 by a call of `projection/yearFigures.ts#spendingWithTaxAndPenalties`; the same mutation is rewritten below for that code, and re-executed 2026-09-26 against RetireGolden base `6b01db8d` (branch `claude/b2p1-slice1-ledger-figures`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/projection/compare.ts`
 
 ```diff
 diff --git a/packages/engine/src/projection/compare.ts b/packages/engine/src/projection/compare.ts
-index 893060b3..fa566a58 100644
+index 5292d802..b464fb04 100644
 --- a/packages/engine/src/projection/compare.ts
 +++ b/packages/engine/src/projection/compare.ts
-@@ -326,7 +326,7 @@ export function summarizeProjection(plan: Plan, result: ProjectionResult): Proje
-   // 3. FI Number
-   const targetResult = result.years.find((y) => y.year === Math.max(startYear, targetYear)) ?? result.years[0]
+@@ -343,3 +343,3 @@
    const nominalSpendingAtFI = targetResult
--    ? targetResult.expenses.total + targetResult.tax + targetResult.penalties
+-    ? spendingWithTaxAndPenalties(targetResult)
 +    ? targetResult.expenses.intendedSpending + targetResult.tax + targetResult.penalties
      : plan.expenses.baseAnnual
-   const yearsToFIYear = targetResult ? targetResult.year - startYear : 0
-   const annualSpendingAtFIToday = nominalSpendingAtFI / Math.pow(1 + inflationRate, yearsToFIYear)
 ```
 
 Price intended spending instead of published funded expenses.total.
@@ -32,25 +28,31 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-Re-executed 2026-09-22 on the pull-request branch after the review of #727: the heir-tax fixture had grown to two cases since the first execution and the branch was renamed for the pull request, so every capture, blob hash and revert note is refreshed against this head. The baseline is green (compareSummary.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed. Exit code: 1.
+Re-executed 2026-09-26 for B2-P1 slice 1, whose engine change moved or rewrote the code this receipt mutates, so every capture, blob hash and revert note is refreshed against this head. The baseline is green (compareSummary.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/TEMP/rg-rehearse2/packages/engine
+RUN  v5.0.0 C:/rgwt/engine4/packages/engine
 
- ❯ src/projection/compareSummary.evidence.test.ts (15 tests | 4 failed) 23ms
+ ❯ src/projection/compareSummary.evidence.test.ts (19 tests | 6 failed) 23ms
    ❯ projection-summary-fi-number — Projection summary fi number (2)
      × deflates 92000 of 2030 outflows four years and divides by 4 percent 4ms
    ❯ projection-summary-fi-age — Projection summary fi age (2)
      × crosses inclusively in 2027 at age 47 and ignores the later sentinel row 1ms
    ❯ projection-summary-coast-fire-number — Projection summary coast fire number (2)
      × discounts the FI number four years at the simple real 4 percent 1ms
-     × equals the FI number when retirement age is already attained 1ms
+     × equals the FI number when retirement age is already attained 0ms
+   ❯ projection-summary-fi-year — First financial-independence crossing year (2)
+     × crosses inclusively in 2027 and never waits for the larger 2028 row 0ms
+     × publishes null when no row crosses, and null again for an empty ledger 0ms
 
  Test Files  1 failed (1)
-      Tests  4 failed | 11 passed (15)
+      Tests  6 failed | 13 passed (19)
+
+             persist transforms across runs with fsModuleCache: true
+             learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
 
 
-⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 6 ⎯⎯⎯⎯⎯⎯⎯
 
  FAIL  src/projection/compareSummary.evidence.test.ts > projection-summary-fi-number — Projection summary fi number > deflates 92000 of 2030 outflows four years and divides by 4 percent
 AssertionError: fiNumber: actual 266546.11437470664, worksheet 2043520.21020608: expected false to be true // Object.is equality
@@ -69,7 +71,7 @@ AssertionError: fiNumber: actual 266546.11437470664, worksheet 2043520.21020608:
     262|     })
     263|
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/6]⎯
 
  FAIL  src/projection/compareSummary.evidence.test.ts > projection-summary-fi-age — Projection summary fi age > crosses inclusively in 2027 at age 47 and ignores the later sentinel row
 AssertionError: upstream fiNumber: actual 0, worksheet 1000000: expected false to be true // Object.is equality
@@ -88,7 +90,7 @@ AssertionError: upstream fiNumber: actual 0, worksheet 1000000: expected false t
     330|       expect(summary.fiYear).toBe(example.expected.fiYear)
     331|       expect(summary.fiAge).toBe(example.expected.fiAge)
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/6]⎯
 
  FAIL  src/projection/compareSummary.evidence.test.ts > projection-summary-coast-fire-number — Projection summary coast fire number > discounts the FI number four years at the simple real 4 percent
 AssertionError: upstream fiNumber: actual 266546.11437470664, worksheet 2043520.21020608: expected false to be true // Object.is equality
@@ -107,7 +109,7 @@ AssertionError: upstream fiNumber: actual 266546.11437470664, worksheet 2043520.
     389|       const expected = example.expected.coastFireNumber as number
     390|       expect(
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/6]⎯
 
  FAIL  src/projection/compareSummary.evidence.test.ts > projection-summary-coast-fire-number — Projection summary coast fire number > equals the FI number when retirement age is already attained
 AssertionError: zero-horizon coastFireNumber: actual 266546.11437470664, worksheet 2043520.21020608: expected false to be true // Object.is equality
@@ -126,7 +128,45 @@ AssertionError: zero-horizon coastFireNumber: actual 266546.11437470664, workshe
     409|     })
     410|   },
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/6]⎯
+
+ FAIL  src/projection/compareSummary.evidence.test.ts > projection-summary-fi-year — First financial-independence crossing year > crosses inclusively in 2027 and never waits for the larger 2028 row
+AssertionError: fiNumber: actual 0, worksheet 500000: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ src/projection/compareSummary.evidence.test.ts:843:9
+    841|         withinTolerance(summary.fiNumber, inputs.fiNumber as number, {…
+    842|         `fiNumber: actual ${summary.fiNumber}, worksheet ${inputs.fiNu…
+    843|       ).toBe(true)
+       |         ^
+    844|       expect(summary.fiYear).toBe(expected.crossingFiYear)
+    845|       // The worksheet's three wrong readings all land on 2028.
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/6]⎯
+
+ FAIL  src/projection/compareSummary.evidence.test.ts > projection-summary-fi-year — First financial-independence crossing year > publishes null when no row crosses, and null again for an empty ledger
+AssertionError: expected 2026 to be null // Object.is equality
+
+- Expected:
+null
+
++ Received:
+2026
+
+ ❯ src/projection/compareSummary.evidence.test.ts:855:30
+    853|         projection({ endYear: 2028, years: ledger(rows) }),
+    854|       )
+    855|       expect(summary.fiYear).toBe(expected.nullFiYear)
+       |                              ^
+    856|       expect(summary.fiYear).not.toBe(expected.horizonFallbackWrongRea…
+    857|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/6]⎯
 ```
 
 ## Revert

@@ -11,7 +11,7 @@ export const taxesRecords = {
       'tax-loss-carryforward-used-against-gains-annual',
       'tax-loss-carryforward-used-against-ordinary-annual',
     ],
-    feeds: ['tax-total-annual'],
+    feeds: ['tax-total-annual', 'display-loss-carryforward-used-annual', 'display-tax-free-gains-room-annual'],
     statement:
       'tax/federalTax.ts#applyCapitalLossCarryforward applies an annual capital-loss pool first against current gains, then reports up to the annual ordinary-offset limit as a negative capital-gain-line amount without changing ordinary income, and carries the unused pool forward. The offset is not capped by ordinary income. Units: nominal USD. Rounding: none.',
     formula: {
@@ -460,7 +460,7 @@ export const taxesRecords = {
     purpose: 'What the year\'s published tax figure is composed of, and what it excludes.',
     kind: 'composition',
     outputs: ['tax-total-annual'],
-    feeds: ['portfolio-need-annual', 'surplus-invested-annual'],
+    feeds: ['portfolio-need-annual', 'surplus-invested-annual', 'display-tax-plus-penalties-annual', 'display-total-spending-annual'],
     statement:
       'projection/internal/types/result.ts#YearResult.tax is the amount produced by the composed calculator built by tax/federalTax.ts#combineTaxCalculators: the federal total of regular income tax plus AMT plus NIIT, plus the state calculator amount, plus any further composed calculator amounts. Penalties are excluded from it, from AGI and from MAGI. Units: nominal USD per year. Rounding: none; the composition is an ordered fold.',
     formula: {
@@ -533,7 +533,7 @@ export const taxesRecords = {
     purpose: 'The two penalty channels a year composes, and why neither is part of tax.',
     kind: 'composition',
     outputs: ['tax-penalties-annual'],
-    feeds: ['portfolio-need-annual', 'display-total-spending-annual', 'scenario-lifetime-penalties'],
+    feeds: ['portfolio-need-annual', 'display-total-spending-annual', 'display-tax-plus-penalties-annual', 'scenario-lifetime-penalties'],
     statement:
       'projection/internal/types/result.ts#YearResult.penalties is composed by projection/internal/annualFundingCandidateEvaluation.ts#annualFundingCandidateEvaluation as projection/internal/annualFundingWithdrawalEffects.ts#annualFundingWithdrawalEffects reporting penaltyExcludingRmdShortfallExcise plus the IRC 4974 excise from rmd/rmdShortfallExcise.ts#computeRmdShortfallExcise. The early-withdrawal rate is 10 percent on pre-age-59-and-a-half taxable traditional withdrawals, inherited distributions are never subject to it, and the excise prices max(0, required - distributed by deadline) at the stated rate, whose post-SECURE-2 default is 25 percent. Penalties stay outside tax, AGI and MAGI. Units: nominal USD per year. Rounding: none.',
     formula: {
@@ -570,5 +570,129 @@ export const taxesRecords = {
     ],
     verifiedOn: '2026-09-18',
     provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
+  'display-tax-plus-penalties-annual': {
+    title: 'Tax plus penalties for the year',
+    purpose: 'The single Tax figure the year-by-year table, the spending chart and the report print.',
+    kind: 'composition',
+    outputs: ['display-tax-plus-penalties-annual'],
+    feeds: [
+
+    ],
+    statement: 'projection/yearFigures.ts#taxAndPenalties publishes YearResult.tax + YearResult.penalties for the year, in that order: the settled federal (regular, AMT and NIIT), state and any composed tax, plus the early-withdrawal penalty and the IRC 4974 excise. AMT is already inside tax. Units: nominal USD of the year. Rounding: none; the pages format to whole dollars.',
+    formula: {
+      expression: 'taxAndPenalties = tax + penalties',
+      variables: [
+        { symbol: 'tax', meaning: 'Settled tax of the year (YearResult.tax)', unit: 'usd per year', domain: 'finite' },
+        { symbol: 'penalties', meaning: 'Early-withdrawal penalty plus IRC 4974 excise (YearResult.penalties)', unit: 'usd per year', domain: 'nonnegative' },
+      ],
+      timing: 'annual',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/taxes/display-tax-plus-penalties-annual.md',
+    },
+    limits: [
+      'None beyond those of tax and penalties, which their own records carry; the sum is written in the order the pages used, so the displayed figure did not change when it moved into the engine',
+    ],
+    implementedBy: [
+      'packages/engine/src/projection/yearFigures.ts',
+      'packages/engine/src/projection/internal/types/result.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/yearFigures.ts#taxAndPenalties',
+      'packages/engine/src/projection/internal/types/result.ts#YearResult.tax',
+      'packages/engine/src/projection/internal/types/result.ts#YearResult.penalties',
+    ],
+    verifiedOn: '2026-09-26',
+    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+  },
+  'display-loss-carryforward-used-annual': {
+    title: 'Capital-loss carryforward used in the year',
+    purpose: 'How much of the capital-loss carryforward the year used, as the ledger download reports it.',
+    kind: 'composition',
+    outputs: ['display-loss-carryforward-used-annual'],
+    feeds: [
+
+    ],
+    statement: 'projection/yearFigures.ts#capitalLossCarryforwardUsed publishes capitalLossUsedAgainstGains + capitalLossUsedAgainstOrdinary for the year, both from one call of tax/federalTax.ts#applyCapitalLossCarryforward in the ledger (IRC 1211(b), 1212(b)). Units: nominal USD. Rounding: none; the ledger download rounds to whole dollars.',
+    formula: {
+      expression: 'used = usedAgainstGains + usedAgainstOrdinary; usedAgainstGains = min(P, G+); usedAgainstOrdinary = min(P - usedAgainstGains + G-, L)',
+      variables: [
+        { symbol: 'P', meaning: 'Opening carryforward pool', unit: 'usd', domain: 'nonnegative' },
+        { symbol: 'G+ / G-', meaning: 'The year\'s own realized gain / loss', unit: 'usd', domain: 'nonnegative' },
+        { symbol: 'L', meaning: 'Annual loss offset limit', unit: 'usd', domain: '3,000' },
+      ],
+      timing: 'annual',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/taxes/display-loss-carryforward-used-annual.md',
+    },
+    limits: [
+      'When the year also realizes a net loss of its own, the figure exceeds the fall in the carried balance by that loss, which joined the pool before the $3,000 offset',
+      'The single-pool, $3,000-for-every-filing-status and 1212(b)(2) limits of the carryforward itself are carried by the carryforward records',
+    ],
+    implementedBy: [
+      'packages/engine/src/projection/yearFigures.ts',
+      'packages/engine/src/tax/federalTax.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/yearFigures.ts#capitalLossCarryforwardUsed',
+      'packages/engine/src/tax/federalTax.ts#applyCapitalLossCarryforward',
+    ],
+    verifiedOn: '2026-09-26',
+    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+  },
+  'display-tax-free-gains-room-annual': {
+    title: 'Tax-free gains room: extra long-term gain at no extra federal tax',
+    purpose: 'How much more long-term gain the year could realize without raising the year\'s federal income tax.',
+    kind: 'model',
+    outputs: ['display-tax-free-gains-room-annual'],
+    feeds: [
+
+    ],
+    statement: 'projection/yearFigures.ts#taxFreeGainsRoom publishes the largest extra long-term capital gain whose realization, netted through the capital-loss carryforward by applyCapitalLossCarryforward and priced by computeFederalTax on the year\'s published advisory input, does not raise the year\'s federal income tax (regular tax, AMT and NIIT). The opening pool is rebuilt from the published netting. The search doubles an upper bound from $1 until tax rises by more than $0.000001, then bisects to a $0.01 bracket and returns its lower end. Null when the row carries no advisory federal tax input. premiumTaxCreditYear marks the years with a modeled ACA premium credit, which the room does not price. Units: nominal USD of additional gain. Rounding: the bisection\'s lower end.',
+    formula: {
+      expression: 'R = max{ g >= 0 : F(h) <= F(0) for every h in [0, g] }; F(g) = computeFederalTax({ ...I, capitalGains: N(g), realizedCapitalGainsBeforeCarryforward: G + g }).totalTax; N(g) = applyCapitalLossCarryforward(P, I.ordinaryIncome, G + g, L).netCapitalGain; P = remaining + usedAgainstOrdinary + usedAgainstGains - max(0, -G)',
+      variables: [
+        { symbol: 'I', meaning: 'The year\'s advisory federal tax input (YearResult.advisoryFederalTax.input)', unit: 'tax input', domain: 'published by every ledger row' },
+        { symbol: 'G', meaning: 'The year\'s signed realized gain before netting', unit: 'usd', domain: 'finite' },
+        { symbol: 'P', meaning: 'Opening carryforward pool, rebuilt from the published netting', unit: 'usd', domain: 'nonnegative up to binary rounding' },
+        { symbol: 'L', meaning: 'The year\'s capital loss offset limit', unit: 'usd', domain: '3,000' },
+        { symbol: 'R', meaning: 'Published room', unit: 'usd of extra long-term gain', domain: 'in [R - 0.01, R + 1e-6/m], m the marginal rate just past R' },
+      ],
+      timing: 'annual, on top of everything the year already realized',
+      rounding: 'bisection to $0.01 with a $0.000001 tax tolerance; the lower end is published',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/taxes/display-tax-free-gains-room-annual.md',
+    },
+    limits: [
+      'Federal income tax only. State income tax on the gain is not included, nor a smaller ACA premium tax credit (which the ledger books as a higher net premium, and which is repaid as federal tax at filing when it was paid in advance; the years with a modeled credit are marked), nor a Medicare premium surcharge two years later',
+      'This year only: gains the carryforward absorbs reduce what carries into later years',
+      'Everything else in the year is held fixed (withdrawals, the funding solve, state tax); the recomputation starts from the advisory input, whose federal tax can differ from the settled tax of the funding solve',
+      'Exact when federal tax does not fall as a gain is added, which holds for every input except an itemized charitable deduction bound by a percentage-of-AGI ceiling; there the search returns a gain at which tax has not risen, not necessarily the first point at which it would',
+      'The engine\'s carryforward limits apply: a single pool with no short- and long-term split, the $3,000 limit for every filing status, and no 1212(b)(2) preservation of a deduction unused in a zero-income year',
+      'The opening pool is rebuilt from the published netting; exact in real arithmetic, within a few units in the last binary place otherwise',
+      'Owner decision R2 (2026-09-25): before this record the page showed the 0% band room plus the remaining carryforward. That overstated the room at no tax whenever the gain would make Social Security taxable, use up the $3,000 loss deduction, shrink the senior deduction, or reach the net investment income tax threshold (the last two are not indexed while the 0% band is). year-result-ltcg-zero-headroom stays published as the 0% band room',
+    ],
+    implementedBy: [
+      'packages/engine/src/projection/yearFigures.ts',
+      'packages/engine/src/tax/federalTax.ts',
+      'packages/engine/src/projection/internal/types/result.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/yearFigures.ts#taxFreeGainsRoom',
+      'packages/engine/src/projection/yearFigures.ts#premiumTaxCreditYear',
+      'packages/engine/src/tax/federalTax.ts#computeFederalTax',
+      'packages/engine/src/tax/federalTax.ts#applyCapitalLossCarryforward',
+      'packages/engine/src/projection/internal/types/result.ts#YearResult.advisoryFederalTax',
+    ],
+    verifiedOn: '2026-09-26',
+    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
   },
 } satisfies Record<string, CalculationRecord>

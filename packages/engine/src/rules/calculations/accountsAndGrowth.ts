@@ -474,11 +474,13 @@ export const accountsAndGrowthRecords = {
     limits: [
       'Asserted at summarizeProjection with the worksheet\'s six accounts, their plan types and their last-year balances verbatim, over a two-row ledger whose penultimate row carries a distinct sentinel balance on every account so a row mistake cannot pass. Plan assumptions beyond the worksheet\'s inputs: each account opens at a zero balance with zero returns, because the summary reads the ledger row rather than the plan; the owner-held accounts name the plan\'s single person',
       'The fixture also asserts that the published object has exactly the five category keys, which is how the worksheet\'s third wrong reading (adding property or insurance categories) is discriminated',
+      'Since 2026-09-26 the roll-up is projection/yearFigures.ts#balancesByCategory read for the last row (the same sums in the same order, so the published figures did not move). That function refuses a plan in which an account id is also the id of a property, a debt or a permanent-life policy, so the summary now stops on such a plan instead of reporting the overwritten value as the account\'s; the plan checks refuse those plans and stored ones are repaired on load',
     ],
-    implementedBy: ['packages/engine/src/projection/compare.ts'],
+    implementedBy: ['packages/engine/src/projection/compare.ts', 'packages/engine/src/projection/yearFigures.ts'],
     implementedByFunctions: [
       'packages/engine/src/projection/compare.ts#summarizeProjection',
       'packages/engine/src/projection/compare.ts#ProjectionSummary.endingByCategory',
+      'packages/engine/src/projection/yearFigures.ts#balancesByCategory',
     ],
     verifiedOn: '2026-09-18',
     provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
@@ -557,6 +559,7 @@ export const accountsAndGrowthRecords = {
     purpose: 'The per-account year-end balances the ledger publishes for every projection year.',
     kind: 'composition',
     outputs: ['accounts-balance-per-account-annual'],
+    feeds: ['display-balance-by-category-annual'],
     statement:
       'YearResult.balances, materialized by projection/internal/annualSnapshot.ts#annualSnapshot, is the year-end map written in exactly this order: logical investable balances, then property values, then ordinary debt balances, then permanent-life cash values. Object.fromEntries keeps the later-channel write, so when two channels share an id the LAST channel written wins. Each value is that channel\'s own full-year figure and no netting across channels happens: a debt appears as its positive outstanding balance, not as a negative asset. Units: nominal dollars per id. Rounding: none.',
     formula: {
@@ -628,5 +631,49 @@ export const accountsAndGrowthRecords = {
     ],
     verifiedOn: '2026-09-18',
     provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
+  'display-balance-by-category-annual': {
+    title: 'Balances by account type, one value per logical account',
+    purpose: 'How a year\'s account balances roll up into the six stacked categories of the balance chart, with the unassigned cash beside them.',
+    kind: 'composition',
+    outputs: ['display-balance-by-category-annual'],
+    feeds: [
+
+    ],
+    statement: 'projection/yearFigures.ts#balancesByCategory publishes, for a ledger year, the sum of YearResult.balances[id] over the plan\'s selected logical balance accounts (one per id, model/plan.ts#selectedLogicalBalanceAccounts) by account type into cash, taxable, equityComp, traditional, roth and hsa, and refuses a plan in which an account id is also the id of a property, a debt or a permanent-life policy. projection/yearFigures.ts#unassignedCash reads YearResult.unassignedCash, the surplus the ledger holds outside every account, which is in investableTotal and in no category. Units: nominal USD at year end. Rounding: none.',
+    formula: {
+      expression: 'balance[c] = sum over logical balance accounts a of type c of balances[a.id]; investableTotal = sum over c of balance[c] + unassignedCash (up to binary association)',
+      variables: [
+        { symbol: 'c', meaning: 'Category', unit: 'enum', domain: 'cash | taxable | equityComp | traditional | roth | hsa' },
+        { symbol: 'balances[id]', meaning: 'The year\'s published aggregate balance of the logical account id', unit: 'usd', domain: 'finite' },
+        { symbol: 'unassignedCash', meaning: 'Surplus with no cash or taxable account to land in', unit: 'usd', domain: 'nonnegative; 0 in a plan with a cash or taxable account' },
+      ],
+      timing: 'annual, end of year after flows and growth',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/accounts-and-growth/display-balance-by-category-annual.md',
+    },
+    limits: [
+      'One value per logical account id: rows sharing an id are one account, whose aggregate the ledger publishes once. Owner decision R1 (2026-09-25): the pages used to add the aggregate once per physical row, so an account split across two 50,000 rows showed 200,000 instead of 100,000',
+      'Unassigned cash is in investableTotal and in no category; it is published beside the categories so the chart can draw it rather than stop short of investableTotal',
+      'Refuses, rather than reads, an id shared with a property, a debt or a permanent-life policy (decision D-CASH-PROPERTY-ALIAS): the plan checks refuse such plans and stored ones are repaired on load, so this fires only on a plan that did not go through them',
+      'endingByCategory in the projection summary is this roll-up read for the last row, without equity compensation',
+    ],
+    implementedBy: [
+      'packages/engine/src/projection/yearFigures.ts',
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/projection/internal/types/result.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/yearFigures.ts#balancesByCategory',
+      'packages/engine/src/projection/yearFigures.ts#unassignedCash',
+      'packages/engine/src/model/plan.ts#selectedLogicalBalanceAccounts',
+      'packages/engine/src/projection/internal/types/result.ts#YearResult.balances',
+      'packages/engine/src/projection/internal/types/result.ts#YearResult.unassignedCash',
+    ],
+    verifiedOn: '2026-09-26',
+    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
   },
 } satisfies Record<string, CalculationRecord>

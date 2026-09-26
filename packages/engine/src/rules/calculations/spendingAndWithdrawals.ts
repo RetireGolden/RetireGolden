@@ -372,7 +372,7 @@ export const spendingAndWithdrawalsRecords = {
     purpose: 'The year\'s actual net outflow, and which expense members compose it.',
     kind: 'composition',
     outputs: ['spending-total-annual'],
-    feeds: ['portfolio-need-annual'],
+    feeds: ['portfolio-need-annual', 'display-total-spending-annual'],
     statement:
       'projection/internal/annualExpenseSummary.ts#annualExpenseSummary publishes projection/internal/types/yearLedger.ts#YearExpenses.total as baseSpending + oneTimeGoals + debtService + propertyCosts + healthcare + insurancePremiums + careCost - ltcBenefit, kept in that left-to-right association because regrouping the LTC pair can move the last bit. careCost is gross and ltcBenefit offsets it. guardrailFactor is descriptive — the cut is already inside baseSpending and is never multiplied in again. requiredSpending, targetSpending, idealSpending, excessSpending and intendedSpending are overlapping layer summaries, not additional members, and intendedSpending is the no-cut request and need not equal this total. Units: nominal USD per year. Rounding: none.',
     formula: {
@@ -599,5 +599,117 @@ export const spendingAndWithdrawalsRecords = {
     ],
     verifiedOn: '2026-09-18',
     provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
+  'display-total-spending-annual': {
+    title: 'Total spending with tax and penalties',
+    purpose: 'Everything the year paid out, as the spending line of the balance chart and the report chart show it.',
+    kind: 'composition',
+    outputs: ['display-total-spending-annual'],
+    feeds: [
+
+    ],
+    statement: 'projection/yearFigures.ts#spendingWithTaxAndPenalties publishes expenses.total + tax + penalties for the year, summed left to right: (expenses.total + tax) + penalties, the same composite the FI number\'s spending base uses. Units: nominal USD of the year. Rounding: none.',
+    formula: {
+      expression: 'spending = (expenses.total + tax) + penalties',
+      variables: [
+        { symbol: 'expenses.total', meaning: 'Funded spending after guardrail cuts, net of the LTC benefit', unit: 'usd per year', domain: 'nonnegative' },
+        { symbol: 'tax', meaning: 'Settled tax of the year', unit: 'usd per year', domain: 'finite' },
+        { symbol: 'penalties', meaning: 'Early-withdrawal penalty plus IRC 4974 excise', unit: 'usd per year', domain: 'nonnegative' },
+      ],
+      timing: 'annual',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/spending-and-withdrawals/display-total-spending-annual.md',
+    },
+    limits: [
+      'Gross of incomes: it is what the year paid out, not what the portfolio had to supply (portfolio-need-annual)',
+      'The association is part of the figure: expenses.total + (tax + penalties) differs in the last binary digit on some inputs (40,477.35, 18,353.95 and 539.21 give 59,370.51 left to right and 59,370.509999999995 grouped the other way)',
+    ],
+    implementedBy: [
+      'packages/engine/src/projection/yearFigures.ts',
+      'packages/engine/src/projection/compare.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/yearFigures.ts#spendingWithTaxAndPenalties',
+      'packages/engine/src/projection/compare.ts#summarizeProjection',
+    ],
+    verifiedOn: '2026-09-26',
+    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+  },
+  'display-upside-spending-annual': {
+    title: 'Upside spending: intended spending above the target layer',
+    purpose: 'The ideal and excess spending a layered plan intended in the year, as the Upside column shows it.',
+    kind: 'composition',
+    outputs: ['display-upside-spending-annual'],
+    feeds: [
+
+    ],
+    statement: 'projection/yearFigures.ts#upsideSpending publishes expenses.idealSpending + expenses.excessSpending for the year: intended spending above the target layer. Units: nominal USD of the year. Rounding: none.',
+    formula: {
+      expression: 'upsideSpending = idealSpending + excessSpending',
+      variables: [
+        { symbol: 'idealSpending', meaning: 'Ideal layer intended above target', unit: 'usd per year', domain: 'nonnegative' },
+        { symbol: 'excessSpending', meaning: 'Excess layer intended above ideal', unit: 'usd per year', domain: 'nonnegative' },
+      ],
+      timing: 'annual',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/spending-and-withdrawals/display-upside-spending-annual.md',
+    },
+    limits: [
+      'Intended, not funded: a guardrail cut or a portfolio shortfall does not reduce it; the unfunded part is display-upside-shortfall-annual',
+    ],
+    implementedBy: [
+      'packages/engine/src/projection/yearFigures.ts',
+      'packages/engine/src/projection/internal/types/yearLedger.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/yearFigures.ts#upsideSpending',
+      'packages/engine/src/projection/internal/types/yearLedger.ts#YearExpenses.idealSpending',
+      'packages/engine/src/projection/internal/types/yearLedger.ts#YearExpenses.excessSpending',
+    ],
+    verifiedOn: '2026-09-26',
+    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+  },
+  'display-upside-shortfall-annual': {
+    title: 'Upside miss: upside spending not funded',
+    purpose: 'The ideal and excess spending the year did not fund, as the Upside part of the Layer miss column shows it.',
+    kind: 'composition',
+    outputs: ['display-upside-shortfall-annual'],
+    feeds: [
+
+    ],
+    statement: 'projection/yearFigures.ts#upsideShortfall publishes idealShortfall + excessShortfall for the year. Units: nominal USD of the year. Rounding: none.',
+    formula: {
+      expression: 'upsideShortfall = idealShortfall + excessShortfall',
+      variables: [
+        { symbol: 'idealShortfall', meaning: 'Ideal spending not funded', unit: 'usd per year', domain: 'nonnegative' },
+        { symbol: 'excessShortfall', meaning: 'Excess spending not funded', unit: 'usd per year', domain: 'nonnegative' },
+      ],
+      timing: 'annual',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/spending-and-withdrawals/display-upside-shortfall-annual.md',
+    },
+    limits: [
+      'None beyond the layer attribution\'s own (spending-layer-shortfall-attribution); the page\'s show-or-blank test for the Layer miss cell reads the three engine figures separately rather than adding the four shortfalls, which renders the same cell in every case',
+    ],
+    implementedBy: [
+      'packages/engine/src/projection/yearFigures.ts',
+      'packages/engine/src/projection/internal/types/result.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/yearFigures.ts#upsideShortfall',
+      'packages/engine/src/projection/internal/types/result.ts#YearResult.idealShortfall',
+      'packages/engine/src/projection/internal/types/result.ts#YearResult.excessShortfall',
+    ],
+    verifiedOn: '2026-09-26',
+    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
   },
 } satisfies Record<string, CalculationRecord>

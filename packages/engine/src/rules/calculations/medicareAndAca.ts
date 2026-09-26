@@ -455,4 +455,42 @@ export const medicareAndAcaRecords = {
     verifiedOn: '2026-09-18',
     provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
   },
+  'display-net-care-cost-annual': {
+    title: 'Net long-term-care cost after the LTC benefit',
+    purpose: 'The year\'s long-term-care cost left after the modeled insurance benefit, as the spending chart shows it.',
+    kind: 'formula',
+    outputs: ['display-net-care-cost-annual'],
+    feeds: [
+
+    ],
+    statement: 'projection/yearFigures.ts#netCareCost publishes max(0, expenses.careCost - expenses.ltcBenefit) for the year and refuses a difference below -$0.005 (ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS). The ledger never pays more benefit than the cost in exact arithmetic; the floor absorbs only the last-binary-digit residue of a sum of per-policy payments. Units: nominal USD of the year. Rounding: none.',
+    formula: {
+      expression: 'netCareCost = max(0, careCost - ltcBenefit); refused when careCost - ltcBenefit < -0.005',
+      variables: [
+        { symbol: 'careCost', meaning: 'Gross care-episode cost of the year', unit: 'usd per year', domain: 'nonnegative' },
+        { symbol: 'ltcBenefit', meaning: 'Sum of the LTC policy payments against it', unit: 'usd per year', domain: 'nonnegative; at most careCost up to a floating-point residue' },
+      ],
+      timing: 'annual',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/medicare-and-aca/display-net-care-cost-annual.md',
+    },
+    limits: [
+      'The floor removes only a floating-point residue: with two policies on one episode, the first paying under half the cost, the summed payments can exceed the summed cost by one unit in the last place (53,932.24 of cost against 6,020.16 plus the remainder differs by -7.3e-12). expenses.total subtracts the benefit unfloored, so the category chart can differ from expenses.total by that residue',
+      'A benefit above the cost by more than half a cent is a ledger error and is refused rather than hidden, so a display page that reads this figure fails loudly on it',
+    ],
+    implementedBy: [
+      'packages/engine/src/projection/yearFigures.ts',
+      'packages/engine/src/projection/internal/types/yearLedger.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/yearFigures.ts#netCareCost',
+      'packages/engine/src/projection/internal/types/yearLedger.ts#YearExpenses.careCost',
+      'packages/engine/src/projection/internal/types/yearLedger.ts#YearExpenses.ltcBenefit',
+    ],
+    verifiedOn: '2026-09-26',
+    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+  },
 } satisfies Record<string, CalculationRecord>
