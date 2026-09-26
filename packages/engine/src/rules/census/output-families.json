@@ -7712,7 +7712,7 @@
     ],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": "Solved on demand (Spending card button) under the headline lognormal model (12% volatility, 60/40) with 200 paths and the plan-id seed, whatever model the Monte Carlo page shows. The persisted percents also drive the projection's guardrail rule (spending/guardrails.ts: cut below lowerBalanceThresholdPct/100 x the starting real portfolio, raise above upper), so the value feeds spending-guardrail-factor-annual and monte-carlo-guardrail-action-counts. The printed dollars differ from RiskBasedThreshold.balanceDollars by the two-decimal percent rounding and by any balance change since the solve. 'assumptions-card' stands in for the Spending card, which has no surface name in the vocabulary (the census's household-section gap)."
+    "notes": "Solved on demand (Spending card button) under the lognormal model at 12% volatility around the plan's own expected returns (allocated accounts use their asset classes' volatilities), with 200 paths and the plan-id seed, whatever model the Monte Carlo page shows. The persisted percents also drive the projection's guardrail rule (spending/guardrails.ts: cut below lowerBalanceThresholdPct/100 x the starting real portfolio, raise above upper), so the value feeds spending-guardrail-factor-annual and monte-carlo-guardrail-action-counts. The printed dollars differ from RiskBasedThreshold.balanceDollars by the two-decimal percent rounding and by any balance change since the solve. 'assumptions-card' stands in for the Spending card, which has no surface name in the vocabulary (the census's household-section gap)."
   },
   {
     "id": "risk-based-guardrail-suggested-adjustment-monthly",

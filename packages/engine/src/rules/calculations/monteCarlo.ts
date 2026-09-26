@@ -1042,7 +1042,7 @@ export const monteCarloRecords = {
     },
     limits: [
       'Monotonicity of success in f and m is assumed, not checked; with a curve that is not monotone the result is a lattice point but not a meaningful edge',
-      'The Spending card always solves under the headline lognormal model (12 percent volatility, 60/40) with 200 paths and the plan-id seed, whatever model the Monte Carlo page shows',
+      'The Spending card always solves under the lognormal model at 12 percent volatility around the plan\'s own expected returns (allocated accounts use their asset classes\' volatilities), with 200 paths and the plan-id seed, whatever model the Monte Carlo page shows',
       'Successes are cached by the balance scale rounded to 1e-6; the lattice step is about 3.9e-3, so two lattice points never share a key. The spending phase is not cached, so successAfter re-evaluates a multiplier the bisection has usually tried already',
       'With a single path S is 0 or 1, so the two band edges are the same test and return the same point',
       'The planner persists each edge as a percent of today\'s investable rounded to two decimals (140.37 and 190.12 in the worked example), and the callouts print that percent of today\'s balances, so the printed dollars can differ from balanceDollars by that rounding and by any balance change since the solve',

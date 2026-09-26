@@ -98,7 +98,7 @@ Outputs: `risk-based-guardrail-solved-balance-thresholds` (the solved `balanceFr
 ## Limits
 
 - Monotonicity is assumed, not checked; a probe that is not monotone yields a lattice point but not a meaningful edge.
-- The Spending card always solves under the headline lognormal model (12 percent volatility, 60/40) with 200 paths and the plan-id seed, whatever model the Monte Carlo page shows.
+- The Spending card always solves under the lognormal model at 12 percent volatility around the plan's own expected returns (allocated accounts use their asset classes' volatilities), with 200 paths and the plan-id seed, whatever model the Monte Carlo page shows. The equity weight the page passes is not read by the lognormal model.
 - The cache key `round(f x 1e6)` would merge two fractions closer than 5e-7; the lattice step is 3.9e-3, so it cannot bite on the lattice.
 - The spending phase is uncached: `successAfter` re-evaluates a multiplier the bisection has usually tried already (it has in both adjustments above, and their 10 calls include that repeat).
 
