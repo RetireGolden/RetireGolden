@@ -1,12 +1,12 @@
 # Mutation receipt: historical-stress-window-total-shortfall
 
-Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-thirteen` at base `1452ae11`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730), and re-executed 2026-09-26 against RetireGolden base `fe6233de` (branch `claude/monte-carlo-models`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-thirteen` at base `1452ae11`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730), and re-executed 2026-09-26 against RetireGolden base `fe6233de` (branch `claude/monte-carlo-models`; no pull request is open yet), and re-executed 2026-09-26 against RetireGolden base `00c28120` (branch `claude/monte-carlo-models`, pull request #746) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/montecarlo/historicalSuites.ts`
 
 ```diff
 diff --git a/packages/engine/src/montecarlo/historicalSuites.ts b/packages/engine/src/montecarlo/historicalSuites.ts
-index 16a3556f..4ef9652d 100644
+index 7c93ee2a..76e27abf 100644
 --- a/packages/engine/src/montecarlo/historicalSuites.ts
 +++ b/packages/engine/src/montecarlo/historicalSuites.ts
 @@ -96,7 +96,7 @@ function historicalReplaySeries(args: {
@@ -30,17 +30,17 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/montecarlo/
 
 ## Captured failing output
 
-Re-executed because this branch added tests to the evidence file, so the test counts and quoted line numbers recorded earlier no longer matched it. The baseline is green (historicalSuites.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed because review round 1 added a test to the evidence file, so the test count recorded earlier no longer matched it. The baseline is green (historicalSuites.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
 RUN  v5.0.0 C:/rgwt/engine3/packages/engine
 
- ❯ src/montecarlo/historicalSuites.evidence.test.ts (3 tests | 1 failed) 160ms
-   ❯ historical-stress-window-total-shortfall — Historical stress window total shortfall (3)
-     × sums 0, 20000 and 60000 to 80000 over the replayed 2000-2002 window 95ms
+ ❯ src/montecarlo/historicalSuites.evidence.test.ts (4 tests | 1 failed) 171ms
+   ❯ historical-stress-window-total-shortfall — Historical stress window total shortfall (4)
+     × sums 0, 20000 and 60000 to 80000 over the replayed 2000-2002 window 103ms
 
  Test Files  1 failed (1)
-      Tests  1 failed | 2 passed (3)
+      Tests  1 failed | 3 passed (4)
 
              persist transforms across runs with fsModuleCache: true
              learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
