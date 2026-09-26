@@ -4,6 +4,35 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## Unreleased
 
+- **"How much can I spend?" answers plans with an unpriced premium tax credit:** the
+  solver gave no answer on 22 of the 29 examples, and on every plan with the premium
+  credit box on and a pre-65 Marketplace year, because any year whose credit the
+  projection could not price (a year past the 2026 parameter year, or a user plan with
+  no per-year credit details) made every probe a refusal, and the page then said fixed
+  costs might exceed what the plan can fund. That refusal is meant for actions whose
+  value depends on the credit, such as Roth conversions, and stays there. A spending
+  probe now runs on the ledger as it already is: those years pay the full Marketplace
+  premium, which the credit can only lower (26 U.S.C. 36B(b)(2)), and the result names
+  them (`acaGrossPremiumYears`, `acaGrossPremiumReasons`). The page, the spending
+  shapes and the spending-headroom Insight say which years and why. Before → after,
+  from a 2026 start: Early retiree & the ACA cliff, no answer → $45,300; Aggressive
+  saver to early retirement, no answer → $90,300. 20 examples gain an answer and the 7
+  that had one do not move. The two still without one are true: Long-term-care shock
+  depletes even at zero spending, and Guardrails and flexible goals at its required
+  floor (next item).
+- **The solver probes the required spending floor, not zero:** when today's spending
+  fails, the solver used to probe $0, which the plan checks refuse for a plan with
+  required spending, and then reported that even zero spending depletes. It now probes
+  the required floor and names it ("Even the required spending floor ($34,000/yr)
+  depletes…" for Guardrails and flexible goals, which does), and no probe goes below
+  the floor. The same example's smirk spending shape now answers $37,000. The page's
+  fixed-costs sentence now appears only after a probe that ran and failed.
+- **The solver page no longer calls a sustainable baseline unsustainable:** the answer
+  is shown rounded down to $100, and the page judged today's baseline against that
+  rounded figure, so a $72,030 baseline the plan sustains exactly read as "$30 below …
+  cannot sustain today's spending". The hero and the slack tile now judge by the exact
+  answer ("less than $100 a year to spare"), and when the bequest target is what limits
+  the answer, the page says the plan cannot sustain today's spending and still leave it.
 - **Student-t market model is now a true Student-t:** it used to draw a normal and
   multiply one year in twenty by 2.5 (3.5 at df 4 or less), so its swings were about 12%
   larger than the volatility set (1.25 times at df 4 or less) and no t variate was
