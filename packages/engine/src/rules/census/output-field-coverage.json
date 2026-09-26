@@ -2621,6 +2621,16 @@
   },
   {
     "source": "engine/src/decisions/spendingSolver.ts",
+    "owner": "SustainableSpendingResult",
+    "field": "acaGrossPremiumYears",
+    "tsType": "number[]",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "dimension-coordinate",
+    "reason": "Calendar years whose ACA premium tax credit the ledger could not price in the run the sustainable-spending answer rests on (the best feasible probe, else the seed); the solver page names them in its note under the answer. A list of years that places the full-premium budget, not a quantity."
+  },
+  {
+    "source": "engine/src/decisions/spendingSolver.ts",
     "owner": "module",
     "field": "baseAnnual",
     "tsType": "number",

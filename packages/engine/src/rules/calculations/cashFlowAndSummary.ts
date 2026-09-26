@@ -268,11 +268,13 @@ export const cashFlowAndSummaryRecords = {
     limits: [
       'simulationCount is not derivable from the stated contract because the bracketing rule is not documented. The quantity enters the published result, so its family is fed, not output.',
       'The public API generates its own bracket. Evidence seeds 40000, brackets at 80000, and verifies the first two midpoints reach the worksheet bracket 60000/70000 before checking its four probes and 62500 result. It isolates the stated feasible predicate with an evaluation double, not an invented ledger oracle. Monotone feasibility is assumed; budgets can stop convergence.',
+      'A Marketplace year whose premium tax credit the ledger could not price (aca.readiness nonActionable) counts its full premium, as the ledger funds it; the credit lies between 0 and that premium (26 U.S.C. 36B(b)(2)), so the probe is a conservative feasibility test there instead of a refusal. Those years of the run the answer rests on (the best feasible probe, else the seed) and the codes that blocked pricing are published in acaGrossPremiumYears and acaGrossPremiumReasons. Conservative is measured on the 29 examples, not proven for every ledger: a lower healthcare cost could in principle change later guardrail spending.',
+      'When the seed is infeasible the downward bracket starts at the required spending floor (expenses.requiredAnnual rounded up, 0 when the plan has none), the lowest level the plan checks accept; no probe goes below it, and a failure there is reported as the floor failing.',
     ],
     implementedBy: ['packages/engine/src/decisions/spendingSolver.ts'],
     implementedByFunctions: ['packages/engine/src/decisions/spendingSolver.ts#solveMaxSustainableSpending'],
-    verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'codex', reviewedBy: 'cursor' },
+    verifiedOn: '2026-09-26',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
   },
   'usd-cent-arithmetic': {
     title: 'Usd cent arithmetic',
@@ -1815,11 +1817,12 @@ export const cashFlowAndSummaryRecords = {
     kind: 'model',
     outputs: ['sustainable-spending-result-simulation-count'],
     statement:
-      'decisions/spendingSolver.ts#solveMaxSustainableSpending counts one probe at the seed (the patched plan\'s own base spending, rounded and floored at 0). When the seed is feasible it counts one probe per doubling from max(2 x seed, $20,000), doubling again after each feasible one, until a probe fails or the budget or the $100,000,000 unbounded ceiling is reached; when the seed is infeasible and non-zero it counts one further probe at 0. It then counts one bisection probe per halving while the bracket is strictly wider than resolutionDollars and simulationCount is below maxSimulations. Units: probes (whole projections). Rounding: none; the value is an integer.',
+      'decisions/spendingSolver.ts#solveMaxSustainableSpending counts one probe at the seed (the patched plan\'s own base spending, rounded and floored at 0). When the seed is feasible it counts one probe per doubling from max(2 x seed, $20,000), doubling again after each feasible one, until a probe fails or the budget or the $100,000,000 unbounded ceiling is reached; when the seed is infeasible and above the required spending floor it counts one further probe at that floor (expenses.requiredAnnual rounded up, 0 when the plan has none). It then counts one bisection probe per halving while the bracket is strictly wider than resolutionDollars and simulationCount is below maxSimulations. Units: probes (whole projections). Rounding: none; the value is an integer.',
     formula: {
-      expression: 'count = 1 + doublings + bisections, or 2 when a non-zero seed and zero both fail',
+      expression: 'count = 1 + doublings + bisections, or 2 when a seed above the floor and the floor both fail',
       variables: [
         { symbol: 'seed', meaning: 'max(0, round(base spending of the patched plan))', unit: 'usd/year', domain: 'nonnegative' },
+        { symbol: 'floor', meaning: 'min(seed, ceil(expenses.requiredAnnual)), 0 when the plan has no required spending', unit: 'usd/year', domain: 'nonnegative' },
         { symbol: 'resolution', meaning: 'Bracket width the bisection stops at', unit: 'usd/year', domain: 'positive' },
         { symbol: 'budget', meaning: 'maxSimulations, the hard probe cap', unit: 'probes', domain: 'positive integer' },
         { symbol: 'count', meaning: 'Projections the solve ran', unit: 'probes', domain: 'nonnegative integer' },
@@ -1833,15 +1836,15 @@ export const cashFlowAndSummaryRecords = {
     },
     limits: [
       'The worksheet supplies probe feasibility as fixture evidence; the evidence therefore builds a plan whose feasibility frontier really does fall between $22,500 and $25,000 — four projection years, one $95,000 cash account, zero return and zero inflation, no income and no tax, so a level S is feasible exactly when 4S <= $95,000 (frontier $23,750)',
-      'The infeasible-seed case counts 2 only when the zero-spending probe ALSO fails; the evidence forces that with a $60,000 uninflated one-time goal the $5,000 portfolio cannot fund, because a feasible zero would open the bisection and raise the count',
-      'The count is not a measure of accuracy: it rises with the budget and falls with a looser resolution, and a diagnostic first probe returns 0',
+      'The infeasible-seed case counts 2 only when the floor probe ALSO fails; the fixture has no required spending, so its floor is 0, and the evidence forces the failure with a $60,000 uninflated one-time goal the $5,000 portfolio cannot fund, because a feasible floor would open the bisection and raise the count',
+      'The count is not a measure of accuracy: it rises with the budget and falls with a looser resolution. An amortized-spending (ABW) plan returns 0 without probing; a diagnostic seed probe (an invalid basePatch) returns 1, and a seed already at the floor that fails returns 1',
     ],
     implementedBy: ['packages/engine/src/decisions/spendingSolver.ts'],
     implementedByFunctions: [
       'packages/engine/src/decisions/spendingSolver.ts#solveMaxSustainableSpending',
       'packages/engine/src/decisions/spendingSolver.ts#SustainableSpendingResult',
     ],
-    verifiedOn: '2026-09-18',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+    verifiedOn: '2026-09-26',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
   },
 } satisfies Record<string, CalculationRecord>

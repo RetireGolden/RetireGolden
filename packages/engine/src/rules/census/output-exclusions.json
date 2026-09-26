@@ -776,6 +776,14 @@
     "reason": "The SustainableSpendingOptions.estateFloorTodayDollars field is an internal diagnostic used to trace or validate calculation behavior."
   },
   {
+    "id": "field-engine-src-decisions-spendingsolver-ts-sustainablespendingresult-acagrosspremiumyears",
+    "path": "engine/src/decisions/spendingSolver.ts",
+    "symbol": "SustainableSpendingResult",
+    "field": "acaGrossPremiumYears",
+    "reasonKind": "dimension-coordinate",
+    "reason": "Calendar years whose ACA premium tax credit the ledger could not price in the run the sustainable-spending answer rests on (the best feasible probe, else the seed); the solver page names them in its note under the answer. A list of years that places the full-premium budget, not a quantity."
+  },
+  {
     "id": "field-engine-src-decisions-spendingsolver-ts-module-baseannual",
     "path": "engine/src/decisions/spendingSolver.ts",
     "symbol": "module",

@@ -1,7 +1,7 @@
 /**
  * GENERATED FILE — DO NOT EDIT BY HAND.
  *
- * Output field coverage imported from the output-family census at commit 34444020cb0e164569c8f430a00cf5e18aec5f87.
+ * Output field coverage imported from the output-family census at commit f1e0b5739c18951740cb7541bb14dc8634abe3cc.
  * Regenerate: node packages/engine/scripts/import-output-census.mjs <census-dir>
  */
 
@@ -316,6 +316,16 @@ const coverageCensus = [
     "reasonKind": "runtime-diagnostic",
     "reason": "The SustainableSpendingOptions.resolutionDollars field is an internal diagnostic used to trace or validate calculation behavior.",
     "tsType": "number"
+  },
+  {
+    "source": "engine/src/decisions/spendingSolver.ts",
+    "owner": "SustainableSpendingResult",
+    "field": "acaGrossPremiumYears",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "dimension-coordinate",
+    "reason": "Calendar years whose ACA premium tax credit the ledger could not price in the run the sustainable-spending answer rests on (the best feasible probe, else the seed); the solver page names them in its note under the answer. A list of years that places the full-premium budget, not a quantity.",
+    "tsType": "number[]"
   },
   {
     "source": "engine/src/decisions/spendingSolver.ts",
@@ -10564,6 +10574,14 @@ const exclusionCensus = [
     "field": "resolutionDollars",
     "reasonKind": "runtime-diagnostic",
     "reason": "The SustainableSpendingOptions.resolutionDollars field is an internal diagnostic used to trace or validate calculation behavior."
+  },
+  {
+    "id": "field-engine-src-decisions-spendingsolver-ts-sustainablespendingresult-acagrosspremiumyears",
+    "path": "engine/src/decisions/spendingSolver.ts",
+    "symbol": "SustainableSpendingResult",
+    "field": "acaGrossPremiumYears",
+    "reasonKind": "dimension-coordinate",
+    "reason": "Calendar years whose ACA premium tax credit the ledger could not price in the run the sustainable-spending answer rests on (the best feasible probe, else the seed); the solver page names them in its note under the answer. A list of years that places the full-premium budget, not a quantity."
   },
   {
     "id": "field-engine-src-decisions-swrcomparator-ts-compareswrrules-cape",

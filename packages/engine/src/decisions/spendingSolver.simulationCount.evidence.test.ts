@@ -80,12 +80,13 @@ describeCalculation(
       expect(result.simulationCount).not.toBe(expected.oneProbePastResolutionWrongReading)
     })
 
-    it('counts two probes when the seed and zero both fail', () => {
+    it('counts two probes when the seed and the floor (zero: no required spending) both fail', () => {
       const plan = singlePersonPlan({ dob: '1969-06-15', planningAge: 60 })
       plan.accounts = [cashAccount('cash', inputs.infeasibleOpeningBalance as number)]
       plan.expenses.baseAnnual = inputs.infeasibleSeed as number
       // An uninflated one-time goal the portfolio cannot fund at ANY base
-      // spending, so the required zero probe fails too and no bisection opens.
+      // spending, so the floor probe (at zero: the plan has no required
+      // spending) fails too and no bisection opens.
       plan.expenses.oneTimeGoals = [
         { id: 'goal', label: 'Unfundable', year: 2026, amount: inputs.infeasibleOneTimeGoal as number },
       ]

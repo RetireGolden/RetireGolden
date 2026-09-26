@@ -189,9 +189,6 @@
       "spending-total-annual",
       "stochastic-frontier-variant-axis",
       "surplus-invested-annual",
-      "sustainable-spending-result-max-base-annual",
-      "sustainable-spending-result-simulation-count",
-      "sustainable-spending-result-spending-slack-dollars",
       "swr-rule-result-depletion-year",
       "swr-rule-result-end-year",
       "swr-rule-result-ending-after-tax-estate",
@@ -214,7 +211,10 @@
     ],
     "partial": [
       "risk-based-guardrail-solved-balance-thresholds",
-      "risk-based-guardrail-suggested-adjustment-monthly"
+      "risk-based-guardrail-suggested-adjustment-monthly",
+      "sustainable-spending-result-max-base-annual",
+      "sustainable-spending-result-simulation-count",
+      "sustainable-spending-result-spending-slack-dollars"
     ],
     "noRecordYet": [
       "bucket-lens-allocation",
