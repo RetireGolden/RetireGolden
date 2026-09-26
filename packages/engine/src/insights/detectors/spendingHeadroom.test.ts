@@ -72,6 +72,8 @@ function solverFixture(
     converged: true,
     limitingConstraint: null,
     simulationCount: 1,
+    acaGrossPremiumYears: [],
+    acaGrossPremiumReasons: [],
     diagnostics: [],
     ...partial,
   }

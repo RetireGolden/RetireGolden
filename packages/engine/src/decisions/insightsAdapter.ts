@@ -52,9 +52,20 @@ export interface InsightExactEvaluation {
 }
 
 /**
+ * The spending-headroom card's action is a spending level, the question the
+ * sustainable-spending solver answers, so its preview discloses unpriced ACA
+ * years the way the solver does instead of refusing; every other card keeps
+ * the evaluator's default refusal. The id is the detector's
+ * (`insights/detectors/spendingHeadroom.ts`), written out here because that
+ * module imports this package.
+ */
+const DISCLOSES_UNPRICED_ACA_CARD_ID = 'spending-headroom'
+
+/**
  * Evaluate an insight action on the exact ledger. Throws for advisory actions
  * (nothing to model) and surfaces invalid patches as a diagnostic evaluation,
- * mirroring every other decision surface.
+ * mirroring every other decision surface. The spending-headroom card defaults
+ * to `nonActionableAca: 'disclose'`; an explicit option always wins.
  */
 export function evaluateInsightAction(
   ctx: DecisionContext,
@@ -64,7 +75,13 @@ export function evaluateInsightAction(
 ): InsightExactEvaluation {
   const candidate = candidateFromInsight(card, action)
   if (!candidate) throw new Error('Advisory insights have no modelable action to evaluate.')
-  const evaluation = evaluateCandidate(ctx, candidate, options)
+  const evaluation = evaluateCandidate(
+    ctx,
+    candidate,
+    card.id === DISCLOSES_UNPRICED_ACA_CARD_ID && options?.nonActionableAca === undefined
+      ? { ...options, nonActionableAca: 'disclose' }
+      : options,
+  )
   return {
     evaluation,
     impact: {

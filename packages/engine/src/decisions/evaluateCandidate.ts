@@ -578,6 +578,17 @@ export interface EvaluateCandidateOptions {
    * The caller is responsible for it matching the candidate exactly.
    */
   candidateResult?: ProjectionResult
+  /**
+   * What a year whose ACA evidence is non-actionable (its premium tax credit
+   * could not be priced) does to the evaluation. 'refuse', the default on
+   * every recommendation surface: the evaluation is diagnostic, because an
+   * action that moves MAGI cannot be certified against an unpriced credit.
+   * 'disclose', for the sustainable-spending solver and the spending-headroom
+   * card: the ledger already budgets that year's full Marketplace premium, so
+   * the run stays a valid, conservative feasibility test; the candidate's
+   * years are named in `diagnostics` and the caller must tell the user.
+   */
+  nonActionableAca?: 'refuse' | 'disclose'
 }
 
 export const DECISION_NEUTRAL_TOLERANCE_DOLLARS = 1
@@ -799,17 +810,24 @@ export function evaluateCandidate(
   const unsafeCandidateAcaYears = candidateResult.years
     .filter((year) => year.aca?.readiness === 'nonActionable')
     .map((year) => year.year)
-  if (unsafeBaselineAcaYears.length > 0) {
+  const refuseNonActionableAca = (options.nonActionableAca ?? 'refuse') === 'refuse'
+  if (refuseNonActionableAca && unsafeBaselineAcaYears.length > 0) {
     diagnostics.push(
       `ACA exact-ledger evidence is non-actionable in the baseline for ${unsafeBaselineAcaYears.join(', ')}; no candidate can be applied as executable.`,
     )
   }
-  if (unsafeCandidateAcaYears.length > 0) {
+  if (refuseNonActionableAca && unsafeCandidateAcaYears.length > 0) {
     diagnostics.push(
       `ACA exact-ledger evidence is non-actionable in the candidate for ${unsafeCandidateAcaYears.join(', ')}; this candidate cannot be applied as executable.`,
     )
   }
-  const hasUnsafeAcaEvidence = unsafeBaselineAcaYears.length > 0 || unsafeCandidateAcaYears.length > 0
+  if (!refuseNonActionableAca && unsafeCandidateAcaYears.length > 0) {
+    diagnostics.push(
+      `ACA premium tax credit is not priced in the candidate for ${unsafeCandidateAcaYears.join(', ')}; the ledger budgets the full Marketplace premium in those years.`,
+    )
+  }
+  const hasUnsafeAcaEvidence =
+    refuseNonActionableAca && (unsafeBaselineAcaYears.length > 0 || unsafeCandidateAcaYears.length > 0)
   const legacyAggregateCalculation = isLegacyAggregateDecisionCalculation(options)
   const retirementActionReadiness = legacyAggregateCalculation
     ? null
