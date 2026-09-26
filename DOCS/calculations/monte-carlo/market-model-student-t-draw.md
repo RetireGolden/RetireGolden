@@ -20,7 +20,7 @@ Kind: model. `montecarlo/marketModels.ts#createStudentTModel` draws a Student-t 
   - `E[t^4] = 3 E[m^4] = 3(df - 2)/(df - 4)` for `df > 4`: 9 at df 5, infinite for `df <= 4`.
   - Inflation: `Var(rho t + sqrt(1 - rho^2) z2) = rho^2 + 1 - rho^2 = 1`, and `Corr(shock, inflation) = rho E[t^2] = rho` exactly.
   - At df 5, `P(|t| > 3) = P(|T_5| > 3 / sqrt(0.6)) = 0.011724811003954616` from the closed-form `t_5` distribution function, against 0.0027 for a normal.
-- **Class shocks.** With the shared scale `m`, the class vector is `m L g`, a multivariate t with correlation `L L^T` and covariance `E[m^2] L L^T = L L^T`. The first Cholesky row is `[1, 0, ...]`, so the first class (`usStocks`) draw is exactly `m Z = t`: allocated and unallocated accounts see the same market. What co-occurs across classes is large moves in magnitude; their direction follows the correlation.
+- **Class shocks.** With the shared scale `m`, the class vector is `m L g`, a multivariate t with correlation `L L^T` and covariance `E[m^2] L L^T = L L^T`. Each class `c` publishes `sigma_c x_c 100`, with `x_c` its correlated draw and `sigma_c` its own volatility. The first Cholesky row is `[1, 0, ...]`, so the first class's (`usStocks`) draw is `x = m Z = t` itself and its published shock is `sigma_usStocks t 100` (`19.6 t` at the default US-stock volatility of 19.6): the same market draw as unallocated accounts, rescaled to that class's volatility rather than equal to the market shock `sigma t 100`. What co-occurs across classes is large moves in magnitude; their direction follows the correlation.
 
 ## Inputs
 

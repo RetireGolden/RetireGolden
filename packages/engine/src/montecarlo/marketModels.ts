@@ -594,8 +594,11 @@ export function sampleChiSquare(rng: Rng, df: number): number {
  *     z2 = rng.nextNormal()
  *     inflation = inflationMeanPct + inflationVolPct * (rho * t + sqrt(1 - rho^2) * z2)
  *     class shocks, when configured: first factor Z, common scale m, so the class vector is a
- *       multivariate t with the configured class correlations and volatilities, and the first
- *       class's draw (usStocks, Cholesky row [1, 0, ...]) equals t.
+ *       multivariate t with the configured class correlations and volatilities. Each class c
+ *       publishes sigma_c * x_c * 100 with x_c its correlated draw; the first class's draw
+ *       (usStocks, Cholesky row [1, 0, ...]) is t itself, so its shock is sigma_usStocks * t * 100
+ *       (19.6 t at the default US-stock volatility), the market's t rescaled to that class's
+ *       volatility rather than equal to the market shock.
  * Defaults: df 5, returnVolPct 12, inflationVolPct 1.5, correlation -0.2 (a correlation outside
  * [-1, 1] is refused). For df <= 4 the shock's fourth moment is infinite.
  */

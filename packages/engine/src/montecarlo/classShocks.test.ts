@@ -438,7 +438,7 @@ describe('class shocks that share the market factor\'s scale', () => {
     2,
   ).classReturnShockPct!
 
-  it('student-t: every class draw is the Gaussian one times m = sqrt((df − 2) / V), and usStocks equals the market t', () => {
+  it('student-t: every class shock is the Gaussian one times m = sqrt((df − 2) / V), and the usStocks shock is the market shock times usStocks vol / 12', () => {
     // Uniforms 0.5, 0, 0.5 give V = 8.805870575472607 (the worksheet case B1), so m = 0.5836795510996967.
     const m = 0.5836795510996967
     const path = createStudentTModel({ type: 'student-t', df: 5, returnVolPct: 12, inflationMeanPct: 2.5, classShocks })
@@ -446,8 +446,8 @@ describe('class shocks that share the market factor\'s scale', () => {
     for (const id of ASSET_CLASS_IDS) {
       expect(path.classReturnShockPct![id]![0]!).toBeCloseTo(gaussian[id]![0]! * m, 12)
     }
-    // usStocks at the market's own 12% volatility would equal the market shock; at its class
-    // volatility it is that shock times usStocks vol / 12, because Cholesky row 0 is [1, 0, 0, 0].
+    // Cholesky row 0 is [1, 0, 0, 0], so usStocks's draw is t itself and its shock is
+    // sigma_usStocks · t · 100: the market shock (12 · t) times usStocks vol / 12, not the market shock.
     expect(path.classReturnShockPct!.usStocks![0]!).toBeCloseTo((path.returnShockPct![0]! * defaultVols.usStocks) / 12, 12)
   })
 
