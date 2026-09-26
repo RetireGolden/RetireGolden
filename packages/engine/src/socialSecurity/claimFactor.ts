@@ -7,7 +7,7 @@
  * module directly; it must stay pure (no UI, storage, or DOM access).
  */
 
-import { delayedRetirementFactor, earlyRetirementFactor } from './benefitFactor.js'
+import { delayedCreditMonthlyPct, delayedRetirementFactor, earlyRetirementFactor } from './benefitFactor.js'
 import { effectiveBirthYear, fraForBirthYear, fraTotalMonths } from './nra.js'
 
 export interface ClaimAge {
@@ -29,7 +29,7 @@ export function claimFactor(dobYear: number, dobMonth: number, dobDay: number, c
   const maxDrcMonths = Math.max(0, 70 * 12 - fraM)
 
   if (claimM < fraM) return earlyRetirementFactor(fraM - claimM)
-  if (claimM > fraM) return delayedRetirementFactor(claimM - fraM, maxDrcMonths)
+  if (claimM > fraM) return delayedRetirementFactor(claimM - fraM, maxDrcMonths, delayedCreditMonthlyPct(effY))
   return 1
 }
 

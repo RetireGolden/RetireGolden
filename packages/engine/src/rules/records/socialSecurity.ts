@@ -122,30 +122,31 @@ export const socialSecurityRecords = {
   },
 
   'cfr-20-404-313-delayed-retirement-credit': {
-    title: 'Delayed retirement credits accrue at 2/3 of 1 percent and stop at 70',
+    title: 'Delayed retirement credits accrue at the rate for the birth date and stop at 70',
     statement:
-      'A retirement benefit claimed after full retirement age is increased by 2/3 of 1 percent for each month of delay, beginning with the month full retirement age is attained and ending with the month age 70 is attained. Delaying past 70 earns nothing further.',
+      'A retirement benefit claimed after full retirement age is increased for each month of delay, beginning with the month full retirement age is attained and ending with the month age 70 is attained, by the credit 404.313(b)(2) gives for the date of birth: 2/3 of 1 percent for anyone born after January 1, 1943, and a lower rate, from 5/8 of 1 percent down to 1/12 of 1 percent, for earlier births. Delaying past 70 earns nothing further.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The 2/3 of 1 percent rate applies to individuals born after 1 January 1943; earlier cohorts have lower rates that the engine does not model, because a person reaching full retirement age in a projected year is necessarily in the later group.',
+      'A person reaching full retirement age in a projected year is necessarily born after January 1, 1943, so most claims use the 2/3 of 1 percent rate. The earlier rows matter for someone already past 70 whose benefit or whose survivor benefit the projection prices from an age reached before the projection starts, so benefitFactor.ts#delayedCreditMonthlyPct carries the whole table, keyed to the effective birth year (a January 1 birth counts in the prior year, as the table’s date ranges run from January 2).',
     jurisdiction: 'federal',
     authority: [{
       kind: 'regulation',
       citation: '20 CFR 404.313(a), (b)(2)',
       url: 'https://www.law.cornell.edu/cfr/text/20/404.313',
       quotedText:
-        'You may earn a credit for each month during the period beginning with the month you attain full retirement age (as defined in \u00a7 404.409) and ending with the month you attain age 70 (72 before 1984). ... Credit percentages. The applicable credit amount for each month of delayed retirement can be found in the table below. If your date of birth is: The credit for each month you delay retirement is: ... After 1/1/1943 2/3 of 1%',
+        'You may earn a credit for each month during the period beginning with the month you attain full retirement age (as defined in \u00a7 404.409) and ending with the month you attain age 70 (72 before 1984). ... Credit percentages. The applicable credit amount for each month of delayed retirement can be found in the table below. If your date of birth is: The credit for each month you delay retirement is: Before 1/2/1917 1/12 of 1% 1/2/1917—1/1/1925 1/4 of 1% 1/2/1925—1/1/1927 7/24 of 1% 1/2/1927—1/1/1929 1/3 of 1% 1/2/1929—1/1/1931 3/8 of 1% 1/2/1931—1/1/1933 5/12 of 1% 1/2/1933—1/1/1935 11/24 of 1% 1/2/1935—1/1/1937 1/2 of 1% 1/2/1937—1/1/1939 13/24 of 1% 1/2/1939—1/1/1941 7/12 of 1% 1/2/1941—1/1/1943 5/8 of 1% After 1/1/1943 2/3 of 1%',
     }],
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-04',
+    verifiedOn: '2026-09-26',
     implementedBy: ['packages/engine/src/socialSecurity/benefitFactor.ts',
       'packages/engine/src/socialSecurity/claimFactor.ts',
     ],
     implementedByFunctions: [
+      'packages/engine/src/socialSecurity/benefitFactor.ts#delayedCreditMonthlyPct',
       'packages/engine/src/socialSecurity/benefitFactor.ts#delayedRetirementFactor',
       'packages/engine/src/socialSecurity/claimFactor.ts#claimFactor',
     ],
@@ -625,7 +626,7 @@ export const socialSecurityRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'This record is confined to the reduction curve after a survivor FRA has been supplied. The nra.ts age-60-cohort error for survivors born 1940 through 1950 and 1961 and later is recorded separately at usc-42-416-l-survivor-fra-age-60-attainment-cohorts; it is not a competing reading of this helper’s month interpolation.',
+      'This record is confined to the reduction curve after a survivor FRA has been supplied. The survivor FRA schedule itself, keyed to the year the survivor turns 60, is recorded separately at usc-42-416-l-survivor-fra-age-60-attainment-cohorts; it is not a competing reading of this helper’s month interpolation.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -885,12 +886,12 @@ export const socialSecurityRecords = {
   'usc-42-416-l-survivor-fra-age-60-attainment-cohorts': {
     title: 'The survivor full retirement age follows the year the survivor turns 60, from 65 up to 67',
     statement:
-      'nra.ts correctly keeps a survivor FRA separate from retirement FRA, but its table departs from the statute at both ends. Section 416(l) keys retirement age to the calendar year the claimant attains early retirement age, and sets that early age at 60 for survivor benefits, so the statutory survivor schedule is: 65 for an effective birth year of 1939 or earlier (age 60 before 2000); 65 years and 2 months for 1940, rising by 2 months a year to 65 years and 10 months for 1944 (age 60 in 2000 through 2004); 66 for 1945 through 1956 (age 60 in 2005 through 2016); 66 years and 2 months for 1957, rising to 66 years and 10 months for 1961 (age 60 in 2017 through 2021); and 67 for 1962 and later. 20 CFR 404.409(b) prints the same schedule by date of birth for every birth from 1912 onward. The engine instead returns 65 for every effective birth year through 1945 and 65 years and 2 months through 65 years and 10 months for 1946 through 1950, so a survivor born 1940 through 1950 is unreduced 2 to 12 months too early (for 1946, 782 months against the statutory 792); and it stops at 66 years and 8 months for every effective birth year from 1960 onward, so a 1961 survivor is unreduced two months too early and a 1962-and-later survivor four months too early. The 1912 through 1939 and 1951 through 1960 cohorts match. Births before 1912, for which the regulation’s table gives an earlier age, are outside any projection RetireGolden runs and outside this record. The benefit error moves taxable Social Security income directly (at most 85 percent taxable), but when spending is instead funded from a traditional account the engine replaces each missing benefit dollar with a fully taxable withdrawal dollar, so the sign of the tax error depends on how the shortfall is funded (and symmetrically for the too-early-unreduced FRA case).',
-    classification: 'approximated',
+      'nra.ts keeps a survivor FRA separate from retirement FRA and follows the statutory schedule. Section 416(l) keys retirement age to the calendar year the claimant attains early retirement age, and sets that early age at 60 for survivor benefits, so the statutory survivor schedule is: 65 for an effective birth year of 1939 or earlier (age 60 before 2000); 65 years and 2 months for 1940, rising by 2 months a year to 65 years and 10 months for 1944 (age 60 in 2000 through 2004); 66 for 1945 through 1956 (age 60 in 2005 through 2016); 66 years and 2 months for 1957, rising to 66 years and 10 months for 1961 (age 60 in 2017 through 2021); and 67 for 1962 and later. 20 CFR 404.409(b) prints the same schedule by date of birth for every birth from January 2, 1912 onward. survivorFraForBirthYear returns the worker schedule of fraForBirthYear for the effective birth year two years earlier, because a survivor born in a given year turns 60 in the same calendar year that a worker born two years earlier turns 62, and section 416(l)(1) keys both schedules to that calendar year. Births before January 2, 1912, for which the regulation’s table gives an earlier age, are outside any projection RetireGolden runs and outside this record.',
+    classification: 'settled',
     contraryReading: null,
-    errorDirection: 'bothDirections',
+    errorDirection: null,
     conventionRationale:
-      'The engine\'s survivor full retirement age table departs from the statute at both ends. From an effective birth year of 1960 on, the table stops at 66 years and 8 months, where the statute gives 66 years and 10 months for 1961 (800 months against 802) and, for 1962 or later, when the survivor turns 60 in 2022 or later, 67 under section 416(l)(1)(E) (800 months against 804). For 1940 through 1950 the table runs early: it returns 65 through 1945 and 65 years and 2 months through 65 years and 10 months for 1946 through 1950, where the statute gives 65 years and 2 months through 66 (for 1946, 782 months against 792). In both ranges a survivor who claims before the statutory age is reduced less than the law requires. The companion tests pin both schedules against the table.',
+      'Until 2026-09-25 the engine kept a separate survivor table that departed from the statute at both ends: it stopped at 66 years and 8 months from an effective birth year of 1960 on (800 months, where the statute gives 802 for 1961 and 804 for 1962 or later), and for 1940 through 1950 it ran six birth years late (for 1946, 782 months against 792). Deriving the survivor schedule from the worker schedule leaves one table to maintain, so the two cannot drift again. The companion tests pin every cohort from 1939 to 1962 against the statutory months.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -993,7 +994,7 @@ export const socialSecurityRecords = {
   'cfr-20-404-338-survivor-deceased-drc-pass-through': {
     title: 'The deceased worker’s delayed-retirement credits pass through to the survivor base',
     statement:
-      'survivorBenefit.ts accepts the deceased worker’s actual claim-age-adjusted amount as the survivor base and preserves it when it exceeds 82.5 percent of PIA. Section 404.338 expressly permits an increased survivor monthly amount where the insured person delayed filing and earned delayed-retirement credits. The engine therefore carries a deceased worker’s earned DRCs into the survivor base; it does not grant DRCs for the survivor’s own delay. This record covers a worker who claimed before death. For a worker who died before claiming, the engine prices the base at the claim age entered in the plan rather than on the credits earned by the death, which is the departure registered as usc-42-402-e-survivor-of-worker-who-died-before-claiming.',
+      'survivorBenefit.ts accepts the deceased worker’s actual claim-age-adjusted amount as the survivor base and preserves it when it exceeds 82.5 percent of PIA. Section 404.338 expressly permits an increased survivor monthly amount where the insured person delayed filing and earned delayed-retirement credits. The engine therefore carries a deceased worker’s earned DRCs into the survivor base; it does not grant DRCs for the survivor’s own delay. This record covers a worker who claimed before death. For a worker who died before claiming, the base is the benefit the worker would have received for the month before the death, with the credits earned by then, registered as usc-42-402-e-survivor-of-worker-who-died-before-claiming.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -1028,14 +1029,14 @@ export const socialSecurityRecords = {
   },
 
   'usc-42-402-e-survivor-of-worker-who-died-before-claiming': {
-    title: 'When a worker dies before claiming, the survivor is paid from the death, on the benefit earned by then',
+    title: 'When a worker dies before claiming, the survivor benefit starts after the death, on the benefit earned by then',
     statement:
-      'When a worker dies before claiming, annualSocialSecurity.ts still prices the dead worker’s own benefit as a claim at the claim age configured on the worker’s Social Security stream: annualSocialSecurityPayableMonths records nothing until the calendar year the worker would have reached that age, and the amount is then the PIA times claimFactor at that age. The survivor step-up waits for that amount, so the surviving spouse receives no survivor benefit before that year, and survivorBenefit.ts then takes the larger of that amount and 82.5 percent of the PIA as the survivor base. Section 402(e)(1) instead entitles the widow(er) of an individual who died a fully insured individual, once the widow(er) is not married, has attained age 60 and has filed an application (and meets the provision’s other conditions), for each month beginning with the first month in which the widow(er) becomes so entitled; none of its conditions is that the worker had claimed. 20 CFR 404.337(a) starts entitlement with the first month the application covers in which every other requirement is met, and 404.621(a) lets an application reach back up to 6 months, but not into months that would be reduced for age unless the widow(er) was at least 60 in the month of death and applies in the following month, in which case entitlement can begin with the month of death. Under section 402(e)(2)(A) and (C) the base is the worker’s PIA, deemed up to the old-age benefit the worker would upon application have received for the month before the month of death; 20 CFR 404.313(e)(1) accordingly counts delayed retirement credits only up to but not including the month of death, and 404.313(a) earns them only from full retirement age through the month the worker attains 70. The section 402(e)(2)(D) limit, the larger of the worker’s reduced benefit and 82.5 percent of the PIA, applies only where the worker was at any time entitled to an old-age benefit reduced under subsection (q), so a worker who never claimed passes on neither an early-claim reduction nor that limit. Wherever the survivor amount is larger than the survivor’s own benefit, the engine therefore understates the survivor’s benefits from the death until the year of the configured claim age, overstates them afterwards when the configured age is past full retirement age (it counts credits the worker never earned), and understates them for life when the configured age is below full retirement age (it applies an early-claim reduction for a claim that was never made, floored at 82.5 percent of the PIA). The survivor’s own single claim age, which also gates the step-up, is registered separately at usc-42-402-r-survivor-deemed-filing-exemption. The benefit error moves taxable Social Security income directly (at most 85 percent taxable), but when spending is instead funded from a traditional account the engine replaces each missing benefit dollar with a fully taxable withdrawal dollar, so the sign of the tax error depends on how the shortfall is funded. The record covers a worker who dies at 62 or later: for a death before 62, section 402(e)(2)(B) determines the PIA a different way for survivor purposes, applying only where that does not lower it, and this record makes no claim about that case.',
-    classification: 'approximated',
+      'When a worker dies without having claimed, annualSocialSecurity.ts prices the survivor base on the benefit the worker would upon application have received for the month before the death, whatever claim age the plan configured, and makes it available from the first year after the death. survivorBenefit.ts#neverClaimedDeceasedFactor counts delayed retirement credits from the month the worker attains full retirement age up to but not including the month of death, stopping before the month the worker attains 70, and applies no early-claim reduction, so the base is never below the PIA and the 82.5 percent limit cannot bind. Section 402(e)(1) entitles the widow(er) of an individual who died a fully insured individual, once the widow(er) is not married, has attained age 60 and has filed an application (and meets the provision’s other conditions), for each month beginning with the first month in which the widow(er) becomes so entitled; none of its conditions is that the worker had claimed. 20 CFR 404.337(a) starts entitlement with the first month the application covers in which every other requirement is met, and 404.621(a) lets an application reach back up to 6 months, but not into months that would be reduced for age unless the widow(er) was at least 60 in the month of death and applies in the following month, in which case entitlement can begin with the month of death. Under section 402(e)(2)(A) and (C) the base is the worker’s PIA, deemed up to the old-age benefit the worker would upon application have received for the month before the month of death; 20 CFR 404.313(e)(1) accordingly counts delayed retirement credits only up to but not including the month of death, 404.313(a) earns them only from the month the worker attains full retirement age, and section 402(w)(2)(A) counts only the months before the month the worker attains 70. Each credit is worth the percentage 404.313(b)(2) gives for the worker’s date of birth. The section 402(e)(2)(D) limit, the larger of the worker’s reduced benefit and 82.5 percent of the PIA, applies only where the worker was at any time entitled to an old-age benefit reduced under subsection (q), so a worker who never claimed passes on neither an early-claim reduction nor that limit. The survivor’s own single claim age also gates the survivor benefit: the survivor is paid from the first year after the death or from the year the survivor reaches that claim age, whichever is later, which is registered separately at usc-42-402-r-survivor-deemed-filing-exemption. The record covers a worker who dies at 62 or later. For a death before 62 the law computes the PIA with the death as the eligibility event, and section 402(e)(2)(B) can raise it for survivor purposes; the engine uses the PIA as entered, which the survivor-benefit calculation states as a limit, and this record makes no claim about that case.',
+    classification: 'settled',
     contraryReading: null,
-    errorDirection: 'bothDirections',
+    errorDirection: null,
     conventionRationale:
-      'The engine works out a survivor benefit from the benefit the worker was set to collect at the claim age entered in the plan, and has no separate path for a worker who dies before reaching that age. The plan already holds what the right figure needs: both birth dates, the age at death, the worker’s primary insurance amount and both claim ages. An example, with no cost-of-living increases: a worker born in January 1962 has a 2,000 dollar primary insurance amount and a full retirement age of 67, plans to claim at 70, and dies at 64 in December 2026. The surviving spouse, born in January 1960, is 66, with her own 600 dollar benefit and a planned claim age of 67. The engine pays her own 600 dollars a month from 2027 through 2031, then 2,480 dollars a month from 2032, which is what the worker would have received at 70. The law pays her 2,000 dollars a month from December 2026 if she applies within six months: she is past her survivor full retirement age, so nothing is taken off, and the worker earned no delayed retirement credits before dying. Leaving aside December 2026, which the engine’s whole-year counting cannot reach, the engine pays 1,400 dollars a month too little for five years, 84,000 dollars in all, and then 480 dollars a month too much for the rest of her life.',
+      'The plan states a life age, not a date of death, and the ledger is annual: it keeps a person alive through the whole calendar year in which the life age is attained, so the engine takes December of that year, the latest month the life age allows, as the month of death. Credits then run through November and the survivor amount starts in January of the next year. A real death earlier in that year would let the survivor be paid sooner, by up to eleven months, since the law can pay from the month of death, and between full retirement age and 70 it would earn fewer credits; the engine does not model a death month inside the year. Whether the worker claimed before dying is decided the way the ledger pays claims, in whole years: a configured claim age whose year is the year of death counts as a claim made, and the survivor base is then the benefit the ledger paid him. An example, with no cost-of-living increases: a worker born in January 1962 has a 2,000 dollar primary insurance amount and a full retirement age of 67, plans to claim at 70, and dies at 64 in December 2026. The surviving spouse, born in January 1960, is 66, with her own 600 dollar benefit and a planned claim age of 67. She is paid 2,000 dollars a month from 2027: she is past her survivor full retirement age, so nothing is taken off, and the worker earned no delayed retirement credits before dying. Had he died at 69 in December 2031, he would have earned 35 months of credits, January 2029 through November 2031, and she would be paid 2,000 times 1.23333, or 2,466.67 dollars a month, from 2032, not the 2,480 dollars he would have received at 70. Until 2026-09-25 the engine priced the dead worker as a claim at the configured age, which paid her 600 dollars a month through 2031 and 2,480 from 2032 in the first case.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -1067,6 +1068,12 @@ export const socialSecurityRecords = {
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim',
       quotedText:
         'If the deceased individual (on the basis of whose wages and self-employment income a widow or surviving divorced wife is entitled to widow\'s insurance benefits under this subsection) was, at any time, entitled to an old-age insurance benefit which was reduced by reason of the application of subsection (q), the widow\'s insurance benefit of such widow or surviving divorced wife for any month shall, if the amount of the widow\'s insurance benefit of such widow or surviving divorced wife (as determined under subparagraph (A) and after application of subsection (q)) is greater than- ... (ii) 82½ percent of the primary insurance amount (as determined without regard to subparagraph (C)) of such deceased individual, ... be reduced to the amount referred to in clause (i), or (if greater) the amount referred to in clause (ii).',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 402(w)(2)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim',
+      quotedText:
+        'For purposes of this subsection, the number of increment months for any individual shall be a number equal to the total number of the months- (A) which have elapsed after the month before the month in which such individual attained retirement age (as defined in section 416(l) of this title) or (if later) December 1970 and prior to the month in which such individual attained age 70, and',
     }, {
       kind: 'regulation',
       citation: '20 CFR 404.313(a)',
@@ -1110,13 +1117,11 @@ export const socialSecurityRecords = {
     verifiedOn: '2026-09-23',
     implementedBy: [
       'packages/engine/src/projection/internal/annualSocialSecurity.ts',
-      'packages/engine/src/socialSecurity/claimFactor.ts',
       'packages/engine/src/socialSecurity/survivorBenefit.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/projection/internal/annualSocialSecurity.ts#annualSocialSecurity',
-      'packages/engine/src/projection/internal/annualSocialSecurity.ts#annualSocialSecurityPayableMonths',
-      'packages/engine/src/socialSecurity/claimFactor.ts#claimFactor',
+      'packages/engine/src/socialSecurity/survivorBenefit.ts#neverClaimedDeceasedFactor',
       'packages/engine/src/socialSecurity/survivorBenefit.ts#survivorBenefitMonthly',
     ],
   },

@@ -1856,9 +1856,16 @@ export const formerSpouseSchema = z.object({
   /**
    * Survivor paths only: the age the deceased ex actually claimed their own benefit
    * (62–70), used for the survivor base (claim-age-adjusted) and the RIB-LIM /
-   * widow's-limit cap. Omitted/null = claimed at the deceased's FRA (the safe
-   * default: actual benefit = PIA, no early reduction, no delayed credits), so
-   * existing plans are unchanged. @see app/src/socialSecurity/survivorBenefit.ts
+   * widow's-limit cap. Omitted/null = claimed at the deceased's FRA (actual
+   * benefit = PIA, no early reduction, no delayed credits), so existing plans
+   * are unchanged. For an ex who died without claiming, the base is the benefit
+   * for the month before death (42 U.S.C. 402(e)(2)(C)): enter the age, in
+   * years AND months, in the month of death (70 at most) when that was after
+   * FRA, so claimFactor counts the credits through the month before death; a
+   * whole-year age drops the months since the last birthday. Leave it null for
+   * a death before FRA.
+   * @see packages/engine/src/socialSecurity/maritalBenefits.ts (survivorBenefitFromFormerSpouse)
+   * @see packages/engine/src/socialSecurity/survivorBenefit.ts
    */
   deceasedClaimAge: z
     .object({

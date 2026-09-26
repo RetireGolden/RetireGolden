@@ -42,11 +42,11 @@ describeCalculation(
       expect(fraForBirthYear(1959)).not.toEqual(fraForBirthYear(inputs.effectiveBirthYear!))
     })
 
-    it('is not the survivor schedule, which caps at 66 years 8 months', () => {
-      // The first wrong reading: the survivor FRA is 800 month slots, not 804.
-      const survivorFra = survivorFraForBirthYear(inputs.effectiveBirthYear!)
-      expect(fraTotalMonths(survivorFra)).toBe(800)
-      expect(fraTotalMonths(survivorFra)).toBeLessThan(expected.totalMonths!)
+    it('is not the survivor schedule, which reaches 67 two birth years later', () => {
+      // The first wrong reading: the survivor schedule is keyed to age 60, so
+      // at 1960, the first year past this ramp, it gives 66y8m = 800 slots.
+      expect(fraTotalMonths(survivorFraForBirthYear(1960))).toBe(800)
+      expect(fraTotalMonths(fraForBirthYear(1960))).toBe(expected.totalMonths!)
     })
   },
 )

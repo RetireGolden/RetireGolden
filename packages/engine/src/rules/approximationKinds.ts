@@ -74,8 +74,9 @@
  * - usc-42-402-e-survivor-of-worker-who-died-before-claiming, fix: the plan
  *   already holds both birth dates, the worker's age at death, the PIA and
  *   both claim ages, which is what the statutory start and base need under
- *   the engine's existing whole-year death convention; the fix is in the
- *   survivor step-up's own code.
+ *   the engine's existing whole-year death convention. Fixed on 2026-09-25
+ *   together with usc-42-416-l-survivor-fra-age-60-attainment-cohorts; both
+ *   records are settled and have left this list.
  *
  * This text is published. `scripts/rules-coverage.mjs` writes each entry onto
  * its rule in the ledger (`DOCS/operations/rule-coverage/`), and the public
@@ -215,14 +216,12 @@ export const APPROXIMATION_KINDS: Readonly<Record<ApproximatedTaxRuleId, Approxi
   'usc-42-1395r-i-4-a-i-irmaa-magi-foreign-exclusion-addback': { kind: 'fix' },
   'usc-42-1395r-i-5-optimizer-uniform-threshold-indexing': { kind: 'fix' },
   'usc-42-402-c-2-ssdi-spouse-auxiliary': { kind: 'fix' },
-  'usc-42-402-e-survivor-of-worker-who-died-before-claiming': { kind: 'fix' },
   'usc-42-403-a-6-ssdi-family-maximum': { kind: 'fix' },
   'usc-42-403-f-1-earnings-test-month-charging': { kind: 'fix' },
   'usc-42-415-b-2-a-i-computation-years-five-year-dropout': { kind: 'fix' },
   'usc-42-415-b-2-b-disability-freeze-aime-exclusion': { kind: 'fix' },
   'usc-42-415-b-2-b-ii-iii-initial-computation-base-window': { kind: 'fix' },
   'usc-42-415-f-2-post-entitlement-pia-recomputation': { kind: 'fix' },
-  'usc-42-416-l-survivor-fra-age-60-attainment-cohorts': { kind: 'fix' },
   'usc-42-423-a-2-402-q-retirement-claim-before-disability-onset': { kind: 'fix' },
   'usc-42-423-c-2-ssdi-five-month-waiting-period': { kind: 'needs-fact', missingInput: 'disability onset month or exact onset date' },
   'va-code-58-1-322-03-age-deduction-and-social-security': { kind: 'fix' },

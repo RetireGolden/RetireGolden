@@ -57,7 +57,7 @@ Income tab shows it read-only and links there.
 
 Monthly granularity from 62 to 70 ([benefitFactor.ts](../../packages/engine/src/socialSecurity/benefitFactor.ts),
 [socialSecurity/claimFactor.ts](../../packages/engine/src/socialSecurity/claimFactor.ts)): early
-reduction 5/9%/mo for the first 36 months then 5/12%/mo; delayed credits 2/3%/mo to 70. FRA by birth year
+reduction 5/9%/mo for the first 36 months then 5/12%/mo; delayed credits 2/3%/mo to 70 (a lower rate by birth date before 1943). FRA by birth year
 with the Jan-1 rule ([nra.ts](../../packages/engine/src/socialSecurity/nra.ts)).
 
 ## The benefit menu
@@ -74,18 +74,15 @@ Benefits-only analysis separately illustrates survivor switching
   sets the base at `max(deceased's actual benefit, 82.5% × deceased's PIA)` when the deceased claimed early,
   then applies the survivor reduction. POMS applies that limit after the survivor reduction, so the ordering
   gap is disclosed as an approximation (`poms-rs-00615-320-rib-lim-after-survivor-reduction`). When the
-  deceased died **before claiming**, the code still prices them at their configured claim age: the survivor
-  gets nothing from the deceased's record until the year the deceased would have reached that age, and the
-  base is PIA × the claim factor at that age. The statute entitles the widow(er) from as early as the month
-  of death, on the PIA plus only the delayed credits earned before death, with no early reduction and no
-  RIB-LIM, so the gap is disclosed as an approximation that errs both ways
+  deceased died **before claiming**, the survivor is paid from the year after the death (or from the survivor's
+  own entered claim age, if later), whatever claim age the plan configured for the deceased, on the PIA plus only the delayed credits earned before death, with no early reduction
+  and no RIB-LIM, as the statute gives it; the plan states a life age, not a death date, so the annual ledger
+  treats December of the last year alive as the death month, and a real death earlier in that year would let
+  the survivor be paid up to eleven months sooner
   (`usc-42-402-e-survivor-of-worker-who-died-before-claiming`). An
   **early-claim widow(er) reduction** (up to 28.5% at age 60, linear to the survivor's FRA) applies when the
-  survivor claims before their **survivor FRA**. The code keeps a separate survivor-FRA schedule, but it
-  departs from the age-60-attainment statute at both ends: it returns 65y0m through 1945 and 65y2m–65y10m for
-  1946–50, where the statute gives 65y2m–65y10m for 1940–44 and 66 from 1945, and it caps at 66y8m for
-  effective birth year 1960+, where the statute reaches 66y10m for 1961 and 67 for 1962+. Both cohort errors
-  are disclosed as one approximation
+  survivor claims before their **survivor FRA**, which follows the age-60-attainment statute: the retirement
+  schedule two birth years later, from 65y2m for 1940 to 67 for 1962 and later
   (`usc-42-416-l-survivor-fra-age-60-attainment-cohorts`). The $255 lump-sum death payment is absent
   (`usc-42-402-i-lump-sum-death-payment`). Current-spouse survivor benefits are built before the earnings-test pass, so they can be
   withheld for a working survivor and credited back through the same ARF path. The former-spouse survivor path

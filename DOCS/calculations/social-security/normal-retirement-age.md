@@ -25,7 +25,7 @@ Exact derived and published FRA: `{years: 67, extraMonths: 0}` and `804` total m
 
 ## Wrong readings
 
-- Using the survivor-FRA cap produces 66 years 8 months, or `800` months.
+- Using the survivor schedule, which is keyed to age 60 and runs two birth years behind, produces 66 years 8 months, or `800` months, at 1960, the first year past the ramp (revised 2026-09-25: the survivor table used to stop at that value for every later year).
 - Treating `extraMonths` as years produces an invalid interpretation even though this endpoint happens to use zero.
 
 ## Family

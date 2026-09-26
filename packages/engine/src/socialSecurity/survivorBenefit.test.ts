@@ -10,8 +10,8 @@ import {
 } from './survivorBenefit.js'
 import { fraTotalMonths, survivorFraForBirthYear } from './nra.js'
 
-// The engine's current survivor FRA for born 1962+ is 66y8m = 66*12 + 8 = 800 months.
-const SURVIVOR_FRA_1962PLUS = 66 * 12 + 8
+// Survivor FRA for born 1960 is 66y8m = 66*12 + 8 = 800 months (416(l)(1)(D): age 60 in 2020).
+const SURVIVOR_FRA_1960 = 66 * 12 + 8
 // Survivor FRA for born 1951–56 is 66y0m = 792 months.
 const SURVIVOR_FRA_1951TO56 = 66 * 12
 const age = (years: number, months = 0) => ({ years, months })
@@ -45,7 +45,7 @@ describe('widow benefit base', () => {
         deceasedPiaMonthly: 2_000,
         deceasedActualMonthly: 2_000,
         survivorClaimAge: { years: 67, months: 0 },
-        survivorFraMonths: SURVIVOR_FRA_1962PLUS,
+        survivorFraMonths: SURVIVOR_FRA_1960,
       })
 
       expect(monthly).toBeCloseTo(accepted, 6)
@@ -68,7 +68,7 @@ describe('widow benefit base', () => {
         deceasedPiaMonthly: 2_000,
         deceasedActualMonthly: 2_480,
         survivorClaimAge: { years: 67, months: 0 },
-        survivorFraMonths: SURVIVOR_FRA_1962PLUS,
+        survivorFraMonths: SURVIVOR_FRA_1960,
       })
 
       expect(monthly).toBeCloseTo(accepted, 6)
@@ -89,7 +89,7 @@ describeRule('usc-42-402-q-1-widow-survivor-early-reduction-schedule', {
       deceasedPiaMonthly: 2_000,
       deceasedActualMonthly: 2_000,
       survivorClaimAge: age(60),
-      survivorFraMonths: SURVIVOR_FRA_1962PLUS,
+      survivorFraMonths: SURVIVOR_FRA_1960,
     })
 
     expect(monthly).toBeCloseTo(accepted, 6)
@@ -149,66 +149,51 @@ describeRule('poms-rs-00615-320-rib-lim-after-survivor-reduction', {
   })
 })
 
-describeRule('usc-42-416-l-survivor-fra-age-60-attainment-cohorts', {
-  // A 1962 survivor attains the section 416(l)(2) early-retirement age of 60
-  // in 2022, so section 416(l)(1)(E) yields 67 years = 804 months. The
-  // rejected engine schedule observably returns 66y8m = 800 months.
-  // A 1961 survivor attains 60 in 2021, so 416(l)(1)(D) + (l)(3)(B):
-  // 2/12 × 60 months = 10 → statutory 66y10m = 802 months. The engine table
-  // still caps at 66y8m = 800, so a blanket-67 repair cannot go green while
-  // 1961 stays wrong.
-  readings: {
-    statutory1962SurvivorFraMonths: 804,
-    statutory1961SurvivorFraMonths: 802,
-    engineCappedAtSixtySixEight: 800,
-  },
-  accepted: 'statutory1962SurvivorFraMonths',
-  produced: 'engineCappedAtSixtySixEight',
-}, ({ accepted, produced, readings }) => {
-  it('pins the separate survivor-FRA table for the 1962 age-60 cohort', () => {
-    const months = fraTotalMonths(survivorFraForBirthYear(1962))
-
-    expect(months).toBe(produced)
-    expect(months).not.toBe(accepted)
-  })
-
-  it('pins the 1961 age-60 cohort at the engine’s 66y8m cap, not statutory 66y10m', () => {
-    const months = fraTotalMonths(survivorFraForBirthYear(1961))
-
-    expect(months).toBe(produced)
-    expect(months).not.toBe(readings.statutory1961SurvivorFraMonths)
-  })
-})
-
-// The early end of the same table. Effective birth years 1940 through 1950
-// attain the survivor early-retirement age of 60 in 2000 through 2010.
-// Section 416(l)(1)(B) with (l)(3)(A) gives 65 plus two-twelfths of the months
-// from January 2000 through December of the attainment year for 1940-1944
-// (12, 24, 36, 48, 60 months: 65y2m ... 65y10m), and 416(l)(1)(C) gives 66 for
-// 1945 onward (through 1956); 20 CFR 404.409(b) and POMS RS 00615.301 print
-// the same rows. The engine's rows for these years are the statutory ones
-// moved six birth years later: 65y0m through 1945, then 65y2m ... 65y10m for
-// 1946-1950. In months, statute against engine:
-//   1940 782/780  1941 784/780  1942 786/780  1943 788/780  1944 790/780
-//   1945 792/780  1946 792/782  1947 792/784  1948 792/786  1949 792/788
-//   1950 792/790
-// 1939 and earlier (780) and 1951-1960 agree, so they are not pinned here.
-const EARLY_SURVIVOR_COHORTS = [1940, 1941, 1942, 1943, 1944, 1945, 1946, 1947, 1948, 1949, 1950] as const
+// Section 416(l)(1) keys retirement age to the calendar year a person attains
+// early retirement age, and (l)(2) sets that age at 60 for a widow(er). By
+// hand, from the record's quoted spans, for effective birth years 1939-1962:
+//   1939 and earlier: age 60 before 2000, (l)(1)(A): 65 = 780 months.
+//   1940-1944: age 60 in 2000-2004, (l)(1)(B) with (l)(3)(A), two-twelfths of
+//     the 12, 24, 36, 48, 60 months from January 2000: 65y2m ... 65y10m.
+//   1945-1956: age 60 in 2005-2016, (l)(1)(C): 66 = 792.
+//   1957-1961: age 60 in 2017-2021, (l)(1)(D) with (l)(3)(B): 66y2m ... 66y10m.
+//   1962 and later: age 60 in 2022 or later, (l)(1)(E): 67 = 804.
+// 20 CFR 404.409(b) prints the same rows by date of birth. The rejected
+// reading is the table the engine kept until 2026-09-25: the early rows moved
+// six birth years late (65y0m through 1945, 65y2m ... 65y10m for 1946-1950)
+// and a cap at 66y8m from 1960 on.
+const SURVIVOR_COHORTS = Array.from({ length: 24 }, (_, index) => 1939 + index)
 
 describeRule('usc-42-416-l-survivor-fra-age-60-attainment-cohorts', {
-  note: 'age-60 cohorts born 1940 to 1950',
+  note: 'age-60 cohorts born 1939 to 1962',
   readings: {
-    statutory1940To1950SurvivorFraMonths: [782, 784, 786, 788, 790, 792, 792, 792, 792, 792, 792],
-    engine1940To1950SurvivorFraMonths: [780, 780, 780, 780, 780, 780, 782, 784, 786, 788, 790],
+    statutorySurvivorFraMonths: [
+      780,
+      782, 784, 786, 788, 790,
+      792, 792, 792, 792, 792, 792, 792, 792, 792, 792, 792, 792,
+      794, 796, 798, 800, 802,
+      804,
+    ],
+    tableCappedAtSixtySixEightAndLateEarlyRows: [
+      780,
+      780, 780, 780, 780, 780,
+      780, 782, 784, 786, 788, 790, 792, 792, 792, 792, 792, 792,
+      794, 796, 798, 800, 800,
+      800,
+    ],
   },
-  accepted: 'statutory1940To1950SurvivorFraMonths',
-  produced: 'engine1940To1950SurvivorFraMonths',
-}, ({ accepted, produced }) => {
-  it('pins the engine table for the 1940 to 1950 cohorts, 1946 at 782 months against the statutory 792', () => {
-    const months = EARLY_SURVIVOR_COHORTS.map((year) => fraTotalMonths(survivorFraForBirthYear(year)))
+  accepted: 'statutorySurvivorFraMonths',
+}, ({ accepted, readings }) => {
+  it('follows the statutory schedule for every cohort from 1939 to 1962', () => {
+    const months = SURVIVOR_COHORTS.map((year) => fraTotalMonths(survivorFraForBirthYear(year)))
 
-    expect(months).toEqual(produced)
-    expect(months).not.toEqual(accepted)
+    expect(months).toEqual(accepted)
+    expect(months).not.toEqual(readings.tableCappedAtSixtySixEightAndLateEarlyRows)
+  })
+
+  it('stays at 67 after 1962', () => {
+    expect(fraTotalMonths(survivorFraForBirthYear(1970))).toBe(804)
+    expect(fraTotalMonths(survivorFraForBirthYear(2026))).toBe(804)
   })
 })
 
@@ -235,27 +220,27 @@ describeRule('usc-42-402-e-2-a-survivor-own-delay-no-drc', {
 
 describe('survivorReductionFactor', () => {
   it('is 1.0 at/after the survivor FRA', () => {
-    expect(survivorReductionFactor(67 * 12, SURVIVOR_FRA_1962PLUS)).toBe(1)
-    expect(survivorReductionFactor(70 * 12, SURVIVOR_FRA_1962PLUS)).toBe(1)
+    expect(survivorReductionFactor(67 * 12, SURVIVOR_FRA_1960)).toBe(1)
+    expect(survivorReductionFactor(70 * 12, SURVIVOR_FRA_1960)).toBe(1)
   })
 
-  it('is 1.0 at the current engine-table survivor FRA in months (66y8m for born 1962+)', () => {
-    // The current-table boundary is 66y8m. The statutory 1962+ correction is
-    // deliberately pinned separately as an approximation above.
-    expect(survivorReductionFactor(66 * 12 + 8, SURVIVOR_FRA_1962PLUS)).toBe(1)
+  it('is 1.0 at the survivor FRA in months (66y8m for born 1960)', () => {
+    // A survivor who claims in the very month of the survivor FRA is not
+    // reduced.
+    expect(survivorReductionFactor(66 * 12 + 8, SURVIVOR_FRA_1960)).toBe(1)
   })
 
   it('is reduced just below the survivor FRA (66y7m when FRA is 66y8m)', () => {
-    expect(survivorReductionFactor(66 * 12 + 7, SURVIVOR_FRA_1962PLUS)).toBeLessThan(1)
+    expect(survivorReductionFactor(66 * 12 + 7, SURVIVOR_FRA_1960)).toBeLessThan(1)
   })
 
   it('applies the full 28.5% reduction at the earliest age (60)', () => {
-    expect(survivorReductionFactor(SURVIVOR_EARLIEST_AGE * 12, SURVIVOR_FRA_1962PLUS)).toBeCloseTo(1 - SURVIVOR_MAX_REDUCTION, 10)
-    expect(survivorReductionFactor(SURVIVOR_EARLIEST_AGE * 12, SURVIVOR_FRA_1962PLUS)).toBeCloseTo(0.715, 6)
+    expect(survivorReductionFactor(SURVIVOR_EARLIEST_AGE * 12, SURVIVOR_FRA_1960)).toBeCloseTo(1 - SURVIVOR_MAX_REDUCTION, 10)
+    expect(survivorReductionFactor(SURVIVOR_EARLIEST_AGE * 12, SURVIVOR_FRA_1960)).toBeCloseTo(0.715, 6)
   })
 
   it('clamps below 60 to the same floor', () => {
-    expect(survivorReductionFactor(50 * 12, SURVIVOR_FRA_1962PLUS)).toBeCloseTo(0.715, 6)
+    expect(survivorReductionFactor(50 * 12, SURVIVOR_FRA_1960)).toBeCloseTo(0.715, 6)
   })
 
   it('reduces linearly at a midpoint between 60 and FRA', () => {
@@ -264,10 +249,10 @@ describe('survivorReductionFactor', () => {
     expect(survivorReductionFactor(63 * 12, SURVIVOR_FRA_1951TO56)).toBeCloseTo(0.8575, 4)
   })
 
-  it('uses the current engine survivor FRA, not the retirement FRA', () => {
-    // Under the current engine table, a 66-year-old survivor is still below
-    // 66y8m and is reduced; the statutory 1962+ schedule is separately pinned.
-    expect(survivorReductionFactor(66 * 12, SURVIVOR_FRA_1962PLUS)).toBeLessThan(1)
+  it('uses the survivor FRA, not the retirement FRA', () => {
+    // A 66-year-old survivor born 1960 is still below the 66y8m survivor FRA
+    // and is reduced.
+    expect(survivorReductionFactor(66 * 12, SURVIVOR_FRA_1960)).toBeLessThan(1)
     // But a 66-year-old whose survivor FRA is 66y0m (born 1951–56) is at FRA → 1.0.
     expect(survivorReductionFactor(66 * 12, SURVIVOR_FRA_1951TO56)).toBe(1)
   })
@@ -279,7 +264,7 @@ describe('survivorBenefitMonthly', () => {
       deceasedPiaMonthly: 0,
       deceasedActualMonthly: 0,
       survivorClaimAge: age(67),
-      survivorFraMonths: SURVIVOR_FRA_1962PLUS,
+      survivorFraMonths: SURVIVOR_FRA_1960,
     })).toBe(0)
   })
 
@@ -289,7 +274,7 @@ describe('survivorBenefitMonthly', () => {
       deceasedPiaMonthly: pia,
       deceasedActualMonthly: pia,
       survivorClaimAge: age(66, 8),
-      survivorFraMonths: SURVIVOR_FRA_1962PLUS,
+      survivorFraMonths: SURVIVOR_FRA_1960,
     })).toBeCloseTo(pia, 6)
   })
 
@@ -301,7 +286,7 @@ describe('survivorBenefitMonthly', () => {
       deceasedPiaMonthly: pia,
       deceasedActualMonthly: actual,
       survivorClaimAge: age(67),
-      survivorFraMonths: SURVIVOR_FRA_1962PLUS,
+      survivorFraMonths: SURVIVOR_FRA_1960,
     })
     expect(atFra).toBeCloseTo(WIDOW_LIMIT_PIA_FRACTION * pia, 6)
     expect(atFra).toBeGreaterThan(actual) // RIB-LIM lifts the survivor above the deceased's reduced benefit
@@ -316,7 +301,7 @@ describe('survivorBenefitMonthly', () => {
       deceasedPiaMonthly: pia,
       deceasedActualMonthly: actual,
       survivorClaimAge: age(60),
-      survivorFraMonths: SURVIVOR_FRA_1962PLUS,
+      survivorFraMonths: SURVIVOR_FRA_1960,
     })).toBeCloseTo(WIDOW_LIMIT_PIA_FRACTION * pia * 0.715, 6)
   })
 
@@ -326,7 +311,7 @@ describe('survivorBenefitMonthly', () => {
       deceasedPiaMonthly: pia,
       deceasedActualMonthly: pia,
       survivorClaimAge: age(67),
-      survivorFraMonths: SURVIVOR_FRA_1962PLUS,
+      survivorFraMonths: SURVIVOR_FRA_1960,
     })).toBeCloseTo(pia, 6)
   })
 
@@ -335,7 +320,7 @@ describe('survivorBenefitMonthly', () => {
       deceasedPiaMonthly: pia,
       deceasedActualMonthly: pia, // claimed at FRA
       survivorClaimAge: age(60),
-      survivorFraMonths: SURVIVOR_FRA_1962PLUS,
+      survivorFraMonths: SURVIVOR_FRA_1960,
     })
     expect(claim(1000)).toBeLessThanOrEqual(claim(2000))
     expect(claim(2000)).toBeLessThanOrEqual(claim(3000))

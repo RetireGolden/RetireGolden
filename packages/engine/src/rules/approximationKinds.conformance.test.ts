@@ -115,7 +115,7 @@ describe('approximation kinds conformance', () => {
     // and each rule registered as approximated since, with its evidence.
     const counts: Record<ApproximationKind, number> = { fix: 0, 'needs-fact': 0, convention: 0 }
     for (const entry of Object.values(kinds)) counts[entry.kind] += 1
-    expect(counts).toEqual({ fix: 77, 'needs-fact': 24, convention: 22 })
+    expect(counts).toEqual({ fix: 75, 'needs-fact': 24, convention: 22 })
     expect(counts.fix + counts['needs-fact'] + counts.convention).toBe(approximatedIds.length)
   })
 

@@ -884,7 +884,7 @@ describeCalculation(
   {
     example: {
       inputs: {
-        canonicalClaimAges: ['62y0m', '67y0m (FRA)', '70y0m'],
+        canonicalClaimAges: ['62y0m', '66y2m (FRA)', '70y0m'],
         oneStreamFixture: { streams: 1, currentClaimAgeYears: 70 },
         noStreamFixture: { streams: 0 },
         currentClaimWinsFixture: { traditionalBalance: 0, currentClaimAgeYears: 70, planningAge: 70 },
@@ -949,12 +949,13 @@ describeCalculation(
     it('generates 2 candidates for a stream already claiming at 70y0m, so 3 combinations are evaluated', () => {
       const candidates = generatedCandidates(inputs.oneStreamFixture.streams)
 
-      // The canonical grid is {62y0m, 67y0m (FRA), 70y0m}; the stream's own
+      // The canonical grid is {62y0m, the person's FRA, 70y0m}; born 1956-01-01
+      // (effective birth year 1955) the FRA is 66y2m. The stream's own
       // current 70y0m age is skipped, so 3 - 1 = 2 candidates are generated.
       expect(candidates.length).toBe(example.expected.oneStreamGeneratedCandidates)
       expect(candidates.map((candidate) => candidate.label).sort()).toEqual([
         'Pat claims Social Security at 62',
-        'Pat claims Social Security at 67 (FRA)',
+        'Pat claims Social Security at 66 and 2 months (FRA)',
       ])
       // Including the current claim is the published count. Counting the
       // stream's own 70y0m age as a candidate would give 4; omitting the
