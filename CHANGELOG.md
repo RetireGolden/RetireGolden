@@ -33,7 +33,19 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   target. No figure changes; the warning disappears from projections that
   never went over, among them the bracket-fill example, whose taxable income
   ends $64,977.21, $43,471.24 and $61,127.60 under the target in 2027, 2028
-  and 2029.
+  and 2029, and the example couple's report, whose two conversion years with
+  a spending draw (2034 and 2035) end about $94,753 and $70,301 under it.
+
+- **Changed: engine comments and dead members brought in line with the code**
+  (decisions D-PREMIUM-END-AGE, D-GOAL-FLEXIBILITY,
+  D-ADJUSTMENT-ROUNDING-REASON, D-DEAD-EXPORT): the `premiumMode` comment now
+  says an until-age policy is charged in the years before the insured (or
+  the LTC owner) reaches the stop age; the `GoalFlexibility` comment now says
+  a movable or skippable goal still unfunded at its latest year is recorded
+  as skipped and counted in the unfunded layer totals, as the scheduler
+  always did; the never-used `rounding` reason is removed from optimizer
+  schedule adjustments; and the uncalled `nonCashWeight` export is deleted.
+  No displayed number changes.
 
 - **Fixed: inherited Roth earnings counted twice in the withdrawal categories**
   (decision D-INHERITED-ROTH-SLICE): in a year with a non-qualified inherited
