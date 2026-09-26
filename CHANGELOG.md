@@ -17,20 +17,21 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 - **Fixed: "Tax-free gains room" showed gains that cost federal tax**
   (owner decision R2). The Results column added the room left in the 0%
   long-term bracket to the remaining capital-loss carryforward. That is not
-  the room at no tax: an extra gain can use up the $3,000 loss deduction,
-  make more Social Security taxable, shrink the senior deduction, or reach
-  the 3.8% net investment income tax, whose thresholds are not indexed while
-  the 0% bracket is. The column now shows the largest extra long-term gain
+  the room at no tax: an extra gain can use up a loss deduction the
+  household's other income was using, make more Social Security taxable,
+  shrink the senior deduction, or reach the 3.8% net investment income tax,
+  whose thresholds are not indexed while the 0% bracket is. The column now shows the largest extra long-term gain
   that raises the year's federal income tax (regular tax, AMT and NIIT) by
   $0, found by recomputing the year's federal tax with the gain netted
   through the carryforward first. A single filer in 2026 with $40,000 of
   pension and a $10,000 carryforward saw $35,550 and now sees $7,000
   (realizing $35,550 would have cost $360); one with $10,000 of pension and
-  $30,000 of Social Security saw $38,100 and now sees $20,353 (the old figure
-  would have cost $1,135). On the 29 example plans the figure is lower in
+  $30,000 of Social Security saw $38,100 and now sees $20,352 (the old figure
+  would have cost $1,135). The column rounds down to the whole dollar, so it
+  never shows more room than the engine found ($20,352.94 here). On the 29 example plans the figure is lower in
   370 of 1,210 plan-years and higher in none. The largest drop is $216,148
   (`all-401k-no-bridge` and `brokerage-bridge-401k`, 2078: $303,767 became
-  $87,620), where realizing the old figure would have cost $11,599.64 of
+  $87,619), where realizing the old figure would have cost $11,599.64 of
   federal tax. Most of those years hold no taxable account to realize a gain
   from; in the 51 that end the year with a taxable-account balance, the
   largest drop is $59,276 (`salary-growth-escalation`, 2070) and the largest
@@ -39,8 +40,8 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   table explainer and the Learning Center article on harvesting say what the
   room includes and what it leaves out (state tax, the ACA premium credit,
   Medicare premiums two years later), and a year with an ACA premium credit
-  carries a marker, since losing part of the credit is repaid as federal
-  tax at filing. The room in the 0% bracket stays published
+  carries a marker: realizing gains can also shrink the credit, and if it
+  was paid in advance, the part lost is paid back as federal tax at filing. The room in the 0% bracket stays published
   (`YearResult.ltcgZeroHeadroom`).
 
 - **Fixed: an account held in two plan rows was counted twice in the
@@ -68,12 +69,16 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   the years short of the plan's end: "Money lasts through 2045, 7 years
   short of the plan's end in 2052" for the `under-saved-single` example,
   which used to say 6. The count is one higher than before in every plan
-  that runs short (10 of the 29 examples). The KPI bar and the printed report
-  now say "through" the last funded year where they said "until" or "to" the
-  first short year: the same fact, one year earlier ("until 2046" is now
-  "through 2045"). A plan short from its first year says so ("not funded" on
-  the KPI bar, "short from 2026" in the printed report) instead of naming the
-  year before it.
+  that runs short (10 of the 29 examples). The KPI bar, the printed report,
+  the LTC stress table on the Insurance page and the Social Security bridge
+  comparison now say "through" the last funded year where they said "until"
+  or "to" the first short year: the same fact, one year earlier ("until 2046"
+  is now "through 2045"); the downloadable report's "Depletes in 2046" is now
+  "Through 2045 (runs short in 2046)". A plan short from its first year says
+  "short from 2026" everywhere instead of naming the year before it. The
+  engine's `compareLtcStress` publishes each run's money-lasts figures
+  (`LtcStressComparison.lasts`), and the Compare page's delta now reads the
+  engine's `lastFundedYear` instead of its own copy.
 
 - **Changed: today's dollars divide by the ledger's own inflation factor**
   (owner decision R19). The pages compounded the plan's inflation rate with
@@ -105,6 +110,12 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   review-queue worker and fleet scan to hand to the insight cards; a follow-up
   there should switch those to `detectorProjection`. The row builders in
   `planner/resultsRows` take the page's dollar mode instead of an adjuster.
+  Two more RetireGolden-Pro follow-ups: its packet `ReportDocument.tsx`
+  (lines 405 to 429) draws the chart from the report's chart-data rows and
+  ignores their new optional `unassignedCash` field, so a plan with unassigned
+  cash prints a stack short of investable assets there; and the packet
+  screen's `chartDataCsv` gains the `unassignedCash` column only for plans
+  that have unassigned cash.
 
 - **Fixed: a value lost or shown under another row when two rows shared an
   id** (decision D-CASH-PROPERTY-ALIAS): the year's balances, and the
