@@ -37,6 +37,7 @@ import {
 
 import type { Account, IncomeStream, Plan } from '@retiregolden/engine/model/plan'
 import { moneyLasts } from '@retiregolden/engine/projection/moneyLasts'
+import { moneyLastsValue } from './moneyLastsCopy'
 import type { YearResult } from '@retiregolden/engine/projection/types'
 import { taxAndPenalties } from '@retiregolden/engine/projection/yearFigures'
 import { downloadStandaloneReport } from '../report/downloadReport'
@@ -115,12 +116,15 @@ function ReportBody() {
   // from the first short year D. A plan short in its first year has no funded
   // year to name, so it says so instead of printing the year before the plan.
   const lasts = moneyLasts(result)
-  const moneyLastsKpi =
-    lasts.depletionYear === null
-      ? { value: 'full plan', sub: `through ${result.endYear}` }
-      : lasts.lastFundedYear < result.startYear
-        ? { value: `short from ${result.startYear}`, sub: "the plan's first year" }
-        : { value: `through ${lasts.lastFundedYear}`, sub: `runs short in ${lasts.depletionYear}` }
+  const moneyLastsKpi = {
+    value: moneyLastsValue(lasts, result.startYear),
+    sub:
+      lasts.depletionYear === null
+        ? `through ${result.endYear}`
+        : lasts.lastFundedYear < result.startYear
+          ? "the plan's first year"
+          : `runs short in ${lasts.depletionYear}`,
+  }
 
   // The same engine-figure rows the Results charts draw, in nominal dollars
   // (the printed report's charts are nominal): categories from the engine's

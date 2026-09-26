@@ -397,21 +397,22 @@ const stackTooltipProps = { ...tooltipProps, content: NonZeroTooltipContent } as
  */
 const TAX_FREE_GAINS_ROOM_TOOLTIP =
   "Extra long-term gains you could realize this year without raising this year's federal income tax. " +
-  'Your remaining loss carryforward absorbs gains first. After that, gains count only while they stay in the ' +
-  '0% bracket without making more of your Social Security taxable, using up your $3,000 loss deduction, ' +
-  'shrinking a deduction, or reaching the 3.8% net investment income tax or the AMT. State tax, the ACA ' +
-  'premium credit, and Medicare premiums are not included.'
+  'Your remaining loss carryforward absorbs gains first. After that, gains count only while they add no ' +
+  'federal tax: they stay in the 0% bracket and do not make more of your Social Security taxable, use up a ' +
+  'loss deduction your other income was using, shrink a deduction, or reach the 3.8% net investment income ' +
+  'tax or the AMT. State tax, the ACA premium credit, and Medicare premiums are not included. The figure is ' +
+  'rounded down to the dollar.'
 
 /** The per-year marker beside the gains room in a year with an ACA premium credit. */
 const ACA_CREDIT_MARKER = '†'
 
 const ACA_CREDIT_MARKER_TEXT =
-  'This year has an ACA premium credit. Realizing gains can also shrink the credit, and a credit paid in ' +
-  'advance is paid back as federal tax when you file. The room does not include that.'
+  'This year has an ACA premium credit. Realizing gains this year can also shrink the credit; if it was paid ' +
+  'in advance, the part you lose is paid back as federal tax when you file. The room does not include that.'
 
 const ACA_CREDIT_MARKER_EXPLAINER =
-  'marks a year with an ACA premium credit. Realizing gains that year can also shrink the credit, and a ' +
-  'credit paid in advance is paid back as federal tax when you file. The room does not include that.'
+  'marks a year with an ACA premium credit. Realizing gains that year can also shrink the credit; if it was ' +
+  'paid in advance, the part you lose is paid back as federal tax when you file. The room does not include that.'
 
 
 /**
@@ -622,6 +623,9 @@ export function YearByYearLedger({
             {years.map((y, index) => {
               const f = figures[index]!
               const room = f.taxFreeGainsRoom
+              // Rounded down to the whole dollar in the page's dollars, so the
+              // cell never shows more room than the engine computed.
+              const roomShown = room === null ? null : Math.floor(adj(y.year, room))
               return (
               <tr key={y.year} className={y.shortfall > 0.005 ? 'row-depleted' : undefined}>
                 <td className="year-table-year">{y.year}</td>
@@ -644,7 +648,7 @@ export function YearByYearLedger({
                 {hasAmt ? <td>{y.amt > 0.5 ? fmtMoney(adj(y.year, y.amt)) : ''}</td> : null}
                 <td>{fmtMoney(adj(y.year, y.magi))}</td>
                 <td>
-                  {room !== null && room > 0.5 ? fmtMoney(adj(y.year, room)) : ''}
+                  {roomShown !== null && roomShown >= 1 ? fmtMoney(roomShown) : ''}
                   {f.premiumTaxCreditYear ? (
                     <span className="gains-room-aca-marker" title={ACA_CREDIT_MARKER_TEXT}>
                       <span aria-hidden="true">{ACA_CREDIT_MARKER}</span>

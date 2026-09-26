@@ -5,22 +5,21 @@
  * figures (a year minus a year), never dollars.
  */
 
+import { lastFundedYear } from '@retiregolden/engine/projection/moneyLasts'
 import { fmtMoneyCompact } from './format'
+
+/**
+ * The last year a plan is fully funded, the engine's own convention
+ * (projection/moneyLasts.ts): the first short year minus one, or the end year
+ * when it never runs short. Re-exported so this page keeps no copy of it.
+ */
+export { lastFundedYear }
 
 export type DeltaUnit = 'money' | 'years' | 'pp'
 
 /** The engine's deterministic success reading of a summary: 100 with no depletion year, else 0. */
 export function deterministicSuccessPct(depletionYear: number | null): number {
   return depletionYear === null ? 100 : 0
-}
-
-/**
- * The last year a plan is fully funded. The engine's `depletionYear` is the
- * first year with any shortfall, so a plan that "Depletes in 2054" was funded
- * through 2053; a plan that never depletes is funded through its end year.
- */
-export function lastFundedYear(plan: { depletionYear: number | null; endYear: number }): number {
-  return plan.depletionYear === null ? plan.endYear : plan.depletionYear - 1
 }
 
 export interface MoneyLastsDelta {

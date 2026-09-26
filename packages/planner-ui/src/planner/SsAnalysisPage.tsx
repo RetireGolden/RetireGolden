@@ -36,6 +36,8 @@ import { claimFactor } from '@retiregolden/engine/socialSecurity/claimFactor'
 import { objectivePolicies, type ObjectivePolicyId } from '@retiregolden/engine/decisions'
 import { effectiveBirthYear, fraForBirthYear, fraTotalMonths, survivorFraForBirthYear } from '@retiregolden/engine/socialSecurity/nra'
 import { packForYear } from '@retiregolden/engine/params'
+import { moneyLasts } from '@retiregolden/engine/projection/moneyLasts'
+import { moneyLastsValue } from './moneyLastsCopy'
 import { usePlan } from './planContextCore'
 import { useWorkspaceReadOnly } from '../data/workspaceReadOnly'
 import { CheckboxField, HelpTip, SelectField } from './fields'
@@ -170,6 +172,8 @@ interface BridgeComparisonRow {
   name: string
   endingAfterTaxEstate: number
   depletionYear: number | null
+  /** The engine's last fully funded year for the run (projection/moneyLasts.ts). */
+  lastFundedYear: number
   successRate: number | null
 }
 
@@ -300,6 +304,7 @@ function BridgePanel() {
           name: v.name,
           endingAfterTaxEstate: projection.summary.endingAfterTaxEstate,
           depletionYear: projection.summary.depletionYear,
+          lastFundedYear: moneyLasts(projection.result).lastFundedYear,
           successRate: mc.successRate,
         })
       }
@@ -395,7 +400,7 @@ function BridgePanel() {
                 <tr key={row.name}>
                   <td>{row.name}</td>
                   <td>{row.successRate !== null ? `${Math.round(row.successRate * 100)}%` : '—'}</td>
-                  <td>{row.depletionYear === null ? 'full plan' : `until ${row.depletionYear}`}</td>
+                  <td>{moneyLastsValue(row, startYear)}</td>
                   <td>{fmtMoneyCompact(row.endingAfterTaxEstate)}</td>
                 </tr>
               ))}

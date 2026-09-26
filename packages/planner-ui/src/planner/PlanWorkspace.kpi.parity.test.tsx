@@ -4,8 +4,9 @@
  * figures.
  * - "Money lasts" reads `moneyLasts(result)`: "through L" (the last funded
  *   year, D - 1) with "steady markets · short in D" beneath it; a plan short
- *   from its first year says "not funded" rather than naming the year before
- *   the plan. It used to read "until D" / "depletes".
+ *   from its first year says "short from S", the printed report's wording,
+ *   rather than naming the year before the plan. It used to read "until D" /
+ *   "depletes".
  * - "Ending net worth" shows today's dollars by the run's own factor,
  *   `toTodayDollars(basis, endYear, endingNetWorth)`.
  */
@@ -119,7 +120,7 @@ describe('KPI bar: Money lasts and ending net worth are the engine figures', () 
     const valid = validatePlan(plan)
     expect(moneyLasts(projectPlan(valid, START_YEAR).result).lastFundedYear).toBe(2025)
     const kpis = await kpisOf(valid)
-    expect(kpis['Money lasts']).toEqual({ value: 'not funded', sub: 'steady markets · short in 2026' })
+    expect(kpis['Money lasts']).toEqual({ value: 'short from 2026', sub: 'steady markets · short in 2026' })
     expect(kpis['Money lasts']!.value).not.toContain('2025')
   })
 })

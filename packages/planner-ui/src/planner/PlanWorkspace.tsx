@@ -9,6 +9,7 @@ import { Link, NavLink, Outlet, useLocation, useNavigate, useParams } from 'reac
 
 import { toTodayDollars } from '@retiregolden/engine/projection/dollarBasis'
 import { moneyLasts } from '@retiregolden/engine/projection/moneyLasts'
+import { moneyLastsValue } from './moneyLastsCopy'
 
 import { duplicatePlanVia, usePlanStore } from '../data/planStoreContext'
 import { useWorkspaceReadOnly } from '../data/workspaceReadOnly'
@@ -164,7 +165,7 @@ function KpiBar() {
   // year to name, so the value says so rather than naming the year before.
   const lasts = moneyLasts(result)
   const depleted = lasts.depletionYear !== null
-  const lastsValue = lasts.lastFundedYear < result.startYear ? 'not funded' : `through ${lasts.lastFundedYear}`
+  const lastsValue = moneyLastsValue(lasts, result.startYear)
 
   if (isPlanIncomplete(plan)) {
     return (

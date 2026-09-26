@@ -10,6 +10,7 @@ import {
   type Plan,
 } from '@retiregolden/engine/model/plan'
 import { compareLtcStress } from '@retiregolden/engine/projection/compare'
+import { moneyLastsValue } from '../moneyLastsCopy'
 import { usePlan } from '../planContextCore'
 import { CheckboxField, MoneyField, NumberField, PercentField, SelectField, TextField } from '../fields'
 import { useFieldIssue } from '../useFieldIssue'
@@ -341,8 +342,6 @@ function CareEventFields({ event, index }: { event: CareEvent; index: number }) 
   )
 }
 
-const lastsLabel = (depletionYear: number | null) => (depletionYear === null ? 'full plan' : `until ${depletionYear}`)
-
 function LtcStressPanel() {
   const { plan, issues } = usePlan()
   // The scenarios are full projections of the plan, so while any entry is
@@ -350,10 +349,14 @@ function LtcStressPanel() {
   // another page) the last table would read as authoritative for a plan the
   // engine has refused to store; the panel pauses instead (#517).
   const onHold = issues.length > 0
-  const cmp = useMemo(
-    () => (onHold ? null : compareLtcStress(plan, { startYear: currentStartYear(), taxCalculator: taxCalculatorFor(plan) })),
-    [plan, onHold],
-  )
+  // The comparison is kept beside the start year it ran for, which the
+  // "Money lasts" cells need for a plan that is short from its first year.
+  const stress = useMemo(() => {
+    if (onHold) return null
+    const startYear = currentStartYear()
+    return { startYear, cmp: compareLtcStress(plan, { startYear, taxCalculator: taxCalculatorFor(plan) }) }
+  }, [plan, onHold])
+  const cmp = stress?.cmp ?? null
   // Only events on a current household member are priced; a set left over
   // from removed people is an entry to fix, not a stress test to show.
   const liveEvents = plan.careEvents.filter((c) => plan.household.people.some((p) => p.id === c.personId))
@@ -400,17 +403,17 @@ function LtcStressPanel() {
             <tr>
               <th scope="row">No care needed</th>
               <td>{fmtMoneyCompact(cmp.noCare.endingNetWorth)}</td>
-              <td>{lastsLabel(cmp.noCare.depletionYear)}</td>
+              <td>{moneyLastsValue(cmp.lasts.noCare, stress!.startYear)}</td>
             </tr>
             <tr>
               <th scope="row">Care, self-funded</th>
               <td>{fmtMoneyCompact(cmp.careUninsured.endingNetWorth)}</td>
-              <td>{lastsLabel(cmp.careUninsured.depletionYear)}</td>
+              <td>{moneyLastsValue(cmp.lasts.careUninsured, stress!.startYear)}</td>
             </tr>
             <tr>
               <th scope="row">Care, insured</th>
               <td>{fmtMoneyCompact(cmp.careInsured.endingNetWorth)}</td>
-              <td>{lastsLabel(cmp.careInsured.depletionYear)}</td>
+              <td>{moneyLastsValue(cmp.lasts.careInsured, stress!.startYear)}</td>
             </tr>
           </tbody>
         </table>

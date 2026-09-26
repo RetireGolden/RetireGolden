@@ -8,8 +8,9 @@
  * - Upside is `upsideSpending(row)`, shown above $0.50.
  * - Tax-free gains room is `taxFreeGainsRoom(row)` (owner decision R2: the
  *   extra long-term gain that raises the year's federal income tax by $0),
- *   shown when it is not null and above $0.50, with a marker in a year that
- *   has an ACA premium credit (owner answer Q2).
+ *   rounded down to the whole dollar in the page's dollars (never more room
+ *   than the engine computed) and shown when that is at least $1, with a
+ *   marker in a year that has an ACA premium credit (owner answer Q2).
  * - Layer miss shows when the required, target or upside shortfall
  *   (`upsideShortfall(row)`) is above $0.50, each part on its own gate.
  *
@@ -54,10 +55,10 @@ const START_YEAR = 2026
 const MODES: readonly DollarMode[] = ['today', 'nominal']
 
 const ACA_MARKER_TEXT =
-  'This year has an ACA premium credit. Realizing gains can also shrink the credit, and a credit paid in advance is paid back as federal tax when you file. The room does not include that.'
+  'This year has an ACA premium credit. Realizing gains this year can also shrink the credit; if it was paid in advance, the part you lose is paid back as federal tax when you file. The room does not include that.'
 
 const GAINS_ROOM_COPY =
-  "Extra long-term gains you could realize this year without raising this year's federal income tax. Your remaining loss carryforward absorbs gains first. After that, gains count only while they stay in the 0% bracket without making more of your Social Security taxable, using up your $3,000 loss deduction, shrinking a deduction, or reaching the 3.8% net investment income tax or the AMT. State tax, the ACA premium credit, and Medicare premiums are not included."
+  "Extra long-term gains you could realize this year without raising this year's federal income tax. Your remaining loss carryforward absorbs gains first. After that, gains count only while they add no federal tax: they stay in the 0% bracket and do not make more of your Social Security taxable, use up a loss deduction your other income was using, shrink a deduction, or reach the 3.8% net investment income tax or the AMT. State tax, the ACA premium credit, and Medicare premiums are not included. The figure is rounded down to the dollar."
 
 beforeAll(() => {
   // The page projects from the calendar year; pin it so the table starts in 2026.
@@ -73,6 +74,13 @@ afterAll(() => {
 function retiredGainsRoomText(y: YearResult, adj: (year: number, v: number) => number): string {
   const sum = y.ltcgZeroHeadroom + y.capitalLossCarryforwardRemaining
   return sum > 0.5 ? fmtMoney(adj(y.year, sum)) : ''
+}
+
+/** The engine's room as the cell prints it: rounded down to the whole dollar in the page's dollars, blank under $1. */
+function roomText(room: number | null, year: number, adj: (year: number, v: number) => number): string {
+  if (room === null) return ''
+  const shown = Math.floor(adj(year, room))
+  return shown >= 1 ? fmtMoney(shown) : ''
 }
 
 /** The gains-room cell's figure, without the ACA marker that may follow it. */
@@ -98,10 +106,9 @@ async function checkLedgerCells(plan: Plan): Promise<string[]> {
         const tax = fmtMoney(adj(y.year, taxAndPenalties(y)))
         if (table.cell(y.year, 'Tax').textContent !== tax) mismatches.push(`${at} Tax ${table.cell(y.year, 'Tax').textContent} vs ${tax}`)
 
-        const room = taxFreeGainsRoom(y)
-        const roomText = room !== null && room > 0.5 ? fmtMoney(adj(y.year, room)) : ''
+        const expectedRoom = roomText(taxFreeGainsRoom(y), y.year, adj)
         const roomCell = table.cell(y.year, 'Tax-free gains room')
-        if (gainsRoomFigure(roomCell) !== roomText) mismatches.push(`${at} room ${gainsRoomFigure(roomCell)} vs ${roomText}`)
+        if (gainsRoomFigure(roomCell) !== expectedRoom) mismatches.push(`${at} room ${gainsRoomFigure(roomCell)} vs ${expectedRoom}`)
         const hasMarker = roomCell.querySelector('.gains-room-aca-marker') !== null
         if (hasMarker !== premiumTaxCreditYear(y)) mismatches.push(`${at} ACA marker ${hasMarker}`)
 
@@ -164,7 +171,8 @@ describe('Results table cells are the engine figures, both dollar modes', () => 
       // Social Security taxation the 0% band room does not price.
       expect(changed.length).toBeGreaterThan(0)
       const y2078 = view.result.years.find((y) => y.year === 2078)!
-      expect(gainsRoomFigure(table.cell(2078, 'Tax-free gains room'))).toBe('$87,620')
+      // 87,619.53, rounded down to the dollar.
+      expect(gainsRoomFigure(table.cell(2078, 'Tax-free gains room'))).toBe('$87,619')
       expect(retiredGainsRoomText(y2078, identity)).toBe('$303,767')
     } finally {
       await page.unmount()
@@ -197,8 +205,10 @@ describe('constructed households: the 2026 gains-room cell (engine evidence A, D
     // dollar of the $3,000 loss deduction at 12%. The retired sum read $35,550.
     { name: 'A', plan: () => household({ dob: '1963-01-01', pension: 40_000, carryforward: 10_000 }), shown: '$7,000', retired: '$35,550' },
     // D: $10,000 of pension and $30,000 of Social Security; past $20,352.94 each
-    // gain dollar makes 85 cents of benefits taxable. The retired sum read $38,100.
-    { name: 'D', plan: () => household({ dob: '1959-06-15', pension: 10_000, socialSecurity: true }), shown: '$20,353', retired: '$38,100' },
+    // gain dollar makes 85 cents of benefits taxable, so the cell rounds down
+    // to $20,352 (rounding to $20,353 would show room that costs tax). The
+    // retired sum read $38,100.
+    { name: 'D', plan: () => household({ dob: '1959-06-15', pension: 10_000, socialSecurity: true }), shown: '$20,352', retired: '$38,100' },
     // E: no carryforward, no benefits: the room is the 0% band room either way.
     { name: 'E', plan: () => household({ dob: '1963-01-01', pension: 40_000 }), shown: '$25,550', retired: '$25,550' },
   ]
@@ -208,7 +218,7 @@ describe('constructed households: the 2026 gains-room cell (engine evidence A, D
     const view = projectPlan(plan, START_YEAR)
     const row = view.result.years[0]!
     expect(row.year).toBe(2026)
-    expect(fmtMoney(taxFreeGainsRoom(row)!)).toBe(shown)
+    expect(roomText(taxFreeGainsRoom(row), row.year, (_year, v) => v)).toBe(shown)
     expect(retiredGainsRoomText(row, (_year, v) => v)).toBe(retired)
     const page = await mountPlanPage(plan, <ResultsPage />)
     try {
@@ -228,6 +238,60 @@ describe('constructed households: the 2026 gains-room cell (engine evidence A, D
     const room = taxFreeGainsRoom(row)!
     expect(room).toBeGreaterThanOrEqual(exact - 0.01)
     expect(room).toBeLessThanOrEqual(exact + 1e-4)
+  })
+})
+
+describe('the gains room is rounded down, never up', () => {
+  it('prints $7,000 for 7,000.99 and nothing for 0.99 of room', async () => {
+    const plan = validatePlan(singlePersonPlan({ dob: '1956-01-01', planningAge: 95 }))
+    const view = projectPlan(household({ dob: '1963-01-01', pension: 40_000, carryforward: 10_000 }), START_YEAR)
+    const year = view.result.years[0]!
+    const years = [year, { ...year, year: 2027 }]
+    const figures = years.map((y, index) => ({
+      year: y.year,
+      taxAndPenalties: taxAndPenalties(y),
+      spendingWithTaxAndPenalties: 0,
+      netCareCost: 0,
+      upsideSpending: 0,
+      upsideShortfall: 0,
+      capitalLossCarryforwardUsed: 0,
+      taxFreeGainsRoom: index === 0 ? 7_000.99 : 0.99,
+      premiumTaxCreditYear: false,
+      balancesByCategory: { cash: 0, taxable: 0, equityComp: 0, traditional: 0, roth: 0, hsa: 0 },
+      unassignedCash: 0,
+    }))
+    const container = document.createElement('div')
+    document.body.appendChild(container)
+    const root = createRoot(container)
+    try {
+      await act(async () => {
+        root.render(
+          <MemoryRouter initialEntries={['/plan/p/results']}>
+            <YearByYearLedger
+              plan={plan}
+              years={years}
+              adj={(_year, v) => v}
+              dollars="nominal"
+              dollarLabel="nominal $"
+              hasLayeredSpending={false}
+              hasAmt={false}
+              hasCarryforward={false}
+              figures={figures}
+            />
+          </MemoryRouter>,
+        )
+      })
+      const headers = [...container.querySelectorAll('thead th')].map((th) => th.textContent?.trim())
+      const column = headers.indexOf('Tax-free gains room')
+      const cellOf = (index: number) => container.querySelectorAll('tbody tr')[index]!.querySelectorAll('td')[column]!.textContent
+      // fmtMoney alone would print $7,001: more room than the engine found.
+      expect(fmtMoney(7_000.99)).toBe('$7,001')
+      expect(cellOf(0)).toBe('$7,000')
+      expect(cellOf(1)).toBe('')
+    } finally {
+      await act(async () => root.unmount())
+      container.remove()
+    }
   })
 })
 
@@ -329,7 +393,7 @@ describe('the ACA premium credit marker and the column copy', () => {
       }
       const explainer = [...page.container.querySelectorAll('#year-table .ss-explainer li')].map((li) => li.textContent ?? '')
       expect(explainer).toContain(
-        '† beside the gains room marks a year with an ACA premium credit. Realizing gains that year can also shrink the credit, and a credit paid in advance is paid back as federal tax when you file. The room does not include that.',
+        '† beside the gains room marks a year with an ACA premium credit. Realizing gains that year can also shrink the credit; if it was paid in advance, the part you lose is paid back as federal tax when you file. The room does not include that.',
       )
     } finally {
       await page.unmount()
