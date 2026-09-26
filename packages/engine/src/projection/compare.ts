@@ -6,6 +6,7 @@
 import { selectedLogicalBalanceAccounts, type Account, type Plan } from '../model/plan.js'
 import { estateTraditionalTaxableBase } from './estateTraditionalBasis.js'
 import { estateHsaIncomeBase } from './estateHsaIncome.js'
+import { moneyLasts, type MoneyLasts } from './moneyLasts.js'
 import { simulatePlan, type SimulateOptions } from './simulate.js'
 import type { ProjectionResult } from './types.js'
 import { balancesByCategory, spendingWithTaxAndPenalties } from './yearFigures.js'
@@ -413,6 +414,12 @@ export interface LtcStressComparison {
   careUninsured: ProjectionSummary
   /** The care episode occurs with the plan's LTC policies (premiums + benefits). */
   careInsured: ProjectionSummary
+  /**
+   * How long the money lasts in each of the three runs, in the one published
+   * convention (projection/moneyLasts.ts): the last fully funded year and the
+   * first short year, so the page names the same years every other surface does.
+   */
+  lasts: { noCare: MoneyLasts; careUninsured: MoneyLasts; careInsured: MoneyLasts }
   hasCareEvents: boolean
   hasLtcPolicy: boolean
 }
@@ -428,14 +435,19 @@ export interface LtcStressComparison {
  * premiums exceed the benefits paid). The UI labels it as such.
  */
 export function compareLtcStress(plan: Plan, opts: SimulateOptions): LtcStressComparison {
-  const run = (p: Plan) => summarizeProjection(p, simulatePlan(p, opts))
+  const run = (p: Plan) => {
+    const result = simulatePlan(p, opts)
+    return { summary: summarizeProjection(p, result), lasts: moneyLasts(result) }
+  }
   const withoutLtc = plan.insurance.filter((i) => i.kind !== 'ltc')
-  const noCare: Plan = { ...plan, careEvents: [], insurance: withoutLtc }
-  const careUninsured: Plan = { ...plan, insurance: withoutLtc }
+  const noCare = run({ ...plan, careEvents: [], insurance: withoutLtc })
+  const careUninsured = run({ ...plan, insurance: withoutLtc })
+  const careInsured = run(plan)
   return {
-    noCare: run(noCare),
-    careUninsured: run(careUninsured),
-    careInsured: run(plan),
+    noCare: noCare.summary,
+    careUninsured: careUninsured.summary,
+    careInsured: careInsured.summary,
+    lasts: { noCare: noCare.lasts, careUninsured: careUninsured.lasts, careInsured: careInsured.lasts },
     hasCareEvents: plan.careEvents.length > 0,
     hasLtcPolicy: plan.insurance.some((i) => i.kind === 'ltc'),
   }
