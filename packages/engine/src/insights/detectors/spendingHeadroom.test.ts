@@ -74,6 +74,7 @@ function solverFixture(
     simulationCount: 1,
     acaGrossPremiumYears: [],
     acaGrossPremiumReasons: [],
+    acaGrossPremiumDirection: null,
     diagnostics: [],
     ...partial,
   }
@@ -319,5 +320,21 @@ describe('spendingHeadroom', () => {
     expect(result.action.patch).toEqual({ expenses: { baseAnnual: solvedMaxBaseAnnual } })
     expect(result.impact?.qualitative).toContain('$2,500/yr above your current level')
     expectEvaluateWiring(eligibleCtx, 500_000)
+  })
+
+  it('evaluate() names the unpriced credit years and which way a credit would move the answer', () => {
+    const base = { maxBaseAnnual: 64_500, spendingSlackDollars: 4_500, acaGrossPremiumYears: [2027, 2028, 2029, 2030] }
+    mockedSolver.mockReturnValue(solverFixture({ ...base, acaGrossPremiumDirection: 'conservative' }))
+    expect(spendingHeadroom.evaluate!(screenEligibleContext()).impact?.qualitative).toBe(
+      "The full year-by-year projection sustains about $64,500/yr of baseline spending, which is $4,500/yr above your current level (today's dollars)." +
+        ' It counts no premium tax credit in 2027 to 2030 and pays the full Marketplace premium then; if you receive a credit in those years, you would likely be able to spend somewhat more than this.',
+    )
+
+    mockedSolver.mockReturnValue(
+      solverFixture({ ...base, acaGrossPremiumYears: [2027, 2028], acaGrossPremiumDirection: 'uncertain' }),
+    )
+    expect(spendingHeadroom.evaluate!(screenEligibleContext()).impact?.qualitative).toContain(
+      ' It counts no premium tax credit in 2027 and 2028 and pays the full Marketplace premium then; a credit in those years could move this answer up or down, because your spending guardrails respond to what healthcare costs.',
+    )
   })
 })

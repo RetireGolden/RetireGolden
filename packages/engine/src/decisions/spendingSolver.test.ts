@@ -183,10 +183,63 @@ describe('solveMaxSustainableSpending with an unpriced ACA credit', () => {
     const unpriced = solved.bestEvaluation!.candidateResult.years[1]!
     expect(unpriced.aca!.economicNetPremium).toBe(unpriced.aca!.grossEnrollmentPremium)
     expect(solved.acaGrossPremiumYears).toEqual([2027])
-    expect(solved.acaGrossPremiumReasons).toContain('tax-year-parameters-unsupported')
-    expect(solved.diagnostics).toContain(
-      'The ACA premium tax credit is not priced in 2027; the ledger budgets the full Marketplace premium in those years, so a credit there would lower that cost.',
+    expect(solved.acaGrossPremiumReasons).toEqual(['tax-year-parameters-unsupported'])
+    // Fixed-target spending: a credit could only lower withdrawals.
+    expect(solved.acaGrossPremiumDirection).toBe('conservative')
+    // The disclosure is the last diagnostic, and it names the blocking codes.
+    expect(solved.diagnostics.at(-1)).toBe(
+      'The ACA premium tax credit is not priced in 2027 (tax-year-parameters-unsupported); the ledger budgets the full Marketplace premium in those years, so a household that receives a credit there would likely be able to spend somewhat more than this answer.',
     )
+  })
+
+  it('calls the direction uncertain under guardrail spending', () => {
+    const plan = validatePlan({
+      ...marketplacePlan(),
+      expenses: { ...marketplacePlan().expenses, spendingPolicy: { mode: 'withdrawalRateGuardrails' } },
+    })
+    const solved = solveMaxSustainableSpending(zeroTaxContext(plan))
+
+    expect(solved.maxBaseAnnual).not.toBeNull()
+    expect(solved.acaGrossPremiumDirection).toBe('uncertain')
+    expect(solved.acaGrossPremiumReasons).toContain('guardrail-interaction-unsupported')
+    expect(solved.diagnostics.at(-1)).toMatch(
+      /the ledger budgets the full Marketplace premium in those years, and a credit there could move this answer up or down because the spending guardrails respond to healthcare costs\.$/,
+    )
+  })
+
+  it('words the disclosure for a solve with no answer without calling an answer conservative', () => {
+    const plan = marketplacePlan()
+    // A one-time goal no base spending can fund: even zero depletes.
+    plan.expenses.oneTimeGoals = [{ id: 'goal', label: 'Unfundable', year: 2026, amount: 5_000_000 }]
+    const solved = solveMaxSustainableSpending(zeroTaxContext(validatePlan(plan)))
+
+    expect(solved.maxBaseAnnual).toBeNull()
+    expect(solved.acaGrossPremiumYears).toEqual([2027])
+    expect(solved.diagnostics).toEqual([
+      'Even zero base spending depletes the portfolio or breaks the estate floor.',
+      'The ACA premium tax credit is not priced in 2027 (tax-year-parameters-unsupported); the ledger budgets the full Marketplace premium in those years, and a credit there would lower that cost.',
+    ])
+  })
+
+  it('leaves the informational tax-exempt-interest codes out of the reasons', () => {
+    const ctx = zeroTaxContext(marketplacePlan())
+    const real = evaluation.evaluateCandidate
+    const spy = vi.spyOn(evaluation, 'evaluateCandidate').mockImplementation((...args) => {
+      const evaluated = real(...args)
+      const years = evaluated.candidateResult.years.map((year) =>
+        year.aca?.readiness === 'nonActionable'
+          ? { ...year, aca: { ...year.aca, supportCodes: ['tax-exempt-interest-plan-derived' as const, ...year.aca.supportCodes] } }
+          : year,
+      )
+      return { ...evaluated, candidateResult: { ...evaluated.candidateResult, years } }
+    })
+    try {
+      const solved = solveMaxSustainableSpending(ctx)
+      expect(solved.acaGrossPremiumReasons).toEqual(['tax-year-parameters-unsupported'])
+      expect(solved.diagnostics.at(-1)).not.toContain('tax-exempt-interest')
+    } finally {
+      spy.mockRestore()
+    }
   })
 
   it('solves exactly as with the credit box off when every Marketplace year is unpriced', () => {
@@ -209,6 +262,8 @@ describe('solveMaxSustainableSpending with an unpriced ACA credit', () => {
     expect(on.acaGrossPremiumReasons).toEqual(['missing-year-contract', 'tax-year-parameters-unsupported'])
     expect(off.acaGrossPremiumYears).toEqual([])
     expect(off.acaGrossPremiumReasons).toEqual([])
+    expect(on.acaGrossPremiumDirection).toBe('conservative')
+    expect(off.acaGrossPremiumDirection).toBeNull()
   })
 
   it('still bails out on an invalid basePatch with its plan-check diagnostic', () => {
@@ -222,6 +277,7 @@ describe('solveMaxSustainableSpending with an unpriced ACA credit', () => {
     // A diagnostic run is no basis for the disclosure.
     expect(solved.acaGrossPremiumYears).toEqual([])
     expect(solved.acaGrossPremiumReasons).toEqual([])
+    expect(solved.acaGrossPremiumDirection).toBeNull()
   })
 })
 

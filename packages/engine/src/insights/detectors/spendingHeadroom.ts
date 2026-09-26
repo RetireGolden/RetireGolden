@@ -119,6 +119,16 @@ export const spendingHeadroom: Detector = {
         'The spending solver found no meaningful headroom once taxes, healthcare cliffs, and sequencing were priced in.',
       )
     }
+    // Nothing silent: a solve that paid the full Marketplace premium where the
+    // credit is unpriced says so, and which way a credit there would move it.
+    const acaCaveat =
+      solved.acaGrossPremiumDirection === null
+        ? ''
+        : ` It counts no premium tax credit in ${yearRuns(solved.acaGrossPremiumYears)} and pays the full Marketplace premium then; ${
+            solved.acaGrossPremiumDirection === 'conservative'
+              ? 'if you receive a credit in those years, you would likely be able to spend somewhat more than this.'
+              : 'a credit in those years could move this answer up or down, because your spending guardrails respond to what healthcare costs.'
+          }`
     return {
       action: {
         kind: 'preview-scenario',
@@ -126,8 +136,23 @@ export const spendingHeadroom: Detector = {
         patch: { expenses: { baseAnnual: maxBaseAnnual } },
       },
       impact: {
-        qualitative: `The full year-by-year projection sustains about ${formatWholeUsd(maxBaseAnnual)}/yr of baseline spending, which is ${formatWholeUsd(slack)}/yr above your current level (today's dollars).`,
+        qualitative: `The full year-by-year projection sustains about ${formatWholeUsd(maxBaseAnnual)}/yr of baseline spending, which is ${formatWholeUsd(slack)}/yr above your current level (today's dollars).${acaCaveat}`,
       },
     }
   },
+}
+
+/** Year list with runs of three or more collapsed: "2027", "2027 and 2028", "2027 to 2060". */
+function yearRuns(years: readonly number[]): string {
+  const items: string[] = []
+  for (let start = 0; start < years.length; ) {
+    let end = start
+    while (end + 1 < years.length && years[end + 1] === years[end]! + 1) end++
+    if (end - start >= 2) items.push(`${years[start]} to ${years[end]}`)
+    else for (let i = start; i <= end; i++) items.push(String(years[i]))
+    start = end + 1
+  }
+  if (items.length <= 1) return items[0] ?? ''
+  if (items.length === 2) return `${items[0]} and ${items[1]}`
+  return `${items.slice(0, -1).join(', ')}, and ${items[items.length - 1]}`
 }

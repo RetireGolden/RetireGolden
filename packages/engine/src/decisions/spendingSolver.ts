@@ -79,19 +79,43 @@ export interface SustainableSpendingResult {
    * the seed) whose ACA premium tax credit the ledger could not price
    * (`aca.readiness === 'nonActionable'`). The ledger budgets the full
    * Marketplace premium in each; the credit lies between 0 and that premium
-   * (26 U.S.C. 36B(b)(2)), so for a household that does receive a credit
-   * there the answer is conservative. Empty when every Marketplace year is
-   * priced or the plan has none.
+   * (26 U.S.C. 36B(b)(2)). Which way a credit there would move the answer is
+   * `acaGrossPremiumDirection`. Empty when every Marketplace year is priced,
+   * the plan has none, or the solve bailed out on a diagnostic evaluation.
    */
   acaGrossPremiumYears: number[]
   /**
    * The support codes that blocked pricing in those years, distinct, in
-   * first-seen order. The two informational tax-exempt-interest codes never
-   * block a year and are left out.
+   * first-seen order: every code the ledger treats as blocking, which is all
+   * but the two informational tax-exempt-interest codes.
    */
   acaGrossPremiumReasons: AcaSupportCode[]
+  /**
+   * How a credit in `acaGrossPremiumYears` would move the answer; null when
+   * there are no such years. 'conservative' on a fixed-target plan: at fixed
+   * spending a lower premium lowers every withdrawal, so a credit could only
+   * leave room to spend more. That is measured on the fixed-target examples,
+   * not proven for every plan. 'uncertain' under an adaptive spending policy
+   * (guardrails): a lower cost changes when the guardrails cut or raise, and a
+   * ledger that priced the credit has been measured to solve lower.
+   */
+  acaGrossPremiumDirection: 'conservative' | 'uncertain' | null
+  /**
+   * Why the solve stopped where it did, in order. When `acaGrossPremiumYears`
+   * is non-empty the last entry is the sentence naming them.
+   */
   diagnostics: string[]
 }
+
+/**
+ * Support codes the ledger publishes on a year without blocking it
+ * (`projection/internal/annualAcaResultPublication.ts` prices a year only when
+ * every other code is absent), so they are never a reason a year is unpriced.
+ */
+const INFORMATIONAL_ACA_SUPPORT_CODES: ReadonlySet<AcaSupportCode> = new Set([
+  'tax-exempt-interest-plan-derived',
+  'tax-exempt-interest-contract-contradicted',
+])
 
 const DEFAULT_MAX_SIMULATIONS = 24
 const DEFAULT_RESOLUTION_DOLLARS = 500
@@ -144,8 +168,9 @@ export function solveMaxSustainableSpending(
   // Runtime guard behind the Omit: a cached candidateResult from a JS caller
   // would make every probe reuse one projection instead of simulating its own.
   // A year whose ACA credit cannot be priced is already funded at its full
-  // premium by the ledger, so a probe stays a valid, conservative feasibility
-  // test; the solve discloses those years instead of refusing every probe.
+  // premium by the ledger, so a probe stays a valid feasibility test on that
+  // ledger; the solve discloses those years instead of refusing every probe.
+  // Always 'disclose': the option type leaves callers no way to ask for 'refuse'.
   const evaluationOptions: EvaluateCandidateOptions = { ...options.evaluation, nonActionableAca: 'disclose' }
   delete evaluationOptions.candidateResult
 
@@ -173,6 +198,7 @@ export function solveMaxSustainableSpending(
       simulationCount: 0,
       acaGrossPremiumYears: [],
       acaGrossPremiumReasons: [],
+      acaGrossPremiumDirection: null,
       diagnostics: [
         'This plan uses amortized spending (ABW), which recomputes annual spending from the portfolio each year — there is no fixed base-spending level to solve for. Switch the spending policy to fixed target or guardrails to use this solver.',
       ],
@@ -218,12 +244,25 @@ export function solveMaxSustainableSpending(
     const acaGrossPremiumYears = grossPremiumYears.map((year) => year.year)
     const acaGrossPremiumReasons = [
       ...new Set(grossPremiumYears.flatMap((year) => year.aca?.supportCodes ?? [])),
-    ].filter((code) => code !== 'tax-exempt-interest-plan-derived' && code !== 'tax-exempt-interest-contract-contradicted')
-    if (acaGrossPremiumYears.length > 0) {
-      diagnostics.push(
-        `The ACA premium tax credit is not priced in ${acaGrossPremiumYears.join(', ')}; the ledger budgets the full Marketplace premium in those years, so a credit there would lower that cost.`,
-      )
-    }
+    ].filter((code) => !INFORMATIONAL_ACA_SUPPORT_CODES.has(code))
+    const acaGrossPremiumDirection =
+      acaGrossPremiumYears.length === 0
+        ? null
+        : (effectivePlan.expenses.spendingPolicy?.mode ?? 'fixedTarget') === 'fixedTarget'
+          ? 'conservative'
+          : 'uncertain'
+    const acaLead =
+      `The ACA premium tax credit is not priced in ${acaGrossPremiumYears.join(', ')}` +
+      `${acaGrossPremiumReasons.length > 0 ? ` (${acaGrossPremiumReasons.join(', ')})` : ''}; ` +
+      'the ledger budgets the full Marketplace premium in those years'
+    const acaDisclosure =
+      acaGrossPremiumDirection === null
+        ? null
+        : bestFeasible === null
+          ? `${acaLead}, and a credit there would lower that cost.`
+          : acaGrossPremiumDirection === 'conservative'
+            ? `${acaLead}, so a household that receives a credit there would likely be able to spend somewhat more than this answer.`
+            : `${acaLead}, and a credit there could move this answer up or down because the spending guardrails respond to healthcare costs.`
     if (!converged && lower !== null) {
       diagnostics.push(
         `Stopped before converging to $${formatGroupedNumber(resolutionDollars)}; the result is a feasible lower bound.`,
@@ -238,7 +277,8 @@ export function solveMaxSustainableSpending(
       simulationCount,
       acaGrossPremiumYears,
       acaGrossPremiumReasons,
-      diagnostics,
+      acaGrossPremiumDirection,
+      diagnostics: acaDisclosure === null ? diagnostics : [...diagnostics, acaDisclosure],
     }
   }
 
