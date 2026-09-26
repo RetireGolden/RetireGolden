@@ -7,7 +7,10 @@
  * quietly is now refused with a RangeError. This file checks both halves of
  * that change.
  *
- * 1. Every valid input produces byte-identical paths. The functions below the
+ * 1. Every valid input produces byte-identical paths, with one stated
+ *    exception: a positive-definite class correlation matrix whose Cholesky
+ *    pivot is positive but below 1e-12 is now factored exactly, where
+ *    origin/main raised that pivot to 1e-12 (pinned below). The functions below the
  *    "frozen" marker are a verbatim copy of origin/main aeb2861a
  *    (packages/engine/src/montecarlo/marketModels.ts lines 292-367, 369-468,
  *    520-700 and 760-958, and allocation/assetClasses.ts lines 256-277), with
@@ -789,7 +792,23 @@ describe('valid inputs produce the same paths as origin/main aeb2861a', () => {
     expect(mismatches).toEqual([])
   })
 
-  it('factors every positive-definite matrix the way origin/main did', () => {
+  it('the one valid input whose factor changed: a pivot in (0, 1e-12) is no longer raised to 1e-12', () => {
+    // [[1, r], [r, 1]] with r = 1 − 1e-13 is positive definite; its second pivot is 1 − r^2 =
+    // 2.000621890374532e-13 in doubles. origin/main raised it to 1e-12 (L[1][1] = 1e-6); it is now
+    // factored exactly, and L L^T reproduces the matrix.
+    const r = 1 - 1e-13
+    const matrix = [
+      [1, r],
+      [r, 1],
+    ]
+    expect(oldCholeskyDecompose(matrix)[1]![1]).toBe(0.000001)
+    const after = choleskyDecompose(matrix)
+    expect(after[1]![1]).toBe(4.4728311955343587e-7)
+    expect(after[1]![0]).toBe(r)
+    expect(after[1]![0]! ** 2 + after[1]![1]! ** 2).toBeCloseTo(1, 15)
+  })
+
+  it('factors every positive-definite matrix with pivots of at least 1e-12 the way origin/main did', () => {
     for (const matrix of [DEFAULT_CLASS_CORRELATIONS, CUSTOM_CORRELATIONS, [[1, 0.5], [0.5, 1]], [[4, 2], [2, 3]]]) {
       const before = oldCholeskyDecompose(matrix)
       const after = choleskyDecompose(matrix)
@@ -829,7 +848,8 @@ describe('inputs the market models used to change without a word are refused', (
   })
 
   it('refuses a custom class correlation matrix that is not positive definite, and keeps the default working', () => {
-    // Pivots 1, 0.19, then 1 − 0.81 − (−0.9 − 0.81)^2 / 0.19 < 0: no real factor exists.
+    // Pivots 1, 0.19, then 1 − 0.81 − (−0.9 − 0.81)^2 / 0.19 < 0: an indefinite matrix, so no factor
+    // with a positive diagonal exists.
     const notPositiveDefinite = [
       [1, 0.9, 0.9, 0],
       [0.9, 1, -0.9, 0],

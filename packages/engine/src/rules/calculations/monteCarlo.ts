@@ -30,7 +30,7 @@ export const monteCarloRecords = {
       'monte-carlo-ending-after-tax-estate-percentiles',
     ],
     statement:
-      'For a symmetric matrix A, the lower-triangular L satisfies L L^T = A when A is positive definite: L_ij = (A_ij − sum_{k<j} L_ik L_jk) / L_jj for i > j, and L_ii = sqrt(A_ii − sum_{k<i} L_ik^2), with L_ij = 0 for j > i. When a diagonal pivot A_ii − sum_{k<i} L_ik^2 is not a positive number, A is not positive definite, no real factor exists, and the matrix is refused with a message. For the 2×2 correlation [[1, r], [r, 1]], this is L = [[1, 0], [r, sqrt(1 − r^2)]]. Units: dimensionless. Rounding: none.',
+      'For a symmetric matrix A, the lower-triangular L satisfies L L^T = A when A is positive definite: L_ij = (A_ij − sum_{k<j} L_ik L_jk) / L_jj for i > j, and L_ii = sqrt(A_ii − sum_{k<i} L_ik^2), with L_ij = 0 for j > i. When a diagonal pivot A_ii − sum_{k<i} L_ik^2 is not a positive number, A is not positive definite and no factor with a positive diagonal exists (the pivot is 0, as for a perfectly correlated pair, or negative, as for an indefinite matrix), so the matrix is refused with a message. For the 2×2 correlation [[1, r], [r, 1]], this is L = [[1, 0], [r, sqrt(1 − r^2)]]. Units: dimensionless. Rounding: none.',
     formula: {
       expression: 'L_ii = sqrt(A_ii − sum_{k<i} L_ik^2), refused unless that pivot is positive; L_ij = (A_ij − sum_{k<j} L_ik L_jk) / L_jj for i > j; L_ij = 0 for j > i',
       variables: [
@@ -47,6 +47,7 @@ export const monteCarloRecords = {
     },
     limits: [
       'A matrix that is not positive definite (a diagonal pivot at or below 0, which includes a perfectly correlated pair of classes) is refused with a message; the shipped default matrix is positive definite',
+      'A positive-definite matrix whose pivot is positive but below 1e-12 is now factored exactly; it used to have that pivot raised to 1e-12, so its class shocks differ from before (for [[1, r], [r, 1]] with r = 1 − 1e-13, L_22 is 4.4728311955343587e-7, not 1e-6). This is the one valid input whose factor changed',
       'The function neither checks symmetry nor rescales a correlation matrix to unit diagonal',
       'Class-shock models pass this factor a matrix over ASSET_CLASS_IDS order; a 2×2 is the worksheet case, not a live allocation',
     ],

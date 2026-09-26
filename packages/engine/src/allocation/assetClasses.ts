@@ -257,10 +257,15 @@ export function expectedAccountReturnPct(account: Account, assumptions: Assumpti
  * Cholesky factor L (lower-triangular, LLᵀ = matrix) for correlated class
  * draws. The input must be positive definite: when a diagonal pivot
  * matrix[i][i] − Σ_{k<i} L[i][k]² is not a positive finite number the matrix
- * is refused with a RangeError, because no real factor exists (it used to be
- * raised to 1e-12 without a word, which returned the factor of a different
- * matrix). The shipped default matrix is positive definite. The function does
- * not check symmetry or a unit diagonal.
+ * is refused with a RangeError, because no factor with a positive diagonal
+ * exists (the pivot is 0, as for a perfectly correlated pair, or negative, as
+ * for an indefinite matrix). It used to be raised to 1e-12 without a word,
+ * which returned the factor of a different matrix. One valid input changes
+ * too: a positive-definite matrix whose pivot is positive but below 1e-12 is
+ * now factored exactly instead of having that pivot raised to 1e-12 (for
+ * [[1, r], [r, 1]] with r = 1 − 1e-13, L[1][1] is 4.4728311955343587e-7, not
+ * 1e-6). The shipped default matrix is positive definite, with every pivot
+ * at least 0.4375. The function does not check symmetry or a unit diagonal.
  */
 export function choleskyDecompose(matrix: readonly (readonly number[])[]): number[][] {
   const n = matrix.length

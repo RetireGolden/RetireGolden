@@ -41,8 +41,10 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   length (below 2), the user-shock year (not a whole number of at least 1; a fractional
   year used to give no shock at all), an explicit historical stress window (not a whole
   number from 1 to 96), and a custom class correlation matrix that is not positive
-  definite. Every valid input produces the same paths as before; a test compares each
-  unchanged model against a copy of the previous code over a grid of valid inputs. The
+  definite. Every valid input produces the same paths as before, with one exception: a
+  positive-definite correlation matrix whose Cholesky pivot is positive but below 1e-12
+  is now factored exactly instead of having that pivot raised to 1e-12. A test compares
+  each unchanged model against a copy of the previous code over a grid of valid inputs. The
   CAPE adjustment cap (a cap on a derived value), the stationary bootstrap's minimum
   block of one year, and the random-number and balance floors stay, and are documented.
 - **Guardrail solver success probe:** `solveRiskBasedGuardrails` takes an optional
