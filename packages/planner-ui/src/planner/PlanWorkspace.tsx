@@ -9,7 +9,7 @@ import { Link, NavLink, Outlet, useLocation, useNavigate, useParams } from 'reac
 
 import { toTodayDollars } from '@retiregolden/engine/projection/dollarBasis'
 import { moneyLasts } from '@retiregolden/engine/projection/moneyLasts'
-import { moneyLastsValue } from './moneyLastsCopy'
+import { moneyLastsValue } from './format'
 
 import { duplicatePlanVia, usePlanStore } from '../data/planStoreContext'
 import { useWorkspaceReadOnly } from '../data/workspaceReadOnly'

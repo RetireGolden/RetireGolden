@@ -37,7 +37,7 @@ import { objectivePolicies, type ObjectivePolicyId } from '@retiregolden/engine/
 import { effectiveBirthYear, fraForBirthYear, fraTotalMonths, survivorFraForBirthYear } from '@retiregolden/engine/socialSecurity/nra'
 import { packForYear } from '@retiregolden/engine/params'
 import { moneyLasts } from '@retiregolden/engine/projection/moneyLasts'
-import { moneyLastsValue } from './moneyLastsCopy'
+import { moneyLastsValue } from './format'
 import { usePlan } from './planContextCore'
 import { useWorkspaceReadOnly } from '../data/workspaceReadOnly'
 import { CheckboxField, HelpTip, SelectField } from './fields'

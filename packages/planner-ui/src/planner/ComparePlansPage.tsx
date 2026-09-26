@@ -16,7 +16,7 @@ import { LiveStatus } from './LiveStatus'
 import { projectPlan, type ProjectionView } from './useProjection'
 import { ScrollRegion } from './ScrollRegion'
 import { ageDelta, deterministicSuccessPct, formatDelta, moneyLastsDelta, type DeltaUnit } from './compareDeltas'
-import { moneyLastsValue } from './moneyLastsCopy'
+import { moneyLastsValue } from './format'
 
 const SAME_PLAN_NOTICE = 'Choose two different plans to compare.'
 

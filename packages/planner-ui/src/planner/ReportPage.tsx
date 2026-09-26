@@ -37,7 +37,7 @@ import {
 
 import type { Account, IncomeStream, Plan } from '@retiregolden/engine/model/plan'
 import { moneyLasts } from '@retiregolden/engine/projection/moneyLasts'
-import { moneyLastsValue } from './moneyLastsCopy'
+import { moneyLastsValue } from './format'
 import type { YearResult } from '@retiregolden/engine/projection/types'
 import { taxAndPenalties } from '@retiregolden/engine/projection/yearFigures'
 import { downloadStandaloneReport } from '../report/downloadReport'

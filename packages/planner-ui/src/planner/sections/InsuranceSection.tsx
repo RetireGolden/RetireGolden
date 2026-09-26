@@ -10,7 +10,7 @@ import {
   type Plan,
 } from '@retiregolden/engine/model/plan'
 import { compareLtcStress } from '@retiregolden/engine/projection/compare'
-import { moneyLastsValue } from '../moneyLastsCopy'
+import { moneyLastsValue } from '../format'
 import { usePlan } from '../planContextCore'
 import { CheckboxField, MoneyField, NumberField, PercentField, SelectField, TextField } from '../fields'
 import { useFieldIssue } from '../useFieldIssue'
