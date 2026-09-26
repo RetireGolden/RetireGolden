@@ -53,11 +53,14 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   value outside those bounds is no longer moved to the nearest one. The planner never
   sets the two probabilities and passes phi 0.3, so no displayed figure moves. The CAPE
   adjustment cap (a cap on a derived value), the stationary bootstrap's minimum block of
-  one year, and the random-number and balance floors stay, and are documented. suggested
-  cut and raise now have a calculation record evidenced against an analytic success
-  curve, and the census gains two families for them (the solved thresholds and the
-  suggested monthly adjustment). The solver worksheet's lattice range is corrected to 1
-  through 1024.
+  one year, and the random-number and balance floors stay, and are documented.
+- **Guardrail solver success probe:** `solveRiskBasedGuardrails` takes an optional
+  `successProbe(balanceFrac, spendingMultiplier)` that replaces its Monte Carlo runs (a
+  test seam; the default is unchanged). With it the band-edge thresholds and the
+  suggested cut and raise now have a calculation record evidenced against an analytic
+  success curve, and the census gains two families for them (the solved thresholds and
+  the suggested monthly adjustment). The solver worksheet's lattice range is corrected
+  to 1 through 1024.
 - **Monte Carlo page shows the slider each model reads:** Return volatility for
   lognormal, Student-t, GARCH, Gaussian, AR(1), CAPE and user shock; Equity weight for
   the three historical modes, the stationary and empirical bootstraps and reversed
@@ -533,6 +536,7 @@ has — rather than the runtime contract a consumer needs on the landing page.
   `runHistoricalStressSuites` refuses an explicit window that is not a whole number from
   1 to 96 and a `worstWindowCount` that is not a whole number of at least 1, and
   `solveRiskBasedGuardrails` refuses a `successProbe` value outside 0 to 1.
+
 ## 2026-09
 
 **2026-09-04**
