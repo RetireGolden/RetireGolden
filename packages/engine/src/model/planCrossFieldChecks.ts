@@ -17,6 +17,7 @@
 import type { z } from 'zod'
 import { addCalendarMonths } from '../actions/civilDate.js'
 import { packForYear } from '../params/index.js'
+import { accountChannel, policyChannel, sharedIdGroups } from './sharedIdCollisions.js'
 import {
   ownedNonRothIraAnnualFilingSourceKey,
   planOwnedNonRothIraAnnualFilingSourceIdentifierClaims,
@@ -270,6 +271,19 @@ export function checkAmbiguousActionPersonIds(
   return hasAmbiguousActionPersonIds
 }
 
+const COUNT_WORDS = ['', 'a', 'two', 'three', 'four', 'five'] as const
+
+/** "a property and a debt", "two properties", "two properties and a debt". */
+function describeValueRows(types: readonly ('property' | 'debt')[]): string {
+  const phrase = (count: number, singular: string, plural: string): string | null =>
+    count === 0 ? null : `${COUNT_WORDS[count] ?? String(count)} ${count === 1 ? singular : plural}`
+  const parts = [
+    phrase(types.filter((type) => type === 'property').length, 'property', 'properties'),
+    phrase(types.filter((type) => type === 'debt').length, 'debt', 'debts'),
+  ].filter((part): part is string => part !== null)
+  return parts.join(' and ')
+}
+
 /**
  * Refuses a duplicate account id when an action names it, when the rows
  * sharing it disagree on the facts that drive a forced distribution, or when
@@ -296,7 +310,8 @@ export function checkAmbiguousAccountIds(
     // balance. Plans once accepted exactly this pair; decision
     // D-CASH-PROPERTY-ALIAS refuses it with a message naming the collision,
     // and model/migrations.ts gives a stored plan's property its own id on
-    // load (`propertyAccountIdSeparatedFromCash`).
+    // load (`sharedIdSeparated`). model/sharedIdCollisions.ts reads which rows
+    // collide for both.
     const isCashPropertyPair = duplicateAccounts.length === 2 &&
       duplicateAccounts.filter((account) => account.type === 'cash').length === 1 &&
       duplicateAccounts.filter((account) => account.type === 'property').length === 1
@@ -328,7 +343,28 @@ export function checkAmbiguousAccountIds(
     if (
       !actionReferencedAccountIds.has(accountId) &&
       !hasConflictingForcedDistributionFacts
-    ) continue
+    ) {
+      // Properties and debts under one id, with no investable account among
+      // them: the property and debt value maps and the published balances are
+      // keyed by id, so all but one of them would be lost or overwritten.
+      // Pensions and annuities publish no value under their id and may still
+      // share one.
+      const valueRows = duplicateAccounts.filter((account) =>
+        account.type === 'property' || account.type === 'debt')
+      if (duplicateBalanceAccounts.length > 0 || valueRows.length < 2) continue
+      hasAmbiguousAccountIds = true
+      const described = describeValueRows(valueRows.map((account) => account.type))
+      indexes.forEach((index) => {
+        const type = plan.accounts[index]!.type
+        if (type !== 'property' && type !== 'debt') return
+        ctx.addIssue({
+          code: 'custom',
+          path: ['accounts', index, 'id'],
+          message: `account id "${accountId}" is shared by ${described}; give each its own id`,
+        })
+      })
+      continue
+    }
     hasAmbiguousAccountIds = true
     indexes.forEach((index) => {
       ctx.addIssue({
@@ -1148,6 +1184,33 @@ export function checkInsuranceCrossFieldRules(
       }
     }
   })
+  // Policies keep per-policy state by id, and a permanent-life cash value is
+  // published under its policy id in the same balances record as the accounts
+  // (model/sharedIdCollisions.ts). A policy therefore may not repeat another
+  // policy's id, and a permanent-life policy may not take the id of an account
+  // that publishes a value.
+  const groups = sharedIdGroups(
+    plan.accounts.map((account) => ({ id: account.id, channel: accountChannel(account.type) })),
+    plan.insurance.map((policy) => ({ id: policy.id, channel: policyChannel(policy.kind) })),
+  )
+  for (const group of groups) {
+    for (const member of group.members) {
+      if (member.collection !== 'insurance') continue
+      if (group.space === 'insurance') {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['insurance', member.index, 'id'],
+          message: `insurance policy id "${group.id}" is used by more than one policy; give each its own id`,
+        })
+      } else if (group.members.some((other) => other.collection === 'accounts')) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['insurance', member.index, 'id'],
+          message: `insurance policy id "${group.id}" is also an account id; give the policy its own id`,
+        })
+      }
+    }
+  }
 }
 
 /** Resolves the person a care episode names. */

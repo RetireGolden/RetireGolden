@@ -1,7 +1,7 @@
 {
   "schema": "retiregolden.equivalence-reach-spec/1",
   "name": "simulate-batch",
-  "why": "The four annual phases extracted in the simulate-batch slice, plus the sub-arms whose reach cannot be assumed. REPOINTED after the extractions landed: every range now names the extracted helper under projection/internal/, not the removed inlined block in projection/simulate.ts, and one entry (B.application) names the call site because that arm stayed there. Block D - income pass 1, wages - was REMOVED when this branch merged origin/main. That phase was extracted concurrently and independently on main as projection/internal/wageIncomeStreams.ts; this slice's duplicate helper was withdrawn rather than kept, and main's version is not this spec's to prove. The surviving ids A, B, C and E were left as they are rather than renumbered, so reach output stays comparable with the runs taken before the merge. All helper ranges were rechecked on this tree, while B.application is pinned to its current pension-credit branch by exact content anchors. The normal engine test suite now validates every committed reach-spec anchor and refuses any unanchored projection/simulate.ts range, so a later source shift fails before coverage can silently report unrelated code as reached.",
+  "why": "The four annual phases extracted in the simulate-batch slice, plus the sub-arms whose reach cannot be assumed. REPOINTED after the extractions landed: every range now names the extracted helper under projection/internal/, not the removed inlined block in projection/simulate.ts, and one entry (B.application) names the call site because that arm stayed there. Block D - income pass 1, wages - was REMOVED when this branch merged origin/main. That phase was extracted concurrently and independently on main as projection/internal/wageIncomeStreams.ts; this slice's duplicate helper was withdrawn rather than kept, and main's version is not this spec's to prove. The surviving ids A, B, C and E were left as they are rather than renumbered, so reach output stays comparable with the runs taken before the merge. All helper ranges were rechecked on this tree, while B.application is pinned to its current pension-credit branch by exact content anchors. The normal engine test suite now validates every committed reach-spec anchor and refuses any unanchored projection/simulate.ts range, so a later source shift fails before coverage can silently report unrelated code as reached. SPLIT on 2026-09-26: entry E (227-309) is now E (227-230) and E.fromEntryMap (232-309), leaving out the one line only two properties under one id reached, since the plan checks refuse that (D-CASH-PROPERTY-ALIAS).",
   "entries": [
     {
       "id": "A",
@@ -258,17 +258,37 @@
     },
     {
       "id": "E",
-      "label": "property events + growth",
+      "label": "property events + growth: loop header and the shadow membership test",
       "file": "projection/internal/propertyEventsAndGrowth.ts",
       "lines": [
         227,
-        309
+        230
       ],
-      "note": "a member's count here is LOOP-HEADER iterations, not phase work: V8 attributes straight-line code after a conditional `continue` to the enclosing block, so this range reports every plan the loop iterates over at all. Read the sub-entries and the cold regions for what the phase body actually did.",
+      "note": "a member's count here is LOOP-HEADER iterations, not phase work: V8 attributes straight-line code after a conditional `continue` to the enclosing block, so this range reports every plan the loop iterates over at all. Read the sub-entries and the cold regions for what the phase body actually did. SPLIT on 2026-09-26 from one range, 227-309, around line 231 (`? shadowValues.get(accountId)!`), which is excluded: it reads the numeric shadow for a property id an earlier row already wrote, which only two properties under one id can reach, and the plan checks now refuse that (D-CASH-PROPERTY-ALIAS, model/sharedIdCollisions.ts), so no validated differential member selects it. The helper keeps the read for input that did not pass through the checks.",
       "anchors": [
         {
           "line": 227,
           "text": "for (const account of accounts) {"
+        },
+        {
+          "line": 230,
+          "text": "let value = shadowValues.has(accountId)"
+        }
+      ]
+    },
+    {
+      "id": "E.fromEntryMap",
+      "label": "property events + growth from the entry property value on",
+      "file": "projection/internal/propertyEventsAndGrowth.ts",
+      "lines": [
+        232,
+        309
+      ],
+      "note": "The rest of the former entry E; see its note.",
+      "anchors": [
+        {
+          "line": 232,
+          "text": ": (propertyValues.get(accountId) ?? 0)"
         },
         {
           "line": 245,

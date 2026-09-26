@@ -27,6 +27,15 @@ import {
   parseScenarioPatch,
 } from '../scenarios/contract.js'
 import { rebindScenarioPatchesToPlan } from '../scenarios/patch.js'
+import {
+  accountChannel,
+  policyChannel,
+  sharedIdGroups,
+  sharedIdRenames,
+  type SharedIdChannel,
+  type SharedIdMember,
+  type SharedIdRow,
+} from './sharedIdCollisions.js'
 
 export type MigrationStep = (raw: Record<string, unknown>) => Record<string, unknown>
 
@@ -716,19 +725,25 @@ export type PlanLoadRepair =
       latestPermittedStartAgeIfToggled: number
     }
   /**
-   * A cash account and a property stored under one account id, the pair plans
-   * once accepted. The year's balances are keyed by id, so the property's
-   * value was published as the cash balance. The property now carries
-   * `newAccountId`, a string the stored document did not contain anywhere; the
-   * cash account keeps `accountId`. `accountName` is the property's name and
-   * `cashAccountName` the cash account's.
+   * Two rows stored under one id where the projection keeps one value per id
+   * (model/sharedIdCollisions.ts): a cash account and a property, a property
+   * and a debt, two properties, an account and a permanent-life policy, two
+   * policies. One row's value replaced the other's in the year's balances, or
+   * dropped out of net worth. The renamed row now carries `newAccountId`, a
+   * string the stored document did not contain anywhere; the kept row keeps
+   * `accountId`. An investable account always keeps the id; otherwise the
+   * first row does, accounts before policies. For a policy, `accountId`,
+   * `accountName` and `newAccountId` name the policy.
    */
   | {
-      kind: 'propertyAccountIdSeparatedFromCash'
+      kind: 'sharedIdSeparated'
       accountId: string
       accountName: string
       newAccountId: string
-      cashAccountName: string
+      renamedType: 'property' | 'debt' | 'permanentLife' | 'ltc'
+      keptName: string
+      /** The kept row's account type, or its policy kind. */
+      keptType: string
     }
 
 /** The document as repaired, plus what the repairs were. */
@@ -768,106 +783,171 @@ function collectDocumentStrings(value: unknown, into: Set<string> = new Set()): 
   return into
 }
 
+type SharedIdSuffix = 'property' | 'debt' | 'policy'
+
 /**
- * The new id for each property that shares its id with exactly one cash
- * account (and nothing else), keyed by that shared id: `<id>-property`, or
- * `<id>-property-2`, `-3`, and so on while the candidate already appears as a
- * string anywhere in the stored document, so it cannot collide with any id
- * or reference the document holds.
+ * Fresh ids for renamed rows: `<id>-<property|debt|policy>`, then `-2`, `-3`
+ * and so on while the candidate already appears as a string anywhere in the
+ * stored document (so it cannot collide with any id or reference it holds).
+ * The same (id, suffix, ordinal) always gets the same name, so a scenario
+ * holding a copy of the plan's rows renames them exactly as the plan's own.
  */
-function cashPropertyAliasRenames(
-  raw: Record<string, unknown>,
-  accounts: readonly unknown[],
-): ReadonlyMap<string, string> {
-  const typesById = new Map<string, string[]>()
-  for (const account of accounts) {
-    if (!isPlainRecord(account)) continue
-    const id = account['id']
-    const type = account['type']
-    if (typeof id !== 'string' || typeof type !== 'string') continue
-    const types = typesById.get(id)
-    if (types === undefined) typesById.set(id, [type])
-    else types.push(type)
-  }
-  const renames = new Map<string, string>()
+type SharedIdAllocator = (id: string, suffix: SharedIdSuffix, ordinal: number) => string
+
+function createSharedIdAllocator(document: Record<string, unknown>): SharedIdAllocator {
   let used: Set<string> | null = null
-  for (const [id, types] of typesById) {
-    if (types.length !== 2 || !types.includes('cash') || !types.includes('property')) continue
-    used ??= collectDocumentStrings(raw)
-    let candidate = `${id}-property`
-    for (let suffix = 2; used.has(candidate); suffix++) candidate = `${id}-property-${suffix}`
+  const names = new Map<string, string>()
+  return (id, suffix, ordinal) => {
+    const key = JSON.stringify([id, suffix, ordinal])
+    const known = names.get(key)
+    if (known !== undefined) return known
+    used ??= collectDocumentStrings(document)
+    let candidate = `${id}-${suffix}`
+    for (let next = 2; used.has(candidate); next++) candidate = `${id}-${suffix}-${next}`
     used.add(candidate)
-    renames.set(id, candidate)
+    names.set(key, candidate)
+    return candidate
   }
-  return renames
 }
 
-/** A stored accounts list with each renamed property's id replaced; the same array when nothing matched. */
-function renamePropertiesInAccountList(
+function rawSharedIdRows(
+  list: readonly unknown[],
+  channelOf: (row: Record<string, unknown>) => SharedIdChannel | null,
+): SharedIdRow[] {
+  return list.map((row) =>
+    isPlainRecord(row) && typeof row['id'] === 'string'
+      ? { id: row['id'], channel: channelOf(row) }
+      : { id: '', channel: null })
+}
+
+interface SharedIdListRename {
+  readonly member: SharedIdMember
+  readonly keeper: SharedIdMember
+  readonly newId: string
+}
+
+/**
+ * The rows of a stored accounts list and insurance list that give up a shared
+ * id, with their new ids. Ordinals count renamed rows per (id, suffix) in
+ * accounts-then-policies order.
+ */
+function sharedIdListRenames(
+  accounts: readonly unknown[],
+  insurance: readonly unknown[],
+  allocate: SharedIdAllocator,
+): SharedIdListRename[] {
+  const accountRows = rawSharedIdRows(accounts, (row) => accountChannel(row['type']))
+  const policyRows = rawSharedIdRows(insurance, (row) => policyChannel(row['kind']))
+  const groups = sharedIdGroups(accountRows, policyRows)
+  const ordinals = new Map<string, number>()
+  return sharedIdRenames(groups).map((member) => {
+    const row = member.collection === 'accounts' ? accountRows[member.index]! : policyRows[member.index]!
+    const suffix: SharedIdSuffix = member.channel === 'property' || member.channel === 'debt' ? member.channel : 'policy'
+    const key = JSON.stringify([row.id, suffix])
+    const ordinal = (ordinals.get(key) ?? 0) + 1
+    ordinals.set(key, ordinal)
+    const keeper = groups.find((group) => group.members.includes(member))!.keeper
+    return { member, keeper, newId: allocate(row.id, suffix, ordinal) }
+  })
+}
+
+/** A stored list with the renamed rows' ids replaced; the same array when nothing changed. */
+function applySharedIdRenames(
   list: unknown,
-  renames: ReadonlyMap<string, string>,
+  collection: 'accounts' | 'insurance',
+  renames: readonly SharedIdListRename[],
 ): unknown {
   if (!Array.isArray(list)) return list
-  let changed = false
-  const renamed = list.map((row) => {
-    if (!isPlainRecord(row) || row['type'] !== 'property' || typeof row['id'] !== 'string') return row
-    const newId = renames.get(row['id'])
-    if (newId === undefined) return row
-    changed = true
-    return { ...row, id: newId }
+  const byIndex = new Map(renames
+    .filter((rename) => rename.member.collection === collection)
+    .map((rename) => [rename.member.index, rename.newId] as const))
+  if (byIndex.size === 0) return list
+  return list.map((row, index) => {
+    const newId = byIndex.get(index)
+    return newId === undefined || !isPlainRecord(row) ? row : { ...row, id: newId }
   })
-  return changed ? renamed : list
 }
 
 /**
- * Carries a property rename into stored scenarios. A scenario can hold
- * account rows in two places only: a canonical patch's operation on
- * `/accounts` (paths never traverse an array, so account rows are set as the
- * whole list, in both its `before` state and its `value`; a stored operation
- * on one element is renamed too, though it cannot apply), and a legacy
- * deep-merge patch's `accounts` list. Renaming the property there too keeps a
- * scenario's recorded `before` equal to the repaired plan, so it still
- * applies, and keeps it from putting the shared id back.
+ * Carries the shared-id repair into stored scenarios. A scenario holds rows in
+ * two places only: a canonical patch's operations on `/accounts` and
+ * `/insurance` (paths never traverse an array, so rows are set as whole lists,
+ * in both an operation's `before` state and its `value`), and a legacy
+ * deep-merge patch's `accounts` and `insurance` lists. Each such list, or pair
+ * of lists, is repaired on its own terms, with the plan's own accounts
+ * standing in for a scenario that sets no accounts, and names come from the
+ * same allocator as the plan's. So a scenario holding a copy of the plan's
+ * rows renames them as the plan did, and its recorded `before` still equals
+ * the repaired plan; and a scenario whose own lists carry a collision the plan
+ * does not have is repaired too, so it still applies. (A scenario that adds an
+ * account under the id of one of the plan's own policies, without setting
+ * `/insurance`, is left as stored and is refused when applied.)
  */
-function renamePropertiesInScenarios(
+function repairSharedIdsInScenarios(
   scenarios: unknown,
-  renames: ReadonlyMap<string, string>,
+  planAccounts: readonly unknown[],
+  allocate: SharedIdAllocator,
 ): unknown {
-  if (renames.size === 0 || !Array.isArray(scenarios)) return scenarios
+  if (!Array.isArray(scenarios)) return scenarios
+  const repairLists = (accounts: unknown, insurance: unknown): { accounts: unknown; insurance: unknown } => {
+    const accountList = Array.isArray(accounts) ? accounts : null
+    const insuranceList = Array.isArray(insurance) ? insurance : null
+    if (accountList === null && insuranceList === null) return { accounts, insurance }
+    const renames = sharedIdListRenames(accountList ?? planAccounts, insuranceList ?? [], allocate)
+    return {
+      accounts: accountList === null ? accounts : applySharedIdRenames(accountList, 'accounts', renames),
+      insurance: insuranceList === null ? insurance : applySharedIdRenames(insuranceList, 'insurance', renames),
+    }
+  }
   let changed = false
   const repaired = scenarios.map((scenario) => {
     if (!isPlainRecord(scenario) || !isPlainRecord(scenario['patch'])) return scenario
     const patch = scenario['patch']
     let nextPatch = patch
     if (Array.isArray(patch['operations'])) {
-      let operationsChanged = false
-      const operations = patch['operations'].map((operation: unknown) => {
-        if (!isPlainRecord(operation) || typeof operation['path'] !== 'string') return operation
-        // `/accounts` holds the list. A stored operation on one element
-        // (`/accounts/2`) cannot apply, since paths never traverse an array,
-        // but its row is renamed all the same so it never carries the old id.
-        const path = operation['path']
-        const holdsOneRow = /^\/accounts\/[^/]+$/u.test(path)
-        if (path !== '/accounts' && !holdsOneRow) return operation
-        const rename = (value: unknown): unknown => {
-          if (!holdsOneRow) return renamePropertiesInAccountList(value, renames)
-          return (renamePropertiesInAccountList([value], renames) as unknown[])[0]
+      const operations = patch['operations'] as unknown[]
+      const find = (path: string): number => operations.findIndex((operation) =>
+        isPlainRecord(operation) && operation['path'] === path)
+      const accountsAt = find('/accounts')
+      const insuranceAt = find('/insurance')
+      if (accountsAt >= 0 || insuranceAt >= 0) {
+        const next = [...operations]
+        const accountsOperation = accountsAt >= 0 ? operations[accountsAt] as Record<string, unknown> : null
+        const insuranceOperation = insuranceAt >= 0 ? operations[insuranceAt] as Record<string, unknown> : null
+        const beforeOf = (operation: Record<string, unknown> | null): unknown => {
+          const before = operation?.['before']
+          return isPlainRecord(before) && before['present'] === true ? before['value'] : undefined
         }
-        let next = operation
-        const value = rename(operation['value'])
-        if (value !== operation['value']) next = { ...next, value }
-        const before = operation['before']
-        if (isPlainRecord(before) && before['present'] === true) {
-          const beforeValue = rename(before['value'])
-          if (beforeValue !== before['value']) next = { ...next, before: { ...before, value: beforeValue } }
+        const values = repairLists(accountsOperation?.['value'], insuranceOperation?.['value'])
+        const befores = repairLists(beforeOf(accountsOperation), beforeOf(insuranceOperation))
+        const rebuild = (
+          operation: Record<string, unknown> | null,
+          at: number,
+          value: unknown,
+          before: unknown,
+        ): void => {
+          if (operation === null) return
+          let rebuilt = operation
+          if (value !== operation['value']) rebuilt = { ...rebuilt, value }
+          const storedBefore = operation['before']
+          if (isPlainRecord(storedBefore) && storedBefore['present'] === true && before !== storedBefore['value']) {
+            rebuilt = { ...rebuilt, before: { ...storedBefore, value: before } }
+          }
+          next[at] = rebuilt
         }
-        if (next !== operation) operationsChanged = true
-        return next
-      })
-      if (operationsChanged) nextPatch = { ...patch, operations }
-    } else if (Array.isArray(patch['accounts'])) {
-      const accounts = renamePropertiesInAccountList(patch['accounts'], renames)
-      if (accounts !== patch['accounts']) nextPatch = { ...patch, accounts }
+        rebuild(accountsOperation, accountsAt, values.accounts, befores.accounts)
+        rebuild(insuranceOperation, insuranceAt, values.insurance, befores.insurance)
+        if (next.some((operation, index) => operation !== operations[index])) {
+          nextPatch = { ...patch, operations: next }
+        }
+      }
+    } else {
+      const lists = repairLists(patch['accounts'], patch['insurance'])
+      if (lists.accounts !== patch['accounts'] || lists.insurance !== patch['insurance']) {
+        nextPatch = { ...patch }
+        if (lists.accounts !== patch['accounts']) nextPatch['accounts'] = lists.accounts
+        if (lists.insurance !== patch['insurance']) nextPatch['insurance'] = lists.insurance
+      }
     }
     if (nextPatch === patch) return scenario
     changed = true
@@ -974,42 +1054,53 @@ function normalizeCurrentPlan(raw: Record<string, unknown>): NormalizedPlan {
     return { year, month }
   }
 
-  // A cash account and a property under one id (decision
-  // D-CASH-PROPERTY-ALIAS). Plans accepted exactly this pair until parse began
-  // refusing it, and the year's balances, keyed by id, published the
-  // property's value as the cash balance. The property takes a new id and the
-  // cash account keeps the stored one, because every other field that can
-  // hold an account id takes only an investable or retirement account: a TIPS
-  // ladder's funding account (cash, taxable or equity compensation), an
-  // annuity's premium source, a pension rollover target, a retirement
-  // action's source or destination, and the IRA classification and annual
-  // tax-fact sources. A stored reference to the shared id can therefore only
-  // have meant the cash account, and none needs to move. No plan field names a
-  // property by id; the one other place a property row is stored is a
-  // scenario's accounts list, which follows the rename below.
-  const propertyRenames = cashPropertyAliasRenames(raw, accounts)
+  // Rows under one id where the projection keeps one value per id (decision
+  // D-CASH-PROPERTY-ALIAS and its extension; model/sharedIdCollisions.ts): a
+  // cash account and a property, which plans accepted until parse began
+  // refusing the pair, and properties, debts and policies sharing an id. The
+  // row that keeps the id is an investable account when one is involved, and
+  // otherwise the first row, accounts before policies; the others take new ids.
+  // Nothing else needs to move: every other field that can hold an account id
+  // takes only an investable or retirement account (a TIPS ladder's funding
+  // account, an annuity's premium source, a pension rollover target, a
+  // retirement action's source or destination, the IRA classification and
+  // annual tax-fact sources), so a stored reference to a shared id can only
+  // have meant the investable account; no field names a property, a debt or a
+  // policy by id (a debt carries no property link, and care events and LTC
+  // offsets match on the person); and the one other place such rows are
+  // stored, a scenario's accounts and insurance lists, follows below.
+  const insurance = Array.isArray(raw['insurance']) ? raw['insurance'] as unknown[] : []
+  const allocateSharedId = createSharedIdAllocator(raw)
+  const sharedIdRenames = sharedIdListRenames(accounts, insurance, allocateSharedId)
+  const rowAt = (member: SharedIdMember): Record<string, unknown> =>
+    (member.collection === 'accounts' ? accounts : insurance)[member.index] as Record<string, unknown>
+  const sharedIdRepair = (rename: SharedIdListRename): PlanLoadRepair => {
+    const renamedRow = rowAt(rename.member)
+    const keptRow = rowAt(rename.keeper)
+    return {
+      kind: 'sharedIdSeparated',
+      accountId: stringField(renamedRow, 'id'),
+      accountName: stringField(renamedRow, 'name'),
+      newAccountId: rename.newId,
+      renamedType: rename.member.channel as 'property' | 'debt' | 'permanentLife' | 'ltc',
+      keptName: stringField(keptRow, 'name'),
+      keptType: stringField(keptRow, rename.keeper.collection === 'accounts' ? 'type' : 'kind'),
+    }
+  }
+  const accountRenameByIndex = new Map(sharedIdRenames
+    .filter((rename) => rename.member.collection === 'accounts')
+    .map((rename) => [rename.member.index, rename] as const))
 
   const repairs: PlanLoadRepair[] = []
   let changed = false
-  const normalizedAccounts = accounts.map((account) => {
+  const normalizedAccounts = accounts.map((account, accountIndex) => {
     if (typeof account !== 'object' || account === null || Array.isArray(account)) return account
     const accountRecord = account as Record<string, unknown>
-    const renamedPropertyId = accountRecord['type'] === 'property' && typeof accountRecord['id'] === 'string'
-      ? propertyRenames.get(accountRecord['id'])
-      : undefined
-    if (renamedPropertyId !== undefined) {
+    const sharedIdRename = accountRenameByIndex.get(accountIndex)
+    if (sharedIdRename !== undefined) {
       changed = true
-      const accountId = stringField(accountRecord, 'id')
-      const cash = accounts.find((candidate) =>
-        isPlainRecord(candidate) && candidate['type'] === 'cash' && candidate['id'] === accountId)
-      repairs.push({
-        kind: 'propertyAccountIdSeparatedFromCash',
-        accountId,
-        accountName: stringField(accountRecord, 'name'),
-        newAccountId: renamedPropertyId,
-        cashAccountName: isPlainRecord(cash) ? stringField(cash, 'name') : '',
-      })
-      return { ...accountRecord, id: renamedPropertyId }
+      repairs.push(sharedIdRepair(sharedIdRename))
+      return { ...accountRecord, id: sharedIdRename.newId }
     }
     if (
       (accountRecord['type'] === 'traditional' || accountRecord['type'] === 'roth' || accountRecord['type'] === 'hsa') &&
@@ -1278,14 +1369,23 @@ function normalizeCurrentPlan(raw: Record<string, unknown>): NormalizedPlan {
     return account
   })
 
-  if (!changed) return { raw, repairs }
-  const scenarios = renamePropertiesInScenarios(raw['scenarios'], propertyRenames)
-  return {
-    raw: scenarios === raw['scenarios']
-      ? { ...raw, accounts: normalizedAccounts }
-      : { ...raw, accounts: normalizedAccounts, scenarios },
-    repairs,
+  // Policies that gave up a shared id, after the accounts, in stored order.
+  const policyRenames = sharedIdRenames.filter((rename) => rename.member.collection === 'insurance')
+  for (const rename of policyRenames) repairs.push(sharedIdRepair(rename))
+  const normalizedInsurance = applySharedIdRenames(raw['insurance'], 'insurance', policyRenames)
+  // Scenarios are repaired whether or not the plan itself was: a collision
+  // that only a scenario's own lists carry would otherwise refuse the
+  // scenario when it is applied.
+  const scenarios = repairSharedIdsInScenarios(raw['scenarios'], normalizedAccounts, allocateSharedId)
+
+  if (!changed && normalizedInsurance === raw['insurance'] && scenarios === raw['scenarios']) {
+    return { raw, repairs }
   }
+  const repaired: Record<string, unknown> = { ...raw }
+  if (changed) repaired['accounts'] = normalizedAccounts
+  if (normalizedInsurance !== raw['insurance']) repaired['insurance'] = normalizedInsurance
+  if (scenarios !== raw['scenarios']) repaired['scenarios'] = scenarios
+  return { raw: repaired, repairs }
 }
 
 /**

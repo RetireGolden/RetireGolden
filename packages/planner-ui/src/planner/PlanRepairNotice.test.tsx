@@ -240,23 +240,64 @@ describe('PlanRepairNotice', () => {
   it('says a property that shared its id with a cash account was given its own', async () => {
     await mount([
       {
-        kind: 'propertyAccountIdSeparatedFromCash',
+        kind: 'sharedIdSeparated',
         accountId: 'home',
         accountName: 'Home',
         newAccountId: 'home-property',
-        cashAccountName: 'Checking',
+        renamedType: 'property',
+        keptName: 'Checking',
+        keptType: 'cash',
       },
       {
-        kind: 'propertyAccountIdSeparatedFromCash',
+        kind: 'sharedIdSeparated',
         accountId: 'cabin',
         accountName: '',
         newAccountId: 'cabin-property',
-        cashAccountName: '',
+        renamedType: 'property',
+        keptName: '',
+        keptType: 'cash',
       },
     ])
     expect(items()).toEqual([
       "Home and the cash account Checking were stored under one internal reference, so the plan showed the property's value as cash. The property now has a reference of its own. Its value and the cash balance are as you entered them, and cash totals no longer include the property. Open Accounts to check both.",
       "A property and a cash account were stored under one internal reference, so the plan showed the property's value as cash. The property now has a reference of its own. Its value and the cash balance are as you entered them, and cash totals no longer include the property. Open Accounts to check both.",
+    ])
+  })
+
+  it('says a debt or a policy that shared an id was given its own, pointing at the page that lists it', async () => {
+    await mount([
+      {
+        kind: 'sharedIdSeparated',
+        accountId: 'home',
+        accountName: 'Mortgage',
+        newAccountId: 'home-debt',
+        renamedType: 'debt',
+        keptName: 'Home',
+        keptType: 'property',
+      },
+      {
+        kind: 'sharedIdSeparated',
+        accountId: 'savings',
+        accountName: 'Whole life',
+        newAccountId: 'savings-policy',
+        renamedType: 'permanentLife',
+        keptName: 'Savings',
+        keptType: 'cash',
+      },
+      {
+        kind: 'sharedIdSeparated',
+        accountId: 'cover',
+        accountName: '',
+        newAccountId: 'cover-policy',
+        renamedType: 'ltc',
+        keptName: '',
+        keptType: 'permanentLife',
+      },
+    ])
+    expect(items()).toEqual([
+      'Mortgage and Home were stored under one internal reference. The plan keeps one value per reference, so one of the two was shown in place of the other or left out of your totals. The debt now has a reference of its own, and both are as you entered them. Open Accounts to check both.',
+      'Whole life and Savings were stored under one internal reference. The plan keeps one value per reference, so one of the two was shown in place of the other or left out of your totals. The policy now has a reference of its own, and both are as you entered them. Open Accounts and Insurance to check both.',
+      'An insurance policy and another policy were stored under one internal reference. The plan keeps one value per reference, so one of the two was shown in place of the other or left out of your totals. The policy now has a reference of its own, and both are as you entered them. Open Insurance to check both.',
     ])
   })
 

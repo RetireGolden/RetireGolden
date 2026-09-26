@@ -750,21 +750,22 @@ function blockC() {
   }
 
   {
-    // Two property accounts sharing ONE id, BOTH carrying a HECM. The first
-    // opens the line; the second is turned away by the phase's own
-    // already-open guard, which no other member reaches. `propertyValues` is
-    // last-write-wins by id, so the line opens against the SECOND account's
-    // value — a quirk the extraction must preserve, not repair.
+    // Two HECM properties opening their lines in the same year, stored back
+    // to back. This member once gave both ONE id, so that the second was
+    // turned away by the phase's already-open guard; the plan checks now
+    // refuse two properties under one id (D-CASH-PROPERTY-ALIAS,
+    // model/sharedIdCollisions.ts), so that guard's duplicate arm is no
+    // longer reachable from a valid plan and the two have their own ids.
     const plan = shell()
     plan.accounts = [
       property('twin', 320_000, { primaryResidence: true, hecm: hecm({ principalLimitPct: 42, upfrontCostPct: 2 }) }),
       {
-        ...property('twin', 275_000, { primaryResidence: true, hecm: hecm({ principalLimitPct: 33, upfrontCostPct: 4 }) }),
+        ...property('twin-second', 275_000, { primaryResidence: true, hecm: hecm({ principalLimitPct: 33, upfrontCostPct: 4 }) }),
         name: 'twin-second',
       },
       qualified('traditional', 'ira-c8', 180_000),
     ]
-    out.push(member('c8-duplicateIdsSecondSkipped', 'C: duplicate property ids — the second is skipped by the already-open guard', plan))
+    out.push(member('c8-twoLinesOpenTogether', 'C: two HECM properties opening in one year, stored back to back', plan))
   }
 
   return out
@@ -917,20 +918,21 @@ function blockE() {
   }
 
   {
-    // Two property accounts sharing ONE id. `propertyValues` is keyed by id, so
-    // the second row compounds the first row's already-grown property value.
-    // Only the first row declares a HECM; that opens one id-keyed line state,
-    // so this member is not evidence for duplicate-row HECM accrual semantics.
+    // A HECM home beside a second property sold in a later year. These two
+    // once shared ONE id, so that the second row compounded the first row's
+    // already-grown value in the id-keyed `propertyValues`; the plan checks
+    // now refuse two properties under one id (D-CASH-PROPERTY-ALIAS,
+    // model/sharedIdCollisions.ts), so each has its own id.
     const plan = shell()
     plan.assumptions.inflationPct = 4
     plan.accounts = [
       property('home-dup', 250_000, { primaryResidence: true, hecm: hecm({ principalLimitPct: 35, upfrontCostPct: 2, growthRatePct: 6 }) }),
       // `expectedNetProceeds` NULL, so the sale falls back to the property's
       // own modelled value — the `?? value` arm, cold without this.
-      { ...property('home-dup', 250_000, { plannedSaleYear: START_YEAR + 3 }), name: 'home-dup-second' },
+      { ...property('home-dup-second', 250_000, { plannedSaleYear: START_YEAR + 3 }), name: 'home-dup-second' },
       qualified('traditional', 'ira-e5', 200_000),
     ]
-    out.push(member('e5-duplicatePropertyIds', 'E: duplicate property ids compound and clamp against a running shared value', plan))
+    out.push(member('e5-hecmHomeBesideSoldProperty', 'E: a HECM home beside a second property sold at its modelled value', plan))
   }
 
   return out
@@ -1069,9 +1071,13 @@ function blockH() {
     cash('snapshot-dup', 11_111.11),
     taxable('snapshot-taxable', 22_222.22, 12_345.67),
     qualified('traditional', 'snapshot-ira', 33_333.33),
-    // Same id as the cash row. `Object.fromEntries` must publish the later
-    // property value while investable/property totals still count both rows.
-    property('snapshot-dup', 44_444.44),
+    // This property once shared the cash row's id, to exercise
+    // `Object.fromEntries` publishing the later value. The plan checks now
+    // refuse any id two published rows share (D-CASH-PROPERTY-ALIAS,
+    // model/sharedIdCollisions.ts), so it has its own id; the snapshot's
+    // overwrite order is asserted on annualSnapshot directly by the
+    // accounts-balance-per-account-annual evidence.
+    property('snapshot-dup-property', 44_444.44),
     property('__proto__', 55_555.55),
     property('hecm-fast', 500_000, {
       primaryResidence: true,
@@ -1094,9 +1100,11 @@ function blockH() {
       cashValue: 12_345.67,
       cashValueGrowthPct: 4.25,
     }),
-    // Duplicate policy id: the second row must read the first row's shadow
-    // write, not the entry map's last-write opening value.
-    permanentLife('life-flat', 'p2', {
+    // A second flat-rate policy. It once repeated the first policy's id, so
+    // that it read the first row's shadow write; the plan checks now refuse a
+    // repeated policy id (D-CASH-PROPERTY-ALIAS, model/sharedIdCollisions.ts),
+    // so it has its own id.
+    permanentLife('life-flat-second', 'p2', {
       cashValue: 98_765.43,
       cashValueGrowthPct: 1.5,
     }),
@@ -1127,7 +1135,7 @@ function blockH() {
   return [
     member(
       'h1-insuranceAndSnapshot',
-      'H: permanent-life flat/schedule/positive+zero settlement/post-death transitions; snapshot balances/property/debt/3 HECMs/insurance, duplicate and __proto__ ids, non-recourse clamp',
+      'H: permanent-life flat/schedule/positive+zero settlement/post-death transitions; snapshot balances/property/debt/3 HECMs/insurance, a __proto__ id, non-recourse clamp',
       plan,
       { horizonEndYear: START_YEAR + 20 },
     ),
@@ -1361,11 +1369,14 @@ function blockJ() {
   }
 
   {
-    // Two rows share `property-dup`; the helper row fold must retain plan order
-    // rather than collapsing by id. The large-first-plus-three-small amounts
-    // make that order observable in the aggregate even though cash-flow lines
-    // are sorted downstream. Sale boundaries, omitted cost fields, inflation,
-    // survivor and all-dead years are all live.
+    // The helper row fold must retain plan order. The large-first-plus-three-
+    // small amounts make that order observable in the aggregate even though
+    // cash-flow lines are sorted downstream. Two of these rows once shared
+    // `property-dup`, to show the fold does not collapse by id; the plan checks
+    // now refuse two properties under one id (D-CASH-PROPERTY-ALIAS,
+    // model/sharedIdCollisions.ts), so the second has its own id. Sale
+    // boundaries, omitted cost fields, inflation, survivor and all-dead years
+    // are all live.
     const plan = couplePlan({ p1PlanningAge: 90, p2PlanningAge: 90 })
     plan.assumptions.inflationPct = 7.125
     plan.accounts = [
@@ -1377,7 +1388,7 @@ function blockJ() {
         plannedSaleYear: START_YEAR + 2,
       }),
       {
-        ...property('property-dup', 200_000, {
+        ...property('property-dup-second', 200_000, {
           propertyTaxAnnual: 1,
         }),
         name: 'property-dup-second',
@@ -1396,8 +1407,8 @@ function blockJ() {
     ]
     out.push(
       member(
-        'j4-propertyCostsSalesDuplicatesAndDeaths',
-        'J: ordered inflated property tax/insurance rows, sale-year skips, omitted-zero operands, duplicate ids, survivor and all-dead gates',
+        'j4-propertyCostsSalesAndDeaths',
+        'J: ordered inflated property tax/insurance rows, sale-year skips, omitted-zero operands, survivor and all-dead gates',
         plan,
         { horizonEndYear: START_YEAR + 2, deathAgeByPersonId: { p1: 60, p2: 61 } },
       ),
@@ -2175,11 +2186,14 @@ function blockN() {
 
   {
     // The two cent-scale lines precede a much larger line on purpose:
-    // ((0.01 + 0.01) + 1e14) !== ((1e14 + 0.01) + 0.01) in binary64. The
-    // first HECM-bearing duplicate owns the shared line's coordinated policy;
-    // its later last-resort alias must neither remove capacity nor receive a
-    // second allocation. An earlier alias without HECM metadata deliberately
-    // does not claim authority. Normal spending fills both small lines, then
+    // ((0.01 + 0.01) + 1e14) !== ((1e14 + 0.01) + 0.01) in binary64. Three of
+    // these properties once shared `n1-small-a` (an earlier alias without HECM
+    // metadata, the coordinated owner, and a later last-resort alias), to show
+    // which row owns a shared line's policy; the plan checks now refuse two
+    // properties under one id (D-CASH-PROPERTY-ALIAS,
+    // model/sharedIdCollisions.ts), so the two aliases have their own ids and
+    // the later one opens its own last-resort line, which the coordinated
+    // fold does not read. Normal spending fills both small lines, then
     // takes a partial allocation from the large line, making source order and
     // the accepted scalar observable without exhausting total capacity. A
     // second loss year has no spending, so the same eligible ids reach
@@ -2205,10 +2219,11 @@ function blockN() {
     })
     plan.accounts = [
       taxable('n1-brokerage', 1_000_000, 1_000_000),
-      { ...tiny, name: 'n1-small-a-earlier-no-hecm', hecm: undefined },
+      { ...tiny, id: 'n1-small-a-earlier-no-hecm', name: 'n1-small-a-earlier-no-hecm', hecm: undefined },
       tiny,
       {
         ...tiny,
+        id: 'n1-small-a-later-last-resort',
         name: 'n1-small-a-later-last-resort',
         hecm: { ...tiny.hecm, drawPolicy: 'lastResort' },
       },
@@ -2233,8 +2248,8 @@ function blockN() {
     ]
     out.push(
       member(
-        'n1-duplicateDistinctOrderedPartial',
-        'N: divergent-policy duplicate plus distinct coordinated lines, cancellation-sensitive source-order capacity fold, two full cent allocations, one partial allocation, then an accepted-zero tolerance break',
+        'n1-distinctOrderedPartial',
+        'N: distinct coordinated lines beside a no-HECM property and a last-resort line, cancellation-sensitive source-order capacity fold, two full cent allocations, one partial allocation, then an accepted-zero tolerance break',
         plan,
         {
           horizonEndYear: START_YEAR + 2,
@@ -2938,10 +2953,12 @@ function blockR() {
   const out = []
 
   {
-    // Both debt rows share the public id and therefore begin from the map's
-    // last-row balance. The first row's amortization must be visible to the
-    // second row before its scheduled payoff. LTC repeats the same hazard with
-    // duplicate policy ids across two simultaneous episodes and later years.
+    // Two debts, one amortizing and one paid off in the start year, and two
+    // identical LTC policies across two simultaneous episodes and later years.
+    // Each pair once shared an id, to exercise the id-keyed maps' read-after-
+    // write; the plan checks now refuse two debts or two policies under one id
+    // (D-CASH-PROPERTY-ALIAS, model/sharedIdCollisions.ts), so each row has its
+    // own id.
     const plan = singlePersonPlan({ dob: '1966-03-15', planningAge: 70 })
     plan.assumptions.defaultReturnPct = 0
     plan.accounts = [
@@ -2950,7 +2967,7 @@ function blockR() {
         interestPct: 10,
         monthlyPayment: 50,
       }),
-      { ...debt('r1-duplicate-debt', 1_000, {
+      { ...debt('r1-duplicate-debt-second', 1_000, {
         payoffYear: START_YEAR,
         monthlyPayment: 0,
       }), name: 'r1-duplicate-debt-second' },
@@ -2965,7 +2982,7 @@ function blockR() {
         benefitPeriodYears: 1,
         eliminationPeriodDays: 0,
       }),
-      ltc('r1-duplicate-policy', 'p1', {
+      ltc('r1-duplicate-policy-second', 'p1', {
         benefitMonthly: 500,
         benefitPeriodYears: 1,
         eliminationPeriodDays: 0,
@@ -2982,8 +2999,8 @@ function blockR() {
       { id: 'r1-care-b', personId: 'p1', startAge: 60, durationYears: 2, annualCost: 4_000 },
     ]
     out.push(member(
-      'r1-positionalDebtAndLtcShadows',
-      'R: duplicate debt-id read-after-write and payoff, capped terminal payment, duplicate LTC policy years, elimination, finite/lifetime periods, rider, ordered person reporting and multi-year carry',
+      'r1-positionalDebtAndLtcRows',
+      'R: amortizing and paid-off debts, capped terminal payment, two LTC policies across simultaneous episodes, elimination, finite/lifetime periods, rider, ordered person reporting and multi-year carry',
       plan,
       { horizonEndYear: START_YEAR + 2 },
     ))

@@ -293,12 +293,14 @@ function noDrawsHappened(result: ProjectionResult): void {
 }
 
 describe('simulatePlan delegates property events and growth', () => {
-  it('advances one parse-valid duplicate-id HECM line exactly once per year', () => {
+  it('advances one duplicate-id HECM line exactly once per year', () => {
     /**
      * Repository model contract: `hecmStates` stores exactly one mutable line
      * per property-account id, with one principal limit and one loan balance.
-     * Duplicate property rows can legally alias that state when no retirement
-     * action references the id, but an alias does not create a second contract
+     * Duplicate property rows once parsed and aliased that state; the plan
+     * checks now refuse them (D-CASH-PROPERTY-ALIAS), so the two-row plan goes
+     * to the projection unparsed, as input that skipped the checks would. An
+     * alias still does not create a second contract
      * or a second annual accrual. The helper unit suite separately pins that the
      * first qualifying duplicate row supplies the shared state's annual rate.
      *
@@ -325,11 +327,9 @@ describe('simulatePlan delegates property events and growth', () => {
         traditionalAccount('unreferenced-ira', 400_000),
       ]
       const parsed = parsePlan(p)
-      expect(parsed.ok, parsed.ok ? undefined : parsed.issues.join('\n')).toBe(true)
-      if (!parsed.ok) throw new Error(parsed.issues.join('\n'))
 
       resetSeam()
-      const result = simulatePlan(parsed.plan, {
+      const result = simulatePlan(parsed.ok ? parsed.plan : p, {
         startYear: START_YEAR,
         horizonEndYear: START_YEAR + 1,
         taxCalculator: noTax,
@@ -353,7 +353,7 @@ describe('simulatePlan delegates property events and growth', () => {
       hecmGrowthRows: [1.075],
     })
     expect(project(2)).toEqual({
-      parseAccepted: true,
+      parseAccepted: false,
       principalLimit: 172_000,
       loanBalance: 8_600,
       hecmGrowthRows: [1.075, null],

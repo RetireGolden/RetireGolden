@@ -192,7 +192,12 @@ function coordinatedPlan(): Plan {
     },
     property('home2', 10),
   ]
-  return validatePlan(plan)
+  // The aliases are the point of this fixture, and the plan checks refuse
+  // them since D-CASH-PROPERTY-ALIAS (two properties may not share an id).
+  // The coordinated helpers still handle them for input that skipped the
+  // checks, which is what these seams pin, so the plan goes in unparsed.
+  expect(() => validatePlan(plan)).toThrow('is shared by two properties')
+  return plan
 }
 
 function run(

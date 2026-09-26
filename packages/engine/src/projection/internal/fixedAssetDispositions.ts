@@ -46,9 +46,9 @@
  *
  * THE DELETE-AS-YOU-GO RULE. The inlined phase closed a HECM line with
  * `hecmStates.delete(id)` INSIDE the loop, so a later iteration reading the
- * same id saw no line. Account ids are not globally unique in a valid `Plan`:
- * `model/plan.ts` raises `duplicate account id` only when a retirement action
- * references the id, so two property accounts may legally share one. This
+ * same id saw no line. Two property accounts could once share one id; the plan
+ * checks now refuse that (D-CASH-PROPERTY-ALIAS, model/sharedIdCollisions.ts),
+ * so what follows guards only input that did not pass through them. This
  * module therefore tracks the ids it has already closed and reports a line as
  * absent for the second row, rather than handing the caller a set of deletes
  * to apply afterwards — a post-hoc delete would give the second row a payoff

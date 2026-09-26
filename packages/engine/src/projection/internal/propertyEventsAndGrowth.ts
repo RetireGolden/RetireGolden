@@ -39,10 +39,10 @@
  * the reason it is the hardest of its batch. `internal/fixedAssetDispositions.ts`
  * needed only a MEMBERSHIP shadow — a set of the ids whose line it had already
  * closed. This phase needs a NUMERIC one, on both maps, because THREE separate
- * read-after-write channels cross iterations of the loop. Account ids
- * are not globally unique in a valid `Plan`: `model/plan.ts` raises `duplicate
- * account id` only when a retirement action references the id, so two property
- * accounts may legally share one, and all three channels are then live.
+ * read-after-write channels cross iterations of the loop when two property
+ * accounts share one id. A valid `Plan` no longer can: the plan checks refuse
+ * it (D-CASH-PROPERTY-ALIAS, model/sharedIdCollisions.ts), so the shadows now
+ * guard only input that did not pass through them, where all three are live.
  *
  *   1. `propertyValues` — written at the end of an iteration and read at the
  *      start of the next. MEASURED on two property accounts sharing one id at
@@ -51,7 +51,7 @@
  *      pre-loop snapshot would give the second row the wrong base.
  *   2. The HECM line's NUMBERS — compounded once per OPEN LINE ID per year,
  *      while the non-recourse payoff clamp reads the running `loanBalance`.
- *      Duplicate unreferenced account ids are parse-valid, but the line map is
+ *      Where two property rows do share an id, the line map is still
  *      keyed by id, so a second property row is not a second HECM line and must
  *      not apply a second annual multiplier. If an earlier row has already
  *      accrued the line, however, a later same-id sale must see that accrued
