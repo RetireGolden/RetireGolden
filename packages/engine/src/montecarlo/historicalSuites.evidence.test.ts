@@ -119,5 +119,26 @@ describeCalculation(
         expect(result.suites[0]!.windows).toHaveLength(96 - windowLengthYears + 1)
       }
     })
+
+    it('refuses a worst-window count that is not a whole number of at least 1, before simulating', () => {
+      // It used to be raised to 1 without a word.
+      const plan = singlePersonPlan({ dob: '1968-06-15', planningAge: 60 })
+      plan.accounts = [cashAccount('cash', inputs.openingBalance as number)]
+      const valid = validatePlan(plan)
+      for (const worstWindowCount of [0, -2, 2.5, Number.NaN, Number.POSITIVE_INFINITY]) {
+        expect(() =>
+          runHistoricalStressSuites(valid, { startYear: START_YEAR, taxCalculator: createFlatTaxCalculator(0), worstWindowCount }),
+        ).toThrow(new RangeError(`Historical stress worstWindowCount must be a whole number of at least 1; got ${worstWindowCount}.`))
+      }
+      const result = runHistoricalStressSuites(valid, {
+        startYear: START_YEAR,
+        taxCalculator: createFlatTaxCalculator(0),
+        windowLengthYears: 90,
+        suites: ['rolling'],
+        worstWindowCount: 1,
+      })
+      expect(result.suites[0]!.worstByTotalShortfall).toHaveLength(1)
+      expect(result.suites[0]!.worstByEndingAfterTaxEstate).toHaveLength(1)
+    })
   },
 )

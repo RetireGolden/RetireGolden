@@ -40,7 +40,8 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   (outside 0.01 to 0.3), AR(1) phi (outside −0.9 to 0.95), the stationary mean block
   length (below 2), the user-shock year (not a whole number of at least 1; a fractional
   year used to give no shock at all), an explicit historical stress window (not a whole
-  number from 1 to 96), and a custom class correlation matrix that is not positive
+  number from 1 to 96), the historical stress suite's worst-window count (not a whole
+  number of at least 1), and a custom class correlation matrix that is not positive
   definite. Every valid input produces the same paths as before, with one exception: a
   positive-definite correlation matrix whose Cholesky pivot is positive but below 1e-12
   is now factored exactly instead of having that pivot raised to 1e-12. A test compares
@@ -389,8 +390,8 @@ has — rather than the runtime contract a consumer needs on the landing page.
   high-inflation probability outside 0.01 to 0.3; AR(1) phi outside −0.9 to 0.95; a
   stationary mean block length below 2; a user-shock year that is not a whole number of
   at least 1. `runHistoricalStressSuites` refuses an explicit window that is not a whole
-  number from 1 to 96, and `solveRiskBasedGuardrails` refuses a `successProbe` value
-  outside 0 to 1.
+  number from 1 to 96 and a `worstWindowCount` that is not a whole number of at least 1,
+  and `solveRiskBasedGuardrails` refuses a `successProbe` value outside 0 to 1.
 
 ## 2026-09
 
