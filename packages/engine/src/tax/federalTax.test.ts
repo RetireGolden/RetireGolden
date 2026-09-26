@@ -1860,6 +1860,22 @@ describe('zeroRateLtcgHeadroom (gain-harvesting advisory)', () => {
     }
   })
 
+  it('returns the threshold exactly when income before the gain equals the deduction', () => {
+    // 16,100 of ordinary income against the 16,100 deduction: the root is the
+    // threshold itself, and the second bracket is empty, so no search runs.
+    expect(computeFederalTax(input({ ordinaryIncome: 16_100 })).zeroRateLtcgHeadroom).toBe(49_450)
+  })
+
+  it('uses the filing status own threshold and deduction below the deduction (married filing jointly)', () => {
+    // 2026 joint: 0% LTCG up to 98,900 of taxable income, standard deduction
+    // 32,200, both from params/data/year2026.ts. With no income the room is
+    // 98,900 + 32,200 = 131,100; a bound hard-wired to the single deduction
+    // would stop at 98,900 + 16,100 = 115,000.
+    const headroom = computeFederalTax(input({ filingStatus: 'marriedFilingJointly' })).zeroRateLtcgHeadroom
+    expect(headroom).toBeLessThanOrEqual(131_100)
+    expect(headroom).toBeGreaterThanOrEqual(131_100 - 0.01)
+  })
+
   it('carries a net capital loss offset into the below-deduction room', () => {
     // $2,000 ordinary and a $3,000 net capital loss (the most a year may take
     // against ordinary income): income before the gain is −1,000, so the room

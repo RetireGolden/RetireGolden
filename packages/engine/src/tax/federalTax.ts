@@ -330,8 +330,13 @@ export function zeroRateLtcgHeadroom(
   // taxableIncomeAt(threshold) <= threshold means incomeBeforeGain plus the
   // taxable benefit does not exceed the deduction. A negative income offset
   // (a net capital loss carried in `ordinaryExcludingSs`) widens it by the
-  // same amount. The first bracket is unchanged, so every figure it already
-  // produced stays bit-identical.
+  // same amount. The first bracket is unchanged, so every figure it produced
+  // while it held the root stays bit-identical. The one boundary it did not:
+  // when income before the gain plus the benefit taxable at a gain equal to
+  // the threshold exactly equals the deduction, the root is the threshold
+  // itself, which the old search returned as about $0.01 under it and this
+  // one returns exactly (single, 2026, no benefits: $16,100 of income gives
+  // $49,450 rather than about $49,449.99).
   let lo = 0
   let hi = threshold
   if (taxableIncomeAt(hi) <= threshold) {

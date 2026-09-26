@@ -14,10 +14,12 @@
 import { describe, expect, it } from 'vitest'
 
 import type { Account, Plan } from '../model/plan.js'
+import { createFlatTaxCalculator } from '../testing/flatTax.js'
 import {
   cashAccount,
   couplePlan,
   productionTaxCalculator,
+  taxableAccount,
   traditionalAccount,
   validatePlan,
 } from '../testing/planFixtures.js'
@@ -100,5 +102,47 @@ describe('Roth-conversion target overshoot warning', () => {
     expect(taxableIncome).toBeDefined()
     expect(taxableIncome!).toBeGreaterThan(TWELVE_PERCENT_TOP_2026_JOINT + 0.01)
     expect(warnings).toContain(OVERSHOOT_WARNING)
+  })
+
+  it('reads the metric the target sized: MAGI for a fixed-MAGI target, not taxable income', () => {
+    // Fixed-MAGI target of 100,000 and no tax, so the draw is the spending gap
+    // alone: 40,000 of spending plus 4,869.60 of Part B premiums, less 20,000
+    // of cash, is a 24,869.60 IRA draw. The conversion is sized to MAGI
+    // 100,000 before spending, so the year ends at MAGI 124,869.60, above the
+    // target. Taxable income is MAGI less the 32,200 joint deduction, 3,300 of
+    // age-65 additions and the 12,000 senior deduction: 77,369.60, under
+    // 100,000. A warning that read taxable income would stay silent here.
+    const plan = bracketFillCouple(['p1', 'p2'])
+    plan.strategies.rothConversion = { mode: 'fillToTarget', target: 'fixedMagi', targetValue: 100_000, startYear: 2026, endYear: 2026 }
+    const result = simulatePlan(validatePlan(plan), {
+      startYear: 2026,
+      horizonEndYear: 2026,
+      taxCalculator: createFlatTaxCalculator(0),
+    })
+    const year = result.years[0]!
+    expect(year.rothConversion).toBeGreaterThan(0)
+    expect(year.withdrawals.traditional - year.rmd).toBeCloseTo(24_869.6, 2)
+    const detail = year.advisoryFederalTax?.detail
+    expect(detail?.agiBeforeFloor).toBeCloseTo(124_869.6, 1)
+    expect(detail?.taxableIncome).toBeCloseTo(77_369.6, 1)
+    expect(result.warnings).toContain(OVERSHOOT_WARNING)
+  })
+
+  it('stays silent on an overshoot that no spending draw from the IRAs caused', () => {
+    // The spending comes from a brokerage account whose sales realize gains, so
+    // taxable income ends above the 12% bracket top with no traditional
+    // spending draw at all. The warning is about spending draws from
+    // traditional accounts, so it stays silent.
+    const plan = bracketFillCouple(['p1', 'p2'])
+    plan.accounts = [
+      taxableAccount('brokerage', 200_000, 20_000),
+      ...plan.accounts.filter((account) => account.type !== 'cash'),
+    ]
+    const { year, warnings } = run(validatePlan(plan))
+    expect(year.rothConversion).toBeGreaterThan(0)
+    expect(year.withdrawals.traditional - year.rmd).toBeLessThanOrEqual(0.01)
+    expect(year.withdrawals.taxable).toBeGreaterThan(0)
+    expect(year.advisoryFederalTax!.detail.taxableIncome).toBeGreaterThan(TWELVE_PERCENT_TOP_2026_JOINT + 0.01)
+    expect(warnings).not.toContain(OVERSHOOT_WARNING)
   })
 })
