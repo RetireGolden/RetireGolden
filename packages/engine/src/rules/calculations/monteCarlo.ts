@@ -53,8 +53,8 @@ export const monteCarloRecords = {
     ],
     implementedBy: ['packages/engine/src/allocation/assetClasses.ts'],
     implementedByFunctions: ['packages/engine/src/allocation/assetClasses.ts#choleskyDecompose'],
-    verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'grok', reviewedBy: 'cursor' },
+    verifiedOn: '2026-09-26',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
   },
   'historical-market-series': {
     title: 'Embedded annual stock, bond, and inflation series, 1928–2023',
