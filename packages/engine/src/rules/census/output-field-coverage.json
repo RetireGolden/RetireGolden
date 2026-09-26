@@ -157,7 +157,7 @@
     "disposition": "unsurfaced-evidence",
     "familyId": null,
     "reasonKind": "runtime-diagnostic",
-    "reason": "Traditional-only share of the forced inherited distribution. Searched planner-ui/src at pin fb398216 (pages, charts, CSV columns, report blocks, cash-flow drilldown line identities): not displayed; consumed by the engine ordinary-income and withdrawals.traditional composition."
+    "reason": "Ordinary income from the year's forced inherited distributions: each inherited traditional row's executed amount plus the taxable earnings of a non-qualified inherited Roth distribution (decision D-INHERITED-ROTH-SLICE). Searched planner-ui/src at pin fb398216 (pages, charts, CSV columns, report blocks, cash-flow drilldown line identities): not displayed; consumed by the engine ordinary-income composition. It is not a withdrawal amount: withdrawals.traditional carries the forced dollars from inherited traditional accounts instead."
   },
   {
     "source": "engine/src/projection/internal/types/result.ts",
