@@ -501,7 +501,7 @@
       "engineSourceTree": "b63271eaed9a0e5cc36db5b525c834b830f5b16d"
     },
     "inputs": {
-      "corpusSourceBlob": "7a1507c9bbf8e42f2e465195628bd389951c8025",
+      "corpusSourceBlob": "df82d4ee7fbeeaa41c43b1811f05ddb161b01268",
       "corpusIndexBlob": "3d434147ef86cac8116cefac867b2076256feb21",
       "corpusExamplesBlob": "453bcb81103f490447d679276ca1a3ffbad9104a",
       "equivalenceRunnerBlob": "22b18d3b2374bbc2c1640d4a1c1095015771f720",
@@ -537,7 +537,16 @@
       "entriesWithColdWholeLines": 0,
       "entriesWithReportedColdSubLineRegions": 8
     },
-    "scope": "Every blocks-corpus member is byte-identical in all four modes. O6 independently calibrates a lone zero-movement inherited Roth residue as a 0.004 applicable-plan shortfall with a 0.001 section 4974 excise; O3 calibrates three such residues sharing one identity as a 0.012 shortfall with a 0.003 excise. Focused helper tests separately pin those cases plus a 0.01 actual distribution followed by a skipped 0.004 remainder, which remains a 0.004 shortfall with a 0.001 excise. Delegation tests pin immutable snapshotting, grouped duplicate identities, ordered single-write application, runtime journaling, evidence and obligation publication, and hostile failure before caller mutation."
+    "scope": "Every blocks-corpus member is byte-identical in all four modes. O6 independently calibrates a lone zero-movement inherited Roth residue as a 0.004 applicable-plan shortfall with a 0.001 section 4974 excise; O3 calibrates three such residues sharing one identity as a 0.012 shortfall with a 0.003 excise. Focused helper tests separately pin those cases plus a 0.01 actual distribution followed by a skipped 0.004 remainder, which remains a 0.004 shortfall with a 0.001 excise. Delegation tests pin immutable snapshotting, grouped duplicate identities, ordered single-write application, runtime journaling, evidence and obligation publication, and hostile failure before caller mutation.",
+    "harnessRepins": [
+      {
+        "date": "2026-09-26",
+        "path": "packages/engine/scripts/equivalence/corpus/blocks.mjs",
+        "measuredWithBlob": "7a1507c9bbf8e42f2e465195628bd389951c8025",
+        "pinnedBlob": "df82d4ee7fbeeaa41c43b1811f05ddb161b01268",
+        "reason": "Decision D-CASH-PROPERTY-ALIAS made the plan checks refuse any id two rows would publish a value under, so six blocks members (c8, e5, h1, j4, n1, r1) that shared property, debt or policy ids now give each row its own id. No block-O, block-Q or block-Y member this proof measures changed. The pin is advanced so the harness closure still authenticates at HEAD; the corpus, capture, reach and calibration figures in this record were measured with the earlier blob and were not re-measured. This proof's engine-tree check already ties it to its own head source tree, so it verifies only at that tree."
+      }
+    ]
   },
   "readingTheCounts": "Member counts prove execution and the reach command additionally fails on cold executable whole lines. JavaScript line coverage cannot distinguish every operand sharing a line, so the report must be read with focused helper, hostile delegation, grouped-duplicate integration, and calibrated-mutation tests."
 }

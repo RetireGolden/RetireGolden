@@ -595,7 +595,7 @@
     "inputs": {
       "harnessBlobs": {
         "packages/engine/scripts/equivalence.mjs": "22b18d3b2374bbc2c1640d4a1c1095015771f720",
-        "packages/engine/scripts/equivalence/corpus/blocks.mjs": "7a1507c9bbf8e42f2e465195628bd389951c8025",
+        "packages/engine/scripts/equivalence/corpus/blocks.mjs": "df82d4ee7fbeeaa41c43b1811f05ddb161b01268",
         "packages/engine/scripts/equivalence/corpus/examples.mjs": "453bcb81103f490447d679276ca1a3ffbad9104a",
         "packages/engine/scripts/equivalence/corpus/index.mjs": "3d434147ef86cac8116cefac867b2076256feb21",
         "packages/engine/scripts/equivalence/describe-tree.mjs": "1b2e00f1170bbadae67cd04269cf91aa1f03a168",
@@ -635,7 +635,16 @@
         "blocks:y5-unprovableOffsetFailsClosed"
       ]
     },
-    "scope": "The mixed grouped-ID member measures a same-year deductible contribution updating qcdSection219ByDonor before character planning, and the duplicate-ID members measure one logical aggregate rather than physical-row intent. Focused helper and delegation tests independently pin contradictory offset history; exact pro-rata identity plus immutable scalar arithmetic after a hostile second-read boundary; all four cash-flow target values; multi-year counterfactual retry, rollback and re-entry; fresh per-attempt arrays, rows and writes; single-read hostile getters and iterators before any annual character mutation; exact owner-union order/cardinality; and the caller's three-row 1e16-plus-1-plus-1 binary64 left fold. The current seam also compares prior consumption and cumulative section 219 totals in the ledger's integer-cent domain, warns on genuinely contradictory carry evidence, exhaustively guards cash-flow publication, and pins divergent pro-rata identity/read-state arithmetic plus no-op identity behavior."
+    "scope": "The mixed grouped-ID member measures a same-year deductible contribution updating qcdSection219ByDonor before character planning, and the duplicate-ID members measure one logical aggregate rather than physical-row intent. Focused helper and delegation tests independently pin contradictory offset history; exact pro-rata identity plus immutable scalar arithmetic after a hostile second-read boundary; all four cash-flow target values; multi-year counterfactual retry, rollback and re-entry; fresh per-attempt arrays, rows and writes; single-read hostile getters and iterators before any annual character mutation; exact owner-union order/cardinality; and the caller's three-row 1e16-plus-1-plus-1 binary64 left fold. The current seam also compares prior consumption and cumulative section 219 totals in the ledger's integer-cent domain, warns on genuinely contradictory carry evidence, exhaustively guards cash-flow publication, and pins divergent pro-rata identity/read-state arithmetic plus no-op identity behavior.",
+    "harnessRepins": [
+      {
+        "date": "2026-09-26",
+        "path": "packages/engine/scripts/equivalence/corpus/blocks.mjs",
+        "measuredWithBlob": "7a1507c9bbf8e42f2e465195628bd389951c8025",
+        "pinnedBlob": "df82d4ee7fbeeaa41c43b1811f05ddb161b01268",
+        "reason": "Decision D-CASH-PROPERTY-ALIAS made the plan checks refuse any id two rows would publish a value under, so six blocks members (c8, e5, h1, j4, n1, r1) that shared property, debt or policy ids now give each row its own id. No block-O, block-Q or block-Y member this proof measures changed. The pin is advanced so the harness closure still authenticates at HEAD; the corpus, capture, reach and calibration figures in this record were measured with the earlier blob and were not re-measured. This proof's engine-tree check already ties it to its own head source tree, so it verifies only at that tree."
+      }
+    ]
   },
   "readingTheCounts": "A member count proves that at least one line in the named range executed. Reach additionally fails on any cold executable whole line in a reached range. JavaScript line coverage cannot distinguish every ternary, nullish or compound-condition operand sharing one physical line, so its reported cold sub-line region and the focused hostile tests must be read alongside the differential proof."
 }
