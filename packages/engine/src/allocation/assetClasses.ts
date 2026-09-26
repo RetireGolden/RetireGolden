@@ -255,9 +255,12 @@ export function expectedAccountReturnPct(account: Account, assumptions: Assumpti
 
 /**
  * Cholesky factor L (lower-triangular, LLᵀ = matrix) for correlated class
- * draws. For non-positive-definite input the diagonal term is clamped to a
- * small epsilon (1e-12) rather than failing, so the factorization always
- * returns (defensive: the shipped default matrix is PD).
+ * draws. The input must be positive definite: when a diagonal pivot
+ * matrix[i][i] − Σ_{k<i} L[i][k]² is not a positive finite number the matrix
+ * is refused with a RangeError, because no real factor exists (it used to be
+ * raised to 1e-12 without a word, which returned the factor of a different
+ * matrix). The shipped default matrix is positive definite. The function does
+ * not check symmetry or a unit diagonal.
  */
 export function choleskyDecompose(matrix: readonly (readonly number[])[]): number[][] {
   const n = matrix.length
@@ -267,7 +270,13 @@ export function choleskyDecompose(matrix: readonly (readonly number[])[]): numbe
       let sum = 0
       for (let k = 0; k < j; k++) sum += L[i]![k]! * L[j]![k]!
       if (i === j) {
-        L[i]![j] = Math.sqrt(Math.max(1e-12, matrix[i]![i]! - sum))
+        const pivot = matrix[i]![i]! - sum
+        if (!(Number.isFinite(pivot) && pivot > 0)) {
+          throw new RangeError(
+            `Correlation matrix is not positive definite: the Cholesky pivot at row ${i} is ${pivot}, not a positive number.`,
+          )
+        }
+        L[i]![j] = Math.sqrt(pivot)
       } else {
         L[i]![j] = (matrix[i]![j]! - sum) / L[j]![j]!
       }

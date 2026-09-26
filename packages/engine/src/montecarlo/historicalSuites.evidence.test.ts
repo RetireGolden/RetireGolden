@@ -93,5 +93,31 @@ describeCalculation(
       expect(withinTolerance(window.totalShortfall, expected.openingAsIncomeWrongReading!, example.tolerance)).toBe(false)
       expect(window.success).toBe(false)
     })
+
+    it('refuses an explicit window that is not a whole number of years from 1 to 96, before simulating', () => {
+      // It used to be clamped into [1, 96] without a word, and a fractional window read past the series.
+      const plan = singlePersonPlan({ dob: '1968-06-15', planningAge: 60 })
+      plan.accounts = [cashAccount('cash', inputs.openingBalance as number)]
+      const valid = validatePlan(plan)
+      for (const windowLengthYears of [0, 97, 2.5, -3, Number.NaN, Number.POSITIVE_INFINITY]) {
+        expect(() =>
+          runHistoricalStressSuites(valid, { startYear: START_YEAR, taxCalculator: createFlatTaxCalculator(0), windowLengthYears }),
+        ).toThrow(
+          new RangeError(
+            `Historical stress windowLengthYears must be a whole number of years from 1 to 96 (the length of the historical series); got ${windowLengthYears}.`,
+          ),
+        )
+      }
+      for (const windowLengthYears of [1, 96]) {
+        const result = runHistoricalStressSuites(valid, {
+          startYear: START_YEAR,
+          taxCalculator: createFlatTaxCalculator(0),
+          windowLengthYears,
+          suites: ['rolling'],
+        })
+        expect(result.windowLengthYears).toBe(windowLengthYears)
+        expect(result.suites[0]!.windows).toHaveLength(96 - windowLengthYears + 1)
+      }
+    })
   },
 )

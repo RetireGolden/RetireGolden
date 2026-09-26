@@ -16,8 +16,9 @@ import {
   createStationaryBootstrapModel,
   createStudentTModel,
   createUserShockModel,
+  sampleChiSquare,
 } from './marketModels.js'
-import type { Rng } from './rng.js'
+import { createRng, derivePathSeed, type Rng } from './rng.js'
 
 function seriesOf(path: MarketSeries): { returnShockPct: number[]; inflationPct: number[] } {
   const { returnShockPct, inflationPct } = path
@@ -217,48 +218,53 @@ describeCalculation(
     example: {
       inputs: {
         type: 'garch',
-        omega: 1,
+        returnVolPct: 12,
         alpha: 0.1,
-        beta: 0.8,
-        returnVolScalePct: 100,
+        beta: 0.85,
         inflationMeanPct: 0,
         inflationVolPct: 0,
         correlation: 0,
-        normals: [1, 0, 0.5, 0],
-        yearCount: 2,
+        normals: [1, 0, 0.5, 0, -2, 0, 0, 0],
+        yearCount: 4,
       },
       expected: {
-        returnShockPct: [500.019999600016, 518.4269476020705],
-        inflationPct: [0, 0],
+        returnShockPct: [12, 6, -23.082460874005616, 0],
+        inflationPct: [0, 0, 0, 0],
       },
-      tolerance: { abs: 1e-9 },
+      tolerance: { abs: 1e-12 },
     },
     worksheet: 'DOCS/calculations/monte-carlo/market-model-garch-variance.md',
     mutation: 'DOCS/calculations/monte-carlo/market-model-garch-variance.mutation.md',
   },
   ({ example }) => {
-    it('two-year published shocks 500.019999600016 then 518.4269476020705 with inflation 0', () => {
-      const path = seriesOf(
-        createGarchModel({
-          type: 'garch',
-          omega: example.inputs.omega as number,
-          alpha: example.inputs.alpha as number,
-          beta: example.inputs.beta as number,
-          returnVolScalePct: example.inputs.returnVolScalePct as number,
-          inflationMeanPct: example.inputs.inflationMeanPct as number,
-          inflationVolPct: example.inputs.inflationVolPct as number,
-          correlation: example.inputs.correlation as number,
-        }).generatePath(scriptedRng({ normals: example.inputs.normals as number[] }), example.inputs.yearCount as number),
-      )
-      const expectedShocks = example.expected.returnShockPct as number[]
-      const expectedInflation = example.expected.inflationPct as number[]
-      expectedShocks.forEach((value, index) => {
+    const base = {
+      type: 'garch' as const,
+      inflationMeanPct: example.inputs.inflationMeanPct as number,
+      inflationVolPct: example.inputs.inflationVolPct as number,
+      correlation: example.inputs.correlation as number,
+    }
+
+    function expectShocks(path: { returnShockPct: number[] }, expected: readonly number[]): void {
+      expected.forEach((value, index) => {
         const shock = path.returnShockPct[index]!
         expect(
           withinTolerance(shock, value, example.tolerance),
           `returnShockPct[${index}] ${shock} is not within ${JSON.stringify(example.tolerance)} of the worksheet's ${value}`,
         ).toBe(true)
       })
+    }
+
+    it('defaults (12, 0.1, 0.85), Z1 = 1, 0.5, −2, 0: shocks 12, 6, −23.082460874005616, 0 with inflation 0', () => {
+      const path = seriesOf(
+        createGarchModel({
+          ...base,
+          returnVolPct: example.inputs.returnVolPct as number,
+          alpha: example.inputs.alpha as number,
+          beta: example.inputs.beta as number,
+        }).generatePath(scriptedRng({ normals: example.inputs.normals as number[] }), example.inputs.yearCount as number),
+      )
+      expectShocks(path, example.expected.returnShockPct as number[])
+      const expectedInflation = example.expected.inflationPct as number[]
       expectedInflation.forEach((value, index) => {
         const inflation = path.inflationPct[index]!
         expect(
@@ -266,6 +272,106 @@ describeCalculation(
           `inflationPct[${index}] ${inflation} is not within ${JSON.stringify(example.tolerance)} of the worksheet's ${value}`,
         ).toBe(true)
       })
+    })
+
+    it('the same defaults are what an empty config runs: omega is 0.0144 · 0.05 and v_1 is 0.0144', () => {
+      const path = seriesOf(createGarchModel(base).generatePath(scriptedRng({ normals: example.inputs.normals as number[] }), 4))
+      expectShocks(path, example.expected.returnShockPct as number[])
+    })
+
+    it('returnVolPct 100, alpha 0.1, beta 0.8, Z1 = 1, 0.5, −2: variances 1, 1, 0.925 and shocks 100, 50, −192.35384061671346', () => {
+      const path = seriesOf(
+        createGarchModel({ ...base, returnVolPct: 100, alpha: 0.1, beta: 0.8 }).generatePath(
+          scriptedRng({ normals: [1, 0, 0.5, 0, -2, 0] }),
+          3,
+        ),
+      )
+      expectShocks(path, [100, 50, -192.35384061671346])
+    })
+
+    it('alpha = beta = 0 is an iid normal with the configured standard deviation', () => {
+      const path = seriesOf(
+        createGarchModel({ ...base, alpha: 0, beta: 0 }).generatePath(scriptedRng({ normals: [1, 0, -2, 0, 0.5, 0] }), 3),
+      )
+      expectShocks(path, [12, -24, 6])
+    })
+
+    it('refuses a negative or non-finite volatility, negative or non-finite weights, and alpha + beta of 1 or more', () => {
+      for (const returnVolPct of [-12, Number.NaN, Number.POSITIVE_INFINITY]) {
+        expect(() => createGarchModel({ ...base, returnVolPct })).toThrow(
+          new RangeError(`GARCH returnVolPct must be a finite number of at least 0; got ${returnVolPct}.`),
+        )
+      }
+      expect(() => createGarchModel({ ...base, alpha: -0.1 })).toThrow(
+        new RangeError('GARCH alpha and beta must be finite numbers of at least 0; got alpha -0.1, beta 0.85.'),
+      )
+      expect(() => createGarchModel({ ...base, beta: Number.NaN })).toThrow(
+        new RangeError('GARCH alpha and beta must be finite numbers of at least 0; got alpha 0.1, beta NaN.'),
+      )
+      expect(() => createGarchModel({ ...base, alpha: 0.1, beta: 0.9 })).toThrow(
+        new RangeError('GARCH alpha + beta must be below 1 for a finite long-run variance; got alpha 0.1 + beta 0.9 = 1.'),
+      )
+      expect(() => createGarchModel({ ...base, alpha: 0.2, beta: 0.85 })).toThrow(
+        new RangeError('GARCH alpha + beta must be below 1 for a finite long-run variance; got alpha 0.2 + beta 0.85 = 1.05.'),
+      )
+      expect(() => createGarchModel({ ...base, returnVolPct: 0 })).not.toThrow()
+    })
+
+    it('2,000 seeded paths of 30 years: every year has the configured variance, mean 0, and squared shocks cluster', () => {
+      // P = 2,000 paths seeded createRng(derivePathSeed(20260925, p)), Y = 30 years, r = shock / 12.
+      // mean(r^2) is 1 in every year (E[v_t] = sigmaBar^2 by induction from v_1 = sigmaBar^2); the
+      // tolerance 0.07 is five times an upper bound of 0.01428 on its standard error. mean(r) is 0
+      // with standard error 1 / sqrt(60,000) = 0.00408; tolerance five of those, 0.0205. The
+      // clustering statistic is the pooled Pearson correlation of (r_{t-1}^2, r_t^2) over all
+      // 2,000 x 29 consecutive within-path pairs (separate x and y means): the GARCH value over 20
+      // seeds has mean 0.151, standard deviation 0.0099 and minimum 0.131, while an iid model
+      // (alpha = beta = 0) never exceeds 0.008. The bound 0.08 sits 7 standard deviations below the
+      // GARCH mean and ten times above the largest iid value, so it separates the two on any seed.
+      const paths = 2000
+      const years = 30
+      const statistics = (config: Parameters<typeof createGarchModel>[0]) => {
+        const model = createGarchModel(config)
+        let sum = 0
+        let sumSquares = 0
+        let count = 0
+        let sx = 0
+        let sy = 0
+        let sxx = 0
+        let syy = 0
+        let sxy = 0
+        let pairs = 0
+        for (let p = 0; p < paths; p++) {
+          const shocks = seriesOf(model.generatePath(createRng(derivePathSeed(20260925, p)), years)).returnShockPct
+          for (let t = 0; t < years; t++) {
+            const r = shocks[t]! / 12
+            sum += r
+            sumSquares += r * r
+            count += 1
+            if (t > 0) {
+              const x = (shocks[t - 1]! / 12) ** 2
+              const y = r * r
+              sx += x
+              sy += y
+              sxx += x * x
+              syy += y * y
+              sxy += x * y
+              pairs += 1
+            }
+          }
+        }
+        const mx = sx / pairs
+        const my = sy / pairs
+        const clustering = (sxy / pairs - mx * my) / Math.sqrt((sxx / pairs - mx * mx) * (syy / pairs - my * my))
+        return { meanSquare: sumSquares / count, mean: sum / count, clustering }
+      }
+      const garch = statistics({ type: 'garch', inflationMeanPct: 2.5 })
+      expect(Math.abs(garch.meanSquare - 1), `mean(r^2) ${garch.meanSquare}`).toBeLessThan(0.07)
+      expect(Math.abs(garch.mean), `mean(r) ${garch.mean}`).toBeLessThan(0.0205)
+      expect(garch.clustering, `clustering ${garch.clustering}`).toBeGreaterThan(0.08)
+      // The same statistic on alpha = beta = 0 (an iid normal) stays far below the bound.
+      const iid = statistics({ type: 'garch', inflationMeanPct: 2.5, alpha: 0, beta: 0 })
+      expect(Math.abs(iid.meanSquare - 1)).toBeLessThan(0.07)
+      expect(iid.clustering, `iid clustering ${iid.clustering}`).toBeLessThan(0.08)
     })
   },
 )
@@ -439,7 +545,7 @@ describeCalculation(
     example: {
       inputs: {
         type: 'reversed-history',
-        windowLengthYears: 3,
+        windowLengthYears: 5,
         equityWeightPct: 60,
         startIndex: 72,
         yearCount: 3,
@@ -455,15 +561,28 @@ describeCalculation(
     mutation: 'DOCS/calculations/monte-carlo/market-model-reversed-history.mutation.md',
   },
   ({ example }) => {
-    it('floors windowLengthYears 3 to 5 and replays 2004, 2003, 2002 with the worksheet shocks', () => {
+    it('replays 2004, 2003, 2002 from a 5-year window with the worksheet shocks', () => {
       const model = createReversedHistoryModel({
         type: 'reversed-history',
         windowLengthYears: example.inputs.windowLengthYears as number,
         equityWeightPct: example.inputs.equityWeightPct as number,
       })
+      let drawnBound: number | undefined
+      const ints = scriptedRng({ ints: [example.inputs.startIndex as number] })
       const path = seriesOf(
-        model.generatePath(scriptedRng({ ints: [example.inputs.startIndex as number] }), example.inputs.yearCount as number),
+        model.generatePath(
+          {
+            ...ints,
+            nextInt: (bound: number) => {
+              drawnBound = bound
+              return ints.nextInt(bound)
+            },
+          },
+          example.inputs.yearCount as number,
+        ),
       )
+      // The start is drawn from 0..n − L: nextInt(96 − 5 + 1) = nextInt(92).
+      expect(drawnBound).toBe(HISTORICAL_YEARS.length - (example.inputs.windowLengthYears as number) + 1)
       const expectedYears = example.expected.reversedYears as number[]
       const expectedShocks = example.expected.returnShockPct as number[]
       const expectedInflation = example.expected.inflationPct as number[]
@@ -480,6 +599,47 @@ describeCalculation(
           `inflationPct[${index}] (year ${year}) ${inflation} is not within ${JSON.stringify(example.tolerance)} of the worksheet's ${expectedInflation[index]}`,
         ).toBe(true)
       })
+    })
+
+    it('a 7-year path wraps inside the 5-year window: 2004, 2003, 2002, 2001, 2000, 2004, 2003', () => {
+      const model = createReversedHistoryModel({
+        type: 'reversed-history',
+        windowLengthYears: example.inputs.windowLengthYears as number,
+        equityWeightPct: example.inputs.equityWeightPct as number,
+      })
+      const path = seriesOf(model.generatePath(scriptedRng({ ints: [example.inputs.startIndex as number] }), 7))
+      const rowOf = (year: number) => HISTORICAL_YEARS.find((row) => row.year === year)!
+      expect(path.inflationPct).toEqual([2004, 2003, 2002, 2001, 2000, 2004, 2003].map((year) => rowOf(year).inflationPct))
+    })
+
+    it('at the UI window of 10 and start 72 the first three years are 2009, 2008, 2007', () => {
+      const path = seriesOf(
+        createReversedHistoryModel({ type: 'reversed-history', windowLengthYears: 10, equityWeightPct: 60 }).generatePath(
+          scriptedRng({ ints: [72] }),
+          3,
+        ),
+      )
+      const expected = [2.1627083333333292, -22.85729166666667, -1.5572916666666687]
+      expected.forEach((value, index) => {
+        expect(
+          withinTolerance(path.returnShockPct[index]!, value, example.tolerance),
+          `returnShockPct[${index}] ${path.returnShockPct[index]} is not within ${JSON.stringify(example.tolerance)} of ${value}`,
+        ).toBe(true)
+      })
+      expect(path.inflationPct).toEqual([2.7, 0.1, 4.1])
+    })
+
+    it('refuses a window that is not a whole number from 5 to 96, instead of clamping it', () => {
+      for (const windowLengthYears of [3, 4, 4.999, 5.5, 97, 0, -5, Number.NaN, Number.POSITIVE_INFINITY]) {
+        expect(() => createReversedHistoryModel({ type: 'reversed-history', windowLengthYears })).toThrow(
+          new RangeError(
+            `Reversed-history windowLengthYears must be a whole number of years from 5 to 96 (the length of the historical series); got ${windowLengthYears}.`,
+          ),
+        )
+      }
+      for (const windowLengthYears of [undefined, 5, 10, 95, 96]) {
+        expect(() => createReversedHistoryModel({ type: 'reversed-history', windowLengthYears })).not.toThrow()
+      }
     })
   },
 )
@@ -606,76 +766,147 @@ describeCalculation(
   {
     example: {
       inputs: {
-        returnVolScalePct: 12,
+        df: 5,
+        returnVolPct: 12,
         inflationMeanPct: 0,
         inflationVolPct: 0,
         correlation: 0,
-        cases: [
-          { df: 5, z: 1, u: 0.5 },
-          { df: 5, z: 1, u: 0.01 },
-          { df: 3, z: 1, u: 0.01 },
-        ],
+        normals: [1, 0],
+        uniforms: [0.5, 0, 0.5],
+        yearCount: 1,
       },
-      expected: { returnShockPct: [12, 30, 42], inflationPct: [0, 0, 0] },
+      expected: {
+        chiSquare: 8.805870575472607,
+        mixingScale: 0.5836795510996967,
+        returnShockPct: 7.00415461319636,
+        inflationPct: 0,
+      },
       tolerance: { abs: 1e-12 },
     },
     worksheet: 'DOCS/calculations/monte-carlo/market-model-student-t-draw.md',
     mutation: 'DOCS/calculations/monte-carlo/market-model-student-t-draw.mutation.md',
   },
   ({ example }) => {
-    const cases = example.inputs.cases as readonly { df: number; z: number; u: number }[]
-    const expectedShocks = example.expected.returnShockPct as number[]
-    const expectedInflation = example.expected.inflationPct as number[]
-
-    function pathOf(row: { df: number; z: number; u: number }) {
-      // Draws per year come in the order nextNormal (return z), next (uniform u),
-      // nextNormal (inflation z2). z2 is scripted 0; inflation vol is 0 so its
-      // value is immaterial.
-      const model = createStudentTModel({
-        type: 'student-t',
-        df: row.df,
-        returnVolPct: example.inputs.returnVolScalePct as number,
-        inflationMeanPct: example.inputs.inflationMeanPct as number,
-        inflationVolPct: example.inputs.inflationVolPct as number,
-        correlation: example.inputs.correlation as number,
-      })
-      return seriesOf(model.generatePath(scriptedRng({ normals: [row.z, 0], uniforms: [row.u] }), 1))
+    const base = {
+      type: 'student-t' as const,
+      returnVolPct: example.inputs.returnVolPct as number,
+      inflationMeanPct: example.inputs.inflationMeanPct as number,
+      inflationVolPct: example.inputs.inflationVolPct as number,
+      correlation: example.inputs.correlation as number,
     }
 
-    it('df 5, u 0.5, z 1: shock 12 and inflation 0', () => {
-      const path = pathOf(cases[0]!)
+    /** One scripted Student-t year, counting the uniforms and normals the model reads. */
+    function oneYear(df: number, z: number, uniforms: readonly number[]) {
+      const inner = scriptedRng({ normals: [z, 0], uniforms: [...uniforms] })
+      let uniformsRead = 0
+      let normalsRead = 0
+      const rng: Rng = {
+        next: () => {
+          uniformsRead += 1
+          return inner.next()
+        },
+        nextNormal: () => {
+          normalsRead += 1
+          return inner.nextNormal()
+        },
+        nextInt: (bound: number) => inner.nextInt(bound),
+      }
+      const path = seriesOf(createStudentTModel({ ...base, df }).generatePath(rng, 1))
+      return { path, uniformsRead, normalsRead, rng }
+    }
+
+    function expectShock(actual: number, expected: number): void {
       expect(
-        withinTolerance(path.returnShockPct[0]!, expectedShocks[0]!, example.tolerance),
-        `returnShockPct ${path.returnShockPct[0]} is not within ${JSON.stringify(example.tolerance)} of the worksheet's ${expectedShocks[0]}`,
+        withinTolerance(actual, expected, example.tolerance),
+        `returnShockPct ${actual} is not within ${JSON.stringify(example.tolerance)} of the worksheet's ${expected}`,
       ).toBe(true)
+    }
+
+    it('B1, df 5, Z 1, uniforms 0.5, 0, 0.5: V = 8.805870575472607, m = 0.5836795510996967, shock 7.00415461319636, inflation 0', () => {
+      const uniforms = example.inputs.uniforms as number[]
+      const chiSquare = sampleChiSquare(scriptedRng({ uniforms }), example.inputs.df as number)
       expect(
-        withinTolerance(path.inflationPct[0]!, expectedInflation[0]!, example.tolerance),
-        `inflationPct ${path.inflationPct[0]} is not within ${JSON.stringify(example.tolerance)} of the worksheet's ${expectedInflation[0]}`,
+        withinTolerance(chiSquare, example.expected.chiSquare as number, example.tolerance),
+        `V ${chiSquare} is not within ${JSON.stringify(example.tolerance)} of the worksheet's ${example.expected.chiSquare}`,
       ).toBe(true)
+      const mixingScale = Math.sqrt(((example.inputs.df as number) - 2) / chiSquare)
+      expect(
+        withinTolerance(mixingScale, example.expected.mixingScale as number, example.tolerance),
+        `m ${mixingScale} is not within ${JSON.stringify(example.tolerance)} of the worksheet's ${example.expected.mixingScale}`,
+      ).toBe(true)
+      const year = oneYear(example.inputs.df as number, (example.inputs.normals as number[])[0]!, uniforms)
+      expectShock(year.path.returnShockPct[0]!, example.expected.returnShockPct as number)
+      expect(year.path.inflationPct[0]).toBe(example.expected.inflationPct)
+      // Draw order: Z (normal), three uniforms for V (squeeze accepts), z2 (normal).
+      expect(year.uniformsRead).toBe(3)
+      expect(year.normalsRead).toBe(2)
     })
 
-    it('df 5, u 0.01, z 1: shock 30 and inflation 0', () => {
-      const path = pathOf(cases[1]!)
-      expect(
-        withinTolerance(path.returnShockPct[0]!, expectedShocks[1]!, example.tolerance),
-        `returnShockPct ${path.returnShockPct[0]} is not within ${JSON.stringify(example.tolerance)} of the worksheet's ${expectedShocks[1]}`,
-      ).toBe(true)
-      expect(
-        withinTolerance(path.inflationPct[0]!, expectedInflation[1]!, example.tolerance),
-        `inflationPct ${path.inflationPct[0]} is not within ${JSON.stringify(example.tolerance)} of the worksheet's ${expectedInflation[1]}`,
-      ).toBe(true)
+    it('B2, an attempt rejected at s <= 0 reads two uniforms and retries: shock 7.00415461319636 after 5 uniforms', () => {
+      const year = oneYear(5, 1, [1e-5, 0.5, 0.5, 0, 0.5])
+      expectShock(year.path.returnShockPct[0]!, example.expected.returnShockPct as number)
+      expect(year.uniformsRead).toBe(5)
     })
 
-    it('df 3, u 0.01, z 1: shock 42 and inflation 0', () => {
-      const path = pathOf(cases[2]!)
-      expect(
-        withinTolerance(path.returnShockPct[0]!, expectedShocks[2]!, example.tolerance),
-        `returnShockPct ${path.returnShockPct[0]} is not within ${JSON.stringify(example.tolerance)} of the worksheet's ${expectedShocks[2]}`,
-      ).toBe(true)
-      expect(
-        withinTolerance(path.inflationPct[0]!, expectedInflation[2]!, example.tolerance),
-        `inflationPct ${path.inflationPct[0]} is not within ${JSON.stringify(example.tolerance)} of the worksheet's ${expectedInflation[2]}`,
-      ).toBe(true)
+    it('B3, the squeeze fails and the exact test rejects, then accepts: shock 7.00415461319636 after 6 uniforms', () => {
+      const year = oneYear(5, 1, [0.5, 0, 0.999, 0.5, 0, 0.95])
+      expectShock(year.path.returnShockPct[0]!, example.expected.returnShockPct as number)
+      expect(year.uniformsRead).toBe(6)
+      expect(() => year.rng.next()).toThrow(new RangeError('uniform 6 was not scripted'))
+    })
+
+    it('B4, non-integer df 2.5, Z −2, uniforms 0.5, 0, 0.5: shock −7.486573660049821', () => {
+      const year = oneYear(2.5, -2, [0.5, 0, 0.5])
+      expectShock(year.path.returnShockPct[0]!, -7.486573660049821)
+    })
+
+    it('refuses df of 2 or below and a non-finite df with the stated message; accepts 2.0000001, 2.5 and 3', () => {
+      for (const df of [2, 1.5, 0, -3, Number.NaN, Number.POSITIVE_INFINITY]) {
+        expect(() => createStudentTModel({ ...base, df })).toThrow(
+          new RangeError(
+            `Student-t degrees of freedom must be a finite number greater than 2 (at 2 or below the variance is infinite, so no volatility can be matched); got ${df}.`,
+          ),
+        )
+      }
+      for (const df of [2.0000001, 2.5, 3]) expect(() => createStudentTModel({ ...base, df })).not.toThrow()
+    })
+
+    it('one seeded path of 200,000 years at df 5: mean 0, variance 1 and tail share 0.0117248110 within five standard errors', () => {
+      // r = shock / 12. Exact values: E[r] = 0, E[r^2] = 1, P(|r| > 3) = P(|T_5| > 3 / sqrt(0.6)) =
+      // 0.011724811003954616 from the closed-form t_5 distribution function. Standard errors at N:
+      // 1/sqrt(N) = 0.002236, sqrt((E[t^4] − 1)/N) = sqrt(8/N) = 0.006325 (E[t^4] = 9 at df 5), and
+      // sqrt(p(1 − p)/N) = 0.0002407. The five-standard-error bands reject the old mixture (variance
+      // 1.2625), an unscaled t (variance 5/3) and a plain normal (tail share 0.0027).
+      const N = 200_000
+      const shocks = seriesOf(
+        createStudentTModel({ type: 'student-t', df: 5, returnVolPct: 12, inflationMeanPct: 2.5 }).generatePath(
+          createRng(20260925),
+          N,
+        ),
+      ).returnShockPct
+      let sum = 0
+      let sumSquares = 0
+      let beyondThree = 0
+      for (const shock of shocks) {
+        const r = shock / 12
+        sum += r
+        sumSquares += r * r
+        if (Math.abs(r) > 3) beyondThree += 1
+      }
+      const mean = sum / N
+      const variance = sumSquares / N - mean * mean
+      expect(Math.abs(mean), `mean ${mean}`).toBeLessThan(0.0112)
+      expect(Math.abs(variance - 1), `variance ${variance}`).toBeLessThan(0.0317)
+      expect(Math.abs(beyondThree / N - 0.011724811003954616), `tail share ${beyondThree / N}`).toBeLessThan(0.0012)
+    })
+
+    it('sampleChiSquare at df 5 has mean 5 within five standard errors over 200,000 seeded draws', () => {
+      // Var(chi^2_5) = 10, so the standard error of the mean is sqrt(10 / N) = 0.00707.
+      const rng = createRng(7)
+      const N = 200_000
+      let sum = 0
+      for (let i = 0; i < N; i++) sum += sampleChiSquare(rng, 5)
+      expect(Math.abs(sum / N - 5), `mean ${sum / N}`).toBeLessThan(0.0354)
     })
   },
 )

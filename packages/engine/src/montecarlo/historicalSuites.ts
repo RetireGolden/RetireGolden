@@ -103,13 +103,31 @@ function suiteName(kind: HistoricalStressSuiteKind, windowLength: number): strin
   return kind === 'rolling' ? `Rolling ${windowLength}-year historical windows` : `Reversed ${windowLength}-year historical windows`
 }
 
+/**
+ * Replays every rolling (and, by default, every reversed) historical window through the
+ * projection ledger.
+ *
+ * The window length defaults to the projection's length, capped at the length of the
+ * historical series (a longer projection wraps within the window). An explicit
+ * windowLengthYears must be a whole number of years from 1 to the length of the series
+ * (96); any other value is refused with a RangeError before anything is simulated. It
+ * used to be clamped into that range without a word, and a fractional value read past the
+ * end of the series.
+ */
 export function runHistoricalStressSuites(plan: Plan, opts: HistoricalStressSuiteOptions): HistoricalStressSuiteResult {
+  const seriesLength = HISTORICAL_YEARS.length
+  const requestedWindow = opts.windowLengthYears
+  if (
+    requestedWindow !== undefined &&
+    !(Number.isInteger(requestedWindow) && requestedWindow >= 1 && requestedWindow <= seriesLength)
+  ) {
+    throw new RangeError(
+      `Historical stress windowLengthYears must be a whole number of years from 1 to ${seriesLength} (the length of the historical series); got ${requestedWindow}.`,
+    )
+  }
   const baseline = simulatePlan(plan, { startYear: opts.startYear, taxCalculator: opts.taxCalculator })
   const projectionYears = baseline.years.length
-  const windowLength = Math.max(
-    1,
-    Math.min(opts.windowLengthYears ?? projectionYears, HISTORICAL_YEARS.length),
-  )
+  const windowLength = requestedWindow ?? Math.max(1, Math.min(projectionYears, seriesLength))
   const kinds = opts.suites ?? (['rolling', 'reversed'] as const)
   const lastStart = HISTORICAL_YEARS.length - windowLength
   const worstWindowCount = Math.max(1, opts.worstWindowCount ?? 5)
