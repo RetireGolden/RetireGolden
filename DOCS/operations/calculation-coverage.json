@@ -30,7 +30,6 @@
       "aca-gross-enrollment-premium-annual",
       "aca-modeled-allowable-ptc-annual",
       "accounts-balance-per-account-annual",
-      "accounts-ending-balance-by-category",
       "accounts-investable-total-annual",
       "accounts-net-worth-annual",
       "annuitization-payout-rate-pct",
@@ -161,11 +160,6 @@
       "scenario-lifetime-penalties",
       "scenario-lifetime-tax",
       "sepp-distribution-annual",
-      "simple-candidate-evaluation-after-tax-estate-delta",
-      "simple-candidate-evaluation-executed-conversion-total",
-      "simple-candidate-evaluation-incomplete-computation-years",
-      "simple-candidate-evaluation-lifetime-tax-delta",
-      "simple-candidate-evaluation-money-lasts-years-delta",
       "social-security-benefit-annual",
       "social-security-bridge-sizing",
       "spending-base-annual",
@@ -213,6 +207,7 @@
       "year-result-tax-exempt-interest"
     ],
     "partial": [
+      "accounts-ending-balance-by-category",
       "display-balance-by-category-annual",
       "display-dollar-basis-conversion",
       "display-fi-target-annual",
@@ -224,7 +219,12 @@
       "display-upside-shortfall-annual",
       "display-upside-spending-annual",
       "display-years-before-plan-end",
-      "longevity-last-funded-year"
+      "longevity-last-funded-year",
+      "simple-candidate-evaluation-after-tax-estate-delta",
+      "simple-candidate-evaluation-executed-conversion-total",
+      "simple-candidate-evaluation-incomplete-computation-years",
+      "simple-candidate-evaluation-lifetime-tax-delta",
+      "simple-candidate-evaluation-money-lasts-years-delta"
     ],
     "noRecordYet": [
       "bucket-lens-allocation",

@@ -482,8 +482,10 @@ export const accountsAndGrowthRecords = {
       'packages/engine/src/projection/compare.ts#ProjectionSummary.endingByCategory',
       'packages/engine/src/projection/yearFigures.ts#balancesByCategory',
     ],
-    verifiedOn: '2026-09-18',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+    verifiedOn: '2026-09-26',
+    // Restated 2026-09-26 (B2-P1 slice 1); the original codex derivation and
+    // its cursor review cover the earlier text, not the restatement.
+    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
   },
   'estate-to-charity': {
     title: 'Ending estate passing to charity',

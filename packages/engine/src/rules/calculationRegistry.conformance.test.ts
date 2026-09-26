@@ -1444,8 +1444,8 @@ describe('calculation registry conformance', () => {
         if (relocation.target !== null) violations.push(`${id}: a pending relocation names a target (${relocation.target})`)
         continue
       }
-      if (relocation.target === null || !shape.test(relocation.target)) {
-        violations.push(`${id}: a done relocation must name engine/src/<path>.ts#<symbol>, got ${String(relocation.target)}`)
+      if (relocation.target === null || !shape.test(relocation.target) || relocation.target.split(/[/#]/u).includes('..')) {
+        violations.push(`${id}: a done relocation must name engine/src/<path>.ts#<symbol> with no .. segment, got ${String(relocation.target)}`)
         continue
       }
       const [censusPath, symbol] = relocation.target.split('#') as [string, string]

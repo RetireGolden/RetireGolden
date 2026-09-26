@@ -382,7 +382,7 @@ export const optimizerAndComparisonsRecords = {
       worksheet: 'DOCS/calculations/optimizer-and-comparisons/simple-candidate-evaluation-comparison.md',
     },
     limits: [
-      'Every difference is candidate minus baseline, the conversion sum is the candidate result\'s rows alone, a non-depleting result is funded through its endYear and a depleting one through its depletionYear - 1 (owner decision R15, 2026-09-26, replaced the earlier count of depletionYear or endYear + 1; both shift every result by one year, so every delta is unchanged), and the incomplete years are a de-duplicated ascending union across both results rather than a concatenation. Beyond the worksheet\'s inputs the smallest exported entry that publishes these fields generates its own fixed set of fill-to-target candidates and runs each one through the ledger, so the fixture supplies the candidate result at the simulate seam and the baseline result directly; it also assumes a validated plan whose only estate-discounted holding is one non-inherited traditional account at a 20 percent flat heir rate, so each result\'s final-year balance for that account is what turns its ending net worth into the worksheet\'s after-tax estate. In the no-incomplete-status branch the optional incompleteComputationYears key is omitted, not set to an empty list, as the worksheet states since its 2026-09-18 revision (the first derivation expected an empty list, which the fixture found); the fixture asserts the omission and the empty union it stands for. recommendationState has no census family this round and is not published by this record.',
+      'Every difference is candidate minus baseline, the conversion sum is the candidate result\'s rows alone, a non-depleting result is funded through its endYear and a depleting one through its depletionYear - 1 (owner decision R15, 2026-09-25; restated 2026-09-26; it replaced the earlier count of depletionYear or endYear + 1, and both shift every result by one year, so every delta is unchanged), and the incomplete years are a de-duplicated ascending union across both results rather than a concatenation. Beyond the worksheet\'s inputs the smallest exported entry that publishes these fields generates its own fixed set of fill-to-target candidates and runs each one through the ledger, so the fixture supplies the candidate result at the simulate seam and the baseline result directly; it also assumes a validated plan whose only estate-discounted holding is one non-inherited traditional account at a 20 percent flat heir rate, so each result\'s final-year balance for that account is what turns its ending net worth into the worksheet\'s after-tax estate. In the no-incomplete-status branch the optional incompleteComputationYears key is omitted, not set to an empty list, as the worksheet states since its 2026-09-18 revision (the first derivation expected an empty list, which the fixture found); the fixture asserts the omission and the empty union it stands for. recommendationState has no census family this round and is not published by this record.',
     ],
     implementedBy: [
       'packages/engine/src/projection/optimizePlan.ts',
@@ -396,8 +396,10 @@ export const optimizerAndComparisonsRecords = {
       'packages/engine/src/decisions/evaluateCandidate.ts#evaluateCandidate',
       'packages/engine/src/projection/moneyLasts.ts#lastFundedYear',
     ],
-    verifiedOn: '2026-09-18',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+    verifiedOn: '2026-09-26',
+    // Restated 2026-09-26 (B2-P1 slice 1); the original codex derivation and
+    // its cursor review cover the earlier text, not the restatement.
+    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
   },
   'exact-ledger-tournament-margin': {
     title: 'Exact ledger tournament margin',

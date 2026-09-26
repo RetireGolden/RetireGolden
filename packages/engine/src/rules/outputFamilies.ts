@@ -2530,7 +2530,7 @@ const families = {
       },
       {
         "surface": "ss-page",
-        "selector": "Bridge comparison and claim-age tables \"until YEAR / never\""
+        "selector": "Claim-age table \"Depletes\" column YEAR / never"
       },
       {
         "surface": "survivor-page",
@@ -2570,11 +2570,19 @@ const families = {
       },
       {
         "surface": "results-headline",
-        "selector": "KpiBar \"Money lasts\" value \"through L\""
+        "selector": "KpiBar \"Money lasts\" value \"through L\", or \"short from S\" when the first year is short"
       },
       {
         "surface": "report",
-        "selector": "Printed report KPI \"Money lasts\" value \"through L\""
+        "selector": "Printed report KPI \"Money lasts\" value \"through L\", or \"short from S\" when the first year is short"
+      },
+      {
+        "surface": "report",
+        "selector": "Downloadable HTML report headline \"Money lasts\" \"Through L (runs short in D)\""
+      },
+      {
+        "surface": "ss-page",
+        "selector": "Bridge comparison \"Money lasts\" \"through L\" / \"full plan\""
       }
     ],
     "relocation": null

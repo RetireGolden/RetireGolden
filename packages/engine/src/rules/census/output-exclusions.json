@@ -1960,22 +1960,6 @@
     "reason": "The deterministicSuccessPct.depletionYear field is a coordinate such as year, age, or offset used to place another value."
   },
   {
-    "id": "field-planner-ui-src-planner-comparedeltas-ts-lastfundedyear-depletionyear",
-    "path": "planner-ui/src/planner/compareDeltas.ts",
-    "symbol": "lastFundedYear",
-    "field": "depletionYear",
-    "reasonKind": "dimension-coordinate",
-    "reason": "The lastFundedYear.depletionYear field is a coordinate such as year, age, or offset used to place another value."
-  },
-  {
-    "id": "field-planner-ui-src-planner-comparedeltas-ts-lastfundedyear-endyear",
-    "path": "planner-ui/src/planner/compareDeltas.ts",
-    "symbol": "lastFundedYear",
-    "field": "endYear",
-    "reasonKind": "dimension-coordinate",
-    "reason": "The lastFundedYear.endYear field is a coordinate such as year, age, or offset used to place another value."
-  },
-  {
     "id": "field-planner-ui-src-planner-comparedeltas-ts-moneylastsdelta-depletionyear",
     "path": "planner-ui/src/planner/compareDeltas.ts",
     "symbol": "moneyLastsDelta",

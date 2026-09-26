@@ -7199,6 +7199,14 @@ const coverageCensus = [
   {
     "source": "planner-ui/src/planner/SsAnalysisPage.tsx",
     "owner": "BridgeComparisonRow",
+    "field": "lastFundedYear",
+    "disposition": "family",
+    "familyId": "longevity-last-funded-year",
+    "tsType": "number"
+  },
+  {
+    "source": "planner-ui/src/planner/SsAnalysisPage.tsx",
+    "owner": "BridgeComparisonRow",
     "field": "successRate",
     "disposition": "family",
     "familyId": "monte-carlo-success-rate",
@@ -7411,26 +7419,6 @@ const coverageCensus = [
     "familyId": null,
     "reasonKind": "runtime-diagnostic",
     "reason": "The formatDelta.value field is an internal diagnostic used to trace or validate calculation behavior.",
-    "tsType": "number"
-  },
-  {
-    "source": "planner-ui/src/planner/compareDeltas.ts",
-    "owner": "lastFundedYear",
-    "field": "depletionYear",
-    "disposition": "excluded",
-    "familyId": null,
-    "reasonKind": "dimension-coordinate",
-    "reason": "The lastFundedYear.depletionYear field is a coordinate such as year, age, or offset used to place another value.",
-    "tsType": "number | null"
-  },
-  {
-    "source": "planner-ui/src/planner/compareDeltas.ts",
-    "owner": "lastFundedYear",
-    "field": "endYear",
-    "disposition": "excluded",
-    "familyId": null,
-    "reasonKind": "dimension-coordinate",
-    "reason": "The lastFundedYear.endYear field is a coordinate such as year, age, or offset used to place another value.",
     "tsType": "number"
   },
   {
@@ -12181,22 +12169,6 @@ const exclusionCensus = [
     "field": "value",
     "reasonKind": "runtime-diagnostic",
     "reason": "The formatDelta.value field is an internal diagnostic used to trace or validate calculation behavior."
-  },
-  {
-    "id": "field-planner-ui-src-planner-comparedeltas-ts-lastfundedyear-depletionyear",
-    "path": "planner-ui/src/planner/compareDeltas.ts",
-    "symbol": "lastFundedYear",
-    "field": "depletionYear",
-    "reasonKind": "dimension-coordinate",
-    "reason": "The lastFundedYear.depletionYear field is a coordinate such as year, age, or offset used to place another value."
-  },
-  {
-    "id": "field-planner-ui-src-planner-comparedeltas-ts-lastfundedyear-endyear",
-    "path": "planner-ui/src/planner/compareDeltas.ts",
-    "symbol": "lastFundedYear",
-    "field": "endYear",
-    "reasonKind": "dimension-coordinate",
-    "reason": "The lastFundedYear.endYear field is a coordinate such as year, age, or offset used to place another value."
   },
   {
     "id": "field-planner-ui-src-planner-comparedeltas-ts-module-value",

@@ -557,7 +557,7 @@
       "irc-55-a-amt-is-the-excess-over-regular-tax"
     ],
     "status": "identified",
-    "notes": "Before B2-P1 slice 1 the page added the 0% band room (ltcgZeroHeadroom) and the remaining carryforward, which overstated the room at no tax whenever a gain would make Social Security taxable, use up the $3,000 loss deduction, reach the unindexed NIIT threshold or shrink the senior deduction. ltcgZeroHeadroom stays published as the 0% band room.",
+    "notes": "Before B2-P1 slice 1 the page added the 0% band room (ltcgZeroHeadroom) and the remaining carryforward, which overstated the room at no tax whenever a gain would make Social Security taxable, use up a loss deduction the other income was using, reach the unindexed NIIT threshold or shrink the senior deduction. ltcgZeroHeadroom stays published as the 0% band room. The page floors the room to the whole dollar, so it never shows more room than the engine computed.",
     "dimensions": [
       "year"
     ],
@@ -3223,7 +3223,7 @@
     "uiSources": [
       {
         "path": "planner-ui/src/planner/compareDeltas.ts",
-        "symbol": "lastFundedYear / ageDelta"
+        "symbol": "moneyLastsDelta / ageDelta"
       }
     ],
     "surfaces": [
@@ -3253,7 +3253,7 @@
       },
       {
         "surface": "ss-page",
-        "selector": "Bridge comparison and claim-age tables \"until YEAR / never\""
+        "selector": "Claim-age table \"Depletes\" column YEAR / never"
       },
       {
         "surface": "survivor-page",
@@ -3273,7 +3273,7 @@
       }
     ],
     "transformations": [
-      "Compare view converts first-shortfall year to last-funded year."
+      "Compare view differences the engine's last funded years (projection/moneyLasts.ts#lastFundedYear, re-exported by compareDeltas.ts)."
     ],
     "candidateRuleIds": [],
     "status": "identified",
@@ -7749,16 +7749,24 @@
       },
       {
         "surface": "results-headline",
-        "selector": "KpiBar \"Money lasts\" value \"through L\""
+        "selector": "KpiBar \"Money lasts\" value \"through L\", or \"short from S\" when the first year is short"
       },
       {
         "surface": "report",
-        "selector": "Printed report KPI \"Money lasts\" value \"through L\""
+        "selector": "Printed report KPI \"Money lasts\" value \"through L\", or \"short from S\" when the first year is short"
+      },
+      {
+        "surface": "report",
+        "selector": "Downloadable HTML report headline \"Money lasts\" \"Through L (runs short in D)\""
+      },
+      {
+        "surface": "ss-page",
+        "selector": "Bridge comparison \"Money lasts\" \"through L\" / \"full plan\""
       }
     ],
     "transformations": [],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": "Added by B2-P1 slice 1 (owner decision R15, one money-lasts convention). The decision and optimizer money-lasts deltas are differences of this year; slice 3 moves the Compare page onto it."
+    "notes": "Added by B2-P1 slice 1 (owner decision R15, one money-lasts convention). The decision and optimizer money-lasts deltas are differences of this year, and the Compare page's delta now differences the engine's lastFundedYear. The Insurance section's LTC stress table also prints it (LtcStressComparison.lasts), on a page no census surface names yet."
   }
 ]

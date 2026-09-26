@@ -5007,26 +5007,6 @@
   },
   {
     "source": "planner-ui/src/planner/compareDeltas.ts",
-    "owner": "lastFundedYear",
-    "field": "depletionYear",
-    "tsType": "number | null",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "The lastFundedYear.depletionYear field is a coordinate such as year, age, or offset used to place another value.",
-    "reasonKind": "dimension-coordinate"
-  },
-  {
-    "source": "planner-ui/src/planner/compareDeltas.ts",
-    "owner": "lastFundedYear",
-    "field": "endYear",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "The lastFundedYear.endYear field is a coordinate such as year, age, or offset used to place another value.",
-    "reasonKind": "dimension-coordinate"
-  },
-  {
-    "source": "planner-ui/src/planner/compareDeltas.ts",
     "owner": "MoneyLastsDelta",
     "field": "value",
     "tsType": "number",
@@ -10077,5 +10057,13 @@
     "tsType": "number | undefined",
     "disposition": "family",
     "familyId": "display-balance-by-category-annual"
+  },
+  {
+    "source": "planner-ui/src/planner/SsAnalysisPage.tsx",
+    "owner": "BridgeComparisonRow",
+    "field": "lastFundedYear",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "longevity-last-funded-year"
   }
 ]

@@ -672,7 +672,7 @@ export const taxesRecords = {
       worksheet: 'DOCS/calculations/taxes/display-tax-free-gains-room-annual.md',
     },
     limits: [
-      'Federal income tax only. State income tax on the gain is not included, nor a smaller ACA premium tax credit (which the ledger books as a higher net premium, and which is repaid as federal tax at filing when it was paid in advance; the years with a modeled credit are marked), nor a Medicare premium surcharge two years later',
+      'Federal income tax only. State income tax on the gain is not included, nor a smaller ACA premium tax credit (the ledger books it as a higher net premium; if the credit was paid in advance, the part lost is paid back as federal tax at filing; the years with a modeled credit are marked), nor a Medicare premium surcharge two years later',
       'This year only: gains the carryforward absorbs reduce what carries into later years',
       'Everything else in the year is held fixed (withdrawals, the funding solve, state tax); the recomputation starts from the advisory input, whose federal tax can differ from the settled tax of the funding solve',
       'Exact when federal tax does not fall as a gain is added, which holds for every input except an itemized charitable deduction bound by a percentage-of-AGI ceiling; there the search returns a gain at which tax has not risen, not necessarily the first point at which it would',

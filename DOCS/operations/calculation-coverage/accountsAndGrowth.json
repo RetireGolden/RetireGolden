@@ -121,8 +121,8 @@
       ],
       "provenance": {
         "derivedBy": "codex",
-        "implementedBy": "claude",
-        "reviewedBy": "cursor"
+        "implementedBy": "claude-subagent",
+        "reviewedBy": "unreviewed"
       },
       "fixtureFiles": [
         "packages/engine/src/projection/compareSummary.evidence.test.ts"
