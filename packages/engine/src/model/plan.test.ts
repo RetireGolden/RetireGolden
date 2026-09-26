@@ -1612,6 +1612,26 @@ describe('Plan retirement-action persistence', () => {
       expect(issues).toEqual([`accounts.${first}.id: ${message}`, `accounts.${first + 1}.id: ${message}`])
     })
 
+    it('names every investable account a property or a debt shares an id with', () => {
+      // These pairs were refused only as a "duplicate account id" before.
+      const taxable: Plan['accounts'][number] = {
+        type: 'taxable', id: 'x', name: 'Brokerage', ownerPersonId: null, annualReturnPct: 0, balance: 10_000,
+        costBasis: 10_000, annualContribution: 0,
+      }
+      const hsa: Plan['accounts'][number] = {
+        type: 'hsa', id: 'x', name: 'HSA', ownerPersonId: 'p1', annualReturnPct: 0, balance: 10_000, annualContribution: 0,
+      }
+      const cases: [Plan['accounts'], string][] = [
+        [[cash('x'), debt('x')], 'a cash account and a debt; give the debt its own id'],
+        [[property('x'), taxable], 'a taxable account and a property; give the property its own id'],
+        [[hsa, debt('x'), property('x')], 'an HSA, a property and a debt; give each property and debt its own id'],
+      ]
+      for (const [accounts, described] of cases) {
+        const { issues, first } = issuesFor(accounts)
+        expect(issues).toEqual(accounts.map((_, offset) => `accounts.${first + offset}.id: account id "x" is shared by ${described}`))
+      }
+    })
+
     it('refuses two properties, and two debts, under one id', () => {
       expect(issuesFor([property('home'), property('home', 'Cabin')]).issues)
         .toContain(`accounts.${validCouplePlan().accounts.length}.id: account id "home" is shared by two properties; give each its own id`)
@@ -1681,11 +1701,12 @@ describe('Plan retirement-action persistence', () => {
       expectedNetProceeds: null,
     }]
 
+    // The two cash rows agree, so once the property has its own id they are
+    // one logical account; only the property's collision is refused.
     const parsed = parsePlan(plan)
     expect(parsed.ok).toBe(false)
-    expect(parsed.ok ? [] : parsed.issues.join('\n')).toContain(
-      'duplicate account id "ambiguous-cash-property"',
-    )
+    const message = 'account id "ambiguous-cash-property" is shared by two cash accounts and a property; give the property its own id'
+    expect(parsed.ok ? [] : parsed.issues).toEqual([0, 1, 2].map((index) => `accounts.${index}.id: ${message}`))
   })
 
   it('rejects a cash/property channel with more than the exact legacy pair', () => {
@@ -1713,9 +1734,8 @@ describe('Plan retirement-action persistence', () => {
 
     const parsed = parsePlan(plan)
     expect(parsed.ok).toBe(false)
-    expect(parsed.ok ? [] : parsed.issues.join('\n')).toContain(
-      'duplicate account id "legacy-position"',
-    )
+    const message = 'account id "legacy-position" is shared by a cash account and two properties; give each property its own id'
+    expect(parsed.ok ? [] : parsed.issues).toEqual([0, 1, 2].map((index) => `accounts.${index}.id: ${message}`))
   })
 
   it('rejects duplicate balance rows whose estate destinations disagree in either order', () => {

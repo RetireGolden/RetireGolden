@@ -17,7 +17,7 @@
 import type { z } from 'zod'
 import { addCalendarMonths } from '../actions/civilDate.js'
 import { packForYear } from '../params/index.js'
-import { accountChannel, policyChannel, sharedIdGroups } from './sharedIdCollisions.js'
+import { accountChannel, policyChannel, sharedIdGroups, sharedIdRenames } from './sharedIdCollisions.js'
 import {
   ownedNonRothIraAnnualFilingSourceKey,
   planOwnedNonRothIraAnnualFilingSourceIdentifierClaims,
@@ -273,23 +273,70 @@ export function checkAmbiguousActionPersonIds(
 
 const COUNT_WORDS = ['', 'a', 'two', 'three', 'four', 'five'] as const
 
-/** "a property and a debt", "two properties", "two properties and a debt". */
-function describeValueRows(types: readonly ('property' | 'debt')[]): string {
-  const phrase = (count: number, singular: string, plural: string): string | null =>
-    count === 0 ? null : `${COUNT_WORDS[count] ?? String(count)} ${count === 1 ? singular : plural}`
-  const parts = [
-    phrase(types.filter((type) => type === 'property').length, 'property', 'properties'),
-    phrase(types.filter((type) => type === 'debt').length, 'debt', 'debts'),
-  ].filter((part): part is string => part !== null)
-  return parts.join(' and ')
+/** How a shared-id message names each account type that publishes a value: singular, plural, article. */
+const SHARED_ID_ACCOUNT_NOUNS: readonly (readonly [AccountType, string, string, 'a' | 'an'])[] = [
+  ['cash', 'cash account', 'cash accounts', 'a'],
+  ['taxable', 'taxable account', 'taxable accounts', 'a'],
+  ['equityComp', 'equity compensation account', 'equity compensation accounts', 'an'],
+  ['traditional', 'traditional account', 'traditional accounts', 'a'],
+  ['roth', 'Roth account', 'Roth accounts', 'a'],
+  ['hsa', 'HSA', 'HSAs', 'an'],
+  ['property', 'property', 'properties', 'a'],
+  ['debt', 'debt', 'debts', 'a'],
+]
+
+/** "a cash account and a property", "two properties", "a taxable account, a property and a debt". */
+function describeSharedIdRows(types: readonly AccountType[]): string {
+  const parts = SHARED_ID_ACCOUNT_NOUNS.flatMap(([type, singular, plural, article]) => {
+    const count = types.filter((candidate) => candidate === type).length
+    if (count === 0) return []
+    return [count === 1 ? `${article} ${singular}` : `${COUNT_WORDS[count] ?? String(count)} ${plural}`]
+  })
+  return parts.length <= 2 ? parts.join(' and ') : `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]!}`
 }
 
 /**
- * Refuses a duplicate account id when an action names it, when the rows
- * sharing it disagree on the facts that drive a forced distribution, or when
- * it is shared by a cash account and a property.
+ * Which rows of a colliding group need their own id: with an investable
+ * account among them, the properties and debts (loading keeps the id on the
+ * account); otherwise all but one, so each.
+ */
+function sharedIdRemedy(types: readonly AccountType[]): string {
+  const valueTypes = types.filter((type) => type === 'property' || type === 'debt')
+  if (valueTypes.length === types.length) return 'give each its own id'
+  if (valueTypes.length === 1) return `give the ${valueTypes[0]!} its own id`
+  if (new Set(valueTypes).size === 1) return `give each ${valueTypes[0]!} its own id`
+  return 'give each property and debt its own id'
+}
+
+/**
+ * Refuses account rows that share an id, id by id in stored order, in two
+ * ways.
  *
- * @returns whether any ambiguous account id was reported.
+ * First, a shared-id collision, as `sharedIdGroups` (model/sharedIdCollisions.ts)
+ * reads the accounts: two or more rows under one id that each publish a value
+ * under it (an investable account, a property or a debt), not all of them
+ * investable accounts. Every one of those rows is refused with a message
+ * naming the kinds that share the id and the rows that need their own, for
+ * example "a cash account and a debt; give the debt its own id" or "two
+ * properties; give each its own id". These are exactly the collisions loading
+ * repairs (`sharedIdSeparated`, model/migrations.ts). A permanent-life policy
+ * under an account's id is refused on the policy, by
+ * `checkInsuranceCrossFieldRules`.
+ *
+ * Second, `duplicate account id`, on the rows that keep the id once any
+ * collision is set aside (the investable accounts, or the row that keeps the
+ * id when there is none, and pensions and annuities), when two or more remain
+ * and a retirement action names the id, an investable account shares it with
+ * a pension or an annuity, or the investable accounts disagree on a fact
+ * `duplicateAccountIdentityFacts` compares (among them type, kind, owner,
+ * SEPP, inherited and beneficiary facts, vesting, HSA treatment and estate
+ * destination).
+ *
+ * Every other shared id is accepted: investable accounts that agree are one
+ * logical account held in several rows, and pensions and annuities publish no
+ * value under their id.
+ *
+ * @returns whether any account id was refused.
  */
 export function checkAmbiguousAccountIds(
   plan: PlanDocument,
@@ -297,35 +344,29 @@ export function checkAmbiguousAccountIds(
   context: PlanCrossFieldContext = planCrossFieldContext(plan),
 ): boolean {
   const { accountIndexesById, actionReferencedAccountIds } = context
+  const collisions = new Map(sharedIdGroups(
+    plan.accounts.map((account) => ({ id: account.id, channel: accountChannel(account.type) })),
+    [],
+  ).map((group) => [group.id, group] as const))
+  const separated = new Set(sharedIdRenames([...collisions.values()]).map((member) => member.index))
   let hasAmbiguousAccountIds = false
-  for (const [accountId, indexes] of accountIndexesById) {
+  for (const [accountId, allIndexes] of accountIndexesById) {
+    const collision = collisions.get(accountId)
+    if (collision !== undefined) {
+      hasAmbiguousAccountIds = true
+      const types = collision.members.map((member) => plan.accounts[member.index]!.type)
+      const message = `account id "${accountId}" is shared by ${describeSharedIdRows(types)}; ${sharedIdRemedy(types)}`
+      for (const member of collision.members) {
+        ctx.addIssue({ code: 'custom', path: ['accounts', member.index, 'id'], message })
+      }
+    }
+    const indexes = allIndexes.filter((index) => !separated.has(index))
     if (indexes.length < 2) continue
     const duplicateAccounts = indexes.map((index) => plan.accounts[index]!)
     // Only multiple physical BalanceState rows enter the grouped ledger.
     // Non-balance aliases retain their historical last-row publication
     // semantics unless an explicit action references the ambiguous ID.
     const duplicateBalanceAccounts = duplicateAccounts.filter(isLogicalBalanceAccount)
-    // A cash account and a property under one id publish one entry in the
-    // year's balances, keyed by id, so the property's value overwrote the cash
-    // balance. Plans once accepted exactly this pair; decision
-    // D-CASH-PROPERTY-ALIAS refuses it with a message naming the collision,
-    // and model/migrations.ts gives a stored plan's property its own id on
-    // load (`sharedIdSeparated`). model/sharedIdCollisions.ts reads which rows
-    // collide for both.
-    const isCashPropertyPair = duplicateAccounts.length === 2 &&
-      duplicateAccounts.filter((account) => account.type === 'cash').length === 1 &&
-      duplicateAccounts.filter((account) => account.type === 'property').length === 1
-    if (isCashPropertyPair) {
-      hasAmbiguousAccountIds = true
-      indexes.forEach((index) => {
-        ctx.addIssue({
-          code: 'custom',
-          path: ['accounts', index, 'id'],
-          message: `account id "${accountId}" is shared by a cash account and a property; give the property its own id`,
-        })
-      })
-      continue
-    }
     const hasUnsupportedMixedAccountChannel =
       duplicateBalanceAccounts.length > 0 &&
       duplicateBalanceAccounts.length < duplicateAccounts.length
@@ -344,25 +385,6 @@ export function checkAmbiguousAccountIds(
       !actionReferencedAccountIds.has(accountId) &&
       !hasConflictingForcedDistributionFacts
     ) {
-      // Properties and debts under one id, with no investable account among
-      // them: the property and debt value maps and the published balances are
-      // keyed by id, so all but one of them would be lost or overwritten.
-      // Pensions and annuities publish no value under their id and may still
-      // share one.
-      const valueRows = duplicateAccounts.filter((account) =>
-        account.type === 'property' || account.type === 'debt')
-      if (duplicateBalanceAccounts.length > 0 || valueRows.length < 2) continue
-      hasAmbiguousAccountIds = true
-      const described = describeValueRows(valueRows.map((account) => account.type))
-      indexes.forEach((index) => {
-        const type = plan.accounts[index]!.type
-        if (type !== 'property' && type !== 'debt') return
-        ctx.addIssue({
-          code: 'custom',
-          path: ['accounts', index, 'id'],
-          message: `account id "${accountId}" is shared by ${described}; give each its own id`,
-        })
-      })
       continue
     }
     hasAmbiguousAccountIds = true

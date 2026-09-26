@@ -17,17 +17,20 @@
  * Investable accounts sharing an id are the one deliberate exception: they are
  * one logical account held in several rows, and the plan checks require their
  * facts to agree (`checkAmbiguousAccountIds`). Pensions and annuities publish
- * no value under their id and take no part here, and neither does an LTC
+ * no value under their id and take no part here (the plan checks still refuse
+ * one beside an investable account, as an ambiguous id), and neither does an LTC
  * policy beside an account or a permanent-life policy: it publishes nothing
  * in the balances and shares no per-id value with them (their premiums are
  * separate rows; only their cash-flow lines share an id, as two pensions'
  * already may).
  *
  * Decision D-CASH-PROPERTY-ALIAS (2026-09-25) and its extension the next day:
- * the plan checks refuse every collision found here, and a stored plan that
- * holds one is repaired on load (model/migrations.ts) by giving each colliding
- * row after the first its own id. This module is the single reading of which
- * rows collide and which row keeps the id, used by both.
+ * the plan checks refuse every collision found here (model/planCrossFieldChecks.ts:
+ * accounts in `checkAmbiguousAccountIds`, policies in
+ * `checkInsuranceCrossFieldRules`), and a stored plan that holds one is
+ * repaired on load (model/migrations.ts) by giving each colliding row after the
+ * first its own id. This module is the single reading of which rows collide
+ * and which row keeps the id, used by both.
  */
 
 /** The value channel a row publishes under its id, or null for a row that publishes none. */

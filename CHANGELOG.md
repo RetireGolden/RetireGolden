@@ -20,7 +20,11 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   properties, two debts, two permanent-life policies) kept one value, so one
   of them dropped out of net worth. Two LTC policies counted their benefit
   years together, so a year one of them paid used up a year of the other.
-  The checks now refuse every such pair with a message naming it. A saved
+  The checks now refuse every such pair with a message naming it, from the
+  same reading of which rows collide that the repair uses (a property or a
+  debt sharing an id with an investable account, other than one property
+  with one cash account, was refused before only as a duplicate account id).
+  A saved
   plan that has one is repaired when it opens: an investable account keeps
   the id, otherwise the first row does, and each other row gets a new id
   (`<id>-property`, `<id>-debt` or `<id>-policy`, numbered when taken). No
@@ -38,9 +42,11 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   and cash totals drop to the cash actually held, each renamed row appears
   under its own entry, net worth counts both of two same-kind rows, and two
   LTC policies each pay their own benefit period; investable assets do not
-  change. A pension publishes no value under its id and may still share one,
-  and so may an LTC policy with an account or a permanent-life policy, since
-  they keep no value in common.
+  change. A pension or an annuity publishes no value under its id and may
+  still share one with a property, a debt or another pension or annuity (not
+  with an investable account, which stays refused as a duplicate account id),
+  and an LTC policy may share one with an account or a permanent-life policy,
+  since they keep no value in common.
 
 - **Fixed: a false Roth-conversion warning** (decision
   D-ROTH-TARGET-WARNING): "Spending withdrawals from traditional accounts

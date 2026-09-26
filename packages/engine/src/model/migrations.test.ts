@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { createEmptyPlan, type Plan } from './plan.js'
+import { createEmptyPlan, parsePlan, type Plan } from './plan.js'
 import { summarizeProjection } from '../projection/compare.js'
 import { simulatePlan } from '../projection/simulate.js'
 import { createFlatTaxCalculator } from '../testing/flatTax.js'
@@ -1161,6 +1161,111 @@ describe('load-time repair: rows stored under one id where the projection keeps 
     const applied = applyScenarioPatchDocument(result.plan, parsed.patch)
     expect(applied.ok).toBe(false)
     if (!applied.ok) expect(applied.issues).toEqual(refusal)
+  })
+
+  describe('every pair of row kinds under one id: the plan checks and the load repair agree', () => {
+    type RowKind =
+      | 'cash' | 'taxable' | 'equityComp' | 'traditional' | 'roth' | 'hsa'
+      | 'property' | 'debt' | 'pension' | 'annuity' | 'permanentLife' | 'ltc'
+    const kinds: readonly RowKind[] = [
+      'cash', 'taxable', 'equityComp', 'traditional', 'roth', 'hsa',
+      'property', 'debt', 'pension', 'annuity', 'permanentLife', 'ltc',
+    ]
+    /**
+     * The collision rule, stated here on its own terms rather than read from
+     * model/sharedIdCollisions.ts: two rows collide when both publish a value
+     * in the year's balances (an investable account, a property, a debt or a
+     * permanent-life cash value) and not both are investable accounts, or when
+     * both are LTC policies.
+     */
+    const investable = new Set<RowKind>(['cash', 'taxable', 'equityComp', 'traditional', 'roth', 'hsa'])
+    const publishesBalance = (kind: RowKind): boolean =>
+      investable.has(kind) || kind === 'property' || kind === 'debt' || kind === 'permanentLife'
+    const collide = (left: RowKind, right: RowKind): boolean =>
+      (publishesBalance(left) && publishesBalance(right) && !(investable.has(left) && investable.has(right))) ||
+      (left === 'ltc' && right === 'ltc')
+
+    function withRow(plan: Plan, kind: RowKind, name: string): void {
+      const person = plan.household.people[0]!.id
+      const common = { id: 'x', name, annualReturnPct: 0 }
+      switch (kind) {
+        case 'cash': plan.accounts.push({ ...checking('x'), name }); return
+        case 'property': plan.accounts.push(home('x', 300_000, name)); return
+        case 'debt': plan.accounts.push({ ...mortgage('x'), name }); return
+        case 'taxable':
+          plan.accounts.push({ ...common, type: 'taxable', ownerPersonId: null, balance: 10_000, costBasis: 10_000, annualContribution: 0 })
+          return
+        case 'equityComp':
+          plan.accounts.push({
+            ...common, type: 'equityComp', ownerPersonId: person, balance: 10_000, costBasis: 5_000, annualContribution: 0,
+            vestingMode: 'final', vestDate: null,
+          })
+          return
+        case 'traditional':
+        case 'roth':
+          plan.accounts.push({ ...common, type: kind, ownerPersonId: person, kind: 'ira', balance: 10_000, annualContribution: 0 })
+          return
+        case 'hsa':
+          plan.accounts.push({ ...common, type: 'hsa', ownerPersonId: person, balance: 10_000, annualContribution: 0 })
+          return
+        case 'pension':
+          plan.accounts.push({
+            ...common, type: 'pension', ownerPersonId: person, annualReturnPct: null, startAge: 65, monthlyAmount: 1_000,
+            colaPct: 0, survivorPct: 0,
+          })
+          return
+        case 'annuity':
+          plan.accounts.push({
+            ...common, type: 'annuity', ownerPersonId: person, annualReturnPct: null, startAge: 65, monthlyAmount: 500,
+            colaPct: 0, taxablePct: 100,
+          })
+          return
+        case 'permanentLife': plan.insurance.push(lifePolicy('x', person, 50_000, name)); return
+        case 'ltc': plan.insurance.push({ ...ltcPolicy('x', person), name }); return
+      }
+    }
+    const planWith = (rows: readonly RowKind[]): Plan => {
+      const plan = quietPlan([])
+      rows.forEach((kind, index) => withRow(plan, kind, `Row ${index + 1}`))
+      return plan
+    }
+    const sharedIdMessage = /is shared by|is also an account id|is used by more than one/
+
+    it('accepts each kind on its own', () => {
+      for (const kind of kinds) {
+        const parsed = parsePlan(planWith([kind]))
+        expect(parsed.ok, `${kind}: ${parsed.ok ? '' : parsed.issues.join('; ')}`).toBe(true)
+      }
+    })
+
+    for (const left of kinds) {
+      for (const right of kinds) {
+        const collides = collide(left, right)
+        it(`${left} then ${right}: ${collides ? 'refused by name and repaired on load' : 'no shared-id refusal and no repair'}`, () => {
+          const plan = planWith([left, right])
+          const parsed = parsePlan(plan)
+          const issues = parsed.ok ? [] : parsed.issues
+          const named = issues.filter((issue) => sharedIdMessage.test(issue))
+          const loaded = migratePlanToCurrent(stored(plan))
+          if (collides) {
+            // Refused only by name, and the repair leaves a plan that parses.
+            expect(named.length).toBeGreaterThan(0)
+            expect(issues.filter((issue) => !sharedIdMessage.test(issue))).toEqual([])
+            expect(loaded.ok, loaded.ok ? '' : (loaded.issues ?? []).join('; ')).toBe(true)
+            if (!loaded.ok) return
+            expect(loaded.repairs.filter((repair) => repair.kind === 'sharedIdSeparated')).toHaveLength(1)
+            const ids = [...loaded.plan.accounts, ...loaded.plan.insurance].map((row) => row.id)
+            expect(new Set(ids).size).toBe(2)
+          } else {
+            expect(named).toEqual([])
+            // Whatever else refuses the pair (an ambiguous id) refuses it on load
+            // too; nothing is repaired either way.
+            expect(loaded.ok).toBe(parsed.ok)
+            if (loaded.ok) expect(loaded.repairs.filter((repair) => repair.kind === 'sharedIdSeparated')).toEqual([])
+          }
+        })
+      }
+    }
   })
 
   it('leaves a collision-free plan byte-identical, including a pension and a property that share an id', () => {
