@@ -1,12 +1,12 @@
 # Mutation receipt: projection-summary-fi-number
 
-Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-seven` at base `74916a7e` and 2026-09-22 against base `7ae019a8` (pull request #727) on the inline spending sum, which B2-P1 slice 1 replaced on 2026-09-26 by a call of `projection/yearFigures.ts#spendingWithTaxAndPenalties`; the same mutation is rewritten below for that code, and re-executed 2026-09-26 against RetireGolden base `6b01db8d` (branch `claude/b2p1-slice1-ledger-figures`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-seven` at base `74916a7e` and 2026-09-22 against base `7ae019a8` (pull request #727) on the inline spending sum, which B2-P1 slice 1 replaced on 2026-09-26 by a call of `projection/yearFigures.ts#spendingWithTaxAndPenalties`; the same mutation is rewritten below for that code, and re-executed 2026-09-26 against RetireGolden base `6b01db8d` (branch `claude/b2p1-slice1-ledger-figures`; no pull request is open yet), and re-executed 2026-09-26 against RetireGolden base `94954596` (branch `claude/b2p1-slice1-ledger-figures`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/projection/compare.ts`
 
 ```diff
 diff --git a/packages/engine/src/projection/compare.ts b/packages/engine/src/projection/compare.ts
-index 5292d802..b464fb04 100644
+index 7b631048..2604c715 100644
 --- a/packages/engine/src/projection/compare.ts
 +++ b/packages/engine/src/projection/compare.ts
 @@ -343,3 +343,3 @@
@@ -28,7 +28,7 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-Re-executed 2026-09-26 for B2-P1 slice 1, whose engine change moved or rewrote the code this receipt mutates, so every capture, blob hash and revert note is refreshed against this head. The baseline is green (compareSummary.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed 2026-09-26 for the review round of B2-P1 slice 1, whose new moneyLasts import moved every line of compare.ts by one (the mutated code is unchanged), so every capture, blob hash and revert note is refreshed against this head. The baseline is green (compareSummary.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
 RUN  v5.0.0 C:/rgwt/engine4/packages/engine
@@ -42,7 +42,7 @@ RUN  v5.0.0 C:/rgwt/engine4/packages/engine
      × discounts the FI number four years at the simple real 4 percent 1ms
      × equals the FI number when retirement age is already attained 0ms
    ❯ projection-summary-fi-year — First financial-independence crossing year (2)
-     × crosses inclusively in 2027 and never waits for the larger 2028 row 0ms
+     × crosses inclusively in 2027 and never waits for the larger 2028 row 1ms
      × publishes null when no row crosses, and null again for an empty ledger 0ms
 
  Test Files  1 failed (1)
