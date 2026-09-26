@@ -543,7 +543,7 @@ export function annualFundingApplicationAndClosePhase(
     seppTotal,
     inheritedTotal,
     inheritedOrdinaryIncome,
-    inheritedRothForced,
+    inheritedRothForced, inheritedTraditionalForced,
     inheritedRothTaxCharacterIncomplete,
     rmdShortfallExciseResults,
     rmdShortfallExciseTax,
@@ -1994,12 +1994,12 @@ export function annualFundingApplicationAndClosePhase(
         withdrawalPlan.byCategory.taxable +
         retirementActionEquityCompensation +
         retirementActionTaxableProceeds,
-      // Traditional forced only: Roth forced is Roth-character (K1/K2).
+      // Dollars withdrawn from traditional accounts only; a non-qualified inherited Roth's taxable earnings stay in roth (D-INHERITED-ROTH-SLICE).
       traditional:
         withdrawalPlan.byCategory.traditional +
         rmdTotal +
         seppTotal +
-        inheritedOrdinaryIncome,
+        inheritedTraditionalForced,
       roth: withdrawalPlan.byCategory.roth + inheritedRothForced,
       total:
         withdrawalPlan.byCategory.total +

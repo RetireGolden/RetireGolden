@@ -198,17 +198,21 @@ export interface YearResult {
    * Equals the sum of each `inheritedAccounts[]` row's executed required amount
    * (annual/year-of-death) plus final-sweep amounts; voluntary draws are not
    * included. Traditional forced dollars also join `withdrawals.traditional`
-   * and ordinary income; Roth forced dollars join `withdrawals.roth` only.
+   * and ordinary income; Roth forced dollars join `withdrawals.roth`, and only
+   * the taxable earnings of a non-qualified one reach ordinary income.
    */
   inheritedDistribution: number
   /**
-   * Forced inherited amounts assigned from the phase's ordinary-income total:
-   * each traditional row in full plus, for a non-qualified inherited Roth
-   * distribution, its characterized taxable earnings; for qualified Roth
-   * distributions the Roth share is 0 and the figure is the traditional share
-   * of `inheritedDistribution`. The traditional rows are a subset of
-   * `withdrawals.traditional`. An earlier comment said Roth dollars were
-   * excluded outright; decision D-INHERITED-ROTH-SLICE settles the meaning.
+   * Ordinary income from this year's forced inherited-IRA distributions: each
+   * traditional row's executed amount in full, plus, for a non-qualified
+   * inherited Roth distribution, its characterized taxable earnings, which are
+   * ordinary income under IRC 408A(d) and Treas. Reg. 1.408A-6; a qualified
+   * Roth distribution adds 0. It is an income figure, not a withdrawal
+   * category: the traditional rows are inside `withdrawals.traditional`, while
+   * a Roth distribution, taxable earnings included, is withdrawn from a Roth
+   * account and is counted in `withdrawals.roth` only (decision
+   * D-INHERITED-ROTH-SLICE, 2026-09-25). Without a non-qualified Roth
+   * distribution it equals the traditional share of `inheritedDistribution`.
    */
   inheritedTraditionalDistribution: number
   /**

@@ -1878,18 +1878,25 @@ function reconcilePublishedAnnualTotals(
     taxYear,
     accountOrder,
   )
-  // Traditional withdrawals carry only the traditional-character forced
-  // inherited share (`inheritedTraditionalDistribution`); Roth forced dollars
-  // join `withdrawals.roth` and must not be double-counted here against the
-  // combined `inheritedDistribution` scalar.
-  if (yearResult.inheritedTraditionalDistribution === undefined) {
-    fail('sourceMissing', 'Each year requires the independently published traditional-character inherited distribution total', {
-      taxYear,
-    })
-  }
+  // Traditional withdrawals carry the forced dollars executed from inherited
+  // traditional accounts, which the inherited-distribution occurrences name
+  // by source account; Roth forced dollars join `withdrawals.roth` and must
+  // not be counted here. `inheritedTraditionalDistribution` is not this
+  // amount: it is ordinary income, and in a year with a non-qualified
+  // inherited Roth distribution it also carries that distribution's taxable
+  // earnings, which stay in `withdrawals.roth` (D-INHERITED-ROTH-SLICE).
+  const inheritedTraditionalWithdrawalTotal = occurrenceTotalInPlanOrder(
+    occurrenceSource.runtimeOccurrences.filter((occurrence) =>
+      occurrence.kind === 'inheritedIraRmd' &&
+      accountById.get(occurrence.sourceAccountId ?? '')?.type === 'traditional'),
+    ['inheritedIraRmd'],
+    'inherited traditional distribution',
+    taxYear,
+    accountOrder,
+  )
   const reconstructedTraditionalWithdrawal =
     ((legacyNeedBasedWithdrawalTotal.total + yearResult.rmd) + yearResult.sepp) +
-    yearResult.inheritedTraditionalDistribution
+    inheritedTraditionalWithdrawalTotal.total
   if (!Number.isFinite(yearResult.withdrawals.traditional) ||
       yearResult.withdrawals.traditional < 0 ||
       Object.is(yearResult.withdrawals.traditional, -0)) {
@@ -1900,9 +1907,9 @@ function reconcilePublishedAnnualTotals(
   if (!rawTotalsReconcile(
     reconstructedTraditionalWithdrawal,
     yearResult.withdrawals.traditional,
-    legacyNeedBasedWithdrawalTotal.count + 3,
+    legacyNeedBasedWithdrawalTotal.count + inheritedTraditionalWithdrawalTotal.count + 3,
   )) {
-    fail('sourceCoverageInvalid', 'Legacy need-based withdrawal occurrences plus RMD, SEPP, and traditional-character inherited totals must exact-rejoin published traditional withdrawals', {
+    fail('sourceCoverageInvalid', 'Legacy need-based withdrawal occurrences plus RMD, SEPP, and inherited traditional distribution totals must exact-rejoin published traditional withdrawals', {
       taxYear,
     })
   }

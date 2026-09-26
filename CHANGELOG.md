@@ -4,6 +4,20 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## Unreleased
 
+- **Fixed: inherited Roth earnings counted twice in the withdrawal categories**
+  (decision D-INHERITED-ROTH-SLICE): in a year with a non-qualified inherited
+  Roth distribution, its taxable earnings were added to the traditional
+  withdrawal category as well as to Roth, so cash + taxable + traditional +
+  Roth + HSA exceeded the year's total withdrawals by that amount. The
+  traditional category now carries only dollars withdrawn from traditional
+  accounts, and the five categories add to the total in every year. Displayed
+  numbers that change, and only in such a year: the year's traditional
+  withdrawals (and the lifetime traditional-withdrawal sum on scenario
+  comparisons) drop by the Roth earnings. Taxes do not change: those earnings
+  are still ordinary income under IRC 408A(d), and the inherited
+  ordinary-income figure (`inheritedTraditionalDistribution`) keeps them, as
+  its comment now says.
+
 - **Fixed: 0% capital-gains room when income is below the deduction**
   (decision D-ZERO-RATE-HEADROOM): the search for the room stopped at the 15%
   threshold, so a year whose ordinary income (with gains, qualified dividends

@@ -634,6 +634,39 @@ describe('inherited Roth shared annual production ledger', () => {
     expect(year(result.result, 2026).penalties).toBe(0)
   })
 
+  it('keeps the non-qualified Roth slice out of withdrawals.traditional, so the five categories add to the total', () => {
+    // D-INHERITED-ROTH-SLICE. The same two 100 mandatory Roth draws as above,
+    // 140 of them taxable earnings, beside an inherited traditional IRA on the
+    // same facts: 2,610 over the 26.1 divisor is a 100 requirement. The 140 is
+    // ordinary income, so inheritedTraditionalDistribution is 100 + 140 = 240.
+    // It is withdrawn from Roth accounts, so withdrawals.traditional is the
+    // traditional 100 alone and withdrawals.roth is the Roth 200; the total is
+    // the 300 of forced cash and the five categories add to it. The old fold
+    // put the 240 in traditional, so the categories summed to 440.
+    const plan = sharedPoolPlan()
+    const roth = plan.accounts.find((account) => account.id === 'inherited')!
+    plan.accounts.push({ ...roth, type: 'traditional', id: 'inherited-traditional' } as Account)
+    const { result, ordinaryIncome } = runCapturingOrdinaryIncome(plan, 2026)
+    const row = year(result, 2026)
+    expect(row.inheritedDistribution).toBeCloseTo(300, 8)
+    expect(row.inheritedTraditionalDistribution).toBeCloseTo(240, 8)
+    expect(ordinaryIncome.at(-1)).toBeCloseTo(240, 8)
+    expect(row.withdrawals.traditional).toBeCloseTo(100, 8)
+    expect(row.withdrawals.roth).toBeCloseTo(200, 8)
+    expect(row.withdrawals.total).toBeCloseTo(300, 8)
+    const { cash, taxable, traditional, roth: rothDrawn, hsa, total } = row.withdrawals
+    expect(cash + taxable + traditional + rothDrawn + hsa).toBeCloseTo(total, 8)
+  })
+
+  it('carries no Roth dollars in withdrawals.traditional when every inherited account is a Roth', () => {
+    const { result } = runCapturingOrdinaryIncome(sharedPoolPlan(), 2026)
+    const row = year(result, 2026)
+    expect(row.inheritedTraditionalDistribution).toBeCloseTo(140, 8)
+    expect(row.withdrawals.traditional).toBe(0)
+    expect(row.withdrawals.roth).toBeCloseTo(200, 8)
+    expect(row.withdrawals.total).toBeCloseTo(200, 8)
+  })
+
   it('preserves known qualified clocks with unknown basis without inventing ordinary income', () => {
     const plan = sharedPoolPlan()
     plan.inheritedRothTaxCharacterPools[0]!.firstRothContributionTaxYear = 2020
