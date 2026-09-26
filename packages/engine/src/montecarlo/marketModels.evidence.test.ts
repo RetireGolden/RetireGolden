@@ -317,6 +317,23 @@ describeCalculation(
       expect(() => createGarchModel({ ...base, returnVolPct: 0 })).not.toThrow()
     })
 
+    it('refuses the retired keys omega and returnVolScalePct from an untyped caller, naming the replacement', () => {
+      // A caller written against the earlier config would otherwise run the default 12 without a word.
+      const untyped = (extra: Record<string, unknown>) => ({ ...base, ...extra }) as unknown as Parameters<typeof createGarchModel>[0]
+      expect(() => createGarchModel(untyped({ omega: 0.00001 }))).toThrow(
+        new RangeError(
+          'GARCH omega is no longer an input: it is derived as (returnVolPct / 100)^2 * (1 - alpha - beta), so the long-run standard deviation equals returnVolPct; remove omega (got 0.00001).',
+        ),
+      )
+      expect(() => createGarchModel(untyped({ returnVolScalePct: 20 }))).toThrow(
+        new RangeError(
+          'GARCH returnVolScalePct was renamed returnVolPct, the long-run standard deviation of the return shock in percentage points; pass returnVolPct instead (got returnVolScalePct 20).',
+        ),
+      )
+      // An explicit undefined is not a value, and the current key is accepted.
+      expect(() => createGarchModel(untyped({ omega: undefined, returnVolScalePct: undefined, returnVolPct: 20 }))).not.toThrow()
+    })
+
     it('2,000 seeded paths of 30 years: every year has the configured variance, mean 0, and squared shocks cluster', () => {
       // P = 2,000 paths seeded createRng(derivePathSeed(20260925, p)), Y = 30 years, r = shock / 12.
       // mean(r^2) is 1 in every year (E[v_t] = sigmaBar^2 by induction from v_1 = sigmaBar^2); the

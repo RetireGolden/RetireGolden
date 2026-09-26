@@ -380,10 +380,12 @@ has — rather than the runtime contract a consumer needs on the landing page.
 - **`GarchModelConfig`:** `omega` is deleted (it is now set from the volatility, so an
   explicit value would either be ignored or contradict it), and `returnVolScalePct` is
   renamed `returnVolPct`, which now means the long-run standard deviation of the return
-  shock in percentage points, as for every sibling model. A caller passing either old
-  key gets a type error; an untyped caller's `returnVolScalePct` is ignored and the
-  default 12 is used. The RetireGolden-MCP and RetireGolden-Pro hosts build only the
-  lognormal model and need no change.
+  shock in percentage points, as for every sibling model. A typed caller passing either
+  old key gets a type error, and `createGarchModel` refuses either key from an untyped
+  caller with a RangeError that names the replacement (pass `returnVolPct`; `omega` is
+  now derived), so no old config silently runs the default volatility. The
+  RetireGolden-MCP and RetireGolden-Pro hosts build only the lognormal model and need no
+  change.
 - **New RangeErrors from `createMarketModel` and the model factories**, where values
   used to be clamped or rounded without a word: Student-t df of 2 or less; GARCH
   negative inputs and alpha + beta of 1 or more; a reversed-history window that is not a

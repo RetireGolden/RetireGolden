@@ -854,6 +854,19 @@ export function createEmpiricalModel(config: EmpiricalModelConfig): MarketModel 
  * Defaults: inflationVolPct 1.5, correlation -0.2 (a correlation outside [-1, 1] is refused).
  */
 export function createGarchModel(config: GarchModelConfig): MarketModel {
+  // The retired keys are refused rather than ignored, so an untyped caller written against the
+  // earlier config cannot silently run the default volatility.
+  const retired = config as GarchModelConfig & { omega?: unknown; returnVolScalePct?: unknown }
+  if (retired.omega !== undefined) {
+    throw new RangeError(
+      `GARCH omega is no longer an input: it is derived as (returnVolPct / 100)^2 * (1 - alpha - beta), so the long-run standard deviation equals returnVolPct; remove omega (got ${String(retired.omega)}).`,
+    )
+  }
+  if (retired.returnVolScalePct !== undefined) {
+    throw new RangeError(
+      `GARCH returnVolScalePct was renamed returnVolPct, the long-run standard deviation of the return shock in percentage points; pass returnVolPct instead (got returnVolScalePct ${String(retired.returnVolScalePct)}).`,
+    )
+  }
   const volPct = config.returnVolPct ?? 12
   const alpha = config.alpha ?? 0.1
   const beta = config.beta ?? 0.85

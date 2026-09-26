@@ -7,7 +7,7 @@ Kind: model. `montecarlo/marketModels.ts#createGarchModel` runs textbook GARCH(1
 - the path starts at `v_1 = sigmaBar^2`;
 - each year `t`, in this order: `Z1_t = rng.nextNormal()`; innovation `e_t = sqrt(v_t) Z1_t`; published shock `returnShockPct = 100 e_t`; `Z2_t = rng.nextNormal()`; inflation `= inflationMeanPct + inflationVolPct (rho Z1_t + sqrt(1 - rho^2) Z2_t)`; class shocks, when configured, from first factor `Z1_t` with the shared scale `sqrt(v_t) / sigmaBar` (this year's `v_t`, before the update; 1 when `sigmaBar = 0`); then `v_{t+1} = omega + alpha e_t^2 + beta v_t`.
 
-`omega` is not configurable. A negative or non-finite `returnVolPct`, a negative or non-finite `alpha` or `beta`, and `alpha + beta >= 1` are refused with a RangeError before any draw. The variance is internal; only the shock, inflation and class series are published.
+`omega` is not configurable. A negative or non-finite `returnVolPct`, a negative or non-finite `alpha` or `beta`, `alpha + beta >= 1`, and the retired keys `omega` and `returnVolScalePct` passed by an untyped caller are refused with a RangeError before any draw; the messages for the retired keys name the replacement. The variance is internal; only the shock, inflation and class series are published.
 
 ## Justification
 
@@ -53,6 +53,8 @@ Refusals, each a RangeError with the message shown:
 - `returnVolPct` -12, NaN or Infinity: `GARCH returnVolPct must be a finite number of at least 0; got <value>.`
 - `alpha -0.1`: `GARCH alpha and beta must be finite numbers of at least 0; got alpha -0.1, beta 0.85.`
 - `alpha 0.1, beta 0.9`: `GARCH alpha + beta must be below 1 for a finite long-run variance; got alpha 0.1 + beta 0.9 = 1.`; `alpha 0.2, beta 0.85` prints `= 1.05.`
+- `omega: 0.00001`: `GARCH omega is no longer an input: it is derived as (returnVolPct / 100)^2 * (1 - alpha - beta), so the long-run standard deviation equals returnVolPct; remove omega (got 0.00001).`
+- `returnVolScalePct: 20`: `GARCH returnVolScalePct was renamed returnVolPct, the long-run standard deviation of the return shock in percentage points; pass returnVolPct instead (got returnVolScalePct 20).`
 - `returnVolPct 0` and `alpha = beta = 0` are accepted.
 
 Seeded moments: defaults with `inflationMeanPct 2.5`, `P = 2,000` paths seeded `createRng(derivePathSeed(20260925, p))`, `Y = 30` years, `r = shock / 12`.
