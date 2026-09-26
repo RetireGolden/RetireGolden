@@ -194,7 +194,9 @@ function KpiBar() {
         <span className="kpi-label">Money lasts</span>
         {depleted ? (
           <Link
-            className="kpi-value kpi-value--bad kpi-value-link"
+            // A worded value ("short from 2026" is 15 characters): it may wrap
+            // between words rather than paint past its cell.
+            className="kpi-value kpi-value--bad kpi-value-link kpi-value--wrap"
             to="insights"
             title="See what would change this in Insights"
           >
