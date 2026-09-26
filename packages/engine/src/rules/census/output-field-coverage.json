@@ -6543,7 +6543,7 @@
     "tsType": "string",
     "disposition": "excluded",
     "familyId": null,
-    "reason": "The inheritedLedgerCsvValues.inheritedRequirementKind field is a categorical label used to name or classify the displayed record.",
+    "reason": "The inheritedLedgerCsvValues.requirementKind field is a categorical label used to name or classify the displayed record.",
     "reasonKind": "label-or-category",
     "note": "CSV header is the account id plus 'inherited' and this name; the value is read from YearResult.inheritedAccounts[].requirementKind in inheritedLedgerCsvValues."
   },
@@ -6554,7 +6554,7 @@
     "tsType": "string",
     "disposition": "excluded",
     "familyId": null,
-    "reason": "The inheritedLedgerCsvValues.inheritedProfessionalConfirmation field is a nonnumeric object, collection, or text value.",
+    "reason": "The inheritedLedgerCsvValues.needsProfessionalConfirmation field is a nonnumeric object, collection, or text value.",
     "reasonKind": "not-numeric",
     "note": "CSV header is the account id plus 'inherited' and this name; the value is read from YearResult.inheritedAccounts[].needsProfessionalConfirmation in inheritedLedgerCsvValues."
   },

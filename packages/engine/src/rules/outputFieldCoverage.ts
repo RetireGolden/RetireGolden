@@ -1,7 +1,7 @@
 /**
  * GENERATED FILE — DO NOT EDIT BY HAND.
  *
- * Output field coverage imported from the output-family census at commit 205b45570bda97ec86ddaf96740fa6d63df8fba9.
+ * Output field coverage imported from the output-family census at commit 34444020cb0e164569c8f430a00cf5e18aec5f87.
  * Regenerate: node packages/engine/scripts/import-output-census.mjs <census-dir>
  */
 
@@ -8090,7 +8090,7 @@ const coverageCensus = [
     "disposition": "excluded",
     "familyId": null,
     "reasonKind": "not-numeric",
-    "reason": "The inheritedLedgerCsvValues.inheritedProfessionalConfirmation field is a nonnumeric object, collection, or text value.",
+    "reason": "The inheritedLedgerCsvValues.needsProfessionalConfirmation field is a nonnumeric object, collection, or text value.",
     "tsType": "string",
     "note": "CSV header is the account id plus 'inherited' and this name; the value is read from YearResult.inheritedAccounts[].needsProfessionalConfirmation in inheritedLedgerCsvValues."
   },
@@ -8110,7 +8110,7 @@ const coverageCensus = [
     "disposition": "excluded",
     "familyId": null,
     "reasonKind": "label-or-category",
-    "reason": "The inheritedLedgerCsvValues.inheritedRequirementKind field is a categorical label used to name or classify the displayed record.",
+    "reason": "The inheritedLedgerCsvValues.requirementKind field is a categorical label used to name or classify the displayed record.",
     "tsType": "string",
     "note": "CSV header is the account id plus 'inherited' and this name; the value is read from YearResult.inheritedAccounts[].requirementKind in inheritedLedgerCsvValues."
   },
