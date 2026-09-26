@@ -47,6 +47,7 @@ import {
   catalogLabelOf,
   MODEL_CATALOG,
   MODEL_PRESETS,
+  modelControlOf,
   PRESET_FAMILY_LABELS,
   presetFamilyOf,
   type ModelKind,
@@ -136,6 +137,7 @@ export function MonteCarloPage() {
     () => buildModel(modelKind, plan.assumptions.inflationPct, returnVolPct, equityWeightPct, plan),
     [modelKind, plan, returnVolPct, equityWeightPct],
   )
+  const modelControl = modelControlOf(modelKind)
 
   const run = useCallback(
     (paths: number) => {
@@ -332,7 +334,9 @@ export function MonteCarloPage() {
               </div>
             </details>
           </div>
-          {modelKind === 'lognormal' ? (
+          {/* Each model shows only the slider its config reads, and the two
+              models that read neither show none (modelControlOf). */}
+          {modelControl === 'return-volatility' ? (
             <div className="field">
               <span className="field-label-row">
                 <span className="field-label">Return volatility: {returnVolPct}%</span>
@@ -349,7 +353,8 @@ export function MonteCarloPage() {
                 onChange={(e) => setReturnVolPct(Number(e.target.value))}
               />
             </div>
-          ) : (
+          ) : null}
+          {modelControl === 'equity-weight' ? (
             <div className="field">
               <span className="field-label-row">
                 <span className="field-label">Equity weight: {equityWeightPct}/{100 - equityWeightPct}</span>
@@ -366,7 +371,7 @@ export function MonteCarloPage() {
                 onChange={(e) => setEquityWeightPct(Number(e.target.value))}
               />
             </div>
-          )}
+          ) : null}
           <div className="field">
             <span className="field-label-row">
               <span className="field-label">Market draw</span>

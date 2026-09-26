@@ -6,11 +6,11 @@ Kind: model. `montecarlo/marketModels.ts#createStationaryBootstrapModel` draws o
 
 ## Justification
 
-With effective mean parameter `L = max(2, meanBlockLength ?? 5)`, a block draws
+With mean parameter `L = meanBlockLength ?? 5` (a finite number of at least 2; anything else is refused with a RangeError rather than raised to 2), a block draws
 
 `remaining = floor(-ln(1 - U) * L) || 1`.
 
-This is a floored exponential draw clamped to at least one year. Its mean is near `L`, not exactly `L`; for `L = 5`, `E[remaining] = 1 + exp(-2/5) / (1 - exp(-1/5)) = 4.697924813049012`. A per-year restart/continuation coin is a different probability law even if its parameter is chosen to give a similar mean. In particular, the uniform draw is consumed once per block here and does not decide continuation separately in every path year.
+This is a floored exponential draw kept at no less than one year on purpose (a block of length 0 would publish no row). Its mean is near `L`, not exactly `L`; for `L = 5`, `E[remaining] = 1 + exp(-2/5) / (1 - exp(-1/5)) = 4.697924813049012`. A per-year restart/continuation coin is a different probability law even if its parameter is chosen to give a similar mean. In particular, the uniform draw is consumed once per block here and does not decide continuation separately in every path year.
 
 ## Inputs
 

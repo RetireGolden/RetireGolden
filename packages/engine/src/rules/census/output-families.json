@@ -5,7 +5,7 @@
     ],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": "",
+    "notes": "The percents are the solver's thresholds (risk-based-guardrail-solved-balance-thresholds) rounded to two decimals by useThresholdSolve; the dollar base is today's startingInvestableOf(plan), so the printed figure moves with balances after the solve.",
     "dimensions": [],
     "basis": "nominal",
     "id": "display-guardrail-balance-thresholds",
@@ -18,12 +18,28 @@
       {
         "path": "planner-ui/src/planner/ResultsPage.tsx",
         "symbol": "ResultsPage"
+      },
+      {
+        "path": "planner-ui/src/planner/MonteCarloPage.tsx",
+        "symbol": "MonteCarloPage"
+      },
+      {
+        "path": "planner-ui/src/planner/sections/SpendingPolicyRiskBased.tsx",
+        "symbol": "RiskBasedThresholdsCallout"
       }
     ],
     "surfaces": [
       {
         "surface": "results-table",
         "selector": "Risk-based guardrails callout \"cut below $X / raise above $Y\""
+      },
+      {
+        "surface": "monte-carlo-page",
+        "selector": "Risk-based dollar guardrails note \"cut below $X · raise above $Y\""
+      },
+      {
+        "surface": "assumptions-card",
+        "selector": "Spending card, risk-based guardrails callout \"cut spending if the portfolio falls below $X; raise if it rises above $Y\""
       }
     ]
   },
@@ -7655,5 +7671,74 @@
     "candidateRuleIds": [],
     "status": "identified",
     "notes": "no registry record: the characterization is assigned by the ledger sites in simulate.ts that publish each line; the governing law sits on the upstream tax calculators (ordinary income, capital gains, QCD exclusion). capitalGain may be negative for a realized loss; other kinds are nonnegative."
+  },
+  {
+    "id": "risk-based-guardrail-solved-balance-thresholds",
+    "group": "spending-and-withdrawals",
+    "title": "Solved risk-based guardrail balance thresholds",
+    "meaning": "The cut and raise portfolio levels the risk-based guardrail solver finds for the plan's success band, as a fraction of today's investable portfolio: for each band edge, the lowest point of the solver's ten-step bisection lattice on [0.02, 4] whose fixed-target Monte Carlo success on shared seeded paths is at or above that edge.",
+    "unit": "factor",
+    "basis": "n/a",
+    "dimensions": [
+      "edge"
+    ],
+    "kind": "engine",
+    "engineSource": {
+      "path": "engine/src/montecarlo/riskBasedGuardrails.ts",
+      "symbol": "RiskBasedGuardrailSolution.lower.balanceFrac / upper.balanceFrac"
+    },
+    "uiSources": [
+      {
+        "path": "planner-ui/src/planner/sections/useThresholdSolve.ts",
+        "symbol": "useThresholdSolve"
+      }
+    ],
+    "surfaces": [
+      {
+        "surface": "assumptions-card",
+        "selector": "Spending card, risk-based guardrails callout \"cut spending if the portfolio falls below $X; raise if it rises above $Y\" (SpendingPolicyRiskBased.tsx RiskBasedThresholdsCallout)"
+      },
+      {
+        "surface": "results-table",
+        "selector": "Risk-based spending guardrails callout \"if the portfolio falls below $X ... above $Y\""
+      },
+      {
+        "surface": "monte-carlo-page",
+        "selector": "Risk-based dollar guardrails note \"cut below $X · raise above $Y (today's dollars, solved on Spending)\""
+      }
+    ],
+    "transformations": [
+      "useThresholdSolve persists Math.round(balanceFrac × 10000) / 100 into plan.expenses.spendingPolicy.lowerBalanceThresholdPct / upperBalanceThresholdPct (percent of today's investable, two decimals); each callout then prints that percent / 100 × startingInvestableOf(plan) through fmtMoney (family display-guardrail-balance-thresholds)."
+    ],
+    "candidateRuleIds": [],
+    "status": "identified",
+    "notes": "Solved on demand (Spending card button) under the lognormal model at 12% volatility around the plan's own expected returns (allocated accounts use their asset classes' volatilities), with 200 paths and the plan-id seed, whatever model the Monte Carlo page shows. The persisted percents also drive the projection's guardrail rule (spending/guardrails.ts: cut below lowerBalanceThresholdPct/100 x the starting real portfolio, raise above upper), so the value feeds spending-guardrail-factor-annual and monte-carlo-guardrail-action-counts. The printed dollars differ from RiskBasedThreshold.balanceDollars by the two-decimal percent rounding and by any balance change since the solve. 'assumptions-card' stands in for the Spending card, which has no surface name in the vocabulary (the census's household-section gap)."
+  },
+  {
+    "id": "risk-based-guardrail-suggested-adjustment-monthly",
+    "group": "spending-and-withdrawals",
+    "title": "Suggested spending adjustment at a solved guardrail threshold",
+    "meaning": "The monthly spending cut at the solved cut threshold, or raise at the solved raise threshold, that brings fixed-target Monte Carlo success back to the middle of the band: |1 − m| × base annual spending / 12, with m the eight-step bisection result for the spending multiplier.",
+    "unit": "usd",
+    "basis": "real",
+    "dimensions": [
+      "edge"
+    ],
+    "kind": "engine",
+    "engineSource": {
+      "path": "engine/src/montecarlo/riskBasedGuardrails.ts",
+      "symbol": "RiskBasedGuardrailSolution.suggestedCut.monthlyDollars / suggestedRaise.monthlyDollars"
+    },
+    "uiSources": [],
+    "surfaces": [
+      {
+        "surface": "assumptions-card",
+        "selector": "Spending card, risk-based guardrails callout \"trimming about $X/mo restores the middle of the band\" / \"roughly $Y/mo of extra spending\" (SpendingPolicyRiskBased.tsx RiskBasedThresholdsCallout)"
+      }
+    ],
+    "transformations": [],
+    "candidateRuleIds": [],
+    "status": "identified",
+    "notes": "Rendered only from the in-memory solution of the latest solve; it is not persisted in the plan. When even a 2x raise keeps success above the midpoint the raise is reported at the bracket maximum (m = 2)."
   }
 ]

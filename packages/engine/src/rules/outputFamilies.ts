@@ -1,7 +1,7 @@
 /**
  * GENERATED FILE — DO NOT EDIT BY HAND.
  *
- * Output families imported from the output-family census at commit 664eae30f6db456663b1e9c1a276ce7b9505ccf6.
+ * Output families imported from the output-family census at commit 205b45570bda97ec86ddaf96740fa6d63df8fba9.
  * Regenerate: node packages/engine/scripts/import-output-census.mjs <census-dir>
  */
 
@@ -767,6 +767,14 @@ const families = {
       {
         "surface": "results-table",
         "selector": "Risk-based guardrails callout \"cut below $X / raise above $Y\""
+      },
+      {
+        "surface": "monte-carlo-page",
+        "selector": "Risk-based dollar guardrails note \"cut below $X · raise above $Y\""
+      },
+      {
+        "surface": "assumptions-card",
+        "selector": "Spending card, risk-based guardrails callout \"cut spending if the portfolio falls below $X; raise if it rises above $Y\""
       }
     ],
     "relocation": {
@@ -4124,6 +4132,58 @@ const families = {
       "status": "pending",
       "target": null
     }
+  },
+  "risk-based-guardrail-solved-balance-thresholds": {
+    "title": "Solved risk-based guardrail balance thresholds",
+    "group": "spending-and-withdrawals",
+    "meaning": "The cut and raise portfolio levels the risk-based guardrail solver finds for the plan's success band, as a fraction of today's investable portfolio: for each band edge, the lowest point of the solver's ten-step bisection lattice on [0.02, 4] whose fixed-target Monte Carlo success on shared seeded paths is at or above that edge.",
+    "unit": "factor",
+    "basis": "n/a",
+    "dimensions": [
+      "edge"
+    ],
+    "kind": "engine",
+    "engineSource": {
+      "path": "engine/src/montecarlo/riskBasedGuardrails.ts",
+      "symbol": "RiskBasedGuardrailSolution.lower.balanceFrac / upper.balanceFrac"
+    },
+    "surfaces": [
+      {
+        "surface": "assumptions-card",
+        "selector": "Spending card, risk-based guardrails callout \"cut spending if the portfolio falls below $X; raise if it rises above $Y\" (SpendingPolicyRiskBased.tsx RiskBasedThresholdsCallout)"
+      },
+      {
+        "surface": "results-table",
+        "selector": "Risk-based spending guardrails callout \"if the portfolio falls below $X ... above $Y\""
+      },
+      {
+        "surface": "monte-carlo-page",
+        "selector": "Risk-based dollar guardrails note \"cut below $X · raise above $Y (today's dollars, solved on Spending)\""
+      }
+    ],
+    "relocation": null
+  },
+  "risk-based-guardrail-suggested-adjustment-monthly": {
+    "title": "Suggested spending adjustment at a solved guardrail threshold",
+    "group": "spending-and-withdrawals",
+    "meaning": "The monthly spending cut at the solved cut threshold, or raise at the solved raise threshold, that brings fixed-target Monte Carlo success back to the middle of the band: |1 − m| × base annual spending / 12, with m the eight-step bisection result for the spending multiplier.",
+    "unit": "usd",
+    "basis": "real",
+    "dimensions": [
+      "edge"
+    ],
+    "kind": "engine",
+    "engineSource": {
+      "path": "engine/src/montecarlo/riskBasedGuardrails.ts",
+      "symbol": "RiskBasedGuardrailSolution.suggestedCut.monthlyDollars / suggestedRaise.monthlyDollars"
+    },
+    "surfaces": [
+      {
+        "surface": "assumptions-card",
+        "selector": "Spending card, risk-based guardrails callout \"trimming about $X/mo restores the middle of the band\" / \"roughly $Y/mo of extra spending\" (SpendingPolicyRiskBased.tsx RiskBasedThresholdsCallout)"
+      }
+    ],
+    "relocation": null
   },
   "rmd-required-annual": {
     "title": "requiredAmount",

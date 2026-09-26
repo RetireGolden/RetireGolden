@@ -196,7 +196,7 @@ const CHOLESKY_MODELS: readonly CholeskyModelCase[] = [
   {
     name: 'student-t',
     family: 'additive',
-    centering: 'additive: s * x * 100, zero-centered like its own fat-tailed return shock',
+    centering: 'additive: s * m * x * 100, zero-centered, with the market factor\'s t scale m shared by every class',
     centeringConstant: 0,
     build: (classShocks) => createStudentTModel({ type: 'student-t', df: 4, inflationMeanPct: 2.5, classShocks }),
   },
@@ -229,7 +229,7 @@ const CHOLESKY_MODELS: readonly CholeskyModelCase[] = [
   {
     name: 'garch',
     family: 'additive',
-    centering: 'additive: s * x * 100 (class vol is static; only the single factor is GARCH)',
+    centering: 'additive: s * x * 100, scaled each year by the market factor\'s sqrt(v_t) / sigmaBar, so classes cluster with it',
     centeringConstant: 0,
     build: (classShocks) => createGarchModel({ type: 'garch', inflationMeanPct: 2.5, classShocks }),
   },
@@ -395,5 +395,101 @@ describe('user-shock class shocks — the id-driven shock year', () => {
     expect(later.cash![8]).toBe(0)
     expect(later.usStocks![8]).toBe(SHOCK_PCT)
     expect(later.cash![shockIndex]).not.toBe(0)
+  })
+})
+
+/**
+ * Student-t and GARCH share one scale between the market factor and every
+ * class (D-STUDENT-T-MIXTURE and D-GARCH-FEEDBACK, decided 2026-09-25). A
+ * sampler fed only the first factor would still pass every table case above,
+ * because those look at one class at a time and at the draw count. These cases
+ * drive the same scripted draws through the model and through the Gaussian
+ * model, which mixes the same Cholesky draw with no shared scale, so the ratio
+ * of the two class series is the shared scale itself.
+ */
+describe('class shocks that share the market factor\'s scale', () => {
+  function scripted(normals: readonly number[], uniforms: readonly number[] = []): Rng {
+    let n = 0
+    let u = 0
+    return {
+      nextNormal: () => {
+        const draw = normals[n]
+        if (draw === undefined) throw new RangeError(`normal ${n} was not scripted`)
+        n += 1
+        return draw
+      },
+      next: () => {
+        const draw = uniforms[u]
+        if (draw === undefined) throw new RangeError(`uniform ${u} was not scripted`)
+        u += 1
+        return draw
+      },
+      nextInt: () => {
+        throw new RangeError('no integer draw was scripted')
+      },
+    }
+  }
+  const classShocks = { volatilityPctByClass: defaultVols }
+  // Per year: Z (the market factor), z2 (inflation), then one normal per class beyond the first.
+  const yearOne = [1, 0, 0.3, -1.2, 0.7]
+  const yearTwo = [-0.4, 0.2, 1.1, 0.5, -0.9]
+  const gaussian = createGaussianModel({ type: 'gaussian', inflationMeanPct: 2.5, classShocks }).generatePath(
+    scripted([...yearOne, ...yearTwo]),
+    2,
+  ).classReturnShockPct!
+
+  it('student-t: every class draw is the Gaussian one times m = sqrt((df − 2) / V), and usStocks equals the market t', () => {
+    // Uniforms 0.5, 0, 0.5 give V = 8.805870575472607 (the worksheet case B1), so m = 0.5836795510996967.
+    const m = 0.5836795510996967
+    const path = createStudentTModel({ type: 'student-t', df: 5, returnVolPct: 12, inflationMeanPct: 2.5, classShocks })
+      .generatePath(scripted(yearOne, [0.5, 0, 0.5]), 1)
+    for (const id of ASSET_CLASS_IDS) {
+      expect(path.classReturnShockPct![id]![0]!).toBeCloseTo(gaussian[id]![0]! * m, 12)
+    }
+    // usStocks at the market's own 12% volatility would equal the market shock; at its class
+    // volatility it is that shock times usStocks vol / 12, because Cholesky row 0 is [1, 0, 0, 0].
+    expect(path.classReturnShockPct!.usStocks![0]!).toBeCloseTo((path.returnShockPct![0]! * defaultVols.usStocks) / 12, 12)
+  })
+
+  it('garch: year 1 has scale 1 (v_1 = sigmaBar^2); after Z1 = 1 the year-2 scale is sqrt(v_2) / sigmaBar = 1', () => {
+    // Z1 = 1 leaves v_2 = 0.00072 + 0.1 * 0.0144 + 0.85 * 0.0144 = 0.0144, so the scale stays 1.
+    const path = createGarchModel({ type: 'garch', inflationMeanPct: 2.5, classShocks }).generatePath(
+      scripted([...yearOne, ...yearTwo]),
+      2,
+    ).classReturnShockPct!
+    for (const id of ASSET_CLASS_IDS) {
+      expect(path[id]![0]!).toBeCloseTo(gaussian[id]![0]!, 12)
+      expect(path[id]![1]!).toBeCloseTo(gaussian[id]![1]!, 12)
+    }
+  })
+
+  it('garch: after a 2-sigma year the next year\'s class shocks are sqrt(1.3) times the static ones', () => {
+    // Z1 = 2: e_1 = 0.24, v_2 = 0.00072 + 0.1 * 0.0576 + 0.85 * 0.0144 = 0.01872 = 1.3 * 0.0144.
+    const bigYear = [2, ...yearOne.slice(1)]
+    const staticPath = createGaussianModel({ type: 'gaussian', inflationMeanPct: 2.5, classShocks }).generatePath(
+      scripted([...bigYear, ...yearTwo]),
+      2,
+    ).classReturnShockPct!
+    const garchPath = createGarchModel({ type: 'garch', inflationMeanPct: 2.5, classShocks }).generatePath(
+      scripted([...bigYear, ...yearTwo]),
+      2,
+    ).classReturnShockPct!
+    for (const id of ASSET_CLASS_IDS) {
+      expect(garchPath[id]![0]!).toBeCloseTo(staticPath[id]![0]!, 12)
+      if (id === 'cash' && defaultVols.cash === 0) continue
+      expect(garchPath[id]![1]! / staticPath[id]![1]!).toBeCloseTo(Math.sqrt(1.3), 12)
+    }
+  })
+
+  it('garch at returnVolPct 0: the market is flat, so the class shocks keep their static volatilities', () => {
+    const flat = createGarchModel({ type: 'garch', returnVolPct: 0, inflationMeanPct: 2.5, classShocks }).generatePath(
+      scripted([...yearOne, ...yearTwo]),
+      2,
+    )
+    // 0 · Z1 is a signed zero (−0 when Z1 < 0); either way the market shock is zero.
+    expect(flat.returnShockPct!.every((shock) => shock === 0)).toBe(true)
+    for (const id of ASSET_CLASS_IDS) {
+      expect(flat.classReturnShockPct![id]![1]!).toBeCloseTo(gaussian[id]![1]!, 12)
+    }
   })
 })

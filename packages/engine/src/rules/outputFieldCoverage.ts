@@ -1,7 +1,7 @@
 /**
  * GENERATED FILE — DO NOT EDIT BY HAND.
  *
- * Output field coverage imported from the output-family census at commit 664eae30f6db456663b1e9c1a276ce7b9505ccf6.
+ * Output field coverage imported from the output-family census at commit 205b45570bda97ec86ddaf96740fa6d63df8fba9.
  * Regenerate: node packages/engine/scripts/import-output-census.mjs <census-dir>
  */
 
@@ -1328,6 +1328,211 @@ const coverageCensus = [
     "reasonKind": "runtime-diagnostic",
     "reason": "Summed target shortfall for the window; the Historical stress windows table on MonteCarloPage.tsx prints totalShortfall only.",
     "tsType": "number"
+  },
+  {
+    "source": "engine/src/montecarlo/riskBasedGuardrails.ts",
+    "owner": "RiskBasedAdjustment",
+    "field": "annualDollars",
+    "disposition": "unsurfaced-evidence",
+    "familyId": null,
+    "reasonKind": "runtime-diagnostic",
+    "reason": "|1 - m| x baseAnnual; the callout prints only the monthly figure; searched planner-ui/src for annualDollars: no reader of the solver's field.",
+    "tsType": "number"
+  },
+  {
+    "source": "engine/src/montecarlo/riskBasedGuardrails.ts",
+    "owner": "RiskBasedAdjustment",
+    "field": "monthlyDollars",
+    "disposition": "family",
+    "familyId": "risk-based-guardrail-suggested-adjustment-monthly",
+    "tsType": "number"
+  },
+  {
+    "source": "engine/src/montecarlo/riskBasedGuardrails.ts",
+    "owner": "RiskBasedAdjustment",
+    "field": "spendingMultiplier",
+    "disposition": "unsurfaced-evidence",
+    "familyId": null,
+    "reasonKind": "runtime-diagnostic",
+    "reason": "Solved target-spending multiplier m, an operand of monthlyDollars; searched planner-ui/src for spendingMultiplier: no reader.",
+    "tsType": "number"
+  },
+  {
+    "source": "engine/src/montecarlo/riskBasedGuardrails.ts",
+    "owner": "RiskBasedAdjustment",
+    "field": "successAfter",
+    "disposition": "unsurfaced-evidence",
+    "familyId": null,
+    "reasonKind": "runtime-diagnostic",
+    "reason": "Success at the threshold after the adjustment (0..1); searched planner-ui/src for successAfter: no reader.",
+    "tsType": "number"
+  },
+  {
+    "source": "engine/src/montecarlo/riskBasedGuardrails.ts",
+    "owner": "RiskBasedGuardrailSolution",
+    "field": "lowerBandPct",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "input-parameter",
+    "reason": "Echo of the solved band's lower edge; the callout's never-reaches-band and always-above-band notes print it as the edge the user entered.",
+    "tsType": "number"
+  },
+  {
+    "source": "engine/src/montecarlo/riskBasedGuardrails.ts",
+    "owner": "RiskBasedGuardrailSolution",
+    "field": "pathCount",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "sample-size-or-count-setting",
+    "reason": "Echo of the paths per probe; a run-size setting.",
+    "tsType": "number"
+  },
+  {
+    "source": "engine/src/montecarlo/riskBasedGuardrails.ts",
+    "owner": "RiskBasedGuardrailSolution",
+    "field": "seed",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "runtime-diagnostic",
+    "reason": "Echo of the probe seed; a reproducibility setting.",
+    "tsType": "number"
+  },
+  {
+    "source": "engine/src/montecarlo/riskBasedGuardrails.ts",
+    "owner": "RiskBasedGuardrailSolution",
+    "field": "startingInvestable",
+    "disposition": "unsurfaced-evidence",
+    "familyId": null,
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The dollar base the fractions apply to; planner-ui recomputes startingInvestableOf(plan) rather than reading this field of a solution.",
+    "tsType": "number"
+  },
+  {
+    "source": "engine/src/montecarlo/riskBasedGuardrails.ts",
+    "owner": "RiskBasedGuardrailSolution",
+    "field": "successAtCurrent",
+    "disposition": "unsurfaced-evidence",
+    "familyId": null,
+    "reasonKind": "runtime-diagnostic",
+    "reason": "Fixed-target success at today's balances (0..1); searched planner-ui/src for successAtCurrent: no reader.",
+    "tsType": "number"
+  },
+  {
+    "source": "engine/src/montecarlo/riskBasedGuardrails.ts",
+    "owner": "RiskBasedGuardrailSolution",
+    "field": "upperBandPct",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "input-parameter",
+    "reason": "Echo of the solved band's upper edge; a solve input.",
+    "tsType": "number"
+  },
+  {
+    "source": "engine/src/montecarlo/riskBasedGuardrails.ts",
+    "owner": "RiskBasedGuardrailSolveOptions",
+    "field": "lowerBandPct",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "input-parameter",
+    "reason": "Lower success-band edge override, percent; a solve input.",
+    "tsType": "number | undefined"
+  },
+  {
+    "source": "engine/src/montecarlo/riskBasedGuardrails.ts",
+    "owner": "RiskBasedGuardrailSolveOptions",
+    "field": "pathCount",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "sample-size-or-count-setting",
+    "reason": "Paths per success probe (200 from the Spending card); a run-size setting.",
+    "tsType": "number"
+  },
+  {
+    "source": "engine/src/montecarlo/riskBasedGuardrails.ts",
+    "owner": "RiskBasedGuardrailSolveOptions",
+    "field": "seed",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "runtime-diagnostic",
+    "reason": "Seed shared by every probe so all balances see the same market paths; a reproducibility setting.",
+    "tsType": "number"
+  },
+  {
+    "source": "engine/src/montecarlo/riskBasedGuardrails.ts",
+    "owner": "RiskBasedGuardrailSolveOptions",
+    "field": "startYear",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "dimension-coordinate",
+    "reason": "First calendar year of every probe's Monte Carlo projection; a coordinate.",
+    "tsType": "number"
+  },
+  {
+    "source": "engine/src/montecarlo/riskBasedGuardrails.ts",
+    "owner": "RiskBasedGuardrailSolveOptions",
+    "field": "upperBandPct",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "input-parameter",
+    "reason": "Upper success-band edge override, percent; a solve input.",
+    "tsType": "number | undefined"
+  },
+  {
+    "source": "engine/src/montecarlo/riskBasedGuardrails.ts",
+    "owner": "RiskBasedThreshold",
+    "field": "balanceDollars",
+    "disposition": "unsurfaced-evidence",
+    "familyId": null,
+    "reasonKind": "runtime-diagnostic",
+    "reason": "balanceFrac x startingInvestable; searched planner-ui/src for balanceDollars: no reader (the callouts print the rounded persisted percent x startingInvestableOf(plan) instead).",
+    "tsType": "number"
+  },
+  {
+    "source": "engine/src/montecarlo/riskBasedGuardrails.ts",
+    "owner": "RiskBasedThreshold",
+    "field": "balanceFrac",
+    "disposition": "family",
+    "familyId": "risk-based-guardrail-solved-balance-thresholds",
+    "tsType": "number"
+  },
+  {
+    "source": "engine/src/montecarlo/riskBasedGuardrails.ts",
+    "owner": "RiskBasedThreshold",
+    "field": "successAtThreshold",
+    "disposition": "unsurfaced-evidence",
+    "familyId": null,
+    "reasonKind": "runtime-diagnostic",
+    "reason": "Success re-evaluated at the solved balance (0..1); searched planner-ui/src for successAtThreshold: no reader.",
+    "tsType": "number"
+  },
+  {
+    "source": "engine/src/montecarlo/riskBasedGuardrails.ts",
+    "owner": "module",
+    "field": "DEFAULT_TARGET_SUCCESS_LOWER_PCT",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "input-parameter",
+    "reason": "Default lower success-band edge (70) used when neither the options nor the plan's spending policy set one; a solve input.",
+    "tsType": "number"
+  },
+  {
+    "source": "engine/src/montecarlo/riskBasedGuardrails.ts",
+    "owner": "module",
+    "field": "DEFAULT_TARGET_SUCCESS_UPPER_PCT",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "input-parameter",
+    "reason": "Default upper success-band edge (95) used when neither the options nor the plan's spending policy set one; a solve input.",
+    "tsType": "number"
+  },
+  {
+    "source": "engine/src/montecarlo/riskBasedGuardrails.ts",
+    "owner": "startingInvestableOf",
+    "field": "return",
+    "disposition": "family",
+    "familyId": "display-guardrail-balance-thresholds",
+    "tsType": "number",
+    "note": "Operand: the dollar base the three threshold callouts multiply the persisted percent by (record risk-based-starting-investable). SpendingSolverPage also divides by it (solved-initial-withdrawal-rate-pct)."
   },
   {
     "source": "engine/src/montecarlo/run.ts",
@@ -10249,22 +10454,6 @@ const exclusionCensus = [
     "reason": "The inheritedLedgerCsvValues.inheritedEvidenceNote field is a narrative evidence or audit note rather than a numeric amount."
   },
   {
-    "id": "csv-inherited-professional-confirmation",
-    "path": "planner-ui/src/planner/resultsRows.ts",
-    "symbol": "inheritedLedgerCsvValues",
-    "field": "inheritedProfessionalConfirmation",
-    "reasonKind": "not-numeric",
-    "reason": "The inheritedLedgerCsvValues.inheritedProfessionalConfirmation field is a nonnumeric object, collection, or text value."
-  },
-  {
-    "id": "csv-inherited-requirement-kind",
-    "path": "planner-ui/src/planner/resultsRows.ts",
-    "symbol": "inheritedLedgerCsvValues",
-    "field": "inheritedRequirementKind",
-    "reasonKind": "label-or-category",
-    "reason": "The inheritedLedgerCsvValues.inheritedRequirementKind field is a categorical label used to name or classify the displayed record."
-  },
-  {
     "id": "csv-year",
     "path": "planner-ui/src/planner/resultsRows.ts",
     "symbol": "LEDGER_CSV_COLUMNS",
@@ -10807,6 +10996,94 @@ const exclusionCensus = [
     "field": "startHistoricalYear",
     "reasonKind": "dimension-coordinate",
     "reason": "First historical market year of the replayed window; part of the window label."
+  },
+  {
+    "id": "field-engine-src-montecarlo-riskbasedguardrails-ts-module-default-target-success-lower-pct",
+    "path": "engine/src/montecarlo/riskBasedGuardrails.ts",
+    "symbol": "module",
+    "field": "DEFAULT_TARGET_SUCCESS_LOWER_PCT",
+    "reasonKind": "input-parameter",
+    "reason": "Default lower success-band edge (70) used when neither the options nor the plan's spending policy set one; a solve input."
+  },
+  {
+    "id": "field-engine-src-montecarlo-riskbasedguardrails-ts-module-default-target-success-upper-pct",
+    "path": "engine/src/montecarlo/riskBasedGuardrails.ts",
+    "symbol": "module",
+    "field": "DEFAULT_TARGET_SUCCESS_UPPER_PCT",
+    "reasonKind": "input-parameter",
+    "reason": "Default upper success-band edge (95) used when neither the options nor the plan's spending policy set one; a solve input."
+  },
+  {
+    "id": "field-engine-src-montecarlo-riskbasedguardrails-ts-riskbasedguardrailsolution-lowerbandpct",
+    "path": "engine/src/montecarlo/riskBasedGuardrails.ts",
+    "symbol": "RiskBasedGuardrailSolution",
+    "field": "lowerBandPct",
+    "reasonKind": "input-parameter",
+    "reason": "Echo of the solved band's lower edge; the callout's never-reaches-band and always-above-band notes print it as the edge the user entered."
+  },
+  {
+    "id": "field-engine-src-montecarlo-riskbasedguardrails-ts-riskbasedguardrailsolution-pathcount",
+    "path": "engine/src/montecarlo/riskBasedGuardrails.ts",
+    "symbol": "RiskBasedGuardrailSolution",
+    "field": "pathCount",
+    "reasonKind": "sample-size-or-count-setting",
+    "reason": "Echo of the paths per probe; a run-size setting."
+  },
+  {
+    "id": "field-engine-src-montecarlo-riskbasedguardrails-ts-riskbasedguardrailsolution-seed",
+    "path": "engine/src/montecarlo/riskBasedGuardrails.ts",
+    "symbol": "RiskBasedGuardrailSolution",
+    "field": "seed",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "Echo of the probe seed; a reproducibility setting."
+  },
+  {
+    "id": "field-engine-src-montecarlo-riskbasedguardrails-ts-riskbasedguardrailsolution-upperbandpct",
+    "path": "engine/src/montecarlo/riskBasedGuardrails.ts",
+    "symbol": "RiskBasedGuardrailSolution",
+    "field": "upperBandPct",
+    "reasonKind": "input-parameter",
+    "reason": "Echo of the solved band's upper edge; a solve input."
+  },
+  {
+    "id": "field-engine-src-montecarlo-riskbasedguardrails-ts-riskbasedguardrailsolveoptions-lowerbandpct",
+    "path": "engine/src/montecarlo/riskBasedGuardrails.ts",
+    "symbol": "RiskBasedGuardrailSolveOptions",
+    "field": "lowerBandPct",
+    "reasonKind": "input-parameter",
+    "reason": "Lower success-band edge override, percent; a solve input."
+  },
+  {
+    "id": "field-engine-src-montecarlo-riskbasedguardrails-ts-riskbasedguardrailsolveoptions-pathcount",
+    "path": "engine/src/montecarlo/riskBasedGuardrails.ts",
+    "symbol": "RiskBasedGuardrailSolveOptions",
+    "field": "pathCount",
+    "reasonKind": "sample-size-or-count-setting",
+    "reason": "Paths per success probe (200 from the Spending card); a run-size setting."
+  },
+  {
+    "id": "field-engine-src-montecarlo-riskbasedguardrails-ts-riskbasedguardrailsolveoptions-seed",
+    "path": "engine/src/montecarlo/riskBasedGuardrails.ts",
+    "symbol": "RiskBasedGuardrailSolveOptions",
+    "field": "seed",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "Seed shared by every probe so all balances see the same market paths; a reproducibility setting."
+  },
+  {
+    "id": "field-engine-src-montecarlo-riskbasedguardrails-ts-riskbasedguardrailsolveoptions-startyear",
+    "path": "engine/src/montecarlo/riskBasedGuardrails.ts",
+    "symbol": "RiskBasedGuardrailSolveOptions",
+    "field": "startYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "First calendar year of every probe's Monte Carlo projection; a coordinate."
+  },
+  {
+    "id": "field-engine-src-montecarlo-riskbasedguardrails-ts-riskbasedguardrailsolveoptions-upperbandpct",
+    "path": "engine/src/montecarlo/riskBasedGuardrails.ts",
+    "symbol": "RiskBasedGuardrailSolveOptions",
+    "field": "upperBandPct",
+    "reasonKind": "input-parameter",
+    "reason": "Upper success-band edge override, percent; a solve input."
   },
   {
     "id": "field-engine-src-montecarlo-run-ts-aggregatemontecarlo-averagetargetshortfalls",
@@ -11527,6 +11804,14 @@ const exclusionCensus = [
     "field": "year",
     "reasonKind": "dimension-coordinate",
     "reason": "The PromotedWinner.year field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-engine-src-projection-optimizeplan-ts-retirementactionpromotion-searchsimulations",
+    "path": "engine/src/projection/optimizePlan.ts",
+    "symbol": "RetirementActionPromotion",
+    "field": "searchSimulations",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "Number of optimizer search simulations run for the promoted candidate; a runtime diagnostic shown in the explain panel, not a financial output."
   },
   {
     "id": "field-engine-src-projection-optimizeplan-ts-retirementactionpromotion-year",
@@ -12265,20 +12550,20 @@ const exclusionCensus = [
     "reason": "The inheritedLedgerCsvValues.inheritedEvidenceNote field is a narrative evidence or audit note rather than a numeric amount."
   },
   {
-    "id": "field-planner-ui-src-planner-resultsrows-ts-inheritedledgercsvvalues-inheritedprofessionalconfirmation",
+    "id": "field-planner-ui-src-planner-resultsrows-ts-inheritedledgercsvvalues-needsprofessionalconfirmation",
     "path": "planner-ui/src/planner/resultsRows.ts",
     "symbol": "inheritedLedgerCsvValues",
-    "field": "inheritedProfessionalConfirmation",
+    "field": "needsProfessionalConfirmation",
     "reasonKind": "not-numeric",
-    "reason": "The inheritedLedgerCsvValues.inheritedProfessionalConfirmation field is a nonnumeric object, collection, or text value."
+    "reason": "The inheritedLedgerCsvValues.needsProfessionalConfirmation field is a nonnumeric object, collection, or text value."
   },
   {
-    "id": "field-planner-ui-src-planner-resultsrows-ts-inheritedledgercsvvalues-inheritedrequirementkind",
+    "id": "field-planner-ui-src-planner-resultsrows-ts-inheritedledgercsvvalues-requirementkind",
     "path": "planner-ui/src/planner/resultsRows.ts",
     "symbol": "inheritedLedgerCsvValues",
-    "field": "inheritedRequirementKind",
+    "field": "requirementKind",
     "reasonKind": "label-or-category",
-    "reason": "The inheritedLedgerCsvValues.inheritedRequirementKind field is a categorical label used to name or classify the displayed record."
+    "reason": "The inheritedLedgerCsvValues.requirementKind field is a categorical label used to name or classify the displayed record."
   },
   {
     "id": "field-planner-ui-src-planner-resultsrows-ts-ledger-csv-columns-filingstatus",

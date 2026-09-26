@@ -1,9 +1,12 @@
 /**
  * Market-model picker wiring: the plain-language presets shown up front, the
- * full advanced catalog behind the disclosure, and the mapping from a picked
- * kind to a MarketModelConfig. Pure UI-level mapping — every config value
- * written here already existed when the picker was a flat <select>, so a
- * given (kind, seed) pair produces byte-identical Monte Carlo results.
+ * full advanced catalog behind the disclosure, the mapping from a picked
+ * kind to a MarketModelConfig, and the one slider the page shows for that
+ * kind. Pure UI-level mapping: a given (kind, seed) pair always produces the
+ * same Monte Carlo results. The GARCH config names its volatility
+ * `returnVolPct` like every sibling model (it was `returnVolScalePct` until
+ * the engine's GARCH fix of 2026-09-26, which also changed what the value
+ * means: now the long-run standard deviation of the return shock).
  */
 
 import { planUsesAssetAllocation, resolveAssetClassParams } from '@retiregolden/engine/allocation/assetClasses'
@@ -92,6 +95,43 @@ export function catalogLabelOf(kind: ModelKind): string {
   return MODEL_CATALOG.find((entry) => entry.kind === kind)?.label ?? kind
 }
 
+/**
+ * The one model-specific slider the Monte Carlo page shows beside a kind:
+ * 'return-volatility' for the kinds whose config buildModel fills from
+ * returnVolPct (user-shock as baseReturnVolPct), 'equity-weight' for the kinds
+ * it fills from equityWeightPct, and null for the kinds it passes neither, so
+ * the page never offers a control the chosen model ignores.
+ */
+export type ModelControl = 'return-volatility' | 'equity-weight' | null
+
+export function modelControlOf(kind: ModelKind): ModelControl {
+  switch (kind) {
+    case 'lognormal':
+    case 'student-t':
+    case 'garch':
+    case 'gaussian':
+    case 'ar1':
+    case 'cape-conditioned':
+    case 'user-shock':
+      return 'return-volatility'
+    case 'hist-iid':
+    case 'hist-block':
+    case 'hist-sequence':
+    case 'stationary':
+    case 'empirical':
+    case 'reversed-history':
+      return 'equity-weight'
+    case 'regime-switch':
+    case 'inflation-regime':
+      return null
+    default: {
+      // A new ModelKind fails to compile here until it is mapped above.
+      const unmapped: never = kind
+      throw new Error(`No Monte Carlo control is mapped for model kind ${String(unmapped)}`)
+    }
+  }
+}
+
 function buildClassShocks(plan: Plan): ClassShockConfig | undefined {
   if (!planUsesAssetAllocation(plan)) return undefined
   const params = resolveAssetClassParams(plan.assumptions.assetClassParams)
@@ -145,7 +185,7 @@ export function buildModel(
     return { type: 'empirical', equityWeightPct, centered: true, classShocks: !!classShocks }
   }
   if (kind === 'garch') {
-    return { type: 'garch', inflationMeanPct, returnVolScalePct: returnVolPct, classShocks }
+    return { type: 'garch', inflationMeanPct, returnVolPct, classShocks }
   }
   if (kind === 'inflation-regime') {
     return { type: 'inflation-regime', baseInflationMeanPct: inflationMeanPct, classShocks }
