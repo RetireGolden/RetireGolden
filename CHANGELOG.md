@@ -4,6 +4,61 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## Unreleased
 
+- **Student-t market model is now a true Student-t:** it used to draw a normal and
+  multiply one year in twenty by 2.5 (3.5 at df 4 or less), so its swings were about
+  12% larger than the volatility set (1.25 times at df 4 or less) and no t variate was
+  drawn. It now draws Z · sqrt((df − 2)/V) with V chi-square (Marsaglia and Tsang, on
+  uniforms only), whose standard deviation equals the set volatility; the fat tails come
+  from the t itself. A df of 2 or less is refused (the floor at 3 is gone). Allocated
+  accounts' class shocks share the same V, so they form a multivariate t: large moves in
+  magnitude co-occur across classes, their direction follows the correlation, and cash
+  gets t tails too. Before → after on one test household (1,000 paths, seed 42,
+  $1,000,000 taxable, $45,000 spending, 5% return, 12% volatility): success 45.7% →
+  48.4%. Lognormal at 12% on the same household is unchanged at 48.2%.
+- **GARCH market model fixed:** the recursion fed back its already-scaled shock (a factor
+  0.36 on the alpha term at the default setting, 25 at 100), and with a fixed omega of
+  1e-5 its long-run swing was about 0.56 points a year when the volatility was set to
+  12%, so its paths were nearly deterministic. At volatility settings of 24.5 or more it
+  had no finite long-run variance (the old recursion stays strictly stationary to about
+  26.2; only the planner's top value, 25, is affected). It now runs textbook GARCH(1,1)
+  on its own innovation (Bollerslev 1986), with omega set so the long-run standard
+  deviation equals the set volatility in every year (variance targeting). Alpha + beta of
+  1 or more, and negative inputs, are refused. Allocated accounts' class shocks now
+  cluster with the market: each class keeps its volatility and correlations and is
+  scaled each year by the market's conditional volatility over its long-run one. Before →
+  after on the same household: success 90.1% → 49.0% at 12%, and 85.7% → 38.3% at 20%.
+- **Reversed-history window refused instead of clamped:** `windowLengthYears` must be a
+  whole number of years from 5 to 96; anything else now raises an error instead of
+  running a different window (3 and 4 ran as 5, 97 as 96) or crashing (a fractional
+  window). No displayed figure moves: the planner always sends 10, and every valid
+  window replays the same paths as before.
+- **No silent clamps left in the market models:** an out-of-range value now raises an
+  error with a message instead of being changed quietly, for the return-inflation
+  correlation (outside −1 to 1, in seven models), a class volatility (missing, negative
+  or not finite), the historical block length (not a whole number of at least 1), the
+  regime switch probability (outside 0.001 to 0.5), the high-inflation probability
+  (outside 0.01 to 0.3), AR(1) phi (outside −0.9 to 0.95), the stationary mean block
+  length (below 2), the user-shock year (not a whole number of at least 1; a fractional
+  year used to give no shock at all), an explicit historical stress window (not a whole
+  number from 1 to 96), and a custom class correlation matrix that is not positive
+  definite. Every valid input produces the same paths as before; a test compares each
+  unchanged model against a copy of the previous code over a grid of valid inputs. The
+  CAPE adjustment cap (a cap on a derived value), the stationary bootstrap's minimum
+  block of one year, and the random-number and balance floors stay, and are documented.
+- **Guardrail solver success probe:** `solveRiskBasedGuardrails` takes an optional
+  `successProbe(balanceFrac, spendingMultiplier)` that replaces its Monte Carlo runs (a
+  test seam; the default is unchanged). With it the band-edge thresholds and the
+  suggested cut and raise now have a calculation record evidenced against an analytic
+  success curve, and the census gains two families for them (the solved thresholds and
+  the suggested monthly adjustment). The solver worksheet's lattice range is corrected to
+  1 through 1024.
+- **Monte Carlo page shows the slider each model reads:** Return volatility for
+  lognormal, Student-t, GARCH, Gaussian, AR(1), CAPE and user shock; Equity weight for the
+  three historical modes, the stationary and empirical bootstraps and reversed history;
+  neither for regime switching and inflation regimes. Before, only lognormal showed the
+  volatility slider and every other model showed the equity slider, so Student-t and
+  GARCH silently reused the last lognormal volatility.
+
 - **Bundle budget aggregate rows:** raised `all JS` 4400 → 4800 KiB and
   PWA precache 4550 → 4900 KiB. Azure `build` on head `03bb93cc` measured
   4431.7 and 4579.6 KiB; the previous ~30–46 KiB of slack was tripping every
@@ -312,6 +367,28 @@ has — rather than the runtime contract a consumer needs on the landing page.
   transitions apply only to a detached snapshot: movement and actionability
   remain unestablished, and it publishes no December 31, tax, penalty, basis,
   or finalization claim.
+
+### Breaking (published `@retiregolden/engine` API)
+
+- **`GarchModelConfig`:** `omega` is deleted (it is now set from the volatility, so an
+  explicit value would either be ignored or contradict it), and `returnVolScalePct` is
+  renamed `returnVolPct`, which now means the long-run standard deviation of the return
+  shock in percentage points, as for every sibling model. A caller passing either old
+  key gets a type error; an untyped caller's `returnVolScalePct` is ignored and the
+  default 12 is used. The RetireGolden-MCP and RetireGolden-Pro hosts build only the
+  lognormal model and need no change.
+- **New RangeErrors from `createMarketModel` and the model factories**, where values
+  used to be clamped or rounded without a word: Student-t df of 2 or less; GARCH
+  negative inputs and alpha + beta of 1 or more; a reversed-history window that is not a
+  whole number from 5 to 96; a return-inflation correlation outside −1 to 1; a missing,
+  negative or non-finite class volatility; a class correlation matrix that is not
+  positive definite (also from `choleskyDecompose`); a historical block length that is
+  not a whole number of at least 1; a regime switch probability outside 0.001 to 0.5; a
+  high-inflation probability outside 0.01 to 0.3; AR(1) phi outside −0.9 to 0.95; a
+  stationary mean block length below 2; a user-shock year that is not a whole number of
+  at least 1. `runHistoricalStressSuites` refuses an explicit window that is not a whole
+  number from 1 to 96, and `solveRiskBasedGuardrails` refuses a `successProbe` value
+  outside 0 to 1.
 
 ## 2026-09
 
