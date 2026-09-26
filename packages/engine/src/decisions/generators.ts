@@ -64,14 +64,20 @@ function conversionWindowBoundaries(ctx: DecisionContext, startYear: number, end
   // captured inherited-distribution movements whose source is a traditional
   // account, the same figures internal/ownedNonRothIraRuntimeSourceSeries.ts
   // reconciles exactly against withdrawals.traditional. simulatePlan always
-  // publishes them; a result built elsewhere without them falls back to the
-  // published ordinary-income figure.
+  // publishes them, and every caller hands the generators a simulatePlan
+  // result. A year without them is refused: no published figure stands in
+  // for them exactly, and a stand-in would silently move the window.
   const traditionalIds = new Set(
     plan.accounts.filter((account) => account.type === 'traditional').map((account) => account.id),
   )
   const inheritedTraditionalForced = (year: (typeof ctx.baselineResult.years)[number]): number => {
     const occurrences = year.retirementRuntimeSource?.runtimeOccurrences
-    if (occurrences === undefined) return year.inheritedTraditionalDistribution
+    if (occurrences === undefined) {
+      throw new Error(
+        `Roth conversion windows: baseline year ${year.year} has no retirementRuntimeSource.runtimeOccurrences; ` +
+          'the decision context must carry a simulatePlan result',
+      )
+    }
     let forced = 0
     for (const occurrence of occurrences) {
       if (occurrence.kind === 'inheritedIraRmd' && traditionalIds.has(occurrence.sourceAccountId ?? '')) {

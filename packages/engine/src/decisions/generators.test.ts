@@ -182,6 +182,22 @@ describe('simpleRothConversionGenerator ACA evidence gate', () => {
     expect(windowedIds(plan)).toEqual([])
   })
 
+  it('refuses a baseline year without the recorded movements instead of reading the ordinary-income figure', () => {
+    // The inherited Roth plan's 2027 inheritedTraditionalDistribution carries
+    // the Roth slice's taxable earnings; with the recorded movements removed
+    // no figure can stand in for them, so the generator names what is missing.
+    const plan = spousalElectionPlan('roth', 5_000, false)
+    const ctx = createDecisionContext(plan, { startYear: 2026, taxCalculator: createFlatTaxCalculator(0) })
+    const years = ctx.baselineResult.years.map((year) => {
+      if (year.year !== 2026) return year
+      const stripped = { ...year }
+      delete stripped.retirementRuntimeSource
+      return stripped
+    })
+    expect(() => simpleRothConversionGenerator.generate({ ...ctx, baselineResult: { ...ctx.baselineResult, years } }))
+      .toThrow('baseline year 2026 has no retirementRuntimeSource.runtimeOccurrences')
+  })
+
   it('marks every aggregate fill candidate explicitly exploratory', () => {
     const candidates = simpleRothConversionGenerator.generate(createDecisionContext(noTraditionalPlan(), simOptions()))
     expect(candidates.length).toBeGreaterThan(0)

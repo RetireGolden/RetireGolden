@@ -83,6 +83,10 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   moved out of inherited traditional accounts (a spousal election year
   included, where an inherited account's published row can show an amount
   that did not move), so the candidates it offers do not change either.
+  Those movements come from the year's `retirementRuntimeSource`, which
+  `simulatePlan` always publishes; a decision context whose baseline year
+  lacks them (a result not built by `simulatePlan`) is refused with an error
+  naming the missing field rather than read from another figure.
 
 - **Fixed: 0% capital-gains room when income is below the deduction**
   (decision D-ZERO-RATE-HEADROOM): the search for the room stopped at the 15%
