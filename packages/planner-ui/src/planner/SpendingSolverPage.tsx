@@ -217,7 +217,7 @@ export function SpendingSolverPage() {
   const headroomUnderHundred = sustainsCurrent && slack !== null && slack < 0
   const acaNote = result ? unpricedCreditSpendingNote(result, result.maxBaseAnnual !== null) : null
   // The failure well prints the engine's reasons verbatim, except the
-  // unpriced-credit sentence, which the plain note above replaces.
+  // unpriced-credit sentence, which the plain note under it replaces.
   const failureDiagnostics = result
     ? diagnosticsWithoutUnpricedCreditSentence(result.diagnostics, result.acaGrossPremiumYears)
     : []
