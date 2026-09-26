@@ -919,7 +919,7 @@ balances. "Chain" is the value with every year's fixed point exact, from 2026 on
 |---|---|---|---|---|---|
 | 81 | **`penalties`** | **0** | both RMDs fully taken; both owners past 59½; a conversion is never penalized | worksheet `tax-penalties-annual` | exact 0 |
 | 82 | Other published zeros | `contributions`, `employerMatch`, `sepp`, `inheritedDistribution`, `hecmDraw`, `realizedGains`, `taxableYield`, `taxExemptInterest` all 0; `guardrailAction` `hold`; no `aca` | none in the plan | `YearResult` docs | exact |
-| 83 | Warnings (projection-level, not assertable from a row) | Riley's trim warning, as in 2026. **And "Spending withdrawals from traditional accounts pushed income above the Roth-conversion target in some years."**, raised from 2027 on | The second warning's condition checks only fill-to-target, `rothConversion > 0` and a need-based traditional draw > 0.01. **Its text is false here:** taxable income stays 64,977.21 / 43,471.24 / 61,127.60 below the ceiling in 2027 / 2028 / 2029. *Superseded 2026-09-25 by decision D-ROTH-TARGET-WARNING:* the condition now also requires the year's final value of the sized metric (taxable income here) to end above the ceiling, so this projection no longer carries the second warning; `planner-ui` `bracketFillRothWarning.test.ts` holds that for 2027 to 2029 | `annualFundingApplicationAndClosePhase.ts` lines 1276–1284 (body, as derived; the check now sits after the year's federal detail); section 6, A3 | not applicable (projection-level text) |
+| 83 | Warnings (projection-level, not assertable from a row) | Riley's trim warning, as in 2026, and no other: the Roth-conversion target warning is not raised in 2027, 2028 or 2029 | The target warning needs a fill-to-target conversion, `rothConversion > 0`, a need-based traditional draw above 0.01, **and** the year's final value of the metric the conversion was sized against (taxable income here), priced from the year's realized figures, more than a cent above the ceiling (decision D-ROTH-TARGET-WARNING, 2026-09-25). The first three hold from 2027, when cash runs out, but taxable income ends 64,977.21 / 43,471.24 / 61,127.60 below the ceiling in 2027 / 2028 / 2029, so the fourth fails. `planner-ui` `bracketFillRothWarning.test.ts` holds this for 2027 to 2029 | `annualFundingApplicationAndClosePhase.ts` lines 1346 to 1364 (body: the check that follows the year's federal detail); section 6, A3 | not applicable (projection-level text) |
 
 **The 2029 rule, stated plainly.** Everything federal that Congress indexes is carried forward from the 2026 pack at
 2.5% a year. The §86 thresholds and the senior deduction are not, and the senior deduction ends after 2028. The
@@ -1015,7 +1015,8 @@ ceiling (section 5). *Recommendation:* gate the warning on the year's TI exceedi
 have pushed". The warning is projection-level (`ProjectionResult.warnings`), so a row cannot assert it (2026 B6).
 *Resolved 2026-09-25 (decision D-ROTH-TARGET-WARNING):* the first option was taken. The warning now fires only when
 the year's final value of the metric the conversion was sized against ends more than a cent above the ceiling, and
-this projection no longer raises it.
+this projection no longer raises it. The check now sits at `annualFundingApplicationAndClosePhase.ts` lines 1346 to
+1364, after the year's federal detail.
 
 **A4. Which IRA the need comes from.** The category order is documented (`YearWithdrawals` doc,
 `withdrawalStrategySchema` doc, domain rules §11). The order within the traditional category is body-only:
@@ -1067,8 +1068,8 @@ a cent to spare.
 **B3. The cash identity residuals** (A1) are not in any published field; `surplusInvested` stays 0 by a wide margin
 every year.
 
-**B4. Warnings are not assertable from a row** (2026 B6): Riley's trim warning every year from 2026 to 2031, and the
-spending-withdrawal warning (A3) from 2027.
+**B4. Warnings are not assertable from a row** (2026 B6): Riley's trim warning every year from 2026 to 2031. The
+spending-withdrawal warning (A3) is not raised in 2027 to 2029, where taxable income ends below the ceiling (row 83).
 
 ---
 
