@@ -68,7 +68,9 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   the three historical modes, the stationary and empirical bootstraps and reversed
   history; neither for regime switching and inflation regimes. Before, only lognormal
   showed the volatility slider and every other model showed the equity slider, so
-  Student-t and GARCH silently reused the last lognormal volatility.
+  Student-t and GARCH silently reused the last lognormal volatility. The historical
+  stress windows now have their own stock-share control, shown whatever model is picked,
+  since the model's equity weight is offered only for the models that read it.
 - **Fixed: a value lost or shown under another row when two rows shared an
   id** (decision D-CASH-PROPERTY-ALIAS): the year's balances, and the
   property, debt and policy values behind them, keep one value per id. The

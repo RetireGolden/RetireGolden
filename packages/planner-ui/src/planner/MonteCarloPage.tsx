@@ -101,6 +101,10 @@ export function MonteCarloPage() {
   const [modelKind, setModelKind] = useState<ModelKind>(HEADLINE_MC_MODEL.kind)
   const [returnVolPct, setReturnVolPct] = useState<number>(HEADLINE_MC_MODEL.returnVolPct)
   const [equityWeightPct, setEquityWeightPct] = useState<number>(HEADLINE_MC_MODEL.equityWeightPct)
+  // The historical stress windows replay history at their own stock share, set in that section and
+  // shown whatever model is picked: the model's equity weight is only offered for the models that
+  // read it, so the stress table must not depend on a value the page may be hiding.
+  const [stressEquityWeightPct, setStressEquityWeightPct] = useState<number>(HEADLINE_MC_MODEL.equityWeightPct)
   const [seed, setSeed] = useState(() => seedFromPlanId(plan.id))
   const [stochasticLongevity, setStochasticLongevity] = useState(false)
   const [ltcShock, setLtcShock] = useState(false)
@@ -220,16 +224,16 @@ export function MonteCarloPage() {
     setHistoricalError(null)
     void runHistoricalStressSuiteViews(plan, {
       startYear: currentStartYear(),
-      equityWeightPct,
+      equityWeightPct: stressEquityWeightPct,
       classShocks: planUsesAssetAllocation(plan),
       worstWindowCount: 5,
     })
       .then((result) => {
-        setHistorical({ plan, equityWeightPct, result })
+        setHistorical({ plan, equityWeightPct: stressEquityWeightPct, result })
       })
       .catch((e: unknown) => setHistoricalError(e instanceof Error ? e.message : String(e)))
       .finally(() => setHistoricalRunning(false))
-  }, [plan, equityWeightPct])
+  }, [plan, stressEquityWeightPct])
 
   // Under the headline configuration, the latest run published for this exact
   // plan object (a 10,000-path one, typically) is what the page shows, so the
@@ -280,7 +284,7 @@ export function MonteCarloPage() {
       ? frontier
       : null
   const visibleHistorical =
-    historical && historical.plan === plan && historical.equityWeightPct === equityWeightPct ? historical.result : null
+    historical && historical.plan === plan && historical.equityWeightPct === stressEquityWeightPct ? historical.result : null
 
   return (
     <section>
@@ -852,6 +856,24 @@ export function MonteCarloPage() {
               Replay every rolling historical window, then replay those windows in reverse order, to find the named
               sequences that hurt this plan most.
             </p>
+            <div className="field">
+              <span className="field-label-row">
+                <span className="field-label">
+                  Stock share for the stress windows: {stressEquityWeightPct}/{100 - stressEquityWeightPct}
+                </span>
+                <HelpTip text="The stock/bond mix each replayed historical window uses (60/40 = 60% S&P 500, 40% 10-year Treasuries). It applies to this table only, whichever market model is picked above; your accounts' expected returns still come from the Accounts/Assumptions forms." />
+              </span>
+              <input
+                type="range"
+                min={0}
+                max={100}
+                step={5}
+                value={stressEquityWeightPct}
+                aria-label="Stock share for the stress windows"
+                aria-valuetext={`${stressEquityWeightPct}% stocks, ${100 - stressEquityWeightPct}% bonds`}
+                onChange={(e) => setStressEquityWeightPct(Number(e.target.value))}
+              />
+            </div>
             {historicalError ? (
               <div className="error-recovery" role="alert">
                 <p className="error-text">Stress suite error: {historicalError}</p>
