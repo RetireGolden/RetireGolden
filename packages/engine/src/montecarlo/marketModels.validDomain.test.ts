@@ -743,6 +743,7 @@ function comparisons(): Comparison[] {
   for (const row of grid({
     startingCape: [undefined, 10, 50],
     capeSensitivity: [undefined, 0.3],
+    returnVolPct: [undefined, 0, 7],
     correlation: [undefined, -1, 1],
     classShocks: CLASS_SHOCK_VARIANTS,
   })) {
@@ -754,20 +755,30 @@ function comparisons(): Comparison[] {
   for (const row of grid({ centered: [undefined, false, true], equityWeightPct: [undefined, 80], classShocks: [undefined, true] })) {
     add('empirical', defined<EmpiricalModelConfig>({ type: 'empirical', ...row }), oldCreateEmpiricalModel, createEmpiricalModel)
   }
-  for (const row of grid({ highInflationProb: [undefined, 0.01, 0.3], correlation: [undefined, -1, 1], classShocks: CLASS_SHOCK_VARIANTS })) {
+  for (const row of grid({
+    highInflationProb: [undefined, 0.01, 0.3],
+    returnVolPct: [undefined, 0, 7],
+    correlation: [undefined, -1, 1],
+    classShocks: CLASS_SHOCK_VARIANTS,
+  })) {
     add('inflation-regime', defined<InflationRegimeModelConfig>({ type: 'inflation-regime', baseInflationMeanPct: 2.5, ...row }), oldCreateInflationRegimeModel, createInflationRegimeModel)
   }
   const windows = [undefined, ...Array.from({ length: HISTORICAL_YEARS.length - 4 }, (_, i) => i + 5)]
   for (const row of grid({ windowLengthYears: windows, classShocks: [undefined, true] })) {
     add('reversed-history', defined<ReversedHistoryModelConfig>({ type: 'reversed-history', ...row }), oldCreateReversedHistoryModel, createReversedHistoryModel, 120)
   }
-  for (const row of grid({ shockYear: [undefined, 1, 3, 60, 200], classShocks: CLASS_SHOCK_VARIANTS })) {
+  for (const row of grid({ shockYear: [undefined, 1, 3, 60, 200], baseReturnVolPct: [undefined, 0, 7], classShocks: CLASS_SHOCK_VARIANTS })) {
     add('user-shock', defined<UserShockModelConfig>({ type: 'user-shock', inflationMeanPct: 2.5, ...row }), oldCreateUserShockModel, createUserShockModel)
   }
   for (const row of grid({ returnVolPct: [undefined, 0, 20], correlation: correlations, classShocks: CLASS_SHOCK_VARIANTS })) {
     add('gaussian', defined<GaussianModelConfig>({ type: 'gaussian', inflationMeanPct: 2.5, ...row }), oldCreateGaussianModel, createGaussianModel)
   }
-  for (const row of grid({ phi: [undefined, -0.9, 0, 0.95], correlation: [undefined, -1, 1], classShocks: CLASS_SHOCK_VARIANTS })) {
+  for (const row of grid({
+    phi: [undefined, -0.9, 0, 0.95],
+    returnVolPct: [undefined, 0, 7],
+    correlation: [undefined, -1, 1],
+    classShocks: CLASS_SHOCK_VARIANTS,
+  })) {
     add('ar1', defined<AR1ModelConfig>({ type: 'ar1', inflationMeanPct: 2.5, ...row }), oldCreateAR1Model, createAR1Model)
   }
   return out
@@ -830,6 +841,27 @@ describe('inputs the market models used to change without a word are refused', (
     ['Gaussian', (correlation) => createGaussianModel({ type: 'gaussian', inflationMeanPct: 2.5, correlation })],
     ['AR(1)', (correlation) => createAR1Model({ type: 'ar1', inflationMeanPct: 2.5, correlation })],
   ]
+
+  // Review round 1, item 4: GARCH already refused a negative or non-finite returnVolPct; every other
+  // factory that reads a return volatility now does too (a negative standard deviation would
+  // silently mirror every draw, and NaN or Infinity would poison every path).
+  const volatilityModels: readonly [string, (volPct: number) => MarketModel][] = [
+    ['Lognormal returnVolPct', (returnVolPct) => createLognormalModel({ type: 'lognormal', inflationMeanPct: 2.5, returnVolPct })],
+    ['Student-t returnVolPct', (returnVolPct) => createStudentTModel({ type: 'student-t', inflationMeanPct: 2.5, returnVolPct })],
+    ['CAPE-conditioned returnVolPct', (returnVolPct) => createCapeConditionedModel({ type: 'cape-conditioned', inflationMeanPct: 2.5, returnVolPct })],
+    ['GARCH returnVolPct', (returnVolPct) => createGarchModel({ type: 'garch', inflationMeanPct: 2.5, returnVolPct })],
+    ['Inflation-regime returnVolPct', (returnVolPct) => createInflationRegimeModel({ type: 'inflation-regime', baseInflationMeanPct: 2.5, returnVolPct })],
+    ['User-shock baseReturnVolPct', (baseReturnVolPct) => createUserShockModel({ type: 'user-shock', inflationMeanPct: 2.5, baseReturnVolPct })],
+    ['Gaussian returnVolPct', (returnVolPct) => createGaussianModel({ type: 'gaussian', inflationMeanPct: 2.5, returnVolPct })],
+    ['AR(1) returnVolPct', (returnVolPct) => createAR1Model({ type: 'ar1', inflationMeanPct: 2.5, returnVolPct })],
+  ]
+
+  it.each(volatilityModels)('refuses a negative or non-finite %s, and accepts 0', (label, build) => {
+    for (const volPct of [-1, -0.0001, Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY]) {
+      expect(() => build(volPct)).toThrow(new RangeError(`${label} must be a finite number of at least 0; got ${volPct}.`))
+    }
+    for (const volPct of [0, 12, 25, 100]) expect(() => build(volPct)).not.toThrow()
+  })
 
   it.each(correlationModels)('%s refuses a return-inflation correlation outside [-1, 1] or not finite', (name, build) => {
     for (const correlation of [1.0000001, -1.5, 2, Number.NaN, Number.POSITIVE_INFINITY]) {

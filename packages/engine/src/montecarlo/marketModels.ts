@@ -57,7 +57,7 @@ export interface ClassShockConfig {
 
 export interface LognormalModelConfig {
   type: 'lognormal'
-  /** Annual volatility of the portfolio return, percentage points (default 12). */
+  /** Annual volatility of the portfolio return, percentage points (default 12): a finite number of at least 0, refused otherwise. */
   returnVolPct?: number
   /** Mean inflation, percent (default: the plan's assumption — pass it explicitly). */
   inflationMeanPct: number
@@ -101,7 +101,7 @@ export interface StudentTModelConfig {
    * t variance is infinite and no volatility can be matched. Non-integer values are exact.
    */
   df?: number
-  /** Standard deviation of the annual return shock, percentage points (default 12). */
+  /** Standard deviation of the annual return shock, percentage points (default 12): a finite number of at least 0, refused otherwise. */
   returnVolPct?: number
   inflationMeanPct: number
   inflationVolPct?: number
@@ -137,6 +137,7 @@ export interface CapeConditionedModelConfig {
    * bounds a derived value, not an input, and is stated on the model's calculation record.
    */
   capeSensitivity?: number
+  /** Lognormal volatility of the base return shock, percentage points (default 12): a finite number of at least 0, refused otherwise. */
   returnVolPct?: number
   inflationMeanPct: number
   inflationVolPct?: number
@@ -186,6 +187,7 @@ export interface InflationRegimeModelConfig {
   highInflationMean?: number
   /** Probability of entering the high regime from the normal one each year (default 0.08): a probability from 0 to 1, refused otherwise. */
   highInflationProb?: number
+  /** Lognormal volatility of the return shock, percentage points (default 12): a finite number of at least 0, refused otherwise. */
   returnVolPct?: number
   baseInflationMeanPct: number
   /** Correlation between the return shock and inflation (default −0.2); a finite number from −1 to 1, refused otherwise. */
@@ -210,7 +212,7 @@ export interface UserShockModelConfig {
   shockYear?: number
   /** Additive shock in that year, percent (e.g. -20 for crash year). */
   shockPct?: number
-  /** Base model after the shock year (lognormal params). */
+  /** Lognormal volatility outside the shock year, percentage points (default 12): a finite number of at least 0, refused otherwise. */
   baseReturnVolPct?: number
   inflationMeanPct: number
   classShocks?: ClassShockConfig
@@ -218,7 +220,7 @@ export interface UserShockModelConfig {
 
 export interface GaussianModelConfig {
   type: 'gaussian'
-  /** Annual volatility of the portfolio return shock, percentage points (default 12). */
+  /** Annual volatility of the portfolio return shock, percentage points (default 12): a finite number of at least 0, refused otherwise. */
   returnVolPct?: number
   inflationMeanPct: number
   inflationVolPct?: number
@@ -235,6 +237,7 @@ export interface AR1ModelConfig {
    * Note: an earlier comment said 0.2; the code has always applied 0.25.
    */
   phi?: number
+  /** Standard deviation of each year's innovation, percentage points (default 12): a finite number of at least 0, refused otherwise. */
   returnVolPct?: number
   inflationMeanPct: number
   inflationVolPct?: number
@@ -385,6 +388,18 @@ function returnInflationCorrelation(modelName: string, correlation: number | und
   return rho
 }
 
+/**
+ * A model's return volatility in percentage points (default 12). A negative or non-finite value
+ * is refused: it is a standard deviation, and a negative one would silently mirror every draw.
+ */
+function returnVolatility(label: string, volPct: number | undefined): number {
+  const value = volPct ?? 12
+  if (!(Number.isFinite(value) && value >= 0)) {
+    throw new RangeError(`${label} must be a finite number of at least 0; got ${value}.`)
+  }
+  return value
+}
+
 /** Refuses a model parameter outside its documented closed range [min, max], or not finite. */
 function requireInRange(label: string, value: number, min: number, max: number): number {
   if (!(Number.isFinite(value) && value >= min && value <= max)) {
@@ -443,7 +458,7 @@ function makeClassShockSampler(classCfg: ClassShockConfig | undefined): ClassSho
  * return shock via a Gaussian copula.
  */
 export function createLognormalModel(config: LognormalModelConfig): MarketModel {
-  const sigma = (config.returnVolPct ?? 12) / 100
+  const sigma = returnVolatility('Lognormal returnVolPct', config.returnVolPct) / 100
   const inflMean = config.inflationMeanPct
   const inflVol = config.inflationVolPct ?? 1.5
   const rho = returnInflationCorrelation('Lognormal', config.correlation)
@@ -584,7 +599,7 @@ export function sampleChiSquare(rng: Rng, df: number): number {
 /**
  * Student-t return model, scaled so the shock's standard deviation equals returnVolPct.
  *   df    = config.df ?? 5, refused with a RangeError unless finite and > 2
- *   sigma = (config.returnVolPct ?? 12) / 100
+ *   sigma = (config.returnVolPct ?? 12) / 100, refused with a RangeError unless finite and >= 0
  *   per path year, in this order:
  *     Z  = rng.nextNormal()                    (the year's first normal draw)
  *     V  = sampleChiSquare(rng, df)            (uniforms only)
@@ -609,7 +624,7 @@ export function createStudentTModel(config: StudentTModelConfig): MarketModel {
       `Student-t degrees of freedom must be a finite number greater than 2 (at 2 or below the variance is infinite, so no volatility can be matched); got ${df}.`,
     )
   }
-  const sigma = (config.returnVolPct ?? 12) / 100
+  const sigma = returnVolatility('Student-t returnVolPct', config.returnVolPct) / 100
   const inflMean = config.inflationMeanPct
   const inflVol = config.inflationVolPct ?? 1.5
   const rho = returnInflationCorrelation('Student-t', config.correlation)
@@ -699,7 +714,7 @@ export function createCapeConditionedModel(config: CapeConditionedModelConfig): 
   const startCape = config.startingCape ?? 25
   const sens = config.capeSensitivity ?? 0.15
   const baseMuAdj = Math.max(-4, Math.min(2, -(startCape - 20) * sens)) // pp adjustment
-  const sigma = (config.returnVolPct ?? 12) / 100
+  const sigma = returnVolatility('CAPE-conditioned returnVolPct', config.returnVolPct) / 100
   const inflMean = config.inflationMeanPct
   const inflVol = config.inflationVolPct ?? 1.5
   const rho = returnInflationCorrelation('CAPE-conditioned', config.correlation)
@@ -927,7 +942,7 @@ export function createGarchModel(config: GarchModelConfig): MarketModel {
 export function createInflationRegimeModel(config: InflationRegimeModelConfig): MarketModel {
   const highMu = config.highInflationMean ?? 8
   const pHigh = requireInRange('Inflation-regime highInflationProb', config.highInflationProb ?? 0.08, 0, 1)
-  const sigma = (config.returnVolPct ?? 12) / 100
+  const sigma = returnVolatility('Inflation-regime returnVolPct', config.returnVolPct) / 100
   const baseInfl = config.baseInflationMeanPct
   const rho = returnInflationCorrelation('Inflation-regime', config.correlation)
   const classCfg = config.classShocks
@@ -1027,7 +1042,7 @@ export function createUserShockModel(config: UserShockModelConfig): MarketModel 
     throw new RangeError(`User-shock shockYear must be a whole number of at least 1 (a 1-based path year); got ${shockYear}.`)
   }
   const shock = config.shockPct ?? -20
-  const sigma = (config.baseReturnVolPct ?? 12) / 100
+  const sigma = returnVolatility('User-shock baseReturnVolPct', config.baseReturnVolPct) / 100
   const inflMean = config.inflationMeanPct
   const classCfg = config.classShocks
   const classShocks = makeClassShockSampler(classCfg)
@@ -1072,7 +1087,7 @@ export function createUserShockModel(config: UserShockModelConfig): MarketModel 
  * Mean-preserving (shocks centered at 0).
  */
 export function createGaussianModel(config: GaussianModelConfig): MarketModel {
-  const sigma = (config.returnVolPct ?? 12) / 100
+  const sigma = returnVolatility('Gaussian returnVolPct', config.returnVolPct) / 100
   const inflMean = config.inflationMeanPct
   const inflVol = config.inflationVolPct ?? 1.5
   const rho = returnInflationCorrelation('Gaussian', config.correlation)
@@ -1115,7 +1130,7 @@ export function createAR1Model(config: AR1ModelConfig): MarketModel {
       `AR(1) phi must be a number strictly between -1 and 1 (at |phi| of 1 or more the process is not stationary); got ${phi}.`,
     )
   }
-  const sigma = (config.returnVolPct ?? 12) / 100
+  const sigma = returnVolatility('AR(1) returnVolPct', config.returnVolPct) / 100
   const inflMean = config.inflationMeanPct
   const inflVol = config.inflationVolPct ?? 1.5
   const rho = returnInflationCorrelation('AR(1)', config.correlation)

@@ -42,18 +42,20 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   2), the user-shock year (not a whole number of at least 1; a fractional year used to
   give no shock at all), an explicit historical stress window (not a whole number from 1
   to 96), the historical stress suite's worst-window count (not a whole number of at
-  least 1), and a custom class correlation matrix that is not positive definite. Every
-  value the earlier code ran as given produces the same paths as before, except a
-  positive-definite correlation matrix with a Cholesky pivot below 1e-12, which is now
-  factored exactly instead of having that pivot raised to 1e-12; a test compares each
-  unchanged model against a copy of the previous code over a grid of such values. Values
-  the earlier code clamped are now refused, as listed above, or run as set: the regime
-  switch and high-inflation probabilities and AR(1) phi accept their whole mathematical
-  range instead of the old bounds (0.001 to 0.5, 0.01 to 0.3, and −0.9 to 0.95), so a
-  value outside those bounds is no longer moved to the nearest one. The planner never
-  sets the two probabilities and passes phi 0.3, so no displayed figure moves. The CAPE
-  adjustment cap (a cap on a derived value), the stationary bootstrap's minimum block of
-  one year, and the random-number and balance floors stay, and are documented.
+  least 1), a return volatility (negative or not finite, in every model that reads one;
+  only GARCH checked it before), and a custom class correlation matrix that is not
+  positive definite. Every value the earlier code ran as given produces the same paths
+  as before, except a positive-definite correlation matrix with a Cholesky pivot below
+  1e-12, which is now factored exactly instead of having that pivot raised to 1e-12; a
+  test compares each unchanged model against a copy of the previous code over a grid of
+  such values. Values the earlier code clamped are now refused, as listed above, or run
+  as set: the regime switch and high-inflation probabilities and AR(1) phi accept their
+  whole mathematical range instead of the old bounds (0.001 to 0.5, 0.01 to 0.3, and
+  −0.9 to 0.95), so a value outside those bounds is no longer moved to the nearest one.
+  The planner never sets the two probabilities and passes phi 0.3, so no displayed
+  figure moves. The CAPE adjustment cap (a cap on a derived value), the stationary
+  bootstrap's minimum block of one year, and the random-number and balance floors stay,
+  and are documented.
 - **Guardrail solver success probe:** `solveRiskBasedGuardrails` takes an optional
   `successProbe(balanceFrac, spendingMultiplier)` that replaces its Monte Carlo runs (a
   test seam; the default is unchanged). With it the band-edge thresholds and the
@@ -532,7 +534,9 @@ has — rather than the runtime contract a consumer needs on the landing page.
   positive definite (also from `choleskyDecompose`); a historical block length that is
   not a whole number of at least 1; a regime switch or high-inflation probability
   outside 0 to 1; AR(1) phi of 1 or more in size; a stationary mean block length below
-  2; a user-shock year that is not a whole number of at least 1.
+  2; a user-shock year that is not a whole number of at least 1; a negative or
+  non-finite `returnVolPct` in any model that reads one (Student-t, lognormal, Gaussian,
+  AR(1), CAPE, inflation regime, GARCH) or `baseReturnVolPct` (user shock).
   `runHistoricalStressSuites` refuses an explicit window that is not a whole number from
   1 to 96 and a `worstWindowCount` that is not a whole number of at least 1, and
   `solveRiskBasedGuardrails` refuses a `successProbe` value outside 0 to 1.
