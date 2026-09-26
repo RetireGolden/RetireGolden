@@ -539,5 +539,17 @@ describeCalculation(
         `LL^T second diagonal ${secondDiag} is not within ${JSON.stringify(example.tolerance)} of 1`,
       ).toBe(true)
     })
+
+    it('refuses a matrix that is not positive definite: r = 1 leaves pivot 0 and r = 2 leaves pivot −3', () => {
+      // The second pivot of [[1, r], [r, 1]] is 1 − r^2. The factor used to raise it to 1e-12 and
+      // return the factor of a different matrix; it is now refused.
+      expect(() => choleskyDecompose([[1, 1], [1, 1]])).toThrow(
+        new RangeError('Correlation matrix is not positive definite: the Cholesky pivot at row 1 is 0, not a positive number.'),
+      )
+      expect(() => choleskyDecompose([[1, 2], [2, 1]])).toThrow(
+        new RangeError('Correlation matrix is not positive definite: the Cholesky pivot at row 1 is -3, not a positive number.'),
+      )
+      expect(() => choleskyDecompose([[1, 0.999], [0.999, 1]])).not.toThrow()
+    })
   },
 )

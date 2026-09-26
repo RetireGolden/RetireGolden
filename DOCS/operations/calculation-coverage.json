@@ -2,7 +2,7 @@
   "kind": "retiregolden.calculation-coverage.manifest",
   "version": 2,
   "families": {
-    "identified": 230,
+    "identified": 232,
     "byGroup": {
       "accounts-and-growth": 11,
       "cash-flow-and-summary": 60,
@@ -15,12 +15,12 @@
       "rmd": 3,
       "roth": 4,
       "social-security": 17,
-      "spending-and-withdrawals": 14,
+      "spending-and-withdrawals": 16,
       "taxes": 18
     },
     "byKind": {
       "adapter": 3,
-      "engine": 187,
+      "engine": 189,
       "ui-native": 21,
       "ui-transformation": 19
     },
@@ -220,6 +220,8 @@
       "display-upside-spending-annual",
       "display-years-before-plan-end",
       "longevity-last-funded-year",
+      "risk-based-guardrail-solved-balance-thresholds",
+      "risk-based-guardrail-suggested-adjustment-monthly",
       "simple-candidate-evaluation-after-tax-estate-delta",
       "simple-candidate-evaluation-executed-conversion-total",
       "simple-candidate-evaluation-incomplete-computation-years",
@@ -348,6 +350,7 @@
         "projection-summary-fi-number"
       ],
       "display-guardrail-balance-thresholds": [
+        "risk-based-guardrail-threshold-solver",
         "risk-based-starting-investable"
       ],
       "display-loss-carryforward-used-annual": [
@@ -724,6 +727,9 @@
       "spending-care-cost-gross-annual": [
         "long-term-care-shock-sampling"
       ],
+      "spending-guardrail-factor-annual": [
+        "risk-based-guardrail-threshold-solver"
+      ],
       "spending-healthcare-annual": [
         "aca-400-percent-cliff",
         "aca-allowable-premium-tax-credit",
@@ -837,16 +843,16 @@
     }
   },
   "records": {
-    "total": 224,
+    "total": 225,
     "byKind": {
       "composition": 72,
       "data": 16,
       "formula": 79,
-      "model": 57
+      "model": 58
     },
     "byJustificationKind": {
       "dataset": 5,
-      "derivation": 219
+      "derivation": 220
     }
   },
   "oracleExamples": [
@@ -1041,7 +1047,7 @@
     {
       "group": "monteCarlo",
       "path": "calculation-coverage/monteCarlo.json",
-      "recordCount": 35
+      "recordCount": 36
     },
     {
       "group": "optimizerAndComparisons",
