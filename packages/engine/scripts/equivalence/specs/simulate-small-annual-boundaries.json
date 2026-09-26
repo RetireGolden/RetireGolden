@@ -1,7 +1,7 @@
 {
   "schema": "retiregolden.equivalence-reach-spec/1",
   "name": "simulate-small-annual-boundaries",
-  "why": "Measured reach for the five small annual boundaries extracted from simulatePlan. Ranges point at the helper files after extraction, not the removed inline sites. Each range was pinned against this working tree after all five helpers landed. Reach reports the remaining cold sub-line operands; material validated-input-impossible branches are called out in entry notes, while the helper unit suites cover their supported structural contracts. Treating rejected Plan input as differential coverage would weaken, not strengthen, this proof. SPLIT on 2026-09-26: entry C (77-118) is now C (77-80) and C.fromEntryMap (82-118), leaving out the one line only a repeated policy id reached, since the plan checks refuse repeated policy ids (D-CASH-PROPERTY-ALIAS).",
+  "why": "Measured reach for the five small annual boundaries extracted from simulatePlan. Ranges point at the helper files after extraction, not the removed inline sites. Each range was pinned against this working tree after all five helpers landed. Reach reports the remaining cold sub-line operands; material validated-input-impossible branches are called out in entry notes, while the helper unit suites cover their supported structural contracts. Treating rejected Plan input as differential coverage would weaken, not strengthen, this proof. SPLIT on 2026-09-26: entry C (77-118) is now C (77-80) and C.fromEntryMap (82-118), leaving out the one line only a repeated policy id reached, since the plan checks refuse repeated policy ids (D-CASH-PROPERTY-ALIAS). REPINNED on 2026-09-26 (B2-P1 slice 1): the snapshot now carries its input's unassigned cash through to the year so YearResult.unassignedCash can publish it, so B (77-126, now 79-129) moved +2 for the new AnnualSnapshot member and its comment and is one line longer for the added unassignedCash return property. Every other range in this spec is unchanged.",
   "entries": [
     {
       "id": "A.filters",
@@ -55,20 +55,20 @@
       "label": "annual balance snapshot",
       "file": "projection/internal/annualSnapshot.ts",
       "lines": [
-        77,
-        126
+        79,
+        129
       ],
       "anchors": [
         {
-          "line": 77,
+          "line": 79,
           "text": "const {"
         },
         {
-          "line": 102,
+          "line": 104,
           "text": "balanceEntries.push([id, value])"
         },
         {
-          "line": 126,
+          "line": 129,
           "text": "}"
         }
       ]
