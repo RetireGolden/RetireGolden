@@ -546,7 +546,11 @@
         "pinnedBlob": "df82d4ee7fbeeaa41c43b1811f05ddb161b01268",
         "reason": "Decision D-CASH-PROPERTY-ALIAS made the plan checks refuse any id two rows would publish a value under, so six blocks members (c8, e5, h1, j4, n1, r1) that shared property, debt or policy ids now give each row its own id. No block-O, block-Q or block-Y member this proof measures changed. The pin is advanced so the harness closure still authenticates at HEAD; the corpus, capture, reach and calibration figures in this record were measured with the earlier blob and were not re-measured. This proof's engine-tree check already ties it to its own head source tree, so it verifies only at that tree."
       }
-    ]
+    ],
+    "historicalRecord": {
+      "date": "2026-09-26",
+      "statement": "This proof verifies only at its recorded engine trees: head b63271eaed9a0e5cc36db5b525c834b830f5b16d (packages/engine/src at commit 07b3614d4459ae67fa9de31b28c0f09f0b212680) and base d8e8d22f1bd0931f79bca576612b66a60e430987 (packages/engine/src at commit df896740af6ef75e01931720abcbc1074e428570). It has not been verifiable at main's HEAD since later commits changed packages/engine/src, so HEAD no longer carries the recorded head tree the verifier requires, and re-pinned this spec, so the recorded specMeasurementSha256 no longer matches it. It stands as a historical record of that extraction, not as a check the current engine passes."
+    }
   },
   "readingTheCounts": "Member counts prove execution and the reach command additionally fails on cold executable whole lines. JavaScript line coverage cannot distinguish every operand sharing a line, so the report must be read with focused helper, hostile delegation, grouped-duplicate integration, and calibrated-mutation tests."
 }

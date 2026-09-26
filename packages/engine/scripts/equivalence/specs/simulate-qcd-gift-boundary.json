@@ -479,7 +479,11 @@
         "pinnedBlob": "df82d4ee7fbeeaa41c43b1811f05ddb161b01268",
         "reason": "Decision D-CASH-PROPERTY-ALIAS made the plan checks refuse any id two rows would publish a value under, so six blocks members (c8, e5, h1, j4, n1, r1) that shared property, debt or policy ids now give each row its own id. No block-O, block-Q or block-Y member this proof measures changed. The pin is advanced so the harness closure still authenticates at HEAD; the corpus, capture, reach and calibration figures in this record were measured with the earlier blob and were not re-measured. This proof's engine-tree check already ties it to its own head source tree, so it verifies only at that tree."
       }
-    ]
+    ],
+    "historicalRecord": {
+      "date": "2026-09-26",
+      "statement": "This proof verifies only at its recorded engine trees: head b63271eaed9a0e5cc36db5b525c834b830f5b16d (packages/engine/src at commit 07b3614d4459ae67fa9de31b28c0f09f0b212680) and base 33d9b00d8054b592361e37710c78f99cc01cee65 (packages/engine/src at commit 815a52b25359c4bbaf103efbf69e2a5bf7d65487). It has not been verifiable at main's HEAD since later commits changed packages/engine/src, so HEAD no longer carries the recorded head tree the verifier requires, and re-pinned this spec, so the recorded specMeasurementSha256 no longer matches it. It stands as a historical record of that extraction, not as a check the current engine passes."
+    }
   },
   "readingTheCounts": "A member count proves that at least one line in the named range executed. Reach additionally fails on any cold executable whole line in a reached range. JavaScript line coverage cannot distinguish every ternary, nullish or compound-condition operand sharing one physical line, so focused hostile tests must be read alongside the differential proof."
 }
