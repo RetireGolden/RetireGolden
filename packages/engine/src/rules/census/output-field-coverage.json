@@ -9919,5 +9919,210 @@
     "disposition": "excluded",
     "reasonKind": "runtime-diagnostic",
     "reason": "Number of optimizer search simulations run for the promoted candidate; a runtime diagnostic shown in the explain panel, not a financial output."
+  },
+  {
+    "source": "engine/src/montecarlo/riskBasedGuardrails.ts",
+    "owner": "module",
+    "field": "DEFAULT_TARGET_SUCCESS_LOWER_PCT",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "Default lower success-band edge (70) used when neither the options nor the plan's spending policy set one; a solve input.",
+    "reasonKind": "input-parameter"
+  },
+  {
+    "source": "engine/src/montecarlo/riskBasedGuardrails.ts",
+    "owner": "module",
+    "field": "DEFAULT_TARGET_SUCCESS_UPPER_PCT",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "Default upper success-band edge (95) used when neither the options nor the plan's spending policy set one; a solve input.",
+    "reasonKind": "input-parameter"
+  },
+  {
+    "source": "engine/src/montecarlo/riskBasedGuardrails.ts",
+    "owner": "RiskBasedGuardrailSolveOptions",
+    "field": "startYear",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "First calendar year of every probe's Monte Carlo projection; a coordinate.",
+    "reasonKind": "dimension-coordinate"
+  },
+  {
+    "source": "engine/src/montecarlo/riskBasedGuardrails.ts",
+    "owner": "RiskBasedGuardrailSolveOptions",
+    "field": "pathCount",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "Paths per success probe (200 from the Spending card); a run-size setting.",
+    "reasonKind": "sample-size-or-count-setting"
+  },
+  {
+    "source": "engine/src/montecarlo/riskBasedGuardrails.ts",
+    "owner": "RiskBasedGuardrailSolveOptions",
+    "field": "seed",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "Seed shared by every probe so all balances see the same market paths; a reproducibility setting.",
+    "reasonKind": "runtime-diagnostic"
+  },
+  {
+    "source": "engine/src/montecarlo/riskBasedGuardrails.ts",
+    "owner": "RiskBasedGuardrailSolveOptions",
+    "field": "lowerBandPct",
+    "tsType": "number | undefined",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "Lower success-band edge override, percent; a solve input.",
+    "reasonKind": "input-parameter"
+  },
+  {
+    "source": "engine/src/montecarlo/riskBasedGuardrails.ts",
+    "owner": "RiskBasedGuardrailSolveOptions",
+    "field": "upperBandPct",
+    "tsType": "number | undefined",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "Upper success-band edge override, percent; a solve input.",
+    "reasonKind": "input-parameter"
+  },
+  {
+    "source": "engine/src/montecarlo/riskBasedGuardrails.ts",
+    "owner": "RiskBasedThreshold",
+    "field": "balanceFrac",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "risk-based-guardrail-solved-balance-thresholds"
+  },
+  {
+    "source": "engine/src/montecarlo/riskBasedGuardrails.ts",
+    "owner": "RiskBasedThreshold",
+    "field": "balanceDollars",
+    "tsType": "number",
+    "disposition": "unsurfaced-evidence",
+    "familyId": null,
+    "reason": "balanceFrac x startingInvestable; searched planner-ui/src for balanceDollars: no reader (the callouts print the rounded persisted percent x startingInvestableOf(plan) instead).",
+    "reasonKind": "runtime-diagnostic"
+  },
+  {
+    "source": "engine/src/montecarlo/riskBasedGuardrails.ts",
+    "owner": "RiskBasedThreshold",
+    "field": "successAtThreshold",
+    "tsType": "number",
+    "disposition": "unsurfaced-evidence",
+    "familyId": null,
+    "reason": "Success re-evaluated at the solved balance (0..1); searched planner-ui/src for successAtThreshold: no reader.",
+    "reasonKind": "runtime-diagnostic"
+  },
+  {
+    "source": "engine/src/montecarlo/riskBasedGuardrails.ts",
+    "owner": "RiskBasedAdjustment",
+    "field": "spendingMultiplier",
+    "tsType": "number",
+    "disposition": "unsurfaced-evidence",
+    "familyId": null,
+    "reason": "Solved target-spending multiplier m, an operand of monthlyDollars; searched planner-ui/src for spendingMultiplier: no reader.",
+    "reasonKind": "runtime-diagnostic"
+  },
+  {
+    "source": "engine/src/montecarlo/riskBasedGuardrails.ts",
+    "owner": "RiskBasedAdjustment",
+    "field": "annualDollars",
+    "tsType": "number",
+    "disposition": "unsurfaced-evidence",
+    "familyId": null,
+    "reason": "|1 - m| x baseAnnual; the callout prints only the monthly figure; searched planner-ui/src for annualDollars: no reader of the solver's field.",
+    "reasonKind": "runtime-diagnostic"
+  },
+  {
+    "source": "engine/src/montecarlo/riskBasedGuardrails.ts",
+    "owner": "RiskBasedAdjustment",
+    "field": "monthlyDollars",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "risk-based-guardrail-suggested-adjustment-monthly"
+  },
+  {
+    "source": "engine/src/montecarlo/riskBasedGuardrails.ts",
+    "owner": "RiskBasedAdjustment",
+    "field": "successAfter",
+    "tsType": "number",
+    "disposition": "unsurfaced-evidence",
+    "familyId": null,
+    "reason": "Success at the threshold after the adjustment (0..1); searched planner-ui/src for successAfter: no reader.",
+    "reasonKind": "runtime-diagnostic"
+  },
+  {
+    "source": "engine/src/montecarlo/riskBasedGuardrails.ts",
+    "owner": "RiskBasedGuardrailSolution",
+    "field": "startingInvestable",
+    "tsType": "number",
+    "disposition": "unsurfaced-evidence",
+    "familyId": null,
+    "reason": "The dollar base the fractions apply to; planner-ui recomputes startingInvestableOf(plan) rather than reading this field of a solution.",
+    "reasonKind": "runtime-diagnostic"
+  },
+  {
+    "source": "engine/src/montecarlo/riskBasedGuardrails.ts",
+    "owner": "RiskBasedGuardrailSolution",
+    "field": "successAtCurrent",
+    "tsType": "number",
+    "disposition": "unsurfaced-evidence",
+    "familyId": null,
+    "reason": "Fixed-target success at today's balances (0..1); searched planner-ui/src for successAtCurrent: no reader.",
+    "reasonKind": "runtime-diagnostic"
+  },
+  {
+    "source": "engine/src/montecarlo/riskBasedGuardrails.ts",
+    "owner": "RiskBasedGuardrailSolution",
+    "field": "lowerBandPct",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "Echo of the solved band's lower edge; the callout's never-reaches-band and always-above-band notes print it as the edge the user entered.",
+    "reasonKind": "input-parameter"
+  },
+  {
+    "source": "engine/src/montecarlo/riskBasedGuardrails.ts",
+    "owner": "RiskBasedGuardrailSolution",
+    "field": "upperBandPct",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "Echo of the solved band's upper edge; a solve input.",
+    "reasonKind": "input-parameter"
+  },
+  {
+    "source": "engine/src/montecarlo/riskBasedGuardrails.ts",
+    "owner": "RiskBasedGuardrailSolution",
+    "field": "pathCount",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "Echo of the paths per probe; a run-size setting.",
+    "reasonKind": "sample-size-or-count-setting"
+  },
+  {
+    "source": "engine/src/montecarlo/riskBasedGuardrails.ts",
+    "owner": "RiskBasedGuardrailSolution",
+    "field": "seed",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "Echo of the probe seed; a reproducibility setting.",
+    "reasonKind": "runtime-diagnostic"
+  },
+  {
+    "source": "engine/src/montecarlo/riskBasedGuardrails.ts",
+    "owner": "startingInvestableOf",
+    "field": "return",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "display-guardrail-balance-thresholds",
+    "note": "Operand: the dollar base the three threshold callouts multiply the persisted percent by (record risk-based-starting-investable). SpendingSolverPage also divides by it (solved-initial-withdrawal-rate-pct)."
   }
 ]
