@@ -14,6 +14,7 @@ import {
 import { noTraditionalPlan } from '@retiregolden/engine/testing/decisionFixtures'
 import { combineTaxCalculators, createFederalTaxCalculator } from '@retiregolden/engine/tax/federalTax'
 import { createStateTaxCalculator } from '@retiregolden/engine/tax/stateTax'
+import { taxCalculatorFor } from '../planTaxCalculator'
 import { runSpendingSolveRequest } from './runSpendingSolve'
 
 describe('runSpendingSolveRequest', () => {
@@ -62,5 +63,31 @@ describe('runSpendingSolveRequest', () => {
     expect(solved.limitingConstraint).toBe('estate-floor')
     // Fixture inflation is 0%, so the today's-dollar floor is the nominal floor.
     expect(solved.evidence!.endingAfterTaxEstate).toBeGreaterThanOrEqual(300_000)
+  })
+
+  it('answers a plan whose Marketplace credit is unpriced and carries the years and reasons', () => {
+    // Pre-65 with the credit box on and no year contract, as the standard
+    // editor saves it: every Marketplace year pays its full premium.
+    const fixture = noTraditionalPlan()
+    const plan = {
+      ...fixture,
+      household: { ...fixture.household, people: [{ ...fixture.household.people[0]!, dob: '1964-06-15' }] },
+      expenses: {
+        ...fixture.expenses,
+        healthcare: { ...fixture.expenses.healthcare, pre65MonthlyPremiumPerPerson: 800, applyAcaCredit: true },
+      },
+    }
+    const solved = runSpendingSolveRequest({ plan, startYear: 2026 })
+    const direct = solveMaxSustainableSpending(
+      createDecisionContext(plan, { startYear: 2026, taxCalculator: taxCalculatorFor(plan) }),
+      { maxSimulations: SPENDING_SOLVER_UI_BUDGET },
+    )
+
+    expect(solved.maxBaseAnnual).not.toBeNull()
+    expect(solved.maxBaseAnnual).toBe(direct.maxBaseAnnual)
+    expect(solved.acaGrossPremiumYears.length).toBeGreaterThan(0)
+    expect(solved.acaGrossPremiumYears).toEqual(direct.acaGrossPremiumYears)
+    expect(solved.acaGrossPremiumReasons).toContain('missing-year-contract')
+    expect(solved.acaGrossPremiumReasons).toEqual(direct.acaGrossPremiumReasons)
   })
 })
