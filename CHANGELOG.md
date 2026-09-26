@@ -9,12 +9,19 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   having claimed was paid nothing from the worker's record until the year the worker
   would have reached the claim age entered in the plan, and was then priced at that age
   (credits the worker never earned, or an early reduction for a claim never made). The
-  survivor is now paid from the year after the death, on the PIA plus the delayed
-  credits earned up to the month before death, with no early reduction and no
-  widow's limit (42 U.S.C. 402(e)(1), (e)(2)(A) to (D); 20 CFR 404.313(e)(1)). Example:
-  worker PIA $2,000, planned claim at 70, dies at 64; survivor past her survivor FRA
-  with her own $600. Before: $600 a month for five years, then $2,480. Now: $2,000 a
-  month from the year after the death. A death before 62 still uses the PIA as entered.
+  survivor is now paid from the year after the death (or from the survivor's own
+  entered claim age, if later), on the PIA plus the delayed credits earned up to the
+  month before death, with no early reduction and no widow's limit (42 U.S.C. 402(e)(1),
+  (e)(2)(A) to (D), 402(w)(2)(A); 20 CFR 404.313(e)(1)). Example: worker PIA $2,000,
+  planned claim at 70, dies at 64; survivor past her survivor FRA with her own $600.
+  Before: $600 a month for five years, then $2,480. Now: $2,000 a month from the year
+  after the death. A death before 62 still uses the PIA as entered, stated as a limit.
+- **Delayed retirement credits use the rate for the date of birth.** Every credit was
+  2/3 of 1 percent a month; 20 CFR 404.313(b)(2) gives less for births on or before
+  January 1, 1943 (5/8 of 1 percent for 1941 and 1942, down to 1/12 of 1 percent).
+  Only someone born before 1943 whose benefit is priced from a delay past full
+  retirement age sees a change: a 1941 birth claiming at 70 gets 132.5 percent of PIA,
+  not 134.7 percent.
 - **Survivor full retirement age follows 416(l) for every cohort (displayed numbers
   change for early survivor claims).** The survivor table now is the retirement
   schedule two birth years later: 65y2m to 65y10m for 1940 to 1944, 66 for 1945 to
@@ -22,9 +29,11 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   late for 1940 to 1950 and stopped at 66y8m from 1960, so an early survivor claim in
   those cohorts was reduced slightly less than the law requires.
 - **Claim-age optimizer: the "FRA" candidate is the person's own full retirement age.**
-  The middle of the three canonical claim ages was 67 for everyone and labelled FRA;
-  for births 1955 to 1959 it is now 66 and 2 to 10 months, as 416(l) gives it. For
-  births from 1960 nothing changes.
+  The middle of the three canonical claim ages was 67 for everyone and labelled FRA.
+  It now follows the effective birth year (a January 1 birth counts in the prior year),
+  as 416(l) gives it: 66 and 2 to 10 months for 1955 to 1959 (so a January 1, 1960
+  birth gets 66 and 10 months), 66 for 1943 to 1954, and 65 and 2 to 10 months for 1938
+  to 1942. From an effective birth year of 1960 nothing changes.
 
 - **Bundle budget aggregate rows:** raised `all JS` 4400 → 4800 KiB and
   PWA precache 4550 → 4900 KiB. Azure `build` on head `03bb93cc` measured

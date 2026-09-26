@@ -74,8 +74,8 @@ Benefits-only analysis separately illustrates survivor switching
   sets the base at `max(deceased's actual benefit, 82.5% × deceased's PIA)` when the deceased claimed early,
   then applies the survivor reduction. POMS applies that limit after the survivor reduction, so the ordering
   gap is disclosed as an approximation (`poms-rs-00615-320-rib-lim-after-survivor-reduction`). When the
-  deceased died **before claiming**, the survivor is paid from the year after the death, whatever claim age
-  the plan configured, on the PIA plus only the delayed credits earned before death, with no early reduction
+  deceased died **before claiming**, the survivor is paid from the year after the death (or from the survivor's
+  own entered claim age, if later), whatever claim age the plan configured for the deceased, on the PIA plus only the delayed credits earned before death, with no early reduction
   and no RIB-LIM, as the statute gives it; the annual ledger treats December of the last year alive as the
   death month (`usc-42-402-e-survivor-of-worker-who-died-before-claiming`). An
   **early-claim widow(er) reduction** (up to 28.5% at age 60, linear to the survivor's FRA) applies when the

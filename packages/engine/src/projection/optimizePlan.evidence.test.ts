@@ -879,7 +879,7 @@ describeCalculation(
   {
     example: {
       inputs: {
-        canonicalClaimAges: ['62y0m', '67y0m (FRA)', '70y0m'],
+        canonicalClaimAges: ['62y0m', '66y2m (FRA)', '70y0m'],
         oneStreamFixture: { streams: 1, currentClaimAgeYears: 70 },
         noStreamFixture: { streams: 0 },
         currentClaimWinsFixture: { traditionalBalance: 0, currentClaimAgeYears: 70, planningAge: 70 },

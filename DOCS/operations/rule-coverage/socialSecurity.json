@@ -121,7 +121,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1875
+              "line": 1879
             }
           ]
         },
@@ -190,7 +190,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1875
+              "line": 1879
             }
           ]
         },
@@ -282,7 +282,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1875
+              "line": 1879
             }
           ]
         },
@@ -368,7 +368,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1875
+              "line": 1879
             }
           ]
         }
@@ -387,18 +387,18 @@
     },
     {
       "id": "cfr-20-404-313-delayed-retirement-credit",
-      "title": "Delayed retirement credits accrue at 2/3 of 1 percent and stop at 70",
+      "title": "Delayed retirement credits accrue at the rate for the birth date and stop at 70",
       "classification": "settled",
       "errorDirection": null,
       "approximation": null,
-      "conventionRationale": "The 2/3 of 1 percent rate applies to individuals born after 1 January 1943; earlier cohorts have lower rates that the engine does not model, because a person reaching full retirement age in a projected year is necessarily in the later group.",
+      "conventionRationale": "A person reaching full retirement age in a projected year is necessarily born after January 1, 1943, so most claims use the 2/3 of 1 percent rate. The earlier rows matter for someone already past 70 whose benefit or whose survivor benefit the projection prices from an age reached before the projection starts, so benefitFactor.ts#delayedCreditMonthlyPct carries the whole table, keyed to the effective birth year (a January 1 birth counts in the prior year, as the table’s date ranges run from January 2).",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-04",
-      "dueOn": "2027-08-04",
+      "verifiedOn": "2026-09-26",
+      "dueOn": "2027-09-26",
       "implementedBy": [
         "packages/engine/src/socialSecurity/benefitFactor.ts",
         "packages/engine/src/socialSecurity/claimFactor.ts"
@@ -408,8 +408,12 @@
           "path": "packages/engine/src/socialSecurity/benefitFactor.ts",
           "functions": [
             {
+              "name": "delayedCreditMonthlyPct",
+              "line": 28
+            },
+            {
               "name": "delayedRetirementFactor",
-              "line": 23
+              "line": 50
             }
           ]
         },
@@ -429,12 +433,27 @@
       "fixtures": [
         {
           "path": "packages/engine/src/socialSecurity/benefitFactor.test.ts",
-          "line": 52,
+          "line": 55,
           "note": null,
           "tests": [
             {
               "title": "stops crediting at age seventy however long the delay",
-              "line": 56
+              "line": 59
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/benefitFactor.test.ts",
+          "line": 78,
+          "note": "the credit rate for a birth before 1943",
+          "tests": [
+            {
+              "title": "prices a 1941 birth at 5/8 of 1 percent a month",
+              "line": 83
+            },
+            {
+              "title": "follows every row of the table, a January 1 birth counting in the prior year",
+              "line": 89
             }
           ]
         }
@@ -482,7 +501,7 @@
           "functions": [
             {
               "name": "survivorBenefitMonthly",
-              "line": 76
+              "line": 78
             }
           ]
         }
@@ -562,12 +581,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/socialSecurity/benefitFactor.test.ts",
-          "line": 19,
+          "line": 22,
           "note": null,
           "tests": [
             {
               "title": "slows the reduction after the thirty-sixth month",
-              "line": 23
+              "line": 26
             }
           ]
         }
@@ -610,7 +629,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1875
+              "line": 1879
             },
             {
               "name": "wagesIncomeSchema",
@@ -701,7 +720,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1875
+              "line": 1879
             }
           ]
         }
@@ -1025,7 +1044,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1875
+              "line": 1879
             }
           ]
         }
@@ -1077,7 +1096,7 @@
           "functions": [
             {
               "name": "survivorBenefitMonthly",
-              "line": 76
+              "line": 78
             }
           ]
         }
@@ -1541,7 +1560,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1875
+              "line": 1879
             }
           ]
         }
@@ -1631,7 +1650,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1875
+              "line": 1879
             }
           ]
         }
@@ -1691,7 +1710,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1875
+              "line": 1879
             }
           ]
         }
@@ -1746,7 +1765,7 @@
           "functions": [
             {
               "name": "survivorBenefitMonthly",
-              "line": 76
+              "line": 78
             }
           ]
         }
@@ -1805,7 +1824,7 @@
           "functions": [
             {
               "name": "survivorBenefitMonthly",
-              "line": 76
+              "line": 78
             }
           ]
         }
@@ -1842,7 +1861,7 @@
       "classification": "settled",
       "errorDirection": null,
       "approximation": null,
-      "conventionRationale": "The ledger is annual and keeps a person alive through the whole calendar year in which the life age is attained, so the engine takes December of that year as the month of death: credits run through November, and the survivor amount starts in January of the next year. The December payment the law can allow falls outside whole-year counting. An example, with no cost-of-living increases: a worker born in January 1962 has a 2,000 dollar primary insurance amount and a full retirement age of 67, plans to claim at 70, and dies at 64 in December 2026. The surviving spouse, born in January 1960, is 66, with her own 600 dollar benefit and a planned claim age of 67. She is paid 2,000 dollars a month from 2027: she is past her survivor full retirement age, so nothing is taken off, and the worker earned no delayed retirement credits before dying. Had he died at 69 in December 2031, he would have earned 35 months of credits, January 2029 through November 2031, and she would be paid 2,000 times 1.23333, or 2,466.67 dollars a month, from 2032, not the 2,480 dollars he would have received at 70. Until 2026-09-25 the engine priced the dead worker as a claim at the configured age, which paid her 600 dollars a month through 2031 and 2,480 from 2032 in the first case.",
+      "conventionRationale": "The ledger is annual and keeps a person alive through the whole calendar year in which the life age is attained, so the engine takes December of that year as the month of death: credits run through November, and the survivor amount starts in January of the next year. The December payment the law can allow falls outside whole-year counting. Whether the worker claimed before dying is decided the way the ledger pays claims, in whole years: a configured claim age whose year is the year of death counts as a claim made, and the survivor base is then the benefit the ledger paid him. An example, with no cost-of-living increases: a worker born in January 1962 has a 2,000 dollar primary insurance amount and a full retirement age of 67, plans to claim at 70, and dies at 64 in December 2026. The surviving spouse, born in January 1960, is 66, with her own 600 dollar benefit and a planned claim age of 67. She is paid 2,000 dollars a month from 2027: she is past her survivor full retirement age, so nothing is taken off, and the worker earned no delayed retirement credits before dying. Had he died at 69 in December 2031, he would have earned 35 months of credits, January 2029 through November 2031, and she would be paid 2,000 times 1.23333, or 2,466.67 dollars a month, from 2032, not the 2,480 dollars he would have received at 70. Until 2026-09-25 the engine priced the dead worker as a claim at the configured age, which paid her 600 dollars a month through 2031 and 2,480 from 2032 in the first case.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -1869,11 +1888,11 @@
           "functions": [
             {
               "name": "neverClaimedDeceasedFactor",
-              "line": 98
+              "line": 101
             },
             {
               "name": "survivorBenefitMonthly",
-              "line": 76
+              "line": 78
             }
           ]
         }
@@ -1925,6 +1944,28 @@
               "line": 163
             }
           ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.survivorNeverClaimed.test.ts",
+          "line": 184,
+          "note": "worker on disability from 60 dies at 68 with a configured claim age of 70",
+          "tests": [
+            {
+              "title": "keeps a worker who was on disability benefits on the disability path",
+              "line": 192
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.survivorNeverClaimed.test.ts",
+          "line": 204,
+          "note": "worker claims at 64 and dies at 64",
+          "tests": [
+            {
+              "title": "keeps the widow’s limit for a worker who claimed in the year he died",
+              "line": 212
+            }
+          ]
         }
       ],
       "refusalFixtureFiles": [],
@@ -1953,6 +1994,11 @@
         {
           "kind": "statute",
           "citation": "42 U.S.C. 402(e)(2)(D)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 402(w)(2)(A)",
           "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim"
         },
         {
@@ -2010,7 +2056,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1875
+              "line": 1879
             }
           ]
         }
@@ -2128,7 +2174,7 @@
           "functions": [
             {
               "name": "survivorReductionFactor",
-              "line": 62
+              "line": 64
             }
           ]
         }
@@ -2294,7 +2340,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1875
+              "line": 1879
             }
           ]
         },
@@ -2387,7 +2433,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1875
+              "line": 1879
             }
           ]
         },
@@ -2457,7 +2503,7 @@
           "functions": [
             {
               "name": "SS_GRID_CLAIM_AGES",
-              "line": 284
+              "line": 285
             }
           ]
         },
@@ -2466,7 +2512,7 @@
           "functions": [
             {
               "name": "retirementBenefitPiaFactor",
-              "line": 32
+              "line": 60
             }
           ]
         },
@@ -3367,7 +3413,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1875
+              "line": 1879
             }
           ]
         },
@@ -3627,7 +3673,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1875
+              "line": 1879
             }
           ]
         },

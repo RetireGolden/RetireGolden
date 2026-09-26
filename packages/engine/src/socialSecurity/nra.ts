@@ -62,7 +62,7 @@ export function fraTotalMonths(fra: FraComponents): number {
  * schedule is the worker schedule shifted two years: 65 for born 1939 or
  * earlier, 65y2m to 65y10m for 1940-44, 66 for 1945-56, 66y2m to 66y10m for
  * 1957-61, and 67 for 1962 and later, which is the table 20 CFR 404.409(b)
- * prints by date of birth from 1912 on. Births before 1912 (for which the
+ * prints by date of birth from January 2, 1912 on. Earlier births (for which the
  * regulation gives 62) are outside any projection. Registered as
  * usc-42-416-l-survivor-fra-age-60-attainment-cohorts.
  */

@@ -172,6 +172,51 @@ describeRule('usc-42-402-e-survivor-of-worker-who-died-before-claiming', {
   })
 })
 
+// The two neighbouring paths the rule must not capture. A worker whose
+// disability began before his death was entitled to disability benefits,
+// which become his retirement benefit at FRA unreduced; with onset at 60 and
+// death at 68 (December 2030) his survivor base is the PIA, 2,000, not a
+// never-claimed base with 23 credits (January 2029 through November 2030):
+// 2,000 x (1 + 23 x 2/3 percent) = 2,306.67. A worker who claimed at 64 in
+// the year he died was entitled to a reduced benefit, 2,000 x (1 - 36 x 5/9
+// percent) = 1,600, so 402(e)(2)(D) holds his survivor to the larger of that
+// and 82.5 percent of the PIA, 1,650, not the never-claimed 2,000.
+describeRule('usc-42-402-e-survivor-of-worker-who-died-before-claiming', {
+  note: 'worker on disability from 60 dies at 68 with a configured claim age of 70',
+  readings: {
+    disabilityBenefitIsTheBase: [2_000, 2_000],
+    treatedAsNeverClaimed: [2_306.67, 2_306.67],
+  },
+  accepted: 'disabilityBenefitIsTheBase',
+}, ({ accepted, readings }) => {
+  it('keeps a worker who was on disability benefits on the disability path', () => {
+    const worker = {
+      ...socialSecurityIncome('ss-worker', 2_000, 70, 'p2'),
+      disability: { onsetAge: 60 },
+    } as IncomeStream
+    const monthly = survivorMonthlyByYear(68, worker, [2031, 2032])
+
+    expect(monthly).toEqual(accepted)
+    expect(monthly).not.toEqual(readings.treatedAsNeverClaimed)
+  })
+})
+
+describeRule('usc-42-402-e-survivor-of-worker-who-died-before-claiming', {
+  note: 'worker claims at 64 and dies at 64',
+  readings: {
+    reducedClaimKeepsTheWidowsLimit: [1_650, 1_650],
+    treatedAsNeverClaimed: [2_000, 2_000],
+  },
+  accepted: 'reducedClaimKeepsTheWidowsLimit',
+}, ({ accepted, readings }) => {
+  it('keeps the widow’s limit for a worker who claimed in the year he died', () => {
+    const monthly = survivorMonthlyByYear(64, socialSecurityIncome('ss-worker', 2_000, 64, 'p2'), [2027, 2028])
+
+    expect(monthly).toEqual(accepted)
+    expect(monthly).not.toEqual(readings.treatedAsNeverClaimed)
+  })
+})
+
 describe('neverClaimedDeceasedFactor', () => {
   const jan15 = { year: 1962, month: 1, day: 15 }
 
@@ -202,5 +247,21 @@ describe('neverClaimedDeceasedFactor', () => {
     expect(neverClaimedDeceasedFactor(jan1, 2028, 12)).toBe(1)
     expect(neverClaimedDeceasedFactor(jan1, 2029, 1)).toBeCloseTo(1 + (2 / 3) / 100, 12)
     expect(neverClaimedDeceasedFactor(jan1, 2031, 12)).toBeCloseTo(1.24, 12)
+  })
+
+  it('takes the full retirement age from the effective birth year', () => {
+    // Born 1960-01-01: effective birth year 1959, FRA 66y10m, reached October
+    // 2026 (the calendar year 1960 would give 67). A death in December 2028
+    // earns 26 credits, October 2026 through November 2028, not 24.
+    const jan1of1960 = { year: 1960, month: 1, day: 1 }
+    expect(neverClaimedDeceasedFactor(jan1of1960, 2028, 12)).toBeCloseTo(1 + (26 * 2 / 3) / 100, 12)
+  })
+
+  it('uses the credit rate for the worker’s date of birth', () => {
+    // Born 1941-06-15: FRA 65y8m, reached February 2007; a death in December
+    // 2010 earns 46 credits at 5/8 of 1 percent (20 CFR 404.313(b)(2)),
+    // 28.75 percent, not 46 x 2/3 = 30.667 percent.
+    const mid1941 = { year: 1941, month: 6, day: 15 }
+    expect(neverClaimedDeceasedFactor(mid1941, 2010, 12)).toBeCloseTo(1.2875, 12)
   })
 })

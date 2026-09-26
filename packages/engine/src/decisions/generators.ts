@@ -266,9 +266,10 @@ export function probabilityBandSpendingGuardrailGenerator(
 
 /**
  * The three canonical claim ages for one person: 62, their own full
- * retirement age and 70. Full retirement age depends on the birth year (42
- * U.S.C. 416(l), 20 CFR 404.409): 66 and some months for births 1955 to
- * 1959, 67 from 1960, so the middle candidate is computed, not fixed at 67.
+ * retirement age and 70. Full retirement age depends on the effective birth
+ * year (42 U.S.C. 416(l), 20 CFR 404.409): 67 from 1960, and below 67 for
+ * every earlier year (66 and some months for 1955 to 1959, 66 for 1943 to
+ * 1954), so the middle candidate is computed, not fixed at 67.
  */
 function canonicalClaimAges(person: Plan['household']['people'][number] | undefined): Array<{ years: number; months: number; suffix: string }> {
   const dob = person === undefined ? null : socialSecurityDobParts(person)
