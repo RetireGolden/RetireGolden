@@ -15679,5 +15679,21 @@
       "host": "www.govinfo.gov",
       "note": "quote uses U+2019 (’) where this host renders U+0027 (')"
     }
+  ],
+  "amendments": [
+    {
+      "on": "2026-09-26",
+      "note": "Both were changed by RetireGolden #744 and checked against their sources with verify-quotes on 2026-09-26; a full re-run that day moved 25 unrelated PDF verdicts, which are left for a separate quote-maintenance pass rather than merged unexamined.",
+      "entries": [
+        {
+          "id": "cfr-20-404-313-delayed-retirement-credit",
+          "citation": "20 CFR 404.313(a), (b)(2)"
+        },
+        {
+          "id": "usc-42-402-e-survivor-of-worker-who-died-before-claiming",
+          "citation": "42 U.S.C. 402(w)(2)(A)"
+        }
+      ]
+    }
   ]
 }

@@ -76,8 +76,10 @@ Benefits-only analysis separately illustrates survivor switching
   gap is disclosed as an approximation (`poms-rs-00615-320-rib-lim-after-survivor-reduction`). When the
   deceased died **before claiming**, the survivor is paid from the year after the death (or from the survivor's
   own entered claim age, if later), whatever claim age the plan configured for the deceased, on the PIA plus only the delayed credits earned before death, with no early reduction
-  and no RIB-LIM, as the statute gives it; the annual ledger treats December of the last year alive as the
-  death month (`usc-42-402-e-survivor-of-worker-who-died-before-claiming`). An
+  and no RIB-LIM, as the statute gives it; the plan states a life age, not a death date, so the annual ledger
+  treats December of the last year alive as the death month, and a real death earlier in that year would let
+  the survivor be paid up to eleven months sooner
+  (`usc-42-402-e-survivor-of-worker-who-died-before-claiming`). An
   **early-claim widow(er) reduction** (up to 28.5% at age 60, linear to the survivor's FRA) applies when the
   survivor claims before their **survivor FRA**, which follows the age-60-attainment statute: the retirement
   schedule two birth years later, from 65y2m for 1940 to 67 for 1962 and later

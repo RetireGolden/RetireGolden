@@ -158,7 +158,7 @@ export function annualSocialSecurity(
     // received for the month before his death (42 U.S.C. 402(e)(2)(C)), from
     // the first year after the death, whatever claim age the plan configured.
     // The ledger keeps a person alive through the whole year he attains his
-    // life age, so December of that year stands in for the death month.
+    // life age, so December, the latest month that allows, is the death month.
     const firstPaidAge = ssdiPath ? onsetAge : stream.claimAge.years
     if (!s.alive && s.lifeAge !== undefined && firstPaidAge > s.lifeAge) {
       const monthly = pia * neverClaimedDeceasedFactor({ year: y, month: m, day: d }, y + s.lifeAge, 12)

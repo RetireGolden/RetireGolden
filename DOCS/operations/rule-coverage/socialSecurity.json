@@ -121,7 +121,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1879
+              "line": 1882
             }
           ]
         },
@@ -190,7 +190,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1879
+              "line": 1882
             }
           ]
         },
@@ -282,7 +282,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1879
+              "line": 1882
             }
           ]
         },
@@ -368,7 +368,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1879
+              "line": 1882
             }
           ]
         }
@@ -629,7 +629,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1879
+              "line": 1882
             },
             {
               "name": "wagesIncomeSchema",
@@ -720,7 +720,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1879
+              "line": 1882
             }
           ]
         }
@@ -1044,7 +1044,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1879
+              "line": 1882
             }
           ]
         }
@@ -1560,7 +1560,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1879
+              "line": 1882
             }
           ]
         }
@@ -1650,7 +1650,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1879
+              "line": 1882
             }
           ]
         }
@@ -1710,7 +1710,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1879
+              "line": 1882
             }
           ]
         }
@@ -1861,7 +1861,7 @@
       "classification": "settled",
       "errorDirection": null,
       "approximation": null,
-      "conventionRationale": "The ledger is annual and keeps a person alive through the whole calendar year in which the life age is attained, so the engine takes December of that year as the month of death: credits run through November, and the survivor amount starts in January of the next year. The December payment the law can allow falls outside whole-year counting. Whether the worker claimed before dying is decided the way the ledger pays claims, in whole years: a configured claim age whose year is the year of death counts as a claim made, and the survivor base is then the benefit the ledger paid him. An example, with no cost-of-living increases: a worker born in January 1962 has a 2,000 dollar primary insurance amount and a full retirement age of 67, plans to claim at 70, and dies at 64 in December 2026. The surviving spouse, born in January 1960, is 66, with her own 600 dollar benefit and a planned claim age of 67. She is paid 2,000 dollars a month from 2027: she is past her survivor full retirement age, so nothing is taken off, and the worker earned no delayed retirement credits before dying. Had he died at 69 in December 2031, he would have earned 35 months of credits, January 2029 through November 2031, and she would be paid 2,000 times 1.23333, or 2,466.67 dollars a month, from 2032, not the 2,480 dollars he would have received at 70. Until 2026-09-25 the engine priced the dead worker as a claim at the configured age, which paid her 600 dollars a month through 2031 and 2,480 from 2032 in the first case.",
+      "conventionRationale": "The plan states a life age, not a date of death, and the ledger is annual: it keeps a person alive through the whole calendar year in which the life age is attained, so the engine takes December of that year, the latest month the life age allows, as the month of death. Credits then run through November and the survivor amount starts in January of the next year. A real death earlier in that year would let the survivor be paid sooner, by up to eleven months, since the law can pay from the month of death, and between full retirement age and 70 it would earn fewer credits; the engine does not model a death month inside the year. Whether the worker claimed before dying is decided the way the ledger pays claims, in whole years: a configured claim age whose year is the year of death counts as a claim made, and the survivor base is then the benefit the ledger paid him. An example, with no cost-of-living increases: a worker born in January 1962 has a 2,000 dollar primary insurance amount and a full retirement age of 67, plans to claim at 70, and dies at 64 in December 2026. The surviving spouse, born in January 1960, is 66, with her own 600 dollar benefit and a planned claim age of 67. She is paid 2,000 dollars a month from 2027: she is past her survivor full retirement age, so nothing is taken off, and the worker earned no delayed retirement credits before dying. Had he died at 69 in December 2031, he would have earned 35 months of credits, January 2029 through November 2031, and she would be paid 2,000 times 1.23333, or 2,466.67 dollars a month, from 2032, not the 2,480 dollars he would have received at 70. Until 2026-09-25 the engine priced the dead worker as a claim at the configured age, which paid her 600 dollars a month through 2031 and 2,480 from 2032 in the first case.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -2056,7 +2056,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1879
+              "line": 1882
             }
           ]
         }
@@ -2340,7 +2340,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1879
+              "line": 1882
             }
           ]
         },
@@ -2433,7 +2433,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1879
+              "line": 1882
             }
           ]
         },
@@ -3413,7 +3413,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1879
+              "line": 1882
             }
           ]
         },
@@ -3673,7 +3673,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1879
+              "line": 1882
             }
           ]
         },
