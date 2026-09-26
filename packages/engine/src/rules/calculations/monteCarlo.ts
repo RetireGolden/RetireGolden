@@ -328,7 +328,7 @@ export const monteCarloRecords = {
     implementedBy: ['packages/engine/src/montecarlo/marketModels.ts'],
     implementedByFunctions: ['packages/engine/src/montecarlo/marketModels.ts#createGarchModel'],
     verifiedOn: '2026-09-26',
-    provenance: { derivedBy: 'claude-deriver', implementedBy: 'claude-subagent', reviewedBy: 'claude-checker' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
   },
   'market-model-gaussian-draw': {
     title: 'Additive Gaussian return shock',
@@ -522,7 +522,7 @@ export const monteCarloRecords = {
     implementedBy: ['packages/engine/src/montecarlo/marketModels.ts'],
     implementedByFunctions: ['packages/engine/src/montecarlo/marketModels.ts#createReversedHistoryModel'],
     verifiedOn: '2026-09-26',
-    provenance: { derivedBy: 'claude-deriver', implementedBy: 'claude-subagent', reviewedBy: 'claude-checker' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
   },
   'market-model-stationary-bootstrap': {
     title: 'Stationary (geometric-block) historical bootstrap',
@@ -598,7 +598,7 @@ export const monteCarloRecords = {
       'packages/engine/src/montecarlo/marketModels.ts#sampleChiSquare',
     ],
     verifiedOn: '2026-09-26',
-    provenance: { derivedBy: 'claude-deriver', implementedBy: 'claude-subagent', reviewedBy: 'claude-checker' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
   },
   'market-model-user-shock': {
     title: 'One-year additive user shock on a lognormal base',
@@ -1051,7 +1051,7 @@ export const monteCarloRecords = {
     implementedBy: ['packages/engine/src/montecarlo/riskBasedGuardrails.ts'],
     implementedByFunctions: ['packages/engine/src/montecarlo/riskBasedGuardrails.ts#solveRiskBasedGuardrails'],
     verifiedOn: '2026-09-26',
-    provenance: { derivedBy: 'claude-deriver', implementedBy: 'claude-subagent', reviewedBy: 'claude-checker' },
+    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
   },
   'risk-based-starting-investable': {
     title: 'Starting investable: sum of listed account balances',
