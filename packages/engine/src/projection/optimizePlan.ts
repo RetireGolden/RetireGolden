@@ -2139,10 +2139,10 @@ export interface ExactLedgerScheduleAdjustment {
   /**
    * dropped-zero when the rounded cleaned amount is within the neutral
    * tolerance, ledger-capped otherwise, and estate-pruned when the trailing
-   * prune pass drops a year that harms the estate; rounding is declared but
-   * never assigned (decision D-ADJUSTMENT-ROUNDING-REASON).
+   * prune pass drops a year that harms the estate. These three are the only
+   * reasons the post-processing assigns.
    */
-  reason: 'ledger-capped' | 'dropped-zero' | 'estate-pruned' | 'rounding'
+  reason: 'ledger-capped' | 'dropped-zero' | 'estate-pruned'
 }
 
 export interface ExactLedgerPostProcessingOptions extends ExactLedgerValidationOptions {

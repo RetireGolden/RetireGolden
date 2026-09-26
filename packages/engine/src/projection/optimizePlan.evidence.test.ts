@@ -17,6 +17,7 @@ import {
   postProcessExactLedgerSchedule,
   runExactLedgerTournament,
   withOptimizedConversions,
+  type ExactLedgerScheduleAdjustment,
 } from './optimizePlan.js'
 
 /**
@@ -786,7 +787,7 @@ describeCalculation(
           { year: 2027, amount: 5_000 },
         ],
         liveReasons: ['ledger-capped', 'dropped-zero', 'estate-pruned'],
-        declaredButNeverAssignedReason: 'rounding',
+        removedReason: 'rounding',
       },
       expected: {
         cleanedConversions: [
@@ -858,18 +859,22 @@ describeCalculation(
       expect(processed.cleanedValidation.executedConversionRatio).toBe(example.expected.cleanedExecutedRatio)
     })
 
-    it('records Y2 as ledger-capped, never the declared-but-never-assigned rounding', () => {
+    it('records Y2 as ledger-capped, never rounding, which is not a reason', () => {
       const { processed } = postProcess()
 
       expect(processed.adjustments).toContainEqual(example.expected.secondYearAdjustment)
       const reasons = processed.adjustments.map((adjustment) => adjustment.reason)
       // Every reason this run assigned is one of the three live values, and
-      // `rounding` — declared on the union but never assigned, decision
-      // D-ADJUSTMENT-ROUNDING-REASON — is not among them. The other two live
-      // reasons, `dropped-zero` and `estate-pruned`, need a raw schedule and a
-      // plan the worksheet does not state, so they are not constructed here.
+      // `rounding`, once declared on the union and never assigned, is not
+      // among them. Decision D-ADJUSTMENT-ROUNDING-REASON removed it from the
+      // type, which the type check below holds. The other two live reasons,
+      // `dropped-zero` and `estate-pruned`, need a raw schedule and a plan the
+      // worksheet does not state, so they are not constructed here.
       for (const reason of reasons) expect(inputs.liveReasons as string[]).toContain(reason)
-      expect(reasons).not.toContain(inputs.declaredButNeverAssignedReason)
+      expect(reasons).not.toContain(inputs.removedReason)
+      // @ts-expect-error `rounding` is not a member of the reason union.
+      const removed: ExactLedgerScheduleAdjustment['reason'] = 'rounding'
+      expect(inputs.liveReasons as string[]).not.toContain(removed)
     })
   },
 )
