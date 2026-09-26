@@ -50,9 +50,30 @@ function conversionWindowBoundaries(ctx: DecisionContext, startYear: number, end
   // spending withdrawals fill the cheap bands themselves (sequential order), so
   // the classic optimal shape is "convert hard while reserves last, then stop."
   // Reads the already-computed baseline result — no new simulation.
+  //
+  // The spending draw is the traditional withdrawal less the RMDs and the
+  // forced dollars from inherited traditional accounts. That forced amount is
+  // not inheritedTraditionalDistribution, which is ordinary income and also
+  // carries a non-qualified inherited Roth distribution's taxable earnings,
+  // withdrawn from roth (D-INHERITED-ROTH-SLICE). It is inheritedDistribution
+  // less the Roth rows' executed amounts. (Subtracting the Roth rows rather
+  // than summing the traditional ones keeps a spousal election year on an
+  // inherited traditional account exact: a row whose beneficiary take was
+  // suppressed publishes the owner-reconciled amount, which is already in rmd.)
+  const inheritedRothIds = new Set(
+    plan.accounts
+      .filter((account) => account.type === 'roth' && account.inherited !== undefined)
+      .map((account) => account.id),
+  )
+  const inheritedTraditionalForced = (year: (typeof ctx.baselineResult.years)[number]): number =>
+    year.inheritedDistribution -
+    (year.inheritedAccounts ?? []).reduce(
+      (sum, row) => (inheritedRothIds.has(row.accountId) ? sum + row.executedRequiredAmount : sum),
+      0,
+    )
   const firstTraditionalDrawYear = ctx.baselineResult.years.find(
     (year) =>
-      year.withdrawals.traditional - year.rmd - year.inheritedTraditionalDistribution > 1,
+      year.withdrawals.traditional - year.rmd - inheritedTraditionalForced(year) > 1,
   )?.year
   if (firstTraditionalDrawYear !== undefined && firstTraditionalDrawYear > startYear && firstTraditionalDrawYear <= endYear) {
     boundaries.set(firstTraditionalDrawYear, `while cash and taxable cover spending (through ${firstTraditionalDrawYear - 1})`)

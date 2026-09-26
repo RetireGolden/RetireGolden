@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
 import type { AllocationWeights, Plan } from '../model/plan.js'
-import { ASSET_CLASS_IDS } from '../model/plan.js'
+import { ASSET_CLASS_IDS, createEmptyPlan, parsePlan } from '../model/plan.js'
+import { createFlatTaxCalculator } from '../testing/flatTax.js'
 import { createDecisionContext, evaluateCandidate } from './evaluateCandidate.js'
 import {
   assetLocationGenerator,
@@ -28,6 +29,60 @@ describe('simpleRothConversionGenerator ACA evidence gate', () => {
     const actionable = createDecisionContext(noTraditionalPlan(), simOptions())
     actionable.baselineResult.years[0]!.aca = { readiness: 'actionable' } as never
     expect(simpleRothConversionGenerator.generate(actionable).some((candidate) => candidate.id === 'aca-cliff-cap')).toBe(true)
+  })
+
+  it('finds the first spending draw on traditional accounts even beside a non-qualified inherited Roth slice', () => {
+    // D-INHERITED-ROTH-SLICE. A disabled beneficiary born 1965 takes 100 a
+    // year from an inherited Roth (2,610 over 26.1, then 2,510 over 25.1); the
+    // decedent's first Roth year is 2024, so neither draw is qualified, and
+    // with 60 of basis the 2027 draw is 100 of taxable earnings. Spending of
+    // 1,000 with 1,750 of cash and no tax leaves 850 of cash for 2027, so the
+    // owned IRA pays a 50 spending draw that year. inheritedTraditionalDistribution
+    // is 100 then, so reading it as the forced traditional amount gave
+    // 50 - 0 - 100 < 1 and no "while cash and taxable cover spending" window.
+    const plan = createEmptyPlan({ newId: () => 'slice-generator', now: () => new Date('2026-01-01T00:00:00.000Z') })
+    plan.household.people[0] = {
+      id: 'beneficiary', name: 'Beneficiary', dob: '1965-06-15',
+      sex: 'average', retirementAge: null, longevity: { planningAge: 64, source: 'manual' },
+    }
+    plan.assumptions.inflationPct = 0
+    plan.assumptions.defaultReturnPct = 0
+    plan.expenses.baseAnnual = 1_000
+    plan.expenses.healthcare = { pre65MonthlyPremiumPerPerson: 0, applyAcaCredit: false, medicareExtrasMonthlyPerPerson: 0 }
+    plan.accounts = [
+      { type: 'cash', id: 'cash', name: 'Cash', ownerPersonId: null, annualReturnPct: 0, balance: 1_750, annualContribution: 0 },
+      { type: 'traditional', id: 'ira', name: 'IRA', ownerPersonId: 'beneficiary', annualReturnPct: 0, kind: 'ira', balance: 100_000, annualContribution: 0 },
+      {
+        type: 'roth', id: 'inherited', name: 'Inherited Roth', ownerPersonId: 'beneficiary', annualReturnPct: 0,
+        kind: 'ira', balance: 2_610, annualContribution: 0,
+        inherited: {
+          ownerDeathYear: 2024, ownerDeathDate: '2024-06-01', decedentId: 'decedent', decedentHadStartedRmds: false,
+          beneficiary: {
+            beneficiaryClass: 'designated-individual', edbCategory: 'disabled', beneficiaryBirthYear: 1965,
+            soleBeneficiary: true, ownerBirthYear: 1960, provenance: { source: 'test', asOf: '2026-01-01' },
+          },
+        },
+      },
+    ] as Plan['accounts']
+    plan.inheritedRothTaxCharacterPools = [{
+      beneficiaryPersonId: 'beneficiary', decedentId: 'decedent',
+      firstRothContributionTaxYear: 2024, remainingRegularContributionBasis: 60,
+      conversionLayers: [], priorDistributionsConsumedAmount: 0,
+      provenance: { source: 'Complete decedent Roth records', asOf: '2026-01-01' },
+    }]
+    const parsed = parsePlan(plan)
+    if (!parsed.ok) throw new Error(parsed.issues.join('; '))
+    const ctx = createDecisionContext(parsed.plan, { startYear: 2026, taxCalculator: createFlatTaxCalculator(0) })
+    const [year2026, year2027] = ctx.baselineResult.years
+    // The facts the window reads: no spending draw on the IRA in 2026, a 50
+    // one in 2027, and a Roth slice larger than it.
+    expect(year2026!.withdrawals.traditional).toBe(0)
+    expect(year2027!.withdrawals.traditional).toBeCloseTo(50, 8)
+    expect(year2027!.inheritedTraditionalDistribution).toBeCloseTo(100, 8)
+    expect(year2027!.withdrawals.roth).toBeCloseTo(100, 8)
+
+    const ids = simpleRothConversionGenerator.generate(ctx).map((candidate) => candidate.id)
+    expect(ids).toContain('bracket-12-until-2027')
   })
 
   it('marks every aggregate fill candidate explicitly exploratory', () => {
