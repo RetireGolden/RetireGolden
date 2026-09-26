@@ -54,7 +54,7 @@
           "functions": [
             {
               "name": "bracketTax",
-              "line": 323
+              "line": 350
             }
           ]
         }
@@ -65,12 +65,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 2040,
+          "line": 2080,
           "note": null,
           "tests": [
             {
               "title": "taxes each bracket slice at its own rate",
-              "line": 2069
+              "line": 2109
             }
           ]
         }
@@ -154,20 +154,20 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 2403,
+          "line": 2443,
           "note": null,
           "tests": [
             {
               "title": "prices nominal wages on the rate tables prescribed for that year",
-              "line": 2412
+              "line": 2452
             },
             {
               "title": "leaves a published year exactly as published",
-              "line": 2427
+              "line": 2467
             },
             {
               "title": "starts the 15% layer at the breakpoint prescribed for that year",
-              "line": 2436
+              "line": 2476
             }
           ]
         }
@@ -260,7 +260,7 @@
           "functions": [
             {
               "name": "seniorDeductionAmount",
-              "line": 363
+              "line": 390
             }
           ]
         }
@@ -358,7 +358,7 @@
           "functions": [
             {
               "name": "seniorDeductionAmount",
-              "line": 363
+              "line": 390
             }
           ]
         }
@@ -369,12 +369,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 2476,
+          "line": 2516,
           "note": null,
           "tests": [
             {
               "title": "holds the amount and the phase-out threshold flat in a projected year",
-              "line": 2480
+              "line": 2520
             }
           ]
         }
@@ -426,7 +426,7 @@
           "functions": [
             {
               "name": "itemizedDeductionsSchema",
-              "line": 2309
+              "line": 2316
             }
           ]
         },
@@ -530,7 +530,7 @@
           "functions": [
             {
               "name": "itemizedDeductionsSchema",
-              "line": 2309
+              "line": 2316
             }
           ]
         },
@@ -791,11 +791,11 @@
           "functions": [
             {
               "name": "computeFederalTax",
-              "line": 495
+              "line": 522
             },
             {
               "name": "tentativeMinimumTax",
-              "line": 419
+              "line": 446
             }
           ]
         }
@@ -854,7 +854,7 @@
           "functions": [
             {
               "name": "tentativeMinimumTax",
-              "line": 419
+              "line": 446
             }
           ]
         }
@@ -865,12 +865,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 2300,
+          "line": 2340,
           "note": null,
           "tests": [
             {
               "title": "caps the tentative minimum tax on capital gain at the preferential rates",
-              "line": 2304
+              "line": 2344
             }
           ]
         }
@@ -923,7 +923,7 @@
           "functions": [
             {
               "name": "amtExemptionAmount",
-              "line": 404
+              "line": 431
             }
           ]
         }
@@ -997,7 +997,7 @@
           "functions": [
             {
               "name": "computeFederalTax",
-              "line": 495
+              "line": 522
             }
           ]
         }
@@ -1008,12 +1008,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 2266,
+          "line": 2306,
           "note": null,
           "tests": [
             {
               "title": "adds back capped state and local taxes but leaves charitable gifts alone",
-              "line": 2274
+              "line": 2314
             }
           ]
         }
@@ -1056,7 +1056,7 @@
           "functions": [
             {
               "name": "computeFederalTax",
-              "line": 495
+              "line": 522
             }
           ]
         }
@@ -1127,7 +1127,7 @@
           "functions": [
             {
               "name": "computeFederalTax",
-              "line": 495
+              "line": 522
             }
           ]
         }
@@ -1138,12 +1138,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 2354,
+          "line": 2394,
           "note": null,
           "tests": [
             {
               "title": "adds no tax-exempt interest to AMTI, even when it is all PAB interest",
-              "line": 2359
+              "line": 2399
             }
           ]
         }
@@ -1186,7 +1186,7 @@
           "functions": [
             {
               "name": "computeFederalTax",
-              "line": 495
+              "line": 522
             }
           ]
         }
@@ -1197,12 +1197,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 2190,
+          "line": 2230,
           "note": null,
           "tests": [
             {
               "title": "itemizes when larger and adds the senior deduction on top",
-              "line": 2198
+              "line": 2238
             }
           ]
         }
@@ -1260,7 +1260,7 @@
           "functions": [
             {
               "name": "computeFederalTax",
-              "line": 495
+              "line": 522
             }
           ]
         }
@@ -1479,7 +1479,7 @@
           "functions": [
             {
               "name": "computeFederalTax",
-              "line": 495
+              "line": 522
             }
           ]
         }
@@ -1549,12 +1549,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 2222,
+          "line": 2262,
           "note": null,
           "tests": [
             {
               "title": "offers no channel by which a miscellaneous itemized deduction is allowed",
-              "line": 2232
+              "line": 2272
             }
           ]
         }

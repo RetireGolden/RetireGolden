@@ -121,7 +121,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1875
+              "line": 1873
             }
           ]
         },
@@ -190,7 +190,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1875
+              "line": 1873
             }
           ]
         },
@@ -282,7 +282,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1875
+              "line": 1873
             }
           ]
         },
@@ -368,7 +368,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1875
+              "line": 1873
             }
           ]
         }
@@ -610,11 +610,11 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1875
+              "line": 1873
             },
             {
               "name": "wagesIncomeSchema",
-              "line": 1819
+              "line": 1817
             }
           ]
         },
@@ -701,7 +701,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1875
+              "line": 1873
             }
           ]
         }
@@ -825,7 +825,7 @@
           "functions": [
             {
               "name": "taxableSocialSecurity",
-              "line": 339
+              "line": 366
             }
           ]
         }
@@ -894,7 +894,7 @@
           "functions": [
             {
               "name": "taxableSocialSecurity",
-              "line": 339
+              "line": 366
             }
           ]
         }
@@ -905,16 +905,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 2145,
+          "line": 2185,
           "note": null,
           "tests": [
             {
               "title": "counts tax-exempt interest in provisional income",
-              "line": 2153
+              "line": 2193
             },
             {
               "title": "includes a foreign exclusion in provisional income without taxing the exclusion itself",
-              "line": 2164
+              "line": 2204
             }
           ]
         }
@@ -967,7 +967,7 @@
           "functions": [
             {
               "name": "taxableSocialSecurity",
-              "line": 339
+              "line": 366
             }
           ]
         }
@@ -1025,7 +1025,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1875
+              "line": 1873
             }
           ]
         }
@@ -1541,7 +1541,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1875
+              "line": 1873
             }
           ]
         }
@@ -1631,7 +1631,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1875
+              "line": 1873
             }
           ]
         }
@@ -1691,7 +1691,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1875
+              "line": 1873
             }
           ]
         }
@@ -2000,7 +2000,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1875
+              "line": 1873
             }
           ]
         }
@@ -2284,7 +2284,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1875
+              "line": 1873
             }
           ]
         },
@@ -2377,7 +2377,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1875
+              "line": 1873
             }
           ]
         },
@@ -3370,7 +3370,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1875
+              "line": 1873
             }
           ]
         },
@@ -3630,7 +3630,7 @@
           "functions": [
             {
               "name": "socialSecurityIncomeSchema",
-              "line": 1875
+              "line": 1873
             }
           ]
         },

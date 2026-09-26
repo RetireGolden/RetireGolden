@@ -1106,7 +1106,7 @@
           "functions": [
             {
               "name": "incomeStreamSchema",
-              "line": 1959
+              "line": 1957
             },
             {
               "name": "pensionSchema",
@@ -1238,7 +1238,7 @@
             },
             {
               "name": "wagesIncomeSchema",
-              "line": 1819
+              "line": 1817
             }
           ]
         },
@@ -1534,7 +1534,7 @@
           "functions": [
             {
               "name": "incomeStreamSchema",
-              "line": 1959
+              "line": 1957
             },
             {
               "name": "pensionSchema",
@@ -1968,7 +1968,7 @@
           "functions": [
             {
               "name": "incomeStreamSchema",
-              "line": 1959
+              "line": 1957
             },
             {
               "name": "pensionSchema",

@@ -2330,7 +2330,7 @@
           "functions": [
             {
               "name": "migratePlanToCurrent",
-              "line": 1128
+              "line": 1302
             }
           ]
         },
@@ -2348,7 +2348,7 @@
           "functions": [
             {
               "name": "checkAccountCrossFieldRules",
-              "line": 820
+              "line": 837
             }
           ]
         },
@@ -2461,7 +2461,7 @@
           "functions": [
             {
               "name": "migratePlanToCurrent",
-              "line": 1128
+              "line": 1302
             }
           ]
         },
@@ -2479,7 +2479,7 @@
           "functions": [
             {
               "name": "checkAccountCrossFieldRules",
-              "line": 820
+              "line": 837
             }
           ]
         },
@@ -3379,7 +3379,7 @@
           "functions": [
             {
               "name": "annualForcedDistributionQcdAndRetirementActionsPhase",
-              "line": 346
+              "line": 348
             }
           ]
         },
@@ -3492,8 +3492,16 @@
               "line": 624
             },
             {
-              "title": "preserves known qualified clocks with unknown basis without inventing ordinary income",
+              "title": "keeps the non-qualified Roth slice out of withdrawals.traditional, so the five categories add to the total",
               "line": 637
+            },
+            {
+              "title": "carries no Roth dollars in withdrawals.traditional when every inherited account is a Roth",
+              "line": 661
+            },
+            {
+              "title": "preserves known qualified clocks with unknown basis without inventing ordinary income",
+              "line": 670
             }
           ]
         },
@@ -3567,7 +3575,7 @@
           "functions": [
             {
               "name": "annualForcedDistributionQcdAndRetirementActionsPhase",
-              "line": 346
+              "line": 348
             }
           ]
         },
@@ -3883,7 +3891,7 @@
           "functions": [
             {
               "name": "annualForcedDistributionQcdAndRetirementActionsPhase",
-              "line": 346
+              "line": 348
             }
           ]
         },
@@ -4010,7 +4018,7 @@
           "functions": [
             {
               "name": "validateOwnedNonRothIraRuntimeSourceSeries",
-              "line": 3249
+              "line": 3256
             }
           ]
         },
@@ -4132,7 +4140,7 @@
           "functions": [
             {
               "name": "annualForcedDistributionQcdAndRetirementActionsPhase",
-              "line": 346
+              "line": 348
             }
           ]
         },
@@ -4401,7 +4409,7 @@
           "functions": [
             {
               "name": "annualForcedDistributionQcdAndRetirementActionsPhase",
-              "line": 346
+              "line": 348
             }
           ]
         },

@@ -43,7 +43,8 @@
         "The withdrawal is realized as an uninflated one-time goal, which is what makes the investable close opening + contributions - withdrawals at a zero return",
         "The worksheet names 3% as the PROPERTY's appreciation; internal/propertyEventsAndGrowth.ts grows a property at GENERAL inflation and ignores the property account's own annualReturnPct, so the evidence sets the plan's inflationPct to 3 instead. In the start year every cumulative factor is still 1, so nothing else in the row moves",
         "The collision case is asserted by calling annualSnapshot directly with four channels on one id, because a real plan cannot give a property, a debt and an investable account the same id (the plan schema rejects it) — the overwrite order is a property of the snapshot, not of any plan",
-        "The map holds no HECM line: HECM debt is published separately and only enters net worth under its non-recourse cap"
+        "The map holds no HECM line: HECM debt is published separately and only enters net worth under its non-recourse cap",
+        "Until decision D-CASH-PROPERTY-ALIAS (2026-09-25) the plan checks accepted one cross-channel pair on a single id, a cash account and a property, and the property's value then overwrote the cash balance in this map and in every figure read from it (a $300,000 home published as cash). The checks now refuse that pair, and a stored plan that has one gets a new id for the property when it is loaded, so no plan reaches the snapshot with it"
       ],
       "worksheet": "DOCS/calculations/accounts-and-growth/accounts-balance-per-account-annual.md",
       "mutation": "DOCS/calculations/accounts-and-growth/accounts-balance-per-account-annual.mutation.md",

@@ -130,7 +130,7 @@
           "functions": [
             {
               "name": "capitalGainsTaxStacked",
-              "line": 386
+              "line": 413
             }
           ]
         }
@@ -283,11 +283,11 @@
           "functions": [
             {
               "name": "capitalGainsTaxStacked",
-              "line": 386
+              "line": 413
             },
             {
               "name": "computeFederalTax",
-              "line": 495
+              "line": 522
             }
           ]
         }
@@ -298,12 +298,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 2104,
+          "line": 2144,
           "note": null,
           "tests": [
             {
               "title": "runs qualified dividends through the preferential stack",
-              "line": 2108
+              "line": 2148
             }
           ]
         }
@@ -361,7 +361,7 @@
           "functions": [
             {
               "name": "capitalGainsTaxStacked",
-              "line": 386
+              "line": 413
             }
           ]
         }
@@ -588,7 +588,7 @@
           "functions": [
             {
               "name": "computeFederalTax",
-              "line": 495
+              "line": 522
             }
           ]
         }
@@ -669,7 +669,7 @@
           "functions": [
             {
               "name": "applyCapitalLossCarryforward",
-              "line": 468
+              "line": 495
             }
           ]
         }
@@ -939,7 +939,7 @@
           "functions": [
             {
               "name": "applyCapitalLossCarryforward",
-              "line": 468
+              "line": 495
             }
           ]
         }
@@ -995,7 +995,7 @@
           "functions": [
             {
               "name": "applyCapitalLossCarryforward",
-              "line": 468
+              "line": 495
             }
           ]
         }
@@ -1074,7 +1074,7 @@
           "functions": [
             {
               "name": "applyCapitalLossCarryforward",
-              "line": 468
+              "line": 495
             }
           ]
         }
@@ -1138,7 +1138,7 @@
           "functions": [
             {
               "name": "computeFederalTax",
-              "line": 495
+              "line": 522
             }
           ]
         }
@@ -1268,7 +1268,7 @@
           "functions": [
             {
               "name": "computeFederalTax",
-              "line": 495
+              "line": 522
             }
           ]
         }
@@ -1332,7 +1332,7 @@
           "functions": [
             {
               "name": "computeFederalTax",
-              "line": 495
+              "line": 522
             }
           ]
         }
@@ -1343,12 +1343,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 2326,
+          "line": 2366,
           "note": null,
           "tests": [
             {
               "title": "leaves plan distributions out of net investment income but not out of modified AGI",
-              "line": 2330
+              "line": 2370
             }
           ]
         }
@@ -1394,7 +1394,7 @@
           "functions": [
             {
               "name": "computeFederalTax",
-              "line": 495
+              "line": 522
             }
           ]
         }
@@ -1468,7 +1468,7 @@
           "functions": [
             {
               "name": "computeFederalTax",
-              "line": 495
+              "line": 522
             }
           ]
         }
@@ -1600,7 +1600,7 @@
           "functions": [
             {
               "name": "tipsLadderSchema",
-              "line": 1775
+              "line": 1773
             }
           ]
         },
@@ -1906,12 +1906,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 2592,
+          "line": 2632,
           "note": "2027 positive indexation is a phantom OID character",
           "tests": [
             {
               "title": "records positive inflation accretion as OID in the cash-flow ledger",
-              "line": 2600
+              "line": 2640
             }
           ]
         }
@@ -1978,7 +1978,7 @@
           "functions": [
             {
               "name": "tipsLadderSchema",
-              "line": 1775
+              "line": 1773
             }
           ]
         },
@@ -2007,12 +2007,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/federalTax.test.ts",
-          "line": 2660,
+          "line": 2700,
           "note": "paired positive-inflation then deflation path; 2027 non-maturity",
           "tests": [
             {
               "title": "pins the engine output while distinguishing the deflation reading",
-              "line": 2669
+              "line": 2709
             }
           ]
         }
@@ -2062,7 +2062,7 @@
           "functions": [
             {
               "name": "tipsLadderSchema",
-              "line": 1775
+              "line": 1773
             }
           ]
         },
@@ -2131,7 +2131,7 @@
           "functions": [
             {
               "name": "tipsLadderSchema",
-              "line": 1775
+              "line": 1773
             }
           ]
         },
