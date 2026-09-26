@@ -1,6 +1,6 @@
 # Mutation receipt: risk-based-guardrail-threshold-solver
 
-Executed 2026-09-26 against RetireGolden base `8ff951e4` with the solver change of this commit applied (branch claude/monte-carlo-models) in `packages/engine`.
+Executed 2026-09-26 against RetireGolden base `8ff951e4` with the solver change of this commit applied (branch claude/monte-carlo-models), and re-executed 2026-09-26 against RetireGolden base `a78a1c30` (branch `claude/monte-carlo-models`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/montecarlo/riskBasedGuardrails.ts`
 
@@ -22,11 +22,10 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/montecarlo/
 
 ## Captured failing output
 
-Captured with `NO_COLOR=1 FORCE_COLOR=0`. The `Start at` and `Duration` lines are the only lines removed.
+Re-executed against the current head so every receipt on the branch records the same commit; the quoted test lines had not moved, and only the timings differ from the earlier run. The baseline is green (riskBasedGuardrails.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed. Exit code: 1.
 
 ```
-
- RUN  v5.0.0 C:/rgwt/engine3/packages/engine
+RUN  v5.0.0 C:/rgwt/engine3/packages/engine
 
  ❯ src/montecarlo/riskBasedGuardrails.evidence.test.ts (5 tests | 3 failed) 18ms
    ❯ risk-based-guardrail-threshold-solver — Risk-based guardrail thresholds and suggested adjustments by bisection (4)
@@ -37,7 +36,7 @@ Captured with `NO_COLOR=1 FORCE_COLOR=0`. The `Start at` and `Duration` lines ar
  Test Files  1 failed (1)
       Tests  3 failed | 2 passed (5)
 
-  Transform  transforming modules took 2.40s · 41% of tracked time, re-done on every run
+  Transform  transforming modules took 2.44s · 44% of tracked time, re-done on every run
              persist transforms across runs with fsModuleCache: true
              learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
 
@@ -112,4 +111,4 @@ AssertionError: expected [ +0, 128, 192, 224, 208, 200, …(4) ] to deeply equal
 
 ## Revert
 
-The mutated file was restored from a byte copy taken before the edit, and the restored bytes were compared with that copy and found identical, so no production code changed after the run. The evidence file then passes again on the unmutated code.
+The original bytes of `packages/engine/src/montecarlo/riskBasedGuardrails.ts` were written back and compared byte for byte in the harness, and `git diff --quiet -- packages/engine/src/montecarlo/riskBasedGuardrails.ts` then exited 0, confirming no production change remained. Re-ran the named command after restoration: the suite returned to its baseline state, green (exit 0).

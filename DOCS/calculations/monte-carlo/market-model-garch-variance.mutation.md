@@ -1,6 +1,6 @@
 # Mutation receipt: market-model-garch-variance
 
-Executed 2026-09-26 against RetireGolden base `8ff951e4` (branch claude/monte-carlo-models) in `packages/engine`.
+Executed 2026-09-26 against RetireGolden base `8ff951e4` (branch claude/monte-carlo-models), and re-executed 2026-09-26 against RetireGolden base `a78a1c30` (branch `claude/monte-carlo-models`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/montecarlo/marketModels.ts`
 
@@ -22,21 +22,20 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/montecarlo/
 
 ## Captured failing output
 
-Captured with `NO_COLOR=1 FORCE_COLOR=0`. The `Start at` and `Duration` lines are the only lines removed.
+Re-executed after the review fixes of 2026-09-26 added tests to the evidence file, so the quoted test counts and line numbers match the committed file. The baseline is green (marketModels.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed. Exit code: 1.
 
 ```
+RUN  v5.0.0 C:/rgwt/engine3/packages/engine
 
- RUN  v5.0.0 C:/rgwt/engine3/packages/engine
-
- ❯ src/montecarlo/marketModels.evidence.test.ts (28 tests | 4 failed) 51ms
-   ❯ market-model-garch-variance — GARCH(1,1) variance recursion with variance targeting (6)
+ ❯ src/montecarlo/marketModels.evidence.test.ts (30 tests | 4 failed) 49ms
+   ❯ market-model-garch-variance — GARCH(1,1) variance recursion with variance targeting (7)
      × defaults (12, 0.1, 0.85), Z1 = 1, 0.5, −2, 0: shocks 12, 6, −23.082460874005616, 0 with inflation 0 4ms
      × the same defaults are what an empty config runs: omega is 0.0144 · 0.05 and v_1 is 0.0144 0ms
      × returnVolPct 100, alpha 0.1, beta 0.8, Z1 = 1, 0.5, −2: variances 1, 1, 0.925 and shocks 100, 50, −192.35384061671346 0ms
      × 2,000 seeded paths of 30 years: every year has the configured variance, mean 0, and squared shocks cluster 6ms
 
  Test Files  1 failed (1)
-      Tests  4 failed | 24 passed (28)
+      Tests  4 failed | 26 passed (30)
 
 
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
@@ -106,17 +105,17 @@ AssertionError: returnShockPct[1] 1581.8501825394212 is not within {"abs":1e-12}
 
  FAIL  src/montecarlo/marketModels.evidence.test.ts > market-model-garch-variance — GARCH(1,1) variance recursion with variance targeting > 2,000 seeded paths of 30 years: every year has the configured variance, mean 0, and squared shocks cluster
 AssertionError: mean(r^2) 1.1420190999439862e+80: expected 1.1420190999439862e+80 to be less than 0.07
- ❯ src/montecarlo/marketModels.evidence.test.ts:368:79
-    366|       }
-    367|       const garch = statistics({ type: 'garch', inflationMeanPct: 2.5 …
-    368|       expect(Math.abs(garch.meanSquare - 1), `mean(r^2) ${garch.meanSq…
+ ❯ src/montecarlo/marketModels.evidence.test.ts:385:79
+    383|       }
+    384|       const garch = statistics({ type: 'garch', inflationMeanPct: 2.5 …
+    385|       expect(Math.abs(garch.meanSquare - 1), `mean(r^2) ${garch.meanSq…
        |                                                                               ^
-    369|       expect(Math.abs(garch.mean), `mean(r) ${garch.mean}`).toBeLessTh…
-    370|       expect(garch.clustering, `clustering ${garch.clustering}`).toBeG…
+    386|       expect(Math.abs(garch.mean), `mean(r) ${garch.mean}`).toBeLessTh…
+    387|       expect(garch.clustering, `clustering ${garch.clustering}`).toBeG…
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯
 ```
 
 ## Revert
 
-The mutated file was restored from a byte copy taken before the edit, and the restored bytes were compared with that copy and found identical, so no production code changed after the run. The evidence file then passes again on the unmutated code.
+The original bytes of `packages/engine/src/montecarlo/marketModels.ts` were written back and compared byte for byte in the harness, and `git diff --quiet -- packages/engine/src/montecarlo/marketModels.ts` then exited 0, confirming no production change remained. Re-ran the named command after restoration: the suite returned to its baseline state, green (exit 0).

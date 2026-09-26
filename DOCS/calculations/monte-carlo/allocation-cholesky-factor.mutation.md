@@ -1,6 +1,6 @@
 # Mutation receipt: allocation-cholesky-factor
 
-Executed 2026-09-26 against RetireGolden base `8ff951e4` (branch claude/monte-carlo-models) in `packages/engine`.
+Executed 2026-09-26 against RetireGolden base `8ff951e4` (branch claude/monte-carlo-models), and re-executed 2026-09-26 against RetireGolden base `a78a1c30` (branch `claude/monte-carlo-models`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/allocation/assetClasses.ts`
 
@@ -22,13 +22,12 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/allocation/
 
 ## Captured failing output
 
-Captured with `NO_COLOR=1 FORCE_COLOR=0`. The `Start at` and `Duration` lines are the only lines removed.
+Re-executed against the current head so every receipt on the branch records the same commit; the quoted test lines had not moved, and only the timings differ from the earlier run. The baseline is green (assetClasses.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed. Exit code: 1.
 
 ```
+RUN  v5.0.0 C:/rgwt/engine3/packages/engine
 
- RUN  v5.0.0 C:/rgwt/engine3/packages/engine
-
- ❯ src/allocation/assetClasses.evidence.test.ts (32 tests | 3 failed) 10ms
+ ❯ src/allocation/assetClasses.evidence.test.ts (32 tests | 3 failed) 11ms
    ❯ allocation-cholesky-factor — Cholesky factor of a correlation matrix (3)
      × factors [[1, 0.5], [0.5, 1]] as [[1, 0], [0.5, sqrt(3)/2]] 4ms
      × the factor reconstructs the off-diagonal 0.5 and the unit diagonal 0ms
@@ -104,4 +103,4 @@ AssertionError: expected a thrown error to be RangeError: Correlation matrix is 
 
 ## Revert
 
-The mutated file was restored from a byte copy taken before the edit, and the restored bytes were compared with that copy and found identical, so no production code changed after the run. The evidence file then passes again on the unmutated code.
+The original bytes of `packages/engine/src/allocation/assetClasses.ts` were written back and compared byte for byte in the harness, and `git diff --quiet -- packages/engine/src/allocation/assetClasses.ts` then exited 0, confirming no production change remained. Re-ran the named command after restoration: the suite returned to its baseline state, green (exit 0).
