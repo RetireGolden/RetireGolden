@@ -2,7 +2,7 @@
   "kind": "retiregolden.calculation-coverage.manifest",
   "version": 2,
   "families": {
-    "identified": 229,
+    "identified": 231,
     "byGroup": {
       "accounts-and-growth": 11,
       "cash-flow-and-summary": 60,
@@ -15,12 +15,12 @@
       "rmd": 3,
       "roth": 4,
       "social-security": 17,
-      "spending-and-withdrawals": 14,
+      "spending-and-withdrawals": 16,
       "taxes": 18
     },
     "byKind": {
       "adapter": 3,
-      "engine": 186,
+      "engine": 188,
       "ui-native": 21,
       "ui-transformation": 19
     },
@@ -212,7 +212,10 @@
       "year-result-ltcg-zero-headroom",
       "year-result-tax-exempt-interest"
     ],
-    "partial": [],
+    "partial": [
+      "risk-based-guardrail-solved-balance-thresholds",
+      "risk-based-guardrail-suggested-adjustment-monthly"
+    ],
     "noRecordYet": [
       "bucket-lens-allocation",
       "cash-flow-line-amount",
@@ -350,6 +353,7 @@
         "year-result-contributions"
       ],
       "display-guardrail-balance-thresholds": [
+        "risk-based-guardrail-threshold-solver",
         "risk-based-starting-investable"
       ],
       "display-total-spending-annual": [
@@ -693,6 +697,9 @@
       "spending-care-cost-gross-annual": [
         "long-term-care-shock-sampling"
       ],
+      "spending-guardrail-factor-annual": [
+        "risk-based-guardrail-threshold-solver"
+      ],
       "spending-healthcare-annual": [
         "aca-400-percent-cliff",
         "aca-allowable-premium-tax-credit",
@@ -806,16 +813,16 @@
     }
   },
   "records": {
-    "total": 214,
+    "total": 215,
     "byKind": {
       "composition": 66,
       "data": 16,
       "formula": 76,
-      "model": 56
+      "model": 57
     },
     "byJustificationKind": {
       "dataset": 5,
-      "derivation": 209
+      "derivation": 210
     }
   },
   "oracleExamples": [
@@ -1010,7 +1017,7 @@
     {
       "group": "monteCarlo",
       "path": "calculation-coverage/monteCarlo.json",
-      "recordCount": 35
+      "recordCount": 36
     },
     {
       "group": "optimizerAndComparisons",
