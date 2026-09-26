@@ -49,6 +49,13 @@ const RECORD_MODULES: readonly (readonly [string, Readonly<Record<string, unknow
 
 const testSources = import.meta.glob('../**/*.test.ts', { query: '?raw', import: 'default', eager: true })
 const engineSources = import.meta.glob('../**/*.ts', { query: '?raw', import: 'default', eager: true })
+// The census copy itself, for the fields the generated OUTPUT_FAMILIES module
+// does not carry (uiSources).
+const censusFamiliesCopy = import.meta.glob('./census/output-families.json', {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+})
 function plannerUiSourceText(censusPath: string): string | undefined {
   // Read through the scripts helper: glob keys outside this package's root are
   // not stable across Vite roots, and the census names files relative to packages/.
@@ -1426,6 +1433,35 @@ describe('calculation registry conformance', () => {
       const isUi = family.kind === 'ui-native' || family.kind === 'ui-transformation'
       if (isUi && family.relocation === null) violations.push(`${id} (${family.kind}): relocation missing`)
       if (!isUi && family.relocation !== null) violations.push(`${id} (${family.kind}): relocation must be null`)
+    }
+    expect(violations).toEqual([])
+  })
+
+  it('names, on every done relocation, UI sources that exist: the symbols that now read the engine value', () => {
+    // A relocated family keeps uiSources as its current consumers (the UI
+    // symbols that read the engine value); the retired computing symbol is
+    // history in its notes. A uiSource naming a deleted symbol fails here, and
+    // the Docs validator cannot see source, so this is the only guard.
+    const texts = Object.values(censusFamiliesCopy) as string[]
+    expect(texts).toHaveLength(1)
+    const census = JSON.parse(texts[0]!) as {
+      id: string
+      relocation?: { status?: string }
+      uiSources?: { path: string; symbol: string }[]
+    }[]
+    const done = census.filter((family) => family.relocation?.status === 'done')
+    expect(done.length).toBeGreaterThan(0)
+    const violations: string[] = []
+    for (const family of done) {
+      if (!family.uiSources || family.uiSources.length === 0) violations.push(`${family.id}: no uiSources`)
+      for (const { path, symbol } of family.uiSources ?? []) {
+        const text = plannerUiSourceText(path)
+        if (text === undefined) {
+          violations.push(`${family.id}: ${path} does not exist`)
+          continue
+        }
+        if (locateOwnerBlock(text, symbol) === null) violations.push(`${family.id}: ${path} declares no ${symbol}`)
+      }
     }
     expect(violations).toEqual([])
   })

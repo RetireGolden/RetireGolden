@@ -2530,7 +2530,7 @@ const families = {
       },
       {
         "surface": "compare-page",
-        "selector": "Money lasts row"
+        "selector": "Depletion age (primary) row: the primary person's age in that year"
       },
       {
         "surface": "scenarios-page",
@@ -2591,6 +2591,10 @@ const families = {
       {
         "surface": "ss-page",
         "selector": "Bridge comparison \"Money lasts\" \"through L\" / \"full plan\""
+      },
+      {
+        "surface": "compare-page",
+        "selector": "Money lasts row \"through L\" / \"short from S\" / \"full plan through E\""
       }
     ],
     "relocation": null

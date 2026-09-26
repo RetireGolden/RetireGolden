@@ -83,7 +83,7 @@
     ],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": "",
+    "notes": "Computed in planner-ui/src/planner/resultsRows.ts#buildResultsRows, planner-ui/src/report/reportModel.ts#chartDataRows and planner-ui/src/planner/ReportPage.tsx#ReportBody until B2-P1 slice 1; now engine engine/src/projection/yearFigures.ts#spendingWithTaxAndPenalties, which buildResultsRows and chartDataRows read (ReportBody through buildResultsRows).",
     "relocation": {
       "status": "done",
       "target": "engine/src/projection/yearFigures.ts#spendingWithTaxAndPenalties"
@@ -95,7 +95,7 @@
     ],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": "",
+    "notes": "Computed in planner-ui/src/planner/ResultsPage.tsx#YearByYearLedger until B2-P1 slice 1; now engine engine/src/projection/yearFigures.ts#upsideShortfall, which YearByYearLedger reads through projectionDisplayFigures.",
     "dimensions": [
       "year"
     ],
@@ -129,7 +129,7 @@
     ],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": "",
+    "notes": "Computed in planner-ui/src/planner/ResultsPage.tsx#YearByYearLedger until B2-P1 slice 1; now engine engine/src/projection/yearFigures.ts#upsideSpending, which YearByYearLedger reads through projectionDisplayFigures.",
     "dimensions": [
       "year"
     ],
@@ -529,7 +529,7 @@
       "irc-1212-b-capital-loss-carryforward"
     ],
     "status": "identified",
-    "notes": "",
+    "notes": "Computed in planner-ui/src/planner/resultsRows.ts#buildLedgerCsv until B2-P1 slice 1; now engine engine/src/projection/yearFigures.ts#capitalLossCarryforwardUsed, which buildLedgerCsv reads.",
     "dimensions": [
       "year"
     ],
@@ -573,7 +573,7 @@
       "irc-55-a-amt-is-the-excess-over-regular-tax"
     ],
     "status": "identified",
-    "notes": "Before B2-P1 slice 1 the page added the 0% band room (ltcgZeroHeadroom) and the remaining carryforward, which overstated the room at no tax whenever a gain would make Social Security taxable, use up a loss deduction the other income was using, reach the unindexed NIIT threshold or shrink the senior deduction. ltcgZeroHeadroom stays published as the 0% band room. The page floors the room to the whole dollar, so it never shows more room than the engine computed.",
+    "notes": "Computed in planner-ui/src/planner/ResultsPage.tsx#YearByYearLedger until B2-P1 slice 1, as the 0% band room (ltcgZeroHeadroom) plus the remaining carryforward, which overstated the room at no tax whenever a gain would make Social Security taxable, use up a loss deduction the other income was using, reach the unindexed NIIT threshold or shrink the senior deduction; now engine engine/src/projection/yearFigures.ts#taxFreeGainsRoom, which YearByYearLedger reads through projectionDisplayFigures. ltcgZeroHeadroom stays published as the 0% band room. The page floors the room to the whole dollar, so it never shows more room than the engine computed.",
     "dimensions": [
       "year"
     ],
@@ -607,7 +607,7 @@
     ],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": "",
+    "notes": "Computed in planner-ui/src/planner/ResultsPage.tsx#YearByYearLedger, planner-ui/src/report/reportModel.ts#yearLedgerRow, planner-ui/src/planner/resultsRows.ts#buildExpenseRows and planner-ui/src/planner/ReportPage.tsx#ReportBody until B2-P1 slice 1; now engine engine/src/projection/yearFigures.ts#taxAndPenalties, which the same four read.",
     "dimensions": [
       "year"
     ],
@@ -1783,7 +1783,7 @@
     ],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": "",
+    "notes": "Computed in planner-ui/src/planner/resultsRows.ts#buildExpenseRows until B2-P1 slice 1; now engine engine/src/projection/yearFigures.ts#netCareCost, which buildExpenseRows reads.",
     "relocation": {
       "status": "done",
       "target": "engine/src/projection/yearFigures.ts#netCareCost"
@@ -2011,7 +2011,7 @@
     "transformations": [],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": "The Results balances chart and the report chart-data block show category sums of these balances computed in planner-ui (categoryBalances, chartDataRows); the sums are recorded as the ui-transformation display-balance-by-category-annual."
+    "notes": "The Results balances chart and the report chart-data block show category sums of these balances, recorded as display-balance-by-category-annual: computed in planner-ui (accountCategories.ts#categoryBalances, reportModel.ts#chartDataRows) until B2-P1 slice 1; now engine engine/src/projection/yearFigures.ts#balancesByCategory, one value per logical account id."
   },
   {
     "transformations": [],
@@ -2167,7 +2167,7 @@
     ],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": "",
+    "notes": "Computed in planner-ui/src/planner/accountCategories.ts#categoryBalances (for resultsRows.ts#buildResultsRows and ReportPage.tsx#ReportBody) and planner-ui/src/report/reportModel.ts#chartDataRows, once per plan row, until B2-P1 slice 1; now engine engine/src/projection/yearFigures.ts#balancesByCategory (one value per logical account, owner decision R1) with #unassignedCash beside it, which buildResultsRows and chartDataRows read (ReportBody through buildResultsRows, and accountCategories.ts#hasUnassignedCash gates the unassigned band). categoryBalances is deleted.",
     "dimensions": [
       "year",
       "category"
@@ -2181,8 +2181,8 @@
     "kind": "ui-transformation",
     "uiSources": [
       {
-        "path": "planner-ui/src/planner/accountCategories.ts",
-        "symbol": "categoryBalances"
+        "path": "planner-ui/src/planner/resultsRows.ts",
+        "symbol": "buildResultsRows"
       },
       {
         "path": "planner-ui/src/report/reportModel.ts",
@@ -2191,6 +2191,10 @@
       {
         "path": "planner-ui/src/planner/ReportPage.tsx",
         "symbol": "ReportBody"
+      },
+      {
+        "path": "planner-ui/src/planner/accountCategories.ts",
+        "symbol": "hasUnassignedCash"
       }
     ],
     "surfaces": [
@@ -3195,7 +3199,7 @@
     ],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": "",
+    "notes": "Computed in planner-ui/src/planner/ResultsPage.tsx#ResultsPage (endYear minus depletionYear) until B2-P1 slice 1; now engine engine/src/projection/moneyLasts.ts#moneyLasts, which ResultsPage reads.",
     "dimensions": [],
     "basis": "n/a",
     "id": "display-years-before-plan-end",
@@ -3261,7 +3265,7 @@
       },
       {
         "surface": "compare-page",
-        "selector": "Money lasts row"
+        "selector": "Depletion age (primary) row: the primary person's age in that year"
       },
       {
         "surface": "scenarios-page",
@@ -5211,7 +5215,39 @@
     "uiSources": [
       {
         "path": "planner-ui/src/projection.ts",
-        "symbol": "inflationView"
+        "symbol": "projectPlan"
+      },
+      {
+        "path": "planner-ui/src/planner/resultsRows.ts",
+        "symbol": "dollarAdjuster"
+      },
+      {
+        "path": "planner-ui/src/planner/ResultsPage.tsx",
+        "symbol": "ResultsPage"
+      },
+      {
+        "path": "planner-ui/src/planner/PlanWorkspace.tsx",
+        "symbol": "KpiBar"
+      },
+      {
+        "path": "planner-ui/src/planner/RelocationComparePage.tsx",
+        "symbol": "RelocationComparePage"
+      },
+      {
+        "path": "planner-ui/src/planner/SpendingSolverPage.tsx",
+        "symbol": "todayDollarsOf"
+      },
+      {
+        "path": "planner-ui/src/planner/sections/IncomeFloorSection.tsx",
+        "symbol": "FundedRatioReadout"
+      },
+      {
+        "path": "planner-ui/src/planner/insights/InsightsPage.tsx",
+        "symbol": "InsightsPage"
+      },
+      {
+        "path": "planner-ui/src/planner/insights/InsightCardView.tsx",
+        "symbol": "InsightCardView"
       }
     ],
     "surfaces": [
@@ -5253,7 +5289,7 @@
     ],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": "A transformation family, not a new economic amount; every adjusted renderer must cite it. Since B2-P1 slice 1 the conversion is the engine's projection/dollarBasis.ts, which reads the ledger's own inflation factor (owner decision R19); uiSources records where the page computed it before.",
+    "notes": "A transformation family, not a new economic amount; every adjusted renderer must cite it. Computed in planner-ui/src/projection.ts#inflationView (the plan's rate compounded with Math.pow from the page's start year) until B2-P1 slice 1; now engine engine/src/projection/dollarBasis.ts#toTodayDollars and its siblings, which read the ledger's own inflation factor (owner decision R19). uiSources names the symbols that read it.",
     "relocation": {
       "status": "done",
       "target": "engine/src/projection/dollarBasis.ts#toTodayDollars"
@@ -5287,7 +5323,7 @@
     ],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": "",
+    "notes": "Computed in planner-ui/src/planner/resultsRows.ts#buildResultsRows (fiNumber inflated, then adjusted to the page's dollars) until B2-P1 slice 1; now engine engine/src/projection/dollarBasis.ts#todayForDisplay, which buildResultsRows reads.",
     "relocation": {
       "status": "done",
       "target": "engine/src/projection/dollarBasis.ts#todayForDisplay"
@@ -7847,11 +7883,15 @@
       {
         "surface": "ss-page",
         "selector": "Bridge comparison \"Money lasts\" \"through L\" / \"full plan\""
+      },
+      {
+        "surface": "compare-page",
+        "selector": "Money lasts row \"through L\" / \"short from S\" / \"full plan through E\""
       }
     ],
     "transformations": [],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": "Added by B2-P1 slice 1 (owner decision R15, one money-lasts convention). The decision and optimizer money-lasts deltas are differences of this year, and the Compare page's delta now differences the engine's lastFundedYear. The Insurance section's LTC stress table also prints it (LtcStressComparison.lasts), on a page no census surface names yet."
+    "notes": "Added by B2-P1 slice 1 (owner decision R15, one money-lasts convention). The decision and optimizer money-lasts deltas are differences of this year; the Compare page prints it in the Money lasts row and differences it in the delta column. The Insurance section's LTC stress table also prints it (LtcStressComparison.lasts), on a page no census surface names yet."
   }
 ]
