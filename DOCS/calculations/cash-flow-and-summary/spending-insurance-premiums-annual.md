@@ -4,7 +4,7 @@ Kind: formula. `projection/internal/types/result.ts#YearResult.expenses.insuranc
 
 ## Justification
 
-The schema explicitly calls premiums level rather than inflation-adjusted and defines the two stop rules. The `premiumEndAge` field is the age when premiums stop, and the completed `untilAge` comment makes the comparison strict: attained age must be below the end age. Decision D-PREMIUM-END-AGE records the earlier conflicting “through” reading for resolution.
+The schema explicitly calls premiums level rather than inflation-adjusted and defines the two stop rules. The `premiumEndAge` field is the age when premiums stop, and the completed `untilAge` comment makes the comparison strict: attained age must be below the end age. Decision D-PREMIUM-END-AGE (2026-09-25) kept this strict stop age and corrected the earlier conflicting “through” reading in the `premiumMode` comment.
 
 ## Inputs
 
@@ -51,3 +51,5 @@ feeds: `spending-total-annual`.
 Derived by: codex (gpt-5.6-sol), 2026-09-18, from the signatures-and-comments extract (with the 2026-09-18 doc-comment completion), without executing the engine or reading any implementation body. Reviewed by: cursor (composer-2.5), 2026-09-18, by independent recomputation without executing the engine; see REVIEW-2026-09-18-round-eight.md in this directory (the re-check section named "Re-check, 2026-09-18 (three worksheets after the slice-eleven comment completion)").
 
 Revision note: The first derivation treated `premiumEndAge` as inclusive, charged Life C at age 65, and expected `$1,800`; the implementation's fixture found that error. This revision applies the strict stop-age contract and expects `$1,200`.
+
+Amended 2026-09-25 by claude (the implementer of decision D-PREMIUM-END-AGE): the justification now records the decision instead of the open question. No input, arithmetic or expected value changed.

@@ -1689,11 +1689,11 @@ export function selectedLogicalBalanceAccounts(
  * Premiums are a shared shape across kinds:
  *   'lifetime' = charge annualPremium every year while the insured is alive
  *   'paidUp'   = charge nothing (fully paid up); annualPremium ignored
- *   'untilAge' = charge annualPremium in each year the subject's attained age
- *                is below premiumEndAge (required); nothing is charged in the
- *                year that age is attained or after (the field comments say
- *                "age when premiums stop"; an earlier reading here said
- *                "through", see decision D-PREMIUM-END-AGE)
+ *   'untilAge' = charge annualPremium in each year before the one in which the
+ *                subject (the LTC owner, or the life policy's insured) attains
+ *                premiumEndAge (required), so nothing is charged from that year
+ *                on: premiumEndAge is the age when premiums stop, as its field
+ *                comments say (decision D-PREMIUM-END-AGE, 2026-09-25)
  * Premiums are level (fixed nominal), not inflation-adjusted: permanent-life
  * base premiums and most LTC premiums are contractually level.
  */
@@ -1986,11 +1986,20 @@ export type SpendingClassification = z.infer<typeof spendingClassificationSchema
 
 /**
  * How a one-time goal may move under a guardrail policy. 'fixed' funds in its
- * target year exactly (today's behavior); 'movable' funds in its target year
- * when spending is not being cut, and is delayed up to `latestYear` while the
- * guardrail is cutting; if still unaffordable at `latestYear` under a cut, the
- * unfunded amount is reported as a layer shortfall. 'skippable' is the same but
- * dropped entirely if it is still unaffordable at `latestYear`. Absent ⇒ 'fixed'.
+ * target year exactly (today's behavior). 'movable' and 'skippable' goals are
+ * scheduled alike by spending/flexibleGoals.ts: from the target year (earlier,
+ * back to `earliestYear`, only in a strong-path pull-forward year) through
+ * `latestYear`, a goal funds in the first year the flexible-goal budget covers
+ * its inflated amount (unlimited in a year the guardrail is not cutting, zero
+ * while it is cutting, the remaining upside budget when pulled forward), or is
+ * partly funded when `allowPartialFunding` is set and the budget covers its
+ * `minFundingPct` share; otherwise it is deferred a year. A goal of either kind
+ * still unfunded at `latestYear` is recorded as skipped: nothing is spent, and
+ * its inflated amount in that year is added to its classification's skipped
+ * layer total and to the year's unfunded goal amount, so it is reported as
+ * intended spending that did not happen rather than dropped. The two kinds
+ * differ only in the default `minFundingPct` (100 for movable, 0 for
+ * skippable). Absent ⇒ 'fixed'.
  */
 export const goalFlexibilitySchema = z.enum(['fixed', 'movable', 'skippable'])
 export type GoalFlexibility = z.infer<typeof goalFlexibilitySchema>

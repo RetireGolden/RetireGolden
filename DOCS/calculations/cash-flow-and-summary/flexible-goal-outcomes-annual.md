@@ -61,7 +61,7 @@ Outside guardrail mode, the expected publication is `funded = 0`, `partiallyFund
 - In Case B, dropping the terminal skipped amount produces unfunded `$0` instead of `$440` and removes `$440` from the excess layer's intended spending.
 - In Case B, treating goals 2, 3, and 4 as deferred even though they are not in the schedule publishes `deferred = 3` instead of `deferred = 0`.
 
-Limit: `model/plan.ts#GoalFlexibility` describes movable and skippable goals differently at `latestYear`, but the scheduler and published-field comments specify that both skip with the amount folded into layer totals. This worksheet follows the latter behavior; decision D-GOAL-FLEXIBILITY is queued.
+Limit: movable and skippable goals end the same way at `latestYear`: both skip with the amount folded into layer totals. The `model/plan.ts#GoalFlexibility` comment once described them differently; decision D-GOAL-FLEXIBILITY (2026-09-25) kept the scheduler, and the comment now states this behavior.
 
 ## Family
 
@@ -72,3 +72,5 @@ feeds: `spending-intended-annual`.
 ## Provenance
 
 Derived by: codex (gpt-5.6-sol), 2026-09-18, from the signatures-and-comments extract only, without executing the engine or reading any implementation body. Reviewed by: cursor (composer-2.5), 2026-09-18, by independent recomputation without executing the engine; see REVIEW-2026-09-18-round-six.md in this directory (approved with a note: the plan schema's movable/skippable distinction is not what the scheduler does; the worksheet follows the scheduler and names decision D-GOAL-FLEXIBILITY in its limits). Revision 2026-09-22: the single case, a cutting year carrying a $1,700 budget, is not a state the completed YearResult.flexibleGoals contract allows (a cutting year hands the scheduler a budget of 0, and the budget constrains only goals funded before their target year); it was split into a pull-forward year and a cutting year over one goal table. Re-derived by codex without executing the engine. Corrected the same day: in the cutting year, goals not yet in the schedule have no outcome, so Case B publishes deferred 0.
+
+Amended 2026-09-25 by claude (the implementer of decision D-GOAL-FLEXIBILITY): the limit line now records the decision instead of calling it queued. No input, arithmetic or expected value changed.
