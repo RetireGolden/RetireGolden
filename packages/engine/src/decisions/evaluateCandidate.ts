@@ -585,7 +585,7 @@ export interface EvaluateCandidateOptions {
    * action that moves MAGI cannot be certified against an unpriced credit.
    * 'disclose', for the sustainable-spending solver and the spending-headroom
    * card: the ledger already budgets that year's full Marketplace premium, so
-   * the run stays a valid, conservative feasibility test; the candidate's
+   * the run stays a valid feasibility test on that ledger; the candidate's
    * years are named in `diagnostics` and the caller must tell the user.
    */
   nonActionableAca?: 'refuse' | 'disclose'
