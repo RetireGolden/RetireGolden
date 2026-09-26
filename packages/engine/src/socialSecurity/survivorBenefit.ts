@@ -9,6 +9,10 @@
  *  - **Survivor base = the deceased's actual (claim-age-adjusted) benefit**,
  *    including the deceased's delayed-retirement credits when the deceased
  *    delayed past FRA (not flat PIA).
+ *  - **A worker who died without having claimed** was never paid, so the base
+ *    is the benefit he would have received for the month before his death:
+ *    the PIA plus the credits earned up to the death, with no early reduction
+ *    (`neverClaimedDeceasedFactor` below).
  *  - **RIB-LIM ("widow's limit")**: when the deceased claimed reduced benefits
  *    early, the survivor is capped at the larger of the deceased's actual
  *    reduced benefit or 82.5% of the deceased's PIA — equivalently
@@ -23,7 +27,9 @@
  * annual COLA-adjusted frame they need. Illustrative, not a filing tool.
  */
 
+import { delayedRetirementFactor } from './benefitFactor.js'
 import type { ClaimAge } from './claimFactor.js'
+import { effectiveBirthYear, fraForBirthYear, fraTotalMonths } from './nra.js'
 
 /** Earliest age a (non-disabled) widow(er) can claim survivor benefits. */
 export const SURVIVOR_EARLIEST_AGE = 60
@@ -72,6 +78,33 @@ export function survivorBenefitMonthly(input: SurvivorBenefitInput): number {
   const base = Math.max(input.deceasedActualMonthly, WIDOW_LIMIT_PIA_FRACTION * input.deceasedPiaMonthly)
   const ageMonths = input.survivorClaimAge.years * 12 + input.survivorClaimAge.months
   return base * survivorReductionFactor(ageMonths, input.survivorFraMonths)
+}
+
+/**
+ * The deceased's benefit, as a fraction of PIA, for a worker who died without
+ * ever having claimed: the old-age benefit he "would upon application have
+ * received for the month prior to the month in which he died" (42 U.S.C.
+ * 402(e)(2)(C)). Delayed retirement credits count from the month he attains
+ * full retirement age up to but not including the month of death (20 CFR
+ * 404.313(e)(1)) and stop before the month he attains 70 (402(w)(2)), so a
+ * death at or before full retirement age earns none. No early-retirement
+ * reduction applies, and the 402(e)(2)(D) limit cannot bind, because he was
+ * never entitled to a reduced benefit: the factor is never below 1.
+ *
+ * Ages are counted as SSA counts them: a person attains an age on the day
+ * before the birthday, so a birthday on the 1st attains each age in the month
+ * before.
+ */
+export function neverClaimedDeceasedFactor(
+  dob: { readonly year: number; readonly month: number; readonly day: number },
+  deathYear: number,
+  deathMonth: number,
+): number {
+  const attainedAgeZeroMonth = dob.year * 12 + (dob.month - 1) - (dob.day === 1 ? 1 : 0)
+  const ageMonthsAtDeath = deathYear * 12 + (deathMonth - 1) - attainedAgeZeroMonth
+  const fraMonths = fraTotalMonths(fraForBirthYear(effectiveBirthYear(dob.year, dob.month, dob.day)))
+  const creditMonths = Math.min(ageMonthsAtDeath, 70 * 12) - fraMonths
+  return delayedRetirementFactor(creditMonths, 70 * 12 - fraMonths)
 }
 
 /** Convenience: a deceased claim age of "at/after FRA" (no early reduction, no DRCs). */

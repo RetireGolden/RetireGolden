@@ -482,7 +482,7 @@
           "functions": [
             {
               "name": "survivorBenefitMonthly",
-              "line": 70
+              "line": 76
             }
           ]
         }
@@ -1077,7 +1077,7 @@
           "functions": [
             {
               "name": "survivorBenefitMonthly",
-              "line": 70
+              "line": 76
             }
           ]
         }
@@ -1746,7 +1746,7 @@
           "functions": [
             {
               "name": "survivorBenefitMonthly",
-              "line": 70
+              "line": 76
             }
           ]
         }
@@ -1757,12 +1757,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/socialSecurity/survivorBenefit.test.ts",
-          "line": 215,
+          "line": 200,
           "note": null,
           "tests": [
             {
               "title": "does not add credits when the survivor waits from FRA to 70",
-              "line": 223
+              "line": 208
             }
           ]
         }
@@ -1805,7 +1805,7 @@
           "functions": [
             {
               "name": "survivorBenefitMonthly",
-              "line": 70
+              "line": 76
             }
           ]
         }
@@ -1838,13 +1838,11 @@
     },
     {
       "id": "usc-42-402-e-survivor-of-worker-who-died-before-claiming",
-      "title": "When a worker dies before claiming, the survivor is paid from the death, on the benefit earned by then",
-      "classification": "approximated",
-      "errorDirection": "bothDirections",
-      "approximation": {
-        "kind": "fix"
-      },
-      "conventionRationale": "The engine works out a survivor benefit from the benefit the worker was set to collect at the claim age entered in the plan, and has no separate path for a worker who dies before reaching that age. The plan already holds what the right figure needs: both birth dates, the age at death, the worker’s primary insurance amount and both claim ages. An example, with no cost-of-living increases: a worker born in January 1962 has a 2,000 dollar primary insurance amount and a full retirement age of 67, plans to claim at 70, and dies at 64 in December 2026. The surviving spouse, born in January 1960, is 66, with her own 600 dollar benefit and a planned claim age of 67. The engine pays her own 600 dollars a month from 2027 through 2031, then 2,480 dollars a month from 2032, which is what the worker would have received at 70. The law pays her 2,000 dollars a month from December 2026 if she applies within six months: she is past her survivor full retirement age, so nothing is taken off, and the worker earned no delayed retirement credits before dying. Leaving aside December 2026, which the engine’s whole-year counting cannot reach, the engine pays 1,400 dollars a month too little for five years, 84,000 dollars in all, and then 480 dollars a month too much for the rest of her life.",
+      "title": "When a worker dies before claiming, the survivor benefit starts after the death, on the benefit earned by then",
+      "classification": "settled",
+      "errorDirection": null,
+      "approximation": null,
+      "conventionRationale": "The ledger is annual and keeps a person alive through the whole calendar year in which the life age is attained, so the engine takes December of that year as the month of death: credits run through November, and the survivor amount starts in January of the next year. The December payment the law can allow falls outside whole-year counting. An example, with no cost-of-living increases: a worker born in January 1962 has a 2,000 dollar primary insurance amount and a full retirement age of 67, plans to claim at 70, and dies at 64 in December 2026. The surviving spouse, born in January 1960, is 66, with her own 600 dollar benefit and a planned claim age of 67. She is paid 2,000 dollars a month from 2027: she is past her survivor full retirement age, so nothing is taken off, and the worker earned no delayed retirement credits before dying. Had he died at 69 in December 2031, he would have earned 35 months of credits, January 2029 through November 2031, and she would be paid 2,000 times 1.23333, or 2,466.67 dollars a month, from 2032, not the 2,480 dollars he would have received at 70. Until 2026-09-25 the engine priced the dead worker as a claim at the configured age, which paid her 600 dollars a month through 2031 and 2,480 from 2032 in the first case.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -1854,7 +1852,6 @@
       "dueOn": "2027-09-23",
       "implementedBy": [
         "packages/engine/src/projection/internal/annualSocialSecurity.ts",
-        "packages/engine/src/socialSecurity/claimFactor.ts",
         "packages/engine/src/socialSecurity/survivorBenefit.ts"
       ],
       "implementations": [
@@ -1864,19 +1861,6 @@
             {
               "name": "annualSocialSecurity",
               "line": 68
-            },
-            {
-              "name": "annualSocialSecurityPayableMonths",
-              "line": 59
-            }
-          ]
-        },
-        {
-          "path": "packages/engine/src/socialSecurity/claimFactor.ts",
-          "functions": [
-            {
-              "name": "claimFactor",
-              "line": 22
             }
           ]
         },
@@ -1884,35 +1868,61 @@
           "path": "packages/engine/src/socialSecurity/survivorBenefit.ts",
           "functions": [
             {
+              "name": "neverClaimedDeceasedFactor",
+              "line": 98
+            },
+            {
               "name": "survivorBenefitMonthly",
-              "line": 70
+              "line": 76
             }
           ]
         }
       ],
       "fixtureFiles": [
-        "packages/engine/src/rules/approximations/survivorOfWorkerWhoDiedBeforeClaiming.approximation.test.ts"
+        "packages/engine/src/projection/simulate.survivorNeverClaimed.test.ts"
       ],
       "fixtures": [
         {
-          "path": "packages/engine/src/rules/approximations/survivorOfWorkerWhoDiedBeforeClaiming.approximation.test.ts",
-          "line": 94,
+          "path": "packages/engine/src/projection/simulate.survivorNeverClaimed.test.ts",
+          "line": 103,
           "note": "worker dies at 64 with a configured claim age of 70",
           "tests": [
             {
-              "title": "pays her own 600 until the year the worker would have turned 70, then his age-70 amount of 2,480",
-              "line": 103
+              "title": "pays the 2,000 PIA from 2027, not her own 600 until the year he would have turned 70",
+              "line": 111
             }
           ]
         },
         {
-          "path": "packages/engine/src/rules/approximations/survivorOfWorkerWhoDiedBeforeClaiming.approximation.test.ts",
-          "line": 111,
+          "path": "packages/engine/src/projection/simulate.survivorNeverClaimed.test.ts",
+          "line": 121,
           "note": "worker dies at 64 with a configured claim age of 65",
           "tests": [
             {
-              "title": "prices the survivor base at the age-65 early-claim factor the worker never took",
-              "line": 120
+              "title": "applies no early-claim reduction for a claim the worker never made",
+              "line": 129
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.survivorNeverClaimed.test.ts",
+          "line": 137,
+          "note": "worker dies at 69 with a configured claim age of 70",
+          "tests": [
+            {
+              "title": "counts the 35 credits earned through November 2031, not the 36 to age 70",
+              "line": 145
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.survivorNeverClaimed.test.ts",
+          "line": 155,
+          "note": "worker dies at 62 before a configured disability onset at 66",
+          "tests": [
+            {
+              "title": "pays the PIA from her first claim year, not from the onset year he never reached",
+              "line": 163
             }
           ]
         }
@@ -2101,7 +2111,7 @@
       "classification": "settled",
       "errorDirection": null,
       "approximation": null,
-      "conventionRationale": "This record is confined to the reduction curve after a survivor FRA has been supplied. The nra.ts age-60-cohort error for survivors born 1940 through 1950 and 1961 and later is recorded separately at usc-42-416-l-survivor-fra-age-60-attainment-cohorts; it is not a competing reading of this helper’s month interpolation.",
+      "conventionRationale": "This record is confined to the reduction curve after a survivor FRA has been supplied. The survivor FRA schedule itself, keyed to the year the survivor turns 60, is recorded separately at usc-42-416-l-survivor-fra-age-60-attainment-cohorts; it is not a competing reading of this helper’s month interpolation.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -2118,7 +2128,7 @@
           "functions": [
             {
               "name": "survivorReductionFactor",
-              "line": 56
+              "line": 62
             }
           ]
         }
@@ -2447,7 +2457,7 @@
           "functions": [
             {
               "name": "SS_GRID_CLAIM_AGES",
-              "line": 271
+              "line": 284
             }
           ]
         },
@@ -3235,12 +3245,10 @@
     {
       "id": "usc-42-416-l-survivor-fra-age-60-attainment-cohorts",
       "title": "The survivor full retirement age follows the year the survivor turns 60, from 65 up to 67",
-      "classification": "approximated",
-      "errorDirection": "bothDirections",
-      "approximation": {
-        "kind": "fix"
-      },
-      "conventionRationale": "The engine's survivor full retirement age table departs from the statute at both ends. From an effective birth year of 1960 on, the table stops at 66 years and 8 months, where the statute gives 66 years and 10 months for 1961 (800 months against 802) and, for 1962 or later, when the survivor turns 60 in 2022 or later, 67 under section 416(l)(1)(E) (800 months against 804). For 1940 through 1950 the table runs early: it returns 65 through 1945 and 65 years and 2 months through 65 years and 10 months for 1946 through 1950, where the statute gives 65 years and 2 months through 66 (for 1946, 782 months against 792). In both ranges a survivor who claims before the statutory age is reduced less than the law requires. The companion tests pin both schedules against the table.",
+      "classification": "settled",
+      "errorDirection": null,
+      "approximation": null,
+      "conventionRationale": "Until 2026-09-25 the engine kept a separate survivor table that departed from the statute at both ends: it stopped at 66 years and 8 months from an effective birth year of 1960 on (800 months, where the statute gives 802 for 1961 and 804 for 1962 or later), and for 1940 through 1950 it ran six birth years late (for 1946, 782 months against 792). Deriving the survivor schedule from the worker schedule leaves one table to maintain, so the two cannot drift again. The companion tests pin every cohort from 1939 to 1962 against the statutory months.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -3257,7 +3265,7 @@
           "functions": [
             {
               "name": "survivorFraForBirthYear",
-              "line": 67
+              "line": 69
             }
           ]
         }
@@ -3268,27 +3276,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/socialSecurity/survivorBenefit.test.ts",
-          "line": 152,
-          "note": null,
+          "line": 167,
+          "note": "age-60 cohorts born 1939 to 1962",
           "tests": [
             {
-              "title": "pins the separate survivor-FRA table for the 1962 age-60 cohort",
-              "line": 168
+              "title": "follows the statutory schedule for every cohort from 1939 to 1962",
+              "line": 187
             },
             {
-              "title": "pins the 1961 age-60 cohort at the engine’s 66y8m cap, not statutory 66y10m",
-              "line": 175
-            }
-          ]
-        },
-        {
-          "path": "packages/engine/src/socialSecurity/survivorBenefit.test.ts",
-          "line": 198,
-          "note": "age-60 cohorts born 1940 to 1950",
-          "tests": [
-            {
-              "title": "pins the engine table for the 1940 to 1950 cohorts, 1946 at 782 months against the statutory 792",
-              "line": 207
+              "title": "stays at 67 after 1962",
+              "line": 194
             }
           ]
         }

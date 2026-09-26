@@ -162,7 +162,7 @@ export const socialSecurityRecords = {
     },
     limits: [
       'Simplified to the birth year: the month-of-year refinements of the SSA schedule are not modeled, and a January 1 birth is handled by the separate effective-birth-year rule',
-      'The survivor (widow(er)) full retirement age is a different schedule, keyed to the year the survivor turns 60; the engine\'s survivor table departs from it for survivors born 1940 through 1950 and 1961 and later, registered as usc-42-416-l-survivor-fra-age-60-attainment-cohorts',
+      'The survivor (widow(er)) full retirement age is a different schedule, keyed to the year the survivor turns 60, so it runs two birth years behind this one and reaches 67 for survivors born 1962 and later; registered as usc-42-416-l-survivor-fra-age-60-attainment-cohorts',
       'Current law may change; the record pins what the module states today',
     ],
     implementedBy: ['packages/engine/src/socialSecurity/nra.ts'],
@@ -340,8 +340,8 @@ export const socialSecurityRecords = {
       worksheet: 'DOCS/calculations/social-security/survivor-benefit-rib-lim.md',
     },
     limits: [
-      'The survivor FRA is a separate schedule from the worker FRA, and using the worker FRA would change every reduction between 60 and FRA; the engine\'s survivor table departs from the statute for survivors born 1940 through 1950 and 1961 and later, registered as usc-42-416-l-survivor-fra-age-60-attainment-cohorts',
-      'The deceased\'s actual benefit is taken as the caller supplies it; for a worker who died before claiming, the projection supplies the benefit at the claim age entered in the plan rather than the credits earned by the death, registered as usc-42-402-e-survivor-of-worker-who-died-before-claiming',
+      'The survivor FRA is a separate schedule from the worker FRA, and using the worker FRA would change every reduction between 60 and FRA; the survivor schedule is registered as usc-42-416-l-survivor-fra-age-60-attainment-cohorts',
+      'The deceased\'s actual benefit is taken as the caller supplies it; for a worker who died before claiming, the projection supplies the benefit the worker would have received for the month before the death, with the credits earned by then, registered as usc-42-402-e-survivor-of-worker-who-died-before-claiming',
       'Inputs are monthly, in today\'s dollars, before COLA and any benefit haircut; callers scale to their own annual frame',
       'RIB-LIM here is the widow\'s-limit floor at 82.5% of PIA; the full RIB-LIM family of provisions is broader and illustrative only',
     ],

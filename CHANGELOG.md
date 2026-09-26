@@ -4,6 +4,28 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## Unreleased
 
+- **Social Security survivor benefits follow the statute when a worker dies before
+  claiming (displayed numbers change).** The survivor of a worker who died without
+  having claimed was paid nothing from the worker's record until the year the worker
+  would have reached the claim age entered in the plan, and was then priced at that age
+  (credits the worker never earned, or an early reduction for a claim never made). The
+  survivor is now paid from the year after the death, on the PIA plus the delayed
+  credits earned up to the month before death, with no early reduction and no
+  widow's limit (42 U.S.C. 402(e)(1), (e)(2)(A) to (D); 20 CFR 404.313(e)(1)). Example:
+  worker PIA $2,000, planned claim at 70, dies at 64; survivor past her survivor FRA
+  with her own $600. Before: $600 a month for five years, then $2,480. Now: $2,000 a
+  month from the year after the death. A death before 62 still uses the PIA as entered.
+- **Survivor full retirement age follows 416(l) for every cohort (displayed numbers
+  change for early survivor claims).** The survivor table now is the retirement
+  schedule two birth years later: 65y2m to 65y10m for 1940 to 1944, 66 for 1945 to
+  1956, 66y2m to 66y10m for 1957 to 1961, and 67 from 1962. It had run six birth years
+  late for 1940 to 1950 and stopped at 66y8m from 1960, so an early survivor claim in
+  those cohorts was reduced slightly less than the law requires.
+- **Claim-age optimizer: the "FRA" candidate is the person's own full retirement age.**
+  The middle of the three canonical claim ages was 67 for everyone and labelled FRA;
+  for births 1955 to 1959 it is now 66 and 2 to 10 months, as 416(l) gives it. For
+  births from 1960 nothing changes.
+
 - **Bundle budget aggregate rows:** raised `all JS` 4400 → 4800 KiB and
   PWA precache 4550 → 4900 KiB. Azure `build` on head `03bb93cc` measured
   4431.7 and 4579.6 KiB; the previous ~30–46 KiB of slack was tripping every

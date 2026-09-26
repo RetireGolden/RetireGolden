@@ -15,7 +15,7 @@ import { inSsdiWindow, ssdiMonthlyBenefit, ssdiSuspendedBySga } from '../../soci
 import { capAuxiliaryForFamilyMaximum, claimAgeTotalMonths } from '../../socialSecurity/familyMaximum.js'
 import { bestMaritalBenefit } from '../../socialSecurity/maritalBenefits.js'
 import { effectiveBirthYear, fraForBirthYear, fraTotalMonths, survivorFraForBirthYear } from '../../socialSecurity/nra.js'
-import { survivorBenefitMonthly } from '../../socialSecurity/survivorBenefit.js'
+import { neverClaimedDeceasedFactor, survivorBenefitMonthly } from '../../socialSecurity/survivorBenefit.js'
 import { socialSecurityDobParts } from '../../socialSecurity/annualTiming.js'
 import type {
   SocialSecurityBenefitSource,
@@ -151,6 +151,21 @@ export function annualSocialSecurity(
     const fra = fraForBirthYear(effectiveBirthYear(y, m, d))
 
     const onsetAge = stream.disability?.onsetAge
+    const ssdiPath = onsetAge !== undefined && onsetAge < fra.years
+    // A worker who died before the year his benefit would first have been paid
+    // (his configured claim age, or a pre-FRA disability onset) never claimed.
+    // His survivor is priced on the benefit he would upon application have
+    // received for the month before his death (42 U.S.C. 402(e)(2)(C)), from
+    // the first year after the death, whatever claim age the plan configured.
+    // The ledger keeps a person alive through the whole year he attains his
+    // life age, so December of that year stands in for the death month.
+    const firstPaidAge = ssdiPath ? onsetAge : stream.claimAge.years
+    if (!s.alive && s.lifeAge !== undefined && firstPaidAge > s.lifeAge) {
+      const monthly = pia * neverClaimedDeceasedFactor({ year: y, month: m, day: d }, y + s.lifeAge, 12)
+      ssActualMonthlyByPerson.set(stream.personId, (ssActualMonthlyByPerson.get(stream.personId) ?? 0) + monthly)
+      continue
+    }
+
     // A pre-FRA disability onset replaces this stream's retirement-claim path.
     // Onset at or after FRA is intentionally invalid here and falls through to
     // ordinary retirement rather than creating a second SSDI case.
