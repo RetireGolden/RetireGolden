@@ -2,13 +2,13 @@
   "kind": "retiregolden.calculation-coverage.manifest",
   "version": 2,
   "families": {
-    "identified": 231,
+    "identified": 232,
     "byGroup": {
       "accounts-and-growth": 11,
       "cash-flow-and-summary": 60,
       "insights": 12,
       "ladders-and-valuation": 15,
-      "longevity": 3,
+      "longevity": 4,
       "medicare-and-aca": 10,
       "monte-carlo": 35,
       "optimizer-and-comparisons": 27,
@@ -20,7 +20,7 @@
     },
     "byKind": {
       "adapter": 3,
-      "engine": 188,
+      "engine": 189,
       "ui-native": 21,
       "ui-transformation": 19
     },
@@ -30,7 +30,6 @@
       "aca-gross-enrollment-premium-annual",
       "aca-modeled-allowable-ptc-annual",
       "accounts-balance-per-account-annual",
-      "accounts-ending-balance-by-category",
       "accounts-investable-total-annual",
       "accounts-net-worth-annual",
       "annuitization-payout-rate-pct",
@@ -161,11 +160,6 @@
       "scenario-lifetime-penalties",
       "scenario-lifetime-tax",
       "sepp-distribution-annual",
-      "simple-candidate-evaluation-after-tax-estate-delta",
-      "simple-candidate-evaluation-executed-conversion-total",
-      "simple-candidate-evaluation-incomplete-computation-years",
-      "simple-candidate-evaluation-lifetime-tax-delta",
-      "simple-candidate-evaluation-money-lasts-years-delta",
       "social-security-benefit-annual",
       "social-security-bridge-sizing",
       "spending-base-annual",
@@ -210,8 +204,26 @@
       "year-result-tax-exempt-interest"
     ],
     "partial": [
+      "accounts-ending-balance-by-category",
+      "display-balance-by-category-annual",
+      "display-dollar-basis-conversion",
+      "display-fi-target-annual",
+      "display-loss-carryforward-used-annual",
+      "display-net-care-cost-annual",
+      "display-tax-free-gains-room-annual",
+      "display-tax-plus-penalties-annual",
+      "display-total-spending-annual",
+      "display-upside-shortfall-annual",
+      "display-upside-spending-annual",
+      "display-years-before-plan-end",
+      "longevity-last-funded-year",
       "risk-based-guardrail-solved-balance-thresholds",
       "risk-based-guardrail-suggested-adjustment-monthly",
+      "simple-candidate-evaluation-after-tax-estate-delta",
+      "simple-candidate-evaluation-executed-conversion-total",
+      "simple-candidate-evaluation-incomplete-computation-years",
+      "simple-candidate-evaluation-lifetime-tax-delta",
+      "simple-candidate-evaluation-money-lasts-years-delta",
       "sustainable-spending-result-max-base-annual",
       "sustainable-spending-result-simulation-count",
       "sustainable-spending-result-spending-slack-dollars"
@@ -222,20 +234,9 @@
       "claim-age-co-optimization-estate-gain",
       "compare-plan-deltas",
       "compare-plan-money-deltas",
-      "display-balance-by-category-annual",
-      "display-dollar-basis-conversion",
       "display-fan-band-widths",
-      "display-fi-target-annual",
       "display-guardrail-balance-thresholds",
       "display-histogram-bin-label",
-      "display-loss-carryforward-used-annual",
-      "display-net-care-cost-annual",
-      "display-tax-free-gains-room-annual",
-      "display-tax-plus-penalties-annual",
-      "display-total-spending-annual",
-      "display-upside-shortfall-annual",
-      "display-upside-spending-annual",
-      "display-years-before-plan-end",
       "income-floor-ladder-yield-pct",
       "insight-monte-carlo-success-delta",
       "mcp-batch-cumulative-tax-objective",
@@ -267,20 +268,9 @@
       "claim-age-co-optimization-estate-gain",
       "compare-plan-deltas",
       "compare-plan-money-deltas",
-      "display-balance-by-category-annual",
-      "display-dollar-basis-conversion",
       "display-fan-band-widths",
-      "display-fi-target-annual",
       "display-guardrail-balance-thresholds",
       "display-histogram-bin-label",
-      "display-loss-carryforward-used-annual",
-      "display-net-care-cost-annual",
-      "display-tax-free-gains-room-annual",
-      "display-tax-plus-penalties-annual",
-      "display-total-spending-annual",
-      "display-upside-shortfall-annual",
-      "display-upside-spending-annual",
-      "display-years-before-plan-end",
       "income-floor-ladder-yield-pct",
       "insight-monte-carlo-success-delta",
       "optimizer-schedule-conversion-total",
@@ -352,12 +342,49 @@
         "surplus-invested-annual",
         "year-result-contributions"
       ],
+      "display-balance-by-category-annual": [
+        "accounts-balance-per-account-annual",
+        "display-dollar-basis-conversion"
+      ],
+      "display-fi-target-annual": [
+        "projection-summary-fi-number"
+      ],
       "display-guardrail-balance-thresholds": [
         "risk-based-guardrail-threshold-solver",
         "risk-based-starting-investable"
       ],
+      "display-loss-carryforward-used-annual": [
+        "capital-loss-carryforward-netting"
+      ],
+      "display-net-care-cost-annual": [
+        "display-dollar-basis-conversion"
+      ],
+      "display-tax-free-gains-room-annual": [
+        "capital-loss-carryforward-netting",
+        "display-dollar-basis-conversion"
+      ],
+      "display-tax-plus-penalties-annual": [
+        "display-dollar-basis-conversion",
+        "tax-penalties-annual",
+        "tax-total-annual"
+      ],
       "display-total-spending-annual": [
-        "tax-penalties-annual"
+        "display-dollar-basis-conversion",
+        "spending-total-annual",
+        "tax-penalties-annual",
+        "tax-total-annual"
+      ],
+      "display-upside-shortfall-annual": [
+        "display-dollar-basis-conversion",
+        "spending-layer-shortfall-attribution"
+      ],
+      "display-upside-spending-annual": [
+        "display-dollar-basis-conversion",
+        "spending-excess-requested-annual",
+        "spending-ideal-requested-annual"
+      ],
+      "display-years-before-plan-end": [
+        "longevity-depletion-year"
       ],
       "exact-ledger-tournament-margin-over-milp-dollars": [
         "exact-ledger-cleaned-schedule"
@@ -476,6 +503,9 @@
       ],
       "long-term-care-benefit-annual": [
         "long-term-care-shock-sampling"
+      ],
+      "longevity-last-funded-year": [
+        "longevity-depletion-year"
       ],
       "longevity-survival-percentile-age": [
         "mortality-ex-to-qx-identity",
@@ -813,16 +843,16 @@
     }
   },
   "records": {
-    "total": 215,
+    "total": 225,
     "byKind": {
-      "composition": 66,
+      "composition": 72,
       "data": 16,
-      "formula": 76,
-      "model": 57
+      "formula": 79,
+      "model": 58
     },
     "byJustificationKind": {
       "dataset": 5,
-      "derivation": 210
+      "derivation": 220
     }
   },
   "oracleExamples": [
@@ -979,7 +1009,7 @@
     }
   ],
   "attestationsDerived": {
-    "catalogued": 60,
+    "catalogued": 64,
     "excludedWithReason": 0,
     "notYetReviewed": 163
   },
@@ -987,12 +1017,12 @@
     {
       "group": "accountsAndGrowth",
       "path": "calculation-coverage/accountsAndGrowth.json",
-      "recordCount": 16
+      "recordCount": 17
     },
     {
       "group": "cashFlowAndSummary",
       "path": "calculation-coverage/cashFlowAndSummary.json",
-      "recordCount": 53
+      "recordCount": 54
     },
     {
       "group": "insights",
@@ -1007,12 +1037,12 @@
     {
       "group": "longevity",
       "path": "calculation-coverage/longevity.json",
-      "recordCount": 8
+      "recordCount": 9
     },
     {
       "group": "medicareAndAca",
       "path": "calculation-coverage/medicareAndAca.json",
-      "recordCount": 13
+      "recordCount": 14
     },
     {
       "group": "monteCarlo",
@@ -1042,12 +1072,12 @@
     {
       "group": "spendingAndWithdrawals",
       "path": "calculation-coverage/spendingAndWithdrawals.json",
-      "recordCount": 15
+      "recordCount": 18
     },
     {
       "group": "taxes",
       "path": "calculation-coverage/taxes.json",
-      "recordCount": 17
+      "recordCount": 20
     }
   ]
 }

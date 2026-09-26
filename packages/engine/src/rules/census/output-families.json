@@ -62,6 +62,10 @@
       {
         "path": "planner-ui/src/report/reportModel.ts",
         "symbol": "chartDataRows"
+      },
+      {
+        "path": "planner-ui/src/planner/ReportPage.tsx",
+        "symbol": "ReportBody"
       }
     ],
     "surfaces": [
@@ -71,23 +75,27 @@
       },
       {
         "surface": "report",
-        "selector": "chart-data block spendingPlusTax (expenses.total + tax + penalties)"
+        "selector": "chart-data block spendingPlusTax (expenses.total + tax + penalties), and the printed report chart's spending series"
       }
     ],
     "transformations": [
-      "Add expenses.total + tax + penalties, then apply the selected dollar-basis adjustment."
+      "Add expenses.total + tax + penalties, left to right, in projection/yearFigures.ts#spendingWithTaxAndPenalties, then apply the selected dollar basis."
     ],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": ""
+    "notes": "Computed in planner-ui/src/planner/resultsRows.ts#buildResultsRows, planner-ui/src/report/reportModel.ts#chartDataRows and planner-ui/src/planner/ReportPage.tsx#ReportBody until B2-P1 slice 1; now engine engine/src/projection/yearFigures.ts#spendingWithTaxAndPenalties, which buildResultsRows and chartDataRows read (ReportBody through buildResultsRows).",
+    "relocation": {
+      "status": "done",
+      "target": "engine/src/projection/yearFigures.ts#spendingWithTaxAndPenalties"
+    }
   },
   {
     "transformations": [
-      "Add idealShortfall and excessShortfall, then apply the dollar-basis adjuster."
+      "Add idealShortfall and excessShortfall in projection/yearFigures.ts#upsideShortfall, then apply the selected dollar basis."
     ],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": "",
+    "notes": "Computed in planner-ui/src/planner/ResultsPage.tsx#YearByYearLedger until B2-P1 slice 1; now engine engine/src/projection/yearFigures.ts#upsideShortfall, which YearByYearLedger reads through projectionDisplayFigures.",
     "dimensions": [
       "year"
     ],
@@ -109,15 +117,19 @@
         "surface": "results-table",
         "selector": "Layer miss \"Upside\""
       }
-    ]
+    ],
+    "relocation": {
+      "status": "done",
+      "target": "engine/src/projection/yearFigures.ts#upsideShortfall"
+    }
   },
   {
     "transformations": [
-      "Add expenses.idealSpending and expenses.excessSpending, then apply the dollar-basis adjuster."
+      "Add expenses.idealSpending and expenses.excessSpending in projection/yearFigures.ts#upsideSpending, then apply the selected dollar basis."
     ],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": "",
+    "notes": "Computed in planner-ui/src/planner/ResultsPage.tsx#YearByYearLedger until B2-P1 slice 1; now engine engine/src/projection/yearFigures.ts#upsideSpending, which YearByYearLedger reads through projectionDisplayFigures.",
     "dimensions": [
       "year"
     ],
@@ -139,7 +151,11 @@
         "surface": "results-table",
         "selector": "Upside column (layered spending)"
       }
-    ]
+    ],
+    "relocation": {
+      "status": "done",
+      "target": "engine/src/projection/yearFigures.ts#upsideSpending"
+    }
   },
   {
     "id": "portfolio-need-annual",
@@ -506,11 +522,14 @@
   },
   {
     "transformations": [
-      "Add capitalLossUsedAgainstGains and capitalLossUsedAgainstOrdinary."
+      "Add capitalLossUsedAgainstGains and capitalLossUsedAgainstOrdinary in projection/yearFigures.ts#capitalLossCarryforwardUsed."
     ],
-    "candidateRuleIds": [],
+    "candidateRuleIds": [
+      "irc-1211-b-capital-loss-ordinary-offset",
+      "irc-1212-b-capital-loss-carryforward"
+    ],
     "status": "identified",
-    "notes": "",
+    "notes": "Computed in planner-ui/src/planner/resultsRows.ts#buildLedgerCsv until B2-P1 slice 1; now engine engine/src/projection/yearFigures.ts#capitalLossCarryforwardUsed, which buildLedgerCsv reads.",
     "dimensions": [
       "year"
     ],
@@ -532,15 +551,29 @@
         "surface": "csv",
         "selector": "lossCarryforwardUsed"
       }
-    ]
+    ],
+    "relocation": {
+      "status": "done",
+      "target": "engine/src/projection/yearFigures.ts#capitalLossCarryforwardUsed"
+    }
   },
   {
     "transformations": [
-      "Add ltcgZeroHeadroom and capitalLossCarryforwardRemaining, then apply the dollar-basis adjuster."
+      "Bisection on the recomputed federal tax of the year's advisory input with the extra gain netted through the carryforward (projection/yearFigures.ts#taxFreeGainsRoom, owner decision R2), then apply the selected dollar basis; years with a modeled ACA premium credit carry a marker."
     ],
-    "candidateRuleIds": [],
+    "candidateRuleIds": [
+      "irc-1-h-1-0-15-20-preferential-rate-schedule",
+      "irc-1-h-capital-gain-stacked-on-ordinary",
+      "irc-1211-b-capital-loss-ordinary-offset",
+      "irc-1212-b-capital-loss-carryforward",
+      "irc-1212-b-2-zero-income-section-1211-allowance-preserves-carryforward",
+      "irc-86-a-taxable-social-security-two-tier",
+      "irc-151-d-5-C-iii-I-senior-deduction-per-individual-phase-out",
+      "irc-1411-a-net-investment-income-tax",
+      "irc-55-a-amt-is-the-excess-over-regular-tax"
+    ],
     "status": "identified",
-    "notes": "",
+    "notes": "Computed in planner-ui/src/planner/ResultsPage.tsx#YearByYearLedger until B2-P1 slice 1, as the 0% band room (ltcgZeroHeadroom) plus the remaining carryforward, which overstated the room at no tax whenever a gain would make Social Security taxable, use up a loss deduction the other income was using, reach the unindexed NIIT threshold or shrink the senior deduction; now engine engine/src/projection/yearFigures.ts#taxFreeGainsRoom, which YearByYearLedger reads through projectionDisplayFigures. ltcgZeroHeadroom stays published as the 0% band room. The page floors the room to the whole dollar, so it never shows more room than the engine computed.",
     "dimensions": [
       "year"
     ],
@@ -548,7 +581,7 @@
     "id": "display-tax-free-gains-room-annual",
     "group": "taxes",
     "title": "Tax-free gains room",
-    "meaning": "Additional long-term gains realizable at $0 federal tax: remaining loss carryforward plus 0%-bracket headroom.",
+    "meaning": "The largest additional long-term gain realizable this year without raising the year's federal income tax, as the engine's federal calculator computes it with the gain netted through any loss carryforward first.",
     "unit": "usd",
     "kind": "ui-transformation",
     "uiSources": [
@@ -562,15 +595,19 @@
         "surface": "results-table",
         "selector": "Tax-free gains room column"
       }
-    ]
+    ],
+    "relocation": {
+      "status": "done",
+      "target": "engine/src/projection/yearFigures.ts#taxFreeGainsRoom"
+    }
   },
   {
     "transformations": [
-      "Add YearResult.tax and YearResult.penalties, then apply the dollar-basis adjuster on the Results page."
+      "Add YearResult.tax and YearResult.penalties in projection/yearFigures.ts#taxAndPenalties, then apply the selected dollar basis on the Results page."
     ],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": "",
+    "notes": "Computed in planner-ui/src/planner/ResultsPage.tsx#YearByYearLedger, planner-ui/src/report/reportModel.ts#yearLedgerRow, planner-ui/src/planner/resultsRows.ts#buildExpenseRows and planner-ui/src/planner/ReportPage.tsx#ReportBody until B2-P1 slice 1; now engine engine/src/projection/yearFigures.ts#taxAndPenalties, which the same four read.",
     "dimensions": [
       "year"
     ],
@@ -593,6 +630,10 @@
       {
         "path": "planner-ui/src/planner/resultsRows.ts",
         "symbol": "buildExpenseRows"
+      },
+      {
+        "path": "planner-ui/src/planner/ReportPage.tsx",
+        "symbol": "ReportBody"
       }
     ],
     "surfaces": [
@@ -608,7 +649,11 @@
         "surface": "chart",
         "selector": "Spending by category \"Tax + penalties\" series"
       }
-    ]
+    ],
+    "relocation": {
+      "status": "done",
+      "target": "engine/src/projection/yearFigures.ts#taxAndPenalties"
+    }
   },
   {
     "transformations": [],
@@ -1734,11 +1779,15 @@
       }
     ],
     "transformations": [
-      "Compute max(0, careCost - ltcBenefit), then apply the selected dollar-basis adjustment."
+      "Compute max(0, careCost - ltcBenefit) in projection/yearFigures.ts#netCareCost, then apply the selected dollar basis. The floor absorbs only a floating-point residue of the per-policy payment sum; a benefit above the cost by more than half a cent is refused."
     ],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": ""
+    "notes": "Computed in planner-ui/src/planner/resultsRows.ts#buildExpenseRows until B2-P1 slice 1; now engine engine/src/projection/yearFigures.ts#netCareCost, which buildExpenseRows reads.",
+    "relocation": {
+      "status": "done",
+      "target": "engine/src/projection/yearFigures.ts#netCareCost"
+    }
   },
   {
     "id": "irmaa-surcharge-annual",
@@ -1962,7 +2011,7 @@
     "transformations": [],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": "The Results balances chart and the report chart-data block show category sums of these balances computed in planner-ui (categoryBalances, chartDataRows); the sums are recorded as the ui-transformation display-balance-by-category-annual."
+    "notes": "The Results balances chart and the report chart-data block show category sums of these balances, recorded as display-balance-by-category-annual: computed in planner-ui (accountCategories.ts#categoryBalances, reportModel.ts#chartDataRows) until B2-P1 slice 1; now engine engine/src/projection/yearFigures.ts#balancesByCategory, one value per logical account id."
   },
   {
     "transformations": [],
@@ -2114,11 +2163,11 @@
   },
   {
     "transformations": [
-      "Sum YearResult.balances[accountId] over plan accounts whose type is the category, per year; then apply the dollar-basis adjuster on the Results page."
+      "Sum YearResult.balances[id] once per logical account id, by the account's type (projection/yearFigures.ts#balancesByCategory, owner decision R1), refusing an id shared with a property, debt or permanent-life policy; read YearResult.unassignedCash beside the categories; then apply the selected dollar basis on the Results page."
     ],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": "",
+    "notes": "Computed in planner-ui/src/planner/accountCategories.ts#categoryBalances (for resultsRows.ts#buildResultsRows and ReportPage.tsx#ReportBody) and planner-ui/src/report/reportModel.ts#chartDataRows, once per plan row, until B2-P1 slice 1; now engine engine/src/projection/yearFigures.ts#balancesByCategory (one value per logical account, owner decision R1) with #unassignedCash beside it, which buildResultsRows and chartDataRows read (ReportBody through buildResultsRows, and accountCategories.ts#hasUnassignedCash gates the unassigned band). categoryBalances is deleted.",
     "dimensions": [
       "year",
       "category"
@@ -2127,17 +2176,25 @@
     "id": "display-balance-by-category-annual",
     "group": "accounts-and-growth",
     "title": "Balances by account type",
-    "meaning": "Per year, the sum of per-account balances within each account category (cash, taxable, equityComp, traditional, roth, hsa).",
+    "meaning": "Per year, the year-end balances of the plan's logical investable accounts (one per id) summed within each category (cash, taxable, equityComp, traditional, roth, hsa), with the unassigned cash the ledger holds outside every account published beside them.",
     "unit": "usd",
     "kind": "ui-transformation",
     "uiSources": [
       {
-        "path": "planner-ui/src/planner/accountCategories.ts",
-        "symbol": "categoryBalances"
+        "path": "planner-ui/src/planner/resultsRows.ts",
+        "symbol": "buildResultsRows"
       },
       {
         "path": "planner-ui/src/report/reportModel.ts",
         "symbol": "chartDataRows"
+      },
+      {
+        "path": "planner-ui/src/planner/ReportPage.tsx",
+        "symbol": "ReportBody"
+      },
+      {
+        "path": "planner-ui/src/planner/accountCategories.ts",
+        "symbol": "hasUnassignedCash"
       }
     ],
     "surfaces": [
@@ -2147,9 +2204,13 @@
       },
       {
         "surface": "report",
-        "selector": "chart-data block cash/taxable/equityComp/traditional/roth/hsa and chartDataCsv"
+        "selector": "chart-data block cash/taxable/equityComp/traditional/roth/hsa and chartDataCsv, and the printed report chart's stacked categories"
       }
-    ]
+    ],
+    "relocation": {
+      "status": "done",
+      "target": "engine/src/projection/yearFigures.ts#balancesByCategory"
+    }
   },
   {
     "transformations": [],
@@ -3134,17 +3195,17 @@
   },
   {
     "transformations": [
-      "Subtract summary.depletionYear from result.endYear."
+      "endYear - (depletionYear - 1), in projection/moneyLasts.ts#moneyLasts (owner decision R15)."
     ],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": "",
+    "notes": "Computed in planner-ui/src/planner/ResultsPage.tsx#ResultsPage (endYear minus depletionYear) until B2-P1 slice 1; now engine engine/src/projection/moneyLasts.ts#moneyLasts, which ResultsPage reads.",
     "dimensions": [],
     "basis": "n/a",
     "id": "display-years-before-plan-end",
     "group": "longevity",
-    "title": "Years depleted before plan end",
-    "meaning": "How many years before the plan horizon the portfolio depletes.",
+    "title": "Years short of the plan's end",
+    "meaning": "How many plan years the money falls short of the plan's end: the plan's last year minus the last fully funded year (0 when it never depletes).",
     "unit": "years",
     "kind": "ui-transformation",
     "uiSources": [
@@ -3156,9 +3217,13 @@
     "surfaces": [
       {
         "surface": "results-headline",
-        "selector": "Depletion narrative \"depletes N years before the plan ends\""
+        "selector": "Depletion sentence \"Money lasts through L, N years short of the plan's end in E\""
       }
-    ]
+    ],
+    "relocation": {
+      "status": "done",
+      "target": "engine/src/projection/moneyLasts.ts#moneyLasts"
+    }
   },
   {
     "id": "longevity-depletion-year",
@@ -3178,13 +3243,13 @@
     "uiSources": [
       {
         "path": "planner-ui/src/planner/compareDeltas.ts",
-        "symbol": "lastFundedYear / ageDelta"
+        "symbol": "moneyLastsDelta / ageDelta"
       }
     ],
     "surfaces": [
       {
         "surface": "results-headline",
-        "selector": "KpiBar \"Money lasts ... until YEAR\""
+        "selector": "KpiBar \"Money lasts\" sub \"short in YEAR\""
       },
       {
         "surface": "results-headline",
@@ -3200,7 +3265,7 @@
       },
       {
         "surface": "compare-page",
-        "selector": "Money lasts row"
+        "selector": "Depletion age (primary) row: the primary person's age in that year"
       },
       {
         "surface": "scenarios-page",
@@ -3208,7 +3273,7 @@
       },
       {
         "surface": "ss-page",
-        "selector": "Bridge comparison and claim-age tables \"until YEAR / never\""
+        "selector": "Claim-age table \"Depletes\" column YEAR / never"
       },
       {
         "surface": "survivor-page",
@@ -3228,7 +3293,7 @@
       }
     ],
     "transformations": [
-      "Compare view converts first-shortfall year to last-funded year."
+      "Compare view differences the engine's last funded years (projection/moneyLasts.ts#lastFundedYear, re-exported by compareDeltas.ts)."
     ],
     "candidateRuleIds": [],
     "status": "identified",
@@ -5150,7 +5215,39 @@
     "uiSources": [
       {
         "path": "planner-ui/src/projection.ts",
-        "symbol": "inflationView"
+        "symbol": "projectPlan"
+      },
+      {
+        "path": "planner-ui/src/planner/resultsRows.ts",
+        "symbol": "dollarAdjuster"
+      },
+      {
+        "path": "planner-ui/src/planner/ResultsPage.tsx",
+        "symbol": "ResultsPage"
+      },
+      {
+        "path": "planner-ui/src/planner/PlanWorkspace.tsx",
+        "symbol": "KpiBar"
+      },
+      {
+        "path": "planner-ui/src/planner/RelocationComparePage.tsx",
+        "symbol": "RelocationComparePage"
+      },
+      {
+        "path": "planner-ui/src/planner/SpendingSolverPage.tsx",
+        "symbol": "todayDollarsOf"
+      },
+      {
+        "path": "planner-ui/src/planner/sections/IncomeFloorSection.tsx",
+        "symbol": "FundedRatioReadout"
+      },
+      {
+        "path": "planner-ui/src/planner/insights/InsightsPage.tsx",
+        "symbol": "InsightsPage"
+      },
+      {
+        "path": "planner-ui/src/planner/insights/InsightCardView.tsx",
+        "symbol": "InsightCardView"
       }
     ],
     "surfaces": [
@@ -5160,7 +5257,7 @@
       },
       {
         "surface": "results-headline",
-        "selector": "KpiBar and ResultsPage \"in today's dollars\" ending net worth"
+        "selector": "KpiBar and ResultsPage \"in today's dollars\" ending net worth, and the depletion sentence's floor-year income and uncovered gap"
       },
       {
         "surface": "solver-page",
@@ -5181,14 +5278,22 @@
       {
         "surface": "chart",
         "selector": "Every Results chart series through the DollarAdjuster"
+      },
+      {
+        "surface": "income-floor",
+        "selector": "FundedRatioReadout hands the basis to computeFundedRatio"
       }
     ],
     "transformations": [
-      "Deflate or inflate by (1+r)^(year-startYear) for the selected dollar basis."
+      "Divide a nominal year amount by the ledger's own YearResult.inflationScale for that year (today's dollars), or multiply a start-year amount by it (nominal dollars), through projection/dollarBasis.ts; a page with no projection rows uses planDollarBasis, the same recurrence."
     ],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": "A transformation family, not a new economic amount; every adjusted renderer must cite it."
+    "notes": "A transformation family, not a new economic amount; every adjusted renderer must cite it. Computed in planner-ui/src/projection.ts#inflationView (the plan's rate compounded with Math.pow from the page's start year) until B2-P1 slice 1; now engine engine/src/projection/dollarBasis.ts#toTodayDollars and its siblings, which read the ledger's own inflation factor (owner decision R19). uiSources names the symbols that read it.",
+    "relocation": {
+      "status": "done",
+      "target": "engine/src/projection/dollarBasis.ts#toTodayDollars"
+    }
   },
   {
     "id": "display-fi-target-annual",
@@ -5214,11 +5319,15 @@
       }
     ],
     "transformations": [
-      "Inflate fiNumber to the projection year and then apply the selected dollar-basis adjustment."
+      "In nominal mode, fiNumber times the ledger's inflation factor for the year; in today's-dollar mode, fiNumber unchanged (projection/dollarBasis.ts#todayForDisplay)."
     ],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": ""
+    "notes": "Computed in planner-ui/src/planner/resultsRows.ts#buildResultsRows (fiNumber inflated, then adjusted to the page's dollars) until B2-P1 slice 1; now engine engine/src/projection/dollarBasis.ts#todayForDisplay, which buildResultsRows reads.",
+    "relocation": {
+      "status": "done",
+      "target": "engine/src/projection/dollarBasis.ts#todayForDisplay"
+    }
   },
   {
     "id": "flexible-goal-funded-amount-annual",
@@ -7391,7 +7500,7 @@
     "transformations": [],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": "The deflate used is the planner-ui inflationView passed in as DetectorProjection.deflate. After Preview the card shows the spending solver result (sustainable-spending families).",
+    "notes": "The deflate used is the engine's detectorProjection, deflating by the projection's own inflationScale. After Preview the card shows the spending solver result (sustainable-spending families).",
     "dimensions": [
       "figure"
     ],
@@ -7740,5 +7849,49 @@
     "candidateRuleIds": [],
     "status": "identified",
     "notes": "Rendered only from the in-memory solution of the latest solve; it is not persisted in the plan. When even a 2x raise keeps success above the midpoint the raise is reported at the bracket maximum (m = 2)."
+  },
+  {
+    "id": "longevity-last-funded-year",
+    "group": "longevity",
+    "title": "Last fully funded year",
+    "meaning": "The last plan year the portfolio fully funds: the year before the depletion year, or the plan's last year when it never depletes.",
+    "unit": "year",
+    "basis": "n/a",
+    "dimensions": [],
+    "kind": "engine",
+    "engineSource": {
+      "path": "engine/src/projection/moneyLasts.ts",
+      "symbol": "MoneyLasts.lastFundedYear"
+    },
+    "surfaces": [
+      {
+        "surface": "results-headline",
+        "selector": "Depletion sentence \"Money lasts through L\""
+      },
+      {
+        "surface": "results-headline",
+        "selector": "KpiBar \"Money lasts\" value \"through L\", or \"short from S\" when the first year is short"
+      },
+      {
+        "surface": "report",
+        "selector": "Printed report KPI \"Money lasts\" value \"through L\", or \"short from S\" when the first year is short"
+      },
+      {
+        "surface": "report",
+        "selector": "Downloadable HTML report headline \"Money lasts\" \"Through L (runs short in D)\""
+      },
+      {
+        "surface": "ss-page",
+        "selector": "Bridge comparison \"Money lasts\" \"through L\" / \"full plan\""
+      },
+      {
+        "surface": "compare-page",
+        "selector": "Money lasts row \"through L\" / \"short from S\" / \"full plan through E\""
+      }
+    ],
+    "transformations": [],
+    "candidateRuleIds": [],
+    "status": "identified",
+    "notes": "Added by B2-P1 slice 1 (owner decision R15, one money-lasts convention). The decision and optimizer money-lasts deltas are differences of this year; the Compare page prints it in the Money lasts row and differences it in the delta column. The Insurance section's LTC stress table also prints it (LtcStressComparison.lasts), on a page no census surface names yet."
   }
 ]

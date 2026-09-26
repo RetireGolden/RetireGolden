@@ -183,6 +183,7 @@ function baseInput(): AnnualYearResultAssemblyInput {
         hecmLoanTotal: 44,
         hecmEffectiveDebt: 1,
         insuranceCashValueTotal: 4,
+        unassignedCash: 45,
       },
       ladderValue: 2,
       deathBenefit: 45,
@@ -538,6 +539,7 @@ describe('annualYearResultAssembly', () => {
       'netWorth',
       'cashFlow',
       'netPortfolioNeed',
+      'unassignedCash',
     ])
 
     const absent = annualYearResultAssembly(base)

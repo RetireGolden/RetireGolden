@@ -40,6 +40,11 @@
  * dropped, so the two years with a spending draw on the IRAs, 2034 and 2035,
  * end about $94,753 and $70,301 under the top of the 22% bracket. No figure
  * in these goldens changed.
+ * 2026-09-26 (B2-P1 slice 1, owner decision R15): the headline "Money lasts"
+ * row names the last fully funded year and the first short year from the
+ * engine's moneyLasts, "Through 2045 (runs short in 2046)" where it said
+ * "Depletes in 2046" (under-saved-single; survivor-years and incomplete-data
+ * likewise). No figure changed; report-model JSON goldens are unchanged.
  */
 import { describe, expect, it } from 'vitest'
 

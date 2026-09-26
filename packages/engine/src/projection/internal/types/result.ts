@@ -75,7 +75,13 @@ export interface ElectionYearOwnerRmdObligation {
 export interface YearResult {
   year: number
   /**
-   * Exact cumulative general-inflation factor used by this simulation year.
+   * Exact cumulative general-inflation factor used by this simulation year:
+   * the left-to-right product of `(1 + rate)` over the years `startYear` to
+   * `year - 1`, starting from 1, so exactly 1 in the start year. The rate is
+   * the plan's general `inflationPct / 100` in a deterministic run and the
+   * path's own yearly series in a Monte Carlo run; never the healthcare rate
+   * or the Social Security COLA. Every today's-dollar figure divides the
+   * year's nominal amount by it (projection/dollarBasis.ts).
    * `simulatePlan` always publishes it; optionality preserves compatibility
    * for external consumers that construct partial YearResult fixtures.
    */
@@ -531,6 +537,13 @@ export interface YearResult {
    * income excluding Social Security + gains + qualified dividends + the extra
    * gain + the resulting taxable Social Security − deduction) at or under that
    * threshold. Without benefits that is threshold − taxable income.
+   *
+   * It is room in the 0% band, not room at no tax: it ignores the capital-loss
+   * carryforward (the extra gain is not netted through it, and a gain that
+   * uses up the $3,000 loss deduction is not priced), and benefits made
+   * taxable by the gain are counted in taxable income but not priced as the
+   * ordinary income they are. The largest gain that raises federal tax by $0
+   * is projection/yearFigures.ts#taxFreeGainsRoom.
    */
   ltcgZeroHeadroom: number
   /** Benefits withheld by the retirement earnings test (working early claimants). */
@@ -597,17 +610,19 @@ export interface YearResult {
    * Required-floor spending the portfolio could not cover this year — the
    * serious failure signal (a portfolio shortfall is charged to the
    * discretionary layer first and only reaches the floor once it is exhausted).
+   * Nominal dollars of the year.
    */
   requiredShortfall: number
   /**
    * Target-lifestyle miss this year: a guardrail's deliberate discretionary cut
    * plus any portfolio shortfall that ate into funded discretionary spending.
    * Not the same as running out of money for essentials (see requiredShortfall).
+   * Nominal dollars of the year.
    */
   targetShortfall: number
-  /** Ideal spending not funded this year. */
+  /** Ideal spending not funded this year, in nominal dollars of the year. */
   idealShortfall: number
-  /** Excess/opportunistic spending not funded this year. */
+  /** Excess/opportunistic spending not funded this year, in nominal dollars of the year. */
   excessShortfall: number
   /** Guardrail action taken this year under a withdrawal-rate policy ('hold' when inactive). */
   guardrailAction: 'hold' | 'cut' | 'raise'
@@ -652,6 +667,10 @@ export interface YearResult {
    * investable accounts (post-growth, post-flow), then property values by
    * property id, then debt balances by debt id, then permanent-life cash
    * values by policy id. Each entry is its channel's own full-year figure.
+   * An investable account held in several plan rows under one id is one
+   * logical account: its entry is the one aggregate value of all its rows,
+   * so a consumer summing by account adds it once per id, not once per row
+   * (projection/yearFigures.ts#balancesByCategory).
    */
   balances: Record<string, number>
   /**
@@ -706,6 +725,18 @@ export interface YearResult {
    * gap in `shortfall`. Nominal, like every other dollar on this row.
    */
   netPortfolioNeed: number
+  /**
+   * Surplus cash held outside every modeled account at year end, because a
+   * surplus found no cash or taxable account to land in (the ledger warns and
+   * holds it at 0% growth). It is inside `investableTotal` and in no account's
+   * entry in `balances`, so a chart that stacks balances by account type is
+   * short of `investableTotal` by exactly this. 0 in a plan with a cash or
+   * taxable account. Nominal dollars at year end. `simulatePlan` always
+   * publishes it; optionality preserves compatibility for external consumers
+   * that construct partial `YearResult` fixtures, and absence is
+   * evidence-absent, never 0.
+   */
+  unassignedCash?: number
 }
 
 export interface ProjectionResult {

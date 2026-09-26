@@ -7,6 +7,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate, useParams } from 'react-router'
 
+import { toTodayDollars } from '@retiregolden/engine/projection/dollarBasis'
+import { moneyLasts } from '@retiregolden/engine/projection/moneyLasts'
+import { moneyLastsValue } from './format'
+
 import { duplicatePlanVia, usePlanStore } from '../data/planStoreContext'
 import { useWorkspaceReadOnly } from '../data/workspaceReadOnly'
 import { useDialogs } from './dialogs'
@@ -142,7 +146,7 @@ function SaveIndicator() {
 
 function KpiBar() {
   const { plan } = usePlan()
-  const { result, summary, deflate } = useProjection(plan)
+  const { result, summary, basis } = useProjection(plan)
   // The path count rides with the rate: after a 10,000-path run on the Monte
   // Carlo page, the KPI quotes that count, not the default one (#497).
   const { rate: mcRate, status: mcStatus, pathCount: mcPathCount } = useMcSuccessRateState(plan, !isPlanIncomplete(plan))
@@ -153,8 +157,15 @@ function KpiBar() {
   const { hideAmounts } = usePrivacy()
   const money = (v: number) => (hideAmounts ? '•••' : fmtMoneyCompact(v))
   const endYear = result.endYear
-  const depleted = summary.depletionYear !== null
-  const endingToday = deflate(endYear, result.endingNetWorth)
+  // A projection whose horizon ended before it started has no rows and so no
+  // inflation factor for its end year: nothing in today's dollars then.
+  const endingToday = result.years.length > 0 ? toTodayDollars(basis, endYear, result.endingNetWorth) : null
+  // The engine's "money lasts" figures: through the last funded year, short
+  // from the first short year. A plan short in its first year has no funded
+  // year to name, so the value says so rather than naming the year before.
+  const lasts = moneyLasts(result)
+  const depleted = lasts.depletionYear !== null
+  const lastsValue = moneyLastsValue(lasts, result.startYear)
 
   if (isPlanIncomplete(plan)) {
     return (
@@ -175,22 +186,28 @@ function KpiBar() {
       <div className="kpi">
         <span className="kpi-label">Ending net worth</span>
         <span className="kpi-value">{money(result.endingNetWorth)}</span>
-        <span className="kpi-sub">{hideAmounts ? 'amounts hidden' : <>{fmtMoneyCompact(endingToday)} today's $ · {endYear}</>}</span>
+        <span className="kpi-sub">
+          {hideAmounts ? 'amounts hidden' : endingToday !== null ? <>{fmtMoneyCompact(endingToday)} today's $ · {endYear}</> : <>nominal $ · {endYear}</>}
+        </span>
       </div>
       <div className="kpi">
         <span className="kpi-label">Money lasts</span>
         {depleted ? (
           <Link
-            className="kpi-value kpi-value--bad kpi-value-link"
+            // A worded value ("short from 2026" is 15 characters): it may wrap
+            // between words rather than paint past its cell.
+            className="kpi-value kpi-value--bad kpi-value-link kpi-value--wrap"
             to="insights"
             title="See what would change this in Insights"
           >
-            until {summary.depletionYear}
+            {lastsValue}
           </Link>
         ) : (
           <span className="kpi-value kpi-value--good">full plan</span>
         )}
-        <span className="kpi-sub">{depleted ? 'steady markets · depletes' : `steady markets · ${endYear}`}</span>
+        <span className="kpi-sub">
+          {depleted ? `steady markets · short in ${lasts.depletionYear}` : `steady markets · ${endYear}`}
+        </span>
       </div>
       <div className="kpi">
         <span className="kpi-label">Market success</span>

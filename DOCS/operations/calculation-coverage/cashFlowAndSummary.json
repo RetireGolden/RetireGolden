@@ -210,6 +210,98 @@
       }
     },
     {
+      "id": "display-dollar-basis-conversion",
+      "title": "Today's dollars by the ledger's own inflation factor",
+      "kind": "formula",
+      "outputs": [
+        "display-dollar-basis-conversion",
+        "display-fi-target-annual"
+      ],
+      "feeds": [
+        "display-balance-by-category-annual",
+        "display-net-care-cost-annual",
+        "display-tax-free-gains-room-annual",
+        "display-tax-plus-penalties-annual",
+        "display-total-spending-annual",
+        "display-upside-shortfall-annual",
+        "display-upside-spending-annual"
+      ],
+      "purpose": "How a year's nominal amount becomes start-year dollars on every page, and how a start-year figure such as the FI target is placed in a year's dollars.",
+      "statement": "projection/dollarBasis.ts converts a nominal amount x of projection year y to start-year dollars as x / f(y), and a start-year amount to year-y dollars as x * f(y), where f(y) is the ledger's published YearResult.inflationScale: the left-to-right product of (1 + inflationPct/100) taken y - startYear times from 1, exactly 1 in the start year. projectionDollarBasis reads the factors from a projection's rows; planDollarBasis runs the same recurrence for a page that holds no projection rows and is bit-identical to a deterministic run's factors. nominalForDisplay shows a nominal amount in the page's mode (converted in today's-dollar mode, unchanged in nominal mode) and todayForDisplay shows a start-year amount (unchanged in today's-dollar mode, times f(y) in nominal mode), so the FI target line is fiNumber itself in today's-dollar mode and fiNumber * f(y) in nominal mode. A year outside the projection, or a fractional year, is refused. Units: USD. Rounding: none.",
+      "formula": {
+        "expression": "f(s) = 1; f(y) = f(y - 1) * (1 + i/100); today(y, x) = x / f(y); nominal(y, x) = x * f(y); FI target in year y = fiNumber (today mode) or fiNumber * f(y) (nominal mode)",
+        "variables": [
+          {
+            "symbol": "i",
+            "meaning": "General inflation rate, plan.assumptions.inflationPct",
+            "unit": "percent per year",
+            "domain": "finite, above -100"
+          },
+          {
+            "symbol": "s",
+            "meaning": "Projection start year, the first ledger row",
+            "unit": "calendar year",
+            "domain": "integer"
+          },
+          {
+            "symbol": "y",
+            "meaning": "Year of the amount",
+            "unit": "calendar year",
+            "domain": "integer in [s, endYear]"
+          },
+          {
+            "symbol": "x",
+            "meaning": "Amount converted",
+            "unit": "usd",
+            "domain": "finite"
+          },
+          {
+            "symbol": "f(y)",
+            "meaning": "Cumulative general-inflation factor, YearResult.inflationScale",
+            "unit": "ratio",
+            "domain": "f(s) = 1"
+          }
+        ],
+        "timing": "annual; one factor per calendar year, applied to every amount of that year",
+        "rounding": "none"
+      },
+      "limits": [
+        "planDollarBasis is the plan's assumed rate and matches only a deterministic run: a Monte Carlo path grows by its own inflation series, so its rows are converted with projectionDollarBasis on that path's own result",
+        "Start-year dollars in whole-year steps: an amount paid in December and one paid in January of the same year carry the same factor",
+        "General inflation only: the healthcare inflation premium and the Social Security cost-of-living adjustment are separate assumptions and are never the basis",
+        "Years outside the projection are refused, never extrapolated; a projection whose horizon ends before its start year has an empty basis in which every year is refused",
+        "Owner decision R19 (2026-09-25): the planner pages used to compound the plan's rate with Math.pow from the page's start year. The ledger's factor is a product built one year at a time, which differs from the power in the last binary digit in some years (21 of 41 years at 2.5 percent, one unit each), so a whole-dollar figure can change only on an exact half-dollar tie; the FI target in today's-dollar mode becomes exactly fiNumber instead of fiNumber * f / f",
+        "The FI target is recorded here rather than in a record of its own: it is projection-summary-fi-number placed in a year through todayForDisplay"
+      ],
+      "worksheet": "DOCS/calculations/cash-flow-and-summary/display-dollar-basis-conversion.md",
+      "mutation": "DOCS/calculations/cash-flow-and-summary/display-dollar-basis-conversion.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/projection/dollarBasis.ts",
+        "packages/engine/src/insights/detectorProjection.ts",
+        "packages/engine/src/projection/internal/types/result.ts"
+      ],
+      "provenance": {
+        "derivedBy": "claude",
+        "implementedBy": "claude-subagent",
+        "reviewedBy": "unreviewed"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/projection/dollarBasis.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
       "id": "exact-cent-largest-remainder-slices",
       "title": "Exact cent largest remainder slices",
       "kind": "formula",
@@ -2103,7 +2195,8 @@
       ],
       "feeds": [
         "projection-summary-fi-age",
-        "projection-summary-coast-fire-number"
+        "projection-summary-coast-fire-number",
+        "display-fi-target-annual"
       ],
       "purpose": "Price one selected year of gross outflows against the safe-withdrawal-rate lens.",
       "statement": "projection/compare.ts#summarizeProjection publishes the FI number in projection-start-year dollars as one selected year's nominal funded expenses plus tax and penalties, discretely deflated by general inflation, divided by the safe-withdrawal-rate decimal; an empty ledger instead divides base annual lifestyle spending alone by that rate.",
@@ -2388,7 +2481,9 @@
       "outputs": [
         "spending-excess-requested-annual"
       ],
-      "feeds": [],
+      "feeds": [
+        "display-upside-spending-annual"
+      ],
       "purpose": "The incremental opportunistic layer above ideal spending.",
       "statement": "projection/internal/annualExpenseSummary.ts#annualExpenseSummary publishes YearExpenses.excessSpending as excessSpendingBase + skippedExcessNominal, with excessSpendingBase = excessLifestyle + excessGoalsFunded. It is an increment above ideal, so the identity the worksheet derives holds exactly: excessSpending = intendedSpending - targetSpending - idealSpending. Units: nominal USD per year. Rounding: none.",
       "formula": {
@@ -2454,7 +2549,9 @@
       "outputs": [
         "spending-ideal-requested-annual"
       ],
-      "feeds": [],
+      "feeds": [
+        "display-upside-spending-annual"
+      ],
       "purpose": "The incremental ideal layer above target spending.",
       "statement": "projection/internal/annualExpenseSummary.ts#annualExpenseSummary publishes YearExpenses.idealSpending as idealSpendingBase + skippedIdealNominal, with idealSpendingBase = idealLifestyle + idealGoalsFunded. It is an increment, not a cumulative summary, so the identity the worksheet derives from the field comments holds exactly: idealSpending = intendedSpending - targetSpending - excessSpending, because intendedSpending adds the target base, the ideal base, the excess base and all four skipped amounts while targetSpending carries the target base with the target and required skips and excessSpending carries the excess base with the excess skip. Units: nominal USD per year. Rounding: none.",
       "formula": {
@@ -2657,7 +2754,9 @@
         "spending-ideal-shortfall-annual",
         "spending-excess-shortfall-annual"
       ],
-      "feeds": [],
+      "feeds": [
+        "display-upside-shortfall-annual"
+      ],
       "purpose": "Attribute annual spending misses to required, target, ideal and excess layers.",
       "statement": "spending/layers.ts#attributeShortfall first reduces the spending attempted after any guardrail cut by the withdrawal shortfall to obtain actually funded dollars, then attributes the miss of each layer against those dollars: the target miss includes the deliberate guardrail cut as well as every attempted dollar the portfolio could not produce; the required miss is the floor minus actually funded dollars, floored at zero; ideal and excess misses are the gaps in their successive layers. No rounding.",
       "formula": {

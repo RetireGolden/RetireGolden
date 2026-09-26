@@ -88,6 +88,13 @@ export interface DetectorProjection {
   result: ProjectionResult
   summary: ProjectionSummary
   startYear: number
+  /**
+   * A nominal amount in `year`, expressed in `startYear` dollars by the
+   * projection's own published `YearResult.inflationScale`. Build it with
+   * `insights/detectorProjection.ts#detectorProjection`, which binds it to the
+   * engine's dollar basis (projection/dollarBasis.ts); a year outside the
+   * projection is refused, never extrapolated.
+   */
   deflate: (year: number, amount: number) => number
 }
 
