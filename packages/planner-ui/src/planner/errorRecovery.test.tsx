@@ -73,6 +73,7 @@ describe('Spending Solver — Apply to Spending', () => {
     simulationCount: 20,
     acaGrossPremiumYears: [],
     acaGrossPremiumReasons: [],
+    acaGrossPremiumDirection: null,
     diagnostics: [],
     evidence: {
       endingAfterTaxEstate: 500_000,

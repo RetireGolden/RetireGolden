@@ -28,6 +28,7 @@ export function runSpendingSolveRequest(req: SpendingSolveRequest): SpendingSolv
     simulationCount: solved.simulationCount,
     acaGrossPremiumYears: solved.acaGrossPremiumYears,
     acaGrossPremiumReasons: solved.acaGrossPremiumReasons,
+    acaGrossPremiumDirection: solved.acaGrossPremiumDirection,
     diagnostics: solved.diagnostics,
     evidence: summary
       ? {

@@ -57,7 +57,13 @@ const UNPRICED_CREDIT_REASONS: Partial<Record<AcaSupportCode, string>> = {
   'tax-year-parameters-unsupported': "the credit's figures for that year aren't published yet",
   'missing-year-contract': "the plan doesn't have the household details the credit needs",
   'guardrail-interaction-unsupported': "the credit isn't modeled together with guardrail spending",
-  'below-100-fpl-exception-unsupported': "income is below the poverty line, where the credit's exceptions aren't modeled",
+  // Below 100% of the poverty line there is generally no credit (26 U.S.C.
+  // 36B(c)(1)(A)); the one pathway left for tax years after 2025 (Treas. Reg.
+  // 1.36B-2(b)(6), advance credit paid on an enrollment estimate of 100% to
+  // 400%) is not modeled.
+  'below-100-fpl-exception-unsupported':
+    'income is below the poverty line, where there is generally no credit and Medicaid may apply',
+  'example-contract-input-mismatch': "the example's inputs were edited, so its stated credit figures no longer apply",
 }
 const OTHER_UNPRICED_CREDIT_REASON = 'some facts the credit needs are missing'
 const NOT_A_REASON: ReadonlySet<AcaSupportCode> = new Set([
@@ -66,15 +72,26 @@ const NOT_A_REASON: ReadonlySet<AcaSupportCode> = new Set([
   'tax-exempt-interest-contract-contradicted',
 ])
 
+/** What the solver publishes about the Marketplace years it could not price (SustainableSpendingResult). */
+export interface UnpricedCreditFacts {
+  acaGrossPremiumYears: number[]
+  acaGrossPremiumReasons: readonly AcaSupportCode[]
+  acaGrossPremiumDirection: 'conservative' | 'uncertain' | null
+}
+
 /**
- * The note beside a spending answer whose projection could not price the
- * premium tax credit in some Marketplace years: it names the years and why,
- * and says what paying the full premium there means for the answer. The
- * reasons are merged across years, so with several years and several reasons
- * the note says each year has at least one of them rather than pinning every
- * reason on every year. Null when there are no such years.
+ * The note beside a spending answer (or its absence) whose projection could
+ * not price the premium tax credit in some Marketplace years: it names the
+ * years and why, and says which way a credit there would move the result,
+ * by the solver's direction: at fixed-target spending a credit would likely
+ * leave room to spend more; under guardrails it could move the answer either
+ * way. The reasons are merged across years, so with several years and several
+ * reasons the note says each year has at least one of them rather than pinning
+ * every reason on every year. Null when there are no such years.
  */
-export function unpricedCreditSpendingNote(years: number[], codes: readonly AcaSupportCode[]): string | null {
+export function unpricedCreditSpendingNote(facts: UnpricedCreditFacts, answered: boolean): string | null {
+  const years = facts.acaGrossPremiumYears
+  const codes = facts.acaGrossPremiumReasons
   if (years.length === 0) return null
   const one = new Set(years).size === 1
   const reasons = [
@@ -91,10 +108,25 @@ export function unpricedCreditSpendingNote(years: number[], codes: readonly AcaS
       : one || reasons.length === 1
         ? `${lead}: ${joinNatural(reasons)}.`
         : `${lead}. In each of those years, at least one of these applies: ${reasons.join('; ')}.`
-  return (
-    `${why} The projection pays the full Marketplace premium in ${one ? 'that year' : 'those years'}, ` +
-    'so a credit then would leave room to spend more than this.'
-  )
+  const adaptive = facts.acaGrossPremiumDirection === 'uncertain'
+  const guardrails = 'because your spending guardrails respond to what healthcare costs'
+  const effect = answered
+    ? adaptive
+      ? `a credit then could move this answer up or down, ${guardrails}.`
+      : 'if you receive a credit then, you would likely be able to spend somewhat more than this.'
+    : adaptive
+      ? `a credit then could change this result, ${guardrails}.`
+      : 'a credit then would lower that cost.'
+  return `${why} The projection pays the full Marketplace premium in ${one ? 'that year' : 'those years'}; ${effect}`
+}
+
+/**
+ * A solve's diagnostics without its unpriced-credit sentence, which the engine
+ * appends last whenever it names such years; surfaces that show the plain
+ * note above print the rest verbatim.
+ */
+export function diagnosticsWithoutUnpricedCreditSentence(diagnostics: string[], acaGrossPremiumYears: number[]): string[] {
+  return acaGrossPremiumYears.length > 0 ? diagnostics.slice(0, -1) : diagnostics
 }
 
 /** Short marker appended to a vetoed candidate row in the alternatives table. */

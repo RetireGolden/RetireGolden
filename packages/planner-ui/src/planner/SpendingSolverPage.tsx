@@ -16,7 +16,7 @@ import { spendingShapePhases, type SpendingShapeId } from '@retiregolden/engine/
 import type { Plan } from '@retiregolden/engine/model/plan'
 import type { SpendingSolveResult } from '../optimize/spendingMessages'
 import { runSpendingSolve } from '../optimize/spendingRunner'
-import { formatYearRuns, unpricedCreditSpendingNote } from './acaVetoCopy'
+import { diagnosticsWithoutUnpricedCreditSentence, formatYearRuns, unpricedCreditSpendingNote } from './acaVetoCopy'
 import { usePlan } from './planContextCore'
 import { useWorkspaceReadOnly } from '../data/workspaceReadOnly'
 import { HelpTip } from './fields'
@@ -64,6 +64,7 @@ interface ShapeRow {
   maxBaseAnnual: number | null
   /** Years whose premium tax credit that row's solve could not price. */
   acaGrossPremiumYears: number[]
+  acaGrossPremiumDirection: SpendingSolveResult['acaGrossPremiumDirection']
 }
 
 const SHAPE_DEFS: { id: SpendingShapeId; label: string }[] = [
@@ -123,7 +124,12 @@ export function SpendingSolverPage() {
             },
           }
           const solved = await runSpendingSolve({ plan: variant, startYear })
-          rows.push({ ...def, maxBaseAnnual: solved.maxBaseAnnual, acaGrossPremiumYears: solved.acaGrossPremiumYears })
+          rows.push({
+            ...def,
+            maxBaseAnnual: solved.maxBaseAnnual,
+            acaGrossPremiumYears: solved.acaGrossPremiumYears,
+            acaGrossPremiumDirection: solved.acaGrossPremiumDirection,
+          })
         }
         if (token === shapeToken.current) setShapeState({ forPlan, rows, error: null })
       } catch (e: unknown) {
@@ -209,8 +215,23 @@ export function SpendingSolverPage() {
   // Only the rounding puts the shown figure below a baseline the plan
   // sustains: the headroom is under $100, not negative.
   const headroomUnderHundred = sustainsCurrent && slack !== null && slack < 0
-  const acaNote = result ? unpricedCreditSpendingNote(result.acaGrossPremiumYears, result.acaGrossPremiumReasons) : null
+  const acaNote = result ? unpricedCreditSpendingNote(result, result.maxBaseAnnual !== null) : null
+  // The failure well prints the engine's reasons verbatim, except the
+  // unpriced-credit sentence, which the plain note above replaces.
+  const failureDiagnostics = result
+    ? diagnosticsWithoutUnpricedCreditSentence(result.diagnostics, result.acaGrossPremiumYears)
+    : []
+  // "Fixed costs may exceed what the plan can fund" is true only when even
+  // zero base spending ran out of money: not after a required floor failed
+  // (the diagnostic names that floor), a bequest miss, or a solve that never
+  // ran a probe.
+  const fixedCostsMayExceedFunding =
+    result !== null &&
+    result.maxBaseAnnual === null &&
+    result.limitingConstraint === 'depletion' &&
+    !((plan.expenses.requiredAnnual ?? 0) > 0)
   const shapeAcaYears = shapeRows?.flatMap((row) => row.acaGrossPremiumYears) ?? []
+  const shapesAdaptive = shapeRows?.some((row) => row.acaGrossPremiumDirection === 'uncertain') ?? false
   // Deflate nominal end-of-plan evidence back to today's dollars so it reads
   // on the same scale as the today's-dollars spending answer.
   // One inflation seam for the page: the end-of-plan evidence and the SWR
@@ -275,15 +296,18 @@ export function SpendingSolverPage() {
                 the two places a fix usually lives. */}
             <h2 style={{ marginTop: 0 }}>No sustainable spending level found</h2>
             <p className="muted">
-              {result.diagnostics.length > 0
-                ? result.diagnostics.join(' ')
+              {failureDiagnostics.length > 0
+                ? failureDiagnostics.join(' ')
                 : 'Even minimal base spending depletes the portfolio or breaks the bequest target within the plan horizon.'}
-              {/* Only a probe that ran and failed says anything about fixed
-                  costs; a solve that could not run a probe says nothing. */}
-              {result.limitingConstraint !== null
+              {fixedCostsMayExceedFunding
                 ? ' Fixed costs modeled outside baseline spending (healthcare, debt service, property carrying costs, one-time goals) may already exceed what the plan can fund.'
                 : null}
             </p>
+            {acaNote ? (
+              <p className="muted" data-testid="aca-gross-premium-note">
+                {acaNote}
+              </p>
+            ) : null}
             <p className="picker-actions">
               <Link to={`/plan/${plan.id}/spending`} className="btn btn-secondary btn-small">
                 Review Spending
@@ -481,7 +505,11 @@ export function SpendingSolverPage() {
               dollars; later years follow the shape). No shape is &quot;the answer&quot;. They are framings of how
               your own later-life spending might behave.
               {shapeAcaYears.length > 0
-                ? ` In these solves the premium tax credit isn't counted in ${formatYearRuns(shapeAcaYears)}, so they pay the full Marketplace premium then; a credit in those years would leave room to spend more than these amounts.`
+                ? ` In these solves the premium tax credit isn't counted in ${formatYearRuns(shapeAcaYears)}, so they pay the full Marketplace premium then; ${
+                    shapesAdaptive
+                      ? 'a credit in those years could move these amounts up or down, because your spending guardrails respond to what healthcare costs.'
+                      : 'if you receive a credit in those years, you would likely be able to spend somewhat more than these amounts.'
+                  }`
                 : null}
             </p>
           </>

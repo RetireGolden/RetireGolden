@@ -229,6 +229,7 @@ describe('ScenariosPage comparison lifecycle', () => {
     simulationCount: 12,
     acaGrossPremiumYears: [],
     acaGrossPremiumReasons: [],
+    acaGrossPremiumDirection: null,
     diagnostics: [],
     evidence: null,
   }
@@ -989,6 +990,37 @@ describe('ScenariosPage comparison lifecycle', () => {
     )
     expect(visibleError).toBeTruthy()
     expect(visibleError!.hasAttribute('role')).toBe(false)
+  })
+
+  it("names each side's unpriced credit years in plain words instead of the raw engine sentence", async () => {
+    const unpriced: SpendingSolveResult = {
+      ...solved,
+      acaGrossPremiumYears: [2027, 2028, 2029],
+      acaGrossPremiumReasons: ['tax-year-parameters-unsupported'],
+      acaGrossPremiumDirection: 'uncertain',
+      diagnostics: [
+        'The ACA premium tax credit is not priced in 2027, 2028, 2029 (tax-year-parameters-unsupported); the ledger budgets the full Marketplace premium in those years, and a credit there could move this answer up or down because the spending guardrails respond to healthcare costs.',
+      ],
+    }
+    mockedRunSpendingSolve.mockResolvedValueOnce(solved).mockResolvedValueOnce(unpriced)
+    await mount()
+    await advanceComparison()
+
+    const calculate = Array.from(container.querySelectorAll('button')).find(
+      (button) => button.textContent === 'Calculate capacity',
+    )
+    await act(async () => {
+      calculate!.click()
+      await Promise.resolve()
+    })
+
+    expect(container.textContent).toContain(
+      "Proposal: The premium tax credit isn't counted in 2027 to 2029: the credit's figures for those years aren't published yet. " +
+        'The projection pays the full Marketplace premium in those years; a credit then could move this answer up or down, ' +
+        'because your spending guardrails respond to what healthcare costs.',
+    )
+    expect(container.textContent).not.toContain('tax-year-parameters-unsupported')
+    expect(container.textContent).not.toContain('Baseline: The premium tax credit')
   })
 
   it('clears an in-flight capacity request when switching between equivalent scenarios', async () => {

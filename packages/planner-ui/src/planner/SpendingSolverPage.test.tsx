@@ -38,6 +38,7 @@ function solved(overrides: Partial<SpendingSolveResult>): SpendingSolveResult {
     simulationCount: 10,
     acaGrossPremiumYears: [],
     acaGrossPremiumReasons: [],
+    acaGrossPremiumDirection: null,
     diagnostics: [],
     evidence: {
       endingAfterTaxEstate: 500_000,
@@ -119,7 +120,7 @@ describe('SpendingSolverPage statements', () => {
     const note = container.querySelector('[data-testid="aca-gross-premium-note"]')
     expect(note?.textContent).toBe(
       "The premium tax credit isn't counted in 2027 and 2028: the credit's figures for those years aren't published yet. " +
-        'The projection pays the full Marketplace premium in those years, so a credit then would leave room to spend more than this.',
+        'The projection pays the full Marketplace premium in those years; if you receive a credit then, you would likely be able to spend somewhat more than this.',
     )
   })
 
@@ -144,6 +145,70 @@ describe('SpendingSolverPage statements', () => {
     const well = container.querySelector('.solver-failure')
     expect(well?.textContent).toContain('required annual spending cannot exceed baseline')
     expect(well?.textContent).not.toContain(FIXED_COSTS)
+  })
+
+  it('replaces the raw unpriced-credit sentence in the failure well with the plain note', async () => {
+    mockedSolve.mockResolvedValue(
+      solved({
+        maxBaseAnnual: null,
+        spendingSlackDollars: null,
+        limitingConstraint: 'depletion',
+        simulationCount: 2,
+        acaGrossPremiumYears: [2026, 2027, 2028],
+        acaGrossPremiumReasons: ['below-100-fpl-exception-unsupported', 'tax-year-parameters-unsupported'],
+        acaGrossPremiumDirection: 'conservative',
+        diagnostics: [
+          'Even zero base spending depletes the portfolio or breaks the estate floor.',
+          'The ACA premium tax credit is not priced in 2026, 2027, 2028 (below-100-fpl-exception-unsupported, tax-year-parameters-unsupported); the ledger budgets the full Marketplace premium in those years, and a credit there would lower that cost.',
+        ],
+        evidence: null,
+      }),
+    )
+    await renderSolved()
+    const well = container.querySelector('.solver-failure')!.textContent!
+    expect(well).toContain('Even zero base spending depletes')
+    expect(well).not.toContain('below-100-fpl-exception-unsupported')
+    expect(container.querySelector('[data-testid="aca-gross-premium-note"]')?.textContent).toBe(
+      "The premium tax credit isn't counted in 2026 to 2028. In each of those years, at least one of these applies: " +
+        'income is below the poverty line, where there is generally no credit and Medicaid may apply; ' +
+        "the credit's figures for those years aren't published yet. " +
+        'The projection pays the full Marketplace premium in those years; a credit then would lower that cost.',
+    )
+  })
+
+  it('names the required floor instead of blaming fixed costs when the floor fails', async () => {
+    const plan = createSamplePlan()
+    plan.expenses.requiredAnnual = Math.min(34_000, plan.expenses.baseAnnual)
+    mockedSolve.mockResolvedValue(
+      solved({
+        maxBaseAnnual: null,
+        spendingSlackDollars: null,
+        limitingConstraint: 'depletion',
+        simulationCount: 2,
+        diagnostics: ['Even the required spending floor ($34,000/yr) depletes the portfolio or breaks the estate floor.'],
+        evidence: null,
+      }),
+    )
+    await renderSolved(plan)
+    const well = container.querySelector('.solver-failure')!.textContent!
+    expect(well).toContain('Even the required spending floor ($34,000/yr) depletes')
+    expect(well).not.toContain(FIXED_COSTS)
+  })
+
+  it('does not blame fixed costs when only the bequest target fails', async () => {
+    mockedSolve.mockResolvedValue(
+      solved({
+        maxBaseAnnual: null,
+        spendingSlackDollars: null,
+        limitingConstraint: 'estate-floor',
+        simulationCount: 2,
+        estateFloorTodayDollars: 2_000_000,
+        diagnostics: ['Even zero base spending depletes the portfolio or breaks the estate floor.'],
+        evidence: null,
+      }),
+    )
+    await renderSolved()
+    expect(container.querySelector('.solver-failure')?.textContent).not.toContain(FIXED_COSTS)
   })
 
   it('keeps the fixed-costs sentence after a real depletion', async () => {

@@ -45,7 +45,8 @@ export interface SustainableSpendingResult {
    * Highest feasible annual base spending found (today's dollars), or null
    * when even the lowest valid level (the required spending floor, 0 when
    * the plan has none) depletes or breaks the estate floor, or when the solve
-   * bailed out on a diagnostic evaluation.
+   * bailed out on a diagnostic evaluation. Under guardrails feasibility is not
+   * monotone in the base amount, so a higher feasible level can exist.
    */
   maxBaseAnnual: number | null
   /**

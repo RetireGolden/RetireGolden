@@ -36,8 +36,10 @@ const BELOW_FPL: AcaSupportCode = 'below-100-fpl-exception-unsupported'
 const GUARDRAIL: AcaSupportCode = 'guardrail-interaction-unsupported'
 
 interface SolverGolden {
-  /** The solver's exact answer, today's dollars; the page shows it floored to $100. */
+  /** The solver's exact answer, today's dollars. */
   maxBaseAnnual: number | null
+  /** What the page shows: the exact answer floored to $100. */
+  displayed: number | null
   probes: number
   /** First and last year whose credit is unpriced (every span is contiguous); null when none. */
   acaYears: [number, number] | null
@@ -45,35 +47,35 @@ interface SolverGolden {
 }
 
 const EXPECTED: Record<string, SolverGolden> = {
-  'example-couple': { maxBaseAnnual: 117_000, probes: 10, acaYears: [2027, 2029], reasons: [PARAMS] },
-  'under-saved-single': { maxBaseAnnual: 65_250, probes: 10, acaYears: null, reasons: [] },
-  'bracket-fill-roth': { maxBaseAnnual: 101_602, probes: 10, acaYears: null, reasons: [] },
-  'early-retiree-aca': { maxBaseAnnual: 45_313, probes: 9, acaYears: [2027, 2028], reasons: [PARAMS] },
-  'rmd-irmaa': { maxBaseAnnual: 131_485, probes: 10, acaYears: null, reasons: [] },
-  'inherited-ira-beneficiary': { maxBaseAnnual: 26_438, probes: 10, acaYears: null, reasons: [] },
-  'survivor-years': { maxBaseAnnual: 59_063, probes: 10, acaYears: null, reasons: [] },
-  'moving-state-tax': { maxBaseAnnual: 107_657, probes: 10, acaYears: [2027, 2030], reasons: [PARAMS] },
-  'ltc-shock': { maxBaseAnnual: null, probes: 2, acaYears: [2026, 2028], reasons: [BELOW_FPL, PARAMS] },
-  'early-career-match': { maxBaseAnnual: 59_766, probes: 9, acaYears: [2027, 2065], reasons: [PARAMS] },
-  'aggressive-saver': { maxBaseAnnual: 90_352, probes: 11, acaYears: [2027, 2060], reasons: [PARAMS] },
-  'coast-fire': { maxBaseAnnual: 66_407, probes: 9, acaYears: [2027, 2060], reasons: [PARAMS] },
-  'barista-fire': { maxBaseAnnual: 52_032, probes: 9, acaYears: [2027, 2060], reasons: [PARAMS] },
-  'bridge-early-retirement': { maxBaseAnnual: 70_704, probes: 9, acaYears: [2027, 2045], reasons: [PARAMS] },
-  'lean-fat-fire': { maxBaseAnnual: 74_532, probes: 9, acaYears: [2027, 2055], reasons: [PARAMS] },
-  'hsa-stealth-retirement': { maxBaseAnnual: 54_688, probes: 9, acaYears: [2027, 2050], reasons: [PARAMS] },
-  'salary-growth-escalation': { maxBaseAnnual: 68_204, probes: 9, acaYears: [2027, 2060], reasons: [PARAMS] },
-  'guardrails-flex-goals': { maxBaseAnnual: null, probes: 2, acaYears: [2026, 2028], reasons: [GUARDRAIL, PARAMS] },
-  'annuity-purchases-estate': { maxBaseAnnual: 114_259, probes: 10, acaYears: null, reasons: [] },
-  'glidepath-allocation': { maxBaseAnnual: 75_563, probes: 9, acaYears: [2027, 2027], reasons: [PARAMS] },
-  'hsa-property-depth': { maxBaseAnnual: 28_688, probes: 9, acaYears: [2026, 2029], reasons: [BELOW_FPL, PARAMS] },
-  'fixed-target-spending': { maxBaseAnnual: 30_813, probes: 9, acaYears: [2026, 2028], reasons: [BELOW_FPL, PARAMS] },
-  'no-annuity-brokerage': { maxBaseAnnual: 116_391, probes: 10, acaYears: null, reasons: [] },
-  'static-allocation-control': { maxBaseAnnual: 71_688, probes: 9, acaYears: [2027, 2027], reasons: [PARAMS] },
-  'brokerage-no-hsa': { maxBaseAnnual: 28_290, probes: 9, acaYears: [2026, 2029], reasons: [BELOW_FPL, PARAMS] },
-  'all-401k-no-bridge': { maxBaseAnnual: 71_250, probes: 10, acaYears: [2027, 2051], reasons: [PARAMS] },
-  'brokerage-bridge-401k': { maxBaseAnnual: 71_250, probes: 10, acaYears: [2027, 2051], reasons: [PARAMS] },
-  'no-head-start-grad': { maxBaseAnnual: 55_000, probes: 9, acaYears: [2027, 2069], reasons: [PARAMS] },
-  'trump-account-head-start': { maxBaseAnnual: 64_282, probes: 9, acaYears: [2027, 2069], reasons: [PARAMS] },
+  'example-couple': { maxBaseAnnual: 117_000, displayed: 117_000, probes: 10, acaYears: [2027, 2029], reasons: [PARAMS] },
+  'under-saved-single': { maxBaseAnnual: 65_250, displayed: 65_200, probes: 10, acaYears: null, reasons: [] },
+  'bracket-fill-roth': { maxBaseAnnual: 101_602, displayed: 101_600, probes: 10, acaYears: null, reasons: [] },
+  'early-retiree-aca': { maxBaseAnnual: 45_313, displayed: 45_300, probes: 9, acaYears: [2027, 2028], reasons: [PARAMS] },
+  'rmd-irmaa': { maxBaseAnnual: 131_485, displayed: 131_400, probes: 10, acaYears: null, reasons: [] },
+  'inherited-ira-beneficiary': { maxBaseAnnual: 26_438, displayed: 26_400, probes: 10, acaYears: null, reasons: [] },
+  'survivor-years': { maxBaseAnnual: 59_063, displayed: 59_000, probes: 10, acaYears: null, reasons: [] },
+  'moving-state-tax': { maxBaseAnnual: 107_657, displayed: 107_600, probes: 10, acaYears: [2027, 2030], reasons: [PARAMS] },
+  'ltc-shock': { maxBaseAnnual: null, displayed: null, probes: 2, acaYears: [2026, 2028], reasons: [BELOW_FPL, PARAMS] },
+  'early-career-match': { maxBaseAnnual: 59_766, displayed: 59_700, probes: 9, acaYears: [2027, 2065], reasons: [PARAMS] },
+  'aggressive-saver': { maxBaseAnnual: 90_352, displayed: 90_300, probes: 11, acaYears: [2027, 2060], reasons: [PARAMS] },
+  'coast-fire': { maxBaseAnnual: 66_407, displayed: 66_400, probes: 9, acaYears: [2027, 2060], reasons: [PARAMS] },
+  'barista-fire': { maxBaseAnnual: 52_032, displayed: 52_000, probes: 9, acaYears: [2027, 2060], reasons: [PARAMS] },
+  'bridge-early-retirement': { maxBaseAnnual: 70_704, displayed: 70_700, probes: 9, acaYears: [2027, 2045], reasons: [PARAMS] },
+  'lean-fat-fire': { maxBaseAnnual: 74_532, displayed: 74_500, probes: 9, acaYears: [2027, 2055], reasons: [PARAMS] },
+  'hsa-stealth-retirement': { maxBaseAnnual: 54_688, displayed: 54_600, probes: 9, acaYears: [2027, 2050], reasons: [PARAMS] },
+  'salary-growth-escalation': { maxBaseAnnual: 68_204, displayed: 68_200, probes: 9, acaYears: [2027, 2060], reasons: [PARAMS] },
+  'guardrails-flex-goals': { maxBaseAnnual: null, displayed: null, probes: 2, acaYears: [2026, 2028], reasons: [GUARDRAIL, PARAMS] },
+  'annuity-purchases-estate': { maxBaseAnnual: 114_259, displayed: 114_200, probes: 10, acaYears: null, reasons: [] },
+  'glidepath-allocation': { maxBaseAnnual: 75_563, displayed: 75_500, probes: 9, acaYears: [2027, 2027], reasons: [PARAMS] },
+  'hsa-property-depth': { maxBaseAnnual: 28_688, displayed: 28_600, probes: 9, acaYears: [2026, 2029], reasons: [BELOW_FPL, PARAMS] },
+  'fixed-target-spending': { maxBaseAnnual: 30_813, displayed: 30_800, probes: 9, acaYears: [2026, 2028], reasons: [BELOW_FPL, PARAMS] },
+  'no-annuity-brokerage': { maxBaseAnnual: 116_391, displayed: 116_300, probes: 10, acaYears: null, reasons: [] },
+  'static-allocation-control': { maxBaseAnnual: 71_688, displayed: 71_600, probes: 9, acaYears: [2027, 2027], reasons: [PARAMS] },
+  'brokerage-no-hsa': { maxBaseAnnual: 28_290, displayed: 28_200, probes: 9, acaYears: [2026, 2029], reasons: [BELOW_FPL, PARAMS] },
+  'all-401k-no-bridge': { maxBaseAnnual: 71_250, displayed: 71_200, probes: 10, acaYears: [2027, 2051], reasons: [PARAMS] },
+  'brokerage-bridge-401k': { maxBaseAnnual: 71_250, displayed: 71_200, probes: 10, acaYears: [2027, 2051], reasons: [PARAMS] },
+  'no-head-start-grad': { maxBaseAnnual: 55_000, displayed: 55_000, probes: 9, acaYears: [2027, 2069], reasons: [PARAMS] },
+  'trump-account-head-start': { maxBaseAnnual: 64_282, displayed: 64_200, probes: 9, acaYears: [2027, 2069], reasons: [PARAMS] },
 }
 
 /** The only examples with no answer, and the failure each one truly has. */
@@ -112,9 +114,15 @@ describe('sustainable spending on every example', () => {
       const solved = runSpendingSolveRequest({ plan: stampDemo(example), startYear: EXAMPLE_FIXED_YEAR })
 
       expect(solved.maxBaseAnnual).toBe(expected!.maxBaseAnnual)
+      expect(solved.maxBaseAnnual === null ? null : Math.floor(solved.maxBaseAnnual / 100) * 100).toBe(expected!.displayed)
       expect(solved.simulationCount).toBe(expected!.probes)
       expect(solved.acaGrossPremiumYears).toEqual(expected!.acaYears ? yearsBetween(...expected!.acaYears) : [])
       expect(solved.acaGrossPremiumReasons).toEqual(expected!.reasons)
+      // Only Guardrails and flexible goals spends under guardrails, where a
+      // credit could move the answer either way.
+      expect(solved.acaGrossPremiumDirection).toBe(
+        expected!.acaYears === null ? null : example.id === 'guardrails-flex-goals' ? 'uncertain' : 'conservative',
+      )
       // Every probe ran: a failed probe is a real depletion, never a refusal.
       expect(solved.limitingConstraint).toBe('depletion')
 
@@ -127,9 +135,9 @@ describe('sustainable spending on every example', () => {
         expect(solved.maxBaseAnnual).toBeNull()
         expect(solved.diagnostics[0]).toBe(failure)
       }
-      // Nothing silent: an unpriced year is always named in the diagnostics.
+      // Nothing silent: an unpriced year is always named, in the last diagnostic.
       if (expected!.acaYears !== null) {
-        expect(solved.diagnostics.join(' ')).toContain(`The ACA premium tax credit is not priced in ${expected!.acaYears[0]}`)
+        expect(solved.diagnostics.at(-1)!.startsWith(`The ACA premium tax credit is not priced in ${expected!.acaYears[0]}`)).toBe(true)
       }
     }, 120_000)
   }

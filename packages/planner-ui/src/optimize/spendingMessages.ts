@@ -42,8 +42,13 @@ export interface SpendingSolveResult {
    * each. Empty when every Marketplace year is priced or there is none.
    */
   acaGrossPremiumYears: number[]
-  /** Why those years are unpriced: the engine's support codes, distinct. */
+  /** Why those years are unpriced: the engine's blocking support codes, distinct. */
   acaGrossPremiumReasons: AcaSupportCode[]
+  /**
+   * Which way a credit in those years would move the answer: 'conservative'
+   * at fixed-target spending, 'uncertain' under guardrails; null when none.
+   */
+  acaGrossPremiumDirection: 'conservative' | 'uncertain' | null
   diagnostics: string[]
   evidence: SpendingSolveEvidence | null
 }

@@ -13,11 +13,15 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   value depends on the credit, such as Roth conversions, and stays there. A spending
   probe now runs on the ledger as it already is: those years pay the full Marketplace
   premium, which the credit can only lower (26 U.S.C. 36B(b)(2)), and the result names
-  them (`acaGrossPremiumYears`, `acaGrossPremiumReasons`). The page, the spending
-  shapes and the spending-headroom Insight say which years and why. Before → after,
-  from a 2026 start: Early retiree & the ACA cliff, no answer → $45,300; Aggressive
-  saver to early retirement, no answer → $90,300. 20 examples gain an answer and the 7
-  that had one do not move. The two still without one are true: Long-term-care shock
+  them and which way a credit there would move the answer (`acaGrossPremiumYears`,
+  `acaGrossPremiumReasons`, `acaGrossPremiumDirection`): at fixed-target spending a
+  lower premium lowers every withdrawal, so a credit would likely leave room to spend
+  somewhat more (measured on the examples, not proven); under guardrails it could move
+  the answer either way, because cuts and raises respond to healthcare costs. The page,
+  its spending shapes, the Scenarios capacity section and the spending-headroom Insight
+  say which years, why, and which way. Before → after, from a 2026 start: Early retiree
+  & the ACA cliff, no answer → $45,300; Aggressive saver to early retirement, no answer
+  → $90,300. 20 examples gain an answer and the 7 that had one do not move. The two still without one are true: Long-term-care shock
   depletes even at zero spending, and Guardrails and flexible goals at its required
   floor (next item).
 - **The solver probes the required spending floor, not zero:** when today's spending
@@ -26,7 +30,9 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   the required floor and names it ("Even the required spending floor ($34,000/yr)
   depletes…" for Guardrails and flexible goals, which does), and no probe goes below
   the floor. The same example's smirk spending shape now answers $37,000. The page's
-  fixed-costs sentence now appears only after a probe that ran and failed.
+  "fixed costs may already exceed what the plan can fund" sentence now appears only
+  when even zero base spending runs out of money, never after a floor, a bequest-target
+  miss or a solve that could not run.
 - **The solver page no longer calls a sustainable baseline unsustainable:** the answer
   is shown rounded down to $100, and the page judged today's baseline against that
   rounded figure, so a $72,030 baseline the plan sustains exactly read as "$30 below …
