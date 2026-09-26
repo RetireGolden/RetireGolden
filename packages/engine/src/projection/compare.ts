@@ -8,6 +8,7 @@ import { estateTraditionalTaxableBase } from './estateTraditionalBasis.js'
 import { estateHsaIncomeBase } from './estateHsaIncome.js'
 import { simulatePlan, type SimulateOptions } from './simulate.js'
 import type { ProjectionResult } from './types.js'
+import { balancesByCategory, spendingWithTaxAndPenalties } from './yearFigures.js'
 
 function isoYear(isoDate: string): number {
   return Number(isoDate.slice(0, 4))
@@ -229,11 +230,14 @@ export function summarizeProjection(plan: Plan, result: ProjectionResult): Proje
   const endingByCategory = { cash: 0, taxable: 0, traditional: 0, roth: 0, hsa: 0 }
   const last = result.years[result.years.length - 1]
   if (last) {
-    for (const account of selectedLogicalBalanceAccounts(plan.accounts)) {
-      if (account.type in endingByCategory) {
-        endingByCategory[account.type as keyof typeof endingByCategory] += last.balances[account.id] ?? 0
-      }
-    }
+    // The one roll-up of balances by category (one value per logical account
+    // id), read for the last row; equity compensation is not one of these five.
+    const lastByCategory = balancesByCategory(plan, last)
+    endingByCategory.cash = lastByCategory.cash
+    endingByCategory.taxable = lastByCategory.taxable
+    endingByCategory.traditional = lastByCategory.traditional
+    endingByCategory.roth = lastByCategory.roth
+    endingByCategory.hsa = lastByCategory.hsa
   }
 
   // --- estate depth (guaranteed-income-and-estate-depth) --------------------
@@ -337,7 +341,7 @@ export function summarizeProjection(plan: Plan, result: ProjectionResult): Proje
   // 3. FI Number
   const targetResult = result.years.find((y) => y.year === Math.max(startYear, targetYear)) ?? result.years[0]
   const nominalSpendingAtFI = targetResult
-    ? targetResult.expenses.total + targetResult.tax + targetResult.penalties
+    ? spendingWithTaxAndPenalties(targetResult)
     : plan.expenses.baseAnnual
   const yearsToFIYear = targetResult ? targetResult.year - startYear : 0
   const annualSpendingAtFIToday = nominalSpendingAtFI / Math.pow(1 + inflationRate, yearsToFIYear)

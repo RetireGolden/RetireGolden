@@ -28,7 +28,6 @@ import {
   attachStochasticMetrics,
   dedupeCandidates,
   evaluateCandidate,
-  lastsThroughYear,
   rankEvaluations,
   refineConversionSchedule,
   simpleRothConversionGenerator,
@@ -50,6 +49,7 @@ import {
 import { expectedAccountReturnPct } from '../allocation/assetClasses.js'
 import { buildLognormalModelConfigForPlan } from '../montecarlo/marketModels.js'
 import { summarizeProjection, type ProjectionSummary } from './compare.js'
+import { lastFundedYear } from './moneyLasts.js'
 import { allowLegacyAggregateDecisionCalculation } from './internal/legacyAggregateDecisionCalculation.js'
 import type { AggregateConversionPromotionYearOutcome } from './optimizerAggregateConversionPromotion.js'
 import {
@@ -706,7 +706,11 @@ export interface SimpleCandidateEvaluation {
   afterTaxEstateDelta: number
   /** candidate minus baseline lifetime taxes and penalties. */
   lifetimeTaxDelta: number
-  /** lastsThrough(candidate) − lastsThrough(baseline): depletionYear, or endYear + 1 when never depleting. */
+  /**
+   * lastFundedYear(candidate) − lastFundedYear(baseline), where a result's
+   * last funded year is its depletionYear − 1, or its endYear when it never
+   * depletes (projection/moneyLasts.ts).
+   */
   moneyLastsYearsDelta: number
 }
 
@@ -1327,14 +1331,14 @@ export function runExactLedgerTournament(
       : null
   const milpDelta = milpRecommended ? milpRecommended.cleanedValidation.afterTaxEstateDelta : 0
   const guardrailResult = milpRecommended?.cleanedResult ?? baselineResult
-  const guardrailLastsThroughYear = lastsThroughYear(guardrailResult)
+  const guardrailLastFundedYear = lastFundedYear(guardrailResult)
 
   // Rank guardrail-passing candidates by exact estate delta. Search refines the
   // top two (not just the winner): the runner-up can sit in a different basin —
   // e.g. a lower bracket fill whose refined taper beats the raw winner — and
   // coordinate descent cannot cross basins from the winner alone.
   const eligible = rich
-    .filter((candidate) => !candidate.evaluation.incompleteComputationYears?.length && lastsThroughYear(candidate.result) >= guardrailLastsThroughYear)
+    .filter((candidate) => !candidate.evaluation.incompleteComputationYears?.length && lastFundedYear(candidate.result) >= guardrailLastFundedYear)
     .sort((a, b) => b.evaluation.afterTaxEstateDelta - a.evaluation.afterTaxEstateDelta)
   const best = eligible[0] ?? null
   if (best !== null && best.conversions.length > 0) {
@@ -1368,7 +1372,7 @@ export function runExactLedgerTournament(
             }),
           )
           searchSimulations += refined.simulationCount
-          if (!refined.improved || lastsThroughYear(refined.bestEvaluation.candidateResult) < guardrailLastsThroughYear) continue
+          if (!refined.improved || lastFundedYear(refined.bestEvaluation.candidateResult) < guardrailLastFundedYear) continue
           // Snap to exact-ledger executed amounts so the recommended schedule
           // stays executable-by-construction, like every other winner.
           const executed = refined.bestEvaluation.conversionExecution?.executedByYear ?? refined.bestConversions
@@ -1524,7 +1528,7 @@ export function runExactLedgerTournament(
         }),
       )
       searchSimulations = refined.simulationCount
-      if (refined.improved && lastsThroughYear(refined.bestEvaluation.candidateResult) >= guardrailLastsThroughYear) {
+      if (refined.improved && lastFundedYear(refined.bestEvaluation.candidateResult) >= guardrailLastFundedYear) {
         const executed = refined.bestEvaluation.conversionExecution?.executedByYear ?? refined.bestConversions
         const refinedValidation = evaluateExactLedgerSchedule(
           plan,
@@ -1600,7 +1604,7 @@ export function runExactLedgerTournament(
     .filter((candidate) => candidate.evaluation.incompleteComputationYears?.length &&
       candidate.conversions.length > 0 &&
       candidate.evaluation.afterTaxEstateDelta > DECISION_NEUTRAL_TOLERANCE_DOLLARS &&
-      lastsThroughYear(candidate.result) >= lastsThroughYear(baselineResult))
+      lastFundedYear(candidate.result) >= lastFundedYear(baselineResult))
     .sort((a, b) => b.evaluation.afterTaxEstateDelta - a.evaluation.afterTaxEstateDelta)[0]
   const diagnosticVeto = diagnostic === undefined ? null : readinessVetoFor(
     'candidate', diagnostic.evaluation.id, diagnostic.evaluation.label,
@@ -2085,8 +2089,9 @@ export interface ExactLedgerValidation {
   /** candidate.lifetimeTaxesAndPenalties − baseline.lifetimeTaxesAndPenalties. */
   lifetimeTaxDelta: number
   /**
-   * lastsThrough(candidate) − lastsThrough(baseline), where lastsThrough is a
-   * result's depletionYear, or its endYear + 1 when it never depletes.
+   * lastFundedYear(candidate) − lastFundedYear(baseline), where a result's
+   * last funded year is its depletionYear − 1, or its endYear when it never
+   * depletes (projection/moneyLasts.ts).
    */
   moneyLastsYearsDelta: number
   /** Sum of the candidate schedule's requested conversion amounts. */

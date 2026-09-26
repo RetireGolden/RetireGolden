@@ -309,5 +309,7 @@ export function annualYearResultAssembly(
       0,
       ledger.expenses.total + tax.tax + tax.penalties - ledger.incomes.total,
     ),
+    // Published after netPortfolioNeed for the same reason: no existing key moves.
+    unassignedCash: snapshot.unassignedCash,
   }
 }

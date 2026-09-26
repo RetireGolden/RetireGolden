@@ -138,9 +138,18 @@ export interface YearExpenses {
    * without ideal/excess layers.
    */
   targetSpending: number
-  /** Incremental ideal spending intended this year above the target lifestyle. */
+  /**
+   * Incremental ideal spending intended this year above the target lifestyle,
+   * in nominal dollars of the year. Intended, not funded: a guardrail cut or a
+   * portfolio shortfall does not reduce it (the unfunded part is
+   * `YearResult.idealShortfall`). With `excessSpending` it is what
+   * `intendedSpending` adds above `targetSpending`.
+   */
   idealSpending: number
-  /** Incremental excess/opportunistic spending intended this year above ideal. */
+  /**
+   * Incremental excess/opportunistic spending intended this year above ideal,
+   * in nominal dollars of the year; intended, not funded, like `idealSpending`.
+   */
   excessSpending: number
   /** Full intended spending with no guardrail cut across required/target/ideal/excess. */
   intendedSpending: number

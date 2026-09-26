@@ -77,7 +77,12 @@ export interface AnnualLongTermCarePlan {
  * the episode's first year by `max(0, 1 − eliminationPeriodDays / 365)` (the
  * elimination period is self-paid), and only while the policy's benefit
  * years remain (`benefitPeriodYears`, or unlimited for lifetime); `ltcBenefit`
- * is the sum and never exceeds `careCost`.
+ * is the sum and never exceeds `careCost` in exact arithmetic. In binary
+ * floating point the sum of two or more policies' payments can exceed the
+ * summed cost by a unit in the last place (a first policy paying under half
+ * the cost leaves a rounded remainder), which is why
+ * projection/yearFigures.ts#netCareCost floors the difference at 0 and
+ * refuses only a gap larger than half a cent.
  */
 export function annualLongTermCarePlan(input: {
   readonly careEvents: readonly CareEvent[]
