@@ -4,23 +4,33 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## Unreleased
 
-- **Fixed: a home reported as cash when it shared an id with a cash account**
-  (decision D-CASH-PROPERTY-ALIAS): the plan checks accepted a cash account
-  and a property under one account id, and the year's balances, keyed by id,
-  then published the property's value in place of the cash balance (cash
-  $10,000 and a $300,000 home under `home` showed $300,000 of cash in the
-  ending balances by category and the balance-by-category chart). The checks
-  now refuse the pair with "account id ... is shared by a cash account and a
-  property; give the property its own id". A saved plan that has one is
-  repaired when it opens: the property gets a new id (`<id>-property`, or a
-  numbered variant when that is taken), the cash account keeps its id, which
-  every other account reference in the plan could only have meant, stored
-  scenarios follow the rename, and the load notice (new repair kind
-  `propertyAccountIdSeparatedFromCash`) tells the household. For such a plan
-  the cash balance, the cash totals and the cash account's row in the estate
-  breakdown drop to the cash actually held, and the property appears under its
-  own entry; investable assets and net worth were summed from the right
-  amounts before and do not change.
+- **Fixed: a value lost or shown under another row when two rows shared an
+  id** (decision D-CASH-PROPERTY-ALIAS): the year's balances, and the
+  property, debt and policy values behind them, keep one value per id. The
+  plan checks accepted a cash account and a property under one id, so the
+  property's value was published in place of the cash balance: cash $10,000
+  and a $300,000 home under `home` showed $300,000 of cash in the ending
+  balances by category, the balance-by-category chart and the estate
+  breakdown's cash row, and so also moved the amount passing to charity and
+  the after-tax estate when that cash account named a charity destination.
+  They also accepted a property and a debt, two properties, two debts, an
+  account and a permanent-life policy, and two insurance policies under one
+  id, where one value replaced the other in the published balances or dropped
+  out of net worth (two properties, or two life policies, under one id
+  counted only one of them). The checks now refuse every such pair with a
+  message naming it. A saved plan that has one is repaired when it opens: an
+  investable account keeps the id, otherwise the first row does, and each
+  other row gets a new id (`<id>-property`, `<id>-debt` or `<id>-policy`,
+  numbered when taken). No other field in a plan can name a property, a debt
+  or a policy, and every account reference could only have meant the
+  investable account, so nothing else moves; stored scenarios follow the
+  rename, and a pair found only in a scenario's own lists is repaired there.
+  The load notice (new repair kind `sharedIdSeparated`) tells the household.
+  For such a plan the cash balance and cash totals drop to the cash actually
+  held, each renamed row appears under its own entry, and net worth counts
+  both of two properties or two life policies; investable assets do not
+  change. A pension or an LTC policy publishes no value under its id and may
+  still share one.
 
 - **Fixed: a false Roth-conversion warning** (decision
   D-ROTH-TARGET-WARNING): "Spending withdrawals from traditional accounts
@@ -59,7 +69,9 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   comparisons) drop by the Roth earnings. Taxes do not change: those earnings
   are still ordinary income under IRC 408A(d), and the inherited
   ordinary-income figure (`inheritedTraditionalDistribution`) keeps them, as
-  its comment now says.
+  its comment now says. The optimizer's bracket-fill windows read the year's
+  spending draw from traditional accounts net of the traditional forced
+  dollars, so the candidates it offers do not change either.
 
 - **Fixed: 0% capital-gains room when income is below the deduction**
   (decision D-ZERO-RATE-HEADROOM): the search for the room stopped at the 15%
@@ -70,7 +82,9 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   gain-harvesting room move up in those years only: single, 2026, no Social
   Security, $10,000 of ordinary income shows $55,550 instead of $49,450, and
   $0 shows $65,550 instead of $49,450. Years whose income already covers the
-  deduction are unchanged to the last bit.
+  deduction are unchanged to the last bit, except the boundary where income
+  (with the benefit it makes taxable) exactly equals the deduction: that year
+  now shows the threshold itself ($49,450 single) rather than about $49,449.99.
 
 - **Bundle budget aggregate rows:** raised `all JS` 4400 → 4800 KiB and
   PWA precache 4550 → 4900 KiB. Azure `build` on head `03bb93cc` measured
