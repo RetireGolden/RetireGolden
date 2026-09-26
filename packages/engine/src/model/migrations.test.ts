@@ -913,6 +913,64 @@ describe('load-time repair: rows stored under one id where the projection keeps 
     })
   })
 
+  describe("two properties under one id, in a scenario that does not keep the plan's order", () => {
+    /** Home keeps `x` on load and Cabin becomes `x-property`. */
+    const twoHomesPlan = (): Plan => quietPlan([home('x', 300_000, 'Home'), home('x', 120_000, 'Cabin')])
+
+    /** A legacy and a canonical scenario that each set the accounts to the given list, loaded, then applied. */
+    function applyBoth(accounts: (storedAccounts: Record<string, unknown>[]) => Record<string, unknown>[]): string[][][] {
+      const plan = twoHomesPlan()
+      const storedAccounts = stored(plan)['accounts'] as Record<string, unknown>[]
+      const value = accounts(storedAccounts)
+      plan.scenarios = [
+        { id: 's-legacy', name: 'Scenario', patch: { accounts: value } },
+        {
+          id: 's-canonical',
+          name: 'Scenario',
+          patch: {
+            kind: 'retiregolden.scenario-patch',
+            version: 1,
+            base: { planId: plan.id, planSchemaVersion: plan.schemaVersion, snapshotHash: 'fnv1a64:0000000000000000' },
+            title: 'Scenario',
+            rationale: null,
+            createdAtIso: '2026-06-11T00:00:00.000Z',
+            actor: { kind: 'user' },
+            operations: [{ op: 'set', path: '/accounts', before: { present: true, value: storedAccounts }, value }],
+          },
+        },
+      ]
+      const result = load(plan)
+      expect(result.plan.accounts.map((account) => [account.name, account.id])).toEqual([['Home', 'x'], ['Cabin', 'x-property']])
+      const legacy = applyScenarioPatch(result.plan, result.plan.scenarios[0]!.patch)
+      if (!legacy.ok) throw new Error(legacy.issues.join('; '))
+      const parsed = parseScenarioPatch(result.plan.scenarios[1]!.patch)
+      if (!parsed.ok) throw new Error(parsed.issues.join('; '))
+      const canonical = applyScenarioPatchDocument(result.plan, parsed.patch)
+      if (!canonical.ok) throw new Error(canonical.issues.join('; '))
+      return [legacy.plan, canonical.plan].map((applied) => applied.accounts.map((account) => [account.name, account.id]))
+    }
+
+    it('keeps each property under the id the plan gave it when the scenario lists Cabin first', () => {
+      const [legacy, canonical] = applyBoth((storedAccounts) => [storedAccounts[1]!, storedAccounts[0]!])
+      expect(legacy).toEqual([['Cabin', 'x-property'], ['Home', 'x']])
+      expect(canonical).toEqual([['Cabin', 'x-property'], ['Home', 'x']])
+    })
+
+    it('keeps Cabin under its new id when the scenario drops Home', () => {
+      const [legacy, canonical] = applyBoth((storedAccounts) => [storedAccounts[1]!])
+      expect(legacy).toEqual([['Cabin', 'x-property']])
+      expect(canonical).toEqual([['Cabin', 'x-property']])
+    })
+
+    it("keeps Cabin under its new id when the scenario drops Home and changes Cabin's value", () => {
+      // Cabin's copy no longer equals the plan's row, so its name and type
+      // identify it; it must not take the id Home kept.
+      const [legacy, canonical] = applyBoth((storedAccounts) => [{ ...storedAccounts[1]!, value: 150_000 }])
+      expect(legacy).toEqual([['Cabin', 'x-property']])
+      expect(canonical).toEqual([['Cabin', 'x-property']])
+    })
+  })
+
   it('renames the later of a property and a debt, and publishes both values', () => {
     const result = load(quietPlan([home(), mortgage()]))
     expect(result.plan.accounts.map((account) => [account.type, account.id])).toEqual([['property', 'home'], ['debt', 'home-debt']])

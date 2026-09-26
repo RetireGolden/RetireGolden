@@ -869,16 +869,34 @@ function applySharedIdRenames(
   })
 }
 
-/**
- * The plan's own renames, keyed by what identifies a row across copies of a
- * list: its old id, its channel, and its position among the plan's rows with
- * that id and channel. A scenario row that matches a key is the scenario's
- * copy of a row the plan renamed.
- */
-type PlanSharedIdRenames = ReadonlyMap<string, string>
+/** One of the plan's stored rows under an id where the plan renamed a row. */
+interface PlanSharedIdRow {
+  /** The stored row, as canonical JSON, before the rename. */
+  readonly content: string
+  readonly name: unknown
+  /** The row's `type` (an account) or `kind` (a policy). */
+  readonly type: unknown
+  /** The id the row takes on load, or null for a row that keeps its id. */
+  readonly newId: string | null
+}
 
-function sharedIdCorrespondenceKey(id: string, channel: SharedIdChannel, ordinal: number): string {
-  return JSON.stringify([id, channel, ordinal])
+/**
+ * The plan's stored rows, in stored order, under every (collection, id,
+ * channel) where the plan renamed at least one row, keyed by
+ * `sharedIdCorrespondenceKey`.
+ */
+type PlanSharedIdRenames = ReadonlyMap<string, readonly PlanSharedIdRow[]>
+
+function sharedIdCorrespondenceKey(collection: 'accounts' | 'insurance', id: string, channel: SharedIdChannel): string {
+  return JSON.stringify([collection, id, channel])
+}
+
+function sharedIdTypeField(collection: 'accounts' | 'insurance'): 'type' | 'kind' {
+  return collection === 'accounts' ? 'type' : 'kind'
+}
+
+function sharedIdRowChannel(collection: 'accounts' | 'insurance', row: Record<string, unknown>): SharedIdChannel | null {
+  return collection === 'accounts' ? accountChannel(row['type']) : policyChannel(row['kind'])
 }
 
 function planSharedIdRenames(
@@ -886,46 +904,88 @@ function planSharedIdRenames(
   insurance: readonly unknown[],
   renames: readonly SharedIdListRename[],
 ): PlanSharedIdRenames {
-  const map = new Map<string, string>()
+  const map = new Map<string, PlanSharedIdRow[]>()
   for (const [collection, list] of [['accounts', accounts], ['insurance', insurance]] as const) {
-    const rows = rawSharedIdRows(list, (row) =>
-      collection === 'accounts' ? accountChannel(row['type']) : policyChannel(row['kind']))
-    const ordinals = new Map<string, number>()
-    rows.forEach((row, index) => {
-      if (row.channel === null) return
-      const seen = JSON.stringify([row.id, row.channel])
-      const ordinal = (ordinals.get(seen) ?? 0) + 1
-      ordinals.set(seen, ordinal)
-      const rename = renames.find((candidate) =>
-        candidate.member.collection === collection && candidate.member.index === index)
-      if (rename !== undefined) map.set(sharedIdCorrespondenceKey(row.id, row.channel, ordinal), rename.newId)
+    const newIdByIndex = new Map(renames
+      .filter((rename) => rename.member.collection === collection)
+      .map((rename) => [rename.member.index, rename.newId] as const))
+    if (newIdByIndex.size === 0) continue
+    const renamedKeys = new Set<string>()
+    const rows = new Map<string, PlanSharedIdRow[]>()
+    list.forEach((row, index) => {
+      if (!isPlainRecord(row) || typeof row['id'] !== 'string') return
+      const channel = sharedIdRowChannel(collection, row)
+      if (channel === null) return
+      const key = sharedIdCorrespondenceKey(collection, row['id'], channel)
+      const newId = newIdByIndex.get(index) ?? null
+      if (newId !== null) renamedKeys.add(key)
+      const entry: PlanSharedIdRow = {
+        content: canonicalJson(row),
+        name: row['name'],
+        type: row[sharedIdTypeField(collection)],
+        newId,
+      }
+      const group = rows.get(key)
+      if (group === undefined) rows.set(key, [entry])
+      else group.push(entry)
     })
+    for (const key of renamedKeys) map.set(key, rows.get(key)!)
   }
   return map
 }
 
-/** A stored list with every row that copies a row the plan renamed given the plan's new id; the same array when none did. */
+/**
+ * A stored list with every row that copies a row the plan renamed given the
+ * plan's new id; the same array when none did. A row copies the plan row it
+ * equals exactly, else the plan row with its name and type (so an edited copy
+ * still counts), among the plan's rows with the same id and channel; each plan
+ * row is copied at most once, and between rows that match equally well stored
+ * order decides. A row that matches no plan row is the scenario's own and
+ * keeps its id.
+ */
 function followPlanSharedIdRenames(
   list: readonly unknown[],
   collection: 'accounts' | 'insurance',
   planRenames: PlanSharedIdRenames,
 ): readonly unknown[] {
   if (planRenames.size === 0) return list
-  const ordinals = new Map<string, number>()
-  let changed = false
-  const followed = list.map((row) => {
-    if (!isPlainRecord(row) || typeof row['id'] !== 'string') return row
-    const channel = collection === 'accounts' ? accountChannel(row['type']) : policyChannel(row['kind'])
-    if (channel === null) return row
-    const seen = JSON.stringify([row['id'], channel])
-    const ordinal = (ordinals.get(seen) ?? 0) + 1
-    ordinals.set(seen, ordinal)
-    const newId = planRenames.get(sharedIdCorrespondenceKey(row['id'], channel, ordinal))
-    if (newId === undefined) return row
-    changed = true
-    return { ...row, id: newId }
+  const candidates = new Map<string, number[]>()
+  list.forEach((row, index) => {
+    if (!isPlainRecord(row) || typeof row['id'] !== 'string') return
+    const channel = sharedIdRowChannel(collection, row)
+    if (channel === null) return
+    const key = sharedIdCorrespondenceKey(collection, row['id'], channel)
+    if (!planRenames.has(key)) return
+    const group = candidates.get(key)
+    if (group === undefined) candidates.set(key, [index])
+    else group.push(index)
   })
-  return changed ? followed : list
+  const newIds = new Map<number, string>()
+  for (const [key, indexes] of candidates) {
+    const planRows = planRenames.get(key)!
+    const copied = new Set<number>()
+    const copy = (index: number, matches: (planRow: PlanSharedIdRow) => boolean): boolean => {
+      const at = planRows.findIndex((planRow, position) => !copied.has(position) && matches(planRow))
+      if (at < 0) return false
+      copied.add(at)
+      const newId = planRows[at]!.newId
+      if (newId !== null) newIds.set(index, newId)
+      return true
+    }
+    const inexact = indexes.filter((index) => {
+      const content = canonicalJson(list[index])
+      return !copy(index, (planRow) => planRow.content === content)
+    })
+    for (const index of inexact) {
+      const row = list[index] as Record<string, unknown>
+      copy(index, (planRow) => planRow.name === row['name'] && planRow.type === row[sharedIdTypeField(collection)])
+    }
+  }
+  if (newIds.size === 0) return list
+  return list.map((row, index) => {
+    const newId = newIds.get(index)
+    return newId === undefined ? row : { ...(row as Record<string, unknown>), id: newId }
+  })
 }
 
 /**
@@ -935,10 +995,13 @@ function followPlanSharedIdRenames(
  * in both an operation's `before` state and its `value`), and a legacy
  * deep-merge patch's `accounts` and `insurance` lists. Each such list, or pair
  * of lists, is repaired in two passes. First, every row that copies a row the
- * plan renamed (same old id, same channel, same position among the rows with
- * that id and channel) takes the plan's new id, whether or not the scenario's
- * list still collides: a scenario that dropped the cash account keeps the
- * property it shares with the plan under the property's new id. Then the
+ * plan renamed takes the plan's new id, whether or not the scenario's list
+ * still collides: a scenario that dropped the cash account keeps the property
+ * it shares with the plan under the property's new id, and a scenario that
+ * reorders or drops one of two properties under one id keeps each under the
+ * id the plan gave it. A row copies the plan row it equals, else the one with
+ * its name and type (`followPlanSharedIdRenames`), never merely the one in the
+ * same position. Then the
  * list's own collisions are repaired, with the plan's own accounts standing in
  * for a scenario that sets no accounts, and names that are fresh both in the
  * document and in the list. So a scenario holding a copy of the plan's rows

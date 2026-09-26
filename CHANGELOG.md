@@ -27,8 +27,9 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   other field in a plan can name a property, a debt or a policy, and every
   account reference could only have meant the investable account, so nothing
   else moves; a stored scenario's copy of a renamed row takes the same new
-  id (a scenario that dropped the cash account still names the property the
-  way the plan does), and a pair found only in a scenario's own lists is
+  id, found by the row's contents or its name rather than its position, so a
+  scenario that dropped or reordered rows still names each one the way the
+  plan does, and a pair found only in a scenario's own lists is
   repaired there. A scenario that would add a pair loading cannot repair is
   refused when applied, with a message saying the scenario introduces the
   shared id. The load notice (new repair kind
