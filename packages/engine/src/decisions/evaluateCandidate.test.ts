@@ -72,6 +72,37 @@ describe('evaluateCandidate', () => {
     expect(baselineSide.diagnostics.join(' ')).toContain('baseline')
   })
 
+  it("classifies normally under nonActionableAca 'disclose' and names only the candidate's unpriced years", () => {
+    const plan = tradHeavyPlan()
+    const opts = simOptions()
+    const safeBaseline = simulatePlan(plan, opts)
+    const unsafeBaseline = structuredClone(safeBaseline)
+    unsafeBaseline.years[0]!.aca = { readiness: 'nonActionable' } as never
+    const unsafeCandidate = structuredClone(safeBaseline)
+    unsafeCandidate.years[1]!.aca = { readiness: 'nonActionable' } as never
+    const ctx = createDecisionContext(plan, opts, { result: unsafeBaseline })
+
+    const refused = evaluateCandidate(ctx, rothCandidate({}), { candidateResult: unsafeCandidate })
+    const explicitRefuse = evaluateCandidate(ctx, rothCandidate({}), {
+      candidateResult: unsafeCandidate,
+      nonActionableAca: 'refuse',
+    })
+    const disclosed = evaluateCandidate(ctx, rothCandidate({}), {
+      candidateResult: unsafeCandidate,
+      nonActionableAca: 'disclose',
+    })
+
+    // The default is the refusal every recommendation surface relies on.
+    expect(refused.recommendationState).toBe('diagnostic')
+    expect(explicitRefuse).toEqual(refused)
+    // Disclosing changes the classification and the wording, never a number.
+    expect(disclosed.recommendationState).not.toBe('diagnostic')
+    expect(disclosed.deltas).toEqual(refused.deltas)
+    expect(disclosed.diagnostics).toEqual([
+      `ACA premium tax credit is not priced in the candidate for ${safeBaseline.years[1]!.year}; the ledger budgets the full Marketplace premium in those years.`,
+    ])
+  })
+
   it('prices untagged aggregate retirement-action patches but fails closed on recommendation', () => {
     const plan = tradHeavyPlan()
     const opts = simOptions()
