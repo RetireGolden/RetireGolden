@@ -33,6 +33,13 @@
  * placeholder removed); example-couple and coast-fire reflect KY/CO state-tax
  * characterization changes. Committed report snapshot bytes are regenerated
  * separately; numeric oracles remain in engine fixtures.
+ * 2026-09-25: example-couple's modeling notes lose "Spending withdrawals from
+ * traditional accounts pushed income above the Roth-conversion target in some
+ * years." (decision D-ROTH-TARGET-WARNING: the warning now needs the year's
+ * sized metric to end above the target). Sam's share of each conversion is
+ * dropped, so the two years with a spending draw on the IRAs, 2034 and 2035,
+ * end about $94,753 and $70,301 under the top of the 22% bracket. No figure
+ * in these goldens changed.
  */
 import { describe, expect, it } from 'vitest'
 

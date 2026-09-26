@@ -1844,6 +1844,62 @@ describe('zeroRateLtcgHeadroom (gain-harvesting advisory)', () => {
     const realized = computeFederalTax(input({ ordinaryIncome: 0, ssBenefits: 40_000, capitalGains: d.zeroRateLtcgHeadroom }))
     expect(realized.taxableIncome).toBeLessThanOrEqual(49_450 + 1)
   })
+
+  /**
+   * D-ZERO-RATE-HEADROOM. Single, 2026, under 65: threshold 49,450 and
+   * standard deduction 16,100. With ordinary income O below the deduction,
+   * taxable income is max(0, O + g − 16,100), so the largest gain keeping it
+   * at 49,450 is 49,450 + 16,100 − O: the threshold plus the unused deduction.
+   * The search stopped at the threshold before, publishing about 49,450 here.
+   */
+  it('adds the unused deduction to the room when ordinary income is below the deduction', () => {
+    for (const [ordinaryIncome, root] of [[10_000, 55_550], [0, 65_550], [16_000, 49_550]] as const) {
+      const headroom = computeFederalTax(input({ ordinaryIncome })).zeroRateLtcgHeadroom
+      expect(headroom, `ordinary ${ordinaryIncome}`).toBeLessThanOrEqual(root)
+      expect(headroom, `ordinary ${ordinaryIncome}`).toBeGreaterThanOrEqual(root - 0.01)
+    }
+  })
+
+  it('returns the threshold exactly when income before the gain equals the deduction', () => {
+    // 16,100 of ordinary income against the 16,100 deduction: the root is the
+    // threshold itself, and the second bracket is empty, so no search runs.
+    expect(computeFederalTax(input({ ordinaryIncome: 16_100 })).zeroRateLtcgHeadroom).toBe(49_450)
+  })
+
+  it('uses the filing status own threshold and deduction below the deduction (married filing jointly)', () => {
+    // 2026 joint: 0% LTCG up to 98,900 of taxable income, standard deduction
+    // 32,200, both from params/data/year2026.ts. With no income the room is
+    // 98,900 + 32,200 = 131,100; a bound hard-wired to the single deduction
+    // would stop at 98,900 + 16,100 = 115,000.
+    const headroom = computeFederalTax(input({ filingStatus: 'marriedFilingJointly' })).zeroRateLtcgHeadroom
+    expect(headroom).toBeLessThanOrEqual(131_100)
+    expect(headroom).toBeGreaterThanOrEqual(131_100 - 0.01)
+  })
+
+  it('carries a net capital loss offset into the below-deduction room', () => {
+    // $2,000 ordinary and a $3,000 net capital loss (the most a year may take
+    // against ordinary income): income before the gain is −1,000, so the room
+    // is 49,450 + 16,100 + 1,000 = 66,550.
+    const headroom = computeFederalTax(input({ ordinaryIncome: 2_000, capitalGains: -3_000 })).zeroRateLtcgHeadroom
+    expect(headroom).toBeLessThanOrEqual(66_550)
+    expect(headroom).toBeGreaterThanOrEqual(66_550 - 0.01)
+  })
+
+  it('solves the below-deduction room with Social Security phase-in', () => {
+    // $10,000 of benefits and nothing else. Provisional income is g + 5,000;
+    // past the 34,000 second tier the taxable benefit is
+    // min(8,500, 0.85 (g + 5,000 − 34,000) + 4,500). The root solves
+    // g + 8,500 − 16,100 = 49,450: g = 57,050, where 0.85 × 28,050 + 4,500 =
+    // 28,342.50 keeps the benefit capped at 8,500.
+    const d = computeFederalTax(input({ ssBenefits: 10_000 }))
+    expect(d.zeroRateLtcgHeadroom).toBeLessThanOrEqual(57_050)
+    expect(d.zeroRateLtcgHeadroom).toBeGreaterThanOrEqual(57_050 - 0.01)
+    const realized = computeFederalTax(input({ ssBenefits: 10_000, capitalGains: d.zeroRateLtcgHeadroom }))
+    expect(realized.taxableIncome).toBeLessThanOrEqual(49_450)
+    expect(realized.capitalGainsTax).toBe(0)
+    const over = computeFederalTax(input({ ssBenefits: 10_000, capitalGains: d.zeroRateLtcgHeadroom + 0.02 }))
+    expect(over.taxableIncome).toBeGreaterThan(49_450)
+  })
 })
 
 describe('applyCapitalLossCarryforward', () => {

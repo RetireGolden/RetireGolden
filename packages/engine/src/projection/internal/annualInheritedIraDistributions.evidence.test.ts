@@ -333,9 +333,10 @@ describeCalculation(
 
       // The gross forced total, which is what YearResult.inheritedDistribution publishes.
       expect(result.totals.inherited).toBe(expected.inheritedDistribution)
-      // The current-code traditional/ordinary-income share, D-INHERITED-ROTH-SLICE.
+      // The ordinary income from inherited accounts, the meaning decision
+      // D-INHERITED-ROTH-SLICE settled on.
       expect(result.totals.ordinaryIncome).toBe(expected.inheritedTraditionalDistribution)
-      // The discriminating evidence the decision needs, kept separately.
+      // How that figure is composed, kept separately.
       expect(result.totals.rothForced).toBe(expected.rothGrossForced)
       expect(result.rothTaxCharacterOperations[0]?.ordinaryIncome).toBe(expected.rothTaxableSlice)
       expect(result.rothTaxCharacterStatus).toBe('complete')

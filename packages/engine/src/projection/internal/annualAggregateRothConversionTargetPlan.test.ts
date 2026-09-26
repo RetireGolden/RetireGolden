@@ -11,7 +11,8 @@ const { sizeRothConversionMock } = vi.hoisted(() => ({
   sizeRothConversionMock: vi.fn(),
 }))
 
-vi.mock('../../strategies/rothConversion.js', () => ({
+vi.mock('../../strategies/rothConversion.js', async (importOriginal) => ({
+  ...await importOriginal<typeof import('../../strategies/rothConversion.js')>(),
   sizeRothConversion: sizeRothConversionMock,
 }))
 
@@ -242,6 +243,32 @@ describe('annualAggregateRothConversionTargetPlan', () => {
         },
       }),
     )
+  })
+
+  it('hands back the ceiling and metric a sized fill-to-target conversion used', () => {
+    // Top of the 2026 single 12% bracket: the 22% bracket starts above 50,400.
+    sizeRothConversionMock.mockReturnValue({ ok: true, amount: 20 })
+    const sized = annualAggregateRothConversionTargetPlan(baseInput({
+      mode: 'fillToTarget',
+      target: 'topOfBracket',
+      targetValue: 12,
+      startYear: YEAR,
+      endYear: YEAR,
+    }))
+    expect(sized.fillTarget?.ceiling).toBe(50_400)
+    // A bracket-top target measures federal taxable income.
+    const detail = { taxableIncome: 50_400.5 } as Parameters<NonNullable<typeof sized.fillTarget>['metric']>[0]
+    expect(sized.fillTarget?.metric(detail)).toBe(50_400.5)
+
+    // No fill target when nothing was sized: another mode, or out of window.
+    expect(annualAggregateRothConversionTargetPlan(baseInput({ mode: 'none' })).fillTarget).toBeNull()
+    expect(annualAggregateRothConversionTargetPlan(baseInput({
+      mode: 'fillToTarget',
+      target: 'topOfBracket',
+      targetValue: 12,
+      startYear: YEAR + 1,
+      endYear: YEAR + 1,
+    })).fillTarget).toBeNull()
   })
 
   it('exposes a lazy then-current gross-to-taxable translator', () => {

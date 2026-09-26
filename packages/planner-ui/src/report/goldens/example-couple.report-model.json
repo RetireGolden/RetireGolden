@@ -612,8 +612,7 @@
       "warnings": [
         "Some pre-65 years exceed 400% of the federal poverty line: no ACA credit (the cliff).",
         "Some Marketplace years use gross enrollment premium because required ACA reconciliation facts are missing or unsupported.",
-        "Sam has no Roth account, so Sam’s share of the Roth conversion was skipped — a conversion has to land in the same person’s own Roth. Opening a Roth IRA for Sam would let that share convert.",
-        "Spending withdrawals from traditional accounts pushed income above the Roth-conversion target in some years."
+        "Sam has no Roth account, so Sam’s share of the Roth conversion was skipped — a conversion has to land in the same person’s own Roth. Opening a Roth IRA for Sam would let that share convert."
       ]
     },
     "parameter-sources": {

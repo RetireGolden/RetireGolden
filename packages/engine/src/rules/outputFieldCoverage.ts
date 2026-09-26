@@ -1,7 +1,7 @@
 /**
  * GENERATED FILE — DO NOT EDIT BY HAND.
  *
- * Output field coverage imported from the output-family census at commit d5d1ededad03d8efc2b2050db269afd70037e3f6.
+ * Output field coverage imported from the output-family census at commit 205b45570bda97ec86ddaf96740fa6d63df8fba9.
  * Regenerate: node packages/engine/scripts/import-output-census.mjs <census-dir>
  */
 
@@ -3411,7 +3411,7 @@ const coverageCensus = [
     "disposition": "unsurfaced-evidence",
     "familyId": null,
     "reasonKind": "runtime-diagnostic",
-    "reason": "Traditional-only share of the forced inherited distribution. Searched planner-ui/src at pin fb398216 (pages, charts, CSV columns, report blocks, cash-flow drilldown line identities): not displayed; consumed by the engine ordinary-income and withdrawals.traditional composition.",
+    "reason": "Ordinary income from the year's forced inherited distributions: each inherited traditional row's executed amount plus the taxable earnings of a non-qualified inherited Roth distribution (decision D-INHERITED-ROTH-SLICE). Searched planner-ui/src at pin fb398216 (pages, charts, CSV columns, report blocks, cash-flow drilldown line identities): not displayed; consumed by the engine ordinary-income composition. It is not a withdrawal amount: withdrawals.traditional carries the forced dollars from inherited traditional accounts instead.",
     "tsType": "number"
   },
   {

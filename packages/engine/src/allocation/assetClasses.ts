@@ -213,12 +213,6 @@ export function rebalanceTurnoverFraction(current: readonly number[], target: re
   return turnover
 }
 
-/** Non-cash share of a weight vector (the market-shocked portion under the single-factor model). */
-export function nonCashWeight(weights: number[]): number {
-  const cashIndex = ASSET_CLASS_IDS.indexOf('cash')
-  return Math.max(0, 1 - (weights[cashIndex] ?? 0))
-}
-
 type AllocatableAccount = Extract<Account, { type: 'taxable' | 'traditional' | 'roth' | 'hsa' }>
 
 /** The account's allocation policy, when its type supports one and it is set. */

@@ -40,11 +40,11 @@
  * THE OPEN-AS-YOU-GO RULE, the mirror of `internal/fixedAssetDispositions.ts`'s
  * delete-as-you-go. The inlined phase read `hecmStates.has(id)` and wrote
  * `hecmStates.set(id, …)` on the same map inside the same loop, so a later
- * iteration observed an earlier one's write. Account ids are not globally
- * unique in a valid `Plan`: `model/plan.ts` raises `duplicate account id` only
- * when a retirement action references the id, so two property accounts may
- * legally share one, and today the FIRST opens the line while the second is
- * skipped by the `has` guard. An eager helper handed a snapshot, with the
+ * iteration observed an earlier one's write. Two property accounts could once
+ * share one id, and then the FIRST opens the line while the second is skipped
+ * by the `has` guard. The plan checks now refuse that (D-CASH-PROPERTY-ALIAS,
+ * model/sharedIdCollisions.ts), so the guard protects only input that did not
+ * pass through them, and is kept as it was. An eager helper handed a snapshot, with the
  * caller applying the writes afterwards, would return TWO rows and open two
  * lines. So this module keeps a private set of the ids it has already opened
  * during THIS call and treats such an id as present. The caller still performs
@@ -67,7 +67,7 @@
  * behave identically. The delegation test's `toBe` on this field pins the
  * SEAM, not any number.
  *
- * THE DUPLICATE-ID QUIRK IN `propertyValues` IS PRESERVED, NOT FIXED. The
+ * THE DUPLICATE-ID QUIRK IN `propertyValues` IS PRESERVED FOR SUCH INPUT. The
  * simulator seeds that map with `set(account.id, account.value)` per account,
  * so with two property accounts sharing an id the LAST account's value wins,
  * while the loop below lets the FIRST one open the line — so the line opens

@@ -1,7 +1,7 @@
 {
   "schema": "retiregolden.equivalence-reach-spec/1",
   "name": "simulate-inherited-ira-boundary",
-  "why": "Measured reach for the grouped annual inherited-IRA distribution planner and shared applicable-plan identity boundary. Six block-O members exercise legacy and classified schedules, S2 pre/post-election and death-year behavior, final sweeps, dead beneficiaries, Roth character, zero-movement sub-cent shortfalls, compatible duplicate physical rows represented by one logical ID, ordered application, applicable-plan aggregation, pre-horizon limitations, and repeated all-four-mode entry. REPINNED on 2026-09-04: publishing the discriminated inherited-IRA refusal code added one line inside each of C2.death-evidence, E.legacy and G.identity-and-execution, so those three measured ranges are one line longer than they were -- the added line is the refusalCode publication itself, in each case beside the refusalReason the range already covered. Every other range in this spec moved positionally only.",
+  "why": "Measured reach for the grouped annual inherited-IRA distribution planner and shared applicable-plan identity boundary. Six block-O members exercise legacy and classified schedules, S2 pre/post-election and death-year behavior, final sweeps, dead beneficiaries, Roth character, zero-movement sub-cent shortfalls, compatible duplicate physical rows represented by one logical ID, ordered application, applicable-plan aggregation, pre-horizon limitations, and repeated all-four-mode entry. REPINNED on 2026-09-04: publishing the discriminated inherited-IRA refusal code added one line inside each of C2.death-evidence, E.legacy and G.identity-and-execution, so those three measured ranges are one line longer than they were -- the added line is the refusalCode publication itself, in each case beside the refusalReason the range already covered. Every other range in this spec moved positionally only. REPINNED on 2026-09-25 (decision D-INHERITED-ROTH-SLICE): the inherited fold now also sums inheritedTraditionalForced, the forced dollars from inherited traditional accounts, so I.delegate (963-1097, now 965-1106) is seven lines longer: the new accumulator and its three-line comment, and the traditional else branch, now braced around a second statement. Every other range in this spec moved positionally only.",
   "entries": [
     {
       "id": "A.applicable-plan-identity",
@@ -387,28 +387,28 @@
       "label": "caller-owned plain immutable snapshot materialization before annual writes",
       "file": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
       "lines": [
-        329,
-        343
+        331,
+        345
       ],
       "anchors": [
         {
-          "line": 329,
+          "line": 331,
           "text": "function immutablePlainSnapshot<T>(value: T): T {"
         },
         {
-          "line": 330,
+          "line": 332,
           "text": "const snapshot = structuredClone(value)"
         },
         {
-          "line": 337,
+          "line": 339,
           "text": "for (const child of Object.values(candidate as Record<string, unknown>)) {"
         },
         {
-          "line": 340,
+          "line": 342,
           "text": "Object.freeze(candidate)"
         },
         {
-          "line": 343,
+          "line": 345,
           "text": "return snapshot"
         }
       ],
@@ -419,40 +419,40 @@
       "label": "grouped logical input, pure planning, immutable channel capture, and complete prevalidation setup",
       "file": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
       "lines": [
-        963,
-        1097
+        965,
+        1106
       ],
       "anchors": [
         {
-          "line": 963,
+          "line": 965,
           "text": "const inheritedPlan = immutablePlainSnapshot("
         },
         {
-          "line": 964,
+          "line": 966,
           "text": "annualInheritedIraDistributions({"
         },
         {
-          "line": 969,
+          "line": 971,
           "text": "balances: rmdBalances,"
         },
         {
-          "line": 1033,
+          "line": 1035,
           "text": "const inheritedOperations = inheritedPlan.rows.flatMap((row) =>"
         },
         {
-          "line": 1043,
+          "line": 1045,
           "text": "let inheritedTotal = 0"
         },
         {
-          "line": 1064,
+          "line": 1073,
           "text": "const inheritedYearEvidenceDraft: InheritedAccountYearEvidence[] ="
         },
         {
-          "line": 1091,
+          "line": 1100,
           "text": "const inheritedRmdShortfallObligations ="
         },
         {
-          "line": 1097,
+          "line": 1106,
           "text": "for (const operation of inheritedOperations) {"
         }
       ],
@@ -463,28 +463,28 @@
       "label": "cached one-logical-setter write and runtime occurrence per operation plus obligation and excise handoff",
       "file": "projection/internal/annualForcedDistributionQcdAndRetirementActionsPhase.ts",
       "lines": [
-        1126,
-        1167
+        1135,
+        1176
       ],
       "anchors": [
         {
-          "line": 1126,
+          "line": 1135,
           "text": "for (const operation of inheritedOperations) {"
         },
         {
-          "line": 1128,
+          "line": 1137,
           "text": "state.balance = operation.sourceBalanceAfter"
         },
         {
-          "line": 1131,
+          "line": 1140,
           "text": "recordAnnualRetirementRuntimeOccurrence({"
         },
         {
-          "line": 1157,
+          "line": 1166,
           "text": "rmdShortfallObligations.push(...inheritedRmdShortfallObligations)"
         },
         {
-          "line": 1164,
+          "line": 1173,
           "text": "const rmdShortfallExciseTax = rmdShortfallExciseResults.reduce("
         }
       ]
@@ -501,7 +501,7 @@
       "engineSourceTree": "b63271eaed9a0e5cc36db5b525c834b830f5b16d"
     },
     "inputs": {
-      "corpusSourceBlob": "7a1507c9bbf8e42f2e465195628bd389951c8025",
+      "corpusSourceBlob": "df82d4ee7fbeeaa41c43b1811f05ddb161b01268",
       "corpusIndexBlob": "3d434147ef86cac8116cefac867b2076256feb21",
       "corpusExamplesBlob": "453bcb81103f490447d679276ca1a3ffbad9104a",
       "equivalenceRunnerBlob": "22b18d3b2374bbc2c1640d4a1c1095015771f720",
@@ -537,7 +537,20 @@
       "entriesWithColdWholeLines": 0,
       "entriesWithReportedColdSubLineRegions": 8
     },
-    "scope": "Every blocks-corpus member is byte-identical in all four modes. O6 independently calibrates a lone zero-movement inherited Roth residue as a 0.004 applicable-plan shortfall with a 0.001 section 4974 excise; O3 calibrates three such residues sharing one identity as a 0.012 shortfall with a 0.003 excise. Focused helper tests separately pin those cases plus a 0.01 actual distribution followed by a skipped 0.004 remainder, which remains a 0.004 shortfall with a 0.001 excise. Delegation tests pin immutable snapshotting, grouped duplicate identities, ordered single-write application, runtime journaling, evidence and obligation publication, and hostile failure before caller mutation."
+    "scope": "Every blocks-corpus member is byte-identical in all four modes. O6 independently calibrates a lone zero-movement inherited Roth residue as a 0.004 applicable-plan shortfall with a 0.001 section 4974 excise; O3 calibrates three such residues sharing one identity as a 0.012 shortfall with a 0.003 excise. Focused helper tests separately pin those cases plus a 0.01 actual distribution followed by a skipped 0.004 remainder, which remains a 0.004 shortfall with a 0.001 excise. Delegation tests pin immutable snapshotting, grouped duplicate identities, ordered single-write application, runtime journaling, evidence and obligation publication, and hostile failure before caller mutation.",
+    "harnessRepins": [
+      {
+        "date": "2026-09-26",
+        "path": "packages/engine/scripts/equivalence/corpus/blocks.mjs",
+        "measuredWithBlob": "7a1507c9bbf8e42f2e465195628bd389951c8025",
+        "pinnedBlob": "df82d4ee7fbeeaa41c43b1811f05ddb161b01268",
+        "reason": "Decision D-CASH-PROPERTY-ALIAS made the plan checks refuse any id two rows would publish a value under, so six blocks members (c8, e5, h1, j4, n1, r1) that shared property, debt or policy ids now give each row its own id. No block-O, block-Q or block-Y member this proof measures changed. The pin is advanced so the harness closure still authenticates at HEAD; the corpus, capture, reach and calibration figures in this record were measured with the earlier blob and were not re-measured. This proof's engine-tree check already ties it to its own head source tree, so it verifies only at that tree."
+      }
+    ],
+    "historicalRecord": {
+      "date": "2026-09-26",
+      "statement": "This proof verifies only at its recorded engine trees: head b63271eaed9a0e5cc36db5b525c834b830f5b16d (packages/engine/src at commit 07b3614d4459ae67fa9de31b28c0f09f0b212680) and base d8e8d22f1bd0931f79bca576612b66a60e430987 (packages/engine/src at commit df896740af6ef75e01931720abcbc1074e428570). It has not been verifiable at main's HEAD since later commits changed packages/engine/src, so HEAD no longer carries the recorded head tree the verifier requires, and re-pinned this spec, so the recorded specMeasurementSha256 no longer matches it. It stands as a historical record of that extraction, not as a check the current engine passes."
+    }
   },
   "readingTheCounts": "Member counts prove execution and the reach command additionally fails on cold executable whole lines. JavaScript line coverage cannot distinguish every operand sharing a line, so the report must be read with focused helper, hostile delegation, grouped-duplicate integration, and calibrated-mutation tests."
 }

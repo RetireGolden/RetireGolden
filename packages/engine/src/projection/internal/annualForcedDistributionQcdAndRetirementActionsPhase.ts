@@ -264,6 +264,8 @@ export interface AnnualForcedDistributionQcdAndRetirementActionsPhaseResult {
   readonly inheritedTotal: number
   readonly inheritedOrdinaryIncome: number
   readonly inheritedRothForced: number
+  /** Forced dollars executed from inherited traditional accounts: inheritedTotal less inheritedRothForced, summed directly. */
+  readonly inheritedTraditionalForced: number
   readonly inheritedDeadlineObservationIssues?: readonly {accountId: string; reason: string}[]
   readonly inheritedRothTaxCharacterIncomplete: boolean
   readonly inheritedYearEvidenceDraft: InheritedAccountYearEvidence[]
@@ -1043,6 +1045,10 @@ export function annualForcedDistributionQcdAndRetirementActionsPhase(
   let inheritedTotal = 0
   let inheritedOrdinaryIncome = 0
   let inheritedRothForced = 0
+  // The traditional share of the forced cash, summed on its own rather than
+  // taken as inheritedTotal − inheritedRothForced, so a year without a Roth
+  // taxable slice carries exactly the sum inheritedOrdinaryIncome carries.
+  let inheritedTraditionalForced = 0
   const inheritedRothOrdinaryIncomeByAccount = new Map(
     inheritedPlan.rothTaxCharacterOperations.map((operation) => [
       operation.accountId,
@@ -1057,7 +1063,10 @@ export function annualForcedDistributionQcdAndRetirementActionsPhase(
       inheritedOrdinaryIncome +=
         inheritedRothOrdinaryIncomeByAccount.get(operation.accountId) ?? 0
     }
-    else inheritedOrdinaryIncome += operation.executed
+    else {
+      inheritedOrdinaryIncome += operation.executed
+      inheritedTraditionalForced += operation.executed
+    }
   }
   const inheritedRothTaxCharacterIncomplete =
     inheritedPlan.rothTaxCharacterStatus === 'incomplete'
@@ -2470,6 +2479,7 @@ export function annualForcedDistributionQcdAndRetirementActionsPhase(
     inheritedTotal,
     inheritedOrdinaryIncome,
     inheritedRothForced,
+    inheritedTraditionalForced,
     inheritedRothTaxCharacterIncomplete,
     inheritedDeadlineObservationIssues: inheritedPlan.deadlineObservationIssues,
     inheritedYearEvidenceDraft,

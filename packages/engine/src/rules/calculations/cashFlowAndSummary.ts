@@ -1097,7 +1097,7 @@ export const cashFlowAndSummaryRecords = {
       worksheet: 'DOCS/calculations/cash-flow-and-summary/flexible-goal-outcomes-annual.md',
     },
     limits: [
-      'Decision D-GOAL-FLEXIBILITY is queued: model/plan.ts#GoalFlexibility promises that a movable goal reports its unfunded amount as a layer shortfall at latestYear while a skippable goal is dropped entirely, but the scheduler and the published-field comments make both skip at latestYear with the amount folded into the layer totals. This record follows the scheduler, as the worksheet does',
+      'Movable and skippable goals end the same way: one still unfunded at latestYear is skipped and its amount is folded into the layer totals, so neither is dropped from them. The model/plan.ts#GoalFlexibility comment once promised a movable goal a layer shortfall and a skippable goal a silent drop; decision D-GOAL-FLEXIBILITY (2026-09-25) kept the scheduler, and the comment now describes it. This record follows the scheduler, as the worksheet does',
       'The worksheet\'s two cases are states annualOneTimeGoalFundingPhase produces, and the evidence drives the real phase and the real createGoalScheduler with no seam: a pull-forward year (not cutting, goals may be pulled forward), where the phase hands the scheduler the $1,700 remaining upside budget and the budget constrains the goals pulled forward before their target year; and a cutting year, where the budget is 0, goals not yet in the schedule have no outcome, and the skippable goal at its latest year skips. The first derivation paired a cutting year with a positive budget, which the completed YearResult.flexibleGoals comment rules out; it was re-derived on 2026-09-22 and re-approved by the reviewer',
       'The zero-guardrail case is asserted on a real simulatePlan run instead, where the scheduler is absent: all six fields publish exactly 0 while the goal still funds and shows up in expenses.oneTimeGoals',
       'A fixed goal does not consume the flexible budget; letting it do so changes every later goal\'s outcome, which is the worksheet\'s first wrong reading',
@@ -1285,7 +1285,7 @@ export const cashFlowAndSummaryRecords = {
     },
     limits: [
       'Asserted at the exported phase helper with the worksheet\'s five policies — the primary case\'s four and the boundary case\'s Life E — their modes, premiums, subject ages and end ages verbatim; the subject resolver supplies the stated ages and alive flags. Plan assumptions beyond the worksheet\'s inputs: each policy carries zero benefit fields, which the premium selection does not read',
-      'The first derivation read untilAge as charging through and including premiumEndAge, charged its Life C at attained age 65 against an end age of 65, and expected 1,800; that derivation was corrected on 2026-09-18 under decision D-PREMIUM-END-AGE. The worksheet now states the strict stop age production holds — a policy is skipped once subject.ageAttained >= policy.premiumEndAge — so its primary case totals 1,200 with Life C not charged, and its boundary case charges Life E 600 at attained age 64, one year below the same end age. Both are asserted, the 1,800 through-the-end-age reading is asserted as a wrong reading, and no production-versus-worksheet discrepancy remains. The plan schema still states both readings (premiumModeSchema says "charge annualPremium through premiumEndAge", premiumEndAge says "age when premiums stop"), which is what D-PREMIUM-END-AGE resolves',
+      'The first derivation read untilAge as charging through and including premiumEndAge, charged its Life C at attained age 65 against an end age of 65, and expected 1,800; that derivation was corrected on 2026-09-18 under decision D-PREMIUM-END-AGE. The worksheet now states the strict stop age production holds: a policy is skipped once subject.ageAttained >= policy.premiumEndAge, so its primary case totals 1,200 with Life C not charged, and its boundary case charges Life E 600 at attained age 64, one year below the same end age. Both are asserted, the 1,800 through-the-end-age reading is asserted as a wrong reading, and no production-versus-worksheet discrepancy remains. Decision D-PREMIUM-END-AGE (2026-09-25) kept this rule, since premiumEndAge is the field a user fills as the age premiums stop; the premiumModeSchema comment, which once read "charge annualPremium through premiumEndAge", now states the same stop age',
     ],
     implementedBy: [
       'packages/engine/src/projection/internal/types/yearLedger.ts',
@@ -1776,12 +1776,12 @@ export const cashFlowAndSummaryRecords = {
     kind: 'model',
     outputs: ['year-result-ltcg-zero-headroom'],
     statement:
-      'YearResult.ltcgZeroHeadroom, computed by tax/federalTax.ts#zeroRateLtcgHeadroom, is 0 when taxable income with no extra gain already reaches pack.capitalGains.rate15StartsAbove for the filing status; otherwise it is the largest extra gain, found by bisection to a $0.01 bracket, that keeps max(0, ordinary income excluding Social Security + gains + qualified dividends + the extra gain + the resulting taxable Social Security − deduction) at or under that threshold. Without benefits the slope is exactly 1, so the root is threshold − taxable income. Units: nominal dollars of additional gain. Rounding: bisection to $0.01, so the published figure sits at or just under the exact root.',
+      'YearResult.ltcgZeroHeadroom, computed by tax/federalTax.ts#zeroRateLtcgHeadroom, is 0 when taxable income with no extra gain already reaches pack.capitalGains.rate15StartsAbove for the filing status; otherwise it is the largest extra gain, found by bisection to a $0.01 bracket, that keeps max(0, ordinary income excluding Social Security + gains + qualified dividends + the extra gain + the resulting taxable Social Security − deduction) at or under that threshold. The search brackets that gain in every case: its upper end is the threshold when taxable income at a gain equal to the threshold is above it, and otherwise the threshold + deduction − (ordinary income excluding Social Security + gains + qualified dividends), where taxable income before the floor is at least the threshold. Without benefits the slope above the zero floor is exactly 1, so the root is threshold − taxable income when income before the gain covers the deduction, and the threshold plus the unused deduction when it does not (single, 2026: $55,550 of room at $10,000 of ordinary income, $65,550 at $0). Units: nominal dollars of additional gain. Rounding: bisection to $0.01, so the published figure sits at or just under the exact root.',
     formula: {
       expression: 'headroom = 0 when taxable(0) >= T; else max{ g : taxable(g) <= T }, T = rate15StartsAbove[filingStatus]',
       variables: [
         { symbol: 'T', meaning: '15% long-term-gains threshold for the filing status', unit: 'usd taxable income', domain: 'positive' },
-        { symbol: 'taxable(g)', meaning: 'Taxable income with g of extra long-term gain, including any resulting taxable Social Security', unit: 'usd', domain: 'nondecreasing in g, slope 1 to 1.85' },
+        { symbol: 'taxable(g)', meaning: 'Taxable income with g of extra long-term gain, including any resulting taxable Social Security', unit: 'usd', domain: 'nondecreasing in g; slope 0 while floored at zero, then 1 to 1.85' },
         { symbol: 'headroom', meaning: 'Additional gain still taxed at 0%', unit: 'usd', domain: 'nonnegative' },
       ],
       timing: 'annual, priced with the year\'s federal detail after the funding fixed point',
@@ -1796,6 +1796,7 @@ export const cashFlowAndSummaryRecords = {
       'Case A is asserted at the worksheet\'s absolute $0.005 because the bisection lands 0.002 under the exact $12,450 root; a fixture that demanded exactness would fail on the algorithm\'s own $0.01 stopping width, not on the identity',
       'The at-threshold branch returns exactly 0 before any bisection, which is why Case B is compared with toBe rather than a tolerance',
       'The benefits branch is out of scope here: the worksheet states the no-benefit subtraction, and the bisection exists precisely because that subtraction is wrong once §86 inclusion moves with the gain',
+      'Cases C and D, added under decision D-ZERO-RATE-HEADROOM on 2026-09-25, put ordinary income below the deduction: the same plan with a $10,000 ordinary stream, and with no income at all. Their search runs from the threshold to the threshold plus the unused deduction, a wider bracket than Case A\'s, so the bisection lands up to $0.008 under the root (55,549.994 and 65,549.992); each is asserted within the $0.01 stopping width and at or under the root, and away from the 49,450 that a search bounded by the threshold published before the decision. The provenance line records Cases A and B: Cases C and D were worked by the implementer from the decision\'s evidence and independently checked on 2026-09-26 by a reviewer who is not the author, as the worksheet records',
     ],
     implementedBy: [
       'packages/engine/src/tax/federalTax.ts',
@@ -1805,7 +1806,7 @@ export const cashFlowAndSummaryRecords = {
       'packages/engine/src/tax/federalTax.ts#zeroRateLtcgHeadroom',
       'packages/engine/src/projection/internal/annualFundingApplicationAndClosePhase.ts#annualFundingApplicationAndClosePhase',
     ],
-    verifiedOn: '2026-09-18',
+    verifiedOn: '2026-09-25',
     provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
   },
   'sustainable-spending-result-simulation-count': {

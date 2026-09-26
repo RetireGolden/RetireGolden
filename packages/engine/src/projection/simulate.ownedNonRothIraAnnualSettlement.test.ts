@@ -365,6 +365,66 @@ describe('simulator owned non-Roth IRA exact annual settlement', () => {
     expect(JSON.stringify(settlements)).not.toMatch(/sourceIdentityInvalid|sourceCoverageInvalid/)
   })
 
+  it('P1b: settles owned basis beside a non-qualified inherited-Roth draw whose earnings stay out of traditional', () => {
+    // D-INHERITED-ROTH-SLICE. A disabled eligible designated beneficiary
+    // draws 2,610 / 26.1 = 100 from an inherited Roth in 2026; the
+    // decedent's first Roth year is 2024, so the draw is not qualified, and
+    // after the 60 of regular-contribution basis 40 is taxable earnings.
+    // Those 40 are ordinary income (inheritedTraditionalDistribution) but
+    // stay in withdrawals.roth, so the replay has to rebuild
+    // withdrawals.traditional from the traditional draws alone.
+    settlementController.calls.mockClear()
+    const plan = singlePersonPlan({ dob: '1965-06-15', planningAge: 80 })
+    plan.id = 'settled-owned-basis-nonqualified-inherited-roth'
+    plan.accounts = [
+      ira('owner-ira', 100_000, 25_000),
+      {
+        type: 'roth',
+        id: 'inherited-roth',
+        name: 'Inherited Roth IRA',
+        ownerPersonId: 'p1',
+        annualReturnPct: 0,
+        kind: 'ira',
+        balance: 2_610,
+        annualContribution: 0,
+        inherited: {
+          ownerDeathYear: 2024,
+          ownerDeathDate: '2024-06-01',
+          decedentId: 'decedent',
+          decedentHadStartedRmds: false,
+          beneficiary: {
+            beneficiaryClass: 'designated-individual',
+            edbCategory: 'disabled',
+            beneficiaryBirthYear: 1965,
+            soleBeneficiary: true,
+            ownerBirthYear: 1960,
+            provenance: { source: 'test', asOf: '2026-01-01' },
+          },
+        },
+      },
+    ]
+    plan.inheritedRothTaxCharacterPools = [{
+      beneficiaryPersonId: 'p1', decedentId: 'decedent',
+      firstRothContributionTaxYear: 2024, remainingRegularContributionBasis: 60,
+      conversionLayers: [], priorDistributionsConsumedAmount: 0,
+      provenance: { source: 'Complete decedent Roth records', asOf: '2026-01-01' },
+    }]
+
+    const year = project(plan).years[0]!
+    expect(year.inheritedDistribution).toBeCloseTo(100, 8)
+    expect(year.inheritedTraditionalDistribution).toBeCloseTo(40, 8)
+    expect(year.withdrawals.roth).toBeCloseTo(100, 8)
+    expect(year.withdrawals.traditional).toBe(0)
+
+    const settlements = settlementController.calls.mock.calls
+      .map(([, result]) => result)
+    expect(settlements.length).toBeGreaterThan(0)
+    expect(settlements).toEqual(expect.arrayContaining([
+      expect.objectContaining({ status: 'committed' }),
+    ]))
+    expect(JSON.stringify(settlements)).not.toMatch(/sourceIdentityInvalid|sourceCoverageInvalid/)
+  })
+
   it('P2: settles basis through S2 ownership flip and post-flip owner RMDs', () => {
     settlementController.calls.mockClear()
     const plan = singlePersonPlan({ dob: '1950-01-01', planningAge: 80 })

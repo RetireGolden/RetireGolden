@@ -436,7 +436,7 @@
     "inputs": {
       "harnessBlobs": {
         "packages/engine/scripts/equivalence.mjs": "22b18d3b2374bbc2c1640d4a1c1095015771f720",
-        "packages/engine/scripts/equivalence/corpus/blocks.mjs": "7a1507c9bbf8e42f2e465195628bd389951c8025",
+        "packages/engine/scripts/equivalence/corpus/blocks.mjs": "df82d4ee7fbeeaa41c43b1811f05ddb161b01268",
         "packages/engine/scripts/equivalence/corpus/examples.mjs": "453bcb81103f490447d679276ca1a3ffbad9104a",
         "packages/engine/scripts/equivalence/corpus/index.mjs": "3d434147ef86cac8116cefac867b2076256feb21",
         "packages/engine/scripts/equivalence/describe-tree.mjs": "1b2e00f1170bbadae67cd04269cf91aa1f03a168",
@@ -470,7 +470,20 @@
       "entriesWithColdWholeLines": 0,
       "entriesWithReportedColdSubLineRegions": 6
     },
-    "scope": "The scalar-QCD source extraction changes no captured output in any block member or mode. The helper and caller retain named-request stand-down, donor eligibility and per-person caps, routed-RMD attribution, grouped logical beyond-RMD debits, exact-cent suppression, runtime/deferred-character publication, and ordered history writes. Focused helper and hostile delegation tests independently pin identity, atomicity, defensive rejection, and publication contracts that a byte-identical dump cannot prove."
+    "scope": "The scalar-QCD source extraction changes no captured output in any block member or mode. The helper and caller retain named-request stand-down, donor eligibility and per-person caps, routed-RMD attribution, grouped logical beyond-RMD debits, exact-cent suppression, runtime/deferred-character publication, and ordered history writes. Focused helper and hostile delegation tests independently pin identity, atomicity, defensive rejection, and publication contracts that a byte-identical dump cannot prove.",
+    "harnessRepins": [
+      {
+        "date": "2026-09-26",
+        "path": "packages/engine/scripts/equivalence/corpus/blocks.mjs",
+        "measuredWithBlob": "7a1507c9bbf8e42f2e465195628bd389951c8025",
+        "pinnedBlob": "df82d4ee7fbeeaa41c43b1811f05ddb161b01268",
+        "reason": "Decision D-CASH-PROPERTY-ALIAS made the plan checks refuse any id two rows would publish a value under, so six blocks members (c8, e5, h1, j4, n1, r1) that shared property, debt or policy ids now give each row its own id. No block-O, block-Q or block-Y member this proof measures changed. The pin is advanced so the harness closure still authenticates at HEAD; the corpus, capture, reach and calibration figures in this record were measured with the earlier blob and were not re-measured. This proof's engine-tree check already ties it to its own head source tree, so it verifies only at that tree."
+      }
+    ],
+    "historicalRecord": {
+      "date": "2026-09-26",
+      "statement": "This proof verifies only at its recorded engine trees: head b63271eaed9a0e5cc36db5b525c834b830f5b16d (packages/engine/src at commit 07b3614d4459ae67fa9de31b28c0f09f0b212680) and base 33d9b00d8054b592361e37710c78f99cc01cee65 (packages/engine/src at commit 815a52b25359c4bbaf103efbf69e2a5bf7d65487). It has not been verifiable at main's HEAD since later commits changed packages/engine/src, so HEAD no longer carries the recorded head tree the verifier requires, and re-pinned this spec, so the recorded specMeasurementSha256 no longer matches it. It stands as a historical record of that extraction, not as a check the current engine passes."
+    }
   },
   "readingTheCounts": "A member count proves that at least one line in the named range executed. Reach additionally fails on any cold executable whole line in a reached range. JavaScript line coverage cannot distinguish every ternary, nullish or compound-condition operand sharing one physical line, so focused hostile tests must be read alongside the differential proof."
 }

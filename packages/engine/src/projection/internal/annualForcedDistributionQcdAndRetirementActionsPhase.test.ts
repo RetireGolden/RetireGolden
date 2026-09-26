@@ -90,6 +90,7 @@ function expectNothingForced(
   expect(result.inheritedTotal).toBe(0)
   expect(result.inheritedOrdinaryIncome).toBe(0)
   expect(result.inheritedRothForced).toBe(0)
+  expect(result.inheritedTraditionalForced).toBe(0)
   expect(result.inheritedYearEvidenceDraft).toEqual([])
   expect(result.qcd).toBe(0)
   expect(result.qcdIncomeOffset).toBe(0)

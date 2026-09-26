@@ -280,6 +280,12 @@ function section68Reduction(
  * the largest additional gain that keeps taxable income at the threshold,
  * modeling that SS phase-in (the dominant interaction). The deduction is held
  * fixed — the second-order senior-deduction MAGI phase-out is not modeled.
+ *
+ * Nor is it `threshold − taxableIncome` when income is below the deduction:
+ * taxable income is floored at 0, and the first gain dollars only use up the
+ * unused deduction, so the room is the threshold plus that unused deduction
+ * (single, 2026, no benefits: $10,000 of ordinary income leaves $55,550 of
+ * room, $0 leaves $65,550).
  * @see DOCS/domain/domain-rules-reference.md §2
  */
 export function zeroRateLtcgHeadroom(
@@ -307,11 +313,37 @@ export function zeroRateLtcgHeadroom(
     return Math.max(0, agiExcludingSs + taxableSs - deduction)
   }
   if (taxableIncomeAt(0) >= threshold) return 0
-  // Monotonic increasing in extraGains (slope 1–1.85); binary-search the largest
-  // gain that keeps taxable income at the threshold. `threshold` brackets the
-  // root since the slope is ≥ 1 and taxableIncomeAt(0) ≥ 0.
+  // Nondecreasing in extraGains (taxable Social Security never falls as AGI
+  // rises, and above the zero floor the slope is 1 to 1.85); binary-search the
+  // largest gain that keeps taxable income at the threshold. The search keeps
+  // taxableIncomeAt(lo) <= threshold and needs a bracket whose upper end
+  // reaches it.
+  //
+  // `threshold` is that upper end whenever taxableIncomeAt(threshold) exceeds
+  // the threshold, which holds once income before the gain covers the
+  // deduction. It does not when that income is below the deduction: the floor
+  // at 0 absorbs the first gain dollars, so the root lies at or above the
+  // threshold. The search then runs from the threshold to
+  // threshold + deduction − incomeBeforeGain, where taxable income before the
+  // floor is threshold + taxable Social Security ≥ threshold, so the root lies
+  // inside; and that end is at least the threshold, because
+  // taxableIncomeAt(threshold) <= threshold means incomeBeforeGain plus the
+  // taxable benefit does not exceed the deduction. A negative income offset
+  // (a net capital loss carried in `ordinaryExcludingSs`) widens it by the
+  // same amount. The first bracket is unchanged, so every figure it produced
+  // while it held the root stays bit-identical. The one boundary it did not:
+  // when income before the gain plus the benefit taxable at a gain equal to
+  // the threshold exactly equals the deduction, the root is the threshold
+  // itself, which the old search returned as about $0.01 under it and this
+  // one returns exactly (single, 2026, no benefits: $16,100 of income gives
+  // $49,450 rather than about $49,449.99).
   let lo = 0
   let hi = threshold
+  if (taxableIncomeAt(hi) <= threshold) {
+    const incomeBeforeGain = ordinaryExcludingSs + currentGains + currentQualifiedDividends
+    lo = threshold
+    hi = threshold + deduction - incomeBeforeGain
+  }
   for (let i = 0; i < 60 && hi - lo > 0.01; i++) {
     const mid = (lo + hi) / 2
     if (taxableIncomeAt(mid) <= threshold) lo = mid

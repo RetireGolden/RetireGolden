@@ -386,7 +386,11 @@ describe('simulatePlan delegates the HECM line open', () => {
       { ...property('twin', 275_000, { principalLimitPct: 33, upfrontCostPct: 4 }), name: 'twin-second' } as Account,
       traditionalAccount('ira', 180_000),
     ]
-    const { result, phases } = run(validatePlan(plan))
+    // The plan checks refuse two properties under one id since
+    // D-CASH-PROPERTY-ALIAS; the phase still opens one line for input that
+    // skipped them, which is what this pins, so the plan goes in unparsed.
+    expect(() => validatePlan(plan)).toThrow('is shared by two properties')
+    const { result, phases } = run(plan)
     noDrawsHappened(result)
     expect(phases[0]?.injected.length).toBe(1)
     // FIRST account's upfront percentage, SECOND account's value — and ONE

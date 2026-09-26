@@ -4,7 +4,7 @@ Kind: composition. `projection/internal/types/yearLedger.ts#YearWithdrawals` par
 
 ## Justification
 
-The category meanings and order come from the `YearWithdrawals` comment. The `YearResult.rmd`, `sepp`, `inheritedDistribution`, and `inheritedTraditionalDistribution` comments provide the stated inclusions. Those named amounts are subsets, not extra categories or amounts to add again.
+The category meanings and order come from the `YearWithdrawals` comment. The `YearResult.rmd`, `sepp`, `inheritedDistribution`, and `inheritedTraditionalDistribution` comments provide the stated inclusions. Those named amounts are subsets, not extra categories or amounts to add again. (`inheritedTraditionalDistribution` is ordinary income: its traditional rows are inside `traditional`, and the taxable earnings of a non-qualified inherited Roth distribution it also carries are inside `roth`, under decision D-INHERITED-ROTH-SLICE. This worksheet's year has no such distribution.)
 
 ## Inputs
 
@@ -47,3 +47,5 @@ feeds: `withdrawals-total-annual`.
 ## Provenance
 
 Derived by: codex (gpt-5.6-sol), 2026-09-18, from the signatures-and-comments extract only, without executing the engine or reading any implementation body. Reviewed by: cursor (composer-2.5), 2026-09-18, by independent recomputation without executing the engine; see REVIEW-2026-09-18-round-five.md in this directory.
+
+Amended 2026-09-25 by claude, the implementer of decision D-INHERITED-ROTH-SLICE: the parenthesis in the Justification says where a non-qualified inherited Roth distribution's taxable earnings sit, now that the decision keeps them out of `traditional`. No input, arithmetic or expected value changed.

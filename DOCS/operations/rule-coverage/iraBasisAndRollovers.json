@@ -255,7 +255,7 @@
           "functions": [
             {
               "name": "validateOwnedNonRothIraRuntimeSourceSeries",
-              "line": 3249
+              "line": 3256
             }
           ]
         },
@@ -264,7 +264,7 @@
           "functions": [
             {
               "name": "checkAccountCrossFieldRules",
-              "line": 820
+              "line": 895
             }
           ]
         },
@@ -394,7 +394,7 @@
           "functions": [
             {
               "name": "validateOwnedNonRothIraRuntimeSourceSeries",
-              "line": 3249
+              "line": 3256
             }
           ]
         },
@@ -651,7 +651,7 @@
           "functions": [
             {
               "name": "validateOwnedNonRothIraRuntimeSourceSeries",
-              "line": 3249
+              "line": 3256
             }
           ]
         },
@@ -771,7 +771,7 @@
           "functions": [
             {
               "name": "validateOwnedNonRothIraRuntimeSourceSeries",
-              "line": 3249
+              "line": 3256
             }
           ]
         },
@@ -909,7 +909,7 @@
           "functions": [
             {
               "name": "validateOwnedNonRothIraRuntimeSourceSeries",
-              "line": 3249
+              "line": 3256
             }
           ]
         },
@@ -1229,7 +1229,7 @@
           "functions": [
             {
               "name": "validateOwnedNonRothIraRuntimeSourceSeries",
-              "line": 3249
+              "line": 3256
             }
           ]
         },
@@ -1376,7 +1376,7 @@
           "functions": [
             {
               "name": "validateOwnedNonRothIraRuntimeSourceSeries",
-              "line": 3249
+              "line": 3256
             }
           ]
         },

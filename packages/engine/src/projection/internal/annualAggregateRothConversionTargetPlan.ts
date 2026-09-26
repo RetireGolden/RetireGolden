@@ -10,9 +10,12 @@
 import type { Plan } from '../../model/plan.js'
 import type { ParameterPack } from '../../params/types.js'
 import {
+  fillTargetCeiling,
+  fillTargetMetric,
   sizeRothConversion,
   type ConversionSizingInput,
 } from '../../strategies/rothConversion.js'
+import type { FederalTaxDetail } from '../../tax/federalTax.js'
 import {
   AGGREGATE_ROTH_CONVERSION_EPSILON_PLAN_DOLLARS,
   ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS,
@@ -93,8 +96,21 @@ export interface AnnualAggregateRothConversionTargetPlanResult
   readonly acaSizingInput: ConversionSizingInput['aca']
   /** Whether the unsuppressed aggregate strategy selected fill-to-target. */
   readonly fillToTargetSelected: boolean
+  /**
+   * The ceiling this year's fill-to-target conversion was sized against, and
+   * the metric it sized (taxable income for a bracket top, MAGI for an IRMAA
+   * tier or a fixed MAGI, ACA MAGI for the credit cliff), read from a federal
+   * tax detail with the same sizing input. Null when no fill-to-target
+   * conversion was sized this year.
+   */
+  readonly fillTarget: AnnualAggregateRothConversionFillTarget | null
   /** Reads the caller's then-current source snapshots when invoked. */
   readonly taxableAmountForGross: (grossPlanDollars: number) => number
+}
+
+export interface AnnualAggregateRothConversionFillTarget {
+  readonly ceiling: number
+  readonly metric: (detail: FederalTaxDetail) => number
 }
 
 function acaSizingInput(
@@ -228,10 +244,12 @@ export function annualAggregateRothConversionTargetPlan(
   const annualAcaSizingInput = acaSizingInput(input.sizing.aca)
   const result = (
     decision: AnnualAggregateRothConversionTargetDecision,
+    fillTarget: AnnualAggregateRothConversionFillTarget | null = null,
   ): AnnualAggregateRothConversionTargetPlanResult => ({
     ...decision,
     acaSizingInput: annualAcaSizingInput,
     fillToTargetSelected: strategy.mode === 'fillToTarget',
+    fillTarget,
     taxableAmountForGross: (grossPlanDollars) =>
       taxableAmountForGross(input.readSources(), grossPlanDollars),
   })
@@ -253,7 +271,7 @@ export function annualAggregateRothConversionTargetPlan(
     return result({ desiredPlanDollars: 0, warnings: [] })
   }
   const sizing = input.sizing
-  const sized = sizeRothConversion(strategy, {
+  const sizingInput: ConversionSizingInput = {
     year: input.year,
     pack: sizing.pack,
     filingStatus: sizing.filingStatus,
@@ -267,7 +285,8 @@ export function annualAggregateRothConversionTargetPlan(
     aca: annualAcaSizingInput,
     inflationScale: sizing.inflationScale,
     itemizedDeductions: sizing.itemizedDeductions,
-  })
+  }
+  const sized = sizeRothConversion(strategy, sizingInput)
   if (!sized.ok) {
     // Kept after #495 D6 made the two everyday routes here parse errors (an
     // unpublished or open-ended bracket rate, a fixed MAGI of 0 or less are
@@ -294,13 +313,22 @@ export function annualAggregateRothConversionTargetPlan(
     return result({ desiredPlanDollars: 0, warnings: [] })
   }
 
+  // sizeRothConversion returned ok, so the target names a ceiling; a null
+  // here would mean no ceiling to compare with, and then no overshoot.
+  const ceiling = fillTargetCeiling(strategy, sizingInput)
+  const fillTarget: AnnualAggregateRothConversionFillTarget | null = ceiling === null
+    ? null
+    : {
+        ceiling,
+        metric: (detail) => fillTargetMetric(strategy.target, detail, sizingInput),
+      }
   const sources = input.readSources()
   const desiredPlanDollars = grossAmountForTaxable(sources, sized.amount)
   if (
     desiredPlanDollars <= AGGREGATE_ROTH_CONVERSION_EPSILON_PLAN_DOLLARS ||
     input.safetyNet.floorTodayPlanDollars <= 0
   ) {
-    return result({ desiredPlanDollars, warnings: [] })
+    return result({ desiredPlanDollars, warnings: [] }, fillTarget)
   }
-  return result(trimForSafetyNet(desiredPlanDollars, sources, input.safetyNet))
+  return result(trimForSafetyNet(desiredPlanDollars, sources, input.safetyNet), fillTarget)
 }
