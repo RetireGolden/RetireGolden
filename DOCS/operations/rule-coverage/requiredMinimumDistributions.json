@@ -2330,7 +2330,7 @@
           "functions": [
             {
               "name": "migratePlanToCurrent",
-              "line": 1402
+              "line": 1492
             }
           ]
         },
@@ -2452,7 +2452,7 @@
           "functions": [
             {
               "name": "annuityPurchaseGenerator",
-              "line": 571
+              "line": 578
             }
           ]
         },
@@ -2461,7 +2461,7 @@
           "functions": [
             {
               "name": "migratePlanToCurrent",
-              "line": 1402
+              "line": 1492
             }
           ]
         },
@@ -2665,7 +2665,7 @@
           "functions": [
             {
               "name": "annuityPurchaseGenerator",
-              "line": 571
+              "line": 578
             }
           ]
         },
