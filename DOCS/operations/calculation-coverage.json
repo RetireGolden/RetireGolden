@@ -154,6 +154,8 @@
       "qcd-annual",
       "relocation-lifetime-state-local-tax",
       "relocation-state-tax-driver-savings",
+      "risk-based-guardrail-solved-balance-thresholds",
+      "risk-based-guardrail-suggested-adjustment-monthly",
       "rmd-required-annual",
       "roth-conversion-annual",
       "scenario-comparison-cell",
@@ -212,10 +214,7 @@
       "year-result-ltcg-zero-headroom",
       "year-result-tax-exempt-interest"
     ],
-    "partial": [
-      "risk-based-guardrail-solved-balance-thresholds",
-      "risk-based-guardrail-suggested-adjustment-monthly"
-    ],
+    "partial": [],
     "noRecordYet": [
       "bucket-lens-allocation",
       "cash-flow-line-amount",

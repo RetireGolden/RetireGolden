@@ -15,7 +15,7 @@
         "monte-carlo-ending-after-tax-estate-percentiles"
       ],
       "purpose": "The lower-triangular mix that turns independent Gaussians into correlated class shocks on an allocated Monte Carlo path.",
-      "statement": "For a symmetric matrix A, the lower-triangular L satisfies L L^T = A when A is positive definite: L_ij = (A_ij − sum_{k<j} L_ik L_jk) / L_jj for i > j, and L_ii = sqrt(A_ii − sum_{k<i} L_ik^2), with L_ij = 0 for j > i. When a diagonal pivot A_ii − sum_{k<i} L_ik^2 is not a positive number, A is not positive definite, no real factor exists, and the matrix is refused with a message. For the 2×2 correlation [[1, r], [r, 1]], this is L = [[1, 0], [r, sqrt(1 − r^2)]]. Units: dimensionless. Rounding: none.",
+      "statement": "For a symmetric matrix A, the lower-triangular L satisfies L L^T = A when A is positive definite: L_ij = (A_ij − sum_{k<j} L_ik L_jk) / L_jj for i > j, and L_ii = sqrt(A_ii − sum_{k<i} L_ik^2), with L_ij = 0 for j > i. When a diagonal pivot A_ii − sum_{k<i} L_ik^2 is not a positive number, A is not positive definite and no factor with a positive diagonal exists (the pivot is 0, as for a perfectly correlated pair, or negative, as for an indefinite matrix), so the matrix is refused with a message. For the 2×2 correlation [[1, r], [r, 1]], this is L = [[1, 0], [r, sqrt(1 − r^2)]]. Units: dimensionless. Rounding: none.",
       "formula": {
         "expression": "L_ii = sqrt(A_ii − sum_{k<i} L_ik^2), refused unless that pivot is positive; L_ij = (A_ij − sum_{k<j} L_ik L_jk) / L_jj for i > j; L_ij = 0 for j > i",
         "variables": [
@@ -43,6 +43,7 @@
       },
       "limits": [
         "A matrix that is not positive definite (a diagonal pivot at or below 0, which includes a perfectly correlated pair of classes) is refused with a message; the shipped default matrix is positive definite",
+        "A positive-definite matrix whose pivot is positive but below 1e-12 is now factored exactly; it used to have that pivot raised to 1e-12, so its class shocks differ from before (for [[1, r], [r, 1]] with r = 1 − 1e-13, L_22 is 4.4728311955343587e-7, not 1e-6). This is the one valid input whose factor changed",
         "The function neither checks symmetry nor rescales a correlation matrix to unit diagonal",
         "Class-shock models pass this factor a matrix over ASSET_CLASS_IDS order; a 2×2 is the worksheet case, not a live allocation"
       ],
@@ -488,7 +489,7 @@
         "monte-carlo-depletion-probability-by-year"
       ],
       "purpose": "A serially correlated, mean-zero additive return shock for one Monte Carlo path.",
-      "statement": "Let phi be the configured persistence (default 0.25; a number from −0.9 to 0.95, and anything else is refused with a message) and sigma = returnVolPct/100. Starting from prev = 0, each year draws an innovation eps ~ N(0, 1) and sets shock = phi · prev + sigma · eps, then prev = shock; the published return shock is 100 · shock percentage points. With phi = 0.2, sigma = 0.10 and a first-year eps that produces a 10-point shock, the next two zero-innovation years are 2 then 0.4 points. Units: percentage points. Rounding: none.",
+      "statement": "Let phi be the configured persistence (default 0.25; a number strictly between −1 and 1, where the process is stationary, and anything else is refused with a message) and sigma = returnVolPct/100. Starting from prev = 0, each year draws an innovation eps ~ N(0, 1) and sets shock = phi · prev + sigma · eps, then prev = shock; the published return shock is 100 · shock percentage points. With phi = 0.2, sigma = 0.10 and a first-year eps that produces a 10-point shock, the next two zero-innovation years are 2 then 0.4 points. Units: percentage points. Rounding: none.",
       "formula": {
         "expression": "x_0 = 0; x_t = phi x_{t-1} + sigma eps_t; returnShockPct_t = 100 x_t",
         "variables": [
@@ -496,7 +497,7 @@
             "symbol": "phi",
             "meaning": "AR(1) persistence",
             "unit": "1",
-            "domain": "from −0.9 to 0.95, refused otherwise; worksheet case 0.2"
+            "domain": "strictly between −1 and 1, refused otherwise; worksheet case 0.2"
           },
           {
             "symbol": "sigma",
@@ -524,6 +525,7 @@
         "A dynamics assumption, not evidence of a true return process",
         "The path always starts from prev = 0; a prior shock of 10 is realized as year 1 of the path, and the worksheet's \"next two shocks\" are years 2 and 3 with zero innovations",
         "The phi default comment was corrected to the code's 0.25 on 2026-09-18 (D-STUDENT-T-MIXTURE notes the related decision). The worksheet case passes 0.2 explicitly",
+        "A phi of 1 or more in size, where the process is not stationary, is refused with a message; phi used to be clamped to [−0.9, 0.95] without a word, and values inside that range run exactly as before",
         "A return-inflation correlation outside [−1, 1], or not finite, is refused with a message rather than clamped"
       ],
       "worksheet": "DOCS/calculations/monte-carlo/market-model-ar1-shock.md",
@@ -718,7 +720,7 @@
         "monte-carlo-depletion-probability-by-year"
       ],
       "purpose": "A clustered-volatility additive return shock whose long-run standard deviation equals returnVolPct.",
-      "statement": "With sigmaBar = returnVolPct/100 (default 12), alpha (default 0.1) and beta (default 0.85), omega = sigmaBar^2 · (1 − alpha − beta), so the long-run variance omega / (1 − alpha − beta) is sigmaBar^2 (Bollerslev 1986, with the variance targeting of Engle and Mezrich 1996). The path starts at v_1 = sigmaBar^2. Each year t draws Z1_t = nextNormal, sets the innovation e_t = sqrt(v_t) · Z1_t and publishes returnShockPct = 100 · e_t; then Z2_t = nextNormal and inflation = inflationMeanPct + inflationVolPct · (rho · Z1_t + sqrt(1 − rho^2) · Z2_t); then v_{t+1} = omega + alpha · e_t^2 + beta · v_t, which feeds back the innovation itself. Because E[e_t^2 | past] = v_t and v_1 = sigmaBar^2, E[v_t] = sigmaBar^2 in every year, so every year's shock has mean 0 and unconditional standard deviation returnVolPct points. A negative or non-finite returnVolPct, a negative or non-finite alpha or beta, and alpha + beta of 1 or more are refused with a message. For the defaults, zero inflation inputs and Z1 = 1, 0.5, −2, 0 (Z2 = 0), omega = 0.00072 and v = 0.0144, 0.0144, 0.01332, 0.01737, so the shocks are 12, 6, −23.082460874005616 and 0 points and inflation is 0. Units: percentage points. Rounding: none. Absolute tolerance 1e-12.",
+      "statement": "With sigmaBar = returnVolPct/100 (default 12), alpha (default 0.1) and beta (default 0.85), omega = sigmaBar^2 · (1 − alpha − beta), so the long-run variance omega / (1 − alpha − beta) is sigmaBar^2 (Bollerslev 1986, with the variance targeting of Engle and Mezrich 1996). The path starts at v_1 = sigmaBar^2. Each year t draws Z1_t = nextNormal, sets the innovation e_t = sqrt(v_t) · Z1_t and publishes returnShockPct = 100 · e_t; then Z2_t = nextNormal and inflation = inflationMeanPct + inflationVolPct · (rho · Z1_t + sqrt(1 − rho^2) · Z2_t); then v_{t+1} = omega + alpha · e_t^2 + beta · v_t, which feeds back the innovation itself. Because E[e_t^2 | past] = v_t and v_1 = sigmaBar^2, E[v_t] = sigmaBar^2 in every year, so every year's shock has mean 0 and unconditional standard deviation returnVolPct points. A negative or non-finite returnVolPct, a negative or non-finite alpha or beta, alpha + beta of 1 or more, and the retired keys omega (now derived) and returnVolScalePct (now returnVolPct) are refused with a message. For the defaults, zero inflation inputs and Z1 = 1, 0.5, −2, 0 (Z2 = 0), omega = 0.00072 and v = 0.0144, 0.0144, 0.01332, 0.01737, so the shocks are 12, 6, −23.082460874005616 and 0 points and inflation is 0. Units: percentage points. Rounding: none. Absolute tolerance 1e-12.",
       "formula": {
         "expression": "v_1 = sigmaBar^2; e_t = sqrt(v_t) · Z1_t; shock_t = 100 · e_t; v_{t+1} = sigmaBar^2 (1 − alpha − beta) + alpha e_t^2 + beta v_t",
         "variables": [
@@ -774,9 +776,9 @@
         "packages/engine/src/montecarlo/marketModels.ts"
       ],
       "provenance": {
-        "derivedBy": "claude",
+        "derivedBy": "claude-deriver",
         "implementedBy": "claude-subagent",
-        "reviewedBy": "unreviewed"
+        "reviewedBy": "claude-checker"
       },
       "fixtureFiles": [
         "packages/engine/src/montecarlo/marketModels.evidence.test.ts"
@@ -956,7 +958,7 @@
             "symbol": "p_high",
             "meaning": "Probability of switching into the high regime from low",
             "unit": "1",
-            "domain": "from 0.01 to 0.3, refused otherwise; worksheet 0.20"
+            "domain": "a probability from 0 to 1, refused otherwise; worksheet 0.20"
           },
           {
             "symbol": "U",
@@ -977,7 +979,7 @@
       "limits": [
         "A stress model, not a forecast of regime incidence",
         "Inflation volatility is hardcoded at 1.5 percentage points; zero-innovation inflation requires Z = 0, not a configured vol of 0",
-        "A high-inflation probability outside [0.01, 0.3] is refused with a message rather than clamped",
+        "A high-inflation probability outside [0, 1] is refused with a message; it used to be clamped to [0.01, 0.3] without a word, and values inside that range run exactly as before",
         "A return-inflation correlation outside [−1, 1], or not finite, is refused with a message rather than clamped"
       ],
       "worksheet": "DOCS/calculations/monte-carlo/market-model-inflation-regime.md",
@@ -1103,7 +1105,7 @@
             "symbol": "p",
             "meaning": "Annual switch probability",
             "unit": "1",
-            "domain": "from 0.001 to 0.5, refused otherwise; worksheet 0.05"
+            "domain": "a probability from 0 to 1, refused otherwise; worksheet 0.05"
           },
           {
             "symbol": "U",
@@ -1119,7 +1121,7 @@
         "A scenario model, not evidence markets have two regimes",
         "Symmetric +a/−a deviations are near zero only under equal long-run state mass",
         "The start state is a coin flip (U > 0.5), so the worksheet's \"current state bull\" is realized by scripting that first draw",
-        "A switch probability outside [0.001, 0.5] is refused with a message rather than clamped"
+        "A switch probability outside [0, 1] is refused with a message; it used to be clamped to [0.001, 0.5] without a word, and values inside that range run exactly as before"
       ],
       "worksheet": "DOCS/calculations/monte-carlo/market-model-regime-switch.md",
       "mutation": "DOCS/calculations/monte-carlo/market-model-regime-switch.mutation.md",
@@ -1201,9 +1203,9 @@
         "packages/engine/src/montecarlo/marketModels.ts"
       ],
       "provenance": {
-        "derivedBy": "claude",
+        "derivedBy": "claude-deriver",
         "implementedBy": "claude-subagent",
-        "reviewedBy": "unreviewed"
+        "reviewedBy": "claude-checker"
       },
       "fixtureFiles": [
         "packages/engine/src/montecarlo/marketModels.evidence.test.ts"
@@ -1365,9 +1367,9 @@
         "packages/engine/src/montecarlo/marketModels.ts"
       ],
       "provenance": {
-        "derivedBy": "claude",
+        "derivedBy": "claude-deriver",
         "implementedBy": "claude-subagent",
-        "reviewedBy": "unreviewed"
+        "reviewedBy": "claude-checker"
       },
       "fixtureFiles": [
         "packages/engine/src/montecarlo/marketModels.evidence.test.ts"
@@ -2273,7 +2275,7 @@
       },
       "limits": [
         "Monotonicity of success in f and m is assumed, not checked; with a curve that is not monotone the result is a lattice point but not a meaningful edge",
-        "The Spending card always solves under the headline lognormal model (12 percent volatility, 60/40) with 200 paths and the plan-id seed, whatever model the Monte Carlo page shows",
+        "The Spending card always solves under the lognormal model at 12 percent volatility around the plan's own expected returns (allocated accounts use their asset classes' volatilities), with 200 paths and the plan-id seed, whatever model the Monte Carlo page shows",
         "Successes are cached by the balance scale rounded to 1e-6; the lattice step is about 3.9e-3, so two lattice points never share a key. The spending phase is not cached, so successAfter re-evaluates a multiplier the bisection has usually tried already",
         "With a single path S is 0 or 1, so the two band edges are the same test and return the same point",
         "The planner persists each edge as a percent of today's investable rounded to two decimals (140.37 and 190.12 in the worked example), and the callouts print that percent of today's balances, so the printed dollars can differ from balanceDollars by that rounding and by any balance change since the solve"
@@ -2288,9 +2290,9 @@
         "packages/engine/src/montecarlo/riskBasedGuardrails.ts"
       ],
       "provenance": {
-        "derivedBy": "claude",
+        "derivedBy": "claude-deriver",
         "implementedBy": "claude-subagent",
-        "reviewedBy": "unreviewed"
+        "reviewedBy": "claude-checker"
       },
       "fixtureFiles": [
         "packages/engine/src/montecarlo/riskBasedGuardrails.evidence.test.ts"
