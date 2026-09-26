@@ -3,6 +3,7 @@ import { Link } from 'react-router'
 import { usePlan } from '../planContextCore'
 import { useProjection } from '../useProjection'
 import { packForYear } from '@retiregolden/engine/params'
+import { detectorProjection } from '@retiregolden/engine/insights/detectorProjection'
 import { runScreen } from '@retiregolden/engine/insights/runInsights'
 import type { InsightCard, InsightCategory } from '@retiregolden/engine/insights/types'
 import { readLocal, STORAGE_KEYS, writeLocal } from '../../data/localStore'
@@ -124,12 +125,9 @@ export function InsightsPage() {
     const paramsLookup = packForYear(projectionView.startYear)
     const ctx = {
       plan,
-      projection: {
-        result: projectionView.result,
-        summary: projectionView.summary,
-        startYear: projectionView.startYear,
-        deflate: projectionView.deflate,
-      },
+      // The engine's own projection view: today's dollars divide by the
+      // run's published inflation factor, not a converter built here.
+      projection: detectorProjection(projectionView.result, projectionView.summary),
       params: paramsLookup.pack,
     }
     return runScreen(ctx)

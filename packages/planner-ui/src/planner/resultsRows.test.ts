@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { Account, Plan } from '@retiregolden/engine/model/plan'
+import { toNominalDollars, toTodayDollars } from '@retiregolden/engine/projection/dollarBasis'
 import type { InheritedAccountYearEvidence } from '@retiregolden/engine/projection/types'
 import { projectPlan } from '../projection'
 import { ACCOUNT_CATEGORIES } from './accountCategories'
@@ -11,19 +12,33 @@ import {
   buildIncomeRows,
   buildLedgerCsv,
   buildResultsRows,
+  dollarAdjuster,
   inheritedAccountIds,
 } from './resultsRows'
-
-const identity = (_year: number, value: number) => value
 
 function view(plan: Plan) {
   return projectPlan(plan, { startYear: EXAMPLE_FIXED_YEAR })
 }
 
+describe('dollarAdjuster', () => {
+  it("is the identity in nominal mode and divides by the run's own factor in today's mode", () => {
+    const v = view(buildExampleCouple())
+    const nominal = dollarAdjuster(v.basis, 'nominal')
+    const today = dollarAdjuster(v.basis, 'today')
+    for (const row of v.result.years) {
+      expect(nominal(row.year, 123_456.78), String(row.year)).toBe(123_456.78)
+      expect(Object.is(today(row.year, 123_456.78), 123_456.78 / row.inflationScale!), String(row.year)).toBe(true)
+    }
+    // No year outside the projection is extrapolated.
+    expect(() => today(v.result.startYear - 1, 1)).toThrow(RangeError)
+    expect(() => nominal(v.result.endYear + 1, 1)).toThrow(RangeError)
+  })
+})
+
 describe('buildResultsRows', () => {
   it('carries one row per projected year with every stacked-chart key', () => {
     const plan = buildExampleCouple()
-    const rows = buildResultsRows(view(plan), plan, identity)
+    const rows = buildResultsRows(view(plan), plan, 'nominal')
     const result = view(plan).result
     expect(rows).toHaveLength(result.years.length)
     expect(rows[0]).toMatchObject({
@@ -34,6 +49,7 @@ describe('buildResultsRows', () => {
       traditional: expect.any(Number),
       roth: expect.any(Number),
       hsa: expect.any(Number),
+      unassigned: expect.any(Number),
       income: expect.any(Number),
       spending: expect.any(Number),
       tax: expect.any(Number),
@@ -44,32 +60,24 @@ describe('buildResultsRows', () => {
     })
   })
 
-  it('routes every dollar figure through the supplied adjuster', () => {
+  it("converts every nominal dollar figure into today's dollars by the year's own factor", () => {
     const plan = buildExampleCouple()
     const v = view(plan)
-    let calls = 0
-    // A deterministic, always-different-from-identity transform (rather than
-    // the view's own deflate, whose divergence from identity depends on
-    // fixture-specific inflation compounding and can be near-zero for an
-    // early year): every dollar-typed field, every year, must equal
-    // `identity + 1000`, or the field skipped the adjuster entirely.
-    const shiftedAdj = (_year: number, value: number) => {
-      calls += 1
-      return value + 1_000
-    }
-    const nominal = buildResultsRows(v, plan, identity)
-    const shifted = buildResultsRows(v, plan, shiftedAdj)
-    expect(calls).toBeGreaterThan(0)
-    expect(shifted).toHaveLength(nominal.length)
-    const DOLLAR_KEYS = [
+    const nominal = buildResultsRows(v, plan, 'nominal')
+    const today = buildResultsRows(v, plan, 'today')
+    expect(today).toHaveLength(nominal.length)
+    // A later year's factor is well away from 1, so a field that skipped the
+    // conversion cannot pass by accident.
+    expect(v.result.years.at(-1)!.inflationScale!).toBeGreaterThan(1.5)
+    const NOMINAL_KEYS = [
       ...ACCOUNT_CATEGORIES,
-      'income', 'spending', 'tax', 'magi', 'shortfall', 'investable', 'fiTarget',
+      'unassigned', 'income', 'spending', 'tax', 'magi', 'shortfall', 'investable',
     ] as const
     nominal.forEach((rawRow, i) => {
-      const row = rawRow as unknown as Record<(typeof DOLLAR_KEYS)[number], number> & { year: number }
-      const shiftedRow = shifted[i] as unknown as Record<(typeof DOLLAR_KEYS)[number], number>
-      for (const key of DOLLAR_KEYS) {
-        expect(shiftedRow[key], `${key} in year ${row.year}`).toBeCloseTo(row[key] + 1_000, 6)
+      const row = rawRow as unknown as Record<(typeof NOMINAL_KEYS)[number], number> & { year: number }
+      const todayRow = today[i] as unknown as Record<(typeof NOMINAL_KEYS)[number], number>
+      for (const key of NOMINAL_KEYS) {
+        expect(Object.is(todayRow[key], toTodayDollars(v.basis, row.year, row[key])), `${key} in year ${row.year}`).toBe(true)
       }
     })
   })
@@ -77,25 +85,27 @@ describe('buildResultsRows', () => {
   it('computes spending as expenses.total + tax + penalties, not merely expenses.total', () => {
     const plan = buildExampleCouple()
     const v = view(plan)
-    const rows = buildResultsRows(v, plan, identity)
+    const rows = buildResultsRows(v, plan, 'nominal')
     const years = v.result.years
     // At least one projected year owes tax or a penalty — otherwise a
     // `spending` that silently dropped both terms would still pass below.
     expect(years.some((y) => y.tax > 0 || y.penalties > 0)).toBe(true)
     years.forEach((y, i) => {
-      expect(rows[i]!.spending, `year ${y.year}`).toBeCloseTo(y.expenses.total + y.tax + y.penalties, 6)
+      expect(rows[i]!.spending, `year ${y.year}`).toBe(y.expenses.total + y.tax + y.penalties)
     })
   })
 
-  it("runs fiTarget through the view's own inflation helper before the adjuster", () => {
+  it("shows the FI target unchanged in today's dollars and grown by the year's factor in nominal dollars", () => {
     const plan = buildExampleCouple()
     const v = view(plan)
-    const rows = buildResultsRows(v, plan, identity)
-    // A zero fiNumber would make a broken inflate-then-adjust call read back
-    // as 0 too, so this guard is what makes the loop below discriminating.
+    const nominal = buildResultsRows(v, plan, 'nominal')
+    const today = buildResultsRows(v, plan, 'today')
+    // A zero fiNumber would make a broken conversion read back as 0 too, so
+    // this guard is what makes the loop below discriminating.
     expect(v.summary.fiNumber).toBeGreaterThan(0)
     v.result.years.forEach((y, i) => {
-      expect(rows[i]!.fiTarget, `year ${y.year}`).toBeCloseTo(v.inflate(y.year, v.summary.fiNumber), 6)
+      expect(today[i]!.fiTarget, `year ${y.year}`).toBe(v.summary.fiNumber)
+      expect(Object.is(nominal[i]!.fiTarget, toNominalDollars(v.basis, y.year, v.summary.fiNumber)), `year ${y.year}`).toBe(true)
     })
   })
 })
@@ -103,7 +113,7 @@ describe('buildResultsRows', () => {
 describe('buildIncomeRows / buildExpenseRows', () => {
   it('carries one row per projected year with the documented income keys', () => {
     const plan = buildExampleCouple()
-    const rows = buildIncomeRows(view(plan), identity)
+    const rows = buildIncomeRows(view(plan), 'nominal')
     expect(rows).toHaveLength(view(plan).result.years.length)
     expect(Object.keys(rows[0]!).sort()).toEqual(
       [
@@ -115,7 +125,7 @@ describe('buildIncomeRows / buildExpenseRows', () => {
 
   it('carries one row per projected year with the documented expense keys', () => {
     const plan = buildExampleCouple()
-    const rows = buildExpenseRows(view(plan), identity)
+    const rows = buildExpenseRows(view(plan), 'nominal')
     expect(rows).toHaveLength(view(plan).result.years.length)
     expect(Object.keys(rows[0]!).sort()).toEqual(
       ['year', 'base', 'healthcare', 'property', 'debt', 'insurance', 'care', 'goals', 'taxes'].sort(),
@@ -129,7 +139,7 @@ describe('buildIncomeRows / buildExpenseRows', () => {
     // exercising both the subtraction and the floor.
     const plan = buildExampleCouple()
     const v = view(plan)
-    const rows = buildExpenseRows(v, identity)
+    const rows = buildExpenseRows(v, 'nominal')
     expect(v.result.years.some((y) => y.expenses.careCost > 0)).toBe(true)
     v.result.years.forEach((y, i) => {
       expect(rows[i]!.care, `year ${y.year}`).toBeCloseTo(

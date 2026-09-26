@@ -1,12 +1,15 @@
 import { describe, expect, it } from 'vitest'
 
 import { singlePersonPlan, taxableAccount, validatePlan } from '@retiregolden/engine/testing/planFixtures'
-import { inflationView, projectPlan } from './projection'
+import { projectPlan } from './projection'
 
 const START_YEAR = 2026
 
 function fixturePlan() {
-  const plan = singlePersonPlan()
+  // A horizon of several years and a nonzero rate, so the conversions below
+  // move something (the bare fixture runs one year at 0% inflation).
+  const plan = singlePersonPlan({ dob: '1966-01-01', planningAge: 70 })
+  plan.assumptions.inflationPct = 2.5
   plan.accounts.push(taxableAccount('acct-taxable', 500_000, 250_000))
   return validatePlan(plan)
 }
@@ -28,26 +31,6 @@ describe('projectPlan', () => {
     expect(projection.result.years[0]?.year).toBe(START_YEAR)
   })
 
-  it('keeps today-dollar deflation unchanged', () => {
-    const plan = fixturePlan()
-    const projection = projectPlan(plan, START_YEAR)
-    const rate = 1 + plan.assumptions.inflationPct / 100
-
-    expect(projection.deflate(START_YEAR + 2, 10_000)).toBeCloseTo(10_000 / Math.pow(rate, 2))
-  })
-
-  it('inflates a today-dollar amount the same way it deflates a nominal one', () => {
-    const plan = fixturePlan()
-    const projection = projectPlan(plan, START_YEAR)
-    const rate = 1 + plan.assumptions.inflationPct / 100
-
-    // Hand worksheet, not the code: 10,000 x rate^3 three years out.
-    expect(projection.inflate(START_YEAR + 3, 10_000)).toBeCloseTo(10_000 * Math.pow(rate, 3))
-    // The base year is a fixed point in both directions.
-    expect(projection.inflate(START_YEAR, 10_000)).toBeCloseTo(10_000)
-    expect(projection.deflate(START_YEAR, 10_000)).toBeCloseTo(10_000)
-  })
-
   it('omits YearResult.cashFlow unless captureAnnualCashFlow is requested', () => {
     const plan = fixturePlan()
     const byStartYear = projectPlan(plan, START_YEAR)
@@ -59,26 +42,41 @@ describe('projectPlan', () => {
   })
 })
 
-describe('inflationView', () => {
-  const RATE_PCT = 2.5
+describe('ProjectionView dollar basis', () => {
+  it("carries the run's own basis: one published factor per projected year, 1 in the start year", () => {
+    const projection = projectPlan(fixturePlan(), START_YEAR)
+    const { basis, result } = projection
 
-  it('round-trips an amount through inflate then deflate, and back', () => {
-    const money = inflationView(RATE_PCT, START_YEAR)
-    for (const year of [START_YEAR - 4, START_YEAR, START_YEAR + 1, START_YEAR + 30]) {
-      expect(money.deflate(year, money.inflate(year, 1_234.56)), String(year)).toBeCloseTo(1_234.56, 6)
-      expect(money.inflate(year, money.deflate(year, 1_234.56)), String(year)).toBeCloseTo(1_234.56, 6)
-    }
+    expect(basis.startYear).toBe(result.startYear)
+    expect(basis.endYear).toBe(result.endYear)
+    expect(basis.factors).toHaveLength(result.years.length)
+    expect(basis.factors[0]).toBe(1)
+    result.years.forEach((row, index) => {
+      expect(Object.is(basis.factors[index], row.inflationScale), String(row.year)).toBe(true)
+    })
   })
 
-  it('compounds the rate it is given, from the base year it is given', () => {
-    // 1.025^10 = 1.2800845..., a figure independent of this module.
-    expect(inflationView(RATE_PCT, START_YEAR).inflate(START_YEAR + 10, 1)).toBeCloseTo(1.2800845441, 9)
-    // A different base year moves the exponent, not the rate.
-    expect(inflationView(RATE_PCT, START_YEAR + 10).inflate(START_YEAR + 10, 1)).toBeCloseTo(1)
+  it("deflates and inflates by the ledger's published factor for the year", () => {
+    const plan = fixturePlan()
+    const projection = projectPlan(plan, START_YEAR)
+    const scaleIn = (year: number) => projection.result.years.find((row) => row.year === year)!.inflationScale!
+    const rate = 1 + plan.assumptions.inflationPct / 100
+
+    // Exactly the ledger's own factor, bit for bit.
+    expect(Object.is(projection.deflate(START_YEAR + 2, 10_000), 10_000 / scaleIn(START_YEAR + 2))).toBe(true)
+    expect(Object.is(projection.inflate(START_YEAR + 3, 10_000), 10_000 * scaleIn(START_YEAR + 3))).toBe(true)
+    // Hand worksheet, not the code: 10,000 over rate^2, and 10,000 x rate^3.
+    expect(projection.deflate(START_YEAR + 2, 10_000)).toBeCloseTo(10_000 / (rate * rate), 9)
+    expect(projection.inflate(START_YEAR + 3, 10_000)).toBeCloseTo(10_000 * rate * rate * rate, 9)
+    // The base year is a fixed point in both directions.
+    expect(projection.inflate(START_YEAR, 10_000)).toBe(10_000)
+    expect(projection.deflate(START_YEAR, 10_000)).toBe(10_000)
   })
 
-  it('reads a year before the base year as the inverse, not as zero growth', () => {
-    const money = inflationView(RATE_PCT, START_YEAR)
-    expect(money.inflate(START_YEAR - 2, 1)).toBeCloseTo(1 / Math.pow(1.025, 2), 9)
+  it('refuses a year outside the projection instead of extrapolating', () => {
+    const projection = projectPlan(fixturePlan(), START_YEAR)
+
+    expect(() => projection.deflate(START_YEAR - 1, 1)).toThrow(RangeError)
+    expect(() => projection.inflate(projection.result.endYear + 1, 1)).toThrow(RangeError)
   })
 })

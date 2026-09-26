@@ -34,7 +34,7 @@ import { buildModel } from './marketModelPicker'
 import { ScrollRegion } from './ScrollRegion'
 import { usePlan } from './planContextCore'
 import { useWorkspaceReadOnly } from '../data/workspaceReadOnly'
-import { inflationView } from '../projection'
+import { planDollarBasis, toTodayDollars } from '@retiregolden/engine/projection/dollarBasis'
 import { currentStartYear, seedFromPlanId } from './useProjection'
 import { US_STATES } from './usStates'
 
@@ -262,8 +262,13 @@ export function RelocationComparePage() {
     return [...rows].sort((a, b) => key(a) - key(b) || a.destinationState.localeCompare(b.destinationState))
   }, [result, effectiveRankBy])
 
-  const money = inflationView(plan.assumptions.inflationPct, startYear)
-  const deflateEnd = (row: RelocationCandidateRow, amount: number) => money.deflate(row.endYear, amount)
+  // Today's dollars of the comparison's own start year (the year it ran for,
+  // not the clock at render), by the ledger's recurrence at the plan's rate.
+  // A row whose horizon ended before that year has no factor to divide by.
+  const deflateEnd = (row: RelocationCandidateRow, amount: number): number | null =>
+    result === null || row.endYear < result.startYear
+      ? null
+      : toTodayDollars(planDollarBasis(plan.assumptions.inflationPct, result.startYear, row.endYear), row.endYear, amount)
 
   return (
     <section>
@@ -423,6 +428,7 @@ export function RelocationComparePage() {
               <tbody>
                 {[baseline, ...rankedCandidates].map((row) => {
                   const delta = row.error ? null : row.lifetimeTaxesAndPenalties - baseline.lifetimeTaxesAndPenalties
+                  const estateToday = row.error ? null : deflateEnd(row, row.endingAfterTaxEstate)
                   return (
                     <tr key={row.id}>
                       <td>
@@ -445,7 +451,7 @@ export function RelocationComparePage() {
                           <td style={{ textAlign: 'right', color: delta !== null && delta < 0 ? 'var(--good)' : undefined }}>
                             {row.id === 'baseline' || delta === null ? '—' : `${delta > 0 ? '+' : ''}${fmtMoney(delta)}`}
                           </td>
-                          <td style={{ textAlign: 'right' }}>{fmtMoney(deflateEnd(row, row.endingAfterTaxEstate))}</td>
+                          <td style={{ textAlign: 'right' }}>{estateToday === null ? '—' : fmtMoney(estateToday)}</td>
                         </>
                       )}
                       {result.monteCarlo && !row.error ? (

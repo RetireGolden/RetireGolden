@@ -12,8 +12,12 @@ import {
   ACCOUNT_CATEGORIES,
   ACCOUNT_CATEGORY_COLOR,
   ACCOUNT_CATEGORY_LABEL,
-  categoryBalances,
+  hasUnassignedCash,
+  UNASSIGNED_CASH_COLOR,
+  UNASSIGNED_CASH_KEY,
+  UNASSIGNED_CASH_LABEL,
 } from './accountCategories'
+import { buildResultsRows } from './resultsRows'
 import { ScrollRegion } from './ScrollRegion'
 import { planNameForTitle } from './planName'
 import { usePlannerEdition } from './editionContext'
@@ -32,7 +36,9 @@ import {
 } from 'recharts'
 
 import type { Account, IncomeStream, Plan } from '@retiregolden/engine/model/plan'
+import { moneyLasts } from '@retiregolden/engine/projection/moneyLasts'
 import type { YearResult } from '@retiregolden/engine/projection/types'
+import { taxAndPenalties } from '@retiregolden/engine/projection/yearFigures'
 import { downloadStandaloneReport } from '../report/downloadReport'
 import { useReportBranding } from '../report/brandingContext'
 import { accountBalance, buildInheritedSchedules, incomeDetail, ownerName as reportOwnerName } from '../report/reportModel'
@@ -105,19 +111,22 @@ function ReportBody() {
     plan.household.capitalLossCarryforward,
     result.years,
   )
-  const depleted = summary.depletionYear !== null
+  // The engine's "money lasts" figures: through the last funded year L, short
+  // from the first short year D. A plan short in its first year has no funded
+  // year to name, so it says so instead of printing the year before the plan.
+  const lasts = moneyLasts(result)
+  const moneyLastsKpi =
+    lasts.depletionYear === null
+      ? { value: 'full plan', sub: `through ${result.endYear}` }
+      : lasts.lastFundedYear < result.startYear
+        ? { value: `short from ${result.startYear}`, sub: "the plan's first year" }
+        : { value: `through ${lasts.lastFundedYear}`, sub: `runs short in ${lasts.depletionYear}` }
 
-  const chartRows = result.years.map((y) => {
-    const cats = categoryBalances(plan, y)
-    return {
-      year: y.year,
-      ...cats,
-      income: y.incomes.total,
-      spending: y.expenses.total + y.tax + y.penalties,
-      tax: y.tax,
-      magi: y.magi,
-    }
-  })
+  // The same engine-figure rows the Results charts draw, in nominal dollars
+  // (the printed report's charts are nominal): categories from the engine's
+  // balancesByCategory, spending plus tax and penalties from the engine.
+  const chartRows = buildResultsRows(view, plan, 'nominal')
+  const showUnassignedCash = hasUnassignedCash(result.years)
   const { homeLabel } = usePlannerEdition()
 
   return (
@@ -178,7 +187,7 @@ function ReportBody() {
         <div className="report-kpis">
           <ReportKpi label="Ending net worth" value={fmtMoneyCompact(result.endingNetWorth)} sub={`in ${result.endYear}`} />
           <ReportKpi label="After-tax estate" value={fmtMoneyCompact(summary.endingAfterTaxEstate)} sub="net of heir tax on pre-tax" />
-          <ReportKpi label="Money lasts" value={depleted ? `to ${summary.depletionYear}` : 'full plan'} sub={depleted ? 'portfolio depletes' : `through ${result.endYear}`} />
+          <ReportKpi label="Money lasts" value={moneyLastsKpi.value} sub={moneyLastsKpi.sub} />
           <ReportKpi label="Lifetime tax" value={fmtMoneyCompact(summary.lifetimeTaxesAndPenalties)} sub="federal + state + penalties" />
         </div>
         <div className="report-kpis mt-md">
@@ -206,6 +215,9 @@ function ReportBody() {
             {ACCOUNT_CATEGORIES.map((c) => (
               <Area key={c} dataKey={c} stackId="bal" name={ACCOUNT_CATEGORY_LABEL[c]} stroke={ACCOUNT_CATEGORY_COLOR[c]} fill={ACCOUNT_CATEGORY_COLOR[c]} fillOpacity={0.55} isAnimationActive={false} />
             ))}
+            {showUnassignedCash ? (
+              <Area key={UNASSIGNED_CASH_KEY} dataKey={UNASSIGNED_CASH_KEY} stackId="bal" name={UNASSIGNED_CASH_LABEL} stroke={UNASSIGNED_CASH_COLOR} fill={UNASSIGNED_CASH_COLOR} fillOpacity={0.55} isAnimationActive={false} />
+            ) : null}
           </AreaChart>
           </div>
         </div>
@@ -414,7 +426,7 @@ function ReportBody() {
                 <td style={{ ...td, textAlign: 'right' }}>{fmtMoney(y.employerMatch)}</td>
                 <td style={{ ...td, textAlign: 'right' }}>{fmtMoney(y.rmd)}</td>
                 <td style={{ ...td, textAlign: 'right' }}>{fmtMoney(y.rothConversion)}</td>
-                <td style={{ ...td, textAlign: 'right' }}>{fmtMoney(y.tax + y.penalties)}</td>
+                <td style={{ ...td, textAlign: 'right' }}>{fmtMoney(taxAndPenalties(y))}</td>
                 {hasCarryforward ? <td style={{ ...td, textAlign: 'right' }}>{fmtMoney(y.capitalLossCarryforwardRemaining)}</td> : null}
                 <td style={{ ...td, textAlign: 'right' }}>{fmtMoney(y.investableTotal)}</td>
                 <td style={{ ...td, textAlign: 'right' }}>{fmtMoney(y.netWorth)}</td>

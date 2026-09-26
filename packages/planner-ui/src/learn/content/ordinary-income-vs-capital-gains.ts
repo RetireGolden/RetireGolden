@@ -72,6 +72,6 @@ export const blocks: ArticleBlock[] = [
   { type: 'heading', text: 'Where to use this in the app' },
   {
     type: 'prose',
-    md: 'Use **Accounts** to enter taxable cost basis and account type correctly. Use **Strategy** to control withdrawals and conversions, then inspect **Results** for ordinary income, realized gains, MAGI, tax, and zero-rate capital-gain headroom.',
+    md: 'Use **Accounts** to enter taxable cost basis and account type correctly. Use **Strategy** to control withdrawals and conversions, then inspect **Results** for ordinary income, realized gains, MAGI, tax, and the tax-free gains room: the extra long-term gains a year could take without raising its federal income tax.',
   },
 ]
