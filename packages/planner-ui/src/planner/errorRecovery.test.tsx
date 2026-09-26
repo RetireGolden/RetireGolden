@@ -71,6 +71,8 @@ describe('Spending Solver — Apply to Spending', () => {
     converged: true,
     limitingConstraint: 'depletion',
     simulationCount: 20,
+    acaGrossPremiumYears: [],
+    acaGrossPremiumReasons: [],
     diagnostics: [],
     evidence: {
       endingAfterTaxEstate: 500_000,

@@ -16,6 +16,7 @@ import { sectionTitleOf } from '../sectionTitles'
 import { fmtMoney, fmtMoneyCompact } from '../format'
 import { uniqueScenarioName } from '../scenarioNames'
 import { formatMcDelta } from './mcDeltaFormat'
+import { unpricedCreditSpendingNote } from '../acaVetoCopy'
 
 function makeScenarioId(): string {
   return typeof crypto !== 'undefined' && 'randomUUID' in crypto
@@ -33,9 +34,16 @@ export function InsightCardView({ card, onDismiss }: { card: InsightCard; onDism
   // Preview results are keyed to the plan object they were computed for and
   // read as absent once the plan changes, so a stale delta can never sit
   // beside a newer plan's depletion year; the next Preview recomputes them.
-  const [exactImpactFor, setExactImpactFor] = useState<{ plan: Plan; impact: InsightImpact } | null>(null)
+  const [exactImpactFor, setExactImpactFor] = useState<{
+    plan: Plan
+    impact: InsightImpact
+    /** Unpriced-credit note for a previewed spending level; null when every year is priced. */
+    acaNote: string | null
+  } | null>(null)
   const exactImpact = exactImpactFor !== null && exactImpactFor.plan === plan ? exactImpactFor.impact : null
-  const setExactImpact = (impact: InsightImpact) => setExactImpactFor({ plan, impact })
+  const exactAcaNote = exactImpactFor !== null && exactImpactFor.plan === plan ? exactImpactFor.acaNote : null
+  const setExactImpact = (impact: InsightImpact, acaNote: string | null = null) =>
+    setExactImpactFor({ plan, impact, acaNote })
   // Detectors may refine their action during evaluate() (e.g. the spending
   // headroom card solves the exact level); Add-as-scenario must use that one.
   const [exactActionFor, setExactActionFor] = useState<{ plan: Plan; action: InsightAction } | null>(null)
@@ -98,8 +106,16 @@ export function InsightCardView({ card, onDismiss }: { card: InsightCard; onDism
             } else {
               // Keep the detector's own evaluated summary line (e.g. the solved
               // spending level) alongside the shared evaluator's exact deltas.
+              // A spending-level preview runs even when a Marketplace year's
+              // credit is unpriced (the evaluator discloses instead of
+              // refusing); the note says which years pay the full premium.
+              const unpriced = evaluation.candidateResult.years.filter((year) => year.aca?.readiness === 'nonActionable')
               setExactImpact(
                 evalResult.impact?.qualitative ? { ...impact, qualitative: evalResult.impact.qualitative } : impact,
+                unpricedCreditSpendingNote(
+                  unpriced.map((year) => year.year),
+                  unpriced.flatMap((year) => year.aca?.supportCodes ?? []),
+                ),
               )
               setExactAction(evalResult.action)
               // The exact dollar deltas are final here: release the button so
@@ -301,6 +317,7 @@ export function InsightCardView({ card, onDismiss }: { card: InsightCard; onDism
                 </div>
               )}
             </div>
+            {exactAcaNote ? <p className="small muted insight-aca-note">{exactAcaNote}</p> : null}
             {allFlat && baseDepletionYear !== null ? (
               <p className="small muted insight-flat-note">
                 Every delta shown is zero. The base plan runs out of money in {baseDepletionYear}.

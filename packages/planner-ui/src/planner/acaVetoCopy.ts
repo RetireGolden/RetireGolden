@@ -6,20 +6,95 @@
  * drifts between surfaces. Everything here is finding-framed — it reports what
  * the projection could not price, never an instruction — per the
  * decision-support boundary (guarded by app/src/boundaryLanguage.test.ts).
+ *
+ * The spending answer's note (the "How much can I spend?" page, its spending
+ * shapes and the spending-headroom Insight) lives here too: the same unpriced
+ * years, told from the side of a spending level instead of a conversion.
  */
 
 import type { AcaActionabilityVeto } from '@retiregolden/engine/projection/optimizePlan'
+import type { AcaSupportCode } from '@retiregolden/engine/projection/types'
 
 /** Every non-actionable ACA year the veto cites, merged and ascending. */
 export function acaVetoYears(veto: AcaActionabilityVeto): number[] {
   return [...new Set([...veto.baselineNonActionableYears, ...veto.candidateNonActionableYears])].sort((a, b) => a - b)
 }
 
+function joinNatural(items: string[]): string {
+  if (items.length <= 1) return items[0] ?? ''
+  if (items.length === 2) return `${items[0]} and ${items[1]}`
+  return `${items.slice(0, -1).join(', ')}, and ${items[items.length - 1]}`
+}
+
 /** Natural-language year list ("2027", "2027 and 2028", "2026, 2027, and 2028"). */
 export function formatYearList(years: number[]): string {
-  if (years.length <= 1) return String(years[0] ?? '')
-  if (years.length === 2) return `${years[0]} and ${years[1]}`
-  return `${years.slice(0, -1).join(', ')}, and ${years[years.length - 1]}`
+  return joinNatural(years.map(String))
+}
+
+/**
+ * Year list with runs of three or more collapsed ("2027 to 2060", "2026 to
+ * 2028 and 2030", "2027 and 2028"): an unpriced span can be decades long.
+ */
+export function formatYearRuns(years: number[]): string {
+  const sorted = [...new Set(years)].sort((a, b) => a - b)
+  const items: string[] = []
+  for (let start = 0; start < sorted.length; ) {
+    let end = start
+    while (end + 1 < sorted.length && sorted[end + 1] === sorted[end]! + 1) end++
+    if (end - start >= 2) items.push(`${sorted[start]} to ${sorted[end]}`)
+    else for (let i = start; i <= end; i++) items.push(String(sorted[i]))
+    start = end + 1
+  }
+  return joinNatural(items)
+}
+
+/**
+ * Why a Marketplace year's credit is not priced, by the engine's support
+ * code. The two tax-exempt-interest codes are informational (they never block
+ * a year) and give no reason; any other code reads as the generic one.
+ */
+const UNPRICED_CREDIT_REASONS: Partial<Record<AcaSupportCode, string>> = {
+  'tax-year-parameters-unsupported': "the credit's figures for that year aren't published yet",
+  'missing-year-contract': "the plan doesn't have the household details the credit needs",
+  'guardrail-interaction-unsupported': "the credit isn't modeled together with guardrail spending",
+  'below-100-fpl-exception-unsupported': "income is below the poverty line, where the credit's exceptions aren't modeled",
+}
+const OTHER_UNPRICED_CREDIT_REASON = 'some facts the credit needs are missing'
+const NOT_A_REASON: ReadonlySet<AcaSupportCode> = new Set([
+  'actionable',
+  'tax-exempt-interest-plan-derived',
+  'tax-exempt-interest-contract-contradicted',
+])
+
+/**
+ * The note beside a spending answer whose projection could not price the
+ * premium tax credit in some Marketplace years: it names the years and why,
+ * and says what paying the full premium there means for the answer. The
+ * reasons are merged across years, so with several years and several reasons
+ * the note says each year has at least one of them rather than pinning every
+ * reason on every year. Null when there are no such years.
+ */
+export function unpricedCreditSpendingNote(years: number[], codes: readonly AcaSupportCode[]): string | null {
+  if (years.length === 0) return null
+  const one = new Set(years).size === 1
+  const reasons = [
+    ...new Set(
+      codes
+        .filter((code) => !NOT_A_REASON.has(code))
+        .map((code) => UNPRICED_CREDIT_REASONS[code] ?? OTHER_UNPRICED_CREDIT_REASON),
+    ),
+  ].map((reason) => (one ? reason : reason.replace('for that year', 'for those years')))
+  const lead = `The premium tax credit isn't counted in ${formatYearRuns(years)}`
+  const why =
+    reasons.length === 0
+      ? `${lead}: ${OTHER_UNPRICED_CREDIT_REASON}.`
+      : one || reasons.length === 1
+        ? `${lead}: ${joinNatural(reasons)}.`
+        : `${lead}. In each of those years, at least one of these applies: ${reasons.join('; ')}.`
+  return (
+    `${why} The projection pays the full Marketplace premium in ${one ? 'that year' : 'those years'}, ` +
+    'so a credit then would leave room to spend more than this.'
+  )
 }
 
 /** Short marker appended to a vetoed candidate row in the alternatives table. */

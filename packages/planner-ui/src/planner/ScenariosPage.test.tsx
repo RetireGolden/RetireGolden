@@ -227,6 +227,8 @@ describe('ScenariosPage comparison lifecycle', () => {
     converged: true,
     limitingConstraint: 'depletion',
     simulationCount: 12,
+    acaGrossPremiumYears: [],
+    acaGrossPremiumReasons: [],
     diagnostics: [],
     evidence: null,
   }

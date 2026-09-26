@@ -6,6 +6,7 @@
  */
 
 import type { Plan } from '@retiregolden/engine/model/plan'
+import type { AcaSupportCode } from '@retiregolden/engine/projection/types'
 
 export interface SpendingSolveRequest {
   plan: Plan
@@ -35,6 +36,14 @@ export interface SpendingSolveResult {
   converged: boolean
   limitingConstraint: 'depletion' | 'estate-floor' | null
   simulationCount: number
+  /**
+   * Years whose ACA premium tax credit the projection could not price in the
+   * run the answer rests on; that run pays the full Marketplace premium in
+   * each. Empty when every Marketplace year is priced or there is none.
+   */
+  acaGrossPremiumYears: number[]
+  /** Why those years are unpriced: the engine's support codes, distinct. */
+  acaGrossPremiumReasons: AcaSupportCode[]
   diagnostics: string[]
   evidence: SpendingSolveEvidence | null
 }
