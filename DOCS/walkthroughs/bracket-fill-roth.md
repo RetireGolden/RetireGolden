@@ -919,7 +919,7 @@ balances. "Chain" is the value with every year's fixed point exact, from 2026 on
 |---|---|---|---|---|---|
 | 81 | **`penalties`** | **0** | both RMDs fully taken; both owners past 59½; a conversion is never penalized | worksheet `tax-penalties-annual` | exact 0 |
 | 82 | Other published zeros | `contributions`, `employerMatch`, `sepp`, `inheritedDistribution`, `hecmDraw`, `realizedGains`, `taxableYield`, `taxExemptInterest` all 0; `guardrailAction` `hold`; no `aca` | none in the plan | `YearResult` docs | exact |
-| 83 | Warnings (projection-level, not assertable from a row) | Riley's trim warning, as in 2026. **And "Spending withdrawals from traditional accounts pushed income above the Roth-conversion target in some years."**, raised from 2027 on | The second warning's condition checks only fill-to-target, `rothConversion > 0` and a need-based traditional draw > 0.01. **Its text is false here:** taxable income stays 64,977.21 / 43,471.24 / 61,127.60 below the ceiling in 2027 / 2028 / 2029 | `annualFundingApplicationAndClosePhase.ts` lines 1276–1284 (body); section 6, A3 | — |
+| 83 | Warnings (projection-level, not assertable from a row) | Riley's trim warning, as in 2026. **And "Spending withdrawals from traditional accounts pushed income above the Roth-conversion target in some years."**, raised from 2027 on | The second warning's condition checks only fill-to-target, `rothConversion > 0` and a need-based traditional draw > 0.01. **Its text is false here:** taxable income stays 64,977.21 / 43,471.24 / 61,127.60 below the ceiling in 2027 / 2028 / 2029. *Superseded 2026-09-25 by decision D-ROTH-TARGET-WARNING:* the condition now also requires the year's final value of the sized metric (taxable income here) to end above the ceiling, so this projection no longer carries the second warning; `planner-ui` `bracketFillRothWarning.test.ts` holds that for 2027 to 2029 | `annualFundingApplicationAndClosePhase.ts` lines 1276–1284 (body, as derived; the check now sits after the year's federal detail); section 6, A3 | — |
 
 **The 2029 rule, stated plainly.** Everything federal that Congress indexes is carried forward from the 2026 pack at
 2.5% a year. The §86 thresholds and the senior deduction are not, and the senior deduction ends after 2028. The
@@ -1013,6 +1013,9 @@ room, so the claim "pushed income above the Roth-conversion target" is false in 
 43,471.24 and 61,127.60 below). Had Riley held a Roth IRA, the draw would have put 2029's TI 90,670.87 above the
 ceiling (section 5). *Recommendation:* gate the warning on the year's TI exceeding the ceiling, or reword it as "may
 have pushed". The warning is projection-level (`ProjectionResult.warnings`), so a row cannot assert it (2026 B6).
+*Resolved 2026-09-25 (decision D-ROTH-TARGET-WARNING):* the first option was taken. The warning now fires only when
+the year's final value of the metric the conversion was sized against ends more than a cent above the ceiling, and
+this projection no longer raises it.
 
 **A4. Which IRA the need comes from.** The category order is documented (`YearWithdrawals` doc,
 `withdrawalStrategySchema` doc, domain rules §11). The order within the traditional category is body-only:

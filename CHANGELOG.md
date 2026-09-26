@@ -4,6 +4,19 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## Unreleased
 
+- **Fixed: a false Roth-conversion warning** (decision
+  D-ROTH-TARGET-WARNING): "Spending withdrawals from traditional accounts
+  pushed income above the Roth-conversion target in some years." was raised
+  whenever a fill-to-target conversion and a spending draw from a traditional
+  account fell in the same year, without looking at income. It is now raised
+  only when the year's final value of the measure the conversion was sized
+  against (taxable income for a bracket top, MAGI for an IRMAA tier or a fixed
+  MAGI, ACA MAGI for the credit cliff) ends more than a cent above the
+  target. No figure changes; the warning disappears from projections that
+  never went over, among them the bracket-fill example, whose taxable income
+  ends $64,977.21, $43,471.24 and $61,127.60 under the target in 2027, 2028
+  and 2029.
+
 - **Fixed: inherited Roth earnings counted twice in the withdrawal categories**
   (decision D-INHERITED-ROTH-SLICE): in a year with a non-qualified inherited
   Roth distribution, its taxable earnings were added to the traditional

@@ -59,7 +59,7 @@ import {
   type RothBasisState,
 } from '../../strategies/rothBasis.js'
 import { applyCapitalLossCarryforward, computeFederalTax, taxableSocialSecurity } from '../../tax/federalTax.js'
-import { ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS } from '../moneyTolerance.js'
+import { AGGREGATE_ROTH_CONVERSION_EPSILON_PLAN_DOLLARS, ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS } from '../moneyTolerance.js'
 import type { PhaseLedgerScalarBindings } from './phaseLedgerScalars.js'
 import { readPhaseLedgerScalars, writePhaseLedgerScalars } from './phaseLedgerScalars.js'
 import {
@@ -1273,16 +1273,6 @@ export function annualFundingApplicationAndClosePhase(
       )
     }
 
-    if (
-      aggregateRothConversionTarget.fillToTargetSelected &&
-      rothConversion > 0 &&
-      withdrawalPlan.byCategory.traditional > 0.01
-    ) {
-      warnings.add(
-        'Spending withdrawals from traditional accounts pushed income above the Roth-conversion target in some years.',
-      )
-    }
-
     // Apply the carryforward to the final realized figures, then commit the
     // depleted pool to next year. Netted ordinary/gains feed MAGI, taxable SS,
     // and the gain-harvesting headroom below, so the AGI cascade is consistent.
@@ -1353,6 +1343,25 @@ export function annualFundingApplicationAndClosePhase(
     }
     const federalDetail = computeFederalTax(advisoryFederalTaxInput)
     const ltcgZeroHeadroom = federalDetail.zeroRateLtcgHeadroom
+    // A fill-to-target conversion is sized before the year's spending draws,
+    // so a need-based traditional draw can carry the year past the target.
+    // The warning says so only when it did: the year's final value of the
+    // metric the conversion was sized against (taxable income, MAGI or ACA
+    // MAGI, priced federally from the realized figures above) ends more than
+    // a cent above the ceiling (D-ROTH-TARGET-WARNING).
+    const fillTarget = aggregateRothConversionTarget.fillTarget
+    if (
+      aggregateRothConversionTarget.fillToTargetSelected &&
+      fillTarget !== null &&
+      rothConversion > 0 &&
+      withdrawalPlan.byCategory.traditional > 0.01 &&
+      fillTarget.metric(federalDetail) >
+        fillTarget.ceiling + AGGREGATE_ROTH_CONVERSION_EPSILON_PLAN_DOLLARS
+    ) {
+      warnings.add(
+        'Spending withdrawals from traditional accounts pushed income above the Roth-conversion target in some years.',
+      )
+    }
     if (federalDetail.alternativeMinimumTax > ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS) {
       warnings.add('The planning-grade AMT screen bound in at least one year; tax includes the AMT excess.')
     }

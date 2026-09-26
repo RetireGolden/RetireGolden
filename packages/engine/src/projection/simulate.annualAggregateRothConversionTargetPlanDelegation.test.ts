@@ -11,7 +11,7 @@ import type {
   AnnualAggregateRothConversionTargetPlanResult,
 } from './internal/annualAggregateRothConversionTargetPlan.js'
 
-type Mode = 'original' | 'economic' | 'acaGetter' | 'taxableFunction'
+type Mode = 'original' | 'economic' | 'economicUnderTarget' | 'acaGetter' | 'taxableFunction'
 
 interface TargetCapture {
   readonly sources: ReturnType<
@@ -48,12 +48,17 @@ vi.mock(
       >(),
       'annualAggregateRothConversionTargetPlan',
       (natural): AnnualAggregateRothConversionTargetPlanResult => {
-        if (hostile.mode === 'economic') {
+        if (hostile.mode === 'economic' || hostile.mode === 'economicUnderTarget') {
+          // The delegated fill target decides the overshoot warning: a
+          // ceiling of 0 against a metric of 1 is an overshoot, a ceiling of 1
+          // against a metric of 0 is not.
+          const overshoot = hostile.mode === 'economic'
           return {
             ...natural,
             desiredPlanDollars: SENTINEL_DESIRED,
             warnings: [SENTINEL_WARNING],
             fillToTargetSelected: true,
+            fillTarget: { ceiling: overshoot ? 0 : 1, metric: () => (overshoot ? 1 : 0) },
           }
         }
         if (hostile.mode === 'acaGetter') {
@@ -181,6 +186,16 @@ describe('simulatePlan delegates aggregate Roth-conversion target planning', () 
     expect(result.years[0]!.rothConversion).toBe(SENTINEL_DESIRED)
     expect(result.warnings).toContain(SENTINEL_WARNING)
     expect(result.warnings).toContain(
+      'Spending withdrawals from traditional accounts pushed income above the Roth-conversion target in some years.',
+    )
+  })
+
+  it('reads the overshoot from the delegated fill target, not from the draw alone', () => {
+    const result = run('economicUnderTarget')
+    expect(result.years[0]!.rothConversion).toBe(SENTINEL_DESIRED)
+    expect(result.years[0]!.withdrawals.traditional).toBeGreaterThan(0.01)
+    expect(result.warnings).toContain(SENTINEL_WARNING)
+    expect(result.warnings).not.toContain(
       'Spending withdrawals from traditional accounts pushed income above the Roth-conversion target in some years.',
     )
   })
