@@ -917,9 +917,17 @@ describe('load-time repair: rows stored under one id where the projection keeps 
     /** Home keeps `x` on load and Cabin becomes `x-property`. */
     const twoHomesPlan = (): Plan => quietPlan([home('x', 300_000, 'Home'), home('x', 120_000, 'Cabin')])
 
-    /** A legacy and a canonical scenario that each set the accounts to the given list, loaded, then applied. */
-    function applyBoth(accounts: (storedAccounts: Record<string, unknown>[]) => Record<string, unknown>[]): string[][][] {
-      const plan = twoHomesPlan()
+    /**
+     * A legacy and a canonical scenario that each set the accounts to the
+     * given list, loaded with the plan, then applied; each applied plan's
+     * accounts as `read` reads them.
+     */
+    function applyBoth(
+      accounts: (storedAccounts: Record<string, unknown>[]) => Record<string, unknown>[],
+      plan: Plan = twoHomesPlan(),
+      loaded: unknown[][] = [['Home', 'x'], ['Cabin', 'x-property']],
+      read: (account: Plan['accounts'][number]) => unknown[] = (account) => [account.name, account.id],
+    ): unknown[][][] {
       const storedAccounts = stored(plan)['accounts'] as Record<string, unknown>[]
       const value = accounts(storedAccounts)
       plan.scenarios = [
@@ -940,14 +948,14 @@ describe('load-time repair: rows stored under one id where the projection keeps 
         },
       ]
       const result = load(plan)
-      expect(result.plan.accounts.map((account) => [account.name, account.id])).toEqual([['Home', 'x'], ['Cabin', 'x-property']])
+      expect(result.plan.accounts.map(read)).toEqual(loaded)
       const legacy = applyScenarioPatch(result.plan, result.plan.scenarios[0]!.patch)
       if (!legacy.ok) throw new Error(legacy.issues.join('; '))
       const parsed = parseScenarioPatch(result.plan.scenarios[1]!.patch)
       if (!parsed.ok) throw new Error(parsed.issues.join('; '))
       const canonical = applyScenarioPatchDocument(result.plan, parsed.patch)
       if (!canonical.ok) throw new Error(canonical.issues.join('; '))
-      return [legacy.plan, canonical.plan].map((applied) => applied.accounts.map((account) => [account.name, account.id]))
+      return [legacy.plan, canonical.plan].map((applied) => applied.accounts.map(read))
     }
 
     it('keeps each property under the id the plan gave it when the scenario lists Cabin first', () => {
@@ -968,6 +976,27 @@ describe('load-time repair: rows stored under one id where the projection keeps 
       const [legacy, canonical] = applyBoth((storedAccounts) => [{ ...storedAccounts[1]!, value: 150_000 }])
       expect(legacy).toEqual([['Cabin', 'x-property']])
       expect(canonical).toEqual([['Cabin', 'x-property']])
+    })
+
+    it('pairs two edited copies of same-named properties by their closest content when the scenario reverses them', () => {
+      // Both are named Home. The one growing at 3% keeps `x`; the one growing
+      // at 0% becomes `x-property`. The scenario lists them in the other order
+      // and edits both values, so neither copy equals a plan row and both
+      // share a name and type: the unedited growth rate tells them apart.
+      const plan = quietPlan([
+        { ...home('x', 300_000, 'Home'), annualReturnPct: 3 } as Plan['accounts'][number],
+        home('x', 120_000, 'Home'),
+      ])
+      const readAccount = (account: Plan['accounts'][number]): unknown[] =>
+        [account.annualReturnPct, account.type === 'property' ? account.value : null, account.id]
+      const [legacy, canonical] = applyBoth(
+        (storedAccounts) => [{ ...storedAccounts[1]!, value: 125_000 }, { ...storedAccounts[0]!, value: 310_000 }],
+        plan,
+        [[3, 300_000, 'x'], [0, 120_000, 'x-property']],
+        readAccount,
+      )
+      expect(legacy).toEqual([[0, 125_000, 'x-property'], [3, 310_000, 'x']])
+      expect(canonical).toEqual([[0, 125_000, 'x-property'], [3, 310_000, 'x']])
     })
   })
 

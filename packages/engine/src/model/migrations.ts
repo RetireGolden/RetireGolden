@@ -873,6 +873,8 @@ function applySharedIdRenames(
 interface PlanSharedIdRow {
   /** The stored row, as canonical JSON, before the rename. */
   readonly content: string
+  /** Each top-level field of the stored row, as canonical JSON. */
+  readonly fields: ReadonlyMap<string, string>
   readonly name: unknown
   /** The row's `type` (an account) or `kind` (a policy). */
   readonly type: unknown
@@ -899,6 +901,17 @@ function sharedIdRowChannel(collection: 'accounts' | 'insurance', row: Record<st
   return collection === 'accounts' ? accountChannel(row['type']) : policyChannel(row['kind'])
 }
 
+function canonicalFields(row: Record<string, unknown>): Map<string, string> {
+  return new Map(Object.keys(row).map((key) => [key, canonicalJson(row[key])]))
+}
+
+/** How many top-level fields two rows hold with equal values. */
+function equalFieldCount(left: ReadonlyMap<string, string>, right: ReadonlyMap<string, string>): number {
+  let equal = 0
+  for (const [key, value] of left) if (right.get(key) === value) equal++
+  return equal
+}
+
 function planSharedIdRenames(
   accounts: readonly unknown[],
   insurance: readonly unknown[],
@@ -921,6 +934,7 @@ function planSharedIdRenames(
       if (newId !== null) renamedKeys.add(key)
       const entry: PlanSharedIdRow = {
         content: canonicalJson(row),
+        fields: canonicalFields(row),
         name: row['name'],
         type: row[sharedIdTypeField(collection)],
         newId,
@@ -936,12 +950,14 @@ function planSharedIdRenames(
 
 /**
  * A stored list with every row that copies a row the plan renamed given the
- * plan's new id; the same array when none did. A row copies the plan row it
- * equals exactly, else the plan row with its name and type (so an edited copy
- * still counts), among the plan's rows with the same id and channel; each plan
- * row is copied at most once, and between rows that match equally well stored
- * order decides. A row that matches no plan row is the scenario's own and
- * keeps its id.
+ * plan's new id; the same array when none did. Among the plan's rows with the
+ * same id and channel, a row copies the plan row it equals exactly; failing
+ * that, a plan row with its name and type (so an edited copy still counts),
+ * and when several share them, the one holding the most top-level fields with
+ * equal values, pairs with more equal fields claimed first. Each plan row is
+ * copied at most once, and stored order (the scenario's, then the plan's)
+ * decides only between pairs that match exactly as well. A row that matches
+ * no plan row is the scenario's own and keeps its id.
  */
 function followPlanSharedIdRenames(
   list: readonly unknown[],
@@ -964,21 +980,34 @@ function followPlanSharedIdRenames(
   for (const [key, indexes] of candidates) {
     const planRows = planRenames.get(key)!
     const copied = new Set<number>()
-    const copy = (index: number, matches: (planRow: PlanSharedIdRow) => boolean): boolean => {
-      const at = planRows.findIndex((planRow, position) => !copied.has(position) && matches(planRow))
-      if (at < 0) return false
-      copied.add(at)
-      const newId = planRows[at]!.newId
+    const copy = (index: number, position: number): void => {
+      copied.add(position)
+      const newId = planRows[position]!.newId
       if (newId !== null) newIds.set(index, newId)
-      return true
     }
     const inexact = indexes.filter((index) => {
       const content = canonicalJson(list[index])
-      return !copy(index, (planRow) => planRow.content === content)
+      const position = planRows.findIndex((planRow, at) => !copied.has(at) && planRow.content === content)
+      if (position < 0) return true
+      copy(index, position)
+      return false
     })
+    const pairs: { index: number; position: number; equalFields: number }[] = []
     for (const index of inexact) {
       const row = list[index] as Record<string, unknown>
-      copy(index, (planRow) => planRow.name === row['name'] && planRow.type === row[sharedIdTypeField(collection)])
+      const fields = canonicalFields(row)
+      planRows.forEach((planRow, position) => {
+        if (copied.has(position) || planRow.name !== row['name'] || planRow.type !== row[sharedIdTypeField(collection)]) return
+        pairs.push({ index, position, equalFields: equalFieldCount(fields, planRow.fields) })
+      })
+    }
+    pairs.sort((left, right) =>
+      right.equalFields - left.equalFields || left.index - right.index || left.position - right.position)
+    const paired = new Set<number>()
+    for (const pair of pairs) {
+      if (paired.has(pair.index) || copied.has(pair.position)) continue
+      paired.add(pair.index)
+      copy(pair.index, pair.position)
     }
   }
   if (newIds.size === 0) return list
@@ -999,9 +1028,9 @@ function followPlanSharedIdRenames(
  * still collides: a scenario that dropped the cash account keeps the property
  * it shares with the plan under the property's new id, and a scenario that
  * reorders or drops one of two properties under one id keeps each under the
- * id the plan gave it. A row copies the plan row it equals, else the one with
- * its name and type (`followPlanSharedIdRenames`), never merely the one in the
- * same position. Then the
+ * id the plan gave it. A row copies the plan row it equals, else the closest
+ * in content among those with its name and type (`followPlanSharedIdRenames`),
+ * never merely the one in the same position. Then the
  * list's own collisions are repaired, with the plan's own accounts standing in
  * for a scenario that sets no accounts, and names that are fresh both in the
  * document and in the list. So a scenario holding a copy of the plan's rows
