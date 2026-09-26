@@ -776,9 +776,9 @@
         "packages/engine/src/montecarlo/marketModels.ts"
       ],
       "provenance": {
-        "derivedBy": "claude-deriver",
+        "derivedBy": "claude",
         "implementedBy": "claude-subagent",
-        "reviewedBy": "claude-checker"
+        "reviewedBy": "unreviewed"
       },
       "fixtureFiles": [
         "packages/engine/src/montecarlo/marketModels.evidence.test.ts"
@@ -1203,9 +1203,9 @@
         "packages/engine/src/montecarlo/marketModels.ts"
       ],
       "provenance": {
-        "derivedBy": "claude-deriver",
+        "derivedBy": "claude",
         "implementedBy": "claude-subagent",
-        "reviewedBy": "claude-checker"
+        "reviewedBy": "unreviewed"
       },
       "fixtureFiles": [
         "packages/engine/src/montecarlo/marketModels.evidence.test.ts"
@@ -1367,9 +1367,9 @@
         "packages/engine/src/montecarlo/marketModels.ts"
       ],
       "provenance": {
-        "derivedBy": "claude-deriver",
+        "derivedBy": "claude",
         "implementedBy": "claude-subagent",
-        "reviewedBy": "claude-checker"
+        "reviewedBy": "unreviewed"
       },
       "fixtureFiles": [
         "packages/engine/src/montecarlo/marketModels.evidence.test.ts"
@@ -2290,9 +2290,9 @@
         "packages/engine/src/montecarlo/riskBasedGuardrails.ts"
       ],
       "provenance": {
-        "derivedBy": "claude-deriver",
+        "derivedBy": "claude",
         "implementedBy": "claude-subagent",
-        "reviewedBy": "claude-checker"
+        "reviewedBy": "unreviewed"
       },
       "fixtureFiles": [
         "packages/engine/src/montecarlo/riskBasedGuardrails.evidence.test.ts"
