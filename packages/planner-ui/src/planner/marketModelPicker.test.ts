@@ -7,13 +7,16 @@
 
 import { describe, expect, it } from 'vitest'
 
+import { planUsesAssetAllocation } from '@retiregolden/engine/allocation/assetClasses'
 import { createEmptyPlan, parsePlan, type Account, type Plan } from '@retiregolden/engine/model/plan'
 import { runMonteCarlo } from '../mc/pool'
 import {
   buildModel,
   MODEL_CATALOG,
   MODEL_PRESETS,
+  modelControlOf,
   presetFamilyOf,
+  type ModelControl,
   type ModelKind,
 } from './marketModelPicker'
 
@@ -145,10 +148,13 @@ describe('buildModel golden configs', () => {
       centered: true,
       classShocks: false,
     })
+    // GARCH's volatility key is returnVolPct, the shock's long-run standard
+    // deviation like every sibling model (owner decision 2026-09-25); the
+    // flat select wrote the retired returnVolScalePct.
     expect(buildModel('garch', inflation, vol, equity, plan)).toEqual({
       type: 'garch',
       inflationMeanPct: inflation,
-      returnVolScalePct: vol,
+      returnVolPct: vol,
       classShocks: undefined,
     })
     expect(buildModel('inflation-regime', inflation, vol, equity, plan)).toEqual({
@@ -188,6 +194,80 @@ describe('buildModel golden configs', () => {
       type: 'lognormal',
       inflationMeanPct: inflation,
     })
+  })
+})
+
+describe('model controls', () => {
+  // Owner decision 2026-09-25, one entry per kind: the return-volatility
+  // slider for the kinds whose config reads returnVolPct (user-shock as
+  // baseReturnVolPct), the equity-weight slider for the kinds that read
+  // equityWeightPct, and neither for the kinds buildModel passes neither.
+  const EXPECTED_CONTROL: Record<ModelKind, ModelControl> = {
+    lognormal: 'return-volatility',
+    'student-t': 'return-volatility',
+    garch: 'return-volatility',
+    gaussian: 'return-volatility',
+    ar1: 'return-volatility',
+    'cape-conditioned': 'return-volatility',
+    'user-shock': 'return-volatility',
+    'hist-iid': 'equity-weight',
+    'hist-block': 'equity-weight',
+    'hist-sequence': 'equity-weight',
+    stationary: 'equity-weight',
+    empirical: 'equity-weight',
+    'reversed-history': 'equity-weight',
+    'regime-switch': null,
+    'inflation-regime': null,
+  }
+
+  /** basePlan with its one account opted into an allocation, so buildModel takes the classShocks branches. */
+  function allocatedPlan(): Plan {
+    const plan = basePlan()
+    plan.accounts = plan.accounts.map((account) => ({
+      ...account,
+      allocation: { mode: 'static', rebalancing: 'annual', weights: { usStocks: 60, intlStocks: 0, bonds: 40, cash: 0 } },
+    }))
+    const parsed = parsePlan(plan)
+    if (!parsed.ok) throw new Error(parsed.issues.join('; '))
+    if (!planUsesAssetAllocation(parsed.plan)) throw new Error('the allocated fixture lost its allocation')
+    return parsed.plan
+  }
+
+  it('the expected table names every catalog model exactly once', () => {
+    const catalogKinds = MODEL_CATALOG.map((entry) => entry.kind)
+    expect(Object.keys(EXPECTED_CONTROL).sort()).toEqual([...catalogKinds].sort())
+    expect(new Set(catalogKinds).size).toBe(catalogKinds.length)
+  })
+
+  it('maps every catalog model to the control the owner table names', () => {
+    for (const { kind } of MODEL_CATALOG) {
+      expect(modelControlOf(kind), kind).toBe(EXPECTED_CONTROL[kind])
+    }
+  })
+
+  it('shows a control exactly when the config buildModel produces reads that value', () => {
+    for (const [planName, plan] of [
+      ['single-return plan', basePlan()],
+      ['allocated plan', allocatedPlan()],
+    ] as const) {
+      const configOf = (kind: ModelKind, vol: number, equity: number) => JSON.stringify(buildModel(kind, 2.5, vol, equity, plan))
+      for (const { kind } of MODEL_CATALOG) {
+        const control = modelControlOf(kind)
+        const volReachesConfig = configOf(kind, 9, 60) !== configOf(kind, 17, 60)
+        const equityReachesConfig = configOf(kind, 12, 40) !== configOf(kind, 12, 80)
+        expect(volReachesConfig, `${planName}, ${kind}: return volatility reaches the config`).toBe(control === 'return-volatility')
+        expect(equityReachesConfig, `${planName}, ${kind}: equity weight reaches the config`).toBe(control === 'equity-weight')
+
+        // And the value lands in the key the model reads, unchanged.
+        const config = buildModel(kind, 2.5, 17, 80, plan) as unknown as Record<string, unknown>
+        if (control === 'return-volatility') {
+          expect(config[kind === 'user-shock' ? 'baseReturnVolPct' : 'returnVolPct'], `${planName}, ${kind}`).toBe(17)
+        }
+        if (control === 'equity-weight') {
+          expect(config.equityWeightPct, `${planName}, ${kind}`).toBe(80)
+        }
+      }
+    }
   })
 })
 

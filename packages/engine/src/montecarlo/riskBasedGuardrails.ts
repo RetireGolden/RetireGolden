@@ -52,6 +52,17 @@ export interface RiskBasedGuardrailSolveOptions {
   upperBandPct?: number
   /** Called after each completed Monte Carlo probe (drives progress UI). */
   onProbeDone?: (completed: number, total: number) => void
+  /**
+   * Test seam (D-SOLVER-SEAM). When set, every success evaluation calls this
+   * instead of re-running the plan's Monte Carlo: `balanceFrac` is the scale
+   * applied to every investable balance and `spendingMultiplier` the scale
+   * applied to target spending (1 during the band-edge search and for
+   * successAtCurrent). It must return a finite probability in [0, 1] and be
+   * nondecreasing in balanceFrac and nonincreasing in spendingMultiplier, as
+   * shared-path Monte Carlo success is; the solver refuses a value outside
+   * [0, 1] and does not check monotonicity. Omitted (the default): unchanged.
+   */
+  successProbe?: (balanceFrac: number, spendingMultiplier: number) => number
 }
 
 export interface RiskBasedThreshold {
@@ -168,8 +179,19 @@ export function solveRiskBasedGuardrails(plan: Plan, opts: RiskBasedGuardrailSol
   const totalProbes =
     1 + 2 * BALANCE_BISECTION_ITERATIONS + 2 + 2 * (SPENDING_BISECTION_ITERATIONS + 1)
   let completedProbes = 0
-  const successOf = (variant: Plan): number => {
-    const result = runMonteCarloPaths(variant, {
+  const successOf = (balanceFrac: number, spendingMultiplier: number, variant: () => Plan): number => {
+    if (opts.successProbe) {
+      const probed = opts.successProbe(balanceFrac, spendingMultiplier)
+      if (!(Number.isFinite(probed) && probed >= 0 && probed <= 1)) {
+        throw new RangeError(
+          `successProbe returned ${probed} at balanceFrac ${balanceFrac}, spendingMultiplier ${spendingMultiplier}; a success probability must be a finite number from 0 to 1.`,
+        )
+      }
+      completedProbes++
+      opts.onProbeDone?.(completedProbes, totalProbes)
+      return probed
+    }
+    const result = runMonteCarloPaths(variant(), {
       startYear: opts.startYear,
       taxCalculator: opts.taxCalculator,
       model: createMarketModel(opts.model),
@@ -191,7 +213,7 @@ export function solveRiskBasedGuardrails(plan: Plan, opts: RiskBasedGuardrailSol
     const key = Math.round(frac * 1e6)
     const cached = successByFrac.get(key)
     if (cached !== undefined) return cached
-    const success = successOf(scaleInvestableBalances(fixedTargetPlan, frac))
+    const success = successOf(frac, 1, () => scaleInvestableBalances(fixedTargetPlan, frac))
     successByFrac.set(key, success)
     return success
   }
@@ -240,7 +262,7 @@ export function solveRiskBasedGuardrails(plan: Plan, opts: RiskBasedGuardrailSol
     const requiredFloorMultiplier = Math.min(1, (plan.expenses.requiredAnnual ?? 0) / plan.expenses.baseAnnual)
     const minMultiplier = direction === 'cut' ? Math.max(0.3, requiredFloorMultiplier) : 1
     const maxMultiplier = direction === 'cut' ? 1 : 2
-    const successAtSpend = (m: number) => successOf(scaleTargetSpending(atThreshold, m))
+    const successAtSpend = (m: number) => successOf(threshold.balanceFrac, m, () => scaleTargetSpending(atThreshold, m))
     // Success falls as spending rises: check the target is reachable inside the bracket.
     const bestCase = successAtSpend(direction === 'cut' ? minMultiplier : maxMultiplier)
     if (direction === 'cut' && bestCase < recoveryTarget) return null
