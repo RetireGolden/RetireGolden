@@ -4,7 +4,7 @@ Kind: model. `projection/optimizePlan.ts#ExactLedgerPostProcessing.cleanedSchedu
 
 ## Justification
 
-The post-processor comment says it trims raw requested conversions to exact execution and reruns the ledger. The adjustment comment gives its live reasons: `ledger-capped`, `dropped-zero`, and `estate-pruned`; it also says `rounding` is declared but never assigned by decision `D-ADJUSTMENT-ROUNDING-REASON`.
+The post-processor comment says it trims raw requested conversions to exact execution and reruns the ledger. The adjustment comment gives its reasons: `ledger-capped`, `dropped-zero`, and `estate-pruned`, the only three members of the reason union. (A fourth member, `rounding`, was declared and never assigned until decision `D-ADJUSTMENT-ROUNDING-REASON` removed it on 2026-09-25.)
 
 ## Inputs
 
@@ -33,14 +33,14 @@ Cleaned executed ratio `= $20,000 / $20,000 = 1`.
 - `optimizer-recommended-conversion-annual`: exact cleaned list `[{ year: Y1, amount: 15000 }, { year: Y2, amount: 5000 }]`; fixture tolerance exact because it is a schedule list.
 - Cleaned requested and executed totals are each `$20,000`; fixture tolerance absolute `$0.005`, because they are dollar figures. Its executed ratio is exactly `1`; fixture tolerance exact because this ratio is exactly one.
 - The `Y2` adjustment is exactly `{ requested: 15000, executed: 5000, cleaned: 5000, reason: ledger-capped }`; fixture tolerance exact because it is a structured row and reason.
-- Live reasons are exactly `ledger-capped`, `dropped-zero`, and `estate-pruned`; `rounding` is declared but never assigned. Tolerance exact.
+- Reasons are exactly `ledger-capped`, `dropped-zero`, and `estate-pruned`; `rounding` is not a reason. Tolerance exact.
 - The related tournament `winnerConversions` incumbent case is the executed list, not the raw list; a MILP-sourced winning schedule is a solver-run limit with no number in this worksheet.
 
 ## Wrong readings
 
 - Setting cleaned equal to requested produces `$15,000` in `Y2`, rather than the ledger-capped `$5,000`.
 - Summing the raw requests produces `$30,000`, rather than the cleaned requested and executed totals of `$20,000`.
-- Calling the `Y2` reason `rounding` produces the declared-but-never-assigned value, rather than `ledger-capped`.
+- Calling the `Y2` reason `rounding` names a value that is not a reason, rather than `ledger-capped`.
 
 ## Family
 
@@ -51,3 +51,5 @@ feeds: `exact-ledger-tournament-margin-over-milp-dollars` through the tournament
 ## Provenance
 
 Derived by: codex (gpt-5.6-terra), 2026-09-18, from the signatures-and-comments extract only, without executing the engine or reading any implementation body. Reviewed by: cursor (composer-2.5), 2026-09-18, by independent recomputation without executing the engine; see REVIEW-2026-09-18-round-twelve.md in this directory.
+
+Amended 2026-09-25 by claude (the implementer of decision D-ADJUSTMENT-ROUNDING-REASON): the three sentences that described `rounding` as declared but never assigned now say it is not a reason, because the decision removed it from the union. No input, arithmetic or expected value changed.

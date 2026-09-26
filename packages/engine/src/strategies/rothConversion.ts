@@ -185,3 +185,23 @@ export function sizeRothConversion(strategy: FillTarget, input: ConversionSizing
   }
   return { ok: true, amount: lo }
 }
+
+/**
+ * The metric a fill-to-target conversion is sized against, read from any
+ * federal tax detail: taxable income for a bracket top, MAGI for an IRMAA
+ * tier or a fixed MAGI, ACA MAGI for the credit cliff. The projection reads
+ * the year's final detail through it to tell whether the year ended above
+ * the target the conversion was sized for.
+ */
+export function fillTargetMetric(
+  target: FillTarget['target'],
+  detail: FederalTaxDetail,
+  input: ConversionSizingInput,
+): number {
+  return metricFor(target, detail, input)
+}
+
+/** The ceiling a fill-to-target conversion is sized against, or null when the target names none. */
+export function fillTargetCeiling(strategy: FillTarget, input: ConversionSizingInput): number | null {
+  return ceilingFor(strategy, input)
+}

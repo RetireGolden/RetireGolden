@@ -52,10 +52,59 @@ function conversionWindowBoundaries(ctx: DecisionContext, startYear: number, end
   // spending withdrawals fill the cheap bands themselves (sequential order), so
   // the classic optimal shape is "convert hard while reserves last, then stop."
   // Reads the already-computed baseline result — no new simulation.
-  const firstTraditionalDrawYear = ctx.baselineResult.years.find(
-    (year) =>
-      year.withdrawals.traditional - year.rmd - year.inheritedTraditionalDistribution > 1,
-  )?.year
+  //
+  // The spending draw is the traditional withdrawal less the RMDs and the
+  // forced dollars executed from inherited traditional accounts. That forced
+  // amount is not inheritedTraditionalDistribution, which is ordinary income
+  // and also carries a non-qualified inherited Roth distribution's taxable
+  // earnings, withdrawn from roth (D-INHERITED-ROTH-SLICE). Nor is it read from
+  // the inheritedAccounts rows: in a spousal election year a row whose
+  // beneficiary take was suppressed publishes the owner-reconciled amount,
+  // which is not a movement out of the inherited account. It is the year's
+  // captured inherited-distribution movements whose source is a traditional
+  // account, the same figures internal/ownedNonRothIraRuntimeSourceSeries.ts
+  // reconciles exactly against withdrawals.traditional. simulatePlan always
+  // publishes them.
+  //
+  // A result built elsewhere can lack them: the optimizer's exported
+  // evaluators take a caller's baseline, and YearResult keeps the field
+  // optional for results constructed outside simulatePlan. For such a year
+  // the forced amount is read only where the published figures fix it
+  // exactly: 0 when no inherited distribution moved at all
+  // (inheritedDistribution is 0); otherwise the traditional rows' executed
+  // amounts, but only when the rows' executed amounts reconcile with
+  // inheritedDistribution to the cent, so no row carries an amount that did
+  // not move. A year whose forced traditional amount cannot be fixed that way
+  // counts as having no spending draw: it never opens the window, rather than
+  // opening it on a guessed figure.
+  const traditionalIds = new Set(
+    plan.accounts.filter((account) => account.type === 'traditional').map((account) => account.id),
+  )
+  const inheritedTraditionalForced = (year: (typeof ctx.baselineResult.years)[number]): number | null => {
+    const occurrences = year.retirementRuntimeSource?.runtimeOccurrences
+    if (occurrences !== undefined) {
+      let forced = 0
+      for (const occurrence of occurrences) {
+        if (occurrence.kind === 'inheritedIraRmd' && traditionalIds.has(occurrence.sourceAccountId ?? '')) {
+          forced += occurrence.grossAmountPlanDollars
+        }
+      }
+      return forced
+    }
+    if (year.inheritedDistribution === 0) return 0
+    if (year.inheritedAccounts === undefined) return null
+    let executed = 0
+    let traditional = 0
+    for (const row of year.inheritedAccounts) {
+      executed += row.executedRequiredAmount
+      if (traditionalIds.has(row.accountId)) traditional += row.executedRequiredAmount
+    }
+    return Math.abs(executed - year.inheritedDistribution) <= 0.01 ? traditional : null
+  }
+  const firstTraditionalDrawYear = ctx.baselineResult.years.find((year) => {
+    const forced = inheritedTraditionalForced(year)
+    return forced !== null && year.withdrawals.traditional - year.rmd - forced > 1
+  })?.year
   if (firstTraditionalDrawYear !== undefined && firstTraditionalDrawYear > startYear && firstTraditionalDrawYear <= endYear) {
     boundaries.set(firstTraditionalDrawYear, `while cash and taxable cover spending (through ${firstTraditionalDrawYear - 1})`)
   }

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import { createEmptyPlan, type Plan } from './plan.js'
+import { createEmptyPlan, parsePlan, type Plan } from './plan.js'
+import { summarizeProjection } from '../projection/compare.js'
 import { simulatePlan } from '../projection/simulate.js'
 import { createFlatTaxCalculator } from '../testing/flatTax.js'
 import {
@@ -656,6 +657,636 @@ describe('migratePlanToCurrent', () => {
       expect(result.reason).toBe('invalid_after_migration')
       expect(result.issues).toBeDefined()
     }
+  })
+})
+
+describe('load-time repair: rows stored under one id where the projection keeps one value per id (D-CASH-PROPERTY-ALIAS)', () => {
+  /**
+   * A plan with no growth, no inflation, no spending and no income, so a
+   * projection year publishes exactly the entered amounts. The rows are the
+   * ones each test sets.
+   */
+  function quietPlan(accounts: Plan['accounts'], insurance: Plan['insurance'] = []): Plan {
+    const plan = createEmptyPlan({ newId: testIds, now: fixedNow })
+    plan.assumptions.inflationPct = 0
+    plan.assumptions.defaultReturnPct = 0
+    plan.expenses.baseAnnual = 0
+    plan.expenses.healthcare = { pre65MonthlyPremiumPerPerson: 0, applyAcaCredit: false, medicareExtrasMonthlyPerPerson: 0 }
+    plan.incomes = []
+    plan.accounts = accounts
+    plan.insurance = insurance
+    return plan
+  }
+  const owner = (): string => createEmptyPlan({ newId: testIds, now: fixedNow }).household.people[0]!.id
+  const home = (id = 'home', value = 300_000, name = 'Home'): Plan['accounts'][number] =>
+    ({ type: 'property', id, name, ownerPersonId: null, annualReturnPct: 0, value, plannedSaleYear: null, expectedNetProceeds: null })
+  const checking = (id = 'home', balance = 10_000): Plan['accounts'][number] =>
+    ({ type: 'cash', id, name: 'Checking', ownerPersonId: null, annualReturnPct: 0, balance, annualContribution: 0 })
+  const mortgage = (id = 'home', balance = 100_000): Plan['accounts'][number] =>
+    ({ type: 'debt', id, name: 'Mortgage', ownerPersonId: null, annualReturnPct: 0, balance, interestPct: 0, monthlyPayment: 0 })
+  const lifePolicy = (id: string, insured: string, cashValue = 50_000, name = 'Whole life'): Plan['insurance'][number] => ({
+    kind: 'permanentLife', id, name, insured, beneficiary: 'estate', annualPremium: 0, premiumMode: 'paidUp',
+    deathBenefit: 0, cashValue, cashValueMode: 'flatRate', cashValueGrowthPct: 0,
+  })
+  const ltcPolicy = (id: string, holder: string): Plan['insurance'][number] => ({
+    kind: 'ltc', id, name: 'Care policy', owner: holder, annualPremium: 0, premiumMode: 'paidUp',
+    benefitMonthly: 0, benefitPeriodYears: 3, eliminationPeriodDays: 90,
+  })
+  const stored = (plan: Plan): Record<string, unknown> => JSON.parse(JSON.stringify(plan)) as Record<string, unknown>
+  function load(plan: Plan): Extract<ReturnType<typeof migratePlanToCurrent>, { ok: true }> {
+    const result = migratePlanToCurrent(stored(plan))
+    if (!result.ok) throw new Error(`load failed: ${result.reason} ${(result.issues ?? []).join('; ')}`)
+    return result
+  }
+  function firstYear(plan: Plan) {
+    return simulatePlan(plan, { startYear: 2026, horizonEndYear: 2026, taxCalculator: createFlatTaxCalculator(0) })
+  }
+
+  describe('a cash account and a property', () => {
+    /**
+     * The pair plans accepted until the plan checks began refusing it: a
+     * 300,000 home and 10,000 of cash, both under `home`. The property is
+     * stored first: in that order a TIPS ladder funded from `home` resolved to
+     * the cash account under the old checks, which read the last row.
+     */
+    const aliasPlan = (): Plan => quietPlan([home(), checking()])
+
+    it('gives the property its own id on load, keeps the cash id, and reports the repair', () => {
+      const result = load(aliasPlan())
+      expect(result.plan.accounts.map((account) => [account.type, account.id])).toEqual([
+        ['property', 'home-property'],
+        ['cash', 'home'],
+      ])
+      const [property, cash] = result.plan.accounts
+      expect(property!.type === 'property' ? property!.value : null).toBe(300_000)
+      expect(cash!.type === 'cash' ? cash!.balance : null).toBe(10_000)
+      expect(result.repairs).toEqual([
+        {
+          kind: 'sharedIdSeparated',
+          accountId: 'home',
+          accountName: 'Home',
+          newAccountId: 'home-property',
+          renamedType: 'property',
+          keptName: 'Checking',
+          keptType: 'cash',
+        },
+      ])
+    })
+
+    it('publishes the cash balance and the property value separately once repaired', () => {
+      const result = load(aliasPlan())
+      const projection = firstYear(result.plan)
+      const year = projection.years[0]!
+      // Before the repair the one `home` entry was the property's 300,000 and
+      // the cash category reported it; now each is its own entry.
+      expect(year.balances['home']).toBe(10_000)
+      expect(year.balances['home-property']).toBe(300_000)
+      expect(year.investableTotal).toBe(10_000)
+      expect(summarizeProjection(result.plan, projection).endingByCategory.cash).toBe(10_000)
+    })
+
+    it('leaves a reference to the shared id on the cash account, the only account it could name', () => {
+      const plan = aliasPlan()
+      plan.incomeFloor = {
+        ladders: [{
+          id: 'ladder',
+          name: 'Bridge ladder',
+          purpose: 'bridge',
+          startYear: 2028,
+          endYear: 2029,
+          annualRealAmount: 1_000,
+          purchase: { year: 2027, fundingAccountId: 'home' },
+        }],
+      }
+      const result = load(plan)
+      expect(result.plan.incomeFloor?.ladders[0]!.purchase?.fundingAccountId).toBe('home')
+      expect(result.plan.accounts.find((account) => account.id === 'home')!.type).toBe('cash')
+    })
+
+    it('picks a new id that appears nowhere in the stored document', () => {
+      const plan = aliasPlan()
+      plan.expenses.oneTimeGoals = [{ id: 'home-property', label: 'Roof', year: 2030, amount: 1_000 }]
+      const result = load(plan)
+      expect(result.repairs.map((repair) => repair.kind === 'sharedIdSeparated' && repair.newAccountId))
+        .toEqual(['home-property-2'])
+      expect(result.plan.accounts.map((account) => account.id)).toEqual(['home-property-2', 'home'])
+    })
+
+    it('carries the rename into stored scenarios, so a scenario over the accounts still applies', () => {
+      const plan = aliasPlan()
+      const storedAccounts = stored(plan)['accounts'] as Record<string, unknown>[]
+      const editedAccounts = storedAccounts.map((row) => (row['type'] === 'property' ? { ...row, value: 350_000 } : row))
+      plan.scenarios = [
+        {
+          id: 's-canonical',
+          name: 'Home at 350,000',
+          patch: {
+            kind: 'retiregolden.scenario-patch',
+            version: 1,
+            base: { planId: plan.id, planSchemaVersion: plan.schemaVersion, snapshotHash: 'fnv1a64:0000000000000000' },
+            title: 'Home at 350,000',
+            rationale: null,
+            createdAtIso: '2026-06-11T00:00:00.000Z',
+            actor: { kind: 'user' },
+            operations: [{ op: 'set', path: '/accounts', before: { present: true, value: storedAccounts }, value: editedAccounts }],
+          },
+        },
+        { id: 's-legacy', name: 'Legacy edit', patch: { accounts: editedAccounts } },
+      ]
+      const result = load(plan)
+
+      const legacy = result.plan.scenarios[1]!.patch as { accounts: { type: string; id: string }[] }
+      expect(legacy.accounts.map((row) => [row.type, row.id])).toEqual([['property', 'home-property'], ['cash', 'home']])
+
+      const parsed = parseScenarioPatch(result.plan.scenarios[0]!.patch)
+      expect(parsed.ok).toBe(true)
+      if (!parsed.ok) return
+      const applied = applyScenarioPatchDocument(result.plan, parsed.patch)
+      expect(applied.ok, applied.ok ? '' : applied.issues.join('; ')).toBe(true)
+      if (!applied.ok) return
+      const property = applied.plan.accounts.find((account) => account.id === 'home-property')
+      const cash = applied.plan.accounts.find((account) => account.id === 'home')
+      expect(property?.type === 'property' ? property.value : null).toBe(350_000)
+      expect(cash?.type === 'cash' ? cash.balance : null).toBe(10_000)
+    })
+
+    it('repairs a pair that only a stored scenario carries, so the scenario still applies', () => {
+      // The plan itself holds cash `home` and a property `house`; a legacy
+      // scenario's accounts list adds a second property under `home`. Loading
+      // repairs nothing in the plan, and the scenario's own list is repaired.
+      const plan = quietPlan([checking(), home('house', 250_000, 'House')])
+      const cabin = JSON.parse(JSON.stringify(home('home', 120_000, 'Cabin'))) as Record<string, unknown>
+      const scenarioAccounts = [...(stored(plan)['accounts'] as Record<string, unknown>[]), cabin]
+      const canonicalBefore = stored(plan)['accounts'] as Record<string, unknown>[]
+      plan.scenarios = [
+        { id: 's-legacy', name: 'Buy a cabin', patch: { accounts: scenarioAccounts } },
+        {
+          id: 's-canonical',
+          name: 'Buy a cabin',
+          patch: {
+            kind: 'retiregolden.scenario-patch',
+            version: 1,
+            base: { planId: plan.id, planSchemaVersion: plan.schemaVersion, snapshotHash: 'fnv1a64:0000000000000000' },
+            title: 'Buy a cabin',
+            rationale: null,
+            createdAtIso: '2026-06-11T00:00:00.000Z',
+            actor: { kind: 'user' },
+            operations: [{ op: 'set', path: '/accounts', before: { present: true, value: canonicalBefore }, value: scenarioAccounts }],
+          },
+        },
+      ]
+      const result = load(plan)
+      expect(result.repairs).toEqual([])
+      expect(result.plan.accounts.map((account) => account.id)).toEqual(['home', 'house'])
+
+      const legacy = applyScenarioPatch(result.plan, result.plan.scenarios[0]!.patch)
+      expect(legacy.ok, legacy.ok ? '' : legacy.issues.join('; ')).toBe(true)
+      if (!legacy.ok) return
+      expect(legacy.plan.accounts.map((account) => [account.type, account.id])).toEqual([['cash', 'home'], ['property', 'house'], ['property', 'home-property']])
+
+      const parsed = parseScenarioPatch(result.plan.scenarios[1]!.patch)
+      expect(parsed.ok).toBe(true)
+      if (!parsed.ok) return
+      const applied = applyScenarioPatchDocument(result.plan, parsed.patch)
+      expect(applied.ok, applied.ok ? '' : applied.issues.join('; ')).toBe(true)
+      if (!applied.ok) return
+      expect(applied.plan.accounts.map((account) => [account.type, account.id]))
+        .toEqual([['cash', 'home'], ['property', 'house'], ['property', 'home-property']])
+    })
+
+    it("gives a scenario's copy of the renamed property the plan's new id where the scenario drops the cash account", () => {
+      // The scenario's list no longer collides on its own terms, so only the
+      // plan's rename can tell it that its `home` property is the plan's.
+      const plan = aliasPlan()
+      const storedAccounts = stored(plan)['accounts'] as Record<string, unknown>[]
+      const homeOnly = storedAccounts.filter((row) => row['type'] === 'property')
+      plan.scenarios = [
+        { id: 's-legacy', name: 'Close the checking account', patch: { accounts: homeOnly } },
+        {
+          id: 's-canonical',
+          name: 'Close the checking account',
+          patch: {
+            kind: 'retiregolden.scenario-patch',
+            version: 1,
+            base: { planId: plan.id, planSchemaVersion: plan.schemaVersion, snapshotHash: 'fnv1a64:0000000000000000' },
+            title: 'Close the checking account',
+            rationale: null,
+            createdAtIso: '2026-06-11T00:00:00.000Z',
+            actor: { kind: 'user' },
+            operations: [{ op: 'set', path: '/accounts', before: { present: true, value: storedAccounts }, value: homeOnly }],
+          },
+        },
+      ]
+      const result = load(plan)
+      expect(result.plan.accounts.map((account) => [account.type, account.id])).toEqual([['property', 'home-property'], ['cash', 'home']])
+
+      const legacy = applyScenarioPatch(result.plan, result.plan.scenarios[0]!.patch)
+      expect(legacy.ok, legacy.ok ? '' : legacy.issues.join('; ')).toBe(true)
+      if (!legacy.ok) return
+      expect(legacy.plan.accounts.map((account) => [account.type, account.id])).toEqual([['property', 'home-property']])
+
+      const parsed = parseScenarioPatch(result.plan.scenarios[1]!.patch)
+      if (!parsed.ok) throw new Error(parsed.issues.join('; '))
+      const applied = applyScenarioPatchDocument(result.plan, parsed.patch)
+      expect(applied.ok, applied.ok ? '' : applied.issues.join('; ')).toBe(true)
+      if (!applied.ok) return
+      expect(applied.plan.accounts.map((account) => [account.type, account.id])).toEqual([['property', 'home-property']])
+    })
+
+    it("names a scenario's own collision past the new id its copy of the plan's property took", () => {
+      // The scenario keeps both of the plan's rows and adds a cabin, also
+      // under `home`. Its copy of the plan's property takes `home-property`
+      // as the plan's did, so the cabin takes the next name.
+      const plan = aliasPlan()
+      const cabin = JSON.parse(JSON.stringify(home('home', 120_000, 'Cabin'))) as Record<string, unknown>
+      plan.scenarios = [{
+        id: 's-legacy',
+        name: 'Buy a cabin',
+        patch: { accounts: [...(stored(plan)['accounts'] as Record<string, unknown>[]), cabin] },
+      }]
+      const result = load(plan)
+      const legacy = applyScenarioPatch(result.plan, result.plan.scenarios[0]!.patch)
+      expect(legacy.ok, legacy.ok ? '' : legacy.issues.join('; ')).toBe(true)
+      if (!legacy.ok) return
+      expect(legacy.plan.accounts.map((account) => [account.name, account.id]))
+        .toEqual([['Home', 'home-property'], ['Checking', 'home'], ['Cabin', 'home-property-2']])
+    })
+  })
+
+  describe("two properties under one id, in a scenario that does not keep the plan's order", () => {
+    /** Home keeps `x` on load and Cabin becomes `x-property`. */
+    const twoHomesPlan = (): Plan => quietPlan([home('x', 300_000, 'Home'), home('x', 120_000, 'Cabin')])
+
+    /**
+     * A legacy and a canonical scenario that each set the accounts to the
+     * given list, loaded with the plan, then applied; each applied plan's
+     * accounts as `read` reads them.
+     */
+    function applyBoth(
+      accounts: (storedAccounts: Record<string, unknown>[]) => Record<string, unknown>[],
+      plan: Plan = twoHomesPlan(),
+      loaded: unknown[][] = [['Home', 'x'], ['Cabin', 'x-property']],
+      read: (account: Plan['accounts'][number]) => unknown[] = (account) => [account.name, account.id],
+    ): unknown[][][] {
+      const storedAccounts = stored(plan)['accounts'] as Record<string, unknown>[]
+      const value = accounts(storedAccounts)
+      plan.scenarios = [
+        { id: 's-legacy', name: 'Scenario', patch: { accounts: value } },
+        {
+          id: 's-canonical',
+          name: 'Scenario',
+          patch: {
+            kind: 'retiregolden.scenario-patch',
+            version: 1,
+            base: { planId: plan.id, planSchemaVersion: plan.schemaVersion, snapshotHash: 'fnv1a64:0000000000000000' },
+            title: 'Scenario',
+            rationale: null,
+            createdAtIso: '2026-06-11T00:00:00.000Z',
+            actor: { kind: 'user' },
+            operations: [{ op: 'set', path: '/accounts', before: { present: true, value: storedAccounts }, value }],
+          },
+        },
+      ]
+      const result = load(plan)
+      expect(result.plan.accounts.map(read)).toEqual(loaded)
+      const legacy = applyScenarioPatch(result.plan, result.plan.scenarios[0]!.patch)
+      if (!legacy.ok) throw new Error(legacy.issues.join('; '))
+      const parsed = parseScenarioPatch(result.plan.scenarios[1]!.patch)
+      if (!parsed.ok) throw new Error(parsed.issues.join('; '))
+      const canonical = applyScenarioPatchDocument(result.plan, parsed.patch)
+      if (!canonical.ok) throw new Error(canonical.issues.join('; '))
+      return [legacy.plan, canonical.plan].map((applied) => applied.accounts.map(read))
+    }
+
+    it('keeps each property under the id the plan gave it when the scenario lists Cabin first', () => {
+      const [legacy, canonical] = applyBoth((storedAccounts) => [storedAccounts[1]!, storedAccounts[0]!])
+      expect(legacy).toEqual([['Cabin', 'x-property'], ['Home', 'x']])
+      expect(canonical).toEqual([['Cabin', 'x-property'], ['Home', 'x']])
+    })
+
+    it('keeps Cabin under its new id when the scenario drops Home', () => {
+      const [legacy, canonical] = applyBoth((storedAccounts) => [storedAccounts[1]!])
+      expect(legacy).toEqual([['Cabin', 'x-property']])
+      expect(canonical).toEqual([['Cabin', 'x-property']])
+    })
+
+    it("keeps Cabin under its new id when the scenario drops Home and changes Cabin's value", () => {
+      // Cabin's copy no longer equals the plan's row, so its name and type
+      // identify it; it must not take the id Home kept.
+      const [legacy, canonical] = applyBoth((storedAccounts) => [{ ...storedAccounts[1]!, value: 150_000 }])
+      expect(legacy).toEqual([['Cabin', 'x-property']])
+      expect(canonical).toEqual([['Cabin', 'x-property']])
+    })
+
+    it('pairs two edited copies of same-named properties by their closest content when the scenario reverses them', () => {
+      // Both are named Home. The one growing at 3% keeps `x`; the one growing
+      // at 0% becomes `x-property`. The scenario lists them in the other order
+      // and edits both values, so neither copy equals a plan row and both
+      // share a name and type: the unedited growth rate tells them apart.
+      const plan = quietPlan([
+        { ...home('x', 300_000, 'Home'), annualReturnPct: 3 } as Plan['accounts'][number],
+        home('x', 120_000, 'Home'),
+      ])
+      const readAccount = (account: Plan['accounts'][number]): unknown[] =>
+        [account.annualReturnPct, account.type === 'property' ? account.value : null, account.id]
+      const [legacy, canonical] = applyBoth(
+        (storedAccounts) => [{ ...storedAccounts[1]!, value: 125_000 }, { ...storedAccounts[0]!, value: 310_000 }],
+        plan,
+        [[3, 300_000, 'x'], [0, 120_000, 'x-property']],
+        readAccount,
+      )
+      expect(legacy).toEqual([[0, 125_000, 'x-property'], [3, 310_000, 'x']])
+      expect(canonical).toEqual([[0, 125_000, 'x-property'], [3, 310_000, 'x']])
+    })
+  })
+
+  it('renames the later of a property and a debt, and publishes both values', () => {
+    const result = load(quietPlan([home(), mortgage()]))
+    expect(result.plan.accounts.map((account) => [account.type, account.id])).toEqual([['property', 'home'], ['debt', 'home-debt']])
+    expect(result.repairs).toEqual([{
+      kind: 'sharedIdSeparated', accountId: 'home', accountName: 'Mortgage', newAccountId: 'home-debt',
+      renamedType: 'debt', keptName: 'Home', keptType: 'property',
+    }])
+    const year = firstYear(result.plan).years[0]!
+    // Before, the one `home` entry held the debt's 100,000 in place of the home.
+    expect(year.balances['home']).toBe(300_000)
+    expect(year.balances['home-debt']).toBe(100_000)
+  })
+
+  it('renames the second of two properties, so both count in net worth', () => {
+    const result = load(quietPlan([home('home', 300_000, 'Home'), home('home', 200_000, 'Cabin')]))
+    expect(result.plan.accounts.map((account) => account.id)).toEqual(['home', 'home-property'])
+    expect(result.repairs.map((repair) => repair.kind === 'sharedIdSeparated' && [repair.accountName, repair.keptName]))
+      .toEqual([['Cabin', 'Home']])
+    const projection = firstYear(result.plan)
+    const year = projection.years[0]!
+    expect(year.balances['home']).toBe(300_000)
+    expect(year.balances['home-property']).toBe(200_000)
+    // Before, the property map kept one 'home' value, and net worth held 200,000 of the 500,000.
+    expect(year.netWorth).toBe(500_000)
+  })
+
+  it('renames a permanent-life policy that shares an account id, so the cash balance is published', () => {
+    const plan = quietPlan([checking('savings')])
+    plan.insurance = [lifePolicy('savings', plan.household.people[0]!.id)]
+    const result = load(plan)
+    expect(result.plan.insurance.map((policy) => policy.id)).toEqual(['savings-policy'])
+    expect(result.plan.accounts.map((account) => account.id)).toEqual(['savings'])
+    expect(result.repairs).toEqual([{
+      kind: 'sharedIdSeparated', accountId: 'savings', accountName: 'Whole life', newAccountId: 'savings-policy',
+      renamedType: 'permanentLife', keptName: 'Checking', keptType: 'cash',
+    }])
+    const year = firstYear(result.plan).years[0]!
+    // Before, `savings` published the policy's 50,000 cash value in place of the 10,000 of cash.
+    expect(year.balances['savings']).toBe(10_000)
+    expect(year.balances['savings-policy']).toBe(50_000)
+    expect(year.investableTotal).toBe(10_000)
+  })
+
+  it('renames the second of two policies under one id, so both cash values count', () => {
+    const plan = quietPlan([])
+    const insured = plan.household.people[0]!.id
+    plan.insurance = [lifePolicy('life', insured, 50_000, 'First policy'), lifePolicy('life', insured, 20_000, 'Second policy')]
+    const result = load(plan)
+    expect(result.plan.insurance.map((policy) => policy.id)).toEqual(['life', 'life-policy'])
+    const year = firstYear(result.plan).years[0]!
+    expect(year.balances['life']).toBe(50_000)
+    expect(year.balances['life-policy']).toBe(20_000)
+    // Before, the cash-value map held one 'life' entry, and net worth 20,000 of the 70,000.
+    expect(year.netWorth).toBe(70_000)
+  })
+
+  it('leaves an LTC and a permanent-life policy under one id alone, since they keep no shared value', () => {
+    const plan = quietPlan([])
+    const person = plan.household.people[0]!.id
+    plan.insurance = [ltcPolicy('cover', person), lifePolicy('cover', person)]
+    const result = load(plan)
+    expect(result.repairs).toEqual([])
+    expect(result.plan.insurance.map((policy) => [policy.kind, policy.id])).toEqual([['ltc', 'cover'], ['permanentLife', 'cover']])
+  })
+
+  it('renames the second of two LTC policies under one id, so each keeps its own benefit period', () => {
+    // Each policy pays up to 60,000 a year for 1 year, against 120,000 a year
+    // of care. Under one id the two shared one count of benefit years, so in
+    // the first year the second policy read the first one's year as its own
+    // and paid nothing: 60,000 of benefit instead of 120,000.
+    const plan = quietPlan([checking('cash', 500_000)])
+    const person = plan.household.people[0]!.id
+    plan.household.people[0]!.longevity = { planningAge: 90, source: 'manual' }
+    const firstLtc = { ...ltcPolicy('cover', person), benefitMonthly: 5_000, benefitPeriodYears: 1, eliminationPeriodDays: 0, name: 'First care policy' }
+    const secondLtc = { ...firstLtc, name: 'Second care policy' }
+    plan.insurance = [firstLtc, secondLtc] as Plan['insurance']
+    const startAge = 2026 - Number(plan.household.people[0]!.dob.slice(0, 4))
+    plan.careEvents = [{ id: 'care', personId: person, startAge, durationYears: 2, annualCost: 120_000 }]
+    const result = load(plan)
+    expect(result.plan.insurance.map((policy) => policy.id)).toEqual(['cover', 'cover-policy'])
+    expect(result.repairs).toEqual([{
+      kind: 'sharedIdSeparated', accountId: 'cover', accountName: 'Second care policy', newAccountId: 'cover-policy',
+      renamedType: 'ltc', keptName: 'First care policy', keptType: 'ltc',
+    }])
+    const options = { startYear: 2026, horizonEndYear: 2027, taxCalculator: createFlatTaxCalculator(0) }
+    // The stored plan, projected as it was: one shared count of years used.
+    expect(simulatePlan(plan, options).years.map((year) => year.expenses.ltcBenefit)).toEqual([60_000, 0])
+    // Repaired, each policy pays its own year.
+    expect(simulatePlan(result.plan, options).years.map((year) => year.expenses.ltcBenefit)).toEqual([120_000, 0])
+  })
+
+  it('carries a policy rename into a scenario that sets the insurance list', () => {
+    const plan = quietPlan([checking('savings')])
+    plan.insurance = [lifePolicy('savings', plan.household.people[0]!.id)]
+    const storedInsurance = stored(plan)['insurance'] as Record<string, unknown>[]
+    plan.scenarios = [{
+      id: 's-insurance',
+      name: 'Bigger policy',
+      patch: {
+        kind: 'retiregolden.scenario-patch',
+        version: 1,
+        base: { planId: plan.id, planSchemaVersion: plan.schemaVersion, snapshotHash: 'fnv1a64:0000000000000000' },
+        title: 'Bigger policy',
+        rationale: null,
+        createdAtIso: '2026-06-11T00:00:00.000Z',
+        actor: { kind: 'user' },
+        operations: [{
+          op: 'set',
+          path: '/insurance',
+          before: { present: true, value: storedInsurance },
+          value: storedInsurance.map((row) => ({ ...row, cashValue: 80_000 })),
+        }],
+      },
+    }]
+    const result = load(plan)
+    const parsed = parseScenarioPatch(result.plan.scenarios[0]!.patch)
+    if (!parsed.ok) throw new Error(parsed.issues.join('; '))
+    const applied = applyScenarioPatchDocument(result.plan, parsed.patch)
+    expect(applied.ok, applied.ok ? '' : applied.issues.join('; ')).toBe(true)
+    if (!applied.ok) return
+    expect(applied.plan.insurance.map((policy) => [policy.id, policy.kind === 'permanentLife' ? policy.cashValue : null]))
+      .toEqual([['savings-policy', 80_000]])
+  })
+
+  it("says a scenario introduced the shared id it adds when applying it is refused", () => {
+    // The scenario adds a cash account under the id of the plan's own policy
+    // without setting the insurance list, which loading leaves as stored.
+    const plan = quietPlan([checking('savings')])
+    plan.insurance = [lifePolicy('cover', plan.household.people[0]!.id)]
+    const cover = JSON.parse(JSON.stringify(checking('cover', 5_000))) as Record<string, unknown>
+    const storedAccounts = stored(plan)['accounts'] as Record<string, unknown>[]
+    plan.scenarios = [
+      { id: 's-legacy', name: 'Open another account', patch: { accounts: [...storedAccounts, cover] } },
+      {
+        id: 's-canonical',
+        name: 'Open another account',
+        patch: {
+          kind: 'retiregolden.scenario-patch',
+          version: 1,
+          base: { planId: plan.id, planSchemaVersion: plan.schemaVersion, snapshotHash: 'fnv1a64:0000000000000000' },
+          title: 'Open another account',
+          rationale: null,
+          createdAtIso: '2026-06-11T00:00:00.000Z',
+          actor: { kind: 'user' },
+          operations: [{ op: 'set', path: '/accounts', before: { present: true, value: storedAccounts }, value: [...storedAccounts, cover] }],
+        },
+      },
+    ]
+    const result = load(plan)
+    expect(result.repairs).toEqual([])
+    const refusal = [
+      'insurance.0.id: insurance policy id "cover" is also an account id; give the policy its own id (this scenario introduces the shared id)',
+    ]
+    const legacy = applyScenarioPatch(result.plan, result.plan.scenarios[0]!.patch)
+    expect(legacy.ok).toBe(false)
+    if (!legacy.ok) expect(legacy.issues).toEqual(refusal)
+    const parsed = parseScenarioPatch(result.plan.scenarios[1]!.patch)
+    if (!parsed.ok) throw new Error(parsed.issues.join('; '))
+    const applied = applyScenarioPatchDocument(result.plan, parsed.patch)
+    expect(applied.ok).toBe(false)
+    if (!applied.ok) expect(applied.issues).toEqual(refusal)
+  })
+
+  describe('every pair of row kinds under one id: the plan checks and the load repair agree', () => {
+    type RowKind =
+      | 'cash' | 'taxable' | 'equityComp' | 'traditional' | 'roth' | 'hsa'
+      | 'property' | 'debt' | 'pension' | 'annuity' | 'permanentLife' | 'ltc'
+    const kinds: readonly RowKind[] = [
+      'cash', 'taxable', 'equityComp', 'traditional', 'roth', 'hsa',
+      'property', 'debt', 'pension', 'annuity', 'permanentLife', 'ltc',
+    ]
+    /**
+     * The collision rule, stated here on its own terms rather than read from
+     * model/sharedIdCollisions.ts: two rows collide when both publish a value
+     * in the year's balances (an investable account, a property, a debt or a
+     * permanent-life cash value) and not both are investable accounts, or when
+     * both are LTC policies.
+     */
+    const investable = new Set<RowKind>(['cash', 'taxable', 'equityComp', 'traditional', 'roth', 'hsa'])
+    const publishesBalance = (kind: RowKind): boolean =>
+      investable.has(kind) || kind === 'property' || kind === 'debt' || kind === 'permanentLife'
+    const collide = (left: RowKind, right: RowKind): boolean =>
+      (publishesBalance(left) && publishesBalance(right) && !(investable.has(left) && investable.has(right))) ||
+      (left === 'ltc' && right === 'ltc')
+
+    function withRow(plan: Plan, kind: RowKind, name: string): void {
+      const person = plan.household.people[0]!.id
+      const common = { id: 'x', name, annualReturnPct: 0 }
+      switch (kind) {
+        case 'cash': plan.accounts.push({ ...checking('x'), name }); return
+        case 'property': plan.accounts.push(home('x', 300_000, name)); return
+        case 'debt': plan.accounts.push({ ...mortgage('x'), name }); return
+        case 'taxable':
+          plan.accounts.push({ ...common, type: 'taxable', ownerPersonId: null, balance: 10_000, costBasis: 10_000, annualContribution: 0 })
+          return
+        case 'equityComp':
+          plan.accounts.push({
+            ...common, type: 'equityComp', ownerPersonId: person, balance: 10_000, costBasis: 5_000, annualContribution: 0,
+            vestingMode: 'final', vestDate: null,
+          })
+          return
+        case 'traditional':
+        case 'roth':
+          plan.accounts.push({ ...common, type: kind, ownerPersonId: person, kind: 'ira', balance: 10_000, annualContribution: 0 })
+          return
+        case 'hsa':
+          plan.accounts.push({ ...common, type: 'hsa', ownerPersonId: person, balance: 10_000, annualContribution: 0 })
+          return
+        case 'pension':
+          plan.accounts.push({
+            ...common, type: 'pension', ownerPersonId: person, annualReturnPct: null, startAge: 65, monthlyAmount: 1_000,
+            colaPct: 0, survivorPct: 0,
+          })
+          return
+        case 'annuity':
+          plan.accounts.push({
+            ...common, type: 'annuity', ownerPersonId: person, annualReturnPct: null, startAge: 65, monthlyAmount: 500,
+            colaPct: 0, taxablePct: 100,
+          })
+          return
+        case 'permanentLife': plan.insurance.push(lifePolicy('x', person, 50_000, name)); return
+        case 'ltc': plan.insurance.push({ ...ltcPolicy('x', person), name }); return
+      }
+    }
+    const planWith = (rows: readonly RowKind[]): Plan => {
+      const plan = quietPlan([])
+      rows.forEach((kind, index) => withRow(plan, kind, `Row ${index + 1}`))
+      return plan
+    }
+    const sharedIdMessage = /is shared by|is also an account id|is used by more than one/
+
+    it('accepts each kind on its own', () => {
+      for (const kind of kinds) {
+        const parsed = parsePlan(planWith([kind]))
+        expect(parsed.ok, `${kind}: ${parsed.ok ? '' : parsed.issues.join('; ')}`).toBe(true)
+      }
+    })
+
+    for (const left of kinds) {
+      for (const right of kinds) {
+        const collides = collide(left, right)
+        it(`${left} then ${right}: ${collides ? 'refused by name and repaired on load' : 'no shared-id refusal and no repair'}`, () => {
+          const plan = planWith([left, right])
+          const parsed = parsePlan(plan)
+          const issues = parsed.ok ? [] : parsed.issues
+          const named = issues.filter((issue) => sharedIdMessage.test(issue))
+          const loaded = migratePlanToCurrent(stored(plan))
+          if (collides) {
+            // Refused only by name, and the repair leaves a plan that parses.
+            expect(named.length).toBeGreaterThan(0)
+            expect(issues.filter((issue) => !sharedIdMessage.test(issue))).toEqual([])
+            expect(loaded.ok, loaded.ok ? '' : (loaded.issues ?? []).join('; ')).toBe(true)
+            if (!loaded.ok) return
+            expect(loaded.repairs.filter((repair) => repair.kind === 'sharedIdSeparated')).toHaveLength(1)
+            const ids = [...loaded.plan.accounts, ...loaded.plan.insurance].map((row) => row.id)
+            expect(new Set(ids).size).toBe(2)
+          } else {
+            expect(named).toEqual([])
+            // Whatever else refuses the pair (an ambiguous id) refuses it on load
+            // too; nothing is repaired either way.
+            expect(loaded.ok).toBe(parsed.ok)
+            if (loaded.ok) expect(loaded.repairs.filter((repair) => repair.kind === 'sharedIdSeparated')).toEqual([])
+          }
+        })
+      }
+    }
+  })
+
+  it('leaves a collision-free plan byte-identical, including a pension and a property that share an id', () => {
+    // A pension publishes no value under its id, so it may share one.
+    const plan = quietPlan([
+      home('pension-home'),
+      {
+        type: 'pension', id: 'pension-home', name: 'Pension', ownerPersonId: owner(), annualReturnPct: null,
+        startAge: 65, monthlyAmount: 1_000, colaPct: 0, survivorPct: 0,
+      },
+      checking('cash'),
+      mortgage('mortgage'),
+    ])
+    plan.accounts[1] = { ...plan.accounts[1]!, ownerPersonId: plan.household.people[0]!.id } as Plan['accounts'][number]
+    plan.insurance = [lifePolicy('life', plan.household.people[0]!.id)]
+    const raw = stored(plan)
+    const result = migratePlanToCurrent(raw)
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.repairs).toEqual([])
+    expect(result.plan).toEqual(plan)
   })
 })
 

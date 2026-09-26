@@ -1,7 +1,7 @@
 {
   "schema": "retiregolden.equivalence-reach-spec/1",
   "name": "simulate-small-annual-boundaries",
-  "why": "Measured reach for the five small annual boundaries extracted from simulatePlan. Ranges point at the helper files after extraction, not the removed inline sites. Each range was pinned against this working tree after all five helpers landed. Reach reports the remaining cold sub-line operands; material validated-input-impossible branches are called out in entry notes, while the helper unit suites cover their supported structural contracts. Treating rejected Plan input as differential coverage would weaken, not strengthen, this proof.",
+  "why": "Measured reach for the five small annual boundaries extracted from simulatePlan. Ranges point at the helper files after extraction, not the removed inline sites. Each range was pinned against this working tree after all five helpers landed. Reach reports the remaining cold sub-line operands; material validated-input-impossible branches are called out in entry notes, while the helper unit suites cover their supported structural contracts. Treating rejected Plan input as differential coverage would weaken, not strengthen, this proof. SPLIT on 2026-09-26: entry C (77-118) is now C (77-80) and C.fromEntryMap (82-118), leaving out the one line only a repeated policy id reached, since the plan checks refuse repeated policy ids (D-CASH-PROPERTY-ALIAS).",
   "entries": [
     {
       "id": "A.filters",
@@ -75,17 +75,37 @@
     },
     {
       "id": "C",
-      "label": "permanent-life annual state transitions",
+      "label": "permanent-life annual state transitions: setup and the shadow membership test",
       "file": "projection/internal/annualPermanentLifeTransitions.ts",
       "lines": [
         77,
+        80
+      ],
+      "note": "SPLIT on 2026-09-26 from one range, 77-118, around line 81 (`? shadowCashValues.get(policyId)!`), which is excluded: it reads the private shadow for a policy id an earlier row already wrote, which only a repeated policy id can reach, and the plan checks now refuse a repeated policy id (D-CASH-PROPERTY-ALIAS, model/sharedIdCollisions.ts), so no validated differential member selects it. The helper keeps the read for input that did not pass through the checks.",
+      "anchors": [
+        {
+          "line": 77,
+          "text": "const transitions: AnnualPermanentLifeTransition[] = []"
+        },
+        {
+          "line": 80,
+          "text": "shadowCashValues.has(policyId)"
+        }
+      ]
+    },
+    {
+      "id": "C.fromEntryMap",
+      "label": "permanent-life annual state transitions from the entry cash values on",
+      "file": "projection/internal/annualPermanentLifeTransitions.ts",
+      "lines": [
+        82,
         118
       ],
       "note": "The corpus reaches the permanent-life kind filter, flat-rate and schedule modes, positive and zero settlement, and post-death zeroing. The missing-insured nullish operands on lines 89-90 are a defensive structural-input contract: Plan validation rejects an insurance subject absent from household.people, so no validated differential member can select those sub-line operands.",
       "anchors": [
         {
-          "line": 77,
-          "text": "const transitions: AnnualPermanentLifeTransition[] = []"
+          "line": 82,
+          "text": ": (input.insuranceCashValues.get(policyId) ?? 0)"
         },
         {
           "line": 98,

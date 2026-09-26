@@ -164,18 +164,19 @@ export interface YearWithdrawals {
   roth: number
   hsa: number
   /**
-   * `cash + taxable + traditional + roth + hsa`, with one known departure.
-   * The publishing site composes this total as the need-based category total
-   * + RMDs + SEPP payments + inherited forced distributions + retirement-action
-   * proceeds, and composes the categories separately: cash and taxable add
-   * the retirement-action cash, equity-compensation and taxable proceeds;
-   * traditional adds RMDs, SEPP payments and inherited ordinary income; roth
-   * adds the forced inherited Roth distributions. A non-qualified inherited
-   * Roth distribution's taxable earnings therefore enter traditional as well
-   * as roth, and the categories exceed this total by that slice
-   * (D-INHERITED-ROTH-SLICE). The three retirement-action class amounts are
-   * composed from tax-character and coverage evidence while the proceeds are
-   * the executed dispositions; their agreement is not asserted here.
+   * `cash + taxable + traditional + roth + hsa`. The publishing site composes
+   * this total as the need-based category total + RMDs + SEPP payments +
+   * inherited forced distributions + retirement-action proceeds, and composes
+   * the categories separately: cash and taxable add the retirement-action
+   * cash, equity-compensation and taxable proceeds; traditional adds RMDs,
+   * SEPP payments and the forced dollars executed from inherited traditional
+   * accounts; roth adds the forced inherited Roth distributions. Each forced
+   * inherited dollar is therefore in exactly one category, including the
+   * taxable earnings of a non-qualified inherited Roth distribution, which
+   * stay in roth (D-INHERITED-ROTH-SLICE, 2026-09-25). The three
+   * retirement-action class amounts are composed from tax-character and
+   * coverage evidence while the proceeds are the executed dispositions; their
+   * agreement is not asserted here.
    */
   total: number
 }

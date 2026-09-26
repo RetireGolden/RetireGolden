@@ -307,16 +307,18 @@ describe('coordinated draw policy (Pfau direction fixture)', () => {
       { ...sharedLine, name: 'Duplicate property row sharing the HECM line' },
       distinctLine,
     ]
-    const parsed = parsePlan(plan)
-    expect(parsed.ok).toBe(true)
-    if (!parsed.ok) throw new Error(parsed.issues.join('; '))
+    // The plan checks refuse the duplicate row since D-CASH-PROPERTY-ALIAS (two
+    // properties may not share an id). The projection still counts an aliased
+    // line once for input that skipped the checks, which is what this pins, so
+    // the plan goes in unparsed.
+    expect(parsePlan(plan).ok).toBe(false)
     expect(
-      parsed.plan.accounts
+      plan.accounts
         .filter((account) => account.type === 'property')
         .map((account) => account.id),
     ).toEqual(['home1', 'home1', 'home2'])
 
-    const result = simulatePlan(parsed.plan, {
+    const result = simulatePlan(plan, {
       startYear: 2026,
       horizonEndYear: 2028,
       taxCalculator: noTax,
@@ -409,7 +411,12 @@ describe('coordinated draw policy (Pfau direction fixture)', () => {
       },
     ]
 
-    const result = run(plan, {
+    // Refused by the plan checks since D-CASH-PROPERTY-ALIAS; pinned for input
+    // that skipped them, so the plan goes in unparsed.
+    expect(parsePlan(plan).ok).toBe(false)
+    const result = simulatePlan(plan, {
+      startYear: 2026,
+      taxCalculator: noTax,
       horizonEndYear: 2027,
       market: { returnShockPct: [-10, 0] },
     })

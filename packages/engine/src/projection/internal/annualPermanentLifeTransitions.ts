@@ -3,8 +3,8 @@
  *
  * The caller owns the live cash-value map, deposits, and cash-flow publication.
  * This helper only computes the ordered writes and the death-benefit fold. Its
- * private shadow is load-bearing: duplicate policy ids are accepted by the
- * plan schema, so a later policy row must observe an earlier row's write.
+ * private shadow lets a later row under a repeated policy id see the earlier
+ * row's write; the plan checks now refuse a repeated id (model/sharedIdCollisions.ts).
  */
 import type { InsurancePolicy } from '../../model/plan.js'
 

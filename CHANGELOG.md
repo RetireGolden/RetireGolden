@@ -4,6 +4,112 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## Unreleased
 
+- **Fixed: a value lost or shown under another row when two rows shared an
+  id** (decision D-CASH-PROPERTY-ALIAS): the year's balances, and the
+  property, debt and policy values behind them, keep one value per id. The
+  plan checks accepted a cash account and a property under one id, so the
+  property's value was published in place of the cash balance: cash $10,000
+  and a $300,000 home under `home` showed $300,000 of cash in the ending
+  balances by category, the balance-by-category chart and the estate
+  breakdown's cash row, and so also moved the amount passing to charity and
+  the after-tax estate when that cash account named a charity destination.
+  They also accepted other pairs under one id, with three kinds of effect.
+  Two rows of different kinds (a property and a debt, or an account and a
+  permanent-life policy) kept both in the totals, but the year's published
+  balances showed one in place of the other. Two rows of the same kind (two
+  properties, two debts, two permanent-life policies) kept one value, so one
+  of them dropped out of net worth. Two LTC policies counted their benefit
+  years together, so a year one of them paid used up a year of the other.
+  The checks now refuse every such pair with a message naming it, from the
+  same reading of which rows collide that the repair uses (a property or a
+  debt sharing an id with an investable account, other than one property
+  with one cash account, was refused before only as a duplicate account id).
+  A saved
+  plan that has one is repaired when it opens: an investable account keeps
+  the id, otherwise the first row does, and each other row gets a new id
+  (`<id>-property`, `<id>-debt` or `<id>-policy`, numbered when taken). No
+  other field in a plan can name a property, a debt or a policy, and every
+  account reference could only have meant the investable account, so nothing
+  else moves; a stored scenario's copy of a renamed row takes the same new
+  id, found by the row's contents (for an edited copy, its name and type and
+  then the closest contents) rather than its position, so a scenario that
+  dropped, reordered or edited rows still names each one the way the plan
+  does, and a pair found only in a scenario's own lists is
+  repaired there. A scenario that would add a pair loading cannot repair is
+  refused when applied, with a message saying the scenario introduces the
+  shared id. The load notice (new repair kind
+  `sharedIdSeparated`) tells the household. For such a plan the cash balance
+  and cash totals drop to the cash actually held, each renamed row appears
+  under its own entry, net worth counts both of two same-kind rows, and two
+  LTC policies each pay their own benefit period; investable assets do not
+  change. A pension or an annuity publishes no value under its id and may
+  still share one with a property, a debt or another pension or annuity (not
+  with an investable account, which stays refused as a duplicate account id),
+  and an LTC policy may share one with an account or a permanent-life policy,
+  since they keep no value in common.
+
+- **Fixed: a false Roth-conversion warning** (decision
+  D-ROTH-TARGET-WARNING): "Spending withdrawals from traditional accounts
+  pushed income above the Roth-conversion target in some years." was raised
+  whenever a fill-to-target conversion and a spending draw from a traditional
+  account fell in the same year, without looking at income. It is now raised
+  only when the year's final value of the measure the conversion was sized
+  against (taxable income for a bracket top, MAGI for an IRMAA tier or a fixed
+  MAGI, ACA MAGI for the credit cliff) ends more than a cent above the
+  target. No figure changes; the warning disappears from projections that
+  never went over, among them the bracket-fill example, whose taxable income
+  ends $64,977.21, $43,471.24 and $61,127.60 under the target in 2027, 2028
+  and 2029, and the example couple's report, whose two conversion years with
+  a spending draw (2034 and 2035) end about $94,753 and $70,301 under it.
+
+- **Changed: engine comments and dead members brought in line with the code**
+  (decisions D-PREMIUM-END-AGE, D-GOAL-FLEXIBILITY,
+  D-ADJUSTMENT-ROUNDING-REASON, D-DEAD-EXPORT): the `premiumMode` comment now
+  says an until-age policy is charged in the years before the insured (or
+  the LTC owner) reaches the stop age; the `GoalFlexibility` comment now says
+  a movable or skippable goal still unfunded at its latest year is recorded
+  as skipped and counted in the unfunded layer totals, as the scheduler
+  always did; the never-used `rounding` reason is removed from optimizer
+  schedule adjustments; and the uncalled `nonCashWeight` export is deleted.
+  No displayed number changes.
+
+- **Fixed: inherited Roth earnings counted twice in the withdrawal categories**
+  (decision D-INHERITED-ROTH-SLICE): in a year with a non-qualified inherited
+  Roth distribution, its taxable earnings were added to the traditional
+  withdrawal category as well as to Roth, so cash + taxable + traditional +
+  Roth + HSA exceeded the year's total withdrawals by that amount. The
+  traditional category now carries only dollars withdrawn from traditional
+  accounts, and the five categories add to the total in every year. Displayed
+  numbers that change, and only in such a year: the year's traditional
+  withdrawals (and the lifetime traditional-withdrawal sum on scenario
+  comparisons) drop by the Roth earnings. Taxes do not change: those earnings
+  are still ordinary income under IRC 408A(d), and the inherited
+  ordinary-income figure (`inheritedTraditionalDistribution`) keeps them, as
+  its comment now says. The optimizer's bracket-fill windows read the year's
+  spending draw from traditional accounts net of the dollars that actually
+  moved out of inherited traditional accounts (a spousal election year
+  included, where an inherited account's published row can show an amount
+  that did not move), so the candidates it offers do not change either.
+  Those movements come from the year's `retirementRuntimeSource`, which
+  `simulatePlan` always publishes. For a baseline year built elsewhere
+  without it, the forced amount is read only where the published figures fix
+  it: nothing when no inherited distribution moved, otherwise the inherited
+  traditional rows' executed amounts when every row's executed amount adds
+  up to `inheritedDistribution`; a year they cannot fix counts as having no
+  spending draw, rather than being read from the ordinary-income figure.
+
+- **Fixed: 0% capital-gains room when income is below the deduction**
+  (decision D-ZERO-RATE-HEADROOM): the search for the room stopped at the 15%
+  threshold, so a year whose ordinary income (with gains, qualified dividends
+  and the taxable Social Security they bring) was below the deduction showed
+  the threshold alone. It now adds the unused deduction, as IRC 1(h)(1)(B) and
+  63 give it. The year's `ltcgZeroHeadroom` and the tax-opportunity view's
+  gain-harvesting room move up in those years only: single, 2026, no Social
+  Security, $10,000 of ordinary income shows $55,550 instead of $49,450, and
+  $0 shows $65,550 instead of $49,450. Years whose income already covers the
+  deduction are unchanged to the last bit, except the boundary where income
+  (with the benefit it makes taxable) exactly equals the deduction: that year
+  now shows the threshold itself ($49,450 single) rather than about $49,449.99.
 - **Social Security survivor benefits follow the statute when a worker dies before
   claiming (displayed numbers change).** The survivor of a worker who died without
   having claimed was paid nothing from the worker's record until the year the worker

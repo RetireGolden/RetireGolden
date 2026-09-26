@@ -76,5 +76,32 @@ export function planRepairMessage(repair: PlanLoadRepair, plan: Plan): string {
       return repair.startAge <= repair.latestPermittedStartAgeIfToggled
         ? `${account} was bought as a QLAC and set to start paying at age ${repair.startAge}. A QLAC has to start by age ${repair.latestPermittedStartAge} — the IRA rules put the last start on the first of the month after your 85th birthday. Bought as late as this one was, an ordinary pre-tax purchase could still start at ${repair.startAge}. The purchase was cleared and ${account} pays nothing, so the premium stayed in the account it would have come from. Open Accounts to set it up again with an earlier start age, or without the QLAC box ticked.`
         : `${account} was bought as a QLAC and set to start paying at age ${repair.startAge}. A QLAC is the longest a pre-tax purchase can wait, but it still has to start by age ${repair.latestPermittedStartAge} — the IRA rules put the last start on the first of the month after your 85th birthday. The purchase was cleared and ${account} pays nothing, so the premium stayed in the account it would have come from. Open Accounts to set it up again with an earlier start age.`
+    // The account and insurance lists never show ids, so the copy speaks of an
+    // internal reference. What the collision did depends on the pair: a cash
+    // account and a property (the pair plans accepted) reported the property's
+    // value as cash; two rows of the same kind kept one value, so one of them
+    // dropped out of the totals; two rows of different kinds kept both in the
+    // totals but showed one in place of the other in the year-by-year
+    // balances; and two LTC policies counted their benefit years together.
+    case 'sharedIdSeparated': {
+      if (repair.renamedType === 'property' && repair.keptType === 'cash') {
+        const cash = repair.keptName.trim().length > 0
+          ? `the cash account ${repair.keptName}`
+          : 'a cash account'
+        return `${named(repair.accountName, 'A property')} and ${cash} were stored under one internal reference, so the plan showed the property's value as cash. The property now has a reference of its own. Its value and the cash balance are as you entered them, and cash totals no longer include the property. Open Accounts to check both.`
+      }
+      const renamedIsPolicy = repair.renamedType === 'permanentLife' || repair.renamedType === 'ltc'
+      const keptIsPolicy = repair.keptType === 'permanentLife' || repair.keptType === 'ltc'
+      const noun = repair.renamedType === 'property' ? 'property' : repair.renamedType === 'debt' ? 'debt' : 'policy'
+      const renamed = named(repair.accountName, noun === 'property' ? 'A property' : noun === 'debt' ? 'A debt' : 'An insurance policy')
+      const kept = named(repair.keptName, keptIsPolicy ? 'another policy' : 'another account')
+      const page = !renamedIsPolicy ? 'Accounts' : keptIsPolicy ? 'Insurance' : 'Accounts and Insurance'
+      const effect = repair.renamedType === 'ltc'
+        ? 'so the plan counted their benefit years together, and a year one policy paid used up a year of the other'
+        : repair.renamedType === repair.keptType
+          ? 'so the plan kept one value for the two and left the other out of your totals'
+          : 'so the plan showed one in place of the other in your year-by-year balances'
+      return `${renamed} and ${kept} were stored under one internal reference, ${effect}. The ${noun} now has a reference of its own, and both are as you entered them. Open ${page} to check both.`
+    }
   }
 }
