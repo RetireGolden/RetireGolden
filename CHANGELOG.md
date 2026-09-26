@@ -13,24 +13,28 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   balances by category, the balance-by-category chart and the estate
   breakdown's cash row, and so also moved the amount passing to charity and
   the after-tax estate when that cash account named a charity destination.
-  They also accepted a property and a debt, two properties, two debts, an
-  account and a permanent-life policy, and two insurance policies under one
-  id, where one value replaced the other in the published balances or dropped
-  out of net worth (two properties, or two life policies, under one id
-  counted only one of them). The checks now refuse every such pair with a
-  message naming it. A saved plan that has one is repaired when it opens: an
-  investable account keeps the id, otherwise the first row does, and each
-  other row gets a new id (`<id>-property`, `<id>-debt` or `<id>-policy`,
-  numbered when taken). No other field in a plan can name a property, a debt
-  or a policy, and every account reference could only have meant the
-  investable account, so nothing else moves; stored scenarios follow the
-  rename, and a pair found only in a scenario's own lists is repaired there.
-  The load notice (new repair kind `sharedIdSeparated`) tells the household.
-  For such a plan the cash balance and cash totals drop to the cash actually
-  held, each renamed row appears under its own entry, and net worth counts
-  both of two properties or two life policies; investable assets do not
-  change. A pension or an LTC policy publishes no value under its id and may
-  still share one.
+  They also accepted other pairs under one id, with three kinds of effect.
+  Two rows of different kinds (a property and a debt, or an account and a
+  permanent-life policy) kept both in the totals, but the year's published
+  balances showed one in place of the other. Two rows of the same kind (two
+  properties, two debts, two permanent-life policies) kept one value, so one
+  of them dropped out of net worth. Two LTC policies counted their benefit
+  years together, so a year one of them paid used up a year of the other.
+  The checks now refuse every such pair with a message naming it. A saved
+  plan that has one is repaired when it opens: an investable account keeps
+  the id, otherwise the first row does, and each other row gets a new id
+  (`<id>-property`, `<id>-debt` or `<id>-policy`, numbered when taken). No
+  other field in a plan can name a property, a debt or a policy, and every
+  account reference could only have meant the investable account, so nothing
+  else moves; stored scenarios follow the rename, and a pair found only in a
+  scenario's own lists is repaired there. The load notice (new repair kind
+  `sharedIdSeparated`) tells the household. For such a plan the cash balance
+  and cash totals drop to the cash actually held, each renamed row appears
+  under its own entry, net worth counts both of two same-kind rows, and two
+  LTC policies each pay their own benefit period; investable assets do not
+  change. A pension publishes no value under its id and may still share one,
+  and so may an LTC policy with an account or a permanent-life policy, since
+  they keep no value in common.
 
 - **Fixed: a false Roth-conversion warning** (decision
   D-ROTH-TARGET-WARNING): "Spending withdrawals from traditional accounts

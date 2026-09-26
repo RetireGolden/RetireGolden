@@ -291,13 +291,23 @@ describe('PlanRepairNotice', () => {
         newAccountId: 'cover-policy',
         renamedType: 'ltc',
         keptName: '',
-        keptType: 'permanentLife',
+        keptType: 'ltc',
+      },
+      {
+        kind: 'sharedIdSeparated',
+        accountId: 'cabin',
+        accountName: 'Cabin',
+        newAccountId: 'cabin-property',
+        renamedType: 'property',
+        keptName: 'Home',
+        keptType: 'property',
       },
     ])
     expect(items()).toEqual([
-      'Mortgage and Home were stored under one internal reference. The plan keeps one value per reference, so one of the two was shown in place of the other or left out of your totals. The debt now has a reference of its own, and both are as you entered them. Open Accounts to check both.',
-      'Whole life and Savings were stored under one internal reference. The plan keeps one value per reference, so one of the two was shown in place of the other or left out of your totals. The policy now has a reference of its own, and both are as you entered them. Open Accounts and Insurance to check both.',
-      'An insurance policy and another policy were stored under one internal reference. The plan keeps one value per reference, so one of the two was shown in place of the other or left out of your totals. The policy now has a reference of its own, and both are as you entered them. Open Insurance to check both.',
+      'Mortgage and Home were stored under one internal reference, so the plan showed one in place of the other in your year-by-year balances. The debt now has a reference of its own, and both are as you entered them. Open Accounts to check both.',
+      'Whole life and Savings were stored under one internal reference, so the plan showed one in place of the other in your year-by-year balances. The policy now has a reference of its own, and both are as you entered them. Open Accounts and Insurance to check both.',
+      'An insurance policy and another policy were stored under one internal reference, so the plan counted their benefit years together, and a year one policy paid used up a year of the other. The policy now has a reference of its own, and both are as you entered them. Open Insurance to check both.',
+      'Cabin and Home were stored under one internal reference, so the plan kept one value for the two and left the other out of your totals. The property now has a reference of its own, and both are as you entered them. Open Accounts to check both.',
     ])
   })
 

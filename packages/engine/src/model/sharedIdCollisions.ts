@@ -1,21 +1,27 @@
 /**
- * Ids that two plan rows may not share, because the projection keeps a value
- * per id and one row's value would replace the other's.
+ * Ids that two plan rows may not share, because the projection keeps one
+ * value per id and the two rows would share or overwrite it.
  *
  * The year's published balances (`YearResult.balances`) are one record keyed
  * by id, written from four channels: the investable accounts, the property
  * values, the debt balances and the permanent-life cash values, and the
- * property, debt and cash-value channels are themselves maps keyed by id. The
- * insurance policies also keep per-policy state by id (a permanent-life cash
- * value, an LTC policy's benefit years used). So a property and a debt under
- * one id publish only the later value, two properties under one id leave one
- * of them out of net worth, and a policy under an account's id replaces that
- * account's published balance.
+ * property, debt and cash-value channels are themselves maps keyed by id. So
+ * a property and a debt under one id publish only the later value, a
+ * permanent-life policy under an account's id replaces that account's
+ * published balance, and two properties, or two permanent-life policies, under
+ * one id keep one value, so one of them drops out of net worth. LTC policies
+ * keep one more per-id value, the benefit years used
+ * (projection/internal/annualDebtAndLongTermCare.ts), so two LTC policies
+ * under one id draw down one benefit period between them.
  *
  * Investable accounts sharing an id are the one deliberate exception: they are
  * one logical account held in several rows, and the plan checks require their
  * facts to agree (`checkAmbiguousAccountIds`). Pensions and annuities publish
- * no value under their id and take no part here.
+ * no value under their id and take no part here, and neither does an LTC
+ * policy beside an account or a permanent-life policy: it publishes nothing
+ * in the balances and shares no per-id value with them (their premiums are
+ * separate rows; only their cash-flow lines share an id, as two pensions'
+ * already may).
  *
  * Decision D-CASH-PROPERTY-ALIAS (2026-09-25) and its extension the next day:
  * the plan checks refuse every collision found here, and a stored plan that
@@ -40,8 +46,8 @@ export interface SharedIdMember {
 
 export interface SharedIdGroup {
   readonly id: string
-  /** 'balances' for the published balances record, 'insurance' for per-policy state. */
-  readonly space: 'balances' | 'insurance'
+  /** 'balances' for the published balances record and its value maps, 'ltcBenefits' for LTC benefit years used. */
+  readonly space: 'balances' | 'ltcBenefits'
   /** Every row carrying the id in this space, accounts in stored order and then policies. */
   readonly members: readonly SharedIdMember[]
   /** The row that keeps the id: the first investable account if any, else the first member. */
@@ -74,9 +80,11 @@ function groupBy(members: readonly (SharedIdMember & { readonly id: string })[])
 }
 
 /**
- * Every id two rows collide on. In the balances space a group collides when it
- * has two or more members and at least one is not an investable account; in
- * the insurance space any two policies under one id collide.
+ * Every id two rows collide on. In the balances space (investable accounts,
+ * properties, debts and permanent-life policies) a group collides when it has
+ * two or more members and at least one is not an investable account; in the
+ * LTC benefit space any two LTC policies under one id collide. An LTC policy
+ * and a permanent-life policy under one id do not collide.
  */
 export function sharedIdGroups(
   accounts: readonly SharedIdRow[],
@@ -96,9 +104,9 @@ export function sharedIdGroups(
     const keeper = members.find((member) => member.channel === 'balance') ?? members[0]!
     groups.push({ id, space: 'balances', members, keeper })
   }
-  for (const [id, members] of groupBy(policyMembers)) {
+  for (const [id, members] of groupBy(policyMembers.filter((member) => member.channel === 'ltc'))) {
     if (members.length < 2) continue
-    groups.push({ id, space: 'insurance', members, keeper: members[0]! })
+    groups.push({ id, space: 'ltcBenefits', members, keeper: members[0]! })
   }
   return groups
 }

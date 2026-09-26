@@ -1626,11 +1626,20 @@ describe('Plan retirement-action persistence', () => {
         .toEqual(['insurance.0.id: insurance policy id "home" is also an account id; give the policy its own id'])
     })
 
-    it('refuses two policies under one id, of either kind', () => {
-      const message = 'insurance policy id "cover" is used by more than one policy; give each its own id'
-      for (const insurance of [[life('cover'), life('cover')], [ltc('cover'), ltc('cover')], [ltc('cover'), life('cover')]]) {
-        expect(issuesFor([], insurance).issues).toEqual([`insurance.0.id: ${message}`, `insurance.1.id: ${message}`])
-      }
+    it('refuses two policies of the same kind under one id', () => {
+      // Two permanent-life policies keep one cash value; two LTC policies keep
+      // one count of benefit years used.
+      const life2 = 'insurance policy id "cover" is used by more than one permanent-life policy; give each its own id'
+      expect(issuesFor([], [life('cover'), life('cover')]).issues)
+        .toEqual([`insurance.0.id: ${life2}`, `insurance.1.id: ${life2}`])
+      const ltc2 = 'insurance policy id "cover" is used by more than one LTC policy; give each its own id'
+      expect(issuesFor([], [ltc('cover'), ltc('cover')]).issues)
+        .toEqual([`insurance.0.id: ${ltc2}`, `insurance.1.id: ${ltc2}`])
+    })
+
+    it('accepts an LTC policy and a permanent-life policy under one id, which keep no shared value', () => {
+      expect(issuesFor([], [ltc('cover'), life('cover')]).issues).toEqual([])
+      expect(issuesFor([], [life('cover'), ltc('cover')]).issues).toEqual([])
     })
 
     it('still accepts a pension or an LTC policy under an id another row uses, since neither publishes a value under it', () => {

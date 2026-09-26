@@ -1184,31 +1184,27 @@ export function checkInsuranceCrossFieldRules(
       }
     }
   })
-  // Policies keep per-policy state by id, and a permanent-life cash value is
-  // published under its policy id in the same balances record as the accounts
-  // (model/sharedIdCollisions.ts). A policy therefore may not repeat another
-  // policy's id, and a permanent-life policy may not take the id of an account
-  // that publishes a value.
+  // A permanent-life cash value is published under its policy id in the same
+  // balances record as the accounts, and an LTC policy's benefit years used
+  // are kept by id (model/sharedIdCollisions.ts). So a permanent-life policy
+  // may not take the id of an account that publishes a value, nor another
+  // permanent-life policy's id, and an LTC policy may not take another LTC
+  // policy's id. An LTC policy and a permanent-life policy may share one.
   const groups = sharedIdGroups(
     plan.accounts.map((account) => ({ id: account.id, channel: accountChannel(account.type) })),
     plan.insurance.map((policy) => ({ id: policy.id, channel: policyChannel(policy.kind) })),
   )
   for (const group of groups) {
+    const withAccount = group.members.some((other) => other.collection === 'accounts')
     for (const member of group.members) {
       if (member.collection !== 'insurance') continue
-      if (group.space === 'insurance') {
-        ctx.addIssue({
-          code: 'custom',
-          path: ['insurance', member.index, 'id'],
-          message: `insurance policy id "${group.id}" is used by more than one policy; give each its own id`,
-        })
-      } else if (group.members.some((other) => other.collection === 'accounts')) {
-        ctx.addIssue({
-          code: 'custom',
-          path: ['insurance', member.index, 'id'],
-          message: `insurance policy id "${group.id}" is also an account id; give the policy its own id`,
-        })
-      }
+      ctx.addIssue({
+        code: 'custom',
+        path: ['insurance', member.index, 'id'],
+        message: withAccount
+          ? `insurance policy id "${group.id}" is also an account id; give the policy its own id`
+          : `insurance policy id "${group.id}" is used by more than one ${group.space === 'ltcBenefits' ? 'LTC' : 'permanent-life'} policy; give each its own id`,
+      })
     }
   }
 }

@@ -727,9 +727,10 @@ export type PlanLoadRepair =
   /**
    * Two rows stored under one id where the projection keeps one value per id
    * (model/sharedIdCollisions.ts): a cash account and a property, a property
-   * and a debt, two properties, an account and a permanent-life policy, two
-   * policies. One row's value replaced the other's in the year's balances, or
-   * dropped out of net worth. The renamed row now carries `newAccountId`, a
+   * and a debt, two properties or two debts, an account and a permanent-life
+   * policy, two permanent-life policies, two LTC policies. One row's value
+   * replaced the other's in the year's balances, or dropped out of net worth,
+   * or two LTC policies counted one benefit period. The renamed row now carries `newAccountId`, a
    * string the stored document did not contain anywhere; the kept row keeps
    * `accountId`. An investable account always keeps the id; otherwise the
    * first row does, accounts before policies. For a policy, `accountId`,

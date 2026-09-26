@@ -911,12 +911,39 @@ describe('load-time repair: rows stored under one id where the projection keeps 
     expect(year.netWorth).toBe(70_000)
   })
 
-  it('renames the later of an LTC and a permanent-life policy under one id', () => {
+  it('leaves an LTC and a permanent-life policy under one id alone, since they keep no shared value', () => {
     const plan = quietPlan([])
     const person = plan.household.people[0]!.id
     plan.insurance = [ltcPolicy('cover', person), lifePolicy('cover', person)]
     const result = load(plan)
-    expect(result.plan.insurance.map((policy) => [policy.kind, policy.id])).toEqual([['ltc', 'cover'], ['permanentLife', 'cover-policy']])
+    expect(result.repairs).toEqual([])
+    expect(result.plan.insurance.map((policy) => [policy.kind, policy.id])).toEqual([['ltc', 'cover'], ['permanentLife', 'cover']])
+  })
+
+  it('renames the second of two LTC policies under one id, so each keeps its own benefit period', () => {
+    // Each policy pays up to 60,000 a year for 1 year, against 120,000 a year
+    // of care. Under one id the two shared one count of benefit years, so in
+    // the first year the second policy read the first one's year as its own
+    // and paid nothing: 60,000 of benefit instead of 120,000.
+    const plan = quietPlan([checking('cash', 500_000)])
+    const person = plan.household.people[0]!.id
+    plan.household.people[0]!.longevity = { planningAge: 90, source: 'manual' }
+    const firstLtc = { ...ltcPolicy('cover', person), benefitMonthly: 5_000, benefitPeriodYears: 1, eliminationPeriodDays: 0, name: 'First care policy' }
+    const secondLtc = { ...firstLtc, name: 'Second care policy' }
+    plan.insurance = [firstLtc, secondLtc] as Plan['insurance']
+    const startAge = 2026 - Number(plan.household.people[0]!.dob.slice(0, 4))
+    plan.careEvents = [{ id: 'care', personId: person, startAge, durationYears: 2, annualCost: 120_000 }]
+    const result = load(plan)
+    expect(result.plan.insurance.map((policy) => policy.id)).toEqual(['cover', 'cover-policy'])
+    expect(result.repairs).toEqual([{
+      kind: 'sharedIdSeparated', accountId: 'cover', accountName: 'Second care policy', newAccountId: 'cover-policy',
+      renamedType: 'ltc', keptName: 'First care policy', keptType: 'ltc',
+    }])
+    const options = { startYear: 2026, horizonEndYear: 2027, taxCalculator: createFlatTaxCalculator(0) }
+    // The stored plan, projected as it was: one shared count of years used.
+    expect(simulatePlan(plan, options).years.map((year) => year.expenses.ltcBenefit)).toEqual([60_000, 0])
+    // Repaired, each policy pays its own year.
+    expect(simulatePlan(result.plan, options).years.map((year) => year.expenses.ltcBenefit)).toEqual([120_000, 0])
   })
 
   it('carries a policy rename into a scenario that sets the insurance list', () => {
