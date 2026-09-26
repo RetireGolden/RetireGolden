@@ -64,10 +64,8 @@
     "owner": "YearResult",
     "field": "inflationScale",
     "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reasonKind": "internal-coefficient",
-    "reason": "Cumulative general-inflation factor for the year; drives nominal conversions inside the engine and the QCD detector targets, never printed."
+    "disposition": "family",
+    "familyId": "display-dollar-basis-conversion"
   },
   {
     "source": "engine/src/projection/internal/types/result.ts",
@@ -3144,7 +3142,7 @@
     "tsType": "number",
     "disposition": "excluded",
     "familyId": null,
-    "reason": "Parameter of the DetectorProjection.deflate(year, amount) callback the planner passes to detectors, not a published output.",
+    "reason": "Parameter of the DetectorProjection.deflate(year, amount) callback that insights/detectorProjection.ts binds to the projection's own dollar basis, not a published output.",
     "reasonKind": "input-parameter"
   },
   {
@@ -7362,7 +7360,7 @@
   },
   {
     "source": "planner-ui/src/projection.ts",
-    "owner": "inflationView",
+    "owner": "InflationView",
     "field": "deflate",
     "tsType": "function",
     "disposition": "family",
@@ -9919,5 +9917,165 @@
     "disposition": "excluded",
     "reasonKind": "runtime-diagnostic",
     "reason": "Number of optimizer search simulations run for the promoted candidate; a runtime diagnostic shown in the explain panel, not a financial output."
+  },
+  {
+    "source": "engine/src/projection/internal/types/result.ts",
+    "owner": "YearResult",
+    "field": "unassignedCash",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "display-balance-by-category-annual"
+  },
+  {
+    "source": "engine/src/projection/yearFigures.ts",
+    "owner": "YearDisplayFigures",
+    "field": "year",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "The YearDisplayFigures.year field is a coordinate such as year, age, or offset used to place another value.",
+    "reasonKind": "dimension-coordinate"
+  },
+  {
+    "source": "engine/src/projection/yearFigures.ts",
+    "owner": "YearDisplayFigures",
+    "field": "taxAndPenalties",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "display-tax-plus-penalties-annual"
+  },
+  {
+    "source": "engine/src/projection/yearFigures.ts",
+    "owner": "YearDisplayFigures",
+    "field": "spendingWithTaxAndPenalties",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "display-total-spending-annual"
+  },
+  {
+    "source": "engine/src/projection/yearFigures.ts",
+    "owner": "YearDisplayFigures",
+    "field": "netCareCost",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "display-net-care-cost-annual"
+  },
+  {
+    "source": "engine/src/projection/yearFigures.ts",
+    "owner": "YearDisplayFigures",
+    "field": "upsideSpending",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "display-upside-spending-annual"
+  },
+  {
+    "source": "engine/src/projection/yearFigures.ts",
+    "owner": "YearDisplayFigures",
+    "field": "upsideShortfall",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "display-upside-shortfall-annual"
+  },
+  {
+    "source": "engine/src/projection/yearFigures.ts",
+    "owner": "YearDisplayFigures",
+    "field": "capitalLossCarryforwardUsed",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "display-loss-carryforward-used-annual"
+  },
+  {
+    "source": "engine/src/projection/yearFigures.ts",
+    "owner": "YearDisplayFigures",
+    "field": "taxFreeGainsRoom",
+    "tsType": "number | null",
+    "disposition": "family",
+    "familyId": "display-tax-free-gains-room-annual"
+  },
+  {
+    "source": "engine/src/projection/yearFigures.ts",
+    "owner": "YearDisplayFigures",
+    "field": "balancesByCategory",
+    "tsType": "Readonly<Record<BalanceCategory, number>>",
+    "disposition": "family",
+    "familyId": "display-balance-by-category-annual"
+  },
+  {
+    "source": "engine/src/projection/yearFigures.ts",
+    "owner": "YearDisplayFigures",
+    "field": "unassignedCash",
+    "tsType": "number | null",
+    "disposition": "family",
+    "familyId": "display-balance-by-category-annual"
+  },
+  {
+    "source": "engine/src/projection/moneyLasts.ts",
+    "owner": "MoneyLasts",
+    "field": "depletionYear",
+    "tsType": "number | null",
+    "disposition": "family",
+    "familyId": "longevity-depletion-year"
+  },
+  {
+    "source": "engine/src/projection/moneyLasts.ts",
+    "owner": "MoneyLasts",
+    "field": "lastFundedYear",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "longevity-last-funded-year"
+  },
+  {
+    "source": "engine/src/projection/moneyLasts.ts",
+    "owner": "MoneyLasts",
+    "field": "endYear",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "The MoneyLasts.endYear field is a coordinate such as year, age, or offset used to place another value.",
+    "reasonKind": "dimension-coordinate"
+  },
+  {
+    "source": "engine/src/projection/moneyLasts.ts",
+    "owner": "MoneyLasts",
+    "field": "yearsShortOfPlanEnd",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "display-years-before-plan-end"
+  },
+  {
+    "source": "engine/src/projection/dollarBasis.ts",
+    "owner": "DollarBasis",
+    "field": "startYear",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "The DollarBasis.startYear field is a coordinate such as year, age, or offset used to place another value.",
+    "reasonKind": "dimension-coordinate"
+  },
+  {
+    "source": "engine/src/projection/dollarBasis.ts",
+    "owner": "DollarBasis",
+    "field": "endYear",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "The DollarBasis.endYear field is a coordinate such as year, age, or offset used to place another value.",
+    "reasonKind": "dimension-coordinate"
+  },
+  {
+    "source": "engine/src/projection/dollarBasis.ts",
+    "owner": "DollarBasis",
+    "field": "factors",
+    "tsType": "readonly number[]",
+    "disposition": "family",
+    "familyId": "display-dollar-basis-conversion"
+  },
+  {
+    "source": "planner-ui/src/report/reportModel.ts",
+    "owner": "ReportChartDataRow",
+    "field": "unassignedCash",
+    "tsType": "number | undefined",
+    "disposition": "family",
+    "familyId": "display-balance-by-category-annual"
   }
 ]

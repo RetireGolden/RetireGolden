@@ -112,14 +112,6 @@
     "reason": "The YearResult.year field is a coordinate such as year, age, or offset used to place another value."
   },
   {
-    "id": "field-engine-src-projection-internal-types-result-ts-yearresult-inflationscale",
-    "path": "engine/src/projection/internal/types/result.ts",
-    "symbol": "YearResult",
-    "field": "inflationScale",
-    "reasonKind": "internal-coefficient",
-    "reason": "Cumulative general-inflation factor for the year; drives nominal conversions inside the engine and the QCD detector targets, never printed."
-  },
-  {
     "id": "field-engine-src-projection-internal-types-result-ts-yearresult-balanceindex",
     "path": "engine/src/projection/internal/types/result.ts",
     "symbol": "YearResult",
@@ -1069,7 +1061,7 @@
     "symbol": "DetectorProjection",
     "field": "amount",
     "reasonKind": "input-parameter",
-    "reason": "Parameter of the DetectorProjection.deflate(year, amount) callback the planner passes to detectors, not a published output."
+    "reason": "Parameter of the DetectorProjection.deflate(year, amount) callback that insights/detectorProjection.ts binds to the projection's own dollar basis, not a published output."
   },
   {
     "id": "field-engine-src-insights-types-ts-detector-version",
@@ -3576,5 +3568,37 @@
     "field": "shortfall",
     "reasonKind": "runtime-diagnostic",
     "reason": "Engine YearResult.shortfall for the last joint and first survivor years, read only by isDegenerateTiming to decide whether a timing row is shown as degenerate; a display gate, never printed (the shortfall family is surfaced elsewhere)."
+  },
+  {
+    "id": "field-engine-src-projection-yearfigures-ts-yeardisplayfigures-year",
+    "path": "engine/src/projection/yearFigures.ts",
+    "symbol": "YearDisplayFigures",
+    "field": "year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The YearDisplayFigures.year field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-engine-src-projection-moneylasts-ts-moneylasts-endyear",
+    "path": "engine/src/projection/moneyLasts.ts",
+    "symbol": "MoneyLasts",
+    "field": "endYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The MoneyLasts.endYear field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-engine-src-projection-dollarbasis-ts-dollarbasis-startyear",
+    "path": "engine/src/projection/dollarBasis.ts",
+    "symbol": "DollarBasis",
+    "field": "startYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The DollarBasis.startYear field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-engine-src-projection-dollarbasis-ts-dollarbasis-endyear",
+    "path": "engine/src/projection/dollarBasis.ts",
+    "symbol": "DollarBasis",
+    "field": "endYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The DollarBasis.endYear field is a coordinate such as year, age, or offset used to place another value."
   }
 ]

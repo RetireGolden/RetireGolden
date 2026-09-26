@@ -1430,6 +1430,60 @@ describe('calculation registry conformance', () => {
     expect(violations).toEqual([])
   })
 
+  it('names a resolvable engine target on every done relocation, and none on a pending one', () => {
+    // The Docs validator cannot read source, so it checks only the target's
+    // shape; this resolves each done target to a declared engine symbol the
+    // same way implementedByFunctions pins resolve.
+    const violations: string[] = []
+    const families: Readonly<Record<string, OutputFamily>> = OUTPUT_FAMILIES
+    const shape = /^engine\/src\/[\w/.-]+\.ts#[A-Za-z_$][\w$]*(\.[A-Za-z_$][\w$]*)*$/u
+    for (const [id, family] of Object.entries(families)) {
+      const relocation = family.relocation
+      if (relocation === null) continue
+      if (relocation.status === 'pending') {
+        if (relocation.target !== null) violations.push(`${id}: a pending relocation names a target (${relocation.target})`)
+        continue
+      }
+      if (relocation.target === null || !shape.test(relocation.target)) {
+        violations.push(`${id}: a done relocation must name engine/src/<path>.ts#<symbol>, got ${String(relocation.target)}`)
+        continue
+      }
+      const [censusPath, symbol] = relocation.target.split('#') as [string, string]
+      const path = 'packages/' + censusPath
+      const globKey = engineGlobKeyOf(path)
+      const source = engineSources[globKey]
+      if (source === undefined) {
+        violations.push(`${id}: ${path} not found among engine sources`)
+        continue
+      }
+      try {
+        symbolAnchorLine(declaredSymbolsOf(globKey, source), path, symbol)
+      } catch (error) {
+        violations.push(`${id}: ${error instanceof Error ? error.message : String(error)}`)
+      }
+    }
+    expect(violations).toEqual([])
+    // Slice 1 of B2-P1 moved these eleven; a later slice adds to the list.
+    expect(
+      Object.entries(families)
+        .filter(([, family]) => family.relocation?.status === 'done')
+        .map(([id]) => id)
+        .sort(),
+    ).toEqual([
+      'display-balance-by-category-annual',
+      'display-dollar-basis-conversion',
+      'display-fi-target-annual',
+      'display-loss-carryforward-used-annual',
+      'display-net-care-cost-annual',
+      'display-tax-free-gains-room-annual',
+      'display-tax-plus-penalties-annual',
+      'display-total-spending-annual',
+      'display-upside-shortfall-annual',
+      'display-upside-spending-annual',
+      'display-years-before-plan-end',
+    ])
+  })
+
   it('publishes relocation-pending for exactly the ui families whose relocation is pending, and counts none of them complete', () => {
     const { complete, relocationPending } = publishedManifest().families
     const expected = Object.entries(OUTPUT_FAMILIES)

@@ -640,7 +640,7 @@ const families = {
   "display-balance-by-category-annual": {
     "title": "Balances by account type",
     "group": "accounts-and-growth",
-    "meaning": "Per year, the sum of per-account balances within each account category (cash, taxable, equityComp, traditional, roth, hsa).",
+    "meaning": "Per year, the year-end balances of the plan's logical investable accounts (one per id) summed within each category (cash, taxable, equityComp, traditional, roth, hsa), with the unassigned cash the ledger holds outside every account published beside them.",
     "unit": "usd",
     "basis": "nominal",
     "dimensions": [
@@ -656,12 +656,12 @@ const families = {
       },
       {
         "surface": "report",
-        "selector": "chart-data block cash/taxable/equityComp/traditional/roth/hsa and chartDataCsv"
+        "selector": "chart-data block cash/taxable/equityComp/traditional/roth/hsa and chartDataCsv, and the printed report chart's stacked categories"
       }
     ],
     "relocation": {
-      "status": "pending",
-      "target": null
+      "status": "done",
+      "target": "engine/src/projection/yearFigures.ts#balancesByCategory"
     }
   },
   "display-dollar-basis-conversion": {
@@ -682,7 +682,7 @@ const families = {
       },
       {
         "surface": "results-headline",
-        "selector": "KpiBar and ResultsPage \"in today's dollars\" ending net worth"
+        "selector": "KpiBar and ResultsPage \"in today's dollars\" ending net worth, and the depletion sentence's floor-year income and uncovered gap"
       },
       {
         "surface": "solver-page",
@@ -703,11 +703,15 @@ const families = {
       {
         "surface": "chart",
         "selector": "Every Results chart series through the DollarAdjuster"
+      },
+      {
+        "surface": "income-floor",
+        "selector": "FundedRatioReadout hands the basis to computeFundedRatio"
       }
     ],
     "relocation": {
-      "status": "pending",
-      "target": null
+      "status": "done",
+      "target": "engine/src/projection/dollarBasis.ts#toTodayDollars"
     }
   },
   "display-fan-band-widths": {
@@ -750,8 +754,8 @@ const families = {
       }
     ],
     "relocation": {
-      "status": "pending",
-      "target": null
+      "status": "done",
+      "target": "engine/src/projection/dollarBasis.ts#todayForDisplay"
     }
   },
   "display-guardrail-balance-thresholds": {
@@ -814,8 +818,8 @@ const families = {
       }
     ],
     "relocation": {
-      "status": "pending",
-      "target": null
+      "status": "done",
+      "target": "engine/src/projection/yearFigures.ts#capitalLossCarryforwardUsed"
     }
   },
   "display-net-care-cost-annual": {
@@ -836,14 +840,14 @@ const families = {
       }
     ],
     "relocation": {
-      "status": "pending",
-      "target": null
+      "status": "done",
+      "target": "engine/src/projection/yearFigures.ts#netCareCost"
     }
   },
   "display-tax-free-gains-room-annual": {
     "title": "Tax-free gains room",
     "group": "taxes",
-    "meaning": "Additional long-term gains realizable at $0 federal tax: remaining loss carryforward plus 0%-bracket headroom.",
+    "meaning": "The largest additional long-term gain realizable this year without raising the year's federal income tax, as the engine's federal calculator computes it with the gain netted through any loss carryforward first.",
     "unit": "usd",
     "basis": "nominal",
     "dimensions": [
@@ -858,8 +862,8 @@ const families = {
       }
     ],
     "relocation": {
-      "status": "pending",
-      "target": null
+      "status": "done",
+      "target": "engine/src/projection/yearFigures.ts#taxFreeGainsRoom"
     }
   },
   "display-tax-plus-penalties-annual": {
@@ -888,8 +892,8 @@ const families = {
       }
     ],
     "relocation": {
-      "status": "pending",
-      "target": null
+      "status": "done",
+      "target": "engine/src/projection/yearFigures.ts#taxAndPenalties"
     }
   },
   "display-total-spending-annual": {
@@ -910,12 +914,12 @@ const families = {
       },
       {
         "surface": "report",
-        "selector": "chart-data block spendingPlusTax (expenses.total + tax + penalties)"
+        "selector": "chart-data block spendingPlusTax (expenses.total + tax + penalties), and the printed report chart's spending series"
       }
     ],
     "relocation": {
-      "status": "pending",
-      "target": null
+      "status": "done",
+      "target": "engine/src/projection/yearFigures.ts#spendingWithTaxAndPenalties"
     }
   },
   "display-upside-shortfall-annual": {
@@ -936,8 +940,8 @@ const families = {
       }
     ],
     "relocation": {
-      "status": "pending",
-      "target": null
+      "status": "done",
+      "target": "engine/src/projection/yearFigures.ts#upsideShortfall"
     }
   },
   "display-upside-spending-annual": {
@@ -958,14 +962,14 @@ const families = {
       }
     ],
     "relocation": {
-      "status": "pending",
-      "target": null
+      "status": "done",
+      "target": "engine/src/projection/yearFigures.ts#upsideSpending"
     }
   },
   "display-years-before-plan-end": {
-    "title": "Years depleted before plan end",
+    "title": "Years short of the plan's end",
     "group": "longevity",
-    "meaning": "How many years before the plan horizon the portfolio depletes.",
+    "meaning": "How many plan years the money falls short of the plan's end: the plan's last year minus the last fully funded year (0 when it never depletes).",
     "unit": "years",
     "basis": "n/a",
     "dimensions": [],
@@ -974,12 +978,12 @@ const families = {
     "surfaces": [
       {
         "surface": "results-headline",
-        "selector": "Depletion narrative \"depletes N years before the plan ends\""
+        "selector": "Depletion sentence \"Money lasts through L, N years short of the plan's end in E\""
       }
     ],
     "relocation": {
-      "status": "pending",
-      "target": null
+      "status": "done",
+      "target": "engine/src/projection/moneyLasts.ts#moneyLasts"
     }
   },
   "estate-heir-income-tax": {
@@ -2502,7 +2506,7 @@ const families = {
     "surfaces": [
       {
         "surface": "results-headline",
-        "selector": "KpiBar \"Money lasts ... until YEAR\""
+        "selector": "KpiBar \"Money lasts\" sub \"short in YEAR\""
       },
       {
         "surface": "results-headline",
@@ -2543,6 +2547,34 @@ const families = {
       {
         "surface": "insights",
         "selector": "InsightCardView flat-delta note \"The base plan runs out of money in YEAR\""
+      }
+    ],
+    "relocation": null
+  },
+  "longevity-last-funded-year": {
+    "title": "Last fully funded year",
+    "group": "longevity",
+    "meaning": "The last plan year the portfolio fully funds: the year before the depletion year, or the plan's last year when it never depletes.",
+    "unit": "year",
+    "basis": "n/a",
+    "dimensions": [],
+    "kind": "engine",
+    "engineSource": {
+      "path": "engine/src/projection/moneyLasts.ts",
+      "symbol": "MoneyLasts.lastFundedYear"
+    },
+    "surfaces": [
+      {
+        "surface": "results-headline",
+        "selector": "Depletion sentence \"Money lasts through L\""
+      },
+      {
+        "surface": "results-headline",
+        "selector": "KpiBar \"Money lasts\" value \"through L\""
+      },
+      {
+        "surface": "report",
+        "selector": "Printed report KPI \"Money lasts\" value \"through L\""
       }
     ],
     "relocation": null

@@ -588,7 +588,7 @@ const coverageCensus = [
     "disposition": "excluded",
     "familyId": null,
     "reasonKind": "input-parameter",
-    "reason": "Parameter of the DetectorProjection.deflate(year, amount) callback the planner passes to detectors, not a published output.",
+    "reason": "Parameter of the DetectorProjection.deflate(year, amount) callback that insights/detectorProjection.ts binds to the projection's own dollar basis, not a published output.",
     "tsType": "number"
   },
   {
@@ -2440,6 +2440,34 @@ const coverageCensus = [
     "tsType": "number | null"
   },
   {
+    "source": "engine/src/projection/dollarBasis.ts",
+    "owner": "DollarBasis",
+    "field": "endYear",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "dimension-coordinate",
+    "reason": "The DollarBasis.endYear field is a coordinate such as year, age, or offset used to place another value.",
+    "tsType": "number"
+  },
+  {
+    "source": "engine/src/projection/dollarBasis.ts",
+    "owner": "DollarBasis",
+    "field": "factors",
+    "disposition": "family",
+    "familyId": "display-dollar-basis-conversion",
+    "tsType": "readonly number[]"
+  },
+  {
+    "source": "engine/src/projection/dollarBasis.ts",
+    "owner": "DollarBasis",
+    "field": "startYear",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "dimension-coordinate",
+    "reason": "The DollarBasis.startYear field is a coordinate such as year, age, or offset used to place another value.",
+    "tsType": "number"
+  },
+  {
     "source": "engine/src/projection/internal/types/aca.ts",
     "owner": "YearAcaResult",
     "field": "applicableSlcspPremium",
@@ -3185,10 +3213,8 @@ const coverageCensus = [
     "source": "engine/src/projection/internal/types/result.ts",
     "owner": "YearResult",
     "field": "inflationScale",
-    "disposition": "excluded",
-    "familyId": null,
-    "reasonKind": "internal-coefficient",
-    "reason": "Cumulative general-inflation factor for the year; drives nominal conversions inside the engine and the QCD detector targets, never printed.",
+    "disposition": "family",
+    "familyId": "display-dollar-basis-conversion",
     "tsType": "number"
   },
   {
@@ -3479,6 +3505,14 @@ const coverageCensus = [
     "field": "taxableYield",
     "disposition": "family",
     "familyId": "income-taxable-yield-annual",
+    "tsType": "number"
+  },
+  {
+    "source": "engine/src/projection/internal/types/result.ts",
+    "owner": "YearResult",
+    "field": "unassignedCash",
+    "disposition": "family",
+    "familyId": "display-balance-by-category-annual",
     "tsType": "number"
   },
   {
@@ -3789,6 +3823,40 @@ const coverageCensus = [
     "field": "traditional",
     "disposition": "family",
     "familyId": "withdrawals-by-category-annual",
+    "tsType": "number"
+  },
+  {
+    "source": "engine/src/projection/moneyLasts.ts",
+    "owner": "MoneyLasts",
+    "field": "depletionYear",
+    "disposition": "family",
+    "familyId": "longevity-depletion-year",
+    "tsType": "number | null"
+  },
+  {
+    "source": "engine/src/projection/moneyLasts.ts",
+    "owner": "MoneyLasts",
+    "field": "endYear",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "dimension-coordinate",
+    "reason": "The MoneyLasts.endYear field is a coordinate such as year, age, or offset used to place another value.",
+    "tsType": "number"
+  },
+  {
+    "source": "engine/src/projection/moneyLasts.ts",
+    "owner": "MoneyLasts",
+    "field": "lastFundedYear",
+    "disposition": "family",
+    "familyId": "longevity-last-funded-year",
+    "tsType": "number"
+  },
+  {
+    "source": "engine/src/projection/moneyLasts.ts",
+    "owner": "MoneyLasts",
+    "field": "yearsShortOfPlanEnd",
+    "disposition": "family",
+    "familyId": "display-years-before-plan-end",
     "tsType": "number"
   },
   {
@@ -4973,6 +5041,88 @@ const coverageCensus = [
     "familyId": null,
     "reasonKind": "sample-size-or-count-setting",
     "reason": "Cap (5) on candidate states per comparison; a run-size bound.",
+    "tsType": "number"
+  },
+  {
+    "source": "engine/src/projection/yearFigures.ts",
+    "owner": "YearDisplayFigures",
+    "field": "balancesByCategory",
+    "disposition": "family",
+    "familyId": "display-balance-by-category-annual",
+    "tsType": "Readonly<Record<BalanceCategory, number>>"
+  },
+  {
+    "source": "engine/src/projection/yearFigures.ts",
+    "owner": "YearDisplayFigures",
+    "field": "capitalLossCarryforwardUsed",
+    "disposition": "family",
+    "familyId": "display-loss-carryforward-used-annual",
+    "tsType": "number"
+  },
+  {
+    "source": "engine/src/projection/yearFigures.ts",
+    "owner": "YearDisplayFigures",
+    "field": "netCareCost",
+    "disposition": "family",
+    "familyId": "display-net-care-cost-annual",
+    "tsType": "number"
+  },
+  {
+    "source": "engine/src/projection/yearFigures.ts",
+    "owner": "YearDisplayFigures",
+    "field": "spendingWithTaxAndPenalties",
+    "disposition": "family",
+    "familyId": "display-total-spending-annual",
+    "tsType": "number"
+  },
+  {
+    "source": "engine/src/projection/yearFigures.ts",
+    "owner": "YearDisplayFigures",
+    "field": "taxAndPenalties",
+    "disposition": "family",
+    "familyId": "display-tax-plus-penalties-annual",
+    "tsType": "number"
+  },
+  {
+    "source": "engine/src/projection/yearFigures.ts",
+    "owner": "YearDisplayFigures",
+    "field": "taxFreeGainsRoom",
+    "disposition": "family",
+    "familyId": "display-tax-free-gains-room-annual",
+    "tsType": "number | null"
+  },
+  {
+    "source": "engine/src/projection/yearFigures.ts",
+    "owner": "YearDisplayFigures",
+    "field": "unassignedCash",
+    "disposition": "family",
+    "familyId": "display-balance-by-category-annual",
+    "tsType": "number | null"
+  },
+  {
+    "source": "engine/src/projection/yearFigures.ts",
+    "owner": "YearDisplayFigures",
+    "field": "upsideShortfall",
+    "disposition": "family",
+    "familyId": "display-upside-shortfall-annual",
+    "tsType": "number"
+  },
+  {
+    "source": "engine/src/projection/yearFigures.ts",
+    "owner": "YearDisplayFigures",
+    "field": "upsideSpending",
+    "disposition": "family",
+    "familyId": "display-upside-spending-annual",
+    "tsType": "number"
+  },
+  {
+    "source": "engine/src/projection/yearFigures.ts",
+    "owner": "YearDisplayFigures",
+    "field": "year",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "dimension-coordinate",
+    "reason": "The YearDisplayFigures.year field is a coordinate such as year, age, or offset used to place another value.",
     "tsType": "number"
   },
   {
@@ -8663,7 +8813,7 @@ const coverageCensus = [
   },
   {
     "source": "planner-ui/src/projection.ts",
-    "owner": "inflationView",
+    "owner": "InflationView",
     "field": "deflate",
     "disposition": "family",
     "familyId": "display-dollar-basis-conversion",
@@ -8894,6 +9044,14 @@ const coverageCensus = [
     "disposition": "family",
     "familyId": "display-balance-by-category-annual",
     "tsType": "number"
+  },
+  {
+    "source": "planner-ui/src/report/reportModel.ts",
+    "owner": "ReportChartDataRow",
+    "field": "unassignedCash",
+    "disposition": "family",
+    "familyId": "display-balance-by-category-annual",
+    "tsType": "number | undefined"
   },
   {
     "source": "planner-ui/src/report/reportModel.ts",
@@ -10406,7 +10564,7 @@ const exclusionCensus = [
     "symbol": "DetectorProjection",
     "field": "amount",
     "reasonKind": "input-parameter",
-    "reason": "Parameter of the DetectorProjection.deflate(year, amount) callback the planner passes to detectors, not a published output."
+    "reason": "Parameter of the DetectorProjection.deflate(year, amount) callback that insights/detectorProjection.ts binds to the projection's own dollar basis, not a published output."
   },
   {
     "id": "field-engine-src-insights-types-ts-detectorprojection-startyear",
@@ -10993,6 +11151,22 @@ const exclusionCensus = [
     "reason": "The ProjectionSummary.year field is a coordinate such as year, age, or offset used to place another value."
   },
   {
+    "id": "field-engine-src-projection-dollarbasis-ts-dollarbasis-endyear",
+    "path": "engine/src/projection/dollarBasis.ts",
+    "symbol": "DollarBasis",
+    "field": "endYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The DollarBasis.endYear field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-engine-src-projection-dollarbasis-ts-dollarbasis-startyear",
+    "path": "engine/src/projection/dollarBasis.ts",
+    "symbol": "DollarBasis",
+    "field": "startYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The DollarBasis.startYear field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
     "id": "field-engine-src-projection-internal-types-aca-ts-yearacaresult-convergence-iterations",
     "path": "engine/src/projection/internal/types/aca.ts",
     "symbol": "YearAcaResult",
@@ -11105,14 +11279,6 @@ const exclusionCensus = [
     "reason": "Positional index of a physical owned-IRA balance row in the replay source."
   },
   {
-    "id": "field-engine-src-projection-internal-types-result-ts-yearresult-inflationscale",
-    "path": "engine/src/projection/internal/types/result.ts",
-    "symbol": "YearResult",
-    "field": "inflationScale",
-    "reasonKind": "internal-coefficient",
-    "reason": "Cumulative general-inflation factor for the year; drives nominal conversions inside the engine and the QCD detector targets, never printed."
-  },
-  {
     "id": "field-engine-src-projection-internal-types-result-ts-yearresult-irmaalookbackmagiyear",
     "path": "engine/src/projection/internal/types/result.ts",
     "symbol": "YearResult",
@@ -11151,6 +11317,14 @@ const exclusionCensus = [
     "field": "lifeAge",
     "reasonKind": "input-parameter",
     "reason": "Effective last full year of life for the run, echoed from SimulateOptions.deathAgeByPersonId or plan longevity.planningAge so detectors can place the first deceased year; a planning input, not an output."
+  },
+  {
+    "id": "field-engine-src-projection-moneylasts-ts-moneylasts-endyear",
+    "path": "engine/src/projection/moneyLasts.ts",
+    "symbol": "MoneyLasts",
+    "field": "endYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The MoneyLasts.endYear field is a coordinate such as year, age, or offset used to place another value."
   },
   {
     "id": "field-engine-src-projection-optimizeplan-ts-acaactionabilityveto-baselinenonactionableyears",
@@ -11695,6 +11869,14 @@ const exclusionCensus = [
     "field": "topRatePct",
     "reasonKind": "internal-coefficient",
     "reason": "State parameter-pack fact: top marginal bracket rate (married filing jointly, percent); printed in the drivers panel prose on RelocationComparePage.tsx ('rate X%'), a rule constant rather than a computed output."
+  },
+  {
+    "id": "field-engine-src-projection-yearfigures-ts-yeardisplayfigures-year",
+    "path": "engine/src/projection/yearFigures.ts",
+    "symbol": "YearDisplayFigures",
+    "field": "year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The YearDisplayFigures.year field is a coordinate such as year, age, or offset used to place another value."
   },
   {
     "id": "field-engine-src-scenarios-comparison-ts-annualcomparisonvalues-irmaatier",
