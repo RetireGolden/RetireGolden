@@ -85,6 +85,103 @@ describe('simpleRothConversionGenerator ACA evidence gate', () => {
     expect(ids).toContain('bracket-12-until-2027')
   })
 
+  /**
+   * A surviving spouse born 1947-06-15 elects on 2027-12-31 to treat a 300,000
+   * inherited account as her own. In that election year the beneficiary take
+   * is suppressed: the account's inheritedAccounts row publishes the
+   * owner-reconciled amount, while nothing moves out of it as an inherited
+   * distribution. Neither case has any spending, so neither has a spending
+   * draw on traditional accounts, and neither may open a "while cash and
+   * taxable cover spending" window.
+   */
+  function spousalElectionPlan(type: 'traditional' | 'roth', acceptedBeforeElection: number, ownedIra: boolean): Plan {
+    const plan = createEmptyPlan({ newId: () => 'spousal-election', now: () => new Date('2026-01-01T00:00:00.000Z') })
+    plan.household.people[0] = {
+      id: 'beneficiary', name: 'Beneficiary', dob: '1947-06-15',
+      sex: 'average', retirementAge: null, longevity: { planningAge: 84, source: 'manual' },
+    }
+    plan.assumptions.inflationPct = 0
+    plan.assumptions.defaultReturnPct = 0
+    plan.expenses.baseAnnual = 0
+    plan.expenses.healthcare = { pre65MonthlyPremiumPerPerson: 0, applyAcaCredit: false, medicareExtrasMonthlyPerPerson: 0 }
+    const receipt = (asOf: string) => ({ source: 'Custodian completed statutory distribution record', asOf })
+    plan.accounts = [
+      { type: 'cash', id: 'cash', name: 'Cash', ownerPersonId: null, annualReturnPct: 0, balance: 1_000_000, annualContribution: 0 },
+      ...(ownedIra
+        ? [{ type: 'traditional', id: 'ira', name: 'IRA', ownerPersonId: 'beneficiary', annualReturnPct: 0, kind: 'ira', balance: 100_000, annualContribution: 0 }]
+        : []),
+      {
+        type, id: 'inherited', name: 'Inherited', ownerPersonId: 'beneficiary', annualReturnPct: 0,
+        kind: 'ira', balance: 300_000, annualContribution: 0,
+        inherited: {
+          ownerDeathYear: 2024, decedentHadStartedRmds: type === 'traditional',
+          decedentId: 'spouse-decedent', ownerDeathDate: '2024-06-01',
+          annualDistributionHistory: [{
+            taxYear: 2025,
+            requiredAmount: type === 'traditional' ? 1_000 : 0,
+            distributedAmount: type === 'traditional' ? 1_000 : 0,
+            observedAsOfDate: '2025-12-31', legalDistributionDeadline: '2025-12-31',
+            provenance: receipt('2025-12-31'),
+          }],
+          beneficiary: {
+            beneficiaryClass: 'designated-individual', edbCategory: 'surviving-spouse', beneficiaryBirthYear: 1947,
+            soleBeneficiary: true, ownerBirthYear: 1945, election: 'treat-as-own', spouseUnlimitedWithdrawalRight: true,
+            treatAsOwnElectionYear: 2028, ...(type === 'traditional' ? { ownerYearOfDeathRmdSatisfied: true } : {}),
+            provenance: { source: 'test', asOf: '2026-01-01' },
+            spousalElectionFacts: {
+              directSpouseNamedOnIra: 'verifiedYes', affirmativeElectionDate: '2027-12-31',
+              affirmativeElectionYear: 2027, nonRolloverContributionYears: [], lateElectionCatchUp: null,
+              preElectionDistributionMethod: 'lifeExpectancyRule',
+              section402c2j4Inputs: {
+                transaction: 'affirmativeTreatAsOwnElection', spouseBirthDate: '1947-06-15',
+                decedentBirthDate: '1945-01-01', distributionYear: 2027, currentYearRmdReferenceBalance: 0,
+                actualPriorYearDistributions: [], actualPreElectionDistributionsCurrentYear: acceptedBeforeElection,
+                currentDistributionOrRemainingInterest: 0,
+                provenance: { source: 'Custodian life-expectancy method evidence', asOf: '2027-12-31' },
+              },
+              provenance: { source: 'Executed custodian owner redesignation', asOf: '2027-12-31' },
+            },
+          },
+        },
+      },
+    ] as Plan['accounts']
+    const parsed = parsePlan(plan)
+    if (!parsed.ok) throw new Error(parsed.issues.join('; '))
+    return parsed.plan
+  }
+  const windowedIds = (plan: Plan): string[] =>
+    simpleRothConversionGenerator
+      .generate(createDecisionContext(plan, { startYear: 2026, taxCalculator: createFlatTaxCalculator(0) }))
+      .map((candidate) => candidate.id)
+      .filter((id) => id.includes('-until-'))
+
+  it('opens no spending window in a spousal election year on an inherited Roth', () => {
+    // 5,000 was accepted before the election; the Roth row publishes it as
+    // executed although nothing moved out of the account as an inherited
+    // distribution. Reading the rows as the forced amount made a 5,000
+    // "draw" out of a year with no traditional withdrawal at all.
+    const plan = spousalElectionPlan('roth', 5_000, false)
+    const year2027 = createDecisionContext(plan, { startYear: 2026, taxCalculator: createFlatTaxCalculator(0) })
+      .baselineResult.years.find((year) => year.year === 2027)!
+    expect(year2027.withdrawals.traditional).toBe(0)
+    expect(year2027.inheritedDistribution).toBe(0)
+    expect(year2027.inheritedAccounts?.find((row) => row.accountId === 'inherited')?.executedRequiredAmount).toBe(5_000)
+    expect(windowedIds(plan)).toEqual([])
+  })
+
+  it('opens no spending window in a spousal election year on an inherited traditional IRA', () => {
+    // The owner-reconciled take is inside rmd and moves nothing out as an
+    // inherited distribution; the row still publishes it as executed.
+    // Summing the traditional rows would subtract it a second time.
+    const plan = spousalElectionPlan('traditional', 0, true)
+    const year2027 = createDecisionContext(plan, { startYear: 2026, taxCalculator: createFlatTaxCalculator(0) })
+      .baselineResult.years.find((year) => year.year === 2027)!
+    expect(year2027.inheritedDistribution).toBe(0)
+    expect(year2027.rmd).toBeGreaterThan(0)
+    expect(year2027.inheritedAccounts?.find((row) => row.accountId === 'inherited')?.executedRequiredAmount).toBeGreaterThan(0)
+    expect(windowedIds(plan)).toEqual([])
+  })
+
   it('marks every aggregate fill candidate explicitly exploratory', () => {
     const candidates = simpleRothConversionGenerator.generate(createDecisionContext(noTraditionalPlan(), simOptions()))
     expect(candidates.length).toBeGreaterThan(0)

@@ -70,8 +70,10 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   are still ordinary income under IRC 408A(d), and the inherited
   ordinary-income figure (`inheritedTraditionalDistribution`) keeps them, as
   its comment now says. The optimizer's bracket-fill windows read the year's
-  spending draw from traditional accounts net of the traditional forced
-  dollars, so the candidates it offers do not change either.
+  spending draw from traditional accounts net of the dollars that actually
+  moved out of inherited traditional accounts (a spousal election year
+  included, where an inherited account's published row can show an amount
+  that did not move), so the candidates it offers do not change either.
 
 - **Fixed: 0% capital-gains room when income is below the deduction**
   (decision D-ZERO-RATE-HEADROOM): the search for the room stopped at the 15%

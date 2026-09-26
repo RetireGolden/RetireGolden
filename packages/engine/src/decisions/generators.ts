@@ -52,25 +52,32 @@ function conversionWindowBoundaries(ctx: DecisionContext, startYear: number, end
   // Reads the already-computed baseline result — no new simulation.
   //
   // The spending draw is the traditional withdrawal less the RMDs and the
-  // forced dollars from inherited traditional accounts. That forced amount is
-  // not inheritedTraditionalDistribution, which is ordinary income and also
-  // carries a non-qualified inherited Roth distribution's taxable earnings,
-  // withdrawn from roth (D-INHERITED-ROTH-SLICE). It is inheritedDistribution
-  // less the Roth rows' executed amounts. (Subtracting the Roth rows rather
-  // than summing the traditional ones keeps a spousal election year on an
-  // inherited traditional account exact: a row whose beneficiary take was
-  // suppressed publishes the owner-reconciled amount, which is already in rmd.)
-  const inheritedRothIds = new Set(
-    plan.accounts
-      .filter((account) => account.type === 'roth' && account.inherited !== undefined)
-      .map((account) => account.id),
+  // forced dollars executed from inherited traditional accounts. That forced
+  // amount is not inheritedTraditionalDistribution, which is ordinary income
+  // and also carries a non-qualified inherited Roth distribution's taxable
+  // earnings, withdrawn from roth (D-INHERITED-ROTH-SLICE). Nor is it read from
+  // the inheritedAccounts rows: in a spousal election year a row whose
+  // beneficiary take was suppressed publishes the owner-reconciled amount,
+  // which is not a movement out of the inherited account. It is the year's
+  // captured inherited-distribution movements whose source is a traditional
+  // account, the same figures internal/ownedNonRothIraRuntimeSourceSeries.ts
+  // reconciles exactly against withdrawals.traditional. simulatePlan always
+  // publishes them; a result built elsewhere without them falls back to the
+  // published ordinary-income figure.
+  const traditionalIds = new Set(
+    plan.accounts.filter((account) => account.type === 'traditional').map((account) => account.id),
   )
-  const inheritedTraditionalForced = (year: (typeof ctx.baselineResult.years)[number]): number =>
-    year.inheritedDistribution -
-    (year.inheritedAccounts ?? []).reduce(
-      (sum, row) => (inheritedRothIds.has(row.accountId) ? sum + row.executedRequiredAmount : sum),
-      0,
-    )
+  const inheritedTraditionalForced = (year: (typeof ctx.baselineResult.years)[number]): number => {
+    const occurrences = year.retirementRuntimeSource?.runtimeOccurrences
+    if (occurrences === undefined) return year.inheritedTraditionalDistribution
+    let forced = 0
+    for (const occurrence of occurrences) {
+      if (occurrence.kind === 'inheritedIraRmd' && traditionalIds.has(occurrence.sourceAccountId ?? '')) {
+        forced += occurrence.grossAmountPlanDollars
+      }
+    }
+    return forced
+  }
   const firstTraditionalDrawYear = ctx.baselineResult.years.find(
     (year) =>
       year.withdrawals.traditional - year.rmd - inheritedTraditionalForced(year) > 1,
