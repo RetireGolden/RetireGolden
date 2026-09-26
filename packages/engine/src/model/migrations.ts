@@ -870,34 +870,117 @@ function applySharedIdRenames(
 }
 
 /**
+ * The plan's own renames, keyed by what identifies a row across copies of a
+ * list: its old id, its channel, and its position among the plan's rows with
+ * that id and channel. A scenario row that matches a key is the scenario's
+ * copy of a row the plan renamed.
+ */
+type PlanSharedIdRenames = ReadonlyMap<string, string>
+
+function sharedIdCorrespondenceKey(id: string, channel: SharedIdChannel, ordinal: number): string {
+  return JSON.stringify([id, channel, ordinal])
+}
+
+function planSharedIdRenames(
+  accounts: readonly unknown[],
+  insurance: readonly unknown[],
+  renames: readonly SharedIdListRename[],
+): PlanSharedIdRenames {
+  const map = new Map<string, string>()
+  for (const [collection, list] of [['accounts', accounts], ['insurance', insurance]] as const) {
+    const rows = rawSharedIdRows(list, (row) =>
+      collection === 'accounts' ? accountChannel(row['type']) : policyChannel(row['kind']))
+    const ordinals = new Map<string, number>()
+    rows.forEach((row, index) => {
+      if (row.channel === null) return
+      const seen = JSON.stringify([row.id, row.channel])
+      const ordinal = (ordinals.get(seen) ?? 0) + 1
+      ordinals.set(seen, ordinal)
+      const rename = renames.find((candidate) =>
+        candidate.member.collection === collection && candidate.member.index === index)
+      if (rename !== undefined) map.set(sharedIdCorrespondenceKey(row.id, row.channel, ordinal), rename.newId)
+    })
+  }
+  return map
+}
+
+/** A stored list with every row that copies a row the plan renamed given the plan's new id; the same array when none did. */
+function followPlanSharedIdRenames(
+  list: readonly unknown[],
+  collection: 'accounts' | 'insurance',
+  planRenames: PlanSharedIdRenames,
+): readonly unknown[] {
+  if (planRenames.size === 0) return list
+  const ordinals = new Map<string, number>()
+  let changed = false
+  const followed = list.map((row) => {
+    if (!isPlainRecord(row) || typeof row['id'] !== 'string') return row
+    const channel = collection === 'accounts' ? accountChannel(row['type']) : policyChannel(row['kind'])
+    if (channel === null) return row
+    const seen = JSON.stringify([row['id'], channel])
+    const ordinal = (ordinals.get(seen) ?? 0) + 1
+    ordinals.set(seen, ordinal)
+    const newId = planRenames.get(sharedIdCorrespondenceKey(row['id'], channel, ordinal))
+    if (newId === undefined) return row
+    changed = true
+    return { ...row, id: newId }
+  })
+  return changed ? followed : list
+}
+
+/**
  * Carries the shared-id repair into stored scenarios. A scenario holds rows in
  * two places only: a canonical patch's operations on `/accounts` and
  * `/insurance` (paths never traverse an array, so rows are set as whole lists,
  * in both an operation's `before` state and its `value`), and a legacy
  * deep-merge patch's `accounts` and `insurance` lists. Each such list, or pair
- * of lists, is repaired on its own terms, with the plan's own accounts
- * standing in for a scenario that sets no accounts, and names come from the
- * same allocator as the plan's. So a scenario holding a copy of the plan's
- * rows renames them as the plan did, and its recorded `before` still equals
- * the repaired plan; and a scenario whose own lists carry a collision the plan
+ * of lists, is repaired in two passes. First, every row that copies a row the
+ * plan renamed (same old id, same channel, same position among the rows with
+ * that id and channel) takes the plan's new id, whether or not the scenario's
+ * list still collides: a scenario that dropped the cash account keeps the
+ * property it shares with the plan under the property's new id. Then the
+ * list's own collisions are repaired, with the plan's own accounts standing in
+ * for a scenario that sets no accounts, and names that are fresh both in the
+ * document and in the list. So a scenario holding a copy of the plan's rows
+ * renames them as the plan did, and its recorded `before` still equals the
+ * repaired plan; and a scenario whose own lists carry a collision the plan
  * does not have is repaired too, so it still applies. (A scenario that adds an
  * account under the id of one of the plan's own policies, without setting
- * `/insurance`, is left as stored and is refused when applied.)
+ * `/insurance`, is left as stored and is refused when applied, with a message
+ * saying the scenario introduced the shared id: scenarios/patch.ts.)
  */
 function repairSharedIdsInScenarios(
   scenarios: unknown,
   planAccounts: readonly unknown[],
+  planRenames: PlanSharedIdRenames,
   allocate: SharedIdAllocator,
 ): unknown {
   if (!Array.isArray(scenarios)) return scenarios
   const repairLists = (accounts: unknown, insurance: unknown): { accounts: unknown; insurance: unknown } => {
-    const accountList = Array.isArray(accounts) ? accounts : null
-    const insuranceList = Array.isArray(insurance) ? insurance : null
-    if (accountList === null && insuranceList === null) return { accounts, insurance }
-    const renames = sharedIdListRenames(accountList ?? planAccounts, insuranceList ?? [], allocate)
+    const storedAccounts = Array.isArray(accounts) ? accounts : null
+    const storedInsurance = Array.isArray(insurance) ? insurance : null
+    if (storedAccounts === null && storedInsurance === null) return { accounts, insurance }
+    const accountList = storedAccounts === null ? null : followPlanSharedIdRenames(storedAccounts, 'accounts', planRenames)
+    const insuranceList = storedInsurance === null ? null : followPlanSharedIdRenames(storedInsurance, 'insurance', planRenames)
+    // Names for the list's own collisions skip every id the list already
+    // carries, including the plan's new ids just applied, and every name this
+    // pass hands out.
+    const taken = new Set<string>(
+      [...(accountList ?? []), ...(insuranceList ?? [])].flatMap((row) =>
+        isPlainRecord(row) && typeof row['id'] === 'string' ? [row['id']] : []),
+    )
+    const allocateInList: SharedIdAllocator = (id, suffix, ordinal) => {
+      let name = allocate(id, suffix, ordinal)
+      for (let next = ordinal + 1; taken.has(name); next++) name = allocate(id, suffix, next)
+      taken.add(name)
+      return name
+    }
+    const renames = sharedIdListRenames(accountList ?? planAccounts, insuranceList ?? [], allocateInList)
+    const repairedAccounts = accountList === null ? null : applySharedIdRenames(accountList, 'accounts', renames)
+    const repairedInsurance = insuranceList === null ? null : applySharedIdRenames(insuranceList, 'insurance', renames)
     return {
-      accounts: accountList === null ? accounts : applySharedIdRenames(accountList, 'accounts', renames),
-      insurance: insuranceList === null ? insurance : applySharedIdRenames(insuranceList, 'insurance', renames),
+      accounts: repairedAccounts === null || repairedAccounts === storedAccounts ? accounts : repairedAccounts,
+      insurance: repairedInsurance === null || repairedInsurance === storedInsurance ? insurance : repairedInsurance,
     }
   }
   let changed = false
@@ -1374,10 +1457,16 @@ function normalizeCurrentPlan(raw: Record<string, unknown>): NormalizedPlan {
   const policyRenames = sharedIdRenames.filter((rename) => rename.member.collection === 'insurance')
   for (const rename of policyRenames) repairs.push(sharedIdRepair(rename))
   const normalizedInsurance = applySharedIdRenames(raw['insurance'], 'insurance', policyRenames)
-  // Scenarios are repaired whether or not the plan itself was: a collision
-  // that only a scenario's own lists carry would otherwise refuse the
-  // scenario when it is applied.
-  const scenarios = repairSharedIdsInScenarios(raw['scenarios'], normalizedAccounts, allocateSharedId)
+  // Scenarios are repaired whether or not the plan itself was: their copies
+  // of the rows the plan renamed follow the plan, and a collision that only a
+  // scenario's own lists carry would otherwise refuse the scenario when it is
+  // applied.
+  const scenarios = repairSharedIdsInScenarios(
+    raw['scenarios'],
+    normalizedAccounts,
+    planSharedIdRenames(accounts, insurance, sharedIdRenames),
+    allocateSharedId,
+  )
 
   if (!changed && normalizedInsurance === raw['insurance'] && scenarios === raw['scenarios']) {
     return { raw, repairs }

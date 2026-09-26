@@ -26,8 +26,12 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   (`<id>-property`, `<id>-debt` or `<id>-policy`, numbered when taken). No
   other field in a plan can name a property, a debt or a policy, and every
   account reference could only have meant the investable account, so nothing
-  else moves; stored scenarios follow the rename, and a pair found only in a
-  scenario's own lists is repaired there. The load notice (new repair kind
+  else moves; a stored scenario's copy of a renamed row takes the same new
+  id (a scenario that dropped the cash account still names the property the
+  way the plan does), and a pair found only in a scenario's own lists is
+  repaired there. A scenario that would add a pair loading cannot repair is
+  refused when applied, with a message saying the scenario introduces the
+  shared id. The load notice (new repair kind
   `sharedIdSeparated`) tells the household. For such a plan the cash balance
   and cash totals drop to the cash actually held, each renamed row appears
   under its own entry, net worth counts both of two same-kind rows, and two

@@ -8,6 +8,14 @@
 
 import { parsePlan, type ParsePlanResult, type Plan } from '../model/plan.js'
 import {
+  accountChannel,
+  policyChannel,
+  sharedIdGroups,
+  type SharedIdChannel,
+  type SharedIdGroup,
+  type SharedIdRow,
+} from '../model/sharedIdCollisions.js'
+import {
   decodeScenarioPointer,
   encodeScenarioPointer,
   isScenarioPatchEnvelope,
@@ -295,6 +303,36 @@ function deepMerge(base: unknown, patch: unknown): unknown {
   return out
 }
 
+function sharedIdGroupsOf(document: Record<string, unknown>): SharedIdGroup[] {
+  const rows = (list: unknown, channelOf: (row: Record<string, unknown>) => SharedIdChannel | null): SharedIdRow[] =>
+    (Array.isArray(list) ? list : []).map((row: unknown) =>
+      typeof row === 'object' && row !== null && !Array.isArray(row) && typeof (row as Record<string, unknown>)['id'] === 'string'
+        ? { id: (row as Record<string, unknown>)['id'] as string, channel: channelOf(row as Record<string, unknown>) }
+        : { id: '', channel: null })
+  return sharedIdGroups(
+    rows(document['accounts'], (row) => accountChannel(row['type'])),
+    rows(document['insurance'], (row) => policyChannel(row['kind'])),
+  )
+}
+
+/**
+ * The plan checks' refusals of rows that share an id
+ * (model/sharedIdCollisions.ts), each marked as the scenario's own when the
+ * plan it applies to keeps those rows apart. Loading repairs every shared id a
+ * stored plan or scenario holds, so one found here was added by the scenario
+ * (or by a scenario loading could not repair: one that adds an account under
+ * the id of one of the plan's own policies without setting the insurance list).
+ */
+function markScenarioSharedIds(plan: Plan, result: Record<string, unknown>, issues: readonly string[]): string[] {
+  const planGroups = new Set(sharedIdGroupsOf(asRecord(plan)).map((group) => JSON.stringify([group.space, group.id])))
+  const introduced = sharedIdGroupsOf(result)
+    .filter((group) => !planGroups.has(JSON.stringify([group.space, group.id])))
+    .flatMap((group) => group.members.map((member) => `${member.collection}.${member.index}.id: `))
+  if (introduced.length === 0) return [...issues]
+  return issues.map((issue) =>
+    introduced.some((prefix) => issue.startsWith(prefix)) ? `${issue} (this scenario introduces the shared id)` : issue)
+}
+
 /** Exact compatibility path for historical loose object patches. */
 export function applyLegacyScenarioPatch(plan: Plan, patch: LegacyScenarioPatch): ParsePlanResult {
   const merged = deepMerge(plan, patch) as Record<string, unknown>
@@ -312,7 +350,8 @@ export function applyLegacyScenarioPatch(plan: Plan, patch: LegacyScenarioPatch)
   }
   merged['annualFederalTaxFacts'] = cloneJson(plan.annualFederalTaxFacts)
   merged['scenarios'] = plan.scenarios
-  return parsePlan(merged)
+  const parsed = parsePlan(merged)
+  return parsed.ok ? parsed : { ok: false, issues: markScenarioSharedIds(plan, merged, parsed.issues) }
 }
 
 /** Convert a legacy patch when a concrete base snapshot is available. */
@@ -474,7 +513,7 @@ function mutateOperations(
         }
       }
     }
-    return { ok: false, issues: parsedPlan.issues, conflicts: [] }
+    return { ok: false, issues: markScenarioSharedIds(plan, draft, parsedPlan.issues), conflicts: [] }
   }
   const parsedRecord = asRecord(parsedPlan.plan)
   for (const operation of parsedPatch.patch.operations) {

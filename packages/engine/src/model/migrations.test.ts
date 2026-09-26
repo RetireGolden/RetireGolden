@@ -853,6 +853,64 @@ describe('load-time repair: rows stored under one id where the projection keeps 
       expect(applied.plan.accounts.map((account) => [account.type, account.id]))
         .toEqual([['cash', 'home'], ['property', 'house'], ['property', 'home-property']])
     })
+
+    it("gives a scenario's copy of the renamed property the plan's new id where the scenario drops the cash account", () => {
+      // The scenario's list no longer collides on its own terms, so only the
+      // plan's rename can tell it that its `home` property is the plan's.
+      const plan = aliasPlan()
+      const storedAccounts = stored(plan)['accounts'] as Record<string, unknown>[]
+      const homeOnly = storedAccounts.filter((row) => row['type'] === 'property')
+      plan.scenarios = [
+        { id: 's-legacy', name: 'Close the checking account', patch: { accounts: homeOnly } },
+        {
+          id: 's-canonical',
+          name: 'Close the checking account',
+          patch: {
+            kind: 'retiregolden.scenario-patch',
+            version: 1,
+            base: { planId: plan.id, planSchemaVersion: plan.schemaVersion, snapshotHash: 'fnv1a64:0000000000000000' },
+            title: 'Close the checking account',
+            rationale: null,
+            createdAtIso: '2026-06-11T00:00:00.000Z',
+            actor: { kind: 'user' },
+            operations: [{ op: 'set', path: '/accounts', before: { present: true, value: storedAccounts }, value: homeOnly }],
+          },
+        },
+      ]
+      const result = load(plan)
+      expect(result.plan.accounts.map((account) => [account.type, account.id])).toEqual([['property', 'home-property'], ['cash', 'home']])
+
+      const legacy = applyScenarioPatch(result.plan, result.plan.scenarios[0]!.patch)
+      expect(legacy.ok, legacy.ok ? '' : legacy.issues.join('; ')).toBe(true)
+      if (!legacy.ok) return
+      expect(legacy.plan.accounts.map((account) => [account.type, account.id])).toEqual([['property', 'home-property']])
+
+      const parsed = parseScenarioPatch(result.plan.scenarios[1]!.patch)
+      if (!parsed.ok) throw new Error(parsed.issues.join('; '))
+      const applied = applyScenarioPatchDocument(result.plan, parsed.patch)
+      expect(applied.ok, applied.ok ? '' : applied.issues.join('; ')).toBe(true)
+      if (!applied.ok) return
+      expect(applied.plan.accounts.map((account) => [account.type, account.id])).toEqual([['property', 'home-property']])
+    })
+
+    it("names a scenario's own collision past the new id its copy of the plan's property took", () => {
+      // The scenario keeps both of the plan's rows and adds a cabin, also
+      // under `home`. Its copy of the plan's property takes `home-property`
+      // as the plan's did, so the cabin takes the next name.
+      const plan = aliasPlan()
+      const cabin = JSON.parse(JSON.stringify(home('home', 120_000, 'Cabin'))) as Record<string, unknown>
+      plan.scenarios = [{
+        id: 's-legacy',
+        name: 'Buy a cabin',
+        patch: { accounts: [...(stored(plan)['accounts'] as Record<string, unknown>[]), cabin] },
+      }]
+      const result = load(plan)
+      const legacy = applyScenarioPatch(result.plan, result.plan.scenarios[0]!.patch)
+      expect(legacy.ok, legacy.ok ? '' : legacy.issues.join('; ')).toBe(true)
+      if (!legacy.ok) return
+      expect(legacy.plan.accounts.map((account) => [account.name, account.id]))
+        .toEqual([['Home', 'home-property'], ['Checking', 'home'], ['Cabin', 'home-property-2']])
+    })
   })
 
   it('renames the later of a property and a debt, and publishes both values', () => {
@@ -977,6 +1035,45 @@ describe('load-time repair: rows stored under one id where the projection keeps 
     if (!applied.ok) return
     expect(applied.plan.insurance.map((policy) => [policy.id, policy.kind === 'permanentLife' ? policy.cashValue : null]))
       .toEqual([['savings-policy', 80_000]])
+  })
+
+  it("says a scenario introduced the shared id it adds when applying it is refused", () => {
+    // The scenario adds a cash account under the id of the plan's own policy
+    // without setting the insurance list, which loading leaves as stored.
+    const plan = quietPlan([checking('savings')])
+    plan.insurance = [lifePolicy('cover', plan.household.people[0]!.id)]
+    const cover = JSON.parse(JSON.stringify(checking('cover', 5_000))) as Record<string, unknown>
+    const storedAccounts = stored(plan)['accounts'] as Record<string, unknown>[]
+    plan.scenarios = [
+      { id: 's-legacy', name: 'Open another account', patch: { accounts: [...storedAccounts, cover] } },
+      {
+        id: 's-canonical',
+        name: 'Open another account',
+        patch: {
+          kind: 'retiregolden.scenario-patch',
+          version: 1,
+          base: { planId: plan.id, planSchemaVersion: plan.schemaVersion, snapshotHash: 'fnv1a64:0000000000000000' },
+          title: 'Open another account',
+          rationale: null,
+          createdAtIso: '2026-06-11T00:00:00.000Z',
+          actor: { kind: 'user' },
+          operations: [{ op: 'set', path: '/accounts', before: { present: true, value: storedAccounts }, value: [...storedAccounts, cover] }],
+        },
+      },
+    ]
+    const result = load(plan)
+    expect(result.repairs).toEqual([])
+    const refusal = [
+      'insurance.0.id: insurance policy id "cover" is also an account id; give the policy its own id (this scenario introduces the shared id)',
+    ]
+    const legacy = applyScenarioPatch(result.plan, result.plan.scenarios[0]!.patch)
+    expect(legacy.ok).toBe(false)
+    if (!legacy.ok) expect(legacy.issues).toEqual(refusal)
+    const parsed = parseScenarioPatch(result.plan.scenarios[1]!.patch)
+    if (!parsed.ok) throw new Error(parsed.issues.join('; '))
+    const applied = applyScenarioPatchDocument(result.plan, parsed.patch)
+    expect(applied.ok).toBe(false)
+    if (!applied.ok) expect(applied.issues).toEqual(refusal)
   })
 
   it('leaves a collision-free plan byte-identical, including a pension and a property that share an id', () => {
