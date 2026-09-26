@@ -15,9 +15,13 @@ import { compareLtcStress } from '@retiregolden/engine/projection/compare'
 import { moneyLasts } from '@retiregolden/engine/projection/moneyLasts'
 import { cashAccount, singlePersonPlan, validatePlan } from '@retiregolden/engine/testing/planFixtures'
 
+import { PlanStoreProvider } from '../data/PlanStoreProvider'
+import type { PlanStore, PlanSummary } from '../data/planStoreContext'
 import { renderStandaloneReportHtml } from '../report/reportHtml'
 import { buildReportModel } from '../report/reportModel'
 import { createSamplePlan } from '../testSupport/samplePlan'
+import { settle, waitFor } from '../testSupport/settle'
+import { ComparePlansPage } from './ComparePlansPage'
 import { getExampleById } from './examples/registry'
 import { moneyLastsValue } from './moneyLastsCopy'
 import { PlanCtx } from './planContextCore'
@@ -114,5 +118,65 @@ describe('the downloadable HTML report names the same years', () => {
     const text = html(validatePlan(plan))
     expect(text).toContain('Short from 2026')
     expect(text).not.toContain('Through 2025')
+  })
+})
+
+describe('Compare Plans names the same years', () => {
+  function store(plans: Plan[]): PlanStore {
+    const docs = new Map<string, Plan>(plans.map((p) => [p.id, structuredClone(p)]))
+    return {
+      async listPlans(): Promise<PlanSummary[]> {
+        return [...docs.values()].map((p) => ({ id: p.id, name: p.name, updatedAtIso: p.updatedAtIso }))
+      },
+      async loadPlan(id: string) {
+        return docs.get(id) ?? null
+      },
+      async savePlan(plan: Plan) {
+        docs.set(plan.id, structuredClone(plan))
+      },
+      async deletePlan(id: string) {
+        docs.delete(id)
+      },
+    }
+  }
+
+  it('the Money lasts row reads "through 2045" and "short from 2026", where it used to say "Depletes in"', async () => {
+    const underSaved = getExampleById('under-saved-single')!.build()
+    underSaved.id = 'plan-under-saved'
+    underSaved.name = 'Under-saved'
+    const shortPlan = singlePersonPlan({ dob: '1960-01-01', planningAge: 90 })
+    shortPlan.accounts = [cashAccount('cash', 1_000)]
+    shortPlan.expenses.baseAnnual = 60_000
+    const firstYear = validatePlan(shortPlan)
+    firstYear.id = 'plan-first-year'
+    firstYear.name = 'Short at once'
+    const expected: Record<string, string> = {}
+    for (const plan of [underSaved, firstYear]) {
+      const lasts = moneyLasts(projectPlan(plan, START_YEAR).result)
+      expected[plan.name] = moneyLastsValue(lasts, START_YEAR)
+    }
+    expect(expected).toEqual({ 'Under-saved': 'through 2045', 'Short at once': 'short from 2026' })
+
+    container = document.createElement('div')
+    document.body.appendChild(container)
+    root = createRoot(container)
+    await act(async () =>
+      root!.render(
+        <MemoryRouter>
+          <PlanStoreProvider store={store([underSaved, firstYear])}>
+            <ComparePlansPage />
+          </PlanStoreProvider>
+        </MemoryRouter>,
+      ),
+    )
+    await settle()
+    await waitFor(() => container!.querySelector('.compare-table tbody') !== null, { what: 'compare table' })
+    const names = [...container.querySelectorAll('.compare-table thead .compare-table-plan-name')].map((th) => th.textContent ?? '')
+    const row = [...container.querySelectorAll('.compare-table tbody tr')].find((tr) => tr.querySelector('th')?.textContent === 'Money lasts')!
+    const cells = [...row.querySelectorAll('td')].map((td) => td.textContent ?? '')
+    expect(names).toHaveLength(2)
+    expect(cells[0]).toBe(expected[names[0]!])
+    expect(cells[1]).toBe(expected[names[1]!])
+    expect(cells.join(' ')).not.toMatch(/Depletes|until/u)
   })
 })
