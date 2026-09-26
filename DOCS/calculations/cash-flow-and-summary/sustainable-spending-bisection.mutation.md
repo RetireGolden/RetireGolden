@@ -1,6 +1,6 @@
 # Mutation receipt: sustainable-spending-bisection
 
-Executed 2026-09-17 against RetireGolden base `33e7d546` (branch `codex/b1-p4-cards-cashflow-optimizer-taxes`), and re-executed 2026-09-26 against RetireGolden base `6f58be5f` (branch `claude/solver-answers-unpriced-aca`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-17 against RetireGolden base `33e7d546` (branch `codex/b1-p4-cards-cashflow-optimizer-taxes`), and re-executed 2026-09-26 against RetireGolden base `6f58be5f` (branch `claude/solver-answers-unpriced-aca`; no pull request is open yet), and re-executed 2026-09-26 against RetireGolden base `5d3a72b1` (branch `claude/solver-answers-unpriced-aca`; no pull request is open yet) in `packages/engine`.
 
 Re-executed 2026-09-18 after the worksheet extension.
 
@@ -8,7 +8,7 @@ Re-executed 2026-09-18 after the worksheet extension.
 
 ```diff
 diff --git a/packages/engine/src/decisions/spendingSolver.ts b/packages/engine/src/decisions/spendingSolver.ts
-index 405aaba1..2db7df64 100644
+index d096c4a6..d47b14fe 100644
 --- a/packages/engine/src/decisions/spendingSolver.ts
 +++ b/packages/engine/src/decisions/spendingSolver.ts
 @@ -175,7 +175,7 @@ export function solveMaxSustainableSpending(
@@ -32,14 +32,14 @@ NO_COLOR=1 FORCE_COLOR=0 npx.cmd vitest run src/decisions/spendingSolver.evidenc
 
 ## Captured failing output
 
-Re-executed 2026-09-26 on branch claude/solver-answers-unpriced-aca after the unpriced-ACA and required-floor change to the spending solver and the evaluator moved lines of the production file, so the capture, blob hashes and revert note are refreshed against this head. The baseline is green (spendingSolver.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed 2026-09-26 on branch claude/solver-answers-unpriced-aca after the unpriced-ACA, answer-direction and required-floor change to the spending solver, the scenario capacity comparison and the spending-headroom Insight moved lines of the production file, so the capture, blob hashes and revert note are refreshed against this head. The baseline is green (spendingSolver.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
 RUN  v5.0.0 C:/rgwt/engine5/packages/engine
 
  ❯ src/decisions/spendingSolver.evidence.test.ts (1 test | 1 failed) 54ms
    ❯ sustainable-spending-bisection — Sustainable spending bisection (1)
-     × bisects the 60000/70000 bracket to the feasible lower bound 62500 54ms
+     × bisects the 60000/70000 bracket to the feasible lower bound 62500 53ms
 
  Test Files  1 failed (1)
       Tests  1 failed (1)

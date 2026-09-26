@@ -1,6 +1,6 @@
 # Mutation receipt: insight-spending-headroom-rough-annual
 
-Executed 2026-09-17 and re-executed 2026-09-18 against RetireGolden base `b99ac29b` (branch grok/b1-p4-cards-insights-ss-medicare-roth) in `packages/engine`.
+Executed 2026-09-17 and re-executed 2026-09-18 against RetireGolden base `b99ac29b` (branch grok/b1-p4-cards-insights-ss-medicare-roth), and re-executed 2026-09-26 against RetireGolden base `5d3a72b1` (branch `claude/solver-answers-unpriced-aca`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/insights/detectors/spendingHeadroom.ts`
 
@@ -23,17 +23,20 @@ npx vitest run src/insights/detectors/spendingHeadroom.evidence.test.ts
 
 ## Captured failing output
 
-Re-executed 2026-09-18 after the evidence fixture moved to the exact tolerance on the published whole-dollar figure (round three of the #720 review). The baseline is green (spendingHeadroom.evidence.test.ts passes on unmodified production). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed. Exit code: 1.
+Re-executed 2026-09-26 on branch claude/solver-answers-unpriced-aca after the unpriced-ACA, answer-direction and required-floor change to the spending solver, the scenario capacity comparison and the spending-headroom Insight moved lines of the production file, so the capture, blob hashes and revert note are refreshed against this head. The baseline is green (spendingHeadroom.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/TEMP/rg-s6/packages/engine
+RUN  v5.0.0 C:/rgwt/engine5/packages/engine
 
- ❯ src/insights/detectors/spendingHeadroom.evidence.test.ts (1 test | 1 failed) 14ms
+ ❯ src/insights/detectors/spendingHeadroom.evidence.test.ts (1 test | 1 failed) 15ms
    ❯ insight-spending-headroom-rough-annual — Rough real annual spending headroom from excess terminal estate (1)
-     × deflates $1,200,000 by 3/4 to $900,000 and spreads the $400,000 excess over the 9 year boundaries of 2026-2035 13ms
+     × deflates $1,200,000 by 3/4 to $900,000 and spreads the $400,000 excess over the 9 year boundaries of 2026-2035 14ms
 
  Test Files  1 failed (1)
       Tests  1 failed (1)
+
+             persist transforms across runs with fsModuleCache: true
+             learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
 
 
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
@@ -60,4 +63,4 @@ AssertionError: roughAnnualHeadroom 50000 is not within "exact" of the worksheet
 
 ## Revert
 
-`git checkout -- packages/engine/src/insights/detectors/spendingHeadroom.ts`, then `git diff --quiet -- packages/engine/src/insights/detectors/spendingHeadroom.ts` exited 0, confirming no change to production code after the run.
+The original bytes of `packages/engine/src/insights/detectors/spendingHeadroom.ts` were written back and compared byte for byte in the harness, and `git diff --quiet -- packages/engine/src/insights/detectors/spendingHeadroom.ts` then exited 0, confirming no production change remained. Re-ran the named command after restoration: the suite returned to its baseline state, green (exit 0).
