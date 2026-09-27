@@ -31,16 +31,16 @@
       "label": "credited total-month claim age reconstruction",
       "file": "projection/internal/annualSocialSecurity.ts",
       "lines": [
-        81,
-        83
+        95,
+        97
       ],
       "anchors": [
         {
-          "line": 81,
+          "line": 95,
           "text": "function claimAgeFromTotalMonths(totalMonths: number): ClaimAge {"
         },
         {
-          "line": 82,
+          "line": 96,
           "text": "return { years: Math.floor(totalMonths / 12), months: totalMonths % 12 }"
         }
       ]
@@ -50,16 +50,16 @@
       "label": "claim-year payable-month boundaries",
       "file": "projection/internal/annualSocialSecurity.ts",
       "lines": [
-        90,
-        93
+        104,
+        107
       ],
       "anchors": [
         {
-          "line": 90,
+          "line": 104,
           "text": "if (ageAttained < claimAge.years) return 0"
         },
         {
-          "line": 92,
+          "line": 106,
           "text": "return Math.max(0, 12 - claimAge.months)"
         }
       ]
@@ -69,24 +69,24 @@
       "label": "credited claim age, own-retirement and SSDI pay sites",
       "file": "projection/internal/annualSocialSecurity.ts",
       "lines": [
-        98,
-        247
+        112,
+        262
       ],
       "anchors": [
         {
-          "line": 98,
+          "line": 112,
           "text": "const {"
         },
         {
-          "line": 176,
+          "line": 191,
           "text": "for (const stream of incomes) {"
         },
         {
-          "line": 191,
+          "line": 206,
           "text": "const onsetAge = stream.disability?.onsetAge"
         },
         {
-          "line": 240,
+          "line": 255,
           "text": "ssOwnByPerson.set(stream.personId, (ssOwnByPerson.get(stream.personId) ?? 0) + annual)"
         }
       ]
@@ -96,20 +96,20 @@
       "label": "former-spouse divorced and survivor replacement menu",
       "file": "projection/internal/annualSocialSecurity.ts",
       "lines": [
-        249,
-        292
+        264,
+        315
       ],
       "anchors": [
         {
-          "line": 249,
+          "line": 264,
           "text": "const householdIsSingle = people.length === 1"
         },
         {
-          "line": 259,
-          "text": "const best = bestMaritalBenefit(stream.formerSpouses, {"
+          "line": 277,
+          "text": "let best: (MaritalBenefitCandidate & { sourceKey: string }) | null = null"
         },
         {
-          "line": 275,
+          "line": 298,
           "text": "const annual = best.monthly * payableMonths * ssColaFactor * ssHaircutFactor"
         }
       ]
@@ -119,20 +119,20 @@
       "label": "current-spouse top-up and worker family-maximum cap",
       "file": "projection/internal/annualSocialSecurity.ts",
       "lines": [
-        294,
-        379
+        317,
+        403
       ],
       "anchors": [
         {
-          "line": 294,
+          "line": 317,
           "text": "if (people.length === 2) {"
         },
         {
-          "line": 303,
+          "line": 327,
           "text": "const lowerPayableMonths = annualSocialSecurityPayableMonths(lowerState.ageAttained, lower.ss.claimAge)"
         },
         {
-          "line": 359,
+          "line": 383,
           "text": "const spousalAnnual = spousalTotalMonthly * spousalPayableMonths * ssColaFactor * ssHaircutFactor"
         }
       ]
@@ -142,20 +142,20 @@
       "label": "current-household survivor step-up and stream publication",
       "file": "projection/internal/annualSocialSecurity.ts",
       "lines": [
-        381,
-        443
+        405,
+        468
       ],
       "anchors": [
         {
-          "line": 381,
+          "line": 405,
           "text": "if (people.length === 2) {"
         },
         {
-          "line": 393,
+          "line": 417,
           "text": "const payableMonths = annualSocialSecurityPayableMonths(survivorState.ageAttained, survivorStream.claimAge)"
         },
         {
-          "line": 415,
+          "line": 440,
           "text": "const survivorAnnual ="
         }
       ]
@@ -165,20 +165,20 @@
       "label": "SSDI SGA gate, retirement earnings test, withheld-month writes and warnings",
       "file": "projection/internal/annualSocialSecurity.ts",
       "lines": [
-        445,
-        510
+        470,
+        535
       ],
       "anchors": [
         {
-          "line": 445,
+          "line": 470,
           "text": "let ssEarningsTestWithheld = 0"
         },
         {
-          "line": 456,
+          "line": 481,
           "text": "if (wages > 0 && ssdiSuspendedBySga(wages, annualSga)) {"
         },
         {
-          "line": 488,
+          "line": 513,
           "text": "const monthsWithheld = Math.min(payableMonths, Math.round((withheld / benefit) * payableMonths))"
         }
       ]
@@ -188,24 +188,24 @@
       "label": "living-household total and ordered per-stream publication",
       "file": "projection/internal/annualSocialSecurity.ts",
       "lines": [
-        512,
-        582
+        537,
+        607
       ],
       "anchors": [
         {
-          "line": 512,
+          "line": 537,
           "text": "let socialSecurity = 0"
         },
         {
-          "line": 524,
+          "line": 549,
           "text": "const preWithholdingSumByPerson = new Map<string, number>()"
         },
         {
-          "line": 540,
+          "line": 565,
           "text": "(entry.preWithholdingAnnual > 0 || entry.claimInForce)"
         },
         {
-          "line": 572,
+          "line": 597,
           "text": "return {"
         }
       ],
@@ -216,24 +216,24 @@
       "label": "annual Social Security scalar selection, helper invocation and effect consumption",
       "file": "projection/simulate.ts",
       "lines": [
-        1686,
-        1722
+        1691,
+        1727
       ],
       "anchors": [
         {
-          "line": 1686,
+          "line": 1691,
           "text": "const ssColaFactor ="
         },
         {
-          "line": 1694,
+          "line": 1699,
           "text": "const socialSecurity = annualSocialSecurity({"
         },
         {
-          "line": 1710,
+          "line": 1715,
           "text": "incomes.socialSecurity += socialSecurity.socialSecurity"
         },
         {
-          "line": 1721,
+          "line": 1726,
           "text": "const { socialSecurityStreams, ssEarningsTestWithheld, ssdiPaid } ="
         }
       ]
