@@ -27,7 +27,13 @@ import {
   expectedPvSingle,
   type ClaimantInput,
 } from '../socialSecurity/expectedPv'
-import { spousalBenefitFactor } from '@retiregolden/engine/socialSecurity/claimFactor'
+import { claimFactor } from '@retiregolden/engine/socialSecurity/claimFactor'
+import {
+  divorcedExFirstMonthIndex,
+  spouseDualEntitlementMonthly,
+  spouseEntitlementAgeMonths,
+  spouseReductionFactorAtAgeMonths,
+} from '@retiregolden/engine/socialSecurity/dualEntitlement'
 import { DIVORCED_MIN_MARRIAGE_YEARS } from '@retiregolden/engine/socialSecurity/maritalBenefits'
 import {
   computePiaFromEarnings,
@@ -324,21 +330,43 @@ function claimantInput(person: Person, pia: number, claimYears: number, startYea
 }
 
 /**
- * Best divorced-spousal monthly benefit (0.5 × ex PIA, reduced for the claim age)
- * across ex-spouses meeting the marriage-duration gate, for a currently-unmarried claimant.
- * Benefits-only assumes each ex meets the ex-worker condition from the selected claim age; it does not
- * wait for the ex to reach 62. Marriage-length and currently-unmarried gates still apply. The ledger
- * In-your-plan path uses its documented calendar-year age-62 approximation instead. A year-varying floor
- * keyed to availability year is follow-up work. Survivor benefits are handled separately by the
- * survivor-switching analysis.
+ * The monthly benefit a currently-unmarried claimant is paid on the best
+ * divorced-spouse record, the ledger's dual-entitlement composition
+ * (@retiregolden/engine socialSecurity/dualEntitlement.ts): the own benefit at
+ * the claim age, held at the own PIA, plus half the ex's PIA less the own PIA,
+ * reduced for the claimant's age in the first month of the spouse benefit (the
+ * later of the own claim and the first month the ex is 62 throughout), and
+ * never less than the own benefit. 0 when no ex meets the marriage-duration
+ * gate or the household is a couple. Benefits-only is one amount for every year
+ * from the claim, so it pays this from the claim age even when the ex is not
+ * yet 62; the ledger (In your plan) waits for the year the spouse benefit
+ * starts. Survivor benefits are handled by the survivor-switching analysis.
  */
-function divorcedSpousalFloorMonthly(person: Person, stream: SsStream, claimYears: number, householdSingle: boolean): number {
+export function divorcedSpouseTotalMonthly(
+  person: Person,
+  stream: SsStream,
+  ownPiaMonthly: number,
+  claimYears: number,
+  householdSingle: boolean,
+): number {
   if (!householdSingle) return 0
   const { y, m, d } = dobParts(person)
+  const claimantDob = { year: y, month: m, day: d }
+  const ownActualMonthly = ownPiaMonthly * claimFactor(y, m, d, { years: claimYears, months: 0 })
   let best = 0
   for (const r of stream.formerSpouses ?? []) {
     if (r.relationship !== 'divorced' || r.marriageYears < DIVORCED_MIN_MARRIAGE_YEARS) continue
-    best = Math.max(best, 0.5 * r.piaMonthly * spousalBenefitFactor(y, m, d, { years: claimYears, months: 0 }))
+    const exDob = { year: Number(r.dob.slice(0, 4)), month: Number(r.dob.slice(5, 7)), day: Number(r.dob.slice(8, 10)) }
+    const spouseAgeMonths = spouseEntitlementAgeMonths(claimantDob, claimYears * 12, divorcedExFirstMonthIndex(exDob))
+    best = Math.max(
+      best,
+      spouseDualEntitlementMonthly({
+        ownPiaMonthly,
+        ownActualMonthly,
+        spouseBaseMonthly: 0.5 * r.piaMonthly,
+        spouseFactor: spouseReductionFactorAtAgeMonths(claimantDob, spouseAgeMonths),
+      }),
+    )
   }
   return best
 }
@@ -360,7 +388,7 @@ export function benefitsOnlyRanking(plan: Plan, discountRate: number, startYear 
   if (people.length === 1) {
     const { person, pia, stream } = people[0]!
     for (const age of candidateClaimAges(person, startYear)) {
-      const benefitFloorMonthly = divorcedSpousalFloorMonthly(person, stream, age, householdSingle)
+      const benefitFloorMonthly = divorcedSpouseTotalMonthly(person, stream, pia, age, householdSingle)
       const pv = expectedPvSingle({ ...claimantInput(person, pia, age, startYear), benefitFloorMonthly }, { discountRate })
       rows.push({ claimByPersonId: { [person.id]: age }, expectedPv: pv })
     }

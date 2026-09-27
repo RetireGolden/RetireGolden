@@ -1081,9 +1081,11 @@ function BenefitsOnlyTab({ personIds, personName, applyStrategy }: TabProps) {
 
       {hasLivingDivorcedRecord ? (
         <div className="callout callout--note" role="note">
-          This ranking assumes each living ex-spouse meets the ex-worker condition from your selected claim age onward; it
-          does not wait for the ex to turn 62. Marriage-length and currently-unmarried gates still apply. The In-your-plan
-          tab uses its documented calendar-year age-62 approximation, not full SSA entitlement rules.
+          With a living ex-spouse, this ranking pays what the plan pays once the spouse benefit starts: your own benefit
+          plus the part of half the ex&apos;s PIA above your own PIA, reduced for your age in the first month the ex is 62
+          throughout. It pays that amount from your selected claim age onward and does not wait for the ex to turn 62.
+          Marriage-length and currently-unmarried gates still apply. The In-your-plan tab waits for the year the spouse
+          benefit starts, and does not check full SSA entitlement rules.
         </div>
       ) : null}
 

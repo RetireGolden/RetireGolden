@@ -3,7 +3,8 @@ import { describe, expect, it } from 'vitest'
 import { createEmptyPlan, parsePlan, type Account, type Plan } from '@retiregolden/engine/model/plan'
 import { simulatePlan } from '@retiregolden/engine/projection/simulate'
 import { taxCalculatorFor } from './useProjection'
-import { benefitsOnlyRanking, candidateClaimAges, claimingPeople, piaAsOfPlan, refineClaimingMonthly, resolvePia, ssStreamFor, sweepClaimingStrategies, objectiveIsFlat, sweepVerdict, type SweepRow } from './ssAnalysis'
+import { expectedPvSingle } from '../socialSecurity/expectedPv'
+import { benefitsOnlyRanking, candidateClaimAges, claimingPeople, divorcedSpouseTotalMonthly, piaAsOfPlan, refineClaimingMonthly, resolvePia, ssStreamFor, sweepClaimingStrategies, objectiveIsFlat, sweepVerdict, type SweepRow } from './ssAnalysis'
 
 let counter = 0
 const id = () => `ssa-${++counter}`
@@ -222,6 +223,40 @@ describe('benefitsOnlyRanking', () => {
     const at67 = (r: ReturnType<typeof benefitsOnlyRanking>) => r.rows.find((x) => x.claimByPersonId['p1'] === 67)!.expectedPv
     // 50% of the $3,000 ex PIA (1,500) beats the own $800 → PV rises.
     expect(at67(lifted)).toBeGreaterThan(at67(base))
+  })
+
+  // The dual-entitlement-composition worksheet's case B: single, born
+  // 1964-06-15, 800 PIA; the ex, born 1966-02-10 with a 2,000 PIA, is first 62
+  // throughout in March 2028, when she is 765 months old. At a 62 claim she is
+  // paid her own 560 plus (1,000 - 800) x 0.7375 = 707.50, the ledger's amount,
+  // not max(560, 1,000 x 0.65) = 650 (the half reduced at her own claim age).
+  function divorcedCaseB(claimYears: number): Plan {
+    const plan = singlePlan()
+    plan.household.people[0] = { ...plan.household.people[0]!, dob: '1964-06-15' }
+    plan.incomes = [{
+      type: 'socialSecurity', id: id(), personId: 'p1', piaMonthly: 800, earnings: null, claimAge: { years: claimYears, months: 0 },
+      formerSpouses: [{ id: id(), relationship: 'divorced', dob: '1966-02-10', piaMonthly: 2_000, marriageYears: 12, remarriedAtAge: null }],
+    }]
+    return parsePlanOk(plan)
+  }
+
+  it('prices a divorced spouse as the ledger does: own benefit plus the reduced excess (707.50 at 62, not 650)', () => {
+    const plan = divorcedCaseB(62)
+    const person = plan.household.people[0]!
+    const stream = ssStreamFor(plan, 'p1')!
+    expect(divorcedSpouseTotalMonthly(person, stream, 800, 62, true)).toBeCloseTo(707.5, 9)
+    // At 67 both benefits start at FRA: 800 + 200 = 1,000.
+    expect(divorcedSpouseTotalMonthly(person, stream, 800, 67, true)).toBeCloseTo(1_000, 9)
+    expect(divorcedSpouseTotalMonthly(person, stream, 800, 62, false)).toBe(0)
+    const row = benefitsOnlyRanking(plan, 0.02, 2026).rows.find((x) => x.claimByPersonId['p1'] === 62)!
+    const input = {
+      currentAge: 62,
+      dob: { year: 1964, month: 6, day: 15 },
+      sex: person.sex,
+      piaMonthly: 800,
+      claimAge: { years: 62, months: 0 },
+    }
+    expect(row.expectedPv).toBeCloseTo(expectedPvSingle({ ...input, benefitFloorMonthly: 707.5 }, { discountRate: 0.02 }), 6)
   })
 
   it('does not grant divorced-spousal once remarried (couple household)', () => {
