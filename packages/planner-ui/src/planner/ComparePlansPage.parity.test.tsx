@@ -12,6 +12,11 @@
  *   retired subtraction printed "+$330k" in green (a change, asserted); both
  *   plans run their full horizons, so Money lasts reads "both full plan" with
  *   no colour.
+ * - The three non-money rows (Money lasts, Success % and Depletion age) on
+ *   pairs where one plan depletes, both deplete, or both deplete in the same
+ *   year: every cell (A, B, delta and its colour) is the retired page's
+ *   (moneyLastsDelta, deterministicSuccessPct, ageDelta and primaryAgeIn, kept
+ *   here), unchanged (PR #754 finding 3).
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act } from 'react'
@@ -19,12 +24,14 @@ import { createRoot, type Root } from 'react-dom/client'
 import { MemoryRouter } from 'react-router'
 
 import type { Plan } from '@retiregolden/engine/model/plan'
+import { lastFundedYear, moneyLasts } from '@retiregolden/engine/projection/moneyLasts'
 import { PlanStoreProvider } from '../data/PlanStoreProvider'
 import type { PlanStore, PlanSummary } from '../data/planStoreContext'
 import { projectPlan } from '../projection'
 import { appExamplePlanById } from '../testSupport/appExamples'
 import { settle, waitFor } from '../testSupport/settle'
 import { formatDelta } from './compareDeltas'
+import { moneyLastsValue } from './format'
 import { EXAMPLE_FIXED_YEAR } from './examples/buildContext'
 import { ComparePlansPage } from './ComparePlansPage'
 
@@ -105,6 +112,66 @@ const row = (label: string) => {
   return found!
 }
 
+// ------------------------------------------------ the retired page's non-money rows (ComparePlansPage.tsx and compareDeltas.ts at 4a80669e)
+function retiredLastsLabel(plan: Plan): string {
+  const view = projectPlan(plan, EXAMPLE_FIXED_YEAR)
+  const lasts = moneyLasts(view.result)
+  const value = moneyLastsValue(lasts, view.result.startYear)
+  return lasts.depletionYear === null ? `${value} through ${lasts.endYear}` : value
+}
+function retiredPrimaryAgeIn(plan: Plan, year: number | null): number | null {
+  if (year === null) return null
+  const dobYear = Number(plan.household.people[0]?.dob.slice(0, 4))
+  return Number.isFinite(dobYear) ? year - dobYear : null
+}
+function retiredDeltaClass(value: number | null): string {
+  if (value === null || Math.abs(value) < 0.5) return ''
+  return value > 0 ? 'delta-pos' : 'delta-neg'
+}
+const retiredSuccessPct = (depletionYear: number | null): number => (depletionYear === null ? 100 : 0)
+function retiredMoneyLastsDelta(
+  a: { depletionYear: number | null; endYear: number },
+  b: { depletionYear: number | null; endYear: number },
+): { value: number; label: string } {
+  const value = lastFundedYear(b) - lastFundedYear(a)
+  const aFull = a.depletionYear === null
+  const bFull = b.depletionYear === null
+  if (aFull && bFull) return { value: 0, label: a.endYear === b.endYear ? 'same' : 'both full plan' }
+  if (!aFull && !bFull) return { value, label: formatDelta(value, 'years') }
+  const bound = bFull ? '≥' : '≤'
+  const years = formatDelta(value, 'years')
+  return { value, label: years === 'same' ? `${bound} same` : `${bound} ${years}` }
+}
+/** The retired page's three non-money rows for Plan A against Plan B: A, B, delta text and class. */
+function retiredNonMoneyRows(a: Plan, b: Plan) {
+  const l = projectPlan(a, EXAMPLE_FIXED_YEAR)
+  const r = projectPlan(b, EXAMPLE_FIXED_YEAR)
+  const lasts = retiredMoneyLastsDelta(
+    { depletionYear: l.summary.depletionYear, endYear: l.result.endYear },
+    { depletionYear: r.summary.depletionYear, endYear: r.result.endYear },
+  )
+  const successA = retiredSuccessPct(l.summary.depletionYear)
+  const successB = retiredSuccessPct(r.summary.depletionYear)
+  const ageA = retiredPrimaryAgeIn(a, l.summary.depletionYear)
+  const ageB = retiredPrimaryAgeIn(b, r.summary.depletionYear)
+  const age = ageA === null || ageB === null ? null : ageB - ageA
+  return {
+    'Money lasts': { a: retiredLastsLabel(a), b: retiredLastsLabel(b), delta: lasts.label, deltaClass: retiredDeltaClass(lasts.value) },
+    'Success % (deterministic)': {
+      a: `${successA}%`,
+      b: `${successB}%`,
+      delta: formatDelta(successB - successA, 'pp'),
+      deltaClass: retiredDeltaClass(successB - successA),
+    },
+    'Depletion age (primary)': {
+      a: ageA === null ? '—' : String(ageA),
+      b: ageB === null ? '—' : String(ageB),
+      delta: age === null ? '—' : formatDelta(age, 'years'),
+      deltaClass: retiredDeltaClass(age),
+    },
+  }
+}
+
 describe('Compare page on library examples (B2-P1 slice 3)', () => {
   it('prints the retired nominal money cells for two plans that end in the same year', async () => {
     const a = appExamplePlanById('annuity-purchases-estate')
@@ -155,4 +222,26 @@ describe('Compare page on library examples (B2-P1 slice 3)', () => {
     expect(lasts.a).toBe('full plan through 2059')
     expect(lasts.b).toBe('full plan through 2076')
   })
+
+  // PR #754 finding 3: the rendered Money lasts, Success % and Depletion age
+  // rows against the retired page's own expressions, cell for cell.
+  for (const [a, b, what, expected] of [
+    ['example-couple', 'under-saved-single', 'only Plan B depletes', { lasts: '≤ −14 yrs', success: '−100 pp', age: '—' }],
+    ['under-saved-single', 'ltc-shock', 'both deplete, in different years', { lasts: '−13 yrs', success: '0 pp', age: '−15 yrs' }],
+    ['hsa-property-depth', 'brokerage-no-hsa', 'both deplete in the same year', { lasts: 'same', success: '0 pp', age: 'same' }],
+  ] as const) {
+    it(`prints the retired non-money rows when ${what} (${a} against ${b})`, async () => {
+      const planA = appExamplePlanById(a)
+      const planB = appExamplePlanById(b)
+      await mountPair(planA, planB)
+      const retired = retiredNonMoneyRows(planA, planB)
+      for (const label of ['Money lasts', 'Success % (deterministic)', 'Depletion age (primary)'] as const) {
+        const rendered = row(label)
+        expect({ a: rendered.a, b: rendered.b, delta: rendered.delta, deltaClass: rendered.deltaClass }, label).toEqual(retired[label])
+      }
+      expect(row('Money lasts').delta).toBe(expected.lasts)
+      expect(row('Success % (deterministic)').delta).toBe(expected.success)
+      expect(row('Depletion age (primary)').delta).toBe(expected.age)
+    })
+  }
 })
