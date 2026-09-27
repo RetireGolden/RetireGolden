@@ -36,6 +36,8 @@ export interface SpendingSolveResult {
   converged: boolean
   limitingConstraint: 'depletion' | 'estate-floor' | null
   simulationCount: number
+  /** True only when the solve ran a probe at zero base spending and it depleted. */
+  zeroSpendingDepletes: boolean
   /**
    * Years whose ACA premium tax credit the projection could not price in the
    * run the answer rests on; that run pays the full Marketplace premium in

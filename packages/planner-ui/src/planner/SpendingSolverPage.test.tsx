@@ -39,6 +39,7 @@ function solved(overrides: Partial<SpendingSolveResult>): SpendingSolveResult {
     acaGrossPremiumYears: [],
     acaGrossPremiumReasons: [],
     acaGrossPremiumDirection: null,
+    zeroSpendingDepletes: false,
     diagnostics: [],
     evidence: {
       endingAfterTaxEstate: 500_000,
@@ -218,12 +219,78 @@ describe('SpendingSolverPage statements', () => {
         spendingSlackDollars: null,
         limitingConstraint: 'depletion',
         simulationCount: 2,
+        zeroSpendingDepletes: true,
         diagnostics: ['Even zero base spending depletes the portfolio before the plan ends.'],
         evidence: null,
       }),
     )
     await renderSolved()
     expect(container.querySelector('.solver-failure')?.textContent).toContain(FIXED_COSTS)
+  })
+
+  it('does not blame fixed costs when the budget stopped before zero spending was tried', async () => {
+    mockedSolve.mockResolvedValue(
+      solved({
+        maxBaseAnnual: null,
+        spendingSlackDollars: null,
+        limitingConstraint: 'depletion',
+        simulationCount: 1,
+        zeroSpendingDepletes: false,
+        diagnostics: ['Simulation budget exhausted before any feasible spending level was found.'],
+        evidence: null,
+      }),
+    )
+    await renderSolved()
+    const well = container.querySelector('.solver-failure')!.textContent!
+    expect(well).toContain('Simulation budget exhausted')
+    expect(well).not.toContain(FIXED_COSTS)
+  })
+
+  async function applyWith(policy: 'fixedTarget' | 'withdrawalRateGuardrails'): Promise<Plan> {
+    mockedSolve.mockResolvedValue(solved({ maxBaseAnnual: 92_450 }))
+    const plan = createSamplePlan()
+    plan.expenses.spendingPolicy = { mode: policy }
+    let applied: Plan = plan
+    const ctx: PlanContextValue = {
+      plan,
+      update: (fn) => {
+        const draft = structuredClone(plan)
+        fn(draft)
+        applied = draft
+      },
+      discardPendingSave: () => {},
+      saveState: 'saved',
+      issues: [],
+    }
+    await act(async () => {
+      root.render(
+        <MemoryRouter>
+          <PlanCtx.Provider value={ctx}>
+            <SpendingSolverPage />
+          </PlanCtx.Provider>
+        </MemoryRouter>,
+      )
+    })
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 400))
+    })
+    const applyButton = Array.from(container.querySelectorAll('button')).find((b) => b.textContent === 'Apply to Spending')
+    await act(async () => applyButton!.click())
+    return applied
+  }
+
+  it('applies the floored figure at fixed-target spending', async () => {
+    const applied = await applyWith('fixedTarget')
+    expect(applied.expenses.baseAnnual).toBe(92_400)
+    expect(container.textContent).toContain("sets your plan's baseline spending to $92,400/yr")
+    expect(container.textContent).not.toContain('the one the solver tested')
+  })
+
+  it('applies the exact tested amount under guardrail spending and says so', async () => {
+    const applied = await applyWith('withdrawalRateGuardrails')
+    expect(applied.expenses.baseAnnual).toBe(92_450)
+    expect(container.textContent).toContain("sets your plan's baseline spending to $92,450/yr")
+    expect(container.textContent).toContain('both use that exact amount, the one the solver tested')
   })
 
   it('does not call a baseline the plan sustains unsustainable because the shown figure is rounded down', async () => {

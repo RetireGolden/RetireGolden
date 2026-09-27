@@ -200,15 +200,22 @@ export function SpendingSolverPage() {
     return () => window.clearTimeout(t)
   }, [run, abwActive])
 
+  // Under guardrails feasibility is not monotone in the base amount: a level
+  // below one that passed can fail, so a rounded-down figure is not implied.
+  const guardrailSpending =
+    plan.expenses.spendingPolicy?.mode === 'withdrawalRateGuardrails' ||
+    plan.expenses.spendingPolicy?.mode === 'riskBasedGuardrails'
   // The solver bisects to ~$500 resolution; a to-the-dollar headline claims
-  // precision the answer doesn't have. Floor to $100 (still feasible — it's
-  // below the level that passed) and use the same number everywhere: display,
-  // Apply, and scenarios.
+  // precision the answer doesn't have, so the page shows it floored to $100.
+  // At fixed-target spending feasibility is monotone, so that floored figure,
+  // below the level that passed, passes too, and Apply and scenarios use it.
+  // Under guardrails it is not implied, so they use the exact tested amount.
   const solvedRounded = result?.maxBaseAnnual != null ? Math.floor(result.maxBaseAnnual / 100) * 100 : null
+  const appliedAmount = guardrailSpending ? (result?.maxBaseAnnual ?? null) : solvedRounded
 
   const applyToSpending = () => {
-    if (solvedRounded === null) return
-    const solved = solvedRounded
+    if (appliedAmount === null) return
+    const solved = appliedAmount
     update((d) => {
       d.expenses.baseAnnual = solved
     })
@@ -217,8 +224,8 @@ export function SpendingSolverPage() {
   }
 
   const addScenario = () => {
-    if (solvedRounded === null) return
-    const solved = solvedRounded
+    if (appliedAmount === null) return
+    const solved = appliedAmount
     const baseName = `Spend ${fmtMoney(solved)}/yr (max sustainable)`
     const names = new Set(plan.scenarios.map((s) => s.name))
     let name = baseName
@@ -237,11 +244,6 @@ export function SpendingSolverPage() {
   // the level its answer is measured against.
   const sustainsCurrent =
     result !== null && result.maxBaseAnnual !== null && result.maxBaseAnnual >= Math.round(result.currentBaseAnnual)
-  // Under guardrails feasibility is not monotone in the base amount: a level
-  // below one that passed can fail, so a rounded-down figure is not implied.
-  const guardrailSpending =
-    plan.expenses.spendingPolicy?.mode === 'withdrawalRateGuardrails' ||
-    plan.expenses.spendingPolicy?.mode === 'riskBasedGuardrails'
   // Slack measured against the rounded display value so the two tiles agree.
   const slack = result && solvedRounded !== null ? solvedRounded - result.currentBaseAnnual : null
   // Only the rounding puts the shown figure below a baseline the plan
@@ -250,18 +252,12 @@ export function SpendingSolverPage() {
   const acaNote = result ? unpricedCreditSpendingNote(result, result.maxBaseAnnual !== null) : null
   // The failure well prints the engine's reasons verbatim, except the
   // unpriced-credit sentence, which the plain note under it replaces.
-  const failureDiagnostics = result
-    ? diagnosticsWithoutUnpricedCreditSentence(result.diagnostics, result.acaGrossPremiumYears)
-    : []
-  // "Fixed costs may exceed what the plan can fund" is true only when even
-  // zero base spending ran out of money: not after a required floor failed
-  // (the diagnostic names that floor), a bequest miss, or a solve that never
-  // ran a probe.
-  const fixedCostsMayExceedFunding =
-    result !== null &&
-    result.maxBaseAnnual === null &&
-    result.limitingConstraint === 'depletion' &&
-    !((plan.expenses.requiredAnnual ?? 0) > 0)
+  const failureDiagnostics = result ? diagnosticsWithoutUnpricedCreditSentence(result.diagnostics) : []
+  // "Fixed costs may exceed what the plan can fund" is true only when a probe
+  // at zero base spending ran and ran out of money: not after a required
+  // floor failed (the diagnostic names that floor), a bequest miss, a budget
+  // that stopped before zero was tried, or a solve that never ran a probe.
+  const fixedCostsMayExceedFunding = result !== null && result.maxBaseAnnual === null && result.zeroSpendingDepletes
   const shapeAcaYears = shapeRows?.flatMap((row) => row.acaGrossPremiumYears) ?? []
   const shapesAdaptive = shapeRows?.some((row) => row.acaGrossPremiumDirection === 'uncertain') ?? false
   // The nominal end-of-plan estate in today's dollars, so it reads on the same
@@ -387,7 +383,7 @@ export function SpendingSolverPage() {
                 label="Max sustainable spending"
                 value={`${fmtMoney(solvedRounded ?? 0)}/yr`}
                 tone="neutral"
-                help="Highest annual baseline spending (today's dollars) whose full year-by-year projection never depletes investable assets and keeps the ending after-tax estate at or above your bequest target. Solved by bisection to ~$500 resolution, then shown rounded down to the nearest $100. The same rounded figure is what Apply and scenarios use."
+                help="Highest annual baseline spending (today's dollars) whose full year-by-year projection never depletes investable assets and keeps the ending after-tax estate at or above your bequest target. Solved by bisection to ~$500 resolution, then shown rounded down to the nearest $100. The same rounded figure is what Apply and scenarios use, except under guardrail spending, where they use the exact amount the solver tested."
               />
               <Stat
                 label="Spending slack"
@@ -462,9 +458,12 @@ export function SpendingSolverPage() {
                   </button>
                 </div>
                 <p className="field-hint mt-sm">
-                  "Apply to Spending" sets your plan's baseline spending to {fmtMoney(solvedRounded ?? 0)}/yr and opens
+                  "Apply to Spending" sets your plan's baseline spending to {fmtMoney(appliedAmount ?? 0)}/yr and opens
                   the Spending screen. "Add as scenario" instead creates a side-by-side scenario under Scenarios without
                   changing your plan.
+                  {guardrailSpending
+                    ? ' Under guardrail spending both use that exact amount, the one the solver tested, not the figure rounded down to $100 above, because a lower level can fail where a higher one passed.'
+                    : null}
                 </p>
                 <details className="ss-explainer">
                   <summary>Why this number?</summary>
@@ -476,11 +475,10 @@ export function SpendingSolverPage() {
                     {result.estateFloorTodayDollars > 0
                       ? `your ${fmtMoney(result.estateFloorTodayDollars)} bequest target`
                       : 'zero (no bequest target set)'}
-                    . The solver&apos;s exact answer is the highest level that passed both. It is shown, applied,
-                    and added to scenarios rounded down to the nearest $100 ({fmtMoney(solvedRounded ?? 0)})
+                    . The solver&apos;s exact answer is the highest level that passed both.{' '}
                     {guardrailSpending
-                      ? '. Under guardrail spending a lower level does not always pass when a higher one does, so that rounded figure was not itself tested'
-                      : ', which therefore also passes'}
+                      ? `It is shown rounded down to the nearest $100 (${fmtMoney(solvedRounded ?? 0)}), but applied and added to scenarios at the exact amount that passed (${fmtMoney(appliedAmount ?? 0)}): under guardrail spending a lower level does not always pass when a higher one does, so that rounded figure was not itself tested`
+                      : `It is shown, applied, and added to scenarios rounded down to the nearest $100 (${fmtMoney(solvedRounded ?? 0)}), which therefore also passes`}
                     . The next-higher probe failed on{' '}
                     {result.limitingConstraint === 'estate-floor'
                       ? 'the bequest target'

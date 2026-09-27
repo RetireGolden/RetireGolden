@@ -165,10 +165,17 @@ describe('unpricedCreditSpendingNote', () => {
 })
 
 describe('diagnosticsWithoutUnpricedCreditSentence', () => {
-  it('drops the last diagnostic only when the solve named unpriced years', () => {
-    expect(diagnosticsWithoutUnpricedCreditSentence(['Stopped early.', 'The ACA premium tax credit is not priced in 2027.'], [2027])).toEqual([
-      'Stopped early.',
-    ])
-    expect(diagnosticsWithoutUnpricedCreditSentence(['Stopped early.'], [])).toEqual(['Stopped early.'])
+  const engineSentence =
+    'The ACA premium tax credit is not priced in 2027 (tax-year-parameters-unsupported); the ledger budgets the full Marketplace premium in those years, and a credit there would lower that cost.'
+
+  it('drops the engine sentence by its content, wherever it sits', () => {
+    expect(diagnosticsWithoutUnpricedCreditSentence(['Stopped early.', engineSentence])).toEqual(['Stopped early.'])
+    expect(diagnosticsWithoutUnpricedCreditSentence([engineSentence, 'Stopped early.'])).toEqual(['Stopped early.'])
+  })
+
+  it('keeps a last diagnostic that is something else', () => {
+    expect(
+      diagnosticsWithoutUnpricedCreditSentence(['Even zero base spending depletes the portfolio before the plan ends.']),
+    ).toEqual(['Even zero base spending depletes the portfolio before the plan ends.'])
   })
 })

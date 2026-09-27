@@ -621,12 +621,8 @@ function CapacitySection({
   const sharedNote = baselineNote !== null && baselineNote === proposalNote
   const diagnostics = capacity
     ? [
-        ...diagnosticsWithoutUnpricedCreditSentence(capacity.baselineDiagnostics, capacity.baselineAcaGrossPremiumYears).map(
-          (message) => `Baseline: ${message}`,
-        ),
-        ...diagnosticsWithoutUnpricedCreditSentence(capacity.proposalDiagnostics, capacity.proposalAcaGrossPremiumYears).map(
-          (message) => `Proposal: ${message}`,
-        ),
+        ...diagnosticsWithoutUnpricedCreditSentence(capacity.baselineDiagnostics).map((message) => `Baseline: ${message}`),
+        ...diagnosticsWithoutUnpricedCreditSentence(capacity.proposalDiagnostics).map((message) => `Proposal: ${message}`),
         ...(sharedNote
           ? [`Baseline and proposal: ${baselineNote}`]
           : [

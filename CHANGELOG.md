@@ -32,7 +32,9 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   or breaks the estate floor". It now probes the required floor and names it and the
   constraint that failed ("Even the required spending floor ($34,000/yr) depletes the
   portfolio before the plan ends." for Guardrails and flexible goals; an ending estate
-  below the target is named as that), and no probe goes below the floor. The same
+  below the target is named as that), and no probe goes below the floor, the first one
+  included: a base spending that rounds below a fractional floor is seeded at the floor
+  rounded up instead of failing the plan checks. The same
   example's smirk spending shape now answers $37,000. The page's "fixed costs may
   already exceed what the plan can fund" sentence now appears only when even zero base
   spending runs out of money, never after a floor, a bequest-target miss or a solve that
@@ -44,8 +46,9 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   answer ("less than $100 a year to spare"), and when the bequest target is what limits
   the answer, the page says the plan cannot sustain today's spending and still leave it.
   Under guardrail spending the page no longer says the rounded figure also passes: there
-  a lower level can fail where a higher one passed, and the rounded figure is not itself
-  tested.
+  a lower level can fail where a higher one passed, so Apply to Spending and Add as
+  scenario use the exact amount the solver tested, and the page says so; fixed-target
+  plans keep the figure rounded down to $100.
 - **The Optimize page no longer says the 2027 credit figures are unpublished:** its
   explanation of an unpriced Marketplace year said "sourced ACA tax parameters for those
   years are not yet published", which is false for 2027 (the IRS published that year's
@@ -682,7 +685,8 @@ has — rather than the runtime contract a consumer needs on the landing page.
 ### Breaking (published `@retiregolden/engine` API)
 
 - **Sustainable-spending result fields (required):** `SustainableSpendingResult` gains
-  `acaGrossPremiumYears`, `acaGrossPremiumReasons` and `acaGrossPremiumDirection`;
+  `acaGrossPremiumYears`, `acaGrossPremiumReasons`, `acaGrossPremiumDirection` and
+  `zeroSpendingDepletes` (true only when a probe at zero base spending ran and depleted);
   `ScenarioSpendingCapacityResult` (a `Pick` of it) gains the same three, and
   `ScenarioSpendingCapacityComparison` gains `baselineAcaGrossPremiumYears`,
   `proposalAcaGrossPremiumYears`, `baselineAcaGrossPremiumReasons`,
@@ -691,13 +695,16 @@ has — rather than the runtime contract a consumer needs on the landing page.
   gets a type error until it adds them; `compareScenarioSpendingCapacityResults` still
   reads an untyped result without them as having no unpriced years rather than
   throwing. planner-ui's `SpendingSolveResult` (the `spendingSolve` export) carries the
-  same three fields.
+  same four fields. New exports `ACA_GROSS_PREMIUM_DIAGNOSTIC_LEAD` and
+  `isAcaGrossPremiumDiagnostic` recognize the solver's unpriced-credit diagnostic by its
+  text, not its position.
 - **`EvaluateCandidateOptions.nonActionableAca`** (`'refuse' | 'disclose'`, default
   `'refuse'`, which is today's behavior). `evaluateInsightAction` now defaults it to
   `'disclose'` for the `spending-headroom` card only; every other card, tournaments and
-  coordinate-descent search keep the refusal, and their `evaluation` option types omit
-  the field. `SustainableSpendingOptions.evaluation` omits it too: the solver always
-  discloses.
+  coordinate-descent search keep the refusal: their `evaluation` option types omit the
+  field, and `runDecisionTournament` and `refineConversionSchedule` throw a TypeError when
+  an untyped caller passes `'disclose'`. `SustainableSpendingOptions.evaluation` omits it
+  too: the solver always discloses.
 - **`GarchModelConfig`:** `omega` is deleted (it is now set from the volatility, so an
   explicit value would either be ignored or contradict it), and `returnVolScalePct` is
   renamed `returnVolPct`, which now means the long-run standard deviation of the return

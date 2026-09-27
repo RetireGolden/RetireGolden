@@ -230,6 +230,7 @@ describe('ScenariosPage comparison lifecycle', () => {
     acaGrossPremiumYears: [],
     acaGrossPremiumReasons: [],
     acaGrossPremiumDirection: null,
+    zeroSpendingDepletes: false,
     diagnostics: [],
     evidence: null,
   }

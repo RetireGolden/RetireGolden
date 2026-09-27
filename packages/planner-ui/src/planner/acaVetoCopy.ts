@@ -13,6 +13,7 @@
  */
 
 import type { AcaActionabilityVeto } from '@retiregolden/engine/projection/optimizePlan'
+import { isAcaGrossPremiumDiagnostic } from '@retiregolden/engine/decisions/spendingSolverDiagnostics'
 import type { AcaSupportCode } from '@retiregolden/engine/projection/types'
 
 /** Every non-actionable ACA year the veto cites, merged and ascending. */
@@ -126,12 +127,13 @@ export function unpricedCreditSpendingNote(facts: UnpricedCreditFacts, answered:
 }
 
 /**
- * A solve's diagnostics without its unpriced-credit sentence, which the engine
- * appends last whenever it names such years; surfaces that show the plain
- * note in its place print the rest verbatim.
+ * A solve's diagnostics without the engine's unpriced-credit sentence,
+ * recognized by its content (`isAcaGrossPremiumDiagnostic`), not its place in
+ * the list; surfaces that show the plain note in its place print the rest
+ * verbatim.
  */
-export function diagnosticsWithoutUnpricedCreditSentence(diagnostics: string[], acaGrossPremiumYears: number[]): string[] {
-  return acaGrossPremiumYears.length > 0 ? diagnostics.slice(0, -1) : diagnostics
+export function diagnosticsWithoutUnpricedCreditSentence(diagnostics: readonly string[]): string[] {
+  return diagnostics.filter((message) => !isAcaGrossPremiumDiagnostic(message))
 }
 
 /** Short marker appended to a vetoed candidate row in the alternatives table. */

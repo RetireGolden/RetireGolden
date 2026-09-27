@@ -74,6 +74,7 @@ describe('Spending Solver — Apply to Spending', () => {
     acaGrossPremiumYears: [],
     acaGrossPremiumReasons: [],
     acaGrossPremiumDirection: null,
+    zeroSpendingDepletes: false,
     diagnostics: [],
     evidence: {
       endingAfterTaxEstate: 500_000,

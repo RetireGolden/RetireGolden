@@ -139,6 +139,9 @@ describe('sustainable spending on every example', () => {
         expect(solved.maxBaseAnnual).toBeNull()
         expect(solved.diagnostics[0]).toBe(failure)
       }
+      // Only ltc-shock tried zero spending and ran out of money; Guardrails
+      // and flexible goals failed at its $34,000 floor and never tried zero.
+      expect(solved.zeroSpendingDepletes).toBe(example.id === 'ltc-shock')
       // Nothing silent: an unpriced year is always named, in the last diagnostic.
       if (expected!.acaYears !== null) {
         expect(solved.diagnostics.at(-1)!.startsWith(`The ACA premium tax credit is not priced in ${expected!.acaYears[0]}`)).toBe(true)
