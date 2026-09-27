@@ -1683,7 +1683,7 @@
         "rounding": "none"
       },
       "limits": [
-        "The pairing and the tooltip text are the chart's; the levels are the engine's fan percentiles, whose own record states how each is interpolated.",
+        "The pairing and the tooltip text are the chart's, done in planner-ui by planner/format.ts fanOuterBand and fanInnerBand (the two bands' data keys) and fmtMoneyOrRange (the tooltip), which the census names as this family's UI sources; the registry pins only engine code, so implementedBy names the engine function that publishes the levels, the engine's fan percentiles, whose own record states how each is interpolated.",
         "A band's width (p90 minus p10) is not published: it is not a level of any path, and the chart printed it as one before R14."
       ],
       "worksheet": "DOCS/calculations/monte-carlo/display-fan-band-widths.md",

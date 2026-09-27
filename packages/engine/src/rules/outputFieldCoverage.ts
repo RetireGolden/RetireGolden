@@ -1,7 +1,7 @@
 /**
  * GENERATED FILE — DO NOT EDIT BY HAND.
  *
- * Output field coverage imported from the output-family census at commit 3d4eedda1a7145545e629f97a7ecc60538a10dc4.
+ * Output field coverage imported from the output-family census at commit 3728414b04c301a583c7f1d37de2a37e6347da12.
  * Regenerate: node packages/engine/scripts/import-output-census.mjs <census-dir>
  */
 
@@ -7195,14 +7195,6 @@ const coverageCensus = [
   {
     "source": "planner-ui/src/planner/MonteCarloPage.tsx",
     "owner": "MonteCarloPage",
-    "field": "binCenters",
-    "disposition": "family",
-    "familyId": "display-histogram-bin-label",
-    "tsType": "number[]"
-  },
-  {
-    "source": "planner-ui/src/planner/MonteCarloPage.tsx",
-    "owner": "MonteCarloPage",
     "field": "equityWeightPct",
     "disposition": "excluded",
     "familyId": null,
@@ -7222,22 +7214,6 @@ const coverageCensus = [
     "source": "planner-ui/src/planner/MonteCarloPage.tsx",
     "owner": "MonteCarloPage",
     "field": "p10",
-    "disposition": "family",
-    "familyId": "display-fan-band-widths",
-    "tsType": "number"
-  },
-  {
-    "source": "planner-ui/src/planner/MonteCarloPage.tsx",
-    "owner": "MonteCarloPage",
-    "field": "p25",
-    "disposition": "family",
-    "familyId": "display-fan-band-widths",
-    "tsType": "number"
-  },
-  {
-    "source": "planner-ui/src/planner/MonteCarloPage.tsx",
-    "owner": "MonteCarloPage",
-    "field": "p75",
     "disposition": "family",
     "familyId": "display-fan-band-widths",
     "tsType": "number"
@@ -7984,6 +7960,46 @@ const coverageCensus = [
     "reasonKind": "dimension-coordinate",
     "reason": "The moneyLastsDelta.endYear field is a coordinate such as year, age, or offset used to place another value.",
     "tsType": "number"
+  },
+  {
+    "source": "planner-ui/src/planner/format.ts",
+    "owner": "fanInnerBand",
+    "field": "p25",
+    "disposition": "family",
+    "familyId": "display-fan-band-widths",
+    "tsType": "number"
+  },
+  {
+    "source": "planner-ui/src/planner/format.ts",
+    "owner": "fanInnerBand",
+    "field": "p75",
+    "disposition": "family",
+    "familyId": "display-fan-band-widths",
+    "tsType": "number"
+  },
+  {
+    "source": "planner-ui/src/planner/format.ts",
+    "owner": "fanOuterBand",
+    "field": "p10",
+    "disposition": "family",
+    "familyId": "display-fan-band-widths",
+    "tsType": "number"
+  },
+  {
+    "source": "planner-ui/src/planner/format.ts",
+    "owner": "fanOuterBand",
+    "field": "p90",
+    "disposition": "family",
+    "familyId": "display-fan-band-widths",
+    "tsType": "number"
+  },
+  {
+    "source": "planner-ui/src/planner/format.ts",
+    "owner": "histogramBars",
+    "field": "binCenters",
+    "disposition": "family",
+    "familyId": "display-histogram-bin-label",
+    "tsType": "number[]"
   },
   {
     "source": "planner-ui/src/planner/insights/InsightCardView.tsx",

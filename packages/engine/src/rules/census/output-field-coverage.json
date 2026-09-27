@@ -5294,16 +5294,32 @@
     "familyId": "display-fan-band-widths"
   },
   {
-    "source": "planner-ui/src/planner/MonteCarloPage.tsx",
-    "owner": "MonteCarloPage",
+    "source": "planner-ui/src/planner/format.ts",
+    "owner": "fanOuterBand",
+    "field": "p10",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "display-fan-band-widths"
+  },
+  {
+    "source": "planner-ui/src/planner/format.ts",
+    "owner": "fanOuterBand",
+    "field": "p90",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "display-fan-band-widths"
+  },
+  {
+    "source": "planner-ui/src/planner/format.ts",
+    "owner": "fanInnerBand",
     "field": "p25",
     "tsType": "number",
     "disposition": "family",
     "familyId": "display-fan-band-widths"
   },
   {
-    "source": "planner-ui/src/planner/MonteCarloPage.tsx",
-    "owner": "MonteCarloPage",
+    "source": "planner-ui/src/planner/format.ts",
+    "owner": "fanInnerBand",
     "field": "p75",
     "tsType": "number",
     "disposition": "family",
@@ -7329,8 +7345,8 @@
     "familyId": "display-histogram-bin-label"
   },
   {
-    "source": "planner-ui/src/planner/MonteCarloPage.tsx",
-    "owner": "MonteCarloPage",
+    "source": "planner-ui/src/planner/format.ts",
+    "owner": "histogramBars",
     "field": "binCenters",
     "tsType": "number[]",
     "disposition": "family",

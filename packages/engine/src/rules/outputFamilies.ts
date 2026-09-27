@@ -1,7 +1,7 @@
 /**
  * GENERATED FILE — DO NOT EDIT BY HAND.
  *
- * Output families imported from the output-family census at commit 3d4eedda1a7145545e629f97a7ecc60538a10dc4.
+ * Output families imported from the output-family census at commit 3728414b04c301a583c7f1d37de2a37e6347da12.
  * Regenerate: node packages/engine/scripts/import-output-census.mjs <census-dir>
  */
 
@@ -4810,7 +4810,7 @@ const families = {
   "solved-initial-withdrawal-rate-pct": {
     "title": "Solved initial withdrawal rate",
     "group": "spending-and-withdrawals",
-    "meaning": "The solved (rounded) baseline spending as a percent of starting investable assets, shown beside the SWR rule rows.",
+    "meaning": "The published solved baseline spending (rounded down to the nearest $100, or the exact level that passed when a guardrail plan fails at the rounded one) as a percent of the starting investable assets of the plan the solve priced, shown beside the SWR rule rows.",
     "unit": "percent",
     "basis": "n/a",
     "dimensions": [],

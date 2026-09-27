@@ -225,13 +225,13 @@
     ],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": "Computed in planner-ui/src/planner/SpendingSolverPage.tsx#SpendingSolverPage ((solvedRounded / startingInvestableOf(plan)) × 100, on the page's current plan) until B2-P1 slice 2; now engine SustainableSpendingResult.initialWithdrawalRatePct, on the plan the solve priced, which SpendingSolverPage reads.",
+    "notes": "Computed in planner-ui/src/planner/SpendingSolverPage.tsx#SpendingSolverPage ((solvedRounded / startingInvestableOf(plan)) × 100, on the page's current plan) until B2-P1 slice 2; now engine SustainableSpendingResult.initialWithdrawalRatePct, on the plan the solve priced, which SpendingSolverPage reads. Under R4 the rate is taken on the published amount, so on a guardrail plan whose rounded amount fails it is the exact amount's rate, and over startingInvestableOf of the plan the solve priced (any base patch applied), so a result can no longer pair an old answer with balances edited since.",
     "dimensions": [],
     "basis": "n/a",
     "id": "solved-initial-withdrawal-rate-pct",
     "group": "spending-and-withdrawals",
     "title": "Solved initial withdrawal rate",
-    "meaning": "The solved (rounded) baseline spending as a percent of starting investable assets, shown beside the SWR rule rows.",
+    "meaning": "The published solved baseline spending (rounded down to the nearest $100, or the exact level that passed when a guardrail plan fails at the rounded one) as a percent of the starting investable assets of the plan the solve priced, shown beside the SWR rule rows.",
     "unit": "percent",
     "kind": "ui-native",
     "uiSources": [
@@ -3460,11 +3460,11 @@
   },
   {
     "transformations": [
-      "None after R14: each band is the pair [p10, p90] or [p25, p75] of MonteCarloSummary.fan, drawn as a range area; the tooltip prints the pair as \"$low to $high\"."
+      "None after R14: each band is the pair [p10, p90] or [p25, p75] of MonteCarloSummary.fan (format.ts#fanOuterBand and #fanInnerBand, the chart's data keys), drawn as a range area; the tooltip prints the pair as \"$low to $high\" (format.ts#fmtMoneyOrRange)."
     ],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": "Computed in planner-ui/src/planner/MonteCarloPage.tsx#MonteCarloPage (p90 − p10 and p75 − p25, stacked on transparent bases and printed as dollar levels) until B2-P1 slice 2; now the engine's fan percentiles, drawn as ranges (R14), which MonteCarloPage reads.",
+    "notes": "Computed in planner-ui/src/planner/MonteCarloPage.tsx#MonteCarloPage (p90 − p10 and p75 − p25, stacked on transparent bases and printed as dollar levels) until B2-P1 slice 2; now the engine's fan percentiles, drawn as ranges (R14), which MonteCarloPage reads. The data keys and the tooltip formatter are named functions in planner-ui format.ts since the review of RetireGolden #752; they are this family's uiSources because the calculation registry pins only engine code (record monte-carlo-fan-chart-ranges).",
     "dimensions": [
       "year"
     ],
@@ -3479,6 +3479,18 @@
       {
         "path": "planner-ui/src/planner/MonteCarloPage.tsx",
         "symbol": "MonteCarloPage"
+      },
+      {
+        "path": "planner-ui/src/planner/format.ts",
+        "symbol": "fanOuterBand"
+      },
+      {
+        "path": "planner-ui/src/planner/format.ts",
+        "symbol": "fanInnerBand"
+      },
+      {
+        "path": "planner-ui/src/planner/format.ts",
+        "symbol": "fmtMoneyOrRange"
       }
     ],
     "surfaces": [
@@ -3494,11 +3506,11 @@
   },
   {
     "transformations": [
-      "The engine's histogram publishes binCenters (min + (i + 0.5) × binWidth, or min when every value is equal); the page formats it compactly."
+      "The engine's histogram publishes binCenters (min + (i + 0.5) × binWidth, or min when every value is equal); the page formats each compactly (format.ts#histogramBars), and when every centre is one value it draws one bar at that value holding every path."
     ],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": "Computed in planner-ui/src/planner/MonteCarloPage.tsx#MonteCarloPage (min + (i + 0.5) × binWidth, which labelled an all-equal sample $1 to $30) until B2-P1 slice 2; now engine Histogram.binCenters, which MonteCarloPage reads.",
+    "notes": "Computed in planner-ui/src/planner/MonteCarloPage.tsx#MonteCarloPage (min + (i + 0.5) × binWidth, which labelled an all-equal sample $1 to $30) until B2-P1 slice 2; now engine Histogram.binCenters, which MonteCarloPage reads. Since the review of RetireGolden #752 the bars are format.ts#histogramBars, which draws a sample that ended at one value as one bar instead of thirty bars repeating one label.",
     "dimensions": [
       "bin"
     ],
@@ -3513,6 +3525,10 @@
       {
         "path": "planner-ui/src/planner/MonteCarloPage.tsx",
         "symbol": "MonteCarloPage"
+      },
+      {
+        "path": "planner-ui/src/planner/format.ts",
+        "symbol": "histogramBars"
       }
     ],
     "surfaces": [
