@@ -178,3 +178,7 @@ Derived by: claude (opus 5.5), 2026-09-27; cases H to M by hand and `scripts/ind
 
 - Refusal classes (F5): the comparison's own refusals are `RangeError`s, and the dollar-basis refusal is `projectionDollarBasis`'s plain `Error`; the Domain paragraph and correction 1 above say so, and so does `comparePlanHeadlines`' doc comment.
 - `planner-ui/src/planner/ComparePlansPage.refusal.test.tsx` pins the page's two guards (F6). A comparison the engine refuses is stated in an alert naming the engine's reason ("These two plans cannot be compared: …"), with no table; a page that rethrew it fails the test. Both plans are projected from the one start year read before they load: with the clock moved into 2027 while the second plan loads, both sides still start in 2026 and the rows are in 2026 dollars; projected from the clock at load time, the sides would start in different years and the engine would refuse the pair.
+
+## PR #754 review fixes (2026-09-27)
+
+- Finding 9: `comparePlanHeadlines` builds each side's dollar basis once per comparison, and only when the plans end in different years; the three ending rows and the lifetime sum read that one basis (`scenarios/planHeadlines.basisOnce.test.ts`: two builds in `today` mode, none in `nominal` mode). The figures are unchanged.

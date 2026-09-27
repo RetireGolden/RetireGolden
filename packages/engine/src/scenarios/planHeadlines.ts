@@ -27,7 +27,7 @@
 
 import type { Plan } from '../model/plan.js'
 import type { ProjectionSummary } from '../projection/compare.js'
-import { projectionDollarBasis, toTodayDollars } from '../projection/dollarBasis.js'
+import { projectionDollarBasis, toTodayDollars, type DollarBasis } from '../projection/dollarBasis.js'
 import { compareMoneyLasts, type MoneyLastsComparison } from '../projection/moneyLasts.js'
 import type { ProjectionResult } from '../projection/types.js'
 import {
@@ -92,8 +92,7 @@ function depletionAge(side: ComparedProjection, role: 'baseline' | 'proposal'): 
 }
 
 /** Σ over the ledger's years, in order and from 0, of (tax + penalties) divided by that year's published factor. */
-function lifetimeTaxesAndPenaltiesToday(side: ComparedProjection): number {
-  const basis = projectionDollarBasis(side.result)
+function lifetimeTaxesAndPenaltiesToday(side: ComparedProjection, basis: DollarBasis): number {
   let total = 0
   for (const year of side.result.years) total += toTodayDollars(basis, year.year, year.tax + year.penalties)
   return total
@@ -120,12 +119,18 @@ export function comparePlanHeadlines(
     )
   }
   const moneyBasis: HeadlineMoneyBasis = baseline.result.endYear === proposal.result.endYear ? 'nominal' : 'today'
-  const ending = (side: ComparedProjection, nominal: number): number =>
-    moneyBasis === 'nominal'
-      ? nominal
-      : toTodayDollars(projectionDollarBasis(side.result), side.result.endYear, nominal)
+  // Each side's dollar basis, built once per comparison and only when today's
+  // dollars are needed: every ending row and the lifetime sum read the same one.
+  const bases =
+    moneyBasis === 'today'
+      ? { baseline: projectionDollarBasis(baseline.result), proposal: projectionDollarBasis(proposal.result) }
+      : null
+  const ending = (side: 'baseline' | 'proposal', nominal: number): number => {
+    const projection = side === 'baseline' ? baseline : proposal
+    return bases === null ? nominal : toTodayDollars(bases[side], projection.result.endYear, nominal)
+  }
   const endingRow = (read: (summary: ComparedProjection['summary']) => number): ScalarComparison =>
-    compareScalars(ending(baseline, read(baseline.summary)), ending(proposal, read(proposal.summary)))
+    compareScalars(ending('baseline', read(baseline.summary)), ending('proposal', read(proposal.summary)))
   const lasts = compareMoneyLasts(baseline.result, proposal.result)
   return {
     startYear,
@@ -135,9 +140,12 @@ export function comparePlanHeadlines(
     endingInvestable: endingRow((summary) => summary.endingInvestable),
     endingAfterTaxEstate: endingRow((summary) => summary.endingAfterTaxEstate),
     lifetimeTaxesAndPenalties:
-      moneyBasis === 'nominal'
+      bases === null
         ? compareScalars(baseline.summary.lifetimeTaxesAndPenalties, proposal.summary.lifetimeTaxesAndPenalties)
-        : compareScalars(lifetimeTaxesAndPenaltiesToday(baseline), lifetimeTaxesAndPenaltiesToday(proposal)),
+        : compareScalars(
+            lifetimeTaxesAndPenaltiesToday(baseline, bases.baseline),
+            lifetimeTaxesAndPenaltiesToday(proposal, bases.proposal),
+          ),
     moneyLasts: lasts,
     deterministicSuccessPct: compareScalars(
       lasts.baseline.depletionYear === null ? 100 : 0,
