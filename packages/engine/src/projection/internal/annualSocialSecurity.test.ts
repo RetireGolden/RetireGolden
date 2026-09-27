@@ -293,7 +293,7 @@ describe('annualSocialSecurity — own benefits and publication', () => {
       ssHaircutFactor: 1,
       pack,
       limitGrowth: 1,
-      })
+    })
 
     const first = annualSocialSecurity(input)
     const second = annualSocialSecurity(input)
