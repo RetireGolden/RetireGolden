@@ -308,9 +308,24 @@ above an optional floor (the bequest target from the Spending screen, entered in
 inflated to nominal end-of-plan dollars before the comparison). Deterministic under a hard simulation cap
 (default 24), it reports the max feasible spending, the slack vs. current spending, the binding constraint
 (depletion vs. estate floor), and the exact-ledger evidence; the paired `max-sustainable-spending`
-objective policy lets tournaments rank spending-level candidates under the same constraints. Three
-surfaces consume it, all under the shared `SPENDING_SOLVER_UI_BUDGET` (25 simulations) so their answers
-agree exactly:
+objective policy lets tournaments rank spending-level candidates under the same constraints. The search
+never probes below the plan's required spending floor (`expenses.requiredAnnual`, rounded up), which the
+plan checks enforce.
+
+A Marketplace year whose premium tax credit the ledger cannot price (a year past the latest parameter year
+RetireGolden has, or a plan without the per-year credit details) does not stop the solve: the ledger
+already pays that year's full premium, which the credit can only lower, so every probe runs on that
+gross-premium ledger (`nonActionableAca: 'disclose'`) and the result names the years, the blocking support
+codes, and which way a credit there would move the answer (`acaGrossPremiumYears`,
+`acaGrossPremiumReasons`, `acaGrossPremiumDirection`: 'conservative' at fixed-target spending, measured
+rather than proven; 'uncertain' under guardrails). Tournaments, local search and every other Insights
+preview keep refusing such evidence.
+
+The bisection assumes feasibility is monotone in the base amount. That holds at fixed-target spending; under
+guardrail spending it does not (a higher base can move the first cut earlier and pass where a lower base
+depleted), so there the answer is a level the search found feasible, and a higher feasible level can exist.
+Three surfaces consume the solver, all under the shared `SPENDING_SOLVER_UI_BUDGET` (25 simulations) so their
+answers agree exactly:
 
 - **"How much can I spend?"** page on the Optimize rail
   ([planner/SpendingSolverPage.tsx](../../packages/planner-ui/src/planner/SpendingSolverPage.tsx)) — runs the solver in a
