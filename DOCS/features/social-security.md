@@ -102,7 +102,7 @@ Benefits-only analysis separately illustrates survivor switching
   (`usc-42-416-l-survivor-fra-age-60-attainment-cohorts`). The $255 lump-sum death payment is absent
   (`usc-42-402-i-lump-sum-death-payment`). Current-spouse survivor benefits are built before the earnings-test pass, so they can be
   withheld for a working survivor and credited back through the same ARF path, which counts only the months the
-  widow(er) benefit itself was withheld, not months of the survivor's own benefit before the death (402(q)(7)). The
+  widow(er) benefit itself was withheld, not months of the survivor's own benefit before the death or of a widow(er) or spouse benefit on another record (402(q)(7)). The
   former-spouse survivor path
   takes the deceased ex's claim age as a user input.
 - **Divorced-spousal** (10-year marriage, currently unmarried, ex calendar-year age 62+ — the ex need not

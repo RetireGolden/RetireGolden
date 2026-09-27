@@ -209,7 +209,7 @@
         "For people born before January 2, 1954, who could restrict an application to the spouse benefit, the one claim age cannot express that choice; they are priced as if they applied for both",
         "A worker on disability benefits is taken to start at the claim age configured for him, not at the disability onset, and a claimant on disability benefits is priced with the same composition; 42 U.S.C. 402(q)(3)(C) and (D) govern a disabled claimant and are not modeled separately",
         "The family maximum caps a current spouse's excess only; a divorced spouse's benefit is outside the family maximum, and no child benefits are modeled",
-        "Earnings-test months are credited to the spouse reduction only for years a spouse benefit was the one paid, by the annual count of poms-rs-00615-482-arf-crediting-months; the claim-milestone insight reconstructs the prior year from configured claim ages without that credit"
+        "Earnings-test months are credited to the spouse reduction only for years the spouse benefit on that record (the current spouse, or that former-spouse entry) was the one paid, by the annual count of poms-rs-00615-482-arf-crediting-months; the claim-milestone insight reconstructs the prior year from configured claim ages without that credit"
       ],
       "worksheet": "DOCS/calculations/social-security/dual-entitlement-composition.md",
       "mutation": "DOCS/calculations/social-security/dual-entitlement-composition.mutation.md",

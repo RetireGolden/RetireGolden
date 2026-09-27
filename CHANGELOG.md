@@ -92,7 +92,8 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   in December 2028 by a spouse with a $2,000 PIA who claimed at 62: $15,769.29 a year
   before, $19,800 now (both fixes). At the survivor's full retirement age, only months
   withheld from the widow(er) benefit itself under the earnings test are credited back
-  (402(q)(7)); months withheld from her own benefit before the death no longer are. New
+  (402(q)(7)), each widow(er) or spouse benefit counting only its own record's months;
+  months withheld from her own benefit before the death no longer are. New
   record `usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month` and calculation
   `survivor-reduction-entitlement-month`.
 
@@ -1210,9 +1211,10 @@ has — rather than the runtime contract a consumer needs on the landing page.
   claimant's total (own benefit plus the reduced excess), not the spouse benefit alone.
   `AnnualSocialSecurityInput` (`projection/internal/annualSocialSecurity`) loses
   `currentSpouseContext` (every couple is priced the same way) and gains the required
-  `withheldSurvivorMonthsByPerson` and `withheldSpouseMonthsByPerson`;
+  `withheldSurvivorMonthsBySource` and `withheldSpouseMonthsBySource`, keyed by
+  `auxiliaryBenefitSourceKey` (new: the claimant and the record the benefit is paid on);
   `AnnualSocialSecurityResult` gains `withheldSurvivorMonthWrites` and
-  `withheldSpouseMonthWrites`. `nra.ts` exports `DobParts`, `attainedAgeZeroMonthIndex`
+  `withheldSpouseMonthWrites` (`{ sourceKey, value }`). `nra.ts` exports `DobParts`, `attainedAgeZeroMonthIndex`
   and `attainedAgeMonthsInMonth`, `claimFactor.ts` exports `creditedAgeMonths`, and
   `survivorBenefit.ts` exports `widowEntitlementAgeMonths`.
 - **`WAGE_BASE_BY_YEAR`** (`@retiregolden/engine/socialSecurity/ssaWageData`) now starts

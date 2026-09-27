@@ -1125,12 +1125,13 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
   // credited back at FRA by recomputing the benefit as if claimed that many
   // months later. Accumulated across the pre-FRA years (persists across the loop).
   const withheldMonthsByPerson = new Map<string, number>()
-  // The part of those months withheld while a widow(er) benefit was paid, which
-  // alone adjusts the widow(er) reduction (42 U.S.C. 402(q)(7)).
-  const withheldSurvivorMonthsByPerson = new Map<string, number>()
-  // And the part withheld while a spouse benefit was paid, which alone adjusts
-  // the spouse reduction.
-  const withheldSpouseMonthsByPerson = new Map<string, number>()
+  // The part of those months withheld while a widow(er) benefit was paid, by
+  // the record it was paid on, which alone adjusts that widow(er) reduction
+  // (42 U.S.C. 402(q)(7); annualSocialSecurity.ts#auxiliaryBenefitSourceKey).
+  const withheldSurvivorMonthsBySource = new Map<string, number>()
+  // And the part withheld while a spouse benefit was paid, by record, which
+  // alone adjusts that spouse reduction.
+  const withheldSpouseMonthsBySource = new Map<string, number>()
   // WS4 inherited-IRA regime cache: classify each inherited account ONCE per
   // simulation. Regime law lives only in strategies/inheritedIra.ts — simulate
   // never re-derives a divisor, deadline, or row. Path:
@@ -1703,8 +1704,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       resolvedPiaByStreamId,
       wagesByPerson,
       withheldMonthsByPerson,
-      withheldSurvivorMonthsByPerson,
-      withheldSpouseMonthsByPerson,
+      withheldSurvivorMonthsBySource,
+      withheldSpouseMonthsBySource,
       year,
       ssColaFactor,
       ssHaircutFactor,
@@ -1716,10 +1717,10 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       withheldMonthsByPerson.set(write.personId, write.value)
     }
     for (const write of socialSecurity.withheldSurvivorMonthWrites) {
-      withheldSurvivorMonthsByPerson.set(write.personId, write.value)
+      withheldSurvivorMonthsBySource.set(write.sourceKey, write.value)
     }
     for (const write of socialSecurity.withheldSpouseMonthWrites) {
-      withheldSpouseMonthsByPerson.set(write.personId, write.value)
+      withheldSpouseMonthsBySource.set(write.sourceKey, write.value)
     }
     for (const warning of socialSecurity.warnings) warnings.add(warning)
     const { socialSecurityStreams, ssEarningsTestWithheld, ssdiPaid } =

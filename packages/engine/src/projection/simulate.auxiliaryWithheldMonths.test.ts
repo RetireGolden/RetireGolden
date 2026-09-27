@@ -207,3 +207,46 @@ describeRule('usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month', {
     expect(produced).not.toEqual(readings.onlyMonthsTheOwnBenefitWasPaidCreditIt)
   })
 })
+
+// 402(q)(7)(A) adjusts a benefit's reduction for the months in which "such
+// benefit" was withheld, so each widow(er) or spouse benefit keeps the count of
+// its own record (annualSocialSecurity.ts#auxiliaryBenefitSourceKey).
+//
+// The widow of the case above, with a 1,000 PIA (own 700 from 2027), also has
+// a former spouse who died after claiming at his full retirement age, with a
+// 2,200 PIA: that widow(er) benefit, reduced at her 744-month claim, is
+// 2,200 x 0.796429 = 1,752.14. Her current husband's, 1,911.43, is larger, so
+// it is the one paid and withheld: 60 months through 2031, all on his record.
+// In 2032 his widow(er) benefit is credited to 804 months (2,400, held to the
+// 1,980 limit); the former spouse's keeps its 744 months (1,752.14), and she is
+// paid 1,980: 23,760. Crediting the 60 months to the former spouse's benefit
+// too would take it to 2,200: 26,400.
+describeRule('usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month', {
+  note: 'months withheld from one widow(er) benefit do not credit a widow(er) benefit on another record',
+  readings: {
+    eachRecordItsOwnMonths: 23_760,
+    everyWidowMonthOnEveryRecord: 26_400,
+  },
+  accepted: 'eachRecordItsOwnMonths',
+}, ({ accepted, readings }) => {
+  it('keeps the months withheld from one widow(er) benefit off another record\'s reduction (23,760 in 2032, not 26,400)', () => {
+    const plan = basePlan()
+    plan.household.filingStatus = 'marriedFilingJointly'
+    plan.household.people = [
+      person('W', '1965-06-15'),
+      { ...person('H', '1963-02-10'), longevity: { planningAge: 63, source: 'manual' } },
+    ]
+    plan.incomes = [
+      ss('W', 1_000, { years: 62, months: 0 }, [
+        { id: 'X', relationship: 'deceased', dob: '1955-03-10', piaMonthly: 2_200, marriageYears: 20, remarriedAtAge: null },
+      ]),
+      ss('H', 2_400, { years: 62, months: 0 }),
+      wages('W', 80_000, 67),
+    ]
+    const byYear = socialSecurityByYear(plan)
+    expect(byYear(2027)).toBeCloseTo(0, 6)
+    const produced = Math.round(byYear(2032) * 100) / 100
+    expect(produced).toBe(accepted)
+    expect(produced).not.toBe(readings.everyWidowMonthOnEveryRecord)
+  })
+})
