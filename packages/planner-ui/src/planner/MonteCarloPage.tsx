@@ -41,7 +41,7 @@ import { WhySuccessPanel } from './explainPanels'
 import { LiveStatus } from './LiveStatus'
 import { CheckboxField, HelpTip } from './fields'
 import { LearnAboutScreen } from '../learn/LearnAboutScreen'
-import { fmtMoney, fmtMoneyCompact, fmtMoneyOrRange } from './format'
+import { fanInnerBand, fanOuterBand, fmtMoney, fmtMoneyCompact, fmtMoneyOrRange, histogramBars } from './format'
 import {
   buildModel,
   catalogLabelOf,
@@ -263,13 +263,9 @@ export function MonteCarloPage() {
   }, [run, cachedHeadline])
 
   const fanRows = useMemo(() => summary?.fan ?? [], [summary])
-  // Each bar is labelled with the centre the engine publishes for its bin
-  // (the one value every path ended at, when they all ended at the same one).
-  const histRows = useMemo(() => {
-    if (!summary) return []
-    const { counts, binCenters } = summary.endingInvestable.histogram
-    return counts.map((count, i) => ({ label: fmtMoneyCompact(binCenters[i]!), count }))
-  }, [summary])
+  // Each bar is labelled with the centre the engine publishes for its bin; when
+  // every path ended at one value there is one bar, at that value.
+  const histRows = useMemo(() => (summary ? histogramBars(summary.endingInvestable.histogram) : []), [summary])
   const depletionRows = useMemo(
     () =>
       summary?.depletionProbabilityByYear.map((row) => ({
@@ -948,9 +944,9 @@ export function MonteCarloPage() {
                   <YAxis tickFormatter={fmtMoneyCompact} tick={{ fill: 'var(--muted)', fontSize: 12 }} width={70} />
                   {/* Each band is a range area between two of the engine's percentile
                       levels (R14): no widths are computed, stacked or printed. */}
-                  <Tooltip formatter={(v: unknown) => fmtMoneyOrRange(v)} contentStyle={chartTooltipStyle} />
-                  <Area dataKey={(d: { p10: number; p90: number }) => [d.p10, d.p90]} stroke="none" fill="var(--chart-1)" fillOpacity={0.18} name="10th to 90th percentile" />
-                  <Area dataKey={(d: { p25: number; p75: number }) => [d.p25, d.p75]} stroke="none" fill="var(--chart-1)" fillOpacity={0.3} name="25th to 75th percentile" />
+                  <Tooltip formatter={fmtMoneyOrRange} contentStyle={chartTooltipStyle} />
+                  <Area dataKey={fanOuterBand} stroke="none" fill="var(--chart-1)" fillOpacity={0.18} name="10th to 90th percentile" />
+                  <Area dataKey={fanInnerBand} stroke="none" fill="var(--chart-1)" fillOpacity={0.3} name="25th to 75th percentile" />
                   <Line dataKey="p50" stroke="var(--chart-1)" strokeWidth={2.5} dot={false} name="Median" />
                 </ComposedChart>
               </ResponsiveContainer>

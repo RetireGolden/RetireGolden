@@ -10,7 +10,8 @@
  *   reconciliation totals; the retired line sums differ only in the last
  *   digit and print the same whole dollars.
  * - Histogram labels: the engine's bin centres equal the retired centres on
- *   every histogram whose values are not all equal.
+ *   every histogram whose values are not all equal, and the five examples the
+ *   worksheet names as all one value at the page's own run draw one bar, "$0".
  */
 import { describe, expect, it } from 'vitest'
 
@@ -27,7 +28,9 @@ import { buildModel } from './marketModelPicker'
 import { HEADLINE_MC_MODEL } from './useMcSuccessRate'
 import { taxCalculatorFor } from './useProjection'
 import { buildYearCashFlowSankey, HOUSEHOLD_CASH_NODE_ID, UNFUNDED_ORIGIN_NODE_ID } from './yearCashFlow/buildYearCashFlow'
-import { fmtMoney } from './format'
+import { fmtMoney, histogramBars } from './format'
+import { DEFAULT_PATH_COUNT, runMonteCarlo } from '../mc/pool'
+import { seedFromPlanId } from './useProjection'
 
 /** The planner's bucket lens as it was until slice 2 (a missing need read as 0). */
 function retiredBucketLens(result: ProjectionResult, spans: readonly number[]) {
@@ -155,5 +158,30 @@ describe('slice 2 figures on the example library', () => {
       )
     }
     expect(degenerate).toBeGreaterThan(0)
+  }, 300_000)
+
+  it("draws one bar, \"$0\", for the five examples every path of the page's own run ends at $0", async () => {
+    // The page's defaults (display-histogram-bin-label, correction 5): the plan
+    // id's seed as the app stamps an example (example:<id>), 1,000 paths, the
+    // headline model, no stochastic longevity or care shock.
+    const ALL_AT_ZERO = ['inherited-ira-beneficiary', 'survivor-years', 'ltc-shock', 'brokerage-no-hsa', 'fixed-target-spending']
+    expect(DEFAULT_PATH_COUNT).toBe(1_000)
+    for (const id of ALL_AT_ZERO) {
+      const example = EXAMPLE_PLANS.find((candidate) => candidate.id === id)!
+      const plan: Plan = { ...example.build(), id: `example:${id}` }
+      const summary = await runMonteCarlo(plan, {
+        startYear: EXAMPLE_FIXED_YEAR,
+        pathCount: DEFAULT_PATH_COUNT,
+        seed: seedFromPlanId(plan.id),
+        model: buildModel(HEADLINE_MC_MODEL.kind, plan.assumptions.inflationPct, HEADLINE_MC_MODEL.returnVolPct, HEADLINE_MC_MODEL.equityWeightPct, plan),
+        stochasticLongevity: false,
+        ltcShock: null,
+      })
+      const histogram = summary.endingInvestable.histogram
+      expect(summary.pathCount, id).toBe(1_000)
+      expect(histogram.counts[0], id).toBe(1_000)
+      expect(new Set(histogram.binCenters), id).toEqual(new Set([0]))
+      expect(histogramBars(histogram), id).toEqual([{ label: '$0', count: 1_000 }])
+    }
   }, 300_000)
 })

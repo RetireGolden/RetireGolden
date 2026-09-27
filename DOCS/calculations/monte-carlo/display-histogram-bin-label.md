@@ -77,7 +77,7 @@ Example library at the page's defaults (scratch-copy run, all 29 examples at 1,0
 
 - The bin's left edge (`min + i·w`): "$100k" for case A's first bar.
 - The degenerate placeholder read as a width: "$1" … "$30" (today).
-- `(max − min) / (bins − 1)` spacing: shifts every centre and puts the last one at the maximum.
+- `(max − min) / (bins − 1)` spacing: with `w' = (max − min) / (bins − 1)` the centres `min + (i + 0.5) · w'` all shift, and the last one (`i = bins − 1`) is `min + (bins − 0.5) · w' = max + w'/2`, half a width above the maximum. (It is the edges `min + i · w'` that would put the last one at the maximum.)
 - Centres of the estate histogram under the investable chart (the aria label at `:956` already pairs the investable histogram with the estate median; a copy mismatch the recon noted, left for the copy pass).
 
 ## Parity test for the switch-over
@@ -110,4 +110,5 @@ Derived by: claude (opus 5.5), 2026-09-26; cases A to E by hand and `scripts/ind
 ## Implementation (B2-P1 slice 2, 2026-09-27)
 
 - **Correction 5:** at the app's own seeds (`seedFromPlanId('example:<id>')`, 1,000 paths, the headline lognormal model at 12 percent, start 2026) 5 of the 29 examples are all one value: inherited-ira-beneficiary, survivor-years, ltc-shock, brokerage-no-hsa and fixed-target-spending (every path ends at $0). Re-measured after #748 and #750 with the same seeds: the same five, and their labels change from "$1" to "$30" to "$0"; no other label changes.
+- **One bar for one value (after the review of #752):** when the engine's centres are all one value the page draws a single bar at that value holding every path, as the Engine publication section recommended, instead of thirty bars that repeat its label (`planner-ui/src/planner/format.ts#histogramBars`). `MonteCarloPage.fan.test.tsx` renders the page's histogram both ways (one bar labelled "$0" for eight paths at $0; three bars labelled "$125k", "$175k", "$225k" for case A's first three bins), and `slice2Figures.parity.test.ts` pins the five examples of correction 5 at the page's own run (`seedFromPlanId('example:<id>')`, 1,000 paths, the headline model, no stochastic longevity or care shock): every path ends at $0, every centre is 0, and the page draws one bar, "$0", holding 1,000 paths.
 - **Correction 6:** `Histogram.binCenters` is required; the two typed literals the check named (planner-ui `explainPanels.test.tsx`, engine `run.evidence.test.ts`'s local type) were updated or are unaffected.

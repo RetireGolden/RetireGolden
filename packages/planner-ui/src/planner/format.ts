@@ -18,11 +18,49 @@ export function fmtMoney(v: number): string {
 
 /**
  * A chart tooltip value: one amount, or a range area's `[low, high]` pair of
- * amounts printed "$low to $high" (a range is two levels, never a width).
+ * amounts printed "$low to $high" (a range is two levels, never a width). Any
+ * other array is not a value this chart draws and prints "—".
  */
 export function fmtMoneyOrRange(value: unknown): string {
-  if (Array.isArray(value)) return `${fmtMoney(Number(value[0]))} to ${fmtMoney(Number(value[1]))}`
+  if (Array.isArray(value)) {
+    return value.length === 2 ? `${fmtMoney(Number(value[0]))} to ${fmtMoney(Number(value[1]))}` : '—'
+  }
   return fmtMoney(Number(value))
+}
+
+/**
+ * The Monte Carlo page's Range of outcomes bands (owner decision R14): each
+ * band is a range area between two of the engine's fan percentile levels, so
+ * the chart passes these as its two Areas' data keys. A band is drawn from its
+ * low level to its high level, and its tooltip value is the `[low, high]` pair
+ * `fmtMoneyOrRange` prints; no width is computed. They live here, beside the
+ * formatter they pair with, for the reason `moneyLastsValue` does.
+ */
+export function fanOuterBand(row: { readonly p10: number; readonly p90: number }): [number, number] {
+  return [row.p10, row.p90]
+}
+
+/** The inner band: the engine's p25 and p75 levels (see `fanOuterBand`). */
+export function fanInnerBand(row: { readonly p25: number; readonly p75: number }): [number, number] {
+  return [row.p25, row.p75]
+}
+
+/**
+ * The Monte Carlo page's ending-balance histogram bars: one per engine bin,
+ * labelled with the engine's bin centre (`Histogram.binCenters`), the page
+ * computing none. When the engine's centres are all one value (every path
+ * ended at the same amount, so its first bin holds every path), the chart
+ * draws one bar at that value instead of a row of bars repeating one label.
+ */
+export function histogramBars(histogram: {
+  readonly counts: readonly number[]
+  readonly binCenters: readonly number[]
+}): { label: string; count: number }[] {
+  const { counts, binCenters } = histogram
+  if (counts.length > 1 && binCenters.every((centre) => centre === binCenters[0])) {
+    return [{ label: fmtMoneyCompact(binCenters[0]!), count: counts.reduce((sum, count) => sum + count, 0) }]
+  }
+  return counts.map((count, i) => ({ label: fmtMoneyCompact(binCenters[i]!), count }))
 }
 
 /**
