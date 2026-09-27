@@ -99,14 +99,14 @@ Example library (engine run in the scratch copy; the 7 examples that produce a s
 | Example | flat shown | smile old → new | smirk old → new |
 |---|---:|---|---|
 | under-saved-single | 65,200 | +5,063 → +5,100 | +8,157 → +8,200 |
-| bracket-fill-roth | 91,700 | +14,062 → +14,100 | +16,172 → +16,200 |
+| bracket-fill-roth | 91,000 | +14,062 → +14,100 | +16,171 → +16,200 |
 | rmd-irmaa | 131,400 | +19,336 → +19,400 | +22,344 → +22,400 |
 | inherited-ira-beneficiary | 26,400 | +5,344 → +5,300 | +5,906 → +5,900 |
 | survivor-years | 55,900 | +6,469 → +6,500 | +7,594 → +7,600 |
 | annuity-purchases-estate | 106,000 | +10,055 → +10,000 | +12,187 → +12,200 |
 | no-annuity-brokerage | 108,400 | +9,750 → +9,800 | +11,884 → +11,900 |
 
-Since decision D-BRACKET-FILL-ROTH-EXAMPLE (2026-09-27) Riley holds her own Roth IRA in the bracket-fill example: flat shown 91,000 (exact 91,056), smile 105,100 and smirk 107,200 (exact 105,118 and 107,227), so its printed deltas are still +14,100 and +16,200 (engine run at that change).
+The bracket-fill row is the example as decision D-BRACKET-FILL-ROTH-EXAMPLE (2026-09-27) built it, with Riley holding her own Roth IRA: flat 91,000 (exact 91,056), smile 105,100 and smirk 107,200 (exact 105,118 and 107,227), engine run at that change. Before that decision it read flat 91,700 (exact 91,759), smile 105,800 and smirk 107,900, and its smirk delta +16,172 → +16,200; the printed deltas are the same either way.
 
 The amount column does not change (it was already floored). The other 22 examples have no shape answers either (the same ACA diagnostic as the base solve).
 
@@ -114,7 +114,7 @@ The amount column does not change (it was already floored). The other 22 example
 
 - Exact minus exact (today): "+$99" beside a visible $100 gap (A), "+$1" beside $100 (B), "+$99" beside no gap (C).
 - Flooring the exact delta: `floor100(99) = 0` in A, where the shown gap is $100.
-- Measuring against the plan's own solve instead of the flat shape: the flat variant clears the plan's phases, so on bracket-fill-roth the plan's own answer is 101,602 while flat is 91,759; deltas against the former would all be about $9,800 too small.
+- Measuring against the plan's own solve instead of the flat shape: the flat variant clears the plan's phases, so on bracket-fill-roth the plan's own answer is 100,899 while flat is 91,056 (101,602 and 91,759 before decision D-BRACKET-FILL-ROTH-EXAMPLE); deltas against the former would all be about $9,800 too small.
 - Keeping ABW on the ABW plan's variants: the solver refuses ABW and every row would be null.
 
 ## Parity test for the switch-over

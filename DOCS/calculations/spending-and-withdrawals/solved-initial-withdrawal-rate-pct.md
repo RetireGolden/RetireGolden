@@ -59,7 +59,7 @@ A. `62,800 / 1,500,000 = 0.041866…`; `× 100 = 4.1866…` (binary float `4.186
 
 A `4.186666666666667`, B `4`, C `5.1499999999999995`, D `null`, E `0`, F `5.438104918746302`, each bit for bit with the retired expression `(solvedRounded / startingInvestable) * 100` (tolerance `exact`; the printed strings "4.19%", "4.00%", "5.15%", no row, "0.00%", "5.44%").
 
-Example library (engine run in the scratch copy; the 7 examples that produce a solver answer): under-saved-single 10.43%, bracket-fill-roth 8.26%, rmd-irmaa 5.71%, inherited-ira-beneficiary 4.98%, survivor-years 59.00% (its investable is $100,000 against $59,000 of solved base spending, most of it carried by guaranteed income), annuity-purchases-estate 7.18%, no-annuity-brokerage 7.31%. Identical to what the page prints today. (Since decision D-BRACKET-FILL-ROTH-EXAMPLE, 2026-09-27, Riley holds her own Roth IRA in the bracket-fill example, and its rate is 8.20%: 100,800 over 1,230,000.)
+Example library (engine run in the scratch copy; the 7 examples that produce a solver answer): under-saved-single 10.43%, bracket-fill-roth 8.20%, rmd-irmaa 5.71%, inherited-ira-beneficiary 4.98%, survivor-years 59.00% (its investable is $100,000 against $59,000 of solved base spending, most of it carried by guaranteed income), annuity-purchases-estate 7.18%, no-annuity-brokerage 7.31%. Identical to what the page prints today. The bracket-fill rate is the example as decision D-BRACKET-FILL-ROTH-EXAMPLE (2026-09-27) built it, with Riley holding her own Roth IRA: 100,800 over 1,230,000 (engine run at that change). Before that decision it was 8.26%, 101,600 over the same 1,230,000.
 
 ## Wrong readings
 
