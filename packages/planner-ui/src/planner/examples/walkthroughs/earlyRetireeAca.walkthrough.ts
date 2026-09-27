@@ -173,7 +173,7 @@ const TABLE_2027: WalkthroughTable = {
       { key: 'healthcare', label: 'Healthcare', hand: NET_PREMIUM_2027, derivation: 'the net premium 1,735.22; no Medicare, no extras', contract: 'worksheet spending-healthcare-annual; YearExpenses.healthcare', select: (year) => year.expenses.healthcare },
       { key: 'spending-total', label: 'Total spending', hand: TOTAL_SPENDING_2027, derivation: '41,000 + 1,735.22', contract: 'worksheet spending-total-annual', select: (year) => year.expenses.total },
       { key: 'portfolio-need', label: 'Portfolio need after income', hand: NET_PORTFOLIO_NEED_2027, derivation: '42,735.22 + tax 1,271 − consulting 18,450 = 25,556.22', contract: 'worksheet portfolio-need-annual', select: (year) => year.netPortfolioNeed },
-      { key: 'withdrawal-cash', label: 'Withdrawn from cash', hand: CASH_DRAW_2027, derivation: 'the whole need; cash is first in the sequential order and 178,627.27 covers it', contract: 'worksheet withdrawals-by-category-annual; withdrawalStrategySchema sequential order', select: (year) => year.withdrawals.cash },
+      { key: 'withdrawal-cash', label: 'Withdrawn from cash', hand: CASH_DRAW_2027, derivation: 'the whole need; cash is first in the sequential order and 178,629.49 covers it', contract: 'worksheet withdrawals-by-category-annual; withdrawalStrategySchema sequential order', select: (year) => year.withdrawals.cash },
       { key: 'withdrawal-traditional', label: 'Withdrawn from the IRA', hand: 0, derivation: 'the conversion is not a withdrawal', contract: 'YearWithdrawals.total composition', select: (year) => year.withdrawals.traditional },
       { key: 'withdrawal-roth', label: 'Withdrawn from the Roth', hand: 0, derivation: 'nothing drawn', contract: 'worksheet withdrawals-by-category-annual', select: (year) => year.withdrawals.roth },
       { key: 'withdrawal-total', label: 'Total withdrawals', hand: CASH_DRAW_2027, derivation: 'cash only', contract: 'worksheet withdrawals-total-annual', select: (year) => year.withdrawals.total },
@@ -210,7 +210,7 @@ export const EARLY_RETIREE_ACA_WALKTHROUGH: Walkthrough = {
   ],
   tables: [{
     year: EXAMPLE_FIXED_YEAR,
-    why: 'The first projection year and the only year the example\'s premium credit is priced: a Roth conversion filled to the top of the 10% bracket raises MAGI, the credit is priced on that MAGI, and the conversion\'s tax and the net premium are both paid from cash.',
+    why: 'The first projection year and the first of the two years the example\'s premium credit is priced (2027 is the second): a Roth conversion filled to the top of the 10% bracket raises MAGI, the credit is priced on that MAGI, and the conversion\'s tax and the net premium are both paid from cash.',
     rows: [
       { key: 'age', label: "Casey's age attained", hand: 62, unit: 'count', derivation: '2026 − 1964', contract: 'PersonYearState.ageAttained', select: (year, plan) => year.people.find((p) => p.personId === plan.household.people[0]!.id)?.ageAttained },
       { key: 'filing-status', label: 'Filing status', hand: 'single', derivation: 'household filing status', contract: 'YearResult.filingStatus', select: (year) => year.filingStatus },

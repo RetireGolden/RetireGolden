@@ -26,7 +26,7 @@
   "tables": [
     {
       "year": 2026,
-      "why": "The first projection year and the only year the example's premium credit is priced: a Roth conversion filled to the top of the 10% bracket raises MAGI, the credit is priced on that MAGI, and the conversion's tax and the net premium are both paid from cash.",
+      "why": "The first projection year and the first of the two years the example's premium credit is priced (2027 is the second): a Roth conversion filled to the top of the 10% bracket raises MAGI, the credit is priced on that MAGI, and the conversion's tax and the net premium are both paid from cash.",
       "rows": [
         {
           "key": "age",
@@ -788,7 +788,7 @@
           "engine": 25556.221681965588,
           "tolerance": 0.005,
           "unit": "dollars",
-          "derivation": "the whole need; cash is first in the sequential order and 178,627.27 covers it",
+          "derivation": "the whole need; cash is first in the sequential order and 178,629.49 covers it",
           "contract": "worksheet withdrawals-by-category-annual; withdrawalStrategySchema sequential order"
         },
         {
