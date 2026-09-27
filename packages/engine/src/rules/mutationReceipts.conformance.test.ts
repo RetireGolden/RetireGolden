@@ -16,9 +16,10 @@ import { readPackageSource } from '../../scripts/census-sources.mjs'
  * (a) The hunks still anchor. The diff has at least one `@@` hunk, and each
  *     header names its lines (`@@ -start,count +start,count @@`; a header such
  *     as `@@ mutation @@` names none). Each hunk's line counts match its lines,
- *     its new-side start is its old-side start moved by the earlier hunks' net
- *     added lines, and its old side (context and removed lines, in order)
- *     occurs exactly once in the current production file, as whole lines (not
+ *     its new-side start is its old-side start moved by the net added lines of
+ *     the earlier hunks in the same file, and its old side (context and removed
+ *     lines, in order) occurs exactly once in the current file it applies to
+ *     (a diff may span several files; see parseReceipt), as whole lines (not
  *     as a piece cut out of a longer line), starting at the line the header
  *     names. "Exactly once" counts every occurrence of the joined text, which is
  *     how the re-execution harness finds the hunk when it applies it.
@@ -73,6 +74,8 @@ const receiptSources = import.meta.glob('../../../../DOCS/calculations/**/*.muta
 })
 
 interface ReceiptHunk {
+  /** Production file the hunk applies to, relative to the repository root. */
+  readonly file: string
   readonly header: string
   readonly oldStart: number
   readonly oldCount: number
@@ -83,7 +86,7 @@ interface ReceiptHunk {
 }
 
 interface ParsedReceipt {
-  /** Production file, relative to the repository root. */
+  /** Production file the heading names, relative to the repository root. */
   readonly production: string
   readonly hunks: readonly ReceiptHunk[]
   /** Test file the command runs, relative to `packages/engine`. */
@@ -146,7 +149,22 @@ function fencedBody(section: string | null): string | null {
 
 const HUNK_HEADER = /^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/u
 
-/** Parses a receipt the way the re-execution harness reads it. */
+/** The path a `+++ ` or `--- ` file header names, without git's a/ or b/ prefix. */
+function headerPath(line: string): string {
+  return line.slice(4).replace(/\t.*$/u, '').trim().replace(/^[ab]\//u, '')
+}
+
+/**
+ * Parses a receipt the way the re-execution harness reads it, and also reads
+ * a diff that spans several files: a `diff --git` line, or a `--- `/`+++ `
+ * pair followed by an @@ header, starts the next file's section, so each hunk
+ * is checked against the file it applies to; hunks before any file header
+ * apply to the file the heading names. A `diff --git` or `index` line cannot
+ * be hunk content (a hunk line starts with a space, `-`, `+` or `\`). A
+ * `--- `/`+++ ` pair is taken as a header only when an @@ header follows it,
+ * so it would be misread only if a hunk ended in a removed line reading
+ * `-- ` and an added line reading `++ ` right before the next hunk.
+ */
 function parseReceipt(raw: string): ParsedReceipt | string {
   const text = normalize(raw)
   const production = /## Mutation applied to `([^`]+)`/u.exec(text)?.[1]
@@ -154,6 +172,7 @@ function parseReceipt(raw: string): ParsedReceipt | string {
   const diff = fencedBody(sectionText(text, 'Mutation applied'))
   if (diff === null) return 'no fenced diff under "Mutation applied"'
   const hunks: {
+    file: string
     header: string
     oldStart: number
     oldCount: number
@@ -162,13 +181,34 @@ function parseReceipt(raw: string): ParsedReceipt | string {
     oldLines: string[]
     newLines: string[]
   }[] = []
+  let file = production
   let current: (typeof hunks)[number] | null = null
-  for (const line of diff.split(NL)) {
+  const lines = diff.split(NL)
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index]!
+    const gitHeader = /^diff --git a\/\S+ b\/(\S+)/u.exec(line)
+    if (gitHeader !== null) {
+      file = gitHeader[1]!
+      current = null
+      continue
+    }
+    if (current !== null && line.startsWith('index ')) {
+      current = null
+      continue
+    }
+    if (line.startsWith('--- ') && lines[index + 1]?.startsWith('+++ ') && lines[index + 2]?.startsWith('@@')) {
+      const target = headerPath(lines[index + 1]!)
+      file = target === '/dev/null' ? headerPath(line) : target
+      current = null
+      index += 1
+      continue
+    }
     // The harness starts a hunk at any line that begins with @@; one whose
     // header carries no line numbers (`@@ mutation @@`) parses with NaN starts.
     if (line.startsWith('@@')) {
       const header = HUNK_HEADER.exec(line)
       current = {
+        file,
         header: line,
         oldStart: header === null ? Number.NaN : Number(header[1]),
         oldCount: header === null ? Number.NaN : header[2] === undefined ? 1 : Number(header[2]),
@@ -205,15 +245,26 @@ function countOccurrences(haystack: string, needle: string): number[] {
   }
 }
 
-/** Criterion (a): every hunk anchors once, at the line its header names. */
-function hunkDrift(receipt: ParsedReceipt, productionText: string | undefined): string[] {
-  if (productionText === undefined) return [`production file ${receipt.production} does not exist`]
+/** Criterion (a): every hunk anchors once in its own file, at the line its header names. */
+function hunkDrift(receipt: ParsedReceipt, sourceOf: (repoPath: string) => string | undefined): string[] {
   if (receipt.hunks.length === 0) return ['the diff has no @@ hunk, so it names no line and cannot be re-executed']
   const reasons: string[] = []
-  const text = normalize(productionText)
-  let netAdded = 0
+  const files = [...new Set(receipt.hunks.map((hunk) => hunk.file))]
+  const texts = new Map<string, string>()
+  for (const file of files) {
+    const source = sourceOf(file)
+    if (source === undefined) reasons.push(`production file ${file} does not exist`)
+    else texts.set(file, normalize(source))
+  }
+  // A unified diff numbers each file's new side from that file's own earlier hunks.
+  const netAdded = new Map<string, number>()
   receipt.hunks.forEach((hunk, index) => {
-    const label = receipt.hunks.length === 1 ? 'the hunk' : `hunk ${index + 1}`
+    const text = texts.get(hunk.file)
+    if (text === undefined) return
+    const label =
+      receipt.hunks.length === 1 ? 'the hunk' : files.length === 1 ? `hunk ${index + 1}` : `hunk ${index + 1} (${hunk.file})`
+    const earlier = netAdded.get(hunk.file) ?? 0
+    netAdded.set(hunk.file, earlier + hunk.newLines.length - hunk.oldLines.length)
     const named = !Number.isNaN(hunk.oldStart)
     if (!named) {
       reasons.push(`${label} header "${hunk.header}" names no line`)
@@ -223,11 +274,10 @@ function hunkDrift(receipt: ParsedReceipt, productionText: string | undefined): 
           `${label} header ${hunk.header.split(' @@')[0]} @@ counts ${hunk.oldCount},${hunk.newCount} but the hunk has ${hunk.oldLines.length} old and ${hunk.newLines.length} new lines`,
         )
       }
-      if (hunk.newStart !== hunk.oldStart + netAdded) {
-        reasons.push(`${label} header starts the new side at ${hunk.newStart}, not ${hunk.oldStart + netAdded}`)
+      if (hunk.newStart !== hunk.oldStart + earlier) {
+        reasons.push(`${label} header starts the new side at ${hunk.newStart}, not ${hunk.oldStart + earlier}`)
       }
     }
-    netAdded += hunk.newLines.length - hunk.oldLines.length
     if (hunk.oldLines.length === 0) {
       reasons.push(`${label} has no context or removed line to anchor it`)
       return
@@ -236,18 +286,18 @@ function hunkDrift(receipt: ParsedReceipt, productionText: string | undefined): 
     const oldText = hunk.oldLines.join(NL)
     const at = countOccurrences(text, oldText)
     if (at.length === 0) {
-      reasons.push(`${label}'s context and removed lines no longer occur in ${receipt.production}`)
+      reasons.push(`${label}'s context and removed lines no longer occur in ${hunk.file}`)
       return
     }
     if (at.length > 1) {
-      reasons.push(`${label}'s context and removed lines occur ${at.length} times in ${receipt.production}`)
+      reasons.push(`${label}'s context and removed lines occur ${at.length} times in ${hunk.file}`)
       return
     }
     const offset = at[0]!
     const end = offset + oldText.length
     const wholeLines = (offset === 0 || text[offset - 1] === NL) && (end === text.length || text[end] === NL)
     if (!wholeLines) {
-      reasons.push(`${label}'s context and removed lines occur only inside longer lines of ${receipt.production}`)
+      reasons.push(`${label}'s context and removed lines occur only inside longer lines of ${hunk.file}`)
       return
     }
     const line = text.slice(0, offset).split(NL).length
@@ -722,7 +772,12 @@ function syntheticReceipt(diff: readonly string[], capture: readonly string[]): 
 
 function syntheticDrift(
   diff: readonly string[],
-  options: { readonly production?: string; readonly test?: string; readonly capture?: readonly string[] } = {},
+  options: {
+    readonly production?: string
+    readonly test?: string
+    readonly capture?: readonly string[]
+    readonly sources?: Readonly<Record<string, string>>
+  } = {},
 ): string[] {
   const receipt = parseReceipt(syntheticReceipt(diff, options.capture ?? SYNTHETIC_CAPTURE))
   if (typeof receipt === 'string') return [receipt]
@@ -730,7 +785,11 @@ function syntheticDrift(
   const { quoted, counts } = captureDrift(receipt, (path) =>
     path === 'src/synthetic.evidence.test.ts' ? shape : undefined,
   )
-  return [...hunkDrift(receipt, options.production ?? SYNTHETIC_PRODUCTION), ...quoted, ...counts]
+  const sources: Readonly<Record<string, string>> = {
+    'packages/engine/src/synthetic.ts': options.production ?? SYNTHETIC_PRODUCTION,
+    ...options.sources,
+  }
+  return [...hunkDrift(receipt, (path) => sources[path]), ...quoted, ...counts]
 }
 
 const crlf = (text: string): string => text.split(NL).join('\r\n')
@@ -754,7 +813,7 @@ describe('mutation receipt drift', () => {
   })
 
   it('(a) anchors every hunk once in its production file, at the line its @@ header names', () => {
-    expect(driftOverReceipts((receipt) => hunkDrift(receipt, productionSource(receipt.production)))).toEqual([])
+    expect(driftOverReceipts((receipt) => hunkDrift(receipt, productionSource))).toEqual([])
   })
 
   it('(b) keeps every quoted test line, stack line and test title pointing into the test the capture names', () => {
@@ -848,6 +907,34 @@ describe('mutation receipt drift', () => {
       (line) => !/^\s+\d+\|/u.test(line),
     )
     expect(syntheticDrift(SYNTHETIC_DIFF, { test: withClass, capture: classCapture })).toEqual([])
+  })
+
+  it('checks each hunk of a diff that spans two files against its own file', () => {
+    const OTHER = 'packages/engine/src/other.ts'
+    const twoFiles = [
+      'diff --git a/packages/engine/src/synthetic.ts b/packages/engine/src/synthetic.ts',
+      'index 1111111..2222222 100644',
+      '--- a/packages/engine/src/synthetic.ts',
+      '+++ b/packages/engine/src/synthetic.ts',
+      ...SYNTHETIC_DIFF,
+      `diff --git a/${OTHER} b/${OTHER}`,
+      'index 3333333..4444444 100644',
+      `--- a/${OTHER}`,
+      `+++ b/${OTHER}`,
+      '@@ -2,1 +2,1 @@',
+      '-export const k = 3',
+      '+export const k = 4',
+    ]
+    const other = ['export const j = 1', 'export const k = 3', ''].join(NL)
+    // Read as one file, the second header's lines would join the first hunk and neither would anchor.
+    expect(syntheticDrift(twoFiles, { sources: { [OTHER]: other } })).toEqual([])
+    expect(syntheticDrift(twoFiles, { sources: { [OTHER]: '// moved' + NL + other } })).toEqual([
+      `hunk 2 (${OTHER}) header names line 2, but its lines now start at 3`,
+    ])
+    expect(syntheticDrift(twoFiles, { sources: {} })).toEqual([`production file ${OTHER} does not exist`])
+    // A bare ---/+++ pair before an @@ starts a file section as well.
+    const pairOnly = twoFiles.filter((line) => !line.startsWith('diff --git') && !line.startsWith('index '))
+    expect(syntheticDrift(pairOnly, { sources: { [OTHER]: other } })).toEqual([])
   })
 
   it('reads a whole capture that prints a fence of its own', () => {
