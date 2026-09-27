@@ -12,9 +12,11 @@ import type { Plan } from '@retiregolden/engine/model/plan'
 import type { MoneyLasts } from '@retiregolden/engine/projection/moneyLasts'
 import {
   comparePlanHeadlines,
+  PlanHeadlineRefusal,
   type MoneyLastsComparison,
   type PlanHeadlineComparison,
 } from '@retiregolden/engine/scenarios/planHeadlines'
+import { NonFiniteComparisonError } from '@retiregolden/engine/scenarios/scalarComparison'
 import { SelectField } from './fields'
 import { fmtMoneyCompact } from './format'
 import { LiveStatus } from './LiveStatus'
@@ -24,6 +26,31 @@ import { formatDelta, type DeltaUnit } from './compareDeltas'
 import { moneyLastsValue } from './format'
 
 const SAME_PLAN_NOTICE = 'Choose two different plans to compare.'
+
+/**
+ * A comparison the engine refuses, in plain words with a next step (PR #754
+ * finding 11): which plan the refusal is about and what to fix, never the
+ * engine's own wording.
+ */
+function comparisonRefusalSentence(error: unknown): string {
+  const lead = "These two plans can't be compared: "
+  const planName = (side: 'baseline' | 'proposal') => (side === 'baseline' ? 'Plan A' : 'Plan B')
+  if (error instanceof NonFiniteComparisonError) {
+    if (error.role === 'difference') {
+      return `${lead}the difference between their figures could not be computed. Open each plan's Results page to check its projection, then compare again.`
+    }
+    const name = planName(error.role)
+    return `${lead}one of ${name}'s figures could not be computed. Open ${name}'s Results page to check its projection, then compare again.`
+  }
+  if (error instanceof PlanHeadlineRefusal) {
+    if (error.reason === 'birth-date-missing' && error.side !== null) {
+      const name = planName(error.side)
+      return `${lead}${name} runs out of money, and its first person has no valid date of birth, so the age when that happens can't be worked out. Add the date of birth on ${name}'s Household page, then compare again.`
+    }
+    return `${lead}they were projected from different start years. Reload this page so both are projected from this year.`
+  }
+  return `${lead}one plan's projection gave a result this page can't use. Open each plan's Results page to check its projection, then compare again.`
+}
 
 interface ComparedPlan {
   plan: Plan
@@ -195,7 +222,8 @@ export function ComparePlansPage() {
   const canCompare = left !== null && right !== null && left.plan.id !== right.plan.id
   // Every figure is the engine's comparison of the two projections (B2-P1
   // slice 3). A comparison the engine refuses (a non-finite figure, a
-  // depleting plan whose first person has no birth date) is stated, not thrown.
+  // depleting plan whose first person has no birth date) is stated in plain
+  // words, not thrown.
   const comparison = useMemo(():
     | { ok: true; headline: PlanHeadlineComparison }
     | { ok: false; message: string }
@@ -207,7 +235,7 @@ export function ComparePlansPage() {
         { plan: right.plan, result: right.view.result, summary: right.view.summary },
       ) }
     } catch (error) {
-      return { ok: false, message: error instanceof Error ? error.message : String(error) }
+      return { ok: false, message: comparisonRefusalSentence(error) }
     }
   }, [canCompare, left, right])
   const headline = comparison?.ok === true ? comparison.headline : null
@@ -306,7 +334,7 @@ export function ComparePlansPage() {
             <div className="callout callout--info">{SAME_PLAN_NOTICE}</div>
           ) : comparison?.ok === false ? (
             <div className="callout callout--warn" role="alert">
-              These two plans cannot be compared: {comparison.message}
+              {comparison.message}
             </div>
           ) : (
             <>

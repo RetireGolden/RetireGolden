@@ -43,8 +43,8 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   `example-couple` against `hsa-stealth-retirement` reads −$466k of after-tax estate in
   2026 dollars where it read +$330k. The 50 pairs that end in the same year, every
   designed A/B pair among them, are unchanged. Both plans are now projected from one
-  start year read once, and a comparison the engine refuses is stated on the page
-  instead of breaking it. When both plans run their full horizons the engine publishes
+  start year read once, and a comparison the engine refuses is stated on the page in
+  plain words, with the plan it is about and what to fix, instead of breaking it. When both plans run their full horizons the engine publishes
   no Money lasts difference (neither exhaustion year is known); the page still reads
   "same" or "both full plan", with no colour. `compareScenarioPlans` gains
   `headline.moneyLasts` in the same convention, for RetireGolden-Pro's meeting view.
@@ -1098,7 +1098,8 @@ has — rather than the runtime contract a consumer needs on the landing page.
   - **`ScalarComparison` and `NullableScalarComparison`** are declared in
     `@retiregolden/engine/scenarios/scalarComparison` (still re-exported, unchanged,
     from `scenarios/comparison`). A comparison that meets a figure that is not finite
-    throws a `RangeError` naming the operand, where it threw a plain `Error` reading
+    throws a `NonFiniteComparisonError` (a new export: a `RangeError` whose `role`
+    names the operand), where it threw a plain `Error` reading
     "scenario comparison produced a non-finite number" (the lifetime sums of
     `compareScenarioPlans` keep that message). `compareScenarioPlans` sets the new
     optional `headline.moneyLasts`, and so refuses (RangeError, from `moneyLasts`) a
@@ -1110,7 +1111,8 @@ has — rather than the runtime contract a consumer needs on the landing page.
     `compareMonteCarloSuccessRates`.
   - **New module `@retiregolden/engine/scenarios/planHeadlines`**
     (`comparePlanHeadlines`), which refuses two projections with different start years
-    and a depleting side whose first person has no birth date (RangeError), and a
+    and a depleting side whose first person has no birth date (`PlanHeadlineRefusal`, a
+    `RangeError` carrying the reason and the side), and a
     projection with no dollar basis when the end years differ (from
     `projectionDollarBasis`). `compareMoneyLasts`, `MoneyLastsComparison` and
     `MoneyLastsBound` are new exports of `@retiregolden/engine/projection/moneyLasts`,

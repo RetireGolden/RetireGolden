@@ -37,9 +37,27 @@ export interface NullableScalarComparison {
   delta: number | null
 }
 
-function finiteComparand(value: number, role: 'baseline' | 'proposal' | 'difference'): number {
+/** Which operand of a comparison a refusal is about. */
+export type ComparandRole = 'baseline' | 'proposal' | 'difference'
+
+/**
+ * The refusal of a comparison that meets a figure that is not a finite
+ * number: a RangeError that names the operand (`role`), so a page can say in
+ * plain words which side's figure could not be computed.
+ */
+export class NonFiniteComparisonError extends RangeError {
+  readonly role: ComparandRole
+
+  constructor(role: ComparandRole, value: number) {
+    super(`A compared figure must be a finite number; the ${role} is ${String(value)}`)
+    this.name = 'NonFiniteComparisonError'
+    this.role = role
+  }
+}
+
+function finiteComparand(value: number, role: ComparandRole): number {
   if (!Number.isFinite(value)) {
-    throw new RangeError(`A compared figure must be a finite number; the ${role} is ${String(value)}`)
+    throw new NonFiniteComparisonError(role, value)
   }
   return Object.is(value, -0) ? 0 : value
 }

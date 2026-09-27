@@ -76,10 +76,32 @@ export interface PlanHeadlineComparison {
   depletionAgePrimary: NullableScalarComparison
 }
 
+/**
+ * Why comparePlanHeadlines refused a pair, with the side it is about, so a
+ * page can say it in plain words: 'start-years-differ' (the two projections
+ * start in different years; `side` is null) or 'birth-date-missing' (a side
+ * that runs out of money has no first person with a YYYY-MM-DD date of birth).
+ * A figure that is not finite is refused by compareScalars instead
+ * (NonFiniteComparisonError).
+ */
+export class PlanHeadlineRefusal extends RangeError {
+  readonly reason: 'start-years-differ' | 'birth-date-missing'
+  readonly side: 'baseline' | 'proposal' | null
+
+  constructor(reason: PlanHeadlineRefusal['reason'], side: PlanHeadlineRefusal['side'], message: string) {
+    super(message)
+    this.name = 'PlanHeadlineRefusal'
+    this.reason = reason
+    this.side = side
+  }
+}
+
 function birthYearOf(side: ComparedProjection, role: 'baseline' | 'proposal'): number {
   const dob = side.plan.household.people[0]?.dob
   if (dob === undefined || !/^\d{4}-\d{2}-\d{2}$/u.test(dob)) {
-    throw new RangeError(
+    throw new PlanHeadlineRefusal(
+      'birth-date-missing',
+      role,
       `The ${role} plan's first person has no birth date in YYYY-MM-DD form, so no depletion age can be published`,
     )
   }
@@ -100,8 +122,9 @@ function lifetimeTaxesAndPenaltiesToday(side: ComparedProjection, basis: DollarB
 
 /**
  * Compare two projections that share a start year. Refuses with a RangeError
- * two results with different start years, a non-finite figure (through
- * compareScalars) and a depleting side whose first person has no birth date.
+ * two results with different start years and a depleting side whose first
+ * person has no birth date (PlanHeadlineRefusal, naming the reason and side),
+ * and a non-finite figure (NonFiniteComparisonError, through compareScalars).
  * When today's dollars are needed, a projection whose rows give no dollar
  * basis is refused by projection/dollarBasis.ts#projectionDollarBasis: with a
  * plain Error for a missing, non-contiguous or unscaled row, and a RangeError
@@ -114,7 +137,9 @@ export function comparePlanHeadlines(
 ): PlanHeadlineComparison {
   const startYear = baseline.result.startYear
   if (startYear !== proposal.result.startYear) {
-    throw new RangeError(
+    throw new PlanHeadlineRefusal(
+      'start-years-differ',
+      null,
       `Two plans are compared only from one start year; the baseline starts in ${startYear} and the proposal in ${proposal.result.startYear}`,
     )
   }

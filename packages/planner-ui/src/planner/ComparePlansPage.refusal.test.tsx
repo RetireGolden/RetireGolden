@@ -3,8 +3,10 @@
  * B2-P1 slice 3 (review F6): the Compare page's two guards around the
  * engine's headline comparison.
  *
- * - A comparison the engine refuses is stated on the page, in an alert naming
- *   the engine's reason, instead of breaking the page (check correction 1).
+ * - A comparison the engine refuses is stated on the page, in an alert that
+ *   says in plain words which plan it is about and what to fix, instead of
+ *   breaking the page (check correction 1; PR #754 finding 11: never the
+ *   engine's own wording).
  * - Both plans are projected from the one start year the page reads before
  *   loading them: a clock that crosses a New Year between the two loads must
  *   not give the two sides different start years, which the engine refuses.
@@ -26,7 +28,8 @@ vi.mock('@retiregolden/engine/scenarios/planHeadlines', async (importOriginal) =
   return { ...actual, comparePlanHeadlines: vi.fn(actual.comparePlanHeadlines) }
 })
 
-import { comparePlanHeadlines } from '@retiregolden/engine/scenarios/planHeadlines'
+import { comparePlanHeadlines, PlanHeadlineRefusal } from '@retiregolden/engine/scenarios/planHeadlines'
+import { NonFiniteComparisonError } from '@retiregolden/engine/scenarios/scalarComparison'
 import { ComparePlansPage } from './ComparePlansPage'
 
 const mockedCompare = vi.mocked(comparePlanHeadlines)
@@ -91,17 +94,48 @@ async function mount(store: PlanStore) {
 }
 
 describe('Compare page guards (B2-P1 slice 3, review F6)', () => {
-  it('states a comparison the engine refuses in an alert, and shows no table', async () => {
-    const reason = 'A compared figure must be a finite number; the proposal is NaN'
-    mockedCompare.mockImplementation(() => {
-      throw new RangeError(reason)
+  for (const [what, refusal, sentence] of [
+    [
+      'a figure of Plan B that is not finite',
+      () => new NonFiniteComparisonError('proposal', Number.NaN),
+      "These two plans can't be compared: one of Plan B's figures could not be computed. Open Plan B's Results page to check its projection, then compare again.",
+    ],
+    [
+      'a difference that is not finite',
+      () => new NonFiniteComparisonError('difference', Number.POSITIVE_INFINITY),
+      "These two plans can't be compared: the difference between their figures could not be computed. Open each plan's Results page to check its projection, then compare again.",
+    ],
+    [
+      'a depleting Plan A with no valid date of birth',
+      () => new PlanHeadlineRefusal('birth-date-missing', 'baseline', "The baseline plan's first person has no birth date in YYYY-MM-DD form, so no depletion age can be published"),
+      "These two plans can't be compared: Plan A runs out of money, and its first person has no valid date of birth, so the age when that happens can't be worked out. Add the date of birth on Plan A's Household page, then compare again.",
+    ],
+    [
+      'two different start years',
+      () => new PlanHeadlineRefusal('start-years-differ', null, 'Two plans are compared only from one start year; the baseline starts in 2026 and the proposal in 2027'),
+      "These two plans can't be compared: they were projected from different start years. Reload this page so both are projected from this year.",
+    ],
+    [
+      'any other refusal',
+      () => new Error('Projection year 2031 publishes no usable inflationScale (undefined), so it has no dollar basis'),
+      "These two plans can't be compared: one plan's projection gave a result this page can't use. Open each plan's Results page to check its projection, then compare again.",
+    ],
+  ] as const) {
+    it(`states ${what} in plain words with a next step, and shows no table`, async () => {
+      mockedCompare.mockImplementation(() => {
+        throw refusal()
+      })
+      await mount(makeStore(pair('example-couple', 'hsa-stealth-retirement')))
+      await waitFor(() => container.querySelector('[role="alert"]') !== null, { what: 'the refusal alert' })
+      const text = container.querySelector('[role="alert"]')?.textContent ?? ''
+      expect(text).toBe(sentence)
+      for (const jargon of ['NaN', 'Infinity', 'YYYY-MM-DD', 'baseline', 'proposal', 'finite number', 'inflationScale']) {
+        expect(text, jargon).not.toContain(jargon)
+      }
+      expect(container.querySelector('.compare-table')).toBeNull()
+      expect(mockedCompare).toHaveBeenCalled()
     })
-    await mount(makeStore(pair('example-couple', 'hsa-stealth-retirement')))
-    await waitFor(() => container.querySelector('[role="alert"]') !== null, { what: 'the refusal alert' })
-    expect(container.querySelector('[role="alert"]')?.textContent).toBe(`These two plans cannot be compared: ${reason}`)
-    expect(container.querySelector('.compare-table')).toBeNull()
-    expect(mockedCompare).toHaveBeenCalled()
-  })
+  }
 
   it('projects both plans from the start year it read before loading them, across a New Year', async () => {
     // The first plan loads at once; the second loads after the clock has
