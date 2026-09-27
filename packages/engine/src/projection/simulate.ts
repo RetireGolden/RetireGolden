@@ -1680,9 +1680,13 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     }
 
     // Pass 3: Social Security. Benefits are computed for everyone (a deceased
-    // spouse's hypothetical benefit drives the survivor step-up), survivors
-    // step up to max(own, deceased's) under the v1 couples simplification, and
-    // then the earnings test withholds from living workers' resulting benefit.
+    // spouse's benefit and PIA price the survivor), a survivor is paid the
+    // larger of her own benefit and the widow(er) benefit (the deceased's
+    // larger of PIA and actual benefit, reduced for her age in the first month
+    // the ledger pays it and held to the widow's limit for an early claimant,
+    // survivorBenefit.ts), and then the earnings test withholds from living
+    // workers' resulting benefit, counting withheld widow(er) and spouse months
+    // apart for their own reductions.
     const ssColaFactor =
       plan.assumptions.ssCola.mode === 'matchInflation'
         ? inflFactorFrom(startYear, year)
