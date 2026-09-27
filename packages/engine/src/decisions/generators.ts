@@ -583,7 +583,7 @@ export function milpScheduleGenerator(schedules: {
           id: 'milp-cleaned',
           source: 'milp',
           category: 'roth',
-          label: 'Optimizer schedule (exact-ledger cleaned)',
+          label: 'Optimizer schedule (cleaned on the full projection)',
           explanation: 'The post-processed MILP schedule the exact ledger can execute in full.',
           conversions: schedules.cleanedConversions,
           retirementActionReadiness: AGGREGATE_RETIREMENT_ACTION_EXPLORATION,

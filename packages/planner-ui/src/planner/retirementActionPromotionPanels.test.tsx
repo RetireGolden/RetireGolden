@@ -215,8 +215,8 @@ describe('PromotedSchedulePanel', () => {
 describe('PromotionWithheldPanel', () => {
   it('renders the projection’s own diagnostics verbatim for notComparable', () => {
     const diagnostic =
-      'Retirement-action request promoted-2026 does not have matching committed, actionable exact-ledger ' +
-      'execution evidence. Blocking reasons: conversion-plan-availability-unknown.'
+      'Retirement-action request promoted-2026 does not have matching committed, actionable execution ' +
+      'evidence from the full projection. Blocking reasons: conversion-plan-availability-unknown.'
     const { container, unmount } = render(
       <PromotionWithheldPanel
         plan={testPlan(true)}
