@@ -825,13 +825,13 @@
   ],
   "quoteFidelity": {
     "generatedAt": "2026-09-23T22:50:50.754Z",
-    "entryCount": 1579,
+    "entryCount": 1581,
     "fetched": 0,
     "cached": 433,
     "counts": {
       "ELISION-EXACT": 127,
       "ELISION-PUNCTUATION": 1,
-      "EXACT": 1083,
+      "EXACT": 1085,
       "PDF-NOT-VERIFIABLE": 1,
       "PDF-WORD-LEVEL": 358,
       "PUNCTUATION": 4,
@@ -1081,6 +1081,40 @@
           {
             "id": "usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement",
             "citation": "SSA POMS RS 00615.694, A. Policy"
+          }
+        ]
+      },
+      {
+        "on": "2026-09-27",
+        "note": "Changed in the review of RetireGolden #755 (D-SS-LAW-2): 42 U.S.C. 403(b)(1) and 20 CFR 404.412(a)(1) were added to this record for the rule that months withheld while a widow(er) benefit was paid also credit the own old-age reduction, and every authority of the record was checked against its source with verify-quotes on 2026-09-27, filtered to this record: all seven EXACT; no other entry was re-run.",
+        "entries": [
+          {
+            "id": "usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month",
+            "citation": "42 U.S.C. 402(q)(6)(A)(iii)"
+          },
+          {
+            "id": "usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month",
+            "citation": "42 U.S.C. 402(q)(3)(E)"
+          },
+          {
+            "id": "usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month",
+            "citation": "42 U.S.C. 402(q)(7)(A)"
+          },
+          {
+            "id": "usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month",
+            "citation": "20 CFR 404.410(c)(1)"
+          },
+          {
+            "id": "usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month",
+            "citation": "20 CFR 404.621(a)(4)(ii)"
+          },
+          {
+            "id": "usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month",
+            "citation": "42 U.S.C. 403(b)(1)"
+          },
+          {
+            "id": "usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month",
+            "citation": "20 CFR 404.412(a)(1)"
           }
         ]
       }

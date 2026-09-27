@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { FormerSpouse, IncomeStream, Plan } from '../model/plan.js'
+import { describeRule } from '../rules/describeRule.js'
 import { simulatePlan } from './simulate.js'
 import { basePlan, cash, noTax, testIds, validate } from './simulate.test-support.js'
 
@@ -149,5 +150,60 @@ describe('402(q)(7) credit for a former spouse survivor benefit', () => {
     const byYear = formerSurvivor(900)
     expect(byYear(2027)).toBeCloseTo(900 * (1 - (0.285 * 47) / 82) * 12, 6)
     expect(byYear(2027)).toBeCloseTo(9_035.78, 2)
+  })
+})
+
+// A widow(er) entitled to her own old-age benefit and a larger widow(er)
+// benefit is paid the own benefit plus the excess (402(k)(3)(A)); the ledger
+// pays the larger of the two, the same amount. The earnings test deducts
+// "from any payment or payments under this subchapter to which an individual
+// is entitled" (42 U.S.C. 403(b)(1)), so a month withheld while the widow(er)
+// benefit was paid is a month in which her old-age benefit "was subject to
+// deductions" too (402(q)(7)(A); 20 CFR 404.412(a)(1)), and it is credited to
+// the own reduction.
+//
+// She is born 1965-06-15 (FRA 67, survivor FRA 67, both 804 months), has a
+// 2,000 PIA and claims at 62y0m, in 2027 (own 1,400). He is born 1963-02-10,
+// has a 2,400 PIA, claimed at 62 (paid 1,680, so the widow's limit applies)
+// and has a life age of 63, so he dies in 2026. From 2027 her widow(er)
+// benefit, reduced at 744 months, is 2,400 x 0.796429 = 1,911.43, under the
+// max(1,680, 1,980) limit and above her own 1,400, so it is paid. She earns
+// $80,000 from 2026 through 2031, which withholds all of each year's
+// 22,937.14 from 2027: 60 months, all of them widow(er) months. In 2032, the
+// year she reaches 67, the own reduction is credited with the 60 months (804,
+// factor 1, 2,000) and the widow(er) reduction too (804, 2,400, held to the
+// 1,980 limit); the own benefit is larger and is paid: 24,000. Leaving the
+// widow(er) months off the own reduction keeps it at 1,400 and pays the 1,980
+// limit: 23,760.
+describeRule('usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month', {
+  note: 'months withheld from a paid widow(er) benefit credit the own old-age reduction too',
+  readings: {
+    everyWithheldMonthCreditsTheOldAgeBenefit: { withheld2027: 22_937.14, paid2032: 24_000 },
+    onlyMonthsTheOwnBenefitWasPaidCreditIt: { withheld2027: 22_937.14, paid2032: 23_760 },
+  },
+  accepted: 'everyWithheldMonthCreditsTheOldAgeBenefit',
+}, ({ accepted, readings }) => {
+  it('credits months withheld while the widow(er) benefit was paid to the own reduction (24,000 in 2032, not 23,760)', () => {
+    const plan = basePlan()
+    plan.household.filingStatus = 'marriedFilingJointly'
+    plan.household.people = [
+      person('W', '1965-06-15'),
+      { ...person('H', '1963-02-10'), longevity: { planningAge: 63, source: 'manual' } },
+    ]
+    plan.incomes = [
+      ss('W', 2_000, { years: 62, months: 0 }),
+      ss('H', 2_400, { years: 62, months: 0 }),
+      wages('W', 80_000, 67),
+    ]
+    plan.accounts = [cash(5_000_000)]
+    const result = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax })
+    const row = (year: number) => result.years.find((y) => y.year === year)!
+    const produced = {
+      withheld2027: Math.round(row(2027).ssEarningsTestWithheld * 100) / 100,
+      paid2032: Math.round(row(2032).incomes.socialSecurity * 100) / 100,
+    }
+    expect(row(2027).incomes.socialSecurity).toBeCloseTo(0, 6)
+    expect(produced).toEqual(accepted)
+    expect(produced).not.toEqual(readings.onlyMonthsTheOwnBenefitWasPaidCreditIt)
   })
 })
