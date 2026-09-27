@@ -16,6 +16,7 @@ import type {
   ExactLedgerValidation,
 } from '@retiregolden/engine/projection/optimizePlan'
 import type { OptimizedSchedule } from '@retiregolden/engine/strategies/optimizer'
+import type { EngineRefusal } from '../workers/refusal'
 
 export interface OptimizeRequest {
   plan: Plan
@@ -82,4 +83,5 @@ export interface OptimizePostProcessing {
 
 export type OptimizeResponse =
   | { type: 'done'; result: OptimizeResult }
-  | { type: 'error'; message: string }
+  /** `refusal`: a typed engine refusal as plain data (../workers/refusal.ts). */
+  | { type: 'error'; message: string; refusal?: EngineRefusal }

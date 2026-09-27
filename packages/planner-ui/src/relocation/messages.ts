@@ -7,6 +7,7 @@
 import type { Plan } from '@retiregolden/engine/model/plan'
 import type { MarketModelConfig } from '@retiregolden/engine/montecarlo/marketModels'
 import type { RelocationCandidate, RelocationComparison } from '@retiregolden/engine/projection/relocation'
+import type { EngineRefusal } from '../workers/refusal'
 
 export interface RelocationCompareRequest {
   plan: Plan
@@ -18,4 +19,5 @@ export interface RelocationCompareRequest {
 
 export type RelocationCompareResponse =
   | { type: 'done'; result: RelocationComparison }
-  | { type: 'error'; message: string }
+  /** `refusal`: a typed engine refusal as plain data (../workers/refusal.ts). */
+  | { type: 'error'; message: string; refusal?: EngineRefusal }

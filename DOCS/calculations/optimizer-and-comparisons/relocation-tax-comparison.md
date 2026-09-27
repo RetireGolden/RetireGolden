@@ -117,3 +117,7 @@ Derived by: claude (opus 5.5), 2026-09-27; cases N to Q by hand and `scripts/ind
 
 - P7's copy uses the check's hint wording; the column header is the derivation's.
 - No displayed number changes (staging `b2p1-s3/addendum.md`).
+
+## PR #754 review fixes (2026-09-27)
+
+The compare runs in the planner's worker, where an engine refusal loses its class, so the page printed the engine's message ("Compare error: A compared figure must be a finite number; the proposal is NaN"). The worker now posts a typed refusal as plain data beside the message (`workers/refusal.ts`: the error's kind and its operand role or reason), the runner rebuilds it as a `WorkerRefusalError`, and the page says it in plain words with a next step (`planner/engineRefusalCopy.ts#relocationErrorSentence`): "The states couldn't be compared: one of a candidate state's figures could not be computed. Check that state's details, then compare again." (and the same for your plan's figure or the difference). An error nothing recognises reads "The states couldn't be compared. Compare again." with its own text kept as a labelled detail, so a crash can still be reported. `RelocationComparePage.refusal.test.tsx` pins the sentences.

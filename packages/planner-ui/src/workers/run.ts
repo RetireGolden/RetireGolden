@@ -8,9 +8,12 @@
  * worker once settled.
  */
 
+import { errorFromWorkerMessage, type EngineRefusal } from './refusal'
+
 export type WorkerMessageOutcome<TResult> =
   | { kind: 'done'; result: TResult }
-  | { kind: 'error'; message: string }
+  /** `refusal`: a typed engine refusal the worker recognised, rebuilt as a WorkerRefusalError (./refusal.ts). */
+  | { kind: 'error'; message: string; refusal?: EngineRefusal }
   /** Keep listening (e.g. progress messages). */
   | { kind: 'progress' }
 
@@ -87,7 +90,7 @@ export function runWorkerRequest<TReq, TMsg, TResult>(options: {
       }
       if (outcome.kind === 'progress') return
       if (outcome.kind === 'done') resolveOnce(outcome.result)
-      else rejectOnce(new Error(outcome.message))
+      else rejectOnce(errorFromWorkerMessage(outcome.message, outcome.refusal))
     }
     worker.onerror = (event) => {
       rejectOnce(new Error(event.message || errorLabel))

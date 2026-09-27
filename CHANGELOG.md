@@ -95,6 +95,11 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   the figure is nominal, and the line now names the plan's last year ("in YYYY
   dollars"), and the `insight-impact-estate-and-lifetime-tax-deltas` record, which also
   said today's dollars, is corrected (unreviewed until the review lane checks it).
+  The Insights card's preview, the Roth & Tax Optimizer's failure well and the
+  relocation compare's error line printed an engine refusal in the engine's own words
+  (for a worker page, its class was lost on the way back); each now names what could
+  not be computed or compared and what to do next, and keeps an unrecognised error's
+  text only as a labelled detail.
 
   Follow-ups outside this repository. RetireGolden-Pro: its review queue
   (`reviewEvaluate.worker.ts`) reads `InsightImpact.successRateDeltaPct`, which is
@@ -1137,6 +1142,19 @@ has — rather than the runtime contract a consumer needs on the landing page.
     `projectionDollarBasis`). `compareMoneyLasts`, `MoneyLastsComparison` and
     `MoneyLastsBound` are new exports of `@retiregolden/engine/projection/moneyLasts`,
     re-exported from `planHeadlines`.
+  - **New engine exports `MonteCarloComparisonRefusal`** (the RangeError
+    `compareMonteCarloSuccessRates` throws, with its reason) **and
+    `InsightPreviewUnavailable`** (`insights/previewUnavailable`, the error the
+    asset-location and spending-headroom detectors throw, with a reason written for the
+    reader, when they find nothing to preview; it was a plain `Error`).
+  - **planner-ui worker errors carry a typed refusal:** the worker's error message gains
+    an optional `refusal` (`workers/refusal.ts`: the engine refusal's kind and its
+    operand role or reason, as plain data, since an error's class does not survive
+    postMessage); `runWorkerRequest` rejects with a `WorkerRefusalError` carrying it;
+    `OptimizeResponse` and `RelocationCompareResponse` gain the field. The Optimize
+    failure well and the relocation compare's error line no longer start "Optimizer
+    error:" or "Compare error:"; they say the failure in plain words
+    (`planner/engineRefusalCopy.ts`).
   - **Three calls now refuse a figure that is not finite** with a RangeError, where it
     used to pass through as NaN: `evaluateCandidate` and the exact-ledger validation on
     a requested conversion amount (through `conversionScheduleTotal`),

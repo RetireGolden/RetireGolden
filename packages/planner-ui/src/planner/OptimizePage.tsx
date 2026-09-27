@@ -38,6 +38,7 @@ import { WhyRecommendationPanel } from './explainPanels'
 import { CheckboxField, HelpTip, SelectField } from './fields'
 import { LearnAboutScreen } from '../learn/LearnAboutScreen'
 import { fmtMoney, fmtMoneyCompact } from './format'
+import { optimizeErrorSentence } from './engineRefusalCopy'
 import { LEARN } from './learnLinks'
 import { LiveStatus } from './LiveStatus'
 import {
@@ -326,7 +327,10 @@ export function OptimizePage() {
       })
       .catch((e: unknown) => {
         if (token === runToken.current) {
-          setError(e instanceof Error ? e.message : String(e))
+          // Plain words for a typed engine refusal the worker passed back,
+          // and a plain sentence with the error's own text as a detail for
+          // anything else (PR #754).
+          setError(optimizeErrorSentence(e))
           // Drop any prior result so a stale chart/Apply can't render against
           // inputs the optimizer just failed on.
           setOptimizeResult(null)
@@ -583,7 +587,7 @@ export function OptimizePage() {
           // silent for this path, so it is heard once); the tabIndex is for
           // the explicit-run focus move.
           <div className="callout callout--warn optimizer-failure" role="alert" tabIndex={-1} ref={failureWell}>
-            Optimizer error: {error}
+            {error}
           </div>
         ) : null}
         {/* No run controls while the precondition holds: every control here

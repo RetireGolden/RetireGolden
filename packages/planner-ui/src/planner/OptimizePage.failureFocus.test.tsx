@@ -13,6 +13,7 @@ import { MemoryRouter } from 'react-router'
 import type { Plan } from '@retiregolden/engine/model/plan'
 import { PlanCtx, type PlanContextValue } from './planContextCore'
 import { createSamplePlan } from '../testSupport/samplePlan'
+import { WorkerRefusalError } from '../workers/refusal'
 
 vi.mock('../optimize/runner', () => ({ runOptimize: vi.fn() }))
 
@@ -98,7 +99,11 @@ describe('Optimize failure well (#525)', () => {
     const well = container.querySelector<HTMLElement>('.optimizer-failure')!
     expect(well, 'the failure well rendered').not.toBeNull()
     expect(well.getAttribute('role')).toBe('alert')
-    expect(well.textContent).toContain('Optimizer error: solver exploded')
+    // PR #754: a failure nothing recognises is a plain sentence that keeps
+    // the error's own text as a detail.
+    expect(well.textContent).toBe(
+      "The optimizer couldn't finish this run. Run it again. If it fails again, this detail helps us fix it: solver exploded",
+    )
     // One announcement channel: the alert well speaks for itself, and the
     // polite live region stays empty so the failure is not heard twice.
     expect(status()?.textContent ?? '').toBe('')
@@ -159,5 +164,24 @@ describe('Optimize failure well (#525)', () => {
     expect(well.textContent).toContain('auto-run failed')
     // The auto-run's failure is on screen but focus was not moved to it.
     expect(document.activeElement).not.toBe(well)
+  })
+
+  // PR #754: an engine refusal from the worker loses its class; the worker
+  // posts it as plain data, and the page says it in plain words.
+  it('states a refused figure from the worker in plain words, never the engine wording', async () => {
+    mockedRunOptimize.mockRejectedValue(
+      new WorkerRefusalError('A compared figure must be a finite number; the proposal is NaN', {
+        kind: 'non-finite-figure',
+        role: 'proposal',
+      }),
+    )
+    await mount(createSamplePlan())
+    const well = container.querySelector<HTMLElement>('.optimizer-failure')!
+    expect(well.textContent).toBe(
+      "The optimizer couldn't finish this run: one of the figures it compares could not be computed. Check your plan's inputs and its Results page, then run the optimizer again.",
+    )
+    for (const banned of ['NaN', 'Infinity', 'YYYY-MM-DD', 'baseline', 'proposal', 'finite number', 'inflationScale']) {
+      expect(well.textContent, banned).not.toContain(banned)
+    }
   })
 })

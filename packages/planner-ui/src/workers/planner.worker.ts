@@ -27,6 +27,7 @@ import wasmUrl from 'highs/runtime?url'
 
 import {
   dispatchPlannerWorkerRequest,
+  plannerWorkerErrorMessage,
   type PlannerWorkerRequest,
   type PlannerWorkerResponse,
 } from './dispatch'
@@ -45,6 +46,6 @@ const post = (msg: PlannerWorkerResponse, transfer: Transferable[] = []) =>
 
 self.onmessage = (event: MessageEvent<PlannerWorkerRequest>) => {
   void dispatchPlannerWorkerRequest(event.data, { post, wasmUrl: () => wasmUrl }).catch((err: unknown) => {
-    post({ type: 'error', message: err instanceof Error ? err.message : String(err) })
+    post(plannerWorkerErrorMessage(err))
   })
 }

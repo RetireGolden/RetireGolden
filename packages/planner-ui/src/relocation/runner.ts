@@ -23,7 +23,9 @@ export function runRelocationCompare(req: RelocationCompareRequest): Promise<Rel
     request: envelope('relocation', req),
     createWorker: spawnPlannerWorker,
     interpret: (msg) =>
-      msg.type === 'done' ? { kind: 'done', result: msg.result } : { kind: 'error', message: msg.message },
+      msg.type === 'done'
+        ? { kind: 'done', result: msg.result }
+        : { kind: 'error', message: msg.message, refusal: msg.refusal },
     errorLabel: 'Relocation compare worker failed',
   })
 }

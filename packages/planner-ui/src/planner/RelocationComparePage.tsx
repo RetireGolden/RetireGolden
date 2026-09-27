@@ -28,6 +28,7 @@ import { LearnAboutScreen } from '../learn/LearnAboutScreen'
 import { LearnLink } from '../learn/LearnLink'
 import { HelpTip, NumberField, PercentField, SelectField } from './fields'
 import { fmtMoney, fmtPct } from './format'
+import { relocationErrorSentence } from './engineRefusalCopy'
 import { TypeChip } from './TypeChip'
 import { LEARN } from './learnLinks'
 import { buildModel } from './marketModelPicker'
@@ -221,7 +222,9 @@ export function RelocationComparePage() {
       })
       .catch((e: unknown) => {
         if (token === runToken.current) {
-          setCompareState({ forPlan, forDrafts, result: null, error: e instanceof Error ? e.message : String(e) })
+          // Plain words for a typed engine refusal the worker passed back
+          // (PR #754), and a plain sentence for anything else.
+          setCompareState({ forPlan, forDrafts, result: null, error: relocationErrorSentence(e) })
         }
       })
       .finally(() => {
@@ -371,7 +374,7 @@ export function RelocationComparePage() {
           </button>
         </div>
         {running ? <div className="skeleton" style={{ height: '2rem', marginTop: '0.75rem' }} aria-label="Comparing states" /> : null}
-        {error ? <p style={{ color: 'var(--bad)' }}>Compare error: {error}</p> : null}
+        {error ? <p style={{ color: 'var(--bad)' }}>{error}</p> : null}
       </div>
 
       {result && baseline && !running ? (
