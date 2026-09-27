@@ -7,11 +7,16 @@ import { TAX_RULE_REGISTRY, type TaxRuleRecord } from './taxRuleRegistry.js'
 /** One rendered field: where it is, its text, and whether it is code-like (held to the dash bans only). */
 type Field = readonly [where: string, text: string | null, code?: boolean]
 
-/** What the site prints from a tax rule. The authorities' quotedText is the source's own words and is exempt. */
+/**
+ * What the site prints from a tax rule, plus its contrary reading (null for
+ * every rule today, and skipped when null). The authorities' quotedText is
+ * the source's own words and is exempt; a url is an address, not text.
+ */
 function ruleFields(id: string, record: TaxRuleRecord): readonly Field[] {
   return [
     [id + ' title', record.title],
     [id + ' conventionRationale', record.conventionRationale],
+    [id + ' contraryReading', record.contraryReading],
     ...record.authority.map((authority, index): Field => [id + ' authority[' + index + '].citation', authority.citation]),
   ]
 }
@@ -100,7 +105,7 @@ describe('public text conformance', () => {
         .map(([where]) => where.slice(where.indexOf(' ') + 1).replace(/\[\d+\]/gu, '[]')),
     )
     const justificationKinds = new Set(Object.values(calculations).map((record) => record.justification.kind))
-    expect(ruleFieldCount).toBeGreaterThan(Object.keys(rules).length * 2)
+    expect(ruleFieldCount).toBeGreaterThan(Object.keys(rules).length * 3)
     expect(Object.entries(kinds).flatMap(([id, entry]) => approximationFields(id, entry)).length).toBeGreaterThan(0)
     for (const name of [
       'title', 'purpose', 'statement', 'limits[]', 'formula.expression', 'formula.timing', 'formula.rounding',
@@ -110,6 +115,19 @@ describe('public text conformance', () => {
     ]) {
       expect(calculationFieldNames.has(name), name).toBe(true)
     }
+  })
+
+  it('checks at least one citation for every tax rule', () => {
+    // The record type demands a non-empty authority list at compile time
+    // (TaxRuleRecordCommonFields.authority in taxRuleRegistry.ts), and
+    // taxRuleRegistry.conformance.test.ts requires a state rule to rest on a
+    // source from its own state; no suite checked the non-empty list at run
+    // time for every rule, so a rule that reached the registry with no
+    // authority would pass the citation check above vacuously.
+    const withoutCitation = Object.entries(rules)
+      .filter(([id, record]) => !ruleFields(id, record).some(([where]) => where.startsWith(id + ' authority[')))
+      .map(([id]) => id)
+    expect(withoutCitation).toEqual([])
   })
 
   it('refuses every banned form, in any case where the ban is case-blind', () => {
@@ -177,9 +195,12 @@ describe('public text conformance', () => {
       'IRC 408(d)(2) - the aggregation rule',
       'a plan - not a forecast',
       'income - deduction',
+      // A middle dot is a prose separator, not an arithmetic sign, so it does
+      // not excuse a dash in the same clause.
+      "the card shows 'Pat · Wages' - a label the ledger never prices",
     ]) {
       expect(usesSpacedHyphenAsDash(text), text).toBe(true)
-      expect(publicTextProblems(text), text).toContain('uses a spaced hyphen used as a dash')
+      expect(publicTextProblems(text), text).toContain('uses a spaced hyphen as a dash')
     }
   })
 

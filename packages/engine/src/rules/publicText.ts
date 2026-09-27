@@ -5,10 +5,15 @@
  * A member of the public reads these fields, so they must read as plain
  * words: no dashes used as punctuation, and none of the internal test and
  * tooling vocabulary a reader cannot be expected to know.
+ *
+ * For a tax rule, the site's rule page (retiregolden.org
+ * `src/pages/methodology/tax-rules.astro`) renders the `title`, the
+ * `conventionRationale`, and each authority's `citation` and `url`.
  * `publicText.conformance.test.ts` holds exactly these fields to this list:
  *
- * - a tax rule's `title`, `conventionRationale`, and each authority's
- *   `citation`;
+ * - a tax rule's `title`, `conventionRationale`, `contraryReading` (skipped
+ *   when null, as it is for every rule today) and each authority's
+ *   `citation` (a `url` is an address, not text);
  * - an approximated rule's entry in `APPROXIMATION_KINDS`: `missingInput`
  *   for a needs-fact entry, `reason` for a convention entry (a fix entry
  *   publishes no text of its own);
@@ -19,9 +24,12 @@
  *   `rationale`, `intendedUse` and `errorBound`.
  *
  * Not covered: an authority's `quotedText`, which is the source's own words;
- * and a tax rule's `statement` and `contraryReading`, which the rule ledger
- * carries but nothing renders where a user reads them. A field that starts
- * being rendered joins the list in the conformance suite.
+ * a tax rule's `statement`, which stays in the registry (the rule ledger
+ * does not publish it); and the rule ledger's evidence entries (each test
+ * file's `note` and the titles of its tests, the tests that name the
+ * candidate `readings`), which the ledger JSON publishes but the site does
+ * not render. A field that starts being rendered joins the list in the
+ * conformance suite.
  *
  * A formula's expression and a variable's symbol are code-like: they keep
  * identifiers and arithmetic, so only the dash bans that cannot be
@@ -51,7 +59,10 @@ function isOperand(token: string, next: string): boolean {
 }
 
 const CLAUSE_BREAK = /[.;:,]\s/gu
-const ARITHMETIC_SIGN = /[=+*/^<>×·≤≥−]/u
+// The middle dot is not an arithmetic sign here: the planner uses it as a
+// separator in prose ("Pat · Wages"), so a clause holding one can still carry
+// a dash. A product written with it, such as "100·G/E", has another sign.
+const ARITHMETIC_SIGN = /[=+*/^<>×≤≥−]/u
 
 /**
  * Whether `text` uses a spaced hyphen (" - ") as a dash. The records also
@@ -99,7 +110,7 @@ export const PUBLIC_TEXT_BANS: readonly PublicTextBan[] = Object.freeze([
   pattern('an em dash', /—/u, true),
   pattern('a spaced en dash', / – /u, true),
   pattern('a double hyphen used as a dash', /(?:^|\s)--(?:\s|$)/u, true),
-  Object.freeze({ label: 'a spaced hyphen used as a dash', inCode: false, test: usesSpacedHyphenAsDash }),
+  Object.freeze({ label: 'a spaced hyphen as a dash', inCode: false, test: usesSpacedHyphenAsDash }),
   pattern('"fixture"', /\bfixtures?\b/iu),
   pattern('"golden"', /\bgolden\b/iu),
   pattern('"regression"', /\bregressions?\b/iu),
