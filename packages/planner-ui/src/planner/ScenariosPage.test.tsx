@@ -63,6 +63,7 @@ import {
   formatScenarioDelta,
   isScenarioComparisonCurrent,
   scenarioOverviewRequestKey,
+  currentBaseVerdict,
   spendingCapacityStatus,
 } from './scenarioComparisonView'
 
@@ -143,6 +144,13 @@ describe('scenario comparison presentation', () => {
     expect(spendingCapacityStatus(75_000, true)).toBe('Converged maximum')
     expect(spendingCapacityStatus(75_000, false)).toBe('Feasible lower bound')
     expect(spendingCapacityStatus(null, false)).toBe('Unavailable')
+  })
+
+  it("reads each side's current base spending from its solve's verdict, never from the slack's sign", () => {
+    expect(currentBaseVerdict(true)).toBe('Sustained')
+    expect(currentBaseVerdict(false)).toBe('Not sustained')
+    expect(currentBaseVerdict(null)).toBe('Not judged')
+    expect(currentBaseVerdict(undefined)).toBe('Not judged')
   })
 
   it('renders basis labels and accessible metric table semantics', () => {
@@ -1022,6 +1030,62 @@ describe('ScenariosPage comparison lifecycle', () => {
     )
     expect(container.textContent).not.toContain('tax-year-parameters-unsupported')
     expect(container.textContent).not.toContain('Baseline: The premium tax credit')
+  })
+
+  it('says a sustained $72,030 base with a −$30 slack is sustained, beside a side that is not', async () => {
+    // The proposal's base passes and is the answer: published $72,000 (rounded
+    // down to $100), slack −$30, sustained. The baseline is above its frontier.
+    const sustained: SpendingSolveResult = {
+      ...solved,
+      maxBaseAnnual: 72_000,
+      feasibleBaseAnnual: 72_030,
+      maxBaseAnnualRounding: 'down-to-hundred',
+      spendingSlackDollars: -30,
+      currentBaseAnnual: 72_030,
+      sustainsCurrentBase: true,
+    }
+    const short: SpendingSolveResult = {
+      ...solved,
+      maxBaseAnnual: 90_000,
+      feasibleBaseAnnual: 90_050,
+      maxBaseAnnualRounding: 'down-to-hundred',
+      spendingSlackDollars: -6_000,
+      sustainsCurrentBase: false,
+    }
+    mockedRunSpendingSolve.mockResolvedValueOnce(short).mockResolvedValueOnce(sustained)
+    await mount()
+    await advanceComparison()
+
+    const calculate = Array.from(container.querySelectorAll('button')).find(
+      (button) => button.textContent === 'Calculate capacity',
+    )
+    await act(async () => {
+      calculate!.click()
+      await Promise.resolve()
+    })
+
+    const status = Array.from(container.querySelectorAll('table')).find(
+      (table) => table.querySelector('caption')?.textContent === 'Capacity solve status',
+    )!
+    const header = Array.from(status.querySelectorAll('thead th')).map((cell) => cell.textContent)
+    expect(header).toEqual(['Plan', 'Status', 'Simulations', 'Limiting constraint', 'Current base spending'])
+    const rows = Array.from(status.querySelectorAll('tbody tr')).map((row) =>
+      Array.from(row.querySelectorAll('th, td')).map((cell) => cell.textContent),
+    )
+    expect(rows.map((row) => [row[0], row[4]])).toEqual([
+      ['Baseline', 'Not sustained'],
+      ['Proposal', 'Sustained'],
+    ])
+    const capacityTable = Array.from(container.querySelectorAll('table')).find(
+      (table) => table.querySelector('caption')?.textContent?.startsWith('Sustainable spending capacity') === true,
+    )!
+    const slackRow = Array.from(capacityTable.querySelectorAll('tbody tr')).find((row) =>
+      row.textContent?.startsWith('Slack vs. current base spending'),
+    )!
+    expect(slackRow.textContent).toContain('−$30')
+    expect(container.textContent).toContain(
+      "the status table says whether each plan's current base spending is sustained.",
+    )
   })
 
   it('says a note both sides share once, for both', async () => {

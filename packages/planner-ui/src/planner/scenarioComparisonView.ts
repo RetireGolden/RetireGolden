@@ -53,3 +53,16 @@ export function spendingCapacityStatus(maxBaseAnnual: number | null, converged: 
   if (maxBaseAnnual === null) return 'Unavailable'
   return converged ? 'Converged maximum' : 'Feasible lower bound'
 }
+
+/**
+ * Whether a side's own base spending passes, from its solve's first probe
+ * (`sustainsCurrentBase`), never from the sign of its slack: the published
+ * amount is rounded down to $100, so a slack between −$100 and $0 can sit
+ * beside a base that is sustained. Undefined for a comparison built from a
+ * result that does not carry the verdict.
+ */
+export function currentBaseVerdict(sustainsCurrentBase: boolean | null | undefined): string {
+  if (sustainsCurrentBase === true) return 'Sustained'
+  if (sustainsCurrentBase === false) return 'Not sustained'
+  return 'Not judged'
+}
