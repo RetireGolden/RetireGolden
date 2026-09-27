@@ -615,6 +615,32 @@ describe('solveMaxSustainableSpending publishes one amount (R4)', () => {
     expect(result.initialWithdrawalRatePct).toBe((62_800 / startingInvestableOf(plan)) * 100)
   })
 
+  it('checks the rounded amount under guardrails even when the search ends on its simulation budget', () => {
+    // With a budget of 9 and a $100 resolution the ninth probe (62,813) spends
+    // the budget while the bracket (62,813 to 63,125) is still open; the check
+    // of 62,800 is a tenth run, outside the budget, whichever way it goes.
+    const options = { maxSimulations: 9, resolutionDollars: 100 }
+    for (const mode of ['withdrawalRateGuardrails', 'riskBasedGuardrails'] as const) {
+      const passed = solveWith(planAt(40_000, mode), (amount) => amount <= 62_850, options)
+      expect(passed.probes).toEqual([...probeSequence, 62_800])
+      expect(passed.result.converged).toBe(false)
+      expect(passed.result.simulationCount).toBe(10)
+      expect(passed.result.maxBaseAnnual).toBe(62_800)
+      expect(passed.result.maxBaseAnnualRounding).toBe('down-to-hundred')
+      const failed = solveWith(planAt(40_000, mode), (amount) => amount <= 62_850 && amount !== 62_800, options)
+      expect(failed.probes).toEqual([...probeSequence, 62_800])
+      expect(failed.result.simulationCount).toBe(10)
+      expect(failed.result.maxBaseAnnual).toBe(62_813)
+      expect(failed.result.maxBaseAnnualRounding).toBe('none')
+      expect(failed.result.diagnostics.some(isExactAnswerDiagnostic)).toBe(true)
+    }
+    // Fixed-target spending on the same budget publishes the rounded amount without a tenth run.
+    const fixed = solveWith(planAt(40_000), (amount) => amount <= 62_850, options)
+    expect(fixed.probes).toEqual(probeSequence)
+    expect(fixed.result.simulationCount).toBe(9)
+    expect(fixed.result.maxBaseAnnual).toBe(62_800)
+  })
+
   it('publishes nulls with no answer', () => {
     const { result } = solveWith(planAt(40_000), () => false)
     expect(result.maxBaseAnnual).toBeNull()
