@@ -7,6 +7,7 @@
 
 import { describe, expect, it } from 'vitest'
 
+import { spendingHeadroom } from '../insights/detectors/spendingHeadroom.js'
 import type { InsightAction, InsightCard } from '../insights/types.js'
 import { simOptions, tradHeavyPlan } from '../testing/decisionFixtures.js'
 import { createFlatTaxCalculator } from '../testing/flatTax.js'
@@ -81,7 +82,10 @@ describe('insights adapter', () => {
       scenarioName: 'Spend $50,000/yr (max sustainable)',
       patch: { expenses: { baseAnnual: 50_000 } },
     }
-    const headroomCard = { ...card, id: 'spending-headroom', category: 'sequence-risk' as const }
+    // The detector's own id and category, so the adapter's disclose default
+    // and the real detector cannot drift apart: if the adapter's constant ever
+    // named another id, this card would be refused and the test would fail.
+    const headroomCard = { ...card, id: spendingHeadroom.id, category: spendingHeadroom.category }
 
     const headroom = evaluateInsightAction(ctx, headroomCard, action)
     expect(headroom.evaluation.recommendationState).not.toBe('diagnostic')
