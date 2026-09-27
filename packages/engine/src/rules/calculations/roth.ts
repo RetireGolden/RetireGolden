@@ -54,7 +54,8 @@ export const rothRecords = {
         { symbol: 'amount', meaning: 'Conversion sized for the year', unit: 'usd', domain: 'nonnegative' },
       ],
       timing: 'annual, inside the strategy window [startYear, endYear]',
-      rounding: 'bisection to a $0.01 bracket; no rounding of the published figure',
+      rounding:
+        'bisection to a $0.01 bracket, returning its lower bound; with one convertible owner the published figure is that bound, and with two or more it is split in exact cents, so when every share converts the published total is the amount rounded half up to the cent and can sit up to half a cent above the root',
     },
     justification: {
       kind: 'derivation',
