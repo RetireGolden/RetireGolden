@@ -14,6 +14,7 @@ import {
   recurringOrdinaryIncome,
   setAcaYearContract,
   singlePersonPlan,
+  traditionalAccount,
   validatePlan,
 } from '../testing/planFixtures.js'
 import * as evaluation from './evaluateCandidate.js'
@@ -282,6 +283,43 @@ describe('solveMaxSustainableSpending with an unpriced ACA credit', () => {
     expect(off.acaGrossPremiumReasons).toEqual([])
     expect(on.acaGrossPremiumDirection).toBe('conservative')
     expect(off.acaGrossPremiumDirection).toBeNull()
+    // Two years and two codes merged across them: the sentence does not pin
+    // both codes on both years.
+    expect(on.diagnostics.at(-1)).toContain(
+      'not priced in 2026, 2027 (in each of those years, at least one of these applies: missing-year-contract, tax-year-parameters-unsupported);',
+    )
+  })
+
+  it('with no answer, reports the unpriced years of the probe the failure names, not the seed', () => {
+    // Spending comes out of a traditional IRA, so MAGI follows spending: the
+    // $40,000 seed prices 2026, but the $0 floor probe leaves 2026 MAGI under
+    // the poverty line, where the credit is not priced. A $5,000,000 goal in
+    // 2027 makes every level deplete.
+    const plan = singlePersonPlan({ dob: '1964-06-15', planningAge: 63 })
+    plan.accounts = [traditionalAccount('ira', 300_000)]
+    plan.expenses.baseAnnual = 40_000
+    plan.expenses.healthcare = { pre65MonthlyPremiumPerPerson: 1_000, applyAcaCredit: true, medicareExtrasMonthlyPerPerson: 0 }
+    setAcaYearContract(plan, { year: 2026 })
+    setAcaYearContract(plan, { year: 2027 })
+    plan.expenses.oneTimeGoals = [{ id: 'goal', label: 'Unfundable', year: 2027, amount: 5_000_000 }]
+    const ctx = zeroTaxContext(validatePlan(plan))
+    const spy = vi.spyOn(evaluation, 'evaluateCandidate')
+    try {
+      const solved = solveMaxSustainableSpending(ctx)
+      const [seedRun, floorRun] = spy.mock.results.map((result) => result.value as ReturnType<typeof evaluateCandidate>)
+      const unpricedIn = (run: ReturnType<typeof evaluateCandidate>) =>
+        run.candidateResult.years.filter((year) => year.aca?.readiness === 'nonActionable').map((year) => year.year)
+      expect(probedAmounts(spy)).toEqual([40_000, 0])
+      expect(unpricedIn(seedRun!)).toEqual([2027])
+      expect(unpricedIn(floorRun!)).toEqual([2026, 2027])
+
+      expect(solved.maxBaseAnnual).toBeNull()
+      expect(solved.diagnostics[0]).toBe('Even zero base spending depletes the portfolio before the plan ends.')
+      expect(solved.acaGrossPremiumYears).toEqual([2026, 2027])
+      expect(solved.acaGrossPremiumReasons).toContain('below-100-fpl-exception-unsupported')
+    } finally {
+      spy.mockRestore()
+    }
   })
 
   it('still bails out on an invalid basePatch with its plan-check diagnostic', () => {
@@ -327,6 +365,42 @@ describe('solveMaxSustainableSpending with a required spending floor', () => {
     } finally {
       spy.mockRestore()
     }
+  })
+
+  it('seeds a fractional baseline equal to its floor at the floor rounded up, never below it', () => {
+    // round($34,000.40) = $34,000 would sit under the $34,000.40 floor and
+    // come back as an invalid plan; the seed is $34,001.
+    const spy = vi.spyOn(evaluation, 'evaluateCandidate')
+    try {
+      const fails = solveMaxSustainableSpending(zeroTaxContext(fourYearFloorPlan(91_000, 34_000.4, 34_000.4)))
+      expect(probedAmounts(spy)).toEqual([34_001])
+      expect(fails.simulationCount).toBe(1)
+      expect(fails.diagnostics).toEqual(['Even the required spending floor ($34,001/yr) depletes the portfolio before the plan ends.'])
+      spy.mockClear()
+
+      const answers = solveMaxSustainableSpending(zeroTaxContext(fourYearFloorPlan(200_000, 34_000.4, 34_000.4)))
+      expect(probedAmounts(spy)[0]).toBe(34_001)
+      expect(answers.maxBaseAnnual).not.toBeNull()
+      expect(answers.bestEvaluation!.recommendationState).not.toBe('diagnostic')
+    } finally {
+      spy.mockRestore()
+    }
+  })
+
+  it('says zero spending depletes only when a probe at zero ran and depleted', () => {
+    const floorFails = solveMaxSustainableSpending(zeroTaxContext(fourYearFloorPlan(50_000, 30_000, 20_000)))
+    expect(floorFails.zeroSpendingDepletes).toBe(false)
+
+    const plan = singlePersonPlan({ dob: '1969-06-15', planningAge: 60 })
+    plan.accounts = [cashAccount('cash', 5_000)]
+    plan.expenses.baseAnnual = 10_000
+    plan.expenses.oneTimeGoals = [{ id: 'goal', label: 'Unfundable', year: 2026, amount: 60_000 }]
+    const ctx = zeroTaxContext(validatePlan(plan))
+    expect(solveMaxSustainableSpending(ctx).zeroSpendingDepletes).toBe(true)
+    // A budget of one probe stops before zero is tried.
+    const stopped = solveMaxSustainableSpending(ctx, { maxSimulations: 1 })
+    expect(stopped.diagnostics[0]).toBe('Simulation budget exhausted before any feasible spending level was found.')
+    expect(stopped.zeroSpendingDepletes).toBe(false)
   })
 
   it('stops after one probe when the seed is already at the floor and fails', () => {

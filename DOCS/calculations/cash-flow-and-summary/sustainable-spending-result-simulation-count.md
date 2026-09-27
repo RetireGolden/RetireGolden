@@ -1,6 +1,6 @@
 ## Claim
 
-Kind: model. `decisions/spendingSolver.ts#SustainableSpendingResult.simulationCount` counts one seed probe; if feasible, each doubling probe until failure; then one bisection probe per halving while the bracket exceeds the requested resolution and the simulation budget remains. If the seed is infeasible and above the required spending floor, it counts one additional probe at that floor (`expenses.requiredAnnual` rounded up, 0 when the plan has none). This sequence is stated directly by the field comment.
+Kind: model. `decisions/spendingSolver.ts#SustainableSpendingResult.simulationCount` counts one seed probe (at the base spending rounded to a whole dollar, raised to the required spending floor rounded up when it would fall below it); if feasible, each doubling probe until failure; then one bisection probe per halving while the bracket exceeds the requested resolution and the simulation budget remains. If the seed is infeasible and above the required spending floor, it counts one additional probe at that floor (`expenses.requiredAnnual` rounded up, 0 when the plan has none). This sequence is stated directly by the field comment.
 
 ## Justification
 

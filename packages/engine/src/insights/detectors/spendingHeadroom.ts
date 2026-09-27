@@ -114,21 +114,22 @@ export const spendingHeadroom: Detector = {
     })
     const maxBaseAnnual = solved.maxBaseAnnual
     const slack = solved.spendingSlackDollars ?? 0
-    if (maxBaseAnnual === null || slack < MIN_SOLVED_SLACK_PER_YEAR) {
-      throw new Error(
-        'The spending solver found no meaningful headroom once taxes, healthcare cliffs, and sequencing were priced in.',
-      )
-    }
     // Nothing silent: a solve that paid the full Marketplace premium where the
-    // credit is unpriced says so, and which way a credit there would move it.
-    const acaCaveat =
+    // credit is unpriced says so, and which way a credit there would move it,
+    // whether or not it found headroom.
+    const acaCaveat = (answered: boolean): string =>
       solved.acaGrossPremiumDirection === null
         ? ''
         : ` It counts no premium tax credit in ${yearRuns(solved.acaGrossPremiumYears)} and pays the full Marketplace premium then; ${
             solved.acaGrossPremiumDirection === 'conservative'
-              ? 'if you receive a credit in those years, you would likely be able to spend somewhat more than this.'
-              : 'a credit in those years could move this answer up or down, because your spending guardrails respond to what healthcare costs.'
+              ? `if you receive a credit in those years, you would likely be able to spend somewhat more than ${answered ? 'this' : 'it found'}.`
+              : `a credit in those years could move ${answered ? 'this answer' : 'what it found'} up or down, because your spending guardrails respond to what healthcare costs.`
           }`
+    if (maxBaseAnnual === null || slack < MIN_SOLVED_SLACK_PER_YEAR) {
+      throw new Error(
+        `The spending solver found no meaningful headroom once taxes, healthcare cliffs, and sequencing were priced in.${acaCaveat(false)}`,
+      )
+    }
     return {
       action: {
         kind: 'preview-scenario',
@@ -136,14 +137,18 @@ export const spendingHeadroom: Detector = {
         patch: { expenses: { baseAnnual: maxBaseAnnual } },
       },
       impact: {
-        qualitative: `The full year-by-year projection sustains about ${formatWholeUsd(maxBaseAnnual)}/yr of baseline spending, which is ${formatWholeUsd(slack)}/yr above your current level (today's dollars).${acaCaveat}`,
+        qualitative: `The full year-by-year projection sustains about ${formatWholeUsd(maxBaseAnnual)}/yr of baseline spending, which is ${formatWholeUsd(slack)}/yr above your current level (today's dollars).${acaCaveat(true)}`,
       },
     }
   },
 }
 
-/** Year list with runs of three or more collapsed: "2027", "2027 and 2028", "2027 to 2060". */
-function yearRuns(years: readonly number[]): string {
+/**
+ * Year list, sorted and de-duplicated, with runs of three or more collapsed:
+ * "2027", "2027 and 2028", "2027 to 2060".
+ */
+function yearRuns(input: readonly number[]): string {
+  const years = [...new Set(input)].sort((a, b) => a - b)
   const items: string[] = []
   for (let start = 0; start < years.length; ) {
     let end = start
