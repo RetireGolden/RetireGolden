@@ -148,6 +148,8 @@ function syntheticFindings(summary: ProjectionSummary): ReportRecommendationEvid
       winningClaimLabel: 'Pat claims Social Security at 70',
       jointExactEstate: 1_118_000,
       currentClaimExactEstate: 1_000_000,
+      claimChangeEstateGain: 118_000,
+      estateYear: 2059,
     },
   }
 }

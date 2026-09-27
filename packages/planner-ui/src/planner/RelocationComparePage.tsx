@@ -28,13 +28,13 @@ import { LearnAboutScreen } from '../learn/LearnAboutScreen'
 import { LearnLink } from '../learn/LearnLink'
 import { HelpTip, NumberField, PercentField, SelectField } from './fields'
 import { fmtMoney, fmtPct } from './format'
+import { relocationErrorSentence } from './engineRefusalCopy'
 import { TypeChip } from './TypeChip'
 import { LEARN } from './learnLinks'
 import { buildModel } from './marketModelPicker'
 import { ScrollRegion } from './ScrollRegion'
 import { usePlan } from './planContextCore'
 import { useWorkspaceReadOnly } from '../data/workspaceReadOnly'
-import { planDollarBasis, toTodayDollars } from '@retiregolden/engine/projection/dollarBasis'
 import { currentStartYear, seedFromPlanId } from './useProjection'
 import { US_STATES } from './usStates'
 
@@ -222,7 +222,9 @@ export function RelocationComparePage() {
       })
       .catch((e: unknown) => {
         if (token === runToken.current) {
-          setCompareState({ forPlan, forDrafts, result: null, error: e instanceof Error ? e.message : String(e) })
+          // Plain words for a typed engine refusal the worker passed back
+          // (PR #754), and a plain sentence for anything else.
+          setCompareState({ forPlan, forDrafts, result: null, error: relocationErrorSentence(e) })
         }
       })
       .finally(() => {
@@ -261,14 +263,6 @@ export function RelocationComparePage() {
     }
     return [...rows].sort((a, b) => key(a) - key(b) || a.destinationState.localeCompare(b.destinationState))
   }, [result, effectiveRankBy])
-
-  // Today's dollars of the comparison's own start year (the year it ran for,
-  // not the clock at render), by the ledger's recurrence at the plan's rate.
-  // A row whose horizon ended before that year has no factor to divide by.
-  const deflateEnd = (row: RelocationCandidateRow, amount: number): number | null =>
-    result === null || row.endYear < result.startYear
-      ? null
-      : toTodayDollars(planDollarBasis(plan.assumptions.inflationPct, result.startYear, row.endYear), row.endYear, amount)
 
   return (
     <section>
@@ -380,7 +374,7 @@ export function RelocationComparePage() {
           </button>
         </div>
         {running ? <div className="skeleton" style={{ height: '2rem', marginTop: '0.75rem' }} aria-label="Comparing states" /> : null}
-        {error ? <p style={{ color: 'var(--bad)' }}>Compare error: {error}</p> : null}
+        {error ? <p style={{ color: 'var(--bad)' }}>{error}</p> : null}
       </div>
 
       {result && baseline && !running ? (
@@ -388,8 +382,8 @@ export function RelocationComparePage() {
           <h2>Ranked results</h2>
           <p className="card-hint">
             Every row is your full plan, identical except for residence (and any knobs you set on the candidate).
-            Deltas are vs. staying in {baseline.destinationState}. Dollar columns are nominal lifetime sums; the
-            estate column is deflated to today&apos;s dollars.
+            Deltas are against the first row ({baseline.label}). Dollar columns are nominal lifetime sums; the
+            estate column is in today&apos;s dollars.
           </p>
           <div className="form-grid">
             <SelectField
@@ -420,15 +414,18 @@ export function RelocationComparePage() {
                   <th scope="col" style={{ textAlign: 'right' }}>
                     Lifetime taxes & penalties <HelpTip text="Federal + state + local + penalties over the whole projection (nominal), the ranking default, since a state change also moves federal interactions like deduction and bracket timing." />
                   </th>
-                  <th scope="col" className="nowrap" style={{ textAlign: 'right' }}>Δ vs staying</th>
+                  <th scope="col" className="nowrap" style={{ textAlign: 'right' }}>Δ vs your plan</th>
                   <th scope="col" style={{ textAlign: 'right' }}>Ending after-tax estate (today&apos;s $)</th>
                   {result.monteCarlo ? <th scope="col" style={{ textAlign: 'right' }}>Success rate</th> : null}
                 </tr>
               </thead>
               <tbody>
                 {[baseline, ...rankedCandidates].map((row) => {
-                  const delta = row.error ? null : row.lifetimeTaxesAndPenalties - baseline.lifetimeTaxesAndPenalties
-                  const estateToday = row.error ? null : deflateEnd(row, row.endingAfterTaxEstate)
+                  // Both figures are the engine's (B2-P1 slice 3): the delta is
+                  // null on the baseline row and a failed row, the estate is in
+                  // the comparison's start-year dollars by the row's own factor.
+                  const delta = row.lifetimeTaxesAndPenaltiesDeltaVsBaseline
+                  const estateToday = row.endingAfterTaxEstateTodayDollars
                   return (
                     <tr key={row.id}>
                       <td>

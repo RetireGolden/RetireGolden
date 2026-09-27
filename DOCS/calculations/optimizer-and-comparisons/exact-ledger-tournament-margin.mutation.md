@@ -1,15 +1,15 @@
 # Mutation receipt: exact-ledger-tournament-margin
 
-Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-fourteen` at base `a4a278ef`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730), and re-executed 2026-09-26 against RetireGolden base `fff2423b` (branch `claude/b2p1-slice1-ledger-figures`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-fourteen` at base `a4a278ef`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730), and re-executed 2026-09-26 against RetireGolden base `fff2423b` (branch `claude/b2p1-slice1-ledger-figures`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `373a40f0` (branch `claude/b2p1-slice3-comparisons`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/projection/optimizePlan.ts`
 
 ```diff
 diff --git a/packages/engine/src/projection/optimizePlan.ts b/packages/engine/src/projection/optimizePlan.ts
-index 1764ef96..ab5a02a0 100644
+index 84c4fbb7..b000ed64 100644
 --- a/packages/engine/src/projection/optimizePlan.ts
 +++ b/packages/engine/src/projection/optimizePlan.ts
-@@ -1867,7 +1867,7 @@ function fallbackTournament(
+@@ -1880,7 +1880,7 @@ function fallbackTournament(
        winnerLabel: incumbentLabel(plan),
        winnerConversions: incumbent,
        winnerValidation: null,
@@ -32,14 +32,14 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-Re-executed for D-RECEIPT-DRIFT because its hunk header named a line its production code has since moved from; the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (optimizePlan.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed 2026-09-27 on B2-P1 slice 3, which moved the lines this receipt quotes (new comparison fields, basis doc comments and helper calls in the production file, or new cases and fixture fields in the evidence file) without changing the mutation, so the hunk header, capture, blob hash and revert note are refreshed against this head. The baseline is green (optimizePlan.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine9/packages/engine
+RUN  v5.0.0 C:/rgwt/engine11/packages/engine
 
- ❯ src/projection/optimizePlan.evidence.test.ts (17 tests | 1 failed) 294ms
+ ❯ src/projection/optimizePlan.evidence.test.ts (17 tests | 1 failed) 297ms
    ❯ exact-ledger-tournament-margin — Full projection tournament margin (2)
-     × publishes $0 and the executed $20,000 when the applied schedule holds 159ms
+     × publishes $0 and the executed $20,000 when the applied schedule holds 158ms
 
  Test Files  1 failed (1)
       Tests  1 failed | 16 passed (17)
@@ -59,13 +59,13 @@ AssertionError: incumbent marginOverMilpDollars: actual 90702.09287729522, works
 - true
 + false
 
- ❯ src/projection/optimizePlan.evidence.test.ts:762:9
-    760|         withinTolerance(tournament.marginOverMilpDollars, expectedMarg…
-    761|         `incumbent marginOverMilpDollars: actual ${tournament.marginOv…
-    762|       ).toBe(true)
+ ❯ src/projection/optimizePlan.evidence.test.ts:763:9
+    761|         withinTolerance(tournament.marginOverMilpDollars, expectedMarg…
+    762|         `incumbent marginOverMilpDollars: actual ${tournament.marginOv…
+    763|       ).toBe(true)
        |         ^
-    763|       // The worksheet's first wrong reading: candidates on this plan …
-    764|       // nonzero estate deltas, and publishing one of them as the marg…
+    764|       // The worksheet's first wrong reading: candidates on this plan …
+    765|       // nonzero estate deltas, and publishing one of them as the marg…
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 ```

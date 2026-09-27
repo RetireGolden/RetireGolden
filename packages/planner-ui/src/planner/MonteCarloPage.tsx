@@ -155,8 +155,11 @@ export function MonteCarloPage() {
       setError(null)
       setStatusMessage(`Simulating ${paths.toLocaleString()} market paths…`)
       const headlineRun = isHeadlineMcConfig(plan, { modelKind, returnVolPct, equityWeightPct, seed, stochasticLongevity, ltcShock })
+      // The start year is read once and published with the run, so a
+      // comparison with it runs from the same year (PR #754 findings 1 and 2).
+      const startYear = currentStartYear()
       const simulation = runMonteCarlo(plan, {
-        startYear: currentStartYear(),
+        startYear,
         pathCount: paths,
         seed,
         model,
@@ -167,14 +170,14 @@ export function MonteCarloPage() {
         },
       })
       // The KPI bar attaches to this run instead of launching its own (#497).
-      if (headlineRun) registerMcHeadlineRun(plan, simulation, paths)
+      if (headlineRun) registerMcHeadlineRun(plan, simulation, paths, startYear)
       void simulation
         .then((s) => {
           // A headline-configuration run is the headline number too, even when
           // a re-roll or model change superseded it on this page meanwhile:
           // the store is per plan object and configuration-invariant, so the
           // KPI bar and Results still gain the finer result (#497).
-          if (headlineRun) publishMcHeadline(plan, s)
+          if (headlineRun) publishMcHeadline(plan, s, startYear)
           if (token === runToken.current) {
             setSummary(s)
             setStatusMessage(

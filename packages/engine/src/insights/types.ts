@@ -32,17 +32,19 @@ export type InsightActionKind =
 
 export interface InsightImpact {
   /**
-   * Rough (screen) or exact (evaluate) change in ending after-tax estate,
-   * today's $: the candidate result's endingAfterTaxEstate − the baseline's
-   * (evaluateCandidate). The IRMAA tier-edge detector instead writes its
-   * annual premium cliff here as an avoidance signal, which is not an estate
-   * change (see its calculation record).
+   * Rough (screen) or exact (evaluate) change in ending after-tax estate, in
+   * nominal dollars of the plan's last year: the candidate result's
+   * endingAfterTaxEstate − the baseline's (evaluateCandidate). The IRMAA
+   * tier-edge detector instead writes its annual premium cliff here as an
+   * avoidance signal, which is not an estate change (see its calculation
+   * record).
    */
   endingAfterTaxEstateDelta?: number
-  /** Change in lifetime taxes & penalties, today's $ (negative = savings). */
+  /**
+   * Change in lifetime taxes and penalties, nominal dollars summed over the
+   * plan's years (negative = savings).
+   */
   lifetimeTaxDelta?: number
-  /** Change in Monte Carlo success rate, percentage points. */
-  successRateDeltaPct?: number
   /** Free-form for advisory levers that can't produce a clean delta yet. */
   qualitative?: string
 }
@@ -109,6 +111,14 @@ export interface Detector {
   category: InsightCategory
   /** Integer >= 1; bump for material trigger, threshold, severity, or evidence changes. */
   version: number
+  /**
+   * The planner's preview of this detector's card also runs the plan and the
+   * previewed plan through Monte Carlo on the headline configuration and shows
+   * the change in success rate (decisions/stochastic.ts#compareMonteCarloSuccessRates).
+   * A property of the detector, not of its card: a card's impact carries only
+   * measured deltas, and RetireGolden-Pro accepts a fixed card shape.
+   */
+  previewsMonteCarlo?: true
   /** Shipped IDs remain reserved; deprecated detectors are excluded from the default registry. */
   deprecated?: { since: string; reason: string; replacedBy?: string }
   /**

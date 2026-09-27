@@ -137,6 +137,13 @@ export interface ConversionExecution {
   /** min(1, executed/requested); 1 when nothing was requested. */
   executedRatio: number
   firstMateriallyUnexecutedYear: number | null
+  /**
+   * True when at least the minimum requested amount was requested and the
+   * whole schedule's shortfall, requested minus executed, is more than
+   * max(material shortfall dollars, requested × material shortfall percent):
+   * the one test that makes the evaluation 'diagnostic' on execution.
+   */
+  materialTotalShortfall: boolean
   /** Per-year amounts the exact ledger actually executed (years > $1 only). */
   executedByYear: Array<{ year: number; amount: number }>
 }

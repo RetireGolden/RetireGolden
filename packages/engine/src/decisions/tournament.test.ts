@@ -159,6 +159,7 @@ describe('candidate generators', () => {
         lifetimeTax: 0,
         schedule: [],
         conversions: [{ year: 2027, amount: 50_000 }],
+        conversionTotal: 50_000,
         solveMs: 0,
       },
       cleanedConversions: [{ year: 2027, amount: 45_000 }],

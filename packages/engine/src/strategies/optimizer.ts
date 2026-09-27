@@ -65,6 +65,7 @@
  */
 
 import type { FilingStatus, ParameterPack } from '../params/types.js'
+import { conversionScheduleTotal } from './conversionScheduleTotal.js'
 
 /** One plan year of exogenous inputs the optimizer treats as given. */
 export interface OptimizerYear {
@@ -497,16 +498,43 @@ export interface OptimizedYear {
 }
 
 export interface OptimizedSchedule {
+  /**
+   * The solver's status. 'timeout' means HiGHS stopped at its time limit; the
+   * schedule is then whatever incumbent it held (possibly none), not a proven
+   * optimum.
+   */
   status: 'optimal' | 'feasible' | 'infeasible' | 'timeout'
-  /** Ending after-tax wealth in today's dollars (the objective). */
+  /**
+   * Ending after-tax wealth in today's dollars (the objective). On a cleaned
+   * schedule (projection/optimizePlan.ts#scheduleWithConversions) this is still
+   * the raw solve's value, which describes the raw schedule, not the cleaned one.
+   */
   endingAfterTax: number
-  /** Cumulative modeled tax over the horizon (secondary readout, V8 §1.4). */
+  /**
+   * Cumulative modeled tax over the horizon (secondary readout, V8 §1.4); on a
+   * cleaned schedule, the raw solve's value, as for endingAfterTax.
+   */
   lifetimeTax: number
   schedule: OptimizedYear[]
-  /** Per-year conversions, ready to drop into the `optimized`/`manual` strategy. */
+  /**
+   * Per-year conversions in each year's nominal dollars, ready to drop into
+   * the `optimized`/`manual` strategy: amounts rounded to cents, only years
+   * above $0.50.
+   */
   conversions: { year: number; amount: number }[]
+  /**
+   * conversionScheduleTotal(conversions): the schedule's total, nominal dollars
+   * of different years added. Set by optimizeSchedule on every status and
+   * recomputed by projection/optimizePlan.ts#scheduleWithConversions, never
+   * carried over from another schedule.
+   */
+  conversionTotal: number
   solveMs: number
 }
+
+// The one schedule sum lives in a leaf module (strategies/conversionScheduleTotal.ts)
+// so pages that only print a total do not load this LP builder; re-exported here.
+export { conversionScheduleTotal }
 
 type Terms = Record<string, number>
 
@@ -1161,6 +1189,7 @@ export async function optimizeSchedule(input: OptimizerInput): Promise<Optimized
     lifetimeTax: round(lifetimeTax),
     schedule,
     conversions,
+    conversionTotal: conversionScheduleTotal(conversions),
     solveMs,
   }
 }

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { asAccountId, asActionId, asAllocationId, asPersonId } from '../actions/identity.js'
 import { asPositiveUsdCents } from '../actions/money.js'
 import { createFlatTaxCalculator } from '../testing/flatTax.js'
+import { compareMoneyLasts } from '../projection/moneyLasts.js'
 import { simulatePlan } from '../projection/simulate.js'
 import { createFederalTaxCalculator } from '../tax/federalTax.js'
 import {
@@ -593,6 +594,34 @@ describe('compareScenarioPlans', () => {
     expect(result.feasibleBaseAnnual).toEqual({ baseline: 80_450, proposal: 72_030, delta: -8_420 })
     expect(result.baselineMaxBaseAnnualRounding).toBe('down-to-hundred')
     expect(result.proposalMaxBaseAnnualRounding).toBe('down-to-hundred')
+  })
+
+  it('publishes headline.moneyLasts with the baseline and proposal in their places (B2-P1 slice 3, review F6)', () => {
+    // comparisonPlan draws $10,000 a year from $600,000 of cash: it runs its
+    // full horizon. Spending $200,000 a year exhausts the cash in a few years.
+    const full = comparisonPlan()
+    const depleting = structuredClone(full)
+    depleting.expenses.baseAnnual = 200_000
+    const options = { startYear: 2026, taxCalculatorForPlan: () => noTax }
+    const fullResult = simulatePlan(full, { startYear: 2026, taxCalculator: noTax })
+    const depletingResult = simulatePlan(depleting, { startYear: 2026, taxCalculator: noTax })
+    expect(fullResult.depletionYear).toBeNull()
+    expect(depletingResult.depletionYear).not.toBeNull()
+
+    // Depleting baseline, full proposal: the proposal lasts at least this much longer.
+    const longer = compareScenarioPlans(depleting, full, options).headline.moneyLasts!
+    expect(longer).toEqual(compareMoneyLasts(depletingResult, fullResult))
+    expect(longer.baseline.depletionYear).toBe(depletingResult.depletionYear)
+    expect(longer.proposal.depletionYear).toBeNull()
+    expect(longer.bound).toBe('atLeast')
+    expect(longer.delta).toBe(fullResult.endYear - (depletingResult.depletionYear! - 1))
+    expect(longer.delta!).toBeGreaterThan(0)
+
+    // Reversed: the proposal runs out first, at most that much sooner.
+    const shorter = compareScenarioPlans(full, depleting, options).headline.moneyLasts!
+    expect(shorter).toEqual(compareMoneyLasts(fullResult, depletingResult))
+    expect(shorter.bound).toBe('atMost')
+    expect(shorter.delta).toBe(-longer.delta!)
   })
 
   it('rejects invalid stochastic options before running simulations', () => {

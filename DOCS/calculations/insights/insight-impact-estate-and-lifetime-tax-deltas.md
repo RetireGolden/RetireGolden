@@ -10,10 +10,10 @@ Both figures compare the same candidate and baseline. Keeping the subtraction or
 
 | Input | Value | Unit |
 |---|---:|---|
-| Baseline ending after-tax estate | 500,000 | today's dollars |
-| Candidate ending after-tax estate | 530,000 | today's dollars |
-| Baseline lifetime taxes and penalties | 200,000 | today's dollars |
-| Candidate lifetime taxes and penalties | 185,000 | today's dollars |
+| Baseline ending after-tax estate | 500,000 | nominal dollars of the plan's last year |
+| Candidate ending after-tax estate | 530,000 | nominal dollars of the plan's last year |
+| Baseline lifetime taxes and penalties | 200,000 | nominal dollars, each year's own, summed |
+| Candidate lifetime taxes and penalties | 185,000 | nominal dollars, each year's own, summed |
 
 ## Arithmetic
 
@@ -38,3 +38,7 @@ feeds: none.
 ## Provenance
 
 Derived by: codex (gpt-5.6-sol), 2026-09-18, from the signatures-and-comments extract only, without executing the engine or reading any implementation body. Reviewed by: cursor (composer-2.5), 2026-09-18, by independent recomputation without executing the engine; see REVIEW-2026-09-18-round-eleven.md in this directory.
+
+## Restated (PR #754 review, finding 7, 2026-09-27)
+
+The record's statement and this worksheet's inputs named the unit as today's dollars. Both deltas are differences of `summarizeProjection` figures, which are nominal: the ending after-tax estate is in dollars of the plan's last year, and the lifetime sum adds each year's own dollars. `InsightImpact`'s comments (slice 3) and the census families (`insight-impact-ending-after-tax-estate-delta` and `insight-impact-lifetime-tax-delta`, basis `nominal`) already say so, and the Insights card prints no basis beside either figure ("Ending estate delta", "Lifetime tax delta"). The evidence plan runs at zero inflation, so its figures are the same in either basis and no worked value moves. The record is unreviewed until the review lane checks the correction. RetireGolden-Pro renders these fields in its review queue; its labels are outside this repository and are on the slice's Pro follow-up list.

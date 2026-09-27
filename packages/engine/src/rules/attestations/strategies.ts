@@ -10,6 +10,7 @@ import type { CoverageAttestation } from '../coverageAttestations.js'
 
 export const strategiesAttestations: Readonly<Record<string, CoverageAttestation>> = Object.freeze({
   'strategies/accountEligibility.ts': Object.freeze({ status: 'partial', sweptOn: '2026-08-25', note: 'The isTreatAsOwnEffective pre-2020 helper cutoff is registered narrowly as pl-116-94-div-o-sec-401-b-1-post-2019-inherited-regime-boundary (helper only; classifyInheritedRegime and spouseTreatAsOwnCatchUp cutoffs are independent). The consumer remains partial: the product still does not derive the Treas. Reg. 1.408-8(c)(2) deemed election from required-distribution or contribution history, and this attestation does not claim complete ownership of every eligibility/refusal branch.' }),
+  'strategies/conversionScheduleTotal.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-09-27', note: 'the one sum of a conversion schedule, left to right from 0; no statute' }),
   'strategies/inheritedIra.ts': Object.freeze({ status: 'registered', sweptOn: '2026-08-24', note: null }),
   'strategies/inheritedFiveYearAndPostDeadline.ts': Object.freeze({ status: 'registered', sweptOn: '2026-09-12', note: 'confirmed five-year emptying + 54.4974-1(e) post-deadline remaining-benefit leaf helpers' }),
   'strategies/iraBasis.ts': Object.freeze({ status: 'registered', sweptOn: '2026-08-24', note: null }),

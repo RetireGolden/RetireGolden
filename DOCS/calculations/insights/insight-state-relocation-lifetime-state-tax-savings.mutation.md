@@ -1,6 +1,6 @@
 # Mutation receipt: insight-state-relocation-lifetime-state-tax-savings
 
-Executed 2026-09-17 and re-executed 2026-09-18 against RetireGolden base `b99ac29b` (branch grok/b1-p4-cards-insights-ss-medicare-roth), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-17 and re-executed 2026-09-18 against RetireGolden base `b99ac29b` (branch grok/b1-p4-cards-insights-ss-medicare-roth), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `373a40f0` (branch `claude/b2p1-slice3-comparisons`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/insights/detectors/stateRelocation.ts`
 
@@ -22,10 +22,10 @@ npx vitest run src/insights/detectors/stateRelocation.evidence.test.ts
 
 ## Captured failing output
 
-Re-executed for D-RECEIPT-DRIFT because its hunk header named a line its production code has since moved from and its hunk header's line counts did not match the hunk; the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (stateRelocation.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed 2026-09-27 on B2-P1 slice 3, which moved the lines this receipt quotes (new comparison fields, basis doc comments and helper calls in the production file, or new cases and fixture fields in the evidence file) without changing the mutation, so the hunk header, capture, blob hash and revert note are refreshed against this head. The baseline is green (stateRelocation.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine9/packages/engine
+RUN  v5.0.0 C:/rgwt/engine11/packages/engine
 
  ❯ src/insights/detectors/stateRelocation.evidence.test.ts (1 test | 1 failed) 14ms
    ❯ insight-state-relocation-lifetime-state-tax-savings — Lifetime state-and-local tax saved by the best zero-tax relocation candidate (1)
@@ -46,13 +46,13 @@ AssertionError: expected 'Relocate to TX (illustrative)' to contain 'FL'
 Expected: "FL"
 Received: "Relocate to TX (illustrative)"
 
- ❯ src/insights/detectors/stateRelocation.evidence.test.ts:142:42
-    140|       expect(result.action.kind).toBe('preview-scenario')
-    141|       if (result.action.kind !== 'preview-scenario') throw new Error('…
-    142|       expect(result.action.scenarioName).toContain(example.expected.se…
+ ❯ src/insights/detectors/stateRelocation.evidence.test.ts:144:42
+    142|       expect(result.action.kind).toBe('preview-scenario')
+    143|       if (result.action.kind !== 'preview-scenario') throw new Error('…
+    144|       expect(result.action.scenarioName).toContain(example.expected.se…
        |                                          ^
-    143|       const qualitative = result.impact?.qualitative ?? ''
-    144|       const match = qualitative.match(/\$[\d,]+/u)
+    145|       const qualitative = result.impact?.qualitative ?? ''
+    146|       const match = qualitative.match(/\$[\d,]+/u)
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 ```

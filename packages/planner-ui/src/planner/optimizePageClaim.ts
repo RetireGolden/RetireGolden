@@ -10,12 +10,6 @@
 import type { Plan } from '@retiregolden/engine/model/plan'
 import type { ClaimAgeCoOptimization } from '@retiregolden/engine/projection/optimizePlan'
 
-/** Exact-estate improvement of the joint optimum over the current-claim optimum. */
-export function claimEstateGain(claimAge: ClaimAgeCoOptimization | null): number {
-  if (!claimAge?.winningClaimPatch) return 0
-  return claimAge.jointExactEstate - claimAge.currentClaimExactEstate
-}
-
 /**
  * A claim-only Apply is safe only when the exact joint result did not depend
  * on a different, withheld conversion schedule. The incumbent path preserves

@@ -79,11 +79,11 @@
     }
   },
   "attestations": {
-    "totalFiles": 438,
+    "totalFiles": 442,
     "byStatus": {
       "partial": 90,
       "registered": 117,
-      "rule-free": 231,
+      "rule-free": 235,
       "unswept": 0
     },
     "sweptPct": 100,
@@ -577,11 +577,11 @@
     },
     {
       "directory": "insights",
-      "files": 23,
+      "files": 24,
       "byStatus": {
         "partial": 2,
         "registered": 3,
-        "rule-free": 18
+        "rule-free": 19
       }
     },
     {
@@ -661,9 +661,9 @@
     },
     {
       "directory": "scenarios",
-      "files": 9,
+      "files": 11,
       "byStatus": {
-        "rule-free": 9
+        "rule-free": 11
       }
     },
     {
@@ -691,10 +691,11 @@
     },
     {
       "directory": "strategies",
-      "files": 8,
+      "files": 9,
       "byStatus": {
         "partial": 3,
-        "registered": 5
+        "registered": 5,
+        "rule-free": 1
       }
     },
     {

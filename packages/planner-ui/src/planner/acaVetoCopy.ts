@@ -14,7 +14,11 @@
 
 import type { AcaActionabilityVeto } from '@retiregolden/engine/projection/optimizePlan'
 import { isAcaGrossPremiumDiagnostic } from '@retiregolden/engine/decisions/spendingSolverDiagnostics'
-import { INFORMATIONAL_ACA_SUPPORT_CODES, type AcaSupportCode } from '@retiregolden/engine/projection/types'
+import {
+  INFORMATIONAL_ACA_SUPPORT_CODES,
+  type AcaSupportCode,
+  type YearResult,
+} from '@retiregolden/engine/projection/types'
 
 /** Every non-actionable ACA year the veto cites, merged and ascending. */
 export function acaVetoYears(veto: AcaActionabilityVeto): number[] {
@@ -86,6 +90,29 @@ export interface UnpricedCreditFacts {
 }
 
 /**
+ * "The premium tax credit isn't counted in YEARS: REASON." for Marketplace
+ * years whose credit is unpriced, with the engine's blocking codes in plain
+ * words. The reasons are merged across years, so with several years and
+ * several reasons the sentence says each year has at least one of them.
+ */
+function unpricedCreditSentence(years: readonly number[], codes: readonly AcaSupportCode[]): string {
+  const one = new Set(years).size === 1
+  const reasons = [
+    ...new Set(
+      codes
+        .filter((code) => !NOT_A_REASON.has(code))
+        .map((code) => UNPRICED_CREDIT_REASONS[code] ?? OTHER_UNPRICED_CREDIT_REASON),
+    ),
+  ].map((reason) => (one ? reason : reason.replace('for that year', 'for those years')))
+  const lead = `The premium tax credit isn't counted in ${formatYearRuns([...years])}`
+  return reasons.length === 0
+    ? `${lead}: ${OTHER_UNPRICED_CREDIT_REASON}.`
+    : one || reasons.length === 1
+      ? `${lead}: ${joinNatural(reasons)}.`
+      : `${lead}. In each of those years, at least one of these applies: ${reasons.join('; ')}.`
+}
+
+/**
  * The note beside a spending answer (or its absence) whose projection could
  * not price the premium tax credit in some Marketplace years: it names the
  * years and why, and says which way a credit there would move the result,
@@ -100,20 +127,7 @@ export function unpricedCreditSpendingNote(facts: UnpricedCreditFacts, answered:
   const codes = facts.acaGrossPremiumReasons
   if (years.length === 0) return null
   const one = new Set(years).size === 1
-  const reasons = [
-    ...new Set(
-      codes
-        .filter((code) => !NOT_A_REASON.has(code))
-        .map((code) => UNPRICED_CREDIT_REASONS[code] ?? OTHER_UNPRICED_CREDIT_REASON),
-    ),
-  ].map((reason) => (one ? reason : reason.replace('for that year', 'for those years')))
-  const lead = `The premium tax credit isn't counted in ${formatYearRuns(years)}`
-  const why =
-    reasons.length === 0
-      ? `${lead}: ${OTHER_UNPRICED_CREDIT_REASON}.`
-      : one || reasons.length === 1
-        ? `${lead}: ${joinNatural(reasons)}.`
-        : `${lead}. In each of those years, at least one of these applies: ${reasons.join('; ')}.`
+  const why = unpricedCreditSentence(years, codes)
   const adaptive = facts.acaGrossPremiumDirection === 'uncertain'
   const guardrails = 'because your spending guardrails respond to what healthcare costs'
   const effect = answered
@@ -124,6 +138,32 @@ export function unpricedCreditSpendingNote(facts: UnpricedCreditFacts, answered:
       ? `a credit then could change this result, ${guardrails}.`
       : 'a credit then would lower that cost.'
   return `${why} The projection pays the full Marketplace premium in ${one ? 'that year' : 'those years'}; ${effect}`
+}
+
+/**
+ * Why the spending-guardrails Insight preview is not shown when a Marketplace
+ * year's premium tax credit is unpriced, in plain words (decision of
+ * 2026-09-26). A fixed spending level can be priced on the gross-premium
+ * ledger because a credit could only lower its cost, but guardrail spending
+ * changes withdrawals, withdrawals change the credit, and a credit can move a
+ * guardrail result either way, so the preview keeps its refusal and says
+ * which years and why. The years are those the exact evaluation refused on:
+ * the base plan's and the previewed plan's unpriced years together. Null when
+ * neither run has one (the refusal had another cause).
+ */
+export function guardrailPreviewUnpricedCreditRefusal(
+  baselineYears: readonly Pick<YearResult, 'year' | 'aca'>[],
+  previewYears: readonly Pick<YearResult, 'year' | 'aca'>[],
+): string | null {
+  const unpriced = [...baselineYears, ...previewYears].filter((year) => year.aca?.readiness === 'nonActionable')
+  if (unpriced.length === 0) return null
+  const years = [...new Set(unpriced.map((year) => year.year))].sort((a, b) => a - b)
+  const codes = unpriced.flatMap((year) => year.aca?.supportCodes ?? [])
+  return (
+    `No preview is shown for this plan. ${unpricedCreditSentence(years, codes)} Guardrail spending changes how ` +
+    'much you withdraw each year, and your withdrawals change the credit, so a preview that leaves the credit ' +
+    'out could come out too high or too low.'
+  )
 }
 
 /**

@@ -320,9 +320,7 @@ export const longevityRecords = {
     purpose: 'One convention for how long the money lasts: the last fully funded year, and how many plan years the money falls short of the plan\'s end.',
     kind: 'formula',
     outputs: ['display-years-before-plan-end', 'longevity-last-funded-year'],
-    feeds: [
-
-    ],
+    feeds: ['compare-plan-deltas'],
     statement: 'projection/moneyLasts.ts#moneyLasts publishes lastFundedYear = depletionYear - 1, or endYear when the projection never depletes, and yearsShortOfPlanEnd = endYear - lastFundedYear: 0 when it never depletes and endYear - depletionYear + 1 when it does, so a plan short only in its final year reads 1. A depletion year outside the projection\'s years is refused. The decision and optimizer money-lasts deltas are differences of lastFundedYear. Units: calendar year; count of years. Rounding: none.',
     formula: {
       expression: 'L = D - 1 when D is not null, else E; N = E - L',

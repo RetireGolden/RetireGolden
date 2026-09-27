@@ -70,7 +70,7 @@ describe('MonteCarloPage adopts the published headline run (#497)', () => {
     // A real, tiny summary under the headline configuration stands in for a 10,000-path run.
     const model = buildModel(HEADLINE_MC_MODEL.kind, plan.assumptions.inflationPct, HEADLINE_MC_MODEL.returnVolPct, HEADLINE_MC_MODEL.equityWeightPct, plan)
     const published = await actualPool.runMonteCarlo(plan, { startYear: currentStartYear(), pathCount: 8, seed: seedFromPlanId(plan.id), model })
-    publishMcHeadline(plan, published)
+    publishMcHeadline(plan, published, currentStartYear())
     mockedRunMc.mockClear()
 
     await mount(plan)

@@ -44,9 +44,6 @@
       "estate-to-charity",
       "exact-ledger-tournament-margin-over-milp-dollars",
       "exact-ledger-validation-ending-net-worth-delta",
-      "exact-ledger-validation-executed-conversion-ratio",
-      "exact-ledger-validation-first-materially-unexecuted-year",
-      "exact-ledger-validation-requested-conversion-total",
       "exact-ledger-validation-traditional-depletion-year",
       "flexible-goal-funded-amount-annual",
       "flexible-goal-unfunded-amount-annual",
@@ -79,8 +76,6 @@
       "insight-annuitization-headroom-illustrative-spia",
       "insight-asset-location-swappable-exposure",
       "insight-hecm-buffer-illustrative-credit-line",
-      "insight-impact-ending-after-tax-estate-delta",
-      "insight-impact-lifetime-tax-delta",
       "insight-irmaa-tier-edge-premium-cliff",
       "insight-spending-guardrails-illustrative-floor",
       "insight-spending-headroom-rough-annual",
@@ -151,7 +146,6 @@
       "relocation-lifetime-state-local-tax",
       "relocation-state-tax-driver-savings",
       "rmd-required-annual",
-      "scenario-comparison-cell",
       "scenario-irmaa-surcharge-tier-years",
       "scenario-lifetime-penalties",
       "scenario-lifetime-tax",
@@ -202,6 +196,9 @@
       "accounts-ending-balance-by-category",
       "bucket-lens-allocation",
       "cash-flow-line-amount",
+      "claim-age-co-optimization-estate-gain",
+      "compare-plan-deltas",
+      "compare-plan-money-deltas",
       "display-balance-by-category-annual",
       "display-dollar-basis-conversion",
       "display-fan-band-widths",
@@ -216,12 +213,21 @@
       "display-upside-shortfall-annual",
       "display-upside-spending-annual",
       "display-years-before-plan-end",
+      "exact-ledger-validation-executed-conversion-ratio",
+      "exact-ledger-validation-first-materially-unexecuted-year",
+      "exact-ledger-validation-requested-conversion-total",
       "income-floor-ladder-yield-pct",
+      "insight-impact-ending-after-tax-estate-delta",
+      "insight-impact-lifetime-tax-delta",
+      "insight-monte-carlo-success-delta",
       "longevity-last-funded-year",
+      "optimizer-schedule-conversion-total",
       "pension-election-annuity-present-value",
+      "relocation-tax-comparison",
       "risk-based-guardrail-solved-balance-thresholds",
       "risk-based-guardrail-suggested-adjustment-monthly",
       "roth-conversion-annual",
+      "scenario-comparison-cell",
       "simple-candidate-evaluation-after-tax-estate-delta",
       "simple-candidate-evaluation-executed-conversion-total",
       "simple-candidate-evaluation-incomplete-computation-years",
@@ -238,15 +244,9 @@
       "year-result-ltcg-zero-headroom"
     ],
     "noRecordYet": [
-      "claim-age-co-optimization-estate-gain",
-      "compare-plan-deltas",
-      "compare-plan-money-deltas",
-      "insight-monte-carlo-success-delta",
       "mcp-batch-cumulative-tax-objective",
       "mcp-batch-ending-traditional-objective",
       "mcp-compare-ending-after-tax-estate-delta",
-      "optimizer-schedule-conversion-total",
-      "relocation-tax-comparison",
       "social-security-break-even",
       "social-security-claiming-sweep-objective",
       "social-security-computation-summary-counts",
@@ -263,12 +263,6 @@
       "survivor-scenario-row-survivor-shortfall-years"
     ],
     "relocationPending": [
-      "claim-age-co-optimization-estate-gain",
-      "compare-plan-deltas",
-      "compare-plan-money-deltas",
-      "insight-monte-carlo-success-delta",
-      "optimizer-schedule-conversion-total",
-      "relocation-tax-comparison",
       "social-security-break-even",
       "social-security-claiming-sweep-objective",
       "social-security-computation-summary-counts",
@@ -335,6 +329,9 @@
         "surplus-invested-annual",
         "year-result-contributions"
       ],
+      "compare-plan-deltas": [
+        "display-years-before-plan-end"
+      ],
       "display-balance-by-category-annual": [
         "accounts-balance-per-account-annual",
         "display-dollar-basis-conversion"
@@ -382,6 +379,9 @@
       ],
       "exact-ledger-tournament-margin-over-milp-dollars": [
         "exact-ledger-cleaned-schedule"
+      ],
+      "exact-ledger-validation-requested-conversion-total": [
+        "conversion-schedule-total"
       ],
       "flexible-goal-funded-amount-annual": [
         "flexible-goal-scheduling"
@@ -841,16 +841,16 @@
     }
   },
   "records": {
-    "total": 235,
+    "total": 241,
     "byKind": {
-      "composition": 76,
+      "composition": 81,
       "data": 17,
-      "formula": 84,
+      "formula": 85,
       "model": 58
     },
     "byJustificationKind": {
       "dataset": 5,
-      "derivation": 230
+      "derivation": 236
     }
   },
   "oracleExamples": [
@@ -1013,7 +1013,7 @@
     }
   ],
   "attestationsDerived": {
-    "catalogued": 66,
+    "catalogued": 70,
     "excludedWithReason": 0,
     "notYetReviewed": 165
   },
@@ -1031,7 +1031,7 @@
     {
       "group": "insights",
       "path": "calculation-coverage/insights.json",
-      "recordCount": 10
+      "recordCount": 11
     },
     {
       "group": "laddersAndValuation",
@@ -1056,7 +1056,7 @@
     {
       "group": "optimizerAndComparisons",
       "path": "calculation-coverage/optimizerAndComparisons.json",
-      "recordCount": 15
+      "recordCount": 19
     },
     {
       "group": "rmd",
@@ -1066,7 +1066,7 @@
     {
       "group": "roth",
       "path": "calculation-coverage/roth.json",
-      "recordCount": 2
+      "recordCount": 3
     },
     {
       "group": "socialSecurity",

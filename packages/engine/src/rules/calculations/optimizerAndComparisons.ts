@@ -70,7 +70,7 @@ export const optimizerAndComparisonsRecords = {
     kind: 'composition',
     outputs: ['scenario-comparison-cell'],
     feeds: [],
-    statement: 'scenarios/comparison.ts#nullableScalar preserves nullable baseline and proposal values and publishes proposal-baseline only when both exist, otherwise publishing a null delta, in the metric\'s own units and with no stated rounding.',
+    statement: 'scenarios/scalarComparison.ts#compareNullableScalars preserves nullable baseline and proposal values and publishes proposal minus baseline, through compareScalars, only when both exist, otherwise publishing a null delta; a negative zero is published as 0 and a non-finite value is refused with a RangeError. The scenario comparison\'s nullable cells (its depletion year, the spending-capacity figures and the annual rows where only one horizon has the year) and the Compare page\'s depletion age use it; the candidate evaluation\'s deltas (decisions/evaluateCandidate.ts) are plain subtractions and do not. Units: the metric\'s own. No stated rounding.',
     formula: {
       expression: 'delta = proposal - baseline when baseline != null and proposal != null, else null',
       variables: [
@@ -85,15 +85,15 @@ export const optimizerAndComparisonsRecords = {
       worksheet: 'DOCS/calculations/optimizer-and-comparisons/scenario-nullable-scalar-comparison.md',
     },
     limits: [
-      'Comparability is conjunctive: absence is not numerical zero, so coercing a null operand to zero would present a comparison that does not exist. The pin is a non-exported helper, so the evidence asserts it through the exported compareScenarioPlans on a metric whose comparison cell is the nullable one (the headline depletion year).',
+      'Comparability is conjunctive: absence is not numerical zero, so coercing a null operand to zero would present a comparison that does not exist. The evidence asserts it directly and through the exported compareScenarioPlans on the metric whose comparison cell is the nullable one (the headline depletion year).',
     ],
-    implementedBy: ['packages/engine/src/scenarios/comparison.ts'],
+    implementedBy: ['packages/engine/src/scenarios/scalarComparison.ts', 'packages/engine/src/scenarios/comparison.ts'],
     implementedByFunctions: [
-      'packages/engine/src/scenarios/comparison.ts#nullableScalar',
+      'packages/engine/src/scenarios/scalarComparison.ts#compareNullableScalars',
       'packages/engine/src/scenarios/comparison.ts#compareScenarioPlans',
     ],
-    verifiedOn: '2026-09-18',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+    verifiedOn: '2026-09-27',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
   },
   'scenario-scalar-comparison': {
     title: 'Scenario scalar comparison',
@@ -101,7 +101,7 @@ export const optimizerAndComparisonsRecords = {
     kind: 'composition',
     outputs: ['scenario-comparison-cell'],
     feeds: [],
-    statement: 'scenarios/comparison.ts#scalar publishes a finite numeric metric\'s baseline, proposal and delta in that metric\'s own units, with delta = proposal - baseline and no stated rounding.',
+    statement: 'scenarios/scalarComparison.ts#compareScalars publishes a finite numeric metric\'s baseline, proposal and delta in that metric\'s own units, with delta = proposal - baseline; a negative zero is published as 0 on every member, and a non-finite operand or difference is refused with a RangeError. The scenario comparison, the Compare page\'s headlines and money-lasts comparison (scenarios/planHeadlines.ts, projection/moneyLasts.ts#compareMoneyLasts), the relocation rows\' lifetime delta, the claim-change estate gain, compareMonteCarloSuccessRates and stochasticDeltas publish their differences through it; the candidate evaluation\'s estate, net-worth, lifetime-tax and money-lasts deltas (decisions/evaluateCandidate.ts, read by InsightImpact and ExactLedgerValidation) are plain subtractions and do not. No stated rounding.',
     formula: {
       expression: 'delta = proposal - baseline',
       variables: [
@@ -116,15 +116,15 @@ export const optimizerAndComparisonsRecords = {
       worksheet: 'DOCS/calculations/optimizer-and-comparisons/scenario-scalar-comparison.md',
     },
     limits: [
-      'The signed identity is fixed: baseline and proposal are preserved rather than reordered by magnitude, and the delta stays in the metric\'s own unit rather than becoming a relative change. The pin is a non-exported helper, so the evidence asserts it through the exported compareScenarioPlans on a headline money metric.',
+      'The signed identity is fixed: baseline and proposal are preserved rather than reordered by magnitude, and the delta stays in the metric\'s own unit rather than becoming a relative change. The evidence asserts it directly and through the exported compareScenarioPlans on a headline money metric.',
     ],
-    implementedBy: ['packages/engine/src/scenarios/comparison.ts'],
+    implementedBy: ['packages/engine/src/scenarios/scalarComparison.ts', 'packages/engine/src/scenarios/comparison.ts'],
     implementedByFunctions: [
-      'packages/engine/src/scenarios/comparison.ts#scalar',
+      'packages/engine/src/scenarios/scalarComparison.ts#compareScalars',
       'packages/engine/src/scenarios/comparison.ts#compareScenarioPlans',
     ],
-    verifiedOn: '2026-09-18',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+    verifiedOn: '2026-09-27',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
   },
   'swr-rule-depletion-year': {
     title: 'Swr rule depletion year',
@@ -288,9 +288,9 @@ export const optimizerAndComparisonsRecords = {
       'exact-ledger-validation-first-materially-unexecuted-year',
     ],
     feeds: [],
-    statement: 'projection/optimizePlan.ts#evaluateExactLedgerSchedule sums the requested schedule into requestedConversionTotal, sums the candidate result\'s YearResult.rothConversion into the executed total, publishes executedConversionRatio as min(1, executed / requested) and exactly 1 when nothing was requested, and publishes firstMateriallyUnexecutedYear as the first ascending requested year whose shortfall is more than max(DECISION_MATERIAL_SHORTFALL_DOLLARS, requested times DECISION_MATERIAL_SHORTFALL_PCT), else null.',
+    statement: 'projection/optimizePlan.ts#evaluateExactLedgerSchedule sums the requested schedule into requestedConversionTotal with strategies/conversionScheduleTotal.ts#conversionScheduleTotal (left to right from 0, the one schedule sum every surface reads), sums the candidate result\'s YearResult.rothConversion into the executed total, publishes executedConversionRatio as min(1, executed / requested) and exactly 1 when nothing was requested, and publishes firstMateriallyUnexecutedYear as the first ascending requested year whose shortfall is more than max(DECISION_MATERIAL_SHORTFALL_DOLLARS, requested times DECISION_MATERIAL_SHORTFALL_PCT), else null. decisions/evaluateCandidate.ts#buildConversionExecution also decides, once, whether the whole schedule is short by more than max(DECISION_MATERIAL_SHORTFALL_DOLLARS, requested total times DECISION_MATERIAL_SHORTFALL_PCT) with at least the minimum requested (the test that makes the evaluation diagnostic), and the validation publishes executedWithoutMaterialShortfall, true when no year and not the whole schedule is short by more than its margin, for the Optimize page to read instead of re-deriving the margins.',
     formula: {
-      expression: 'requested = sum(schedule.amount); executed = sum(candidate.years.rothConversion); ratio = requested > 0 ? min(1, executed / requested) : 1; firstMateriallyUnexecutedYear = min { y ascending : requested_y - executed_y > max(1000, requested_y * 0.05) }, else null',
+      expression: 'requested = sum(schedule.amount); executed = sum(candidate.years.rothConversion); ratio = requested > 0 ? min(1, executed / requested) : 1; firstMateriallyUnexecutedYear = min { y ascending : requested_y - executed_y > max(1000, requested_y * 0.05) }, else null; executedWithoutMaterialShortfall = firstMateriallyUnexecutedYear is null and not (requested >= 1 and requested - executed > max(1000, requested * 0.05))',
       variables: [
         { symbol: 'requested_y', meaning: 'Requested conversion dollars in year y', unit: 'nominal USD', domain: 'nonnegative' },
         { symbol: 'executed_y', meaning: 'Candidate result rothConversion in year y', unit: 'nominal USD', domain: 'nonnegative' },
@@ -310,14 +310,16 @@ export const optimizerAndComparisonsRecords = {
     implementedBy: [
       'packages/engine/src/projection/optimizePlan.ts',
       'packages/engine/src/decisions/evaluateCandidate.ts',
+      'packages/engine/src/strategies/conversionScheduleTotal.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/projection/optimizePlan.ts#evaluateExactLedgerSchedule',
       'packages/engine/src/decisions/evaluateCandidate.ts#buildConversionExecution',
       'packages/engine/src/decisions/evaluateCandidate.ts#evaluateCandidate',
+      'packages/engine/src/strategies/conversionScheduleTotal.ts#conversionScheduleTotal',
     ],
-    verifiedOn: '2026-09-18',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+    verifiedOn: '2026-09-27',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
   },
   'exact-ledger-traditional-depletion': {
     title: 'Full projection traditional depletion',
@@ -506,5 +508,161 @@ export const optimizerAndComparisonsRecords = {
     ],
     verifiedOn: '2026-09-18',
     provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
+  'plan-headline-money-comparison': {
+    title: 'Compare plans: money rows in one stated basis',
+    purpose: 'Compare two plans\' ending net worth, ending investable, ending after-tax estate and lifetime tax plus penalties in one dollar basis that the page states.',
+    kind: 'composition',
+    outputs: ['compare-plan-money-deltas'],
+    feeds: [],
+    statement: 'scenarios/planHeadlines.ts#comparePlanHeadlines compares two projections that share a start year. When they end in the same year it publishes ending net worth, ending investable, ending after-tax estate and lifetime tax plus penalties in nominal dollars as the summaries give them, with moneyBasis nominal. When they end in different years (owner decision R13) it publishes each ending figure divided by that plan\'s own published inflation factor at its own end year, and lifetime tax plus penalties as the sum over that plan\'s years, in ledger order from 0, of each year\'s tax plus penalties divided by that year\'s factor, with moneyBasis today. Every row is scenarios/scalarComparison.ts#compareScalars(baseline, proposal): delta = proposal − baseline, a negative zero published as 0, and a non-finite figure refused with a RangeError, as are two different start years. An after-tax estate of $1,800,000 at the end of 2050 against $2,000,000 at the end of 2060, at 2.5 percent inflation from 2026, compares as $995,175.64 against $863,810.69 in 2026 dollars, a difference of −$131,364.95 where the nominal subtraction read +$200,000. Units: USD, nominal or start-year as moneyBasis says. Rounding: none.',
+    formula: {
+      expression: 'today when E_b ≠ E_p, else nominal; today: X_s = x_s / f_s(E_s) and T_s = Σ_y (tax_y + pen_y) / f_s(y); nominal: X_s = x_s and T_s = the summary sum; delta = X_p − X_b',
+      variables: [
+        { symbol: 'x_s', meaning: 'A side\'s summary figure: ending net worth, ending investable or ending after-tax estate', unit: 'nominal USD of E_s', domain: 'finite' },
+        { symbol: 'f_s(y)', meaning: 'The side\'s published inflation factor for year y, exactly 1 in the start year', unit: '1', domain: '> 0' },
+        { symbol: 'E_s', meaning: 'The side\'s last projection year', unit: 'calendar year', domain: 'integer' },
+        { symbol: 'tax_y + pen_y', meaning: 'The side\'s tax and penalties in year y', unit: 'nominal USD of year y', domain: 'finite' },
+      ],
+      timing: 'once per pair of projections that share a start year',
+      rounding: 'none; the page formats',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/optimizer-and-comparisons/compare-plan-money-deltas.md',
+    },
+    limits: [
+      'Each plan is deflated by its own inflation assumption, so two plans that assume different inflation are compared each in its own view of start-year dollars. When they end in the same year the rows stay nominal, and that year\'s dollars then buy different amounts under each assumption (20 of the 50 same-end pairs of the example library).',
+      'Lifetime rows cover each plan\'s own years: a plan that runs ten years longer pays ten more years of tax, and the page names both end years.',
+      'The difference is taken between the unrounded figures, so beside the page\'s compact levels it can differ from the difference of the two printed levels by up to half a display unit on each side.',
+      'A plan\'s own level cells depend on its partner: the same plan reads in nominal dollars beside a plan that ends in its year and in start-year dollars beside one that does not.',
+    ],
+    implementedBy: [
+      'packages/engine/src/scenarios/planHeadlines.ts',
+      'packages/engine/src/scenarios/scalarComparison.ts',
+      'packages/engine/src/projection/dollarBasis.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/scenarios/planHeadlines.ts#comparePlanHeadlines',
+      'packages/engine/src/scenarios/scalarComparison.ts#compareScalars',
+      'packages/engine/src/projection/dollarBasis.ts#toTodayDollars',
+    ],
+    verifiedOn: '2026-09-27',
+    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+  },
+  'plan-headline-longevity-comparison': {
+    title: 'Compare plans: how long the money lasts, deterministic success and depletion age',
+    purpose: 'Compare two plans on the last fully funded year, the single-path success reading and the first person\'s age in the depletion year.',
+    kind: 'composition',
+    outputs: ['compare-plan-deltas'],
+    feeds: [],
+    statement: 'scenarios/planHeadlines.ts#comparePlanHeadlines publishes moneyLasts through projection/moneyLasts.ts#compareMoneyLasts: each side\'s projection/moneyLasts.ts#moneyLasts (owner decision R15: the last funded year L = D − 1, or E when the projection never depletes) and delta = L_p − L_b, with bound atLeast when only the proposal runs its full horizon (a lower bound), atMost when only the baseline does (an upper bound) and null when both deplete (exact); when both run their full horizons the bound is bothFull and the delta is null, because neither exhaustion year is known. It publishes deterministicSuccessPct as compareScalars of 100 for a side that never depletes and 0 otherwise, and depletionAgePrimary as compareNullableScalars of D minus the birth year of the side\'s first listed person, null on a side that never depletes. A depleting side whose first person has no birth date in YYYY-MM-DD form is refused with a RangeError. A plan depleting in 2046 (first person born 1962) against one that never depletes and ends in 2049 reads 2045 against 2049: a difference of 4 years, bound atLeast, and ages 84 and none. Units: calendar years; percentage points; years of age. Rounding: none.',
+    formula: {
+      expression: 'L_s = D_s − 1 when D_s is not null, else E_s; delta = L_p − L_b unless both D are null; success_s = 100 when D_s is null, else 0; age_s = D_s − birthYear_s',
+      variables: [
+        { symbol: 'D_s', meaning: 'The side\'s first year short of money', unit: 'calendar year', domain: 'integer in [start year, E_s], or null' },
+        { symbol: 'E_s', meaning: 'The side\'s last projection year', unit: 'calendar year', domain: 'integer' },
+        { symbol: 'birthYear_s', meaning: 'Birth year of the side\'s first listed person', unit: 'calendar year', domain: 'integer' },
+      ],
+      timing: 'once per pair of projections that share a start year',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/optimizer-and-comparisons/compare-plan-deltas.md',
+    },
+    limits: [
+      'Primary is each plan\'s first listed person; when the two plans list different people first, the age row compares two people.',
+      'The age is the calendar age in the first short year (the year minus the birth year), not the exact age when the money runs out.',
+      'A bound with a zero difference (at least the same) is a correct bound.',
+      'The deterministic success reading is 100 or 0 on the one deterministic path; it is not a probability.',
+    ],
+    implementedBy: [
+      'packages/engine/src/scenarios/planHeadlines.ts',
+      'packages/engine/src/projection/moneyLasts.ts',
+      'packages/engine/src/scenarios/scalarComparison.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/scenarios/planHeadlines.ts#comparePlanHeadlines',
+      'packages/engine/src/projection/moneyLasts.ts#compareMoneyLasts',
+      'packages/engine/src/projection/moneyLasts.ts#moneyLasts',
+      'packages/engine/src/scenarios/scalarComparison.ts#compareNullableScalars',
+    ],
+    verifiedOn: '2026-09-27',
+    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+  },
+  'relocation-row-comparison': {
+    title: 'Relocation rows compared with your plan',
+    purpose: 'Each relocation row\'s lifetime tax difference from the plan as it stands, and its ending after-tax estate in the comparison\'s start-year dollars.',
+    kind: 'composition',
+    outputs: ['relocation-tax-comparison'],
+    feeds: [],
+    statement: 'projection/relocation.ts#compareRelocationCandidates publishes on each row lifetimeTaxesAndPenaltiesDeltaVsBaseline = compareScalars(baseline.lifetimeTaxesAndPenalties, row.lifetimeTaxesAndPenalties).delta, the row\'s sum minus the first (baseline) row\'s, null on the baseline row and on a row whose candidate failed; and endingAfterTaxEstateTodayDollars, the row\'s endingAfterTaxEstate divided by that row\'s own published inflation factor at its endYear (#runRow, through projection/dollarBasis.ts), null on a failed row and on a projection with no years. Every row covers the same years in the same nominal dollars, since a candidate changes only the residence, the flat state rate, the local rate and base spending. Lifetime sums of $433,212.40 (the baseline) and $363,292.60 differ by −$69,919.80; an after-tax estate of $4,058,000 at the end of 2059, at 2.5 percent inflation from 2026, is $1,796,488.68 in 2026 dollars. Units: nominal USD for the difference; start-year USD for the estate. Rounding: none.',
+    formula: {
+      expression: 'delta_r = L_r − L_baseline; estateToday_r = E_r / f_r(endYear_r)',
+      variables: [
+        { symbol: 'L_r', meaning: 'A row\'s lifetime taxes and penalties', unit: 'nominal USD summed over the plan\'s years', domain: 'finite' },
+        { symbol: 'E_r', meaning: 'A row\'s ending after-tax estate', unit: 'nominal USD of endYear_r', domain: 'finite' },
+        { symbol: 'f_r(y)', meaning: 'The row\'s published inflation factor for year y, exactly 1 in the start year', unit: '1', domain: '> 0' },
+      ],
+      timing: 'once per relocation comparison',
+      rounding: 'none; the page prints whole dollars',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/optimizer-and-comparisons/relocation-tax-comparison.md',
+    },
+    limits: [
+      'The difference is taken between the unrounded sums, so it can differ by $1 from the difference of the two printed sums (19 of the 87 candidate rows of the example library at FL, TX and CA); these sums are not published as rounded quantities, so the exact difference stays.',
+      'The differences and sums are nominal and undiscounted: a dollar of tax in the last year counts the same as one in the first.',
+    ],
+    implementedBy: [
+      'packages/engine/src/projection/relocation.ts',
+      'packages/engine/src/scenarios/scalarComparison.ts',
+      'packages/engine/src/projection/dollarBasis.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/relocation.ts#compareRelocationCandidates',
+      'packages/engine/src/projection/relocation.ts#runRow',
+      'packages/engine/src/scenarios/scalarComparison.ts#compareScalars',
+      'packages/engine/src/projection/dollarBasis.ts#toTodayDollars',
+    ],
+    verifiedOn: '2026-09-27',
+    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+  },
+  'claim-change-estate-gain': {
+    title: 'Claim-age co-optimization estate gain',
+    purpose: 'How much more projected after-tax estate the winning claim-age change leaves than the best result at the current claim ages.',
+    kind: 'composition',
+    outputs: ['claim-age-co-optimization-estate-gain'],
+    feeds: [],
+    statement: 'projection/optimizePlan.ts#optimizePlanCoOptimizingClaimAge publishes ClaimAgeCoOptimization.claimChangeEstateGain = compareScalars(currentClaimExactEstate, jointExactEstate).delta (settled decision R17: one value, which the Optimize page\'s claim card and the downloadable report both read), and estateYear, the plan\'s last projection year, whose nominal dollars all three estate figures are in. A claim candidate is kept only when its estate exceeds the current-claim estate by more than DEFAULT_CLAIM_SWITCH_MARGIN_DOLLARS, which is 1000 dollars, so the gain is 0 when no claim change won (the two estates are then one number) and more than 1000 dollars when one did; it is never negative. Estates of $1,000,000 at the current claim ages and $1,118,000 jointly give $118,000. Units: nominal USD of estateYear. Rounding: none.',
+    formula: {
+      expression: 'gain = J − C, where J = C unless a claim candidate\'s estate exceeds C + 1000',
+      variables: [
+        { symbol: 'J', meaning: 'After-tax estate of the best claim and schedule pair (jointExactEstate)', unit: 'nominal USD of estateYear', domain: 'finite' },
+        { symbol: 'C', meaning: 'After-tax estate of the optimum at the current claim ages (currentClaimExactEstate)', unit: 'nominal USD of estateYear', domain: 'finite' },
+      ],
+      timing: 'once per co-optimized run',
+      rounding: 'none; the page and the report print whole dollars',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/optimizer-and-comparisons/claim-age-co-optimization-estate-gain.md',
+    },
+    limits: [
+      'The gain is in nominal dollars of the plan\'s last year, like both estates beside it: for a plan ending in 2091 at 2.5 percent inflation from 2026, $193,083.87 is $38,787.76 in 2026 dollars. The card and the report row name the year.',
+      'The gain compares optima on after-tax estate whatever objective ranked the conversion schedules; the card says after-tax estate.',
+    ],
+    implementedBy: [
+      'packages/engine/src/projection/optimizePlan.ts',
+      'packages/engine/src/scenarios/scalarComparison.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/optimizePlan.ts#optimizePlanCoOptimizingClaimAge',
+      'packages/engine/src/scenarios/scalarComparison.ts#compareScalars',
+    ],
+    verifiedOn: '2026-09-27',
+    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
   },
 } satisfies Record<string, CalculationRecord>

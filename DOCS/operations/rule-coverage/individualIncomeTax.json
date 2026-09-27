@@ -37,15 +37,15 @@
           "functions": [
             {
               "name": "bracketSegments",
-              "line": 529
-            },
-            {
-              "name": "buildOptimizerModel",
               "line": 557
             },
             {
+              "name": "buildOptimizerModel",
+              "line": 585
+            },
+            {
               "name": "federalTaxOn",
-              "line": 1172
+              "line": 1201
             }
           ]
         },
@@ -251,7 +251,7 @@
           "functions": [
             {
               "name": "buildOptimizerModel",
-              "line": 557
+              "line": 585
             }
           ]
         },
@@ -1605,7 +1605,7 @@
           "functions": [
             {
               "name": "buildOptimizerModel",
-              "line": 557
+              "line": 585
             }
           ]
         }

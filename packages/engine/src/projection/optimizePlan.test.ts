@@ -25,7 +25,7 @@ import {
 import { createEmptyPlan, parsePlan, type Account, type Plan } from '../model/plan.js'
 import { LATEST_PACK_YEAR, packForYear } from '../params/index.js'
 import { recurringOrdinaryIncome, setAcaYearContract, socialSecurityIncome } from '../testing/planFixtures.js'
-import { buildOptimizerModel, optimizeSchedule, type OptimizedSchedule } from '../strategies/optimizer.js'
+import { buildOptimizerModel, conversionScheduleTotal, optimizeSchedule, type OptimizedSchedule } from '../strategies/optimizer.js'
 import { createFederalTaxCalculator } from '../tax/federalTax.js'
 import { HECM_MODELED_DEBT_TIMING_ISSUE } from './internal/hecmLineState.js'
 import { summarizeProjection } from './compare.js'
@@ -510,6 +510,7 @@ function fakeSchedule(conversions: { year: number; amount: number }[]): Optimize
       endTaxable: 0,
     })),
     conversions,
+    conversionTotal: conversionScheduleTotal(conversions),
     solveMs: 0,
   }
 }

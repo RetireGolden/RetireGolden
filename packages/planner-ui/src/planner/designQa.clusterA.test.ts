@@ -198,23 +198,23 @@ describe('Design-QA cluster A: source pins', () => {
     expect(results).toContain('Across {pathCountLabel} varied markets')
     expect(results).not.toContain('PATH_COUNT_LABEL')
     const mc = sheet('./MonteCarloPage.tsx')
-    expect(mc).toContain('publishMcHeadline(plan, s)')
+    expect(mc).toContain('publishMcHeadline(plan, s, startYear)')
     // The store keeps the finest run and the hook never starts a default run
     // once a published one answers for the plan (review round 2).
     const hook = sheet('./useMcSuccessRate.ts')
-    expect(hook).toContain('if (current !== undefined && current.pathCount > summary.pathCount) return')
+    expect(hook).toContain('if (current !== undefined && publishedStartYear.get(plan) === startYear && current.pathCount > summary.pathCount) return')
     expect(hook).toContain('if (headline !== undefined) return undefined')
     // The page subscribes to the store (any publisher re-renders it), shares
     // its in-flight run with the hook, and stands its auto-run down when the
     // reader has already started one. The count-less wrapper is gone.
     expect(mc).toContain('const publishedHeadline = useMcHeadline(plan)')
     expect(mc).not.toContain('publishedMcSummary(plan)')
-    expect(mc).toContain('if (headlineRun) registerMcHeadlineRun(plan, simulation, paths)')
+    expect(mc).toContain('if (headlineRun) registerMcHeadlineRun(plan, simulation, paths, startYear)')
     expect(mc).toContain('if (runToken.current === scheduledAt) run(DEFAULT_PATH_COUNT)')
     // A superseded headline run still publishes: the publish sits before the token check.
-    expect(mc.indexOf('if (headlineRun) publishMcHeadline(plan, s)')).toBeLessThan(mc.indexOf('if (token === runToken.current) {\n            setSummary(s)'))
+    expect(mc.indexOf('if (headlineRun) publishMcHeadline(plan, s, startYear)')).toBeLessThan(mc.indexOf('if (token === runToken.current) {\n            setSummary(s)'))
     // The in-flight result carries its path count, and the store snapshot serves both renders.
-    expect(hook).toContain('.then((s) => ({ rate: s.successRate, pathCount: s.pathCount }))')
+    expect(hook).toContain('.then((s) => ({ rate: s.successRate, pathCount: s.pathCount, startYear }))')
     expect(hook).toContain('return useSyncExternalStore(subscribe, snapshot, snapshot)')
     expect(hook).toContain('export function useInFlightMcPathCount(plan: Plan): number | undefined')
     expect(hook).toContain('pathCount: current?.pathCount ?? inFlightPathCount ?? DEFAULT_PATH_COUNT')
@@ -222,7 +222,7 @@ describe('Design-QA cluster A: source pins', () => {
     // show are the last completed run while a replacement runs.
     expect(mc).toContain('same plan {(summary?.pathCount ?? inFlightPaths).toLocaleString()} times')
     expect(mc).toContain('Showing the last completed run ({summary.pathCount.toLocaleString()} paths) while')
-    expect(mc).toContain('registerMcHeadlineRun(plan, simulation, paths)')
+    expect(mc).toContain('registerMcHeadlineRun(plan, simulation, paths, startYear)')
     expect(results).not.toContain('keeps verdict copy in sync')
     expect(hook).not.toMatch(/export function useMcSuccessRate\(/)
     expect(hook).toContain('export function useMcHeadline(plan: Plan): MonteCarloSummary | undefined')
@@ -242,8 +242,9 @@ describe('Design-QA cluster A: source pins', () => {
   it('the Compare delta column formats every row and explains its colors (#499)', () => {
     const compare = sheet('./ComparePlansPage.tsx')
     expect(compare).toContain("unit: 'years'")
-    // Money lasts renders a bounded label when one plan never depletes.
-    expect(compare).toContain('deltaLabel: lasts.label')
+    // Money lasts renders a bounded label when one plan never depletes, from
+    // the engine's comparison (B2-P1 slice 3).
+    expect(compare).toContain('deltaLabel: lastsDeltaLabel(lasts, headline.endYear.delta)')
     expect(compare).toContain('one plan never runs out, so the gap is at least or at most that many years')
     expect(compare).toContain("unit: 'pp'")
     expect(compare).toContain('className="field-hint compare-delta-legend"')
@@ -285,7 +286,7 @@ describe('Design-QA cluster A: source pins', () => {
     expect(relocation).not.toContain('table-scroll')
     expect(relocation).toContain('<ScrollRegion label="Ranked relocation results" grow')
     expect(relocation).toContain('<ScrollRegion label={`Drivers for ${f.stateName}`} grow')
-    expect(relocation).toContain('<th scope="col" className="nowrap" style={{ textAlign: \'right\' }}>Δ vs staying</th>')
+    expect(relocation).toContain('<th scope="col" className="nowrap" style={{ textAlign: \'right\' }}>Δ vs your plan</th>')
   })
 
   it('the Strategy screen never points at a Retirement actions card that is not mounted (#518)', () => {
@@ -358,7 +359,7 @@ describe('Design-QA cluster A: source pins', () => {
     // The wait has visible text, not only an aria-label.
     expect(card).toContain('<p className="small muted">Re-simulating this plan…</p>')
     expect(rule('.insight-preview-wait', clusterA)).toMatch(/display:\s*grid/)
-    expect(card).toContain('const anyDeltaDefined = definedDollarDeltas.length > 0 || card.impact.successRateDeltaPct !== undefined')
+    expect(card).toContain('const anyDeltaDefined = definedDollarDeltas.length > 0 || previewsMonteCarlo')
     // Preview results are keyed to the plan they were computed for, so a stale
     // delta never sits beside a newer plan's depletion year.
     expect(card).toContain('const exactImpact = exactImpactFor !== null && exactImpactFor.plan === plan ? exactImpactFor.impact : null')
@@ -366,12 +367,12 @@ describe('Design-QA cluster A: source pins', () => {
     // The flat note states two facts and claims no cause; it needs at least
     // one defined dollar delta and a settled Monte Carlo line if the card has one.
     expect(card).toContain('Every delta shown is zero. The base plan runs out of money in {baseDepletionYear}.')
-    expect(card).toContain('const mcSettledFlat = card.impact.successRateDeltaPct === undefined ? true : !loadingMc && mcFlat')
+    expect(card).toContain('const mcSettledFlat = previewsMonteCarlo ? !loadingMc && mcFlat : true')
     expect(card).toContain('anyDeltaDefined && definedDollarDeltas.every((v) => v === 0) && mcSettledFlat')
     // The button is released once the exact dollar deltas land, before the
     // slower Monte Carlo pair starts.
     const release = card.indexOf('setLoadingExact(false)')
-    const mcPair = card.indexOf('await Promise.all([')
+    const mcPair = card.indexOf('await headlineMcRun(plan)')
     expect(release).toBeGreaterThan(0)
     expect(mcPair).toBeGreaterThan(release)
   })

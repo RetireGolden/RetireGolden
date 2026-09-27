@@ -43,7 +43,7 @@ A `{ depletionYear: 2028, lastFundedYear: 2027, endYear: 2028, yearsShortOfPlanE
 
 outputs: `display-years-before-plan-end`, `longevity-last-funded-year`.
 
-feeds: none. Reads `longevity-depletion-year`.
+feeds: `compare-plan-deltas` (since B2-P1 slice 3, the Compare page's Money lasts row is the difference of two published last funded years; see `../optimizer-and-comparisons/compare-plan-deltas.md`). Reads `longevity-depletion-year`.
 
 ## Provenance
 

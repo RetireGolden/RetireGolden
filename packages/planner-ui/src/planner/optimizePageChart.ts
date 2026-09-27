@@ -31,11 +31,7 @@ export function isCalculatedIdentityWithheldPostProcessing(
     !postProcessed.stabilized ||
     postProcessed.cleanedValidation.recommendationState !== 'identityIncomplete'
   ) return false
-  const cleanedTotal = postProcessed.cleanedSchedule.conversions.reduce(
-    (sum, conversion) => sum + conversion.amount,
-    0,
-  )
-  return cleanedTotal >= postProcessed.minimumRequestedConversionDollars
+  return postProcessed.cleanedSchedule.conversionTotal >= postProcessed.minimumRequestedConversionDollars
 }
 
 export function displayedCleanedConversions(

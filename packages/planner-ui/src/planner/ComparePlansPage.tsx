@@ -9,16 +9,48 @@ import { Link } from 'react-router'
 
 import { listPlansVia, loadPlanVia, usePlanStore, type PlanSummary } from '../data/planStoreContext'
 import type { Plan } from '@retiregolden/engine/model/plan'
-import { moneyLasts } from '@retiregolden/engine/projection/moneyLasts'
+import type { MoneyLasts } from '@retiregolden/engine/projection/moneyLasts'
+import {
+  comparePlanHeadlines,
+  PlanHeadlineRefusal,
+  type MoneyLastsComparison,
+  type PlanHeadlineComparison,
+} from '@retiregolden/engine/scenarios/planHeadlines'
+import { NonFiniteComparisonError } from '@retiregolden/engine/scenarios/scalarComparison'
 import { SelectField } from './fields'
 import { fmtMoneyCompact } from './format'
 import { LiveStatus } from './LiveStatus'
-import { projectPlan, type ProjectionView } from './useProjection'
+import { currentStartYear, projectPlan, type ProjectionView } from './useProjection'
 import { ScrollRegion } from './ScrollRegion'
-import { ageDelta, deterministicSuccessPct, formatDelta, moneyLastsDelta, type DeltaUnit } from './compareDeltas'
+import { formatDelta, type DeltaUnit } from './compareDeltas'
 import { moneyLastsValue } from './format'
 
 const SAME_PLAN_NOTICE = 'Choose two different plans to compare.'
+
+/**
+ * A comparison the engine refuses, in plain words with a next step (PR #754
+ * finding 11): which plan the refusal is about and what to fix, never the
+ * engine's own wording.
+ */
+function comparisonRefusalSentence(error: unknown): string {
+  const lead = "These two plans can't be compared: "
+  const planName = (side: 'baseline' | 'proposal') => (side === 'baseline' ? 'Plan A' : 'Plan B')
+  if (error instanceof NonFiniteComparisonError) {
+    if (error.role === 'difference') {
+      return `${lead}the difference between their figures could not be computed. Open each plan's Results page to check its projection, then compare again.`
+    }
+    const name = planName(error.role)
+    return `${lead}one of ${name}'s figures could not be computed. Open ${name}'s Results page to check its projection, then compare again.`
+  }
+  if (error instanceof PlanHeadlineRefusal) {
+    if (error.reason === 'birth-date-missing' && error.side !== null) {
+      const name = planName(error.side)
+      return `${lead}${name} runs out of money, and its first person has no valid date of birth, so the age when that happens can't be worked out. Add the date of birth on ${name}'s Household page, then compare again.`
+    }
+    return `${lead}they were projected from different start years. Reload this page so both are projected from this year.`
+  }
+  return `${lead}one plan's projection gave a result this page can't use. Open each plan's Results page to check its projection, then compare again.`
+}
 
 interface ComparedPlan {
   plan: Plan
@@ -31,16 +63,52 @@ interface ComparedPlan {
  * S", or "full plan", which here also names the end year, since two compared
  * plans can end in different years.
  */
-function lastsLabel(view: ProjectionView): string {
-  const lasts = moneyLasts(view.result)
-  const value = moneyLastsValue(lasts, view.result.startYear)
+function lastsLabel(lasts: MoneyLasts, startYear: number): string {
+  const value = moneyLastsValue(lasts, startYear)
   return lasts.depletionYear === null ? `${value} through ${lasts.endYear}` : value
 }
 
-function primaryAgeIn(plan: Plan, year: number | null): number | null {
-  if (year === null) return null
-  const dobYear = Number(plan.household.people[0]?.dob.slice(0, 4))
-  return Number.isFinite(dobYear) ? year - dobYear : null
+/**
+ * The Money lasts delta cell from the engine's comparison: two full plans read
+ * "same" on one horizon and "both full plan" on different ones, a one-sided
+ * comparison is a bound ("≥ +7 yrs": Plan B lasts at least seven more years),
+ * and two depleting plans read the exact gap.
+ */
+function lastsDeltaLabel(lasts: MoneyLastsComparison, endYearDelta: number): string {
+  if (lasts.bound === 'bothFull' || lasts.delta === null) return endYearDelta === 0 ? 'same' : 'both full plan'
+  const years = formatDelta(lasts.delta, 'years')
+  if (lasts.bound === null) return years
+  return `${lasts.bound === 'atLeast' ? '≥' : '≤'} ${years}`
+}
+
+/**
+ * The dollar rows' basis, stated where the numbers are: the shared start
+ * year's dollars, or (plans ending in one year) that year's dollars for the
+ * ending rows and nominal for the lifetime sum.
+ */
+function moneyLabel(label: string, headline: PlanHeadlineComparison, lifetime: boolean): string {
+  if (headline.moneyBasis === 'today') return `${label} (${headline.startYear} $)`
+  return lifetime ? `${label} (nominal)` : `${label} (${headline.endYear.baseline} $)`
+}
+
+/**
+ * The sentence under the table that states the dollar rows' basis and both
+ * end years (owner decision R13).
+ */
+function compareBasisSentence(headline: PlanHeadlineComparison): string {
+  const a = headline.endYear.baseline
+  const b = headline.endYear.proposal
+  if (headline.moneyBasis === 'today') {
+    return (
+      `Plan A ends in ${a} and Plan B in ${b}, so every dollar row is in ${headline.startYear} dollars: ` +
+      "each plan's figures are divided by that plan's own inflation to the year they fall in. " +
+      "The lifetime rows still cover each plan's own years."
+    )
+  }
+  return (
+    `Both plans end in ${a}, so the dollar rows are nominal: the ending rows are in ${a} dollars and ` +
+    "lifetime tax adds each year's own dollars. Each plan's dollars follow its own inflation assumption."
+  )
 }
 
 function deltaClass(value: number): string | undefined {
@@ -52,7 +120,8 @@ function deltaClass(value: number): string | undefined {
  * One metric row. Every row that differs gets a formatted delta, not only the
  * money rows: years, ages, and percentage points are the largest differences
  * a diff page can show (#499). `delta` null means the difference is undefined
- * for this pair (one side never depletes), and the cell says so with a dash.
+ * for this pair (one side never depletes), and the cell says so with a dash
+ * unless `deltaLabel` says what it is instead; a null delta is never coloured.
  */
 function MetricRow({
   label,
@@ -67,7 +136,7 @@ function MetricRow({
   a: string
   b: string
   delta: number | null
-  /** Pre-formatted cell text (a bounded years delta); `delta` still drives the color. */
+  /** Pre-formatted cell text (a bounded years delta); `delta` still drives the color, none when it is null. */
   deltaLabel?: string
   unit?: DeltaUnit
   higherIsGood?: boolean
@@ -79,7 +148,7 @@ function MetricRow({
       <td>{a}</td>
       <td>{b}</td>
       <td className={adjustedDelta === null ? undefined : deltaClass(adjustedDelta)}>
-        {delta === null ? '—' : (deltaLabel ?? formatDelta(delta, unit))}
+        {deltaLabel ?? (delta === null ? '—' : formatDelta(delta, unit))}
       </td>
     </tr>
   )
@@ -116,6 +185,9 @@ export function ComparePlansPage() {
 
   useEffect(() => {
     let cancelled = false
+    // One start year for both sides, read once: the engine compares two plans
+    // only from one start year, and two clock reads could straddle a New Year.
+    const startYear = currentStartYear()
     async function loadCompared(id: string, setter: (plan: ComparedPlan | null) => void) {
       if (!id) {
         setter(null)
@@ -133,7 +205,7 @@ export function ComparePlansPage() {
         return
       }
       if (cancelled) return
-      if (r.ok) setter({ plan: r.plan, view: projectPlan(r.plan) })
+      if (r.ok) setter({ plan: r.plan, view: projectPlan(r.plan, startYear) })
       else {
         setter(null)
         setNotice(`Could not load one of those plans (${r.reason}).`)
@@ -148,66 +220,66 @@ export function ComparePlansPage() {
 
   const options = summaries ?? []
   const canCompare = left !== null && right !== null && left.plan.id !== right.plan.id
+  // Every figure is the engine's comparison of the two projections (B2-P1
+  // slice 3). A comparison the engine refuses (a non-finite figure, a
+  // depleting plan whose first person has no birth date) is stated in plain
+  // words, not thrown.
+  const comparison = useMemo(():
+    | { ok: true; headline: PlanHeadlineComparison }
+    | { ok: false; message: string }
+    | null => {
+    if (!canCompare) return null
+    try {
+      return { ok: true, headline: comparePlanHeadlines(
+        { plan: left.plan, result: left.view.result, summary: left.view.summary },
+        { plan: right.plan, result: right.view.result, summary: right.view.summary },
+      ) }
+    } catch (error) {
+      return { ok: false, message: comparisonRefusalSentence(error) }
+    }
+  }, [canCompare, left, right])
+  const headline = comparison?.ok === true ? comparison.headline : null
   const rows = useMemo((): Parameters<typeof MetricRow>[0][] => {
-    if (!canCompare) return []
-    const l = left.view.summary
-    const r = right.view.summary
-    const ageA = primaryAgeIn(left.plan, l.depletionYear)
-    const ageB = primaryAgeIn(right.plan, r.depletionYear)
-    const lasts = moneyLastsDelta(
-      { depletionYear: l.depletionYear, endYear: left.view.result.endYear },
-      { depletionYear: r.depletionYear, endYear: right.view.result.endYear },
-    )
+    if (headline === null) return []
+    const money = (label: string, row: PlanHeadlineComparison['endingNetWorth'], lifetime = false) => ({
+      label: moneyLabel(label, headline, lifetime),
+      a: fmtMoneyCompact(row.baseline),
+      b: fmtMoneyCompact(row.proposal),
+      delta: row.delta,
+      ...(lifetime ? { higherIsGood: false } : {}),
+    })
+    const lasts = headline.moneyLasts
+    const age = headline.depletionAgePrimary
+    const success = headline.deterministicSuccessPct
     return [
       {
         label: 'Money lasts',
-        a: lastsLabel(left.view),
-        b: lastsLabel(right.view),
-        delta: lasts.value,
-        deltaLabel: lasts.label,
+        a: lastsLabel(lasts.baseline, headline.startYear),
+        b: lastsLabel(lasts.proposal, headline.startYear),
+        delta: lasts.delta,
+        deltaLabel: lastsDeltaLabel(lasts, headline.endYear.delta),
         unit: 'years',
       },
-      {
-        label: 'Ending net worth',
-        a: fmtMoneyCompact(l.endingNetWorth),
-        b: fmtMoneyCompact(r.endingNetWorth),
-        delta: r.endingNetWorth - l.endingNetWorth,
-      },
-      {
-        label: 'Ending investable',
-        a: fmtMoneyCompact(l.endingInvestable),
-        b: fmtMoneyCompact(r.endingInvestable),
-        delta: r.endingInvestable - l.endingInvestable,
-      },
-      {
-        label: 'After-tax estate',
-        a: fmtMoneyCompact(l.endingAfterTaxEstate),
-        b: fmtMoneyCompact(r.endingAfterTaxEstate),
-        delta: r.endingAfterTaxEstate - l.endingAfterTaxEstate,
-      },
+      money('Ending net worth', headline.endingNetWorth),
+      money('Ending investable', headline.endingInvestable),
+      money('After-tax estate', headline.endingAfterTaxEstate),
       {
         label: 'Success % (deterministic)',
-        a: `${deterministicSuccessPct(l.depletionYear)}%`,
-        b: `${deterministicSuccessPct(r.depletionYear)}%`,
-        delta: deterministicSuccessPct(r.depletionYear) - deterministicSuccessPct(l.depletionYear),
+        a: `${success.baseline}%`,
+        b: `${success.proposal}%`,
+        delta: success.delta,
         unit: 'pp',
       },
       {
         label: 'Depletion age (primary)',
-        a: ageA === null ? '—' : String(ageA),
-        b: ageB === null ? '—' : String(ageB),
-        delta: ageDelta(ageA, ageB),
+        a: age.baseline === null ? '—' : String(age.baseline),
+        b: age.proposal === null ? '—' : String(age.proposal),
+        delta: age.delta,
         unit: 'years',
       },
-      {
-        label: 'Lifetime tax + penalties',
-        a: fmtMoneyCompact(l.lifetimeTaxesAndPenalties),
-        b: fmtMoneyCompact(r.lifetimeTaxesAndPenalties),
-        delta: r.lifetimeTaxesAndPenalties - l.lifetimeTaxesAndPenalties,
-        higherIsGood: false,
-      },
+      money('Lifetime tax + penalties', headline.lifetimeTaxesAndPenalties, true),
     ]
-  }, [canCompare, left, right])
+  }, [headline])
 
   return (
     <section className="page planner-shell" style={{ textAlign: 'left' }}>
@@ -260,6 +332,10 @@ export function ComparePlansPage() {
           />
           {!canCompare ? (
             <div className="callout callout--info">{SAME_PLAN_NOTICE}</div>
+          ) : comparison?.ok === false ? (
+            <div className="callout callout--warn" role="alert">
+              {comparison.message}
+            </div>
           ) : (
             <>
               <ScrollRegion label="Plan comparison">
@@ -280,6 +356,7 @@ export function ComparePlansPage() {
               {/* The delta colors are a verdict on Plan B, so the page says
                   which way each row reads (#499): lifetime tax is "lower is
                   better", everything else "higher or later is better". */}
+              {headline !== null ? <p className="field-hint compare-basis">{compareBasisSentence(headline)}</p> : null}
               <p className="field-hint compare-delta-legend">
                 Plan B − Plan A: <span className="delta-pos">green</span> means Plan B does better on that row,{' '}
                 <span className="delta-neg">red</span> means worse. Lifetime tax reads lower as better; every other row

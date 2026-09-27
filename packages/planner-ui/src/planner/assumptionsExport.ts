@@ -25,6 +25,7 @@ import {
   PARAMETER_DATA_AS_OF,
   PARAMETER_PROVENANCE,
 } from '@retiregolden/engine/params'
+import { conversionScheduleTotal } from '@retiregolden/engine/strategies/conversionScheduleTotal'
 import { SINGLE_WITH_PARTNER_NOTE } from './filingStatusNotice'
 import { fmtMoney } from './format'
 
@@ -279,7 +280,7 @@ function strategyGroup(plan: Plan): AssumptionGroup {
     rc.mode === 'none'
       ? 'none'
       : rc.mode === 'manual' || rc.mode === 'optimized'
-        ? `${rc.mode} schedule (${rc.conversions.length} year${rc.conversions.length === 1 ? '' : 's'}, ${fmtMoney(rc.conversions.reduce((s, c) => s + c.amount, 0))} total)`
+        ? `${rc.mode} schedule (${rc.conversions.length} year${rc.conversions.length === 1 ? '' : 's'}, ${fmtMoney(conversionScheduleTotal(rc.conversions))} total)`
         : `fill to ${rc.target} through ${rc.endYear}`
   return {
     id: 'strategy',

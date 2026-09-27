@@ -1,15 +1,15 @@
 # Mutation receipt: insight-spending-guardrails-illustrative-floor
 
-Executed 2026-09-17 and re-executed 2026-09-18 against RetireGolden base `b99ac29b` (branch grok/b1-p4-cards-insights-ss-medicare-roth) in `packages/engine`.
+Executed 2026-09-17 and re-executed 2026-09-18 against RetireGolden base `b99ac29b` (branch grok/b1-p4-cards-insights-ss-medicare-roth), and re-executed 2026-09-27 against RetireGolden base `373a40f0` (branch `claude/b2p1-slice3-comparisons`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/insights/detectors/spendingGuardrails.ts`
 
 ```diff
 diff --git a/packages/engine/src/insights/detectors/spendingGuardrails.ts b/packages/engine/src/insights/detectors/spendingGuardrails.ts
-index 05de2a9d..acfa43e3 100644
+index 8e97c4af..0adf647a 100644
 --- a/packages/engine/src/insights/detectors/spendingGuardrails.ts
 +++ b/packages/engine/src/insights/detectors/spendingGuardrails.ts
-@@ -51,7 +51,8 @@ export const spendingGuardrails: Detector = {
+@@ -54,7 +54,8 @@ export const spendingGuardrails: Detector = {
  
      const generated = guardrailPatchFromGenerator(ctx.plan)
      if (!generated) return null
@@ -31,19 +31,22 @@ npx vitest run src/insights/detectors/spendingGuardrails.evidence.test.ts
 
 ## Captured failing output
 
-Re-executed 2026-09-18 after the evidence fixture moved to the exact tolerance on the published whole-dollar figure (round three of the #720 review). The baseline is green (spendingGuardrails.evidence.test.ts passes on unmodified production). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed. Exit code: 1.
+Re-executed 2026-09-27 on B2-P1 slice 3, which moved the lines this receipt quotes (new comparison fields, basis doc comments and helper calls in the production file, or new cases and fixture fields in the evidence file) without changing the mutation, so the hunk header, capture, blob hash and revert note are refreshed against this head. The baseline is green (spendingGuardrails.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/TEMP/rg-s6/packages/engine
+RUN  v5.0.0 C:/rgwt/engine11/packages/engine
 
  ❯ src/insights/detectors/spendingGuardrails.evidence.test.ts (4 tests | 3 failed) 15ms
    ❯ insight-spending-guardrails-illustrative-floor — Illustrative (or explicit) required spending floor for a guardrail preview (4)
-     × falls back to 80% of $60,000 = $48,000 when no explicit floor is set 14ms
+     × falls back to 80% of $60,000 = $48,000 when no explicit floor is set 13ms
      × selects the explicit $42,000 floor without applying 80% again 1ms
      × screens a non-depleting plan with $150,000 first-year investable and publishes the $48,000 fallback floor 0ms
 
  Test Files  1 failed (1)
       Tests  3 failed | 1 passed (4)
+
+             persist transforms across runs with fsModuleCache: true
+             learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
 
 
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
@@ -108,4 +111,4 @@ AssertionError: nonDepletingAboveThresholdRequiredAnnual 38400 is not within "ex
 
 ## Revert
 
-`git checkout -- packages/engine/src/insights/detectors/spendingGuardrails.ts`, then `git diff --quiet -- packages/engine/src/insights/detectors/spendingGuardrails.ts` exited 0, confirming no change to production code after the run; the named suite passes again on the restored file.
+The original bytes of `packages/engine/src/insights/detectors/spendingGuardrails.ts` were written back and compared byte for byte in the harness, and `git diff --quiet -- packages/engine/src/insights/detectors/spendingGuardrails.ts` then exited 0, confirming no production change remained. Re-ran the named command after restoration: the suite returned to its baseline state, green (exit 0).

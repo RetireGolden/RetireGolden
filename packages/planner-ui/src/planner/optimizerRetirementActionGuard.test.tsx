@@ -110,6 +110,7 @@ describe('Optimize page retirement-action precondition', () => {
     // throws, and the raw string is back on screen.
     expect(mockedRunOptimize).not.toHaveBeenCalled()
     expect(container.textContent).not.toContain('Optimizer error')
+    expect(container.textContent).not.toContain("The optimizer couldn't finish this run")
     expect(container.textContent).not.toContain('identity-bearing')
     expect(container.querySelector('[aria-label="Optimizing"]')).toBeNull()
   })

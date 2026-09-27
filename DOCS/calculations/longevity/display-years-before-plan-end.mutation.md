@@ -1,15 +1,15 @@
 # Mutation receipt: display-years-before-plan-end
 
-Executed 2026-09-26 against RetireGolden base `6b01db8d` (branch `claude/b2p1-slice1-ledger-figures`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-26 against RetireGolden base `6b01db8d` (branch `claude/b2p1-slice1-ledger-figures`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `a1fd6d59` (branch `claude/b2p1-slice3-comparisons`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/projection/moneyLasts.ts`
 
 ```diff
 diff --git a/packages/engine/src/projection/moneyLasts.ts b/packages/engine/src/projection/moneyLasts.ts
-index 6bedcb32..203ce744 100644
+index dafbd67c..a09cbaff 100644
 --- a/packages/engine/src/projection/moneyLasts.ts
 +++ b/packages/engine/src/projection/moneyLasts.ts
-@@ -42,3 +42,3 @@
+@@ -43,3 +43,3 @@
  export function lastFundedYear(result: Pick<ProjectionResult, 'depletionYear' | 'endYear'>): number {
 -  return result.depletionYear === null ? result.endYear : result.depletionYear - 1
 +  return result.depletionYear === null ? result.endYear : result.depletionYear
@@ -26,10 +26,10 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-The baseline is green (moneyLasts.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+The slice 3 review fixes moved compareMoneyLasts and conversionScheduleTotal, rewrote comments in these files and added evidence tests, so the hunk headers and test counts are re-pointed. The baseline is green (moneyLasts.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine4/packages/engine
+RUN  v5.0.0 C:/rgwt/engine11/packages/engine
 
  ❯ src/projection/moneyLasts.evidence.test.ts (7 tests | 5 failed) 34ms
    ❯ display-years-before-plan-end — Money lasts: the last funded year and the years short of the plan's end (7)
@@ -42,6 +42,8 @@ RUN  v5.0.0 C:/rgwt/engine4/packages/engine
  Test Files  1 failed (1)
       Tests  5 failed | 2 passed (7)
 
+             persist transforms across runs with fsModuleCache: true
+             learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
 
 
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 5 ⎯⎯⎯⎯⎯⎯⎯

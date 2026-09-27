@@ -54,6 +54,8 @@ import {
   formatMetricValue,
   formatScenarioDelta,
   isScenarioComparisonCurrent,
+  scenarioDetailError,
+  scenarioOverviewError,
   scenarioOverviewRequestKey,
   spendingCapacityStatus,
   type MetricFormat,
@@ -887,7 +889,9 @@ function ComparableScenariosPage() {
   const { plan, update } = usePlan()
   const readOnly = useWorkspaceReadOnly()
   const [withMc, setWithMc] = useState(true)
-  const [overviewResult, setOverviewResult] = useState<{ key: string; value: ScenarioComparison } | null>(null)
+  const [overviewResult, setOverviewResult] = useState<
+    { key: string; value: ScenarioComparison; error: null } | { key: string; value: null; error: string } | null
+  >(null)
   const [selectedScenarioId, setSelectedScenarioId] = useState<string | null>(() => plan.scenarios[0]?.id ?? null)
   const [detailResult, setDetailResult] = useState<{
     key: string
@@ -933,6 +937,7 @@ function ComparableScenariosPage() {
       ? `${baselineHash}:${proposalHash}:${startYear}:${withMc ? `mc-${seed}` : 'deterministic'}`
       : null
   const overview = overviewKey && overviewResult?.key === overviewKey ? overviewResult.value : null
+  const overviewError = overviewKey && overviewResult?.key === overviewKey ? overviewResult.error : null
   // Legacy plans may already hold same-named rows; disambiguate at render (#480).
   const overviewRows = useMemo(() => (overview ? withDistinctNames(overview.rows) : []), [overview])
   const detail = detailKey && detailResult?.key === detailKey ? detailResult.value : null
@@ -957,16 +962,23 @@ function ComparableScenariosPage() {
   useEffect(() => {
     if (!overviewKey) return
     const t = window.setTimeout(() => {
-      setOverviewResult({
-        key: overviewKey,
-        value: compareScenarios(plan, {
-          startYear,
-          taxCalculator: taxCalculatorFor(plan),
-          // Per-row stacks so patches that change tax assumptions (e.g. a
-          // relocation scenario clearing the flat override) price correctly.
-          taxCalculatorForPlan: taxCalculatorFor,
-        }),
-      })
+      // A failed run states itself in plain words; left uncaught inside the
+      // timer it would leave the table's placeholder up for good.
+      try {
+        setOverviewResult({
+          key: overviewKey,
+          value: compareScenarios(plan, {
+            startYear,
+            taxCalculator: taxCalculatorFor(plan),
+            // Per-row stacks so patches that change tax assumptions (e.g. a
+            // relocation scenario clearing the flat override) price correctly.
+            taxCalculatorForPlan: taxCalculatorFor,
+          }),
+          error: null,
+        })
+      } catch (error) {
+        setOverviewResult({ key: overviewKey, value: null, error: scenarioOverviewError(error) })
+      }
     }, 200)
     return () => window.clearTimeout(t)
   }, [plan, startYear, overviewKey])
@@ -998,7 +1010,7 @@ function ComparableScenariosPage() {
           setDetailResult({
             key: detailKey,
             value: null,
-            error: error instanceof Error ? error.message : 'The comparison could not be completed.',
+            error: scenarioDetailError(error),
           })
         }
       }
@@ -1069,6 +1081,8 @@ function ComparableScenariosPage() {
           </div>
         ) : baselineFingerprint.error ? (
           <p style={{ color: 'var(--bad)' }}>{baselineFingerprint.error}</p>
+        ) : overviewError !== null ? (
+          <p style={{ color: 'var(--bad)' }}>{overviewError}</p>
         ) : overview === null ? (
           <div className="skeleton" style={{ height: '10rem' }} aria-label="Comparing scenarios" />
         ) : (

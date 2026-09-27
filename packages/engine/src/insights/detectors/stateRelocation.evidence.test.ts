@@ -27,6 +27,8 @@ function row(
     modeled: partial.error === null,
     lifetimeStateLocalTax: 0,
     endingAfterTaxEstate: 0,
+    endingAfterTaxEstateTodayDollars: null,
+    lifetimeTaxesAndPenaltiesDeltaVsBaseline: null,
     endingNetWorth: 0,
     depletionYear: null,
     endYear: 2028,

@@ -20,7 +20,9 @@ export function runOptimize(req: OptimizeRequest): Promise<OptimizeResult> {
     request: envelope('optimize', req),
     createWorker: spawnPlannerWorker,
     interpret: (msg) =>
-      msg.type === 'done' ? { kind: 'done', result: msg.result } : { kind: 'error', message: msg.message },
+      msg.type === 'done'
+        ? { kind: 'done', result: msg.result }
+        : { kind: 'error', message: msg.message, refusal: msg.refusal },
     errorLabel: 'Optimizer worker failed',
   })
 }

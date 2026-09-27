@@ -28,6 +28,7 @@ import type { SpendingSolveRequest, SpendingSolveResponse } from '../optimize/sp
 import { runSpendingSolveRequest } from '../optimize/runSpendingSolve'
 import type { RelocationCompareRequest, RelocationCompareResponse } from '../relocation/messages'
 import { runRelocationCompareRequest } from '../relocation/runRelocation'
+import { workerErrorMessage } from './refusal'
 
 export type PlannerWorkerRequest =
   | PlannerWorkerEnvelope<'monteCarlo', McRequest>
@@ -76,8 +77,18 @@ function handleMonteCarlo(req: McRequest, { post }: PlannerWorkerHost): void {
 }
 
 /**
+ * The error message the entry posts for a failed request: the message, and a
+ * typed engine refusal as plain data when the error carries one, since an
+ * error's class does not survive postMessage (PR #754).
+ */
+export function plannerWorkerErrorMessage(error: unknown): PlannerWorkerResponse {
+  return workerErrorMessage(error)
+}
+
+/**
  * Route one enveloped request to its surface and post the result. Rejects on
- * failure; the entry turns that into an `{ type: 'error' }` message.
+ * failure; the entry turns that into an `{ type: 'error' }` message
+ * (plannerWorkerErrorMessage).
  */
 export async function dispatchPlannerWorkerRequest(
   message: PlannerWorkerRequest,

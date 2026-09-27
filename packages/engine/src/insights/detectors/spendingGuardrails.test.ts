@@ -123,12 +123,14 @@ describe('spendingGuardrails', () => {
     expect(spendingGuardrails.screen(context({ baseAnnual: 0 }))).toBeNull()
   })
 
-  it('evaluate() refuses an ineligible plan and keeps the screened success delta', () => {
+  it('evaluate() refuses an ineligible plan; neither card publishes a success-rate figure', () => {
     expect(() => spendingGuardrails.evaluate!(context({ noYears: true }))).toThrow(/not eligible/i)
     const ctx = context()
     const evaluated = spendingGuardrails.evaluate!(ctx)
-    expect(evaluated.impact?.successRateDeltaPct).toBe(
-      spendingGuardrails.screen(ctx)!.impact.successRateDeltaPct,
-    )
+    // The constant 12 the detector once published as a "change in success
+    // rate" is gone (B2-P1 slice 3); the planner measures the change itself.
+    expect(Object.keys(evaluated.impact ?? {})).toEqual(['qualitative'])
+    expect(Object.keys(spendingGuardrails.screen(ctx)!.impact)).toEqual(['qualitative'])
+    expect(spendingGuardrails.previewsMonteCarlo).toBe(true)
   })
 })

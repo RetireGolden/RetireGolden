@@ -61,10 +61,12 @@ afterEach(async () => {
   container.remove()
 })
 
+/** A row by its label; a dollar row's label ends in its basis, "(2059 $)", so it matches by prefix. */
 function rowByLabel(label: string): string[] {
-  const row = [...container.querySelectorAll('.compare-table tbody tr')].find(
-    (tr) => tr.querySelector('th')?.textContent === label,
-  )
+  const row = [...container.querySelectorAll('.compare-table tbody tr')].find((tr) => {
+    const text = tr.querySelector('th')?.textContent ?? ''
+    return text === label || text.startsWith(`${label} (`)
+  })
   expect(row, `row ${label}`).toBeTruthy()
   return [...row!.querySelectorAll('td')].map((td) => td.textContent ?? '')
 }
@@ -134,5 +136,15 @@ describe('ComparePlansPage delta column (#499)', () => {
     // Both full plan through the same year: the same last funded year.
     expect(rowByLabel('Money lasts')[2]).toBe('same')
     expect(rowByLabel('Ending net worth')[2]).toBe('$0')
+    // One end year: the ending rows name it as their basis, lifetime tax is a
+    // nominal sum, and the sentence under the table says so (R13).
+    const labels = [...container.querySelectorAll('.compare-table tbody th')].map((th) => th.textContent)
+    const endYear = /^Ending net worth \((\d{4}) \$\)$/.exec(labels.find((l) => l?.startsWith('Ending net worth')) ?? '')?.[1]
+    expect(endYear).toBeDefined()
+    expect(labels).toContain('Lifetime tax + penalties (nominal)')
+    expect(container.querySelector('.compare-basis')?.textContent).toBe(
+      `Both plans end in ${endYear}, so the dollar rows are nominal: the ending rows are in ${endYear} dollars and ` +
+        "lifetime tax adds each year's own dollars. Each plan's dollars follow its own inflation assumption.",
+    )
   })
 })

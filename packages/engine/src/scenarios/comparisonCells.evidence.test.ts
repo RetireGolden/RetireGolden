@@ -5,6 +5,7 @@ import * as simulation from '../projection/simulate.js'
 import type { ProjectionResult, YearResult } from '../projection/types.js'
 import { createFlatTaxCalculator } from '../testing/flatTax.js'
 import { compareScenarioPlans, type ScenarioPlanComparisonOptions } from './comparison.js'
+import { compareNullableScalars, compareScalars } from './scalarComparison.js'
 
 /**
  * The smallest real scenario side: a `ProjectionResult` whose rows carry only
@@ -209,6 +210,19 @@ describeCalculation(
       expect(cell.delta).not.toBe(inputs.baseline - inputs.proposal)
       expect(cell.delta).not.toBe((inputs.proposal - inputs.baseline) / inputs.baseline)
     })
+
+    it('publishes the same cell from the exported helper, a negative zero as 0, and refuses a non-finite figure', () => {
+      // Since B2-P1 slice 3 the helper is exported (scalarComparison.ts), so
+      // the claim is also asserted on it directly.
+      const inputs = example.inputs as Record<string, number>
+      const expected = example.expected as Record<string, number>
+      expect(compareScalars(inputs.baseline, inputs.proposal)).toEqual(expected)
+      const zero = compareScalars(-0, -0)
+      expect(Object.is(zero.baseline, 0) && Object.is(zero.proposal, 0) && Object.is(zero.delta, 0)).toBe(true)
+      expect(() => compareScalars(Number.NaN, 1)).toThrow(RangeError)
+      expect(() => compareScalars(1, Number.POSITIVE_INFINITY)).toThrow(RangeError)
+      expect(() => compareScalars(-Number.MAX_VALUE, Number.MAX_VALUE)).toThrow(RangeError)
+    })
   },
 )
 
@@ -261,6 +275,20 @@ describeCalculation(
       // Coercing the absent operand to zero would present the proposal year
       // itself as a comparison.
       expect(cell.delta).not.toBe(absent.proposal)
+    })
+
+    it('publishes the same cells from the exported helper, and refuses a non-finite present value', () => {
+      expect(compareNullableScalars(present.baseline, present.proposal)).toEqual({
+        baseline: present.baseline,
+        proposal: present.proposal,
+        delta: example.expected.presentDelta,
+      })
+      expect(compareNullableScalars(absent.baseline, absent.proposal)).toEqual({
+        baseline: absent.baseline,
+        proposal: absent.proposal,
+        delta: example.expected.absentDelta,
+      })
+      expect(() => compareNullableScalars(null, Number.NaN)).toThrow(RangeError)
     })
   },
 )

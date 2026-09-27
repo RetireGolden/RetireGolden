@@ -85,4 +85,44 @@ export const rothRecords = {
     // unreviewed.
     provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
   },
+  'conversion-schedule-total': {
+    title: 'Conversion schedule total',
+    purpose: 'The one sum of a Roth conversion schedule, as every surface that prints a schedule total shows it.',
+    kind: 'formula',
+    outputs: ['optimizer-schedule-conversion-total'],
+    feeds: ['exact-ledger-validation-requested-conversion-total'],
+    statement: 'strategies/conversionScheduleTotal.ts#conversionScheduleTotal (re-exported by strategies/optimizer.ts) adds a conversion schedule\'s amounts left to right from 0, the order every surface used, so one schedule always gives one double (floating-point addition is not associative), and refuses a non-finite amount with a RangeError. OptimizedSchedule.conversionTotal publishes it on the raw solve (optimizeSchedule, whatever its status) and on each cleaned schedule (projection/optimizePlan.ts#scheduleWithConversions recomputes it rather than copying it), ExactLedgerTournament.winnerConversionTotal publishes it for the recommended schedule, the engine\'s own cleaned-schedule gates read it, and decisions/evaluateCandidate.ts#buildConversionExecution computes the requested total with it. Amounts of $10,000.25, $20,000.50 and $30,000.75 total $60,001.50; 0.1, 0.2 and 0.3 total 0.6000000000000001 left to right, where the other association gives 0.6. Units: nominal dollars of different years added. Rounding: none beyond the amounts\' own cents.',
+    formula: {
+      expression: 'total = ((0 + a_1) + a_2) + … + a_n',
+      variables: [
+        { symbol: 'a_i', meaning: 'The i-th listed conversion amount of the schedule', unit: 'nominal USD of its year', domain: 'finite' },
+      ],
+      timing: 'once per schedule, where the schedule is made',
+      rounding: 'none beyond the amounts\' own cents',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/roth/optimizer-schedule-conversion-total.md',
+    },
+    limits: [
+      'The total adds nominal dollars of different years, undiscounted; the Optimize page\'s schedule chart says nominal dollars, while the hero and the Strategy callout do not.',
+      'A total says nothing about which years carry it; the page prints the count of entries beside it, and every raw entry is above $0.50.',
+      'A cleaned schedule carries the raw solve\'s endingAfterTax and lifetimeTax, which describe the raw schedule; nothing reads them from a cleaned schedule.',
+    ],
+    implementedBy: [
+      'packages/engine/src/strategies/conversionScheduleTotal.ts',
+      'packages/engine/src/strategies/optimizer.ts',
+      'packages/engine/src/projection/optimizePlan.ts',
+      'packages/engine/src/decisions/evaluateCandidate.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/strategies/conversionScheduleTotal.ts#conversionScheduleTotal',
+      'packages/engine/src/strategies/optimizer.ts#optimizeSchedule',
+      'packages/engine/src/projection/optimizePlan.ts#scheduleWithConversions',
+      'packages/engine/src/projection/optimizePlan.ts#finalizedTournament',
+      'packages/engine/src/decisions/evaluateCandidate.ts#buildConversionExecution',
+    ],
+    verifiedOn: '2026-09-27',
+    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+  },
 } satisfies Record<string, CalculationRecord>

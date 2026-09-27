@@ -4,17 +4,24 @@ import type { Plan } from '@retiregolden/engine/model/plan'
 import { usePlan } from '../planContextCore'
 import { TypeChip } from '../TypeChip'
 import { useWorkspaceReadOnly } from '../../data/workspaceReadOnly'
-import { useProjection, taxCalculatorFor, seedFromPlanId } from '../useProjection'
+import { useProjection, taxCalculatorFor } from '../useProjection'
 import { packForYear } from '@retiregolden/engine/params'
 import { applyScenarioPatch } from '@retiregolden/engine/scenarios/scenarios'
-import { createDecisionContext, evaluateInsightAction } from '@retiregolden/engine/decisions'
+import {
+  compareMonteCarloSuccessRates,
+  createDecisionContext,
+  evaluateInsightAction,
+} from '@retiregolden/engine/decisions'
 import { runMonteCarlo } from '../../mc/pool'
+import { guardrailPreviewUnpricedCreditRefusal } from '../acaVetoCopy'
+import { headlineMcRun, headlineMcRunOptions } from '../useMcSuccessRate'
 import { detectorProjection } from '@retiregolden/engine/insights/detectorProjection'
 import { registry } from '@retiregolden/engine/insights/registry'
 import type { InsightAction, InsightCard, InsightImpact } from '@retiregolden/engine/insights/types'
 import { LearnLink } from '../../learn/LearnLink'
 import { sectionTitleOf } from '../sectionTitles'
 import { fmtMoney, fmtMoneyCompact } from '../format'
+import { insightPreviewErrorSentence } from '../engineRefusalCopy'
 import { uniqueScenarioName } from '../scenarioNames'
 import { formatMcDelta } from './mcDeltaFormat'
 
@@ -29,6 +36,11 @@ export function InsightCardView({ card, onDismiss }: { card: InsightCard; onDism
   const readOnly = useWorkspaceReadOnly()
   const projectionView = useProjection(plan)
   const navigate = useNavigate()
+
+  // Whether Preview also runs the Monte Carlo pair is the detector's property,
+  // never a figure on the card (B2-P1 slice 3).
+  const detector = registry.find((d) => d.id === card.id)
+  const previewsMonteCarlo = detector?.previewsMonteCarlo === true
 
   const [expanded, setExpanded] = useState(false)
   // Preview results are keyed to the plan object they were computed for and
@@ -58,7 +70,6 @@ export function InsightCardView({ card, onDismiss }: { card: InsightCard; onDism
     if (nextExpanded && card.action.kind === 'preview-scenario' && !exactImpact && !loadingExact) {
       setLoadingExact(true)
       try {
-        const detector = registry.find((d) => d.id === card.id)
         if (!detector || !detector.evaluate) {
           setPreviewError('This insight cannot be previewed yet.')
           return
@@ -92,7 +103,18 @@ export function InsightCardView({ card, onDismiss }: { card: InsightCard; onDism
             )
             const { evaluation, impact } = evaluateInsightAction(decisionCtx, card, evalResult.action)
             if (evaluation.recommendationState === 'diagnostic') {
-              setPreviewError(evaluation.diagnostics.join(' ') || 'This insight could not be compared against the base plan.')
+              // The guardrail preview keeps its refusal on a year whose premium
+              // tax credit is unpriced, and says which years and why in plain
+              // words rather than in the engine's sentence (decision of
+              // 2026-09-26). Other refusals keep the engine's diagnostics.
+              const unpricedCredit =
+                card.id === 'spending-guardrails'
+                  ? guardrailPreviewUnpricedCreditRefusal(projectionView.result.years, evaluation.candidateResult.years)
+                  : null
+              setPreviewError(
+                unpricedCredit ??
+                  (evaluation.diagnostics.join(' ') || 'This insight could not be compared against the base plan.'),
+              )
             } else {
               // Keep the detector's own evaluated summary line (e.g. the solved
               // spending level) alongside the shared evaluator's exact deltas.
@@ -105,22 +127,25 @@ export function InsightCardView({ card, onDismiss }: { card: InsightCard; onDism
               // pair below is still running (#527).
               setLoadingExact(false)
 
-              // If it impacts Monte Carlo success rate, run async MC pool query
-              if (card.impact.successRateDeltaPct !== undefined) {
+              // The Monte Carlo pair runs the headline configuration (owner
+              // decision R11): the base side is the run whose rate the KPI bar
+              // shows, reused when it is published or in flight, and the
+              // previewed plan runs on the same model (built from the base
+              // plan), seed, path count and start year, so path N is one
+              // market for both, even when the base run is from before a New
+              // Year the plan object outlived (PR #754 findings 1 and 2).
+              if (previewsMonteCarlo) {
                 setLoadingMc(true)
-                const seed = seedFromPlanId(plan.id)
-                const model = { type: 'historical' as const, mode: 'iid' as const, equityWeightPct: 60 }
-                const mcOpts = {
-                  startYear: projectionView.startYear,
-                  pathCount: 250, // fast preview size
-                  seed,
-                  model,
-                }
-                const [baseMc, patchMc] = await Promise.all([
-                  runMonteCarlo(plan, mcOpts),
-                  runMonteCarlo(applied.plan, mcOpts),
-                ])
-                setMcDelta((patchMc.successRate - baseMc.successRate) * 100)
+                const base = await headlineMcRun(plan)
+                const options = headlineMcRunOptions(plan, base.pathCount, base.startYear)
+                const previewed = await runMonteCarlo(applied.plan, options)
+                setMcDelta(
+                  compareMonteCarloSuccessRates(base, {
+                    successRate: previewed.successRate,
+                    pathCount: previewed.pathCount,
+                    startYear: options.startYear,
+                  }).delta,
+                )
                 setLoadingMc(false)
               }
             }
@@ -129,7 +154,10 @@ export function InsightCardView({ card, onDismiss }: { card: InsightCard; onDism
           }
         }
       } catch (err) {
-        setPreviewError(err instanceof Error ? err.message : 'Failed to evaluate this insight.')
+        // A refusal or failure in plain words with a next step, never the
+        // engine's wording; a detector that found nothing to preview says why
+        // in its own words (PR #754).
+        setPreviewError(insightPreviewErrorSentence(err))
         setLoadingMc(false)
       } finally {
         setLoadingExact(false)
@@ -206,10 +234,10 @@ export function InsightCardView({ card, onDismiss }: { card: InsightCard; onDism
   const definedDollarDeltas = exactImpact === null
     ? []
     : [exactImpact.endingAfterTaxEstateDelta, exactImpact.lifetimeTaxDelta].filter((v): v is number => v !== undefined)
-  const mcSettledFlat = card.impact.successRateDeltaPct === undefined ? true : !loadingMc && mcFlat
+  const mcSettledFlat = previewsMonteCarlo ? !loadingMc && mcFlat : true
   // At least one delta of any kind must be defined: a card with only a Monte
   // Carlo line still gets the note when that line is settled and flat.
-  const anyDeltaDefined = definedDollarDeltas.length > 0 || card.impact.successRateDeltaPct !== undefined
+  const anyDeltaDefined = definedDollarDeltas.length > 0 || previewsMonteCarlo
   const allFlat = anyDeltaDefined && definedDollarDeltas.every((v) => v === 0) && mcSettledFlat
 
   const confidenceChips = {
@@ -280,7 +308,7 @@ export function InsightCardView({ card, onDismiss }: { card: InsightCard; onDism
                   {formatDelta(exactImpact.lifetimeTaxDelta, false)}
                 </div>
               )}
-              {card.impact.successRateDeltaPct !== undefined && (
+              {previewsMonteCarlo && (
                 <div>
                   <span className="muted">Monte Carlo success:</span>{' '}
                   {loadingMc ? (

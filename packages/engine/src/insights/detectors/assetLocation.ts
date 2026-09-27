@@ -23,6 +23,7 @@ import { assetLocationGenerator } from '../../decisions/generators.js'
 import type { DecisionCandidate, DecisionContext } from '../../decisions/types.js'
 import { combineTaxCalculators, createFederalTaxCalculator } from '../../tax/federalTax.js'
 import { createStateTaxCalculator } from '../../tax/stateTax.js'
+import { InsightPreviewUnavailable } from '../previewUnavailable.js'
 import type { Detector, DetectorContext } from '../types.js'
 
 function decisionContextFromDetector(ctx: DetectorContext): DecisionContext {
@@ -103,7 +104,7 @@ export const assetLocation: Detector = {
     const candidates = assetLocationGenerator.generate(decisionCtx)
     const best = pickBestBeneficialCandidate(decisionCtx, candidates)
     if (!best) {
-      throw new Error(
+      throw new InsightPreviewUnavailable(
         'No beneficial asset-location swap was found once taxes, taxable drag, and rebalancing were priced in.',
       )
     }
@@ -115,7 +116,7 @@ export const assetLocation: Detector = {
         patch: best.candidate.planPatch as Record<string, unknown>,
       },
       impact: {
-        qualitative: `On the full year-by-year projection, "${best.candidate.label}" improves after-tax estate by about ${formatWholeUsd(best.delta)} (today's dollars).`,
+        qualitative: `On the full year-by-year projection, "${best.candidate.label}" improves after-tax estate by about ${formatWholeUsd(best.delta)} in ${decisionCtx.baselineResult.endYear} dollars.`,
         endingAfterTaxEstateDelta: best.delta,
       },
     }

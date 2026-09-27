@@ -4,6 +4,122 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## Unreleased
 
+- **Changed: six comparisons the planner pages computed are now published by the
+  engine** (owner decisions D-UI-SS, R11, R13, R15 and R17, and slice 3's open calls
+  recorded 2026-09-26; B2-P1 slice 3). One comparison
+  convention is exported, `compareScalars` and `compareNullableScalars`
+  (`@retiregolden/engine/scenarios/scalarComparison`: proposal minus baseline, a
+  negative zero published as 0, a figure that is not finite refused with a RangeError),
+  and every comparison below goes through it. The pages only format and select: the
+  Compare page's rows (`@retiregolden/engine/scenarios/planHeadlines`,
+  `comparePlanHeadlines`), each relocation row's lifetime tax difference from the first
+  row and its ending estate in today's dollars
+  (`RelocationCandidateRow.lifetimeTaxesAndPenaltiesDeltaVsBaseline` and
+  `.endingAfterTaxEstateTodayDollars`), the claim-age co-optimization's estate gain
+  (`ClaimAgeCoOptimization.claimChangeEstateGain`, with `estateYear`, the year whose
+  dollars it is in; the Optimize page's claim card and the report both read it, R17),
+  the conversion schedule total (`conversionScheduleTotal`, published as
+  `OptimizedSchedule.conversionTotal` on the raw and cleaned schedules and as
+  `ExactLedgerTournament.winnerConversionTotal`; the engine's own cleaned-schedule gates
+  and requested total read it too) and the Insight preview's change in Monte Carlo
+  success (`compareMonteCarloSuccessRates`, which refuses two runs on different path
+  counts). Unchanged on the example plans: the relocation rows (116 of 116 bit for bit
+  at FL, TX and CA), the claim gains (the five winners and the twenty that hold their
+  claim ages), every conversion total except the two sentences below, and the Compare
+  page's Money lasts, Success and Depletion age cells on all 812 ordered pairs. What
+  changes is below; the figures are measured in the slice's addendum.
+
+- **Changed: the Compare page compares money in today's dollars when the two plans end
+  in different years** (owner decision R13). Subtracting nominal dollars of two
+  different years reported inflation as a difference between the plans. When the plans
+  end in different years, each ending figure is now divided by its own plan's published
+  inflation factor for its own end year, and lifetime tax plus penalties is re-summed
+  year by year in start-year dollars; when they end in the same year nothing changes.
+  Every money row names its basis ("(2026 $)", or the shared end year and "(nominal)"),
+  and a sentence under the table names both end years. On the 812 ordered pairs of the
+  29 example plans, 762 end in different years: their lifetime tax cells and 678 of
+  their cells in each ending row change, and the difference changes sign (and colour)
+  in 30 estate, 24 net worth, 18 investable and 6 lifetime tax cells; for example
+  `example-couple` against `hsa-stealth-retirement` reads −$466k of after-tax estate in
+  2026 dollars where it read +$330k. The 50 pairs that end in the same year, every
+  designed A/B pair among them, are unchanged. Both plans are now projected from one
+  start year read once, and a comparison the engine refuses is stated on the page in
+  plain words, with the plan it is about and what to fix, instead of breaking it. When both plans run their full horizons the engine publishes
+  no Money lasts difference (neither exhaustion year is known); the page still reads
+  "same" or "both full plan", with no colour. `compareScenarioPlans` gains
+  `headline.moneyLasts` in the same convention, for RetireGolden-Pro's meeting view.
+
+- **Changed: the Insight preview's Monte Carlo line runs the headline configuration**
+  (owner decision R11). The spending-guardrails preview simulated both plans on
+  historical returns at 250 paths, a different model and a quarter of the paths of the
+  success rate shown everywhere else, so it reported a change from a rate the reader
+  had not been shown. It now reuses the headline run for the plan (the rate the KPI bar
+  shows, 1,000 paths or a finer published run) and runs the previewed plan on the same
+  model, seed, path count and start year (a published run that outlived a New Year keeps
+  its own start year, and the engine refuses two runs from different years): `bracket-fill-roth` reads +25.1 points where it read
+  +30.8, `rmd-irmaa` +17.5 where +20.0, `annuity-purchases-estate` "no change" where
+  +0.8, and `no-annuity-brokerage` +0.1 where +2.4. The engine's shared-path helper
+  (`attachStochasticMetrics`) prices each plan with its own tax stack when the decision
+  context builds one per plan (latent: its one caller does not). The spending-guardrails
+  card no longer publishes a constant 12 as its "change in success rate"
+  (`InsightImpact.successRateDeltaPct`, which RetireGolden-Pro's review queue printed as
+  "Change in success rate: +12 percentage points" for every plan); whether a preview
+  runs the Monte Carlo pair is now `Detector.previewsMonteCarlo`, and the card keeps its
+  place in the Insights order through a named editorial weight
+  (`EDITORIAL_RANKING_WEIGHT_DOLLARS`), so no card moves. When the guardrail preview is
+  refused because a Marketplace year's premium tax credit is unpriced (20 of the 26
+  example plans that offer the card), the card now names those years and the reason in
+  plain words and says why a preview without the credit is not shown, instead of
+  printing the engine's sentence.
+
+- **Fixed: Optimize page sentences that said something that had not happened.** The
+  execution sentence printed "Cleaned executable schedule: $0" beside the executed
+  cleaned total on `bridge-early-retirement` and `trump-account-head-start`; it now
+  prints the cleaned schedule's own total ($1,135,975 and $4,053,361). On those two and
+  five other example plans the hero said "only $X could actually be converted" of the
+  same $X, blaming a traditional balance that was there; a schedule with no material
+  shortfall, in any one year or in total (which the engine now publishes as
+  `ExactLedgerValidation.executedWithoutMaterialShortfall`, so the page re-derives no
+  margin), is now headed "shown as a diagnostic" and names the cause the result
+  carries (here the unpriced premium tax credit years; otherwise incomplete tax years;
+  both when both apply), while one short in total keeps the shortfall sentence. A solve that stopped at its time limit (`rmd-irmaa` on slower machines) no
+  longer reads "No beneficial conversions found … little pre-tax balance to convert":
+  the page says the solver ran out of time and only the simple strategies were compared
+  (the card for a current plan that still ranks highest no longer says a solver
+  schedule was compared when the solve found none), and a timed-out schedule that is
+  shown is said to be the best the solver found by then. The claim
+  card and the report row name the year whose dollars the claim gain is in, and the
+  relocation table names its first row as the baseline ("Deltas are against the first
+  row (Your plan (FL → KY))", column "Δ vs your plan") instead of "staying in KY".
+  The asset-location Insight's evaluated line named its estate gain in today's dollars;
+  the figure is nominal, and the line now names the plan's last year ("in YYYY
+  dollars"), and the `insight-impact-estate-and-lifetime-tax-deltas` record, which also
+  said today's dollars, is corrected (unreviewed until the review lane checks it).
+  The Insights card's preview, the Roth & Tax Optimizer's failure well and the
+  relocation compare's error line printed an engine refusal in the engine's own words
+  (for a worker page, its class was lost on the way back); each now names what could
+  not be computed or compared and what to do next, and keeps an unrecognised error's
+  text only as a labelled detail.
+
+  Follow-ups outside this repository. RetireGolden-Pro: its review queue
+  (`reviewEvaluate.worker.ts`) reads `InsightImpact.successRateDeltaPct`, which is
+  removed; that is Pro's only compile break, and the guardrails finding shows no success
+  change until Pro runs the Monte Carlo pair itself (its card parser needs no change,
+  since the flag is not on the card); its meeting view should read
+  `headline.moneyLasts` (money lasts "through" a year, and the bounded difference) and
+  print both end years when a scenario changes the horizon; wherever its review queue
+  or meeting view prints `InsightImpact.endingAfterTaxEstateDelta` or
+  `lifetimeTaxDelta`, it should not call them today's dollars (they are nominal: the
+  estate delta in dollars of the plan's last year, the lifetime delta each year's own
+  dollars summed), which needs checking in Pro's own rendering; the next planner-ui bump
+  brings every page change above.
+  RetireGolden-MCP: `compare_scenarios` should read `comparePlanHeadlines` (its basis and
+  both end years) rather than subtract nominal estates across horizons, which changes
+  its protocol-baseline payload; `run_optimizer` returns `schedule` whole, so it gains
+  `conversionTotal` and the protocol baseline's `run_optimizer_default` hash changes
+  (`winnerConversionTotal` can be picked into the tournament block); reinstall its engine
+  before measuring, since the installed copy is older than its pin.
+
 - **Changed: the embedded TIPS real-yield curve is Treasury's published 2026-06-30 row**
   (decision D-TREASURY). Every TIPS-ladder quote, funded ratio, Social Security bridge
   sizing and pension lump-sum rate reads this curve. It stored 1.85/2.05/2.25/2.55/2.70%
@@ -972,6 +1088,87 @@ has — rather than the runtime contract a consumer needs on the landing page.
   or finalization claim.
 
 ### Breaking (published `@retiregolden/engine` API)
+
+- **B2-P1 slice 3 (comparisons):**
+  - **`InsightImpact.successRateDeltaPct` is removed**, since no detector publishes it
+    any more (rule 4). `SUCCESS_RATE_POINT_DOLLAR_EQUIVALENT` is removed with it;
+    `computeCardScore` reads `EDITORIAL_RANKING_WEIGHT_DOLLARS` (a new export) in its
+    place, so the order is unchanged. `Detector.previewsMonteCarlo` (`true`, optional)
+    is new. RetireGolden-Pro's `reviewEvaluate.worker.ts` reads the removed field and
+    gets a type error on the engine bump.
+  - **`ClaimAgeCoOptimization.claimChangeEstateGain` and `.estateYear`** are new
+    required fields; planner-ui's `ReportClaimAgeEvidence` gains both as required
+    fields too, so a report model or claim result built by hand needs them.
+    planner-ui's `claimEstateGain` (`planner/optimizePageClaim`) is removed.
+  - **`OptimizedSchedule.conversionTotal`** and
+    **`ExactLedgerTournament.winnerConversionTotal`** (and so
+    `ExactLedgerTournamentSummary.winnerConversionTotal`) are new required fields; a
+    hand-built schedule or tournament needs them. New export `conversionScheduleTotal`
+    (`@retiregolden/engine/strategies/conversionScheduleTotal`, a leaf module,
+    re-exported from `strategies/optimizer`), which refuses a non-finite amount with a
+    RangeError. planner-ui's `scheduleConversionTotal`
+    (`planner/optimizePagePromotion`) is removed.
+  - **`ExactLedgerValidation.executedWithoutMaterialShortfall`** and
+    **`ConversionExecution.materialTotalShortfall`** (`boolean`) are new required
+    fields; a hand-built validation or evaluation needs them. The recommendation states
+    are unchanged: the evaluation's diagnostic test now reads
+    `materialTotalShortfall` instead of recomputing it.
+  - **`RelocationCandidateRow.lifetimeTaxesAndPenaltiesDeltaVsBaseline`** and
+    **`.endingAfterTaxEstateTodayDollars`** (`number | null`) are new required fields.
+  - **`ScalarComparison` and `NullableScalarComparison`** are declared in
+    `@retiregolden/engine/scenarios/scalarComparison` (still re-exported, unchanged,
+    from `scenarios/comparison`). A comparison that meets a figure that is not finite
+    throws a `NonFiniteComparisonError` (a new export: a `RangeError` whose `role`
+    names the operand), where it threw a plain `Error` reading
+    "scenario comparison produced a non-finite number" (the lifetime sums of
+    `compareScenarioPlans` keep that message). `compareScenarioPlans` sets the new
+    optional `headline.moneyLasts`, and so refuses (RangeError, from `moneyLasts`) a
+    hand-built result whose depletion year is not one of its own years.
+  - **`attachStochasticMetrics`** publishes its deltas through `compareScalars`
+    (exported as `stochasticDeltas`): a negative zero reads 0, and a candidate whose
+    metrics (or the baseline's) include one that is not finite gets no attachment and
+    the new exported diagnostic `STOCHASTIC_METRICS_NOT_FINITE_DIAGNOSTIC`, so the
+    max-downside-resilience ranking refuses it with that reason instead of throwing;
+    with a decision context that has `taxCalculatorForPlan`, every
+    entry is priced with its own plan's stack. New exports
+    `compareMonteCarloSuccessRates` and `MonteCarloRateRun`: it compares two runs'
+    success rates only when they share a path count and a start year, which each run
+    states, and refuses (RangeError) otherwise.
+  - **New module `@retiregolden/engine/scenarios/planHeadlines`**
+    (`comparePlanHeadlines`), which refuses two projections with different start years
+    and a depleting side whose first person has no birth date (`PlanHeadlineRefusal`, a
+    `RangeError` carrying the reason and the side), and a
+    projection with no dollar basis when the end years differ (from
+    `projectionDollarBasis`). `compareMoneyLasts`, `MoneyLastsComparison` and
+    `MoneyLastsBound` are new exports of `@retiregolden/engine/projection/moneyLasts`,
+    re-exported from `planHeadlines`.
+  - **New engine exports `MonteCarloComparisonRefusal`** (the RangeError
+    `compareMonteCarloSuccessRates` throws, with its reason) **and
+    `InsightPreviewUnavailable`** (`insights/previewUnavailable`, the error the
+    asset-location and spending-headroom detectors throw, with a reason written for the
+    reader, when they find nothing to preview; it was a plain `Error`).
+  - **planner-ui worker errors carry a typed refusal:** the worker's error message gains
+    an optional `refusal` (`workers/refusal.ts`: the engine refusal's kind and its
+    operand role or reason, as plain data, since an error's class does not survive
+    postMessage); `runWorkerRequest` rejects with a `WorkerRefusalError` carrying it;
+    `OptimizeResponse` and `RelocationCompareResponse` gain the field. The Optimize
+    failure well and the relocation compare's error line no longer start "Optimizer
+    error:" or "Compare error:"; they say the failure in plain words
+    (`planner/engineRefusalCopy.ts`).
+  - **Three calls now refuse a figure that is not finite** with a RangeError, where it
+    used to pass through as NaN: `evaluateCandidate` and the exact-ledger validation on
+    a requested conversion amount (through `conversionScheduleTotal`),
+    `optimizePlanCoOptimizingClaimAge` on an after-tax estate, and
+    `compareRelocationCandidates` on a row's lifetime tax sum (both through
+    `compareScalars`).
+  - **planner-ui:** `planner/compareDeltas` exports only `formatDelta` and `DeltaUnit`
+    (`deterministicSuccessPct`, `moneyLastsDelta`, `ageDelta`, `MoneyLastsDelta` and the
+    `lastFundedYear` re-export are removed); `formatMcDelta` takes the engine's fraction
+    rather than percentage points; `recommendationBody` takes an optional context (the
+    tournament's ACA veto); `planner/useMcSuccessRate` exports `headlineMcRun` (which
+    returns the run's start year) and `headlineMcRunOptions` (which takes one), and
+    `publishMcHeadline` and `registerMcHeadlineRun` take the start year of the run they
+    publish or register.
 
 - **`SustainableSpendingResult` (B2-P1 slice 2, owner decision R4):** `maxBaseAnnual`
   now publishes the answer rounded down to $100 (or, under guardrails when that fails,

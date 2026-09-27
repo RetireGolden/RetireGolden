@@ -1,61 +1,12 @@
 /**
- * Plan B − Plan A delta formatting for the Compare plans table (#499). Money
- * deltas come from the engine's summaries; the year, age, and percentage-point
- * differences here are presentation arithmetic on those already-computed
- * figures (a year minus a year), never dollars.
+ * Plan B − Plan A delta cell text for the Compare plans table (#499). Every
+ * figure is the engine's (scenarios/planHeadlines.ts#comparePlanHeadlines,
+ * B2-P1 slice 3); this module only formats a published difference.
  */
 
-import { lastFundedYear } from '@retiregolden/engine/projection/moneyLasts'
 import { fmtMoneyCompact } from './format'
 
-/**
- * The last year a plan is fully funded, the engine's own convention
- * (projection/moneyLasts.ts): the first short year minus one, or the end year
- * when it never runs short. Re-exported so this page keeps no copy of it.
- */
-export { lastFundedYear }
-
 export type DeltaUnit = 'money' | 'years' | 'pp'
-
-/** The engine's deterministic success reading of a summary: 100 with no depletion year, else 0. */
-export function deterministicSuccessPct(depletionYear: number | null): number {
-  return depletionYear === null ? 100 : 0
-}
-
-export interface MoneyLastsDelta {
-  /** Signed years on last funded years, B − A; drives the delta color. */
-  value: number
-  /** The cell text: a plain years delta, a bounded one, or a both-full reading. */
-  label: string
-}
-
-/**
- * Money-lasts delta in years, B − A, on last funded years. A plan that never
- * depletes is funded through its horizon, but how much longer it would have
- * lasted is unbounded, so a one-sided comparison is stated as a bound
- * ("≥ +7 yrs": B lasts at least seven more years) rather than as an exact
- * gap; two full plans read "same" on one horizon and "both full plan" on
- * different ones, never as a horizon arithmetic.
- */
-export function moneyLastsDelta(
-  a: { depletionYear: number | null; endYear: number },
-  b: { depletionYear: number | null; endYear: number },
-): MoneyLastsDelta {
-  const value = lastFundedYear(b) - lastFundedYear(a)
-  const aFull = a.depletionYear === null
-  const bFull = b.depletionYear === null
-  if (aFull && bFull) return { value: 0, label: a.endYear === b.endYear ? 'same' : 'both full plan' }
-  if (!aFull && !bFull) return { value, label: formatDelta(value, 'years') }
-  const bound = bFull ? '≥' : '≤'
-  const years = formatDelta(value, 'years')
-  return { value, label: years === 'same' ? `${bound} same` : `${bound} ${years}` }
-}
-
-/** Age delta, B − A; null when either side has no depletion age to compare. */
-export function ageDelta(a: number | null, b: number | null): number | null {
-  if (a === null || b === null) return null
-  return b - a
-}
 
 function signed(value: number, text: string): string {
   return `${value > 0 ? '+' : value < 0 ? '−' : ''}${text}`

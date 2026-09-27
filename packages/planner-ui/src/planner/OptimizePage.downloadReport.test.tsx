@@ -129,7 +129,7 @@ describe('Optimize download recommendation report (#672)', () => {
     await mount(createSamplePlan())
 
     expect(container.textContent).toContain(
-      "Optimizer error: Uncaught ReferenceError: Cannot access 'oe' before initialization",
+      "The optimizer couldn't finish this run. Run it again. If it fails again, this detail helps us fix it: Uncaught ReferenceError: Cannot access 'oe' before initialization",
     )
     const downloadWhileFailed = findButton('Download recommendation report')
     expect(downloadWhileFailed, 'download control stays on screen after a crash').toBeTruthy()
@@ -140,7 +140,7 @@ describe('Optimize download recommendation report (#672)', () => {
     await act(async () => tryAgain!.click())
     await settle()
 
-    expect(container.textContent).not.toContain('Optimizer error:')
+    expect(container.textContent).not.toContain("The optimizer couldn't finish this run")
     expect(container.textContent).toContain('Fill the 22% bracket')
     const downloadAfterRetry = findButton('Download recommendation report')
     expect(downloadAfterRetry).toBeTruthy()

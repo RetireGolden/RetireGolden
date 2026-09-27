@@ -204,7 +204,7 @@
       ],
       "feeds": [],
       "purpose": "What an insight's modeled action does to the estate and to lifetime taxes, as candidate minus baseline.",
-      "statement": "decisions/evaluateCandidate.ts#evaluateCandidate prices the candidate on its own full year-by-year projection and subtracts the shared baseline in the same direction for both fields: endingAfterTaxEstateDelta = candidateSummary.endingAfterTaxEstate - baselineSummary.endingAfterTaxEstate, and lifetimeTaxDelta = candidateSummary.lifetimeTaxesAndPenalties - baselineSummary.lifetimeTaxesAndPenalties. The estate field's comment states that order outright and the lifetime-tax field defines a negative value as savings, which is the same convention: an estate improvement is positive and a tax saving is negative. Units: today's dollars. Rounding: none.",
+      "statement": "decisions/evaluateCandidate.ts#evaluateCandidate prices the candidate on its own full year-by-year projection and subtracts the shared baseline in the same direction for both fields: endingAfterTaxEstateDelta = candidateSummary.endingAfterTaxEstate - baselineSummary.endingAfterTaxEstate, and lifetimeTaxDelta = candidateSummary.lifetimeTaxesAndPenalties - baselineSummary.lifetimeTaxesAndPenalties. The estate field's comment states that order outright and the lifetime-tax field defines a negative value as savings, which is the same convention: an estate improvement is positive and a tax saving is negative. Units: nominal dollars, not today's: the estate delta is in dollars of the plan's last year (both runs end in that year), and the lifetime tax delta sums each year's own dollars. Rounding: none.",
       "formula": {
         "expression": "estateDelta = E_candidate - E_baseline; taxDelta = T_candidate - T_baseline",
         "variables": [
@@ -244,7 +244,7 @@
       "provenance": {
         "derivedBy": "codex",
         "implementedBy": "claude",
-        "reviewedBy": "cursor"
+        "reviewedBy": "unreviewed"
       },
       "fixtureFiles": [
         "packages/engine/src/decisions/evaluateCandidate.evidence.test.ts"
@@ -629,6 +629,72 @@
       },
       "fixtureFiles": [
         "packages/engine/src/insights/detectors/widowsPenalty.evidence.test.ts"
+      ],
+      "gates": {
+        "fixtureRegistersTest": true,
+        "pinsResolve": true,
+        "familiesExist": true,
+        "worksheetExists": true,
+        "mutationExists": true,
+        "provenanceIndependent": true
+      }
+    },
+    {
+      "id": "monte-carlo-success-rate-comparison",
+      "title": "Monte Carlo success rate change on shared paths",
+      "kind": "composition",
+      "outputs": [
+        "insight-monte-carlo-success-delta"
+      ],
+      "feeds": [],
+      "purpose": "The change in Monte Carlo success rate between a plan and a previewed change to it, on the same market paths as the headline rate.",
+      "statement": "decisions/stochastic.ts#compareMonteCarloSuccessRates publishes compareScalars(baseline.successRate, proposal.successRate): proposal minus baseline, a fraction of paths, refusing with a RangeError two runs with different path counts or from different start years (each run states the calendar year its paths start in). The Insight preview (owner decision R11) runs both plans on the headline configuration: the headline market model built from the base plan (the plan's inflation mean, 12 percent return volatility, and per-class shocks for a plan with allocated accounts), the plan-id seed, and the path count and start year of the headline run it reuses for the base side (1,000 paths, or 10,000 when the Monte Carlo page published a finer run; the start year that run was simulated from, which after a New Year the plan object outlived is the previous year), so path N is one market for both plans and the baseline is the rate the reader was shown. decisions/stochastic.ts#attachStochasticMetrics prices every entry with its own plan's tax calculator when the decision context has a per-plan builder. With 912 and 948 successes of 1,000 the change is 0.03599999999999992, printed +3.6 points. Units: a fraction of paths, printed in percentage points to one decimal. Rounding: none.",
+      "formula": {
+        "expression": "delta = r_p − r_b with r = s / N; refused when N_b ≠ N_p or Y_b ≠ Y_p",
+        "variables": [
+          {
+            "symbol": "s",
+            "meaning": "Paths on which the plan never runs short",
+            "unit": "paths",
+            "domain": "0 to N"
+          },
+          {
+            "symbol": "N",
+            "meaning": "Paths simulated, the same seeded paths for both plans",
+            "unit": "paths",
+            "domain": ">= 1"
+          },
+          {
+            "symbol": "Y",
+            "meaning": "Calendar year the run's paths start in",
+            "unit": "calendar year",
+            "domain": "integer"
+          }
+        ],
+        "timing": "once per preview",
+        "rounding": "none; the card prints points to one decimal"
+      },
+      "limits": [
+        "A success share on N paths moves in steps of 1/N; a change of a few steps is sampling noise even on shared paths.",
+        "The comparison says nothing about the paths that fail in both plans, or how deep their shortfall is."
+      ],
+      "worksheet": "DOCS/calculations/insights/insight-monte-carlo-success-delta.md",
+      "mutation": "DOCS/calculations/insights/insight-monte-carlo-success-delta.mutation.md",
+      "dataset": null,
+      "ruleIds": null,
+      "assumption": null,
+      "justificationKind": "derivation",
+      "implementedBy": [
+        "packages/engine/src/decisions/stochastic.ts",
+        "packages/engine/src/scenarios/scalarComparison.ts"
+      ],
+      "provenance": {
+        "derivedBy": "claude",
+        "implementedBy": "claude-subagent",
+        "reviewedBy": "unreviewed"
+      },
+      "fixtureFiles": [
+        "packages/engine/src/decisions/stochastic.evidence.test.ts"
       ],
       "gates": {
         "fixtureRegistersTest": true,

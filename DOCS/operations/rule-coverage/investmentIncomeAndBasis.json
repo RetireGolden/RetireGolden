@@ -418,11 +418,11 @@
           "functions": [
             {
               "name": "LP_LTCG_RATE",
-              "line": 83
+              "line": 85
             },
             {
               "name": "buildOptimizerInput",
-              "line": 490
+              "line": 492
             }
           ]
         }
@@ -500,7 +500,7 @@
           "functions": [
             {
               "name": "summarizeProjection",
-              "line": 224
+              "line": 232
             }
           ]
         },

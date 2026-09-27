@@ -1,8 +1,32 @@
 import type {
+  AcaActionabilityVeto,
   ExactLedgerValidation,
   RetirementActionReadinessVetoSummary,
 } from '@retiregolden/engine/projection/optimizePlan'
+import { formatYearRuns } from './acaVetoCopy'
 import { fmtMoney, fmtMoneyCompact } from './format'
+
+/**
+ * What else the result carries about why a schedule is not offered. An
+ * 'unexecutable' validation whose schedule executed without a material
+ * shortfall is held back for another cause, and the copy names that cause
+ * instead of claiming a shortfall that did not happen.
+ */
+export interface RecommendationContext {
+  /** The tournament's ACA actionability veto, when unpriced credit years blocked the schedule. */
+  acaActionabilityVeto?: AcaActionabilityVeto | null
+}
+
+/**
+ * An 'unexecutable' validation whose schedule ran without a material shortfall,
+ * in any one year or in total: the cause is not execution. The engine decides
+ * that where it measures the execution and publishes it
+ * (ExactLedgerValidation.executedWithoutMaterialShortfall); the page reads it
+ * and re-derives no margin (decision D-UI-SS; PR #754 finding 5).
+ */
+function heldForAnotherCause(validation: ExactLedgerValidation): boolean {
+  return validation.recommendationState === 'unexecutable' && validation.executedWithoutMaterialShortfall
+}
 
 /**
  * True when a run ended with nothing to recommend: the solver found no
@@ -46,13 +70,15 @@ export function recommendationHeading(validation: ExactLedgerValidation): string
     case 'rejected':
       return 'This lower-tax schedule is not recommended.'
     case 'unexecutable':
-      return 'This conversion schedule is mostly theoretical.'
+      return heldForAnotherCause(validation)
+        ? 'This conversion schedule is shown as a diagnostic.'
+        : 'This conversion schedule is mostly theoretical.'
     case 'identityIncomplete':
       return 'This schedule still needs account allocation.'
   }
 }
 
-export function recommendationBody(validation: ExactLedgerValidation): string {
+export function recommendationBody(validation: ExactLedgerValidation, context: RecommendationContext = {}): string {
   const requested = fmtMoney(validation.requestedConversionTotal)
   const executed = fmtMoney(validation.executedConversionTotal)
   const from = fmtMoneyCompact(validation.baseline.endingAfterTaxEstate)
@@ -71,8 +97,30 @@ export function recommendationBody(validation: ExactLedgerValidation): string {
       return `Converting ${requested} leaves your projected after-tax estate essentially unchanged at ${to}.`
     case 'rejected':
       return `Converting ${requested} ${taxPhrase}, but your projected after-tax estate moves from ${from} to ${to}.`
-    case 'unexecutable':
-      return `The optimizer proposed converting ${requested}, but only ${executed} could actually be converted. The traditional balance it counted on is not available in the plan years shown.`
+    case 'unexecutable': {
+      if (!heldForAnotherCause(validation)) {
+        return `The optimizer proposed converting ${requested}, but only ${executed} could actually be converted. The traditional balance it counted on is not available in the plan years shown.`
+      }
+      // Printed amounts, not a comparison of dollars: when the two print alike
+      // the reader is told plainly that the whole request ran.
+      const executes =
+        executed === requested
+          ? `Your full projection converts all ${requested} requested`
+          : `Your full projection converts ${executed} of the ${requested} requested`
+      const incomplete = validation.incompleteComputationYears ?? []
+      if (incomplete.length > 0 && context.acaActionabilityVeto) {
+        // Both causes hold the schedule back, and the reader is told both
+        // (PR #754 finding 8).
+        return `${executes}, but two things hold it back: its tax could not be computed completely in ${formatYearRuns(incomplete)}, and the marketplace (ACA) premium tax credit isn't priced in some of the plan's years, while conversion income changes that credit. So the schedule is shown as a diagnostic, not a recommendation. The ACA note below names the credit's years.`
+      }
+      if (incomplete.length > 0) {
+        return `${executes}, but its tax could not be computed completely in ${formatYearRuns(incomplete)}, so the schedule is shown as a diagnostic, not a recommendation.`
+      }
+      if (context.acaActionabilityVeto) {
+        return `${executes}, but the marketplace (ACA) premium tax credit isn't priced in some of the plan's years, and conversion income changes that credit, so the schedule is shown as a diagnostic, not a recommendation. The ACA note below names the years.`
+      }
+      return `${executes}, but it cannot be applied to your plan as it stands, so the schedule is shown as a diagnostic, not a recommendation.`
+    }
     case 'identityIncomplete':
       return `The full projection priced and executed ${executed}, but stable owner, source IRA, and Roth destination identities are still required before this aggregate schedule can be recommended.`
   }

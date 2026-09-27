@@ -39,7 +39,9 @@ import {
   type ObjectivePolicyId,
   type RetirementActionCandidateReadiness,
 } from '../decisions/index.js'
+import { compareScalars } from '../scenarios/scalarComparison.js'
 import { applyScenarioPatch } from '../scenarios/scenarios.js'
+import { conversionScheduleTotal } from '../strategies/conversionScheduleTotal.js'
 import {
   optimizeSchedule,
   type OptimizedSchedule,
@@ -917,6 +919,13 @@ export interface ExactLedgerTournament {
    * one dollar, rounded to cents).
    */
   winnerConversions: { year: number; amount: number }[]
+  /**
+   * conversionScheduleTotal(winnerConversions) (strategies/conversionScheduleTotal.ts): the
+   * recommended schedule's total, nominal dollars of different years added; 0
+   * when there is none. Set by finalizedTournament wherever a tournament is
+   * built.
+   */
+  winnerConversionTotal: number
   /** Exact comparison for the winner; null for 'incumbent' (a plan's delta vs itself is zero) and 'none'. */
   winnerValidation: ExactLedgerValidation | null
   /**
@@ -975,17 +984,25 @@ export type ExactLedgerTournamentSummary = Omit<
 /** A candidate only replaces the MILP schedule when it wins by more than this. */
 const DEFAULT_TOURNAMENT_SWITCH_MARGIN_DOLLARS = 1_000
 
+/** A tournament before its published total is attached. */
+type ExactLedgerTournamentDraft = Omit<ExactLedgerTournament, 'winnerConversionTotal'>
+
+/**
+ * Every tournament this module builds passes through here, so the published
+ * total is always the one sum of the schedule it publishes and can never be
+ * carried over from another schedule.
+ */
+function finalizedTournament(draft: ExactLedgerTournamentDraft): ExactLedgerTournament {
+  return { ...draft, winnerConversionTotal: conversionScheduleTotal(draft.winnerConversions) }
+}
+
 function calculatedPostProcessedSchedule(
   postProcessed: ExactLedgerPostProcessing | null,
 ): ExactLedgerPostProcessing | null {
   if (postProcessed === null) return null
-  const cleanedConversionTotal = postProcessed.cleanedSchedule.conversions.reduce(
-    (sum, conversion) => sum + conversion.amount,
-    0,
-  )
   return postProcessed.recommendationSchedule === 'cleaned' ||
     (postProcessed.stabilized &&
-      cleanedConversionTotal >= postProcessed.minimumRequestedConversionDollars &&
+      postProcessed.cleanedSchedule.conversionTotal >= postProcessed.minimumRequestedConversionDollars &&
       postProcessed.cleanedValidation.recommendationState === 'identityIncomplete')
     ? postProcessed
     : null
@@ -1018,12 +1035,8 @@ function policyRankablePostProcessedSchedule(
   postProcessed: ExactLedgerPostProcessing | null,
 ): ExactLedgerPostProcessing | null {
   if (postProcessed === null) return null
-  const cleanedConversionTotal = postProcessed.cleanedSchedule.conversions.reduce(
-    (sum, conversion) => sum + conversion.amount,
-    0,
-  )
   return postProcessed.stabilized &&
-    cleanedConversionTotal >= postProcessed.minimumRequestedConversionDollars &&
+    postProcessed.cleanedSchedule.conversionTotal >= postProcessed.minimumRequestedConversionDollars &&
     postProcessed.cleanedValidation.recommendationState !== 'unexecutable'
     ? postProcessed
     : null
@@ -1473,7 +1486,7 @@ export function runExactLedgerTournament(
             `vetoed as ${promotedVeto.reason}`,
           )
         }
-        return {
+        return finalizedTournament({
           policyId: 'max-after-tax-estate',
           candidates: displayCandidates,
           winnerSource: 'candidate',
@@ -1489,9 +1502,9 @@ export function runExactLedgerTournament(
           acaActionabilityVeto: null,
           retirementActionReadinessVeto: null,
           retirementActionPromotion: promoted.promotion,
-        }
+        })
       }
-      return {
+      return finalizedTournament({
         policyId: 'max-after-tax-estate',
         candidates: displayCandidates,
         winnerSource: 'candidate',
@@ -1505,7 +1518,7 @@ export function runExactLedgerTournament(
         acaActionabilityVeto: null,
         retirementActionReadinessVeto: null,
         retirementActionPromotion: null,
-      }
+      })
     }
   }
   if (milpRecommended) {
@@ -1580,7 +1593,7 @@ export function runExactLedgerTournament(
         promoted.promotion,
       )
     }
-    return {
+    return finalizedTournament({
       policyId: 'max-after-tax-estate',
       candidates,
       winnerSource: 'milp',
@@ -1594,7 +1607,7 @@ export function runExactLedgerTournament(
       acaActionabilityVeto: null,
       retirementActionReadinessVeto: null,
       retirementActionPromotion: null,
-    }
+    })
   }
   // Preserve a priced, explicitly vetoed diagnostic schedule for benchmark
   // consumers even when its incomplete annual valuation excludes it from
@@ -1858,7 +1871,7 @@ function fallbackTournament(
   const incompleteEvidence = incompleteYears.length ? { incompleteComputationYears: incompleteYears } : {}
   const incumbent = incompleteComputationYears(baselineResult).length ? null : incumbentExecutedConversions(plan, baselineResult)
   if (incumbent) {
-    return {
+    return finalizedTournament({
       ...incompleteEvidence,
       policyId,
       candidates,
@@ -1873,9 +1886,9 @@ function fallbackTournament(
       acaActionabilityVeto,
       retirementActionReadinessVeto,
       retirementActionPromotion,
-    }
+    })
   }
-  return {
+  return finalizedTournament({
     ...incompleteEvidence,
     policyId,
     candidates,
@@ -1890,7 +1903,7 @@ function fallbackTournament(
     acaActionabilityVeto,
     retirementActionReadinessVeto,
     retirementActionPromotion,
-  }
+  })
 }
 
 /**
@@ -1976,7 +1989,7 @@ function runPolicyRankedTournament(
 
   if (winner && milpEvaluation && winner.evaluation === milpEvaluation && milpRecommended) {
     return {
-      tournament: {
+      tournament: finalizedTournament({
         policyId: policy.id,
         candidates,
         winnerSource: 'milp',
@@ -1990,7 +2003,7 @@ function runPolicyRankedTournament(
         acaActionabilityVeto: null,
         retirementActionReadinessVeto: null,
         retirementActionPromotion: null,
-      },
+      }),
       winnerResult: milpRecommended.cleanedResult,
     }
   }
@@ -1999,7 +2012,7 @@ function runPolicyRankedTournament(
     if (richWinner && richWinner.conversions.length > 0) {
       const winnerValidation = evaluateExactLedgerSchedule(plan, richWinner.conversions, baselineResult, richWinner.result)
       return {
-        tournament: {
+        tournament: finalizedTournament({
           policyId: policy.id,
           candidates,
           winnerSource: 'candidate',
@@ -2015,7 +2028,7 @@ function runPolicyRankedTournament(
           acaActionabilityVeto: null,
           retirementActionReadinessVeto: null,
           retirementActionPromotion: null,
-        },
+        }),
         winnerResult: richWinner.result,
       }
     }
@@ -2106,6 +2119,17 @@ export interface ExactLedgerValidation {
    * DECISION_MATERIAL_SHORTFALL_PCT); null when no year does.
    */
   firstMateriallyUnexecutedYear: number | null
+  /**
+   * True when the schedule executed without a material shortfall: no
+   * requested year is short by more than its own margin
+   * (firstMateriallyUnexecutedYear is null) and the whole schedule is not
+   * short by more than max(DECISION_MATERIAL_SHORTFALL_DOLLARS, requested ×
+   * DECISION_MATERIAL_SHORTFALL_PCT). An 'unexecutable' state with this true
+   * comes from another cause (incomplete tax years, non-actionable ACA
+   * evidence or a retirement-action diagnostic), not from execution. Pages
+   * read it rather than re-deriving the margins (decision D-UI-SS).
+   */
+  executedWithoutMaterialShortfall: boolean
   /**
    * The first year, over the candidate result's rows, that the candidate
    * plan's own (non-inherited) traditional balances sum to at most the neutral
@@ -2202,11 +2226,18 @@ function conversionsFromYearMap(byYear: Map<number, number>, toleranceDollars: n
     .map(([year, amount]) => ({ year, amount: roundDollars(amount) }))
 }
 
+/**
+ * The raw solve with its conversions replaced by a cleaned list. The total is
+ * recomputed from that list (never copied through the spread); endingAfterTax
+ * and lifetimeTax stay the raw solve's, which nothing reads from a cleaned
+ * schedule.
+ */
 function scheduleWithConversions(schedule: OptimizedSchedule, conversions: { year: number; amount: number }[]): OptimizedSchedule {
   const byYear = aggregateConversions(conversions)
   return {
     ...schedule,
     conversions,
+    conversionTotal: conversionScheduleTotal(conversions),
     schedule: schedule.schedule.map((year) => ({
       ...year,
       conversion: roundDollars(byYear.get(year.year) ?? 0),
@@ -2274,6 +2305,8 @@ function evaluateExactLedgerScheduleCalculation(
     executedConversionTotal: execution.executedTotal,
     executedConversionRatio: execution.executedRatio,
     firstMateriallyUnexecutedYear: execution.firstMateriallyUnexecutedYear,
+    executedWithoutMaterialShortfall:
+      execution.firstMateriallyUnexecutedYear === null && !execution.materialTotalShortfall,
     traditionalDepletionYear: evaluation.traditionalDepletionYear,
     recommendationState:
       incompleteYears.length > 0 || evaluation.recommendationState === 'diagnostic' ? 'unexecutable' : evaluation.recommendationState,
@@ -2550,7 +2583,7 @@ export function postProcessExactLedgerSchedule(
 
   const minimumRequestedConversionDollars =
     options.minimumRequestedConversionDollars ?? DEFAULT_MINIMUM_REQUESTED_CONVERSION_DOLLARS
-  const cleanedConversionTotal = cleanedSchedule.conversions.reduce((sum, conversion) => sum + conversion.amount, 0)
+  const cleanedConversionTotal = cleanedSchedule.conversionTotal
   // The post-processor's own product is the solver's household schedule, which
   // names nobody; promotion happens later, in the tournament, on whatever
   // schedule wins there.
@@ -2852,10 +2885,23 @@ export interface ClaimAgeCoOptimization {
    * change alongside the returned conversion schedule.
    */
   winningClaimPatch: { incomes: Plan['incomes'] } | null
-  /** Exact after-tax estate of the joint (claim, schedule) optimum. */
+  /** Exact after-tax estate of the joint (claim, schedule) optimum, nominal dollars of estateYear. */
   jointExactEstate: number
-  /** Exact after-tax estate of the current-claim optimum (the comparison floor). */
+  /** Exact after-tax estate of the current-claim optimum (the comparison floor), nominal dollars of estateYear. */
   currentClaimExactEstate: number
+  /**
+   * jointExactEstate − currentClaimExactEstate (scenarios/scalarComparison.ts#compareScalars,
+   * proposal minus baseline), nominal dollars of estateYear: 0 when no claim
+   * change won (the joint estate is then the current-claim estate), and more
+   * than DEFAULT_CLAIM_SWITCH_MARGIN_DOLLARS (1,000) when one did. Never negative.
+   */
+  claimChangeEstateGain: number
+  /**
+   * The year whose nominal dollars the three estate figures above are in: the
+   * plan's last projection year. A claim patch changes only incomes, so every
+   * evaluated pair ends in this year.
+   */
+  estateYear: number
 }
 
 export interface OptimizePlanWithClaimResult extends OptimizePlanResult {
@@ -2903,6 +2949,7 @@ export async function optimizePlanCoOptimizingClaimAge(
 
   const ctx = decisionContext(plan, simulatePlan(plan, simulateOptions), simulateOptions)
   const candidates = socialSecurityClaimGenerator.generate(ctx)
+  const estateYear = ctx.baselineResult.endYear
 
   let bestPlan = plan
   let bestResult = baseResult
@@ -2949,6 +2996,8 @@ export async function optimizePlanCoOptimizingClaimAge(
       winningClaimPatch: winningPatch,
       jointExactEstate: bestEstate,
       currentClaimExactEstate: baseEstate,
+      claimChangeEstateGain: compareScalars(baseEstate, bestEstate).delta,
+      estateYear,
     },
   }
 }

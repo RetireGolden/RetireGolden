@@ -12,7 +12,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router'
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 
-import type { OptimizedSchedule } from '@retiregolden/engine/strategies/optimizer'
+import { conversionScheduleTotal } from '@retiregolden/engine/strategies/conversionScheduleTotal'
 import { objectivePolicies, type ObjectivePolicyId } from '@retiregolden/engine/decisions'
 import {
   optimizerUnsupportedRetirementActions,
@@ -38,6 +38,7 @@ import { WhyRecommendationPanel } from './explainPanels'
 import { CheckboxField, HelpTip, SelectField } from './fields'
 import { LearnAboutScreen } from '../learn/LearnAboutScreen'
 import { fmtMoney, fmtMoneyCompact } from './format'
+import { optimizeErrorSentence } from './engineRefusalCopy'
 import { LEARN } from './learnLinks'
 import { LiveStatus } from './LiveStatus'
 import {
@@ -51,7 +52,6 @@ import {
 } from './optimizePageChart'
 import {
   applyOptimizeRecommendation,
-  claimEstateGain,
   claimOnlyApplyAvailable,
   claimRecommendationReportAvailable,
   planWithWinningClaim,
@@ -106,10 +106,6 @@ function stateColor(state: ExactLedgerRecommendationState): string {
 
 function formatPct(value: number): string {
   return `${Math.round(value * 100)}%`
-}
-
-function totalScheduleConversions(schedule: OptimizedSchedule | null): number {
-  return schedule?.conversions.reduce((a, c) => a + c.amount, 0) ?? 0
 }
 
 /**
@@ -331,7 +327,10 @@ export function OptimizePage() {
       })
       .catch((e: unknown) => {
         if (token === runToken.current) {
-          setError(e instanceof Error ? e.message : String(e))
+          // Plain words for a typed engine refusal the worker passed back,
+          // and a plain sentence with the error's own text as a detail for
+          // anything else (PR #754).
+          setError(optimizeErrorSentence(e))
           // Drop any prior result so a stale chart/Apply can't render against
           // inputs the optimizer just failed on.
           setOptimizeResult(null)
@@ -370,8 +369,24 @@ export function OptimizePage() {
 
   const estateDelta = validation?.afterTaxEstateDelta ?? 0
   const taxDelta = validation?.lifetimeTaxDelta ?? 0
-  const totalConversions = displayedConversions.reduce((sum, c) => sum + c.amount, 0)
-  const rawConversions = totalScheduleConversions(schedule)
+  // Every schedule total is the engine's one sum (strategies/conversionScheduleTotal.ts):
+  // published on the raw and cleaned schedules and the tournament, and called
+  // here only for the list this page chooses to display.
+  const totalConversions = conversionScheduleTotal(displayedConversions)
+  const rawConversions = schedule?.conversionTotal ?? 0
+  // HiGHS stopped at its time limit: whatever schedule it held is not a proven
+  // optimum, and an empty one is not evidence that no conversion helps.
+  const solverTimedOut = schedule?.status === 'timeout'
+  // A solve that timed out with no schedule compared nothing of its own; the
+  // cards then name only the simple strategies, as the time-limit note does.
+  const solverScheduleCompared = !(solverTimedOut && rawConversions < 1)
+  const timeoutNote = solverTimedOut ? (
+    <p className="field-hint mt-sm">
+      {rawConversions < 1
+        ? 'The conversion solver stopped at its time limit before it found a schedule, so this result does not show that no conversion helps: only the simple strategies were compared on your full projection.'
+        : "The conversion solver stopped at its time limit, so the solver's schedule here is the best it had found by then, not a proven best."}
+    </p>
+  ) : null
   const executedConversions = validation?.executedConversionTotal ?? 0
   const hasPostProcessingAdjustments = (postProcessed?.adjustments.length ?? 0) > 0
   const recommendationState = presentationValidation?.recommendationState ?? 'neutral'
@@ -572,7 +587,7 @@ export function OptimizePage() {
           // silent for this path, so it is heard once); the tabIndex is for
           // the explicit-run focus move.
           <div className="callout callout--warn optimizer-failure" role="alert" tabIndex={-1} ref={failureWell}>
-            Optimizer error: {error}
+            {error}
           </div>
         ) : null}
         {/* No run controls while the precondition holds: every control here
@@ -619,10 +634,10 @@ export function OptimizePage() {
             </h2>
             <p className="muted" style={{ margin: 0 }}>
               Changing the claim age and re-optimizing conversions is worth{' '}
-              <strong>{fmtMoney(claimEstateGain(claimAge))}</strong> more projected after-tax estate than the best
-              result at your current claim ages ({fmtMoneyCompact(claimAge.currentClaimExactEstate)} →{' '}
-              {fmtMoneyCompact(claimAge.jointExactEstate)}), across {claimAge.combinationsEvaluated} claim combinations
-              each fully re-optimized.
+              <strong>{fmtMoney(claimAge.claimChangeEstateGain)}</strong> more projected after-tax estate, in{' '}
+              {claimAge.estateYear} dollars, than the best result at your current claim ages (
+              {fmtMoneyCompact(claimAge.currentClaimExactEstate)} → {fmtMoneyCompact(claimAge.jointExactEstate)}),
+              across {claimAge.combinationsEvaluated} claim combinations each fully re-optimized.
             </p>
             <p className="field-hint mt-sm">
               {incumbentHolds
@@ -668,13 +683,14 @@ export function OptimizePage() {
               Nothing beat your current plan: {tournament.winnerLabel} still ranks highest.
             </h2>
             <p className="muted" style={{ margin: 0 }}>
-              RetireGolden compared {tournament.candidates.length} simple candidate strategies and a fresh solver
-              schedule against your current plan on your full year-by-year projection;{' '}
+              RetireGolden compared {tournament.candidates.length} simple candidate strategies
+              {solverScheduleCompared ? ' and a fresh solver schedule' : ''} against your current plan on your full
+              year-by-year projection;{' '}
               {tournament.acaActionabilityVeto
                 ? 'none qualified as actionable (see the ACA note below)'
                 : 'none improved it'}
               . Your current schedule (
-              {fmtMoney(tournament.winnerConversions.reduce((sum, c) => sum + c.amount, 0))} of conversions across{' '}
+              {fmtMoney(tournament.winnerConversionTotal)} of conversions across{' '}
               {tournament.winnerConversions.length} year{tournament.winnerConversions.length === 1 ? '' : 's'}) stays
               in place{claimChangeRecommended ? ', so only the claim change above is left to apply.' : ', so there is nothing to apply.'}
             </p>
@@ -683,6 +699,7 @@ export function OptimizePage() {
                 {acaVetoExplanation(tournament.acaActionabilityVeto)}
               </p>
             ) : null}
+            {timeoutNote}
             <StateTaxIncompleteGuidancePanel plan={plan} incompleteYears={incompleteTaxYears} />
             {postProcessed?.cleanedValidation ? (
               <p className="field-hint mt-sm">
@@ -718,11 +735,15 @@ export function OptimizePage() {
           !candidateWins &&
           !tournament?.retirementActionReadinessVeto ? (
           <div className="card">
-            <h2>No beneficial conversions found</h2>
-            <p className="muted">
-              For this plan the optimizer didn't find conversions that improve the after-tax estate (often because there
-              is little pre-tax balance to convert, or the current strategy already captures the opportunity).
-            </p>
+            <h2>{solverTimedOut ? 'The optimizer ran out of time' : 'No beneficial conversions found'}</h2>
+            {solverTimedOut ? (
+              timeoutNote
+            ) : (
+              <p className="muted">
+                For this plan the optimizer didn't find conversions that improve the after-tax estate (often because
+                there is little pre-tax balance to convert, or the current strategy already captures the opportunity).
+              </p>
+            )}
             {tournament?.acaActionabilityVeto ? (
               <p className="field-hint mt-sm">
                 {acaVetoExplanation(tournament.acaActionabilityVeto)}
@@ -741,9 +762,12 @@ export function OptimizePage() {
                 </h2>
                 <p className="muted" style={{ margin: 0 }}>
                   {presentationValidation
-                    ? recommendationBody(presentationValidation)
+                    ? recommendationBody(presentationValidation, {
+                        acaActionabilityVeto: tournament?.acaActionabilityVeto ?? null,
+                      })
                     : `${fmtMoney(totalConversions)} of conversions across ${displayedConversions.length} year(s).`}
                 </p>
+                {timeoutNote}
                 {candidateWins && tournament ? (
                   <p className="field-hint mt-sm">
                     {candidateReplacedMilp ? (
@@ -779,7 +803,8 @@ export function OptimizePage() {
                 {hasExecutionMismatch && validation && !displayedScheduleAlreadyExecuted ? (
                   <p className="field-hint mt-sm">
                     Raw optimizer request: {fmtMoney(rawConversions)}. Cleaned executable schedule:{' '}
-                    {fmtMoney(totalConversions)}. Executed after cleaning: {fmtMoney(executedConversions)} (
+                    {fmtMoney(postProcessed?.cleanedSchedule.conversionTotal ?? totalConversions)}. Executed after
+                    cleaning: {fmtMoney(executedConversions)} (
                     {formatPct(validation.executedConversionRatio)}).
                     {postProcessed?.rawValidation.firstMateriallyUnexecutedYear
                       ? ` First raw shortfall: ${postProcessed.rawValidation.firstMateriallyUnexecutedYear}.`

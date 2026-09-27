@@ -24,6 +24,7 @@
  */
 
 import { formatWholeUsd } from '../../internal/evidenceFormat.js'
+import { InsightPreviewUnavailable } from '../previewUnavailable.js'
 import type { Detector } from '../types.js'
 import {
   createDecisionContext,
@@ -129,7 +130,7 @@ export const spendingHeadroom: Detector = {
               : `a credit in those years could move ${answered ? 'this answer' : 'what it found'} up or down, because your spending guardrails respond to what healthcare costs.`
           }`
     if (maxBaseAnnual === null || slack < MIN_SOLVED_SLACK_PER_YEAR) {
-      throw new Error(
+      throw new InsightPreviewUnavailable(
         `The spending solver found no meaningful headroom once taxes, healthcare cliffs, and sequencing were priced in.${acaCaveat(false)}`,
       )
     }
