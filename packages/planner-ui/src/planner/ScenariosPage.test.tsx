@@ -10,6 +10,7 @@ import type { Plan } from '@retiregolden/engine/model/plan'
 import { TRUSTEES_DEFAULT_SS_HAIRCUT } from '@retiregolden/engine/params'
 import type { ScenarioPlanComparison } from '@retiregolden/engine/scenarios/comparison'
 import type { ScenarioComparison } from '@retiregolden/engine/scenarios/scenarios'
+import { NonFiniteComparisonError } from '@retiregolden/engine/scenarios/scalarComparison'
 import type { SpendingSolveResult } from '../optimize/spendingMessages'
 import { WorkspaceReadOnlyContext } from '../data/workspaceReadOnly'
 import { PlanCtx, type PlanContextValue } from './planContextCore'
@@ -868,6 +869,38 @@ describe('ScenariosPage comparison lifecycle', () => {
     )
     expect(visibleError).toBeTruthy()
     expect(visibleError!.hasAttribute('role')).toBe(false)
+  })
+
+  // PR #754 finding 6: compareScalars refuses a figure that is not finite.
+  // The detail view says which side and what to check, in plain words.
+  it('states a detail comparison refused for a figure that is not finite in plain words', async () => {
+    mockedComparePlans.mockImplementationOnce(() => {
+      throw new NonFiniteComparisonError('proposal', Number.NaN)
+    })
+    await mount()
+    await advanceComparison()
+    const sentence =
+      "This scenario can't be compared with your plan: one of the scenario's figures could not be computed. Check the scenario's changes, then compare again."
+    expect(container.textContent).toContain('Deterministic comparison · Error')
+    const visibleError = Array.from(container.querySelectorAll('p')).find((paragraph) => paragraph.textContent === sentence)
+    expect(visibleError).toBeTruthy()
+    expect(container.textContent).not.toContain('NaN')
+    expect(container.textContent).not.toContain('finite number')
+  })
+
+  // PR #754 finding 6: a side-by-side run that throws inside its timer used to
+  // leave the overview's placeholder up for good.
+  it('states a failed overview run in plain words instead of leaving its placeholder up', async () => {
+    mockedCompareScenarios.mockImplementationOnce(() => {
+      throw new NonFiniteComparisonError('baseline', Number.POSITIVE_INFINITY)
+    })
+    await mount()
+    await advanceComparison()
+    expect(container.querySelector('[aria-label="Comparing scenarios"]')).toBeNull()
+    expect(container.textContent).toContain(
+      "The scenarios can't be compared right now: one of the figures could not be computed. Check each scenario's changes, then open this page again.",
+    )
+    expect(container.textContent).not.toContain('Infinity')
   })
 
   it('starts a fresh comparison with the new calendar year after a rerender', async () => {

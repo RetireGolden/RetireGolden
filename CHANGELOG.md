@@ -1112,8 +1112,11 @@ has — rather than the runtime contract a consumer needs on the landing page.
     optional `headline.moneyLasts`, and so refuses (RangeError, from `moneyLasts`) a
     hand-built result whose depletion year is not one of its own years.
   - **`attachStochasticMetrics`** publishes its deltas through `compareScalars`
-    (exported as `stochasticDeltas`): a negative zero reads 0 and a metric that is not
-    finite throws; with a decision context that has `taxCalculatorForPlan`, every
+    (exported as `stochasticDeltas`): a negative zero reads 0, and a candidate whose
+    metrics (or the baseline's) include one that is not finite gets no attachment and
+    the new exported diagnostic `STOCHASTIC_METRICS_NOT_FINITE_DIAGNOSTIC`, so the
+    max-downside-resilience ranking refuses it with that reason instead of throwing;
+    with a decision context that has `taxCalculatorForPlan`, every
     entry is priced with its own plan's stack. New exports
     `compareMonteCarloSuccessRates` and `MonteCarloRateRun`: it compares two runs'
     success rates only when they share a path count and a start year, which each run

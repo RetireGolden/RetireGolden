@@ -12,7 +12,7 @@ import {
   type SharedPathPlan,
 } from '../montecarlo/sharedPaths.js'
 import type { MonteCarloSummary } from '../montecarlo/run.js'
-import { compareScalars, type ScalarComparison } from '../scenarios/scalarComparison.js'
+import { compareScalars, NonFiniteComparisonError, type ScalarComparison } from '../scenarios/scalarComparison.js'
 import { planForCandidate } from './evaluateCandidate.js'
 import type {
   DecisionContext,
@@ -100,12 +100,22 @@ function attachment(
   return { baseline, candidate, deltas: stochasticDeltas(baseline, candidate) }
 }
 
+/** The diagnostic a candidate carries when its Monte Carlo metrics cannot be compared. */
+export const STOCHASTIC_METRICS_NOT_FINITE_DIAGNOSTIC =
+  'The Monte Carlo figures for this candidate or the current plan include one that could not be computed, so this candidate is not ranked on them.'
+
 /**
  * Run the baseline and every evaluation's candidate plan on the same market
  * paths and attach each candidate's metrics and deltas. When the context has
  * a per-plan tax stack (`ctx.taxCalculatorForPlan`), every entry, the baseline
  * included, is priced with its own plan's stack, as the deterministic
  * evaluation prices it; otherwise every entry uses `opts.taxCalculator`.
+ *
+ * A candidate whose metrics, or the baseline's, include a figure that is not
+ * finite gets no attachment and carries STOCHASTIC_METRICS_NOT_FINITE_DIAGNOSTIC,
+ * so a policy that ranks on them refuses that candidate with a reason (its
+ * "stochastic metrics unavailable" constraint) rather than the comparison
+ * throwing through the optimizer (PR #754 finding 6).
  */
 export function attachStochasticMetrics(
   ctx: DecisionContext,
@@ -145,7 +155,12 @@ export function attachStochasticMetrics(
     if (!item.evaluation) continue
     const summary = rowById.get(item.entry.id)
     if (!summary) continue
-    item.evaluation.stochastic = attachment(baseline, metricsFromSummary(summary, opts.seed))
+    try {
+      item.evaluation.stochastic = attachment(baseline, metricsFromSummary(summary, opts.seed))
+    } catch (error) {
+      if (!(error instanceof NonFiniteComparisonError)) throw error
+      item.evaluation.diagnostics.push(STOCHASTIC_METRICS_NOT_FINITE_DIAGNOSTIC)
+    }
   }
 
   return evaluations
