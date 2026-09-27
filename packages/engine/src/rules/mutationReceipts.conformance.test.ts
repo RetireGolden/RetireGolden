@@ -125,14 +125,23 @@ function sectionText(receipt: string, heading: string): string | null {
   return receipt.slice(start + 1, next < 0 ? receipt.length : next + 1)
 }
 
+/**
+ * The body of a section's fenced block: from the line after the first fence
+ * to the section's last bare fence line at least as long as the opening one,
+ * so a fence printed inside the block (a capture that quotes Markdown) does
+ * not end it early. Each receipt section holds one fenced block.
+ */
 function fencedBody(section: string | null): string | null {
   if (section === null) return null
-  const open = section.indexOf(FENCE)
+  const lines = section.split(NL)
+  const open = lines.findIndex((line) => line.startsWith(FENCE))
   if (open < 0) return null
-  const bodyStart = section.indexOf(NL, open) + 1
-  const close = section.indexOf(NL + FENCE, bodyStart - 1)
-  if (bodyStart <= 0 || close < 0) return null
-  return close < bodyStart ? '' : section.slice(bodyStart, close)
+  const ticks = /^`+/u.exec(lines[open]!)![0].length
+  for (let close = lines.length - 1; close > open; close -= 1) {
+    const bare = /^(`+)\s*$/u.exec(lines[close]!)
+    if (bare !== null && bare[1]!.length >= ticks) return lines.slice(open + 1, close).join(NL)
+  }
+  return null
 }
 
 const HUNK_HEADER = /^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/u
@@ -839,6 +848,18 @@ describe('mutation receipt drift', () => {
       (line) => !/^\s+\d+\|/u.test(line),
     )
     expect(syntheticDrift(SYNTHETIC_DIFF, { test: withClass, capture: classCapture })).toEqual([])
+  })
+
+  it('reads a whole capture that prints a fence of its own', () => {
+    // Were the capture cut at the fence it prints, the lines after it would go
+    // unchecked and this stale count would pass.
+    const added = SYNTHETIC_TEST.replace(NL + '})' + NL, NL + "  it.todo('a third')" + NL + '})' + NL)
+    const fenced = ['AssertionError: expected the report to read', FENCE, 'a quoted block', FENCE, ...SYNTHETIC_CAPTURE]
+    expect(syntheticDrift(SYNTHETIC_DIFF, { test: added, capture: fenced })).toEqual([
+      'states 2 tests in src/synthetic.evidence.test.ts, which now registers 3',
+      'states 2 tests in the run of src/synthetic.evidence.test.ts, which now registers 3',
+    ])
+    expect(syntheticDrift(SYNTHETIC_DIFF, { capture: fenced })).toEqual([])
   })
 
   it("reads a table title's %% as a literal percent sign and only its specifiers as the row's text", () => {
