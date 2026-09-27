@@ -81,16 +81,16 @@
  * This text is published. `scripts/rules-coverage.mjs` writes each entry onto
  * its rule in the ledger (`DOCS/operations/rule-coverage/`), and the public
  * methodology site renders it in its known-limits table, so every string must
- * read as plain words to a member of the public: no em dashes and none of the
- * internal test vocabulary `approximationKinds.conformance.test.ts` bans. The
- * titles of these rules, which the site prints beside each entry, are held to
- * the same rule there.
+ * read as plain words to a member of the public: no dashes used as punctuation
+ * and none of the internal test vocabulary `publicText.ts` bans. The titles of
+ * these rules, which the site prints beside each entry, are held to the same
+ * rule, by `publicText.conformance.test.ts` like every other rendered field.
  *
  * A rule reclassified out of `approximated`, newly classified into it, or
  * fixed must update its entry here in the same change, and a change of kind
  * updates the pinned counts. The type below makes a missing or stale key a
- * compile error, and the conformance suite checks the keys, the shapes, the
- * counts by kind and the public text.
+ * compile error, the conformance suite checks the keys, the shapes and the
+ * counts by kind, and the public-text suite checks the text.
  */
 import type { TAX_RULE_REGISTRY, TaxRuleId } from './taxRuleRegistry.js'
 
@@ -164,7 +164,7 @@ export const APPROXIMATION_KINDS: Readonly<Record<ApproximatedTaxRuleId, Approxi
   'irc-408A-d-4-B-converted-layer-taxable-portion-first': { kind: 'fix' },
   'irc-408A-d-4-B-same-year-conversion-aggregation': { kind: 'fix' },
   'irc-414-v-1-plan-permitted-catch-up': { kind: 'needs-fact', missingInput: 'whether each sponsoring plan permits catch-up contributions' },
-  'irc-414-v-7-A-prior-year-fica-wage-proxy': { kind: 'convention', reason: 'exact future Box 3 wages by sponsor are unknowable over decades; the entered proxy fails closed' },
+  'irc-414-v-7-A-prior-year-fica-wage-proxy': { kind: 'convention', reason: 'exact future Box 3 wages by sponsor are unknowable over decades; the entered proxy is treated as zero when omitted' },
   'irc-4973-a-b-f-ira-and-roth-excess-contribution-excise': { kind: 'fix' },
   'irc-4973-a-g-hsa-excess-contribution-excise': { kind: 'needs-fact', missingInput: 'year-end uncorrected HSA excess after monthly eligibility and corrections' },
   'irc-57-a-5-private-activity-bond-interest-amt-preference': { kind: 'convention', reason: 'future holdings lack issue-level identity and carve-out facts; guessing decades-out PAB mix would falsely exactify an AMT screen' },

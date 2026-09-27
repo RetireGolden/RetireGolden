@@ -57,7 +57,7 @@ export const blocks: ArticleBlock[] = [
   { type: 'heading', text: 'Why it matters in RetireGolden' },
   {
     type: 'prose',
-    md: 'RetireGolden models Medicare starting at age 65. It adds the standard Part B premium, applies IRMAA from the parameter pack, and uses a two-year MAGI lookback. The **Recent annual MAGI** assumption seeds years before the projection has its own MAGI history.',
+    md: 'RetireGolden models Medicare starting at age 65. It adds the standard Part B premium, applies IRMAA from the parameter set, and uses a two-year MAGI lookback. The **Recent annual MAGI** assumption seeds years before the projection has its own MAGI history.',
   },
   { type: 'heading', text: 'Common mistakes' },
   {

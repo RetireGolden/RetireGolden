@@ -42,7 +42,7 @@ export function coloradoSsPensionSubtraction(args: {
   config?: StateTaxParams['coloradoRetirement']
 }): StateLeafAdjustment {
   const config = args.config ?? stateParamsFor('CO', 2026)?.coloradoRetirement
-  if (!config) return { taxableIncomeDelta: 0, taxCredit: 0, warnings: [{ code: 'co-retirement-pack-missing', message: 'Colorado retirement subtraction requires the versioned parameter pack.', missingFacts: ['coloradoRetirement'] }] }
+  if (!config) return { taxableIncomeDelta: 0, taxCredit: 0, warnings: [{ code: 'co-retirement-pack-missing', message: 'Colorado retirement subtraction requires the published parameter set.', missingFacts: ['coloradoRetirement'] }] }
   const threshold = args.filingStatus === 'marriedFilingJointly' ? config.ssAgiJoint : config.ssAgiNonjoint
   const underSsOverride = args.federalAgi <= threshold
   let total = 0

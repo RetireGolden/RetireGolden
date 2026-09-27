@@ -842,12 +842,12 @@
       "authorities": [
         {
           "kind": "stateAgencyPublication",
-          "citation": "Alabama Department of Revenue, Individual Income Tax — Rate",
+          "citation": "Alabama Department of Revenue, Individual Income Tax: Rate",
           "url": "https://www.revenue.alabama.gov/individual-corporate/taxes-administered-by-individual-corporate-income-tax/individual-income-tax/"
         },
         {
           "kind": "stateAgencyPublication",
-          "citation": "Alabama Department of Revenue, Individual Income Tax — Rate (joint)",
+          "citation": "Alabama Department of Revenue, Individual Income Tax: Rate (joint)",
           "url": "https://www.revenue.alabama.gov/individual-corporate/taxes-administered-by-individual-corporate-income-tax/individual-income-tax/"
         }
       ]
@@ -949,17 +949,17 @@
       "authorities": [
         {
           "kind": "statute",
-          "citation": "Ala. Code § 40-18-19(a)(13), as retained by 2026 Ala. H.B. 341, p. 6 — amount",
+          "citation": "Ala. Code § 40-18-19(a)(13), as retained by 2026 Ala. H.B. 341, p. 6: amount",
           "url": "https://alison.legislature.state.al.us/files/pdf/SearchableInstruments/2026RS/HB341-enr.pdf"
         },
         {
           "kind": "statute",
-          "citation": "Ala. Code § 40-18-19(a)(13), as retained by 2026 Ala. H.B. 341, p. 6 — age restriction",
+          "citation": "Ala. Code § 40-18-19(a)(13), as retained by 2026 Ala. H.B. 341, p. 6: age restriction",
           "url": "https://alison.legislature.state.al.us/files/pdf/SearchableInstruments/2026RS/HB341-enr.pdf"
         },
         {
           "kind": "formInstruction",
-          "citation": "Alabama Department of Revenue, 2025 Form 40, Schedule RS — retirement income exclusion",
+          "citation": "Alabama Department of Revenue, 2025 Form 40, Schedule RS: retirement income exclusion",
           "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40.pdf"
         },
         {
@@ -969,7 +969,7 @@
         },
         {
           "kind": "formInstruction",
-          "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Line 4 — Retirement Income (Schedule RS)",
+          "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Line 4: Retirement Income (Schedule RS)",
           "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf"
         }
       ]
@@ -1019,7 +1019,7 @@
       "authorities": [
         {
           "kind": "formInstruction",
-          "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Worksheet for Partially Taxable Pensions — pre-1987 recovery",
+          "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Worksheet for Partially Taxable Pensions: pre-1987 recovery",
           "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf"
         },
         {
@@ -1122,7 +1122,7 @@
         },
         {
           "kind": "formInstruction",
-          "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Pensions and Annuities — amounts not taxable",
+          "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Pensions and Annuities: amounts not taxable",
           "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf"
         }
       ]
@@ -1190,7 +1190,7 @@
       "authorities": [
         {
           "kind": "formInstruction",
-          "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Line 4 — Retirement Income (Schedule RS)",
+          "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Line 4: Retirement Income (Schedule RS)",
           "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf"
         },
         {
@@ -1261,12 +1261,12 @@
       "authorities": [
         {
           "kind": "formInstruction",
-          "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Line 13 — Personal Exemption",
+          "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Line 13: Personal Exemption",
           "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf"
         },
         {
           "kind": "stateAgencyPublication",
-          "citation": "Alabama Department of Revenue, Individual Income Tax — Rate (applicability levels)",
+          "citation": "Alabama Department of Revenue, Individual Income Tax: Rate (applicability levels)",
           "url": "https://www.revenue.alabama.gov/individual-corporate/taxes-administered-by-individual-corporate-income-tax/individual-income-tax/"
         },
         {
@@ -1469,17 +1469,17 @@
       "authorities": [
         {
           "kind": "formInstruction",
-          "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Line 11 — Standard Deduction",
+          "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Line 11: Standard Deduction",
           "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf"
         },
         {
           "kind": "formInstruction",
-          "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, page 9 Standard Deduction chart — Single column",
+          "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, page 9 Standard Deduction chart: Single column",
           "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf"
         },
         {
           "kind": "formInstruction",
-          "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, page 9 Standard Deduction chart — Married Filing Joint column",
+          "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, page 9 Standard Deduction chart: Married Filing Joint column",
           "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf"
         }
       ]
@@ -1692,7 +1692,7 @@
       "classification": "settled",
       "errorDirection": null,
       "approximation": null,
-      "conventionRationale": "Primary gate evidence is the 2026 IT-540ESi estimated-tax worksheet plus La. R.S. 47:294 indexing; a final TY2026 resident Form IT-540 was not located. The record expires after TY2026. Later plan years may reuse the latest pack as a planning stand-in and are not certified by this annual record.",
+      "conventionRationale": "Primary gate evidence is the 2026 IT-540ESi estimated-tax worksheet plus La. R.S. 47:294 indexing; a final TY2026 resident Form IT-540 was not located. The record expires after TY2026. Later plan years may reuse the latest per-state tax data as a planning stand-in and are not certified by this annual record.",
       "contraryReading": null,
       "jurisdiction": "state:LA",
       "volatility": "annuallyIndexed",
@@ -2412,7 +2412,7 @@
         },
         {
           "kind": "stateAgencyPublication",
-          "citation": "MS DOR, Individual Income Tax — Tax Rates",
+          "citation": "MS DOR, Individual Income Tax: Tax Rates",
           "url": "https://www.dor.ms.gov/individual/tax-rates"
         },
         {
@@ -2489,7 +2489,7 @@
       "authorities": [
         {
           "kind": "formInstruction",
-          "citation": "MS DOR, 2025 Form 80-100 instructions, Line 40 — Capital Gain or Loss",
+          "citation": "MS DOR, 2025 Form 80-100 instructions, Line 40: Capital Gain or Loss",
           "url": "https://www.dor.ms.gov/sites/default/files/tax-forms/individual/80100251%202.pdf"
         }
       ]
@@ -2569,7 +2569,7 @@
       "authorities": [
         {
           "kind": "stateAgencyPublication",
-          "citation": "MS DOR, Individual Income Tax — Tax Rates, combined returns",
+          "citation": "MS DOR, Individual Income Tax: Tax Rates, combined returns",
           "url": "https://www.dor.ms.gov/individual/tax-rates"
         },
         {
@@ -2664,12 +2664,12 @@
       "authorities": [
         {
           "kind": "formInstruction",
-          "citation": "MS DOR, 2025 Form 80-100 instructions, Line 46 — Total Pensions and Annuities",
+          "citation": "MS DOR, 2025 Form 80-100 instructions, Line 46: Total Pensions and Annuities",
           "url": "https://www.dor.ms.gov/sites/default/files/tax-forms/individual/80100251%202.pdf"
         },
         {
           "kind": "stateAgencyPublication",
-          "citation": "MS DOR, Individual Income Tax FAQ — \"Is retirement income taxable?\"",
+          "citation": "MS DOR, Individual Income Tax FAQ: \"Is retirement income taxable?\"",
           "url": "https://www.dor.ms.gov/individual/individual-income-tax-frequently-asked-questions"
         },
         {
@@ -2917,7 +2917,7 @@
       "authorities": [
         {
           "kind": "stateAgencyPublication",
-          "citation": "TN Dept. of Revenue, Hall Income Tax — Due Date and Tax Rates",
+          "citation": "TN Dept. of Revenue, Hall Income Tax: Due Date and Tax Rates",
           "url": "https://www.tn.gov/revenue/taxes/hall-income-tax/due-date-and-tax-rates.html"
         },
         {

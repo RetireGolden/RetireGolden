@@ -74,6 +74,6 @@ export function recommendationBody(validation: ExactLedgerValidation): string {
     case 'unexecutable':
       return `The optimizer proposed converting ${requested}, but only ${executed} could actually be converted. The traditional balance it counted on is not available in the plan years shown.`
     case 'identityIncomplete':
-      return `The exact ledger priced and executed ${executed}, but stable owner, source IRA, and Roth destination identities are still required before this aggregate schedule can be recommended.`
+      return `The full projection priced and executed ${executed}, but stable owner, source IRA, and Roth destination identities are still required before this aggregate schedule can be recommended.`
   }
 }

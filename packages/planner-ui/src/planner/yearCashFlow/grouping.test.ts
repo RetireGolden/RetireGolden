@@ -173,7 +173,7 @@ describe('year cash-flow grouping', () => {
     const model = ready()
     const other = model.views.cashFlow.nodes.find((n) => n.collapsed)
     expect(other).toBeDefined()
-    expect(other!.label).toBe('Pat — Other (3) — Need-based withdrawal')
+    expect(other!.label).toBe('Pat · Other (3) · Need-based withdrawal')
     expect(other!.underlyingLineIds).toEqual([
       'source:needBasedPortfolioWithdrawal:tiny-a',
       'source:needBasedPortfolioWithdrawal:tiny-b',
@@ -184,8 +184,8 @@ describe('year cash-flow grouping', () => {
     const otherLink = model.views.cashFlow.links.find((link) => link.source === other!.id)
     expect(otherLink?.amountPlanDollars).toBe(300)
     expect(otherLink?.target).toBe('householdCash')
-    expect(otherLink?.lineLabel).toBe('Pat — Other (3) — Need-based withdrawal')
-    expect(otherLink?.lineLabel).not.toBe('Pat - Tiny A (IRA)')
+    expect(otherLink?.lineLabel).toBe('Pat · Other (3) · Need-based withdrawal')
+    expect(otherLink?.lineLabel).not.toBe('Pat · Tiny A (IRA)')
     expect(otherLink?.kindLabel).toBe('Need-based withdrawal')
   })
 
@@ -193,7 +193,7 @@ describe('year cash-flow grouping', () => {
     const model = ready()
     const robin = model.views.cashFlow.nodes.find((n) => n.id === 'source:needBasedPortfolioWithdrawal:tiny-robin')
     expect(robin).toBeDefined()
-    expect(robin!.label).toBe('Robin - Spouse IRA (IRA)')
+    expect(robin!.label).toBe('Robin · Spouse IRA (IRA)')
     expect(robin!.collapsed).toBe(false)
     const other = model.views.cashFlow.nodes.find((n) => n.collapsed)
     expect(other!.personKey).toBe('p1')

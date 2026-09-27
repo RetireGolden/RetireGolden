@@ -231,7 +231,7 @@ describe('D6 (#508): the fill-to-target bracket is chosen, not typed', () => {
     [37.5, '37.5% (not a published rate)'],
     // A plan saved before the top bracket was refused. It says which of the two
     // mistakes this is, because they are corrected differently.
-    [37, '37% (top bracket — nothing above it to fill)'],
+    [37, '37% (top bracket; nothing above it to fill)'],
   ])('keeps a stored rate the select no longer offers visible and marked: %s', async (stored, label) => {
     // Parse refuses both now, so the fixture is built WITHOUT parsing: this is
     // the shape an older stored plan arrives in, and the workspace renders it

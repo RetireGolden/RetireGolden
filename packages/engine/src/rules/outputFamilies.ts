@@ -1,7 +1,7 @@
 /**
  * GENERATED FILE — DO NOT EDIT BY HAND.
  *
- * Output families imported from the output-family census at commit ba123d312b8d16c8bcd00acec37f79bf9478faf9.
+ * Output families imported from the output-family census at commit 7146c166fde38ef5494cca5e47b7ef7bee71b54a.
  * Regenerate: node packages/engine/scripts/import-output-census.mjs <census-dir>
  */
 
@@ -698,7 +698,7 @@ const families = {
       },
       {
         "surface": "insights",
-        "selector": "DetectorProjection.deflate handed to detectors for today's-dollar figures"
+        "selector": "DetectorProjection.deflate handed to each Insight for today's-dollar figures"
       },
       {
         "surface": "chart",
@@ -1061,7 +1061,7 @@ const families = {
   "exact-ledger-tournament-margin-over-milp-dollars": {
     "title": "marginOverMilpDollars",
     "group": "optimizer-and-comparisons",
-    "meaning": "After-tax-estate margin by which the exact-ledger winner beats the solver schedule.",
+    "meaning": "After-tax-estate margin by which the full-projection winner beats the solver schedule.",
     "unit": "usd",
     "basis": "nominal",
     "dimensions": [],
@@ -3478,7 +3478,7 @@ const families = {
   "optimizer-recommended-conversion-annual": {
     "title": "Recommended Roth conversion schedule",
     "group": "roth",
-    "meaning": "Per-year Roth conversion dollars the optimizer recommends: the solver schedule, the exact-ledger tournament winner's conversions, and the post-processed (cleaned) executable schedule.",
+    "meaning": "Per-year Roth conversion dollars the optimizer recommends: the solver schedule, the full-projection tournament winner's conversions, and the post-processed (cleaned) executable schedule.",
     "unit": "usd",
     "basis": "nominal",
     "dimensions": [

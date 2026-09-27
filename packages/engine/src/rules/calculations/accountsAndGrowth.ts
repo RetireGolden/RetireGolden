@@ -43,7 +43,7 @@ export const accountsAndGrowthRecords = {
       'Overrides apply field by field: an override object cannot remove a class or blank a field, and the label is never overridable',
       'The sourced defaults (7/7/4/2.5 percent returns, 19.6/21/7.7/0.5 volatilities, the yields and qualified shares) are planning conventions from domain rules section 15, not forecasts; this record pins the overlay, not the defaults',
       'No validation here: the plan schema bounds each override field before it reaches the function',
-      'The worksheet asks for exactness at one-decimal precision; the fixture compares with an absolute bound of 0 because the helper\'s exact keyword is reserved for integers, and pass-through doubles are equal bit for bit',
+      'The worksheet asks for exactness at one-decimal precision; the test compares with an absolute bound of 0 because the helper\'s exact keyword is reserved for integers, and pass-through doubles are equal bit for bit',
     ],
     implementedBy: ['packages/engine/src/allocation/assetClasses.ts'],
     implementedByFunctions: [
@@ -84,7 +84,7 @@ export const accountsAndGrowthRecords = {
     },
     limits: [
       'Negative weights are floored at 0 before normalizing rather than rejected; the schema already bounds each weight to [0, 100] and the total to 100 +/- 0.5, so a near-100 total normalizes exactly to 1',
-      'A zero total returns the all-cash vector instead of failing closed; the worksheet\'s domain is a positive total and its fixture does not reach that branch',
+      'A zero total returns the all-cash vector instead of refusing; the worksheet\'s domain is a positive total and its test does not reach that branch',
       'Class order is positional and fixed by ASSET_CLASS_IDS; every consumer indexes the vector by that order, never by magnitude',
       'The worksheet names bucket-lens-allocation upstream; the bucket lens reads only the published investable total, so the family is reached only through the balances every growth record feeds and is not listed here',
     ],
@@ -126,7 +126,7 @@ export const accountsAndGrowthRecords = {
     },
     limits: [
       'Endpoints clamp flat; a linear or custom policy is never extrapolated',
-      'Linear and custom mixes are renormalized after interpolation, a no-op when both endpoints already sum to 1',
+      'Linear and custom mixes are renormalized after interpolation, which changes nothing when both endpoints already sum to 1',
       'A degenerate linear policy (endYear <= startYear) holds the from vector for every year',
       'A staged policy before its first stage year holds the earliest stage; a custom policy with one target holds it for every year',
       'lerpVectors is module-private; the evidence reaches it through targetWeightsAt',
@@ -152,7 +152,7 @@ export const accountsAndGrowthRecords = {
     outputs: [],
     feeds: ['optimizer-recommended-conversion-annual', 'optimizer-schedule-conversion-total'],
     statement:
-      'For a weight vector w in ASSET_CLASS_IDS order and resolved class params, r = sum over i of w_i x returnPct_i, with a missing w_i read as 0. Units: percent per year, nominal; the class returns are percents and the weights fractions, so the result is in percent. Rounding: none.',
+      'For a weight vector w in ASSET_CLASS_IDS order and resolved class parameters, r = sum over i of w_i x returnPct_i, with a missing w_i read as 0. Units: percent per year, nominal; the class returns are percents and the weights fractions, so the result is in percent. Rounding: none.',
     formula: {
       expression: 'r = sum_i w_i r_i',
       variables: [
@@ -236,7 +236,7 @@ export const accountsAndGrowthRecords = {
       'income-ordinary-dividends-annual',
     ],
     statement:
-      'For weights w and class params: interestYieldPct = sum of w_i x interestYieldPct_i; dividendYieldPct = sum of w_i x dividendYieldPct_i; qualified = sum of w_i x dividendYieldPct_i x qualifiedRatioPct_i/100; qualifiedRatio = qualified/dividendYieldPct when dividendYieldPct > 0, else DEFAULT_QUALIFIED_DIVIDEND_RATIO = 0.85. Units: the two yields in percent of balance per year; the ratio a fraction in [0, 1]. Rounding: none. In the ledger an account-level interestYieldPct, dividendYieldPct or qualifiedRatio overrides the blend field by field, and the published rows are start-of-year balance x yield/100.',
+      'For weights w and class parameters: interestYieldPct = sum of w_i x interestYieldPct_i; dividendYieldPct = sum of w_i x dividendYieldPct_i; qualified = sum of w_i x dividendYieldPct_i x qualifiedRatioPct_i/100; qualifiedRatio = qualified/dividendYieldPct when dividendYieldPct > 0, else DEFAULT_QUALIFIED_DIVIDEND_RATIO = 0.85. Units: the two yields in percent of balance per year; the ratio a fraction in [0, 1]. Rounding: none. In the ledger an account-level interestYieldPct, dividendYieldPct or qualifiedRatio overrides the blend field by field, and the published rows are start-of-year balance x yield/100.',
     formula: {
       expression: 'I = sum_i w_i I_i; D = sum_i w_i D_i; Q = (sum_i w_i D_i q_i/100) / D when D > 0, else 0.85',
       variables: [
@@ -297,7 +297,7 @@ export const accountsAndGrowthRecords = {
     limits: [
       'Total-return convention: distributions are treated as reinvested pro rata, so a class\'s weight moves with its total return rather than its price return',
       'A class return at or below -100% is floored at zero ending value rather than going negative',
-      'A zero total ending value returns the input weights unchanged instead of failing closed',
+      'A zero total ending value returns the input weights unchanged instead of refusing',
       'The worksheet names bucket-lens-allocation upstream; the bucket lens reads only the published investable total and is not listed here',
     ],
     implementedBy: ['packages/engine/src/allocation/assetClasses.ts'],
@@ -378,7 +378,7 @@ export const accountsAndGrowthRecords = {
     outputs: ['accounts-investable-total-annual'],
     feeds: ['accounts-net-worth-annual', 'projection-result-ending-investable'],
     statement:
-      'projection/internal/annualSnapshot.ts#annualSnapshot opens the investable fold at unassignedCash and adds every investable balance in simulator order — cash, taxable, equity-compensation, traditional, Roth and HSA accounts — publishing the sum as projection/internal/types/result.ts#YearResult.investableTotal. Property values, ordinary debts, HECM loans and permanent-life cash values are folded into their own separate totals and are not members; the TIPS ladder value is computed outside the snapshot and is likewise not a member. netWorth adds those channels. Units: nominal USD at year end. Rounding: none; the additions are left in their original loop order because regrouping binary floats can move the last bit.',
+      'projection/internal/annualSnapshot.ts#annualSnapshot opens the investable fold at unassignedCash and adds every investable balance in simulator order (cash, taxable, equity-compensation, traditional, Roth and HSA accounts), publishing the sum as projection/internal/types/result.ts#YearResult.investableTotal. Property values, ordinary debts, HECM loans and permanent-life cash values are folded into their own separate totals and are not members; the TIPS ladder value is computed outside the snapshot and is likewise not a member. netWorth adds those channels. Units: nominal USD at year end. Rounding: none; the additions are left in their original loop order because regrouping binary floats can move the last bit.',
     formula: {
       expression: 'investableTotal = unassignedCash + sum over investable balances of balance',
       variables: [
@@ -473,7 +473,7 @@ export const accountsAndGrowthRecords = {
     },
     limits: [
       'Asserted at summarizeProjection with the worksheet\'s six accounts, their plan types and their last-year balances verbatim, over a two-row ledger whose penultimate row carries a distinct sentinel balance on every account so a row mistake cannot pass. Plan assumptions beyond the worksheet\'s inputs: each account opens at a zero balance with zero returns, because the summary reads the ledger row rather than the plan; the owner-held accounts name the plan\'s single person',
-      'The fixture also asserts that the published object has exactly the five category keys, which is how the worksheet\'s third wrong reading (adding property or insurance categories) is discriminated',
+      'The test also asserts that the published object has exactly the five category keys, which is how the worksheet\'s third wrong reading (adding property or insurance categories) is discriminated',
       'Since 2026-09-26 the roll-up is projection/yearFigures.ts#balancesByCategory read for the last row (the same sums in the same order, so the published figures did not move). That function refuses a plan in which an account id is also the id of a property, a debt or a permanent-life policy, so the summary now stops on such a plan instead of reporting the overwritten value as the account\'s; the plan checks refuse those plans and stored ones are repaired on load',
     ],
     implementedBy: ['packages/engine/src/projection/compare.ts', 'packages/engine/src/projection/yearFigures.ts'],
@@ -542,7 +542,7 @@ export const accountsAndGrowthRecords = {
       worksheet: 'DOCS/calculations/accounts-and-growth/hecm-draw-annual.md',
     },
     limits: [
-      'Asserted twice: at the exported backstop planner with the worksheet\'s open line, 40,000 shortfall and 25,000 available line verbatim, and as the published hecmDraw of a real simulatePlan year built from the same inputs — a last-resort line on a 500,000 primary residence at the schema\'s minimum 5-percent principal limit and a zero growth rate, so the available line is exactly 25,000, against a 40,000 lifestyle need with no portfolio at all. Plan assumptions beyond the worksheet\'s inputs for that ledger year: a 64-year-old filing single in KY at a zero state rate, so no Medicare or marketplace premium can change the need, and no coordinated draw is possible because the policy is lastResort',
+      'Asserted twice: at the exported backstop planner with the worksheet\'s open line, 40,000 shortfall and 25,000 available line verbatim, and as the published hecmDraw of a real simulatePlan year built from the same inputs (a last-resort line on a 500,000 primary residence at the schema\'s minimum 5-percent principal limit and a zero growth rate, so the available line is exactly 25,000, against a 40,000 lifestyle need with no portfolio at all). Plan assumptions beyond the worksheet\'s inputs for that ledger year: a 64-year-old filing single in KY at a zero state rate, so no Medicare or marketplace premium can change the need, and no coordinated draw is possible because the policy is lastResort',
       'The worksheet derives only the backstop case; the extract states no sizing formula for a coordinated draw, so this record makes no claim about one',
     ],
     implementedBy: [

@@ -402,7 +402,7 @@ function UpdateBalancesPanelBody({
     const classification = classifyRefresh(plan, r.accounts, { protectedTargets: seedProtected, rememberedMappings, broker: r.broker })
     setParsed({
       broker: r.broker,
-      sourceLabel: `${BROKER_LABEL[r.broker]} — ${file.name}`,
+      sourceLabel: `${BROKER_LABEL[r.broker]} file ${file.name}`,
       sourceSha256: source.sha256,
       accounts: r.accounts,
       targets: classification.candidates.map(defaultTarget),
@@ -832,7 +832,7 @@ function UpdateBalancesPanelBody({
             {snapshots.map((snapshot) => (
               <li key={snapshot.id}>
                 <span>
-                  {snapshot.appliedAtIso.slice(0, 10)} — {snapshot.sourceLabel} — {snapshot.changes.length} account
+                  {snapshot.appliedAtIso.slice(0, 10)} · {snapshot.sourceLabel} · {snapshot.changes.length} account
                   {snapshot.changes.length === 1 ? '' : 's'}
                 </span>{' '}
                 <button type="button" className="btn btn-secondary btn-small" onClick={() => void restoreSnapshot(snapshot)}>

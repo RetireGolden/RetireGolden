@@ -81,7 +81,7 @@ const PROPERTY_TAX_PATH_LABEL = 'legacy net-proceeds path'
  * the sale onto the exact path whose proceeds enter cash-flow sizing earlier.
  */
 const PROPERTY_TIMING_PATH_LABEL =
-  'cash-flow timing path — basis moves sale proceeds into earlier sizing'
+  'cash-flow timing path: basis moves sale proceeds into earlier sizing'
 
 /** Card rationale when at least one tax-consequential basis gap is present. */
 const TAX_BASIS_RATIONALE =
@@ -97,7 +97,7 @@ const TAX_BASIS_IMPACT =
 const PROPERTY_TIMING_RATIONALE =
   'Optional property basis currently defaults to the legacy sale path. ' +
   'Supplying the basis moves the sale onto the exact path whose proceeds enter ' +
-  'cash-flow sizing earlier — a timing effect, not a modeled tax change. ' +
+  'cash-flow sizing earlier. This is a timing effect, not a modeled tax change. ' +
   'Entering the real value makes the projection more exact.'
 /** Card impact for §121 timing-only property basis gaps. */
 const PROPERTY_TIMING_IMPACT =

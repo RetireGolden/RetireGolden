@@ -1045,9 +1045,9 @@ export const ssClaimMilestone: Detector = {
       const agesAlign = ageAtFirstPayableYear === income.claimAge.years
       const rationale = agesAlign
         ? `The model starts ${person.name}'s Social Security at age ${claimAgeLabel} in ${firstClaimYear}. ` +
-          'The modeled benefit amount depends on the claim age — confirm it against the Social Security analysis before filing.'
+          'The modeled benefit amount depends on the claim age; confirm it against the Social Security analysis before filing.'
         : `The model uses a configured claim age of ${claimAgeLabel} for ${person.name}, with the first modeled payable year ${firstClaimYear} ` +
-          `(attained age ${ageAtFirstPayableYear}). The modeled benefit amount depends on the claim age — confirm it against the Social Security analysis before filing.`
+          `(attained age ${ageAtFirstPayableYear}). The modeled benefit amount depends on the claim age; confirm it against the Social Security analysis before filing.`
 
       // Partial-year wording only when the filing actually truncates months in
       // the first payable year (annualSocialSecurityPayableMonths < 12). Pre-horizon filers
@@ -1068,7 +1068,7 @@ export const ssClaimMilestone: Detector = {
         title: `${person.name}'s Social Security claim is imminent`,
         rationale,
         impact: {
-          qualitative: 'The modeled benefit amount depends on the claim age — review it in the Social Security analysis before filing.',
+          qualitative: 'The modeled benefit amount depends on the claim age; review it in the Social Security analysis before filing.',
         },
         exact: false,
         confidence: 'high',

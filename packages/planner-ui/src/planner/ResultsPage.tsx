@@ -38,6 +38,7 @@ import {
   UNASSIGNED_CASH_LABEL,
 } from './accountCategories'
 import { serializeSinglePlan } from '../data/planFormat'
+import { downloadCsv } from '../csvDownload'
 import { buildExpenseRows, buildIncomeRows, buildLedgerCsv, buildResultsRows } from './resultsRows'
 import { CopyButton } from './CopyButton'
 import { usePlan } from './planContextCore'
@@ -772,12 +773,7 @@ export function ResultsPage() {
   const hasAcaCreditYears = figures.some((f) => f.premiumTaxCreditYear)
 
   const handleCsv = () => {
-    const blob = new Blob([buildLedgerCsv(plan, view)], { type: 'text/csv' })
-    const a = document.createElement('a')
-    a.href = URL.createObjectURL(blob)
-    a.download = `${plan.name.replace(/\W+/g, '-').toLowerCase()}-ledger.csv`
-    a.click()
-    URL.revokeObjectURL(a.href)
+    downloadCsv(buildLedgerCsv(plan, view), `${plan.name.replace(/\W+/g, '-').toLowerCase()}-ledger.csv`)
   }
 
   const handleHtmlReport = () => {

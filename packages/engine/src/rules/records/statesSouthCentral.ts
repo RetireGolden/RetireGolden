@@ -203,7 +203,7 @@ export const southCentralStateRecords = {
       // claims only what those segments quote — the repeal date — not the
       // elided table rows.
       kind: 'stateAgencyPublication',
-      citation: 'TN Dept. of Revenue, Hall Income Tax — Due Date and Tax Rates',
+      citation: 'TN Dept. of Revenue, Hall Income Tax: Due Date and Tax Rates',
       url: 'https://www.tn.gov/revenue/taxes/hall-income-tax/due-date-and-tax-rates.html',
       quotedText:
         'The Hall income tax has been repealed, and the applicable tax rate for each year leading up to the repeal is as follows: ... Repeal beginning January 1, 2021',
@@ -799,7 +799,7 @@ export const southCentralStateRecords = {
       // boundary. It is reproduced rather than silently repaired, for the same
       // reason the Arkansas act quotes keep their margin line numbers.
       kind: 'stateAgencyPublication',
-      citation: 'MS DOR, Individual Income Tax — Tax Rates',
+      citation: 'MS DOR, Individual Income Tax: Tax Rates',
       url: 'https://www.dor.ms.gov/individual/tax-rates',
       quotedText: 'Tax Year 2026Excess of $10,000 of Taxable Income is taxed @ 4%',
     }, {
@@ -897,13 +897,13 @@ export const southCentralStateRecords = {
     jurisdiction: 'state:MS',
     authority: [{
       kind: 'formInstruction',
-      citation: 'MS DOR, 2025 Form 80-100 instructions, Line 46 — Total Pensions and Annuities',
+      citation: 'MS DOR, 2025 Form 80-100 instructions, Line 46: Total Pensions and Annuities',
       url: 'https://www.dor.ms.gov/sites/default/files/tax-forms/individual/80100251%202.pdf',
       quotedText:
         'Pensions and annuities that are taxable as early or excess distributions under the Federal Internal Revenue Code (see Federal Form 5329) do not qualify for exemption from Mississippi income tax. Such income should be reported on this line as taxable income. Separation pay is not retirement income and does not qualify for exemption. Deferred compensation plan distributions received prior to attainment of retirement age and/or service requirements are taxable for Mississippi purposes and should be reported on this line.',
     }, {
       kind: 'stateAgencyPublication',
-      citation: 'MS DOR, Individual Income Tax FAQ — "Is retirement income taxable?"',
+      citation: 'MS DOR, Individual Income Tax FAQ: "Is retirement income taxable?"',
       url: 'https://www.dor.ms.gov/individual/individual-income-tax-frequently-asked-questions',
       quotedText:
         'Generally, retirement income, pensions and annuities are not subject to Mississippi Income tax if the recipient has met the retirement plan requirements. Early distributions are not considered retirement income and may be subject to tax.',
@@ -1043,7 +1043,7 @@ export const southCentralStateRecords = {
     jurisdiction: 'state:MS',
     authority: [{
       kind: 'stateAgencyPublication',
-      citation: 'MS DOR, Individual Income Tax — Tax Rates, combined returns',
+      citation: 'MS DOR, Individual Income Tax: Tax Rates, combined returns',
       url: 'https://www.dor.ms.gov/individual/tax-rates',
       quotedText:
         'If filing a combined return (both spouses work), each spouse can calculate their tax liability separately and add the results.',
@@ -1099,7 +1099,7 @@ export const southCentralStateRecords = {
     jurisdiction: 'state:MS',
     authority: [{
       kind: 'formInstruction',
-      citation: 'MS DOR, 2025 Form 80-100 instructions, Line 40 — Capital Gain or Loss',
+      citation: 'MS DOR, 2025 Form 80-100 instructions, Line 40: Capital Gain or Loss',
       url: 'https://www.dor.ms.gov/sites/default/files/tax-forms/individual/80100251%202.pdf',
       quotedText:
         'Mississippi generally follows IRS rules concerning computation of capital gains and losses. Capital loss deductions are subject to the same limitations as federal. However, Mississippi does not have different tax rates for capital gains. All income is taxed at the same rate. Gains from the sales of ownership interests must first be reduced by the amount of any losses determined from sales or transactions described in Miss. Code Ann. Section 27-7-9(f)(10).',
@@ -1321,7 +1321,7 @@ export const southCentralStateRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'Primary gate evidence is the 2026 IT-540ESi estimated-tax worksheet plus La. R.S. 47:294 indexing; a final TY2026 resident Form IT-540 was not located. The record expires after TY2026. Later plan years may reuse the latest pack as a planning stand-in and are not certified by this annual record.',
+      'Primary gate evidence is the 2026 IT-540ESi estimated-tax worksheet plus La. R.S. 47:294 indexing; a final TY2026 resident Form IT-540 was not located. The record expires after TY2026. Later plan years may reuse the latest per-state tax data as a planning stand-in and are not certified by this annual record.',
     jurisdiction: 'state:LA',
     authority: [{
       kind: 'statute',
@@ -1487,7 +1487,7 @@ export const southCentralStateRecords = {
         'United States Retirement System benefits … State of Alabama Teachers’ Retirement System benefits … State of Alabama Employees’ Retirement System benefits … State of Alabama Judicial Retirement System benefits … Military retirement pay',
     }, {
       kind: 'formInstruction',
-      citation: 'Alabama Department of Revenue, 2025 Form 40 booklet, Pensions and Annuities — amounts not taxable',
+      citation: 'Alabama Department of Revenue, 2025 Form 40 booklet, Pensions and Annuities: amounts not taxable',
       url: 'https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf',
       quotedText:
         'Any “defined benefit” retirement plan in accordance with IRC 414(j). Contact your retirement plan administrator to determine if your plan qualifies.',
@@ -1520,7 +1520,7 @@ export const southCentralStateRecords = {
     jurisdiction: 'state:AL',
     authority: [{
       kind: 'formInstruction',
-      citation: 'Alabama Department of Revenue, 2025 Form 40 booklet, Line 4 — Retirement Income (Schedule RS)',
+      citation: 'Alabama Department of Revenue, 2025 Form 40 booklet, Line 4: Retirement Income (Schedule RS)',
       url: 'https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf',
       quotedText:
         'Complete Schedule RS to report fully or partially taxable pensions, annuities, IRA distributions (include SEP, Keogh, 401(k)(2), 403(b) distributions), other distributions and retirement distribution(s) exempt from Alabama Income.',
@@ -1565,7 +1565,7 @@ export const southCentralStateRecords = {
     jurisdiction: 'state:AL',
     authority: [{
       kind: 'formInstruction',
-      citation: 'Alabama Department of Revenue, 2025 Form 40 booklet, Worksheet for Partially Taxable Pensions — pre-1987 recovery',
+      citation: 'Alabama Department of Revenue, 2025 Form 40 booklet, Worksheet for Partially Taxable Pensions: pre-1987 recovery',
       url: 'https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf',
       quotedText:
         'Use lines 1 through 8 to report amounts you withdrew from your IRA, SEP, Keogh, 401(k)(2), or 403(b) account which are not fully taxable and for which you have not recovered any of your cost basis before January 1, 1987. If you began recovering your cost before January 1, 1987, you should report these distributions on lines 11, 12, and 13.',
@@ -1639,13 +1639,13 @@ export const southCentralStateRecords = {
     jurisdiction: 'state:AL',
     authority: [{
       kind: 'formInstruction',
-      citation: 'Alabama Department of Revenue, 2025 Form 40 booklet, Line 13 — Personal Exemption',
+      citation: 'Alabama Department of Revenue, 2025 Form 40 booklet, Line 13: Personal Exemption',
       url: 'https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf',
       quotedText:
         'Line 13 Personal Exemption Enter the personal exemption from line 1, 2, 3, or 4.',
     }, {
       kind: 'stateAgencyPublication',
-      citation: 'Alabama Department of Revenue, Individual Income Tax — Rate (applicability levels)',
+      citation: 'Alabama Department of Revenue, Individual Income Tax: Rate (applicability levels)',
       url: 'https://www.revenue.alabama.gov/individual-corporate/taxes-administered-by-individual-corporate-income-tax/individual-income-tax/',
       quotedText:
         'Single persons with adjusted gross income of $4,000, head of family with adjusted gross income of $7,700, and married persons filing separate returns with adjusted gross income of $5,250 or more: 2 percent on first $500 of taxable income',
@@ -1681,20 +1681,20 @@ export const southCentralStateRecords = {
     jurisdiction: 'state:AL',
     authority: [{
       kind: 'statute',
-      citation: 'Ala. Code § 40-18-19(a)(13), as retained by 2026 Ala. H.B. 341, p. 6 — amount',
+      citation: 'Ala. Code § 40-18-19(a)(13), as retained by 2026 Ala. H.B. 341, p. 6: amount',
       url: 'https://alison.legislature.state.al.us/files/pdf/SearchableInstruments/2026RS/HB341-enr.pdf',
       // Ellipsis elides spelled-out amount across numbered PDF lines; parenthesized ($6,000) kept.
       quotedText:
         'Beginning January 1, 2023, the first … ($6,000) of taxable retirement income.',
     }, {
       kind: 'statute',
-      citation: 'Ala. Code § 40-18-19(a)(13), as retained by 2026 Ala. H.B. 341, p. 6 — age restriction',
+      citation: 'Ala. Code § 40-18-19(a)(13), as retained by 2026 Ala. H.B. 341, p. 6: age restriction',
       url: 'https://alison.legislature.state.al.us/files/pdf/SearchableInstruments/2026RS/HB341-enr.pdf',
       quotedText:
         'This exemption may only be claimed by individual taxpayers who are 65 years of age or older.',
     }, {
       kind: 'formInstruction',
-      citation: 'Alabama Department of Revenue, 2025 Form 40, Schedule RS — retirement income exclusion',
+      citation: 'Alabama Department of Revenue, 2025 Form 40, Schedule RS: retirement income exclusion',
       url: 'https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40.pdf',
       quotedText:
         'each taxpayer is eligible up to $6,000 not to exceed the Retirement Income Taxable to Alabama',
@@ -1706,7 +1706,7 @@ export const southCentralStateRecords = {
         'Generally, unless specifically excluded by law, your pension payments are fully taxable if you did not contribute to the cost of your pension annuity or you have recovered your cost in the plan on prior Alabama income tax returns.',
     }, {
       kind: 'formInstruction',
-      citation: 'Alabama Department of Revenue, 2025 Form 40 booklet, Line 4 — Retirement Income (Schedule RS)',
+      citation: 'Alabama Department of Revenue, 2025 Form 40 booklet, Line 4: Retirement Income (Schedule RS)',
       url: 'https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf',
       quotedText:
         'Complete Schedule RS to report fully or partially taxable pensions, annuities, IRA distributions (include SEP, Keogh, 401(k)(2), 403(b) distributions), other distributions and retirement distribution(s) exempt from Alabama Income.',
@@ -1739,19 +1739,19 @@ export const southCentralStateRecords = {
     jurisdiction: 'state:AL',
     authority: [{
       kind: 'formInstruction',
-      citation: 'Alabama Department of Revenue, 2025 Form 40 booklet, Line 11 — Standard Deduction',
+      citation: 'Alabama Department of Revenue, 2025 Form 40 booklet, Line 11: Standard Deduction',
       url: 'https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf',
       quotedText:
         'Standard Deduction. If you elect to claim the Standard Deduction, you must check box b on line 11 and use the Standard Deduction chart on page 9 to determine your allowable deduction.',
     }, {
       kind: 'formInstruction',
-      citation: 'Alabama Department of Revenue, 2025 Form 40 booklet, page 9 Standard Deduction chart — Single column',
+      citation: 'Alabama Department of Revenue, 2025 Form 40 booklet, page 9 Standard Deduction chart: Single column',
       url: 'https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf',
       quotedText:
         '$ 0 – $25,999 … $3,000 … $35,500 and above … $2,500',
     }, {
       kind: 'formInstruction',
-      citation: 'Alabama Department of Revenue, 2025 Form 40 booklet, page 9 Standard Deduction chart — Married Filing Joint column',
+      citation: 'Alabama Department of Revenue, 2025 Form 40 booklet, page 9 Standard Deduction chart: Married Filing Joint column',
       url: 'https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf',
       quotedText:
         '$ 0 – $25,999 … $8,500 … $35,500 and above … $5,000',
@@ -1781,13 +1781,13 @@ export const southCentralStateRecords = {
     jurisdiction: 'state:AL',
     authority: [{
       kind: 'stateAgencyPublication',
-      citation: 'Alabama Department of Revenue, Individual Income Tax — Rate',
+      citation: 'Alabama Department of Revenue, Individual Income Tax: Rate',
       url: 'https://www.revenue.alabama.gov/individual-corporate/taxes-administered-by-individual-corporate-income-tax/individual-income-tax/',
       quotedText:
         'Single persons with adjusted gross income of $4,000, head of family with adjusted gross income of $7,700, and married persons filing separate returns with adjusted gross income of $5,250 or more: 2 percent on first $500 of taxable income … 4 percent on next $2,500 … 5 percent on all over $3,000',
     }, {
       kind: 'stateAgencyPublication',
-      citation: 'Alabama Department of Revenue, Individual Income Tax — Rate (joint)',
+      citation: 'Alabama Department of Revenue, Individual Income Tax: Rate (joint)',
       url: 'https://www.revenue.alabama.gov/individual-corporate/taxes-administered-by-individual-corporate-income-tax/individual-income-tax/',
       quotedText:
         'Married persons filing a joint return with adjusted gross income of $10,500 or more: … 2 percent on first $1,000 … 4 percent on next $5,000 … 5 percent on all over $6,000',

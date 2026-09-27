@@ -53,6 +53,7 @@ export const rulesAttestations: Readonly<Record<string, CoverageAttestation>> = 
   'rules/index.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: 'registry/coverage tooling' }),
   'rules/outputFamilies.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-09-14', note: 'generated output-family census; regenerate with import-output-census.mjs' }),
   'rules/outputFieldCoverage.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-09-14', note: 'generated output-field census; regenerate with import-output-census.mjs' }),
+  'rules/publicText.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-09-26', note: 'registry/coverage tooling; the plain-text rule for every record field the public methodology site renders; enforced by publicText.conformance.test.ts' }),
   'rules/records/annuities.ts': Object.freeze({ status: 'registered', sweptOn: '2026-08-29', note: 'one slice of the record store, split out of taxRuleRegistry.ts; enforced by taxRuleRegistry.conformance.test.ts' }),
   'rules/records/charitableDeductions.ts': Object.freeze({ status: 'registered', sweptOn: '2026-08-29', note: 'one slice of the record store, split out of taxRuleRegistry.ts; enforced by taxRuleRegistry.conformance.test.ts' }),
   'rules/records/charitableDistributions.ts': Object.freeze({ status: 'registered', sweptOn: '2026-08-29', note: 'one slice of the record store, split out of taxRuleRegistry.ts; enforced by taxRuleRegistry.conformance.test.ts' }),

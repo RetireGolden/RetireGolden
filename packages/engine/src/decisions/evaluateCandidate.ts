@@ -539,14 +539,14 @@ function inspectRetirementActionExecution(
   for (const actionId of patchedIds) {
     const records = evidenceById.get(actionId) ?? []
     if (records.length !== 1) {
-      return `Retirement-action request ${actionId} does not have exactly one matching committed, actionable exact-ledger execution record.`
+      return `Retirement-action request ${actionId} does not have exactly one matching committed, actionable execution record on the full projection.`
     }
     const record = records[0]!
     if (!record.committed || record.readiness !== 'actionable') {
       const blockingReasons = record.reasonCodes.length > 0
         ? ` Blocking reasons: ${record.reasonCodes.join(', ')}.`
         : ''
-      return `Retirement-action request ${actionId} does not have matching committed, actionable exact-ledger execution evidence.${blockingReasons}`
+      return `Retirement-action request ${actionId} does not have matching committed, actionable execution evidence from the full projection.${blockingReasons}`
     }
   }
   return null
@@ -809,12 +809,12 @@ export function evaluateCandidate(
   const refuseNonActionableAca = (options.nonActionableAca ?? 'refuse') === 'refuse'
   if (refuseNonActionableAca && unsafeBaselineAcaYears.length > 0) {
     diagnostics.push(
-      `ACA exact-ledger evidence is non-actionable in the baseline for ${unsafeBaselineAcaYears.join(', ')}; no candidate can be applied as executable.`,
+      `ACA evidence from the full projection is non-actionable in the baseline for ${unsafeBaselineAcaYears.join(', ')}; no candidate can be applied as executable.`,
     )
   }
   if (refuseNonActionableAca && unsafeCandidateAcaYears.length > 0) {
     diagnostics.push(
-      `ACA exact-ledger evidence is non-actionable in the candidate for ${unsafeCandidateAcaYears.join(', ')}; this candidate cannot be applied as executable.`,
+      `ACA evidence from the full projection is non-actionable in the candidate for ${unsafeCandidateAcaYears.join(', ')}; this candidate cannot be applied as executable.`,
     )
   }
   if (!refuseNonActionableAca && unsafeCandidateAcaYears.length > 0) {

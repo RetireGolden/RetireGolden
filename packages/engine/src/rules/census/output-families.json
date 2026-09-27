@@ -2543,7 +2543,7 @@
     "id": "optimizer-recommended-conversion-annual",
     "group": "roth",
     "title": "Recommended Roth conversion schedule",
-    "meaning": "Per-year Roth conversion dollars the optimizer recommends: the solver schedule, the exact-ledger tournament winner's conversions, and the post-processed (cleaned) executable schedule.",
+    "meaning": "Per-year Roth conversion dollars the optimizer recommends: the solver schedule, the full-projection tournament winner's conversions, and the post-processed (cleaned) executable schedule.",
     "unit": "usd",
     "basis": "nominal",
     "dimensions": [
@@ -4527,7 +4527,7 @@
     "id": "exact-ledger-tournament-margin-over-milp-dollars",
     "group": "optimizer-and-comparisons",
     "title": "marginOverMilpDollars",
-    "meaning": "After-tax-estate margin by which the exact-ledger winner beats the solver schedule.",
+    "meaning": "After-tax-estate margin by which the full-projection winner beats the solver schedule.",
     "unit": "usd",
     "basis": "nominal",
     "dimensions": [],
@@ -5273,7 +5273,7 @@
       },
       {
         "surface": "insights",
-        "selector": "DetectorProjection.deflate handed to detectors for today's-dollar figures"
+        "selector": "DetectorProjection.deflate handed to each Insight for today's-dollar figures"
       },
       {
         "surface": "chart",

@@ -658,7 +658,7 @@
           "engine": 5718.085799699999,
           "tolerance": 0.005,
           "unit": "dollars",
-          "derivation": "2 × 202.90 × 12 × 1.055³ (the health rate from the pack year); no surcharge",
+          "derivation": "2 × 202.90 × 12 × 1.055³ (the health rate from the year of the published parameters); no surcharge",
           "contract": "worksheet medicare-base-part-b-premium"
         },
         {

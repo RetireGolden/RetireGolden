@@ -37,8 +37,8 @@ export const blocks: ArticleBlock[] = [
     rows: [
       ['Standard deduction', 'A filing-status amount with age-based additions', 'Often wins when itemized expenses are modest'],
       ['Itemized deductions', 'Specific deductible expenses entered in the plan', 'Can win in high property-tax, mortgage-interest, or giving years'],
-      ['SALT cap', 'A limit on deductible state and local tax in the itemized total', 'RetireGolden caps the SALT component using the year\'s parameter pack'],
-      ['Senior deduction', 'A current-law extra deduction for eligible older taxpayers', 'Modeled with phaseout and expiration rules from the parameter pack'],
+      ['SALT cap', 'A limit on deductible state and local tax in the itemized total', 'RetireGolden caps the SALT component using the year\'s parameter set'],
+      ['Senior deduction', 'A current-law extra deduction for eligible older taxpayers', 'Modeled with phaseout and expiration rules from the parameter set'],
     ],
   },
   { type: 'heading', text: 'A worked example' },
@@ -56,7 +56,7 @@ export const blocks: ArticleBlock[] = [
   { type: 'heading', text: 'Why it matters in RetireGolden' },
   {
     type: 'prose',
-    md: 'RetireGolden uses the federal parameter pack for the standard deduction, age-65 additions, SALT cap, and senior deduction. The tax engine compares standard and itemized deductions, adds the modeled senior deduction when applicable, and then applies ordinary-income and capital-gain tax rules to taxable income.',
+    md: 'RetireGolden uses the federal parameter set for the standard deduction, age-65 additions, SALT cap, and senior deduction. The tax engine compares standard and itemized deductions, adds the modeled senior deduction when applicable, and then applies ordinary-income and capital-gain tax rules to taxable income.',
   },
   { type: 'heading', text: 'Common mistakes' },
   {

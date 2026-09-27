@@ -869,7 +869,7 @@ export function OptimizePage() {
                 Optimizer status: {schedule.status} · solved in {schedule.solveMs.toFixed(0)} ms. The optimizer reasons
                 over a simplified plan; the headline figures above come from{' '}
                 {displayedScheduleAlreadyExecuted
-                  ? 'the displayed exact-ledger schedule run through your full projection.'
+                  ? 'the displayed schedule, already run through your full projection.'
                   : 're-running your full projection with the cleaned schedule.'}
               </p>
             </div>

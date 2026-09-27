@@ -23,7 +23,7 @@ export const healthSavingsAccountRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'Section 223(b)(2) supplies the self-only and family coverage categories, while Rev. Proc. 2025-19 publishes the inflation-adjusted 2026 dollar amounts. The projection reads those values from the versioned parameter pack; the age-55 catch-up and the monthly/Medicare limits are separate records.',
+      'Section 223(b)(2) supplies the self-only and family coverage categories, while Rev. Proc. 2025-19 publishes the inflation-adjusted 2026 dollar amounts. The projection reads those values from the versioned tax-year parameters; the age-55 catch-up and the monthly/Medicare limits are separate records.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -376,7 +376,7 @@ export const healthSavingsAccountRecords = {
     contraryReading: null,
     errorDirection: 'bothDirections',
     conventionRationale:
-      'The projection applies three shortcuts, and the direction of error depends on which shortcut dominates. Monthly eligibility is not modelled: the annual ledger applies the whole-year limit regardless of how many months the taxpayer was an eligible individual, which is permissive when eligibility is partial. Medicare entitlement is not modelled: the Plan carries no title XVIII entitlement fact, and calendar age does not establish entitlement, so a taxpayer the authority facts treat as Medicare-entitled still receives a positive limit the statute sets at zero once entitlement begins — again permissive. Coverage tier is not modelled either: household size substitutes for the HDHP election, and paragraph (5) division then halves the family base across two MFJ spouses even when the authority facts stipulate self-only coverage with only one HSA owner; in the 2026 MFJ one-owner fixture that yields $4,375 produced versus the $4,400 self-only statute reading. Eligible months and Medicare entitlement are source-side facts absent from the plan schema, not derivable from the dates the engine already holds. The three stipulated fixtures span both directions: omitted monthly proration and Medicare zeroing permit excess contributions, while the household-size proxy with spousal division permits less than the self-only limit in the two-person case. Superseded claim: this record previously said the ledger gives every owner in a two-person household a full family limit; 223(b)(5) division is now implemented in irc-223-b-5-hsa-family-limit-divided-between-spouses, and this record documents what the annual coverage shortcut still gets wrong.',
+      'The projection applies three shortcuts, and the direction of error depends on which shortcut dominates. Monthly eligibility is not modelled: the annual ledger applies the whole-year limit regardless of how many months the taxpayer was an eligible individual, which is permissive when eligibility is partial. Medicare entitlement is not modelled: the Plan carries no title XVIII entitlement fact, and calendar age does not establish entitlement, so a taxpayer the authority facts treat as Medicare-entitled still receives a positive limit the statute sets at zero once entitlement begins (again permissive). Coverage tier is not modelled either: household size substitutes for the HDHP election, and paragraph (5) division then halves the family base across two MFJ spouses even when the authority facts stipulate self-only coverage with only one HSA owner; in the 2026 MFJ one-owner test that yields $4,375 produced versus the $4,400 self-only statute reading. Eligible months and Medicare entitlement are source-side facts absent from the plan schema, not derivable from the dates the engine already holds. The three stipulated tests span both directions: omitted monthly proration and Medicare zeroing permit excess contributions, while the household-size proxy with spousal division permits less than the self-only limit in the two-person case. Superseded claim: this record previously said the ledger gives every owner in a two-person household a full family limit; 223(b)(5) division is now implemented in irc-223-b-5-hsa-family-limit-divided-between-spouses, and this record documents what the annual coverage shortcut still gets wrong.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -427,7 +427,7 @@ export const healthSavingsAccountRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The reimbursement ledger consumes caller-supplied patient relationship facts. A qualifyingDependent input means a dependent under section 152 as modified by section 223(d)(2)(A); this function does not determine dependency from household, support, residency, or other underlying facts. It requires a nonblank patientRelationshipEvidenceId, binds that identifier to the owner, expense, relationship, and evaluation date, and rejects a self relationship that contradicts the patient identity. That structural evidence binding does not independently verify a spouse or dependent classification. The related-person fixture tests reimbursement conditional on the supplied qualifying relationship, not automatic dependency determination; callers must establish the relationship before submitting the claim.',
+      'The reimbursement ledger consumes caller-supplied patient relationship facts. A qualifyingDependent input means a dependent under section 152 as modified by section 223(d)(2)(A); this function does not determine dependency from household, support, residency, or other underlying facts. It requires a nonblank patientRelationshipEvidenceId, binds that identifier to the owner, expense, relationship, and evaluation date, and rejects a self relationship that contradicts the patient identity. That structural evidence binding does not independently verify a spouse or dependent classification. The related-person test checks reimbursement conditional on the supplied qualifying relationship, not automatic dependency determination; callers must establish the relationship before submitting the claim.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -650,7 +650,7 @@ export const healthSavingsAccountRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'This is narrower than, and not a duplicate of, irc-223-b-2-7-projection-coverage-proration-and-medicare: that approximated record documents the annual HSA coverage shortcut. The Part A entitlement/backdating fact itself is absent and cannot be inferred from age. model/plan.test.ts gates those missing HSA fields.',
+      'This is narrower than, and not a duplicate of, irc-223-b-2-7-projection-coverage-proration-and-medicare: that approximated record documents the annual HSA coverage shortcut. The Part A entitlement/backdating fact itself is absent and cannot be inferred from age. The plan-model tests (model/plan.test.ts) check that those HSA fields are absent.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -689,7 +689,7 @@ export const healthSavingsAccountRecords = {
     contraryReading: null,
     errorDirection: 'understatesTax',
     conventionRationale:
-      'DEFECT — no behavior change in this registration slice. The penalties sum in projection/simulate.ts includes early-withdrawal, Roth, HSA withdrawal, and RMD-shortfall terms but no 4973 HSA contribution term. The fixture posits a 1,000-dollar HSA contribution made while entitled to Medicare, derives 60 dollars as 1,000 × 0.06 with a year-end value of at least 1,000, and the observed engine penalty is 0 — no 4973 HSA term exists — pinned until a separately authorized implementation fix changes it.',
+      'Known defect, registered without changing the calculation. The penalties sum in projection/simulate.ts includes early-withdrawal, Roth, HSA withdrawal, and RMD-shortfall terms but no 4973 HSA contribution term. The test posits a 1,000-dollar HSA contribution made while entitled to Medicare, derives 60 dollars as 1,000 × 0.06 with a year-end value of at least 1,000, and the observed engine penalty is 0 (no 4973 HSA term exists), pinned until a separately authorized implementation fix changes it.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -740,7 +740,7 @@ export const healthSavingsAccountRecords = {
     contraryReading: null,
     errorDirection: 'overstatesTax',
     conventionRationale:
-      'The helper preserves the existing spouse-zero versus gross-for-other decision. Overstatement is claimed only for the omitted (B)(ii)(I) expense reduction at a stipulated death value, a fixed comparison heir rate, and a designated non-spouse natural-person case. A spouse destination follows (A) and is a zero inclusion. Charity exemption, generic default destination, and Form 8606 basis remain outside this helper. The nonSpouse enum also stands in for unmodeled legal classes, including an estate, for which (B)(ii)(I) does not reduce the inclusion. Missing legal beneficiary class, death date or value, and qualifying predeath expense and payment facts stay disclosed rather than inferred from healthcare spending or reimburseLater, which debit a different household cost. The companion fixture stipulates no relevant estate tax, so the (B)(ii)(II) section 691(c) deduction is zero and does not move the delta. The 223(f)(4)(B) additional-tax death exception remains a separate out-of-scope record; this metric is not that waiver.',
+      'The helper preserves the existing spouse-zero versus gross-for-other decision. Overstatement is claimed only for the omitted (B)(ii)(I) expense reduction at a stipulated death value, a fixed comparison heir rate, and a designated non-spouse natural-person case. A spouse destination follows (A) and is a zero inclusion. Charity exemption, generic default destination, and Form 8606 basis remain outside this helper. The nonSpouse enum also stands in for unmodeled legal classes, including an estate, for which (B)(ii)(I) does not reduce the inclusion. Missing legal beneficiary class, death date or value, and qualifying predeath expense and payment facts stay disclosed rather than inferred from healthcare spending or reimburseLater, which debit a different household cost. The companion test stipulates no relevant estate tax, so the (B)(ii)(II) section 691(c) deduction is zero and does not move the delta. The 223(f)(4)(B) additional-tax death exception remains a separate out-of-scope record; this metric is not that waiver.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',

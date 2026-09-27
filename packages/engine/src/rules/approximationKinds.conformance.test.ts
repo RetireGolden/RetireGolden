@@ -19,23 +19,6 @@ const EXPECTED_KEYS: Readonly<Record<ApproximationKind, readonly string[]>> = {
   convention: ['kind', 'reason'],
 }
 
-/**
- * Words the public site must not show: internal test and tooling vocabulary a
- * reader of the known-limits table cannot be expected to know. Whole words,
- * any case; "exact ledger" (or "exact-ledger") is matched as a phrase so
- * "ledger" alone stays usable. The same rule covers the published entries and
- * the titles of the approximated rules they sit beside.
- */
-const BANNED_PUBLIC_WORDS = /\b(?:fixtures?|golden|regression|harness|exact[\s-]+ledger|packs?|vintage)\b/giu
-const EM_DASH = '—'
-
-/** Every public-text problem in one string, empty when it reads as plain words. */
-function publicTextProblems(text: string): readonly string[] {
-  const problems = [...text.matchAll(BANNED_PUBLIC_WORDS)].map((match) => 'uses "' + match[0] + '"')
-  if (text.includes(EM_DASH)) problems.push('uses an em dash')
-  return problems
-}
-
 /** The strings an entry publishes, by field name. A fix publishes none. */
 function publishedStrings(entry: ApproximationEntry): readonly (readonly [string, string])[] {
   switch (entry.kind) {
@@ -117,56 +100,5 @@ describe('approximation kinds conformance', () => {
     for (const entry of Object.values(kinds)) counts[entry.kind] += 1
     expect(counts).toEqual({ fix: 75, 'needs-fact': 24, convention: 22 })
     expect(counts.fix + counts['needs-fact'] + counts.convention).toBe(approximatedIds.length)
-  })
-
-  it('publishes only plain public text: no em dashes and no internal test vocabulary', () => {
-    const violations: string[] = []
-    for (const [id, entry] of Object.entries(kinds)) {
-      for (const [field, text] of publishedStrings(entry)) {
-        for (const problem of publicTextProblems(text)) violations.push(id + ' ' + field + ' ' + problem)
-      }
-    }
-    expect(violations).toEqual([])
-  })
-
-  it('gives every approximated rule a title in plain public text, since the site prints it beside the kind', () => {
-    const violations: string[] = []
-    for (const id of approximatedIds) {
-      const title = TAX_RULE_REGISTRY[id as keyof typeof TAX_RULE_REGISTRY].title
-      for (const problem of publicTextProblems(title)) violations.push(id + ' title ' + problem)
-    }
-    expect(violations).toEqual([])
-  })
-
-  it('flags the banned words as whole words in any case, and nothing that merely contains them', () => {
-    // Probes for the checker itself, so a regex that silently matched nothing
-    // could not pass the public-text test above.
-    for (const text of [
-      'a golden case',
-      'Fixtures kept',
-      'one fixture',
-      'the Exact Ledger re-prices',
-      'the exact  ledger',
-      'priced on the exact-ledger path',
-      'a regression',
-      'the test harness',
-      'a parameter pack',
-      'state packs',
-      'the 2026 vintage',
-      'two parts' + EM_DASH + 'one clause',
-    ]) {
-      expect(publicTextProblems(text), text).not.toEqual([])
-    }
-    for (const text of [
-      'packages/engine/src/params/index.ts#irmaaTierThreshold',
-      'packaging and unpacked backpacks',
-      'the full year-by-year projection re-prices candidates',
-      'a ledger of gifts',
-      'the exact-cent ledger',
-      'goldenrod harnessing',
-      'two parts, one clause',
-    ]) {
-      expect(publicTextProblems(text), text).toEqual([])
-    }
   })
 })

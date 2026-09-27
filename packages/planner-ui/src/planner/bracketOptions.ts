@@ -56,7 +56,7 @@ export function bracketOptions(year: number, current: number | null): BracketOpt
     options.push({
       value: String(current),
       label: isTopBracket
-        ? `${current}% (top bracket — nothing above it to fill)`
+        ? `${current}% (top bracket; nothing above it to fill)`
         : `${current}% (not a published rate)`,
     })
   }

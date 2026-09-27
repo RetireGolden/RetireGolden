@@ -114,7 +114,7 @@ describe('standalone report HTML', () => {
     })
 
     expect(html).toContain('SS claim combinations optimized')
-    expect(html).toContain('None - current claim ages held')
+    expect(html).toContain('None (current claim ages held)')
     expect(html).not.toContain('Claim-change estate gain')
   })
 })
@@ -137,7 +137,7 @@ describe('report branding', () => {
 
   it('defaults to the RetireGolden identity when branding is omitted', () => {
     const html = htmlWith(undefined)
-    expect(html).toContain('- RetireGolden report</title>')
+    expect(html).toContain('· RetireGolden report</title>')
     expect(html).toContain('RetireGolden self-contained HTML report prepared')
     expect(html).toContain('border-bottom: 3px solid #B8860B;')
     expect(html).not.toContain('report-logo')
@@ -151,7 +151,7 @@ describe('report branding', () => {
       accentColor: '#123456',
       footerNote: 'Prepared by Acme Wealth Advisors LLC. For client review only.',
     })
-    expect(html).toContain('- Acme Wealth Planner report</title>')
+    expect(html).toContain('· Acme Wealth Planner report</title>')
     expect(html).toContain('Acme Wealth Planner self-contained HTML report prepared')
     expect(html).toContain('border-bottom: 3px solid #123456;')
     expect(html).toContain(`<img class="report-logo" src="${PNG_DATA_URI}" alt="Acme Wealth">`)
@@ -203,7 +203,7 @@ describe('report branding', () => {
 
   it('falls back to the logo-less default when the logo is not a data URI', () => {
     const html = htmlWith({ productName: 'Acme', logoDataUri: 'https://example.com/logo.png' })
-    expect(html).toContain('- Acme report</title>')
+    expect(html).toContain('· Acme report</title>')
     expect(html).not.toContain('report-logo')
     expect(html).not.toContain('example.com')
   })

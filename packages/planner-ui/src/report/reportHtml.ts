@@ -232,8 +232,8 @@ function assumptionsSection(model: ReportModel): string {
     ['Roth conversions', escapeHtml(assumptions.rothConversionSummary)],
     ['Withdrawal order', escapeHtml(assumptions.withdrawalOrderSummary)],
     ['Spending policy', escapeHtml(assumptions.spendingPolicySummary)],
-    ['Federal parameter pack', `${provenance.federalParameterPackYear}`],
-    ['State parameter pack', `${provenance.stateParameterPackYear}`],
+    ['Federal parameter set', `${provenance.federalParameterPackYear}`],
+    ['State parameter set', `${provenance.stateParameterPackYear}`],
     ['Parameter data as of', escapeHtml(provenance.parameterDataAsOf)],
     ['Parameter data basis', escapeHtml(provenance.parameterDataBasis)],
   ]
@@ -303,7 +303,7 @@ function recommendationSection(evidence: ReportRecommendationEvidence | null): s
       ['SS claim combinations optimized', `${claim.combinationsEvaluated}`],
       [
         'Recommended Social Security claim change',
-        escapeHtml(claim.winningClaimLabel ?? 'None - current claim ages held'),
+        escapeHtml(claim.winningClaimLabel ?? 'None (current claim ages held)'),
       ],
     )
     if (claim.winningClaimLabel !== null) {
@@ -337,7 +337,7 @@ function advisorSection(block: ReportAdvisorRecommendationsBlock | null): string
   if (!block || block.entries.length === 0) return ''
   const entries = block.entries
     .map((entry) => {
-      const adopted = entry.adoptedAtIso ? ` - adopted ${escapeHtml(dateLabel(entry.adoptedAtIso))}` : ''
+      const adopted = entry.adoptedAtIso ? `, adopted ${escapeHtml(dateLabel(entry.adoptedAtIso))}` : ''
       return `<h3>${escapeHtml(entry.heading)}</h3><p>${escapeHtml(entry.body)}</p><p class="muted">Authored by ${escapeHtml(entry.authoredBy)}${adopted}</p>`
     })
     .join('')
@@ -425,7 +425,7 @@ export function renderStandaloneReportHtml(model: ReportModel, brandingInput?: R
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${escapeHtml(model.planName)} - ${escapeHtml(productName)} report</title>
+<title>${escapeHtml(model.planName)} · ${escapeHtml(productName)} report</title>
 <style>
 :root { color-scheme: light; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #12342b; background: #f7fbf8; }
 body { margin: 0; }

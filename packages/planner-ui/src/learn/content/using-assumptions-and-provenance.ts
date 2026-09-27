@@ -7,7 +7,7 @@ import type { ArticleBlock } from '../learningRegistry'
 export const blocks: ArticleBlock[] = [
   {
     type: 'prose',
-    md: 'Assumptions are the bridge between your plan and the rules RetireGolden applies. Some assumptions are choices you set directly. Others come from dated parameter packs, such as tax brackets, contribution limits, RMD factors, Medicare, IRMAA, ACA, and Social Security figures.',
+    md: 'Assumptions are the bridge between your plan and the rules RetireGolden applies. Some assumptions are choices you set directly. Others come from dated parameter sets, such as tax brackets, contribution limits, RMD factors, Medicare, IRMAA, ACA, and Social Security figures.',
   },
   { type: 'heading', text: 'Quick takeaways' },
   {
@@ -21,13 +21,13 @@ export const blocks: ArticleBlock[] = [
   { type: 'heading', text: 'The basic idea' },
   {
     type: 'prose',
-    md: 'A parameter pack is a snapshot of published rules and dollar values. It helps the engine apply tax and benefit rules consistently without asking you to enter every bracket, limit, premium, and threshold yourself. Provenance is the record of where those inputs came from and when they were compiled.',
+    md: 'A parameter set is a snapshot of published rules and dollar values. It helps the engine apply tax and benefit rules consistently without asking you to enter every bracket, limit, premium, and threshold yourself. Provenance is the record of where those inputs came from and when they were compiled.',
   },
   {
     type: 'figure',
     image: { src: '/learn/images/assumptions-provenance.webp' },
     caption:
-      'Household assumptions and sourced parameter packs meet inside the projection engine.',
+      'Household assumptions and sourced parameter sets meet inside the projection engine.',
     alt: 'Two streams labeled by icons for household choices and official sources flow into a structured projection ledger.',
   },
   {
@@ -38,7 +38,7 @@ export const blocks: ArticleBlock[] = [
       ['Is this my input?', 'The planner entry screen that owns the field', 'Correct the fact if it is wrong'],
       ['Is this a plan-wide assumption?', 'Assumptions', 'Adjust it and rerun Results or Monte Carlo'],
       ['Is this a rule default?', 'Disclaimer and provenance table', 'Verify against the official source if it matters'],
-      ['Is this beyond the latest published pack?', 'Report notes or modeling warnings', 'Treat projected future thresholds as planning approximations'],
+      ['Is this beyond the latest published parameter set?', 'Report notes or modeling warnings', 'Treat projected future thresholds as planning approximations'],
     ],
   },
   { type: 'heading', text: 'A worked example' },

@@ -528,7 +528,7 @@ function characterizedRetirementDelta(
       const military = rows.filter((fact) => isMilitarySource(fact.sourceKind)).reduce((sum, fact) => sum + Math.max(0, fact.federallyIncludedAmount), 0)
       if (age60Plus) {
         const cap = params.retirementPrivate.capPerPerson
-        if (cap === undefined) warnings.push({ code: 'de-pension-cap-pack-missing', ruleId: 'de-pension-exclusion-age-60', message: 'Delaware age-60 pension exclusion requires a versioned annual cap.', missingFacts: ['retirementPrivate.capPerPerson'] })
+        if (cap === undefined) warnings.push({ code: 'de-pension-cap-pack-missing', ruleId: 'de-pension-exclusion-age-60', message: 'Delaware age-60 pension exclusion requires an annual cap from the published parameter set.', missingFacts: ['retirementPrivate.capPerPerson'] })
         else taxableIncomeDelta -= Math.min(cap, ordinary + military)
         continue
       }
@@ -741,7 +741,7 @@ function characterizedRetirementDelta(
       } else {
         const fullThrough = joint ? params.vermontExtras?.civilServiceFullThroughJoint : params.vermontExtras?.civilServiceFullThroughNonjoint
         const zeroAt = joint ? params.vermontExtras?.civilServiceZeroAtJoint : params.vermontExtras?.civilServiceZeroAtNonjoint
-        if (fullThrough === undefined || zeroAt === undefined) warnings.push({ code: 'vt-social-security-pack-missing', ruleId: 'vt-5830e-social-security-inclusion', message: 'Vermont Social Security election requires versioned phaseout parameters.', missingFacts: ['vermontExtras'] })
+        if (fullThrough === undefined || zeroAt === undefined) warnings.push({ code: 'vt-social-security-pack-missing', ruleId: 'vt-5830e-social-security-inclusion', message: 'Vermont Social Security election requires its phaseout figures from the published parameter set.', missingFacts: ['vermontExtras'] })
         else {
           const factor = agi <= fullThrough ? 1 : agi >= zeroAt ? 0 : (zeroAt - agi) / (zeroAt - fullThrough)
           taxableIncomeDelta -= Math.max(0, facts.federallyIncludedSocialSecurity) * factor
@@ -1096,7 +1096,7 @@ export function computeStateTaxableIncomeResult(
     const status = opts.householdFacts?.stateFilingStatus
     const agi = opts.householdFacts?.federalAgi
     if (!status || agi === undefined) acc.warnings.push({ code: 'sc-sciad-incomplete', ruleId: 'sc-sciad-deduction', message: 'South Carolina SCIAD deduction requires federal AGI and full filing status.', missingFacts: ['federalAgi', 'stateFilingStatus'] })
-    else if (!params.southCarolinaSciad) acc.warnings.push({ code: 'sc-sciad-pack-missing', ruleId: 'sc-sciad-deduction', message: 'South Carolina SCIAD selection requires its versioned annual schedule.', missingFacts: ['southCarolinaSciad'] })
+    else if (!params.southCarolinaSciad) acc.warnings.push({ code: 'sc-sciad-pack-missing', ruleId: 'sc-sciad-deduction', message: 'South Carolina SCIAD selection requires its annual schedule from the published parameter set.', missingFacts: ['southCarolinaSciad'] })
     else {
       const sciad = scSciadDeduction({ filingStatus: status, federalAgi: agi, config: params.southCarolinaSciad })
       acc.warnings.push(...sciad.warnings)
@@ -1318,7 +1318,7 @@ export function computeStateTaxDetailResult(
       const distributions = knownDistributions ?? []
       const config = params.utahRetirementCredits
       if (!config) {
-        warnings.push({ code: 'ut-credit-pack-missing', ruleId: 'ut-retirement-credits', message: 'Utah credit calculation requires a versioned Utah credit pack.', missingFacts: ['utahRetirementCredits'] })
+        warnings.push({ code: 'ut-credit-pack-missing', ruleId: 'ut-retirement-credits', message: 'Utah credit calculation requires a published set of Utah credit parameters.', missingFacts: ['utahRetirementCredits'] })
       } else {
       const facts = opts.householdFacts
       const militaryAmt = utahOrVirginiaMilitaryFromFacts(distributions)
@@ -1725,7 +1725,7 @@ export function computeStateTaxYearResult(
   }
   if (!input.state) return { amount: 0, taxableIncome: 0, stateTax: 0, localTax: 0, totalTax: 0, taxCredit: 0, status: 'complete', warnings: [] }
   const published = stateParamsFor(input.state, input.year)
-  if (!published) return { amount: 0, taxableIncome: 0, stateTax: 0, localTax: 0, totalTax: 0, taxCredit: 0, status: 'incomplete', warnings: [{ code: 'state-pack-unavailable', message: `No versioned state pack is available for ${input.state} tax year ${input.year}.`, missingFacts: ['stateTaxPack'] }] }
+  if (!published) return { amount: 0, taxableIncome: 0, stateTax: 0, localTax: 0, totalTax: 0, taxCredit: 0, status: 'incomplete', warnings: [{ code: 'state-pack-unavailable', message: `No published state parameter set is available for ${input.state} tax year ${input.year}.`, missingFacts: ['stateTaxPack'] }] }
   const { pack } = packForYear(input.year)
   const params = opts.mapParams ? opts.mapParams(conformStateStandardDeduction(published, pack.federalTax.age65Addition, input.inflationScale ?? 1)) : conformStateStandardDeduction(published, pack.federalTax.age65Addition, input.inflationScale ?? 1)
   return computeStateTaxDetailResult(params, input, { ...opts, localRatePct })

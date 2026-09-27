@@ -15,7 +15,7 @@ export const blocks: ArticleBlock[] = [
     items: [
       'Some states have no broad income tax, while others tax retirement income in different ways.',
       'State rules can treat Social Security, pensions, IRA withdrawals, and capital gains differently from federal rules.',
-      'RetireGolden uses state parameter packs when available and lets you enter a flat override when your situation needs a manual correction.',
+      'RetireGolden uses state parameter sets when available and lets you enter a flat override when your situation needs a manual correction.',
     ],
   },
   { type: 'heading', text: 'The basic idea' },
@@ -65,7 +65,7 @@ export const blocks: ArticleBlock[] = [
       'Assuming state tax follows federal taxable income exactly.',
       'Forgetting that a no-income-tax state may still have property tax, sales tax, insurance, or housing tradeoffs.',
       'Modeling a move only as a tax change without changing spending and property assumptions.',
-      'Treating a planning pack as a state tax return. Always verify unusual facts with state guidance or a tax professional.',
+      'Treating a planning parameter set as a state tax return. Always verify unusual facts with state guidance or a tax professional.',
     ],
   },
   { type: 'heading', text: 'Where to use this in the app' },

@@ -18,7 +18,7 @@ export const spendingAndWithdrawalsRecords = {
     // also includes system costs and goals.
     outputs: ['spending-base-annual'],
     statement:
-      'Given a start-of-year balance B, an expected return r and a planned payment growth g — both in percent per year, as abwAnnualPayment takes them, so the worksheet\'s 10% is passed as 10 — and a remaining horizon in years including the current year, the function first truncates that horizon to whole years, n = floor(remainingYears), so a fractional horizon such as 4.5 years is amortized over 4. The beginning-of-period payment is P = B(1−x)/(1−x^n) where x = (1 + g/100)/(1 + r/100). P = B/n instead under either guard the code tests: `!Number.isFinite(x) || x <= 0` (x is not finite or not positive; r > −100 and g > −100 keep it finite and positive) and `Math.abs(x - 1) < 1e-9` (x = 1 within that tolerance). Payments are withdrawn before growth. Under the ABW spending policy P is the year\'s base spending before guardrail adjustments: annualLifestyleLayers writes it as baseAnnualNominal, which annualExpenseSummary publishes as YearResult.expenses.baseSpending. Domain: finite B > 0 (a non-finite or non-positive balance pays 0) and n ≥ 1; n ≤ 1 spends the whole balance. Rounding: the horizon is floored on input; the payment itself is not rounded — the production function returns a binary float.',
+      'Given a start-of-year balance B, an expected return r and a planned payment growth g (both in percent per year, as abwAnnualPayment takes them, so the worksheet\'s 10% is passed as 10) and a remaining horizon in years including the current year, the function first truncates that horizon to whole years, n = floor(remainingYears), so a fractional horizon such as 4.5 years is amortized over 4. The beginning-of-period payment is P = B(1−x)/(1−x^n) where x = (1 + g/100)/(1 + r/100). P = B/n instead under either guard the code tests: `!Number.isFinite(x) || x <= 0` (x is not finite or not positive; r > −100 and g > −100 keep it finite and positive) and `Math.abs(x - 1) < 1e-9` (x = 1 within that tolerance). Payments are withdrawn before growth. Under the ABW spending policy P is the year\'s base spending before guardrail adjustments: annualLifestyleLayers writes it as baseAnnualNominal, which annualExpenseSummary publishes as YearResult.expenses.baseSpending. Domain: finite B > 0 (a non-finite or non-positive balance pays 0) and n ≥ 1; n ≤ 1 spends the whole balance. Rounding: the horizon is floored on input; the payment itself is not rounded (the production function returns a binary float).',
     formula: {
       expression: 'n = floor(remainingYears); x = (1 + g/100)/(1 + r/100); P = B(1-x)/(1-x^n), or P = B/n when x is not finite, x <= 0, or |x - 1| < 1e-9',
       variables: [
@@ -358,9 +358,9 @@ export const spendingAndWithdrawalsRecords = {
       worksheet: 'DOCS/calculations/spending-and-withdrawals/sepp-rmd-method.md',
     },
     limits: [
-      'The Uniform Lifetime Table is not an alternative here: the pack carries no age-55 entry for it, and the module adopts Single Life for both supported methods',
+      'The Uniform Lifetime Table is not an alternative here: the published parameters carry no age-55 entry for it, and the module adopts Single Life for both supported methods',
       'The published entry is taken as published; a fractional age is floored to the table\'s whole age rather than interpolated',
-      'Unlike the amortization method this payment varies year to year, so a fixture that holds it constant is asserting the wrong method',
+      'Unlike the amortization method this payment varies year to year, so a test that holds it constant is asserting the wrong method',
     ],
     implementedBy: ['packages/engine/src/strategies/sepp.ts'],
     implementedByFunctions: ['packages/engine/src/strategies/sepp.ts#seppAnnualAmount'],
@@ -374,7 +374,7 @@ export const spendingAndWithdrawalsRecords = {
     outputs: ['spending-total-annual'],
     feeds: ['portfolio-need-annual', 'display-total-spending-annual'],
     statement:
-      'projection/internal/annualExpenseSummary.ts#annualExpenseSummary publishes projection/internal/types/yearLedger.ts#YearExpenses.total as baseSpending + oneTimeGoals + debtService + propertyCosts + healthcare + insurancePremiums + careCost - ltcBenefit, kept in that left-to-right association because regrouping the LTC pair can move the last bit. careCost is gross and ltcBenefit offsets it. guardrailFactor is descriptive — the cut is already inside baseSpending and is never multiplied in again. requiredSpending, targetSpending, idealSpending, excessSpending and intendedSpending are overlapping layer summaries, not additional members, and intendedSpending is the no-cut request and need not equal this total. Units: nominal USD per year. Rounding: none.',
+      'projection/internal/annualExpenseSummary.ts#annualExpenseSummary publishes projection/internal/types/yearLedger.ts#YearExpenses.total as baseSpending + oneTimeGoals + debtService + propertyCosts + healthcare + insurancePremiums + careCost - ltcBenefit, kept in that left-to-right association because regrouping the LTC pair can move the last bit. careCost is gross and ltcBenefit offsets it. guardrailFactor is descriptive: the cut is already inside baseSpending and is never multiplied in again. requiredSpending, targetSpending, idealSpending, excessSpending and intendedSpending are overlapping layer summaries, not additional members, and intendedSpending is the no-cut request and need not equal this total. Units: nominal USD per year. Rounding: none.',
     formula: {
       expression: 'total = baseSpending + oneTimeGoals + debtService + propertyCosts + healthcare + insurancePremiums + careCost - ltcBenefit',
       variables: [
@@ -393,7 +393,7 @@ export const spendingAndWithdrawalsRecords = {
     limits: [
       'Asserted at the annualExpenseSummary seam with the worksheet\'s eight member amounts, because the worksheet states them as published year-row components: a single real plan cannot present a chosen base spending, one-time goal, debt service, property cost, healthcare charge, insurance premium, gross care cost and LTC benefit at those exact values simultaneously',
       'Cross-checked on a real simulatePlan run: the published total of that year row equals the same row\'s own eight published members in the same association',
-      'The guardrail factor and intended spending are asserted NOT to enter: the fixture drives the seam with a factor of 0.90 and an intended request of $100,000 and shows neither changes the total',
+      'The guardrail factor and intended spending are asserted NOT to enter: the test drives the seam with a factor of 0.90 and an intended request of $100,000 and shows neither changes the total',
     ],
     implementedBy: [
       'packages/engine/src/projection/internal/annualExpenseSummary.ts',
@@ -413,7 +413,7 @@ export const spendingAndWithdrawalsRecords = {
     outputs: ['spending-base-annual'],
     feeds: ['spending-total-annual'],
     statement:
-      'projection/internal/annualGuardrailFunding.ts#annualGuardrailFundingPlan computes targetLifestyleFunded as targetLifestyle x min(1, discretionaryMultiplier) while guardrails are active, and the full targetLifestyle otherwise; projection/internal/annualExpenseSummary.ts#annualExpenseSummary then publishes projection/internal/types/yearLedger.ts#YearExpenses.baseSpending as requiredLifestyle + targetLifestyleFunded + idealLifestyleFunded + excessLifestyleFunded. The cap keeps a multiplier above one from inflating the target layer; upside instead reaches the separately funded ideal and excess layers. One-time goals and the system-computed costs are excluded — expenses.total adds them. The same multiplier is published unchanged as expenses.guardrailFactor. Units: nominal USD per year. Rounding: none.',
+      'projection/internal/annualGuardrailFunding.ts#annualGuardrailFundingPlan computes targetLifestyleFunded as targetLifestyle x min(1, discretionaryMultiplier) while guardrails are active, and the full targetLifestyle otherwise; projection/internal/annualExpenseSummary.ts#annualExpenseSummary then publishes projection/internal/types/yearLedger.ts#YearExpenses.baseSpending as requiredLifestyle + targetLifestyleFunded + idealLifestyleFunded + excessLifestyleFunded. The cap keeps a multiplier above one from inflating the target layer; upside instead reaches the separately funded ideal and excess layers. One-time goals and the system-computed costs are excluded; expenses.total adds them. The same multiplier is published unchanged as expenses.guardrailFactor. Units: nominal USD per year. Rounding: none.',
     formula: {
       expression: 'baseSpending = requiredLifestyle + targetLifestyle * min(1, guardrailFactor) + idealLifestyleFunded + excessLifestyleFunded',
       variables: [
@@ -468,9 +468,9 @@ export const spendingAndWithdrawalsRecords = {
     },
     limits: [
       'Asserted on a real simulatePlan run whose five accounts hold exactly the worksheet\'s five category amounts and whose spending exceeds their sum, so sequential ordering drains every one of them and the published categories are the worksheet\'s. Plan assumptions beyond the worksheet\'s inputs: a single 76-year-old filing single in KY with a zero state rate, zero inflation, zero account return, no taxable yield, cost basis equal to balance, sequential withdrawal order, and a base lifestyle far above the portfolio, so the year also publishes a shortfall',
-      'The year\'s traditional draw includes an RMD, so the fixture also asserts that the published total is the five categories and not the five categories with the RMD added again',
+      'The year\'s traditional draw includes an RMD, so the test also asserts that the published total is the five categories and not the five categories with the RMD added again',
       'Roth dollars are a member like any other; subtracting them as a tax offset is the worksheet\'s second wrong reading',
-      'The worksheet\'s plan carries no inherited account. The identity in a year with a non-qualified inherited Roth distribution (two 100 Roth draws with 140 of taxable earnings beside a 100 traditional draw: traditional 100, roth 200, total 300) is held by projection/simulate.inheritedRegimeExecution.test.ts, added with decision D-INHERITED-ROTH-SLICE on 2026-09-25, when traditional stopped carrying the Roth earnings',
+      'The worksheet\'s plan carries no inherited account. The identity in a year with a non-qualified inherited Roth distribution (two 100 Roth draws with 140 of taxable earnings beside a 100 traditional draw: traditional 100, roth 200, total 300) is held by a projection test that checks the five categories add to the total in that year (projection/simulate.inheritedRegimeExecution.test.ts), added with decision D-INHERITED-ROTH-SLICE on 2026-09-25, when traditional stopped carrying the Roth earnings',
     ],
     implementedBy: [
       'packages/engine/src/projection/internal/types/yearLedger.ts',
@@ -509,7 +509,7 @@ export const spendingAndWithdrawalsRecords = {
     },
     limits: [
       'Asserted on a real simulatePlan run whose five accounts hold exactly the worksheet\'s five category amounts and whose spending exceeds their sum, so each account drains and its category equals its own opening balance. Plan assumptions beyond the worksheet\'s inputs: a single 76-year-old filing single in KY with a zero state rate, zero inflation, zero account return, no taxable yield, cost basis equal to balance, sequential withdrawal order, and a base lifestyle far above the portfolio',
-      'The worksheet\'s stated subset split — $8,000 of RMD, $3,000 of SEPP, $2,000 of forced inherited traditional inside $18,000 of traditional, and $1,000 of forced inherited Roth inside $7,000 of Roth — is NOT constructed. Those four amounts are each determined by the engine from age, balance and beneficiary facts, and no plan sets them to chosen values inside a traditional draw that must also equal $18,000. The run\'s own RMD is asserted instead to be a nonzero subset of the published traditional category, which is the claim the worksheet\'s first wrong reading denies',
+      'The worksheet\'s stated subset split ($8,000 of RMD, $3,000 of SEPP, $2,000 of forced inherited traditional inside $18,000 of traditional, and $1,000 of forced inherited Roth inside $7,000 of Roth) is NOT constructed. Those four amounts are each determined by the engine from age, balance and beneficiary facts, and no plan sets them to chosen values inside a traditional draw that must also equal $18,000. The run\'s own RMD is asserted instead to be a nonzero subset of the published traditional category, which is the claim the worksheet\'s first wrong reading denies',
       'HSA is a withdrawal category like the other four, not a sixth non-withdrawal bucket',
     ],
     implementedBy: [
@@ -547,7 +547,7 @@ export const spendingAndWithdrawalsRecords = {
     },
     limits: [
       'Asserted at annualYearResultAssembly, the function that computes the field, with the worksheet\'s four year-row components, and separately on a real simulatePlan run where the published need equals its own row\'s published expenses, tax, penalties and incomes',
-      'The floor case the worksheet names — the same outflows against $120,000 of income — is asserted at the same seam, because the published need must be exactly 0 rather than the negative surplus',
+      'The floor case the worksheet names (the same outflows against $120,000 of income) is asserted at the same function, because the published need must be exactly 0 rather than the negative surplus',
       'Penalties are a separate term from tax and are not inside it; omitting them is the worksheet\'s first wrong reading',
     ],
     implementedBy: [
@@ -584,7 +584,7 @@ export const spendingAndWithdrawalsRecords = {
     },
     limits: [
       'Asserted on a real simulatePlan run that realizes the worksheet\'s four inputs: a $10,000 cash account, a $12,000 lifestyle need, and a last-resort HECM whose principal limit is exactly $1,500, leaving the worksheet\'s $500. Plan assumptions beyond the worksheet\'s inputs: a single 64-year-old filing single in KY with a zero state rate, zero inflation, zero account and property return, a zero pre-65 premium so healthcare charges nothing, a primary residence worth $30,000 carrying the HECM at the schema\'s minimum 5 percent principal limit with a zero growth rate, and no earlier projection year, so the worksheet\'s "earlier-year shortfalls 0" holds by construction',
-      'The worksheet declines to state the depletion tolerance numerically, so the fixture imports ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS from production, confirms the $500 exceeds it, and only then asserts the run\'s depletionYear',
+      'The worksheet declines to state the depletion tolerance numerically, so the test imports ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS from production, confirms the $500 exceeds it, and only then asserts the run\'s depletionYear',
       'The year\'s pre-HECM gap is asserted separately from the published figure, because publishing the pre-HECM gap is the worksheet\'s first wrong reading',
     ],
     implementedBy: [

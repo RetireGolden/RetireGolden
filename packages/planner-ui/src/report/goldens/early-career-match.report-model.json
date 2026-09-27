@@ -1134,13 +1134,13 @@
         {
           "detail": "$65,000/yr until retirement",
           "id": "early-career-match--wages",
-          "label": "Wages - Alex",
+          "label": "Wages (Alex)",
           "type": "wages"
         },
         {
           "detail": "$2,000/mo PIA, claim 67y",
           "id": "early-career-match--ss",
-          "label": "Social Security - Alex",
+          "label": "Social Security (Alex)",
           "type": "socialSecurity"
         }
       ]
@@ -1235,7 +1235,7 @@
           "url": "https://www.irs.gov/pub/irs-drop/rp-25-25.pdf"
         },
         {
-          "figures": "Par real yields as of 2026-06-30: 1.85% (5y), 2.05% (7y), 2.25% (10y), 2.55% (20y), 2.70% (30y). Prices TIPS-ladder quotes and the funded-ratio discounting; refreshed annually with the parameter packs.",
+          "figures": "Par real yields as of 2026-06-30: 1.85% (5y), 2.05% (7y), 2.25% (10y), 2.55% (20y), 2.70% (30y). Prices TIPS-ladder quotes and the funded-ratio discounting; refreshed annually with the parameter sets.",
           "label": "TIPS real-yield curve (income floor & bridge)",
           "publisher": "U.S. Treasury",
           "url": "https://home.treasury.gov/resource-center/data-chart-center/interest-rates"

@@ -81,10 +81,10 @@ export const taxesRecords = {
         "E' = max(0, E - q x max(0, A - P)); X = max(0, A - E'); TMT = 0.26 x min(X, T28) + 0.28 x max(0, X - T28); AMT = max(0, TMT - regularTax)",
       variables: [
         { symbol: 'A', meaning: 'Alternative minimum taxable income (taxable income plus modeled add-backs)', unit: 'usd/year', domain: 'nonnegative' },
-        { symbol: 'E', meaning: 'Pack AMT exemption for the filing status', unit: 'usd/year', domain: 'positive' },
-        { symbol: 'P', meaning: 'Pack exemption phase-out start', unit: 'usd/year', domain: 'positive' },
-        { symbol: 'q', meaning: 'Pack exemption phase-out rate', unit: 'fraction', domain: '0 <= q <= 1' },
-        { symbol: 'T28', meaning: 'Pack 28%-rate threshold on taxable excess', unit: 'usd/year', domain: 'positive' },
+        { symbol: 'E', meaning: 'AMT exemption for the filing status, from the tax parameters', unit: 'usd/year', domain: 'positive' },
+        { symbol: 'P', meaning: 'Exemption phase-out start, from the tax parameters', unit: 'usd/year', domain: 'positive' },
+        { symbol: 'q', meaning: 'Exemption phase-out rate, from the tax parameters', unit: 'fraction', domain: '0 <= q <= 1' },
+        { symbol: 'T28', meaning: '28%-rate threshold on taxable excess, from the tax parameters', unit: 'usd/year', domain: 'positive' },
         { symbol: 'regularTax', meaning: 'Ordinary bracket tax plus stacked preferential tax', unit: 'usd/year', domain: 'nonnegative' },
       ],
       timing: 'one tax year',
@@ -96,7 +96,7 @@ export const taxesRecords = {
     },
     limits: [
       'A planning screen, not a full Form 6251 claim: modeled add-backs are the section 63(c) standard deduction or itemized SALT plus the section 151 senior deduction, and the rest of the Form 6251 adjustments are out of scope',
-      "The pinned rate and exemption helpers are not exported, so the evidence asserts them through computeFederalTax. The worksheet's AMTI of 200,000 and regular tax of 20,000 are not themselves calculator inputs: the fixture reaches them from real inputs (130,275 of ordinary income, which after the 16,100 standard deduction leaves 114,175 of taxable income and exactly 20,000 of bracket tax, plus 69,725 of advanced amtPreferenceItems, which with the 16,100 standard-deduction add-back makes AMTI 200,000). Any other construction of the same two figures is a different set of inputs.",
+      "The pinned rate and exemption helpers are not exported, so the evidence asserts them through computeFederalTax. The worksheet's AMTI of 200,000 and regular tax of 20,000 are not themselves calculator inputs: the test reaches them from real inputs (130,275 of ordinary income, which after the 16,100 standard deduction leaves 114,175 of taxable income and exactly 20,000 of bracket tax, plus 69,725 of advanced amtPreferenceItems, which with the 16,100 standard-deduction add-back makes AMTI 200,000). Any other construction of the same two figures is a different set of inputs.",
     ],
     implementedBy: ['packages/engine/src/tax/federalTax.ts'],
     implementedByFunctions: [
@@ -185,7 +185,7 @@ export const taxesRecords = {
     outputs: [],
     feeds: ['tax-total-annual'],
     statement:
-      'params/index.ts#standardDeduction and #age65StandardDeductionAddition, consumed by tax/federalTax.ts#computeFederalTax, compute the 2026 single-filer standard deduction as the basic annual deduction plus the per-person age-65 addition times the number of qualifying people. This is distinct from the separate OBBBA senior deduction, which rides on top of whichever deduction base wins. Units: nominal USD. Rounding: none; the pack values and the head count are integers.',
+      'params/index.ts#standardDeduction and #age65StandardDeductionAddition, consumed by tax/federalTax.ts#computeFederalTax, compute the 2026 single-filer standard deduction as the basic annual deduction plus the per-person age-65 addition times the number of qualifying people. This is distinct from the separate OBBBA senior deduction, which rides on top of whichever deduction base wins. Units: nominal USD. Rounding: none; the published parameter values and the head count are integers.',
     formula: {
       expression: 'deduction = D + n x A',
       variables: [
@@ -223,7 +223,7 @@ export const taxesRecords = {
     outputs: [],
     feeds: ['tax-total-annual'],
     statement:
-      'tax/federalTax.ts#taxableSocialSecurity computes annual taxable Social Security from provisional income (AGI excluding Social Security, plus tax-exempt interest, plus the foreign-exclusion addback, plus half of gross benefits) using the 2026 pack\'s statutorily unindexed single-filer 50% and 85% tier thresholds. Units: nominal USD. Rounding: none stated.',
+      'tax/federalTax.ts#taxableSocialSecurity computes annual taxable Social Security from provisional income (AGI excluding Social Security, plus tax-exempt interest, plus the foreign-exclusion addback, plus half of gross benefits) using the 2026 tax parameters’ statutorily unindexed single-filer 50% and 85% tier thresholds. Units: nominal USD. Rounding: none stated.',
     formula: {
       expression:
         'P = agiExcludingSs + max(0, taxExemptInterest) + max(0, foreignAddback) + 0.5 x B; taxable = 0 when P <= a; min(0.5B, 0.5(P - a)) when a < P <= b; min(0.85B, 0.85(P - b) + min(0.5B, 0.5(b - a))) when P > b',
@@ -352,7 +352,7 @@ export const taxesRecords = {
       worksheet: 'DOCS/calculations/taxes/relocation-lifetime-state-local-tax.md',
     },
     limits: [
-      'Scope is income tax only: federal tax, property tax, sales tax and cost of living are outside this quantity, the annual lines are nominal and are never discounted, and dropping the split or baseline year understates the total. The worksheet\'s per-year lines are supplied by a deterministic state-tax calculator injected at the createStateTaxCalculator seam, so the recording, the row assembly and the sum are the real code path while the state packs themselves are not exercised here. The published total is the driver sum over every recorded line, and the per-year series is that recording restricted to the run horizon; the two agree when every recorded line lies inside the horizon, which the fixture\'s scenario satisfies and which no known code path violates.',
+      'Scope is income tax only: federal tax, property tax, sales tax and cost of living are outside this quantity, the annual lines are nominal and are never discounted, and dropping the split or baseline year understates the total. The worksheet\'s per-year lines are supplied by a deterministic state-tax calculator injected at the createStateTaxCalculator seam, so the recording, the row assembly and the sum are the real code path while the per-state tax data itself is not exercised here. The published total is the driver sum over every recorded line, and the per-year series is that recording restricted to the run horizon; the two agree when every recorded line lies inside the horizon, which the test’s scenario satisfies and which no known code path violates.',
     ],
     implementedBy: ['packages/engine/src/projection/relocation.ts'],
     implementedByFunctions: ['packages/engine/src/projection/relocation.ts#compareRelocationCandidates'],
@@ -380,7 +380,7 @@ export const taxesRecords = {
       worksheet: 'DOCS/calculations/taxes/relocation-state-tax-driver-savings.md',
     },
     limits: [
-      'Changing one feature at a time makes this an attribution, not an additive decomposition: the four savings are not guaranteed to sum to total tax, and capital-gains savings are explicitly allowed to be negative. Reversing the counterfactual subtraction flips every sign. No result is claimed for unmodeled or flat-override rows, whose drivers are null. The pin is a non-exported helper, so the evidence asserts it through the exported compareRelocationCandidates, with the worksheet\'s actual and neutralized year tables supplied by a calculator injected at the createStateTaxCalculator seam; any probe outside those tables fails closed.',
+      'Changing one feature at a time makes this an attribution, not an additive decomposition: the four savings are not guaranteed to sum to total tax, and capital-gains savings are explicitly allowed to be negative. Reversing the counterfactual subtraction flips every sign. No result is claimed for unmodeled or flat-override rows, whose drivers are null. The pin is a non-exported function, so the evidence asserts it through the exported compareRelocationCandidates, with the worksheet\'s actual and neutralized year tables supplied by a calculator injected at the createStateTaxCalculator seam; any probe outside those tables is refused rather than guessed.',
     ],
     implementedBy: ['packages/engine/src/projection/relocation.ts'],
     implementedByFunctions: [
@@ -478,7 +478,7 @@ export const taxesRecords = {
       worksheet: 'DOCS/calculations/taxes/tax-total-annual.md',
     },
     limits: [
-      'The worksheet treats the federal and state amounts as outputs independently evidenced by their own worksheets and checks only the annual composition boundary, so the fixture composes two calculators that report the worksheet\'s stated 12,000 federal total and 3,000 state amount and asserts the composed 15,000 through both compute and computeResult. Those two calculators are fixture doubles standing in for the evidenced federal and state records; this record makes no claim about federal or state tax arithmetic',
+      'The worksheet treats the federal and state amounts as outputs independently evidenced by their own worksheets and checks only the annual composition boundary, so the test composes two calculators that report the worksheet\'s stated 12,000 federal total and 3,000 state amount and asserts the composed 15,000 through both compute and computeResult. Those two calculators are test doubles standing in for the evidenced federal and state records; this record makes no claim about federal or state tax arithmetic',
       'The 500 of penalties is asserted as excluded by composing the same calculators and showing the amount is unchanged: penalties never enter the calculator chain at all',
     ],
     implementedBy: [
@@ -553,7 +553,7 @@ export const taxesRecords = {
     },
     limits: [
       'Asserted twice. At the two component producers: annualFundingWithdrawalEffects reports 2,000 of penaltyExcludingRmdShortfallExcise on the worksheet\'s 20,000 pre-59.5 taxable traditional withdrawal, and computeRmdShortfallExcise prices the worksheet\'s 12,000 required against 4,000 distributed as an 8,000 shortfall and a 2,000 excise at the default 25-percent rate with no relief elected. And as the published penalties of a real simulatePlan 2026 row that carries both channels at once: a 50-year-old whose only portfolio is a traditional IRA and whose 16,000 of required lifestyle plus the 2,000 excise drive a need-based withdrawal of exactly 20,000 under a zero-rate test calculator, alongside an inherited Roth account whose completed five-year deadline observation (opening benefit 12,000, 4,000 distributed by the 2026 deadline) prices the excise without replaying any cash',
-      'Plan assumptions beyond the worksheet\'s inputs for that ledger year: filing single in KY at a zero state rate with a zero-rate test tax calculator, so tax is 0 and the whole need is spending plus penalties; the fixture asserts the 10-percent rate relation W = S + excise + 0.10 W closes at exactly 20,000',
+      'Plan assumptions beyond the worksheet\'s inputs for that ledger year: filing single in KY at a zero state rate with a zero-rate test tax calculator, so tax is 0 and the whole need is spending plus penalties; the test asserts the 10-percent rate relation W = S + excise + 0.10 W closes at exactly 20,000',
       'The worksheet\'s fourth wrong reading is asserted as a rule: the same withdrawal-effects call on an inherited traditional account reports a zero penalty',
     ],
     implementedBy: [

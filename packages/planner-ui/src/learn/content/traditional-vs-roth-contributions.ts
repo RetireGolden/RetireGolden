@@ -66,7 +66,7 @@ export const blocks: ArticleBlock[] = [
   { type: 'heading', text: 'Why it matters in RetireGolden' },
   {
     type: 'prose',
-    md: 'RetireGolden applies annual contribution inputs while the account owner has wages and caps modeled contributions by the parameter pack limits. Traditional and HSA contributions reduce taxable income in the projection; Roth contributions add to Roth basis but do not create the same current-year deduction in the ledger.',
+    md: 'RetireGolden applies annual contribution inputs while the account owner has wages and caps modeled contributions by the parameter set limits. Traditional and HSA contributions reduce taxable income in the projection; Roth contributions add to Roth basis but do not create the same current-year deduction in the ledger.',
   },
   { type: 'heading', text: 'Common mistakes' },
   {

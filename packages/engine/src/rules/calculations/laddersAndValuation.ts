@@ -28,7 +28,7 @@ export const laddersAndValuationRecords = {
       'funded-ratio-result-unfunded-pv',
     ],
     statement:
-      'Given a curve of (maturity m_i years, par real yield y_i percent) points sorted ascending and a finite maturity m, the yield is y_first when m <= m_first, y_last when m >= m_last, and otherwise y_i + (m - m_i)(y_{i+1} - y_i)/(m_{i+1} - m_i) on the first segment with m <= m_{i+1}. An empty curve yields 0. Units: percent per year, real. Rounding: none - the production function returns a binary float.',
+      'Given a curve of (maturity m_i years, par real yield y_i percent) points sorted ascending and a finite maturity m, the yield is y_first when m <= m_first, y_last when m >= m_last, and otherwise y_i + (m - m_i)(y_{i+1} - y_i)/(m_{i+1} - m_i) on the first segment with m <= m_{i+1}. An empty curve yields 0. Units: percent per year, real. Rounding: none; the production function returns a binary float.',
     formula: {
       expression:
         'y(m) = y_i + (m - m_i)(y_{i+1} - y_i)/(m_{i+1} - m_i) for m_i <= m <= m_{i+1}; y(m) = y_first for m <= m_first; y(m) = y_last for m >= m_last',
@@ -48,7 +48,7 @@ export const laddersAndValuationRecords = {
     limits: [
       'Endpoints are held flat, never extrapolated: a maturity beyond the last point reads the last yield, and one before the first point reads the first',
       'The curve must already be sorted ascending by maturity; the function neither sorts nor validates it',
-      'An empty curve returns 0% rather than failing closed',
+      'An empty curve returns 0% rather than refusing',
       'Every caller consumes the interpolated par yield as a spot rate (the par-as-spot planning approximation documented in the ladderMath.ts header)',
     ],
     implementedBy: ['packages/engine/src/ladder/ladderMath.ts'],
@@ -425,7 +425,7 @@ export const laddersAndValuationRecords = {
       'A data correction is owed as its own engine change, and that change must state the product decision between embedding the exact official row and embedding its nearest-5bp rounding; this record pins the stored row as the dataset fact and does not correct it',
       'Maturities below 5 years read the 5-year yield and above 30 years the 30-year yield (flat endpoints)',
       'Par yields are consumed as spot rates by every ladder and funded-ratio calculation',
-      'Refresh cadence is annual with the parameter packs; the opt-in FedInvest fetch never replaces this snapshot',
+      'Refresh cadence is annual with the published parameters; the opt-in FedInvest fetch never replaces this snapshot',
     ],
     implementedBy: ['packages/engine/src/params/data/realYieldCurve2026.ts'],
     implementedByFunctions: ['packages/engine/src/params/data/realYieldCurve2026.ts#REAL_YIELD_CURVE_2026'],
@@ -456,7 +456,7 @@ export const laddersAndValuationRecords = {
     },
     limits: [
       'The worksheet\'s rung set (face $10,000 at offset 1 with a 1% coupon and face $20,000 at offset 3 with a 2% coupon, nothing at offset 2) is NOT plan-constructible: ladder/ladderMath.ts#buildLadder derives faces by back-substitution from a level real income and prices every coupon off the embedded real-yield curve, over CONSECUTIVE offsets. The three-offset case is therefore asserted by calling the phase directly with those rungs, the way the other annual-phase evidence files do',
-      'A real simulatePlan run is asserted beside it for the purchase-year branch the worksheet also states — cash exactly 0 and ladderValue the whole face x scale x factor — because that branch IS plan-constructible',
+      'A real simulatePlan run is asserted beside it for the purchase-year branch the worksheet also states (cash exactly 0 and ladderValue the whole face x scale x factor), because that branch IS plan-constructible',
       'The funding scale is written once by the simulator\'s purchase-funding block and only read here; the direct-call evidence sets it to the worksheet\'s 0.8 rather than starving a funding account to produce it',
       'Cumulative factors of 1.05 at offset 1 and 1.10 at offset 2 are not a constant inflation rate; the direct call passes them as the worksheet states them',
       'Taxable income is a different quantity from cash: the phase also returns coupons plus this year\'s accretion on outstanding face, which these two families do not publish',

@@ -37,7 +37,7 @@ const VT_ELECTION_OPTIONS: ReadonlyArray<{ value: NonNullable<StateTaxYearHouseh
 
 const ZERO_FEDERAL_EXEMPTION_OPTIONS: ReadonlyArray<{ value: NonNullable<StateTaxYearHouseholdFacts['zeroFederalExemptionReason']>; label: string }> = [
   { value: 'unknown', label: 'Unknown' },
-  { value: 'irc151d2', label: 'IRC §151(d)(2) — another taxpayer may claim you' },
+  { value: 'irc151d2', label: 'IRC §151(d)(2): another taxpayer may claim you' },
   { value: 'other', label: 'Other documented reason' },
 ]
 
@@ -178,7 +178,7 @@ function YearRowEditor({
       </div>
       <p className="card-hint">
         This row is shared across every state you lived in during {year}. Generic counts apply to the
-        whole household; state-prefixed amounts stay on this row when you move — use the state filter
+        whole household; state-prefixed amounts stay on this row when you move. Use the state filter
         above to show only the fields that matter for a jurisdiction.
       </p>
       <div className="form-grid">
@@ -186,7 +186,7 @@ function YearRowEditor({
           label="State filing status (override)"
           help="Leave unknown to use the household filing status from the Household screen for this year."
           value={row.stateFilingStatus ?? ''}
-          options={[{ value: '', label: 'Unknown — use household default' }, ...STATE_FILING_OPTIONS]}
+          options={[{ value: '', label: 'Unknown (use household default)' }, ...STATE_FILING_OPTIONS]}
           onCommit={(value) =>
             patch({
               stateFilingStatus:
@@ -235,7 +235,7 @@ function YearRowEditor({
               help="West Virginia uses this count for its personal exemptions. Choose unknown, explicitly zero, or enter the count. A known zero also needs the reason below."
               value={federalExemptionMode}
               options={[
-                { value: 'unknown', label: 'Unknown — not recorded' },
+                { value: 'unknown', label: 'Unknown (not recorded)' },
                 { value: 'zero', label: 'Explicitly zero federal exemptions' },
                 { value: 'count', label: 'Known count' },
               ]}
@@ -294,7 +294,7 @@ function YearRowEditor({
             />
             <MoneyField
               label="Wisconsin worksheet income (standard deduction)"
-              help="The Wisconsin Form 1 income line used for the standard deduction worksheet — not federal AGI."
+              help="The Wisconsin Form 1 income line used for the standard deduction worksheet, not federal AGI."
               value={row.wisconsinIncomeForStandardDeduction ?? null}
               allowNull
               onCommit={(value) => patch({ wisconsinIncomeForStandardDeduction: value === null ? undefined : value })}
@@ -304,7 +304,7 @@ function YearRowEditor({
         {fieldVisible(stateFilter, 'CT') ? (
           <MoneyField
             label="Connecticut AGI"
-            help="Connecticut adjusted gross income from your CT return — not copied from federal AGI."
+            help="Connecticut adjusted gross income from your CT return, not copied from federal AGI."
             value={row.connecticutAgi ?? null}
             allowNull
             onCommit={(value) => patch({ connecticutAgi: value === null ? undefined : value })}
@@ -334,7 +334,7 @@ function YearRowEditor({
               label="Vermont retirement election"
               help="When both civil-service and Social Security exclusions could apply, which election you made."
               value={row.vermontRetirementElection ?? ''}
-              options={[{ value: '', label: 'Unknown — not recorded' }, ...VT_ELECTION_OPTIONS]}
+              options={[{ value: '', label: 'Unknown (not recorded)' }, ...VT_ELECTION_OPTIONS]}
               onCommit={(value) =>
                 patch({
                   vermontRetirementElection:

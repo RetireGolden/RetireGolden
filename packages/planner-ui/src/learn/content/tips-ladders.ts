@@ -61,7 +61,7 @@ export const blocks: ArticleBlock[] = [
     type: 'list',
     items: [
       '**Planning-grade pricing**: annual coupons, par-bond rungs, no auction/secondary spread. Real quotes (tipsladder.com, your brokerage) will differ by small amounts.',
-      '**Curve staleness**: the embedded curve refreshes with the annual parameter packs; the "curve as of" date is always shown. Real yields move, so re-quote before you buy.',
+      '**Curve staleness**: the embedded curve refreshes with the annual parameter sets; the "curve as of" date is always shown. Real yields move, so re-quote before you buy.',
       '**OID precision**: the phantom-income model (accretion taxed in the year it accrues) is the standard planning simplification of TIPS OID rules, not a Form 1099-OID reproduction.',
     ],
   },

@@ -55,7 +55,7 @@ export const cashFlowAndSummaryRecords = {
       worksheet: 'DOCS/calculations/cash-flow-and-summary/exact-cent-largest-remainder-slices.md',
     },
     limits: [
-      'No direct census family: actions/aggregateRothConversionOwnerAllocation.ts consumes the slices as owner allocations feeding annual Roth conversions. The fixture discriminates positional ties, not every surplus-residual case.',
+      'No direct census family: actions/aggregateRothConversionOwnerAllocation.ts consumes the slices as owner allocations feeding annual Roth conversions. The test discriminates positional ties, not every surplus-residual case.',
     ],
     implementedBy: ['packages/engine/src/actions/exactCentProRata.ts'],
     implementedByFunctions: ['packages/engine/src/actions/exactCentProRata.ts#exactCentLargestRemainderSlices'],
@@ -149,7 +149,7 @@ export const cashFlowAndSummaryRecords = {
       worksheet: 'DOCS/calculations/cash-flow-and-summary/flexible-goal-scheduling.md',
     },
     limits: [
-      'The fixture uses a flexible target goal during a cut so the stated budget binds. At or after target without a cut, resolveBudget returns unlimited funding; fixed goals also ignore the flexible budget. projection/internal/annualOneTimeGoalFundingPhase.ts sums per-goal funded and unfunded amounts and counts outcomes; all seven annual families are downstream aggregates, not this record\'s individual amounts.',
+      'The test uses a flexible target goal during a cut so the stated budget binds. At or after target without a cut, resolveBudget returns unlimited funding; fixed goals also ignore the flexible budget. projection/internal/annualOneTimeGoalFundingPhase.ts sums per-goal funded and unfunded amounts and counts outcomes; all seven annual families are downstream aggregates, not this record\'s individual amounts.',
     ],
     implementedBy: ['packages/engine/src/spending/flexibleGoals.ts'],
     implementedByFunctions: ['packages/engine/src/spending/flexibleGoals.ts#createGoalScheduler'],
@@ -525,7 +525,7 @@ export const cashFlowAndSummaryRecords = {
     outputs: ['income-wages-annual'],
     feeds: ['income-total-annual', 'social-security-benefit-annual'],
     statement:
-      'projection/internal/wageIncomeStreams.ts#wageIncomeStreams emits one row per wage stream that pays this year, in plan.incomes order, with amount = annualGross x (1 + realGrowthPct/100)^(year - startYear) x inflFactor, computed in that operand order; annualIncomeSetup folds those rows into the published projection/internal/types/result.ts#YearResult.incomes.wages. A stream is skipped when its owner is not alive, or when the owner has attained the stream\'s stop age — endAge when the stream names one, else the person\'s retirementAge, and neither when both are null. Wages run before Social Security because pass 3\'s earnings test reads the per-person wage totals. Units: nominal USD per year. Rounding: none.',
+      'projection/internal/wageIncomeStreams.ts#wageIncomeStreams emits one row per wage stream that pays this year, in plan.incomes order, with amount = annualGross x (1 + realGrowthPct/100)^(year - startYear) x inflFactor, computed in that operand order; annualIncomeSetup folds those rows into the published projection/internal/types/result.ts#YearResult.incomes.wages. A stream is skipped when its owner is not alive, or when the owner has attained the stream\'s stop age: endAge when the stream names one, else the person\'s retirementAge, and neither when both are null. Wages run before Social Security because pass 3\'s earnings test reads the per-person wage totals. Units: nominal USD per year. Rounding: none.',
     formula: {
       expression: 'wages = annualGross * (1 + realGrowthPct/100)^(year - startYear) * inflFactor',
       variables: [
@@ -545,7 +545,7 @@ export const cashFlowAndSummaryRecords = {
     limits: [
       'Asserted on a real simulatePlan run over 2028-2030. Plan assumptions beyond the worksheet\'s inputs: a single person filing single in KY with a zero state rate, no accounts, and the worksheet\'s 1.08 cumulative inflation factor supplied as a per-year inflation path of 8 percent in the first projection year and 0 afterwards, because a single constant rate cannot give a two-year cumulative factor of exactly 1.08',
       'The stop age is attained-age based: a stream with endAge 65 pays at attained age 64 and stops at 65, so the worksheet\'s paying year is the last one before the stop',
-      'The engine preserves plan order across wage rows rather than pre-summing them, so the last binary digit of a multi-row wage total depends on that order; the fixture asserts a single row',
+      'The engine preserves plan order across wage rows rather than pre-summing them, so the last binary digit of a multi-row wage total depends on that order; the test asserts a single row',
     ],
     implementedBy: [
       'packages/engine/src/projection/internal/wageIncomeStreams.ts',
@@ -584,7 +584,7 @@ export const cashFlowAndSummaryRecords = {
     limits: [
       'Asserted on a real simulatePlan run over 2028-2030. Plan assumptions beyond the worksheet\'s inputs: a two-person household filing jointly in KY with a zero state rate, zero inflation and zero account returns, the owner\'s planning age set to 65 so the run\'s own longevity makes them dead from 2029 on, and the survivor\'s planning age set to 95 so the survivor continuation is the only thing being read',
       'The COLA count is driven by the owner\'s would-be attained age, not by whether they are alive: the survivor keeps a benefit that has continued to compound',
-      'A lump-sum election is a separate path this record does not price; the fixture\'s pension carries no election',
+      'A lump-sum election is a separate path this record does not price; the test’s pension carries no election',
     ],
     implementedBy: [
       'packages/engine/src/projection/internal/annualPensionAndAnnuityIncome.ts',
@@ -876,7 +876,7 @@ export const cashFlowAndSummaryRecords = {
     outputs: ['spending-required-requested-annual'],
     feeds: ['spending-required-shortfall-annual'],
     statement:
-      'projection/internal/annualExpenseSummary.ts#annualExpenseSummary publishes YearExpenses.requiredSpending as requiredSpendingBase + skippedRequiredNominal, where requiredSpendingBase = systemRequired + requiredLifestyle + requiredGoalsFunded. systemRequired is the five system-computed costs the caller has already folded — debt service, property costs, healthcare, insurance premiums and net long-term care, the last being gross care cost less the LTC policy benefit. A required-classified goal the flexible-goal scheduler skipped stays in this layer as intended spending that never happened. Units: nominal USD per year. Rounding: none.',
+      'projection/internal/annualExpenseSummary.ts#annualExpenseSummary publishes YearExpenses.requiredSpending as requiredSpendingBase + skippedRequiredNominal, where requiredSpendingBase = systemRequired + requiredLifestyle + requiredGoalsFunded. systemRequired is the five system-computed costs the caller has already folded: debt service, property costs, healthcare, insurance premiums and net long-term care, the last being gross care cost less the LTC policy benefit. A required-classified goal the flexible-goal scheduler skipped stays in this layer as intended spending that never happened. Units: nominal USD per year. Rounding: none.',
     formula: {
       expression: 'requiredSpending = (systemRequired + requiredLifestyle + requiredGoalsFunded) + skippedRequiredNominal; systemRequired = debtService + propertyCosts + healthcare + insurancePremiums + careCost - ltcBenefit',
       variables: [
@@ -893,7 +893,7 @@ export const cashFlowAndSummaryRecords = {
       worksheet: 'DOCS/calculations/cash-flow-and-summary/spending-required-requested-annual.md',
     },
     limits: [
-      'Asserted at the annualExpenseSummary seam, which is the function that computes the field, because the worksheet states its inputs as already-folded year-row components: a real plan cannot present a chosen debt service, property cost, healthcare charge, care cost, LTC benefit and skipped-goal amount simultaneously at those exact values. The five system costs enter the seam as the systemRequired scalar the caller folds, so the fixture folds them the way the caller does and asserts the published field against the worksheet',
+      'Asserted at the annualExpenseSummary seam, which is the function that computes the field, because the worksheet states its inputs as already-folded year-row components: a real plan cannot present a chosen debt service, property cost, healthcare charge, care cost, LTC benefit and skipped-goal amount simultaneously at those exact values. The five system costs enter the seam as the systemRequired scalar the caller folds, so the test folds them the way the caller does and asserts the published field against the worksheet',
       'The net-LTC term is gross care cost less the benefit; adding the gross without the offset is one of the worksheet\'s wrong readings',
       'The layer summaries are not additional members of expenses.total; this figure describes how baseSpending was built',
     ],
@@ -926,7 +926,7 @@ export const cashFlowAndSummaryRecords = {
     },
     limits: [
       'Asserted at the annualExpenseSummary seam, which is the function that computes the field, because the worksheet states its inputs as already-folded year-row components rather than as plan inputs a single year could realize at those exact values',
-      'The full target lifestyle layer is used here even in a cutting year; the cut amount appears in baseSpending instead, so a fixture that substitutes the cut layer is asserting a different field',
+      'The full target lifestyle layer is used here even in a cutting year; the cut amount appears in baseSpending instead, so a test that substitutes the cut layer is asserting a different field',
       'Both equivalent forms are asserted, so the "counted once each" clause is evidence rather than prose: starting from the published requiredSpending and adding skippedRequiredNominal again is one of the worksheet\'s wrong readings',
     ],
     implementedBy: ['packages/engine/src/projection/internal/annualExpenseSummary.ts'],
@@ -1053,8 +1053,8 @@ export const cashFlowAndSummaryRecords = {
     },
     limits: [
       'Asserted at reconcileYearCashFlow, the production function that computes all three identities, with published lines carrying the worksheet\'s amounts, and with the two tolerances taken from the capture module\'s own exported constants rather than written in',
-      'The three identities are asserted on ONE line set (three sources, fourteen use lines covering the closed use vocabulary, three paired transfers), as the re-derived worksheet states them, with the cash destination total equal to the funded-use total on that single year. The first derivation stated a cash destination total of $100,000 beside a funded-use total of $90,000; both are the same sum of fundedPlanDollars over the same use lines, so it was re-derived after the identity-total comments were completed, re-approved by the reviewer, and its fixture rebuilt and receipt re-executed on this pull request',
-      'The "strictly greater" rule is asserted directly: a cash difference of exactly the tolerance reconciles, and the worksheet\'s first wrong reading — judging the cash residual at the structural 1e-6 bound — is asserted to be rejected',
+      'The three identities are asserted on ONE line set (three sources, fourteen use lines covering the closed use vocabulary, three paired transfers), as the re-derived worksheet states them, with the cash destination total equal to the funded-use total on that single year. The first derivation stated a cash destination total of $100,000 beside a funded-use total of $90,000; both are the same sum of fundedPlanDollars over the same use lines, so it was re-derived after the identity-total comments were completed, re-approved by the reviewer, and its test rebuilt and receipt re-executed on this pull request',
+      'The "strictly greater" rule is asserted directly: a cash difference of exactly the tolerance reconciles, and the worksheet\'s first wrong reading (judging the cash residual at the structural 1e-6 bound) is asserted to be rejected',
     ],
     implementedBy: [
       'packages/engine/src/projection/annualCashFlowReconciliation.ts',
@@ -1179,7 +1179,7 @@ export const cashFlowAndSummaryRecords = {
     limits: [
       'Asserted on a real two-year simulatePlan run whose 2030 row closes at the worksheet\'s $925,000 and whose 2031 row closes at the worksheet\'s $901,375.625. Plan assumptions beyond the worksheet\'s inputs: a single 55-year-old filing single in KY with a zero state rate, zero inflation, zero account and property return, no healthcare charge, one cash account and one property with no carrying costs, and one uninflated 2031 one-time goal sized to spend the difference between the two rows',
       'The empty-row case cannot be reached through simulatePlan; it is the publishing site\'s fallback as the field comment states it and a contract statement, not executed evidence',
-      'Substituting ending investable for net worth names a different quantity, which the fixture asserts against on a run where the two differ by the property value',
+      'Substituting ending investable for net worth names a different quantity, which the test asserts against on a run where the two differ by the property value',
     ],
     implementedBy: [
       'packages/engine/src/projection/simulate.ts',
@@ -1217,7 +1217,7 @@ export const cashFlowAndSummaryRecords = {
     },
     limits: [
       'Asserted twice: at the exported phase helper with the worksheet\'s two debts verbatim, and as the published expenses.debtService of a real simulatePlan 2030 row carrying the same two debts. Plan assumptions beyond the worksheet\'s inputs for that ledger row: a single 60-year-old filing single in KY at a zero state rate, zero general inflation, zero account returns, and one 500,000 cash account large enough that the payments are funded without a portfolio sale',
-      'The worksheet\'s third wrong reading (ignoring payoffYear) coincides with the right answer at these inputs, so the fixture discriminates the first two numerically and states the third as a rule',
+      'The worksheet\'s third wrong reading (ignoring payoffYear) coincides with the right answer at these inputs, so the test discriminates the first two numerically and states the third as a rule',
     ],
     implementedBy: [
       'packages/engine/src/projection/internal/types/yearLedger.ts',
@@ -1290,7 +1290,7 @@ export const cashFlowAndSummaryRecords = {
       worksheet: 'DOCS/calculations/cash-flow-and-summary/spending-insurance-premiums-annual.md',
     },
     limits: [
-      'Asserted at the exported phase helper with the worksheet\'s five policies — the primary case\'s four and the boundary case\'s Life E — their modes, premiums, subject ages and end ages verbatim; the subject resolver supplies the stated ages and alive flags. Plan assumptions beyond the worksheet\'s inputs: each policy carries zero benefit fields, which the premium selection does not read',
+      'Asserted at the exported phase function with the worksheet\'s five policies (the primary case\'s four and the boundary case\'s Life E), their modes, premiums, subject ages and end ages verbatim; the subject resolver supplies the stated ages and alive flags. Plan assumptions beyond the worksheet\'s inputs: each policy carries zero benefit fields, which the premium selection does not read',
       'The first derivation read untilAge as charging through and including premiumEndAge, charged its Life C at attained age 65 against an end age of 65, and expected 1,800; that derivation was corrected on 2026-09-18 under decision D-PREMIUM-END-AGE. The worksheet now states the strict stop age production holds: a policy is skipped once subject.ageAttained >= policy.premiumEndAge, so its primary case totals 1,200 with Life C not charged, and its boundary case charges Life E 600 at attained age 64, one year below the same end age. Both are asserted, the 1,800 through-the-end-age reading is asserted as a wrong reading, and no production-versus-worksheet discrepancy remains. Decision D-PREMIUM-END-AGE (2026-09-25) kept this rule, since premiumEndAge is the field a user fills as the age premiums stop; the premiumModeSchema comment, which once read "charge annualPremium through premiumEndAge", now states the same stop age',
     ],
     implementedBy: [
@@ -1367,7 +1367,7 @@ export const cashFlowAndSummaryRecords = {
     },
     limits: [
       'Asserted at the exported phase helper with the worksheet\'s three goals, target years, amounts, current year, null scheduler and alive flag verbatim; the helper receives the caller\'s already-resolved inflation factor, so the 1.10 is supplied rather than compounded from plan assumptions',
-      'The worksheet\'s third wrong reading is a guardrail case: with no scheduler the phase reports four exact zero skip accumulators, which the fixture asserts, so no skipped amount can reach this field here',
+      'The worksheet\'s third wrong reading is a guardrail case: with no scheduler the phase reports four exact zero skip accumulators, which the test asserts, so no skipped amount can reach this field here',
     ],
     implementedBy: [
       'packages/engine/src/projection/internal/types/yearLedger.ts',
@@ -1403,8 +1403,8 @@ export const cashFlowAndSummaryRecords = {
       worksheet: 'DOCS/calculations/cash-flow-and-summary/year-result-contributions.md',
     },
     limits: [
-      'Asserted as the published field of a real simulatePlan 2026 row built from the worksheet\'s inputs: two owners aged 40 and 45 with one traditional IRA each, desired 6,000 and 9,000, wages 50,000 each, and zero general inflation. Plan assumptions beyond the worksheet\'s inputs: the household files jointly in KY at a zero state rate, both IRAs open at a zero balance with zero returns, there are no other accounts and no spending, and the 2026 IRA limit is read from the parameter pack rather than written into the fixture',
-      'Both owners are under 50, so the fixture isolates the base limit and evidences no catch-up band',
+      'Asserted as the published field of a real simulatePlan 2026 row built from the worksheet\'s inputs: two owners aged 40 and 45 with one traditional IRA each, desired 6,000 and 9,000, wages 50,000 each, and zero general inflation. Plan assumptions beyond the worksheet\'s inputs: the household files jointly in KY at a zero state rate, both IRAs open at a zero balance with zero returns, there are no other accounts and no spending, and the 2026 IRA limit is read from the published parameters rather than written into the test',
+      'Both owners are under 50, so the test isolates the base limit and evidences no catch-up band',
     ],
     implementedBy: [
       'packages/engine/src/projection/internal/types/result.ts',
@@ -1424,7 +1424,7 @@ export const cashFlowAndSummaryRecords = {
     outputs: ['year-result-employer-match'],
     feeds: ['accounts-ending-balance-by-category', 'cash-flow-line-plan-dollars'],
     statement:
-      'projection/internal/types/result.ts#YearResult.employerMatch, planned by projection/internal/annualContributionsAndEmployerMatch.ts#annualContributionsAndEmployerMatch, is min(elective deferral landed, capPctOfPay/100 x wages) x matchPct/100, capped by the owner\'s remaining IRC 415(c) room for that plan after the elective deferrals. The 2026 pack fixes the 415(c) limit at 72,000. The match is computed only after every elective deferral has landed. Units: nominal USD per year. Rounding: none.',
+      'projection/internal/types/result.ts#YearResult.employerMatch, planned by projection/internal/annualContributionsAndEmployerMatch.ts#annualContributionsAndEmployerMatch, is min(elective deferral landed, capPctOfPay/100 x wages) x matchPct/100, capped by the owner\'s remaining IRC 415(c) room for that plan after the elective deferrals. The 2026 tax parameters fix the 415(c) limit at 72,000. The match is computed only after every elective deferral has landed. Units: nominal USD per year. Rounding: none.',
     formula: {
       expression: 'employerMatch = min(min(E, c W) m, L - E - other additions)',
       variables: [
@@ -1442,7 +1442,7 @@ export const cashFlowAndSummaryRecords = {
       worksheet: 'DOCS/calculations/cash-flow-and-summary/year-result-employer-match.md',
     },
     limits: [
-      'Asserted as the published field of a real simulatePlan 2026 row built from the worksheet\'s inputs: wages 75,000, one employer traditional plan whose desired deferral of 24,500 lands in full, a 50-percent-of-pay match cap, a 200-percent match rate, and no other annual additions. Plan assumptions beyond the worksheet\'s inputs: the owner is 45 and filing single in KY at a zero state rate, so no age-50 catch-up can widen either the deferral or the room; the plan opens at a zero balance with zero returns and no spending; and the 2026 415(c) limit and elective-deferral limit are read from the parameter pack rather than written into the fixture',
+      'Asserted as the published field of a real simulatePlan 2026 row built from the worksheet\'s inputs: wages 75,000, one employer traditional plan whose desired deferral of 24,500 lands in full, a 50-percent-of-pay match cap, a 200-percent match rate, and no other annual additions. Plan assumptions beyond the worksheet\'s inputs: the owner is 45 and filing single in KY at a zero state rate, so no age-50 catch-up can widen either the deferral or the room; the plan opens at a zero balance with zero returns and no spending; and the 2026 415(c) limit and elective-deferral limit are read from the published parameters rather than written into the test',
       'The worksheet\'s third wrong reading (applying the pay cap after the match rate) produces 37,500, which is discriminated numerically here only because the 415(c) cap lands at 47,500 rather than 37,500',
     ],
     implementedBy: [
@@ -1483,7 +1483,7 @@ export const cashFlowAndSummaryRecords = {
     limits: [
       'Asserted as the published field of a real simulatePlan 2026 row that carries all five of the worksheet\'s members. Plan assumptions beyond the worksheet\'s inputs: a 55-year-old filing single in KY, so no Medicare or marketplace premium can move expenses.total off 50,000; cash inflows split into an 80,000 wage and a 20,000 tax-free recurring receipt, so a flat 10-percent test calculator prices tax at exactly 8,000 while inflows are exactly 100,000; the 10,000 of contributions go to one taxable brokerage account; and the 2,000 of penalties are the IRC 4974 excise on a completed five-year deadline year (opening benefit 12,000, 4,000 distributed by the 2026 deadline) asserted on an inherited Roth account',
       'That excise is the only penalty a surplus year can carry: the early-withdrawal and HSA penalties are charged on need-based withdrawals, and a year whose inflows exceed its uses takes none, so no plan can produce both a positive surplus and an early-withdrawal penalty',
-      'The flat test calculator is a fixture double, not the shipped calculator; it is used only to realize the worksheet\'s stated tax member exactly, and the record makes no claim about federal tax arithmetic',
+      'The flat test calculator is a test double, not the shipped calculator; it is used only to realize the worksheet\'s stated tax member exactly, and the record makes no claim about federal tax arithmetic',
     ],
     implementedBy: [
       'packages/engine/src/projection/internal/types/result.ts',
@@ -1521,7 +1521,7 @@ export const cashFlowAndSummaryRecords = {
     },
     limits: [
       'Asserted at the exported phase helper with the worksheet\'s two policies, their modes, schedule points, entry cash value, growth rate and face amounts verbatim. Plan assumptions beyond the worksheet\'s inputs: both policies are paid-up, which this transition does not read',
-      'The first derivation put the settling policy at attained age 71 while its Claim and Arithmetic described and calculated the death-age-70 year; that derivation was corrected on 2026-09-18. The worksheet\'s Inputs table now states attained age 70, the death year production settles in, where the payout is max(50,000 face, 60,000 cash value) = 60,000 and the settled policy stops being a cash-value asset. Its last wrong reading moves that row to attained age 71 — the year after the death year, where the payout is null and the cash value 0 — and the fixture asserts both, so no production-versus-worksheet discrepancy remains',
+      'The first derivation put the settling policy at attained age 71 while its Claim and Arithmetic described and calculated the death-age-70 year; that derivation was corrected on 2026-09-18. The worksheet\'s Inputs table now states attained age 70, the death year production settles in, where the payout is max(50,000 face, 60,000 cash value) = 60,000 and the settled policy stops being a cash-value asset. Its last wrong reading moves that row to attained age 71 (the year after the death year, where the payout is null and the cash value 0) and the test asserts both, so no production-versus-worksheet discrepancy remains',
     ],
     implementedBy: [
       'packages/engine/src/projection/internal/types/result.ts',
@@ -1558,8 +1558,8 @@ export const cashFlowAndSummaryRecords = {
       worksheet: 'DOCS/calculations/cash-flow-and-summary/year-result-tax-exempt-interest.md',
     },
     limits: [
-      'Both cases asserted as the published field of a real simulatePlan 2026 row: one municipal sleeve at the worksheet\'s 200,000 balance and 2-percent tax-exempt yield, zero account return and zero inflation. Plan assumptions beyond the worksheet\'s inputs: a 60-year-old filing single in KY at a zero state rate, the sleeve does not reinvest its yield, and Case B adds a 2026 ACA contract at a 500-per-month enrollment premium whose taxExemptInterest state is known at the worksheet\'s 6,000 — the enrollment premium is what makes the contract active and is not read by this field',
-      'The ACA maximum characterizes income only; the fixture also asserts that the generated 4,000 remains the cash-real income member in Case A',
+      'Both cases asserted as the published field of a real simulatePlan 2026 row: one municipal sleeve at the worksheet\'s 200,000 balance and 2-percent tax-exempt yield, zero account return and zero inflation. Plan assumptions beyond the worksheet\'s inputs: a 60-year-old filing single in KY at a zero state rate, the sleeve does not reinvest its yield, and Case B adds a 2026 ACA contract at a 500-per-month enrollment premium whose taxExemptInterest state is known at the worksheet\'s 6,000; the enrollment premium is what makes the contract active and is not read by this field',
+      'The ACA maximum characterizes income only; the test also asserts that the generated 4,000 remains the cash-real income member in Case A',
     ],
     implementedBy: [
       'packages/engine/src/projection/internal/types/result.ts',
@@ -1594,7 +1594,7 @@ export const cashFlowAndSummaryRecords = {
       worksheet: 'DOCS/calculations/cash-flow-and-summary/projection-summary-fi-year.md',
     },
     limits: [
-      'Asserted at summarizeProjection with the worksheet\'s three-row crossing ledger and its three-row null ledger, both at zero inflation from a 2026 start so every deflator is exactly 1. The worksheet states its FI number as an input; the summary derives it, so the plan is built to derive exactly 500,000 — a retirement age already attained puts the spending year at the start year, and 20,000 of funded outflows over the 4-percent lens is exactly 500,000',
+      'Asserted at summarizeProjection with the worksheet\'s three-row crossing ledger and its three-row null ledger, both at zero inflation from a 2026 start so every deflator is exactly 1. The worksheet states its FI number as an input; the summary derives it, so the plan is built to derive exactly 500,000: a retirement age already attained puts the spending year at the start year, and 20,000 of funded outflows over the 4-percent lens is exactly 500,000',
       'The empty-ledger null is asserted separately from the no-crossing null, because they reach the same published value by different paths',
     ],
     implementedBy: ['packages/engine/src/projection/compare.ts'],
@@ -1630,7 +1630,7 @@ export const cashFlowAndSummaryRecords = {
     },
     limits: [
       'Asserted at the production reconciler with the worksheet\'s eight published totals as line amounts, plus its 5,000 post-solve life-insurance deposit and a 5,000 contribution transfer pair. Plan assumptions beyond the worksheet\'s inputs: the account and property identities the line ids carry, and the reconciler\'s own published tolerances, which are imported rather than written in',
-      'The identity is asserted on the published totals, not re-derived: the fixture reads sourceTotalPlanDollars, destinationTotalPlanDollars and differencePlanDollars from the reconciliation result',
+      'The identity is asserted on the published totals, not re-derived: the test reads sourceTotalPlanDollars, destinationTotalPlanDollars and differencePlanDollars from the reconciliation result',
     ],
     implementedBy: [
       'packages/engine/src/projection/internal/types/cashFlow.ts',
@@ -1684,7 +1684,7 @@ export const cashFlowAndSummaryRecords = {
     outputs: ['inherited-distribution-required-annual'],
     feeds: ['inherited-distribution-required-executed-annual', 'tax-penalties-annual'],
     statement:
-      'strategies/inheritedIra.ts#inheritedRequirementForYear publishes the annual inherited-account requirement from the prior-December-31 balance. A beneficiary fixed Single Life Table divisor is read once at the beneficiary\'s age in the year after death and declines by exactly one per later calendar year; for a traditional account inherited on or after the owner\'s required beginning date under the eligible-designated-beneficiary life-expectancy regime, the greater of the beneficiary\'s fixed divisor and the owner\'s fixed divisor governs, so the longer life expectancy produces the smaller required amount; a no-annual-requirement window publishes 0; and the final deadline year requires the full prior-year-end balance, reconciled to the live balance at execution. The 2026 pack supplies 14.8 at age 75, so the next fixed divisor is 13.8, not the age-76 entry 14.1; an owner aged 86 in the death year starts from the entry 7.6 and so stands at 6.6 in the first year after the death year. Units: nominal USD per year. Rounding: none.',
+      'strategies/inheritedIra.ts#inheritedRequirementForYear publishes the annual inherited-account requirement from the prior-December-31 balance. A beneficiary fixed Single Life Table divisor is read once at the beneficiary\'s age in the year after death and declines by exactly one per later calendar year; for a traditional account inherited on or after the owner\'s required beginning date under the eligible-designated-beneficiary life-expectancy regime, the greater of the beneficiary\'s fixed divisor and the owner\'s fixed divisor governs, so the longer life expectancy produces the smaller required amount; a no-annual-requirement window publishes 0; and the final deadline year requires the full prior-year-end balance, reconciled to the live balance at execution. The 2026 tax parameters supply 14.8 at age 75, so the next fixed divisor is 13.8, not the age-76 entry 14.1; an owner aged 86 in the death year starts from the entry 7.6 and so stands at 6.6 in the first year after the death year. Units: nominal USD per year. Rounding: none.',
     formula: {
       expression: 'annual: required = B / d, d read once at the first distribution year and reduced by one per later year; none: 0; final sweep: required = B',
       variables: [
@@ -1699,8 +1699,8 @@ export const cashFlowAndSummaryRecords = {
       worksheet: 'DOCS/calculations/cash-flow-and-summary/inherited-distribution-required-annual.md',
     },
     limits: [
-      'All six of the worksheet\'s cases asserted at the exported calculator with the stated year, prior-year-end balance and divisors verbatim: the 2027 first-year beneficiary arm, the 2028 fixed-minus-one continuation, both post-RBD rows in the first year after the death year, the pre-RBD ten-year no-annual window, and the 2036 final sweep. Plan assumptions beyond the worksheet\'s inputs: the annual arm and both post-RBD rows are an eligible designated beneficiary (disabled) born so the stated age falls in the stated year, the post-RBD rows add an owner born in 1940 — age 86 in the 2026 death year — who had started RMDs and whose death-year RMD was satisfied, the no-annual and sweep cases are a non-eligible designated beneficiary whose owner died in 2026 before the required beginning date, and every case is a sole designated-individual beneficiary of a traditional IRA with asserted provenance',
-      'The first derivation stated the post-RBD rule as the greater required amount, max(B / beneficiary divisor, B / owner divisor), and used an owner-fixed divisor of exactly 10.8 that no 2026 Single Life Table entry can produce; that derivation was corrected on 2026-09-18. The worksheet now states the comparison production holds — the greater DIVISOR (`if (ownDiv > divisor) divisor = ownDiv`), which is the longer life expectancy and so the smaller amount, per Treas. Reg. 1.401(a)(9)-5(d)(1)(ii) — and reaches the owner arm from the age-86 death-year entry 7.6, giving 6.6 in the first year after the death year. Both winning arms are now constructed and asserted: a beneficiary aged 75 keeps 14.8 and publishes 10,000, and a beneficiary aged 90 at 5.7 loses to the owner\'s 6.6 and publishes 22,424.242424. No production-versus-worksheet discrepancy remains',
+      'All six of the worksheet\'s cases asserted at the exported calculator with the stated year, prior-year-end balance and divisors verbatim: the 2027 first-year beneficiary arm, the 2028 fixed-minus-one continuation, both post-RBD rows in the first year after the death year, the pre-RBD ten-year no-annual window, and the 2036 final sweep. Plan assumptions beyond the worksheet\'s inputs: the annual arm and both post-RBD rows are an eligible designated beneficiary (disabled) born so the stated age falls in the stated year, the post-RBD rows add an owner born in 1940 (age 86 in the 2026 death year) who had started RMDs and whose death-year RMD was satisfied, the no-annual and sweep cases are a non-eligible designated beneficiary whose owner died in 2026 before the required beginning date, and every case is a sole designated-individual beneficiary of a traditional IRA with asserted provenance',
+      'The first derivation stated the post-RBD rule as the greater required amount, max(B / beneficiary divisor, B / owner divisor), and used an owner-fixed divisor of exactly 10.8 that no 2026 Single Life Table entry can produce; that derivation was corrected on 2026-09-18. The worksheet now states the comparison production holds: the greater DIVISOR (`if (ownDiv > divisor) divisor = ownDiv`), which is the longer life expectancy and so the smaller amount, per Treas. Reg. 1.401(a)(9)-5(d)(1)(ii). The worksheet reaches the owner arm from the age-86 death-year entry 7.6, giving 6.6 in the first year after the death year. Both winning arms are now constructed and asserted: a beneficiary aged 75 keeps 14.8 and publishes 10,000, and a beneficiary aged 90 at 5.7 loses to the owner\'s 6.6 and publishes 22,424.242424. No production-versus-worksheet discrepancy remains',
     ],
     implementedBy: ['packages/engine/src/strategies/inheritedIra.ts'],
     implementedByFunctions: [
@@ -1765,8 +1765,8 @@ export const cashFlowAndSummaryRecords = {
       worksheet: 'DOCS/calculations/cash-flow-and-summary/inherited-distribution-voluntary-annual.md',
     },
     limits: [
-      'Asserted at the exported phase with the worksheet\'s remaining balance, ordinary plan draw and treat-as-own flag verbatim: the account enters the phase at 95,000, already net of the 5,000 forced take, and the plan draws 12,000. The 5,000 forced take is not re-supplied to this phase, which is the point of the separation, so the fixture asserts that the sum of the two is the account\'s 17,000 total distribution while only 12,000 is voluntary',
-      'The treat-as-own case is asserted with the same inputs and an accepted owner-treatment route for the account, where the phase emits no inherited evidence write; it needs an IRA whose owner died in 2020 or later and a year after the death year, which the fixture supplies',
+      'Asserted at the exported phase with the worksheet\'s remaining balance, ordinary plan draw and treat-as-own flag verbatim: the account enters the phase at 95,000, already net of the 5,000 forced take, and the plan draws 12,000. The 5,000 forced take is not re-supplied to this phase, which is the point of the separation, so the test asserts that the sum of the two is the account\'s 17,000 total distribution while only 12,000 is voluntary',
+      'The treat-as-own case is asserted with the same inputs and an accepted owner-treatment route for the account, where the phase emits no inherited evidence write; it needs an IRA whose owner died in 2020 or later and a year after the death year, which the test supplies',
     ],
     implementedBy: ['packages/engine/src/projection/internal/annualWithdrawalApplyFlowPlan.ts'],
     implementedByFunctions: [
@@ -1782,7 +1782,7 @@ export const cashFlowAndSummaryRecords = {
     kind: 'model',
     outputs: ['year-result-ltcg-zero-headroom'],
     statement:
-      'YearResult.ltcgZeroHeadroom, computed by tax/federalTax.ts#zeroRateLtcgHeadroom, is 0 when taxable income with no extra gain already reaches pack.capitalGains.rate15StartsAbove for the filing status; otherwise it is the largest extra gain, found by bisection to a $0.01 bracket, that keeps max(0, ordinary income excluding Social Security + gains + qualified dividends + the extra gain + the resulting taxable Social Security − deduction) at or under that threshold. The search brackets that gain in every case: its upper end is the threshold when taxable income at a gain equal to the threshold is above it, and otherwise the threshold + deduction − (ordinary income excluding Social Security + gains + qualified dividends), where taxable income before the floor is at least the threshold. Without benefits the slope above the zero floor is exactly 1, so the root is threshold − taxable income when income before the gain covers the deduction, and the threshold plus the unused deduction when it does not (single, 2026: $55,550 of room at $10,000 of ordinary income, $65,550 at $0). Units: nominal dollars of additional gain. Rounding: bisection to $0.01, so the published figure sits at or just under the exact root.',
+      'YearResult.ltcgZeroHeadroom, computed by tax/federalTax.ts#zeroRateLtcgHeadroom, is 0 when taxable income with no extra gain already reaches the threshold where the 15 percent rate starts (capitalGains.rate15StartsAbove in the tax-year parameters) for the filing status; otherwise it is the largest extra gain, found by bisection to a $0.01 bracket, that keeps max(0, ordinary income excluding Social Security + gains + qualified dividends + the extra gain + the resulting taxable Social Security − deduction) at or under that threshold. The search brackets that gain in every case: its upper end is the threshold when taxable income at a gain equal to the threshold is above it, and otherwise the threshold + deduction − (ordinary income excluding Social Security + gains + qualified dividends), where taxable income before the floor is at least the threshold. Without benefits the slope above the zero floor is exactly 1, so the root is threshold − taxable income when income before the gain covers the deduction, and the threshold plus the unused deduction when it does not (single, 2026: $55,550 of room at $10,000 of ordinary income, $65,550 at $0). Units: nominal dollars of additional gain. Rounding: bisection to $0.01, so the published figure sits at or just under the exact root.',
     formula: {
       expression: 'headroom = 0 when taxable(0) >= T; else max{ g : taxable(g) <= T }, T = rate15StartsAbove[filingStatus]',
       variables: [
@@ -1799,7 +1799,7 @@ export const cashFlowAndSummaryRecords = {
     },
     limits: [
       'Beyond the worksheet\'s inputs the evidence plan fixes: a 63-year-old single filer (under 65, so the deduction is the base 2026 standard deduction of $16,100 with no age addition), an uninflated recurring ordinary stream sized to $16,100 above the case\'s taxable income, zero inflation and zero return so the 2026 threshold is unindexed, no gains and no qualified dividends, and a cash account to absorb surplus and pay tax',
-      'Case A is asserted at the worksheet\'s absolute $0.005 because the bisection lands 0.002 under the exact $12,450 root; a fixture that demanded exactness would fail on the algorithm\'s own $0.01 stopping width, not on the identity',
+      'Case A is asserted at the worksheet\'s absolute $0.005 because the bisection lands 0.002 under the exact $12,450 root; a test that demanded exactness would fail on the algorithm\'s own $0.01 stopping width, not on the identity',
       'The at-threshold branch returns exactly 0 before any bisection, which is why Case B is compared with toBe rather than a tolerance',
       'The benefits branch is out of scope here: the worksheet states the no-benefit subtraction, and the bisection exists precisely because that subtraction is wrong once §86 inclusion moves with the gain',
       'Cases C and D, added under decision D-ZERO-RATE-HEADROOM on 2026-09-25, put ordinary income below the deduction: the same plan with a $10,000 ordinary stream, and with no income at all. Their search runs from the threshold to the threshold plus the unused deduction, a wider bracket than Case A\'s, so the bisection lands up to $0.008 under the root (55,549.994 and 65,549.992); each is asserted within the $0.01 stopping width and at or under the root, and away from the 49,450 that a search bounded by the threshold published before the decision. The provenance line records Cases A and B: Cases C and D were worked by the implementer from the decision\'s evidence and independently checked on 2026-09-26 by a reviewer who is not the author, as the worksheet records',
@@ -1839,8 +1839,8 @@ export const cashFlowAndSummaryRecords = {
       worksheet: 'DOCS/calculations/cash-flow-and-summary/sustainable-spending-result-simulation-count.md',
     },
     limits: [
-      'The worksheet supplies probe feasibility as fixture evidence; the evidence therefore builds a plan whose feasibility frontier really does fall between $22,500 and $25,000 — four projection years, one $95,000 cash account, zero return and zero inflation, no income and no tax, so a level S is feasible exactly when 4S <= $95,000 (frontier $23,750)',
-      'The infeasible-seed case counts 2 only when the floor probe ALSO fails; the fixture has no required spending, so its floor is 0, and the evidence forces the failure with a $60,000 uninflated one-time goal the $5,000 portfolio cannot fund, because a feasible floor would open the bisection and raise the count',
+      'The worksheet supplies probe feasibility as test evidence; the evidence therefore builds a plan whose feasibility frontier really does fall between $22,500 and $25,000: four projection years, one $95,000 cash account, zero return and zero inflation, no income and no tax, so a level S is feasible exactly when 4S <= $95,000 (frontier $23,750)',
+      'The infeasible-seed case counts 2 only when the floor probe ALSO fails; the test plan has no required spending, so its floor is 0, and the evidence forces the failure with a $60,000 uninflated one-time goal the $5,000 portfolio cannot fund, because a feasible floor would open the bisection and raise the count',
       'The count is not a measure of accuracy: it rises with the budget and falls with a looser resolution. An amortized-spending (ABW) plan returns 0 without probing; a diagnostic seed probe (an invalid basePatch) returns 1, and a seed already at the floor that fails returns 1',
     ],
     implementedBy: ['packages/engine/src/decisions/spendingSolver.ts'],

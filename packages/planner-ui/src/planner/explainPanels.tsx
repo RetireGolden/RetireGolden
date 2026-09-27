@@ -273,7 +273,7 @@ export function WhyRecommendationPanel({
         Deltas are versus your current plan, measured on the full projection (heir tax on pre-tax balances included).
         Candidates that shorten how long the money lasts are rejected regardless of estate gain. The solver's own
         schedule competes too; it only supplies the recommendation when nothing simpler beats it (and appears above
-        when it wins). See <Link to="/how-tested">how RetireGolden is tested</Link> for the harnesses behind this
+        when it wins). See <Link to="/how-tested">how RetireGolden is tested</Link> for the tests behind this
         pipeline.
       </p>
     </details>

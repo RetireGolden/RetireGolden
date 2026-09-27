@@ -1597,7 +1597,7 @@ describe('missing data basis detector', () => {
       rationale:
         'Optional property basis currently defaults to the legacy sale path. ' +
         'Supplying the basis moves the sale onto the exact path whose proceeds enter ' +
-        'cash-flow sizing earlier — a timing effect, not a modeled tax change. ' +
+        'cash-flow sizing earlier. This is a timing effect, not a modeled tax change. ' +
         'Entering the real value makes the projection more exact.',
       impact: {
         qualitative:
@@ -1606,13 +1606,13 @@ describe('missing data basis detector', () => {
       evidence: [
         {
           label:
-            'Primary home opening property value (cash-flow timing path — basis moves sale proceeds into earlier sizing)',
+            'Primary home opening property value (cash-flow timing path: basis moves sale proceeds into earlier sizing)',
           value: '$200,000',
           year: 2026,
         },
         {
           label:
-            'Primary home planned sale year (cash-flow timing path — basis moves sale proceeds into earlier sizing)',
+            'Primary home planned sale year (cash-flow timing path: basis moves sale proceeds into earlier sizing)',
           value: '2029',
           year: 2029,
         },
@@ -1709,13 +1709,13 @@ describe('missing data basis detector', () => {
     expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
       {
         label:
-          'Primary home expected net proceeds (cash-flow timing path — basis moves sale proceeds into earlier sizing)',
+          'Primary home expected net proceeds (cash-flow timing path: basis moves sale proceeds into earlier sizing)',
         value: '$200,000',
         year: 2029,
       },
       {
         label:
-          'Primary home opening property value (cash-flow timing path — basis moves sale proceeds into earlier sizing)',
+          'Primary home opening property value (cash-flow timing path: basis moves sale proceeds into earlier sizing)',
         value: '$200,000',
         year: 2026,
       },
@@ -1757,13 +1757,13 @@ describe('missing data basis detector', () => {
     expect(missingDataBasis.screen(ctx)?.evidence).toEqual([
       {
         label:
-          'Primary home expected net proceeds (cash-flow timing path — basis moves sale proceeds into earlier sizing)',
+          'Primary home expected net proceeds (cash-flow timing path: basis moves sale proceeds into earlier sizing)',
         value: '$180,000',
         year: 2029,
       },
       {
         label:
-          'Primary home opening property value (cash-flow timing path — basis moves sale proceeds into earlier sizing)',
+          'Primary home opening property value (cash-flow timing path: basis moves sale proceeds into earlier sizing)',
         value: '$200,000',
         year: 2026,
       },

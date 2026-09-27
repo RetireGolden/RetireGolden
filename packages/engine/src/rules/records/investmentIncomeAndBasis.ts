@@ -23,7 +23,7 @@ export const investmentIncomeAndBasisRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The thresholds are not indexed, so this lesser-of record is static rather than annually indexed. This record settles only the 3.8 percent lesser-of calculation and fixed threshold selection once net investment income and MAGI are supplied. Construction of statutory IRC 1411(d) MAGI is a separate dependency on sibling `irc-1411-d-modified-agi-foreign-exclusion-addback` (classification approximated): the direct calculator accepts an optional narrow field for the NIIT threshold leg and reuses the broad amount as a compatibility approximation only when that narrow field is omitted; the broad field alone feeds senior MAGI. Effective from 2013 reflects statutory applicability; implementation verification uses the current 2026 parameter pack and does not certify other historical pack values or a complete historical return.',
+      'The thresholds are not indexed, so this lesser-of record is static rather than annually indexed. This record settles only the 3.8 percent lesser-of calculation and fixed threshold selection once net investment income and MAGI are supplied. Construction of statutory IRC 1411(d) MAGI is a separate dependency on sibling `irc-1411-d-modified-agi-foreign-exclusion-addback` (classification approximated): the direct calculator accepts an optional narrow field for the NIIT threshold leg and reuses the broad amount as a compatibility approximation only when that narrow field is omitted; the broad field alone feeds senior MAGI. Effective from 2013 reflects statutory applicability; implementation verification uses the current 2026 tax parameters and does not certify other historical parameter values or a complete historical return.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -167,7 +167,7 @@ export const investmentIncomeAndBasisRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The plan stores one combined pool rather than separate short- and long-term carryovers. That missing character is already registered with the account-level lot and holding-period approximation (treas-reg-1-1012-1-c-lot-basis-and-holding-period). The section 1212(b)(2) adjusted-taxable-income limit on how much of a section 1211(b) allowance burns the carryforward pool in a zero-income year is registered separately. The describeRule fixture drives the pool through simulatePlan: annualFundingApplicationAndClosePhase applies the current-year producer and simulatePlan threads its returned pool into the next year.',
+      'The plan stores one combined pool rather than separate short- and long-term carryovers. That missing character is already registered with the account-level lot and holding-period approximation (treas-reg-1-1012-1-c-lot-basis-and-holding-period). The section 1212(b)(2) adjusted-taxable-income limit on how much of a section 1211(b) allowance burns the carryforward pool in a zero-income year is registered separately. The describeRule test drives the pool through simulatePlan: annualFundingApplicationAndClosePhase applies the current-year producer and simulatePlan threads its returned pool into the next year.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -200,7 +200,7 @@ export const investmentIncomeAndBasisRecords = {
     contraryReading: null,
     errorDirection: 'overstatesTax',
     conventionRationale:
-      'applyCapitalLossCarryforward burns up to the annual ordinary-income allowance from the pool whenever a loss remains, even when ordinary income is zero and there is no taxable income for a section 1211(b) deduction to offset. A smaller remaining pool overstates tax when a later year\'s gains would otherwise have been absorbed. The companion fixture pins a zero-income year\'s remaining pool against statutory preservation.',
+      'applyCapitalLossCarryforward burns up to the annual ordinary-income allowance from the pool whenever a loss remains, even when ordinary income is zero and there is no taxable income for a section 1211(b) deduction to offset. A smaller remaining pool overstates tax when a later year\'s gains would otherwise have been absorbed. The companion test pins a zero-income year\'s remaining pool against statutory preservation.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -233,7 +233,7 @@ export const investmentIncomeAndBasisRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The quoted 1(h)(1) text still keys its layer boundaries to income taxed below 25 and 39.6 percent; section 1(j)(5)(B) overrides those references with the maximum zero rate amount and maximum 15-percent rate amount, which are the indexed dollar breakpoints the parameter pack stores and the engine reads. The rates and layer order come from the quoted text; the boundary dollars come from the override and the Rev. Proc. 2025-32 2026 amounts. The companion fixture locks the rates and layer order against the 2026 pack only.',
+      'The quoted 1(h)(1) text still keys its layer boundaries to income taxed below 25 and 39.6 percent; section 1(j)(5)(B) overrides those references with the maximum zero rate amount and maximum 15-percent rate amount, which are the indexed dollar breakpoints the published parameters store and the engine reads. The rates and layer order come from the quoted text; the boundary dollars come from the override and the Rev. Proc. 2025-32 2026 amounts. The companion test locks the rates and layer order against the 2026 tax parameters only.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -276,7 +276,7 @@ export const investmentIncomeAndBasisRecords = {
     contraryReading: null,
     errorDirection: 'bothDirections',
     conventionRationale:
-      'A single rate makes the optimizer\'s taxable-bucket objective linear. Its 15-percent value is a chosen planning approximation, not a statutory rate that applies uniformly to a taxpayer\'s gains. The companion fixtures pin marginal rates in the same unit: the statutory marginal rate derived from the exact tax delta on the plan the optimizer sees, against the optimizer\'s flat 0.15.',
+      'A single rate makes the optimizer\'s taxable-bucket objective linear. Its 15-percent value is a chosen planning approximation, not a statutory rate that applies uniformly to a taxpayer\'s gains. The companion tests pin marginal rates in the same unit: the statutory marginal rate derived from the exact tax delta on the plan the optimizer sees, against the optimizer\'s flat 0.15.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -304,7 +304,7 @@ export const investmentIncomeAndBasisRecords = {
     contraryReading: null,
     errorDirection: 'bothDirections',
     conventionRationale:
-      'Approximated rather than out of scope because annualWithdrawalPlanning.ts emits the realized gain or loss for the companion fixture\'s need-based taxable-account sale and federalTax.ts deducts net losses through the capital-loss path; other sale-producing coordinators characterize their own transactions, and none fails closed on wash-sale evidence. The accepted Plan surface is model/plan.ts: a taxable account carries aggregate balance and cost basis, but no security or lot identity, acquisition or disposition date, replacement purchase, contract or option, substantially-identical determination, or dealer-status fact, so a wash-sale cannot be identified and every realized loss is allowed. The companion fixture drives one taxable account (basis above balance) through simulatePlan with a year-one one-time goal forcing its full sale and wages high enough to absorb the section 1211(b) ordinary offset, then stands that single observed ordinary-offset figure against both authority limbs: (1) replacement inside the 61-day window (deduction disallowed → $0) and (2) no replacement purchase (loss allowed → $3,000). The Plan cannot express a replacement purchase, so the annual projection observably deducts $3,000 under both limbs — that collapse is the approximation. Understating tax in the sale year and over- or under-stating it later through missing replacement-basis adjustments is why the direction cannot be narrowed — the same rationale shape as treas-reg-1-1012-1-c-lot-basis-and-holding-period.',
+      'Approximated rather than out of scope because annualWithdrawalPlanning.ts emits the realized gain or loss for the companion test’s need-based taxable-account sale and federalTax.ts deducts net losses through the capital-loss path; other sale-producing coordinators characterize their own transactions, and none refuses (produces no figure) on wash-sale evidence. The accepted Plan input is defined in model/plan.ts: a taxable account carries aggregate balance and cost basis, but no security or lot identity, acquisition or disposition date, replacement purchase, contract or option, substantially-identical determination, or dealer-status fact, so a wash-sale cannot be identified and every realized loss is allowed. The companion test drives one taxable account (basis above balance) through simulatePlan with a year-one one-time goal forcing its full sale and wages high enough to absorb the section 1211(b) ordinary offset, then stands that single observed ordinary-offset figure against both authority limbs: (1) replacement inside the 61-day window (deduction disallowed → $0) and (2) no replacement purchase (loss allowed → $3,000). The Plan cannot express a replacement purchase, so the annual projection observably deducts $3,000 under both limbs; that collapse is the approximation. Understating tax in the sale year and over- or under-stating it later through missing replacement-basis adjustments is why the direction cannot be narrowed (the same rationale shape as treas-reg-1-1012-1-c-lot-basis-and-holding-period).',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -352,7 +352,7 @@ export const investmentIncomeAndBasisRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'TaxRuleAuthorityKind has no revenue-ruling member. This is recorded as irsNotice, the closest existing kind for IRB guidance — a revenue ruling is IRB guidance; a publication is not.',
+      'TaxRuleAuthorityKind has no revenue-ruling member. This is recorded as irsNotice, the closest existing kind for IRB guidance: a revenue ruling is IRB guidance; a publication is not.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'irsNotice',
@@ -385,7 +385,7 @@ export const investmentIncomeAndBasisRecords = {
     contraryReading: null,
     errorDirection: 'bothDirections',
     conventionRationale:
-      'Approximated rather than out of scope because both surfaces produce figures the rule touches. compare.ts\'s after-tax estate treats taxable (and equity-comp) balances as stepped-up and untaxed to heirs, while simulate.ts leaves costBasis unchanged through a death year, so the surviving path can realize the pre-death embedded gain. One half understates heir tax relative to a no-step-up reading; the other overstates tax on a post-death sale relative to a consistent step-up. The companion fixture discriminates those readings through simulatePlan and summarizeProjection.',
+      'Approximated rather than out of scope because both surfaces produce figures the rule touches. compare.ts\'s after-tax estate treats taxable (and equity-comp) balances as stepped-up and untaxed to heirs, while simulate.ts leaves costBasis unchanged through a death year, so the surviving path can realize the pre-death embedded gain. One half understates heir tax relative to a no-step-up reading; the other overstates tax on a post-death sale relative to a consistent step-up. The companion test discriminates those readings through simulatePlan and summarizeProjection.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -434,7 +434,7 @@ export const investmentIncomeAndBasisRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'One record keeps both limbs quote-carried from the staged compiled text. The body still prints the pre-2027 December 31, 2026 election and inclusion cutoffs; the Amendment of Section note carries the Pub. L. 119-21 post-2026 permanent text (rolling five-year deferral, amended (a)(2) without a new-sale cutoff, qualified rural opportunity fund). volatility is staticStatute because the program is permanent after the amending act — sunsetting would fit only a legacy-only record — and the legacy cutoff stays in the statement rather than effectiveThrough, which moots a dueOn-after-cutoff alarm for a still-open permanent regime.',
+      'One record keeps both limbs quote-carried from the staged compiled text. The body still prints the pre-2027 December 31, 2026 election and inclusion cutoffs; the Amendment of Section note carries the Pub. L. 119-21 post-2026 permanent text (rolling five-year deferral, amended (a)(2) without a new-sale cutoff, qualified rural opportunity fund). volatility is staticStatute because the program is permanent after the amending act (sunsetting would fit only a legacy-only record), and the legacy cutoff stays in the statement rather than effectiveThrough, which moots a dueOn-after-cutoff alarm for a still-open permanent regime.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -456,13 +456,13 @@ export const investmentIncomeAndBasisRecords = {
         'Gain to which subsection (a)(1)(B) applies shall be included in income in the taxable year which includes the earlier of- (A) the date on which such investment is sold or exchanged, or (B) December 31, 2026.',
     }, {
       kind: 'legislativeHistory',
-      citation: 'Amendment note to IRC 1400Z-2, P.L. 119-21 sec. 70421 - post-2026 (a)(2)',
+      citation: 'Amendment note to IRC 1400Z-2, P.L. 119-21 sec. 70421: post-2026 (a)(2)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1400Z-2&num=0&edition=prelim',
       quotedText:
         '"No election may be made under paragraph (1) with respect to a sale or exchange if an election previously made with respect to such sale or exchange is in effect."',
     }, {
       kind: 'legislativeHistory',
-      citation: 'Amendment note to IRC 1400Z-2, P.L. 119-21 sec. 70421 - post-2026 (b)(1)',
+      citation: 'Amendment note to IRC 1400Z-2, P.L. 119-21 sec. 70421: post-2026 (b)(1)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1400Z-2&num=0&edition=prelim',
       quotedText:
         '"Gain to which subsection (a)(1)(B) applies shall be included in gross income in the taxable year which includes the earlier of- "(A) the date on which such investment is sold or exchanged, or "(B) the date which is 5 years after the date the investment in the qualified opportunity fund was made.',
@@ -491,7 +491,7 @@ export const investmentIncomeAndBasisRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The statute frames the result as a ceiling -- the tax "shall not exceed" the sum of its components -- and enumerates the bands as offsets from the amount of taxable income otherwise taxed below 25 percent. The engine computes the bands directly from the ordinary taxable amount, which reaches the same figure for the rate schedule it models and is the reason the code carries no explicit 25 percent reference.',
+      'The statute frames the result as a ceiling (the tax "shall not exceed" the sum of its components) and enumerates the bands as offsets from the amount of taxable income otherwise taxed below 25 percent. The engine computes the bands directly from the ordinary taxable amount, which reaches the same figure for the rate schedule it models and is the reason the code carries no explicit 25 percent reference.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -577,7 +577,7 @@ export const investmentIncomeAndBasisRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'This is why the exemption is applied uniformly rather than per state pack: it is federal law binding every state, so no state entry can opt into taxing it. The engine subtracts the interest from the state base because it arrives inside ordinary income.',
+      'This is why the exemption is applied uniformly rather than state by state in the per-state tax data: it is federal law binding every state, so no state entry can opt into taxing it. The engine subtracts the interest from the state base because it arrives inside ordinary income.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -631,7 +631,7 @@ export const investmentIncomeAndBasisRecords = {
     contraryReading: null,
     errorDirection: 'overstatesTax',
     conventionRationale:
-      'DISCLOSED APPROXIMATION. TaxYearInput carries a broad foreignExclusionAddback for section 151 senior MAGI and an optional niitSection911A1NetAddback for the NIIT threshold leg; omission of the narrow member reuses the broad amount. The fixture\'s established $20,000 earned-income and $10,000 housing exclusions have no allocable deductions, so the broad amount is $30,000 and the narrow NIIT net addback is $20,000. At $180,000 AGI and $10,000 included investment income, omitting the narrow input overstates NIIT by $380 (see sibling irc-1411-a-net-investment-income-tax for the 3.8% lesser-of and $200,000 single threshold). At $70,000 AGI the broad addback preserves the legally correct $4,500 senior deduction (see sibling irc-151-d-5-C-iii-I-senior-deduction-per-individual-phase-out for the $6,000 / 6% / $75,000 parameters); supplying the narrow amount for both rules would instead overstate that deduction to $5,100. The overstatesTax direction applies only to this characterized extra-housing omitted-narrow fallback; unknown, missing, or conflicting annual evidence does not establish a direction. The calculator accepts characterized amounts as inputs and does not determine exclusion eligibility or section 911(d)(6) allocation; this record does not certify a gross/net mapping for other compositions. Schedule 1-A\'s Form 2555 line 45 carrier is already net of line 44; the broad senior definition is not an instruction to add gross amounts or net them twice.',
+      'DISCLOSED APPROXIMATION. TaxYearInput carries a broad foreignExclusionAddback for section 151 senior MAGI and an optional niitSection911A1NetAddback for the NIIT threshold leg; omission of the narrow member reuses the broad amount. The test’s established $20,000 earned-income and $10,000 housing exclusions have no allocable deductions, so the broad amount is $30,000 and the narrow NIIT net addback is $20,000. At $180,000 AGI and $10,000 included investment income, omitting the narrow input overstates NIIT by $380 (see sibling irc-1411-a-net-investment-income-tax for the 3.8% lesser-of and $200,000 single threshold). At $70,000 AGI the broad addback preserves the legally correct $4,500 senior deduction (see sibling irc-151-d-5-C-iii-I-senior-deduction-per-individual-phase-out for the $6,000 / 6% / $75,000 parameters); supplying the narrow amount for both rules would instead overstate that deduction to $5,100. The overstatesTax direction applies only to this characterized extra-housing omitted-narrow fallback; unknown, missing, or conflicting annual evidence does not establish a direction. The calculator accepts characterized amounts as inputs and does not determine exclusion eligibility or section 911(d)(6) allocation; this record does not certify a gross/net mapping for other compositions. Schedule 1-A\'s Form 2555 line 45 carrier is already net of line 44; the broad senior definition is not an instruction to add gross amounts or net them twice.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -653,7 +653,7 @@ export const investmentIncomeAndBasisRecords = {
         'Housing exclusion. Multiply line 33 by line 35. Enter the result but don\'t enter more than the amount on line 34. Also, complete Part VIII … Foreign earned income exclusion. Enter the smaller of line 40 or line 41. Also, complete Part VIII … Add lines 36 and 42 … Deductions allowed in figuring your adjusted gross income (Form 1040 or 1040-SR, line 11) that are allocable to the excluded income. See instructions and attach computation … Subtract line 44 from line 43. Enter the result here and on Schedule 1 (Form 1040), line 8d.',
     }, {
       kind: 'formInstruction',
-      citation: 'Instructions for Form 8960 (2025), Part III, Line 13—MAGI, Section 911',
+      citation: 'Instructions for Form 8960 (2025), Part III, Line 13: MAGI, Section 911',
       url: 'https://www.irs.gov/instructions/i8960#en_US_2025_publink10004435',
       quotedText:
         'If you exclude amounts from income under section 911, to calculate your MAGI, you must increase your AGI by the excess of the amount excluded from income under section 911(a)(1) over the amount of any deductions (taken into account in computing AGI) or exclusions disallowed under section 911(d)(6) for the amount excluded from income under section 911(a)(1).',
@@ -861,7 +861,7 @@ export const investmentIncomeAndBasisRecords = {
     contraryReading: null,
     errorDirection: 'bothDirections',
     conventionRationale:
-      'Approximated rather than out of scope because the engine emits a realized gain or loss for every taxable sale; nothing here fails closed. Both of its errors run in both directions, which is why the direction cannot be narrowed: the basis recovered on a partial sale is too high or too low depending on which lots a first-in-first-out or specific-identification seller would have sold, and the missing holding-period character understates tax on a short-term sale and overstates it on a long-term one. The average-cost approximation is defensible for a long-horizon projection and indefensible for a filing-grade statement of a particular year, and the two uses are not distinguished here. Across a full drawdown the account-level ratio and true lot accounting converge, because every lot is eventually sold and the total basis is the same either way, so the approximation costs little over a lifetime. It costs a great deal in any single year a user might act on. The missing holding-period character is the larger of the two gaps and is not an approximation at all: it is a fact the engine never had, since no lot acquisition dates enter the account model, and no convention over a single blended number can recover it.',
+      'Approximated rather than out of scope because the engine emits a realized gain or loss for every taxable sale; nothing here refuses to produce a figure. Both of its errors run in both directions, which is why the direction cannot be narrowed: the basis recovered on a partial sale is too high or too low depending on which lots a first-in-first-out or specific-identification seller would have sold, and the missing holding-period character understates tax on a short-term sale and overstates it on a long-term one. The average-cost approximation is defensible for a long-horizon projection and indefensible for a filing-grade statement of a particular year, and the two uses are not distinguished here. Across a full drawdown the account-level ratio and true lot accounting converge, because every lot is eventually sold and the total basis is the same either way, so the approximation costs little over a lifetime. It costs a great deal in any single year a user might act on. The missing holding-period character is the larger of the two gaps and is not an approximation at all: it is a fact the engine never had, since no lot acquisition dates enter the account model, and no convention over a single blended number can recover it.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'regulation',
@@ -1126,7 +1126,7 @@ export const investmentIncomeAndBasisRecords = {
     contraryReading: null,
     errorDirection: 'overstatesTax',
     conventionRationale:
-      'DEFECT — no behavior change in this registration slice. projection/internal/tipsLadderAnnualCashFlow.ts computes `accretion` as `outstandingFace * Math.max(0, inflFactor - prevInflFactor)`, so a deflation year contributes no negative adjustment, no ordinary-loss carry, and no interest reduction. A paired market path with prior positive inflation followed by deflation drives the gap: the authority reduces current interest (and may permit a bounded ordinary loss), while the engine still reports the coupon as taxable ordinary income. The fixture adds 100,000 of ordinary wages so the tax line remains above zero and pins the produced annual MAGI. The basis decrease under (f)(2) is registered separately at treas-reg-1-1275-7-f-2-deflation-basis-decrease-not-modeled.',
+      'Known defect, registered without changing the calculation. projection/internal/tipsLadderAnnualCashFlow.ts computes `accretion` as `outstandingFace * Math.max(0, inflFactor - prevInflFactor)`, so a deflation year contributes no negative adjustment, no ordinary-loss carry, and no interest reduction. A paired market path with prior positive inflation followed by deflation drives the gap: the authority reduces current interest (and may permit a bounded ordinary loss), while the engine still reports the coupon as taxable ordinary income. The test adds 100,000 of ordinary wages so the tax line remains above zero and pins the produced annual MAGI. The basis decrease under (f)(2) is registered separately at treas-reg-1-1275-7-f-2-deflation-basis-decrease-not-modeled.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'regulation',

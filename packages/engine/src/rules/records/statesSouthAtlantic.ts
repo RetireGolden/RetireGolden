@@ -131,7 +131,7 @@ export const southAtlanticStateRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'Personal exemptions under §11-21-16, the age-65 or disability modification under §11-21-12(c)(9), military and other listed subtractions, and a full return reconciliation are not certified here. This record registers only the progressive rates and shared break points the pack carries as a stand-in for 2026.',
+      'Personal exemptions under §11-21-16, the age-65 or disability modification under §11-21-12(c)(9), military and other listed subtractions, and a full return reconciliation are not certified here. This record registers only the progressive rates and shared break points the per-state tax data carries as a stand-in for 2026.',
     jurisdiction: 'state:WV',
     authority: [{
       kind: 'statute',
@@ -578,7 +578,7 @@ export const southAtlanticStateRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'Blindness, the itemization election under § 1107, personal credits, and whole-return accuracy are outside this record. Delaware’s amounts are fixed statutory dollars with no federal scaling tag. `effectiveFrom: 2000` is the first tax year in which this record’s combined $3,250 single / $6,500 joint basic deductions and $2,500 age addition all governed. Verification is against the 2026 parameter pack; the selector’s use of that pack for earlier years is an unmarked historical approximation, and this record does not certify other Delaware parameters for those years. Qualifying-surviving-spouse years are outside this settled single/MFJ record and are disclosed separately at `de-pit-est-2026-qss-standard-deduction-joint-mapper`. The § 1102 rate schedule is registered separately at `de-code-30-1102-a-14-rate-schedule`.',
+      'Blindness, the itemization election under § 1107, personal credits, and whole-return accuracy are outside this record. Delaware’s amounts are fixed statutory dollars with no federal scaling tag. `effectiveFrom: 2000` is the first tax year in which this record’s combined $3,250 single / $6,500 joint basic deductions and $2,500 age addition all governed. Verification is against the 2026 tax parameters; the selector’s use of those parameters for earlier years is an unmarked historical approximation, and this record does not certify other Delaware parameters for those years. Qualifying-surviving-spouse years are outside this settled single/MFJ record and are disclosed separately at `de-pit-est-2026-qss-standard-deduction-joint-mapper`. The § 1102 rate schedule is registered separately at `de-code-30-1102-a-14-rate-schedule`.',
     jurisdiction: 'state:DE',
     authority: [{
       kind: 'statute',
@@ -629,7 +629,7 @@ export const southAtlanticStateRecords = {
     contraryReading: null,
     errorDirection: 'understatesTax',
     conventionRationale:
-      'DISCLOSED APPROXIMATION. ProjectedFilingStatus can express qualifyingSurvivingSpouse, but taxParameterFilingStatus maps every non-single status to marriedFilingJointly before computeStateTaxableIncome selects the Delaware deduction row. The $3,250 excess deduction can understate Delaware tax where it reduces positive taxable income; tax can be unchanged at a floor. `effectiveFrom: 2026` is the first observed and fixture-backed modeled year. `effectiveThrough: null` means the current mapper and unsunset statutory comparison have no scheduled expiry. Later-year persistence depends on latest-pack fallback and must be rechecked when a new state pack, form, or amendment appears. Earlier years, QSS brackets, itemization, credits, blindness, other return lines, and whole-return accuracy remain outside this record.',
+      'DISCLOSED APPROXIMATION. ProjectedFilingStatus can express qualifyingSurvivingSpouse, but taxParameterFilingStatus maps every non-single status to marriedFilingJointly before computeStateTaxableIncome selects the Delaware deduction row. The $3,250 excess deduction can understate Delaware tax where it reduces positive taxable income; tax can be unchanged at a floor. `effectiveFrom: 2026` is the first observed and test-backed modeled year. `effectiveThrough: null` means the current mapper and unsunset statutory comparison have no scheduled expiry. Later-year persistence depends on the fallback to the latest per-state tax data and must be rechecked when new per-state tax data, a new form, or an amendment appears. Earlier years, QSS brackets, itemization, credits, blindness, other return lines, and whole-return accuracy remain outside this record.',
     jurisdiction: 'state:DE',
     authority: [{
       kind: 'statute',
@@ -881,13 +881,13 @@ export const southAtlanticStateRecords = {
     jurisdiction: 'state:VA',
     authority: [{
       kind: 'stateAgencyPublication',
-      citation: 'Virginia Department of Taxation, Subtractions — Social Security Act and Equivalent Tier 1 Railroad Retirement Act Benefits',
+      citation: 'Virginia Department of Taxation, Subtractions: Social Security Act and Equivalent Tier 1 Railroad Retirement Act Benefits',
       url: 'https://www.tax.virginia.gov/subtractions',
       quotedText:
         'Virginia law exempts Social Security and Tier 1 Railroad Retirement benefits from taxation. If you were required to include any of your benefits in federal adjusted gross income, subtract that amount on your Virginia return. Do not include Tier 2 Railroad Retirement Benefits and Other Railroad Retirement and Railroad Unemployment Benefits. For subtracting other benefits, see Tier 2 and other Railroad Retirement and Railroad Unemployment Benefits.',
     }, {
       kind: 'stateAgencyPublication',
-      citation: 'Virginia Department of Taxation, Subtractions — Tier 2 and other Railroad Retirement and Railroad Unemployment Benefits',
+      citation: 'Virginia Department of Taxation, Subtractions: Tier 2 and other Railroad Retirement and Railroad Unemployment Benefits',
       url: 'https://www.tax.virginia.gov/subtractions',
       quotedText:
         'Federal and Virginia law exempt Tier 2 vested dual benefits, as well as certain other Railroad Retirement Act benefits and Railroad Unemployment Insurance benefits from income tax. The amount to be subtracted is the benefit amount that was included in federal adjusted gross income as a taxable pension or annuity, and that was not already deducted on your federal return.',

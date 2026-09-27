@@ -24,9 +24,9 @@ export const blocks: ArticleBlock[] = [
     caption: '2026 Capital Market Assumptions (Nominal 10-15 Yr Outlook)',
     columns: ['Asset Class', 'Vanguard VEMO 2026', 'J.P. Morgan LTCMA 2026', 'Historical Average'],
     rows: [
-      ['**US Large-Cap Equity**', '4.0% – 5.0%', '6.7%', '~10.0%'],
+      ['**US Large-Cap Equity**', '4.0% to 5.0%', '6.7%', '~10.0%'],
       ['**US Aggregate Bonds**', '~4.0%', '4.6%', '~5.0%'],
-      ['**60/40 Balanced Portfolio**', '4.0% – 4.6%', '6.4%', '~8.5%'],
+      ['**60/40 Balanced Portfolio**', '4.0% to 4.6%', '6.4%', '~8.5%'],
     ],
   },
   {

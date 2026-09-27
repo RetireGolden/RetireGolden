@@ -417,7 +417,7 @@ function QcdManualReviewRow({
         </span>
       </div>
       <div className="callout callout--warn" role="status">
-        <strong>Manual review required — QCD source editing is not supported yet.</strong>{' '}
+        <strong>Manual review required: QCD source editing is not supported yet.</strong>{' '}
         {detail}
       </div>
     </div>

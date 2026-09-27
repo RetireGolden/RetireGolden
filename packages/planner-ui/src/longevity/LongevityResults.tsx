@@ -31,7 +31,7 @@ export function LongevityResults({ data, onEdit, onClear, resultsHeading }: Long
         <p className="muted">
           Illustrative band (not a statistical confidence interval):{' '}
           <strong>
-            {result.bandLowRemainingYears.toFixed(1)} – {result.bandHighRemainingYears.toFixed(1)}
+            {result.bandLowRemainingYears.toFixed(1)} to {result.bandHighRemainingYears.toFixed(1)}
           </strong>{' '}
           years remaining
         </p>

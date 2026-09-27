@@ -15,7 +15,7 @@ export const blocks: ArticleBlock[] = [
     items: [
       'A QCD is a direct IRA-to-charity transfer, not a normal withdrawal followed by a personal donation.',
       'QCDs can count toward RMDs while reducing taxable income and MAGI.',
-      'RetireGolden models QCDs as a planning-level annual amount routed out of RMDs, capped by the parameter pack.',
+      'RetireGolden models QCDs as a planning-level annual amount routed out of RMDs, capped by the parameter set.',
     ],
   },
   { type: 'heading', text: 'The basic idea' },
@@ -56,7 +56,7 @@ export const blocks: ArticleBlock[] = [
   { type: 'heading', text: 'Why it matters in RetireGolden' },
   {
     type: 'prose',
-    md: 'RetireGolden has an annual QCD setting on the Strategy screen. The model routes QCD dollars out of RMDs when an eligible-age person is alive, excludes that amount from income, and caps it using the annual QCD limit in the parameter pack. It does not verify charity eligibility, transfer mechanics, receipts, or tax-form reporting.',
+    md: 'RetireGolden has an annual QCD setting on the Strategy screen. The model routes QCD dollars out of RMDs when an eligible-age person is alive, excludes that amount from income, and caps it using the annual QCD limit in the parameter set. It does not verify charity eligibility, transfer mechanics, receipts, or tax-form reporting.',
   },
   { type: 'heading', text: 'Common mistakes' },
   {

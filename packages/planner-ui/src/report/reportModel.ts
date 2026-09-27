@@ -514,8 +514,8 @@ export function accountBalance(a: Account): number {
 }
 
 function incomeLabel(plan: Plan, s: IncomeStream): string {
-  if (s.type === 'wages') return `Wages - ${ownerName(plan, s.personId)}`
-  if (s.type === 'socialSecurity') return `Social Security - ${ownerName(plan, s.personId)}`
+  if (s.type === 'wages') return `Wages (${ownerName(plan, s.personId)})`
+  if (s.type === 'socialSecurity') return `Social Security (${ownerName(plan, s.personId)})`
   return s.label
 }
 
@@ -545,8 +545,8 @@ export function incomeDetail(s: IncomeStream): string {
 function conversionSummary(plan: Plan): string {
   const rc = plan.strategies.rothConversion
   if (rc.mode === 'none') return 'None'
-  if (rc.mode === 'manual') return `Manual - ${rc.conversions.length} year(s)`
-  if (rc.mode === 'optimized') return `Optimized - ${rc.conversions.length} year(s)`
+  if (rc.mode === 'manual') return `Manual, ${rc.conversions.length} year(s)`
+  if (rc.mode === 'optimized') return `Optimized, ${rc.conversions.length} year(s)`
   return `Fill to ${rc.target}${rc.targetValue !== null ? ` (${rc.targetValue})` : ''}, ${rc.startYear}-${rc.endYear}`
 }
 

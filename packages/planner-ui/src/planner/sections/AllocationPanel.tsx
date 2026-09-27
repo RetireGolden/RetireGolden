@@ -186,7 +186,7 @@ function WeightsGrid({ title, weights, onCommit }: { title?: string; weights: Al
           field above), so the summary line itself is the only place to say
           so. */}
       <p className={sums100 ? 'muted small' : 'field-error'} role={sums100 ? 'status' : 'alert'}>
-        Total {sum.toFixed(0)}%{sums100 ? '' : ' (weights must sum to 100% — not saved until they do)'}
+        Total {sum.toFixed(0)}%{sums100 ? '' : ' (weights must sum to 100%; not saved until they do)'}
       </p>
     </div>
   )

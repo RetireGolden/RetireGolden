@@ -150,7 +150,7 @@ export function scSciadDeduction(args: {
       warnings: [{
         code: 'sc-sciad-config-missing',
         ruleId: 'sc-sciad-deduction',
-        message: 'South Carolina SCIAD deduction requires a versioned annual schedule.',
+        message: 'South Carolina SCIAD deduction requires an annual schedule from the published parameter set.',
         missingFacts: ['southCarolinaSciad'],
       }],
     }

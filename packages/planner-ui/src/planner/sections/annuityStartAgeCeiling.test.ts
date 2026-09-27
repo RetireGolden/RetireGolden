@@ -176,7 +176,7 @@ describe('annuityStartAgeHelp', () => {
     // Born 1950, buying at 76: the ordinary ceiling is 76 and the QLAC's is 85,
     // so ticking the box buys nine more years and the copy names it.
     expect(helpFor(planWithOwner(), annuity())).toBe(
-      'A pre-tax annuity purchase has to start paying by age 76. To start later than that, tick "QLAC (qualified longevity annuity)" below — a QLAC is the only kind of deferred annuity the IRA rules allow, and it has to start by age 85.',
+      'A pre-tax annuity purchase has to start paying by age 76. To start later than that, tick "QLAC (qualified longevity annuity)" below; a QLAC is the only kind of deferred annuity the IRA rules allow, and it has to start by age 85.',
     )
   })
 
@@ -195,7 +195,7 @@ describe('annuityStartAgeHelp', () => {
     // The same 1930-born owner with the box already ticked: dropping it is the
     // remedy, and the copy names the age it would buy back.
     expect(helpFor(planWithOwner('1930-01-01'), qlacAnnuity())).toBe(
-      'A QLAC has to start paying by age 85. To start later than that, untick "QLAC (qualified longevity annuity)" below — bought this late, an ordinary pre-tax purchase may start as late as age 95.',
+      'A QLAC has to start paying by age 85. To start later than that, untick "QLAC (qualified longevity annuity)" below; bought this late, an ordinary pre-tax purchase may start as late as age 95.',
     )
   })
 

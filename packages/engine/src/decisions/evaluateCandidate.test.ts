@@ -862,7 +862,7 @@ describe('evaluateCandidate', () => {
 
     expect(evaluation.recommendationState).toBe('diagnostic')
     const diagnostics = evaluation.diagnostics.join(' ')
-    expect(diagnostics).toMatch(/committed, actionable exact-ledger execution/i)
+    expect(diagnostics).toMatch(/committed, actionable execution (record|evidence) (on|from) the full projection/i)
     expect(diagnostics).toContain('joint-source-acting-person-mismatch')
   })
 

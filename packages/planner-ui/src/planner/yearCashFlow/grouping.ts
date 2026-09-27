@@ -38,9 +38,9 @@ function otherNodeId(node: YearCashFlowSankeyNode): string {
 }
 
 function otherLabel(node: YearCashFlowSankeyNode, n: number): string {
-  const body = `Other (${n}) — ${node.kindLabel}`
+  const body = `Other (${n}) · ${node.kindLabel}`
   if (node.personKey === 'household') return body
-  return `${node.personLabel} — ${body}`
+  return `${node.personLabel} · ${body}`
 }
 
 function uniqueSorted(ids: readonly string[]): string[] {

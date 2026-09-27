@@ -414,7 +414,7 @@ function personName(index: PlanIndex, personId: string): string | null {
 }
 
 function withPerson(person: string | null, rest: string): string {
-  return person ? `${person} - ${rest}` : rest
+  return person ? `${person} · ${rest}` : rest
 }
 
 function accountLabel(index: PlanIndex, account: Account): { label: string; unresolved: boolean } {
@@ -422,8 +422,8 @@ function accountLabel(index: PlanIndex, account: Account): { label: string; unre
   const rest = `${account.name} (${tag})`
   if (account.ownerPersonId === null) return { label: rest, unresolved: false }
   const owner = personName(index, account.ownerPersonId)
-  if (owner === null) return { label: `${unknownLabel(account.ownerPersonId)} - ${rest}`, unresolved: true }
-  return { label: `${owner} - ${rest}`, unresolved: false }
+  if (owner === null) return { label: `${unknownLabel(account.ownerPersonId)} · ${rest}`, unresolved: true }
+  return { label: `${owner} · ${rest}`, unresolved: false }
 }
 
 function incomeLabel(index: PlanIndex, stream: IncomeStream): { label: string; unresolved: boolean } {
@@ -431,7 +431,7 @@ function incomeLabel(index: PlanIndex, stream: IncomeStream): { label: string; u
     const owner = personName(index, stream.personId)
     const kind = stream.type === 'wages' ? 'Wages' : 'Social Security'
     if (owner === null) return { label: unknownLabel(stream.personId), unresolved: true }
-    return { label: `${owner} - ${kind}`, unresolved: false }
+    return { label: `${owner} · ${kind}`, unresolved: false }
   }
   return { label: stream.label, unresolved: false }
 }
@@ -546,7 +546,7 @@ function resolveEntity(index: PlanIndex, ref: YearCashFlowEntityReference): Reso
       const person = householdPerson(index, ref.personId)
       const unresolved = person.personKey.startsWith('unresolved:')
       return {
-        label: unresolved ? unknownLabel(ref.personId) : `${person.personLabel} - owned IRA RMD`,
+        label: unresolved ? unknownLabel(ref.personId) : `${person.personLabel} · owned IRA RMD`,
         unresolved,
         ...person,
       }

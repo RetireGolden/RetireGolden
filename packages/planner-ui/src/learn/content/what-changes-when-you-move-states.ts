@@ -41,7 +41,7 @@ export const blocks: ArticleBlock[] = [
       [
         'Retirement-income rules',
         'Social Security, IRA withdrawals, private pensions, and public pensions may not all get the same state treatment.',
-        'Modeled packs price Social Security treatment and retirement-income exclusions through the normal tax ledger.',
+        'Modeled state parameter sets price Social Security treatment and retirement-income exclusions through the normal tax ledger.',
       ],
       [
         'Local rate and spending knobs',

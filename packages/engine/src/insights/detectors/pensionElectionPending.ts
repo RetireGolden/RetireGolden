@@ -53,7 +53,7 @@ export const pensionElectionPending: Detector = {
         'the decision hinges on longevity, survivor needs, and what you would earn on the rollover. Those are tradeoffs, not a verdict.',
       impact: {
         qualitative:
-          'Preview taking the lump sum (tax-free rollover to a traditional IRA) against keeping the annuity, priced on the exact ledger.',
+          'Preview taking the lump sum (tax-free rollover to a traditional IRA) against keeping the annuity, priced on the full projection.',
       },
       exact: false,
       confidence: 'high',

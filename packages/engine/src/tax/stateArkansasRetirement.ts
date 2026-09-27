@@ -42,7 +42,7 @@ export function arkansasRetirementExclusion(
   // current recipient, not multiplied by household size.
   const ordinaryCapPerPerson = legacyCap ?? ordinaryCapOrLegacyEligibleCount
   if (ordinaryCapPerPerson === undefined) {
-    return { taxableIncomeDelta: 0, taxCredit: 0, warnings: [{ code: 'ar-cap-pack-missing', ruleId: 'aca-26-51-307-six-thousand-retirement-exemption', message: 'Arkansas retirement exclusion requires its versioned annual cap.', missingFacts: ['retirementPrivate.capPerPerson'] }] }
+    return { taxableIncomeDelta: 0, taxCredit: 0, warnings: [{ code: 'ar-cap-pack-missing', ruleId: 'aca-26-51-307-six-thousand-retirement-exemption', message: 'Arkansas retirement exclusion requires its annual cap from the published parameter set.', missingFacts: ['retirementPrivate.capPerPerson'] }] }
   }
   const byOwner = new Map<string, { military: number; railroad: number; ordinary: number }>()
 

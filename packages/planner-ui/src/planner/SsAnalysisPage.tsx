@@ -1051,7 +1051,7 @@ function BenefitsOnlyTab({ personIds, personName, applyStrategy }: TabProps) {
       <p className="card-hint">
         The actuarial view: expected lifetime benefits weighted by the chance of being alive to receive them (SSA
         mortality), ignoring your portfolio and taxes{' '}
-        <HelpTip text="The standard actuarial method: each future year's benefit is multiplied by the probability of survival and discounted to today. This isolates Social Security's longevity-insurance value, useful alongside the In-your-plan tab, which adds taxes and portfolio growth." />. When this disagrees with the In-your-plan tab, differences can also reflect annual timing, how couple benefits are combined, and eligibility assumptions — not only taxes and portfolio growth.
+        <HelpTip text="The standard actuarial method: each future year's benefit is multiplied by the probability of survival and discounted to today. This isolates Social Security's longevity-insurance value, useful alongside the In-your-plan tab, which adds taxes and portfolio growth." />. When this disagrees with the In-your-plan tab, differences can also reflect annual timing, how couple benefits are combined, and eligibility assumptions, not only taxes and portfolio growth.
       </p>
       {personIds.length === 2 ? (
         <p className="card-hint">
@@ -1081,7 +1081,7 @@ function BenefitsOnlyTab({ personIds, personName, applyStrategy }: TabProps) {
 
       {hasLivingDivorcedRecord ? (
         <div className="callout callout--note" role="note">
-          This ranking assumes each living ex-spouse meets the ex-worker condition from your selected claim age onward—it
+          This ranking assumes each living ex-spouse meets the ex-worker condition from your selected claim age onward; it
           does not wait for the ex to turn 62. Marriage-length and currently-unmarried gates still apply. The In-your-plan
           tab uses its documented calendar-year age-62 approximation, not full SSA entitlement rules.
         </div>
