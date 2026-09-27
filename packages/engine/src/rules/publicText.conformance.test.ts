@@ -9,7 +9,7 @@ type Field = readonly [where: string, text: string | null, code?: boolean]
 
 /**
  * What the site prints from a tax rule, plus its contrary reading (skipped
- * when null; most rules have none). The authorities' quotedText is
+ * when null). The authorities' quotedText is
  * the source's own words and is exempt; a url is an address, not text.
  */
 function ruleFields(id: string, record: TaxRuleRecord): readonly Field[] {
