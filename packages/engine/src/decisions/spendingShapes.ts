@@ -17,7 +17,10 @@ import { spendingShapePhases, type SpendingShapeId } from '../spending/shapePres
 import { SOLVED_SPENDING_STEP_DOLLARS, type SustainableSpendingResult } from './spendingSolver.js'
 
 /** The shapes the comparison solves, in the order the table lists them. */
-export const SPENDING_SHAPE_COMPARISON: readonly SpendingShapeId[] = Object.freeze(['flat', 'smile', 'smirk'])
+export const SPENDING_SHAPE_COMPARISON = Object.freeze(['flat', 'smile', 'smirk'] as const) satisfies readonly SpendingShapeId[]
+
+/** A shape the comparison solves (front-loaded is a preset, not one of them). */
+export type ComparedSpendingShape = (typeof SPENDING_SHAPE_COMPARISON)[number]
 
 /**
  * The plan solved for one shape: the plan's own spending phases replaced by

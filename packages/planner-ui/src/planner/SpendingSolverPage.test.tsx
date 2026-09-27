@@ -410,6 +410,47 @@ describe('SpendingSolverPage statements', () => {
     expect(explainer).toContain('so that rounded figure was run too, and it passes')
   })
 
+  it('describes the solve that ran, not a spending policy the plan switched to before the next solve lands', async () => {
+    async function show(plan: Plan): Promise<void> {
+      const ctx: PlanContextValue = { plan, update: () => {}, discardPendingSave: () => {}, saveState: 'saved', issues: [] }
+      await act(async () => {
+        root.render(
+          <MemoryRouter>
+            <PlanCtx.Provider value={ctx}>
+              <SpendingSolverPage />
+            </PlanCtx.Provider>
+          </MemoryRouter>,
+        )
+      })
+    }
+    const explainer = () => container.querySelector('.ss-explainer')!.textContent
+    const applyHint = () => container.querySelector('.ss-explainer')!.previousElementSibling!.textContent
+    // Solved at fixed-target spending (the rounded figure published without a
+    // run of its own); the plan then switches to guardrails, and until the next
+    // solve lands (it never does here) the copy still describes that solve.
+    mockedSolve.mockResolvedValueOnce(solved({})).mockReturnValue(new Promise<SpendingSolveResult>(() => {}))
+    const fixedTarget = createSamplePlan()
+    fixedTarget.expenses.spendingPolicy = { mode: 'fixedTarget' }
+    await renderSolved(fixedTarget)
+    await show({ ...fixedTarget, expenses: { ...fixedTarget.expenses, spendingPolicy: { mode: 'withdrawalRateGuardrails' } } })
+    expect(explainer()).toContain('at fixed-target spending a lower level is expected to pass when a higher one does')
+    expect(explainer()).not.toContain('was run too')
+    expect(applyHint()).not.toContain('was run too')
+
+    // And the reverse: solved under guardrails, then switched to fixed target.
+    await act(async () => root.unmount())
+    root = createRoot(container)
+    mockedSolve.mockReset()
+    mockedSolve.mockResolvedValueOnce(solved({})).mockReturnValue(new Promise<SpendingSolveResult>(() => {}))
+    const guardrails = createSamplePlan()
+    guardrails.expenses.spendingPolicy = { mode: 'withdrawalRateGuardrails' }
+    await renderSolved(guardrails)
+    await show({ ...guardrails, expenses: { ...guardrails.expenses, spendingPolicy: { mode: 'fixedTarget' } } })
+    expect(explainer()).toContain('so that rounded figure was run too, and it passes')
+    expect(explainer()).not.toContain('expected to pass when a higher one does')
+    expect(applyHint()).toContain('so that rounded figure was run too, and it passes')
+  })
+
   async function solveShapes(rows: Partial<SpendingSolveResult>[], plan: Plan = createSamplePlan()): Promise<string> {
     // The first call is the page's own auto-run; the next three are the shapes.
     let call = 0

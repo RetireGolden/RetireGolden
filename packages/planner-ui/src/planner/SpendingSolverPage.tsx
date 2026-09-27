@@ -16,9 +16,9 @@ import {
   planWithSpendingShape,
   SPENDING_SHAPE_COMPARISON,
   spendingShapeRows,
+  type ComparedSpendingShape,
   type SolvedSpendingShape,
 } from '@retiregolden/engine/decisions/spendingShapes'
-import type { SpendingShapeId } from '@retiregolden/engine/spending/shapePresets'
 import type { Plan } from '@retiregolden/engine/model/plan'
 import type { SpendingSolveResult } from '../optimize/spendingMessages'
 import { runSpendingSolve } from '../optimize/spendingRunner'
@@ -64,7 +64,7 @@ function Stat({
 }
 
 interface ShapeRow {
-  id: SpendingShapeId
+  id: ComparedSpendingShape
   label: string
   /** The shape solve's published answer, as the engine's comparison rows carry it. */
   maxBaseAnnual: number | null
@@ -75,11 +75,17 @@ interface ShapeRow {
   acaGrossPremiumDirection: SpendingSolveResult['acaGrossPremiumDirection']
 }
 
-const SHAPE_LABELS: Record<SpendingShapeId, string> = {
+/** Labels for the shapes the engine's comparison solves (`SPENDING_SHAPE_COMPARISON`), and only those. */
+const SHAPE_LABELS: Record<ComparedSpendingShape, string> = {
   flat: 'Constant-real (no decline)',
   smile: 'Smile: average retiree (−10% at 75, −20% at 85)',
   smirk: 'Smirk: median retiree (−1%/yr real)',
-  frontLoaded: 'Front-loaded (+10% until 75)',
+}
+
+/** Whether a plan spends under guardrails, where a lower level can fail although a higher one passed. */
+function spendsUnderGuardrails(plan: Plan): boolean {
+  const mode = plan.expenses.spendingPolicy?.mode
+  return mode === 'withdrawalRateGuardrails' || mode === 'riskBasedGuardrails'
 }
 
 export function SpendingSolverPage() {
@@ -88,10 +94,14 @@ export function SpendingSolverPage() {
   const navigate = useNavigate()
   const startYear = currentStartYear()
 
-  // The solve's answer; its today's-dollar evidence arrives converted by the
-  // answer run's own inflation factor, so nothing here depends on the clock
-  // (or the plan) at render.
-  const [result, setResult] = useState<SpendingSolveResult | null>(null)
+  // The solve's answer, with the one fact about the plan it was solved on that
+  // the copy needs (whether it spends under guardrails): the plan can change
+  // before the next solve lands, and the copy describes the solve that ran.
+  // The today's-dollar evidence arrives converted by the answer run's own
+  // inflation factor, so nothing here depends on the clock (or the plan) at
+  // render.
+  const [solved, setSolved] = useState<{ result: SpendingSolveResult; guardrailSpending: boolean } | null>(null)
+  const result = solved?.result ?? null
   const [running, setRunning] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const runToken = useRef(0)
@@ -124,10 +134,11 @@ export function SpendingSolverPage() {
         // The engine builds each shape's plan (ABW is solved as fixed-target
         // variants; guardrail policies stay) and the rows' differences from
         // the flat shape, taken between the published answers (R5).
-        const solves: { solved: SolvedSpendingShape; result: SpendingSolveResult }[] = []
+        const solves: { shape: ComparedSpendingShape; solved: SolvedSpendingShape; result: SpendingSolveResult }[] = []
         for (const shape of SPENDING_SHAPE_COMPARISON) {
           const solvedShape = await runSpendingSolve({ plan: planWithSpendingShape(forPlan, shape), startYear })
           solves.push({
+            shape,
             solved: {
               shape,
               maxBaseAnnual: solvedShape.maxBaseAnnual,
@@ -136,9 +147,10 @@ export function SpendingSolverPage() {
             result: solvedShape,
           })
         }
+        // The engine returns the rows in the order it was given them.
         const rows: ShapeRow[] = spendingShapeRows(solves.map((entry) => entry.solved)).map((row, index) => ({
-          id: row.shape,
-          label: SHAPE_LABELS[row.shape],
+          id: solves[index]!.shape,
+          label: SHAPE_LABELS[solves[index]!.shape],
           maxBaseAnnual: row.maxBaseAnnual,
           deltaVsFlatDollars: row.deltaVsFlatDollars,
           acaGrossPremiumYears: solves[index]!.result.acaGrossPremiumYears,
@@ -165,16 +177,17 @@ export function SpendingSolverPage() {
 
   const run = useCallback(() => {
     const token = ++runToken.current
+    const guardrailSpending = spendsUnderGuardrails(plan)
     setRunning(true)
     setError(null)
     runSpendingSolve({ plan, startYear })
       .then((r) => {
-        if (token === runToken.current) setResult(r)
+        if (token === runToken.current) setSolved({ result: r, guardrailSpending })
       })
       .catch((e: unknown) => {
         if (token === runToken.current) {
           setError(e instanceof Error ? e.message : String(e))
-          setResult(null)
+          setSolved(null)
         }
       })
       .finally(() => {
@@ -190,10 +203,9 @@ export function SpendingSolverPage() {
   }, [run, abwActive])
 
   // Under guardrails a lower level can fail where a higher one passed, which
-  // is why the engine runs its rounded-down answer once more on such plans.
-  const guardrailSpending =
-    plan.expenses.spendingPolicy?.mode === 'withdrawalRateGuardrails' ||
-    plan.expenses.spendingPolicy?.mode === 'riskBasedGuardrails'
+  // is why the engine runs its rounded-down answer once more on such plans;
+  // read from the plan the shown answer was solved on.
+  const guardrailSpending = solved?.guardrailSpending ?? false
   // The engine publishes one amount (R4): the level that passed rounded down
   // to the nearest $100, or that exact level when the rounded one is not
   // known to pass. The page shows it, applies it, adds it as a scenario and
