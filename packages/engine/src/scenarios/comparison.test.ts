@@ -529,7 +529,7 @@ describe('compareScenarioPlans', () => {
         converged: true,
         simulationCount: 7,
         limitingConstraint: 'estate-floor',
-        acaGrossPremiumYears: [2027, 2028],
+        acaGrossPremiumYears: [2028, 2029],
         acaGrossPremiumReasons: ['tax-year-parameters-unsupported'],
         acaGrossPremiumDirection: 'uncertain',
         diagnostics: [],
@@ -542,7 +542,7 @@ describe('compareScenarioPlans', () => {
     // Each side's unpriced ACA years travel with it, so the page can name them.
     expect(result.baselineAcaGrossPremiumYears).toEqual([])
     expect(result.baselineAcaGrossPremiumDirection).toBeNull()
-    expect(result.proposalAcaGrossPremiumYears).toEqual([2027, 2028])
+    expect(result.proposalAcaGrossPremiumYears).toEqual([2028, 2029])
     expect(result.proposalAcaGrossPremiumReasons).toEqual(['tax-year-parameters-unsupported'])
     expect(result.proposalAcaGrossPremiumDirection).toBe('uncertain')
   })

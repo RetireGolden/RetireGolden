@@ -14,17 +14,22 @@
  * is always the federal engine, regardless of which TaxCalculator the
  * projection runs — strategies target federal-law boundaries by definition.
  *
- * Threshold scaling matches the projection: IRMAA thresholds, the FPL, and the
- * federal rate-bracket bounds all index at general inflation beyond the
- * published pack, because each is adjusted annually by statute and the metric
- * being compared against them is nominal. A `fixedMagi` ceiling is the user's
- * own nominal number and is left exactly as entered.
+ * Threshold scaling matches the projection: IRMAA thresholds and the federal
+ * rate-bracket bounds index at general inflation beyond the published pack,
+ * because each is adjusted annually by statute and the metric being compared
+ * against them is nominal. The ACA cliff is different: it reads the coverage
+ * year's own published poverty guidelines (`acaParametersForCoverageYear`), as
+ * published and never inflated, so it is exact in a year whose income-tax pack
+ * is still a stand-in; a coverage year with no published figures is not sized
+ * at all. A `fixedMagi` ceiling is the user's own nominal number and is left
+ * exactly as entered.
  */
 
 import type { Plan } from '../model/plan.js'
 import type { FilingStatus, ParameterPack } from '../params/types.js'
 import type { TaxYearInput } from '../projection/types.js'
 import { indexFederalTaxPack } from '../params/index.js'
+import { acaParametersForCoverageYear } from '../params/acaCoverageYears.js'
 import { acaFederalPovertyLine, type AcaFplRegion } from '../tax/aca.js'
 import * as federalTax from '../tax/federalTax.js'
 import type { FederalTaxDetail } from '../tax/federalTax.js'
@@ -58,7 +63,10 @@ export interface ConversionSizingInput {
    * IRMAA/fixed-MAGI or ACA cliff sizing metrics.
    */
   niitSection911A1NetAddback?: number
-  /** Required for ACA-cliff sizing; absent/non-actionable fails closed. */
+  /**
+   * Required for ACA-cliff sizing; absent/non-actionable fails closed, and so
+   * does a coverage year with no published ACA figures.
+   */
   aca?: {
     actionable: boolean
     taxFamilySize: number
@@ -69,7 +77,7 @@ export interface ConversionSizingInput {
     /** Foreign exclusion also participates in §86 provisional income without becoming ordinary income. */
     foreignExclusionAddback: number
   }
-  /** Scale applied to IRMAA thresholds, the FPL, and the indexed federal tax figures for years beyond the pack. */
+  /** Scale applied to IRMAA thresholds and the indexed federal tax figures for years beyond the pack (not to the FPL). */
   inflationScale: number
   /** Itemized deductions (nominal) so bracket/MAGI targets use the right deduction. */
   itemizedDeductions?: TaxYearInput['itemizedDeductions']
@@ -129,13 +137,17 @@ function ceilingFor(strategy: FillTarget, input: ConversionSizingInput): number 
     }
     case 'acaCliff': {
       if (!input.aca?.actionable) return null
+      // The coverage year's published guidelines at scale 1: the 2026 pack's
+      // guidelines times plan inflation would size a 2027 ceiling on the wrong
+      // year's table (26 CFR 1.36B-1(h)).
+      const coverage = acaParametersForCoverageYear(input.year)
+      if (coverage.isStandIn) return null
       const fpl = acaFederalPovertyLine(
-        pack,
+        coverage.params,
         input.aca.taxFamilySize,
         input.aca.fplRegion,
-        input.inflationScale,
       )
-      return fpl * (pack.aca.maxFplPctForCredit / 100)
+      return fpl * (coverage.params.aca.maxFplPctForCredit / 100)
     }
     case 'fixedMagi':
       return strategy.targetValue !== null && strategy.targetValue > 0 ? strategy.targetValue : null
@@ -144,7 +156,10 @@ function ceilingFor(strategy: FillTarget, input: ConversionSizingInput): number 
 
 /** Largest conversion keeping the strategy's metric at or under its ceiling. */
 export function sizeRothConversion(strategy: FillTarget, input: ConversionSizingInput): SizingResult {
-  if (strategy.target === 'acaCliff' && !input.aca?.actionable) {
+  if (
+    strategy.target === 'acaCliff' &&
+    (!input.aca?.actionable || acaParametersForCoverageYear(input.year).isStandIn)
+  ) {
     return { ok: false, reason: 'aca_nonactionable' }
   }
   const ceiling = ceilingFor(strategy, input)

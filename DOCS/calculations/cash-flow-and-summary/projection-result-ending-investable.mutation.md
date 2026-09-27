@@ -1,11 +1,11 @@
 # Mutation receipt: projection-result-ending-investable
 
-Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-nine` at base `39f8f460`, and re-executed 2026-09-22 against RetireGolden base `4fe87f00` (branch `claude/b1-p4-cards-nine-ten`, pull request #729) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-nine` at base `39f8f460`, and re-executed 2026-09-22 against RetireGolden base `4fe87f00` (branch `claude/b1-p4-cards-nine-ten`, pull request #729), and re-executed 2026-09-27 against RetireGolden base `d9447bec` (branch `claude/aca-2027-coverage-year`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/projection/simulate.ts`
 
 ```diff
-@@ -2878,7 +2878,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
+@@ -2894,7 +2894,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
      endYear,
      years,
      depletionYear,
@@ -26,21 +26,20 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-Re-executed 2026-09-22 on the pull-request branch after the review of #729: the branch was renamed for the pull request and several fixtures changed, so every capture, blob hash and revert note is refreshed against this head. The baseline is green (simulate.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed. Exit code: 1.
+Re-executed 2026-09-27 for the review of decision D-ACA-2027-TABLE: the capture was stale on main (simulate.evidence.test.ts grew from 3 to 9 tests and its stack lines moved) and simulate.ts has moved since, so the hunk header was recomputed from the current file and the capture, blob hash and revert note are refreshed against this head. The baseline is green (simulate.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/TEMP/rg-rehearse2/packages/engine
+RUN  v5.0.0 C:/rgwt/engine7/packages/engine
 
- ❯ src/projection/simulate.evidence.test.ts (3 tests | 2 failed) 39ms
+ ❯ src/projection/simulate.evidence.test.ts (9 tests | 2 failed) 52ms
    ❯ projection-result-ending-investable — Projection-result ending investable balance (1)
      × republishes the 2031 row and not the 2030 one 7ms
    ❯ projection-result-ending-net-worth — Projection-result ending net worth (1)
      × republishes the 2031 row and never substitutes ending investable 3ms
 
  Test Files  1 failed (1)
-      Tests  2 failed | 1 passed (3)
+      Tests  2 failed | 7 passed (9)
 
-  Transform  transforming modules took 2.18s · 45% of tracked time, re-done on every run
              persist transforms across runs with fsModuleCache: true
              learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
 
@@ -56,14 +55,14 @@ AssertionError: endingInvestable 510000 is not within {"abs":0.005} of the works
 - true
 + false
 
- ❯ expectWithin src/projection/simulate.evidence.test.ts:33:5
-     31|     withinTolerance(actual, target, tolerance),
-     32|     `${label} ${actual} is not within ${JSON.stringify(tolerance)} of …
-     33|   ).toBe(true)
+ ❯ expectWithin src/projection/simulate.evidence.test.ts:35:5
+     33|     withinTolerance(actual, target, tolerance),
+     34|     `${label} ${actual} is not within ${JSON.stringify(tolerance)} of …
+     35|   ).toBe(true)
        |     ^
-     34| }
-     35|
- ❯ src/projection/simulate.evidence.test.ts:210:7
+     36| }
+     37|
+ ❯ src/projection/simulate.evidence.test.ts:212:7
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
 
@@ -76,14 +75,14 @@ AssertionError: net worth above ending investable 391375.625 is not within {"abs
 - true
 + false
 
- ❯ expectWithin src/projection/simulate.evidence.test.ts:33:5
-     31|     withinTolerance(actual, target, tolerance),
-     32|     `${label} ${actual} is not within ${JSON.stringify(tolerance)} of …
-     33|   ).toBe(true)
+ ❯ expectWithin src/projection/simulate.evidence.test.ts:35:5
+     33|     withinTolerance(actual, target, tolerance),
+     34|     `${label} ${actual} is not within ${JSON.stringify(tolerance)} of …
+     35|   ).toBe(true)
        |     ^
-     34| }
-     35|
- ❯ src/projection/simulate.evidence.test.ts:261:7
+     36| }
+     37|
+ ❯ src/projection/simulate.evidence.test.ts:263:7
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
 ```

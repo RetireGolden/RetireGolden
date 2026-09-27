@@ -454,13 +454,14 @@ describe('parameter pack provenance', () => {
         .toBeCloseTo(205_000 * Math.pow(1.02, 3), 6)
     })
 
-    it('refuses a pack year that cannot measure from the August 2026 base', () => {
+    it('refuses a pack year that cannot measure from the August 2026 base when no explicit base is given', () => {
       // (i)(5)(C)(i) carries no end date of its own, so a 2027 pack is
-      // publishable and would reach the resumed branch. Its inflation factor
-      // starts at its own year and cannot reach back to August 2026, so a 2029
-      // premium year would price the 2027-to-2029 span where (C)(ii) asks for
-      // 2026-to-2028 -- a wrong answer that looks like a right one. The refusal
-      // is what keeps the next pack from shipping that silently.
+      // publishable and would reach the resumed branch. A factor that starts at
+      // its own year cannot reach back to August 2026, so without
+      // inflationFactorBetween a 2029 premium year would price the 2027-to-2029
+      // span where (C)(ii) asks for 2026-to-2028 -- a wrong answer that looks
+      // like a right one. The refusal keeps a caller that cannot carry the base
+      // from shipping that silently.
       const laterPack = { ...pack, year: 2027 }
       expect(() => irmaaTierThreshold(laterPack, 4, 'single', at(2029))).toThrow(/August 2026/u)
       // The carve-out reaches only the top row, so every row beneath it still
@@ -468,6 +469,46 @@ describe('parameter pack provenance', () => {
       expect(() => irmaaTierThreshold(laterPack, 3, 'single', at(2029))).not.toThrow()
       // And the frozen years never reach the branch at all, from any pack year.
       expect(irmaaTierThreshold(laterPack, 4, 'single', at(2027))).toBe(500_000)
+    })
+
+    it('measures a 2027 pack\'s resumed top row from the August 2026 base on a varying inflation path', () => {
+      // A synthetic 2027 pack (the 2026 figures under a 2027 year, which is
+      // what a published 2027 pack's still-frozen top row looks like) and an
+      // inflation path that varies by year: 3% into 2027, 2% into 2028, 5% into
+      // 2029, 2.5% after. (C)(ii) measures a 2029 premium year from August 2026
+      // to August 2028, which the engine reads as the path from 2026 to 2028:
+      // 500,000 x 1.03 x 1.02 = 525,300, rounded under (i)(5)(B) to 525,000.
+      // Anchoring at the 2027 pack instead would take 2027 to 2029:
+      // 500,000 x 1.02 x 1.05 = 535,500 -> 536,000. At a constant rate the two
+      // agree, which is why the path varies.
+      const rates: Record<number, number> = { 2027: 0.03, 2028: 0.02, 2029: 0.05 }
+      const between = (fromYear: number, toYear: number): number => {
+        let factor = 1
+        for (let year = fromYear + 1; year <= toYear; year++) factor *= 1 + (rates[year] ?? 0.025)
+        return factor
+      }
+      const atOnPath = (packYear: number, premiumYear: number): IrmaaThresholdYear => ({
+        premiumYear,
+        inflationFactorToYear: (year: number): number => between(packYear, year),
+        inflationFactorBetween: between,
+      })
+      const pack2027 = { ...pack, year: 2027 }
+
+      expect(irmaaTierThreshold(pack2027, 4, 'single', atOnPath(2027, 2029))).toBe(525_000)
+      expect(irmaaTierThreshold(pack2027, 4, 'single', atOnPath(2027, 2029))).not.toBe(536_000)
+      // The first resumed year carries one year of the base's growth, 3%.
+      expect(irmaaTierThreshold(pack2027, 4, 'single', atOnPath(2027, 2028))).toBe(515_000)
+      // The same path read from the 2026 pack gives the same row: the base, not
+      // the pack year, decides it.
+      expect(irmaaTierThreshold(pack, 4, 'single', atOnPath(2026, 2029))).toBe(525_000)
+      // The joint row is 150 percent of 500,000 and follows the same base:
+      // 750,000 x 1.0506 = 787,950 -> 788,000.
+      expect(irmaaTierThreshold(pack2027, 4, 'marriedFilingJointly', atOnPath(2027, 2029))).toBe(788_000)
+      // Tier selection prices the whole table without throwing.
+      expect(irmaaTierForMagi(pack2027, 530_000, 'single', atOnPath(2027, 2029))).toBe(5)
+      // The rows beneath keep indexing from the pack's own year: 205,000 x
+      // 1.02 x 1.05, unrounded.
+      expect(irmaaTierThreshold(pack2027, 3, 'single', atOnPath(2027, 2029))).toBeCloseTo(205_000 * 1.02 * 1.05, 6)
     })
   })
 

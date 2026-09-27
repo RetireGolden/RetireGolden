@@ -27,7 +27,7 @@
           "functions": [
             {
               "name": "annualFundingApplicationAndClosePhase",
-              "line": 442
+              "line": 450
             }
           ]
         },
@@ -36,7 +36,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         }
@@ -117,7 +117,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         },
@@ -227,7 +227,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         },
@@ -333,7 +333,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         },
@@ -413,7 +413,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         }
@@ -488,7 +488,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         },
@@ -593,7 +593,7 @@
           "functions": [
             {
               "name": "rmdStartAgeForBirthYear",
-              "line": 137
+              "line": 148
             }
           ]
         },
@@ -714,7 +714,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         },
@@ -807,7 +807,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         },
@@ -913,7 +913,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         },
@@ -1008,7 +1008,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         }
@@ -1099,7 +1099,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         }
@@ -1174,7 +1174,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         },
@@ -1252,7 +1252,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         }
@@ -1328,7 +1328,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         },
@@ -1493,7 +1493,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         },
@@ -1776,7 +1776,7 @@
           "functions": [
             {
               "name": "rmdStartAgeForBirthYear",
-              "line": 137
+              "line": 148
             }
           ]
         },
@@ -1870,7 +1870,7 @@
           "functions": [
             {
               "name": "rmdStartAgeForBirthYear",
-              "line": 137
+              "line": 148
             }
           ]
         },
@@ -1963,7 +1963,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         },
@@ -2069,7 +2069,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         },
@@ -2147,7 +2147,7 @@
           "functions": [
             {
               "name": "singleLifeExpectancyYears",
-              "line": 160
+              "line": 171
             }
           ]
         },
@@ -2366,7 +2366,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         }
@@ -2497,7 +2497,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         }
@@ -2599,7 +2599,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         }
@@ -2674,7 +2674,7 @@
           "functions": [
             {
               "name": "year2026",
-              "line": 16
+              "line": 17
             }
           ]
         },
@@ -2692,7 +2692,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         }
@@ -2703,12 +2703,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/params/params.test.ts",
-          "line": 607,
+          "line": 648,
           "note": null,
           "tests": [
             {
               "title": "carries the published cap on a ten-thousand-dollar step",
-              "line": 611
+              "line": 652
             }
           ]
         }
@@ -2772,7 +2772,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         },
@@ -2850,7 +2850,7 @@
           "functions": [
             {
               "name": "year2026",
-              "line": 16
+              "line": 17
             }
           ]
         },
@@ -2859,7 +2859,7 @@
           "functions": [
             {
               "name": "uniformLifetimeDivisor",
-              "line": 143
+              "line": 154
             }
           ]
         },
@@ -2934,7 +2934,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         },
@@ -3026,7 +3026,7 @@
           "functions": [
             {
               "name": "uniformLifetimeDivisor",
-              "line": 143
+              "line": 154
             }
           ]
         },
@@ -3044,7 +3044,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         }
@@ -3141,7 +3141,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         },
@@ -3308,7 +3308,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         }
@@ -3406,7 +3406,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         },
@@ -3628,7 +3628,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         }
@@ -3753,7 +3753,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         }
@@ -4045,7 +4045,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         },
@@ -4149,7 +4149,7 @@
           "functions": [
             {
               "name": "annualFundingApplicationAndClosePhase",
-              "line": 442
+              "line": 450
             }
           ]
         },
@@ -4158,7 +4158,7 @@
           "functions": [
             {
               "name": "annualFundingCandidateEvaluation",
-              "line": 187
+              "line": 190
             }
           ]
         },
@@ -4198,7 +4198,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         }
@@ -4319,7 +4319,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         },
@@ -4427,7 +4427,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         },
@@ -4572,7 +4572,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         },
@@ -4636,7 +4636,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         },

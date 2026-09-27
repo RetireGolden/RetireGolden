@@ -92,7 +92,8 @@ export interface AnnualExpenseAssemblyPhaseInput {
   readonly year: number
   readonly startYear: number
   readonly inflFactor: number
-  readonly isStandIn: boolean
+  /** True when the coverage year has no published ACA block (`acaParametersForCoverageYear`); read only by the ACA gate. */
+  readonly acaParametersStandIn: boolean
   readonly inflFactorFrom: (fromYear: number, toYear: number) => number
   readonly healthInflFactorFrom: (fromYear: number, toYear: number) => number
   readonly aliveCount: number
@@ -207,7 +208,7 @@ export function annualExpenseAssemblyPhase(
     year,
     startYear,
     inflFactor,
-    isStandIn,
+    acaParametersStandIn,
     inflFactorFrom,
     healthInflFactorFrom,
     aliveCount,
@@ -293,7 +294,7 @@ export function annualExpenseAssemblyPhase(
     taxFilingStatusForYear,
     inflFactorFrom,
     healthInflFactorFrom,
-    isStandIn,
+    acaParametersStandIn,
     hasModeledPerson,
     resolvePerson: stateOf,
     planHasTaxExemptYieldAttestation,

@@ -95,28 +95,107 @@ describe('healthcare and penalties', () => {
     })
   })
 
-  it('fails closed for future years without sourced tax-year parameters', () => {
-    const plan = basePlan()
-    plan.household.people[0]!.dob = '1964-06-15'
-    currentYearAca(plan)
-    const future = structuredClone(plan.expenses.healthcare.acaYears![0]!)
-    future.year = 2027
-    plan.expenses.healthcare.acaYears!.push(future)
-    plan.incomes = [
-      { type: 'recurring', id: testIds(), label: 'Income', annualAmount: 30_000, startYear: 2026, endYear: null, inflationAdjusted: false, taxTreatment: 'ordinary' },
-    ]
-    plan.accounts = [cash(200_000)]
+  // The 2027 coverage year's poverty line for one person: the HHS 2026
+  // guidelines as published (15,960). The income-tax pack's guidelines are the
+  // 2025 ones (15,650); scaled by 2.5% plan inflation they are 16,041.25, and
+  // the published line scaled is 16,359.
+  describeRule('irc-36B-d-3-B-poverty-line-for-coverage-year', {
+    readings: {
+      guidelinesInForceAtOpenEnrollment: 15_960,
+      incomeTaxPackGuidelines: 15_650,
+      incomeTaxPackGuidelinesInflated: 15_650 * 1.025,
+      publishedGuidelinesInflated: 15_960 * 1.025,
+    },
+    accepted: 'guidelinesInForceAtOpenEnrollment',
+    note: 'Published poverty line for a single filer in the 2027 coverage year at 2.5% plan inflation.',
+  }, ({ accepted, readings }) => {
+    it('prices a coverage year from its published ACA figures and fails closed for one without them', () => {
+      const plan = basePlan()
+      plan.household.people[0]!.dob = '1964-06-15'
+      // A nonzero plan inflation is what separates the published 2027 poverty
+      // line (15,960) from the 2026 pack's guidelines scaled forward
+      // (15,650 x 1.025 = 16,041.25) and from the published line scaled
+      // (15,960 x 1.025 = 16,359).
+      plan.assumptions.inflationPct = 2.5
+      currentYearAca(plan)
+      for (const year of [2027, 2028]) {
+        const next = structuredClone(plan.expenses.healthcare.acaYears![0]!)
+        next.year = year
+        plan.expenses.healthcare.acaYears!.push(next)
+      }
+      plan.incomes = [
+        { type: 'recurring', id: testIds(), label: 'Income', annualAmount: 30_000, startYear: 2026, endYear: null, inflationAdjusted: false, taxTreatment: 'ordinary' },
+      ]
+      plan.accounts = [cash(200_000)]
 
-    const result = simulatePlan(validate(plan), {
-      startYear: 2026,
-      horizonEndYear: 2027,
-      taxCalculator: noTax,
+      const result = simulatePlan(validate(plan), {
+        startYear: 2026,
+        horizonEndYear: 2028,
+        taxCalculator: noTax,
+      })
+      const [y2026, y2027, y2028] = result.years
+      expect(y2026!.aca?.readiness).toBe('actionable')
+      expect(y2026!.aca?.supportCodes).toEqual(['actionable'])
+      expect(y2026!.aca?.federalPovertyLine).toBe(15_650)
+
+      // 2027: Rev. Proc. 2026-26 and the HHS 2026 guidelines are published, so
+      // the credit is priced while the 2027 income-tax figures are a stand-in.
+      expect(y2027!.aca?.readiness).toBe('actionable')
+      expect(y2027!.aca?.supportCodes).toEqual(['actionable', 'income-tax-parameters-projected'])
+      expect(y2027!.aca?.federalPovertyLine).toBe(accepted)
+      for (const wrong of [
+        readings.incomeTaxPackGuidelines,
+        readings.incomeTaxPackGuidelinesInflated,
+        readings.publishedGuidelinesInflated,
+      ]) {
+        expect(y2027!.aca?.federalPovertyLine).not.toBe(wrong)
+      }
+      expect(y2027!.aca?.fplPct).toBeCloseTo((30_000 / accepted) * 100, 9)
+      expect(y2027!.aca?.modeledAllowablePtc).toBeGreaterThan(0)
+      expect(y2027!.aca?.convergence.grossPremiumFallback).toBe(false)
+
+      // 2028: nothing is published, so the year fails closed on the gross premium.
+      expect(y2028!.aca?.readiness).toBe('nonActionable')
+      expect(y2028!.aca?.supportCodes).toContain('tax-year-parameters-unsupported')
+      expect(y2028!.aca?.supportCodes).not.toContain('income-tax-parameters-projected')
+      expect(y2028!.aca?.federalPovertyLine).toBeNull()
+      expect(y2028!.expenses.healthcare).toBe(12_000)
     })
-    expect(result.years[0]!.aca?.readiness).toBe('actionable')
-    expect(result.years[1]!.aca?.readiness).toBe('nonActionable')
-    expect(result.years[1]!.aca?.supportCodes).toContain('tax-year-parameters-unsupported')
-    expect(result.years[1]!.aca?.federalPovertyLine).toBeNull()
-    expect(result.years[1]!.expenses.healthcare).toBe(12_000)
+
+    it('sizes a 2027 acaCliff conversion to four times the published 2027 poverty line', () => {
+      // 4 x 15,960 = 63,840. Sized on the 2026 pack's guidelines at the tax
+      // scale it would be 62,600 x 1.025 = 64,165, which is 402.04% of the
+      // 2027 line and above the cliff.
+      const plan = basePlan()
+      plan.household.people[0]!.dob = '1964-06-15'
+      plan.assumptions.inflationPct = 2.5
+      currentYearAca(plan, { year: 2027 })
+      plan.accounts = [
+        cash(200_000),
+        traditional(400_000),
+        { type: 'roth', id: testIds(), name: 'Roth', ownerPersonId: 'p1', annualReturnPct: null, kind: 'ira', balance: 0, annualContribution: 0 },
+      ]
+      plan.strategies.rothConversion = {
+        mode: 'fillToTarget',
+        target: 'acaCliff',
+        targetValue: null,
+        startYear: 2027,
+        endYear: 2027,
+      }
+      const year = simulatePlan(validate(plan), {
+        startYear: 2027,
+        horizonEndYear: 2027,
+        taxCalculator: createFederalTaxCalculator(),
+      }).years[0]!
+      expect(year.aca?.readiness).toBe('actionable')
+      expect(year.aca?.federalPovertyLine).toBe(accepted)
+      expect(year.rothConversion).toBeGreaterThan(0)
+      expect(year.aca?.householdMagi).toBeCloseTo(4 * accepted, 2)
+      expect(year.aca?.householdMagi).not.toBeCloseTo(4 * readings.incomeTaxPackGuidelinesInflated, 0)
+      expect(year.aca?.cliffState).toBe('at-cliff')
+      // At exactly 400% the flat 10.22% band applies: 12,000 - 0.1022 x 63,840.
+      expect(year.aca?.modeledAllowablePtc).toBeCloseTo(12_000 - 0.1022 * 63_840, 2)
+    })
   })
 
   it('fails closed before reconciling ACA with an adaptive spending policy', () => {

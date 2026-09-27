@@ -16,9 +16,11 @@ import {
   type UnpricedCreditFacts,
 } from './acaVetoCopy'
 
+// Years that wait on published credit figures are 2028 and later: 2026 and 2027
+// have their figures (params/acaCoverageYears.ts).
 function veto(overrides: Partial<AcaActionabilityVeto> = {}): AcaActionabilityVeto {
   return {
-    baselineNonActionableYears: [2027, 2028],
+    baselineNonActionableYears: [2028, 2029],
     candidateNonActionableYears: [],
     supportCodes: ['tax-year-parameters-unsupported'],
     vetoedCandidateIds: ['bracket-10'],
@@ -38,7 +40,7 @@ describe('acaVetoYears', () => {
 describe('acaVetoExplanation', () => {
   it('names the missing-parameters cause and the blocked row caveat', () => {
     const text = acaVetoExplanation(veto())
-    expect(text).toContain('marketplace (ACA) coverage in 2027 and 2028')
+    expect(text).toContain('marketplace (ACA) coverage in 2028 and 2029')
     expect(text).toContain("RetireGolden doesn't have the credit's figures for those years yet")
     expect(text).toContain('no conversion schedule is presented as actionable')
     expect(text).toContain('leave the unpriced ACA effect out')
@@ -60,21 +62,21 @@ describe('acaVetoExplanation', () => {
   })
 
   it('falls back to the generic cause when codes are mixed across years', () => {
-    // 2026 is non-actionable for unknown tax-exempt interest; only 2027 waits
-    // on parameters — claiming both years wait on parameters would be false.
+    // 2026 is non-actionable for unknown tax-exempt interest; only 2028 waits
+    // on parameters, and claiming both years wait on parameters would be false.
     const text = acaVetoExplanation(
       veto({
-        baselineNonActionableYears: [2026, 2027],
+        baselineNonActionableYears: [2026, 2028],
         supportCodes: ['other-material-facts-unsupported', 'tax-year-parameters-unsupported'],
       }),
     )
-    expect(text).toContain('The marketplace (ACA) evidence for 2026 and 2027 could not be priced as actionable')
+    expect(text).toContain('The marketplace (ACA) evidence for 2026 and 2028 could not be priced as actionable')
     expect(text).not.toContain("doesn't have the credit's figures")
   })
 
   it('lists three or more years with commas', () => {
-    const text = acaVetoExplanation(veto({ baselineNonActionableYears: [2026, 2027, 2028] }))
-    expect(text).toContain('2026, 2027, and 2028')
+    const text = acaVetoExplanation(veto({ baselineNonActionableYears: [2028, 2029, 2030] }))
+    expect(text).toContain('2028, 2029, and 2030')
   })
 })
 
@@ -104,30 +106,30 @@ describe('unpricedCreditSpendingNote', () => {
   })
 
   it('names one reason for every year when there is only one', () => {
-    expect(unpricedCreditSpendingNote(facts([2027, 2028, 2029], ['tax-year-parameters-unsupported']), true)).toBe(
-      "The premium tax credit isn't counted in 2027 to 2029: RetireGolden doesn't have the credit's figures for those years yet. " +
+    expect(unpricedCreditSpendingNote(facts([2028, 2029, 2030], ['tax-year-parameters-unsupported']), true)).toBe(
+      "The premium tax credit isn't counted in 2028 to 2030: RetireGolden doesn't have the credit's figures for those years yet. " +
         fixedTail,
     )
   })
 
   it('names every reason for a single year, which has them all', () => {
     expect(
-      unpricedCreditSpendingNote(facts([2027], ['missing-year-contract', 'tax-year-parameters-unsupported']), true),
+      unpricedCreditSpendingNote(facts([2028], ['missing-year-contract', 'tax-year-parameters-unsupported']), true),
     ).toBe(
-      "The premium tax credit isn't counted in 2027: the planner doesn't yet collect the household details the credit needs and " +
+      "The premium tax credit isn't counted in 2028: the planner doesn't yet collect the household details the credit needs and " +
         "RetireGolden doesn't have the credit's figures for that year yet. " +
         'The projection pays the full Marketplace premium in that year; if you receive a credit then, you would likely be able to spend somewhat more than this.',
     )
   })
 
   it('does not pin every merged reason on every year, and states the below-poverty-line case as current law has it', () => {
-    // 2026 is below the poverty line; 2027 and 2028 wait on parameters.
+    // 2026 is below the poverty line; 2028 and 2029 wait on parameters.
     const text = unpricedCreditSpendingNote(
-      facts([2026, 2027, 2028], ['below-100-fpl-exception-unsupported', 'tax-year-parameters-unsupported']),
+      facts([2026, 2028, 2029], ['below-100-fpl-exception-unsupported', 'tax-year-parameters-unsupported']),
       true,
     )
     expect(text).toBe(
-      "The premium tax credit isn't counted in 2026 to 2028. In each of those years, at least one of these applies: " +
+      "The premium tax credit isn't counted in 2026, 2028, and 2029. In each of those years, at least one of these applies: " +
         'income is below the poverty line, where there is generally no credit and Medicaid may apply; ' +
         "RetireGolden doesn't have the credit's figures for those years yet. " +
         fixedTail,
@@ -155,10 +157,10 @@ describe('unpricedCreditSpendingNote', () => {
   })
 
   it('never calls a missing answer conservative', () => {
-    expect(unpricedCreditSpendingNote(facts([2027], ['tax-year-parameters-unsupported']), false)).toMatch(
+    expect(unpricedCreditSpendingNote(facts([2028], ['tax-year-parameters-unsupported']), false)).toMatch(
       /in that year; a credit then would lower that cost\.$/,
     )
-    expect(unpricedCreditSpendingNote(facts([2027], ['tax-year-parameters-unsupported'], 'uncertain'), false)).toMatch(
+    expect(unpricedCreditSpendingNote(facts([2028], ['tax-year-parameters-unsupported'], 'uncertain'), false)).toMatch(
       /in that year; a credit then could change this result, because your spending guardrails respond to what healthcare costs\.$/,
     )
   })
@@ -166,7 +168,7 @@ describe('unpricedCreditSpendingNote', () => {
 
 describe('diagnosticsWithoutUnpricedCreditSentence', () => {
   const engineSentence =
-    'The ACA premium tax credit is not priced in 2027 (tax-year-parameters-unsupported); the ledger budgets the full Marketplace premium in those years, and a credit there would lower that cost.'
+    'The ACA premium tax credit is not priced in 2028 (tax-year-parameters-unsupported); the ledger budgets the full Marketplace premium in those years, and a credit there would lower that cost.'
 
   it('drops the engine sentence by its content, wherever it sits', () => {
     expect(diagnosticsWithoutUnpricedCreditSentence(['Stopped early.', engineSentence])).toEqual(['Stopped early.'])

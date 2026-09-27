@@ -27,6 +27,7 @@
 
 import type { Account, IncomeStream, Plan } from '@retiregolden/engine/model/plan'
 import {
+  ACA_COVERAGE_YEARS,
   LATEST_PACK_YEAR,
   PARAMETER_DATA_AS_OF,
   PARAMETER_DATA_BASIS,
@@ -48,7 +49,7 @@ import {
 } from '@retiregolden/engine/projection/yearFigures'
 import { csvCell } from '../csvCell'
 import { hasUnassignedCash } from '../planner/accountCategories'
-import { acaLedgerSummary } from '../planner/acaReportStatus'
+import { acaLedgerSummary, acaProjectedIncomeTaxNote } from '../planner/acaReportStatus'
 import { fmtMoney } from '../planner/format'
 import { isPlanIncomplete } from '../planner/planCompleteness'
 import {
@@ -248,6 +249,14 @@ export interface ReportAcaLedgerBlock {
     economicNetPremium: number
     readiness: 'actionable' | 'nonActionable'
   }>
+  /**
+   * The sentence for priced years whose household income rests on projected
+   * tax brackets (engine support code income-tax-parameters-projected), as the
+   * on-screen report's ACA status says it; null when there are none. Optional
+   * because a version-3 model saved before it has no such field, and the
+   * standalone report then prints no note.
+   */
+  projectedIncomeTaxNote?: string | null
 }
 
 /** Engine warnings for this run — model limitations the report must surface. */
@@ -395,10 +404,29 @@ export interface ReportAdvisorRecommendationsBlock {
 // Model
 // ---------------------------------------------------------------------------
 
+/** One Marketplace coverage year whose premium-tax-credit figures the engine carries. */
+export interface ReportAcaCoverageYear {
+  coverageYear: number
+  /** The revenue procedure that publishes the year's applicable percentage table. */
+  applicablePercentageSource: string
+  /** The HHS poverty guidelines in effect for the year's coverage. */
+  povertyGuidelineSource: string
+}
+
 /** Where the numbers came from: law/data vintage and build identifiers. */
 export interface ReportProvenance {
   federalParameterPackYear: number
   stateParameterPackYear: number
+  /**
+   * Every coverage year with published ACA premium-tax-credit figures,
+   * ascending. They are published on their own calendar, so this can run a
+   * year past the federal parameter pack; a later year is not priced.
+   * buildReportModel always sets it. It is optional because a version-3 model
+   * saved before it was added has no such field (the version did not change),
+   * and the standalone report then prints no "ACA premium tax credit figures"
+   * row; read it as `acaCoverageYears ?? []`.
+   */
+  acaCoverageYears?: ReportAcaCoverageYear[]
   parameterDataAsOf: string
   parameterDataBasis: string
   /** Engine build the host ran, when the host supplies it — never guessed. */
@@ -1073,6 +1101,11 @@ export function buildReportModel(input: ReportModelInput): ReportModel {
     provenance: {
       federalParameterPackYear: LATEST_PACK_YEAR,
       stateParameterPackYear: LATEST_STATE_PACK_YEAR,
+      acaCoverageYears: ACA_COVERAGE_YEARS.map((block) => ({
+        coverageYear: block.coverageYear,
+        applicablePercentageSource: block.applicablePercentageSource,
+        povertyGuidelineSource: block.povertyGuidelineSource,
+      })),
       parameterDataAsOf: PARAMETER_DATA_AS_OF,
       parameterDataBasis: PARAMETER_DATA_BASIS,
       engineVersion: input.build?.engineVersion ?? null,
@@ -1149,6 +1182,7 @@ export function buildReportModel(input: ReportModelInput): ReportModel {
           economicNetPremium: roundDollar(row.economicNetPremium),
           readiness: row.readiness,
         })),
+        projectedIncomeTaxNote: acaProjectedIncomeTaxNote(result.years),
       },
       'modeling-notes': { warnings: [...result.warnings] },
       'year-ledger': { rows: result.years.map(yearLedgerRow) },

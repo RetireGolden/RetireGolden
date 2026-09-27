@@ -14,7 +14,7 @@
 
 import type { AcaActionabilityVeto } from '@retiregolden/engine/projection/optimizePlan'
 import { isAcaGrossPremiumDiagnostic } from '@retiregolden/engine/decisions/spendingSolverDiagnostics'
-import type { AcaSupportCode } from '@retiregolden/engine/projection/types'
+import { INFORMATIONAL_ACA_SUPPORT_CODES, type AcaSupportCode } from '@retiregolden/engine/projection/types'
 
 /** Every non-actionable ACA year the veto cites, merged and ascending. */
 export function acaVetoYears(veto: AcaActionabilityVeto): number[] {
@@ -51,13 +51,14 @@ export function formatYearRuns(years: number[]): string {
 
 /**
  * Why a Marketplace year's credit is not priced, by the engine's support
- * code. The two tax-exempt-interest codes are informational (they never block
- * a year) and give no reason; any other code reads as the generic one.
+ * code. The informational codes (the engine's INFORMATIONAL_ACA_SUPPORT_CODES:
+ * the two tax-exempt-interest codes and income-tax-parameters-projected) never
+ * block a year and give no reason; any other code reads as the generic one.
  */
 const UNPRICED_CREDIT_REASONS: Partial<Record<AcaSupportCode, string>> = {
-  // Whether the IRS has published a later year's figures is not what blocks
-  // it (the 2027 applicable-percentage table is out): the engine has no
-  // sourced parameter pack for the year yet.
+  // The engine prices a coverage year once its applicable-percentage table
+  // and poverty guidelines are in its coverage-year block
+  // (params/acaCoverageYears.ts); 2028 and later are not published yet.
   'tax-year-parameters-unsupported': "RetireGolden doesn't have the credit's figures for that year yet",
   // No screen collects the per-year household contract yet, so the reason
   // points at the planner, not at a field the reader cannot find.
@@ -72,10 +73,9 @@ const UNPRICED_CREDIT_REASONS: Partial<Record<AcaSupportCode, string>> = {
   'example-contract-input-mismatch': "the example's inputs were edited, so its stated credit figures no longer apply",
 }
 const OTHER_UNPRICED_CREDIT_REASON = 'some facts the credit needs are missing'
-const NOT_A_REASON: ReadonlySet<AcaSupportCode> = new Set([
+const NOT_A_REASON: ReadonlySet<AcaSupportCode> = new Set<AcaSupportCode>([
   'actionable',
-  'tax-exempt-interest-plan-derived',
-  'tax-exempt-interest-contract-contradicted',
+  ...INFORMATIONAL_ACA_SUPPORT_CODES,
 ])
 
 /** What the solver publishes about the Marketplace years it could not price (SustainableSpendingResult). */

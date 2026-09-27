@@ -1,6 +1,6 @@
 # Mutation receipt: aca-allowable-premium-tax-credit
 
-Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-eight` at base `989fc81b`, and re-executed 2026-09-22 against RetireGolden base `a046c8f0` (branch `claude/b1-p4-cards-eight`, pull request #728) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-eight` at base `989fc81b`, and re-executed 2026-09-22 against RetireGolden base `a046c8f0` (branch `claude/b1-p4-cards-eight`, pull request #728), and re-executed 2026-09-27 against RetireGolden base `a5d07d32` (branch `claude/aca-2027-coverage-year`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/tax/aca.ts`
 
@@ -26,16 +26,16 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/tax/aca.evi
 
 ## Captured failing output
 
-Re-executed 2026-09-22 on the pull-request branch after the review of #728: the branch was renamed for the pull request and two fixtures and one mutation changed, so every capture, blob hash and revert note is refreshed against this head. The baseline is green (aca.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed. Exit code: 1.
+Re-executed after the IRS rounding change added the rounding case to the evidence file. The baseline is green (aca.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/TEMP/rg-rehearse2/packages/engine
+RUN  v5.0.0 C:/rgwt/engine7/packages/engine
 
- ❯ src/tax/aca.evidence.test.ts (13 tests | 6 failed) 8ms
+ ❯ src/tax/aca.evidence.test.ts (14 tests | 6 failed) 8ms
    ❯ aca-400-percent-cliff — ACA 400% FPL cliff (3)
      × allows the credit at exactly 400% of the poverty line 4ms
    ❯ aca-allowable-premium-tax-credit — ACA modeled allowable premium tax credit (3)
-     × credits the 12,000 benchmark less the 2,791.80 contribution, under the 10,000 enrollment cap 1ms
+     × credits the 12,000 benchmark less the 2,791.80 contribution, under the 10,000 enrollment cap 0ms
      × caps the credit at the enrollment premium when the benchmark is dearer than the plan bought 0ms
      × floors the credit at zero when the contribution exceeds the benchmark 0ms
    ❯ aca-economic-net-premium — ACA economic net premium (2)
@@ -43,7 +43,7 @@ RUN  v5.0.0 C:/TEMP/rg-rehearse2/packages/engine
      × never falls below zero, because each month's credit is capped at that month's premium 0ms
 
  Test Files  1 failed (1)
-      Tests  6 failed | 7 passed (13)
+      Tests  6 failed | 8 passed (14)
 
 
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 6 ⎯⎯⎯⎯⎯⎯⎯
@@ -84,7 +84,7 @@ AssertionError: modeledAllowablePtc 7208.200000000001 is not within {"abs":0.005
        |     ^
      29| }
      30|
- ❯ src/tax/aca.evidence.test.ts:207:7
+ ❯ src/tax/aca.evidence.test.ts:221:7
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/6]⎯
 
@@ -104,7 +104,7 @@ AssertionError: modeledAllowablePtc 0 is not within {"abs":0.005} of the workshe
        |     ^
      29| }
      30|
- ❯ src/tax/aca.evidence.test.ts:225:7
+ ❯ src/tax/aca.evidence.test.ts:239:7
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/6]⎯
 
@@ -117,13 +117,13 @@ AssertionError: expected 1633.5999999999985 to be +0 // Object.is equality
 - 0
 + 1633.5999999999985
 
- ❯ src/tax/aca.evidence.test.ts:236:40
-    234|         byMonth(4_000),
-    235|       )
-    236|       expect(none.modeledAllowablePtc).toBe(0)
+ ❯ src/tax/aca.evidence.test.ts:250:40
+    248|         byMonth(4_000),
+    249|       )
+    250|       expect(none.modeledAllowablePtc).toBe(0)
        |                                        ^
-    237|     })
-    238|   },
+    251|     })
+    252|   },
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/6]⎯
 
@@ -143,7 +143,7 @@ AssertionError: modeledAllowablePtc 7208.200000000001 is not within {"abs":0.005
        |     ^
      29| }
      30|
- ❯ src/tax/aca.evidence.test.ts:270:7
+ ❯ src/tax/aca.evidence.test.ts:284:7
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/6]⎯
 
@@ -156,13 +156,13 @@ AssertionError: expected 1200 to be +0 // Object.is equality
 - 0
 + 1200
 
- ❯ src/tax/aca.evidence.test.ts:294:41
-    292|         byMonth(inputs.applicableSlcspPremium!),
-    293|       )
-    294|       expect(result.economicNetPremium).toBe(0)
+ ❯ src/tax/aca.evidence.test.ts:308:41
+    306|         byMonth(inputs.applicableSlcspPremium!),
+    307|       )
+    308|       expect(result.economicNetPremium).toBe(0)
        |                                         ^
-    295|     })
-    296|   },
+    309|     })
+    310|   },
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/6]⎯
 ```

@@ -8,10 +8,11 @@
  * - RMD: IRS Pub 590-B Uniform Lifetime Table (2022+); QCD $111,000 (2026)
  * - Medicare: CMS 2026 ($202.90 standard Part B); IRMAA tiers per statute
  * - Social Security: SSA 2026 COLA fact sheet
- * - FPL: HHS 2025 guidelines (apply to 2026 ACA coverage year)
+ * - FPL and ACA table: the 2026 coverage-year block (../acaCoverageYears.ts)
  */
 
 import type { ParameterPack } from '../types.js'
+import { acaCoverageYear2026 } from '../acaCoverageYears.js'
 
 export const year2026: ParameterPack = {
   year: 2026,
@@ -232,33 +233,12 @@ export const year2026: ParameterPack = {
     oasdiEmployeeRatePct: 6.2,
   },
 
-  federalPovertyLine: {
-    // HHS 2025 poverty guidelines used for 2026 Marketplace coverage.
-    contiguous: { firstPerson: 15_650, perAdditionalPerson: 5_500 },
-    alaska: { firstPerson: 19_550, perAdditionalPerson: 6_880 },
-    hawaii: { firstPerson: 17_990, perAdditionalPerson: 6_330 },
-  },
+  // HHS 2025 poverty guidelines (the 2026 Marketplace coverage year's) and the
+  // Rev. Proc. 2025-25 Applicable Percentage Table: one object each, owned by
+  // the 2026 coverage-year block in ../acaCoverageYears.ts.
+  federalPovertyLine: acaCoverageYear2026.federalPovertyLine,
 
-  aca: {
-    // Indexed schedule for 2026 (enhanced credits expired 12/31/2025; cliff
-    // restored). Verified against Rev. Proc. 2025-25 §3.01 (Applicable
-    // Percentage Table for 2026): 2.10% below 133% FPL, then 3.14→4.19 (133–150),
-    // 4.19→6.60 (150–200), 6.60→8.44 (200–250), 8.44→9.96 (250–300), 9.96 flat
-    // through 400%.
-    applicablePctBelowFirstBreakpoint: 2.1,
-    minFplPctForCredit: 100,
-    applicablePctBreakpoints: [
-      // Rev. Proc. 2025-25 has a real step at exactly 133%: income strictly
-      // below uses 2.10%; the 133–150 band opens at 3.14%.
-      { fplPct: 133, applicablePct: 3.14 },
-      { fplPct: 150, applicablePct: 4.19 },
-      { fplPct: 200, applicablePct: 6.6 },
-      { fplPct: 250, applicablePct: 8.44 },
-      { fplPct: 300, applicablePct: 9.96 },
-      { fplPct: 400, applicablePct: 9.96 },
-    ],
-    maxFplPctForCredit: 400,
-  },
+  aca: acaCoverageYear2026.aca,
 
   transferTax: {
     // Rev. Proc. 2025-32 §4.42(1): calendar-year 2026 present-interest annual

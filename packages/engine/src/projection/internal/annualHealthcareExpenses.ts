@@ -66,7 +66,12 @@ export interface AnnualHealthcareExpensesInput {
   readonly taxFilingStatusForYear: FilingStatus
   readonly inflFactorFrom: (fromYear: number, toYear: number) => number
   readonly healthInflFactorFrom: (fromYear: number, toYear: number) => number
-  readonly isStandIn: boolean
+  /**
+   * True when the coverage year has no published ACA block
+   * (`acaParametersForCoverageYear`): its credit figures are not published,
+   * so the year is marked `tax-year-parameters-unsupported` and not priced.
+   */
+  readonly acaParametersStandIn: boolean
   readonly hasModeledPerson: (personId: string) => boolean
   readonly resolvePerson: (personId: string) => PersonYearState
   readonly planHasTaxExemptYieldAttestation: boolean
@@ -165,6 +170,7 @@ export function annualHealthcareExpenses(
           premiumYear: input.year,
           inflationFactorToYear: (toYear) =>
             input.inflFactorFrom(input.pack.year, toYear),
+          inflationFactorBetween: input.inflFactorFrom,
         },
         input.healthInflFactorFrom(input.pack.year, input.year),
       )
@@ -196,6 +202,7 @@ export function annualHealthcareExpenses(
           premiumYear: input.year,
           inflationFactorToYear: (toYear) =>
             input.inflFactorFrom(input.pack.year, toYear),
+          inflationFactorBetween: input.inflFactorFrom,
         })
   const exampleContractInputMismatch =
     input.plan.exampleSourceId !== undefined &&
@@ -282,7 +289,7 @@ export function annualHealthcareExpenses(
   const acaInitialSupportCodes: AcaSupportCode[] = []
 
   if (acaActive) {
-    if (input.isStandIn) {
+    if (input.acaParametersStandIn) {
       acaInitialSupportCodes.push('tax-year-parameters-unsupported')
     }
     const spendingPolicy = input.plan.expenses.spendingPolicy

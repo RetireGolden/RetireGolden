@@ -36,10 +36,30 @@ export type AcaSupportCode =
   | 'other-material-facts-unsupported'
   | 'below-100-fpl-exception-unsupported'
   | 'tax-year-parameters-unsupported'
+  /** Informational: the credit is priced on the coverage year's published ACA figures while that year's income-tax figures are projected from the latest pack, so the household's income (MAGI) rests on projected brackets; does not block actionability. */
+  | 'income-tax-parameters-projected'
   | 'guardrail-interaction-unsupported'
   | 'hsa-cap-fixed-point-nonconvergent'
   | 'conflicting-cliff-fixed-points'
   | 'fixed-point-nonconvergent'
+
+/**
+ * The support codes that inform without blocking. A year whose only other
+ * codes are these is priced and actionable, and they are published beside
+ * 'actionable'. The ledger's readiness, the funding fixed point's pricing gate
+ * and every reader that sorts a year's blocking codes from its notes share
+ * this one set.
+ */
+export const INFORMATIONAL_ACA_SUPPORT_CODES: ReadonlySet<AcaSupportCode> = new Set<AcaSupportCode>([
+  'tax-exempt-interest-plan-derived',
+  'tax-exempt-interest-contract-contradicted',
+  'income-tax-parameters-projected',
+])
+
+/** Whether a support code blocks pricing (every code but 'actionable' and the informational ones). */
+export function isBlockingAcaSupportCode(code: AcaSupportCode): boolean {
+  return code !== 'actionable' && !INFORMATIONAL_ACA_SUPPORT_CODES.has(code)
+}
 
 export interface YearAcaResult {
   readiness: 'actionable' | 'nonActionable'

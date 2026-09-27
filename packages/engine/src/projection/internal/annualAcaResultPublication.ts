@@ -1,13 +1,15 @@
 /** Pure assembly of the annual ACA evidence/result published by the ledger. */
-import type { ParameterPack } from '../../params/types.js'
+import type { AcaPricingParameters } from '../../params/acaCoverageYears.js'
 import {
   acaFederalPovertyLine,
   type AcaHouseholdMagiResult,
   type AcaResult,
 } from '../../tax/aca.js'
-import type {
-  AcaSupportCode,
-  YearAcaResult,
+import {
+  isBlockingAcaSupportCode,
+  INFORMATIONAL_ACA_SUPPORT_CODES,
+  type AcaSupportCode,
+  type YearAcaResult,
 } from '../types.js'
 
 export interface AnnualAcaTaxFamilyMemberSnapshot {
@@ -60,13 +62,22 @@ export interface AnnualAcaResultPublicationInput {
   readonly contract: Readonly<AnnualAcaContractSnapshot> | null
   readonly contractCount: number
   readonly exampleContractInputMismatch: boolean
-  readonly isStandIn: boolean
+  /** True when the coverage year has no published ACA block and a neighbouring block stands in. */
+  readonly acaParametersStandIn: boolean
   readonly people: readonly AnnualAcaPersonSnapshot[]
   readonly marketplaceMonthsByPersonPosition: readonly number[]
   readonly pre65MonthlyPremiumPerPerson: number
   readonly healthInflationScale: number
-  readonly parameterPack: ParameterPack
+  /** The coverage year's credit figures (`acaParametersForCoverageYear`). */
+  readonly acaParameters: AcaPricingParameters
+  /** 1 for a published coverage year: published guidelines are never inflated. */
   readonly fplInflationScale: number
+  /**
+   * True when the coverage year's ACA block is published but the year's
+   * income-tax pack is a stand-in: a priced year then says so with the
+   * informational `income-tax-parameters-projected`.
+   */
+  readonly incomeTaxParametersProjected: boolean
   readonly federalAgi: number
   readonly grossSocialSecurity: number
   readonly taxableSocialSecurity: number
@@ -106,17 +117,12 @@ export function annualAcaResultPublication(
     supportCodes.push('conflicting-cliff-fixed-points')
   }
   const uniqueSupportCodes = [...new Set(supportCodes)]
-  const informationalAcaCodes = uniqueSupportCodes.filter(
-    (code) =>
-      code === 'tax-exempt-interest-plan-derived' ||
-      code === 'tax-exempt-interest-contract-contradicted',
+  const informationalAcaCodes = uniqueSupportCodes.filter((code) =>
+    INFORMATIONAL_ACA_SUPPORT_CODES.has(code),
   )
   const actionable =
-    uniqueSupportCodes.filter(
-      (code) =>
-        code !== 'tax-exempt-interest-plan-derived' &&
-        code !== 'tax-exempt-interest-contract-contradicted',
-    ).length === 0 && input.evaluation.acaQuote !== null
+    uniqueSupportCodes.filter(isBlockingAcaSupportCode).length === 0 &&
+    input.evaluation.acaQuote !== null
   const pricedQuote = input.evaluation.acaQuote
   const quote = actionable ? pricedQuote : null
   const warnings: string[] = []
@@ -180,10 +186,10 @@ export function annualAcaResultPublication(
         })
   const fpl =
     input.contract &&
-    !input.isStandIn &&
+    !input.acaParametersStandIn &&
     input.contract.taxFamilyMembers.length > 0
       ? acaFederalPovertyLine(
-          input.parameterPack,
+          input.acaParameters,
           input.contract.taxFamilyMembers.length,
           input.contract.fplRegion,
           input.fplInflationScale,
@@ -197,14 +203,23 @@ export function annualAcaResultPublication(
         ? 'unsupported'
         : quote!.overCliff
           ? 'above-cliff'
-          : Math.abs(fplPct - input.parameterPack.aca.maxFplPctForCredit) <= 1e-9
+          : Math.abs(fplPct - input.acaParameters.aca.maxFplPctForCredit) <= 1e-9
             ? 'at-cliff'
             : 'below-cliff'
 
   const yearAcaResult: YearAcaResult = {
     readiness: actionable ? 'actionable' : 'nonActionable',
+    // income-tax-parameters-projected is appended here rather than raised as
+    // an initial code: the conversion sizer reads a year with any initial code
+    // as unpriced, and this note must not refuse acaCliff sizing.
     supportCodes: actionable
-      ? ['actionable', ...informationalAcaCodes]
+      ? [
+          'actionable',
+          ...informationalAcaCodes,
+          ...(input.incomeTaxParametersProjected
+            ? ['income-tax-parameters-projected' as const]
+            : []),
+        ]
       : uniqueSupportCodes,
     householdMagi: actionable
       ? (input.evaluation.acaMagiProbe?.magi ?? null)

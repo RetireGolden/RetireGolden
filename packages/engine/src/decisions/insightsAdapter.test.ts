@@ -68,14 +68,16 @@ describe('insights adapter', () => {
   })
 
   it('previews the spending-headroom card on a plan with an unpriced ACA year; other cards still refuse', () => {
-    // Marketplace in 2026 (priced) and 2027 (a stand-in year past the latest
-    // parameter pack, unpriced: the ledger budgets its full premium).
-    const plan = singlePersonPlan({ dob: '1964-06-15', planningAge: 63 })
+    // Marketplace in 2026 and 2027 (priced on their published credit figures)
+    // and 2028 (past the latest coverage year with published figures,
+    // unpriced: the ledger budgets its full premium).
+    const plan = singlePersonPlan({ dob: '1964-06-15', planningAge: 64 })
     plan.accounts = [cashAccount('cash', 300_000)]
     plan.incomes = [recurringOrdinaryIncome('wages', 30_000, 2026)]
     plan.expenses.baseAnnual = 40_000
     setAcaYearContract(plan, { year: 2026 })
     setAcaYearContract(plan, { year: 2027 })
+    setAcaYearContract(plan, { year: 2028 })
     const ctx = createDecisionContext(validatePlan(plan), { startYear: 2026, taxCalculator: createFlatTaxCalculator(0) })
     const action: InsightAction = {
       kind: 'preview-scenario',
@@ -90,7 +92,7 @@ describe('insights adapter', () => {
     const headroom = evaluateInsightAction(ctx, headroomCard, action)
     expect(headroom.evaluation.recommendationState).not.toBe('diagnostic')
     expect(headroom.evaluation.diagnostics).toContain(
-      'ACA premium tax credit is not priced in the candidate for 2027; the ledger budgets the full Marketplace premium in those years.',
+      'ACA premium tax credit is not priced in the candidate for 2028; the ledger budgets the full Marketplace premium in those years.',
     )
 
     // An explicit option wins over the card default, and every other card

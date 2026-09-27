@@ -84,13 +84,14 @@ function input(
     },
     contractCount: 1,
     exampleContractInputMismatch: false,
-    isStandIn: false,
+    acaParametersStandIn: false,
     people: [{ personId: 'primary', alive: true }],
     marketplaceMonthsByPersonPosition: [12],
     pre65MonthlyPremiumPerPerson: 100,
     healthInflationScale: 1.1,
-    parameterPack: pack,
+    acaParameters: pack,
     fplInflationScale: 1.05,
+    incomeTaxParametersProjected: false,
     federalAgi: 40_000,
     grossSocialSecurity: 10_000,
     taxableSocialSecurity: 6_000,
@@ -192,6 +193,44 @@ describe('annualAcaResultPublication', () => {
     expect(result.yearAcaResult?.coveredMembers).not.toBe(
       source.contract?.coveredMembers,
     )
+  })
+
+  it('appends income-tax-parameters-projected to a priced year only, after the other informational codes', () => {
+    const projected = annualAcaResultPublication(input({
+      incomeTaxParametersProjected: true,
+      evaluation: {
+        ...input().evaluation,
+        acaSupportCodes: ['tax-exempt-interest-plan-derived'],
+      },
+    }))
+    expect(projected.yearAcaResult?.readiness).toBe('actionable')
+    expect(projected.yearAcaResult?.supportCodes).toEqual([
+      'actionable',
+      'tax-exempt-interest-plan-derived',
+      'income-tax-parameters-projected',
+    ])
+    expect(projected.yearAcaResult?.modeledAllowablePtc).toBe(5_000)
+
+    // A year that is not priced keeps its blocking codes and gains no note:
+    // the note describes a priced credit, and there is none.
+    const unpriced = annualAcaResultPublication(input({
+      incomeTaxParametersProjected: true,
+      evaluation: {
+        ...input().evaluation,
+        acaSupportCodes: ['tax-exempt-interest-unknown'],
+      },
+    }))
+    expect(unpriced.yearAcaResult?.readiness).toBe('nonActionable')
+    expect(unpriced.yearAcaResult?.supportCodes).toEqual(['tax-exempt-interest-unknown'])
+
+    // Raised by an evaluation, the code is informational: it does not block.
+    const raised = annualAcaResultPublication(input({
+      evaluation: {
+        ...input().evaluation,
+        acaSupportCodes: ['income-tax-parameters-projected'],
+      },
+    }))
+    expect(raised.yearAcaResult?.readiness).toBe('actionable')
   })
 
   it('deduplicates blockers, publishes fallback evidence, and preserves warning order', () => {
@@ -311,7 +350,7 @@ describe('annualAcaResultPublication', () => {
     const belowCliff = annualAcaResultPublication(input())
     expect(belowCliff.yearAcaResult?.cliffState).toBe('below-cliff')
 
-    const standIn = annualAcaResultPublication(input({ isStandIn: true }))
+    const standIn = annualAcaResultPublication(input({ acaParametersStandIn: true }))
     expect(standIn.yearAcaResult?.federalPovertyLine).toBeNull()
 
     const emptyFamily = annualAcaResultPublication(input({

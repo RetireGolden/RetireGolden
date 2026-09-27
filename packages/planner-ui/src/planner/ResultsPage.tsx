@@ -66,6 +66,7 @@ import {
 import { ProfessionalConfirmationMarker } from './ProfessionalConfirmationMarker'
 import { ScrollRegion } from './ScrollRegion'
 import { citationHref } from './provenanceLinks'
+import { formatYearList } from './acaVetoCopy'
 import { buildYearCashFlowSankey, type YearCashFlowSankeyViewId } from './yearCashFlow'
 import { YearCashFlowDialog } from './yearCashFlow/YearCashFlowDialog'
 
@@ -415,6 +416,18 @@ const ACA_CREDIT_MARKER_EXPLAINER =
   'marks a year with an ACA premium credit. Realizing gains that year can also shrink the credit; if it was ' +
   'paid in advance, the part you lose is paid back as federal tax when you file. The room does not include that.'
 
+/**
+ * The marker's text for one year. A credit priced on a year's published
+ * Marketplace figures while that year's tax brackets are still projected
+ * (engine support code income-tax-parameters-projected) says so.
+ */
+function acaCreditMarkerText(year: number, incomeTaxProjected: boolean): string {
+  return incomeTaxProjected
+    ? `${ACA_CREDIT_MARKER_TEXT} The ${year} credit uses the published ${year} Marketplace figures; your ${year} ` +
+        `income uses projected ${year} tax brackets, because the ${year} brackets are not published yet.`
+    : ACA_CREDIT_MARKER_TEXT
+}
+
 
 /**
  * The FIRE metrics + FI-target chart. Rendered as the leading card only for
@@ -651,9 +664,14 @@ export function YearByYearLedger({
                 <td>
                   {roomShown !== null && roomShown >= 1 ? fmtMoney(roomShown) : ''}
                   {f.premiumTaxCreditYear ? (
-                    <span className="gains-room-aca-marker" title={ACA_CREDIT_MARKER_TEXT}>
+                    <span
+                      className="gains-room-aca-marker"
+                      title={acaCreditMarkerText(y.year, f.premiumTaxCreditOnProjectedIncomeTax)}
+                    >
                       <span aria-hidden="true">{ACA_CREDIT_MARKER}</span>
-                      <span className="sr-only">{ACA_CREDIT_MARKER_TEXT}</span>
+                      <span className="sr-only">
+                        {acaCreditMarkerText(y.year, f.premiumTaxCreditOnProjectedIncomeTax)}
+                      </span>
                     </span>
                   ) : null}
                 </td>
@@ -771,6 +789,9 @@ export function ResultsPage() {
   const expenseRows = useMemo(() => buildExpenseRows(view, dollars), [view, dollars])
   const showUnassignedCash = hasUnassignedCash(view.result.years)
   const hasAcaCreditYears = figures.some((f) => f.premiumTaxCreditYear)
+  const projectedIncomeTaxCreditYears = figures
+    .filter((f) => f.premiumTaxCreditOnProjectedIncomeTax)
+    .map((f) => f.year)
 
   const handleCsv = () => {
     downloadCsv(buildLedgerCsv(plan, view), `${plan.name.replace(/\W+/g, '-').toLowerCase()}-ledger.csv`)
@@ -1202,6 +1223,10 @@ export function ResultsPage() {
             {hasAcaCreditYears ? (
               <li>
                 <strong>{ACA_CREDIT_MARKER}</strong> beside the gains room {ACA_CREDIT_MARKER_EXPLAINER}
+                {projectedIncomeTaxCreditYears.length > 0
+                  ? ` In ${formatYearList(projectedIncomeTaxCreditYears)} the credit uses that year's published ` +
+                    'Marketplace figures, while the income it is measured on uses projected tax brackets.'
+                  : ''}
               </li>
             ) : null}
             {hasCarryforward ? (

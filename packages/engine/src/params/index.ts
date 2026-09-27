@@ -13,6 +13,17 @@ export { PARAMETER_PROVENANCE } from './provenance.js'
 export type { ParameterSource } from './provenance.js'
 export { REAL_YIELD_CURVE_2026 as EMBEDDED_REAL_YIELD_CURVE } from './data/realYieldCurve2026.js'
 export type { RealYieldCurve, RealYieldCurvePoint } from './types.js'
+export {
+  ACA_COVERAGE_YEARS,
+  EARLIEST_ACA_COVERAGE_YEAR,
+  LATEST_ACA_COVERAGE_YEAR,
+  acaParametersForCoverageYear,
+} from './acaCoverageYears.js'
+export type {
+  AcaCoverageYearLookup,
+  AcaCoverageYearParameters,
+  AcaPricingParameters,
+} from './acaCoverageYears.js'
 
 const packs: ParameterPack[] = [year2026]
 // Keep sorted ascending by year as packs are added each fall.
@@ -239,6 +250,16 @@ export interface IrmaaThresholdYear {
    * for any year at or before the pack year.
    */
   readonly inflationFactorToYear: (year: number) => number
+  /**
+   * Cumulative general inflation from `fromYear` to `toYear` on the same path,
+   * for any pair of years, including years before the pack year. The resumed
+   * top row is measured from a fixed base, August 2026, which a later pack's
+   * `inflationFactorToYear` cannot reach back to: a 2027 pack's factor starts
+   * at 2027. With it, a pack of any year prices the resumed top row from its
+   * statutory base; without it, only the 2026 pack can, and any other pack year
+   * is refused rather than measured over the wrong years.
+   */
+  readonly inflationFactorBetween?: (fromYear: number, toYear: number) => number
 }
 
 /**
@@ -301,20 +322,24 @@ export function irmaaTierThreshold(
   if (at.premiumYear <= IRMAA_TOP_TIER_FROZEN_THROUGH_YEAR) return magiOver
 
   // The resumed adjustment carries the growth from August of the base year to
-  // August of the year before the premium year. `inflationFactorToYear` is
-  // anchored at the pack year and returns 1 for anything at or before it, so it
-  // can express that span only while the pack year IS the resumed base year, in
-  // which case the span is the general factor read one year early.
-  //
-  // (i)(5)(C)(i) freezes the top row with no end date of its own, so a 2027
-  // pack is publishable and would reach this branch. Its factor starts at 2027
-  // and cannot reach back to the August 2026 base, so the adjustment would be
-  // measured over the wrong years without saying so: a 2029 premium year would
-  // price the 2027-to-2029 span where (C)(ii) asks for 2026-to-2028. Refuse
-  // instead, because the fix belongs with the pack that introduces the problem.
+  // August of the year before the premium year: the general factor from the
+  // base year read one year early, whatever the pack year. The base is carried
+  // explicitly (`inflationFactorBetween`), because (i)(5)(C)(i) freezes the top
+  // row with no end date of its own, so a 2027 pack is publishable and reaches
+  // this branch with a factor that starts at 2027. Anchoring there instead would
+  // price a 2029 premium year on the 2027-to-2029 span where (C)(ii) asks for
+  // 2026-to-2028; the two agree only while inflation is constant.
+  if (at.inflationFactorBetween !== undefined) {
+    return roundToNearestThousand(
+      magiOver * at.inflationFactorBetween(IRMAA_TOP_TIER_RESUMED_BASE_YEAR, at.premiumYear - 1),
+    )
+  }
+  // Without the explicit base, `inflationFactorToYear` can express the span
+  // only while the pack year IS the base year; any other pack year is refused
+  // rather than measured over the wrong years.
   if (pack.year !== IRMAA_TOP_TIER_RESUMED_BASE_YEAR) {
     throw new RangeError(
-      `IRMAA top-tier indexing resumes from August ${IRMAA_TOP_TIER_RESUMED_BASE_YEAR} under 42 USC 1395r(i)(5)(C)(ii), a base a ${pack.year} pack cannot measure from; give IrmaaThresholdYear a pre-pack base before publishing one`,
+      `IRMAA top-tier indexing resumes from August ${IRMAA_TOP_TIER_RESUMED_BASE_YEAR} under 42 USC 1395r(i)(5)(C)(ii), a base a ${pack.year} pack cannot measure from through inflationFactorToYear; pass IrmaaThresholdYear.inflationFactorBetween`,
     )
   }
   return roundToNearestThousand(magiOver * at.inflationFactorToYear(at.premiumYear - 1))

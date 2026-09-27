@@ -121,7 +121,7 @@ export const PARAMETER_PROVENANCE: ParameterSource[] = [
     id: 'federal-poverty-line',
     label: 'Federal poverty guideline (ACA)',
     figures:
-      '2025 HHS guideline ($15,650 first person, +$5,500 each additional) applied to the 2026 ACA coverage year.',
+      '2025 HHS guideline ($15,650 first person, +$5,500 each additional) applied to the 2026 ACA coverage year; 2026 HHS guideline ($15,960 first person, +$5,680 each additional) applied to the 2027 ACA coverage year. Each coverage year uses the guidelines in effect when its open enrollment began, as published.',
     publisher: 'HHS',
     url: 'https://aspe.hhs.gov/topics/poverty-economic-mobility/poverty-guidelines',
   },
@@ -129,7 +129,7 @@ export const PARAMETER_PROVENANCE: ParameterSource[] = [
     id: 'aca-ptc',
     label: 'ACA premium tax credit',
     figures:
-      'Applicable-percentage schedule per Rev. Proc. 2025-25 (2.10% under 133% FPL up to 9.96% at 300–400%), with the 400% FPL subsidy cliff restored (enhanced credits expired 12/31/2025).',
+      'Applicable-percentage schedules for 2026 (Rev. Proc. 2025-25: 2.10% under 133% FPL up to 9.96% at 300–400%) and 2027 (Rev. Proc. 2026-26: 2.15% under 133% FPL up to 10.22% at 300–400%), with the 400% FPL subsidy cliff restored (enhanced credits expired 12/31/2025). Later coverage years are not priced until their figures are published.',
     publisher: 'IRS',
     url: 'https://www.irs.gov/pub/irs-drop/rp-25-25.pdf',
   },

@@ -28,6 +28,7 @@ import type { Plan } from '@retiregolden/engine/model/plan'
 import { nominalForDisplay, type DollarMode } from '@retiregolden/engine/projection/dollarBasis'
 import type { YearResult } from '@retiregolden/engine/projection/types'
 import {
+  premiumTaxCreditOnProjectedIncomeTax,
   premiumTaxCreditYear,
   taxAndPenalties,
   taxFreeGainsRoom,
@@ -56,6 +57,10 @@ const MODES: readonly DollarMode[] = ['today', 'nominal']
 
 const ACA_MARKER_TEXT =
   'This year has an ACA premium credit. Realizing gains this year can also shrink the credit; if it was paid in advance, the part you lose is paid back as federal tax when you file. The room does not include that.'
+
+const ACA_MARKER_TEXT_2027 =
+  ACA_MARKER_TEXT +
+  ' The 2027 credit uses the published 2027 Marketplace figures; your 2027 income uses projected 2027 tax brackets, because the 2027 brackets are not published yet.'
 
 const GAINS_ROOM_COPY =
   "Extra long-term gains you could realize this year without raising this year's federal income tax. Your remaining loss carryforward absorbs gains first. After that, gains count only while they add no federal tax: they stay in the 0% bracket and do not make more of your Social Security taxable, use up a loss deduction your other income was using, shrink a deduction, or reach the 3.8% net investment income tax or the AMT. State tax, the ACA premium credit, and Medicare premiums are not included. The figure is rounded down to the dollar."
@@ -257,6 +262,7 @@ describe('the gains room is rounded down, never up', () => {
       capitalLossCarryforwardUsed: 0,
       taxFreeGainsRoom: index === 0 ? 7_000.99 : 0.99,
       premiumTaxCreditYear: false,
+      premiumTaxCreditOnProjectedIncomeTax: false,
       balancesByCategory: { cash: 0, taxable: 0, equityComp: 0, traditional: 0, roth: 0, hsa: 0 },
       unassignedCash: 0,
     }))
@@ -372,28 +378,36 @@ describe('Layer miss gates on each engine figure, not on the sum of four shortfa
 })
 
 describe('the ACA premium credit marker and the column copy', () => {
-  it('early-retiree-aca: the 2026 credit year carries the marker, and the explainer says what it means', async () => {
+  it('early-retiree-aca: the 2026 and 2027 credit years carry the marker, 2027 says its income uses projected brackets, and the explainer says what it means', async () => {
+    // 2027 is priced on Rev. Proc. 2026-26 and the HHS 2026 guidelines while
+    // the 2027 income-tax figures are a stand-in (decision D-ACA-2027-TABLE),
+    // so its marker carries the engine's income-tax-parameters-projected note.
     const plan = getExampleById('early-retiree-aca')!.build()
     const view = projectPlan(plan, START_YEAR)
     const creditYears = view.result.years.filter((y) => premiumTaxCreditYear(y)).map((y) => y.year)
-    expect(creditYears).toEqual([2026])
+    expect(creditYears).toEqual([2026, 2027])
+    const projectedYears = view.result.years
+      .filter((y) => premiumTaxCreditOnProjectedIncomeTax(y))
+      .map((y) => y.year)
+    expect(projectedYears).toEqual([2027])
     const page = await mountPlanPage(plan, <ResultsPage />)
     try {
       const table = yearTable(page.container)
       for (const y of view.result.years) {
         const marker = table.cell(y.year, 'Tax-free gains room').querySelector<HTMLElement>('.gains-room-aca-marker')
-        if (y.year === 2026) {
-          expect(marker, '2026 marker').not.toBeNull()
-          expect(marker!.getAttribute('title')).toBe(ACA_MARKER_TEXT)
+        if (y.year === 2026 || y.year === 2027) {
+          const text = y.year === 2026 ? ACA_MARKER_TEXT : ACA_MARKER_TEXT_2027
+          expect(marker, `${y.year} marker`).not.toBeNull()
+          expect(marker!.getAttribute('title')).toBe(text)
           expect(marker!.querySelector('[aria-hidden="true"]')?.textContent).toBe('†')
-          expect(marker!.querySelector('.sr-only')?.textContent).toBe(ACA_MARKER_TEXT)
+          expect(marker!.querySelector('.sr-only')?.textContent).toBe(text)
         } else {
           expect(marker, `${y.year} marker`).toBeNull()
         }
       }
       const explainer = [...page.container.querySelectorAll('#year-table .ss-explainer li')].map((li) => li.textContent ?? '')
       expect(explainer).toContain(
-        '† beside the gains room marks a year with an ACA premium credit. Realizing gains that year can also shrink the credit; if it was paid in advance, the part you lose is paid back as federal tax when you file. The room does not include that.',
+        "† beside the gains room marks a year with an ACA premium credit. Realizing gains that year can also shrink the credit; if it was paid in advance, the part you lose is paid back as federal tax when you file. The room does not include that. In 2027 the credit uses that year's published Marketplace figures, while the income it is measured on uses projected tax brackets.",
       )
     } finally {
       await page.unmount()

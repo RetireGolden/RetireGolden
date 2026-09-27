@@ -8,20 +8,20 @@
       "label": "support-code intake, fixed-point fallback, and conflicting-basin condition",
       "file": "projection/internal/annualAcaResultPublication.ts",
       "lines": [
-        99,
-        105
+        110,
+        116
       ],
       "anchors": [
         {
-          "line": 99,
+          "line": 110,
           "text": "if (!input.active) return { yearAcaResult: undefined, warnings: [] }"
         },
         {
-          "line": 101,
+          "line": 112,
           "text": "const supportCodes = [...input.evaluation.acaSupportCodes]"
         },
         {
-          "line": 105,
+          "line": 116,
           "text": "if (input.conflictingCliffBasins) {"
         }
       ],
@@ -32,20 +32,20 @@
       "label": "support-code normalization, actionability, quote selection, and cliff warning intent",
       "file": "projection/internal/annualAcaResultPublication.ts",
       "lines": [
-        108,
-        127
+        119,
+        133
       ],
       "anchors": [
         {
-          "line": 108,
+          "line": 119,
           "text": "const uniqueSupportCodes = [...new Set(supportCodes)]"
         },
         {
-          "line": 114,
+          "line": 123,
           "text": "const actionable ="
         },
         {
-          "line": 123,
+          "line": 129,
           "text": "if (quote?.overCliff) {"
         }
       ]
@@ -55,20 +55,20 @@
       "label": "dependent evidence lookup and ordered tax-family publication",
       "file": "projection/internal/annualAcaResultPublication.ts",
       "lines": [
-        129,
-        142
+        135,
+        148
       ],
       "anchors": [
         {
-          "line": 129,
+          "line": 135,
           "text": "const dependentEvidence = new Map("
         },
         {
-          "line": 135,
+          "line": 141,
           "text": "const taxFamilyMembers ="
         },
         {
-          "line": 139,
+          "line": 145,
           "text": "member.relationship === 'dependent'"
         }
       ]
@@ -78,20 +78,20 @@
       "label": "contract-backed covered-month and applicable-SLCSP folds",
       "file": "projection/internal/annualAcaResultPublication.ts",
       "lines": [
-        143,
-        158
+        149,
+        164
       ],
       "anchors": [
         {
-          "line": 143,
+          "line": 149,
           "text": "const coveredMembers = input.contract && !input.exampleContractInputMismatch"
         },
         {
-          "line": 146,
+          "line": 152,
           "text": "coveredMonths: member.enrollmentPremiumByMonth"
         },
         {
-          "line": 153,
+          "line": 159,
           "text": "applicableSlcspPremium: member.slcspBenchmarkPremiumByMonth.reduce("
         }
       ]
@@ -101,24 +101,24 @@
       "label": "duplicate-contract suppression and positional fallback coverage synthesis",
       "file": "projection/internal/annualAcaResultPublication.ts",
       "lines": [
-        159,
-        180
+        165,
+        186
       ],
       "anchors": [
         {
-          "line": 159,
+          "line": 165,
           "text": ": input.contractCount > 1"
         },
         {
-          "line": 161,
+          "line": 167,
           "text": ": input.people"
         },
         {
-          "line": 166,
+          "line": 172,
           "text": ".filter(({ person, months }) =>"
         },
         {
-          "line": 169,
+          "line": 175,
           "text": "const premium ="
         }
       ]
@@ -128,29 +128,29 @@
       "label": "contract FPL production and public cliff-state classification",
       "file": "projection/internal/annualAcaResultPublication.ts",
       "lines": [
-        181,
-        200
+        187,
+        206
       ],
       "anchors": [
         {
-          "line": 181,
+          "line": 187,
           "text": "const fpl ="
         },
         {
-          "line": 185,
+          "line": 191,
           "text": "? acaFederalPovertyLine("
         },
         {
-          "line": 192,
+          "line": 198,
           "text": "const fplPct = pricedQuote?.fplPct ?? null"
         },
         {
-          "line": 193,
+          "line": 199,
           "text": "const cliffState: YearAcaResult['cliffState'] ="
         },
         {
-          "line": 200,
-          "text": ": Math.abs(fplPct - input.parameterPack.aca.maxFplPctForCredit) <= 1e-9"
+          "line": 206,
+          "text": ": Math.abs(fplPct - input.acaParameters.aca.maxFplPctForCredit) <= 1e-9"
         }
       ],
       "note": "The exact at-cliff arm on line 201 is corpus-cold and pinned by the direct coordinator test."
@@ -160,12 +160,12 @@
       "label": "below-cliff terminal classification",
       "file": "projection/internal/annualAcaResultPublication.ts",
       "lines": [
-        202,
-        202
+        208,
+        208
       ],
       "anchors": [
         {
-          "line": 202,
+          "line": 208,
           "text": ": 'below-cliff'"
         }
       ]
@@ -175,28 +175,28 @@
       "label": "complete ACA result, convergence diagnostics, fallback warning, and fresh return",
       "file": "projection/internal/annualAcaResultPublication.ts",
       "lines": [
-        204,
-        261
+        210,
+        276
       ],
       "anchors": [
         {
-          "line": 204,
+          "line": 210,
           "text": "const yearAcaResult: YearAcaResult = {"
         },
         {
-          "line": 229,
+          "line": 244,
           "text": "applicableSlcspPremium:"
         },
         {
-          "line": 242,
+          "line": 257,
           "text": "convergence: {"
         },
         {
-          "line": 255,
+          "line": 270,
           "text": "if (!actionable) {"
         },
         {
-          "line": 261,
+          "line": 276,
           "text": "return { yearAcaResult, warnings }"
         }
       ]
@@ -206,24 +206,24 @@
       "label": "active-year gate plus detached contract and accepted-MAGI snapshots",
       "file": "projection/internal/annualFundingApplicationAndClosePhase.ts",
       "lines": [
-        1359,
-        1394
+        1380,
+        1415
       ],
       "anchors": [
         {
-          "line": 1359,
+          "line": 1380,
           "text": "let yearAcaResult: AnnualAcaResultPublicationResult['yearAcaResult']"
         },
         {
-          "line": 1360,
+          "line": 1381,
           "text": "if (acaActive) {"
         },
         {
-          "line": 1361,
+          "line": 1382,
           "text": "const acaContractSnapshot = acaContract"
         },
         {
-          "line": 1385,
+          "line": 1406,
           "text": "const acaMagiProbeSnapshot = evaluation.acaMagiProbe === null"
         }
       ]
@@ -233,28 +233,28 @@
       "label": "frozen accepted annual evidence, coordinator invocation, exact result and warning consumption",
       "file": "projection/internal/annualFundingApplicationAndClosePhase.ts",
       "lines": [
-        1395,
-        1442
+        1416,
+        1464
       ],
       "anchors": [
         {
-          "line": 1395,
+          "line": 1416,
           "text": "const acaPublication = annualAcaResultPublication(Object.freeze({"
         },
         {
-          "line": 1397,
+          "line": 1418,
           "text": "evaluation: Object.freeze({"
         },
         {
-          "line": 1428,
-          "text": "fplInflationScale: inflFactorFrom(pack.year, year),"
+          "line": 1449,
+          "text": "fplInflationScale: acaFplScale,"
         },
         {
-          "line": 1441,
+          "line": 1463,
           "text": "yearAcaResult = acaPublication.yearAcaResult"
         },
         {
-          "line": 1442,
+          "line": 1464,
           "text": "for (const warning of acaPublication.warnings) warnings.add(warning)"
         }
       ]

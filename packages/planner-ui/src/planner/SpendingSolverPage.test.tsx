@@ -117,11 +117,14 @@ describe('SpendingSolverPage statements', () => {
     mockedSolve.mockImplementation((req) => Promise.resolve(runSpendingSolveRequest({ ...req, startYear: EXAMPLE_FIXED_YEAR })))
     await renderSolved(stampedExample('early-retiree-aca'))
 
-    expect(heroHeading().textContent).toContain('$45,300')
+    // 2027 is priced on its published credit figures (decision
+    // D-ACA-2027-TABLE), which moves the answer from $45,313 to $45,625 and
+    // leaves 2028 as the one unpriced year.
+    expect(heroHeading().textContent).toContain('$45,600')
     const note = container.querySelector('[data-testid="aca-gross-premium-note"]')
     expect(note?.textContent).toBe(
-      "The premium tax credit isn't counted in 2027 and 2028: RetireGolden doesn't have the credit's figures for those years yet. " +
-        'The projection pays the full Marketplace premium in those years; if you receive a credit then, you would likely be able to spend somewhat more than this.',
+      "The premium tax credit isn't counted in 2028: RetireGolden doesn't have the credit's figures for that year yet. " +
+        'The projection pays the full Marketplace premium in that year; if you receive a credit then, you would likely be able to spend somewhat more than this.',
     )
   })
 
@@ -387,12 +390,12 @@ describe('SpendingSolverPage statements', () => {
 
   it("names the union of the shapes' unpriced years once, collapsed into a run", async () => {
     const text = await solveShapes([
-      { acaGrossPremiumYears: [2027, 2028], acaGrossPremiumReasons: ['tax-year-parameters-unsupported'], acaGrossPremiumDirection: 'conservative' },
-      { acaGrossPremiumYears: [2027, 2028, 2029], acaGrossPremiumReasons: ['tax-year-parameters-unsupported'], acaGrossPremiumDirection: 'conservative' },
-      { acaGrossPremiumYears: [2028], acaGrossPremiumReasons: ['tax-year-parameters-unsupported'], acaGrossPremiumDirection: 'conservative' },
+      { acaGrossPremiumYears: [2028, 2029], acaGrossPremiumReasons: ['tax-year-parameters-unsupported'], acaGrossPremiumDirection: 'conservative' },
+      { acaGrossPremiumYears: [2028, 2029, 2030], acaGrossPremiumReasons: ['tax-year-parameters-unsupported'], acaGrossPremiumDirection: 'conservative' },
+      { acaGrossPremiumYears: [2029], acaGrossPremiumReasons: ['tax-year-parameters-unsupported'], acaGrossPremiumDirection: 'conservative' },
     ])
     expect(text).toContain(
-      "In these solves the premium tax credit isn't counted in 2027 to 2029, so they pay the full Marketplace premium then; " +
+      "In these solves the premium tax credit isn't counted in 2028 to 2030, so they pay the full Marketplace premium then; " +
         'if you receive a credit in those years, you would likely be able to spend somewhat more than these amounts.',
     )
   })

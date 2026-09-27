@@ -95,7 +95,7 @@ const baseInput = (
     initialQualifiedCap: 0,
     qualifiedExpenseCap: 0,
   },
-  parameterPack: pack,
+  acaParameters: pack,
   spendingAndContributions: 0,
   rmdShortfallExciseTax: 0,
   tolerancePlanDollars: 0.005,

@@ -92,7 +92,7 @@ describeCalculation(
         taxFilingStatusForYear: 'single',
         inflFactorFrom: () => 1,
         healthInflFactorFrom: () => 1,
-        isStandIn,
+        acaParametersStandIn: isStandIn,
         hasModeledPerson: (personId) => peopleStates.some((state) => state.personId === personId),
         resolvePerson: (personId) => peopleStates.find((state) => state.personId === personId)!,
         planHasTaxExemptYieldAttestation: false,

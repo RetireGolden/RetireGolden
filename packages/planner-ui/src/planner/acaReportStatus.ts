@@ -1,5 +1,6 @@
 import type { Plan } from '@retiregolden/engine/model/plan'
 import type { YearResult } from '@retiregolden/engine/projection/types'
+import { formatYearList } from './acaVetoCopy'
 
 export interface AcaLedgerSummaryRow {
   year: number
@@ -26,14 +27,50 @@ export function acaLedgerSummary(years: YearResult[]): AcaLedgerSummaryRow[] {
   )
 }
 
+/**
+ * Priced ACA years whose household income was computed on projected tax
+ * brackets: the credit reads the year's published Marketplace figures, but the
+ * year's income-tax figures are not published yet (engine support code
+ * income-tax-parameters-projected).
+ */
+export function acaProjectedIncomeTaxYears(years: YearResult[]): number[] {
+  return years
+    .filter(
+      (year) =>
+        year.aca?.readiness === 'actionable' &&
+        year.aca.supportCodes.includes('income-tax-parameters-projected'),
+    )
+    .map((year) => year.year)
+}
+
+/** What both ACA status surfaces say about the years acaProjectedIncomeTaxYears names. */
+const PROJECTED_INCOME_TAX_PHRASE = 'priced on published Marketplace figures, with income from projected tax brackets'
+
+/**
+ * The downloadable report's sentence for the priced ACA years whose income
+ * rests on projected tax brackets ("2027 is priced on published Marketplace
+ * figures, with income from projected tax brackets."), or null when there are
+ * none. The on-screen status line (acaReportStatus) carries the same phrase.
+ */
+export function acaProjectedIncomeTaxNote(years: YearResult[]): string | null {
+  const projected = acaProjectedIncomeTaxYears(years)
+  if (projected.length === 0) return null
+  return `${formatYearList(projected)} ${projected.length === 1 ? 'is' : 'are'} ${PROJECTED_INCOME_TAX_PHRASE}.`
+}
+
 export function acaReportStatus(plan: Plan, years: YearResult[]): string {
   if (!plan.expenses.healthcare.applyAcaCredit) return ''
   const acaYears = acaLedgerSummary(years)
   if (acaYears.length === 0) return ', ACA credit requested; annual evidence required'
   const actionableYears = acaYears.filter((year) => year.readiness === 'actionable').length
-  if (actionableYears === acaYears.length) return ', ACA credit modeled for evidenced years'
+  const projected = acaProjectedIncomeTaxYears(years)
+  const projectedNote =
+    projected.length === 0
+      ? ''
+      : `; ${formatYearList(projected)} ${PROJECTED_INCOME_TAX_PHRASE}`
+  if (actionableYears === acaYears.length) return `, ACA credit modeled for evidenced years${projectedNote}`
   if (actionableYears > 0) {
-    return ', ACA credit modeled for supported years; unsupported years use gross premium'
+    return `, ACA credit modeled for supported years; unsupported years use gross premium${projectedNote}`
   }
   return ', ACA credit not modeled; unsupported years use gross premium'
 }

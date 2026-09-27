@@ -2075,7 +2075,19 @@ export const acaYearContractSchema = z
      * defaults for an ACA-actionable year.
      */
     assertions: z.object({
-      coverageEligibility: z.enum(['supported', 'unsupported']),
+      /**
+       * 'supported' asserts that every covered member is eligible for the
+       * credit on the facts the engine models. From 2027 (Pub. L. 119-21
+       * section 71301, amending IRC 36B(e)) that includes asserting that every
+       * lawfully present tax-family member is an eligible alien: a lawful
+       * permanent resident, a Cuban and Haitian entrant, or a Compact of Free
+       * Association resident. The engine does not compute 36B(e), so a family
+       * with any other lawfully present alien answers 'unsupported', which
+       * leaves the year's credit unpriced.
+       */
+      coverageEligibility: z.enum(['supported', 'unsupported']).describe(
+        "'supported' asserts every covered member is eligible for the premium tax credit on the facts the engine models; from 2027 it also asserts that every lawfully present tax-family member is an eligible alien (a lawful permanent resident, a Cuban and Haitian entrant, or a Compact of Free Association resident; Pub. L. 119-21 section 71301, IRC 36B(e)). 'unsupported' leaves the year's credit unpriced.",
+      ),
       form8814: z.enum(['notApplicable', 'unsupported']),
       specialAllocation: z.enum(['notApplicable', 'unsupported']),
       marriedFilingSeparatelyException: z.enum(['notApplicable', 'unsupported']),

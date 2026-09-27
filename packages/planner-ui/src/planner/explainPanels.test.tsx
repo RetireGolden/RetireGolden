@@ -402,7 +402,7 @@ describe('WhyRecommendationPanel', () => {
             { id: 'bracket-12', label: 'Fill the 12% bracket', executedConversionTotal: 90_000, afterTaxEstateDelta: -2_000, lifetimeTaxDelta: 9_000, moneyLastsYearsDelta: 0 },
           ],
           acaActionabilityVeto: {
-            baselineNonActionableYears: [2027, 2028],
+            baselineNonActionableYears: [2028, 2029],
             candidateNonActionableYears: [],
             supportCodes: ['tax-year-parameters-unsupported'],
             vetoedCandidateIds: ['bracket-10'],
@@ -414,7 +414,7 @@ describe('WhyRecommendationPanel', () => {
     )
     const text = container.textContent
     expect(text).toContain('Why nothing qualified.')
-    expect(text).toContain('marketplace (ACA) coverage in 2027 and 2028')
+    expect(text).toContain('marketplace (ACA) coverage in 2028 and 2029')
     expect(text).toContain("RetireGolden doesn't have the credit's figures for those years yet")
     expect(text).toContain('no conversion schedule is presented as actionable')
     // The blocked row is annotated; the merely-negative row is not.

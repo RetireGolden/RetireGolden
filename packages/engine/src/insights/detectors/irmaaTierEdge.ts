@@ -4,8 +4,13 @@ import { irmaaTierForMagi, irmaaTierThreshold } from '../../params/index.js'
 import { medicareAnnualPremiumPerPerson } from '../../tax/medicare.js'
 
 function inflationScaleFromPack(ctx: DetectorContext, toYear: number): number {
-  if (toYear <= ctx.params.year) return 1
-  return Math.pow(1 + ctx.plan.assumptions.inflationPct / 100, toYear - ctx.params.year)
+  return inflationScaleBetween(ctx, ctx.params.year, toYear)
+}
+
+/** The plan's general inflation from one year to a later one; 1 when `toYear` is not later. */
+function inflationScaleBetween(ctx: DetectorContext, fromYear: number, toYear: number): number {
+  if (toYear <= fromYear) return 1
+  return Math.pow(1 + ctx.plan.assumptions.inflationPct / 100, toYear - fromYear)
 }
 
 function healthcarePremiumScaleFromPack(ctx: DetectorContext, toYear: number): number {
@@ -51,6 +56,8 @@ export const irmaaTierEdge: Detector = {
       const thresholdYear = {
         premiumYear: premiumYearNumber,
         inflationFactorToYear: (year: number): number => inflationScaleFromPack(ctx, year),
+        inflationFactorBetween: (fromYear: number, toYear: number): number =>
+          inflationScaleBetween(ctx, fromYear, toYear),
       }
       const tier = irmaaTierForMagi(ctx.params, y.magi, filingStatus, thresholdYear)
       if (tier > 0 && tier <= ctx.params.medicare.irmaaTiers.length) {

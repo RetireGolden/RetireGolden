@@ -3,7 +3,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { packForYear } from '../params/index.js'
 import * as federalTaxModule from '../tax/federalTax.js'
 import { computeFederalTax } from '../tax/federalTax.js'
-import { sizeRothConversion, type ConversionSizingInput, type FillTarget } from './rothConversion.js'
+import {
+  fillTargetCeiling,
+  sizeRothConversion,
+  type ConversionSizingInput,
+  type FillTarget,
+} from './rothConversion.js'
 
 const pack = packForYear(2026).pack
 
@@ -205,6 +210,30 @@ describe('sizeRothConversion', () => {
       ok: false,
       reason: 'aca_nonactionable',
     })
+  })
+
+  it('refuses an acaCliff target in a coverage year without published credit figures, even when told the year is actionable', () => {
+    // 2028 has no published Applicable Percentage Table or poverty guidelines
+    // for its coverage (the latest block is 2027's), so acaParametersForCoverageYear
+    // resolves it to the 2027 block as a stand-in. The ledger never marks such
+    // a year actionable; these guards keep the sizer and its exported ceiling
+    // from pricing it if a caller does. The input names 2028 and actionable: true,
+    // so only the stand-in guards stand between it and a 2027-table ceiling.
+    const year2028 = input({ year: 2028, inflationScale: 1.05 })
+    // sizeRothConversion's own guard answers aca_nonactionable. Without it the
+    // ceiling guard below would answer bad_target, and without both the
+    // sizer would fill to the 2027 block's 63,840.
+    expect(sizeRothConversion(fill('acaCliff', null, { startYear: 2028, endYear: 2028 }), year2028)).toEqual({
+      ok: false,
+      reason: 'aca_nonactionable',
+    })
+    // The ceiling itself is withheld for the stand-in year...
+    expect(fillTargetCeiling(fill('acaCliff', null, { startYear: 2028, endYear: 2028 }), year2028)).toBeNull()
+    // ...and for 2027, a published coverage year, it is four times the 2027
+    // guideline at scale 1 whatever the income-tax inflation scale says.
+    expect(
+      fillTargetCeiling(fill('acaCliff', null, { startYear: 2027, endYear: 2027 }), input({ year: 2027, inflationScale: 1.05 })),
+    ).toBe(15_960 * 4)
   })
 
   it('honors a fixed MAGI ceiling', () => {

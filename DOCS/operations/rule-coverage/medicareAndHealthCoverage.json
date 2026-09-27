@@ -29,7 +29,7 @@
           "functions": [
             {
               "name": "healthcareConfigSchema",
-              "line": 2127
+              "line": 2139
             }
           ]
         },
@@ -38,7 +38,7 @@
           "functions": [
             {
               "name": "annualHealthcareExpenses",
-              "line": 76
+              "line": 81
             }
           ]
         },
@@ -47,7 +47,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         },
@@ -89,6 +89,254 @@
       ]
     },
     {
+      "id": "cfr-26-1-36B-3-g-1-applicable-percentage-rounding",
+      "title": "The applicable percentage is read at a whole-number poverty-line percentage and rounded to a hundredth of a percent",
+      "classification": "settled",
+      "errorDirection": null,
+      "approximation": null,
+      "conventionRationale": "The regulation states the rounding of the applicable percentage but not the precision of the poverty-line percentage it is read at; the form instructions, which are the IRS's own computation of the credit, fill that gap, and the engine follows both. Ties round up, as the regulation's example rounds 8.775 to 8.78. The form also rounds the annual contribution (line 8a) and the monthly contribution (line 8b) to whole dollars; the engine keeps both unrounded, which is a stated limit on the aca-expected-contribution and aca-allowable-premium-tax-credit calculation records (at most about $0.50 of credit a year on the annual path and about $6 on the monthly path).",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-26",
+      "dueOn": "2027-09-26",
+      "implementedBy": [
+        "packages/engine/src/tax/aca.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/tax/aca.ts",
+          "functions": [
+            {
+              "name": "acaApplicablePct",
+              "line": 161
+            },
+            {
+              "name": "acaEconomicPremiumByMonth",
+              "line": 213
+            },
+            {
+              "name": "acaWholeFplPct",
+              "line": 143
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/tax/aca.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/tax/aca.test.ts",
+          "line": 63,
+          "note": "Expected contribution of a single filer with 2026 MAGI of 28,500.",
+          "tests": [
+            {
+              "title": "reads the table at the whole-number percentage and rounds the applicable percentage to a hundredth",
+              "line": 73
+            },
+            {
+              "title": "keeps a whole-number percentage whole through binary division",
+              "line": 86
+            },
+            {
+              "title": "keeps the 100% and 400% tests on the exact percentage",
+              "line": 92
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "regulation",
+          "citation": "26 CFR 1.36B-3(g)(1)",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.36B-3"
+        },
+        {
+          "kind": "regulation",
+          "citation": "26 CFR 1.36B-3(g)(3), Example 1",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.36B-3"
+        },
+        {
+          "kind": "formInstruction",
+          "citation": "Instructions for Form 8962 (2025), Worksheet 2, line 4",
+          "url": "https://www.irs.gov/pub/irs-pdf/i8962.pdf"
+        }
+      ]
+    },
+    {
+      "id": "hhs-2025-poverty-guidelines-2026-coverage",
+      "title": "The 2026 coverage year's poverty line: the HHS 2025 guidelines",
+      "classification": "settled",
+      "errorDirection": null,
+      "approximation": null,
+      "conventionRationale": "Registered under the regulation authority kind for the reason given on hhs-2026-poverty-guidelines-2027-coverage. The quotations carry the sentences that state the increase and the amount per additional person; the first-person figures are stated above.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2026,
+      "effectiveThrough": 2026,
+      "verifiedOn": "2026-09-26",
+      "dueOn": "2027-01-24",
+      "implementedBy": [
+        "packages/engine/src/params/acaCoverageYears.ts",
+        "packages/engine/src/params/data/year2026.ts",
+        "packages/engine/src/tax/aca.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/acaCoverageYears.ts",
+          "functions": [
+            {
+              "name": "acaCoverageYear2026",
+              "line": 51
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/params/data/year2026.ts",
+          "functions": [
+            {
+              "name": "year2026",
+              "line": 17
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/aca.ts",
+          "functions": [
+            {
+              "name": "acaFederalPovertyLine",
+              "line": 118
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/params/acaCoverageYears.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/params/acaCoverageYears.test.ts",
+          "line": 131,
+          "note": "Poverty line for a two-person Alaska tax family in the 2026 coverage year.",
+          "tests": [
+            {
+              "title": "reads the HHS 2025 Alaska table for 2026 coverage",
+              "line": 136
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "regulation",
+          "citation": "HHS, Annual Update of the HHS Poverty Guidelines, 90 FR 5917 (Jan. 17, 2025), FR Doc. 2025-01377",
+          "url": "https://www.govinfo.gov/content/pkg/FR-2025-01-17/pdf/2025-01377.pdf"
+        },
+        {
+          "kind": "regulation",
+          "citation": "90 FR 5917, 2025 poverty guidelines for the 48 contiguous states and the District of Columbia",
+          "url": "https://www.govinfo.gov/content/pkg/FR-2025-01-17/pdf/2025-01377.pdf"
+        },
+        {
+          "kind": "regulation",
+          "citation": "90 FR 5917, 2025 poverty guidelines for Alaska",
+          "url": "https://www.govinfo.gov/content/pkg/FR-2025-01-17/pdf/2025-01377.pdf"
+        },
+        {
+          "kind": "regulation",
+          "citation": "90 FR 5917, 2025 poverty guidelines for Hawaii",
+          "url": "https://www.govinfo.gov/content/pkg/FR-2025-01-17/pdf/2025-01377.pdf"
+        }
+      ]
+    },
+    {
+      "id": "hhs-2026-poverty-guidelines-2027-coverage",
+      "title": "The 2027 coverage year's poverty line: the HHS 2026 guidelines",
+      "classification": "settled",
+      "errorDirection": null,
+      "approximation": null,
+      "conventionRationale": "The notice is registered under the regulation authority kind. It is an agency determination published in the Federal Register, neither a statute nor an IRS notice, and the enum has no member for it; adding one is a schema decision rather than a research finding, so the nearest existing member is used and the choice is named here, as the Medicare premium determinations already do. The tables themselves are not sentences and cannot be quoted as such, so the quotations carry the sentences that state the increase and the amount per additional person, and the first-person figures are stated above.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2027,
+      "effectiveThrough": 2027,
+      "verifiedOn": "2026-09-26",
+      "dueOn": "2027-01-24",
+      "implementedBy": [
+        "packages/engine/src/params/acaCoverageYears.ts",
+        "packages/engine/src/tax/aca.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/acaCoverageYears.ts",
+          "functions": [
+            {
+              "name": "acaCoverageYear2027",
+              "line": 90
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/aca.ts",
+          "functions": [
+            {
+              "name": "acaFederalPovertyLine",
+              "line": 118
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/params/acaCoverageYears.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/params/acaCoverageYears.test.ts",
+          "line": 117,
+          "note": "Poverty line for a Hawaii tax family of three in the 2027 coverage year.",
+          "tests": [
+            {
+              "title": "reads the HHS 2026 Hawaii table for 2027 coverage",
+              "line": 122
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "regulation",
+          "citation": "HHS, Annual Update of the HHS Poverty Guidelines, 91 FR 1797 (Jan. 15, 2026), FR Doc. 2026-00755",
+          "url": "https://www.govinfo.gov/content/pkg/FR-2026-01-15/pdf/2026-00755.pdf"
+        },
+        {
+          "kind": "regulation",
+          "citation": "91 FR 1798, 2026 poverty guidelines for the 48 contiguous states and the District of Columbia",
+          "url": "https://www.govinfo.gov/content/pkg/FR-2026-01-15/pdf/2026-00755.pdf"
+        },
+        {
+          "kind": "regulation",
+          "citation": "91 FR 1798, 2026 poverty guidelines for Alaska",
+          "url": "https://www.govinfo.gov/content/pkg/FR-2026-01-15/pdf/2026-00755.pdf"
+        },
+        {
+          "kind": "regulation",
+          "citation": "91 FR 1798, 2026 poverty guidelines for Hawaii",
+          "url": "https://www.govinfo.gov/content/pkg/FR-2026-01-15/pdf/2026-00755.pdf"
+        }
+      ]
+    },
+    {
       "id": "irc-162-l-1-self-employed-health-insurance-not-modeled",
       "title": "Self-employed health insurance is not an above-the-line deduction surface",
       "classification": "outOfScope",
@@ -121,7 +369,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         }
@@ -188,7 +436,7 @@
           "functions": [
             {
               "name": "itemizedDeductionsSchema",
-              "line": 2323
+              "line": 2335
             }
           ]
         },
@@ -303,7 +551,7 @@
           "functions": [
             {
               "name": "itemizedDeductionsSchema",
-              "line": 2323
+              "line": 2335
             }
           ]
         },
@@ -335,25 +583,39 @@
       "classification": "settled",
       "errorDirection": null,
       "approximation": null,
-      "conventionRationale": "The enhanced credits that suspended the 400 percent ceiling expired at the end of 2025, so the cliff is live again for 2026. The engine also treats the below-100-percent exception pathways as out of scope rather than modelling them, which is why the floor is a hard cutoff here.",
+      "conventionRationale": "The enhanced credits that suspended the 400 percent ceiling expired at the end of 2025: subparagraph (E), which applied (A) without its \"but does not exceed 400 percent\", reaches only taxable years beginning before January 1, 2026, and no law through Pub. L. 119-111 (the Code as current on 2026-09-18) extends it. So the cliff is live for 2026 and for 2027, and Rev. Proc. 2026-26 prints the 2027 table ending at \"not more than 400%\". Both ends are read from the coverage year's own figures (params/acaCoverageYears.ts). The engine also treats the below-100-percent exception pathways as out of scope rather than modelling them, which is why the floor is a hard cutoff here. The two tests are made on the exact household income, never on the whole-number percentage Form 8962 carries to the applicable-percentage table: the form's own cliff test (Worksheet 2, line 4) compares income with 4 times the poverty line in dollars.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "sunsetting",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-29",
-      "dueOn": "2027-01-26",
+      "verifiedOn": "2026-09-26",
+      "dueOn": "2027-02-23",
       "implementedBy": [
+        "packages/engine/src/params/acaCoverageYears.ts",
         "packages/engine/src/params/data/year2026.ts",
         "packages/engine/src/tax/aca.ts"
       ],
       "implementations": [
         {
+          "path": "packages/engine/src/params/acaCoverageYears.ts",
+          "functions": [
+            {
+              "name": "acaCoverageYear2026",
+              "line": 51
+            },
+            {
+              "name": "acaCoverageYear2027",
+              "line": 90
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/params/data/year2026.ts",
           "functions": [
             {
               "name": "year2026",
-              "line": 16
+              "line": 17
             }
           ]
         },
@@ -362,7 +624,7 @@
           "functions": [
             {
               "name": "acaEconomicPremiumByMonth",
-              "line": 175
+              "line": 213
             }
           ]
         }
@@ -373,12 +635,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/aca.test.ts",
-          "line": 64,
+          "line": 119,
           "note": null,
           "tests": [
             {
               "title": "keeps a household at exactly 400 percent inside the band",
-              "line": 68
+              "line": 123
             }
           ]
         }
@@ -389,6 +651,11 @@
         {
           "kind": "statute",
           "citation": "IRC 36B(c)(1)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section36B&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 36B(c)(1)(E)",
           "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section36B&num=0&edition=prelim"
         }
       ]
@@ -427,12 +694,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/aca.test.ts",
-          "line": 210,
+          "line": 265,
           "note": null,
           "tests": [
             {
               "title": "adds tax-exempt interest to household MAGI alongside the other add-backs",
-              "line": 214
+              "line": 269
             }
           ]
         }
@@ -453,30 +720,211 @@
       ]
     },
     {
+      "id": "irc-36B-d-3-B-poverty-line-for-coverage-year",
+      "title": "A coverage year's poverty line is the one published before its open enrollment",
+      "classification": "settled",
+      "errorDirection": null,
+      "approximation": null,
+      "conventionRationale": null,
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-26",
+      "dueOn": "2027-09-26",
+      "implementedBy": [
+        "packages/engine/src/params/acaCoverageYears.ts",
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/strategies/rothConversion.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/acaCoverageYears.ts",
+          "functions": [
+            {
+              "name": "acaParametersForCoverageYear",
+              "line": 140
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 394
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/strategies/rothConversion.ts",
+          "functions": [
+            {
+              "name": "sizeRothConversion",
+              "line": 158
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/simulate.healthcare.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/projection/simulate.healthcare.test.ts",
+          "line": 102,
+          "note": "Published poverty line for a single filer in the 2027 coverage year at 2.5% plan inflation.",
+          "tests": [
+            {
+              "title": "prices a coverage year from its published ACA figures and fails closed for one without them",
+              "line": 112
+            },
+            {
+              "title": "sizes a 2027 acaCliff conversion to four times the published 2027 poverty line",
+              "line": 165
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 36B(d)(3)(B)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section36B&num=0&edition=prelim"
+        },
+        {
+          "kind": "regulation",
+          "citation": "26 CFR 1.36B-1(h)",
+          "url": "https://www.ecfr.gov/current/title-26/section-1.36B-1"
+        },
+        {
+          "kind": "regulation",
+          "citation": "45 CFR 155.410(e)(5)(i)",
+          "url": "https://www.ecfr.gov/current/title-45/section-155.410"
+        }
+      ]
+    },
+    {
+      "id": "irc-36B-e-eligible-alien-2027-coverage-eligibility-not-modeled",
+      "title": "From 2027, a lawfully present member who is not an eligible alien is not modeled",
+      "classification": "outOfScope",
+      "errorDirection": null,
+      "approximation": null,
+      "conventionRationale": "The United States Code does not yet print the amended subsection (e) in its text: it carries the change as a prospective note, \"Amendment of Subsection (e)\", applicable to taxable years beginning after December 31, 2026, so that note and the effective-date note of section 71301(e) are what the quotations carry. The fact is left as an assertion rather than a new plan input because it concerns a small group of households and is not one question most users can answer.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2027,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-26",
+      "dueOn": "2027-09-26",
+      "implementedBy": [
+        "packages/engine/src/model/plan.ts",
+        "packages/engine/src/projection/internal/annualHealthcareExpenses.ts",
+        "packages/engine/src/projection/simulate.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/model/plan.ts",
+          "functions": [
+            {
+              "name": "acaYearContractSchema",
+              "line": 2041
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/internal/annualHealthcareExpenses.ts",
+          "functions": [
+            {
+              "name": "annualHealthcareExpenses",
+              "line": 81
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 394
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [],
+      "fixtures": [],
+      "refusalFixtureFiles": [
+        "packages/engine/src/projection/simulate.eligibleAlienRefusal.test.ts"
+      ],
+      "refusalFixtures": [
+        {
+          "path": "packages/engine/src/projection/simulate.eligibleAlienRefusal.test.ts",
+          "line": 50,
+          "note": null,
+          "tests": [
+            {
+              "title": "fails the 2027 credit closed instead of computing a 36B(e) adjustment",
+              "line": 57
+            },
+            {
+              "title": "prices the same 2027 year once the assertion is supported, so the refusal is the eligibility claim",
+              "line": 68
+            }
+          ]
+        }
+      ],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "IRC 36B, Amendment of Subsection (e), Pub. L. 119-21, sec. 71301(a), (b), (e)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section36B&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "IRC 36B, Effective Date of 2025 Amendment, Pub. L. 119-21, sec. 71301(e)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section36B&num=0&edition=prelim"
+        }
+      ]
+    },
+    {
       "id": "rev-proc-2025-25-aca-applicable-percentage-2026",
       "title": "ACA applicable percentage table for 2026",
       "classification": "settled",
       "errorDirection": null,
       "approximation": null,
-      "conventionRationale": "The engine interpolates linearly between the published breakpoints. The revenue procedure gives an initial and a final percentage per band rather than a formula, and linear interpolation is the construction that reproduces both endpoints of every band. Section 3.01 presents those percentages as a table, so the quotation carries only the sentence introducing it; the bands and rates are stated above in this record rather than rewritten into prose and attributed to the revenue procedure.",
+      "conventionRationale": "The engine interpolates linearly between the published breakpoints. The revenue procedure gives an initial and a final percentage per band rather than a formula, and linear interpolation is the construction that reproduces both endpoints of every band. The table is read at the whole-number poverty-line percentage and the result rounded to a hundredth of a percent (cfr-26-1-36B-3-g-1-applicable-percentage-rounding). Section 3.01 presents those percentages as a table, so the quotation carries only the sentence introducing it; the bands and rates are stated above in this record rather than rewritten into prose and attributed to the revenue procedure.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "annuallyIndexed",
       "effectiveFrom": 2026,
       "effectiveThrough": 2026,
-      "verifiedOn": "2026-08-04",
-      "dueOn": "2026-12-02",
+      "verifiedOn": "2026-09-26",
+      "dueOn": "2027-01-24",
       "implementedBy": [
+        "packages/engine/src/params/acaCoverageYears.ts",
         "packages/engine/src/params/data/year2026.ts",
         "packages/engine/src/tax/aca.ts"
       ],
       "implementations": [
         {
+          "path": "packages/engine/src/params/acaCoverageYears.ts",
+          "functions": [
+            {
+              "name": "acaCoverageYear2026",
+              "line": 51
+            }
+          ]
+        },
+        {
           "path": "packages/engine/src/params/data/year2026.ts",
           "functions": [
             {
               "name": "year2026",
-              "line": 16
+              "line": 17
             }
           ]
         },
@@ -485,7 +933,7 @@
           "functions": [
             {
               "name": "acaApplicablePct",
-              "line": 132
+              "line": 161
             }
           ]
         }
@@ -496,12 +944,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/tax/aca.test.ts",
-          "line": 23,
+          "line": 24,
           "note": null,
           "tests": [
             {
               "title": "steps to the 133 band at exactly 133 percent of the poverty line",
-              "line": 27
+              "line": 28
             }
           ]
         }
@@ -513,6 +961,83 @@
           "kind": "irsNotice",
           "citation": "Rev. Proc. 2025-25, section 3.01",
           "url": "https://www.irs.gov/pub/irs-drop/rp-25-25.pdf"
+        }
+      ]
+    },
+    {
+      "id": "rev-proc-2026-26-aca-applicable-percentage-2027",
+      "title": "ACA applicable percentage table for 2027",
+      "classification": "settled",
+      "errorDirection": null,
+      "approximation": null,
+      "conventionRationale": "The engine interpolates linearly between the published breakpoints, as for 2026: the revenue procedure gives an initial and a final percentage per band rather than a formula, and linear interpolation is the construction that reproduces both endpoints of every band. The table is read at the whole-number poverty-line percentage and the result rounded to a hundredth of a percent (cfr-26-1-36B-3-g-1-applicable-percentage-rounding). Section 1 says the additional adjustment of section 36B(b)(3)(A)(ii)(II) is not required for plan years beginning in 2027 because the failsafe of (ii)(III) applies, so the section 3.01 table is the complete 2027 table. Section 3.01 presents the percentages as a table, so the quotation carries the sentence introducing it and the bands are stated above in this record.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "annuallyIndexed",
+      "effectiveFrom": 2027,
+      "effectiveThrough": 2027,
+      "verifiedOn": "2026-09-26",
+      "dueOn": "2027-01-24",
+      "implementedBy": [
+        "packages/engine/src/params/acaCoverageYears.ts",
+        "packages/engine/src/tax/aca.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/params/acaCoverageYears.ts",
+          "functions": [
+            {
+              "name": "acaCoverageYear2027",
+              "line": 90
+            },
+            {
+              "name": "acaParametersForCoverageYear",
+              "line": 140
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/tax/aca.ts",
+          "functions": [
+            {
+              "name": "acaApplicablePct",
+              "line": 161
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/params/acaCoverageYears.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/params/acaCoverageYears.test.ts",
+          "line": 93,
+          "note": "Applicable percentage at 175% of the poverty line for 2027 coverage.",
+          "tests": [
+            {
+              "title": "prices 2027 on the Rev. Proc. 2026-26 table, not the 2026 one",
+              "line": 98
+            },
+            {
+              "title": "matches every 2027 band endpoint and the step at exactly 133%",
+              "line": 103
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "irsNotice",
+          "citation": "Rev. Proc. 2026-26, section 3.01",
+          "url": "https://www.irs.gov/pub/irs-drop/rp-26-26.pdf"
+        },
+        {
+          "kind": "irsNotice",
+          "citation": "Rev. Proc. 2026-26, section 3.02",
+          "url": "https://www.irs.gov/pub/irs-drop/rp-26-26.pdf"
         }
       ]
     },
@@ -541,7 +1066,7 @@
           "functions": [
             {
               "name": "healthcareConfigSchema",
-              "line": 2127
+              "line": 2139
             }
           ]
         },
@@ -550,7 +1075,7 @@
           "functions": [
             {
               "name": "annualHealthcareExpenses",
-              "line": 76
+              "line": 81
             }
           ]
         },
@@ -559,7 +1084,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         }
@@ -611,7 +1136,7 @@
           "functions": [
             {
               "name": "year2026",
-              "line": 16
+              "line": 17
             }
           ]
         },
@@ -620,7 +1145,7 @@
           "functions": [
             {
               "name": "partBMonthlyPremium",
-              "line": 351
+              "line": 376
             }
           ]
         },
@@ -640,12 +1165,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/params/params.test.ts",
-          "line": 477,
+          "line": 518,
           "note": "The twenty cents between them is the repayment amount, which the promulgated figure carries and a re-derivation from the actuarial rate drops.",
           "tests": [
             {
               "title": "carries the promulgated premium rather than half the actuarial rate",
-              "line": 484
+              "line": 525
             }
           ]
         }
@@ -692,7 +1217,7 @@
           "functions": [
             {
               "name": "healthcareConfigSchema",
-              "line": 2127
+              "line": 2139
             }
           ]
         },
@@ -701,7 +1226,7 @@
           "functions": [
             {
               "name": "year2026",
-              "line": 16
+              "line": 17
             }
           ]
         },
@@ -710,7 +1235,7 @@
           "functions": [
             {
               "name": "annualHealthcareExpenses",
-              "line": 76
+              "line": 81
             }
           ]
         },
@@ -719,7 +1244,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         },
@@ -851,7 +1376,7 @@
           "functions": [
             {
               "name": "annualFundingApplicationAndClosePhase",
-              "line": 442
+              "line": 450
             }
           ]
         },
@@ -860,7 +1385,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         }
@@ -871,12 +1396,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.healthcare.test.ts",
-          "line": 1140,
+          "line": 1219,
           "note": "foreign-exclusion addback raises ACA MAGI but not IRMAA magiHistory",
           "tests": [
             {
               "title": "raises ACA household MAGI by the known foreign-exclusion addback without moving IRMAA MAGI history",
-              "line": 1149
+              "line": 1228
             }
           ]
         }
@@ -915,7 +1440,7 @@
           "functions": [
             {
               "name": "annualFundingApplicationAndClosePhase",
-              "line": 442
+              "line": 450
             }
           ]
         },
@@ -924,7 +1449,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         }
@@ -935,12 +1460,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.healthcare.test.ts",
-          "line": 1083,
+          "line": 1162,
           "note": null,
           "tests": [
             {
               "title": "carries known tax-exempt interest into later IRMAA MAGI without taxing it as ordinary income",
-              "line": 1090
+              "line": 1169
             }
           ]
         }
@@ -984,7 +1509,7 @@
           "functions": [
             {
               "name": "annualHealthcareExpenses",
-              "line": 76
+              "line": 81
             }
           ]
         },
@@ -993,7 +1518,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         }
@@ -1004,12 +1529,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.healthcare.test.ts",
-          "line": 1026,
+          "line": 1105,
           "note": null,
           "tests": [
             {
               "title": "raises Medicare premiums two years after an income spike",
-              "line": 1033
+              "line": 1112
             }
           ]
         }
@@ -1030,14 +1555,14 @@
       "classification": "settled",
       "errorDirection": null,
       "approximation": null,
-      "conventionRationale": "Three things are decided here rather than dictated. First, the index: the resumed adjustment is measured on the plan assumed general inflation rather than the consumer price index the statute names, which is the same stand-in the lower rows already take, and the year of the published parameters, 2026, is what makes the general inflation series readable at the August 2026 base period without an offset. Second, the rounding: (i)(5)(B) rounds a dollar amount increased under subparagraph (C) to the nearest 1,000, and that is reproduced for the top row. The identical rounding (i)(5)(B) applies to the (i)(5)(A) adjustment of the four lower rows is not reproduced, which is pre-existing behaviour and is named here rather than left as a silent asymmetry between two branches of one function. Third, the Federal Register determination that publishes the table is registered under the regulation authority kind. It is neither a statute nor an IRS notice, and the enum has no member for an agency determination published in the Federal Register; introducing one is a schema decision rather than a research finding, so the nearest existing member is used and the choice is named rather than left silent.",
+      "conventionRationale": "Three things are decided here rather than dictated. First, the index: the resumed adjustment is measured on the plan assumed general inflation rather than the consumer price index the statute names, which is the same stand-in the lower rows already take, and it is measured from the August 2026 base period explicitly, as the plan's inflation from 2026 to the year before the premium year (IrmaaThresholdYear.inflationFactorBetween), so the published parameters of any year price the row from the same base, and parameters published for a year other than 2026 are refused without that explicit base. Anchoring at the year of the 2027 parameters instead would agree with the statute only while inflation is constant. Second, the rounding: (i)(5)(B) rounds a dollar amount increased under subparagraph (C) to the nearest 1,000, and that is reproduced for the top row. The identical rounding (i)(5)(B) applies to the (i)(5)(A) adjustment of the four lower rows is not reproduced, which is pre-existing behaviour and is named here rather than left as a silent asymmetry between two branches of one function. Third, the Federal Register determination that publishes the table is registered under the regulation authority kind. It is neither a statute nor an IRS notice, and the enum has no member for an agency determination published in the Federal Register; introducing one is a schema decision rather than a research finding, so the nearest existing member is used and the choice is named rather than left silent.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "annuallyIndexed",
       "effectiveFrom": 2019,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-03",
-      "dueOn": "2026-12-01",
+      "verifiedOn": "2026-09-26",
+      "dueOn": "2027-01-24",
       "implementedBy": [
         "packages/engine/src/insights/detectors/irmaaTierEdge.ts",
         "packages/engine/src/params/data/year2026.ts",
@@ -1051,7 +1576,7 @@
           "functions": [
             {
               "name": "irmaaTierEdge",
-              "line": 36
+              "line": 41
             }
           ]
         },
@@ -1060,7 +1585,7 @@
           "functions": [
             {
               "name": "year2026",
-              "line": 16
+              "line": 17
             }
           ]
         },
@@ -1069,11 +1594,11 @@
           "functions": [
             {
               "name": "IRMAA_TOP_TIER_FROZEN_THROUGH_YEAR",
-              "line": 248
+              "line": 269
             },
             {
               "name": "irmaaTierThreshold",
-              "line": 274
+              "line": 295
             }
           ]
         },
@@ -1082,7 +1607,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         },
@@ -1130,8 +1655,12 @@
               "line": 440
             },
             {
-              "title": "refuses a pack year that cannot measure from the August 2026 base",
+              "title": "refuses a pack year that cannot measure from the August 2026 base when no explicit base is given",
               "line": 457
+            },
+            {
+              "title": "measures a 2027 pack's resumed top row from the August 2026 base on a varying inflation path",
+              "line": 474
             }
           ]
         }
@@ -1261,7 +1790,7 @@
           "functions": [
             {
               "name": "year2026",
-              "line": 16
+              "line": 17
             }
           ]
         },
@@ -1338,7 +1867,7 @@
           "functions": [
             {
               "name": "healthcareConfigSchema",
-              "line": 2127
+              "line": 2139
             }
           ]
         },
@@ -1347,7 +1876,7 @@
           "functions": [
             {
               "name": "year2026",
-              "line": 16
+              "line": 17
             }
           ]
         },
@@ -1365,7 +1894,7 @@
           "functions": [
             {
               "name": "annualHealthcareExpenses",
-              "line": 76
+              "line": 81
             }
           ]
         },
@@ -1374,7 +1903,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         }

@@ -201,6 +201,20 @@ export function premiumTaxCreditYear(year: Pick<YearResult, 'aca'>): boolean {
 }
 
 /**
+ * Whether a modeled premium-tax-credit year rests on projected income-tax
+ * figures: the credit is priced on the coverage year's published Marketplace
+ * figures, but the household income it reads was computed with tax brackets
+ * projected from the latest published income-tax pack (support code
+ * `income-tax-parameters-projected`). A page says so beside the year's credit.
+ */
+export function premiumTaxCreditOnProjectedIncomeTax(year: Pick<YearResult, 'aca'>): boolean {
+  return (
+    premiumTaxCreditYear(year) &&
+    (year.aca?.supportCodes.includes('income-tax-parameters-projected') ?? false)
+  )
+}
+
+/**
  * Refuses a plan in which an investable account shares its id with a
  * property, a debt or a permanent-life policy: the published balances record
  * keeps one value per id, so such an account's balance was overwritten
@@ -266,6 +280,7 @@ export interface YearDisplayFigures {
   readonly capitalLossCarryforwardUsed: number
   readonly taxFreeGainsRoom: number | null
   readonly premiumTaxCreditYear: boolean
+  readonly premiumTaxCreditOnProjectedIncomeTax: boolean
   readonly balancesByCategory: Readonly<Record<BalanceCategory, number>>
   readonly unassignedCash: number | null
 }
@@ -285,6 +300,7 @@ export function yearDisplayFigures(
     capitalLossCarryforwardUsed: capitalLossCarryforwardUsed(year),
     taxFreeGainsRoom: taxFreeGainsRoom(year),
     premiumTaxCreditYear: premiumTaxCreditYear(year),
+    premiumTaxCreditOnProjectedIncomeTax: premiumTaxCreditOnProjectedIncomeTax(year),
     balancesByCategory: Object.freeze(balancesByCategory(plan, year)),
     unassignedCash: unassignedCash(year),
   })

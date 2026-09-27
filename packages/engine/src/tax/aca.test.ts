@@ -9,6 +9,7 @@ import {
   acaFederalPovertyLine,
   acaNetAnnualPremium,
   acaNetAnnualPremiumByMonth,
+  acaWholeFplPct,
   buildAcaHouseholdMagi,
 } from './aca.js'
 
@@ -36,14 +37,68 @@ describe('acaApplicablePct', () => {
     expect(acaApplicablePct(pack, 133)).toBe(3.14)
   })
 
-  it('interpolates within bands', () => {
-    // Midpoint of the 150–200 band: 4.19 + 0.5×(6.6−4.19)
-    expect(acaApplicablePct(pack, 175)).toBeCloseTo(5.395, 6)
+  it('interpolates within bands and rounds half up to a hundredth of a percent', () => {
+    // Midpoint of the 150–200 band: 4.19 + 0.5×(6.6−4.19) = 5.395, a tie that
+    // 26 CFR 1.36B-3(g)(1) rounds up (its example rounds 8.775 to 8.78).
+    expect(acaApplicablePct(pack, 175)).toBe(5.4)
+    // 182: 4.19 + 32/50 × 2.41 = 5.7324, rounded down to 5.73.
+    expect(acaApplicablePct(pack, 182)).toBe(5.73)
   })
 
   it('is flat at the cap from 300–400%', () => {
     expect(acaApplicablePct(pack, 320)).toBeCloseTo(9.96, 6)
     expect(acaApplicablePct(pack, 400)).toBeCloseTo(9.96, 6)
+  })
+})
+
+describe('the IRS computation of the applicable percentage', () => {
+  // A single filer with 2026 MAGI of 28,500 is at 182.1086% of 15,650. The
+  // IRS computation reads the table at 182 (Form 8962 instructions, Worksheet
+  // 2, line 4: drop the fraction) and rounds to 0.01% (26 CFR 1.36B-3(g)(1)):
+  // 4.19 + 32/50 x 2.41 = 5.7324 -> 5.73, a contribution of 1,633.05. The
+  // readings the two sources rule out: the exact percentage unrounded
+  // (5.737636%, 1,635.23), the regulation's rounding alone on the exact
+  // percentage (5.74%, 1,635.90), and the form's truncation without the
+  // rounding (5.7324%, 1,633.73).
+  describeRule('cfr-26-1-36B-3-g-1-applicable-percentage-rounding', {
+    readings: {
+      truncatedThenRounded: 1_633.05,
+      exactUnrounded: 28_500 * (4.19 + ((28_500 / 15_650 * 100 - 150) / 50) * 2.41) / 100,
+      exactRounded: 28_500 * 5.74 / 100,
+      truncatedUnrounded: 28_500 * 5.7324 / 100,
+    },
+    accepted: 'truncatedThenRounded',
+    note: 'Expected contribution of a single filer with 2026 MAGI of 28,500.',
+  }, ({ accepted, readings }) => {
+    it('reads the table at the whole-number percentage and rounds the applicable percentage to a hundredth', () => {
+      const monthly = new Array<number>(12).fill(1_000)
+      const quote = acaEconomicPremiumByMonth(pack, 1, 28_500, monthly, monthly)
+      // The published percentage stays exact; only the table read is truncated.
+      expect(quote.fplPct).toBeCloseTo((28_500 / 15_650) * 100, 9)
+      expect(acaWholeFplPct(quote.fplPct)).toBe(182)
+      expect(quote.expectedContribution).toBeCloseTo(accepted, 9)
+      for (const wrong of [readings.exactUnrounded, readings.exactRounded, readings.truncatedUnrounded]) {
+        expect(quote.expectedContribution).not.toBeCloseTo(wrong, 2)
+      }
+      expect(quote.modeledAllowablePtc).toBeCloseTo(12_000 - accepted, 9)
+    })
+
+    it('keeps a whole-number percentage whole through binary division', () => {
+      // 29,206.80 is exactly 183% of 15,960 but divides to 182.99999999999997.
+      expect((29_206.8 / 15_960) * 100).toBeLessThan(183)
+      expect(acaWholeFplPct((29_206.8 / 15_960) * 100)).toBe(183)
+    })
+
+    it('keeps the 100% and 400% tests on the exact percentage', () => {
+      const monthly = new Array<number>(12).fill(1_000)
+      // 400.5% is over the cliff even though its whole number is 400.
+      const over = acaEconomicPremiumByMonth(pack, 1, 15_650 * 4.005, monthly, monthly)
+      expect(over.overCliff).toBe(true)
+      expect(over.modeledAllowablePtc).toBe(0)
+      // 99.5% is under the floor even though a rounding would reach 100.
+      const under = acaEconomicPremiumByMonth(pack, 1, 15_650 * 0.995, monthly, monthly)
+      expect(under.belowEligibilityFloor).toBe(true)
+    })
   })
 })
 

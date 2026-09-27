@@ -29,7 +29,7 @@
           "functions": [
             {
               "name": "year2026",
-              "line": 16
+              "line": 17
             }
           ]
         },
@@ -47,7 +47,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         },
@@ -130,7 +130,7 @@
           "functions": [
             {
               "name": "year2026",
-              "line": 16
+              "line": 17
             }
           ]
         },
@@ -208,7 +208,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         },
@@ -300,7 +300,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         },
@@ -651,7 +651,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         }
@@ -781,7 +781,7 @@
           "functions": [
             {
               "name": "year2026",
-              "line": 16
+              "line": 17
             }
           ]
         },
@@ -801,12 +801,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/params/params.test.ts",
-          "line": 621,
+          "line": 662,
           "note": null,
           "tests": [
             {
               "title": "carries the employee side rather than the combined rate",
-              "line": 625
+              "line": 666
             }
           ]
         }
@@ -977,7 +977,7 @@
           "functions": [
             {
               "name": "year2026",
-              "line": 16
+              "line": 17
             }
           ]
         },
@@ -997,16 +997,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/params/params.test.ts",
-          "line": 550,
+          "line": 591,
           "note": "Values are the joint adjusted base amount, above which up to 85 percent of the benefit is included.",
           "tests": [
             {
               "title": "keeps the joint amounts at the figures the statute states",
-              "line": 555
+              "line": 596
             },
             {
               "title": "is the opposite of the standard deduction, which does double",
-              "line": 564
+              "line": 605
             }
           ]
         }
@@ -1178,7 +1178,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         },
@@ -1256,7 +1256,7 @@
           "functions": [
             {
               "name": "TRUSTEES_DEFAULT_SS_HAIRCUT",
-              "line": 40
+              "line": 51
             }
           ]
         }
@@ -1267,12 +1267,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/params/params.test.ts",
-          "line": 639,
+          "line": 680,
           "note": null,
           "tests": [
             {
               "title": "defaults to the combined-OASDI depletion projection",
-              "line": 646
+              "line": 687
             }
           ]
         }
@@ -1393,7 +1393,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         },
@@ -1483,7 +1483,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         },
@@ -2111,7 +2111,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         }
@@ -2358,7 +2358,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         }
@@ -2451,7 +2451,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         }
@@ -2661,7 +2661,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         },
@@ -2740,7 +2740,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         }
@@ -2796,7 +2796,7 @@
           "functions": [
             {
               "name": "year2026",
-              "line": 16
+              "line": 17
             }
           ]
         },
@@ -2814,7 +2814,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         }
@@ -2875,7 +2875,7 @@
           "functions": [
             {
               "name": "year2026",
-              "line": 16
+              "line": 17
             }
           ]
         },
@@ -2893,7 +2893,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         }
@@ -2904,16 +2904,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/params/params.test.ts",
-          "line": 516,
+          "line": 557,
           "note": "Values are the lower annual exempt amount, twelve times the monthly one.",
           "tests": [
             {
               "title": "derives the lower exempt amount from the wage index rather than from prices",
-              "line": 521
+              "line": 562
             },
             {
               "title": "derives the higher exempt amount from its own base and reference year",
-              "line": 534
+              "line": 575
             }
           ]
         }
@@ -3139,7 +3139,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         },
@@ -3431,7 +3431,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         }
@@ -3506,7 +3506,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         },
@@ -3604,7 +3604,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         },
@@ -3738,7 +3738,7 @@
           "functions": [
             {
               "name": "year2026",
-              "line": 16
+              "line": 17
             }
           ]
         },
@@ -3758,12 +3758,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/params/params.test.ts",
-          "line": 495,
+          "line": 536,
           "note": "The price reading takes the 2025 base of 176,100 and the benefit increase the same notice announces for 2026.",
           "tests": [
             {
               "title": "derives the base from the wage index rather than from prices",
-              "line": 500
+              "line": 541
             }
           ]
         }

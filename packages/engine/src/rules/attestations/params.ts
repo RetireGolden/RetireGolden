@@ -9,6 +9,7 @@
 import type { CoverageAttestation } from '../coverageAttestations.js'
 
 export const paramsAttestations: Readonly<Record<string, CoverageAttestation>> = Object.freeze({
+  'params/acaCoverageYears.ts': Object.freeze({ status: 'registered', sweptOn: '2026-09-26', note: 'the premium-tax-credit figures by coverage year (the Applicable Percentage Table and the poverty guidelines) and their resolver; registered under rev-proc-2025-25-aca-applicable-percentage-2026, rev-proc-2026-26-aca-applicable-percentage-2027, irc-36B-d-3-B-poverty-line-for-coverage-year and the two HHS guideline records, and under the aca-coverage-year-parameters calculation' }),
   'params/data/realYieldCurve2026.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: 'Treasury market-data snapshot; provenance in params/provenance.ts, not statute' }),
   'params/data/year2026.ts': Object.freeze({ status: 'registered', sweptOn: '2026-08-24', note: null }),
   'params/index.ts': Object.freeze({ status: 'registered', sweptOn: '2026-08-29', note: 'The Trustees default haircut (2034, 17 percent) is registered under ssa-2026-trustees-oasdi-depletion-default-haircut, which pins the constant; the C-CPI-U-versus-plan-inflation indexing liberty is stated in the annually-indexed records naming indexFederalTaxPack' }),

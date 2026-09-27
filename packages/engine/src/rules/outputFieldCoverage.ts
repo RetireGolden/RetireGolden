@@ -1,7 +1,7 @@
 /**
  * GENERATED FILE — DO NOT EDIT BY HAND.
  *
- * Output field coverage imported from the output-family census at commit 7146c166fde38ef5494cca5e47b7ef7bee71b54a.
+ * Output field coverage imported from the output-family census at commit 72b68c3340e8c7a251753ab69c33e64a4acb8bdc.
  * Regenerate: node packages/engine/scripts/import-output-census.mjs <census-dir>
  */
 
@@ -9104,6 +9104,16 @@ const coverageCensus = [
   },
   {
     "source": "planner-ui/src/report/reportModel.ts",
+    "owner": "ReportAcaCoverageYear",
+    "field": "coverageYear",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "dimension-coordinate",
+    "reason": "The ReportAcaCoverageYear.coverageYear field is a coordinate such as year, age, or offset used to place another value.",
+    "tsType": "number"
+  },
+  {
+    "source": "planner-ui/src/report/reportModel.ts",
     "owner": "ReportAcaLedgerBlock",
     "field": "applicableSlcspPremium",
     "disposition": "family",
@@ -13578,6 +13588,14 @@ const exclusionCensus = [
     "field": "year",
     "reasonKind": "dimension-coordinate",
     "reason": "The primaryInheritedRegimeLabel.year field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-report-reportmodel-ts-reportacacoverageyear-coverageyear",
+    "path": "planner-ui/src/report/reportModel.ts",
+    "symbol": "ReportAcaCoverageYear",
+    "field": "coverageYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The ReportAcaCoverageYear.coverageYear field is a coordinate such as year, age, or offset used to place another value."
   },
   {
     "id": "field-planner-ui-src-report-reportmodel-ts-reportacaledgerblock-year",

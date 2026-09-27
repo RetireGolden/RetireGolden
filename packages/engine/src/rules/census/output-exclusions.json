@@ -1256,6 +1256,14 @@
     "reason": "The ReportProvenance.stateParameterPackYear field is a coordinate such as year, age, or offset used to place another value."
   },
   {
+    "id": "field-planner-ui-src-report-reportmodel-ts-reportacacoverageyear-coverageyear",
+    "path": "planner-ui/src/report/reportModel.ts",
+    "symbol": "ReportAcaCoverageYear",
+    "field": "coverageYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The ReportAcaCoverageYear.coverageYear field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
     "id": "field-planner-ui-src-report-reportmodel-ts-reportmodel-startyear",
     "path": "planner-ui/src/report/reportModel.ts",
     "symbol": "ReportModel",

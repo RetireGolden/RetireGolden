@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { REAL_YIELD_CURVE_2026 } from './data/realYieldCurve2026.js'
-import { packForYear, rmdStartAgeForBirthYear } from './index.js'
+import { acaParametersForCoverageYear, packForYear, rmdStartAgeForBirthYear } from './index.js'
 import { PARAMETER_PROVENANCE } from './provenance.js'
 import { stateParamsFor } from './state/index.js'
 import type { StateTaxParams } from './state/types.js'
@@ -379,15 +379,21 @@ function socialSecurityClauses(): FigureClause[] {
 }
 
 function federalPovertyLineClauses(): FigureClause[] {
+  const block2027 = acaParametersForCoverageYear(2027).params
   return [
     {
       label: 'contiguous FPL first/additional person amounts',
       clause: `(${usd(pack.federalPovertyLine.contiguous.firstPerson)} first person, +${usd(pack.federalPovertyLine.contiguous.perAdditionalPerson)} each additional)`,
     },
+    {
+      label: '2027 coverage-year contiguous FPL first/additional person amounts',
+      clause: `(${usd(block2027.federalPovertyLine.contiguous.firstPerson)} first person, +${usd(block2027.federalPovertyLine.contiguous.perAdditionalPerson)} each additional)`,
+    },
   ]
 }
 
 function acaPtcClauses(): FigureClause[] {
+  const block2027 = acaParametersForCoverageYear(2027).params
   const firstBreakpoint = pack.aca.applicablePctBreakpoints[0]
   if (!firstBreakpoint) {
     throw new Error(`${START_YEAR} ACA pack must include applicable-percentage breakpoints`)
@@ -408,6 +414,14 @@ function acaPtcClauses(): FigureClause[] {
     {
       label: '400% FPL subsidy cliff',
       clause: `${pack.aca.maxFplPctForCredit}% FPL subsidy cliff restored`,
+    },
+    {
+      label: '2027 applicable percentage below first breakpoint',
+      clause: `${block2027.aca.applicablePctBelowFirstBreakpoint.toFixed(2)}% under ${block2027.aca.applicablePctBreakpoints[0]!.fplPct}% FPL`,
+    },
+    {
+      label: '2027 applicable percentage at 300–400% FPL band',
+      clause: `${block2027.aca.applicablePctBreakpoints.find((row) => row.fplPct === 300)!.applicablePct}% at 300–${block2027.aca.maxFplPctForCredit}%`,
     },
   ]
 }
@@ -639,12 +653,15 @@ const NON_PACK_DISPLAY_CONTRACTS: NonPackDisplayContract[] = [
     clauses: [
       { label: '2025 HHS guideline coverage-year prose', clause: '2025 HHS guideline' },
       { label: '2026 ACA coverage year application', clause: 'applied to the 2026 ACA coverage year' },
+      { label: '2026 HHS guideline coverage-year prose', clause: '2026 HHS guideline' },
+      { label: '2027 ACA coverage year application', clause: 'applied to the 2027 ACA coverage year' },
     ],
   },
   {
     id: 'aca-ptc',
     clauses: [
       { label: 'Rev. Proc. citation', clause: 'Rev. Proc. 2025-25' },
+      { label: '2027 Rev. Proc. citation', clause: 'Rev. Proc. 2026-26' },
       { label: 'enhanced-credit expiry', clause: 'enhanced credits expired 12/31/2025' },
     ],
   },

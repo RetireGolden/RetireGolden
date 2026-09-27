@@ -150,7 +150,20 @@ const EXPECTED: Record<string, { depletionYear: number | null; endingInvestable:
   // so the example could not show a credit at all. It now converts to the 10%
   // bracket on smaller consulting income, holding the current year below the
   // cliff with a positive credit that a one-bracket raise visibly forfeits.
-  'early-retiree-aca': { depletionYear: null, endingInvestable: 539_207.42, lifetimeTax: 105_501.55, lifetimeRoth: 59_661.87 },
+  // Re-baselined 2026-09-26 (decision D-ACA-2027-TABLE): 2027 is priced on
+  // Rev. Proc. 2026-26 and the HHS 2026 guidelines. MAGI 29,212.49 is 183.04% of
+  // the 15,960 poverty line, so the credit is 10,925.20 of the 12,660 premium
+  // (the walkthrough's 2027 table derives it by hand). The 2027 cash draw falls
+  // by that credit, and the larger balances compound: ending investable
+  // 539,207.42 -> 579,399.32, and lifetime tax 105,501.55 -> 107,861.71 on the
+  // larger later withdrawals. The conversions are sized on taxable income, which
+  // the credit does not reach, so lifetime conversions are unchanged.
+  // Re-baselined again the same day for the IRS rounding (the table read at the
+  // whole-number poverty-line percentage, the rate rounded to 0.01%): the 2026
+  // credit goes 10,364.77 -> 10,366.95 (read at 182: 5.73%) and the 2027 one
+  // 10,925.20 -> 10,924.78 (read at 183: 5.94%); ending investable
+  // 579,399.32 -> 579,405.87, lifetime tax 107,861.71 -> 107,862.17.
+  'early-retiree-aca': { depletionYear: null, endingInvestable: 579_405.87, lifetimeTax: 107_862.17, lifetimeRoth: 59_661.87 },
   'rmd-irmaa': { depletionYear: null, endingInvestable: 1_546_195.28, lifetimeTax: 512_837.64, lifetimeRoth: 0 },
   'survivor-years': { depletionYear: 2043, endingInvestable: 0, lifetimeTax: 79_020.67, lifetimeRoth: 0 },
   'moving-state-tax': { depletionYear: null, endingInvestable: 3_880_516.31, lifetimeTax: 732_565.75, lifetimeRoth: 0 },
@@ -231,10 +244,24 @@ const EXPECTED: Record<string, { depletionYear: number | null; endingInvestable:
   // New July enhancement examples (positive/negative cases for guardrails, annuities+estate, allocation+MC v2, HSA/property depth)
   'guardrails-flex-goals': { depletionYear: 2041, endingInvestable: 0, lifetimeTax: 7_903.47, lifetimeRoth: 0 },
   'annuity-purchases-estate': { depletionYear: null, endingInvestable: 3_254_253.2, lifetimeTax: 342_232.06, lifetimeRoth: 857_968.22 },
-  'glidepath-allocation': { depletionYear: null, endingInvestable: 1_272_656.33, lifetimeTax: 347_018.53, lifetimeRoth: 765_919.48 },
+  // Re-baselined 2026-09-26 for the IRS rounding of the ACA applicable
+  // percentage (decision D-ACA-2027-TABLE): the 2026 credit, at 180.5% of the
+  // 15,650 poverty line, is read at 180 and rounded to 5.64% (unrounded
+  // 5.66%), so it rises 8,121.13 -> 8,126.97 and the smaller need draws a
+  // little less taxable income: ending investable 1,272,656.33 ->
+  // 1,272,697.21, lifetime tax 347,018.53 -> 347,014.81, lifetime conversions
+  // 765,919.48 -> 765,933.31.
+  'glidepath-allocation': { depletionYear: null, endingInvestable: 1_272_697.21, lifetimeTax: 347_014.81, lifetimeRoth: 765_933.31 },
   // Re-baselined for exact committed Form 8606 line-8 character: generated
   // conversions now size gross dollars against their taxable fraction.
-  'hsa-property-depth': { depletionYear: 2043, endingInvestable: 0, lifetimeTax: 32_843.21, lifetimeRoth: 180_171.15 },
+  // Re-baselined 2026-09-26 (decision D-ACA-2027-TABLE): 2027 is priced, a
+  // 3,283.50 credit at 336.78% of the 15,960 poverty line (10.22% flat band).
+  // The credit cuts the 2027 draw on the traditional IRA from 76,997.66 to
+  // 73,369.98, so the IRA left for the 2029 conversion, which empties it, is
+  // 184,163.05 rather than 180,171.15: lifetime conversions rise by 3,991.90.
+  // Tax falls 344.18 in 2027 and 975.16 in 2032 and rises 775.77 in 2029, so
+  // lifetime tax goes 32,843.21 -> 32,299.64; the plan still depletes in 2043.
+  'hsa-property-depth': { depletionYear: 2043, endingInvestable: 0, lifetimeTax: 32_299.64, lifetimeRoth: 184_163.05 },
   // A-B control variants for direct Plan Compare (fixed target, no annuity, static allocation, no HSA)
   'fixed-target-spending': { depletionYear: 2034, endingInvestable: 0, lifetimeTax: 7_215.17, lifetimeRoth: 0 },
   'no-annuity-brokerage': { depletionYear: null, endingInvestable: 3_684_430.57, lifetimeTax: 278_493.11, lifetimeRoth: 1_230_830.55 },

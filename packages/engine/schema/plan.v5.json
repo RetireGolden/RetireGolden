@@ -5356,7 +5356,8 @@
                         "enum": [
                           "supported",
                           "unsupported"
-                        ]
+                        ],
+                        "description": "'supported' asserts every covered member is eligible for the premium tax credit on the facts the engine models; from 2027 it also asserts that every lawfully present tax-family member is an eligible alien (a lawful permanent resident, a Cuban and Haitian entrant, or a Compact of Free Association resident; Pub. L. 119-21 section 71301, IRC 36B(e)). 'unsupported' leaves the year's credit unpriced."
                       },
                       "form8814": {
                         "type": "string",

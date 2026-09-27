@@ -13,15 +13,14 @@
     "The first projection year is a full calendar year on the entered balances: the projection takes a start year, never a date, and no year row has a proration term.",
     "The premium tax credit is priced on the year's own household MAGI, solved together with tax and withdrawals; the plan's recentAnnualMagi of 50,000 is an IRMAA input for the first two years and plays no part in the credit.",
     "The benchmark (second-lowest-cost silver) premium is an example assumption set equal to the stated premium, not an engine estimate: the engine reads a benchmark only from a Marketplace contract and otherwise funds the gross premium. With benchmark equal to premium, the net premium equals the expected contribution for any premium at which the monthly share of the contribution does not exceed the premium, with twelve covered months.",
-    "Only 2026 is a credit year for this example: 2027 and 2028 carry contracts but no published tax-year parameter set, so the engine funds the gross premium there and says so; the credit does not vanish at the cliff, it vanishes for want of parameters.",
+    "The credit is priced in 2026 and 2027, the coverage years whose credit figures are published (Rev. Proc. 2025-25 with the HHS 2025 guidelines, and Rev. Proc. 2026-26 with the HHS 2026 guidelines); 2028 carries a contract but no published credit figures, so the engine funds the gross premium there and says so. The credit does not vanish at the cliff, it vanishes for want of parameters. 2027 is priced while its income-tax parameter set is the 2026 one carried forward, and says so with income-tax-parameters-projected.",
     "The conversion is sized to the top of the 10% bracket on taxable income after the standard deduction; the credit's dependence on MAGI does not enter the sizing. The example chose the 10% target so the baseline stays under the 400% cliff (it lands 34,100 below it); filling the 12% bracket instead would cross the cliff.",
     "Consulting is ordinary income with no self-employment facts: no self-employment tax, no half-SE deduction, no self-employed health-insurance deduction.",
     "A cash account's growth is not taxable interest and does not enter MAGI; the conversion is not a withdrawal and is never penalized, at any age.",
     "In 2026 the conversion and the zero-rate gain headroom are sized by bisection to $0.01 (the contract's promise) and return the lower bound, so those two rows are held to at most $0.01 below the exact value and never above it, and every other row to half a cent; the 2027 bands follow from the same promise and are stated in the next note.",
     "Florida's zero appears nowhere as a separate field: the year row publishes one composed tax.",
     "In 2027 the conversion's $0.01 bar reaches every figure computed from it (MAGI, taxable income, the ACA AGI component, the IRA and Roth year ends), and no contract says so; those rows carry the propagated bar (0.01 one-sided, 0.0105 on the grown balances) and the zero-rate headroom becomes two-sided, since the conversion's shortfall raises its root while its own search lands below.",
-    "A null row proves an absence: in 2027 the engine publishes the household MAGI, the poverty line, the percentage and the credit as null by contract, and the test holds each to null exactly. The MAGI probe's federal AGI is still published beside them as the input a credit would have been priced on, not as a household MAGI the engine vouches for.",
-    "In a stand-in year the ACA convergence flag reads false although the funding solve converged: the flag certifies a priced credit, not the solve; the year carries no non-convergence code or warning.",
+    "The 2027 poverty line is the HHS 2026 guideline as published, 15,960: pricing it at the plan's inflation (15,960 × 1.025 = 16,359, or the 2026 parameter set's 15,650 × 1.025) would price a guideline that does not exist.",
     "The projected 2027 figures (a 12,710 bracket top, a 16,502.50 deduction, a 50,686.25 breakpoint) are the 2026 figures at the plan's 2.5% with no statutory rounding; the IRS's 2027 figures will differ."
   ],
   "tables": [
@@ -179,7 +178,7 @@
           "tolerance": 0.005,
           "unit": "dollars",
           "derivation": "15,650 for the first person, contiguous states; HHS 2025 guidelines for 2026 coverage",
-          "contract": "params/data/year2026.ts federalPovertyLine.contiguous; tax/aca.ts#acaFederalPovertyLine"
+          "contract": "params/acaCoverageYears.ts (the 2026 block, which year2026 references); tax/aca.ts#acaFederalPovertyLine"
         },
         {
           "key": "aca-fpl-pct",
@@ -224,21 +223,21 @@
         {
           "key": "aca-credit",
           "label": "Premium tax credit",
-          "hand": 10364.773801916934,
-          "engine": 10364.773801916934,
+          "hand": 10366.95,
+          "engine": 10366.950000000003,
           "tolerance": 0.005,
           "unit": "dollars",
-          "derivation": "12,000 − 28,500 × 5.7376% (4.19% + (182.11 − 150)/50 × 2.41%) = 12,000 − 1,635.23 = 10,364.77; below the 12,000 enrollment cap",
-          "contract": "worksheets aca-expected-contribution, aca-allowable-premium-tax-credit; tax/aca.ts#acaApplicablePct"
+          "derivation": "12,000 − 28,500 × 5.73% (4.19% + (182 − 150)/50 × 2.41% = 5.7324%, rounded to 0.01) = 12,000 − 1,633.05 = 10,366.95; below the 12,000 enrollment cap",
+          "contract": "worksheets aca-expected-contribution, aca-allowable-premium-tax-credit; tax/aca.ts#acaApplicablePct; 26 CFR 1.36B-3(g)(1)"
         },
         {
           "key": "aca-net-premium",
           "label": "Net premium after the credit",
-          "hand": 1635.2261980830663,
-          "engine": 1635.2261980830663,
+          "hand": 1633.0499999999993,
+          "engine": 1633.0499999999975,
           "tolerance": 0.005,
           "unit": "dollars",
-          "derivation": "12,000 − 10,364.77 = 1,635.23, which equals the expected contribution because benchmark equals premium",
+          "derivation": "12,000 − 10,366.95 = 1,633.05, which equals the expected contribution because benchmark equals premium",
           "contract": "worksheet aca-economic-net-premium"
         },
         {
@@ -284,38 +283,38 @@
         {
           "key": "healthcare",
           "label": "Healthcare",
-          "hand": 1635.2261980830663,
-          "engine": 1635.2261980830663,
+          "hand": 1633.0499999999993,
+          "engine": 1633.0499999999975,
           "tolerance": 0.005,
           "unit": "dollars",
-          "derivation": "the net premium 1,635.23; no Medicare, no extras",
+          "derivation": "the net premium 1,633.05; no Medicare, no extras",
           "contract": "worksheet spending-healthcare-annual; YearExpenses.healthcare"
         },
         {
           "key": "spending-total",
           "label": "Total spending",
-          "hand": 41635.226198083066,
-          "engine": 41635.226198083066,
+          "hand": 41633.05,
+          "engine": 41633.049999999996,
           "tolerance": 0.005,
           "unit": "dollars",
-          "derivation": "40,000 + 1,635.23",
+          "derivation": "40,000 + 1,633.05",
           "contract": "worksheet spending-total-annual"
         },
         {
           "key": "portfolio-need",
           "label": "Portfolio need after income",
-          "hand": 24875.226198083066,
-          "engine": 24875.226198083066,
+          "hand": 24873.050000000003,
+          "engine": 24873.049999999996,
           "tolerance": 0.005,
           "unit": "dollars",
-          "derivation": "41,635.23 + tax 1,240 − consulting 18,000 = 24,875.23; the conversion brings in no cash",
+          "derivation": "41,633.05 + tax 1,240 − consulting 18,000 = 24,873.05; the conversion brings in no cash",
           "contract": "worksheet portfolio-need-annual"
         },
         {
           "key": "withdrawal-cash",
           "label": "Withdrawn from cash",
-          "hand": 24875.226198083066,
-          "engine": 24875.226198083066,
+          "hand": 24873.050000000003,
+          "engine": 24873.049999999996,
           "tolerance": 0.005,
           "unit": "dollars",
           "derivation": "the whole need, tax included; cash is first in the sequential order",
@@ -344,8 +343,8 @@
         {
           "key": "withdrawal-total",
           "label": "Total withdrawals",
-          "hand": 24875.226198083066,
-          "engine": 24875.226198083066,
+          "hand": 24873.050000000003,
+          "engine": 24873.049999999996,
           "tolerance": 0.005,
           "unit": "dollars",
           "derivation": "cash only",
@@ -358,7 +357,7 @@
           "engine": 0,
           "tolerance": 0.005,
           "unit": "dollars",
-          "derivation": "inflows 18,000 − spending 41,635.23 − tax 1,240 < 0",
+          "derivation": "inflows 18,000 − spending 41,633.05 − tax 1,240 < 0",
           "contract": "worksheet surplus-invested-annual"
         },
         {
@@ -374,11 +373,11 @@
         {
           "key": "balance-cash",
           "label": "Cash, year end",
-          "hand": 178627.26927795526,
-          "engine": 178627.26927795526,
+          "hand": 178629.489,
+          "engine": 178629.489,
           "tolerance": 0.005,
           "unit": "dollars",
-          "derivation": "(200,000 − 24,875.23) × 1.02",
+          "derivation": "(200,000 − 24,873.05) × 1.02",
           "contract": "worksheet accounts-balance-per-account-annual; annualPostSolveAccountGrowth.ts (growth after flows)"
         },
         {
@@ -404,18 +403,18 @@
         {
           "key": "investable",
           "label": "Investable total",
-          "hand": 777127.2692779553,
-          "engine": 777127.2692779553,
+          "hand": 777129.4890000001,
+          "engine": 777129.4890000001,
           "tolerance": 0.005,
           "unit": "dollars",
-          "derivation": "178,627.27 + 461,475 + 137,025",
+          "derivation": "178,629.49 + 461,475 + 137,025",
           "contract": "worksheet accounts-investable-total-annual"
         },
         {
           "key": "net-worth",
           "label": "Net worth",
-          "hand": 777127.2692779553,
-          "engine": 777127.2692779553,
+          "hand": 777129.4890000001,
+          "engine": 777129.4890000001,
           "tolerance": 0.005,
           "unit": "dollars",
           "derivation": "investable only",
@@ -425,7 +424,7 @@
     },
     {
       "year": 2027,
-      "why": "The first stand-in year: every indexed federal figure is the 2026 figure at the plan's 2.5%, so the conversion grows with the bracket top; the Marketplace credit is not priced, not because of the cliff (the income is as far below it as in 2026 and the contract is complete) but because no 2027 tax-year parameters are published, so the engine budgets the gross premium and says so; and the conversion's search lands half a cent under the bracket top, which every figure downstream of it inherits.",
+      "why": "The first stand-in income-tax year: every indexed federal figure is the 2026 figure at the plan's 2.5%, so the conversion grows with the bracket top; the Marketplace credit is priced all the same, on the published 2027 credit figures (Rev. Proc. 2026-26 and the HHS 2026 poverty guidelines), and the year says that its income rests on projected brackets; and the conversion's search lands half a cent under the bracket top, which every figure downstream of it inherits.",
       "rows": [
         {
           "key": "age",
@@ -537,7 +536,7 @@
           "engine": 1270.9994868040085,
           "tolerance": 0.005,
           "unit": "dollars",
-          "derivation": "taxable income 12,710, all at 10% = 1,271; Florida 0. The conversion costs exactly its 10% tax, 1,076.25: there is no credit to forfeit this year",
+          "derivation": "taxable income 12,710, all at 10% = 1,271; Florida 0. The conversion costs its 10% tax, 1,076.25, and also raises the expected contribution toward the benchmark (it lifts MAGI inside the 150-200 band)",
           "contract": "worksheets federal-ordinary-bracket-tax, tax-total-annual"
         },
         {
@@ -583,73 +582,74 @@
         {
           "key": "aca-readiness",
           "label": "Marketplace credit readiness",
-          "hand": "nonActionable",
-          "engine": "nonActionable",
+          "hand": "actionable",
+          "engine": "actionable",
           "tolerance": 0.005,
           "unit": "text",
-          "derivation": "the 2027 contract is complete, but the year rides the 2026 parameter set, which is an unsupported material fact: no credit is priced",
-          "contract": "YearAcaResult.readiness; annualHealthcareExpenses.ts (tax-year-parameters-unsupported); domain rules §8"
+          "derivation": "the 2027 contract is complete and the 2027 credit figures are published, so every gate passes; the stand-in income-tax parameter set does not block the credit",
+          "contract": "YearAcaResult.readiness; params/acaCoverageYears.ts#acaParametersForCoverageYear; domain rules §8"
         },
         {
           "key": "aca-support-codes",
           "label": "Support codes",
-          "hand": "tax-year-parameters-unsupported",
-          "engine": "tax-year-parameters-unsupported",
+          "hand": "actionable,income-tax-parameters-projected",
+          "engine": "actionable,income-tax-parameters-projected",
           "tolerance": 0.005,
           "unit": "text",
-          "derivation": "the one gate that fails; every other gate passes as in 2026",
-          "contract": "YearAcaResult.supportCodes"
+          "derivation": "priced, with the informational note that the household MAGI was computed on projected 2027 brackets",
+          "contract": "YearAcaResult.supportCodes; INFORMATIONAL_ACA_SUPPORT_CODES"
         },
         {
           "key": "aca-household-magi",
           "label": "ACA household MAGI",
-          "hand": null,
-          "engine": null,
-          "tolerance": 0.005,
-          "unit": "dollars",
-          "derivation": "published only in an actionable year",
-          "contract": "YearAcaResult.householdMagi (null when material facts are unsupported)"
-        },
-        {
-          "key": "aca-magi-federal-agi",
-          "label": "The AGI a 2027 credit would be priced on",
           "hand": 29212.5,
           "engine": 29212.494868040085,
           "tolerance": 0.01,
           "unit": "dollars",
-          "derivation": "29,212.50, the MAGI probe’s federal AGI: the input a credit would have been priced on, not a household MAGI the engine vouches for",
+          "derivation": "signed AGI 29,212.50 + untaxed Social Security 0 + tax-exempt interest 0 + foreign addback 0 + dependents 0; carries the conversion’s bar",
+          "contract": "worksheet aca-household-magi-composition; tax/aca.ts#buildAcaHouseholdMagi",
+          "bound": "below"
+        },
+        {
+          "key": "aca-magi-federal-agi",
+          "label": "Federal AGI in the household MAGI",
+          "hand": 29212.5,
+          "engine": 29212.494868040085,
+          "tolerance": 0.01,
+          "unit": "dollars",
+          "derivation": "29,212.50, the whole of the household MAGI",
           "contract": "YearAcaResult.magiComponents.federalAgi; carries the conversion band (single-owner clause at aggregateRothConversionOwnerAllocation.ts#374)",
           "bound": "below"
         },
         {
           "key": "aca-poverty-line",
           "label": "Federal poverty line (one person)",
-          "hand": null,
-          "engine": null,
+          "hand": 15960,
+          "engine": 15960,
           "tolerance": 0.005,
           "unit": "dollars",
-          "derivation": "withheld in a stand-in year: no inflation-scaled poverty line is exposed as evidence",
-          "contract": "YearAcaResult.federalPovertyLine; domain rules §8"
+          "derivation": "15,960 for the first person, contiguous states; HHS 2026 guidelines, the ones in effect when 2027 open enrollment begins, used as published (not 15,960 × 1.025)",
+          "contract": "params/acaCoverageYears.ts (2027 block); tax/aca.ts#acaFederalPovertyLine; YearAcaResult.federalPovertyLine"
         },
         {
           "key": "aca-fpl-pct",
           "label": "MAGI as a percentage of the poverty line",
-          "hand": null,
-          "engine": null,
+          "hand": 183.03571428571428,
+          "engine": 183.03568213057696,
           "tolerance": 0.005,
           "unit": "percent",
-          "derivation": "no priced quote, so no percentage (it would be about 182%, the same distance from the cliff as 2026)",
-          "contract": "YearAcaResult.fplPct"
+          "derivation": "29,212.50 ÷ 15,960 × 100 = 183.04",
+          "contract": "worksheet aca-coverage-year-parameters; YearAcaResult.fplPct"
         },
         {
           "key": "aca-cliff-state",
           "label": "Position against the 400% cliff",
-          "hand": "unsupported",
-          "engine": "unsupported",
+          "hand": "below-cliff",
+          "engine": "below-cliff",
           "tolerance": 0.005,
           "unit": "text",
-          "derivation": "no cliff test is run in a non-actionable year: not above the cliff, unpriced",
-          "contract": "YearAcaResult.cliffState"
+          "derivation": "183.04% is at least 100% and at or below 400%; the 2027 cliff MAGI is 4 × 15,960 = 63,840",
+          "contract": "worksheet aca-400-percent-cliff; YearAcaResult.cliffState"
         },
         {
           "key": "aca-gross-premium",
@@ -674,31 +674,31 @@
         {
           "key": "aca-credit",
           "label": "Premium tax credit",
-          "hand": null,
-          "engine": null,
+          "hand": 10924.7775,
+          "engine": 10924.777804838419,
           "tolerance": 0.005,
           "unit": "dollars",
-          "derivation": "not priced: a 2027 credit needs the 2027 applicable-percentage table and poverty guidelines, and neither is published. Priced on the 2026 schedule carried forward it would be about 10,984 (illustration only)",
-          "contract": "YearAcaResult.modeledAllowablePtc"
+          "derivation": "12,660 − 29,212.50 × 5.94% (4.30% + (183 − 150)/50 × 2.48% = 5.9368%, rounded to 0.01) = 12,660 − 1,735.22 = 10,924.78; below the 12,660 enrollment cap",
+          "contract": "worksheets aca-coverage-year-parameters, aca-allowable-premium-tax-credit; tax/aca.ts#acaApplicablePct; 26 CFR 1.36B-3(g)(1)"
         },
         {
           "key": "aca-net-premium",
           "label": "Net premium after the credit",
-          "hand": 12660,
-          "engine": 12660,
+          "hand": 1735.2224999999999,
+          "engine": 1735.222195161581,
           "tolerance": 0.005,
           "unit": "dollars",
-          "derivation": "the gross premium, 12,660: nothing is credited",
-          "contract": "YearAcaResult.economicNetPremium (the gross premium on a gross fallback)"
+          "derivation": "12,660 − 10,924.78 = 1,735.22, the expected contribution, because benchmark equals premium",
+          "contract": "worksheet aca-economic-net-premium"
         },
         {
           "key": "aca-gross-fallback",
           "label": "Gross-premium fallback",
-          "hand": "gross premium budgeted",
-          "engine": "gross premium budgeted",
+          "hand": "credit priced",
+          "engine": "credit priced",
           "tolerance": 0.005,
           "unit": "text",
-          "derivation": "the year is not actionable, so the plan budgets the full premium and says so",
+          "derivation": "the year is actionable, so the credit is priced and the net premium budgeted",
           "contract": "YearAcaResult.convergence.grossPremiumFallback"
         },
         {
@@ -754,38 +754,38 @@
         {
           "key": "healthcare",
           "label": "Healthcare",
-          "hand": 12660,
-          "engine": 12660,
+          "hand": 1735.2224999999999,
+          "engine": 1735.222195161581,
           "tolerance": 0.005,
           "unit": "dollars",
-          "derivation": "the gross premium 12,660; no Medicare, no extras",
+          "derivation": "the net premium 1,735.22; no Medicare, no extras",
           "contract": "worksheet spending-healthcare-annual; YearExpenses.healthcare"
         },
         {
           "key": "spending-total",
           "label": "Total spending",
-          "hand": 53660,
-          "engine": 53660,
+          "hand": 42735.2225,
+          "engine": 42735.22219516158,
           "tolerance": 0.005,
           "unit": "dollars",
-          "derivation": "41,000 + 12,660",
+          "derivation": "41,000 + 1,735.22",
           "contract": "worksheet spending-total-annual"
         },
         {
           "key": "portfolio-need",
           "label": "Portfolio need after income",
-          "hand": 36481,
-          "engine": 36480.99948680401,
+          "hand": 25556.222500000003,
+          "engine": 25556.221681965588,
           "tolerance": 0.005,
           "unit": "dollars",
-          "derivation": "53,660 + tax 1,271 − consulting 18,450 = 36,481: 11,605.77 more than 2026, of which 10,364.77 is the 2026 credit not repeated",
+          "derivation": "42,735.22 + tax 1,271 − consulting 18,450 = 25,556.22",
           "contract": "worksheet portfolio-need-annual"
         },
         {
           "key": "withdrawal-cash",
           "label": "Withdrawn from cash",
-          "hand": 36481,
-          "engine": 36480.99948680401,
+          "hand": 25556.222500000003,
+          "engine": 25556.221681965588,
           "tolerance": 0.005,
           "unit": "dollars",
           "derivation": "the whole need; cash is first in the sequential order and 178,627.27 covers it",
@@ -814,8 +814,8 @@
         {
           "key": "withdrawal-total",
           "label": "Total withdrawals",
-          "hand": 36481,
-          "engine": 36480.99948680401,
+          "hand": 25556.222500000003,
+          "engine": 25556.221681965588,
           "tolerance": 0.005,
           "unit": "dollars",
           "derivation": "cash only",
@@ -828,7 +828,7 @@
           "engine": 0,
           "tolerance": 0.005,
           "unit": "dollars",
-          "derivation": "inflows 18,450 − spending 53,660 − tax 1,271 < 0",
+          "derivation": "inflows 18,450 − spending 42,735.22 − tax 1,271 < 0",
           "contract": "worksheet surplus-invested-annual"
         },
         {
@@ -844,11 +844,11 @@
         {
           "key": "balance-cash",
           "label": "Cash, year end",
-          "hand": 144989.19466351435,
-          "engine": 144989.19518697428,
+          "hand": 156134.73183,
+          "engine": 156134.73266439512,
           "tolerance": 0.005,
           "unit": "dollars",
-          "derivation": "(178,627.27 − 36,481) × 1.02",
+          "derivation": "(178,629.49 − 25,556.22) × 1.02",
           "contract": "worksheet accounts-balance-per-account-annual"
         },
         {
@@ -875,18 +875,18 @@
         {
           "key": "investable",
           "label": "Investable total",
-          "hand": 773414.1946635144,
-          "engine": 773414.1951869742,
+          "hand": 784559.73183,
+          "engine": 784559.7326643951,
           "tolerance": 0.005,
           "unit": "dollars",
-          "derivation": "144,989.19 + 473,248.125 + 155,176.875; the IRA and Roth offsets cancel",
+          "derivation": "156,134.73 + 473,248.125 + 155,176.875; the IRA and Roth offsets cancel",
           "contract": "worksheet accounts-investable-total-annual"
         },
         {
           "key": "net-worth",
           "label": "Net worth",
-          "hand": 773414.1946635144,
-          "engine": 773414.1951869742,
+          "hand": 784559.73183,
+          "engine": 784559.7326643951,
           "tolerance": 0.005,
           "unit": "dollars",
           "derivation": "investable only",

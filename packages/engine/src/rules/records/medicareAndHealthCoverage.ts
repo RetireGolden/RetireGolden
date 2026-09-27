@@ -23,7 +23,7 @@ export const medicareAndHealthCoverageRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The engine interpolates linearly between the published breakpoints. The revenue procedure gives an initial and a final percentage per band rather than a formula, and linear interpolation is the construction that reproduces both endpoints of every band. Section 3.01 presents those percentages as a table, so the quotation carries only the sentence introducing it; the bands and rates are stated above in this record rather than rewritten into prose and attributed to the revenue procedure.',
+      'The engine interpolates linearly between the published breakpoints. The revenue procedure gives an initial and a final percentage per band rather than a formula, and linear interpolation is the construction that reproduces both endpoints of every band. The table is read at the whole-number poverty-line percentage and the result rounded to a hundredth of a percent (cfr-26-1-36B-3-g-1-applicable-percentage-rounding). Section 3.01 presents those percentages as a table, so the quotation carries only the sentence introducing it; the bands and rates are stated above in this record rather than rewritten into prose and attributed to the revenue procedure.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'irsNotice',
@@ -35,14 +35,95 @@ export const medicareAndHealthCoverageRecords = {
     volatility: 'annuallyIndexed',
     effectiveFrom: 2026,
     effectiveThrough: 2026,
-    verifiedOn: '2026-08-04',
+    verifiedOn: '2026-09-26',
     implementedBy: [
       'packages/engine/src/tax/aca.ts',
+      'packages/engine/src/params/acaCoverageYears.ts',
       'packages/engine/src/params/data/year2026.ts',
     ],
     implementedByFunctions: [
+      'packages/engine/src/params/acaCoverageYears.ts#acaCoverageYear2026',
       'packages/engine/src/params/data/year2026.ts#year2026',
       'packages/engine/src/tax/aca.ts#acaApplicablePct',
+    ],
+  },
+
+  'rev-proc-2026-26-aca-applicable-percentage-2027': {
+    title: 'ACA applicable percentage table for 2027',
+    statement:
+      'For taxable years beginning in 2027 the premium tax credit applicable percentage runs 2.15 percent below 133 percent of the federal poverty line, then 3.23 to 4.30 percent from 133 to 150 percent, 4.30 to 6.78 from 150 to 200, 6.78 to 8.66 from 200 to 250, 8.66 to 10.22 from 250 to 300, and 10.22 flat from 300 to not more than 400 percent. As in 2026, 133 percent is a real step, every other band opens at the previous band\'s final percentage, and 400 percent is inclusive. Section 3.02 sets the 2027 required contribution percentage, the affordability test for employer-sponsored coverage under section 36B(c)(2)(C)(i)(II), at 10.22 percent. The engine has no employer-coverage input: the ACA year contract\'s coverageEligibility assertion stands in for that test, so the 10.22 percent is recorded here and read by no calculation.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'The engine interpolates linearly between the published breakpoints, as for 2026: the revenue procedure gives an initial and a final percentage per band rather than a formula, and linear interpolation is the construction that reproduces both endpoints of every band. The table is read at the whole-number poverty-line percentage and the result rounded to a hundredth of a percent (cfr-26-1-36B-3-g-1-applicable-percentage-rounding). Section 1 says the additional adjustment of section 36B(b)(3)(A)(ii)(II) is not required for plan years beginning in 2027 because the failsafe of (ii)(III) applies, so the section 3.01 table is the complete 2027 table. Section 3.01 presents the percentages as a table, so the quotation carries the sentence introducing it and the bands are stated above in this record.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'irsNotice',
+      citation: 'Rev. Proc. 2026-26, section 3.01',
+      url: 'https://www.irs.gov/pub/irs-drop/rp-26-26.pdf',
+      quotedText:
+        'Applicable Percentage Table for 2027. For taxable years beginning in calendar year 2027, the Applicable Percentage Table for purposes of \u00a7 36B(b)(3)(A)(i) and \u00a7 1.36B-3(g) is:',
+    }, {
+      kind: 'irsNotice',
+      citation: 'Rev. Proc. 2026-26, section 3.02',
+      url: 'https://www.irs.gov/pub/irs-drop/rp-26-26.pdf',
+      quotedText:
+        'For plan years beginning in calendar year 2027, the Required Contribution Percentage for purposes of \u00a7 36B(c)(2)(C)(i)(II) and \u00a7 1.36B-2(c)(3)(v)(C) is 10.22%.',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2027,
+    effectiveThrough: 2027,
+    verifiedOn: '2026-09-26',
+    implementedBy: [
+      'packages/engine/src/tax/aca.ts',
+      'packages/engine/src/params/acaCoverageYears.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/acaCoverageYears.ts#acaCoverageYear2027',
+      'packages/engine/src/params/acaCoverageYears.ts#acaParametersForCoverageYear',
+      'packages/engine/src/tax/aca.ts#acaApplicablePct',
+    ],
+  },
+
+  'cfr-26-1-36B-3-g-1-applicable-percentage-rounding': {
+    title: 'The applicable percentage is read at a whole-number poverty-line percentage and rounded to a hundredth of a percent',
+    statement:
+      'An applicable percentage increases linearly within its income category and is rounded to the nearest one-hundredth of one percent, and Form 8962 fixes the precision of the poverty-line percentage it is read at: household income divided by the poverty line, times 100, with the digits after the decimal point dropped. So the credit reads the table at the whole-number percentage, interpolates there, and rounds the result half up to 0.01 percent. A single filer with 2026 household income of 28,500 is at 182.11 percent of 15,650 and is read at 182, where the 2026 table gives 4.19 + 32/50 x 2.41 = 5.7324 percent, rounded to 5.73: an expected contribution of 1,633.05. The 100 percent and 400 percent tests are not made on the whole-number figure; the form tests the cliff by comparing income with 4 times the poverty line in dollars.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'The regulation states the rounding of the applicable percentage but not the precision of the poverty-line percentage it is read at; the form instructions, which are the IRS\'s own computation of the credit, fill that gap, and the engine follows both. Ties round up, as the regulation\'s example rounds 8.775 to 8.78. The form also rounds the annual contribution (line 8a) and the monthly contribution (line 8b) to whole dollars; the engine keeps both unrounded, which is a stated limit on the aca-expected-contribution and aca-allowable-premium-tax-credit calculation records (at most about $0.50 of credit a year on the annual path and about $6 on the monthly path).',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'regulation',
+      citation: '26 CFR 1.36B-3(g)(1)',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.36B-3',
+      quotedText:
+        'An applicable percentage within an income category increases on a sliding scale in a linear manner and is rounded to the nearest one-hundredth of one percent.',
+    }, {
+      kind: 'regulation',
+      citation: '26 CFR 1.36B-3(g)(3), Example 1',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.36B-3',
+      quotedText:
+        'Thus, rounded to the nearest one-hundredth of one percent, A\'s applicable percentage is 8.78, which is halfway between the initial percentage of 8.05 and the final percentage of 9.5.',
+    }, {
+      kind: 'formInstruction',
+      citation: 'Instructions for Form 8962 (2025), Worksheet 2, line 4',
+      url: 'https://www.irs.gov/pub/irs-pdf/i8962.pdf',
+      quotedText:
+        'Do not round; instead, multiply this number by 100 (to express it as a percentage) and then drop any numbers after the decimal point.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-26',
+    implementedBy: ['packages/engine/src/tax/aca.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/tax/aca.ts#acaWholeFplPct',
+      'packages/engine/src/tax/aca.ts#acaApplicablePct',
+      'packages/engine/src/tax/aca.ts#acaEconomicPremiumByMonth',
     ],
   },
 
@@ -431,7 +512,7 @@ export const medicareAndHealthCoverageRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The enhanced credits that suspended the 400 percent ceiling expired at the end of 2025, so the cliff is live again for 2026. The engine also treats the below-100-percent exception pathways as out of scope rather than modelling them, which is why the floor is a hard cutoff here.',
+      'The enhanced credits that suspended the 400 percent ceiling expired at the end of 2025: subparagraph (E), which applied (A) without its "but does not exceed 400 percent", reaches only taxable years beginning before January 1, 2026, and no law through Pub. L. 119-111 (the Code as current on 2026-09-18) extends it. So the cliff is live for 2026 and for 2027, and Rev. Proc. 2026-26 prints the 2027 table ending at "not more than 400%". Both ends are read from the coverage year\'s own figures (params/acaCoverageYears.ts). The engine also treats the below-100-percent exception pathways as out of scope rather than modelling them, which is why the floor is a hard cutoff here. The two tests are made on the exact household income, never on the whole-number percentage Form 8962 carries to the applicable-percentage table: the form\'s own cliff test (Worksheet 2, line 4) compares income with 4 times the poverty line in dollars.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -439,16 +520,25 @@ export const medicareAndHealthCoverageRecords = {
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section36B&num=0&edition=prelim',
       quotedText:
         'The term "applicable taxpayer" means, with respect to any taxable year, a taxpayer whose household income for the taxable year equals or exceeds 100 percent but does not exceed 400 percent of an amount equal to the poverty line for a family of the size involved.',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 36B(c)(1)(E)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section36B&num=0&edition=prelim',
+      quotedText:
+        'In the case of a taxable year beginning after December 31, 2020, and before January 1, 2026, subparagraph (A) shall be applied without regard to "but does not exceed 400 percent".',
     }],
     volatility: 'sunsetting',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-29',
+    verifiedOn: '2026-09-26',
     implementedBy: [
       'packages/engine/src/tax/aca.ts',
+      'packages/engine/src/params/acaCoverageYears.ts',
       'packages/engine/src/params/data/year2026.ts',
     ],
     implementedByFunctions: [
+      'packages/engine/src/params/acaCoverageYears.ts#acaCoverageYear2026',
+      'packages/engine/src/params/acaCoverageYears.ts#acaCoverageYear2027',
       'packages/engine/src/params/data/year2026.ts#year2026',
       'packages/engine/src/tax/aca.ts#acaEconomicPremiumByMonth',
     ],
@@ -483,6 +573,186 @@ export const medicareAndHealthCoverageRecords = {
     implementedBy: ['packages/engine/src/tax/aca.ts'],
     implementedByFunctions: [
       'packages/engine/src/tax/aca.ts#buildAcaHouseholdMagi',
+    ],
+  },
+
+  // --- Registered 2026-09-26: D-ACA-2027-TABLE (the 2027 credit figures) ----
+
+  'irc-36B-d-3-B-poverty-line-for-coverage-year': {
+    title: 'A coverage year\'s poverty line is the one published before its open enrollment',
+    statement:
+      'For Marketplace coverage in a taxable year, the poverty line used is the one most recently published as of the first day of the regular enrollment period for coverage in that calendar year, which the regulation restates as the poverty line in effect on the first day of the open enrollment period preceding the taxable year. From 2027 that period must open no later than November 1 and close by December 31 of the year before, and HHS publishes each year\'s guidelines in January, so the guidelines for coverage year Y are the ones HHS published in January of Y minus 1: the 2025 guidelines for 2026 coverage and the 2026 guidelines for 2027 coverage, whatever day an Exchange opens. The published figures are used as published. Scaling them by a plan\'s inflation would price a guideline that does not exist, and a coverage year whose guidelines are not yet published is not priced at all (tax-year-parameters-unsupported).',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale: null,
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 36B(d)(3)(B)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section36B&num=0&edition=prelim',
+      quotedText:
+        'In the case of any qualified health plan offered through an Exchange for coverage during a taxable year beginning in a calendar year, the poverty line used shall be the most recently published poverty line as of the 1st day of the regular enrollment period for coverage during such calendar year.',
+    }, {
+      kind: 'regulation',
+      citation: '26 CFR 1.36B-1(h)',
+      url: 'https://www.ecfr.gov/current/title-26/section-1.36B-1',
+      quotedText:
+        'The Federal poverty line means the most recently published poverty guidelines (updated periodically in the Federal Register by the Secretary of Health and Human Services under the authority of 42 U.S.C. 9902(2)) as of the first day of the regular enrollment period for coverage by a qualified health plan offered through an Exchange for a calendar year. Thus, the Federal poverty line for computing the premium tax credit for a taxable year is the Federal poverty line in effect on the first day of the initial or annual open enrollment period preceding that taxable year.',
+    }, {
+      kind: 'regulation',
+      citation: '45 CFR 155.410(e)(5)(i)',
+      url: 'https://www.ecfr.gov/current/title-45/section-155.410',
+      quotedText:
+        'The annual open enrollment period for all Exchanges must begin no later than November 1 and must end no later than December 31 of the calendar year preceding the benefit year.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-26',
+    implementedBy: [
+      'packages/engine/src/params/acaCoverageYears.ts',
+      'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/strategies/rothConversion.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/acaCoverageYears.ts#acaParametersForCoverageYear',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/strategies/rothConversion.ts#sizeRothConversion',
+    ],
+  },
+
+  'hhs-2026-poverty-guidelines-2027-coverage': {
+    title: 'The 2027 coverage year\'s poverty line: the HHS 2026 guidelines',
+    statement:
+      'The HHS poverty guidelines published January 15, 2026, and so the poverty line for 2027 Marketplace coverage, are $15,960 for one person plus $5,680 for each additional person in the 48 contiguous states and the District of Columbia, $19,950 plus $7,100 in Alaska, and $18,360 plus $6,530 in Hawaii. Every printed row from one to eight persons is the first-person figure plus that amount per added person, so the two numbers reproduce the whole table. The 400 percent cliff for 2027 coverage is therefore $63,840 for one person, $86,560 for two and $132,000 for four in the contiguous states, $79,800 and $108,200 for one and two in Alaska, and $73,440 and $99,560 for one and two in Hawaii.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'The notice is registered under the regulation authority kind. It is an agency determination published in the Federal Register, neither a statute nor an IRS notice, and the enum has no member for it; adding one is a schema decision rather than a research finding, so the nearest existing member is used and the choice is named here, as the Medicare premium determinations already do. The tables themselves are not sentences and cannot be quoted as such, so the quotations carry the sentences that state the increase and the amount per additional person, and the first-person figures are stated above.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'regulation',
+      citation: 'HHS, Annual Update of the HHS Poverty Guidelines, 91 FR 1797 (Jan. 15, 2026), FR Doc. 2026-00755',
+      url: 'https://www.govinfo.gov/content/pkg/FR-2026-01-15/pdf/2026-00755.pdf',
+      quotedText:
+        'The guidelines in this 2026 notice reflect the 2.63 percent price increase between calendar years 2024 and 2025.',
+    }, {
+      kind: 'regulation',
+      citation: '91 FR 1798, 2026 poverty guidelines for the 48 contiguous states and the District of Columbia',
+      url: 'https://www.govinfo.gov/content/pkg/FR-2026-01-15/pdf/2026-00755.pdf',
+      quotedText: 'For families/households with more than 8 persons, add $5,680 for each additional person.',
+    }, {
+      kind: 'regulation',
+      citation: '91 FR 1798, 2026 poverty guidelines for Alaska',
+      url: 'https://www.govinfo.gov/content/pkg/FR-2026-01-15/pdf/2026-00755.pdf',
+      quotedText: 'For families/households with more than 8 persons, add $7,100 for each additional person.',
+    }, {
+      kind: 'regulation',
+      citation: '91 FR 1798, 2026 poverty guidelines for Hawaii',
+      url: 'https://www.govinfo.gov/content/pkg/FR-2026-01-15/pdf/2026-00755.pdf',
+      quotedText: 'For families/households with more than 8 persons, add $6,530 for each additional person.',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2027,
+    effectiveThrough: 2027,
+    verifiedOn: '2026-09-26',
+    implementedBy: [
+      'packages/engine/src/params/acaCoverageYears.ts',
+      'packages/engine/src/tax/aca.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/acaCoverageYears.ts#acaCoverageYear2027',
+      'packages/engine/src/tax/aca.ts#acaFederalPovertyLine',
+    ],
+  },
+
+  'hhs-2025-poverty-guidelines-2026-coverage': {
+    title: 'The 2026 coverage year\'s poverty line: the HHS 2025 guidelines',
+    statement:
+      'The HHS poverty guidelines published January 17, 2025, and so the poverty line for 2026 Marketplace coverage, are $15,650 for one person plus $5,500 for each additional person in the 48 contiguous states and the District of Columbia, $19,550 plus $6,880 in Alaska, and $17,990 plus $6,330 in Hawaii. Every printed row from one to eight persons is the first-person figure plus that amount per added person. The guidelines HHS published in January 2026 are not the 2026 coverage year\'s: 2026 open enrollment began in 2025, before they existed.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'Registered under the regulation authority kind for the reason given on hhs-2026-poverty-guidelines-2027-coverage. The quotations carry the sentences that state the increase and the amount per additional person; the first-person figures are stated above.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'regulation',
+      citation: 'HHS, Annual Update of the HHS Poverty Guidelines, 90 FR 5917 (Jan. 17, 2025), FR Doc. 2025-01377',
+      url: 'https://www.govinfo.gov/content/pkg/FR-2025-01-17/pdf/2025-01377.pdf',
+      quotedText:
+        'The guidelines in this 2025 notice reflect the 2.9 percent price increase between calendar years 2023 and 2024.',
+    }, {
+      kind: 'regulation',
+      citation: '90 FR 5917, 2025 poverty guidelines for the 48 contiguous states and the District of Columbia',
+      url: 'https://www.govinfo.gov/content/pkg/FR-2025-01-17/pdf/2025-01377.pdf',
+      quotedText: 'For families/households with more than 8 persons, add $5,500 for each additional person.',
+    }, {
+      kind: 'regulation',
+      citation: '90 FR 5917, 2025 poverty guidelines for Alaska',
+      url: 'https://www.govinfo.gov/content/pkg/FR-2025-01-17/pdf/2025-01377.pdf',
+      quotedText: 'For families/households with more than 8 persons, add $6,880 for each additional person.',
+    }, {
+      kind: 'regulation',
+      citation: '90 FR 5917, 2025 poverty guidelines for Hawaii',
+      url: 'https://www.govinfo.gov/content/pkg/FR-2025-01-17/pdf/2025-01377.pdf',
+      quotedText: 'For families/households with more than 8 persons, add $6,330 for each additional person.',
+    }],
+    volatility: 'annuallyIndexed',
+    effectiveFrom: 2026,
+    effectiveThrough: 2026,
+    verifiedOn: '2026-09-26',
+    implementedBy: [
+      'packages/engine/src/params/acaCoverageYears.ts',
+      'packages/engine/src/params/data/year2026.ts',
+      'packages/engine/src/tax/aca.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/acaCoverageYears.ts#acaCoverageYear2026',
+      'packages/engine/src/params/data/year2026.ts#year2026',
+      'packages/engine/src/tax/aca.ts#acaFederalPovertyLine',
+    ],
+  },
+
+  'irc-36B-e-eligible-alien-2027-coverage-eligibility-not-modeled': {
+    title: 'From 2027, a lawfully present member who is not an eligible alien is not modeled',
+    statement:
+      'For taxable years beginning after December 31, 2026, Pub. L. 119-21 section 71301 amends IRC 36B(e) so that its rules for individuals who are not lawfully present also reach aliens who are lawfully present but are not eligible aliens. An eligible alien is a lawful permanent resident, a Cuban and Haitian entrant, or an individual lawfully residing in the United States under a Compact of Free Association, reasonably expected to remain one for the whole enrollment period. For a tax family with such a member, 36B(e) removes that member\'s share of the premium and recomputes family size and household income. Not modelled: the plan has no immigration-status fact, and the engine does not compute 36B(e). The ACA year contract\'s coverageEligibility assertion is the only place the fact can enter: \'supported\' asserts that no tax-family member is such an alien (from 2027, that every lawfully present member is an eligible alien), and \'unsupported\' fails the year\'s credit closed (coverage-eligibility-unsupported) instead of computing a 36B(e) figure.',
+    classification: 'outOfScope',
+    outOfScope: { shape: 'typedRefusal' },
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'The United States Code does not yet print the amended subsection (e) in its text: it carries the change as a prospective note, "Amendment of Subsection (e)", applicable to taxable years beginning after December 31, 2026, so that note and the effective-date note of section 71301(e) are what the quotations carry. The fact is left as an assertion rather than a new plan input because it concerns a small group of households and is not one question most users can answer.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: 'IRC 36B, Amendment of Subsection (e), Pub. L. 119-21, sec. 71301(a), (b), (e)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section36B&num=0&edition=prelim',
+      quotedText:
+        'An individual who is an alien and lawfully present shall be treated as an eligible alien if such individual is, and is reasonably expected to be for the entire period of enrollment for which the credit under this section is being claimed-',
+    }, {
+      kind: 'statute',
+      citation: 'IRC 36B, Effective Date of 2025 Amendment, Pub. L. 119-21, sec. 71301(e)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section36B&num=0&edition=prelim',
+      quotedText:
+        'Pub. L. 119–21, title VII, \u00a771301(e), July 4, 2025, 139 Stat. 322, provided that: "The amendments made by this section [amending this section and section 5000A of this title] (other than the amendments made by subsection (c) [amending sections 18081 and 18082 of title 42]) shall apply to taxable years beginning after December 31, 2026."',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2027,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-26',
+    implementedBy: [
+      'packages/engine/src/model/plan.ts',
+      'packages/engine/src/projection/internal/annualHealthcareExpenses.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/model/plan.ts#acaYearContractSchema',
+      'packages/engine/src/projection/internal/annualHealthcareExpenses.ts#annualHealthcareExpenses',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
   },
   'irc-213-a-medical-expense-deduction': {
@@ -641,7 +911,7 @@ export const medicareAndHealthCoverageRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'Three things are decided here rather than dictated. First, the index: the resumed adjustment is measured on the plan assumed general inflation rather than the consumer price index the statute names, which is the same stand-in the lower rows already take, and the year of the published parameters, 2026, is what makes the general inflation series readable at the August 2026 base period without an offset. Second, the rounding: (i)(5)(B) rounds a dollar amount increased under subparagraph (C) to the nearest 1,000, and that is reproduced for the top row. The identical rounding (i)(5)(B) applies to the (i)(5)(A) adjustment of the four lower rows is not reproduced, which is pre-existing behaviour and is named here rather than left as a silent asymmetry between two branches of one function. Third, the Federal Register determination that publishes the table is registered under the regulation authority kind. It is neither a statute nor an IRS notice, and the enum has no member for an agency determination published in the Federal Register; introducing one is a schema decision rather than a research finding, so the nearest existing member is used and the choice is named rather than left silent.',
+      'Three things are decided here rather than dictated. First, the index: the resumed adjustment is measured on the plan assumed general inflation rather than the consumer price index the statute names, which is the same stand-in the lower rows already take, and it is measured from the August 2026 base period explicitly, as the plan\'s inflation from 2026 to the year before the premium year (IrmaaThresholdYear.inflationFactorBetween), so the published parameters of any year price the row from the same base, and parameters published for a year other than 2026 are refused without that explicit base. Anchoring at the year of the 2027 parameters instead would agree with the statute only while inflation is constant. Second, the rounding: (i)(5)(B) rounds a dollar amount increased under subparagraph (C) to the nearest 1,000, and that is reproduced for the top row. The identical rounding (i)(5)(B) applies to the (i)(5)(A) adjustment of the four lower rows is not reproduced, which is pre-existing behaviour and is named here rather than left as a silent asymmetry between two branches of one function. Third, the Federal Register determination that publishes the table is registered under the regulation authority kind. It is neither a statute nor an IRS notice, and the enum has no member for an agency determination published in the Federal Register; introducing one is a schema decision rather than a research finding, so the nearest existing member is used and the choice is named rather than left silent.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -665,7 +935,7 @@ export const medicareAndHealthCoverageRecords = {
     volatility: 'annuallyIndexed',
     effectiveFrom: 2019,
     effectiveThrough: null,
-    verifiedOn: '2026-08-03',
+    verifiedOn: '2026-09-26',
     implementedBy: [
       'packages/engine/src/params/index.ts',
       'packages/engine/src/tax/medicare.ts',

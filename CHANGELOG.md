@@ -4,6 +4,88 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## Unreleased
 
+- **Fixed: the Medicare income surcharge (IRMAA) threshold threw for a 2027 parameter
+  pack** (decision D-ACA-2027-TABLE). 42 U.S.C. 1395r(i)(5)(C)(ii) resumes indexing the
+  $500,000 top threshold for premium years after 2027, measured from August 2026.
+  `irmaaTierThreshold` could measure from that base only while the pack year was 2026,
+  and refused any other, so adding the fall's 2027 pack would have stopped every
+  projection with a Medicare month in 2028 or later, and the Insights IRMAA detector for
+  every plan starting in 2027 or later. `IrmaaThresholdYear` gains an optional
+  `inflationFactorBetween(fromYear, toYear)`; with it the resumed row is measured from
+  2026 whatever the pack year, and every engine caller passes it. Anchoring at a 2027
+  pack instead would agree with the statute only at a constant inflation rate: on a path
+  of 3%, 2% and 5%, a 2029 premium year's top single threshold is $525,000 from the
+  2026 base and would be $536,000 from 2027. A caller that omits it still gets the
+  refusal for a pack year other than 2026. No example figure moves: the only published
+  pack is 2026's, where the two readings are the same.
+
+- **Fixed: the ACA premium tax credit now follows the IRS rounding** (decision
+  D-ACA-2027-TABLE). 26 CFR 1.36B-3(g)(1) rounds the applicable percentage "to the
+  nearest one-hundredth of one percent", and Form 8962 reads the table at the
+  poverty-line percentage with its fraction dropped (Worksheet 2, line 4). The engine
+  interpolated on the exact percentage and rounded nothing; it now reads the table at
+  the whole number and rounds the rate half up to 0.01%, in 2026 and 2027 alike. The
+  100% and 400% tests stay on the exact percentage, as the form's cliff test compares
+  dollars, and the published `fplPct` stays exact. The form's whole-dollar rounding of
+  the annual and monthly contribution (lines 8a and 8b) is a stated limit, worth at
+  most about $0.50 of credit a year on the annual path and about $6 on the monthly
+  one. early-retiree-aca's 2026 credit goes $10,364.77 → $10,366.95 (182.11% is read at
+  182: 5.73%), and the 2027 credit the next entry adds is read the same way (183: 5.94%);
+  the figures that entry gives already include this rounding.
+  glidepath-allocation's 2026 credit goes $8,121.13 → $8,126.97 (ending investable
+  $1,272,656.33 → $1,272,697.21). No other example moves. New export `acaWholeFplPct`
+  (`@retiregolden/engine/tax/aca`); `acaApplicablePct` now returns the rounded rate
+  (listed under Breaking).
+
+- **Changed: the 2027 ACA premium tax credit is priced on its published figures**
+  (decision D-ACA-2027-TABLE). Every figure the 2027 credit reads is published:
+  Rev. Proc. 2026-26 gives the 2027 applicable-percentage table (2.15% below 133% of
+  the poverty line, up to 10.22% from 300% to 400%), and the poverty line for 2027
+  coverage is the HHS 2026 guideline, $15,960 for one person plus $5,680 for each
+  added person (Alaska $19,950 + $7,100, Hawaii $18,360 + $6,530), because the
+  statute uses the guidelines in effect when that year's open enrollment begins,
+  which is in 2026 (26 U.S.C. 36B(d)(3)(B); 26 CFR 1.36B-1(h)). The engine now keeps
+  these per coverage year (`acaParametersForCoverageYear` and `ACA_COVERAGE_YEARS` in
+  `@retiregolden/engine/params`; the 2026 pack references the 2026 block) and prices
+  a Marketplace year on its own figures while the 2027 income-tax figures are still
+  projected from the 2026 pack. Such a year says so with the informational support
+  code `income-tax-parameters-projected`: the credit formula reads no income-tax
+  figure, but the household income does, through bracket-sized conversions and the
+  tax fixed point (a 1% change in those figures moves early-retiree-aca's 2027 credit
+  by about $44). The Results ledger's credit marker, the report's ACA status line,
+  a note under the downloadable report's ACA ledger (the report model's
+  `projectedIncomeTaxNote`) and a new "ACA premium tax credit figures" row in the
+  report's assumptions table say it. Published guidelines are used as published: a
+  2027 poverty line is 15,960, never 15,960 × 1.025, and the `acaCliff` conversion
+  ceiling for 2027 is 4 × 15,960 = $63,840 (it would have been sized to $64,165, above
+  the cliff). 2028 and later stay
+  unpriced until their figures are published. On the 29 example plans, 18 of the 22
+  Marketplace years in 2027 are now priced: early-retiree-aca gets a $10,924.78
+  credit (ending investable $539,207.42 → $579,405.87, with the rounding above) and
+  hsa-property-depth $3,283.50 (lifetime tax $32,843.21 → $32,299.64); 13 are above the cliff and 3
+  below it with a $0 credit; ltc-shock (below 100%), guardrails-flex-goals (adaptive
+  spending), fixed-target-spending and brokerage-no-hsa stay unpriced. The last two
+  fund 2027 just above 100% of the poverty line by withdrawals the credit would
+  shrink to below 100%, so no self-consistent credit exists in the engine's model; a
+  stated limit gives the truer reason (the 26 CFR 1.36B-2(b)(6) exception is not
+  modeled). From 2027, Pub. L. 119-21 §71301 reaches a lawfully present tax-family
+  member who is not an eligible alien; that is a stated limit, and the year
+  contract's `coverageEligibility` help text says what 'supported' now asserts. New
+  rule records for Rev. Proc. 2026-26, 36B(d)(3)(B), the HHS 2025 and 2026 guidelines
+  and the eligible-alien rule, and a new calculation record,
+  `aca-coverage-year-parameters`, with its worksheet and receipt; an external-oracle test
+  pins the 2027 table and cliffs. `INFORMATIONAL_ACA_SUPPORT_CODES` and
+  `isBlockingAcaSupportCode` (`@retiregolden/engine/projection/types`) are the one
+  list of support codes that inform without blocking, and
+  `premiumTaxCreditOnProjectedIncomeTax` joins the year display figures. The
+  "How much can I spend?" solver (next item) reads that list for its disclosure, so
+  `income-tax-parameters-projected` is never named as a reason a year went unpriced;
+  with 2027 priced, 2027 leaves the solver's unpriced years in the 18 examples that
+  had it, early-retiree-aca's answer goes $45,313 → $45,625 (shown $45,300 → $45,600)
+  and hsa-property-depth's $28,688 → $29,087 (its unpriced years become 2026, 2028
+  and 2029).
+
+
 - **Plain words in every published record field:** the rule and calculation text the
   methodology site prints (rule titles, rationales and citations, the approximation
   notes, and each calculation's title, purpose, statement, formula, limits and dataset
@@ -16,6 +98,7 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   44 citations changed only their punctuation (a dash between document and section
   became a colon), so the quote-fidelity ledger carries their existing verdicts under
   the new citation text without a new fetch.
+
 - **"How much can I spend?" answers plans with an unpriced premium tax credit:** the
   solver gave no answer on 22 of the 29 examples, and on every plan with a Marketplace
   year whose credit the projection could not price, which includes every plan built in
@@ -695,6 +778,30 @@ has — rather than the runtime contract a consumer needs on the landing page.
   or finalization claim.
 
 ### Breaking (published `@retiregolden/engine` API)
+
+- **ACA inputs of the annual projection phases** (`@retiregolden/engine/projection/internal/*`,
+  decision D-ACA-2027-TABLE): `AnnualAcaResultPublicationInput.isStandIn` is renamed
+  `acaParametersStandIn` and `parameterPack` is renamed `acaParameters` (typed
+  `AcaPricingParameters`, the coverage year's figures), and the input gains the required
+  `incomeTaxParametersProjected`; `AnnualFundingCandidateEvaluationContext.parameterPack`
+  is renamed `acaParameters`; `AnnualHealthcareExpensesInput.isStandIn` and
+  `AnnualExpenseAssemblyPhaseInput.isStandIn` are renamed `acaParametersStandIn`, because
+  the ACA gate was their only reader and the flag now means the coverage year has no
+  published ACA figures. `AcaSupportCode` gains `income-tax-parameters-projected`, so an
+  exhaustive switch over it needs the case. `sizeRothConversion` refuses an `acaCliff`
+  target (`aca_nonactionable`) for a coverage year without published figures, and its
+  ceiling reads that year's guidelines as published instead of `pack` scaled by
+  `inflationScale`. The `tax/aca.ts` functions accept any object with
+  `federalPovertyLine` and `aca`, so a `ParameterPack` still works. In planner-ui,
+  `ReportProvenance` gains `acaCoverageYears`, optional so that a version-3 report model
+  saved before it still renders (without the "ACA premium tax credit figures" row).
+
+- **`acaApplicablePct` returns the rounded rate** (`@retiregolden/engine/tax/aca`,
+  decision D-ACA-2027-TABLE): it rounds the interpolated applicable percentage half up to
+  the nearest 0.01%, as 26 CFR 1.36B-3(g)(1) requires, so a caller that read the
+  unrounded rate gets a different number (5.7324 at 182% in 2026 is now 5.73). The credit
+  now reads it at the whole-number poverty-line percentage, `acaWholeFplPct(fplPct)`; a
+  caller that wants the credit's rate should do the same.
 
 - **Sustainable-spending result fields (required):** `SustainableSpendingResult` gains
   `acaGrossPremiumYears`, `acaGrossPremiumReasons`, `acaGrossPremiumDirection` and
