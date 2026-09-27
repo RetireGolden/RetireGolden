@@ -151,8 +151,9 @@ export function RiskBasedThresholdsCallout({ thresholds }: { thresholds: Thresho
           {e.spendingPolicy.targetSuccessUpperPct ?? 95}% success band:{' '}
           {published.lowerPct !== null ? `cut below ${published.lowerPct}%` : 'no cut threshold'} and{' '}
           {published.upperPct !== null ? `raise above ${published.upperPct}%` : 'no raise threshold'} of the portfolio.
-          This plan has no investable balance today, so those percents apply to the portfolio in the first year the
-          projection gives it a balance, and there is no dollar figure to show. Re-solve after adding balances.
+          This plan has no investable balance today, so those percents apply to the portfolio in the first year it
+          has a balance: in the projection, the first year the projection gives it one, and in Monte Carlo, the first
+          year each simulated path does. There is no dollar figure to show. Re-solve after adding balances.
         </p>
       ) : (
         <p className="card-hint">

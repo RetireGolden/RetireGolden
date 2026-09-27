@@ -988,9 +988,9 @@ export function ResultsPage() {
               {plan.expenses.spendingPolicy.targetSuccessUpperPct ?? 95}% success band:{' '}
               {riskThresholds.lowerPct !== null ? `cut below ${riskThresholds.lowerPct}%` : 'no cut threshold'} and{' '}
               {riskThresholds.upperPct !== null ? `raise above ${riskThresholds.upperPct}%` : 'no raise threshold'} of the
-              portfolio. This plan has no investable balance today, so those percents apply to the portfolio in the
-              first year the projection gives it a balance, and there is no dollar figure to show. Re-solve them on
-              Spending after adding balances.
+              portfolio. This plan has no investable balance today, so in this projection those percents apply to the
+              portfolio in the first year the projection gives it a balance, and there is no dollar figure to show.
+              Re-solve them on Spending after adding balances.
             </p>
           ) : (
             <p>

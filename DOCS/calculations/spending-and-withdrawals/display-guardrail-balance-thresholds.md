@@ -153,7 +153,7 @@ Derived by: claude (opus 5.5), 2026-09-26; cases A to G by hand and `scripts/ind
 
 ## Implementation (B2-P1 slice 2, 2026-09-27)
 
-- **Correction 8:** `balanceThresholdPct` computes from `BALANCE_THRESHOLD_PCT_DECIMALS` (`10 ** 2 = 100` exactly, so the product is `balanceFrac × 10000`, bit-identical to the retired expression); the zero-balance sentence the pages print says only what is true of any plan: the percents apply to the portfolio in the first year the projection gives it a balance, and there is no dollar figure to show.
+- **Correction 8:** `balanceThresholdPct` computes from `BALANCE_THRESHOLD_PCT_DECIMALS` (`10 ** 2 = 100` exactly, so the product is `balanceFrac × 10000`, bit-identical to the retired expression); the zero-balance sentence the pages print says only what is true of any plan: the percents apply to the portfolio in the first year it has a balance, and there is no dollar figure to show. After the review of #752 each page says where that year is for what it shows: Results, the first year the projection gives the portfolio a balance; Monte Carlo, the first year each simulated path does; and the Spending card, which configures both, names the two.
 - **Open question 8:** `acts` is computed from the dollar products, as the ledger compares them.
 - The ledger pin runs a cash-only plan (base $500,000, required spending $20,000 under a $40,000 base, raise threshold 400 percent): the first year cuts at 100.01 percent and holds at 99.99.
 - The lattice ties are reproduced through the solver's seam with a step curve crossing just below each lattice point (0.76624 for k = 192, 0.2687 for k = 64).

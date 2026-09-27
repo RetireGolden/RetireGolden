@@ -145,7 +145,13 @@ describe('risk-based guardrail thresholds on the three pages', () => {
   it('Spending card: percents and no dollar figure without an investable balance; a hold with the pair inverted', async () => {
     const zero = await mount(riskBased(80, 150, true), <RiskBasedThresholdsCallout thresholds={IDLE} />)
     expect(zero.textContent).toContain('cut below 80% and raise above 150% of the portfolio')
-    expect(zero.textContent).toContain('there is no dollar figure to show')
+    // The Spending card serves both surfaces, so it names where the percents
+    // apply in each: the projection's first funded year, and each Monte Carlo
+    // path's own.
+    expect(zero.textContent).toContain(
+      'those percents apply to the portfolio in the first year it has a balance: in the projection, the first year the projection gives it one, and in Monte Carlo, the first year each simulated path does.',
+    )
+    expect(zero.textContent).toContain('There is no dollar figure to show')
     expect(zero.textContent).not.toContain('$0')
     await act(async () => root!.unmount())
     container!.remove()
@@ -167,7 +173,9 @@ describe('risk-based guardrail thresholds on the three pages', () => {
   it('Results: percents without an investable balance, and the hold sentence with the pair inverted', async () => {
     const zero = await mount(riskBased(80, 150, true), <ResultsPage />)
     expect(zero.textContent).toContain('cut below 80% and raise above 150% of the portfolio')
-    expect(zero.textContent).toContain('This plan has no investable balance today')
+    expect(zero.textContent).toContain(
+      'This plan has no investable balance today, so in this projection those percents apply to the portfolio in the first year the projection gives it a balance',
+    )
     await act(async () => root!.unmount())
     container!.remove()
     const inverted = await mount(riskBased(150, 80), <ResultsPage />)
@@ -185,6 +193,7 @@ describe('risk-based guardrail thresholds on the three pages', () => {
     const zero = await mount(riskBased(80, 150, true), <MonteCarloPage />)
     await waitFor(() => zero.textContent?.includes('Risk-based guardrails (') ?? false, { what: 'the zero-balance note' })
     expect(zero.textContent).toContain('cut below 80% · raise above 150%')
+    expect(zero.textContent).toContain('of the portfolio in the first year each simulated path gives it a balance')
     expect(zero.textContent).toContain('there is no dollar figure to show')
   })
 

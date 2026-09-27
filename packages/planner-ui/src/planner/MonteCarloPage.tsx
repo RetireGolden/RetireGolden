@@ -682,8 +682,8 @@ export function MonteCarloPage() {
                     {riskThresholds.lowerPct !== null ? `cut below ${riskThresholds.lowerPct}%` : 'no cut threshold'}
                     {' · '}
                     {riskThresholds.upperPct !== null ? `raise above ${riskThresholds.upperPct}%` : 'no raise threshold'}{' '}
-                    of the portfolio in the first year it has a balance on each path; this plan has no investable balance
-                    today, so there is no dollar figure to show.
+                    of the portfolio in the first year each simulated path gives it a balance; this plan has no
+                    investable balance today, so there is no dollar figure to show.
                   </p>
                 ) : (
                   <p className="card-hint">
