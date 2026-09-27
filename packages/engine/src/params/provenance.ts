@@ -125,13 +125,24 @@ export const PARAMETER_PROVENANCE: ParameterSource[] = [
     publisher: 'HHS',
     url: 'https://aspe.hhs.gov/topics/poverty-economic-mobility/poverty-guidelines',
   },
+  // One entry per ACA coverage year, so each schedule links to the revenue
+  // procedure that publishes it. The 2026 entry keeps the id 'aca-ptc' that
+  // field links already use.
   {
     id: 'aca-ptc',
-    label: 'ACA premium tax credit',
+    label: 'ACA premium tax credit, 2026 coverage',
     figures:
-      'Applicable-percentage schedules for 2026 (Rev. Proc. 2025-25: 2.10% under 133% FPL up to 9.96% at 300–400%) and 2027 (Rev. Proc. 2026-26: 2.15% under 133% FPL up to 10.22% at 300–400%), with the 400% FPL subsidy cliff restored (enhanced credits expired 12/31/2025). Later coverage years are not priced until their figures are published.',
+      'Applicable-percentage schedule for 2026 coverage (Rev. Proc. 2025-25: 2.10% under 133% FPL up to 9.96% at 300–400%), with the 400% FPL subsidy cliff restored (enhanced credits expired 12/31/2025).',
     publisher: 'IRS',
     url: 'https://www.irs.gov/pub/irs-drop/rp-25-25.pdf',
+  },
+  {
+    id: 'aca-ptc-2027',
+    label: 'ACA premium tax credit, 2027 coverage',
+    figures:
+      'Applicable-percentage schedule for 2027 coverage (Rev. Proc. 2026-26: 2.15% under 133% FPL up to 10.22% at 300–400%), under the same 400% FPL cliff. Later coverage years are not priced until their figures are published.',
+    publisher: 'IRS',
+    url: 'https://www.irs.gov/pub/irs-drop/rp-26-26.pdf',
   },
   {
     id: 'real-yield-curve',

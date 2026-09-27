@@ -68,6 +68,12 @@
  * early-career-match, whose 2027 rows are priced while their income-tax
  * figures are projected; the other report models carry null. That sentence is
  * the only HTML change.
+ * 2026-09-27 (same decision, review of #750): the parameter appendix's one
+ * "ACA premium tax credit" row, which linked both years' schedules to Rev.
+ * Proc. 2025-25, is two rows, "ACA premium tax credit, 2026 coverage" (Rev.
+ * Proc. 2025-25) and "ACA premium tax credit, 2027 coverage" (Rev. Proc.
+ * 2026-26, rp-26-26.pdf), in every golden and in each model's
+ * parameter-sources block; nothing else in any golden changed.
  */
 import { describe, expect, it } from 'vitest'
 

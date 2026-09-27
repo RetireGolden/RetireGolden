@@ -55,10 +55,12 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   by about $44). The Results ledger's credit marker, the report's ACA status line,
   a note under the downloadable report's ACA ledger (the report model's
   `projectedIncomeTaxNote`) and a new "ACA premium tax credit figures" row in the
-  report's assumptions table say it. Published guidelines are used as published: a
-  2027 poverty line is 15,960, never 15,960 × 1.025, and the `acaCliff` conversion
-  ceiling for 2027 is 4 × 15,960 = $63,840 (it would have been sized to $64,165, above
-  the cliff). 2028 and later stay
+  report's assumptions table say it; the parameter source appendix gives each coverage
+  year's schedule its own row and link (`aca-ptc` for 2026, Rev. Proc. 2025-25, and the
+  new `aca-ptc-2027` for 2027, Rev. Proc. 2026-26). Published guidelines are used as
+  published: a 2027 poverty line is 15,960, never 15,960 × 1.025, and the `acaCliff`
+  conversion ceiling for 2027 is 4 × 15,960 = $63,840 (it would have been sized to
+  $64,165, above the cliff). 2028 and later stay
   unpriced until their figures are published. On the 29 example plans, 18 of the 22
   Marketplace years in 2027 are now priced: early-retiree-aca gets a $10,924.78
   credit (ending investable $539,207.42 → $579,405.87, with the rounding above) and

@@ -393,7 +393,6 @@ function federalPovertyLineClauses(): FigureClause[] {
 }
 
 function acaPtcClauses(): FigureClause[] {
-  const block2027 = acaParametersForCoverageYear(2027).params
   const firstBreakpoint = pack.aca.applicablePctBreakpoints[0]
   if (!firstBreakpoint) {
     throw new Error(`${START_YEAR} ACA pack must include applicable-percentage breakpoints`)
@@ -415,6 +414,13 @@ function acaPtcClauses(): FigureClause[] {
       label: '400% FPL subsidy cliff',
       clause: `${pack.aca.maxFplPctForCredit}% FPL subsidy cliff restored`,
     },
+  ]
+}
+
+/** The 2027 coverage year's schedule, read from its own block (Rev. Proc. 2026-26). */
+function acaPtc2027Clauses(): FigureClause[] {
+  const block2027 = acaParametersForCoverageYear(2027).params
+  return [
     {
       label: '2027 applicable percentage below first breakpoint',
       clause: `${block2027.aca.applicablePctBelowFirstBreakpoint.toFixed(2)}% under ${block2027.aca.applicablePctBreakpoints[0]!.fplPct}% FPL`,
@@ -422,6 +428,10 @@ function acaPtcClauses(): FigureClause[] {
     {
       label: '2027 applicable percentage at 300–400% FPL band',
       clause: `${block2027.aca.applicablePctBreakpoints.find((row) => row.fplPct === 300)!.applicablePct}% at 300–${block2027.aca.maxFplPctForCredit}%`,
+    },
+    {
+      label: '2027 400% FPL cliff',
+      clause: `same ${block2027.aca.maxFplPctForCredit}% FPL cliff`,
     },
   ]
 }
@@ -566,6 +576,7 @@ const PACK_FIGURE_CLAUSES: Record<string, () => FigureClause[]> = {
   'social-security': socialSecurityClauses,
   'federal-poverty-line': federalPovertyLineClauses,
   'aca-ptc': acaPtcClauses,
+  'aca-ptc-2027': acaPtc2027Clauses,
   'real-yield-curve': realYieldCurveClauses,
   'state-income-tax': stateIncomeTaxClauses,
 }
@@ -661,8 +672,14 @@ const NON_PACK_DISPLAY_CONTRACTS: NonPackDisplayContract[] = [
     id: 'aca-ptc',
     clauses: [
       { label: 'Rev. Proc. citation', clause: 'Rev. Proc. 2025-25' },
-      { label: '2027 Rev. Proc. citation', clause: 'Rev. Proc. 2026-26' },
       { label: 'enhanced-credit expiry', clause: 'enhanced credits expired 12/31/2025' },
+    ],
+  },
+  {
+    id: 'aca-ptc-2027',
+    clauses: [
+      { label: '2027 Rev. Proc. citation', clause: 'Rev. Proc. 2026-26' },
+      { label: 'later coverage years unpriced', clause: 'Later coverage years are not priced until their figures are published' },
     ],
   },
   {
@@ -693,6 +710,15 @@ describe('parameter provenance', () => {
       expect(s.publisher, `${s.id} publisher`).toBeTruthy()
       expect(s.url, `${s.id} url`).toMatch(/^https:\/\//)
     }
+  })
+
+  it('links each ACA coverage year to the revenue procedure that publishes its schedule', () => {
+    // One row per coverage year, so the report appendix never links a year's
+    // figures to a document that does not hold them.
+    expect(byId('aca-ptc').url).toBe('https://www.irs.gov/pub/irs-drop/rp-25-25.pdf')
+    expect(byId('aca-ptc').figures).not.toContain('2026-26')
+    expect(byId('aca-ptc-2027').url).toBe('https://www.irs.gov/pub/irs-drop/rp-26-26.pdf')
+    expect(byId('aca-ptc-2027').figures).not.toContain('2025-25')
   })
 
   it('has unique ids', () => {
