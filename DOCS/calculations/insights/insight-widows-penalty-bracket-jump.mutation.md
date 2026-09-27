@@ -1,11 +1,11 @@
 # Mutation receipt: insight-widows-penalty-bracket-jump
 
-Executed 2026-09-17 and re-executed 2026-09-18 against RetireGolden base `b99ac29b` (branch grok/b1-p4-cards-insights-ss-medicare-roth) in `packages/engine`.
+Executed 2026-09-17 and re-executed 2026-09-18 against RetireGolden base `b99ac29b` (branch grok/b1-p4-cards-insights-ss-medicare-roth), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/insights/detectors/widowsPenalty.ts`
 
 ```diff
-@@ -118,7 +118,7 @@ export const widowsPenalty: Detector = {
+@@ -117,5 +117,5 @@ export const widowsPenalty: Detector = {
              inflationScale,
            }).totalTax,
        )
@@ -24,17 +24,20 @@ npx vitest run src/insights/detectors/widowsPenalty.evidence.test.ts
 
 ## Captured failing output
 
-Re-executed 2026-09-18 after the evidence fixture moved to the exact tolerance on the published whole-dollar figure (round three of the #720 review). The baseline is green (widowsPenalty.evidence.test.ts passes on unmodified production). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed. Exit code: 1.
+Re-executed for D-RECEIPT-DRIFT because its hunk header named a line its production code has since moved from and its hunk header's line counts did not match the hunk; the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (widowsPenalty.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/TEMP/rg-s6/packages/engine
+RUN  v5.0.0 C:/rgwt/engine9/packages/engine
 
- ❯ src/insights/detectors/widowsPenalty.evidence.test.ts (1 test | 1 failed) 14ms
+ ❯ src/insights/detectors/widowsPenalty.evidence.test.ts (1 test | 1 failed) 16ms
    ❯ insight-widows-penalty-bracket-jump — Rough real survivor bracket jump, single versus joint on the same MAGI (1)
      × deflates the $10,000 nominal jump by 4/5 to $8,000 today 14ms
 
  Test Files  1 failed (1)
       Tests  1 failed (1)
+
+             persist transforms across runs with fsModuleCache: true
+             learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
 
 
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
@@ -61,4 +64,4 @@ AssertionError: bracketJumpToday 10000 is not within "exact" of the worksheet's 
 
 ## Revert
 
-`git checkout -- packages/engine/src/insights/detectors/widowsPenalty.ts`, then `git diff --quiet -- packages/engine/src/insights/detectors/widowsPenalty.ts` exited 0, confirming no change to production code after the run.
+The original bytes of `packages/engine/src/insights/detectors/widowsPenalty.ts` were written back and compared byte for byte in the harness, and `git diff --quiet -- packages/engine/src/insights/detectors/widowsPenalty.ts` then exited 0, confirming no production change remained. Re-ran the named command after restoration: the suite returned to its baseline state, green (exit 0).

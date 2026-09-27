@@ -1,6 +1,6 @@
 # Mutation receipt: funded-ratio-hand-present-value
 
-Executed 2026-09-14 against RetireGolden base `319c16ca` (branch claude/b1-p4-cards-ladders) in `packages/engine`.
+Executed 2026-09-14 against RetireGolden base `319c16ca` (branch claude/b1-p4-cards-ladders), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/ladder/fundedRatio.ts`
 
@@ -26,50 +26,81 @@ npx vitest run src/ladder/fundedRatio.evidence.test.ts
 
 ## Captured failing output
 
-Captured with `NO_COLOR=1`; stdout precedes stderr, so the run summary appears before the failed-test detail. The `Start at` and `Duration` lines are the only lines removed.
+Re-executed for D-RECEIPT-DRIFT because the test lines it quoted no longer matched the current test file; the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (fundedRatio.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
- RUN  v5.0.0 C:/TEMP/rg-b1p4impl/packages/engine
- ❯ src/ladder/fundedRatio.evidence.test.ts (4 tests | 3 failed) 4ms
+RUN  v5.0.0 C:/rgwt/engine9/packages/engine
+
+ ❯ src/ladder/fundedRatio.evidence.test.ts (4 tests | 3 failed) 7ms
    ❯ funded-ratio-hand-present-value — Funded ratio: present values of essential spending and guaranteed income (4)
-     × discounts the deflated essential flows to E = 138,700/441 with the year-0 flow undiscounted 2ms
+     × discounts the deflated essential flows to E = 138,700/441 with the year-0 flow undiscounted 5ms
      × discounts the deflated guaranteed flows to G = 69,350/441 0ms
      × reports the funded ratio 100·G/E = 50% and the unfunded PV E - G 0ms
+
  Test Files  1 failed (1)
       Tests  3 failed | 1 passed (4)
+
+
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+
  FAIL  src/ladder/fundedRatio.evidence.test.ts > funded-ratio-hand-present-value — Funded ratio: present values of essential spending and guaranteed income > discounts the deflated essential flows to E = 138,700/441 with the year-0 flow undiscounted
-AssertionError: expected 14.97678436451065 to be less than or equal to 1e-9
- ❯ src/ladder/fundedRatio.evidence.test.ts:82:104
-     80|     it('discounts the deflated essential flows to E = 138,700/441 with…
-     81|       expect(result).not.toBeNull()
-     82|       expect(Math.abs(result!.essentialSpendingPv - (example.expected.…
-       |                                                                                                        ^
-     83|     })
-     84|
+AssertionError: essentialSpendingPv 299.5356872907893 is not within {"abs":1e-9} of the worksheet's 314.5124716553: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ src/ladder/fundedRatio.evidence.test.ts:85:9
+     83|         withinTolerance(result!.essentialSpendingPv, expected, example…
+     84|         `essentialSpendingPv ${result!.essentialSpendingPv} is not wit…
+     85|       ).toBe(true)
+       |         ^
+     86|     })
+     87|
+
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
+
  FAIL  src/ladder/fundedRatio.evidence.test.ts > funded-ratio-hand-present-value — Funded ratio: present values of essential spending and guaranteed income > discounts the deflated guaranteed flows to G = 69,350/441
-AssertionError: expected 7.488392182305347 to be less than or equal to 1e-9
- ❯ src/ladder/fundedRatio.evidence.test.ts:86:102
-     84|
-     85|     it('discounts the deflated guaranteed flows to G = 69,350/441', ()…
-     86|       expect(Math.abs(result!.guaranteedIncomePv - (example.expected.g…
-       |                                                                                                      ^
-     87|     })
-     88|
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
- FAIL  src/ladder/fundedRatio.evidence.test.ts > funded-ratio-hand-present-value — Funded ratio: present values of essential spending and guaranteed income > reports the funded ratio 100·G/E = 50% and the unfunded PV E - G
-AssertionError: expected 7.488392182305347 to be less than or equal to 1e-9
- ❯ src/ladder/fundedRatio.evidence.test.ts:93:86
-     91|         RATIO_ABS_TOLERANCE_PCT,
-     92|       )
-     93|       expect(Math.abs(result!.unfundedPv - (example.expected.unfundedP…
-       |                                                                                      ^
+AssertionError: guaranteedIncomePv 149.76784364539466 is not within {"abs":1e-9} of the worksheet's 157.2562358277: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ src/ladder/fundedRatio.evidence.test.ts:93:9
+     91|         withinTolerance(result!.guaranteedIncomePv, expected, example.…
+     92|         `guaranteedIncomePv ${result!.guaranteedIncomePv} is not withi…
+     93|       ).toBe(true)
+       |         ^
      94|     })
      95|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
+
+ FAIL  src/ladder/fundedRatio.evidence.test.ts > funded-ratio-hand-present-value — Funded ratio: present values of essential spending and guaranteed income > reports the funded ratio 100·G/E = 50% and the unfunded PV E - G
+AssertionError: unfundedPv 149.76784364539466 is not within {"abs":1e-9} of the worksheet's 157.2562358277: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ src/ladder/fundedRatio.evidence.test.ts:106:9
+    104|         withinTolerance(result!.unfundedPv, expectedUnfundedPv, exampl…
+    105|         `unfundedPv ${result!.unfundedPv} is not within ${JSON.stringi…
+    106|       ).toBe(true)
+       |         ^
+    107|     })
+    108|
+
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
 ```
 
 ## Revert
 
-`git checkout -- packages/engine/src/ladder/fundedRatio.ts`, then `git diff --quiet -- packages/engine/src/ladder/fundedRatio.ts` exited 0, confirming no change to production code after the run.
+The original bytes of `packages/engine/src/ladder/fundedRatio.ts` were written back and compared byte for byte in the harness, and `git diff --quiet -- packages/engine/src/ladder/fundedRatio.ts` then exited 0, confirming no production change remained. Re-ran the named command after restoration: the suite returned to its baseline state, green (exit 0).

@@ -1,11 +1,11 @@
 # Mutation receipt: projection-summary-lifetime-roth-conversions
 
-Executed 2026-09-17 against RetireGolden base `b99ac29b` (branch grok/b1-p4-cards-insights-ss-medicare-roth), and re-executed 2026-09-26 against RetireGolden base `fff2423b` (branch `claude/b2p1-slice1-ledger-figures`; no pull request is open yet), and re-executed 2026-09-26 against RetireGolden base `94954596` (branch `claude/b2p1-slice1-ledger-figures`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-17 against RetireGolden base `b99ac29b` (branch grok/b1-p4-cards-insights-ss-medicare-roth), and re-executed 2026-09-26 against RetireGolden base `fff2423b` (branch `claude/b2p1-slice1-ledger-figures`; no pull request is open yet), and re-executed 2026-09-26 against RetireGolden base `94954596` (branch `claude/b2p1-slice1-ledger-figures`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/projection/compare.ts`
 
 ```diff
-@@ -103,8 +103,9 @@ export function summarizeProjection(plan: Plan, result: ProjectionResult): ProjectionSummary {
+@@ -225,6 +225,7 @@ export function summarizeProjection(plan: Plan, result: ProjectionResult): ProjectionSummary {
    let taxes = 0
    let conversions = 0
    for (const y of result.years) {
@@ -26,12 +26,12 @@ npx vitest run src/projection/compare.evidence.test.ts
 
 ## Captured failing output
 
-Re-executed 2026-09-26 for the review round of B2-P1 slice 1, whose new moneyLasts import moved every line of compare.ts by one (the mutated code is unchanged), so every capture, blob hash and revert note is refreshed against this head. The baseline is green (compare.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed for D-RECEIPT-DRIFT because its hunk header named a line its production code has since moved from and its hunk header's line counts did not match the hunk; the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (compare.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine4/packages/engine
+RUN  v5.0.0 C:/rgwt/engine9/packages/engine
 
- ❯ src/projection/compare.evidence.test.ts (1 test | 1 failed) 5ms
+ ❯ src/projection/compare.evidence.test.ts (1 test | 1 failed) 6ms
    ❯ projection-summary-lifetime-roth-conversions — Lifetime Roth conversions: sum of annual traditional-to-Roth movement (1)
      × sums $40,000 + $0 + $55,500.25 to $95,500.25 over all three projection rows 5ms
 

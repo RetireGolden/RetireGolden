@@ -1,15 +1,15 @@
 # Mutation receipt: spending-healthcare-annual
 
-Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-thirteen` at base `1452ae11`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-thirteen` at base `1452ae11`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/projection/internal/annualHealthcareExpenses.ts`
 
 ```diff
 diff --git a/packages/engine/src/projection/internal/annualHealthcareExpenses.ts b/packages/engine/src/projection/internal/annualHealthcareExpenses.ts
-index fd89dfb7..bb842cc7 100644
+index eff40c08..9a9e6aba 100644
 --- a/packages/engine/src/projection/internal/annualHealthcareExpenses.ts
 +++ b/packages/engine/src/projection/internal/annualHealthcareExpenses.ts
-@@ -174,7 +174,7 @@ export function annualHealthcareExpenses(
+@@ -180,7 +180,7 @@ export function annualHealthcareExpenses(
          )
        }
        const premium =
@@ -30,21 +30,20 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-Re-executed 2026-09-22 on the pull-request branch after the review of #730: the branch was renamed for the pull request, so every capture, blob hash and revert note is refreshed against this head. The baseline is green (annualHealthcareExpenses.spendingHealthcare.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed. Exit code: 1.
+Re-executed for D-RECEIPT-DRIFT because its hunk header named a line its production code has since moved from; the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (annualHealthcareExpenses.spendingHealthcare.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/TEMP/rg-rehearse2/packages/engine
+RUN  v5.0.0 C:/rgwt/engine9/packages/engine
 
- ❯ src/projection/internal/annualHealthcareExpenses.spendingHealthcare.evidence.test.ts (3 tests | 3 failed) 36ms
+ ❯ src/projection/internal/annualHealthcareExpenses.spendingHealthcare.evidence.test.ts (3 tests | 3 failed) 35ms
    ❯ spending-healthcare-annual — Annual healthcare expense: Medicare, extras and marketplace premiums (3)
-     × charges the first person 4242.72: twelve Medicare months of tier premium plus scaled extras 30ms
-     × charges the second person 4588.48: 1760 of marketplace beside 2828.48 of Medicare 2ms
+     × charges the first person 4242.72: twelve Medicare months of tier premium plus scaled extras 29ms
+     × charges the second person 4588.48: 1760 of marketplace beside 2828.48 of Medicare 3ms
      × adds the two people to 8831.20 on one household plan 3ms
 
  Test Files  1 failed (1)
       Tests  3 failed (3)
 
-  Transform  transforming modules took 2.41s · 43% of tracked time, re-done on every run
              persist transforms across runs with fsModuleCache: true
              learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
 

@@ -1,15 +1,15 @@
 # Mutation receipt: roth-conversion-annual
 
-Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-thirteen` at base `1452ae11`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-thirteen` at base `1452ae11`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/strategies/rothConversion.ts`
 
 ```diff
 diff --git a/packages/engine/src/strategies/rothConversion.ts b/packages/engine/src/strategies/rothConversion.ts
-index d118e8d5..b4e7557d 100644
+index fc4ffcd9..312a2740 100644
 --- a/packages/engine/src/strategies/rothConversion.ts
 +++ b/packages/engine/src/strategies/rothConversion.ts
-@@ -120,7 +120,7 @@ function ceilingFor(strategy: FillTarget, input: ConversionSizingInput): number
+@@ -128,7 +128,7 @@ function ceilingFor(strategy: FillTarget, input: ConversionSizingInput): number
        const brackets = indexFederalTaxPack(pack, input.inflationScale).federalTax.brackets[filingStatus]
        const i = brackets.findIndex((b) => b.ratePct === strategy.targetValue)
        if (i < 0 || i + 1 >= brackets.length) return null // unknown rate or open-ended top bracket
@@ -30,20 +30,19 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-Re-executed 2026-09-22 on the pull-request branch after the review of #730: the branch was renamed for the pull request, so every capture, blob hash and revert note is refreshed against this head. The baseline is green (annualAggregateRothConversionTargetPlan.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed. Exit code: 1.
+Re-executed for D-RECEIPT-DRIFT because its hunk header named a line its production code has since moved from; the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (annualAggregateRothConversionTargetPlan.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/TEMP/rg-rehearse2/packages/engine
+RUN  v5.0.0 C:/rgwt/engine9/packages/engine
 
- ❯ src/projection/internal/annualAggregateRothConversionTargetPlan.evidence.test.ts (2 tests | 2 failed) 32ms
+ ❯ src/projection/internal/annualAggregateRothConversionTargetPlan.evidence.test.ts (2 tests | 2 failed) 34ms
    ❯ roth-conversion-annual — Annual Roth conversion: the bracket headroom a fill-to-target strategy converts (2)
-     × converts 51800, the 22% bracket headroom above taxable income 28ms
+     × converts 51800, the 22% bracket headroom above taxable income 30ms
      × sizes the conversion below the no-benefit headroom once benefits are present 3ms
 
  Test Files  1 failed (1)
       Tests  2 failed (2)
 
-  Transform  transforming modules took 2.35s · 44% of tracked time, re-done on every run
              persist transforms across runs with fsModuleCache: true
              learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
 

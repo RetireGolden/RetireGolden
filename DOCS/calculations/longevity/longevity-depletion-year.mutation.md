@@ -1,15 +1,15 @@
 # Mutation receipt: longevity-depletion-year
 
-Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-thirteen` at base `1452ae11`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-thirteen` at base `1452ae11`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/projection/internal/annualFundingApplicationAndClosePhase.ts`
 
 ```diff
 diff --git a/packages/engine/src/projection/internal/annualFundingApplicationAndClosePhase.ts b/packages/engine/src/projection/internal/annualFundingApplicationAndClosePhase.ts
-index 3a4581ea..7ecac1d8 100644
+index b5cf5ecd..9821b2e7 100644
 --- a/packages/engine/src/projection/internal/annualFundingApplicationAndClosePhase.ts
 +++ b/packages/engine/src/projection/internal/annualFundingApplicationAndClosePhase.ts
-@@ -1914,7 +1914,7 @@ export function annualFundingApplicationAndClosePhase(
+@@ -1935,7 +1935,7 @@ export function annualFundingApplicationAndClosePhase(
      }
      deposit(surplus)
  
@@ -30,21 +30,20 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-Re-executed 2026-09-22 on the pull-request branch after the review of #730: the branch was renamed for the pull request, so every capture, blob hash and revert note is refreshed against this head. The baseline is green (simulate.depletionYear.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed. Exit code: 1.
+Re-executed for D-RECEIPT-DRIFT because its hunk header named a line its production code has since moved from; the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (simulate.depletionYear.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/TEMP/rg-rehearse2/packages/engine
+RUN  v5.0.0 C:/rgwt/engine9/packages/engine
 
- ❯ src/projection/simulate.depletionYear.evidence.test.ts (3 tests | 3 failed) 36ms
+ ❯ src/projection/simulate.depletionYear.evidence.test.ts (3 tests | 3 failed) 37ms
    ❯ longevity-depletion-year — Depletion year: the first projection year whose shortfall clears the funding tolerance (3)
-     × reports 2028, the first year whose shortfall exceeds the half-cent tolerance 29ms
+     × reports 2028, the first year whose shortfall exceeds the half-cent tolerance 30ms
      × reports null when every year is funded 3ms
      × does not call a year that closes at exactly zero depletion 3ms
 
  Test Files  1 failed (1)
       Tests  3 failed (3)
 
-  Transform  transforming modules took 2.37s · 44% of tracked time, re-done on every run
              persist transforms across runs with fsModuleCache: true
              learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
 

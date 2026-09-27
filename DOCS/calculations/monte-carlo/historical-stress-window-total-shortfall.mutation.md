@@ -1,6 +1,6 @@
 # Mutation receipt: historical-stress-window-total-shortfall
 
-Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-thirteen` at base `1452ae11`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730), and re-executed 2026-09-26 against RetireGolden base `fe6233de` (branch `claude/monte-carlo-models`; no pull request is open yet), and re-executed 2026-09-26 against RetireGolden base `00c28120` (branch `claude/monte-carlo-models`, pull request #746) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-thirteen` at base `1452ae11`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730), and re-executed 2026-09-26 against RetireGolden base `fe6233de` (branch `claude/monte-carlo-models`; no pull request is open yet), and re-executed 2026-09-26 against RetireGolden base `00c28120` (branch `claude/monte-carlo-models`, pull request #746), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/montecarlo/historicalSuites.ts`
 
@@ -9,7 +9,7 @@ diff --git a/packages/engine/src/montecarlo/historicalSuites.ts b/packages/engin
 index 7c93ee2a..76e27abf 100644
 --- a/packages/engine/src/montecarlo/historicalSuites.ts
 +++ b/packages/engine/src/montecarlo/historicalSuites.ts
-@@ -96,7 +96,7 @@ function historicalReplaySeries(args: {
+@@ -97,7 +97,7 @@ function historicalReplaySeries(args: {
  }
  
  function total(result: ProjectionResult, pick: (year: ProjectionResult['years'][number]) => number): number {
@@ -30,14 +30,14 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/montecarlo/
 
 ## Captured failing output
 
-Re-executed because review round 1 added a test to the evidence file, so the test count recorded earlier no longer matched it. The baseline is green (historicalSuites.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed for D-RECEIPT-DRIFT because its hunk header named a line its production code has since moved from; the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (historicalSuites.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine3/packages/engine
+RUN  v5.0.0 C:/rgwt/engine9/packages/engine
 
- ❯ src/montecarlo/historicalSuites.evidence.test.ts (4 tests | 1 failed) 171ms
+ ❯ src/montecarlo/historicalSuites.evidence.test.ts (4 tests | 1 failed) 168ms
    ❯ historical-stress-window-total-shortfall — Historical stress window total shortfall (4)
-     × sums 0, 20000 and 60000 to 80000 over the replayed 2000-2002 window 103ms
+     × sums 0, 20000 and 60000 to 80000 over the replayed 2000-2002 window 99ms
 
  Test Files  1 failed (1)
       Tests  1 failed | 3 passed (4)

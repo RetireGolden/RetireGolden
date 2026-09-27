@@ -1,6 +1,6 @@
 # Mutation receipt: exact-ledger-cleaned-schedule
 
-Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-fourteen` at base `a4a278ef`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730), and re-executed 2026-09-26 against RetireGolden base `fff2423b` (branch `claude/b2p1-slice1-ledger-figures`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-fourteen` at base `a4a278ef`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730), and re-executed 2026-09-26 against RetireGolden base `fff2423b` (branch `claude/b2p1-slice1-ledger-figures`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/projection/optimizePlan.ts`
 
@@ -9,7 +9,7 @@ diff --git a/packages/engine/src/projection/optimizePlan.ts b/packages/engine/sr
 index 1764ef96..c4dabc1c 100644
 --- a/packages/engine/src/projection/optimizePlan.ts
 +++ b/packages/engine/src/projection/optimizePlan.ts
-@@ -2401,7 +2401,7 @@ function buildCleanedConversionsFromExecution(
+@@ -2410,7 +2410,7 @@ function buildCleanedConversionsFromExecution(
  
    for (const [year, requested] of [...requestedByYear.entries()].sort(([a], [b]) => a - b)) {
      const executed = Math.max(0, executedByYear.get(year) ?? 0)
@@ -30,15 +30,15 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-Re-executed 2026-09-26 for B2-P1 slice 1, which moved the lines this receipt's mutation anchors on in its production file (the mutated code itself is unchanged), so every capture, blob hash and revert note is refreshed against this head. The baseline is green (optimizePlan.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed for D-RECEIPT-DRIFT because its hunk header named a line its production code has since moved from; the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (optimizePlan.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine4/packages/engine
+RUN  v5.0.0 C:/rgwt/engine9/packages/engine
 
- ❯ src/projection/optimizePlan.evidence.test.ts (17 tests | 2 failed) 322ms
-   ❯ exact-ledger-cleaned-schedule — Exact ledger cleaned schedule (2)
+ ❯ src/projection/optimizePlan.evidence.test.ts (17 tests | 2 failed) 293ms
+   ❯ exact-ledger-cleaned-schedule — Full projection cleaned schedule (2)
      × cleans $15,000 and $15,000 to $15,000 and $5,000, totalling $20,000 at a ratio of 1 8ms
-     × records Y2 as ledger-capped, never rounding, which is not a reason 3ms
+     × records Y2 as ledger-capped, never rounding, which is not a reason 4ms
 
  Test Files  1 failed (1)
       Tests  2 failed | 15 passed (17)
@@ -49,7 +49,7 @@ RUN  v5.0.0 C:/rgwt/engine4/packages/engine
 
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
 
- FAIL  src/projection/optimizePlan.evidence.test.ts > exact-ledger-cleaned-schedule — Exact ledger cleaned schedule > cleans $15,000 and $15,000 to $15,000 and $5,000, totalling $20,000 at a ratio of 1
+ FAIL  src/projection/optimizePlan.evidence.test.ts > exact-ledger-cleaned-schedule — Full projection cleaned schedule > cleans $15,000 and $15,000 to $15,000 and $5,000, totalling $20,000 at a ratio of 1
 AssertionError: expected [ { year: 2026, amount: 15000 }, …(1) ] to deeply equal [ { year: 2026, amount: 15000 }, …(1) ]
 
 - Expected
@@ -77,7 +77,7 @@ AssertionError: expected [ { year: 2026, amount: 15000 }, …(1) ] to deeply equ
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
 
- FAIL  src/projection/optimizePlan.evidence.test.ts > exact-ledger-cleaned-schedule — Exact ledger cleaned schedule > records Y2 as ledger-capped, never rounding, which is not a reason
+ FAIL  src/projection/optimizePlan.evidence.test.ts > exact-ledger-cleaned-schedule — Full projection cleaned schedule > records Y2 as ledger-capped, never rounding, which is not a reason
 AssertionError: expected [] to deep equally contain { year: 2027, requested: 15000, …(3) }
 
 - Expected:

@@ -1,6 +1,6 @@
 # Mutation receipt: cash-flow-reconciliation-totals
 
-Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-nine` at base `39f8f460`, and re-executed 2026-09-22 against RetireGolden base `4fe87f00` (branch `claude/b1-p4-cards-nine-ten`, pull request #729) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-nine` at base `39f8f460`, and re-executed 2026-09-22 against RetireGolden base `4fe87f00` (branch `claude/b1-p4-cards-nine-ten`, pull request #729), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/projection/annualCashFlowReconciliation.ts`
 
@@ -27,21 +27,26 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-Re-executed 2026-09-22 on the pull-request branch after the review of #729: the branch was renamed for the pull request and several fixtures changed, so every capture, blob hash and revert note is refreshed against this head. The baseline is green (annualCashFlowReconciliation.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed. Exit code: 1.
+Re-executed for D-RECEIPT-DRIFT because the test counts it stated no longer matched the current test file; the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (annualCashFlowReconciliation.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/TEMP/rg-rehearse2/packages/engine
+RUN  v5.0.0 C:/rgwt/engine9/packages/engine
 
- ❯ src/projection/annualCashFlowReconciliation.evidence.test.ts (5 tests | 2 failed) 7ms
+ ❯ src/projection/annualCashFlowReconciliation.evidence.test.ts (8 tests | 3 failed) 9ms
    ❯ cash-flow-reconciliation-totals — Annual cash-flow reconciliation: the three identity totals (5)
-     × accepts the 0.004 cash residual at the annual-funding tolerance and publishes the by-kind destination members 5ms
+     × accepts the 0.004 cash residual at the annual-funding tolerance and publishes the by-kind destination members 6ms
      × sums requested, funded and unfunded over the fourteen use lines, and the funded total is the destination total 1ms
+   ❯ cash-flow-line-plan-dollars — Cash-flow line amounts and the annual cash identity (1)
+     × closes the 80000 cash identity and leaves the 5000 post-solve deposit outside it 0ms
 
  Test Files  1 failed (1)
-      Tests  2 failed | 3 passed (5)
+      Tests  3 failed | 5 passed (8)
+
+             persist transforms across runs with fsModuleCache: true
+             learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
 
 
-⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
 
  FAIL  src/projection/annualCashFlowReconciliation.evidence.test.ts > cash-flow-reconciliation-totals — Annual cash-flow reconciliation: the three identity totals > accepts the 0.004 cash residual at the annual-funding tolerance and publishes the by-kind destination members
 AssertionError: cash destination total 90000 is not within {"abs":0.000001} of the worksheet's 100000: expected false to be true // Object.is equality
@@ -61,7 +66,7 @@ AssertionError: cash destination total 90000 is not within {"abs":0.000001} of t
     118|
  ❯ src/projection/annualCashFlowReconciliation.evidence.test.ts:232:7
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
 
  FAIL  src/projection/annualCashFlowReconciliation.evidence.test.ts > cash-flow-reconciliation-totals — Annual cash-flow reconciliation: the three identity totals > sums requested, funded and unfunded over the fourteen use lines, and the funded total is the destination total
 AssertionError: expected 100000 to be 90000 // Object.is equality
@@ -80,7 +85,27 @@ AssertionError: expected 100000 to be 90000 // Object.is equality
     284|       expect(
     285|         withinTolerance(
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
+
+ FAIL  src/projection/annualCashFlowReconciliation.evidence.test.ts > cash-flow-line-plan-dollars — Cash-flow line amounts and the annual cash identity > closes the 80000 cash identity and leaves the 5000 post-solve deposit outside it
+AssertionError: cash destination total 70000 is not within {"abs":0.005} of the worksheet's 80000: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ expectWithin src/projection/annualCashFlowReconciliation.evidence.test.ts:355:9
+    353|         withinTolerance(actual, target, example.tolerance),
+    354|         `${label} ${actual} is not within ${JSON.stringify(example.tol…
+    355|       ).toBe(true)
+       |         ^
+    356|     }
+    357|
+ ❯ src/projection/annualCashFlowReconciliation.evidence.test.ts:463:7
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
 ```
 
 ## Revert

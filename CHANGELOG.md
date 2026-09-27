@@ -4,6 +4,28 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## Unreleased
 
+- **Mutation receipts are checked against the current code and tests** (decision
+  D-RECEIPT-DRIFT). A receipt is the evidence that an evidence test kills a mutant of
+  production code, and a reader can rerun it only while its diff and captured output
+  still describe that code. A new check, `rules/mutationReceipts.conformance.test.ts`,
+  reads every receipt without re-executing anything (its tests take about a quarter of a
+  second) and fails when one has drifted: a hunk whose context and removed lines no
+  longer occur exactly once in the production file, as whole lines, at the line its `@@`
+  header names, or whose header names no line or miscounts its lines; a stack line into
+  a test file that no longer lies in the test the failure names (or in the helper the
+  frame names); a quoted code-frame line that no longer reads as the test file does; a
+  named test the file no longer registers; or a stated test count that no longer matches
+  the file, where its source fixes the count. Stack lines into production files and the
+  diff's blob hashes are not checked, and the test file says why. On main the check
+  found 133 of the 226 receipts drifted (some in more than one way): 74 hunk headers
+  named a line the code has since moved from, 13 miscounted their lines, 37 diffs were
+  text substitutions that named no line, 27 captures quoted test lines that had moved
+  and 16 stated test counts the files no longer have. Every one was re-executed
+  (baseline green, mutant red, production restored byte for byte and green); the 37
+  substitutions are now the git diff of the same substitution, which reproduces the
+  mutated file byte for byte, and no mutation changed. No calculation or displayed
+  number changes.
+
 - **Fixed: the Medicare income surcharge (IRMAA) threshold threw for a 2027 parameter
   pack** (decision D-ACA-2027-TABLE). 42 U.S.C. 1395r(i)(5)(C)(ii) resumes indexing the
   $500,000 top threshold for premium years after 2027, measured from August 2026.

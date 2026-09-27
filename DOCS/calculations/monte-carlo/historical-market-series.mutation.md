@@ -1,15 +1,23 @@
 # Mutation receipt: historical-market-series
 
-Re-executed 2026-09-18 after the #719 review against RetireGolden base `33e7d546` (branch grok/b1-p4-cards-monte-carlo) in `packages/engine`.
+Re-executed 2026-09-18 after the #719 review against RetireGolden base `33e7d546` (branch grok/b1-p4-cards-monte-carlo), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/montecarlo/historicalReturns.ts`
 
 ```diff
+diff --git a/packages/engine/src/montecarlo/historicalReturns.ts b/packages/engine/src/montecarlo/historicalReturns.ts
+index 9d4fc90d..e36adfcc 100644
 --- a/packages/engine/src/montecarlo/historicalReturns.ts
 +++ b/packages/engine/src/montecarlo/historicalReturns.ts
-@@ mutation @@
--{ year: 1928, stocksPct: 43.8, bondsPct: 0.8, inflationPct: -1.2 },
-+{ year: 1928, stocksPct: 43.9, bondsPct: 0.8, inflationPct: -1.2 },
+@@ -24,7 +24,7 @@ export interface HistoricalYear {
+ 
+ // prettier-ignore
+ export const HISTORICAL_YEARS: readonly HistoricalYear[] = [
+-  { year: 1928, stocksPct: 43.8, bondsPct: 0.8, inflationPct: -1.2 },
++  { year: 1928, stocksPct: 43.9, bondsPct: 0.8, inflationPct: -1.2 },
+   { year: 1929, stocksPct: -8.3, bondsPct: 4.2, inflationPct: 0.6 },
+   { year: 1930, stocksPct: -25.1, bondsPct: 4.5, inflationPct: -6.4 },
+   { year: 1931, stocksPct: -43.8, bondsPct: -2.6, inflationPct: -9.3 },
 ```
 
 Edits the stored 1928 stock return from 43.8 to 43.9, the kind of one-value transcription drift the sample-row pin exists to catch. A 0.1 change is well above the unrounded 1e-9 column-sum bound.
@@ -22,10 +30,10 @@ NO_COLOR=1 FORCE_COLOR=0 npx.cmd vitest run src/montecarlo/historicalReturns.evi
 
 ## Captured failing output
 
-Captured with `NO_COLOR=1 FORCE_COLOR=0`. The `Start at` and `Duration` lines are the only lines removed.
+Re-executed for D-RECEIPT-DRIFT because its diff was a text substitution that named no line (it is now the git diff of the same substitution); the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (historicalReturns.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
- RUN  v5.0.0 C:/TEMP/rg-s3/packages/engine
+RUN  v5.0.0 C:/rgwt/engine9/packages/engine
 
  ❯ src/montecarlo/historicalReturns.evidence.test.ts (7 tests | 4 failed) 7ms
    ❯ historical-market-series — Embedded annual stock, bond, and inflation series, 1928–2023 (3)
@@ -121,4 +129,4 @@ AssertionError: embedded 1928 blend 26.66 is not within {"abs":1e-12} of the wor
 
 ## Revert
 
-`git checkout -- packages/engine/src/montecarlo/historicalReturns.ts`, then `git diff --quiet -- packages/engine/src/montecarlo/historicalReturns.ts` exited 0, confirming no change to production code after the run.
+The original bytes of `packages/engine/src/montecarlo/historicalReturns.ts` were written back and compared byte for byte in the harness, and `git diff --quiet -- packages/engine/src/montecarlo/historicalReturns.ts` then exited 0, confirming no production change remained. Re-ran the named command after restoration: the suite returned to its baseline state, green (exit 0).

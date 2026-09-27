@@ -1,15 +1,15 @@
 # Mutation receipt: claim-age-co-optimization
 
-Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-fourteen` at base `a4a278ef`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730), and re-executed 2026-09-26 against RetireGolden base `a3265275` (branch `claude/engine-law-fixes`, pull request #744) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-fourteen` at base `a4a278ef`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730), and re-executed 2026-09-26 against RetireGolden base `a3265275` (branch `claude/engine-law-fixes`, pull request #744), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/decisions/generators.ts`
 
 ```diff
 diff --git a/packages/engine/src/decisions/generators.ts b/packages/engine/src/decisions/generators.ts
-index a5f5906d..178b2292 100644
+index 4dda2e10..7be954f0 100644
 --- a/packages/engine/src/decisions/generators.ts
 +++ b/packages/engine/src/decisions/generators.ts
-@@ -311,7 +311,6 @@ export const socialSecurityClaimGenerator: CandidateGenerator = {
+@@ -360,7 +360,6 @@ export const socialSecurityClaimGenerator: CandidateGenerator = {
        const person = ctx.plan.household.people.find((p) => p.id === stream.personId)
        const personLabel = person?.name ?? 'household member'
        for (const claim of canonicalClaimAges(person)) {
@@ -29,12 +29,12 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-Re-executed 2026-09-26 because the claim-age candidates became the person's own FRA (RetireGolden #744). The baseline is green (optimizePlan.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed. Exit code: 1.
+Re-executed for D-RECEIPT-DRIFT because its hunk header named a line its production code has since moved from and the test lines it quoted no longer matched the current test file; the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (optimizePlan.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine/packages/engine
+RUN  v5.0.0 C:/rgwt/engine9/packages/engine
 
- ❯ src/projection/optimizePlan.evidence.test.ts (17 tests | 2 failed) 286ms
+ ❯ src/projection/optimizePlan.evidence.test.ts (17 tests | 2 failed) 289ms
    ❯ claim-age-co-optimization — Claim age co-optimization (3)
      × generates 2 candidates for a stream already claiming at 70y0m, so 3 combinations are evaluated 5ms
      × holds the current claim, so the joint estate IS the current-claim estate 61ms
@@ -42,7 +42,6 @@ RUN  v5.0.0 C:/rgwt/engine/packages/engine
  Test Files  1 failed (1)
       Tests  2 failed | 15 passed (17)
 
-  Transform  transforming modules took 2.60s · 39% of tracked time, re-done on every run
              persist transforms across runs with fsModuleCache: true
              learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
 
@@ -58,13 +57,13 @@ AssertionError: expected 3 to be 2 // Object.is equality
 - 2
 + 3
 
- ❯ src/projection/optimizePlan.evidence.test.ts:950:33
-    948|       // (effective birth year 1955) the FRA is 66y2m. The stream's own
-    949|       // current 70y0m age is skipped, so 3 - 1 = 2 candidates are gen…
-    950|       expect(candidates.length).toBe(example.expected.oneStreamGenerat…
+ ❯ src/projection/optimizePlan.evidence.test.ts:955:33
+    953|       // (effective birth year 1955) the FRA is 66y2m. The stream's own
+    954|       // current 70y0m age is skipped, so 3 - 1 = 2 candidates are gen…
+    955|       expect(candidates.length).toBe(example.expected.oneStreamGenerat…
        |                                 ^
-    951|       expect(candidates.map((candidate) => candidate.label).sort()).to…
-    952|         'Pat claims Social Security at 62',
+    956|       expect(candidates.map((candidate) => candidate.label).sort()).to…
+    957|         'Pat claims Social Security at 62',
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
 
@@ -77,13 +76,13 @@ AssertionError: expected 4 to be 3 // Object.is equality
 - 3
 + 4
 
- ❯ src/projection/optimizePlan.evidence.test.ts:974:52
-    972|       const joint = await optimizePlanCoOptimizingClaimAge(plan, feder…
-    973|
-    974|       expect(joint.claimAge.combinationsEvaluated).toBe(example.expect…
+ ❯ src/projection/optimizePlan.evidence.test.ts:979:52
+    977|       const joint = await optimizePlanCoOptimizingClaimAge(plan, feder…
+    978|
+    979|       expect(joint.claimAge.combinationsEvaluated).toBe(example.expect…
        |                                                    ^
-    975|       // No traditional balance, so every conversion schedule is empty…
-    976|       // claim candidate clears the $1,000 switch margin.
+    980|       // No traditional balance, so every conversion schedule is empty…
+    981|       // claim candidate clears the $1,000 switch margin.
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
 ```

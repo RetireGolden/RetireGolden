@@ -1,15 +1,15 @@
 # Mutation receipt: exact-ledger-traditional-depletion
 
-Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-twelve` at base `2c07f0d7`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730), and re-executed 2026-09-26 against RetireGolden base `fff2423b` (branch `claude/b2p1-slice1-ledger-figures`; no pull request is open yet), and re-executed 2026-09-26 against RetireGolden base `b775e5df` (branch `claude/solver-answers-unpriced-aca`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-twelve` at base `2c07f0d7`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730), and re-executed 2026-09-26 against RetireGolden base `fff2423b` (branch `claude/b2p1-slice1-ledger-figures`; no pull request is open yet), and re-executed 2026-09-26 against RetireGolden base `b775e5df` (branch `claude/solver-answers-unpriced-aca`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/decisions/evaluateCandidate.ts`
 
 ```diff
 diff --git a/packages/engine/src/decisions/evaluateCandidate.ts b/packages/engine/src/decisions/evaluateCandidate.ts
-index 6294c7c4..41ccde69 100644
+index c3b9bbdd..6d96da53 100644
 --- a/packages/engine/src/decisions/evaluateCandidate.ts
 +++ b/packages/engine/src/decisions/evaluateCandidate.ts
-@@ -683,7 +683,7 @@ export function findTraditionalDepletionYear(
+@@ -690,7 +690,7 @@ export function findTraditionalDepletionYear(
    toleranceDollars: number,
  ): number | null {
    const ownTraditionalIds = new Set(
@@ -30,13 +30,13 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-Re-executed 2026-09-26 on branch claude/solver-answers-unpriced-aca after merging main (B2-P1 slice 1), whose money-lasts change and this branch's nonActionableAca option both moved lines of the production file, so the capture, blob hashes and revert note are refreshed against the merge. The baseline is green (optimizePlan.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed for D-RECEIPT-DRIFT because its hunk header named a line its production code has since moved from; the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (optimizePlan.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine5/packages/engine
+RUN  v5.0.0 C:/rgwt/engine9/packages/engine
 
- ❯ src/projection/optimizePlan.evidence.test.ts (17 tests | 1 failed) 286ms
-   ❯ exact-ledger-traditional-depletion — Exact ledger traditional depletion (2)
+ ❯ src/projection/optimizePlan.evidence.test.ts (17 tests | 1 failed) 310ms
+   ❯ exact-ledger-traditional-depletion — Full projection traditional depletion (2)
      × names 2031, where the owned balances sum to 0.90 and the inherited 24000 is excluded 4ms
 
  Test Files  1 failed (1)
@@ -48,7 +48,7 @@ RUN  v5.0.0 C:/rgwt/engine5/packages/engine
 
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
 
- FAIL  src/projection/optimizePlan.evidence.test.ts > exact-ledger-traditional-depletion — Exact ledger traditional depletion > names 2031, where the owned balances sum to 0.90 and the inherited 24000 is excluded
+ FAIL  src/projection/optimizePlan.evidence.test.ts > exact-ledger-traditional-depletion — Full projection traditional depletion > names 2031, where the owned balances sum to 0.90 and the inherited 24000 is excluded
 AssertionError: expected null to be 2031 // Object.is equality
 
 - Expected:

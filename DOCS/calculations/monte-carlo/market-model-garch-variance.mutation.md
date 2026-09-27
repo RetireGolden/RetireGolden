@@ -1,15 +1,23 @@
 # Mutation receipt: market-model-garch-variance
 
-Executed 2026-09-26 against RetireGolden base `8ff951e4` (branch claude/monte-carlo-models), and re-executed 2026-09-26 against RetireGolden base `a78a1c30` (branch `claude/monte-carlo-models`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-26 against RetireGolden base `8ff951e4` (branch claude/monte-carlo-models), and re-executed 2026-09-26 against RetireGolden base `a78a1c30` (branch `claude/monte-carlo-models`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/montecarlo/marketModels.ts`
 
 ```diff
+diff --git a/packages/engine/src/montecarlo/marketModels.ts b/packages/engine/src/montecarlo/marketModels.ts
+index 88dabd5b..b4c1c00f 100644
 --- a/packages/engine/src/montecarlo/marketModels.ts
 +++ b/packages/engine/src/montecarlo/marketModels.ts
-@@ mutation @@
+@@ -937,7 +937,7 @@ export function createGarchModel(config: GarchModelConfig): MarketModel {
+           const commonScale = sigmaBar > 0 ? Math.sqrt(variance) / sigmaBar : 1
+           classShocks.sampleYear(rng, z1, classSeries, i, additiveShockPct, commonScale)
+         }
 -        variance = omega + alpha * innovation * innovation + beta * variance
 +        variance = omega + alpha * (innovation * 100) ** 2 + beta * variance
+       }
+       return classSeries
+         ? { returnShockPct, inflationPct, classReturnShockPct: classSeries }
 ```
 
 Feeds back the published percent `100 e_t` instead of the innovation `e_t`, the worksheet's first wrong reading: year 2 of the default case then gives 189.82202190473055 rather than 6.
@@ -22,15 +30,15 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/montecarlo/
 
 ## Captured failing output
 
-Re-executed after the review fixes of 2026-09-26 added tests to the evidence file, so the quoted test counts and line numbers match the committed file. The baseline is green (marketModels.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed. Exit code: 1.
+Re-executed for D-RECEIPT-DRIFT because its diff was a text substitution that named no line (it is now the git diff of the same substitution); the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (marketModels.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine3/packages/engine
+RUN  v5.0.0 C:/rgwt/engine9/packages/engine
 
- ❯ src/montecarlo/marketModels.evidence.test.ts (30 tests | 4 failed) 49ms
+ ❯ src/montecarlo/marketModels.evidence.test.ts (30 tests | 4 failed) 52ms
    ❯ market-model-garch-variance — GARCH(1,1) variance recursion with variance targeting (7)
      × defaults (12, 0.1, 0.85), Z1 = 1, 0.5, −2, 0: shocks 12, 6, −23.082460874005616, 0 with inflation 0 4ms
-     × the same defaults are what an empty config runs: omega is 0.0144 · 0.05 and v_1 is 0.0144 0ms
+     × the same defaults are what an empty config runs: omega is 0.0144 · 0.05 and v_1 is 0.0144 1ms
      × returnVolPct 100, alpha 0.1, beta 0.8, Z1 = 1, 0.5, −2: variances 1, 1, 0.925 and shocks 100, 50, −192.35384061671346 0ms
      × 2,000 seeded paths of 30 years: every year has the configured variance, mean 0, and squared shocks cluster 6ms
 

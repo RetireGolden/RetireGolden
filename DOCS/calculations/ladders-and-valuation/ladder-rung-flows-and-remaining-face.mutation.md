@@ -1,6 +1,6 @@
 # Mutation receipt: ladder-rung-flows-and-remaining-face
 
-Executed 2026-09-14 against RetireGolden base `319c16ca` (branch claude/b1-p4-cards-ladders) in `packages/engine`.
+Executed 2026-09-14 against RetireGolden base `319c16ca` (branch claude/b1-p4-cards-ladders), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/ladder/ladderMath.ts`
 
@@ -26,45 +26,63 @@ npx vitest run src/ladder/ladderMath.evidence.test.ts
 
 ## Captured failing output
 
-Captured with `NO_COLOR=1`; stdout precedes stderr, so the run summary appears before the failed-test detail. The `Start at` and `Duration` lines are the only lines removed.
+Re-executed for D-RECEIPT-DRIFT because the test lines it quoted no longer matched the current test file; the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (ladderMath.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
- RUN  v5.0.0 C:/TEMP/rg-b1p4impl/packages/engine
- ❯ src/ladder/ladderMath.evidence.test.ts (15 tests | 2 failed) 7ms
+RUN  v5.0.0 C:/rgwt/engine9/packages/engine
+
+ ❯ src/ladder/ladderMath.evidence.test.ts (15 tests | 2 failed) 8ms
    ❯ ladder-backward-face-construction — Level-real-income ladder: faces solved back to front (4)
-     × pays the level $110 target in both years and echoes the target 2ms
+     × pays the level $110 target in both years and echoes the target 3ms
    ❯ ladder-rung-flows-and-remaining-face — Ladder cash flows in a year and face outstanding after it (3)
-     × at offset 1: coupons $8, maturing $100, outstanding $300 with the maturing rung included 2ms
+     × at offset 1: coupons $8, maturing $100, outstanding $300 with the maturing rung included 0ms
+
  Test Files  1 failed (1)
       Tests  2 failed | 13 passed (15)
+
+
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
  FAIL  src/ladder/ladderMath.evidence.test.ts > ladder-backward-face-construction — Level-real-income ladder: faces solved back to front > pays the level $110 target in both years and echoes the target
-AssertionError: expected 100 to be less than or equal to 1e-9
- ❯ src/ladder/ladderMath.evidence.test.ts:194:59
-    192|       expect(build.annualRealIncomeByOffset).toHaveLength(expectedInco…
-    193|       build.annualRealIncomeByOffset.forEach((income, index) => {
-    194|         expect(Math.abs(income - expectedIncome[index]!)).toBeLessThan…
-       |                                                           ^
-    195|       })
-    196|       expect(build.targetAnnualRealIncome).toBe(example.expected.targe…
- ❯ src/ladder/ladderMath.evidence.test.ts:193:38
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
- FAIL  src/ladder/ladderMath.evidence.test.ts > ladder-rung-flows-and-remaining-face — Ladder cash flows in a year and face outstanding after it > at offset 1: coupons $8, maturing $100, outstanding $300 with the maturing rung included
-AssertionError: expected 6 to be 8 // Object.is equality
+AssertionError: annualRealIncomeByOffset[0] 10 is not within {"abs":1e-9} of the worksheet's 110: expected false to be true // Object.is equality
+
 - Expected
 + Received
+
+- true
++ false
+
+ ❯ src/ladder/ladderMath.evidence.test.ts:231:11
+    229|           withinTolerance(income, expectedIncome[index]!, example.tole…
+    230|           `annualRealIncomeByOffset[${index}] ${income} is not within …
+    231|         ).toBe(true)
+       |           ^
+    232|       })
+    233|       expect(build.targetAnnualRealIncome).toBe(example.expected.targe…
+ ❯ src/ladder/ladderMath.evidence.test.ts:227:38
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  src/ladder/ladderMath.evidence.test.ts > ladder-rung-flows-and-remaining-face — Ladder cash flows in a year and face outstanding after it > at offset 1: coupons $8, maturing $100, outstanding $300 with the maturing rung included
+AssertionError: expected 6 to be 8 // Object.is equality
+
+- Expected
++ Received
+
 - 8
 + 6
- ❯ src/ladder/ladderMath.evidence.test.ts:240:29
-    238|     it('at offset 1: coupons $8, maturing $100, outstanding $300 with …
-    239|       const flows = ladderRealFlowsAtOffset(rungs, offset)
-    240|       expect(flows.coupons).toBe(example.expected.coupons)
+
+ ❯ src/ladder/ladderMath.evidence.test.ts:285:29
+    283|     it('at offset 1: coupons $8, maturing $100, outstanding $300 with …
+    284|       const flows = ladderRealFlowsAtOffset(rungs, offset)
+    285|       expect(flows.coupons).toBe(example.expected.coupons)
        |                             ^
-    241|       expect(flows.maturingPrincipal).toBe(example.expected.maturingPr…
-    242|       expect(flows.outstandingFace).toBe(example.expected.outstandingF…
+    286|       expect(flows.maturingPrincipal).toBe(example.expected.maturingPr…
+    287|       expect(flows.outstandingFace).toBe(example.expected.outstandingF…
+
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
 ```
 
 ## Revert
 
-`git checkout -- packages/engine/src/ladder/ladderMath.ts`, then `git diff --quiet -- packages/engine/src/ladder/ladderMath.ts` exited 0, confirming no change to production code after the run.
+The original bytes of `packages/engine/src/ladder/ladderMath.ts` were written back and compared byte for byte in the harness, and `git diff --quiet -- packages/engine/src/ladder/ladderMath.ts` then exited 0, confirming no production change remained. Re-ran the named command after restoration: the suite returned to its baseline state, green (exit 0).

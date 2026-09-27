@@ -1,6 +1,6 @@
 # Mutation receipt: accounts-balance-per-account-annual
 
-Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-thirteen` at base `1452ae11`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730), and re-executed 2026-09-26 against RetireGolden base `fff2423b` (branch `claude/b2p1-slice1-ledger-figures`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-thirteen` at base `1452ae11`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730), and re-executed 2026-09-26 against RetireGolden base `fff2423b` (branch `claude/b2p1-slice1-ledger-figures`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/projection/internal/annualSnapshot.ts`
 
@@ -9,7 +9,7 @@ diff --git a/packages/engine/src/projection/internal/annualSnapshot.ts b/package
 index 4aaa0cf8..0323a807 100644
 --- a/packages/engine/src/projection/internal/annualSnapshot.ts
 +++ b/packages/engine/src/projection/internal/annualSnapshot.ts
-@@ -99,7 +99,7 @@ export function annualSnapshot(input: AnnualSnapshotInput): AnnualSnapshot {
+@@ -101,7 +101,7 @@ export function annualSnapshot(input: AnnualSnapshotInput): AnnualSnapshot {
    }
    let debtTotal = 0
    for (const [id, value] of debtBalances) {
@@ -30,14 +30,14 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-Re-executed 2026-09-26 for B2-P1 slice 1, which moved the lines this receipt's mutation anchors on in its production file (the mutated code itself is unchanged), so every capture, blob hash and revert note is refreshed against this head. The baseline is green (annualSnapshot.balances.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed for D-RECEIPT-DRIFT because its hunk header named a line its production code has since moved from; the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (annualSnapshot.balances.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine4/packages/engine
+RUN  v5.0.0 C:/rgwt/engine9/packages/engine
 
- ❯ src/projection/internal/annualSnapshot.balances.evidence.test.ts (2 tests | 1 failed) 40ms
+ ❯ src/projection/internal/annualSnapshot.balances.evidence.test.ts (2 tests | 1 failed) 29ms
    ❯ accounts-balance-per-account-annual — Year-end balance map: one entry per id, written channel by channel (2)
-     × writes each channel its own year-end figure, netting nothing across them 39ms
+     × writes each channel its own year-end figure, netting nothing across them 28ms
 
  Test Files  1 failed (1)
       Tests  1 failed | 1 passed (2)

@@ -1,6 +1,6 @@
 # Mutation receipt: ladder-backward-face-construction
 
-Executed 2026-09-14 against RetireGolden base `319c16ca` (branch claude/b1-p4-cards-ladders) in `packages/engine`.
+Executed 2026-09-14 against RetireGolden base `319c16ca` (branch claude/b1-p4-cards-ladders), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/ladder/ladderMath.ts`
 
@@ -26,75 +26,124 @@ npx vitest run src/ladder/ladderMath.evidence.test.ts
 
 ## Captured failing output
 
-Captured with `NO_COLOR=1`; stdout precedes stderr, so the run summary appears before the failed-test detail. The `Start at` and `Duration` lines are the only lines removed.
+Re-executed for D-RECEIPT-DRIFT because the test lines it quoted no longer matched the current test file; the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (ladderMath.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
- RUN  v5.0.0 C:/TEMP/rg-b1p4impl/packages/engine
- ❯ src/ladder/ladderMath.evidence.test.ts (15 tests | 5 failed) 6ms
+RUN  v5.0.0 C:/rgwt/engine9/packages/engine
+
+ ❯ src/ladder/ladderMath.evidence.test.ts (15 tests | 5 failed) 8ms
    ❯ ladder-annual-coupon-par-pricing — Synthetic TIPS rung: floored coupon and par-curve price (3)
-     × prices a $1,000 face, 2% coupon, 3-year rung at par on a flat 2% curve 2ms
+     × prices a $1,000 face, 2% coupon, 3-year rung at par on a flat 2% curve 4ms
    ❯ ladder-backward-face-construction — Level-real-income ladder: faces solved back to front (4)
      × solves faces [1000/11, 100] back to front on a flat 10% curve 1ms
      × pays the level $110 target in both years and echoes the target 0ms
      × prices each par rung at face, so total cost is 2100/11 0ms
      × year 1 receipt is 1.1·F1 + 0.1·F2 from the returned faces 0ms
+
  Test Files  1 failed (1)
       Tests  5 failed | 10 passed (15)
+
+
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 5 ⎯⎯⎯⎯⎯⎯⎯
+
  FAIL  src/ladder/ladderMath.evidence.test.ts > ladder-annual-coupon-par-pricing — Synthetic TIPS rung: floored coupon and par-curve price > prices a $1,000 face, 2% coupon, 3-year rung at par on a flat 2% curve
-AssertionError: expected 20 to be less than or equal to 1e-9
- ❯ src/ladder/ladderMath.evidence.test.ts:98:42
-     96|       const rung = build.rungs[0]!
-     97|       expect(rung.maturityOffset).toBe(maturityYears)
-     98|       expect(Math.abs(rung.face - face)).toBeLessThanOrEqual(abs)
-       |                                          ^
-     99|       expect(Math.abs(rung.cost - (example.expected.rungCost as number…
-    100|       expect(Math.abs(build.totalCost - (example.expected.rungCost as …
+AssertionError: rung face 1020 is not within {"abs":1e-9} of the worksheet's 1000: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ src/ladder/ladderMath.evidence.test.ts:116:9
+    114|         withinTolerance(rung.face, face, example.tolerance),
+    115|         `rung face ${rung.face} is not within ${JSON.stringify(example…
+    116|       ).toBe(true)
+       |         ^
+    117|       expect(
+    118|         withinTolerance(rung.cost, expectedCost, example.tolerance),
+
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/5]⎯
+
  FAIL  src/ladder/ladderMath.evidence.test.ts > ladder-backward-face-construction — Level-real-income ladder: faces solved back to front > solves faces [1000/11, 100] back to front on a flat 10% curve
-AssertionError: expected 19.0909090909 to be less than or equal to 1e-9
- ❯ src/ladder/ladderMath.evidence.test.ts:186:61
-    184|       expect(build.rungs.map((rung) => rung.maturityOffset)).toEqual([…
-    185|       build.rungs.forEach((rung, index) => {
-    186|         expect(Math.abs(rung.face - expectedFaces[index]!)).toBeLessTh…
-       |                                                             ^
-    187|       })
-    188|     })
- ❯ src/ladder/ladderMath.evidence.test.ts:185:19
+AssertionError: face[0] 110 is not within {"abs":1e-9} of the worksheet's 90.9090909091: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ src/ladder/ladderMath.evidence.test.ts:220:11
+    218|           withinTolerance(rung.face, expectedFaces[index]!, example.to…
+    219|           `face[${index}] ${rung.face} is not within ${JSON.stringify(…
+    220|         ).toBe(true)
+       |           ^
+    221|       })
+    222|     })
+ ❯ src/ladder/ladderMath.evidence.test.ts:216:19
+
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/5]⎯
+
  FAIL  src/ladder/ladderMath.evidence.test.ts > ladder-backward-face-construction — Level-real-income ladder: faces solved back to front > pays the level $110 target in both years and echoes the target
-AssertionError: expected 22 to be less than or equal to 1e-9
- ❯ src/ladder/ladderMath.evidence.test.ts:194:59
-    192|       expect(build.annualRealIncomeByOffset).toHaveLength(expectedInco…
-    193|       build.annualRealIncomeByOffset.forEach((income, index) => {
-    194|         expect(Math.abs(income - expectedIncome[index]!)).toBeLessThan…
-       |                                                           ^
-    195|       })
-    196|       expect(build.targetAnnualRealIncome).toBe(example.expected.targe…
- ❯ src/ladder/ladderMath.evidence.test.ts:193:38
+AssertionError: annualRealIncomeByOffset[0] 132 is not within {"abs":1e-9} of the worksheet's 110: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ src/ladder/ladderMath.evidence.test.ts:231:11
+    229|           withinTolerance(income, expectedIncome[index]!, example.tole…
+    230|           `annualRealIncomeByOffset[${index}] ${income} is not within …
+    231|         ).toBe(true)
+       |           ^
+    232|       })
+    233|       expect(build.targetAnnualRealIncome).toBe(example.expected.targe…
+ ❯ src/ladder/ladderMath.evidence.test.ts:227:38
+
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/5]⎯
+
  FAIL  src/ladder/ladderMath.evidence.test.ts > ladder-backward-face-construction — Level-real-income ladder: faces solved back to front > prices each par rung at face, so total cost is 2100/11
-AssertionError: expected 29.09090909089997 to be less than or equal to 1e-9
- ❯ src/ladder/ladderMath.evidence.test.ts:200:82
-    198|
-    199|     it('prices each par rung at face, so total cost is 2100/11', () =>…
-    200|       expect(Math.abs(build.totalCost - (example.expected.totalCost as…
-       |                                                                                  ^
-    201|     })
-    202|
+AssertionError: totalCost 219.99999999999997 is not within {"abs":1e-9} of the worksheet's 190.9090909091: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ src/ladder/ladderMath.evidence.test.ts:241:9
+    239|         withinTolerance(build.totalCost, expected, example.tolerance),
+    240|         `totalCost ${build.totalCost} is not within ${JSON.stringify(e…
+    241|       ).toBe(true)
+       |         ^
+    242|     })
+    243|
+
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/5]⎯
+
  FAIL  src/ladder/ladderMath.evidence.test.ts > ladder-backward-face-construction — Level-real-income ladder: faces solved back to front > year 1 receipt is 1.1·F1 + 0.1·F2 from the returned faces
-AssertionError: expected 22 to be less than or equal to 1e-9
- ❯ src/ladder/ladderMath.evidence.test.ts:208:79
-    206|       const [first, second] = build.rungs
-    207|       const receipt = first!.face * (1 + yieldPct / 100) + second!.fac…
-    208|       expect(Math.abs(receipt - (example.inputs.annualRealIncome as nu…
-       |                                                                               ^
-    209|     })
-    210|   },
+AssertionError: year-1 receipt 132 is not within {"abs":1e-9} of the worksheet's 110: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ src/ladder/ladderMath.evidence.test.ts:253:9
+    251|         withinTolerance(receipt, target, example.tolerance),
+    252|         `year-1 receipt ${receipt} is not within ${JSON.stringify(exam…
+    253|       ).toBe(true)
+       |         ^
+    254|     })
+    255|   },
+
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/5]⎯
 ```
 
 ## Revert
 
-`git checkout -- packages/engine/src/ladder/ladderMath.ts`, then `git diff --quiet -- packages/engine/src/ladder/ladderMath.ts` exited 0, confirming no change to production code after the run.
+The original bytes of `packages/engine/src/ladder/ladderMath.ts` were written back and compared byte for byte in the harness, and `git diff --quiet -- packages/engine/src/ladder/ladderMath.ts` then exited 0, confirming no production change remained. Re-ran the named command after restoration: the suite returned to its baseline state, green (exit 0).

@@ -1,15 +1,23 @@
 # Mutation receipt: allocation-cholesky-factor
 
-Executed 2026-09-26 against RetireGolden base `8ff951e4` (branch claude/monte-carlo-models), and re-executed 2026-09-26 against RetireGolden base `a78a1c30` (branch `claude/monte-carlo-models`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-26 against RetireGolden base `8ff951e4` (branch claude/monte-carlo-models), and re-executed 2026-09-26 against RetireGolden base `a78a1c30` (branch `claude/monte-carlo-models`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/allocation/assetClasses.ts`
 
 ```diff
+diff --git a/packages/engine/src/allocation/assetClasses.ts b/packages/engine/src/allocation/assetClasses.ts
+index 0a0218c4..971692a5 100644
 --- a/packages/engine/src/allocation/assetClasses.ts
 +++ b/packages/engine/src/allocation/assetClasses.ts
-@@ mutation @@
+@@ -269,7 +269,7 @@ export function choleskyDecompose(matrix: readonly (readonly number[])[]): numbe
+       let sum = 0
+       for (let k = 0; k < j; k++) sum += L[i]![k]! * L[j]![k]!
+       if (i === j) {
 -        const pivot = matrix[i]![i]! - sum
 +        const pivot = matrix[i]![i]! - 2 * sum
+         if (!(Number.isFinite(pivot) && pivot > 0)) {
+           throw new RangeError(
+             `Correlation matrix is not positive definite: the Cholesky pivot at row ${i} is ${pivot}, not a positive number.`,
 ```
 
 Doubles the subtracted inner product in the diagonal pivot, so L22 is sqrt(1 - 0.5) = 0.707 rather than sqrt(3)/2 (the worksheet's first wrong reading, 1 - r under the square root), and a matrix that is not positive definite is no longer caught at the pivot the test names.
@@ -22,14 +30,14 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/allocation/
 
 ## Captured failing output
 
-Re-executed against the current head so every receipt on the branch records the same commit; the quoted test lines had not moved, and only the timings differ from the earlier run. The baseline is green (assetClasses.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed. Exit code: 1.
+Re-executed for D-RECEIPT-DRIFT because its diff was a text substitution that named no line (it is now the git diff of the same substitution); the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (assetClasses.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine3/packages/engine
+RUN  v5.0.0 C:/rgwt/engine9/packages/engine
 
- ❯ src/allocation/assetClasses.evidence.test.ts (32 tests | 3 failed) 11ms
+ ❯ src/allocation/assetClasses.evidence.test.ts (32 tests | 3 failed) 10ms
    ❯ allocation-cholesky-factor — Cholesky factor of a correlation matrix (3)
-     × factors [[1, 0.5], [0.5, 1]] as [[1, 0], [0.5, sqrt(3)/2]] 4ms
+     × factors [[1, 0.5], [0.5, 1]] as [[1, 0], [0.5, sqrt(3)/2]] 3ms
      × the factor reconstructs the off-diagonal 0.5 and the unit diagonal 0ms
      × refuses a matrix that is not positive definite: r = 1 leaves pivot 0 and r = 2 leaves pivot −3 1ms
 

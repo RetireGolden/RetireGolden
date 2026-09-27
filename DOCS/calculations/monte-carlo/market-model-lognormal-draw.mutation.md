@@ -1,17 +1,23 @@
 # Mutation receipt: market-model-lognormal-draw
 
-Re-executed 2026-09-18 after the second #719 review against RetireGolden base `33e7d546` (branch grok/b1-p4-cards-monte-carlo), and re-executed 2026-09-26 against RetireGolden base `fe6233de` (branch `claude/monte-carlo-models`; no pull request is open yet) in `packages/engine`.
+Re-executed 2026-09-18 after the second #719 review against RetireGolden base `33e7d546` (branch grok/b1-p4-cards-monte-carlo), and re-executed 2026-09-26 against RetireGolden base `fe6233de` (branch `claude/monte-carlo-models`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/montecarlo/marketModels.ts`
 
 ```diff
+diff --git a/packages/engine/src/montecarlo/marketModels.ts b/packages/engine/src/montecarlo/marketModels.ts
+index 88dabd5b..68afa5ce 100644
 --- a/packages/engine/src/montecarlo/marketModels.ts
 +++ b/packages/engine/src/montecarlo/marketModels.ts
-@@ mutation @@
--        // E[exp(σz − σ²/2)] = 1: shocks average out to the expected return.
+@@ -491,7 +491,7 @@ export function createLognormalModel(config: LognormalModelConfig): MarketModel
+         const z1 = rng.nextNormal()
+         const z2 = rng.nextNormal()
+         // E[exp(σz − σ²/2)] = 1: shocks average out to the expected return.
 -        returnShockPct[i] = (Math.exp(sigma * z1 - (sigma * sigma) / 2) - 1) * 100
-+        // E[exp(σz − σ²/2)] = 1: shocks average out to the expected return.
 +        returnShockPct[i] = (Math.exp(sigma * z1 - (sigma * sigma) / 2) - 1) * 100 + 100
+         inflationPct[i] = inflMean + inflVol * (rho * z1 + Math.sqrt(1 - rho * rho) * z2)
+         if (classSeries && classShocks) {
+           // Extra draws only in class mode, after z1/z2 — the single-factor
 ```
 
 Adds 100 so a zero-vol path emits 100 rather than shock 0, the worksheet's first wrong reading (returning the gross multiplier as percent).
@@ -24,12 +30,12 @@ NO_COLOR=1 FORCE_COLOR=0 npx.cmd vitest run src/montecarlo/marketModels.evidence
 
 ## Captured failing output
 
-Re-executed because this branch added tests to the evidence file, so the test counts and quoted line numbers recorded earlier no longer matched it. The baseline is green (marketModels.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed for D-RECEIPT-DRIFT because its diff was a text substitution that named no line (it is now the git diff of the same substitution); the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (marketModels.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine3/packages/engine
+RUN  v5.0.0 C:/rgwt/engine9/packages/engine
 
- ❯ src/montecarlo/marketModels.evidence.test.ts (30 tests | 1 failed) 56ms
+ ❯ src/montecarlo/marketModels.evidence.test.ts (30 tests | 1 failed) 57ms
    ❯ market-model-lognormal-draw — Mean-preserving lognormal return shock (1)
      × zero return vol and inflation 3/0 yields shock 0 and inflation 3% every year 5ms
 
