@@ -1,6 +1,6 @@
 ## Claim
 
-Kind: data. `tax/aca.ts#acaEconomicPremiumByMonth` allows 2026 PTC at exactly 400% FPL but no credit strictly above 400% FPL, reflecting the restored post-2025 cliff; below-100%-FPL exception pathways are outside this calculation.
+Kind: data. `tax/aca.ts#acaEconomicPremiumByMonth` allows the credit at exactly 400% FPL but no credit strictly above 400% FPL, reflecting the restored post-2025 cliff, in the 2026 and 2027 coverage years alike: each year's parameters set `maxFplPctForCredit` at 400. The worked example below is a 2026 household; the separate 100% floor still applies, and below-100%-FPL exception pathways are outside this calculation.
 
 ## Justification
 
@@ -43,3 +43,5 @@ feeds: `aca-modeled-allowable-ptc-annual`; `aca-economic-net-premium-annual`; `s
 Derived by: codex (gpt-5.6-sol), 2026-09-18, from the signatures-and-comments extract only, without executing the engine or reading any implementation body. Reviewed by: cursor (composer-2.5), 2026-09-18, by independent recomputation without executing the engine; see REVIEW-2026-09-18-round-three.md in this directory.
 
 Revision, 2026-09-26: the claim now reads the ceiling from the coverage year's block (decision D-ACA-2027-TABLE); the 2026 example and its figures are unchanged. The rewording is unreviewed until a Codex or Cursor review, so the record carries reviewedBy 'unreviewed'.
+
+Revision, 2026-09-27: the Claim names both coverage years, as the record's statement and limits do (review of #750); the 2026 worked example is unchanged.
