@@ -743,14 +743,14 @@ describe('simulatePlan annual cash-flow transfers', () => {
   it('publishes a TIPS-ladder purchase transfer of the quoted real cost', () => {
     // Independent hand-priced 3-rung ladder on the 2026-06-30 Treasury curve.
     // Oracle: packages/engine/src/ladder/ladderMath.worksheet.golden.test.ts
-    // (U.S. Treasury par real yield curve snapshot of 2026-06-30).
+    // (U.S. Treasury par real yield curve, the official 2026-06-30 row).
     //   T = $12,000 real, firstPayoutOffset 5, payoutYears 3 (offsets 5..7).
-    //   Faces: f5 = 11,324.52444, f6 = 11,534.02814, f7 = 11,758.94169.
-    //   Prices: p5 = 11,324.52444 (par), p6 = 11,537.11902, p7 = 11,766.81129.
-    //   Total cost = 34,628.45475.
+    //   Faces: f5 = 11,309.53569, f6 = 11,527.80973, f7 = 11,757.78954.
+    //   Prices: p5 = 11,309.53569 (par), p6 = 11,529.85822, p7 = 11,762.91883.
+    //   Total cost = 34,602.31275.
     //   Purchase year 2026 → startYear 2031, endYear 2033.
     //   cash 100,000 funds at book value → capitalGain omitted (zero).
-    const tipsPurchaseCost = 34_628.45475
+    const tipsPurchaseCost = 34_602.31275
     const plan = singlePersonPlan({ dob: '1966-01-01', planningAge: 95, retirementAge: 60 })
     plan.accounts = [cashAccount('cash1', 100_000)]
     plan.incomeFloor = {

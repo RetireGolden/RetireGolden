@@ -404,33 +404,35 @@ export const laddersAndValuationRecords = {
       'funded-ratio-result-unfunded-pv',
     ],
     statement:
-      'Five par real yields in percent per year at 5, 7, 10, 20 and 30 years, dated 2026-06-30, attributed to the U.S. Treasury Daily Par Real Yield Curve and stored as {asOfIso, source, points[]} sorted ascending by maturity. Consumers interpolate linearly between points and hold the endpoints flat (ladder-real-yield-interpolation). The dataset fact this record pins is the stored row: 1.85, 2.05, 2.25, 2.55, 2.70. That row is not the official 2026-06-30 Treasury row (1.93, 2.06, 2.20, 2.54, 2.73): stored minus official is -8, -1, +5, +1 and -3 basis points at 5, 7, 10, 20 and 30 years, as the worksheet tabulates, and a data correction is owed as its own engine change. Rounding: the file header claims nearest 5 basis points, which the stored row is not; it matches the official row\'s nearest-5bp rounding (1.95, 2.05, 2.20, 2.55, 2.75) only at 7 and 20 years.',
+      'Five par real yields in percent per year at 5, 7, 10, 20 and 30 years, dated 2026-06-30, taken from the U.S. Treasury Daily Par Real Yield Curve and stored as {asOfIso, source, points[]} sorted ascending by maturity. Consumers interpolate linearly between points and hold the endpoints flat (ladder-real-yield-interpolation). The stored row is the official 2026-06-30 row exactly as Treasury publishes it: 1.93, 2.06, 2.20, 2.54 and 2.73. Rounding: none; the yields keep the hundredth of a percent Treasury publishes.',
     formula: null,
     justification: {
       kind: 'dataset',
       source: {
         citation:
-          'U.S. Department of the Treasury, Daily Treasury Par Real Yield Curve Rates, row dated 2026-06-30 (5-, 7-, 10-, 20- and 30-year)',
+          'U.S. Department of the Treasury, Daily Treasury Par Real Yield Curve Rates, row dated 06/30/2026 (5, 7, 10, 20 and 30 year columns)',
         url: 'https://home.treasury.gov/resource-center/data-chart-center/interest-rates/TextView?field_tdr_date_value=2026&type=daily_treasury_real_yield_curve',
         asOf: '2026-06-30',
-        retrievedOn: '2026-09-14',
+        retrievedOn: '2026-09-27',
         rights: 'U.S. federal government factual data, attributed and linked; no expressive material is reproduced',
       },
       transformation:
-        'Embedded as percent per year at the five published maturities; the file header says the readings were rounded to 5bp, which the limits show they were not. The digest is sha256 over the canonical JSON of the embedded points array, [{"maturityYears":5,"realYieldPct":1.85},...,{"maturityYears":30,"realYieldPct":2.7}], as UTF-8.',
-      digest: 'sha256:15ccae3de237f0f0f328632af05a920fd68b39401391be0ada1f5ce1cb8cd139',
+        'Embedded as published, in percent per year at the five published maturities, with no rounding. The digest is sha256 over the canonical JSON of the embedded points array, [{"maturityYears":5,"realYieldPct":1.93},...,{"maturityYears":30,"realYieldPct":2.73}], as UTF-8.',
+      digest: 'sha256:61040e2d7ae93bae99cd6d178b62f7abab6cc85ad951c3fad71a49f1fcda4cab',
     },
     limits: [
-      'The stored row 1.85/2.05/2.25/2.55/2.70 is not the official 2026-06-30 Treasury row 1.93/2.06/2.20/2.54/2.73 (worksheet, retrieved 2026-09-14), nor that row\'s nearest-5bp rounding 1.95/2.05/2.20/2.55/2.75. Stored-minus-official deviation by maturity, as the worksheet\'s deviation table gives it: 5y -8bp, 7y -1bp, 10y +5bp, 20y +1bp, 30y -3bp',
-      'A data correction is owed as its own engine change, and that change must state the product decision between embedding the exact official row and embedding its nearest-5bp rounding; this record pins the stored row as the dataset fact and does not correct it',
+      'Stored exactly as published, with no rounding to the nearest 5 basis points (decision D-TREASURY, 2026-09-25). Until 2026-09-27 the stored row was 1.85/2.05/2.25/2.55/2.70, which the worksheet showed was neither the official row nor its nearest 5 basis points: 8 basis points below the official row at 5 years, 1 below at 7, 5 above at 10, 1 above at 20 and 3 below at 30. Every ladder quote and funded ratio priced on the curve moved with the correction',
       'Maturities below 5 years read the 5-year yield and above 30 years the 30-year yield (flat endpoints)',
       'Par yields are consumed as spot rates by every ladder and funded-ratio calculation',
       'Refresh cadence is annual with the published parameters; the opt-in FedInvest fetch never replaces this snapshot',
     ],
     implementedBy: ['packages/engine/src/params/data/realYieldCurve2026.ts'],
     implementedByFunctions: ['packages/engine/src/params/data/realYieldCurve2026.ts#REAL_YIELD_CURVE_2026'],
-    verifiedOn: '2026-09-14',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'cursor' },
+    verifiedOn: '2026-09-27',
+    // Restated 2026-09-27 (decision D-TREASURY): the claim is now the official
+    // row, so the record is unreviewed until a reviewer of another family
+    // recomputes it; the worksheet's provenance names the original derivation.
+    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
   },
   'income-tips-ladder-and-ladder-value-annual': {
     title: 'TIPS ladder annual cash and remaining ladder value',

@@ -63,7 +63,7 @@ The ladder construction is the engine's record set (`ladder-real-yield-interpola
 | A | flat 2% (one point: 5y at 2.00%) | 10,200 | 1 | 1 |
 | B | flat 2% | 10,200 | 1 | 2 |
 | C | flat 0% (coupon floored at 0.125%) | 20,000 | 3 | 2 |
-| D | the embedded curve at `a7f62f1e` (1.85, 2.05, 2.25, 2.55, 2.70 at 5, 7, 10, 20, 30y) | 30,000 | 2 | 20 |
+| D | the embedded curve, the official 2026-06-30 row since decision D-TREASURY (1.93, 2.06, 2.20, 2.54, 2.73 at 5, 7, 10, 20, 30y) | 30,000 | 2 | 20 |
 
 Case D is a floor ladder already owned (`purchase` absent), payouts 2027 to 2046, projection start 2026: anchor 2025, first offset 2, 20 years.
 
@@ -75,7 +75,7 @@ B. Last rung (offset 2): face `F₂ = 10,200 / 1.02 = 10,000`, coupon 200. First
 
 C. Coupon `max(0.125, 0) = 0.125%`, discount rate 0. `F₄ = 20,000 / 1.00125 = 19,975.031210986268`; `F₃ = (20,000 − 19,975.031210986268 × 0.00125) / 1.00125 = 19,950.093593993777`. Prices (undiscounted): rung 3 `F₃ × (1 + 3 × 0.00125) = 20,024.906444971253`, rung 4 `F₄ × (1 + 4 × 0.00125) = 20,074.9063670412`; cost `40,099.81281201245`; yield `49.875544541217224`, "49.88" (the deferral years pay coupons that cost money and do not count as income in the target).
 
-D. By the author's independent construction (`scripts/ladder-independent.mjs`, no engine import: back-substitution, floored coupons, par yields as spot, linear interpolation with flat ends): cost `474,975.27302773914`, yield `6.316118270486886`, "6.32". On the official Treasury row that D-TREASURY puts in the engine (1.93, 2.06, 2.20, 2.54, 2.73): cost `475,626.77709488804`, yield `6.307466577731172`, "6.31".
+D. By the author's independent construction (`scripts/ladder-independent.mjs`, no engine import: back-substitution, floored coupons, par yields as spot, linear interpolation with flat ends), on the official Treasury row the engine embeds since D-TREASURY (1.93, 2.06, 2.20, 2.54, 2.73): cost `475,626.77709488804`, yield `6.307466577731172`, "6.31". On the row embedded before D-TREASURY (1.85, 2.05, 2.25, 2.55, 2.70 at `a7f62f1e`) the same construction gave cost `474,975.27302773914`, yield `6.316118270486886`, "6.32". The D-TREASURY implementer recomputed both in exact rationals (a separate script, no engine import) and got the same costs and yields to within 3e-10.
 
 ## Expected
 
@@ -84,7 +84,7 @@ D. By the author's independent construction (`scripts/ladder-independent.mjs`, n
 | A | 10,000 | 102 | "102.00" | exact |
 | B | 19,803.92156862745 | 51.504950495049506 | "51.50" | exact; `1.0404/2.02 × 100` within 1e-12 relative |
 | C | 40,099.81281201245 | 49.875544541217224 | "49.88" | absolute 1e-9 on the yield |
-| D | 474,975.27302773914 | 6.316118270486886 | "6.32" | absolute 1e-9; moves to 6.307466577731172 / "6.31" with D-TREASURY |
+| D | 475,626.77709488804 | 6.307466577731172 | "6.31" | absolute 1e-9 (on the row before D-TREASURY: 474,975.27302773914, 6.316118270486886, "6.32") |
 
 `ladderIncomeYieldPct({targetAnnualRealIncome: 1, totalCost: 0})` throws. `quotePlanLadder` for D: `anchorYear 2025`, `maturityYears [2027, …, 2046]`, `incomeYieldPct` as above; with `endYear 2026` and start 2027 (an empty window) it returns null; with `annualRealAmount 0` null.
 
@@ -127,6 +127,8 @@ Derived by: claude (opus 5.5), 2026-09-26; cases A to C by hand, D and the D-TRE
 ## Implementation (B2-P1 slice 2, 2026-09-27)
 
 Implemented as derived. **Correction 7:** `simulatePlan` now calls `planLadderWindow`; the three lines it replaced became three lines, so no reach spec under `scripts/equivalence` moved. An evidence case spies on `planLadderWindow` during a projection with one owned and one purchased ladder and checks the first year's ladder income against the quote. D-TREASURY has not landed at this base, so case D keeps the embedded curve's 6.316118270486886. No example plan has a ladder.
+
+D-TREASURY (2026-09-27): the embedded curve is now the official row, so case D's expected values are the D-TREASURY variant this worksheet derived beforehand (cost 475,626.77709488804, yield 6.307466577731172, "6.31"), and the engine reproduces them to every printed digit. The income-floor card prints 6.31% for this ladder where it printed 6.32%.
 
 Added after the independent review, whose mutants survived:
 

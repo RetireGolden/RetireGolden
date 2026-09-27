@@ -3,9 +3,14 @@
  * control; the only change is where the savings go: 401(k) contributions cover
  * the employer match (slightly above the 6%-of-pay cap so the match stays
  * identical to the control as wages grow 1% real), and the remaining $30,600/yr
- * builds a taxable brokerage "bridge" that funds ages 52–59½ at low MAGI —
- * preserving credit room in sourced ACA years and avoiding penalties, which is enough to turn the
- * control's depletion into a plan that lasts to the planning horizon.
+ * builds a taxable brokerage "bridge" that, after the cash, funds ages 52–59½
+ * at low MAGI and avoids the control's early-withdrawal penalties ($87,045
+ * over 2042–2045). That buys one year, not the horizon: this plan runs out in
+ * 2068 and the control in 2067 (examples.golden.test.ts pins both), both
+ * before the planning horizon (2078). No premium tax credit is priced in either plan:
+ * the bridge years (2038 on) come after the last coverage year whose ACA
+ * figures are published, so both budget the full marketplace premium, and in
+ * the priced years (2026, 2027) the couple's wages put them above the cliff.
  */
 
 import type { Plan } from '@retiregolden/engine/model/plan'
@@ -79,7 +84,9 @@ export function buildBrokerageBridge401k(): Plan {
       annualContribution: 30_600,
     },
     // Empty Roth IRA in both halves of the pair: no ledger effect, but it gives
-    // the bracket-fill conversion scenario a destination account.
+    // the bracket-fill conversion scenario a destination account. Only Sam
+    // holds one, so the scenario converts only his share of each year's sized
+    // amount and says Jordan's share was skipped.
     { type: 'roth', id: exampleEntityId(EXAMPLE_ID, 'roth'), name: 'Sam Roth IRA', ownerPersonId: samId, annualReturnPct: 7, kind: 'ira', balance: 0, annualContribution: 0 },
   ]
 
@@ -99,10 +106,13 @@ export function buildBrokerageBridge401k(): Plan {
 
 
   // Conversion levers stay OFF in the base plan so Compare isolates the
-  // savings-location decision alone. This scenario is the honest stress test of
-  // the popular "convert during the bridge" advice: for this lean plan the
-  // conversion tax plus any actionable ACA credit the extra MAGI forfeits drain the
-  // bridge fund and hand back most of the strategy's advantage.
+  // savings-location decision alone. This scenario tests the popular "convert
+  // during the bridge" advice: conversions sized to the top of the 12% bracket
+  // in 2038-2045 (Sam's share only, see the Roth account above). It was written
+  // expecting the conversion tax, plus any ACA credit the extra MAGI forfeits,
+  // to drain the bridge fund; the projection says otherwise. No ACA year in the
+  // bridge is priced, the brokerage still lasts into 2046, and lifetime tax
+  // falls from 876,459 to 566,785 while the money lasts to 2070 instead of 2068.
   plan.scenarios = [
     {
       id: exampleEntityId(EXAMPLE_ID, 'bridge-conversions'),

@@ -1,22 +1,22 @@
 # Mutation receipt: treasury-real-yield-curve-2026
 
-Executed 2026-09-14 against RetireGolden head `efaeb827` (branch claude/b1-p4-cards-longevity) in `packages/engine`, with the PR #714 round-1 revision of `src/params/data/realYieldCurve2026.evidence.test.ts` applied: the fixture pins the worksheet's Expected section, the stored row, with a zero absolute bound. This run replaces the same-day run against base `319c16ca` (branch claude/b1-p4-cards-ladders), whose fixture compared at 1e-12.
+Executed 2026-09-27 for decision D-TREASURY, which replaced the former stored row with the official one and with it this receipt's mutation (the receipt of 2026-09-14, against RetireGolden head `efaeb827`, mutated the former row and is in git history), and re-executed 2026-09-27 against RetireGolden base `b6d48615` (branch `claude/decided-small-items`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `dd0588c0` (branch `claude/decided-small-items`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/params/data/realYieldCurve2026.ts`
 
 ```diff
-@@ -20,7 +20,7 @@ export const REAL_YIELD_CURVE_2026: RealYieldCurve = {
+@@ -21,7 +21,7 @@ export const REAL_YIELD_CURVE_2026: RealYieldCurve = {
    asOfIso: '2026-06-30',
    source: 'U.S. Treasury Daily Par Real Yield Curve Rates',
    points: [
--    { maturityYears: 5, realYieldPct: 1.85 },
-+    { maturityYears: 5, realYieldPct: 1.93 },
-     { maturityYears: 7, realYieldPct: 2.05 },
-     { maturityYears: 10, realYieldPct: 2.25 },
-     { maturityYears: 20, realYieldPct: 2.55 },
+-    { maturityYears: 5, realYieldPct: 1.93 },
++    { maturityYears: 5, realYieldPct: 1.95 },
+     { maturityYears: 7, realYieldPct: 2.06 },
+     { maturityYears: 10, realYieldPct: 2.2 },
+     { maturityYears: 20, realYieldPct: 2.54 },
 ```
 
-This changes the stored 5-year point from 1.85 to the official 1.93, the kind of one-value edit a silent correction would make. The pin on the worksheet's stored row catches it: 1.93 is not exactly 1.85, so the zero-bound comparison fails, while the structure and limits assertions still pass. It is the 5-year point of the deviation the worksheet tabulates (stored minus official, -8bp), chosen so the receipt shows the pin moves the moment the stored data does.
+This rounds the stored 5-year point from the official 1.93 to 1.95, its nearest 5 basis points: the first value of the nearest-5bp row the worksheet lists as a wrong reading and decision D-TREASURY declined. The pin on the worksheet's official row catches it: 1.95 is not exactly 1.93, so the zero-bound comparison fails, and the stored points no longer hash to the record's digest, so the digest test fails too; the structure and record-text assertions still pass.
 
 ## Command
 
@@ -26,33 +26,59 @@ npx vitest run src/params/data/realYieldCurve2026.evidence.test.ts
 
 ## Captured failing output
 
-Captured with `NO_COLOR=1`, stdout and stderr together; stdout precedes stderr, so the run summary appears before the failed-test detail. Blank lines and the `Start at` and `Duration` lines are the only lines removed.
+Re-executed 2026-09-27 after the branch review added a fourth evidence test (the record's digest against the stored points), so every capture, blob hash and revert note is refreshed against this head. The baseline is green (realYieldCurve2026.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
- RUN  v5.0.0 C:/TEMP/rg-b1p4long/packages/engine
- ❯ src/params/data/realYieldCurve2026.evidence.test.ts (3 tests | 1 failed) 5ms
-   ❯ treasury-real-yield-curve-2026 — Embedded Treasury par real-yield curve, 2026-06-30 (3)
-     × carries the stored row 1.85/2.05/2.25/2.55/2.70 percent per year, exactly 3ms
-⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
- FAIL  src/params/data/realYieldCurve2026.evidence.test.ts > treasury-real-yield-curve-2026 — Embedded Treasury par real-yield curve, 2026-06-30 > carries the stored row 1.85/2.05/2.25/2.55/2.70 percent per year, exactly
-AssertionError: realYieldPct at 5 years 1.93 is not exactly the worksheet's stored 1.85: expected false to be true // Object.is equality
+RUN  v5.0.0 C:/rgwt/engine10/packages/engine
+
+ ❯ src/params/data/realYieldCurve2026.evidence.test.ts (4 tests | 2 failed) 9ms
+   ❯ treasury-real-yield-curve-2026 — Embedded Treasury par real-yield curve, 2026-06-30 (4)
+     × carries the official row 1.93/2.06/2.20/2.54/2.73 percent per year, exactly 3ms
+     × publishes as its digest the SHA-256 of the stored points array as canonical JSON 4ms
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 2 passed (4)
+
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/params/data/realYieldCurve2026.evidence.test.ts > treasury-real-yield-curve-2026 — Embedded Treasury par real-yield curve, 2026-06-30 > carries the official row 1.93/2.06/2.20/2.54/2.73 percent per year, exactly
+AssertionError: realYieldPct at 5 years 1.95 is not exactly the worksheet's official 1.93: expected false to be true // Object.is equality
+
 - Expected
 + Received
+
 - true
 + false
- ❯ src/params/data/realYieldCurve2026.evidence.test.ts:42:11
-     40|           withinTolerance(point.realYieldPct, expectedYields[index]!, …
-     41|           `realYieldPct at ${point.maturityYears} years ${point.realYi…
-     42|         ).toBe(true)
+
+ ❯ src/params/data/realYieldCurve2026.evidence.test.ts:39:11
+     37|           withinTolerance(point.realYieldPct, expectedYields[index]!, …
+     38|           `realYieldPct at ${point.maturityYears} years ${point.realYi…
+     39|         ).toBe(true)
        |           ^
-     43|       })
-     44|     })
- ❯ src/params/data/realYieldCurve2026.evidence.test.ts:38:36
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
- Test Files  1 failed (1)
-      Tests  1 failed | 2 passed (3)
+     40|       })
+     41|     })
+ ❯ src/params/data/realYieldCurve2026.evidence.test.ts:35:36
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  src/params/data/realYieldCurve2026.evidence.test.ts > treasury-real-yield-curve-2026 — Embedded Treasury par real-yield curve, 2026-06-30 > publishes as its digest the SHA-256 of the stored points array as canonical JSON
+AssertionError: expected 'sha256:61040e2d7ae93bae99cd6d178b62f7…' to be 'sha256:918bfc868d63fdfc7296d393d3fe67…' // Object.is equality
+
+Expected: "sha256:918bfc868d63fdfc7296d393d3fe67a98f8b48b084eb21c22733ca4ff451ded7"
+Received: "sha256:61040e2d7ae93bae99cd6d178b62f7abab6cc85ad951c3fad71a49f1fcda4cab"
+
+ ❯ src/params/data/realYieldCurve2026.evidence.test.ts:67:43
+     65|         .join('')
+     66|       if (record.justification.kind !== 'dataset') throw new Error('tr…
+     67|       expect(record.justification.digest).toBe(`sha256:${hex}`)
+       |                                           ^
+     68|     })
+     69|   },
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
 ```
 
 ## Revert
 
-`git checkout -- packages/engine/src/params/data/realYieldCurve2026.ts`, then `git diff --quiet -- packages/engine/src/params/data/realYieldCurve2026.ts` exited 0, confirming no change to production code after the run.
+The original bytes of `packages/engine/src/params/data/realYieldCurve2026.ts` were written back and compared byte for byte in the harness, and `git diff --quiet -- packages/engine/src/params/data/realYieldCurve2026.ts` then exited 0, confirming no production change remained. Re-ran the named command after restoration: the suite returned to its baseline state, green (exit 0).

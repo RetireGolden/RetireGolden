@@ -3,8 +3,11 @@
  * brokerage-bridge-401k, but every savings dollar goes into pre-tax 401(k)s.
  * Retiring at 52 leaves nearly all wealth inaccessible before 59½: once cash
  * and the small brokerage run dry, penalized traditional withdrawals carry the
- * bridge, their MAGI can wipe out credits in sourced ACA years, and the identical savings budget
- * depletes years before the bridge version does.
+ * bridge ($87,045 of penalties over 2042–2045), and the identical savings
+ * budget depletes one year before the bridge version does (2067 against 2068;
+ * examples.golden.test.ts pins both). Their MAGI could wipe out credit in a
+ * coverage year whose ACA figures are published, but no bridge year (2038 on)
+ * is one, so both plans budget the full marketplace premium.
  */
 
 import type { Plan } from '@retiregolden/engine/model/plan'

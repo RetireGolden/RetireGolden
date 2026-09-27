@@ -17,26 +17,30 @@ import { buildLadder } from './ladderMath.js'
  *
  * Case: level real income T = $12,000 for offsets 5..7 (firstPayoutOffset 5,
  * payoutYears 3). Curve mechanics under test: endpoint hold (yields at
- * offsets 1..5 are all the 5y point, 1.85%), interpolation (offset 6 is the
- * 5y/7y midpoint, 1.95%), and par-as-spot discounting.
+ * offsets 1..5 are all the 5y point, 1.93%), interpolation (offset 6 is the
+ * 5y/7y midpoint, 1.995%), and par-as-spot discounting.
  *
- * Worksheet (all real dollars):
- *   coupon rates: c5 = 1.85%, c6 = 1.95%, c7 = 2.05% (curve yields at maturity)
+ * Worksheet (all real dollars), on the official 2026-06-30 row the curve has
+ * carried since decision D-TREASURY (1.93, 2.06, 2.20, 2.54, 2.73):
+ *   coupon rates: c5 = 1.93%, c6 = 1.995%, c7 = 2.06% (curve yields at maturity)
  *   Back-to-front faces (maturing principal + coupons of outstanding rungs = T):
- *     f7 = 12,000 / 1.0205                          = 11,758.94169
- *     f6 = (12,000 - f7*0.0205) / 1.0195            = 11,534.02814
- *     f5 = (12,000 - f7*0.0205 - f6*0.0195) / 1.0185 = 11,324.52444
- *   Coupon dollars: f5*c5 = 209.50370, f6*c6 = 224.91355, f7*c7 = 241.05831
+ *     f7 = 12,000 / 1.0206                              = 11,757.78954
+ *     f6 = (12,000 - f7*0.0206) / 1.01995               = 11,527.80973
+ *     f5 = (12,000 - f7*0.0206 - f6*0.01995) / 1.0193   = 11,309.53569
+ *   Coupon dollars: f5*c5 = 218.27404, f6*c6 = 229.97980, f7*c7 = 242.21046
  *   Prices (discount year k at the curve yield for maturity k):
- *     p5: all five cash-flow years discount at 1.85% = the coupon rate, so the
- *         rung prices exactly at par: p5 = f5 = 11,324.52444
- *     p6 = 224.91355 * A(5, 1.85%) + (224.91355 + 11,534.02814) / 1.0195^6
- *        = 224.91355 * 4.73404985 + 11,758.94169 / 1.12285423 = 11,537.11902
- *     p7 = 241.05831 * A(5, 1.85%) + 241.05831 / 1.0195^6 + 12,000 / 1.0205^7
- *        = 1,141.18205 + 214.68354 + 10,410.94570           = 11,766.81129
- *     (A(5, 1.85%) = sum of 1/1.0185^k for k = 1..5 = 4.73404985)
- *   Total cost = 34,628.45475
- *   Deferral income (offsets 1-4, coupons only) = 675.47556
+ *     p5: all five cash-flow years discount at 1.93% = the coupon rate, so the
+ *         rung prices exactly at par: p5 = f5 = 11,309.53569
+ *     p6 = 229.97980 * A(5, 1.93%) + (229.97980 + 11,527.80973) / 1.01995^6
+ *        = 229.97980 * 4.72305085 + 11,757.78954 / 1.12583124 = 11,529.85822
+ *     p7 = 242.21046 * A(5, 1.93%) + 242.21046 / 1.01995^6 + 12,000 / 1.0206^7
+ *        = 1,143.97234 + 215.13923 + 10,403.80726               = 11,762.91883
+ *     (A(5, 1.93%) = sum of 1/1.0193^k for k = 1..5 = 4.72305085)
+ *   Total cost = 34,602.31275
+ *   Deferral income (offsets 1-4, coupons only) = 690.46431
+ * Worked in exact rationals outside the engine; the same worksheet on the
+ * row stored before D-TREASURY (1.85, 2.05, ...) reproduces the figures this
+ * test pinned until then (total cost 34,628.45475).
  *
  * Tolerance: 1 cent (expectMoney default); the worksheet was carried at 8+
  * decimal places.
@@ -55,30 +59,30 @@ describe('TIPS ladder worksheet: hand-priced 3-rung ladder on the 2026-06-30 Tre
     expect(r5!.maturityOffset).toBe(5)
     expect(r6!.maturityOffset).toBe(6)
     expect(r7!.maturityOffset).toBe(7)
-    expectMoney(r5!.face, 11_324.52444)
-    expectMoney(r6!.face, 11_534.02814)
-    expectMoney(r7!.face, 11_758.94169)
+    expectMoney(r5!.face, 11_309.53569)
+    expectMoney(r6!.face, 11_527.80973)
+    expectMoney(r7!.face, 11_757.78954)
   })
 
   it('uses the curve yield at each maturity as the coupon rate', () => {
     const [r5, r6, r7] = build.rungs
-    expect(r5!.couponRatePct).toBeCloseTo(1.85, 10)
-    expect(r6!.couponRatePct).toBeCloseTo(1.95, 10)
-    expect(r7!.couponRatePct).toBeCloseTo(2.05, 10)
+    expect(r5!.couponRatePct).toBeCloseTo(1.93, 10)
+    expect(r6!.couponRatePct).toBeCloseTo(1.995, 10)
+    expect(r7!.couponRatePct).toBeCloseTo(2.06, 10)
   })
 
   it('prices each rung to the hand-discounted value (rung 5 exactly at par)', () => {
     const [r5, r6, r7] = build.rungs
-    expectMoney(r5!.cost, 11_324.52444)
-    expectMoney(r6!.cost, 11_537.11902)
-    expectMoney(r7!.cost, 11_766.81129)
-    expectMoney(build.totalCost, 34_628.45475)
+    expectMoney(r5!.cost, 11_309.53569)
+    expectMoney(r6!.cost, 11_529.85822)
+    expectMoney(r7!.cost, 11_762.91883)
+    expectMoney(build.totalCost, 34_602.31275)
   })
 
   it('pays coupon-only income in the deferral years and the exact target after', () => {
     // offsets 1-4: all three rungs outstanding, coupons only.
     for (let offset = 1; offset <= 4; offset++) {
-      expectMoney(build.annualRealIncomeByOffset[offset - 1]!, 675.47556)
+      expectMoney(build.annualRealIncomeByOffset[offset - 1]!, 690.46431)
     }
     // offsets 5-7: maturing principal + remaining coupons = the $12,000 target.
     for (let offset = 5; offset <= 7; offset++) {

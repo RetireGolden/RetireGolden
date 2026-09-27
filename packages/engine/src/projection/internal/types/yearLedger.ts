@@ -106,7 +106,11 @@ export interface YearExpenses {
    * off add the pre-65 monthly premium × months × the health inflation factor,
    * and with the credit on enter the gross enrollment premium instead. The
    * ACA fixed point then publishes healthcare excluding enrollment + the
-   * economic net premium when it converges, else + the gross premium. The two
+   * economic net premium when the year is actionable (its coverage year has
+   * published figures, no support code blocks pricing, and the fixed point
+   * converges: YearAcaResult.convergence.converged), else + the gross premium:
+   * by design in a year whose credit cannot be priced, and as a fallback when
+   * the fixed point does not converge (fixed-point-nonconvergent). The two
    * month counts partition the year (Medicare months = 12 − marketplace
    * months); the tier premium with IRMAA is inflated from the pack year, while
    * the extras and the marketplace premium use the health inflation factor

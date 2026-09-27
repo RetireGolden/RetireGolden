@@ -69,9 +69,12 @@ export interface YearAcaResult {
   /**
    * Always published. When the year is ACA-active with a contract, these are
    * the MAGI probe's parts, built before pricing is refused, so in a
-   * non-actionable year (a stand-in tax year, for one) they are the inputs a
-   * credit would have been priced on, not a household MAGI the engine vouches
-   * for, and householdMagi is null beside them. Without a probe they fall
+   * non-actionable year (a coverage year with no published ACA figures, for
+   * one: 2028 and later today) they are the inputs a credit would have been
+   * priced on, not a household MAGI the engine vouches for, and householdMagi
+   * is null beside them. A year whose ACA figures are published is priced even
+   * when its income-tax figures are projected (2027 today, with the
+   * informational income-tax-parameters-projected code). Without a probe they fall
    * back to the year's own federal AGI, untaxed Social Security, tax-exempt
    * interest and foreign-exclusion addback.
    */
@@ -85,11 +88,12 @@ export interface YearAcaResult {
   fplRegion: 'contiguous' | 'alaska' | 'hawaii' | null
   /**
    * The poverty line for the contract's tax family and region, published
-   * whenever there is a contract with a tax family and the year has its own
-   * parameter pack, priced quote or not; null without a contract, with an
-   * empty tax family, and in a stand-in tax year, where no inflation-scaled
-   * line is exposed as evidence (the guidelines for that coverage year are
-   * not published).
+   * whenever there is a contract with a tax family and the coverage year has
+   * its own published ACA figures (params/acaCoverageYears.ts), priced quote
+   * or not, whether or not that year's income-tax figures are projected;
+   * null without a contract, with an empty tax family, and in a coverage year
+   * with no published ACA figures (2028 and later today), where no
+   * inflation-scaled line is exposed as evidence.
    */
   federalPovertyLine: number | null
   /** MAGI as a percentage of the poverty line, from the priced quote; null when none is priced. */

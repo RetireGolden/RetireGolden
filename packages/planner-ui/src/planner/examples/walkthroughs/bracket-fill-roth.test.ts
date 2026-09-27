@@ -6,8 +6,10 @@ import { runWalkthrough, walkthroughRowProblem } from './walkthrough'
 /**
  * Holds the engine to the hand tables in bracketFillRoth.walkthrough.ts:
  * every row's engine figure equals the hand value, strings exactly and
- * numbers within the row's tolerance (half a cent, or at most $0.01 below the
- * exact root for the household conversion the contract sizes by bisection).
+ * numbers within the row's tolerance (half a cent unless the row's contract
+ * gives a wider band: at most $0.01 below the exact root for the household
+ * conversion the contract sizes by bisection, the cent the owner split leaves
+ * open on the executed conversion, and the fixed point's band on the draw).
  * The it() title is what the engine's walkthrough census publishes for this id.
  */
 describe('walkthrough: bracket-fill Roth conversions', () => {

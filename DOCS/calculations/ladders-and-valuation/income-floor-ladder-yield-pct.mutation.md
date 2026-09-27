@@ -1,6 +1,6 @@
 # Mutation receipt: ladder-income-yield
 
-Executed 2026-09-27 against RetireGolden base `fe28be3c` (branch `claude/b2p1-slice2-display-math`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `2c35d2b8` (branch `claude/b2p1-slice2-display-math`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-27 against RetireGolden base `fe28be3c` (branch `claude/b2p1-slice2-display-math`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `2c35d2b8` (branch `claude/b2p1-slice2-display-math`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `b6d48615` (branch `claude/decided-small-items`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/ladder/ladderMath.ts`
 
@@ -28,12 +28,12 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/ladder/ladd
 
 ## Captured failing output
 
-Re-executed 2026-09-27 after the independent review of B2-P1 slice 2 changed this receipt's evidence file or moved the lines it mutates, so every capture, blob hash and revert note is refreshed against this head. The baseline is green (ladderMath.incomeYield.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed 2026-09-27 for decision D-TREASURY: the embedded Treasury row became the official 2026-06-30 row, which changed this receipt's evidence file or moved the lines it mutates, so every capture, blob hash and revert note is refreshed against this head. The baseline is green (ladderMath.incomeYield.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine8/packages/engine
+RUN  v5.0.0 C:/rgwt/engine10/packages/engine
 
- ❯ src/ladder/ladderMath.incomeYield.evidence.test.ts (7 tests | 3 failed) 44ms
+ ❯ src/ladder/ladderMath.incomeYield.evidence.test.ts (7 tests | 3 failed) 45ms
    ❯ ladder-income-yield — Ladder income as a percent of its cost (7)
      × cases A to C: income over cost, × 100, on synthetic curves 4ms
      × case D: a plan ladder already owned is quoted on the ledger window, anchored the year before the projection 1ms
@@ -69,7 +69,7 @@ AssertionError: caseA yield: 98.0392156862745 against the worksheet's 102: expec
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
 
  FAIL  src/ladder/ladderMath.incomeYield.evidence.test.ts > ladder-income-yield — Ladder income as a percent of its cost > case D: a plan ladder already owned is quoted on the ledger window, anchored the year before the projection
-AssertionError: caseD yield: 1583.2509100924638 against the worksheet's 6.316118270486886: expected false to be true // Object.is equality
+AssertionError: caseD yield: 1585.4225903162935 against the worksheet's 6.307466577731172: expected false to be true // Object.is equality
 
 - Expected
 + Received

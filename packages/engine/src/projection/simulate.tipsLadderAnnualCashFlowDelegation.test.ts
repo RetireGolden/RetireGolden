@@ -191,11 +191,15 @@ function plan(): Plan {
   p.expenses.healthcare = { pre65MonthlyPremiumPerPerson: 0, applyAcaCredit: false, medicareExtrasMonthlyPerPerson: 0 }
   // Two ladders, overlapping from 2029: the year's published totals are then a
   // fold of more than one row, so a caller that dropped, reordered, or
-  // pre-summed the fold could not still match exactly.
+  // pre-summed the fold could not still match exactly. Floor B's amount was
+  // 9,000 until the embedded curve became the official 2026-06-30 row
+  // (decision D-TREASURY); on that curve no year separated the two
+  // associations, which the taxable-fold test below refuses, and at 9,500
+  // some years separate them again.
   p.incomeFloor = {
     ladders: [
       { id: LADDER_A, name: 'Floor A', purpose: 'floor', startYear: 2027, endYear: 2032, annualRealAmount: 12_000 },
-      { id: LADDER_B, name: 'Floor B', purpose: 'floor', startYear: 2029, endYear: 2033, annualRealAmount: 9_000, purchase: { year: 2028, fundingAccountId: 'cash1' } },
+      { id: LADDER_B, name: 'Floor B', purpose: 'floor', startYear: 2029, endYear: 2033, annualRealAmount: 9_500, purchase: { year: 2028, fundingAccountId: 'cash1' } },
     ],
   }
   const parsed = parsePlan(p)

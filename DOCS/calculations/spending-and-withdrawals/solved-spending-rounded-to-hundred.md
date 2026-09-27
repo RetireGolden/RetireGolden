@@ -130,12 +130,14 @@ Engine run in the scratch copy (start year 2026, the page's budget of 25). Only 
 | Example | current | exact probe | published (new) | slack today (engine) | slack new | Change on insight card, Scenarios page, Pro, MCP |
 |---|---:|---:|---:|---:|---:|---:|
 | under-saved-single | 72,000 | 65,250 | 65,200 | −6,750 | −6,800 | −50 |
-| bracket-fill-roth | 90,000 | 101,602 | 101,600 | 11,602 | 11,600 | −2 |
+| bracket-fill-roth | 90,000 | 100,899 | 100,800 | 10,899 | 10,800 | −99 |
 | rmd-irmaa | 110,000 | 131,485 | 131,400 | 21,485 | 21,400 | −85 |
 | inherited-ira-beneficiary | 72,000 | 26,438 | 26,400 | −45,562 | −45,600 | −38 |
 | survivor-years | 72,000 | 59,063 | 59,000 | −12,937 | −13,000 | −63 |
 | annuity-purchases-estate | 78,000 | 114,259 | 114,200 | 36,259 | 36,200 | −59 |
 | no-annuity-brokerage | 78,000 | 116,391 | 116,300 | 38,391 | 38,300 | −91 |
+
+The bracket-fill row is the example as decision D-BRACKET-FILL-ROTH-EXAMPLE (2026-09-27) built it, with Riley holding her own Roth IRA (engine run at that change; the rounded 100,800 re-simulated does not deplete). Before that decision the row read 101,602, 101,600, 11,602, 11,600 and −2.
 
 The solver page's own figures do not change on any example. No insight gate flips on the examples (every slack of 1,000 or more stays at or above 1,000). Every exact probe is a whole number, and on all 7 the rounded amount re-simulated at the page's start year is itself feasible (no depletion, estate at or above the floor).
 

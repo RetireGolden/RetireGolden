@@ -45,17 +45,19 @@ describeCalculation(
         colaPct: 0,
         survivorPct: 0,
         planInflationPct: 2,
-        fiveYearRealYieldPct: 1.85,
-        sevenYearRealYieldPct: 2.05,
+        // The official 2026-06-30 Treasury row the curve carries since decision
+        // D-TREASURY (the worksheet worked 1.85 and 2.05 before it).
+        fiveYearRealYieldPct: 1.93,
+        sevenYearRealYieldPct: 2.06,
         rateTolerance: { abs: 1e-9 },
       },
       expected: {
-        curveRatePct: 3.95,
-        presentValueAtCurveRate: 63_008.166010097986,
-        threePaymentHelperPresentValue: 33_332.7193407416,
-        fiveYearEndpointWrongReadingRate: 3.85,
-        fiveYearEndpointWrongReadingPv: 63_213.991361387314,
-        noInflationWrongReadingPv: 67_330.738824470143,
+        curveRatePct: 3.995,
+        presentValueAtCurveRate: 62_915.883021698835,
+        threePaymentHelperPresentValue: 33_304.25282719482,
+        fiveYearEndpointWrongReadingRate: 3.93,
+        fiveYearEndpointWrongReadingPv: 63_049.24798059383,
+        noInflationWrongReadingPv: 67_228.51425330607,
         undiscountedWrongReadingPv: 36_000,
       },
       tolerance: { abs: 0.005 },
@@ -94,7 +96,7 @@ describeCalculation(
       return first
     }
 
-    it('anchors the discount rate at 3.95%: the six-year real yield plus plan inflation', () => {
+    it('anchors the discount rate at 3.995%: the six-year real yield plus plan inflation', () => {
       const curveRatePct = analysis().curveRatePct
       expect(
         withinTolerance(curveRatePct, expected.curveRatePct!, rateTolerance),
@@ -113,10 +115,14 @@ describeCalculation(
       ).toBe(true)
       // The worksheet's second wrong reading: the 5-year endpoint uninterpolated.
       expect(withinTolerance(curveRatePct, expected.fiveYearEndpointWrongReadingRate!, rateTolerance)).toBe(false)
-      expect(curveNominalDiscountRatePct(5, inflationPct)).toBe(expected.fiveYearEndpointWrongReadingRate)
+      // 1.93 + 2 is 3.9299999999999997 in binary floating point, so the
+      // endpoint reading is held at the worksheet's rate tolerance.
+      expect(
+        withinTolerance(curveNominalDiscountRatePct(5, inflationPct), expected.fiveYearEndpointWrongReadingRate!, rateTolerance),
+      ).toBe(true)
     })
 
-    it('values presentValueAtCurveRate at 63008.166010097986: six payments through the planning age', () => {
+    it('values presentValueAtCurveRate at 62915.883021698835: six payments through the planning age', () => {
       const { curveRatePct, presentValueAtCurveRate } = analysis()
       expectWithin(presentValueAtCurveRate, expected.presentValueAtCurveRate!, 'presentValueAtCurveRate')
       // ... and it is the stream valued to the PLANNING age, which is the same
@@ -155,7 +161,7 @@ describeCalculation(
       )
     })
 
-    it('discounts the helper\'s three payments at that rate to 33332.7193407416', () => {
+    it('discounts the helper\'s three payments at that rate to 33304.25282719482', () => {
       const curveRatePct = analysis().curveRatePct
       const pv = pensionAnnuityPresentValue({
         ...base,

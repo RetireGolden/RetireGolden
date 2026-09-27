@@ -4,6 +4,85 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## Unreleased
 
+- **Changed: the embedded TIPS real-yield curve is Treasury's published 2026-06-30 row**
+  (decision D-TREASURY). Every TIPS-ladder quote, funded ratio, Social Security bridge
+  sizing and pension lump-sum rate reads this curve. It stored 1.85/2.05/2.25/2.55/2.70%
+  at 5/7/10/20/30 years, which is neither the official row nor its nearest 5 basis
+  points; it now stores 1.93/2.06/2.20/2.54/2.73%, digit for digit as the Daily Treasury
+  Par Real Yield Curve Rates page and its CSV print the 06/30/2026 row, with no rounding.
+  What moves: the Insights "TIPS bridge ladder" card on 16 example plans (for example
+  `example-couple` $140,471 → $140,217, `aggressive-saver` $118,481 → $118,673; the gap
+  years and the annual income do not change), the same bridge figures on the Social
+  Security page and in the optimizer's bridge candidate, and `guardrails-flex-goals`'s
+  essential-spending floor card (still 44% funded; present values $901,214 → $901,466
+  and $392,982 → $393,278, and "~2.7% real" → "~2.73% real"). A three-rung ladder
+  paying $12,000 a year in years 5 to 7 costs $34,602.31 (was $34,628.45); a 20-year
+  owned ladder paying $30,000 from 2027 yields 6.31% of its cost (was 6.32%); the
+  pension lump-sum analysis's six-year curve rate at 2% inflation is 3.995% (was
+  3.95%). No example plan holds a ladder, so no projected example figure moves; the
+  report's parameter-source appendix prints the new row. The treasury, pension-election
+  and ladder worksheets are recomputed outside the engine and their records are
+  unreviewed until another reviewer recomputes them.
+
+- **Changed: the bracket-fill Roth example gives Riley a Roth IRA, so it fills the
+  bracket it is named for** (decision D-BRACKET-FILL-ROTH-EXAMPLE). A conversion lands
+  only in its owner's own Roth IRA, and the household amount is split between the
+  owners by their IRA balances, so without one Riley's share was dropped every year and
+  taxable income ended $76,551.76 under the top of the 22% bracket in 2026. With her
+  (empty) Roth IRA both shares convert: 2026 converts $183,448.24 (was $115,098.46) and
+  ends a cent under the top. Both IRAs are converted by 2030, so the RMDs and the
+  charitable gifts from them stop there. On Results: lifetime conversions $472,533.42 →
+  $808,047.79, lifetime tax $163,853.34 → $218,889.90, ending investable $623,753.79 →
+  $587,705.63, lifetime QCDs $165,189.53 → $52,563.29; the conversion years' incomes put
+  Medicare's income surcharge at tier 1 in 2028 and tier 2 in 2029 to 2031 (premiums
+  in 2029 $5,718.09 → $12,492.99). The warning that Riley has no Roth account is gone;
+  the overshoot warning ("Spending withdrawals ... pushed income above the
+  Roth-conversion target") now appears and is true, and a reduced-conversion warning
+  appears for 2030. "How much can I spend?" answers $100,800 (was $101,600; exact
+  $100,899, was $101,602), slack $10,800, initial withdrawal rate 8.20% (was 8.26%);
+  the spending shapes read flat $91,000, smile $105,100, smirk $107,200 (were $91,700,
+  $105,800, $107,900; the differences are unchanged). The spending-headroom card reads
+  $14,480/yr on a $333,051 estate (was $15,369/yr on $353,480), and the headline Monte
+  Carlo success rate at the page's defaults (the example as the library opens it, whose
+  plan id seeds the paths) is 66.8% (was 67.7%). The walkthrough's
+  2026 and 2029 tables are derived again by hand for the new household and held to the
+  engine. The `roth-conversion-annual` record gains the owner-split limit, and the
+  `YearResult.rothConversion` comment says that with two owners the executed total is
+  the sized amount rounded half up to the cent.
+
+- **Changed: the early-retiree ACA example and the 401(k) bridge pair say what they
+  show** (decision D-ACA-EXAMPLE-COPY). The early-retiree example's copy now says the
+  credit is priced for 2026 and 2027, the coverage years whose figures are published,
+  and that 2028 budgets the full premium; that the benchmark premium is assumed equal to
+  the $1,000 a month Casey pays, so editing the premium turns the credit off; and that
+  the conversions are sized to the 10% bracket, not to the cliff (raising them to 12%
+  erases both credits). The "401(k) plus brokerage bridge" and "All-in 401(k)" copy
+  claimed the bridge lasts to the planning horizon, outlives the control by years,
+  keeps more ACA credits and lowers net premiums, and that its conversion scenario
+  backfires. On the projection the bridge runs out in 2068 and the control in 2067,
+  both before 2078; no premium tax credit is priced in either plan in any year (in 2026
+  and 2027, the coverage years whose figures are published, the couple's wages put
+  them above the cliff, at 783% and 792% of the poverty line in the bridge plan and
+  638% and 647% in the control; the bridge years, from 2038, come after the last
+  published coverage year), so the premiums are the same; the control pays $87,045 of early-withdrawal penalties; and the conversion
+  scenario, which converts only Sam's share because Jordan holds no Roth IRA, lowers
+  lifetime tax from $876,459 to $566,785 and lasts to 2070. The copy, the builder
+  comments and the golden-test narration now say so.
+
+- **Docs: three calculation worksheets say what a projected year does** (decision
+  D-WALKTHROUGH-WORKSHEET-WORDING). `roth-conversion-annual` states the contract's
+  tolerance (the bisection's one-sided $0.01, and the half-up cent of a two-owner split)
+  instead of its worked case's $0.005; `spending-healthcare-annual` no longer lists the
+  gross premium in a year whose credit is not priced as a wrong reading;
+  `year-result-ltcg-zero-headroom` names the year's threshold, indexed in a projected
+  year (49,450 in 2026, 50,686.25 in 2027 at 2.5% inflation). No worked value moves;
+  the three records are unreviewed until the review lane checks the rewording. The four
+  `YearAcaResult` doc comments the decision asked for landed with the second
+  walkthrough year; two of them described the stand-in income-tax year as unpriced,
+  which the 2027 ACA figures made false, and now name the ACA coverage-year figures as
+  the gate. `YearResult.ltcgZeroHeadroom` and `YearExpenses.healthcare` gain the same
+  clarifications.
+
 - **Changed: nine more figures the planner pages computed are now published by the
   engine** (owner decision D-UI-SS; B2-P1 slice 2). The pages only format and select
   them: the spending solver's answer, its slack and its initial withdrawal rate

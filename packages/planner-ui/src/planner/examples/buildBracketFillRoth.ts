@@ -42,6 +42,11 @@ export function buildBracketFillRoth(): Plan {
     { type: 'traditional', id: exampleEntityId(EXAMPLE_ID, 'ira-m'), name: 'Morgan IRA', ownerPersonId: p1, annualReturnPct: null, kind: 'ira', balance: 700_000, annualContribution: 0 },
     { type: 'traditional', id: exampleEntityId(EXAMPLE_ID, 'ira-r'), name: 'Riley IRA', ownerPersonId: p2, annualReturnPct: null, kind: 'ira', balance: 400_000, annualContribution: 0 },
     { type: 'roth', id: exampleEntityId(EXAMPLE_ID, 'roth'), name: 'Morgan Roth IRA', ownerPersonId: p1, annualReturnPct: null, kind: 'ira', balance: 50_000, annualContribution: 0 },
+    // Riley's own Roth IRA (decision D-BRACKET-FILL-ROTH-EXAMPLE). A conversion
+    // can land only in its owner's Roth IRA, and the household amount is split
+    // between the owners by their traditional balances, so without this account
+    // her share was dropped and the bracket was never filled.
+    { type: 'roth', id: exampleEntityId(EXAMPLE_ID, 'roth-r'), name: 'Riley Roth IRA', ownerPersonId: p2, annualReturnPct: null, kind: 'ira', balance: 0, annualContribution: 0 },
   ]
   plan.incomes = [
     { type: 'socialSecurity', id: exampleEntityId(EXAMPLE_ID, 'ss-m'), personId: p1, piaMonthly: 2_500, earnings: null, claimAge: { years: 67, months: 0 } },

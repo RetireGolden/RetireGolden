@@ -619,8 +619,8 @@ export const accountsAndGrowthRecords = {
       worksheet: 'DOCS/calculations/accounts-and-growth/pension-election-annuity-present-value.md',
     },
     limits: [
-      'One number drives both horizons: analyzePensionElections passes ownerDeathAge = the owner\'s planning age, so planning age 70 against current age 64 gives the 3.95% rate AND the six payments the published presentValueAtCurveRate discounts, $63,008.166010097986. The first derivation valued the published field over three payments to a death age of 67 while taking its rate from planning age 70, which reports the helper\'s figure in the field\'s place; it was corrected on 2026-09-18, and that mismatch is now the worksheet\'s first wrong reading, asserted as not matching',
-      'The three-payment stream is a SECOND case, taken explicitly at the helper pensionAnnuityPresentValue with ownerDeathAge 67 at the same 3.95% rate, and is $33,332.7193407416; the helper accepts any death age, so that case says nothing about the field\'s payment count',
+      'One number drives both horizons: analyzePensionElections passes ownerDeathAge = the owner\'s planning age, so planning age 70 against current age 64 gives the 3.995% rate AND the six payments the published presentValueAtCurveRate discounts, $62,915.883021698835 (on the official 2026-06-30 curve row; $63,008.166010097986 at 3.95% on the row stored before decision D-TREASURY). The first derivation valued the published field over three payments to a death age of 67 while taking its rate from planning age 70, which reports the helper\'s figure in the field\'s place; it was corrected on 2026-09-18, and that mismatch is now the worksheet\'s first wrong reading, asserted as not matching',
+      'The three-payment stream is a SECOND case, taken explicitly at the helper pensionAnnuityPresentValue with ownerDeathAge 67 at the same 3.995% rate, and is $33,304.25282719482; the helper accepts any death age, so that case says nothing about the field\'s payment count',
       'Beyond the worksheet\'s inputs the evidence plan fixes: a single household (so no survivor extends the horizon), a 1962-born owner so the 2026 current age is 64, a pension with a lump-sum offer in the start year (the analysis skips pensions without one), zero return, and inflationPct 2 as the rate\'s inflation term',
       'The curve is the embedded 2026 TIPS real-yield snapshot; the rate is a planning anchor, not a quote, and a corporate-spread view is left to the user',
       'The stream is discounted at annual offsets from the valuation year with no mid-year convention, and COLA compounds from the start age rather than the valuation year',
@@ -631,8 +631,11 @@ export const accountsAndGrowthRecords = {
       'packages/engine/src/decisions/pensionElection.ts#pensionAnnuityPresentValue',
       'packages/engine/src/decisions/pensionElection.ts#curveNominalDiscountRatePct',
     ],
-    verifiedOn: '2026-09-18',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+    verifiedOn: '2026-09-27',
+    // Restated 2026-09-27 (decision D-TREASURY): the worksheet's figures were
+    // recomputed on the official curve row, so the record is unreviewed until
+    // a reviewer of another family recomputes them.
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
   },
   'display-balance-by-category-annual': {
     title: 'Balances by account type, one value per logical account',
