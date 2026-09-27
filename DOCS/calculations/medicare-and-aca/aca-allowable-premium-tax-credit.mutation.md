@@ -1,11 +1,11 @@
 # Mutation receipt: aca-allowable-premium-tax-credit
 
-Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-eight` at base `989fc81b`, and re-executed 2026-09-22 against RetireGolden base `a046c8f0` (branch `claude/b1-p4-cards-eight`, pull request #728), and re-executed 2026-09-27 against RetireGolden base `a5d07d32` (branch `claude/aca-2027-coverage-year`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-eight` at base `989fc81b`, and re-executed 2026-09-22 against RetireGolden base `a046c8f0` (branch `claude/b1-p4-cards-eight`, pull request #728), and re-executed 2026-09-27 against RetireGolden base `a5d07d32` (branch `claude/aca-2027-coverage-year`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/tax/aca.ts`
 
 ```diff
-@@ -205,7 +205,7 @@ export function acaEconomicPremiumByMonth(
+@@ -246,7 +246,7 @@ export function acaEconomicPremiumByMonth(
      const enrollment = Math.max(0, enrollmentPremiums[month] ?? 0)
      const benchmark = Math.max(0, slcspBenchmarkPremiums[month] ?? 0)
      if (enrollment <= 0 || benchmark <= 0) continue
@@ -26,20 +26,20 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/tax/aca.evi
 
 ## Captured failing output
 
-Re-executed after the IRS rounding change added the rounding case to the evidence file. The baseline is green (aca.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed for D-RECEIPT-DRIFT because its hunk header named a line its production code has since moved from; the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (aca.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine7/packages/engine
+RUN  v5.0.0 C:/rgwt/engine9/packages/engine
 
- ❯ src/tax/aca.evidence.test.ts (14 tests | 6 failed) 8ms
+ ❯ src/tax/aca.evidence.test.ts (14 tests | 6 failed) 14ms
    ❯ aca-400-percent-cliff — ACA 400% FPL cliff (3)
-     × allows the credit at exactly 400% of the poverty line 4ms
+     × allows the credit at exactly 400% of the poverty line 7ms
    ❯ aca-allowable-premium-tax-credit — ACA modeled allowable premium tax credit (3)
-     × credits the 12,000 benchmark less the 2,791.80 contribution, under the 10,000 enrollment cap 0ms
+     × credits the 12,000 benchmark less the 2,791.80 contribution, under the 10,000 enrollment cap 1ms
      × caps the credit at the enrollment premium when the benchmark is dearer than the plan bought 0ms
-     × floors the credit at zero when the contribution exceeds the benchmark 0ms
+     × floors the credit at zero when the contribution exceeds the benchmark 1ms
    ❯ aca-economic-net-premium — ACA economic net premium (2)
-     × bears 791.80 of the 10,000 gross premium after a 9,208.20 credit 0ms
+     × bears 791.80 of the 10,000 gross premium after a 9,208.20 credit 1ms
      × never falls below zero, because each month's credit is capped at that month's premium 0ms
 
  Test Files  1 failed (1)

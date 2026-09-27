@@ -1,6 +1,6 @@
 # Mutation receipt: scenario-scalar-comparison
 
-Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-seven` at base `74916a7e`, and re-executed 2026-09-22 against RetireGolden base `7ae019a8` (branch `claude/b1-p4-cards-seven`, pull request #727), and re-executed 2026-09-26 against RetireGolden base `5d3a72b1` (branch `claude/solver-answers-unpriced-aca`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `2c780ae5` (branch `claude/solver-answers-unpriced-aca`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-seven` at base `74916a7e`, and re-executed 2026-09-22 against RetireGolden base `7ae019a8` (branch `claude/b1-p4-cards-seven`, pull request #727), and re-executed 2026-09-26 against RetireGolden base `5d3a72b1` (branch `claude/solver-answers-unpriced-aca`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `2c780ae5` (branch `claude/solver-answers-unpriced-aca`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/scenarios/comparison.ts`
 
@@ -9,7 +9,7 @@ diff --git a/packages/engine/src/scenarios/comparison.ts b/packages/engine/src/s
 index 90289deb..bbfdbd20 100644
 --- a/packages/engine/src/scenarios/comparison.ts
 +++ b/packages/engine/src/scenarios/comparison.ts
-@@ -316,7 +316,7 @@ function safeNumber(value: number): number {
+@@ -326,7 +326,7 @@ function safeNumber(value: number): number {
  function scalar(baseline: number, proposal: number): ScalarComparison {
    const left = safeNumber(baseline)
    const right = safeNumber(proposal)
@@ -32,16 +32,16 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/scenarios/c
 
 ## Captured failing output
 
-Re-executed 2026-09-26 on branch claude/solver-answers-unpriced-aca after the review fixes moved lines of the production file (the solver's failure wording, the capacity comparison's tolerance of older results, the search option type), so the capture, blob hashes and revert note are refreshed against this head. The baseline is green (comparisonCells.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed for D-RECEIPT-DRIFT because its hunk header named a line its production code has since moved from; the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (comparisonCells.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine5/packages/engine
+RUN  v5.0.0 C:/rgwt/engine9/packages/engine
 
- ❯ src/scenarios/comparisonCells.evidence.test.ts (4 tests | 2 failed) 66ms
+ ❯ src/scenarios/comparisonCells.evidence.test.ts (4 tests | 2 failed) 81ms
    ❯ scenario-scalar-comparison — Scenario scalar comparison (1)
-     × publishes 120000.00, 95000.00 and a signed delta of -25000.00 43ms
+     × publishes 120000.00, 95000.00 and a signed delta of -25000.00 52ms
    ❯ scenario-nullable-scalar-comparison — Scenario nullable scalar comparison (2)
-     × subtracts 2041 from 2044 for a delta of exactly 3 years 10ms
+     × subtracts 2041 from 2044 for a delta of exactly 3 years 15ms
 
  Test Files  1 failed (1)
       Tests  2 failed | 2 passed (4)

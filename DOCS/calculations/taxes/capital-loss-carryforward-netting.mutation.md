@@ -1,11 +1,11 @@
 # Mutation receipt: capital-loss-carryforward-netting
 
-Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-eight` at base `989fc81b`, and re-executed 2026-09-22 against RetireGolden base `a046c8f0` (branch `claude/b1-p4-cards-eight`, pull request #728) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-eight` at base `989fc81b`, and re-executed 2026-09-22 against RetireGolden base `a046c8f0` (branch `claude/b1-p4-cards-eight`, pull request #728), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/tax/federalTax.ts`
 
 ```diff
-@@ -483,7 +483,7 @@ export function applyCapitalLossCarryforward(
+@@ -515,7 +515,7 @@ export function applyCapitalLossCarryforward(
    )
    const remaining = availableLoss - usedAgainstOrdinary
    return {
@@ -26,18 +26,18 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/tax/federal
 
 ## Captured failing output
 
-Re-executed 2026-09-22 on the pull-request branch after the review of #728: the branch was renamed for the pull request and two fixtures and one mutation changed, so every capture, blob hash and revert note is refreshed against this head. The baseline is green (federalTax.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed. Exit code: 1.
+Re-executed for D-RECEIPT-DRIFT because its hunk header named a line its production code has since moved from and the test lines and test counts it quoted no longer matched the current test file; the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (federalTax.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/TEMP/rg-rehearse2/packages/engine
+RUN  v5.0.0 C:/rgwt/engine9/packages/engine
 
- ❯ src/tax/federalTax.evidence.test.ts (13 tests | 2 failed) 7ms
+ ❯ src/tax/federalTax.evidence.test.ts (15 tests | 2 failed) 8ms
    ❯ capital-loss-carryforward-netting — Capital-loss carryforward netting (2)
      × spends 5,000 of the pool against gains, reports a 3,000 loss on the capital line, and carries 12,000 forward 4ms
      × leaves ordinary income untouched, so the offset is not an ordinary-income deduction 0ms
 
  Test Files  1 failed (1)
-      Tests  2 failed | 11 passed (13)
+      Tests  2 failed | 13 passed (15)
 
 
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
@@ -51,14 +51,14 @@ AssertionError: ordinaryAfter 47000 is not within "exact" of the worksheet's 500
 - true
 + false
 
- ❯ expectWithin src/tax/federalTax.evidence.test.ts:32:5
-     30|     withinTolerance(actual, expected, tolerance),
-     31|     `${label} ${actual} is not within ${JSON.stringify(tolerance)} of …
-     32|   ).toBe(true)
+ ❯ expectWithin src/tax/federalTax.evidence.test.ts:33:5
+     31|     withinTolerance(actual, expected, tolerance),
+     32|     `${label} ${actual} is not within ${JSON.stringify(tolerance)} of …
+     33|   ).toBe(true)
        |     ^
-     33| }
-     34|
- ❯ src/tax/federalTax.evidence.test.ts:78:9
+     34| }
+     35|
+ ❯ src/tax/federalTax.evidence.test.ts:79:9
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
 
@@ -71,13 +71,13 @@ AssertionError: expected 47000 to be 50000 // Object.is equality
 - 50000
 + 47000
 
- ❯ src/tax/federalTax.evidence.test.ts:89:37
-     87|         pack.federalTax.capitalLossOrdinaryOffsetLimit,
-     88|       )
-     89|       expect(netting.ordinaryAfter).toBe(inputs.ordinaryIncome)
+ ❯ src/tax/federalTax.evidence.test.ts:90:37
+     88|         pack.federalTax.capitalLossOrdinaryOffsetLimit,
+     89|       )
+     90|       expect(netting.ordinaryAfter).toBe(inputs.ordinaryIncome)
        |                                     ^
-     90|     })
-     91|   },
+     91|     })
+     92|   },
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
 ```

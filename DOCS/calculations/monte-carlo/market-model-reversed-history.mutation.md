@@ -1,13 +1,18 @@
 # Mutation receipt: market-model-reversed-history
 
-Executed 2026-09-26 against RetireGolden base `8ff951e4` (branch claude/monte-carlo-models), and re-executed 2026-09-26 against RetireGolden base `a78a1c30` (branch `claude/monte-carlo-models`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-26 against RetireGolden base `8ff951e4` (branch claude/monte-carlo-models), and re-executed 2026-09-26 against RetireGolden base `a78a1c30` (branch `claude/monte-carlo-models`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/montecarlo/marketModels.ts`
 
 ```diff
+diff --git a/packages/engine/src/montecarlo/marketModels.ts b/packages/engine/src/montecarlo/marketModels.ts
+index 88dabd5b..0247a26c 100644
 --- a/packages/engine/src/montecarlo/marketModels.ts
 +++ b/packages/engine/src/montecarlo/marketModels.ts
-@@ mutation @@
+@@ -1004,12 +1004,7 @@ const MIN_REVERSED_WINDOW_YEARS = 5
+ export function createReversedHistoryModel(config: ReversedHistoryModelConfig): MarketModel {
+   const equityWeightPct = config.equityWeightPct ?? 60
+   const n = HISTORICAL_YEARS.length
 -  const winLen = config.windowLengthYears ?? 10
 -  if (!(Number.isInteger(winLen) && winLen >= MIN_REVERSED_WINDOW_YEARS && winLen <= n)) {
 -    throw new RangeError(
@@ -15,6 +20,9 @@ Executed 2026-09-26 against RetireGolden base `8ff951e4` (branch claude/monte-ca
 -    )
 -  }
 +  const winLen = Math.max(MIN_REVERSED_WINDOW_YEARS, Math.min(n, config.windowLengthYears ?? 10))
+   const mean = meanPortfolioReturnPct(equityWeightPct)
+   const meanS = meanPortfolioReturnPct(100)
+   const meanB = meanPortfolioReturnPct(0)
 ```
 
 Restores the silent clamp to [5, 96] in place of the refusal, the worksheet's first wrong reading: a requested window of 3 then runs as 5 and nothing is thrown.
@@ -27,12 +35,12 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/montecarlo/
 
 ## Captured failing output
 
-Re-executed after the review fixes of 2026-09-26 added tests to the evidence file, so the quoted test counts and line numbers match the committed file. The baseline is green (marketModels.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed. Exit code: 1.
+Re-executed for D-RECEIPT-DRIFT because its diff was a text substitution that named no line (it is now the git diff of the same substitution); the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (marketModels.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine3/packages/engine
+RUN  v5.0.0 C:/rgwt/engine9/packages/engine
 
- ❯ src/montecarlo/marketModels.evidence.test.ts (30 tests | 1 failed) 55ms
+ ❯ src/montecarlo/marketModels.evidence.test.ts (30 tests | 1 failed) 56ms
    ❯ market-model-reversed-history — Reversed-history window replay (4)
      × refuses a window that is not a whole number from 5 to 96, instead of clamping it 4ms
 

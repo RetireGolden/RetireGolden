@@ -1,15 +1,23 @@
 # Mutation receipt: risk-based-guardrail-threshold-solver
 
-Executed 2026-09-26 against RetireGolden base `8ff951e4` with the solver change of this commit applied (branch claude/monte-carlo-models), and re-executed 2026-09-26 against RetireGolden base `a78a1c30` (branch `claude/monte-carlo-models`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-26 against RetireGolden base `8ff951e4` with the solver change of this commit applied (branch claude/monte-carlo-models), and re-executed 2026-09-26 against RetireGolden base `a78a1c30` (branch `claude/monte-carlo-models`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/montecarlo/riskBasedGuardrails.ts`
 
 ```diff
+diff --git a/packages/engine/src/montecarlo/riskBasedGuardrails.ts b/packages/engine/src/montecarlo/riskBasedGuardrails.ts
+index dbfa7266..61afdf08 100644
 --- a/packages/engine/src/montecarlo/riskBasedGuardrails.ts
 +++ b/packages/engine/src/montecarlo/riskBasedGuardrails.ts
-@@ mutation @@
+@@ -240,7 +240,7 @@ export function solveRiskBasedGuardrails(plan: Plan, opts: RiskBasedGuardrailSol
+       else lo = mid
+     }
+     return {
 -      threshold: { balanceFrac: hi, balanceDollars: hi * startingInvestable, successAtThreshold: successAtFrac(hi) },
 +      threshold: { balanceFrac: lo, balanceDollars: lo * startingInvestable, successAtThreshold: successAtFrac(lo) },
+       outcome: 'solved',
+     }
+   }
 ```
 
 Returns `lo` instead of `hi` from each band-edge bisection, the worksheet's first wrong reading: the edges become 1.3997851562499997 (k = 355) and 1.8972851562499997 (k = 483), and the adjustments and the probe sequence move with them.
@@ -22,10 +30,10 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/montecarlo/
 
 ## Captured failing output
 
-Re-executed against the current head so every receipt on the branch records the same commit; the quoted test lines had not moved, and only the timings differ from the earlier run. The baseline is green (riskBasedGuardrails.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed for D-RECEIPT-DRIFT because its diff was a text substitution that named no line (it is now the git diff of the same substitution); the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (riskBasedGuardrails.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine3/packages/engine
+RUN  v5.0.0 C:/rgwt/engine9/packages/engine
 
  ❯ src/montecarlo/riskBasedGuardrails.evidence.test.ts (5 tests | 3 failed) 18ms
    ❯ risk-based-guardrail-threshold-solver — Risk-based guardrail thresholds and suggested adjustments by bisection (4)

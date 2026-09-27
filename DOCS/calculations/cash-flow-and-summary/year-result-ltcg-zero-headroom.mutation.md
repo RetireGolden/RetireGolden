@@ -1,15 +1,15 @@
 # Mutation receipt: year-result-ltcg-zero-headroom
 
-Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-thirteen` at base `1452ae11`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-thirteen` at base `1452ae11`, and re-executed 2026-09-22 against RetireGolden base `fca01300` (branch `claude/b1-p4-cards-eleven-fourteen`, pull request #730), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/tax/federalTax.ts`
 
 ```diff
 diff --git a/packages/engine/src/tax/federalTax.ts b/packages/engine/src/tax/federalTax.ts
-index 8cae7295..faab2722 100644
+index cb912c8d..2efda9be 100644
 --- a/packages/engine/src/tax/federalTax.ts
 +++ b/packages/engine/src/tax/federalTax.ts
-@@ -293,7 +293,7 @@ export function zeroRateLtcgHeadroom(
+@@ -299,7 +299,7 @@ export function zeroRateLtcgHeadroom(
    taxExemptInterest = 0,
    foreignExclusionAddback = 0,
  ): number {
@@ -30,25 +30,26 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-Re-executed 2026-09-22 on the pull-request branch after the review of #730: the branch was renamed for the pull request, so every capture, blob hash and revert note is refreshed against this head. The baseline is green (simulate.ltcgZeroHeadroom.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed. Exit code: 1.
+Re-executed for D-RECEIPT-DRIFT because its hunk header named a line its production code has since moved from and the test lines it quoted no longer matched the current test file; the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (simulate.ltcgZeroHeadroom.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/TEMP/rg-rehearse2/packages/engine
+RUN  v5.0.0 C:/rgwt/engine9/packages/engine
 
- ❯ src/projection/simulate.ltcgZeroHeadroom.evidence.test.ts (2 tests | 2 failed) 30ms
-   ❯ year-result-ltcg-zero-headroom — 0% long-term-gains headroom: the unused layer under the 15% threshold (2)
-     × publishes 12450 of 0% headroom for a 37000 taxable income 27ms
+ ❯ src/projection/simulate.ltcgZeroHeadroom.evidence.test.ts (4 tests | 4 failed) 33ms
+   ❯ year-result-ltcg-zero-headroom — 0% long-term-gains headroom: the unused layer under the 15% threshold (4)
+     × publishes 12450 of 0% headroom for a 37000 taxable income 28ms
      × publishes exactly 0 once taxable income reaches the 15% threshold 2ms
+     × publishes 55550 of 0% headroom for 10000 of ordinary income, below the deduction 1ms
+     × publishes 65550 of 0% headroom for 0 of ordinary income, below the deduction 1ms
 
  Test Files  1 failed (1)
-      Tests  2 failed (2)
+      Tests  4 failed (4)
 
-  Transform  transforming modules took 2.38s · 45% of tracked time, re-done on every run
              persist transforms across runs with fsModuleCache: true
              learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
 
 
-⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
 
  FAIL  src/projection/simulate.ltcgZeroHeadroom.evidence.test.ts > year-result-ltcg-zero-headroom — 0% long-term-gains headroom: the unused layer under the 15% threshold > publishes 12450 of 0% headroom for a 37000 taxable income
 AssertionError: ltcgZeroHeadroom 508499.9969229102 is not within {"abs":0.005} of 12450: expected false to be true // Object.is equality
@@ -59,15 +60,15 @@ AssertionError: ltcgZeroHeadroom 508499.9969229102 is not within {"abs":0.005} o
 - true
 + false
 
- ❯ src/projection/simulate.ltcgZeroHeadroom.evidence.test.ts:70:9
-     68|         withinTolerance(row.ltcgZeroHeadroom, expected.caseAHeadroom!,…
-     69|         `ltcgZeroHeadroom ${row.ltcgZeroHeadroom} is not within ${JSON…
-     70|       ).toBe(true)
+ ❯ src/projection/simulate.ltcgZeroHeadroom.evidence.test.ts:81:9
+     79|         withinTolerance(row.ltcgZeroHeadroom, expected.caseAHeadroom!,…
+     80|         `ltcgZeroHeadroom ${row.ltcgZeroHeadroom} is not within ${JSON…
+     81|       ).toBe(true)
        |         ^
-     71|       // ... and the published figure is that threshold minus taxable …
-     72|       expect(
+     82|       // ... and the published figure is that threshold minus taxable …
+     83|       expect(
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
 
  FAIL  src/projection/simulate.ltcgZeroHeadroom.evidence.test.ts > year-result-ltcg-zero-headroom — 0% long-term-gains headroom: the unused layer under the 15% threshold > publishes exactly 0 once taxable income reaches the 15% threshold
 AssertionError: expected 495499.994084239 to be +0 // Object.is equality
@@ -78,15 +79,53 @@ AssertionError: expected 495499.994084239 to be +0 // Object.is equality
 - 0
 + 495499.994084239
 
- ❯ src/projection/simulate.ltcgZeroHeadroom.evidence.test.ts:93:36
-     91|       // The at-threshold branch returns before any bisection, so this…
-     92|       // exact zero rather than a tolerance.
-     93|       expect(row.ltcgZeroHeadroom).toBe(expected.caseBHeadroom)
+ ❯ src/projection/simulate.ltcgZeroHeadroom.evidence.test.ts:104:36
+    102|       // The at-threshold branch returns before any bisection, so this…
+    103|       // exact zero rather than a tolerance.
+    104|       expect(row.ltcgZeroHeadroom).toBe(expected.caseBHeadroom)
        |                                    ^
-     94|       // The worksheet's second wrong reading: an unfloored subtractio…
-     95|       expect(row.ltcgZeroHeadroom).not.toBe(threshold - taxableIncome)
+    105|       // The worksheet's second wrong reading: an unfloored subtractio…
+    106|       expect(row.ltcgZeroHeadroom).not.toBe(threshold - taxableIncome)
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯
+
+ FAIL  src/projection/simulate.ltcgZeroHeadroom.evidence.test.ts > year-result-ltcg-zero-headroom — 0% long-term-gains headroom: the unused layer under the 15% threshold > publishes 55550 of 0% headroom for 10000 of ordinary income, below the deduction
+AssertionError: Case C: ltcgZeroHeadroom 551599.9941825867 is not within 0.01 of 55550: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ src/projection/simulate.ltcgZeroHeadroom.evidence.test.ts:130:11
+    128|           withinTolerance(row.ltcgZeroHeadroom, root, { abs: width }),
+    129|           `Case ${label}: ltcgZeroHeadroom ${row.ltcgZeroHeadroom} is …
+    130|         ).toBe(true)
+       |           ^
+    131|         expect(row.ltcgZeroHeadroom, `Case ${label} sits at or under t…
+    132|         // The wrong reading this case exists for: a search bounded by…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯
+
+ FAIL  src/projection/simulate.ltcgZeroHeadroom.evidence.test.ts > year-result-ltcg-zero-headroom — 0% long-term-gains headroom: the unused layer under the 15% threshold > publishes 65550 of 0% headroom for 0 of ordinary income, below the deduction
+AssertionError: Case D: ltcgZeroHeadroom 561599.9923229218 is not within 0.01 of 65550: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ src/projection/simulate.ltcgZeroHeadroom.evidence.test.ts:130:11
+    128|           withinTolerance(row.ltcgZeroHeadroom, root, { abs: width }),
+    129|           `Case ${label}: ltcgZeroHeadroom ${row.ltcgZeroHeadroom} is …
+    130|         ).toBe(true)
+       |           ^
+    131|         expect(row.ltcgZeroHeadroom, `Case ${label} sits at or under t…
+    132|         // The wrong reading this case exists for: a search bounded by…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯
 ```
 
 ## Revert

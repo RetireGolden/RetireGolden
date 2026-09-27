@@ -1,15 +1,23 @@
 # Mutation receipt: market-model-cape-conditioned
 
-Re-executed 2026-09-18 after the second #719 review against RetireGolden base `33e7d546` (branch grok/b1-p4-cards-monte-carlo), and re-executed 2026-09-26 against RetireGolden base `fe6233de` (branch `claude/monte-carlo-models`; no pull request is open yet) in `packages/engine`.
+Re-executed 2026-09-18 after the second #719 review against RetireGolden base `33e7d546` (branch grok/b1-p4-cards-monte-carlo), and re-executed 2026-09-26 against RetireGolden base `fe6233de` (branch `claude/monte-carlo-models`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/montecarlo/marketModels.ts`
 
 ```diff
+diff --git a/packages/engine/src/montecarlo/marketModels.ts b/packages/engine/src/montecarlo/marketModels.ts
+index 88dabd5b..ceff1a81 100644
 --- a/packages/engine/src/montecarlo/marketModels.ts
 +++ b/packages/engine/src/montecarlo/marketModels.ts
-@@ mutation @@
--const baseMuAdj = Math.max(-4, Math.min(2, -(startCape - 20) * sens)) // pp adjustment
-+const baseMuAdj = Math.max(-4, Math.min(2, (startCape - 20) * sens)) // pp adjustment
+@@ -725,7 +725,7 @@ export function createRegimeSwitchModel(config: RegimeSwitchModelConfig): Market
+ export function createCapeConditionedModel(config: CapeConditionedModelConfig): MarketModel {
+   const startCape = config.startingCape ?? 25
+   const sens = config.capeSensitivity ?? 0.15
+-  const baseMuAdj = Math.max(-4, Math.min(2, -(startCape - 20) * sens)) // pp adjustment
++  const baseMuAdj = Math.max(-4, Math.min(2, (startCape - 20) * sens)) // pp adjustment
+   const sigma = returnVolatility('CAPE-conditioned returnVolPct', config.returnVolPct) / 100
+   const inflMean = config.inflationMeanPct
+   const inflVol = volatilityInput('CAPE-conditioned inflationVolPct', config.inflationVolPct, 1.5)
 ```
 
 Raises returns at high CAPE instead of lowering them, the worksheet's first wrong reading (+0.75 rather than -0.75).
@@ -22,12 +30,12 @@ NO_COLOR=1 FORCE_COLOR=0 npx.cmd vitest run src/montecarlo/marketModels.evidence
 
 ## Captured failing output
 
-Re-executed because this branch added tests to the evidence file, so the test counts and quoted line numbers recorded earlier no longer matched it. The baseline is green (marketModels.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed for D-RECEIPT-DRIFT because its diff was a text substitution that named no line (it is now the git diff of the same substitution); the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (marketModels.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine3/packages/engine
+RUN  v5.0.0 C:/rgwt/engine9/packages/engine
 
- ❯ src/montecarlo/marketModels.evidence.test.ts (30 tests | 1 failed) 57ms
+ ❯ src/montecarlo/marketModels.evidence.test.ts (30 tests | 1 failed) 56ms
    ❯ market-model-cape-conditioned — CAPE-conditioned shift of a mean-preserving lognormal shock (1)
      × CAPE 25 at sensitivity 0.15 and zero vol shifts the shock by −0.75 4ms
 

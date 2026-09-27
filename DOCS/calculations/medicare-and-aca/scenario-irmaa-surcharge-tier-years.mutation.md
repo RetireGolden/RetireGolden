@@ -1,11 +1,11 @@
 # Mutation receipt: scenario-irmaa-surcharge-tier-years
 
-Executed 2026-09-17 against RetireGolden base `b99ac29b` (branch grok/b1-p4-cards-insights-ss-medicare-roth), and re-executed 2026-09-26 against RetireGolden base `5d3a72b1` (branch `claude/solver-answers-unpriced-aca`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `2c780ae5` (branch `claude/solver-answers-unpriced-aca`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-17 against RetireGolden base `b99ac29b` (branch grok/b1-p4-cards-insights-ss-medicare-roth), and re-executed 2026-09-26 against RetireGolden base `5d3a72b1` (branch `claude/solver-answers-unpriced-aca`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `2c780ae5` (branch `claude/solver-answers-unpriced-aca`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/scenarios/comparison.ts`
 
 ```diff
-@@ -702,8 +702,8 @@ export function compareScenarioPlans(
+@@ -722,6 +722,6 @@ export function compareScenarioPlans(
          sum(proposalResult.years, (y) => y.medicarePremiums),
        ),
        surchargeTierYears: scalar(
@@ -26,14 +26,14 @@ npx vitest run src/scenarios/comparison.evidence.test.ts
 
 ## Captured failing output
 
-Re-executed 2026-09-26 on branch claude/solver-answers-unpriced-aca after the review fixes moved lines of the production file (the solver's failure wording, the capacity comparison's tolerance of older results, the search option type), so the capture, blob hashes and revert note are refreshed against this head. The baseline is green (comparison.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed for D-RECEIPT-DRIFT because its hunk header named a line its production code has since moved from and its hunk header's line counts did not match the hunk; the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (comparison.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine5/packages/engine
+RUN  v5.0.0 C:/rgwt/engine9/packages/engine
 
- ❯ src/scenarios/comparison.evidence.test.ts (1 test | 1 failed) 17ms
+ ❯ src/scenarios/comparison.evidence.test.ts (1 test | 1 failed) 14ms
    ❯ scenario-irmaa-surcharge-tier-years — Scenario comparison: years in an IRMAA surcharge tier (1)
-     × counts 3 baseline and 2 proposal surcharge-tier years (delta −1) 16ms
+     × counts 3 baseline and 2 proposal surcharge-tier years (delta −1) 13ms
 
  Test Files  1 failed (1)
       Tests  1 failed (1)

@@ -1,6 +1,6 @@
 # Mutation receipt: ladder-real-yield-interpolation
 
-Executed 2026-09-14 against RetireGolden base `319c16ca` (branch claude/b1-p4-cards-ladders) in `packages/engine`.
+Executed 2026-09-14 against RetireGolden base `319c16ca` (branch claude/b1-p4-cards-ladders), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/ladder/ladderMath.ts`
 
@@ -26,40 +26,62 @@ npx vitest run src/ladder/ladderMath.evidence.test.ts
 
 ## Captured failing output
 
-Captured with `NO_COLOR=1`; stdout precedes stderr, so the run summary appears before the failed-test detail. The `Start at` and `Duration` lines are the only lines removed.
+Re-executed for D-RECEIPT-DRIFT because the test lines it quoted no longer matched the current test file; the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (ladderMath.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
- RUN  v5.0.0 C:/TEMP/rg-b1p4impl/packages/engine
- ❯ src/ladder/ladderMath.evidence.test.ts (15 tests | 2 failed) 6ms
+RUN  v5.0.0 C:/rgwt/engine9/packages/engine
+
+ ❯ src/ladder/ladderMath.evidence.test.ts (15 tests | 2 failed) 8ms
    ❯ ladder-real-yield-interpolation — Par real yield at a maturity: linear interpolation with flat endpoints (3)
-     × interpolates 2.4% at 7 years between (5y, 2%) and (10y, 3%) 2ms
+     × interpolates 2.4% at 7 years between (5y, 2%) and (10y, 3%) 4ms
    ❯ ladder-real-present-value — Real present value of a cash-flow stream on the TIPS curve (2)
      × discounts $100 at 2 years (interpolated 2%) plus $100 at 4 years (flat 3%) to $184.9655829154 0ms
+
  Test Files  1 failed (1)
       Tests  2 failed | 13 passed (15)
+
+
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
  FAIL  src/ladder/ladderMath.evidence.test.ts > ladder-real-yield-interpolation — Par real yield at a maturity: linear interpolation with flat endpoints > interpolates 2.4% at 7 years between (5y, 2%) and (10y, 3%)
-AssertionError: expected 0.3999999999999999 to be less than or equal to 1e-12
- ❯ src/ladder/ladderMath.evidence.test.ts:44:82
-     42|     it('interpolates 2.4% at 7 years between (5y, 2%) and (10y, 3%)', …
-     43|       const yieldPct = realYieldAt(curve, example.inputs.interiorMatur…
-     44|       expect(Math.abs(yieldPct - (example.expected.interiorYieldPct as…
-       |                                                                                  ^
-     45|     })
-     46|
+AssertionError: interiorYieldPct 2 is not within {"abs":1e-12} of the worksheet's 2.4: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ src/ladder/ladderMath.evidence.test.ts:43:9
+     41|         withinTolerance(yieldPct, expected, example.tolerance),
+     42|         `interiorYieldPct ${yieldPct} is not within ${JSON.stringify(e…
+     43|       ).toBe(true)
+       |         ^
+     44|     })
+     45|
+
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
  FAIL  src/ladder/ladderMath.evidence.test.ts > ladder-real-present-value — Real present value of a cash-flow stream on the TIPS curve > discounts $100 at 2 years (interpolated 2%) plus $100 at 4 years (flat 3%) to $184.9655829154
-AssertionError: expected 1.857287210455695 to be less than or equal to 1e-9
- ❯ src/ladder/ladderMath.evidence.test.ts:146:76
-    144|     it('discounts $100 at 2 years (interpolated 2%) plus $100 at 4 yea…
-    145|       const pv = realPresentValue(flows, curve)
-    146|       expect(Math.abs(pv - (example.expected.realPresentValue as numbe…
-       |                                                                            ^
-    147|     })
-    148|
+AssertionError: realPresentValue 183.1082957049443 is not within {"abs":1e-9} of the worksheet's 184.9655829154: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ src/ladder/ladderMath.evidence.test.ts:178:9
+    176|         withinTolerance(pv, expected, example.tolerance),
+    177|         `realPresentValue ${pv} is not within ${JSON.stringify(example…
+    178|       ).toBe(true)
+       |         ^
+    179|     })
+    180|
+
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
 ```
 
 ## Revert
 
-`git checkout -- packages/engine/src/ladder/ladderMath.ts`, then `git diff --quiet -- packages/engine/src/ladder/ladderMath.ts` exited 0, confirming no change to production code after the run.
+The original bytes of `packages/engine/src/ladder/ladderMath.ts` were written back and compared byte for byte in the harness, and `git diff --quiet -- packages/engine/src/ladder/ladderMath.ts` then exited 0, confirming no production change remained. Re-ran the named command after restoration: the suite returned to its baseline state, green (exit 0).

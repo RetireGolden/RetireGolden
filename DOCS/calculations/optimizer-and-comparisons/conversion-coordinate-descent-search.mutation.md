@@ -1,6 +1,6 @@
 # Mutation receipt: conversion-coordinate-descent-search
 
-Executed 2026-09-17 and re-executed with a different mutant 2026-09-18 against RetireGolden base `33e7d546` (branch `codex/b1-p4-cards-cashflow-optimizer-taxes`), and re-executed 2026-09-27 against RetireGolden base `2c780ae5` (branch `claude/solver-answers-unpriced-aca`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `e1709b0e` (branch `claude/solver-answers-unpriced-aca`, pull request #748) in `packages/engine`.
+Executed 2026-09-17 and re-executed with a different mutant 2026-09-18 against RetireGolden base `33e7d546` (branch `codex/b1-p4-cards-cashflow-optimizer-taxes`), and re-executed 2026-09-27 against RetireGolden base `2c780ae5` (branch `claude/solver-answers-unpriced-aca`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `e1709b0e` (branch `claude/solver-answers-unpriced-aca`, pull request #748), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/decisions/search.ts`
 
@@ -9,7 +9,7 @@ diff --git a/packages/engine/src/decisions/search.ts b/packages/engine/src/decis
 index caceaa44..2b230305 100644
 --- a/packages/engine/src/decisions/search.ts
 +++ b/packages/engine/src/decisions/search.ts
-@@ -120,7 +120,7 @@ export function refineConversionSchedule(
+@@ -133,7 +133,7 @@ export function refineConversionSchedule(
      .filter((year) => year > lastSeedYear)
      .slice(0, TAPER_EXTENSION_YEARS)
    const years = [...seedYears, ...extensionYears]
@@ -30,14 +30,14 @@ npx.cmd vitest run src/decisions/search.evidence.test.ts
 
 ## Captured failing output
 
-Re-executed 2026-09-26 on the pull-request branch after the #748 review fixes moved lines of the production file, so the capture, blob hashes and revert note are refreshed against this head. The baseline is green (search.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed for D-RECEIPT-DRIFT because its hunk header named a line its production code has since moved from; the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (search.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine5/packages/engine
+RUN  v5.0.0 C:/rgwt/engine9/packages/engine
 
- ❯ src/decisions/search.evidence.test.ts (1 test | 1 failed) 47ms
+ ❯ src/decisions/search.evidence.test.ts (1 test | 1 failed) 48ms
    ❯ conversion-coordinate-descent-search — Conversion coordinate descent search (1)
-     × retains the coarse 10000 move then the fine 12500 conversion 46ms
+     × retains the coarse 10000 move then the fine 12500 conversion 47ms
 
  Test Files  1 failed (1)
       Tests  1 failed (1)

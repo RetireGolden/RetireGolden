@@ -1,6 +1,6 @@
 # Mutation receipt: early-claim-factor
 
-Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-eight` at base `989fc81b`, and re-executed 2026-09-22 against RetireGolden base `a046c8f0` (branch `claude/b1-p4-cards-eight`, pull request #728) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-eight` at base `989fc81b`, and re-executed 2026-09-22 against RetireGolden base `a046c8f0` (branch `claude/b1-p4-cards-eight`, pull request #728), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/socialSecurity/benefitFactor.ts`
 
@@ -26,18 +26,18 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/socialSecur
 
 ## Captured failing output
 
-Re-executed 2026-09-22 on the pull-request branch after the review of #728: the branch was renamed for the pull request and two fixtures and one mutation changed, so every capture, blob hash and revert note is refreshed against this head. The baseline is green (benefitFactor.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed. Exit code: 1.
+Re-executed for D-RECEIPT-DRIFT because the test lines and test counts it quoted no longer matched the current test file; the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (benefitFactor.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/TEMP/rg-rehearse2/packages/engine
+RUN  v5.0.0 C:/rgwt/engine9/packages/engine
 
- ❯ src/socialSecurity/benefitFactor.evidence.test.ts (6 tests | 2 failed) 5ms
+ ❯ src/socialSecurity/benefitFactor.evidence.test.ts (7 tests | 2 failed) 6ms
    ❯ early-claim-factor — Early claim reduction factor (3)
      × reduces 60 early months to a factor of 0.70 across both bands 3ms
      × charges the steeper 5/9 rate only through the first 36 months 0ms
 
  Test Files  1 failed (1)
-      Tests  2 failed | 4 passed (6)
+      Tests  2 failed | 5 passed (7)
 
 
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
@@ -58,19 +58,19 @@ AssertionError: factor 0.6666666666666666 is not within {"abs":1e-12} of the wor
        |     ^
      16| }
      17|
- ❯ src/socialSecurity/benefitFactor.evidence.test.ts:68:7
+ ❯ src/socialSecurity/benefitFactor.evidence.test.ts:76:7
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
 
  FAIL  src/socialSecurity/benefitFactor.evidence.test.ts > early-claim-factor — Early claim reduction factor > charges the steeper 5/9 rate only through the first 36 months
 AssertionError: expected 0.6666666666666666 to be greater than 0.6666666666666666
- ❯ src/socialSecurity/benefitFactor.evidence.test.ts:75:62
-     73|       const firstBandOnly = earlyRetirementFactor(inputs.firstBandMont…
-     74|       expectWithin(firstBandOnly, 0.8, example.tolerance, 'factor at 3…
-     75|       expect(earlyRetirementFactor(inputs.monthsBeforeNra!)).toBeGreat…
+ ❯ src/socialSecurity/benefitFactor.evidence.test.ts:83:62
+     81|       const firstBandOnly = earlyRetirementFactor(inputs.firstBandMont…
+     82|       expectWithin(firstBandOnly, 0.8, example.tolerance, 'factor at 3…
+     83|       expect(earlyRetirementFactor(inputs.monthsBeforeNra!)).toBeGreat…
        |                                                              ^
-     76|     })
-     77|
+     84|     })
+     85|
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
 ```

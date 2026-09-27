@@ -1,11 +1,11 @@
 # Mutation receipt: family-maximum-bend-points
 
-Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-nine` at base `39f8f460`, and re-executed 2026-09-22 against RetireGolden base `4fe87f00` (branch `claude/b1-p4-cards-nine-ten`, pull request #729) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-nine` at base `39f8f460`, and re-executed 2026-09-22 against RetireGolden base `4fe87f00` (branch `claude/b1-p4-cards-nine-ten`, pull request #729), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/socialSecurity/familyMaximum.ts`
 
 ```diff
-@@ -37,7 +37,7 @@ export function familyMaximumMonthlyFromPia(piaMonthly: number, eligibilityYear:
+@@ -37,5 +37,5 @@ export function familyMaximumMonthlyFromPia(piaMonthly: number, eligibilityYear:
    const second = Math.max(0, Math.min(piaMonthly, bp.second) - bp.first)
    const third = Math.max(0, Math.min(piaMonthly, bp.third) - bp.second)
    const above = Math.max(0, piaMonthly - bp.third)
@@ -24,10 +24,10 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/socialSecur
 
 ## Captured failing output
 
-Re-executed 2026-09-22 on the pull-request branch after the review of #729: the branch was renamed for the pull request and several fixtures changed, so every capture, blob hash and revert note is refreshed against this head. The baseline is green (familyMaximum.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed. Exit code: 1.
+Re-executed for D-RECEIPT-DRIFT because its hunk header's line counts did not match the hunk; the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (familyMaximum.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/TEMP/rg-rehearse2/packages/engine
+RUN  v5.0.0 C:/rgwt/engine9/packages/engine
 
  ❯ src/socialSecurity/familyMaximum.evidence.test.ts (3 tests | 1 failed) 5ms
    ❯ family-maximum-bend-points — Retirement/survivor family maximum from PIA (3)

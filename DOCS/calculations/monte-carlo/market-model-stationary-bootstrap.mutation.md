@@ -1,15 +1,23 @@
 # Mutation receipt: market-model-stationary-bootstrap
 
-Re-executed 2026-09-18 after the second #719 review against RetireGolden base `33e7d546` (branch grok/b1-p4-cards-monte-carlo), and re-executed 2026-09-26 against RetireGolden base `fe6233de` (branch `claude/monte-carlo-models`; no pull request is open yet) in `packages/engine`.
+Re-executed 2026-09-18 after the second #719 review against RetireGolden base `33e7d546` (branch grok/b1-p4-cards-monte-carlo), and re-executed 2026-09-26 against RetireGolden base `fe6233de` (branch `claude/monte-carlo-models`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/montecarlo/marketModels.ts`
 
 ```diff
+diff --git a/packages/engine/src/montecarlo/marketModels.ts b/packages/engine/src/montecarlo/marketModels.ts
+index 88dabd5b..1030d069 100644
 --- a/packages/engine/src/montecarlo/marketModels.ts
 +++ b/packages/engine/src/montecarlo/marketModels.ts
-@@ mutation @@
--let remaining = Math.floor(-Math.log(1 - rng.next()) * meanBlock) || 1
-+let remaining = rng.next() < 1 / meanBlock ? 1 : yearCount
+@@ -795,7 +795,7 @@ export function createStationaryBootstrapModel(config: StationaryBootstrapModelC
+         ? (Object.fromEntries(ASSET_CLASS_IDS.map((id) => [id, new Array<number>(yearCount)])) as Record<AssetClassId, number[]>)
+         : null
+       let cursor = rng.nextInt(n)
+-      let remaining = Math.floor(-Math.log(1 - rng.next()) * meanBlock) || 1
++      let remaining = rng.next() < 1 / meanBlock ? 1 : yearCount
+       for (let i = 0; i < yearCount; i++) {
+         if (remaining <= 0) {
+           cursor = rng.nextInt(n)
 ```
 
 Treats U as a per-year continuation coin with restart probability 1/L: remaining is yearCount when U >= 1/L, so U = 0.50 continues the 2000 block through 2004 rather than restarting at 1928 after three years (the worksheet's first wrong reading). Year 4 then publishes 2003 (inflation 1.9) rather than 1928 (inflation −1.2).
@@ -22,10 +30,10 @@ NO_COLOR=1 FORCE_COLOR=0 npx.cmd vitest run src/montecarlo/marketModels.evidence
 
 ## Captured failing output
 
-Re-executed because this branch added tests to the evidence file, so the test counts and quoted line numbers recorded earlier no longer matched it. The baseline is green (marketModels.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed for D-RECEIPT-DRIFT because its diff was a text substitution that named no line (it is now the git diff of the same substitution); the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (marketModels.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine3/packages/engine
+RUN  v5.0.0 C:/rgwt/engine9/packages/engine
 
  ❯ src/montecarlo/marketModels.evidence.test.ts (30 tests | 1 failed) 55ms
    ❯ market-model-stationary-bootstrap — Stationary (geometric-block) historical bootstrap (1)

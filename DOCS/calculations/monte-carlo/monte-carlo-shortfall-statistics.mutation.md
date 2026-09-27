@@ -1,15 +1,23 @@
 # Mutation receipt: monte-carlo-shortfall-statistics
 
-Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-ten` at base `f12eba6d`, and re-executed 2026-09-22 against RetireGolden base `4fe87f00` (branch `claude/b1-p4-cards-nine-ten`, pull request #729) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-ten` at base `f12eba6d`, and re-executed 2026-09-22 against RetireGolden base `4fe87f00` (branch `claude/b1-p4-cards-nine-ten`, pull request #729), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/montecarlo/run.ts`
 
 ```diff
+diff --git a/packages/engine/src/montecarlo/run.ts b/packages/engine/src/montecarlo/run.ts
+index 6230e828..a40f9a46 100644
 --- a/packages/engine/src/montecarlo/run.ts
 +++ b/packages/engine/src/montecarlo/run.ts
-@@ aggregateMonteCarlo, downsideRisk @@
+@@ -549,7 +549,7 @@ export function aggregateMonteCarlo(result: MonteCarloPathsResult, histogramBins
+     downsideRisk: {
+       failureRate: share(failingPathCount),
+       failingPathCount,
 -      expectedShortfallDollars: failingPathCount === 0 ? 0 : failingPathShortfallTotal / failingPathCount,
 +      expectedShortfallDollars: paths.length === 0 ? 0 : totalShortfallTotal / paths.length,
+       expectedRequiredShortfallDollars:
+         failingPathCount === 0 ? 0 : failingPathRequiredShortfallTotal / failingPathCount,
+       expectedTargetShortfallDollars: failingPathCount === 0 ? 0 : failingPathTargetShortfallTotal / failingPathCount,
 ```
 
 Averages the expected shortfall over all five paths instead of conditioning it on the two that depleted — the worksheet's second wrong reading.
@@ -24,19 +32,18 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/montecarlo/
 
 ## Captured failing output
 
-Re-executed 2026-09-22 on the pull-request branch after the review of #729: the branch was renamed for the pull request and several fixtures changed, so every capture, blob hash and revert note is refreshed against this head. The baseline is green (run.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed. Exit code: 1.
+Re-executed for D-RECEIPT-DRIFT because its diff was a text substitution that named no line (it is now the git diff of the same substitution); the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (run.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/TEMP/rg-rehearse2/packages/engine
+RUN  v5.0.0 C:/rgwt/engine9/packages/engine
 
- ❯ src/montecarlo/run.evidence.test.ts (16 tests | 1 failed) 9ms
+ ❯ src/montecarlo/run.evidence.test.ts (16 tests | 1 failed) 8ms
    ❯ monte-carlo-shortfall-statistics — Shortfall averages, p90s, and expected shortfall on failing paths (2)
-     × conditions expected shortfall on the two depleted paths, at $35 rather than the all-path $36 4ms
+     × conditions expected shortfall on the two depleted paths, at $35 rather than the all-path $36 3ms
 
  Test Files  1 failed (1)
       Tests  1 failed | 15 passed (16)
 
-  Transform  transforming modules took 2.09s · 45% of tracked time, re-done on every run
              persist transforms across runs with fsModuleCache: true
              learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
 

@@ -22,7 +22,9 @@ DOCS/operations/calculation-coverage/*.json linguist-generated=true
 DOCS/operations/rule-coverage.md linguist-generated=true
 # Machine output that tests already pin, so a review bot's read of it is
 # spent re-checking a script: mutation receipts (captured by re-executing the
-# mutation; calculationRegistry.conformance.test.ts checks them), report
+# mutation; calculationRegistry.conformance.test.ts checks them, and
+# mutationReceipts.conformance.test.ts fails when one drifts from the current
+# code and tests), report
 # goldens (reportGoldens.test.ts) and walkthrough exports
 # (walkthroughEvidence.test.ts). Whether a receipt's mutation is a meaningful
 # one is judged by the change's independent reviewer.

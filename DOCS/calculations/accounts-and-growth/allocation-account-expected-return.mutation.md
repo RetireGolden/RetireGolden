@@ -1,11 +1,11 @@
 # Mutation receipt: allocation-account-expected-return
 
-Executed 2026-09-17 against RetireGolden base `33e7d546` (branch claude/b1-p4-cards-accounts-spending) in `packages/engine`.
+Executed 2026-09-17 against RetireGolden base `33e7d546` (branch claude/b1-p4-cards-accounts-spending), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/allocation/assetClasses.ts`
 
 ```diff
-@@ -246,7 +246,7 @@ export function planUsesAssetAllocation(plan: Plan): boolean {
+@@ -240,7 +240,7 @@ export function planUsesAssetAllocation(plan: Plan): boolean {
   */
  export function expectedAccountReturnPct(account: Account, assumptions: Assumptions, year: number): number {
    const policy = accountAllocation(account)
@@ -26,20 +26,30 @@ npx vitest run src/allocation/assetClasses.evidence.test.ts
 
 ## Captured failing output
 
-Captured with `NO_COLOR=1`, stdout and stderr together; stdout precedes stderr, so the run summary appears before the failed-test detail. Blank lines, the `Start at` and `Duration` lines, and Vitest's transform-cache performance hint (when printed) are the only lines removed. The run exited 1.
+Re-executed for D-RECEIPT-DRIFT because its hunk header named a line its production code has since moved from; the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (assetClasses.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
- RUN  v5.0.0 C:/TEMP/rg-s5/packages/engine
+RUN  v5.0.0 C:/rgwt/engine9/packages/engine
+
  ❯ src/allocation/assetClasses.evidence.test.ts (32 tests | 1 failed) 10ms
    ❯ allocation-account-expected-return — Expected return for an account: allocation blend, else account rate, else plan default (4)
-     × uses the 5.8% blend and ignores the 9% account scalar when the account carries an allocation 4ms
+     × uses the 5.8% blend and ignores the 9% account scalar when the account carries an allocation 3ms
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 31 passed (32)
+
+
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
  FAIL  src/allocation/assetClasses.evidence.test.ts > allocation-account-expected-return — Expected return for an account: allocation blend, else account rate, else plan default > uses the 5.8% blend and ignores the 9% account scalar when the account carries an allocation
 AssertionError: withAllocationPct 9 is not within {"abs":1e-12} of the worksheet's 5.8: expected false to be true // Object.is equality
+
 - Expected
 + Received
+
 - true
 + false
+
  ❯ src/allocation/assetClasses.evidence.test.ts:344:9
     342|         withinTolerance(rate, expected, example.tolerance),
     343|         `withAllocationPct ${rate} is not within ${JSON.stringify(exam…
@@ -47,11 +57,10 @@ AssertionError: withAllocationPct 9 is not within {"abs":1e-12} of the worksheet
        |         ^
     345|     })
     346|
+
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
- Test Files  1 failed (1)
-      Tests  1 failed | 31 passed (32)
 ```
 
 ## Revert
 
-`git checkout -- packages/engine/src/allocation/assetClasses.ts`, then `git diff --quiet -- packages/engine/src/allocation/assetClasses.ts` exited 0, confirming no change to production code after the run.
+The original bytes of `packages/engine/src/allocation/assetClasses.ts` were written back and compared byte for byte in the harness, and `git diff --quiet -- packages/engine/src/allocation/assetClasses.ts` then exited 0, confirming no production change remained. Re-ran the named command after restoration: the suite returned to its baseline state, green (exit 0).
