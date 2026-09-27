@@ -73,12 +73,12 @@ describe('slice 2 figures on the example library', () => {
   })
 
   it('reads the buckets, the cash-flow hub and the unfunded node from the engine, with nothing printed differently', () => {
+    // How many rows and years the library exercises, and how many differ in
+    // the last digit, are measurements of the examples at a commit (the
+    // worksheets record them); the invariant is each row's parity below.
     let bucketRows = 0
-    let bucketUlpRows = 0
     let years = 0
-    let hubDiffers = 0
     let hubMaxDiff = 0
-    let unfundedYears = 0
     for (const example of EXAMPLE_PLANS) {
       const plan = example.build()
       const view = projectPlan(plan, { startYear: EXAMPLE_FIXED_YEAR, captureAnnualCashFlow: true })
@@ -89,7 +89,6 @@ describe('slice 2 figures on the example library', () => {
         engine.forEach((row, index) => {
           bucketRows++
           row.buckets.forEach((value, k) => expect(Object.is(value, retired[index]!.buckets[k]), example.id).toBe(true))
-          if (row.buckets.reduce((a, b) => a + b, 0) !== row.investableTotal) bucketUlpRows++
         })
       }
       for (const year of view.result.years) {
@@ -108,7 +107,6 @@ describe('slice 2 figures on the example library', () => {
           }
         }
         const diff = Math.abs(retiredHub - hub.amountPlanDollars)
-        if (diff !== 0) hubDiffers++
         hubMaxDiff = Math.max(hubMaxDiff, diff)
         expect(diff).toBeLessThan(1e-9)
         const factor = view.basis.factors[year.year - view.basis.startYear]!
@@ -118,7 +116,6 @@ describe('slice 2 figures on the example library', () => {
         const unfundedTotal = year.cashFlow.reconciliation.uses.unfundedUsesPlanDollars
         expect(unfunded !== undefined, `${example.id} ${year.year} unfunded node`).toBe(unfundedTotal > 0)
         if (unfunded) {
-          unfundedYears++
           let retiredUnfunded = 0
           for (const line of year.cashFlow.useLines) if (line.unfundedPlanDollars > 0) retiredUnfunded += line.unfundedPlanDollars
           expect(unfunded.amountPlanDollars).toBe(unfundedTotal)
@@ -126,17 +123,9 @@ describe('slice 2 figures on the example library', () => {
         }
       }
     }
-    // Recorded for the slice 2 addendum (re-measured after #748 and #750).
-    // The derivation measured 123 one-unit bucket rows and 30 hub years on
-    // #747; the ACA credit pricing of #748 and #750 moved the ledger since.
-    expect({ bucketRows, bucketUlpRows, years, hubDiffers, hubMaxDiffBelow: hubMaxDiff < 1e-10, unfundedYears }).toEqual({
-      bucketRows: 2420,
-      bucketUlpRows: 127,
-      years: 1210,
-      hubDiffers: 32,
-      hubMaxDiffBelow: true,
-      unfundedYears: 175,
-    })
+    expect(bucketRows).toBeGreaterThan(0)
+    expect(years).toBeGreaterThan(0)
+    expect(hubMaxDiff).toBeLessThan(1e-10)
   }, 300_000)
 
   it('labels every histogram that is not all one value with the retired centre, bit for bit', () => {
