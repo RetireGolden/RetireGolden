@@ -1,4 +1,3 @@
-import { DECISION_MATERIAL_SHORTFALL_DOLLARS, DECISION_MATERIAL_SHORTFALL_PCT } from '@retiregolden/engine/decisions'
 import type {
   AcaActionabilityVeto,
   ExactLedgerValidation,
@@ -20,21 +19,13 @@ export interface RecommendationContext {
 
 /**
  * An 'unexecutable' validation whose schedule ran without a material shortfall,
- * in any one year or in total: the cause is not execution. The engine marks a
- * schedule unexecutable on either shortfall (decisions/evaluateCandidate.ts:
- * a year, or the whole schedule, short by more than max($1,000, 5% of what was
- * requested), at the default margins the page's optimizer run uses), so ten
- * years each a little short can be unexecutable with no materially
- * unexecuted year; both are tested here.
+ * in any one year or in total: the cause is not execution. The engine decides
+ * that where it measures the execution and publishes it
+ * (ExactLedgerValidation.executedWithoutMaterialShortfall); the page reads it
+ * and re-derives no margin (decision D-UI-SS; PR #754 finding 5).
  */
 function heldForAnotherCause(validation: ExactLedgerValidation): boolean {
-  if (validation.recommendationState !== 'unexecutable' || validation.firstMateriallyUnexecutedYear !== null) return false
-  const shortfall = validation.requestedConversionTotal - validation.executedConversionTotal
-  const margin = Math.max(
-    DECISION_MATERIAL_SHORTFALL_DOLLARS,
-    validation.requestedConversionTotal * DECISION_MATERIAL_SHORTFALL_PCT,
-  )
-  return !(shortfall > margin)
+  return validation.recommendationState === 'unexecutable' && validation.executedWithoutMaterialShortfall
 }
 
 /**
@@ -117,6 +108,11 @@ export function recommendationBody(validation: ExactLedgerValidation, context: R
           ? `Your full projection converts all ${requested} requested`
           : `Your full projection converts ${executed} of the ${requested} requested`
       const incomplete = validation.incompleteComputationYears ?? []
+      if (incomplete.length > 0 && context.acaActionabilityVeto) {
+        // Both causes hold the schedule back, and the reader is told both
+        // (PR #754 finding 8).
+        return `${executes}, but two things hold it back: its tax could not be computed completely in ${formatYearRuns(incomplete)}, and the marketplace (ACA) premium tax credit isn't priced in some of the plan's years, while conversion income changes that credit. So the schedule is shown as a diagnostic, not a recommendation. The ACA note below names the credit's years.`
+      }
       if (incomplete.length > 0) {
         return `${executes}, but its tax could not be computed completely in ${formatYearRuns(incomplete)}, so the schedule is shown as a diagnostic, not a recommendation.`
       }

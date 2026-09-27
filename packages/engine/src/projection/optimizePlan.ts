@@ -2120,6 +2120,17 @@ export interface ExactLedgerValidation {
    */
   firstMateriallyUnexecutedYear: number | null
   /**
+   * True when the schedule executed without a material shortfall: no
+   * requested year is short by more than its own margin
+   * (firstMateriallyUnexecutedYear is null) and the whole schedule is not
+   * short by more than max(DECISION_MATERIAL_SHORTFALL_DOLLARS, requested ×
+   * DECISION_MATERIAL_SHORTFALL_PCT). An 'unexecutable' state with this true
+   * comes from another cause (incomplete tax years, non-actionable ACA
+   * evidence or a retirement-action diagnostic), not from execution. Pages
+   * read it rather than re-deriving the margins (decision D-UI-SS).
+   */
+  executedWithoutMaterialShortfall: boolean
+  /**
    * The first year, over the candidate result's rows, that the candidate
    * plan's own (non-inherited) traditional balances sum to at most the neutral
    * tolerance (one dollar by default); null if never, and null when the plan
@@ -2294,6 +2305,8 @@ function evaluateExactLedgerScheduleCalculation(
     executedConversionTotal: execution.executedTotal,
     executedConversionRatio: execution.executedRatio,
     firstMateriallyUnexecutedYear: execution.firstMateriallyUnexecutedYear,
+    executedWithoutMaterialShortfall:
+      execution.firstMateriallyUnexecutedYear === null && !execution.materialTotalShortfall,
     traditionalDepletionYear: evaluation.traditionalDepletionYear,
     recommendationState:
       incompleteYears.length > 0 || evaluation.recommendationState === 'diagnostic' ? 'unexecutable' : evaluation.recommendationState,

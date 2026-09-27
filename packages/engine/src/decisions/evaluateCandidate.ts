@@ -653,7 +653,12 @@ function aggregateByYear(conversions: Array<{ year: number; amount: number }>): 
 function buildConversionExecution(
   requested: Array<{ year: number; amount: number }>,
   candidateResult: ProjectionResult,
-  options: Required<Pick<EvaluateCandidateOptions, 'materialConversionShortfallDollars' | 'materialConversionShortfallPct'>>,
+  options: Required<
+    Pick<
+      EvaluateCandidateOptions,
+      'minimumRequestedConversionDollars' | 'materialConversionShortfallDollars' | 'materialConversionShortfallPct'
+    >
+  >,
 ): ConversionExecution {
   const requestedByYear = aggregateByYear(requested)
   const requestedTotal = conversionScheduleTotal(requested)
@@ -673,11 +678,17 @@ function buildConversionExecution(
     }
   }
 
+  const totalMargin = Math.max(
+    options.materialConversionShortfallDollars,
+    requestedTotal * options.materialConversionShortfallPct,
+  )
   return {
     requestedTotal,
     executedTotal,
     executedRatio: requestedTotal > 0 ? Math.min(1, executedTotal / requestedTotal) : 1,
     firstMateriallyUnexecutedYear,
+    materialTotalShortfall:
+      requestedTotal >= options.minimumRequestedConversionDollars && requestedTotal - executedTotal > totalMargin,
     executedByYear: candidateResult.years
       .filter((year) => year.rothConversion > 1)
       .map((year) => ({ year: year.year, amount: Math.round(year.rothConversion * 100) / 100 })),
@@ -706,21 +717,11 @@ function classifyRecommendationState(args: {
   afterTaxEstateDelta: number
   conversionExecution: ConversionExecution | null
   neutralToleranceDollars: number
-  minimumRequestedConversionDollars: number
-  materialConversionShortfallDollars: number
-  materialConversionShortfallPct: number
 }): DecisionRecommendationState {
   if (args.afterTaxEstateDelta > args.neutralToleranceDollars) return 'beneficial'
-  if (args.conversionExecution) {
-    const { requestedTotal, executedTotal } = args.conversionExecution
-    const materialShortfall = Math.max(
-      args.materialConversionShortfallDollars,
-      requestedTotal * args.materialConversionShortfallPct,
-    )
-    if (requestedTotal >= args.minimumRequestedConversionDollars && requestedTotal - executedTotal > materialShortfall) {
-      return 'diagnostic'
-    }
-  }
+  // The execution test is decided once, where the execution is measured
+  // (buildConversionExecution), and published with it.
+  if (args.conversionExecution?.materialTotalShortfall === true) return 'diagnostic'
   if (args.afterTaxEstateDelta < -args.neutralToleranceDollars) return 'rejected'
   return 'neutral'
 }
@@ -775,6 +776,7 @@ export function evaluateCandidate(
 
   const conversionExecution = candidate.conversions
     ? buildConversionExecution(candidate.conversions, candidateResult, {
+        minimumRequestedConversionDollars,
         materialConversionShortfallDollars,
         materialConversionShortfallPct,
       })
@@ -852,9 +854,6 @@ export function evaluateCandidate(
             afterTaxEstateDelta: deltas.endingAfterTaxEstate,
             conversionExecution,
             neutralToleranceDollars,
-            minimumRequestedConversionDollars,
-            materialConversionShortfallDollars,
-            materialConversionShortfallPct,
           }),
   }
 }

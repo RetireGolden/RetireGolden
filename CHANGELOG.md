@@ -78,10 +78,11 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   prints the cleaned schedule's own total ($1,135,975 and $4,053,361). On those two and
   five other example plans the hero said "only $X could actually be converted" of the
   same $X, blaming a traditional balance that was there; a schedule with no material
-  shortfall, in any one year or in total, is now headed "shown as a diagnostic" and
-  names the cause the result carries (here the unpriced premium tax credit years;
-  otherwise incomplete tax years), while one short in total keeps the shortfall
-  sentence. A solve that stopped at its time limit (`rmd-irmaa` on slower machines) no
+  shortfall, in any one year or in total (which the engine now publishes as
+  `ExactLedgerValidation.executedWithoutMaterialShortfall`, so the page re-derives no
+  margin), is now headed "shown as a diagnostic" and names the cause the result
+  carries (here the unpriced premium tax credit years; otherwise incomplete tax years;
+  both when both apply), while one short in total keeps the shortfall sentence. A solve that stopped at its time limit (`rmd-irmaa` on slower machines) no
   longer reads "No beneficial conversions found … little pre-tax balance to convert":
   the page says the solver ran out of time and only the simple strategies were compared
   (the card for a current plan that still ranks highest no longer says a solver
@@ -1094,6 +1095,11 @@ has — rather than the runtime contract a consumer needs on the landing page.
     re-exported from `strategies/optimizer`), which refuses a non-finite amount with a
     RangeError. planner-ui's `scheduleConversionTotal`
     (`planner/optimizePagePromotion`) is removed.
+  - **`ExactLedgerValidation.executedWithoutMaterialShortfall`** and
+    **`ConversionExecution.materialTotalShortfall`** (`boolean`) are new required
+    fields; a hand-built validation or evaluation needs them. The recommendation states
+    are unchanged: the evaluation's diagnostic test now reads
+    `materialTotalShortfall` instead of recomputing it.
   - **`RelocationCandidateRow.lifetimeTaxesAndPenaltiesDeltaVsBaseline`** and
     **`.endingAfterTaxEstateTodayDollars`** (`number | null`) are new required fields.
   - **`ScalarComparison` and `NullableScalarComparison`** are declared in
