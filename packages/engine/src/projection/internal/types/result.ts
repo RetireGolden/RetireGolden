@@ -749,7 +749,9 @@ export interface YearResult {
 }
 
 export interface ProjectionResult {
+  /** The first projected calendar year; its inflation factor is exactly 1, so it is the year of "today's dollars". */
   startYear: number
+  /** The last projected calendar year, inclusive: the year the ending figures are in. */
   endYear: number
   years: YearResult[]
   /**
@@ -759,9 +761,9 @@ export interface ProjectionResult {
    * depletion.
    */
   depletionYear: number | null
-  /** The last year row's `investableTotal` (0 when the projection has no rows). */
+  /** The last year row's `investableTotal` (0 when the projection has no rows), nominal dollars of endYear. */
   endingInvestable: number
-  /** The last year row's `netWorth` (0 when the projection has no rows). */
+  /** The last year row's `netWorth` (0 when the projection has no rows), nominal dollars of endYear. */
   endingNetWorth: number
   /**
    * Remaining nondeductible (after-tax) traditional-IRA basis at the horizon,

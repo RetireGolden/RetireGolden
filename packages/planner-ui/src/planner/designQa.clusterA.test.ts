@@ -242,8 +242,9 @@ describe('Design-QA cluster A: source pins', () => {
   it('the Compare delta column formats every row and explains its colors (#499)', () => {
     const compare = sheet('./ComparePlansPage.tsx')
     expect(compare).toContain("unit: 'years'")
-    // Money lasts renders a bounded label when one plan never depletes.
-    expect(compare).toContain('deltaLabel: lasts.label')
+    // Money lasts renders a bounded label when one plan never depletes, from
+    // the engine's comparison (B2-P1 slice 3).
+    expect(compare).toContain('deltaLabel: lastsDeltaLabel(lasts, headline.endYear.delta)')
     expect(compare).toContain('one plan never runs out, so the gap is at least or at most that many years')
     expect(compare).toContain("unit: 'pp'")
     expect(compare).toContain('className="field-hint compare-delta-legend"')
@@ -285,7 +286,7 @@ describe('Design-QA cluster A: source pins', () => {
     expect(relocation).not.toContain('table-scroll')
     expect(relocation).toContain('<ScrollRegion label="Ranked relocation results" grow')
     expect(relocation).toContain('<ScrollRegion label={`Drivers for ${f.stateName}`} grow')
-    expect(relocation).toContain('<th scope="col" className="nowrap" style={{ textAlign: \'right\' }}>Δ vs staying</th>')
+    expect(relocation).toContain('<th scope="col" className="nowrap" style={{ textAlign: \'right\' }}>Δ vs your plan</th>')
   })
 
   it('the Strategy screen never points at a Retirement actions card that is not mounted (#518)', () => {
@@ -358,7 +359,7 @@ describe('Design-QA cluster A: source pins', () => {
     // The wait has visible text, not only an aria-label.
     expect(card).toContain('<p className="small muted">Re-simulating this plan…</p>')
     expect(rule('.insight-preview-wait', clusterA)).toMatch(/display:\s*grid/)
-    expect(card).toContain('const anyDeltaDefined = definedDollarDeltas.length > 0 || card.impact.successRateDeltaPct !== undefined')
+    expect(card).toContain('const anyDeltaDefined = definedDollarDeltas.length > 0 || previewsMonteCarlo')
     // Preview results are keyed to the plan they were computed for, so a stale
     // delta never sits beside a newer plan's depletion year.
     expect(card).toContain('const exactImpact = exactImpactFor !== null && exactImpactFor.plan === plan ? exactImpactFor.impact : null')
@@ -366,12 +367,12 @@ describe('Design-QA cluster A: source pins', () => {
     // The flat note states two facts and claims no cause; it needs at least
     // one defined dollar delta and a settled Monte Carlo line if the card has one.
     expect(card).toContain('Every delta shown is zero. The base plan runs out of money in {baseDepletionYear}.')
-    expect(card).toContain('const mcSettledFlat = card.impact.successRateDeltaPct === undefined ? true : !loadingMc && mcFlat')
+    expect(card).toContain('const mcSettledFlat = previewsMonteCarlo ? !loadingMc && mcFlat : true')
     expect(card).toContain('anyDeltaDefined && definedDollarDeltas.every((v) => v === 0) && mcSettledFlat')
     // The button is released once the exact dollar deltas land, before the
     // slower Monte Carlo pair starts.
     const release = card.indexOf('setLoadingExact(false)')
-    const mcPair = card.indexOf('await Promise.all([')
+    const mcPair = card.indexOf('await headlineMcRun(plan)')
     expect(release).toBeGreaterThan(0)
     expect(mcPair).toBeGreaterThan(release)
   })

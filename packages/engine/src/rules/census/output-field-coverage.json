@@ -3267,16 +3267,6 @@
   },
   {
     "source": "engine/src/insights/types.ts",
-    "owner": "InsightImpact",
-    "field": "successRateDeltaPct",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "Screen-time constant (spendingGuardrails sets 12) that only gates whether InsightCardView runs the Monte Carlo pair; the rendered success line is the UI-computed delta, never this value.",
-    "reasonKind": "internal-coefficient"
-  },
-  {
-    "source": "engine/src/insights/types.ts",
     "owner": "DetectorProjection",
     "field": "startYear",
     "tsType": "number",
@@ -5117,60 +5107,6 @@
   },
   {
     "source": "planner-ui/src/planner/compareDeltas.ts",
-    "owner": "deterministicSuccessPct",
-    "field": "depletionYear",
-    "tsType": "number | null",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "The deterministicSuccessPct.depletionYear field is a coordinate such as year, age, or offset used to place another value.",
-    "reasonKind": "dimension-coordinate"
-  },
-  {
-    "source": "planner-ui/src/planner/compareDeltas.ts",
-    "owner": "MoneyLastsDelta",
-    "field": "value",
-    "tsType": "number",
-    "disposition": "family",
-    "familyId": "compare-plan-deltas"
-  },
-  {
-    "source": "planner-ui/src/planner/compareDeltas.ts",
-    "owner": "moneyLastsDelta",
-    "field": "depletionYear",
-    "tsType": "number | null",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "The moneyLastsDelta.depletionYear field is a coordinate such as year, age, or offset used to place another value.",
-    "reasonKind": "dimension-coordinate"
-  },
-  {
-    "source": "planner-ui/src/planner/compareDeltas.ts",
-    "owner": "moneyLastsDelta",
-    "field": "endYear",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "The moneyLastsDelta.endYear field is a coordinate such as year, age, or offset used to place another value.",
-    "reasonKind": "dimension-coordinate"
-  },
-  {
-    "source": "planner-ui/src/planner/compareDeltas.ts",
-    "owner": "ageDelta",
-    "field": "a",
-    "tsType": "number | null",
-    "disposition": "family",
-    "familyId": "compare-plan-deltas"
-  },
-  {
-    "source": "planner-ui/src/planner/compareDeltas.ts",
-    "owner": "ageDelta",
-    "field": "b",
-    "tsType": "number | null",
-    "disposition": "family",
-    "familyId": "compare-plan-deltas"
-  },
-  {
-    "source": "planner-ui/src/planner/compareDeltas.ts",
     "owner": "module",
     "field": "value",
     "tsType": "number",
@@ -5202,16 +5138,6 @@
   {
     "source": "planner-ui/src/planner/ComparePlansPage.tsx",
     "owner": "module",
-    "field": "year",
-    "tsType": "number | null",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "The module.year field is a coordinate such as year, age, or offset used to place another value.",
-    "reasonKind": "dimension-coordinate"
-  },
-  {
-    "source": "planner-ui/src/planner/ComparePlansPage.tsx",
-    "owner": "module",
     "field": "value",
     "tsType": "number",
     "disposition": "excluded",
@@ -5225,7 +5151,8 @@
     "field": "delta",
     "tsType": "number | null",
     "disposition": "family",
-    "familyId": "compare-plan-money-deltas"
+    "familyId": "compare-plan-money-deltas",
+    "note": "The engine comparison's delta (PlanHeadlineComparison.*.delta), printed by MetricRow; the page no longer subtracts."
   },
   {
     "source": "planner-ui/src/planner/MonteCarloPage.tsx",
@@ -5364,14 +5291,6 @@
     "familyId": null,
     "reason": "The CandidateDraft.spendingDeltaPct field is an internal diagnostic used to trace or validate calculation behavior.",
     "reasonKind": "runtime-diagnostic"
-  },
-  {
-    "source": "planner-ui/src/planner/RelocationComparePage.tsx",
-    "owner": "RelocationComparePage",
-    "field": "amount",
-    "tsType": "number",
-    "disposition": "family",
-    "familyId": "relocation-tax-comparison"
   },
   {
     "source": "planner-ui/src/planner/ResultsPage.tsx",
@@ -7334,7 +7253,8 @@
     "field": "mcDelta",
     "tsType": "number",
     "disposition": "family",
-    "familyId": "insight-monte-carlo-success-delta"
+    "familyId": "insight-monte-carlo-success-delta",
+    "note": "compareMonteCarloSuccessRates(base, previewed).delta, a fraction the formatter prints in points."
   },
   {
     "source": "planner-ui/src/planner/MonteCarloPage.tsx",
@@ -7360,7 +7280,8 @@
     "field": "totalConversions",
     "tsType": "number",
     "disposition": "family",
-    "familyId": "optimizer-schedule-conversion-total"
+    "familyId": "optimizer-schedule-conversion-total",
+    "note": "conversionScheduleTotal(displayedConversions): the engine helper over the list the page displays."
   },
   {
     "source": "planner-ui/src/planner/OptimizePage.tsx",
@@ -7368,15 +7289,8 @@
     "field": "rawConversions",
     "tsType": "number",
     "disposition": "family",
-    "familyId": "optimizer-schedule-conversion-total"
-  },
-  {
-    "source": "planner-ui/src/planner/optimizePageClaim.ts",
-    "owner": "claimEstateGain",
-    "field": "return",
-    "tsType": "number",
-    "disposition": "family",
-    "familyId": "claim-age-co-optimization-estate-gain"
+    "familyId": "optimizer-schedule-conversion-total",
+    "note": "schedule.conversionTotal, the raw solve's published total."
   },
   {
     "source": "planner-ui/src/planner/SsAnalysisPage.tsx",
@@ -8634,7 +8548,7 @@
     "tsType": "number",
     "disposition": "excluded",
     "familyId": null,
-    "reason": "Last projection year of the row; RelocationComparePage.tsx uses it as the deflation anchor for the ending estate (relocation-tax-comparison).",
+    "reason": "Last projection year of the row: the year of its ending figures, at whose published inflation factor compareRelocationCandidates converts the ending estate (relocation-tax-comparison).",
     "reasonKind": "dimension-coordinate"
   },
   {
@@ -8728,7 +8642,7 @@
     "reasonKind": "sample-size-or-count-setting"
   },
   {
-    "source": "engine/src/scenarios/comparison.ts",
+    "source": "engine/src/scenarios/scalarComparison.ts",
     "owner": "ScalarComparison",
     "field": "baseline",
     "tsType": "number",
@@ -8736,7 +8650,7 @@
     "familyId": "scenario-comparison-cell"
   },
   {
-    "source": "engine/src/scenarios/comparison.ts",
+    "source": "engine/src/scenarios/scalarComparison.ts",
     "owner": "ScalarComparison",
     "field": "proposal",
     "tsType": "number",
@@ -8744,7 +8658,7 @@
     "familyId": "scenario-comparison-cell"
   },
   {
-    "source": "engine/src/scenarios/comparison.ts",
+    "source": "engine/src/scenarios/scalarComparison.ts",
     "owner": "ScalarComparison",
     "field": "delta",
     "tsType": "number",
@@ -8752,7 +8666,7 @@
     "familyId": "scenario-comparison-cell"
   },
   {
-    "source": "engine/src/scenarios/comparison.ts",
+    "source": "engine/src/scenarios/scalarComparison.ts",
     "owner": "NullableScalarComparison",
     "field": "baseline",
     "tsType": "number | null",
@@ -8760,7 +8674,7 @@
     "familyId": "scenario-comparison-cell"
   },
   {
-    "source": "engine/src/scenarios/comparison.ts",
+    "source": "engine/src/scenarios/scalarComparison.ts",
     "owner": "NullableScalarComparison",
     "field": "proposal",
     "tsType": "number | null",
@@ -8768,7 +8682,7 @@
     "familyId": "scenario-comparison-cell"
   },
   {
-    "source": "engine/src/scenarios/comparison.ts",
+    "source": "engine/src/scenarios/scalarComparison.ts",
     "owner": "NullableScalarComparison",
     "field": "delta",
     "tsType": "number | null",
@@ -10692,5 +10606,243 @@
     "familyId": null,
     "reason": "A transfer-view endpoint's outgoing debits: published transfer lines added by the chart's own node grouping and printed as \"out $Y\" (chart aggregation, decision R18).",
     "reasonKind": "view-aggregation"
+  },
+  {
+    "source": "engine/src/scenarios/planHeadlines.ts",
+    "owner": "PlanHeadlineComparison",
+    "field": "startYear",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "The start year both compared projections share, the year of the today's-dollar basis; the page names it in the basis sentence and the row labels.",
+    "reasonKind": "dimension-coordinate"
+  },
+  {
+    "source": "engine/src/scenarios/planHeadlines.ts",
+    "owner": "PlanHeadlineComparison",
+    "field": "moneyBasis",
+    "tsType": "'nominal' | 'today'",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "Which dollar basis the money rows are in (nominal or start-year dollars); the page states it on every money row and in the basis sentence.",
+    "reasonKind": "label-or-category"
+  },
+  {
+    "source": "engine/src/scenarios/planHeadlines.ts",
+    "owner": "PlanHeadlineComparison",
+    "field": "endYear",
+    "tsType": "ScalarComparison",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "Each compared plan's last projection year; the page names both in the basis sentence and uses their difference to choose \"same\" or \"both full plan\".",
+    "reasonKind": "dimension-coordinate"
+  },
+  {
+    "source": "engine/src/scenarios/planHeadlines.ts",
+    "owner": "PlanHeadlineComparison",
+    "field": "endingNetWorth",
+    "tsType": "ScalarComparison",
+    "disposition": "family",
+    "familyId": "compare-plan-money-deltas"
+  },
+  {
+    "source": "engine/src/scenarios/planHeadlines.ts",
+    "owner": "PlanHeadlineComparison",
+    "field": "endingInvestable",
+    "tsType": "ScalarComparison",
+    "disposition": "family",
+    "familyId": "compare-plan-money-deltas"
+  },
+  {
+    "source": "engine/src/scenarios/planHeadlines.ts",
+    "owner": "PlanHeadlineComparison",
+    "field": "endingAfterTaxEstate",
+    "tsType": "ScalarComparison",
+    "disposition": "family",
+    "familyId": "compare-plan-money-deltas"
+  },
+  {
+    "source": "engine/src/scenarios/planHeadlines.ts",
+    "owner": "PlanHeadlineComparison",
+    "field": "lifetimeTaxesAndPenalties",
+    "tsType": "ScalarComparison",
+    "disposition": "family",
+    "familyId": "compare-plan-money-deltas"
+  },
+  {
+    "source": "engine/src/scenarios/planHeadlines.ts",
+    "owner": "PlanHeadlineComparison",
+    "field": "moneyLasts",
+    "tsType": "MoneyLastsComparison",
+    "disposition": "family",
+    "familyId": "compare-plan-deltas"
+  },
+  {
+    "source": "engine/src/scenarios/planHeadlines.ts",
+    "owner": "PlanHeadlineComparison",
+    "field": "deterministicSuccessPct",
+    "tsType": "ScalarComparison",
+    "disposition": "family",
+    "familyId": "compare-plan-deltas"
+  },
+  {
+    "source": "engine/src/scenarios/planHeadlines.ts",
+    "owner": "PlanHeadlineComparison",
+    "field": "depletionAgePrimary",
+    "tsType": "NullableScalarComparison",
+    "disposition": "family",
+    "familyId": "compare-plan-deltas"
+  },
+  {
+    "source": "engine/src/projection/moneyLasts.ts",
+    "owner": "MoneyLastsComparison",
+    "field": "delta",
+    "tsType": "number | null",
+    "disposition": "family",
+    "familyId": "compare-plan-deltas"
+  },
+  {
+    "source": "engine/src/projection/moneyLasts.ts",
+    "owner": "MoneyLastsComparison",
+    "field": "bound",
+    "tsType": "'atLeast' | 'atMost' | 'bothFull' | null",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "Which plans run their full horizon (a lower bound, an upper bound, both, or neither); the page prints it as ≥, ≤, \"same\" or \"both full plan\".",
+    "reasonKind": "label-or-category"
+  },
+  {
+    "source": "engine/src/projection/relocation.ts",
+    "owner": "RelocationCandidateRow",
+    "field": "lifetimeTaxesAndPenaltiesDeltaVsBaseline",
+    "tsType": "number | null",
+    "disposition": "family",
+    "familyId": "relocation-tax-comparison"
+  },
+  {
+    "source": "engine/src/projection/relocation.ts",
+    "owner": "RelocationCandidateRow",
+    "field": "endingAfterTaxEstateTodayDollars",
+    "tsType": "number | null",
+    "disposition": "family",
+    "familyId": "relocation-tax-comparison"
+  },
+  {
+    "source": "engine/src/projection/optimizePlan.ts",
+    "owner": "ClaimAgeCoOptimization",
+    "field": "claimChangeEstateGain",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "claim-age-co-optimization-estate-gain"
+  },
+  {
+    "source": "engine/src/projection/optimizePlan.ts",
+    "owner": "ClaimAgeCoOptimization",
+    "field": "estateYear",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "The plan's last projection year, whose nominal dollars the three claim estates are in; the claim card and the report row name it.",
+    "reasonKind": "dimension-coordinate"
+  },
+  {
+    "source": "engine/src/projection/optimizePlan.ts",
+    "owner": "ExactLedgerTournament",
+    "field": "winnerConversionTotal",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "optimizer-schedule-conversion-total"
+  },
+  {
+    "source": "planner-ui/src/report/reportModel.ts",
+    "owner": "ReportClaimAgeEvidence",
+    "field": "claimChangeEstateGain",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "claim-age-co-optimization-estate-gain"
+  },
+  {
+    "source": "planner-ui/src/report/reportModel.ts",
+    "owner": "ReportClaimAgeEvidence",
+    "field": "estateYear",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "The year whose nominal dollars the report's claim estates are in, printed in the \"Claim-change estate gain (YEAR dollars)\" label.",
+    "reasonKind": "dimension-coordinate"
+  },
+  {
+    "source": "engine/src/strategies/optimizer.ts",
+    "owner": "OptimizedSchedule",
+    "field": "conversionTotal",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "optimizer-schedule-conversion-total"
+  },
+  {
+    "source": "engine/src/strategies/optimizer.ts",
+    "owner": "OptimizedSchedule",
+    "field": "endingAfterTax",
+    "tsType": "number",
+    "disposition": "unsurfaced-evidence",
+    "familyId": null,
+    "reason": "The solver's linearised objective (ending after-tax wealth in today's dollars) for the raw schedule; no planner surface prints it, because the page's estate figures come from re-running the full projection.",
+    "reasonKind": "runtime-diagnostic"
+  },
+  {
+    "source": "engine/src/strategies/optimizer.ts",
+    "owner": "OptimizedSchedule",
+    "field": "lifetimeTax",
+    "tsType": "number",
+    "disposition": "unsurfaced-evidence",
+    "familyId": null,
+    "reason": "The solver's own modeled lifetime tax for the raw schedule; no planner surface prints it, because the page's tax figures come from re-running the full projection.",
+    "reasonKind": "runtime-diagnostic"
+  },
+  {
+    "source": "engine/src/strategies/optimizer.ts",
+    "owner": "OptimizedSchedule",
+    "field": "solveMs",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "Wall-clock time of the solve, printed as \"solved in N ms\" under the Optimize page's chart.",
+    "reasonKind": "runtime-diagnostic"
+  },
+  {
+    "source": "engine/src/strategies/optimizer.ts",
+    "owner": "OptimizedSchedule",
+    "field": "year",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "Calendar year of each schedule row and each conversion entry.",
+    "reasonKind": "dimension-coordinate"
+  },
+  {
+    "source": "engine/src/strategies/optimizer.ts",
+    "owner": "OptimizedSchedule",
+    "field": "amount",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "optimizer-recommended-conversion-annual"
+  },
+  {
+    "source": "engine/src/insights/types.ts",
+    "owner": "Detector",
+    "field": "previewsMonteCarlo",
+    "tsType": "true",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "Whether the planner's preview of the detector's card also runs the Monte Carlo pair; a property of the detector, not of the card.",
+    "reasonKind": "boolean-flag"
+  },
+  {
+    "source": "engine/src/decisions/stochastic.ts",
+    "owner": "compareMonteCarloSuccessRates",
+    "field": "delta",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "insight-monte-carlo-success-delta"
   }
 ]

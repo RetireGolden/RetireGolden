@@ -1136,14 +1136,6 @@
     "reason": "The InsightEvidence.year field is a coordinate such as year, age, or offset used to place another value."
   },
   {
-    "id": "field-engine-src-insights-types-ts-insightimpact-successratedeltapct",
-    "path": "engine/src/insights/types.ts",
-    "symbol": "InsightImpact",
-    "field": "successRateDeltaPct",
-    "reasonKind": "internal-coefficient",
-    "reason": "Screen-time constant (spendingGuardrails sets 12) that only gates whether InsightCardView runs the Monte Carlo pair; the rendered success line is the UI-computed delta, never this value."
-  },
-  {
     "id": "field-engine-src-insights-types-ts-detectorprojection-startyear",
     "path": "engine/src/insights/types.ts",
     "symbol": "DetectorProjection",
@@ -2056,30 +2048,6 @@
     "reason": "The BucketPreset.spans field is an internal diagnostic used to trace or validate calculation behavior."
   },
   {
-    "id": "field-planner-ui-src-planner-comparedeltas-ts-deterministicsuccesspct-depletionyear",
-    "path": "planner-ui/src/planner/compareDeltas.ts",
-    "symbol": "deterministicSuccessPct",
-    "field": "depletionYear",
-    "reasonKind": "dimension-coordinate",
-    "reason": "The deterministicSuccessPct.depletionYear field is a coordinate such as year, age, or offset used to place another value."
-  },
-  {
-    "id": "field-planner-ui-src-planner-comparedeltas-ts-moneylastsdelta-depletionyear",
-    "path": "planner-ui/src/planner/compareDeltas.ts",
-    "symbol": "moneyLastsDelta",
-    "field": "depletionYear",
-    "reasonKind": "dimension-coordinate",
-    "reason": "The moneyLastsDelta.depletionYear field is a coordinate such as year, age, or offset used to place another value."
-  },
-  {
-    "id": "field-planner-ui-src-planner-comparedeltas-ts-moneylastsdelta-endyear",
-    "path": "planner-ui/src/planner/compareDeltas.ts",
-    "symbol": "moneyLastsDelta",
-    "field": "endYear",
-    "reasonKind": "dimension-coordinate",
-    "reason": "The moneyLastsDelta.endYear field is a coordinate such as year, age, or offset used to place another value."
-  },
-  {
     "id": "field-planner-ui-src-planner-comparedeltas-ts-module-value",
     "path": "planner-ui/src/planner/compareDeltas.ts",
     "symbol": "module",
@@ -2102,14 +2070,6 @@
     "field": "endYear",
     "reasonKind": "dimension-coordinate",
     "reason": "The module.endYear field is a coordinate such as year, age, or offset used to place another value."
-  },
-  {
-    "id": "field-planner-ui-src-planner-compareplanspage-tsx-module-year",
-    "path": "planner-ui/src/planner/ComparePlansPage.tsx",
-    "symbol": "module",
-    "field": "year",
-    "reasonKind": "dimension-coordinate",
-    "reason": "The module.year field is a coordinate such as year, age, or offset used to place another value."
   },
   {
     "id": "field-planner-ui-src-planner-compareplanspage-tsx-module-value",
@@ -3471,7 +3431,7 @@
     "symbol": "RelocationCandidateRow",
     "field": "endYear",
     "reasonKind": "dimension-coordinate",
-    "reason": "Last projection year of the row; RelocationComparePage.tsx uses it as the deflation anchor for the ending estate (relocation-tax-comparison)."
+    "reason": "Last projection year of the row: the year of its ending figures, at whose published inflation factor compareRelocationCandidates converts the ending estate (relocation-tax-comparison)."
   },
   {
     "id": "field-engine-src-projection-relocation-ts-relocationcandidaterow-statetaxbyyear-year",
@@ -3880,5 +3840,77 @@
     "field": "totalOutPlanDollars",
     "reasonKind": "view-aggregation",
     "reason": "A transfer-view endpoint's outgoing debits: published transfer lines added by the chart's own node grouping and printed as \"out $Y\" (chart aggregation, decision R18)."
+  },
+  {
+    "id": "field-engine-src-scenarios-planheadlines-ts-planheadlinecomparison-startyear",
+    "path": "engine/src/scenarios/planHeadlines.ts",
+    "symbol": "PlanHeadlineComparison",
+    "field": "startYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The start year both compared projections share, the year of the today's-dollar basis; the page names it in the basis sentence and the row labels."
+  },
+  {
+    "id": "field-engine-src-scenarios-planheadlines-ts-planheadlinecomparison-moneybasis",
+    "path": "engine/src/scenarios/planHeadlines.ts",
+    "symbol": "PlanHeadlineComparison",
+    "field": "moneyBasis",
+    "reasonKind": "label-or-category",
+    "reason": "Which dollar basis the money rows are in (nominal or start-year dollars); the page states it on every money row and in the basis sentence."
+  },
+  {
+    "id": "field-engine-src-scenarios-planheadlines-ts-planheadlinecomparison-endyear",
+    "path": "engine/src/scenarios/planHeadlines.ts",
+    "symbol": "PlanHeadlineComparison",
+    "field": "endYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "Each compared plan's last projection year; the page names both in the basis sentence and uses their difference to choose \"same\" or \"both full plan\"."
+  },
+  {
+    "id": "field-engine-src-projection-moneylasts-ts-moneylastscomparison-bound",
+    "path": "engine/src/projection/moneyLasts.ts",
+    "symbol": "MoneyLastsComparison",
+    "field": "bound",
+    "reasonKind": "label-or-category",
+    "reason": "Which plans run their full horizon (a lower bound, an upper bound, both, or neither); the page prints it as ≥, ≤, \"same\" or \"both full plan\"."
+  },
+  {
+    "id": "field-engine-src-projection-optimizeplan-ts-claimagecooptimization-estateyear",
+    "path": "engine/src/projection/optimizePlan.ts",
+    "symbol": "ClaimAgeCoOptimization",
+    "field": "estateYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The plan's last projection year, whose nominal dollars the three claim estates are in; the claim card and the report row name it."
+  },
+  {
+    "id": "field-planner-ui-src-report-reportmodel-ts-reportclaimageevidence-estateyear",
+    "path": "planner-ui/src/report/reportModel.ts",
+    "symbol": "ReportClaimAgeEvidence",
+    "field": "estateYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The year whose nominal dollars the report's claim estates are in, printed in the \"Claim-change estate gain (YEAR dollars)\" label."
+  },
+  {
+    "id": "field-engine-src-strategies-optimizer-ts-optimizedschedule-solvems",
+    "path": "engine/src/strategies/optimizer.ts",
+    "symbol": "OptimizedSchedule",
+    "field": "solveMs",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "Wall-clock time of the solve, printed as \"solved in N ms\" under the Optimize page's chart."
+  },
+  {
+    "id": "field-engine-src-strategies-optimizer-ts-optimizedschedule-year",
+    "path": "engine/src/strategies/optimizer.ts",
+    "symbol": "OptimizedSchedule",
+    "field": "year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "Calendar year of each schedule row and each conversion entry."
+  },
+  {
+    "id": "field-engine-src-insights-types-ts-detector-previewsmontecarlo",
+    "path": "engine/src/insights/types.ts",
+    "symbol": "Detector",
+    "field": "previewsMonteCarlo",
+    "reasonKind": "boolean-flag",
+    "reason": "Whether the planner's preview of the detector's card also runs the Monte Carlo pair; a property of the detector, not of the card."
   }
 ]

@@ -324,7 +324,7 @@ function recommendationSection(evidence: ReportRecommendationEvidence | null): s
       summaryRows.push(
         ['Joint (claim + conversions) after-tax estate', fmtMoney(claim.jointExactEstate)],
         ['Best current-claim after-tax estate', fmtMoney(claim.currentClaimExactEstate)],
-        ['Claim-change estate gain', fmtSignedMoney(claim.jointExactEstate - claim.currentClaimExactEstate)],
+        [`Claim-change estate gain (${claim.estateYear} dollars)`, fmtSignedMoney(claim.claimChangeEstateGain)],
       )
     }
   }
@@ -631,6 +631,8 @@ export function reportEvidenceFromOptimizeResult(result: OptimizeResult): Report
           winningClaimLabel: result.claimAge.winningClaimLabel,
           jointExactEstate: result.claimAge.jointExactEstate,
           currentClaimExactEstate: result.claimAge.currentClaimExactEstate,
+          claimChangeEstateGain: result.claimAge.claimChangeEstateGain,
+          estateYear: result.claimAge.estateYear,
         }
       : null,
   }

@@ -26,7 +26,9 @@ import {
 } from '../params/state/index.js'
 import { combineTaxCalculators, createFederalTaxCalculator } from '../tax/federalTax.js'
 import { createStateTaxCalculator } from '../tax/stateTax.js'
+import { compareScalars } from '../scenarios/scalarComparison.js'
 import { summarizeProjection } from './compare.js'
+import { projectionDollarBasis, toTodayDollars } from './dollarBasis.js'
 import { simulatePlan } from './simulate.js'
 import {
   normalizeTaxComputation,
@@ -162,11 +164,30 @@ export interface RelocationCandidateRow {
   destinationState: string
   /** False when any residence state in the row has no modeled pack (tax treated as $0) or a flat override priced it. */
   modeled: boolean
+  /** Lifetime state and local income tax the row's ledger charged, nominal dollars summed over its years. */
   lifetimeStateLocalTax: number
+  /** The row's ProjectionSummary.lifetimeTaxesAndPenalties: each year's tax plus penalties, nominal dollars summed. */
   lifetimeTaxesAndPenalties: number
+  /**
+   * lifetimeTaxesAndPenalties minus the baseline row's (proposal minus baseline,
+   * scenarios/scalarComparison.ts#compareScalars), in nominal dollars; every row
+   * covers the same years, since a candidate changes only where the household
+   * lives. Null on the baseline row and on a row with an error.
+   */
+  lifetimeTaxesAndPenaltiesDeltaVsBaseline: number | null
+  /** The row's ProjectionSummary.endingAfterTaxEstate, nominal dollars of endYear. */
   endingAfterTaxEstate: number
+  /**
+   * endingAfterTaxEstate in the comparison's start-year dollars: divided by this
+   * row's own published inflation factor at endYear (dollarBasis.ts,
+   * projectionDollarBasis). Null on a row with an error and on a projection
+   * with no years.
+   */
+  endingAfterTaxEstateTodayDollars: number | null
+  /** The row's ProjectionSummary.endingNetWorth, nominal dollars of endYear. */
   endingNetWorth: number
   depletionYear: number | null
+  /** The row's last projection year (the year of its ending figures). */
   endYear: number
   /** Monte Carlo success on shared market paths; null when the sweep ran deterministic-only. */
   successRate: number | null
@@ -422,7 +443,9 @@ function runRow(
           modeled: false,
           lifetimeStateLocalTax: 0,
           lifetimeTaxesAndPenalties: 0,
+          lifetimeTaxesAndPenaltiesDeltaVsBaseline: null,
           endingAfterTaxEstate: 0,
+          endingAfterTaxEstateTodayDollars: null,
           endingNetWorth: 0,
           depletionYear: null,
           endYear: endYearFallback,
@@ -533,7 +556,13 @@ function runRow(
       modeled: allModeled && !overrideActive && !anyIncompleteTax,
       lifetimeStateLocalTax: drivers.totalStateLocalTax,
       lifetimeTaxesAndPenalties: summary.lifetimeTaxesAndPenalties,
+      // Filled by compareRelocationCandidates once the baseline row exists.
+      lifetimeTaxesAndPenaltiesDeltaVsBaseline: null,
       endingAfterTaxEstate: summary.endingAfterTaxEstate,
+      endingAfterTaxEstateTodayDollars:
+        result.years.length === 0
+          ? null
+          : toTodayDollars(projectionDollarBasis(result), result.endYear, summary.endingAfterTaxEstate),
       endingNetWorth: summary.endingNetWorth,
       depletionYear: result.depletionYear,
       endYear: result.endYear,
@@ -570,6 +599,19 @@ export function compareRelocationCandidates(
       runRow(`candidate-${i}`, candidateLabel(candidate), candidate, plan, opts.startYear),
     ),
   ]
+
+  // Proposal minus baseline, one convention (scenarios/scalarComparison.ts):
+  // every candidate row that ran against the baseline row, which runs first.
+  // The baseline row has no patch to reject, so runRow never marks it failed
+  // (a simulation failure throws out of this function instead).
+  const baselineRow = runs[0]!.row
+  for (const { row } of runs) {
+    if (row === baselineRow || row.error !== null) continue
+    row.lifetimeTaxesAndPenaltiesDeltaVsBaseline = compareScalars(
+      baselineRow.lifetimeTaxesAndPenalties,
+      row.lifetimeTaxesAndPenalties,
+    ).delta
+  }
 
   const mc = opts.monteCarlo ?? null
   if (mc) {

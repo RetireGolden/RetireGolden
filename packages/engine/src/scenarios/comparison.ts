@@ -27,21 +27,16 @@ import {
   compareScenarioActionRows,
   type ScenarioActionComparisonRow,
 } from './actionRows.js'
+import { compareMoneyLasts, type MoneyLastsComparison } from '../projection/moneyLasts.js'
 import { scenarioPlanSnapshotHash } from './patch.js'
+import {
+  compareNullableScalars,
+  compareScalars,
+  type NullableScalarComparison,
+  type ScalarComparison,
+} from './scalarComparison.js'
 
-export interface ScalarComparison {
-  baseline: number
-  proposal: number
-  /** Proposal minus baseline. */
-  delta: number
-}
-
-export interface NullableScalarComparison {
-  baseline: number | null
-  proposal: number | null
-  /** Null when either side has no comparable value. */
-  delta: number | null
-}
+export type { NullableScalarComparison, ScalarComparison } from './scalarComparison.js'
 
 export interface ComparisonMoneyBasis {
   deterministic: 'nominal'
@@ -90,6 +85,13 @@ export interface ScenarioHeadlineComparison {
   depletionYear: NullableScalarComparison
   /** Explicit simulation horizon; do not interpret a shorter horizon as earlier depletion. */
   projectionEndYear: ScalarComparison
+  /**
+   * How long the money lasts on each side, in the one convention every surface
+   * uses (projection/moneyLasts.ts#compareMoneyLasts: last fully funded years, bounded
+   * when one side runs its full horizon, no number when both do). Optional
+   * because comparisons stored before B2-P1 slice 3 do not carry it.
+   */
+  moneyLasts?: MoneyLastsComparison
 }
 
 export interface ScenarioSpendingComparison {
@@ -353,23 +355,6 @@ function safeNumber(value: number): number {
   return Object.is(value, -0) ? 0 : value
 }
 
-function scalar(baseline: number, proposal: number): ScalarComparison {
-  const left = safeNumber(baseline)
-  const right = safeNumber(proposal)
-  return { baseline: left, proposal: right, delta: safeNumber(right - left) }
-}
-
-function nullableScalar(baseline: number | null, proposal: number | null): NullableScalarComparison {
-  if (baseline === null || proposal === null) {
-    return {
-      baseline: baseline === null ? null : safeNumber(baseline),
-      proposal: proposal === null ? null : safeNumber(proposal),
-      delta: null,
-    }
-  }
-  return scalar(baseline, proposal)
-}
-
 /**
  * Compare two independently solved capacity results without moving dollar
  * arithmetic into a UI. A result from before the unpriced-ACA fields existed
@@ -380,9 +365,9 @@ export function compareScenarioSpendingCapacityResults(
   proposal: ScenarioSpendingCapacityResult,
 ): ScenarioSpendingCapacityComparison {
   return {
-    maxBaseAnnual: nullableScalar(baseline.maxBaseAnnual, proposal.maxBaseAnnual),
-    spendingSlack: nullableScalar(baseline.spendingSlackDollars, proposal.spendingSlackDollars),
-    feasibleBaseAnnual: nullableScalar(baseline.feasibleBaseAnnual ?? null, proposal.feasibleBaseAnnual ?? null),
+    maxBaseAnnual: compareNullableScalars(baseline.maxBaseAnnual, proposal.maxBaseAnnual),
+    spendingSlack: compareNullableScalars(baseline.spendingSlackDollars, proposal.spendingSlackDollars),
+    feasibleBaseAnnual: compareNullableScalars(baseline.feasibleBaseAnnual ?? null, proposal.feasibleBaseAnnual ?? null),
     baselineMaxBaseAnnualRounding: baseline.maxBaseAnnualRounding ?? null,
     proposalMaxBaseAnnualRounding: proposal.maxBaseAnnualRounding ?? null,
     baselineSustainsCurrentBase: baseline.sustainsCurrentBase ?? null,
@@ -455,7 +440,7 @@ function endingByCategory(plan: Plan, result: ProjectionResult) {
 
 function compareRecord<T extends Record<string, number>>(baseline: T, proposal: T): { [K in keyof T]: ScalarComparison } {
   return Object.fromEntries(
-    Object.keys(baseline).map((key) => [key, scalar(baseline[key]!, proposal[key]!)]),
+    Object.keys(baseline).map((key) => [key, compareScalars(baseline[key]!, proposal[key]!)]),
   ) as { [K in keyof T]: ScalarComparison }
 }
 
@@ -505,7 +490,7 @@ function annualComparison(baseline: ProjectionResult, proposal: ProjectionResult
     const left = baselineByYear.get(year)
     const right = proposalByYear.get(year)
     const values = Object.fromEntries(
-      ANNUAL_VALUE_KEYS.map((key) => [key, nullableScalar(left?.[key] ?? null, right?.[key] ?? null)]),
+      ANNUAL_VALUE_KEYS.map((key) => [key, compareNullableScalars(left?.[key] ?? null, right?.[key] ?? null)]),
     ) as AnnualComparisonValue
     return { year, values }
   })
@@ -547,52 +532,52 @@ function riskComparison(
       stochasticLongevity: options.stochasticLongevity ?? false,
       ltcShock: options.ltcShock ? structuredClone(options.ltcShock) : null,
     },
-    successRate: scalar(baseline.successRate, proposal.successRate),
-    requiredFloorSuccessRate: scalar(baseline.requiredFloorSuccessRate, proposal.requiredFloorSuccessRate),
-    targetLifestyleSuccessRate: scalar(baseline.targetLifestyleSuccessRate, proposal.targetLifestyleSuccessRate),
-    targetAttainmentP50: scalar(baseline.targetAttainmentPct.p50, proposal.targetAttainmentPct.p50),
-    expectedShortfallDollars: scalar(
+    successRate: compareScalars(baseline.successRate, proposal.successRate),
+    requiredFloorSuccessRate: compareScalars(baseline.requiredFloorSuccessRate, proposal.requiredFloorSuccessRate),
+    targetLifestyleSuccessRate: compareScalars(baseline.targetLifestyleSuccessRate, proposal.targetLifestyleSuccessRate),
+    targetAttainmentP50: compareScalars(baseline.targetAttainmentPct.p50, proposal.targetAttainmentPct.p50),
+    expectedShortfallDollars: compareScalars(
       baseline.downsideRisk.expectedShortfallDollars,
       proposal.downsideRisk.expectedShortfallDollars,
     ),
-    expectedRequiredShortfallDollars: scalar(
+    expectedRequiredShortfallDollars: compareScalars(
       baseline.downsideRisk.expectedRequiredShortfallDollars,
       proposal.downsideRisk.expectedRequiredShortfallDollars,
     ),
-    expectedTargetShortfallDollars: scalar(
+    expectedTargetShortfallDollars: compareScalars(
       baseline.downsideRisk.expectedTargetShortfallDollars,
       proposal.downsideRisk.expectedTargetShortfallDollars,
     ),
-    averageTotalShortfallDollars: scalar(
+    averageTotalShortfallDollars: compareScalars(
       baseline.spendingShortfall.averageTotalShortfallDollars,
       proposal.spendingShortfall.averageTotalShortfallDollars,
     ),
-    averageRequiredShortfallDollars: scalar(
+    averageRequiredShortfallDollars: compareScalars(
       baseline.spendingShortfall.averageRequiredShortfallDollars,
       proposal.spendingShortfall.averageRequiredShortfallDollars,
     ),
-    averageTargetShortfallDollars: scalar(
+    averageTargetShortfallDollars: compareScalars(
       baseline.spendingShortfall.averageTargetShortfallDollars,
       proposal.spendingShortfall.averageTargetShortfallDollars,
     ),
-    probabilityOfAdjustment: scalar(baseline.adjustments.pathsWithCut, proposal.adjustments.pathsWithCut),
-    medianMaxCutDepth: scalar(baseline.adjustments.medianMaxCutDepth, proposal.adjustments.medianMaxCutDepth),
-    p90MaxCutDepth: scalar(baseline.adjustments.p90MaxCutDepth, proposal.adjustments.p90MaxCutDepth),
-    estateP10: scalar(
+    probabilityOfAdjustment: compareScalars(baseline.adjustments.pathsWithCut, proposal.adjustments.pathsWithCut),
+    medianMaxCutDepth: compareScalars(baseline.adjustments.medianMaxCutDepth, proposal.adjustments.medianMaxCutDepth),
+    p90MaxCutDepth: compareScalars(baseline.adjustments.p90MaxCutDepth, proposal.adjustments.p90MaxCutDepth),
+    estateP10: compareScalars(
       baseline.endingAfterTaxEstate.percentiles.p10,
       proposal.endingAfterTaxEstate.percentiles.p10,
     ),
-    estateP50: scalar(
+    estateP50: compareScalars(
       baseline.endingAfterTaxEstate.percentiles.p50,
       proposal.endingAfterTaxEstate.percentiles.p50,
     ),
-    estateP90: scalar(
+    estateP90: compareScalars(
       baseline.endingAfterTaxEstate.percentiles.p90,
       proposal.endingAfterTaxEstate.percentiles.p90,
     ),
     depletionProbabilityByYear: years.map((year) => ({
       year,
-      cumulativeProbability: scalar(cumulativeAt(baseline, year), cumulativeAt(proposal, year)),
+      cumulativeProbability: compareScalars(cumulativeAt(baseline, year), cumulativeAt(proposal, year)),
     })),
   }
 }
@@ -629,7 +614,7 @@ export function compareScenarioPlans(
   const proposalWithdrawals = aggregateWithdrawals(proposalResult.years)
   const withdrawals: ScenarioWithdrawalComparison = {
     ...compareRecord(baselineWithdrawals, proposalWithdrawals),
-    inherited: scalar(
+    inherited: compareScalars(
       sumAnnualValue(annual, 'inheritedDistribution', 'baseline'),
       sumAnnualValue(annual, 'inheritedDistribution', 'proposal'),
     ),
@@ -638,31 +623,31 @@ export function compareScenarioPlans(
   const proposalEndingByCategory = endingByCategory(proposalPlan, proposalResult)
 
   const spending = {
-    intended: scalar(
+    intended: compareScalars(
       sum(baselineResult.years, (y) => y.expenses.intendedSpending),
       sum(proposalResult.years, (y) => y.expenses.intendedSpending),
     ),
-    funded: scalar(
+    funded: compareScalars(
       sum(baselineResult.years, (y) => y.expenses.total),
       sum(proposalResult.years, (y) => y.expenses.total),
     ),
-    totalShortfall: scalar(
+    totalShortfall: compareScalars(
       sum(baselineResult.years, (y) => y.shortfall),
       sum(proposalResult.years, (y) => y.shortfall),
     ),
-    requiredShortfall: scalar(
+    requiredShortfall: compareScalars(
       sum(baselineResult.years, (y) => y.requiredShortfall),
       sum(proposalResult.years, (y) => y.requiredShortfall),
     ),
-    targetShortfall: scalar(
+    targetShortfall: compareScalars(
       sum(baselineResult.years, (y) => y.targetShortfall),
       sum(proposalResult.years, (y) => y.targetShortfall),
     ),
-    idealShortfall: scalar(
+    idealShortfall: compareScalars(
       sum(baselineResult.years, (y) => y.idealShortfall),
       sum(proposalResult.years, (y) => y.idealShortfall),
     ),
-    excessShortfall: scalar(
+    excessShortfall: compareScalars(
       sum(baselineResult.years, (y) => y.excessShortfall),
       sum(proposalResult.years, (y) => y.excessShortfall),
     ),
@@ -726,78 +711,79 @@ export function compareScenarioPlans(
       proposalSnapshotHash: scenarioPlanSnapshotHash(proposalPlan),
     },
     headline: {
-      endingInvestable: scalar(baselineSummary.endingInvestable, proposalSummary.endingInvestable),
-      endingNetWorth: scalar(baselineSummary.endingNetWorth, proposalSummary.endingNetWorth),
-      endingAfterTaxEstate: scalar(baselineSummary.endingAfterTaxEstate, proposalSummary.endingAfterTaxEstate),
-      lifetimeTax: scalar(
+      endingInvestable: compareScalars(baselineSummary.endingInvestable, proposalSummary.endingInvestable),
+      endingNetWorth: compareScalars(baselineSummary.endingNetWorth, proposalSummary.endingNetWorth),
+      endingAfterTaxEstate: compareScalars(baselineSummary.endingAfterTaxEstate, proposalSummary.endingAfterTaxEstate),
+      lifetimeTax: compareScalars(
         sum(baselineResult.years, (y) => y.tax),
         sum(proposalResult.years, (y) => y.tax),
       ),
-      lifetimePenalties: scalar(
+      lifetimePenalties: compareScalars(
         sum(baselineResult.years, (y) => y.penalties),
         sum(proposalResult.years, (y) => y.penalties),
       ),
-      lifetimeTaxesAndPenalties: scalar(
+      lifetimeTaxesAndPenalties: compareScalars(
         baselineSummary.lifetimeTaxesAndPenalties,
         proposalSummary.lifetimeTaxesAndPenalties,
       ),
-      depletionYear: nullableScalar(baselineResult.depletionYear, proposalResult.depletionYear),
-      projectionEndYear: scalar(baselineResult.endYear, proposalResult.endYear),
+      depletionYear: compareNullableScalars(baselineResult.depletionYear, proposalResult.depletionYear),
+      projectionEndYear: compareScalars(baselineResult.endYear, proposalResult.endYear),
+      moneyLasts: compareMoneyLasts(baselineResult, proposalResult),
     },
     spending,
     income: compareRecord(baselineIncome, proposalIncome),
     withdrawals,
     irmaa: {
-      surcharge: scalar(
+      surcharge: compareScalars(
         sum(baselineResult.years, (y) => y.irmaaSurcharge),
         sum(proposalResult.years, (y) => y.irmaaSurcharge),
       ),
-      totalMedicarePremiums: scalar(
+      totalMedicarePremiums: compareScalars(
         sum(baselineResult.years, (y) => y.medicarePremiums),
         sum(proposalResult.years, (y) => y.medicarePremiums),
       ),
-      surchargeTierYears: scalar(
+      surchargeTierYears: compareScalars(
         baselineResult.years.filter((y) => y.irmaaTier > 0).length,
         proposalResult.years.filter((y) => y.irmaaTier > 0).length,
       ),
-      maxTier: scalar(
+      maxTier: compareScalars(
         Math.max(0, ...baselineResult.years.map((y) => y.irmaaTier)),
         Math.max(0, ...proposalResult.years.map((y) => y.irmaaTier)),
       ),
     },
     aca: {
-      grossEnrollmentPremium: scalar(
+      grossEnrollmentPremium: compareScalars(
         sum(baselineResult.years, (y) => y.aca?.grossEnrollmentPremium ?? 0),
         sum(proposalResult.years, (y) => y.aca?.grossEnrollmentPremium ?? 0),
       ),
-      modeledAllowablePtc: scalar(
+      modeledAllowablePtc: compareScalars(
         sum(baselineResult.years, (y) => y.aca?.modeledAllowablePtc ?? 0),
         sum(proposalResult.years, (y) => y.aca?.modeledAllowablePtc ?? 0),
       ),
-      economicNetPremium: scalar(
+      economicNetPremium: compareScalars(
         sum(baselineResult.years, (y) => y.aca?.economicNetPremium ?? 0),
         sum(proposalResult.years, (y) => y.aca?.economicNetPremium ?? 0),
       ),
-      actionableYears: scalar(
+      actionableYears: compareScalars(
         baselineResult.years.filter((y) => y.aca?.readiness === 'actionable').length,
         proposalResult.years.filter((y) => y.aca?.readiness === 'actionable').length,
       ),
-      nonActionableYears: scalar(
+      nonActionableYears: compareScalars(
         baselineResult.years.filter((y) => y.aca?.readiness === 'nonActionable').length,
         proposalResult.years.filter((y) => y.aca?.readiness === 'nonActionable').length,
       ),
     },
     estate: {
-      grossNetWorth: scalar(baselineSummary.endingNetWorth, proposalSummary.endingNetWorth),
-      afterTaxEstate: scalar(baselineSummary.endingAfterTaxEstate, proposalSummary.endingAfterTaxEstate),
-      heirTax: scalar(baselineSummary.endingEstateHeirTax, proposalSummary.endingEstateHeirTax),
-      charity: scalar(baselineSummary.endingEstateToCharity, proposalSummary.endingEstateToCharity),
+      grossNetWorth: compareScalars(baselineSummary.endingNetWorth, proposalSummary.endingNetWorth),
+      afterTaxEstate: compareScalars(baselineSummary.endingAfterTaxEstate, proposalSummary.endingAfterTaxEstate),
+      heirTax: compareScalars(baselineSummary.endingEstateHeirTax, proposalSummary.endingEstateHeirTax),
+      charity: compareScalars(baselineSummary.endingEstateToCharity, proposalSummary.endingEstateToCharity),
       byCategory: {
-        cash: scalar(baselineEndingByCategory.cash, proposalEndingByCategory.cash),
-        taxable: scalar(baselineEndingByCategory.taxable, proposalEndingByCategory.taxable),
-        traditional: scalar(baselineEndingByCategory.traditional, proposalEndingByCategory.traditional),
-        roth: scalar(baselineEndingByCategory.roth, proposalEndingByCategory.roth),
-        hsa: scalar(baselineEndingByCategory.hsa, proposalEndingByCategory.hsa),
+        cash: compareScalars(baselineEndingByCategory.cash, proposalEndingByCategory.cash),
+        taxable: compareScalars(baselineEndingByCategory.taxable, proposalEndingByCategory.taxable),
+        traditional: compareScalars(baselineEndingByCategory.traditional, proposalEndingByCategory.traditional),
+        roth: compareScalars(baselineEndingByCategory.roth, proposalEndingByCategory.roth),
+        hsa: compareScalars(baselineEndingByCategory.hsa, proposalEndingByCategory.hsa),
       },
     },
     annual,

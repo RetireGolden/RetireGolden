@@ -747,7 +747,7 @@
       },
       {
         "surface": "compare-page",
-        "selector": "Lifetime tax row"
+        "selector": "Lifetime tax row levels, in today's (start-year) dollars when the two plans end in different years (PlanHeadlineComparison)"
       },
       {
         "surface": "solver-page",
@@ -1142,31 +1142,43 @@
   },
   {
     "transformations": [
-      "Subtract claimAge.currentClaimExactEstate from claimAge.jointExactEstate when a winning claim patch exists."
+      "projection/optimizePlan.ts#optimizePlanCoOptimizingClaimAge: claimChangeEstateGain = compareScalars(currentClaimExactEstate, jointExactEstate).delta, with estateYear the plan's last projection year."
     ],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": "",
+    "notes": "Computed in planner-ui/src/planner/optimizePageClaim.ts#claimEstateGain (jointExactEstate − currentClaimExactEstate when a claim patch won) and again in planner-ui/src/report/reportHtml.ts#recommendationSection (R17) until B2-P1 slice 3; now engine ClaimAgeCoOptimization.claimChangeEstateGain, which both read, each naming the year its dollars are in (ClaimAgeCoOptimization.estateYear).",
     "dimensions": [],
     "basis": "nominal",
     "id": "claim-age-co-optimization-estate-gain",
     "group": "social-security",
     "title": "Claim-age co-optimization estate gain",
-    "meaning": "After-tax estate gained by the winning joint claim-age combination over the best result at the current claim ages.",
+    "meaning": "After-tax estate gained by the winning joint claim-age combination over the best result at the current claim ages, in nominal dollars of the plan's last year: 0 when no claim change won, more than $1,000 when one did.",
     "unit": "usd",
     "kind": "ui-native",
     "uiSources": [
       {
-        "path": "planner-ui/src/planner/optimizePageClaim.ts",
-        "symbol": "claimEstateGain"
+        "path": "planner-ui/src/planner/OptimizePage.tsx",
+        "symbol": "OptimizePage"
+      },
+      {
+        "path": "planner-ui/src/report/reportHtml.ts",
+        "symbol": "recommendationSection"
       }
     ],
     "surfaces": [
       {
         "surface": "optimize-page",
-        "selector": "\"$X more projected after-tax estate than the best result at your current claim ages\""
+        "selector": "\"$X more projected after-tax estate, in YEAR dollars, than the best result at your current claim ages\""
+      },
+      {
+        "surface": "report",
+        "selector": "Downloadable report modeled findings \"Claim-change estate gain (YEAR dollars)\""
       }
-    ]
+    ],
+    "relocation": {
+      "status": "done",
+      "target": "engine/src/projection/optimizePlan.ts#ClaimAgeCoOptimization.claimChangeEstateGain"
+    }
   },
   {
     "id": "social-security-benefit-annual",
@@ -2399,7 +2411,7 @@
       },
       {
         "surface": "compare-page",
-        "selector": "After-tax estate row"
+        "selector": "After-tax estate row levels, in today's (start-year) dollars when the two plans end in different years (PlanHeadlineComparison)"
       },
       {
         "surface": "optimize-page",
@@ -2603,35 +2615,67 @@
   },
   {
     "transformations": [
-      "Sum amount over the schedule's conversion entries (schedule.conversions, displayedConversions, tournament.winnerConversions)."
+      "strategies/conversionScheduleTotal.ts#conversionScheduleTotal (amounts added left to right from 0), published as OptimizedSchedule.conversionTotal on the raw and cleaned schedules and ExactLedgerTournament.winnerConversionTotal; the displayed list, the promotion note, the Strategy callout and the assumptions export call the helper."
     ],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": "",
+    "notes": "Computed in planner-ui/src/planner/OptimizePage.tsx#totalScheduleConversions and #OptimizePage (three reduces), optimizePageChart.ts#isCalculatedIdentityWithheldPostProcessing, optimizePagePromotion.ts#scheduleConversionTotal, sections/StrategySection.tsx#StrategySection and assumptionsExport.ts#strategyGroup until B2-P1 slice 3; now engine engine/src/strategies/optimizer.ts#conversionScheduleTotal, published as OptimizedSchedule.conversionTotal and ExactLedgerTournament.winnerConversionTotal, which the engine's own cleaned-schedule gates and requested total also read. The execution-mismatch sentence's cleaned figure now reads the cleaned schedule (it read the empty displayed list when nothing was recommended).",
     "dimensions": [],
     "basis": "nominal",
     "id": "optimizer-schedule-conversion-total",
     "group": "roth",
     "title": "Optimizer conversion schedule total",
-    "meaning": "Total dollars in a conversion schedule: the raw solver request, the cleaned executable schedule, or the tournament winner's conversions.",
+    "meaning": "Total dollars in a conversion schedule, summed across years in nominal dollars: the raw solver request, the cleaned schedule, the displayed recommendation, the tournament winner, a promotion's schedules, or the installed optimized schedule.",
     "unit": "usd",
     "kind": "ui-transformation",
     "uiSources": [
       {
         "path": "planner-ui/src/planner/OptimizePage.tsx",
-        "symbol": "totalScheduleConversions"
+        "symbol": "OptimizePage"
       },
       {
-        "path": "planner-ui/src/planner/OptimizePage.tsx",
-        "symbol": "OptimizePage"
+        "path": "planner-ui/src/planner/optimizePageChart.ts",
+        "symbol": "isCalculatedIdentityWithheldPostProcessing"
+      },
+      {
+        "path": "planner-ui/src/planner/retirementActionPromotionPanels.tsx",
+        "symbol": "PromotedSchedulePanel"
+      },
+      {
+        "path": "planner-ui/src/planner/sections/StrategySection.tsx",
+        "symbol": "StrategySection"
+      },
+      {
+        "path": "planner-ui/src/planner/assumptionsExport.ts",
+        "symbol": "strategyGroup"
       }
     ],
     "surfaces": [
       {
         "surface": "optimize-page",
         "selector": "\"$X of conversions across N years\", \"Raw optimizer request\", \"Cleaned executable schedule\""
+      },
+      {
+        "surface": "optimize-page",
+        "selector": "Incumbent card \"Your current schedule ($X of conversions across N years)\""
+      },
+      {
+        "surface": "optimize-page",
+        "selector": "Repriced promotion note: named and aggregate schedule totals"
+      },
+      {
+        "surface": "optimize-page",
+        "selector": "Strategy section callout \"This N-year schedule ($X total) was produced by the Optimize tab\""
+      },
+      {
+        "surface": "assumptions-card",
+        "selector": "Strategy group \"optimized schedule (N years, $X total)\""
       }
-    ]
+    ],
+    "relocation": {
+      "status": "done",
+      "target": "engine/src/strategies/conversionScheduleTotal.ts#conversionScheduleTotal"
+    }
   },
   {
     "id": "projection-summary-lifetime-roth-conversions",
@@ -3264,12 +3308,7 @@
       "path": "engine/src/projection/internal/types/result.ts",
       "symbol": "ProjectionResult.depletionYear"
     },
-    "uiSources": [
-      {
-        "path": "planner-ui/src/planner/compareDeltas.ts",
-        "symbol": "moneyLastsDelta / ageDelta"
-      }
-    ],
+    "uiSources": [],
     "surfaces": [
       {
         "surface": "results-headline",
@@ -3289,7 +3328,7 @@
       },
       {
         "surface": "compare-page",
-        "selector": "Depletion age (primary) row: the primary person's age in that year"
+        "selector": "Depletion age (primary) row: the first person's age in that year (PlanHeadlineComparison.depletionAgePrimary)"
       },
       {
         "surface": "scenarios-page",
@@ -4317,7 +4356,7 @@
       },
       {
         "surface": "insights",
-        "selector": "InsightCardView base and patched 250-path runs behind the Monte Carlo delta line"
+        "selector": "InsightCardView preview: the headline run (1,000 paths, or a published finer run) and the previewed plan's run at the same path count, behind the Monte Carlo delta line"
       },
       {
         "surface": "mcp",
@@ -4507,27 +4546,15 @@
     "id": "compare-plan-deltas",
     "group": "optimizer-and-comparisons",
     "title": "Plan B minus Plan A: money lasts, ages and deterministic success",
-    "meaning": "Differences between two plans in last funded year, depletion age and deterministic success (100 or 0 by depletion), with bounded labels when only one plan depletes.",
+    "meaning": "Differences between two plans in last funded year, depletion age and deterministic success (100 or 0 by depletion), bounded when only one plan runs its full horizon and published as no number when both do.",
     "unit": "years",
     "basis": "n/a",
     "dimensions": [],
     "kind": "ui-native",
     "uiSources": [
       {
-        "path": "planner-ui/src/planner/compareDeltas.ts",
-        "symbol": "compareDeltas"
-      },
-      {
-        "path": "planner-ui/src/planner/compareDeltas.ts",
-        "symbol": "moneyLastsDelta"
-      },
-      {
-        "path": "planner-ui/src/planner/compareDeltas.ts",
-        "symbol": "deterministicSuccessPct"
-      },
-      {
         "path": "planner-ui/src/planner/ComparePlansPage.tsx",
-        "symbol": "primaryAgeIn"
+        "symbol": "ComparePlansPage"
       }
     ],
     "surfaces": [
@@ -4537,25 +4564,29 @@
       }
     ],
     "transformations": [
-      "lastFundedYear = depletionYear - 1 or endYear; delta = lastFundedYear(B) - lastFundedYear(A) with ≥/≤ bounds when only one plan runs the full horizon; age delta = ageB - ageA where age = depletionYear - primary birth year; deterministicSuccessPct = 100 if never depleted else 0, differenced in percentage points."
+      "scenarios/planHeadlines.ts#comparePlanHeadlines: moneyLasts through projection/moneyLasts.ts#compareMoneyLasts (delta = lastFundedYear(proposal) − lastFundedYear(baseline), bound atLeast or atMost when only one plan runs its full horizon, delta null with bound bothFull when both do); deterministicSuccessPct = compareScalars(100 or 0 by depletion); depletionAgePrimary = compareNullableScalars(depletionYear − birth year of household.people[0]), refused when a depleting side has no birth date."
     ],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": "The module exports moneyLastsDelta and ageDelta; compareDeltas is the validator/orchestrator name for their combined page computation."
+    "notes": "Computed in planner-ui/src/planner/compareDeltas.ts#moneyLastsDelta, #deterministicSuccessPct and #ageDelta and planner-ui/src/planner/ComparePlansPage.tsx#primaryAgeIn until B2-P1 slice 3; now engine engine/src/scenarios/planHeadlines.ts#comparePlanHeadlines, which ComparePlansPage reads. The census named compareDeltas.ts#compareDeltas, a symbol that never existed. When both plans run their full horizons the engine publishes no difference (decision of 2026-09-27); the page prints \"same\" or \"both full plan\" with no colour, as before.",
+    "relocation": {
+      "status": "done",
+      "target": "engine/src/scenarios/planHeadlines.ts#comparePlanHeadlines"
+    }
   },
   {
     "transformations": [
-      "Subtract the Plan A summary figure from the Plan B figure for endingNetWorth, endingInvestable, endingAfterTaxEstate and lifetimeTaxesAndPenalties."
+      "scenarios/planHeadlines.ts#comparePlanHeadlines: moneyBasis nominal when the end years match (each row compareScalars of the summary figures), else today (each ending figure divided by its own plan's factor at its end year; lifetime tax plus penalties the sum of each year's figure divided by that year's factor); delta = proposal − baseline."
     ],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": "",
+    "notes": "Computed in planner-ui/src/planner/ComparePlansPage.tsx#ComparePlansPage (proposal minus baseline of nominal summary figures, across plans that can end in different years) until B2-P1 slice 3; now engine engine/src/scenarios/planHeadlines.ts#comparePlanHeadlines, nominal when the plans end in the same year and today's dollars otherwise (R13), which ComparePlansPage reads; the page states the basis on every money row and in a sentence naming both end years.",
     "dimensions": [],
-    "basis": "nominal",
+    "basis": "either",
     "id": "compare-plan-money-deltas",
     "group": "optimizer-and-comparisons",
     "title": "Plan B minus Plan A money deltas",
-    "meaning": "Differences between two plans in ending net worth, ending investable, ending after-tax estate and lifetime tax plus penalties.",
+    "meaning": "Differences between two plans in ending net worth, ending investable, ending after-tax estate and lifetime tax plus penalties: in nominal dollars when both plans end in the same year, otherwise in today's (start-year) dollars, each plan deflated by its own published inflation factor and lifetime tax re-summed year by year (R13).",
     "unit": "usd",
     "kind": "ui-native",
     "uiSources": [
@@ -4567,9 +4598,13 @@
     "surfaces": [
       {
         "surface": "compare-page",
-        "selector": "Delta column of the four money rows"
+        "selector": "Delta column of the four money rows, in the basis each row label states"
       }
-    ]
+    ],
+    "relocation": {
+      "status": "done",
+      "target": "engine/src/scenarios/planHeadlines.ts#comparePlanHeadlines"
+    }
   },
   {
     "id": "exact-ledger-tournament-margin-over-milp-dollars",
@@ -4825,7 +4860,7 @@
     "id": "relocation-tax-comparison",
     "group": "optimizer-and-comparisons",
     "title": "Relocation candidate deltas and display basis",
-    "meaning": "Lifetime tax-plus-penalties delta of each candidate versus the baseline, and the candidate ending estate deflated to the display basis.",
+    "meaning": "Lifetime tax-plus-penalties delta of each candidate versus the baseline row, and each row's ending after-tax estate in the comparison's start-year dollars.",
     "unit": "usd",
     "basis": "nominal",
     "dimensions": [],
@@ -4839,15 +4874,19 @@
     "surfaces": [
       {
         "surface": "relocation-page",
-        "selector": "Candidate table \"vs. baseline\" delta column and deflated ending after-tax estate"
+        "selector": "Ranked table \"Δ vs your plan\" column and \"Ending after-tax estate (today's $)\" column"
       }
     ],
     "transformations": [
-      "Subtract baseline.lifetimeTaxesAndPenalties from row.lifetimeTaxesAndPenalties per candidate; deflate row.endingAfterTaxEstate from row.endYear with money.deflate."
+      "projection/relocation.ts#compareRelocationCandidates: lifetimeTaxesAndPenaltiesDeltaVsBaseline = compareScalars(baseline, row).delta (null on the baseline row and a failed row); endingAfterTaxEstateTodayDollars = endingAfterTaxEstate / the row's own published inflation factor at its endYear."
     ],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": "Candidate rows themselves (lifetime taxes, state tax, success, drivers) are engine families from engine/src/projection/relocation.ts."
+    "notes": "Computed in planner-ui/src/planner/RelocationComparePage.tsx#RelocationComparePage (row minus baseline lifetime taxes and penalties; the estate deflated through planDollarBasis) until B2-P1 slice 3; now engine engine/src/projection/relocation.ts#compareRelocationCandidates, published as RelocationCandidateRow.lifetimeTaxesAndPenaltiesDeltaVsBaseline and .endingAfterTaxEstateTodayDollars, which RelocationComparePage reads. Candidate rows themselves (lifetime taxes, state tax, success, drivers) are engine families from engine/src/projection/relocation.ts.",
+    "relocation": {
+      "status": "done",
+      "target": "engine/src/projection/relocation.ts#compareRelocationCandidates"
+    }
   },
   {
     "id": "simple-candidate-evaluation-after-tax-estate-delta",
@@ -5286,10 +5325,6 @@
         "symbol": "KpiBar"
       },
       {
-        "path": "planner-ui/src/planner/RelocationComparePage.tsx",
-        "symbol": "RelocationComparePage"
-      },
-      {
         "path": "planner-ui/src/planner/SpendingSolverPage.tsx",
         "symbol": "SpendingSolverPage"
       },
@@ -5325,7 +5360,7 @@
       },
       {
         "surface": "relocation-page",
-        "selector": "deflateEnd on ending after-tax estate"
+        "selector": "Ending after-tax estate (today's $) column, read from the engine row (RelocationCandidateRow.endingAfterTaxEstateTodayDollars)"
       },
       {
         "surface": "cash-flow-drilldown",
@@ -6375,7 +6410,7 @@
       },
       {
         "surface": "compare-page",
-        "selector": "Ending investable row"
+        "selector": "Ending investable row levels, in today's (start-year) dollars when the two plans end in different years (PlanHeadlineComparison)"
       },
       {
         "surface": "mcp",
@@ -6435,6 +6470,10 @@
       {
         "surface": "scenarios-page",
         "selector": "Estate table 'Gross net worth' (ScenarioEstateComparison.grossNetWorth reads the summary copy)"
+      },
+      {
+        "surface": "compare-page",
+        "selector": "Ending net worth row levels, in today's (start-year) dollars when the two plans end in different years (PlanHeadlineComparison)"
       }
     ],
     "transformations": [],
@@ -7505,17 +7544,17 @@
   },
   {
     "transformations": [
-      "Run runMonteCarlo for the base plan and the patched plan with the same seed and 250 paths, then compute (patchMc.successRate - baseMc.successRate) * 100."
+      "decisions/stochastic.ts#compareMonteCarloSuccessRates(base, previewed).delta, a fraction the card prints in points; the base is the headline run (useMcSuccessRate.ts#headlineMcRun) and the previewed plan runs with headlineMcRunOptions(base plan, base path count)."
     ],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": "",
+    "notes": "Computed in planner-ui/src/planner/insights/InsightCardView.tsx#InsightCardView ((patch − base) × 100 on a historical iid model at 250 paths) until B2-P1 slice 3; now engine engine/src/decisions/stochastic.ts#compareMonteCarloSuccessRates on the headline configuration (R11), which InsightCardView reads. Whether a card runs the pair is Detector.previewsMonteCarlo; the constant 12 the spending-guardrails card published as InsightImpact.successRateDeltaPct is gone.",
     "dimensions": [],
     "basis": "n/a",
     "id": "insight-monte-carlo-success-delta",
     "group": "insights",
     "title": "Insight Monte Carlo success delta",
-    "meaning": "Change in Monte Carlo success rate, in percentage points, between the patched plan and the base plan on 250 shared-seed paths.",
+    "meaning": "Change in Monte Carlo success rate, in percentage points, between the previewed plan and the plan, on the headline's model, path count and seed, so the baseline is the headline success rate.",
     "unit": "percent",
     "kind": "ui-native",
     "uiSources": [
@@ -7529,7 +7568,11 @@
         "surface": "insights",
         "selector": "InsightCardView \"Monte Carlo success\" line after Preview"
       }
-    ]
+    ],
+    "relocation": {
+      "status": "done",
+      "target": "engine/src/decisions/stochastic.ts#compareMonteCarloSuccessRates"
+    }
   },
   {
     "transformations": [],

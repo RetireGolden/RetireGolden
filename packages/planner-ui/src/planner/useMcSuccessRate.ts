@@ -22,7 +22,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 
 import type { Plan } from '@retiregolden/engine/model/plan'
 import type { MonteCarloSummary } from '@retiregolden/engine/montecarlo/run'
-import { DEFAULT_PATH_COUNT, runMonteCarlo } from '../mc/pool'
+import { DEFAULT_PATH_COUNT, runMonteCarlo, type MonteCarloRunOptions } from '../mc/pool'
 import { buildModel, type ModelKind } from './marketModelPicker'
 import { currentStartYear, seedFromPlanId } from './useProjection'
 
@@ -133,22 +133,48 @@ export function useMcHeadline(plan: Plan): MonteCarloSummary | undefined {
   return useSyncExternalStore(subscribe, snapshot, snapshot)
 }
 
+/**
+ * The headline configuration's run options for a plan: the headline model
+ * built from this plan (its inflation mean, 12 percent return volatility, and
+ * per-class shocks when it holds allocated accounts), the plan-id seed, the
+ * clock's start year, and the given path count. A comparison run for a
+ * changed plan passes the base plan here, so both runs see one market.
+ */
+export function headlineMcRunOptions(plan: Plan, pathCount: number = DEFAULT_PATH_COUNT): MonteCarloRunOptions {
+  return {
+    startYear: currentStartYear(),
+    pathCount,
+    seed: seedFromPlanId(plan.id),
+    model: buildModel(
+      HEADLINE_MC_MODEL.kind,
+      plan.assumptions.inflationPct,
+      HEADLINE_MC_MODEL.returnVolPct,
+      HEADLINE_MC_MODEL.equityWeightPct,
+      plan,
+    ),
+  }
+}
+
+/**
+ * The headline run for this plan object, the one whose rate the KPI bar
+ * shows: the published run when there is one (a 10,000-path Monte Carlo page
+ * run included), else the run in flight, else a new default run, shared with
+ * the KPI bar through the in-flight map. What an Insight preview compares a
+ * changed plan against, so its "before" is the rate the reader was shown.
+ */
+export function headlineMcRun(plan: Plan): Promise<Pick<MonteCarloSummary, 'successRate' | 'pathCount'>> {
+  const summary = published.get(plan)
+  if (summary !== undefined) return Promise.resolve({ successRate: summary.successRate, pathCount: summary.pathCount })
+  return successRateOf(plan).then((result) => ({ successRate: result.rate, pathCount: result.pathCount }))
+}
+
 function successRateOf(plan: Plan): Promise<McRunResult> {
   const existing = inflight.get(plan)
   if (existing !== undefined) return existing
-  const model = buildModel(
-    HEADLINE_MC_MODEL.kind,
-    plan.assumptions.inflationPct,
-    HEADLINE_MC_MODEL.returnVolPct,
-    HEADLINE_MC_MODEL.equityWeightPct,
-    plan,
-  )
-  const run = runMonteCarlo(plan, {
-    startYear: currentStartYear(),
-    pathCount: DEFAULT_PATH_COUNT,
-    seed: seedFromPlanId(plan.id),
-    model,
-  }).then((s) => ({ rate: s.successRate, pathCount: s.pathCount }))
+  const run = runMonteCarlo(plan, headlineMcRunOptions(plan)).then((s) => ({
+    rate: s.successRate,
+    pathCount: s.pathCount,
+  }))
   // Successful runs stay cached (later subscribers reuse the result), but a
   // rejection is evicted so the next subscriber retries instead of replaying
   // a transient worker failure forever for this plan object.

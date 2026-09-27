@@ -37,6 +37,9 @@ export const spendingGuardrails: Detector = {
   id: 'spending-guardrails',
   category: 'sequence-risk',
   version: 1,
+  // The preview's success-rate change is measured by the planner's Monte Carlo
+  // pair; the card itself publishes no success-rate figure.
+  previewsMonteCarlo: true,
   screen(ctx) {
     const firstYear = ctx.projection.result.years[0]
     if (!firstYear) return null
@@ -78,7 +81,6 @@ export const spendingGuardrails: Detector = {
       rationale: `Your plan currently assumes fixed inflation-adjusted spending. Preview a rules-based guardrail scenario with a ${formatWholeUsd(requiredAnnual)} required floor and 10% spending adjustments when the withdrawal-rate band is crossed.`,
       impact: {
         qualitative: 'Preview to compare the projected and Monte Carlo impact of flexible spending rules.',
-        successRateDeltaPct: 12,
       },
       exact: false,
       confidence: 'medium',
@@ -100,7 +102,6 @@ export const spendingGuardrails: Detector = {
       action: card.action,
       impact: {
         qualitative: 'Exact preview applies the guardrail policy inside the same annual ledger used by Results and Monte Carlo.',
-        successRateDeltaPct: card.impact.successRateDeltaPct,
       },
     }
   },

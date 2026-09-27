@@ -3,9 +3,9 @@ import type { Detector, DetectorContext, InsightCard } from './types.js'
 import {
   CONFIDENCE_RANKING_WEIGHTS,
   computeCardScore,
+  EDITORIAL_RANKING_WEIGHT_DOLLARS,
   registry,
   sortCards,
-  SUCCESS_RATE_POINT_DOLLAR_EQUIVALENT,
 } from './registry.js'
 import { runScreen } from './runInsights.js'
 
@@ -16,7 +16,7 @@ describe('detector framework scoring and ranking', () => {
    * edit with a visible diff rather than a silent nudge.
    */
   it('pins the card-ranking heuristic constants', () => {
-    expect(SUCCESS_RATE_POINT_DOLLAR_EQUIVALENT).toBe(10000)
+    expect(EDITORIAL_RANKING_WEIGHT_DOLLARS).toEqual({ 'spending-guardrails': 120_000 })
     expect(CONFIDENCE_RANKING_WEIGHTS).toEqual({ high: 1.0, medium: 0.7, low: 0.4 })
   })
 
@@ -69,21 +69,28 @@ describe('detector framework scoring and ranking', () => {
     expect(sorted[2]!.id).toBe('card-c')
   })
 
-  it('scores success-rate impacts by magnitude', () => {
+  it('ranks the spending-guardrails card by its editorial weight, where its retired success figure ranked it', () => {
     const card: InsightCard = {
-      id: 'success-risk',
+      id: 'spending-guardrails',
       category: 'sequence-risk',
-      title: 'Success risk',
+      title: 'Preview dynamic spending guardrails',
       rationale: '',
-      impact: { successRateDeltaPct: -5 },
+      impact: { qualitative: 'Preview to compare.' },
       exact: false,
       confidence: 'medium',
-      severity: 'attention',
-      evidence: [{ label: 'Success-rate change', value: '5%' }],
+      severity: 'info',
+      evidence: [{ label: 'Investable assets', value: '$1' }],
       action: { kind: 'advisory' },
     }
-
-    expect(computeCardScore(card)).toBe(35_000)
+    // 12 points × $10,000 × the medium weight 0.7: the score the card had
+    // while it published a constant 12 as a success-rate change.
+    expect(computeCardScore(card)).toBe(84_000)
+    // A measured estate delta still outranks the weight, as it outranked the
+    // retired figure; a lifetime-tax delta still comes after it.
+    expect(computeCardScore({ ...card, impact: { endingAfterTaxEstateDelta: 1_000 } })).toBe(700)
+    expect(computeCardScore({ ...card, impact: { lifetimeTaxDelta: -1 } })).toBe(84_000)
+    // Another card with no measured impact is unranked.
+    expect(computeCardScore({ ...card, id: 'other' })).toBe(-1)
   })
 
   it('runs an empty detector list and drops non-applicable cards', () => {

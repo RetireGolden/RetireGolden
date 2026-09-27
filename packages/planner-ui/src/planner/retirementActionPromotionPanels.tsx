@@ -16,6 +16,7 @@ import { Link } from 'react-router'
 
 import type { Plan } from '@retiregolden/engine/model/plan'
 import type { RetirementActionPromotionYear } from '@retiregolden/engine/projection/optimizePlan'
+import { conversionScheduleTotal } from '@retiregolden/engine/strategies/conversionScheduleTotal'
 
 import { fmtMoney } from './format'
 import {
@@ -39,7 +40,6 @@ import {
 } from './retirementActionPromotionCopy'
 import {
   promotionTrimmedOwners,
-  scheduleConversionTotal,
   unclassifiedIraSourceAccounts,
   type PromotedScheduleRead,
   type PublishedRetirementActionPromotion,
@@ -166,8 +166,8 @@ export function PromotedSchedulePanel({
         {promotion.outcome === 'equivalent'
           ? PROMOTED_SCHEDULE_EQUIVALENT_NOTE
           : promotedScheduleRepricedNote({
-              namedTotal: fmtMoney(scheduleConversionTotal(winnerConversions)),
-              aggregateTotal: fmtMoney(scheduleConversionTotal(promotion.aggregateConversions)),
+              namedTotal: fmtMoney(conversionScheduleTotal(winnerConversions)),
+              aggregateTotal: fmtMoney(conversionScheduleTotal(promotion.aggregateConversions)),
               aggregateYearCount: promotion.aggregateConversions.length,
             })}
       </p>

@@ -13,6 +13,8 @@ export const scenariosAttestations: Readonly<Record<string, CoverageAttestation>
   'scenarios/comparison.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
   'scenarios/contract.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
   'scenarios/patch.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
+  'scenarios/planHeadlines.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-09-27', note: 'two projections compared headline by headline, in one stated dollar basis; no statute' }),
+  'scenarios/scalarComparison.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-09-27', note: 'the one comparison convention, proposal minus baseline; no statute' }),
   'scenarios/scenarios.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
   'scenarios/taxOpportunityView.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
   'scenarios/taxStrategyEvaluation.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),

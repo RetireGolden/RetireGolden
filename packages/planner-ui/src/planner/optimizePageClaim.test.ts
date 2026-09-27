@@ -12,7 +12,6 @@ import type { ClaimAgeCoOptimization } from '@retiregolden/engine/projection/opt
 import { socialSecurityIncome } from '@retiregolden/engine/testing/planFixtures'
 import {
   applyOptimizeRecommendation,
-  claimEstateGain,
   claimOnlyApplyAvailable,
   claimRecommendationReportAvailable,
   planWithWinningClaim,
@@ -49,6 +48,8 @@ function claimAgeWithPatch(plan: Plan): ClaimAgeCoOptimization {
     winningClaimPatch: { incomes },
     jointExactEstate: 1_118_000,
     currentClaimExactEstate: 1_000_000,
+    claimChangeEstateGain: 118_000,
+    estateYear: 2059,
   }
 }
 
@@ -59,15 +60,10 @@ const noChange: ClaimAgeCoOptimization = {
   winningClaimPatch: null,
   jointExactEstate: 1_000_000,
   currentClaimExactEstate: 1_000_000,
+  claimChangeEstateGain: 0,
+  estateYear: 2059,
 }
 
-describe('claimEstateGain', () => {
-  it('is the joint-over-current improvement when a claim change won, else zero', () => {
-    expect(claimEstateGain(claimAgeWithPatch(ssPlan()))).toBe(118_000)
-    expect(claimEstateGain(noChange)).toBe(0)
-    expect(claimEstateGain(null)).toBe(0)
-  })
-})
 
 describe('claimOnlyApplyAvailable', () => {
   it('allows a separately established claim-only result', () => {

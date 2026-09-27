@@ -340,4 +340,40 @@ export const insightsRecords = {
     verifiedOn: '2026-09-18',
     provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
   },
+  'monte-carlo-success-rate-comparison': {
+    title: 'Monte Carlo success rate change on shared paths',
+    purpose: 'The change in Monte Carlo success rate between a plan and a previewed change to it, on the same market paths as the headline rate.',
+    kind: 'composition',
+    outputs: ['insight-monte-carlo-success-delta'],
+    feeds: [],
+    statement: 'decisions/stochastic.ts#compareMonteCarloSuccessRates publishes compareScalars(baseline.successRate, proposal.successRate): proposal minus baseline, a fraction of paths, refusing two runs with different path counts with a RangeError. The Insight preview (owner decision R11) runs both plans on the headline configuration: the headline market model built from the base plan (the plan\'s inflation mean, 12 percent return volatility, and per-class shocks for a plan with allocated accounts), the plan-id seed, and the path count of the headline run it reuses for the base side (1,000, or 10,000 when the Monte Carlo page published a finer run), so path N is one market for both plans and the baseline is the rate the reader was shown. decisions/stochastic.ts#attachStochasticMetrics prices every entry with its own plan\'s tax calculator when the decision context has a per-plan builder. With 912 and 948 successes of 1,000 the change is 0.03599999999999992, printed +3.6 points. Units: a fraction of paths, printed in percentage points to one decimal. Rounding: none.',
+    formula: {
+      expression: 'delta = r_p − r_b with r = s / N; refused when N_b ≠ N_p',
+      variables: [
+        { symbol: 's', meaning: 'Paths on which the plan never runs short', unit: 'paths', domain: '0 to N' },
+        { symbol: 'N', meaning: 'Paths simulated, the same seeded paths for both plans', unit: 'paths', domain: '>= 1' },
+      ],
+      timing: 'once per preview',
+      rounding: 'none; the card prints points to one decimal',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/insights/insight-monte-carlo-success-delta.md',
+    },
+    limits: [
+      'A success share on N paths moves in steps of 1/N; a change of a few steps is sampling noise even on shared paths.',
+      'The comparison says nothing about the paths that fail in both plans, or how deep their shortfall is.',
+    ],
+    implementedBy: [
+      'packages/engine/src/decisions/stochastic.ts',
+      'packages/engine/src/scenarios/scalarComparison.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/decisions/stochastic.ts#compareMonteCarloSuccessRates',
+      'packages/engine/src/decisions/stochastic.ts#attachStochasticMetrics',
+      'packages/engine/src/scenarios/scalarComparison.ts#compareScalars',
+    ],
+    verifiedOn: '2026-09-27',
+    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+  },
 } satisfies Record<string, CalculationRecord>

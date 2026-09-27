@@ -5,7 +5,7 @@ import { createEmptyPlan, parsePlan, type Plan } from '../model/plan.js'
 import { createFederalTaxCalculator } from '../tax/federalTax.js'
 import { createFlatTaxCalculator } from '../testing/flatTax.js'
 import { socialSecurityIncome } from '../testing/planFixtures.js'
-import type { OptimizedSchedule } from '../strategies/optimizer.js'
+import { conversionScheduleTotal, type OptimizedSchedule } from '../strategies/optimizer.js'
 import { summarizeProjection } from './compare.js'
 import * as simulation from './simulate.js'
 import { simulatePlan, type SimulateOptions } from './simulate.js'
@@ -641,6 +641,7 @@ function rawOptimizedSchedule(conversions: { year: number; amount: number }[]): 
       endTaxable: 0,
     })),
     conversions,
+    conversionTotal: conversionScheduleTotal(conversions),
     solveMs: 0,
   }
 }

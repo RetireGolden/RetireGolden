@@ -23,6 +23,7 @@ import { summarizeProjection, type ProjectionSummary } from '../projection/compa
 import { lastFundedYear } from '../projection/moneyLasts.js'
 import { simulatePlan } from '../projection/simulate.js'
 import type { ProjectionResult } from '../projection/types.js'
+import { conversionScheduleTotal } from '../strategies/conversionScheduleTotal.js'
 import { isLegacyAggregateDecisionCalculation } from '../projection/internal/legacyAggregateDecisionCalculation.js'
 import { inspectCompleteRetirementActionCandidateSchedule } from './retirementActionCandidateSchedule.js'
 import type {
@@ -655,7 +656,7 @@ function buildConversionExecution(
   options: Required<Pick<EvaluateCandidateOptions, 'materialConversionShortfallDollars' | 'materialConversionShortfallPct'>>,
 ): ConversionExecution {
   const requestedByYear = aggregateByYear(requested)
-  const requestedTotal = requested.reduce((sum, conversion) => sum + conversion.amount, 0)
+  const requestedTotal = conversionScheduleTotal(requested)
   const executedTotal = candidateResult.years.reduce((sum, year) => sum + year.rothConversion, 0)
 
   let firstMateriallyUnexecutedYear: number | null = null

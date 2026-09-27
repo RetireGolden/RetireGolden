@@ -22,7 +22,6 @@ import {
   promotionTrimmedOwners,
   publishedPromotion,
   readPromotedSchedule,
-  scheduleConversionTotal,
   unclassifiedIraSourceAccounts,
   withheldPromotion,
 } from './optimizePagePromotion'
@@ -322,13 +321,6 @@ describe('promotionTrimmedOwners', () => {
       { ownerPersonId: SAM, reason: 'ownerHoldsNoRothAccount', slicePlanDollars: 20_000 },
     ])
     expect(promotionTrimmedOwners([])).toEqual([])
-  })
-})
-
-describe('scheduleConversionTotal', () => {
-  it('sums a per-year schedule', () => {
-    expect(scheduleConversionTotal([{ year: 2026, amount: 10 }, { year: 2027, amount: 5 }])).toBe(15)
-    expect(scheduleConversionTotal([])).toBe(0)
   })
 })
 

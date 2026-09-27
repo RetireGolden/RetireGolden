@@ -161,6 +161,7 @@ function fakeTournament(overrides: Partial<ExactLedgerTournament> = {}): ExactLe
     winnerCandidateId: 'fill-22',
     winnerLabel: 'Fill the 22% bracket',
     winnerConversions: [{ year: 2027, amount: 60_000 }],
+    winnerConversionTotal: 60_000,
     winnerValidation: fakeValidation(65_000),
     marginOverMilpDollars: 9_000,
     searchRefined: true,

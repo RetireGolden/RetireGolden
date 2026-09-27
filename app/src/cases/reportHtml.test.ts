@@ -66,6 +66,8 @@ describe('standalone report HTML', () => {
         winningClaimLabel: 'Pat claims Social Security at 70',
         jointExactEstate: 1_118_000,
         currentClaimExactEstate: 1_000_000,
+        claimChangeEstateGain: 118_000,
+        estateYear: result.endYear,
       },
     }
     const html = buildStandaloneReportHtml({
@@ -83,7 +85,9 @@ describe('standalone report HTML', () => {
     expect(html).toContain('Fill the 10% bracket')
     expect(html).toContain('Recommended Social Security claim change')
     expect(html).toContain('Pat claims Social Security at 70')
-    expect(html).toContain('Claim-change estate gain')
+    // The row reads the engine's published gain and names the year whose
+    // dollars it is in (B2-P1 slice 3).
+    expect(html).toContain(`Claim-change estate gain (${result.endYear} dollars)`)
     expect(html).toContain('+$118,000')
   })
 
@@ -109,6 +113,8 @@ describe('standalone report HTML', () => {
           winningClaimLabel: null,
           jointExactEstate: 1_000_000,
           currentClaimExactEstate: 1_000_000,
+          claimChangeEstateGain: 0,
+          estateYear: result.endYear,
         },
       },
     })

@@ -1386,7 +1386,7 @@ describe('optimizer recommendation evidence', () => {
         retirementActionReadinessVeto: null,
       },
       postProcessed: {
-        cleanedSchedule: { conversions: [{ year: 2026, amount: 50_000 }] },
+        cleanedSchedule: { conversions: [{ year: 2026, amount: 50_000 }], conversionTotal: 50_000 },
         cleanedValidation: { recommendationState: 'identityIncomplete' },
         stabilized: true,
         minimumRequestedConversionDollars: 1,
@@ -1419,7 +1419,7 @@ describe('optimizer recommendation evidence', () => {
         retirementActionReadinessVeto: null,
       },
       postProcessed: {
-        cleanedSchedule: { conversions: [{ year: 2026, amount: 50_000 }] },
+        cleanedSchedule: { conversions: [{ year: 2026, amount: 50_000 }], conversionTotal: 50_000 },
         cleanedValidation: { recommendationState: 'identityIncomplete' },
         stabilized: true,
         minimumRequestedConversionDollars: 1,
@@ -1508,7 +1508,7 @@ describe('optimizer recommendation evidence', () => {
         retirementActionReadinessVeto: null,
       },
       postProcessed: {
-        cleanedSchedule: { conversions: [{ year: 2026, amount: 50_000 }] },
+        cleanedSchedule: { conversions: [{ year: 2026, amount: 50_000 }], conversionTotal: 50_000 },
         cleanedValidation: { recommendationState: 'identityIncomplete' },
         stabilized: true,
         minimumRequestedConversionDollars: 1,

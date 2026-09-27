@@ -103,6 +103,10 @@ export interface ReportClaimAgeEvidence {
   winningClaimLabel: string | null
   jointExactEstate: number
   currentClaimExactEstate: number
+  /** The engine's claimChangeEstateGain: jointExactEstate minus currentClaimExactEstate, nominal dollars of estateYear. */
+  claimChangeEstateGain: number
+  /** The plan's last projection year, whose dollars the three estate figures are in. */
+  estateYear: number
 }
 
 /**

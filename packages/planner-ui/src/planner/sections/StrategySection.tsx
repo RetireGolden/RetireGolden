@@ -8,6 +8,7 @@ import { CheckboxField, MoneyField, NumberField, SelectField } from '../fields'
 import { LearnAboutScreen } from '../../learn/LearnAboutScreen'
 import { LearnLink } from '../../learn/LearnLink'
 import { LEARN } from '../learnLinks'
+import { conversionScheduleTotal } from '@retiregolden/engine/strategies/conversionScheduleTotal'
 import { fmtMoney } from '../format'
 import { provenanceSource } from '../provenanceLinks'
 import { TypeChip } from '../TypeChip'
@@ -166,7 +167,7 @@ export function StrategySection() {
         {rc.mode === 'optimized' ? (
           <div className="callout callout--info">
             This {rc.conversions.length}-year schedule (
-            {fmtMoney(rc.conversions.reduce((a, c) => a + c.amount, 0))} total) was produced by the{' '}
+            {fmtMoney(conversionScheduleTotal(rc.conversions))} total) was produced by the{' '}
             <strong>Optimize</strong> tab. Re-run or tune it there, choose <em>Accept as manual</em> to edit the amounts
             here, or pick another mode above to take manual control.
           </div>

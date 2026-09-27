@@ -584,8 +584,10 @@
         }
       ],
       "claimAge": {
+        "claimChangeEstateGain": 118000,
         "combinationsEvaluated": 3,
         "currentClaimExactEstate": 1000000,
+        "estateYear": 2059,
         "jointExactEstate": 1118000,
         "winningClaimLabel": "Pat claims Social Security at 70"
       },

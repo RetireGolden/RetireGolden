@@ -164,13 +164,6 @@ export function promotionBlocksApply(
   return read !== null && read.status === 'unreadable'
 }
 
-/** Total conversion dollars in a per-year schedule. */
-export function scheduleConversionTotal(
-  conversions: readonly { year: number; amount: number }[],
-): number {
-  return conversions.reduce((sum, conversion) => sum + conversion.amount, 0)
-}
-
 /** One owner whose share no lawful Roth IRA could receive. */
 export type RetirementActionPromotionTrim = RetirementActionPromotionYear['trims'][number]
 

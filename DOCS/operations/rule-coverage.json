@@ -79,11 +79,11 @@
     }
   },
   "attestations": {
-    "totalFiles": 438,
+    "totalFiles": 441,
     "byStatus": {
       "partial": 90,
       "registered": 117,
-      "rule-free": 231,
+      "rule-free": 234,
       "unswept": 0
     },
     "sweptPct": 100,
@@ -661,9 +661,9 @@
     },
     {
       "directory": "scenarios",
-      "files": 9,
+      "files": 11,
       "byStatus": {
-        "rule-free": 9
+        "rule-free": 11
       }
     },
     {
@@ -691,10 +691,11 @@
     },
     {
       "directory": "strategies",
-      "files": 8,
+      "files": 9,
       "byStatus": {
         "partial": 3,
-        "registered": 5
+        "registered": 5,
+        "rule-free": 1
       }
     },
     {

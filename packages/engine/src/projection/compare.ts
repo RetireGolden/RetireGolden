@@ -63,13 +63,21 @@ function resolveEstateDestination(account: Account): { destination: EstateDestin
 }
 
 export interface ProjectionSummary {
-  /** Sum of taxes and penalties over the whole projection. */
+  /**
+   * Sum of taxes and penalties over the whole projection: each year's tax plus
+   * penalties in that year's nominal dollars, added in ledger order from 0,
+   * undiscounted.
+   */
   lifetimeTaxesAndPenalties: number
+  /** Sum of each year's executed Roth conversion, nominal dollars of each year, undiscounted. */
   lifetimeRothConversions: number
+  /** ProjectionResult.endingInvestable: nominal dollars of the projection's endYear. */
   endingInvestable: number
+  /** ProjectionResult.endingNetWorth: nominal dollars of the projection's endYear. */
   endingNetWorth: number
   /**
-   * Ending net worth minus the charity carve-outs and minus the income tax
+   * In nominal dollars of the projection's endYear:
+   * ending net worth minus the charity carve-outs and minus the income tax
    * heirs owe on inherited pre-tax (traditional) balances at the plan's assumed
    * heir tax rate: `endingAfterTaxEstate = endingNetWorth − endingEstateToCharity
    * − endingEstateHeirTax`. With no charity destination this is net worth minus

@@ -1,7 +1,7 @@
 /**
  * GENERATED FILE — DO NOT EDIT BY HAND.
  *
- * Output families imported from the output-family census at commit 0e6040f713a2dba6e3a47771b0eaf6f3c28b9807.
+ * Output families imported from the output-family census at commit 0410dc80dbb8386a74ad8ab15a4a1be44cd55225.
  * Regenerate: node packages/engine/scripts/import-output-census.mjs <census-dir>
  */
 
@@ -556,7 +556,7 @@ const families = {
   "claim-age-co-optimization-estate-gain": {
     "title": "Claim-age co-optimization estate gain",
     "group": "social-security",
-    "meaning": "After-tax estate gained by the winning joint claim-age combination over the best result at the current claim ages.",
+    "meaning": "After-tax estate gained by the winning joint claim-age combination over the best result at the current claim ages, in nominal dollars of the plan's last year: 0 when no claim change won, more than $1,000 when one did.",
     "unit": "usd",
     "basis": "nominal",
     "dimensions": [],
@@ -565,12 +565,16 @@ const families = {
     "surfaces": [
       {
         "surface": "optimize-page",
-        "selector": "\"$X more projected after-tax estate than the best result at your current claim ages\""
+        "selector": "\"$X more projected after-tax estate, in YEAR dollars, than the best result at your current claim ages\""
+      },
+      {
+        "surface": "report",
+        "selector": "Downloadable report modeled findings \"Claim-change estate gain (YEAR dollars)\""
       }
     ],
     "relocation": {
-      "status": "pending",
-      "target": null
+      "status": "done",
+      "target": "engine/src/projection/optimizePlan.ts#ClaimAgeCoOptimization.claimChangeEstateGain"
     }
   },
   "claim-age-co-optimization-joint-exact-estate": {
@@ -600,7 +604,7 @@ const families = {
   "compare-plan-deltas": {
     "title": "Plan B minus Plan A: money lasts, ages and deterministic success",
     "group": "optimizer-and-comparisons",
-    "meaning": "Differences between two plans in last funded year, depletion age and deterministic success (100 or 0 by depletion), with bounded labels when only one plan depletes.",
+    "meaning": "Differences between two plans in last funded year, depletion age and deterministic success (100 or 0 by depletion), bounded when only one plan runs its full horizon and published as no number when both do.",
     "unit": "years",
     "basis": "n/a",
     "dimensions": [],
@@ -613,28 +617,28 @@ const families = {
       }
     ],
     "relocation": {
-      "status": "pending",
-      "target": null
+      "status": "done",
+      "target": "engine/src/scenarios/planHeadlines.ts#comparePlanHeadlines"
     }
   },
   "compare-plan-money-deltas": {
     "title": "Plan B minus Plan A money deltas",
     "group": "optimizer-and-comparisons",
-    "meaning": "Differences between two plans in ending net worth, ending investable, ending after-tax estate and lifetime tax plus penalties.",
+    "meaning": "Differences between two plans in ending net worth, ending investable, ending after-tax estate and lifetime tax plus penalties: in nominal dollars when both plans end in the same year, otherwise in today's (start-year) dollars, each plan deflated by its own published inflation factor and lifetime tax re-summed year by year (R13).",
     "unit": "usd",
-    "basis": "nominal",
+    "basis": "either",
     "dimensions": [],
     "kind": "ui-native",
     "engineSource": null,
     "surfaces": [
       {
         "surface": "compare-page",
-        "selector": "Delta column of the four money rows"
+        "selector": "Delta column of the four money rows, in the basis each row label states"
       }
     ],
     "relocation": {
-      "status": "pending",
-      "target": null
+      "status": "done",
+      "target": "engine/src/scenarios/planHeadlines.ts#comparePlanHeadlines"
     }
   },
   "display-balance-by-category-annual": {
@@ -690,7 +694,7 @@ const families = {
       },
       {
         "surface": "relocation-page",
-        "selector": "deflateEnd on ending after-tax estate"
+        "selector": "Ending after-tax estate (today's $) column, read from the engine row (RelocationCandidateRow.endingAfterTaxEstateTodayDollars)"
       },
       {
         "surface": "cash-flow-drilldown",
@@ -2105,7 +2109,7 @@ const families = {
   "insight-monte-carlo-success-delta": {
     "title": "Insight Monte Carlo success delta",
     "group": "insights",
-    "meaning": "Change in Monte Carlo success rate, in percentage points, between the patched plan and the base plan on 250 shared-seed paths.",
+    "meaning": "Change in Monte Carlo success rate, in percentage points, between the previewed plan and the plan, on the headline's model, path count and seed, so the baseline is the headline success rate.",
     "unit": "percent",
     "basis": "n/a",
     "dimensions": [],
@@ -2118,8 +2122,8 @@ const families = {
       }
     ],
     "relocation": {
-      "status": "pending",
-      "target": null
+      "status": "done",
+      "target": "engine/src/decisions/stochastic.ts#compareMonteCarloSuccessRates"
     }
   },
   "insight-spending-guardrails-illustrative-floor": {
@@ -2530,7 +2534,7 @@ const families = {
       },
       {
         "surface": "compare-page",
-        "selector": "Depletion age (primary) row: the primary person's age in that year"
+        "selector": "Depletion age (primary) row: the first person's age in that year (PlanHeadlineComparison.depletionAgePrimary)"
       },
       {
         "surface": "scenarios-page",
@@ -3370,7 +3374,7 @@ const families = {
       },
       {
         "surface": "insights",
-        "selector": "InsightCardView base and patched 250-path runs behind the Monte Carlo delta line"
+        "selector": "InsightCardView preview: the headline run (1,000 paths, or a published finer run) and the previewed plan's run at the same path count, behind the Monte Carlo delta line"
       },
       {
         "surface": "mcp",
@@ -3513,7 +3517,7 @@ const families = {
   "optimizer-schedule-conversion-total": {
     "title": "Optimizer conversion schedule total",
     "group": "roth",
-    "meaning": "Total dollars in a conversion schedule: the raw solver request, the cleaned executable schedule, or the tournament winner's conversions.",
+    "meaning": "Total dollars in a conversion schedule, summed across years in nominal dollars: the raw solver request, the cleaned schedule, the displayed recommendation, the tournament winner, a promotion's schedules, or the installed optimized schedule.",
     "unit": "usd",
     "basis": "nominal",
     "dimensions": [],
@@ -3523,11 +3527,27 @@ const families = {
       {
         "surface": "optimize-page",
         "selector": "\"$X of conversions across N years\", \"Raw optimizer request\", \"Cleaned executable schedule\""
+      },
+      {
+        "surface": "optimize-page",
+        "selector": "Incumbent card \"Your current schedule ($X of conversions across N years)\""
+      },
+      {
+        "surface": "optimize-page",
+        "selector": "Repriced promotion note: named and aggregate schedule totals"
+      },
+      {
+        "surface": "optimize-page",
+        "selector": "Strategy section callout \"This N-year schedule ($X total) was produced by the Optimize tab\""
+      },
+      {
+        "surface": "assumptions-card",
+        "selector": "Strategy group \"optimized schedule (N years, $X total)\""
       }
     ],
     "relocation": {
-      "status": "pending",
-      "target": null
+      "status": "done",
+      "target": "engine/src/strategies/conversionScheduleTotal.ts#conversionScheduleTotal"
     }
   },
   "pension-election-annuity-present-value": {
@@ -3735,7 +3755,7 @@ const families = {
       },
       {
         "surface": "compare-page",
-        "selector": "After-tax estate row"
+        "selector": "After-tax estate row levels, in today's (start-year) dollars when the two plans end in different years (PlanHeadlineComparison)"
       },
       {
         "surface": "optimize-page",
@@ -3799,7 +3819,7 @@ const families = {
       },
       {
         "surface": "compare-page",
-        "selector": "Ending investable row"
+        "selector": "Ending investable row levels, in today's (start-year) dollars when the two plans end in different years (PlanHeadlineComparison)"
       },
       {
         "surface": "mcp",
@@ -3852,6 +3872,10 @@ const families = {
       {
         "surface": "scenarios-page",
         "selector": "Estate table 'Gross net worth' (ScenarioEstateComparison.grossNetWorth reads the summary copy)"
+      },
+      {
+        "surface": "compare-page",
+        "selector": "Ending net worth row levels, in today's (start-year) dollars when the two plans end in different years (PlanHeadlineComparison)"
       }
     ],
     "relocation": null
@@ -4047,7 +4071,7 @@ const families = {
       },
       {
         "surface": "compare-page",
-        "selector": "Lifetime tax row"
+        "selector": "Lifetime tax row levels, in today's (start-year) dollars when the two plans end in different years (PlanHeadlineComparison)"
       },
       {
         "surface": "solver-page",
@@ -4160,7 +4184,7 @@ const families = {
   "relocation-tax-comparison": {
     "title": "Relocation candidate deltas and display basis",
     "group": "optimizer-and-comparisons",
-    "meaning": "Lifetime tax-plus-penalties delta of each candidate versus the baseline, and the candidate ending estate deflated to the display basis.",
+    "meaning": "Lifetime tax-plus-penalties delta of each candidate versus the baseline row, and each row's ending after-tax estate in the comparison's start-year dollars.",
     "unit": "usd",
     "basis": "nominal",
     "dimensions": [],
@@ -4169,12 +4193,12 @@ const families = {
     "surfaces": [
       {
         "surface": "relocation-page",
-        "selector": "Candidate table \"vs. baseline\" delta column and deflated ending after-tax estate"
+        "selector": "Ranked table \"Δ vs your plan\" column and \"Ending after-tax estate (today's $)\" column"
       }
     ],
     "relocation": {
-      "status": "pending",
-      "target": null
+      "status": "done",
+      "target": "engine/src/projection/relocation.ts#compareRelocationCandidates"
     }
   },
   "risk-based-guardrail-solved-balance-thresholds": {

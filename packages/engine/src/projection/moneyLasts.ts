@@ -18,6 +18,7 @@
  *
  * @see DOCS/calculations/longevity/display-years-before-plan-end.md
  */
+import { compareScalars } from '../scenarios/scalarComparison.js'
 import type { ProjectionResult } from './types.js'
 
 export interface MoneyLasts {
@@ -65,4 +66,50 @@ export function moneyLasts(result: Pick<ProjectionResult, 'startYear' | 'depleti
     endYear,
     yearsShortOfPlanEnd: endYear - last,
   })
+}
+
+/**
+ * Which plans run their full horizon: 'atLeast' only the proposal (the
+ * difference is a lower bound), 'atMost' only the baseline (an upper bound),
+ * 'bothFull' both (no difference is known).
+ */
+export type MoneyLastsBound = 'atLeast' | 'atMost' | 'bothFull'
+
+export interface MoneyLastsComparison {
+  baseline: MoneyLasts
+  proposal: MoneyLasts
+  /**
+   * proposal.lastFundedYear − baseline.lastFundedYear, in years; null when both
+   * plans run their full horizons, where neither exhaustion year is known and
+   * the difference of the two end years is not a difference in how long the
+   * money lasts.
+   */
+  delta: number | null
+  /** Null when both plans deplete, so the difference is exact. */
+  bound: MoneyLastsBound | null
+}
+
+/**
+ * How long each side's money lasts, compared on last fully funded years (R15),
+ * through the one comparison convention (`scenarios/scalarComparison.ts`).
+ * The Compare page (`scenarios/planHeadlines.ts#comparePlanHeadlines`) and the
+ * scenario comparison's headline both publish it.
+ *
+ * @see DOCS/calculations/optimizer-and-comparisons/compare-plan-deltas.md
+ */
+export function compareMoneyLasts(
+  baseline: Pick<ProjectionResult, 'startYear' | 'depletionYear' | 'endYear'>,
+  proposal: Pick<ProjectionResult, 'startYear' | 'depletionYear' | 'endYear'>,
+): MoneyLastsComparison {
+  const left = moneyLasts(baseline)
+  const right = moneyLasts(proposal)
+  const leftFull = left.depletionYear === null
+  const rightFull = right.depletionYear === null
+  if (leftFull && rightFull) return { baseline: left, proposal: right, delta: null, bound: 'bothFull' }
+  return {
+    baseline: left,
+    proposal: right,
+    delta: compareScalars(left.lastFundedYear, right.lastFundedYear).delta,
+    bound: rightFull ? 'atLeast' : leftFull ? 'atMost' : null,
+  }
 }
