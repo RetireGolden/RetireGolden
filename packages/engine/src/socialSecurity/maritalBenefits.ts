@@ -5,7 +5,10 @@
  *
  * Eligibility rules (from the gap analysis):
  *  - Divorced-spousal: marriage lasted ≥10 years, the claimant is currently
- *    unmarried, and the ex is calendar-year age ≥62 — the ex need not have filed.
+ *    unmarried, and the year is at or after the calendar year of the first
+ *    month the ex is 62 throughout (the year the ex turns 62, or the next year
+ *    for an ex born in December after the 2nd) — the ex need not have filed.
+ *    The ledger pays that whole year, its annual convention for a first year.
  *    The claimant is paid their own benefit plus the excess of 50% of the ex's
  *    PIA over their own PIA, reduced for the claimant's age in the first month
  *    of the divorced-spouse benefit: the later of their own claim and the first
@@ -93,12 +96,20 @@ function birthYear(dob: string): number {
   return Number(dob.slice(0, 4))
 }
 
-/** Living-divorced gates actually applied here; worker entitlement/insured/divorce-date facts are absent. */
+/**
+ * Living-divorced gates actually applied here; worker entitlement/insured/divorce-date facts are absent.
+ * The age gate admits the calendar year of the first month the ex is 62
+ * throughout (#divorcedExFirstMonthIndex, POMS RS 00202.005 B.2.a), the month
+ * the divorced-spouse benefit starts: the year the ex turns 62
+ * (DIVORCED_EX_MIN_AGE), or the next January for an ex born in December after
+ * the 2nd, so no year before that month pays the spouse benefit.
+ */
 function isDivorcedSpouseEligible(record: FormerSpouse, ctx: MaritalBenefitContext): boolean {
   if (record.relationship !== 'divorced') return false
   if (!ctx.claimantIsSingle) return false
   if (record.marriageYears < DIVORCED_MIN_MARRIAGE_YEARS) return false
-  if (ctx.year - birthYear(record.dob) < DIVORCED_EX_MIN_AGE) return false
+  const exDob = { year: birthYear(record.dob), month: Number(record.dob.slice(5, 7)), day: Number(record.dob.slice(8, 10)) }
+  if (ctx.year < Math.floor(divorcedExFirstMonthIndex(exDob) / 12)) return false
   return true
 }
 

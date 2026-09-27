@@ -78,6 +78,7 @@ export const socialSecurityRecords = {
     },
     limits: [
       'One claim age serves the own and the spouse benefit, and a spouse benefit is paid only from the year both the claimant and the worker have reached their configured claim ages; the months within a year follow the payable-month rule of social-security-payable-months',
+      'A divorced spouse\'s benefit is paid from the calendar year of the first month the ex is 62 throughout, and the ledger pays that whole year, its annual convention for a first year (maritalBenefits.ts#isDivorcedSpouseEligible); an ex born in December after the 2nd starts it the next January, so the year the ex turns 62 pays only the own benefit (worksheet case I)',
       'For people born before January 2, 1954, who could restrict an application to the spouse benefit, the one claim age cannot express that choice; they are priced as if they applied for both',
       'A worker on disability benefits is taken to start at the claim age configured for him, not at the disability onset, and a claimant on disability benefits is priced with the same composition; 42 U.S.C. 402(q)(3)(C) and (D) govern a disabled claimant and are not modeled separately',
       'The family maximum caps a current spouse\'s excess only; a divorced spouse\'s benefit is outside the family maximum, and no child benefits are modeled',

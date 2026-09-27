@@ -12,14 +12,14 @@
         "kind": "needs-fact",
         "missingInput": "worker entitlement and fully-insured status plus exact divorce date"
       },
-      "conventionRationale": "Known defect, registered without changing the calculation. 20 CFR 404.331 splits the worker-entitled path (paragraphs (a) through (e), including a disability-entitled worker under 62) from the independently entitled path (paragraphs (a) through (f), worker at least 62 and not yet entitled, two years divorced). The former-spouse entry (formerSpouseSchema) carries relationship, dob, piaMonthly, and marriageYears, and has no worker-entitlement, fully-insured, or divorce-date fact, so the eligibility check (isDivorcedSpouseEligible) substitutes a calendar-year age-62 blanket. The companion test holds the claimant at FRA so the half-PIA amount is 1,500; worksheet-only facts projected out of the schema are an already-disability-entitled ex at 61 and a not-yet-entitled ex at 62 divorced one year. The claimant age-62 condition is supplied by a valid Plan claimAge and by spousalBenefitFactor, not by an explicit 62 predicate here, and the own-PIA restriction is the dual-entitlement offset priced by usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement, which pays no excess when the own PIA is at least half the ex’s; the companion test holds the claimant without an own benefit.",
+      "conventionRationale": "Known defect, registered without changing the calculation. 20 CFR 404.331 splits the worker-entitled path (paragraphs (a) through (e), including a disability-entitled worker under 62) from the independently entitled path (paragraphs (a) through (f), worker at least 62 and not yet entitled, two years divorced). The former-spouse entry (formerSpouseSchema) carries relationship, dob, piaMonthly, and marriageYears, and has no worker-entitlement, fully-insured, or divorce-date fact, so the eligibility check (isDivorcedSpouseEligible) substitutes an age-62 blanket from the calendar year of the first month the ex is 62 throughout. The companion test holds the claimant at FRA so the half-PIA amount is 1,500; worksheet-only facts projected out of the schema are an already-disability-entitled ex at 61 and a not-yet-entitled ex at 62 divorced one year. The claimant age-62 condition is supplied by a valid Plan claimAge and by spousalBenefitFactor, not by an explicit 62 predicate here, and the own-PIA restriction is the dual-entitlement offset priced by usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement, which pays no excess when the own PIA is at least half the ex’s; the companion test holds the claimant without an own benefit.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-09-04",
-      "dueOn": "2027-09-04",
+      "verifiedOn": "2026-09-27",
+      "dueOn": "2027-09-27",
       "implementedBy": [
         "packages/engine/src/socialSecurity/maritalBenefits.ts"
       ],
@@ -29,7 +29,7 @@
           "functions": [
             {
               "name": "isDivorcedSpouseEligible",
-              "line": 97
+              "line": 107
             }
           ]
         }
@@ -245,11 +245,11 @@
           "functions": [
             {
               "name": "isWidowEligible",
-              "line": 148
+              "line": 159
             },
             {
               "name": "passesModeledOrdinaryWidowRecordGates",
-              "line": 116
+              "line": 127
             }
           ]
         }
@@ -355,7 +355,7 @@
           "functions": [
             {
               "name": "passesSurvivorRemarriageGate",
-              "line": 106
+              "line": 117
             }
           ]
         }
@@ -419,7 +419,7 @@
           "functions": [
             {
               "name": "passesModeledSurvivingDivorcedDurationGates",
-              "line": 129
+              "line": 140
             }
           ]
         }

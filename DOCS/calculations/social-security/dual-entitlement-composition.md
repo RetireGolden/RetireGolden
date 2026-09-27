@@ -32,12 +32,13 @@ Every ledger case: plan start 2026, no inflation, COLA factor 1, no benefit hair
 | F (helper) | PIA 1,000, own factor 13/15 (paid 866.67) | worker PIA 3,000, spouse factor 5/6 (24 months early) | |
 | G (helper, delayed credits) | PIA 1,000, own factor 1.24 (paid 1,240) | worker PIA 3,000, spouse factor 1 | |
 | H (helper, delayed credits above the combined amount) | PIA 1,000, own factor 1.24 (paid 1,240) | worker PIA 2,200, spouse factor 1 | |
+| I (an ex born in December after the 2nd) | single, born 1964-06-15, PIA 800 | divorced ex born 1964-12-05, PIA 4,000, married 12 years | 2026 and 2027 |
 
 ## Arithmetic
 
 Case A. Own 800 × 0.70 = 560. The husband attains 70 in August 2034; the claimant attains age 0 in March 1964, so she is \(845\) months old then, past her full retirement age: \(f_s=1\). Total \(560+(1200-800)\times1=\) **$960** a month, 11,520 a year; the household with his 2,400 × 1.24 × 12 = 35,712 is **$47,232** in 2034. Before: \(\max(560,\ 1200\times0.65)=780\), household \$45,072.
 
-Case B. Own 560. The ex attains 62 on February 9, 2028, and is 62 throughout March 2028, when the claimant is \(765\) months old: 39 months early, \(f_s=1-(36\times25/36+3\times5/12)/100=0.7375\). Total \(560+(1000-800)\times0.7375=\) **$707.50** a month, **$8,490** in 2028 (the ledger's calendar-year gate on the ex's age pays the whole year). Before: \(\max(560,\ 1000\times0.65)=650\), \$7,800.
+Case B. Own 560. The ex attains 62 on February 9, 2028, and is 62 throughout March 2028, when the claimant is \(765\) months old: 39 months early, \(f_s=1-(36\times25/36+3\times5/12)/100=0.7375\). Total \(560+(1000-800)\times0.7375=\) **$707.50** a month, **$8,490** in 2028 (the ledger pays the whole of the year the spouse benefit starts, its annual convention for a first year). Before: \(\max(560,\ 1000\times0.65)=650\), \$7,800.
 
 Case C. Own 700 × 0.70 = 490. The husband claims at 65 in November 2028, when she is \(763\) months old: 41 months early, \(f_s=1-(25+5\times5/12)/100=0.729167\). Total \(490+400\times0.729167=\) **$781.67** a month, 9,380 a year; with his 2,200 × 0.866667 × 12 = 22,880, the household is **$32,260** in 2028. Before: \(\max(490,\ 1100\times0.65)=715\), household \$31,460.
 
@@ -50,6 +51,8 @@ Case F. \(\max(866.67,\ 866.67+500\times5/6)=\) **$1,283.33**. The fallback gave
 Case G. \(\max(1240,\ \min(1240,1000)+500\times1)=\) **$1,500**: the combined amount without the delayed credits exceeds the own benefit with them.
 
 Case H. \(\max(1240,\ \min(1240,1000)+100\times1)=\) **$1,240**: the combined amount without the credits, 1,100, is below the own benefit with them, which is paid (POMS RS 00615.694 leaves no spouse benefit).
+
+Case I. Own 560 from her claim in 2026. The ex attains 62 on December 4, 2026, and is first 62 throughout January 2027, so the divorced-spouse benefit starts in 2027, when she is \(751\) months old: 53 months early, \(f_s=1-(25+17\times5/12)/100=0.679167\). In 2026 the ledger pays only her own benefit, \(560\times12=\) **$6,720**; from 2027 the total \(560+(2000-800)\times0.679167=1{,}375\) a month, **$16,500** a year. Before: \(\max(560,\ 2000\times0.65)=1{,}300\), \$15,600 in both years.
 
 ## Expected
 
@@ -65,8 +68,10 @@ Case H. \(\max(1240,\ \min(1240,1000)+100\times1)=\) **$1,240**: the combined am
 | F, monthly | 1,250.00 | **1,283.33** |
 | G, monthly | 1,500.00 | **1,500.00** |
 | H, monthly | 1,240.00 | **1,240.00** |
+| I, 2026 | 15,600.00 | **6,720.00** |
+| I, 2027 | 15,600.00 | **16,500.00** |
 
-A, B, C, D and E are published amounts: `YearResult.incomes.socialSecurity` for a household, and the claimant's `socialSecurityStreams` row (`preWithholdingAnnual`) for a claimant. The spouse-start ages are exact integers: A 845, B 765, C 763, D 774. Exact: case B's factor is 0.7375, D's 0.791666…, F 3,850/3. Fixture tolerance: absolute $0.005.
+A, B, C, D, E and I are published amounts: `YearResult.incomes.socialSecurity` for a household, and the claimant's `socialSecurityStreams` row (`preWithholdingAnnual`) for a claimant. The spouse-start ages are exact integers: A 845, B 765, C 763, D 774, I 751. Exact: case B's factor is 0.7375, D's 0.791666…, F 3,850/3. Fixture tolerance: absolute $0.005.
 
 ## Wrong readings
 
@@ -76,6 +81,7 @@ A, B, C, D and E are published amounts: `YearResult.incomes.socialSecurity` for 
 - Adding the full delayed own benefit to the excess (ignoring POMS RS 00615.694): G 1,240 + 500 = 1,740.
 - The combined amount without the outer comparison with the own benefit: H 1,100, below the 1,240 own benefit the claimant is paid anyway.
 - The divorced spouse's benefit started in the month the ex attains 62 rather than the first month the ex is 62 throughout (this worksheet's first version, corrected 2026-09-27 on independent review): B 764 months, 706.67 a month (8,480); D 773 months, 865.42 (10,385).
+- The divorced spouse's benefit paid for the whole of the calendar year the ex turns 62, before its first month (the ledger's gate until the review of RetireGolden #755): I 2026 16,500 rather than 6,720.
 
 ## Family
 
@@ -85,4 +91,4 @@ feeds: `social-security-benefit-annual`.
 
 ## Provenance
 
-The composition, cases A and B and their before-figures are from the B2-P1 slice 4 derivation (problem 3) and its independent check (A3, cases C-B, S-C, Y1 and Z1, and its one-line POMS RS 00615.694 form), RetireGolden-Docs `calculations/bidirectional-validation-plan-2026-09-13/evidence/b2p1-slice4-derivation.md` and `b2p1-slice4-check.md`; the statute, POMS and Pub. L. 114-74 section 831 text are quoted as saved by that check. Case E is the guarded case of `usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement`, and F the case of the two retired worksheets. Every after-figure was recomputed by a script that does not import the engine, and the before-figures are the check's engine runs at RetireGolden `4a80669e`. Implemented by: claude (opus 5.5), 2026-09-27. Reviewed by: not yet reviewed.
+The composition, cases A and B and their before-figures are from the B2-P1 slice 4 derivation (problem 3) and its independent check (A3, cases C-B, S-C, Y1 and Z1, and its one-line POMS RS 00615.694 form), RetireGolden-Docs `calculations/bidirectional-validation-plan-2026-09-13/evidence/b2p1-slice4-derivation.md` and `b2p1-slice4-check.md`; the statute, POMS and Pub. L. 114-74 section 831 text are quoted as saved by that check. Case I is the review of RetireGolden #755's case (2026-09-27), its before-figures the engine at `4a80669e` and its intermediate reading the gate before that review, both run. Case E is the guarded case of `usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement`, and F the case of the two retired worksheets. Every after-figure was recomputed by a script that does not import the engine, and the before-figures are the check's engine runs at RetireGolden `4a80669e`. Implemented by: claude (opus 5.5), 2026-09-27. Reviewed by: not yet reviewed.

@@ -69,7 +69,13 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   by `dual-entitlement-composition`, and
   `usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement` now covers both spouse paths.
   Earnings-test months are credited back to the spouse reduction only for years a spouse
-  benefit was paid (402(q)(7)).
+  benefit was paid (402(q)(7)). A divorced spouse's benefit is paid from the calendar
+  year of the first month the ex is 62 throughout, the whole of that year under the
+  ledger's annual convention; an ex born in December after the 2nd starts it the next
+  January, where the engine had paid it from the year the ex turned 62 (a claimant with
+  an 800 PIA who claims at 62 in 2026, whose ex, born 1964-12-05 with a $4,000 PIA,
+  turns 62 that year: $6,720 in 2026, her own benefit, rather than $15,600; $16,500 from
+  2027).
 
 - **Fixed: a widow(er) benefit is reduced from the month the survivor became a
   widow(er), not from the survivor's own earlier claim (displayed numbers change)**

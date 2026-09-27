@@ -86,9 +86,10 @@ describeCalculation(
         caseF: { ownPia: 1_000, ownActual: 2_600 / 3, spouseBase: 1_500, spouseFactor: 5 / 6 },
         caseG: { ownPia: 1_000, ownActual: 1_240, spouseBase: 1_500, spouseFactor: 1 },
         caseH: { ownPia: 1_000, ownActual: 1_240, spouseBase: 1_100, spouseFactor: 1 },
+        caseI: { claimant: '1964-06-15 PIA 800 at 62, single', ex: '1964-12-05 PIA 4,000, 12 years', years: '2026 and 2027' },
       },
       expected: {
-        spouseStartMonths: { A: 845, B: 765, C: 763, D: 774 },
+        spouseStartMonths: { A: 845, B: 765, C: 763, D: 774, I: 751 },
         caseAHousehold: after('A, 2034 household'),
         caseAClaimant: after('A, 2034 claimant'),
         caseB: after('B, 2028'),
@@ -99,6 +100,10 @@ describeCalculation(
         caseF: after('F, monthly'),
         caseG: after('G, monthly'),
         caseH: after('H, monthly'),
+        caseI2026: after('I, 2026'),
+        caseI2027: after('I, 2027'),
+        beforeI2026: before('I, 2026'),
+        beforeI2027: before('I, 2027'),
         beforeAClaimant: before('A, 2034 claimant'),
         beforeB: before('B, 2028'),
         beforeCClaimant: before('C, 2028 claimant'),
@@ -114,12 +119,13 @@ describeCalculation(
     const expected = example.expected as Record<string, number> & { spouseStartMonths: Record<string, number> }
     const inputs = example.inputs as Record<string, Record<string, number>>
 
-    it('the spouse benefit starts at the later of the own claim and the worker\'s start (845, 765, 763, 774 months)', () => {
+    it('the spouse benefit starts at the later of the own claim and the worker\'s start (845, 765, 763, 774, 751 months)', () => {
       const dob = (iso: string) => ({ year: Number(iso.slice(0, 4)), month: Number(iso.slice(5, 7)), day: Number(iso.slice(8, 10)) })
       expect(spouseEntitlementAgeMonths(dob('1964-03-10'), 744, claimStartMonthIndex(dob('1964-08-20'), 840))).toBe(expected.spouseStartMonths.A)
       expect(spouseEntitlementAgeMonths(dob('1964-06-15'), 744, divorcedExFirstMonthIndex(dob('1966-02-10')))).toBe(expected.spouseStartMonths.B)
       expect(spouseEntitlementAgeMonths(dob('1965-04-12'), 744, claimStartMonthIndex(dob('1963-11-02'), 780))).toBe(expected.spouseStartMonths.C)
       expect(spouseEntitlementAgeMonths(dob('1964-12-18'), 744, divorcedExFirstMonthIndex(dob('1967-05-25')))).toBe(expected.spouseStartMonths.D)
+      expect(spouseEntitlementAgeMonths(dob('1964-06-15'), 744, divorcedExFirstMonthIndex(dob('1964-12-05')))).toBe(expected.spouseStartMonths.I)
       // A worker who claimed first leaves the start at the claimant's own claim.
       expect(spouseEntitlementAgeMonths(dob('1964-03-10'), 744, claimStartMonthIndex(dob('1962-01-20'), 744))).toBe(744)
       // At or after FRA the spouse factor is 1, even past 70.
@@ -166,6 +172,20 @@ describeCalculation(
       const result = divorced('1964-12-18', 900, '1967-05-25', 2_400, 15, 2029)
       expectWithin(result.household, expected.caseD!, 'caseD')
       expect(withinTolerance(result.household, expected.beforeD!, example.tolerance)).toBe(false)
+    })
+
+    it('case I: an ex born December 5 is first 62 throughout the next January, so the year the ex turns 62 pays only the own benefit (6,720, not 16,500)', () => {
+      const in2026 = divorced('1964-06-15', 800, '1964-12-05', 4_000, 12, 2026)
+      expectWithin(in2026.household, expected.caseI2026!, 'caseI 2026')
+      expect(in2026.source).toBe('own-retirement')
+      // The gate before the review of RetireGolden #755 admitted the whole
+      // calendar year the ex turns 62: 16,500 in 2026.
+      expect(withinTolerance(in2026.household, 16_500, example.tolerance)).toBe(false)
+      expect(withinTolerance(in2026.household, expected.beforeI2026!, example.tolerance)).toBe(false)
+      const in2027 = divorced('1964-06-15', 800, '1964-12-05', 4_000, 12, 2027)
+      expectWithin(in2027.household, expected.caseI2027!, 'caseI 2027')
+      expect(in2027.source).toBe('spousal')
+      expect(withinTolerance(in2027.household, expected.beforeI2027!, example.tolerance)).toBe(false)
     })
 
     it('case E: simultaneous early claims keep the reduced own plus reduced excess (16,080)', () => {
