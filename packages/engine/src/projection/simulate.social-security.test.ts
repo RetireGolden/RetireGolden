@@ -475,6 +475,86 @@ describe('social security', () => {
     })
   })
 
+  // A worker who files later starts the spouse benefit later. The claimant, born
+  // 1964-03-10 with an 800 PIA, claims at 62 (560 a month); her husband, born
+  // 1964-08-20 with a 2,400 PIA, claims at 70 in August 2034, when she is 845
+  // months old and past her full retirement age of 804 months, so the excess is
+  // unreduced: 560 + (1,200 - 800) = 960 a month, 11,520 in 2034. The rejected
+  // reading, the engine's until 2026-09-27, paid the larger of her own 560 and
+  // half his PIA reduced at her own claim age, 1,200 x 0.65 = 780 (9,360).
+  describeRule('usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement', {
+    note: 'a worker who files after the claimant',
+    readings: {
+      ownPlusExcessReducedAtTheSpouseStart: 11_520,
+      largerOfOwnAndHalfReducedAtOwnClaim: 9_360,
+    },
+    accepted: 'ownPlusExcessReducedAtTheSpouseStart',
+  }, ({ accepted, readings }) => {
+    it('reduces the excess at the claimant’s age when the worker files, and adds it to her own benefit', () => {
+      const plan = basePlan()
+      plan.household.filingStatus = 'marriedFilingJointly'
+      plan.household.people = [
+        { id: 'p1', name: 'Lower', dob: '1964-03-10', sex: 'average', retirementAge: null, longevity: { planningAge: 95, source: 'manual' } },
+        { id: 'p2', name: 'Worker', dob: '1964-08-20', sex: 'average', retirementAge: null, longevity: { planningAge: 95, source: 'manual' } },
+      ]
+      const lowerStreamId = testIds()
+      plan.incomes = [
+        { type: 'socialSecurity', id: lowerStreamId, personId: 'p1', piaMonthly: 800, earnings: null, claimAge: { years: 62, months: 0 } },
+        { type: 'socialSecurity', id: testIds(), personId: 'p2', piaMonthly: 2_400, earnings: null, claimAge: { years: 70, months: 0 } },
+      ]
+      plan.accounts = [cash(5_000_000)]
+
+      const year = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax }).years.find((row) => row.year === 2034)!
+      const lower = year.socialSecurityStreams?.find((stream) => stream.streamId === lowerStreamId)
+      if (lower === undefined) throw new Error('expected lower current-spouse Social Security stream')
+
+      expect(lower.source).toBe('spousal')
+      expect(lower.preWithholdingAnnual).toBeCloseTo(accepted, 6)
+      expect(lower.preWithholdingAnnual).not.toBeCloseTo(readings.largerOfOwnAndHalfReducedAtOwnClaim, 6)
+    })
+  })
+
+  // A divorced spouse is paid the same composition. The single claimant, born
+  // 1964-06-15 with an 800 PIA, claims at 62 (560 a month); her ex, born
+  // 1966-02-10 with a 2,000 PIA and married 12 years, attains 62 on February 9,
+  // 2028 and is 62 throughout March 2028 (POMS RS 00202.005 B.2.a), when she is
+  // 765 months old: 39 months early, spouse factor
+  // 1 - (36 x 25/36 + 3 x 5/12)/100 = 0.7375. She is paid
+  // 560 + (1,000 - 800) x 0.7375 = 707.50 a month, 8,490 in 2028, where the
+  // larger of her own 560 and 1,000 x 0.65 gave 650 (7,800), and a start in
+  // the attainment month itself (764 months) would give 706.67 (8,480).
+  describeRule('usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement', {
+    note: 'a divorced spouse',
+    readings: {
+      ownPlusExcessReducedWhenTheExIs62Throughout: 8_490,
+      startInTheMonthTheExAttains62: 8_480,
+      largerOfOwnAndHalfReducedAtOwnClaim: 7_800,
+    },
+    accepted: 'ownPlusExcessReducedWhenTheExIs62Throughout',
+  }, ({ accepted, readings }) => {
+    it('pays a divorced spouse her own benefit plus the excess reduced when the ex is first 62 throughout a month', () => {
+      const plan = basePlan()
+      plan.household.people = [
+        { id: 'p1', name: 'Single', dob: '1964-06-15', sex: 'average', retirementAge: null, longevity: { planningAge: 95, source: 'manual' } },
+      ]
+      plan.incomes = [{
+        type: 'socialSecurity',
+        id: testIds(),
+        personId: 'p1',
+        piaMonthly: 800,
+        earnings: null,
+        claimAge: { years: 62, months: 0 },
+        formerSpouses: [{ id: 'ex', relationship: 'divorced', dob: '1966-02-10', piaMonthly: 2_000, marriageYears: 12, remarriedAtAge: null }],
+      }]
+      plan.accounts = [cash(5_000_000)]
+
+      const year = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax }).years.find((row) => row.year === 2028)!
+      expect(year.incomes.socialSecurity).toBeCloseTo(accepted, 6)
+      expect(year.incomes.socialSecurity).not.toBeCloseTo(readings.largerOfOwnAndHalfReducedAtOwnClaim, 6)
+      expect(year.incomes.socialSecurity).not.toBeCloseTo(readings.startInTheMonthTheExAttains62, 6)
+    })
+  })
+
   it('starts at the claim-age year with the claiming factor applied', () => {
     const plan = basePlan()
     plan.incomes = [
@@ -1014,13 +1094,17 @@ describe('social security', () => {
   // The 10,000-dollar 2030 entitlement-year wage replaces a zero in the
   // top-35 (post-age-60 years are not indexed): sum 647,950, AIME 1,542,
   // PIA floorToDime(0.9×1,174 + 0.32×(1,542−1,174)) = 1,174.30 (delta 7.70
-  // ≥ $1). January 2031 therefore pays 13,999.20 + 7.70×12 = 14,091.60.
-  // The engine resolves PIA once pre-loop and ignores the post-claim wage, so
-  // it observably pays the baseline 13,999.20.
+  // ≥ $1). Both PIAs are raised by the published 2024 and 2025 cost-of-living
+  // increases, 2.5% and 2.8% floored to the dime each time (415(i)(2)(A)), and
+  // by the plan's zero inflation for the unannounced 2026-2029 increases:
+  // 1,166.60 → 1,195.70 → 1,229.10 and 1,174.30 → 1,203.60 → 1,237.30. January
+  // 2031 therefore pays 1,237.30×12 = 14,847.60. The engine resolves PIA once
+  // pre-loop and ignores the post-claim wage, so it observably pays
+  // 1,229.10×12 = 14,749.20.
   describeRule('usc-42-415-f-2-post-entitlement-pia-recomputation', {
     readings: {
-      mandatoryHigherPiaFromPostFraEntitlementYearWages: 14_091.6,
-      piaResolvedOnceBeforeProjection: 13_999.2,
+      mandatoryHigherPiaFromPostFraEntitlementYearWages: 14_847.6,
+      piaResolvedOnceBeforeProjection: 14_749.2,
     },
     accepted: 'mandatoryHigherPiaFromPostFraEntitlementYearWages',
     produced: 'piaResolvedOnceBeforeProjection',
@@ -1123,15 +1207,19 @@ describe('social security', () => {
     expect(y2027.incomes.socialSecurity).toBeLessThan(3_000 * 12) // below 100% of PIA
   })
 
-  it('reduces the survivor step-up for an early-claim widow before survivor FRA', () => {
-    // Both born 1960 (survivor FRA 66y8m = 800 months). p2 PIA 3,000 claimed at 62,
-    // dies at 67. p1 PIA 1,000 claims at 62 ⇒ survivor reduction at 62 (744 months):
-    // frac = (744-720)/(800-720) = 0.3 ⇒ factor = 1 - 0.285×0.7 = 0.8005.
-    // RIB-LIM base = max(2,100, 2,475) = 2,475; payable = 2,475 × 0.8005 × 12.
+  it('reduces the survivor step-up for an early-claim widow before survivor FRA, at her age when it is first paid', () => {
+    // p1 born 1964-06-15 (survivor FRA 67 = 804 months), PIA 1,000, claims at 62.
+    // p2 born 1960-06-15, PIA 3,000, claimed at 62, dies at 66 (December 2026,
+    // the ledger's month of death). The widow benefit is first paid in January
+    // 2027, when p1 is 751 months old (402(q)(6)(A)(iii)), not at her own claim
+    // (744 months): factor = 1 - 0.285 × (804 - 751)/84 = 0.820179. The PIA
+    // reduced for age, 3,000 × 0.820179 = 2,460.54, is below the RIB-LIM limit
+    // max(2,100, 2,475) = 2,475, so it is paid (402(e)(2)(D) applies the limit
+    // after the age reduction); payable = 2,460.54 × 12.
     const plan = basePlan()
     plan.household.filingStatus = 'marriedFilingJointly'
     plan.household.people = [
-      { id: 'p1', name: 'Low', dob: '1960-06-15', sex: 'average', retirementAge: null, longevity: { planningAge: 95, source: 'manual' } },
+      { id: 'p1', name: 'Low', dob: '1964-06-15', sex: 'average', retirementAge: null, longevity: { planningAge: 95, source: 'manual' } },
       { id: 'p2', name: 'High', dob: '1960-06-15', sex: 'average', retirementAge: null, longevity: { planningAge: 66, source: 'manual' } },
     ]
     plan.incomes = [
@@ -1142,7 +1230,7 @@ describe('social security', () => {
     const result = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax })
 
     const y2027 = result.years.find((y) => y.year === 2027)!
-    const expectedSurvivor = 0.825 * 3_000 * (1 - 0.285 * 0.7) * 12
+    const expectedSurvivor = 3_000 * (1 - (0.285 * (804 - 751)) / 84) * 12
     expect(y2027.incomes.socialSecurity).toBeCloseTo(expectedSurvivor, 4)
     expect(y2027.incomes.socialSecurity).toBeLessThan(0.825 * 3_000 * 12) // reduced below the FRA-claim amount
   })
@@ -1320,9 +1408,11 @@ describe('social security', () => {
     plan.accounts = [cash(2_000_000)]
     const result = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax })
 
-    // Born 1964 -> FRA 67. Divorced-spousal at 62y6m is 67.5% of half the ex PIA,
-    // and only the six payable months after the claim month are paid in 2026.
-    expect(result.years.find((y) => y.year === 2026)!.incomes.socialSecurity).toBeCloseTo(4_000 * 0.5 * 0.675 * 6, 6)
+    // Born 1964 -> FRA 67. At 62y6m (54 months early) her own 800 is paid at 72.5%
+    // (580) and the excess of half the ex PIA over it, 2,000 - 800, at the spouse
+    // factor 67.5% (810): 1,390 a month (402(q)(3)(B), (k)(3)(A)). Only the six
+    // payable months after the claim month are paid in 2026.
+    expect(result.years.find((y) => y.year === 2026)!.incomes.socialSecurity).toBeCloseTo((800 * 0.725 + (2_000 - 800) * 0.675) * 6, 6)
   })
 
   it('withholds current-spouse spousal benefits before FRA and credits them at FRA', () => {
@@ -1467,7 +1557,13 @@ describe('social security', () => {
     if (isPiaFromEarningsError(expected)) throw new Error(expected.code)
     expect(expected.piaMonthly).toBeGreaterThan(1_000)
 
+    // The eligibility-year (2024) PIA is raised by the 2024 and 2025
+    // cost-of-living increases, 2.5% and 2.8%, each floored to the dime
+    // (42 U.S.C. 415(i)(2)(A)), to reach the 2026 start year's dollars.
+    const floorToDime = (value: number): number => Math.floor(value * 10 + 1e-9) / 10
+    const piaAtStart = floorToDime(floorToDime(expected.piaMonthly * 1.025) * 1.028)
+    expect(piaAtStart).toBeGreaterThan(expected.piaMonthly)
     const claimYear = result.years.find((y) => y.year === 2029)! // age 67 = FRA: factor 1
-    expect(claimYear.incomes.socialSecurity).toBeCloseTo(expected.piaMonthly * 12, 6)
+    expect(claimYear.incomes.socialSecurity).toBeCloseTo(piaAtStart * 12, 6)
   })
 })

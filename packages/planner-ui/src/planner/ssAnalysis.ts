@@ -33,7 +33,9 @@ import {
   computePiaFromEarnings,
   isPiaFromEarningsError,
   piaInputFromEarnings,
+  piaWithCostOfLivingIncreases,
   resolveEarningsProjection,
+  socialSecurityColaAssumptionPct,
   type PiaFromEarningsResult,
 } from '@retiregolden/engine/socialSecurity/piaFromEarnings'
 import { currentStartYear, taxCalculatorFor } from './useProjection'
@@ -61,16 +63,45 @@ export function ssStreamFor(plan: Plan, personId: string): SsStream | undefined 
   return plan.incomes.find((s): s is SsStream => s.type === 'socialSecurity' && s.personId === personId)
 }
 
+/**
+ * The projection's first year and the plan's COLA assumption: what brings an
+ * earnings-derived PIA to the dollars of the year the ledger starts paying.
+ */
+export interface PiaAsOf {
+  startYear: number
+  colaAssumptionPct: number
+}
+
+export function piaAsOfPlan(plan: Plan, startYear: number = currentStartYear()): PiaAsOf {
+  return { startYear, colaAssumptionPct: socialSecurityColaAssumptionPct(plan.assumptions) }
+}
+
 export interface ResolvedPia {
-  /** Monthly PIA at FRA in today's dollars, or null if it can't be resolved. */
+  /**
+   * Monthly PIA as the projection pays it in its first year, or null if it
+   * can't be resolved: an entered PIA as entered, and an earnings-derived PIA
+   * raised by every cost-of-living increase from the eligibility year (the
+   * year the person attains 62) through the year before the projection starts
+   * (42 U.S.C. 415(i)(2)(A)(iii)). A person not yet eligible has no increase.
+   */
   piaMonthly: number | null
   warning: string | null
-  /** Full earnings-mode computation detail (indexed years, projection, AIME), when derived from earnings. */
+  /**
+   * Full earnings-mode computation detail (indexed years, projection, AIME),
+   * when derived from earnings. Its `piaMonthly` is the eligibility-year PIA,
+   * before the cost-of-living increases `piaMonthly` above includes.
+   */
   detail: PiaFromEarningsResult | null
 }
 
-/** Resolve a stream's PIA the same way the engine does: entered, or derived from earnings. */
-export function resolvePia(person: Person, stream: SsStream): ResolvedPia {
+/**
+ * Resolve a stream's PIA the same way the projection does
+ * (projection/simulate.ts, the resolved-PIA loop): entered, or derived from
+ * earnings and raised by the cost-of-living increases since eligibility to the
+ * projection's first year, so the analysis page's models and the household
+ * step show the amount the ledger pays from.
+ */
+export function resolvePia(person: Person, stream: SsStream, asOf: PiaAsOf): ResolvedPia {
   if (stream.piaMonthly !== null) return { piaMonthly: stream.piaMonthly, warning: null, detail: null }
   if (!stream.earnings || stream.earnings.length === 0) {
     return { piaMonthly: null, warning: 'No PIA entered and no earnings history.', detail: null }
@@ -81,20 +112,31 @@ export function resolvePia(person: Person, stream: SsStream): ResolvedPia {
   if (isPiaFromEarningsError(result)) {
     return { piaMonthly: null, warning: `Earnings history could not be used (${result.code}).`, detail: null }
   }
+  const atStart = piaWithCostOfLivingIncreases(result.piaMonthly, result.eligibilityYear, asOf.startYear - 1, asOf.colaAssumptionPct)
+  const warnings = [
+    result.usesStandInForFutureTables ? 'PIA uses stand-in SSA tables for years beyond published data.' : null,
+    atStart.standInYears.length > 0
+      ? `PIA uses the plan's COLA assumption for cost-of-living increases SSA has not yet announced (${atStart.standInYears.join(', ')}).`
+      : null,
+  ].filter((w): w is string => w !== null)
   return {
-    piaMonthly: result.piaMonthly,
-    warning: result.usesStandInForFutureTables ? 'PIA uses stand-in SSA tables for years beyond published data.' : null,
+    piaMonthly: atStart.piaMonthly,
+    warning: warnings.length > 0 ? warnings.join(' ') : null,
     detail: result,
   }
 }
 
-/** People who have a Social Security stream with a resolvable benefit. */
-export function claimingPeople(plan: Plan): { person: Person; stream: SsStream; pia: number }[] {
+/**
+ * People who have a Social Security stream with a resolvable benefit, each
+ * with the PIA the projection starting in `startYear` pays from.
+ */
+export function claimingPeople(plan: Plan, startYear: number = currentStartYear()): { person: Person; stream: SsStream; pia: number }[] {
   const out: { person: Person; stream: SsStream; pia: number }[] = []
+  const asOf = piaAsOfPlan(plan, startYear)
   for (const person of plan.household.people) {
     const stream = ssStreamFor(plan, person.id)
     if (!stream) continue
-    const { piaMonthly } = resolvePia(person, stream)
+    const { piaMonthly } = resolvePia(person, stream, asOf)
     if (piaMonthly !== null && piaMonthly > 0) out.push({ person, stream, pia: piaMonthly })
   }
   return out
@@ -156,7 +198,7 @@ export function sweepClaimingStrategies(
   startYear = currentStartYear(),
   objectivePolicyId: ObjectivePolicyId = 'max-after-tax-estate',
 ): SweepResult {
-  const people = claimingPeople(plan)
+  const people = claimingPeople(plan, startYear)
   const personIds = people.map((p) => p.person.id)
   const taxCalculator = taxCalculatorFor(plan)
   if (personIds.length === 0) {
@@ -230,7 +272,7 @@ export function refineClaimingMonthly(
   baseClaimYears: Record<string, number>,
   startYear = currentStartYear(),
 ): MonthlyRefinement {
-  const people = claimingPeople(plan)
+  const people = claimingPeople(plan, startYear)
   const taxCalculator = taxCalculatorFor(plan)
   const evaluate = (claim: Record<string, MonthlyClaim>): ProjectionSummary => {
     const candidate = planWithClaimAgesMonthly(plan, claim)
@@ -310,7 +352,7 @@ export function benefitsOnlyRanking(plan: Plan, discountRate: number, startYear 
   rows: BenefitsPvRow[]
   ranked: BenefitsPvRow[]
 } {
-  const people = claimingPeople(plan)
+  const people = claimingPeople(plan, startYear)
   const personIds = people.map((p) => p.person.id)
   const householdSingle = plan.household.people.length === 1
   const rows: BenefitsPvRow[] = []

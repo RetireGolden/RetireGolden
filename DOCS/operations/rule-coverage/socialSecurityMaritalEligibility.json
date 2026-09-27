@@ -12,7 +12,7 @@
         "kind": "needs-fact",
         "missingInput": "worker entitlement and fully-insured status plus exact divorce date"
       },
-      "conventionRationale": "Known defect, registered without changing the calculation. 20 CFR 404.331 splits the worker-entitled path (paragraphs (a) through (e), including a disability-entitled worker under 62) from the independently entitled path (paragraphs (a) through (f), worker at least 62 and not yet entitled, two years divorced). The former-spouse entry (formerSpouseSchema) carries relationship, dob, piaMonthly, and marriageYears, and has no worker-entitlement, fully-insured, or divorce-date fact, so the eligibility check (isDivorcedSpouseEligible) substitutes a calendar-year age-62 blanket. The companion test holds the claimant at FRA so the half-PIA amount is 1,500; worksheet-only facts projected out of the schema are an already-disability-entitled ex at 61 and a not-yet-entitled ex at 62 divorced one year. The claimant age-62 condition is supplied by a valid Plan claimAge and by spousalBenefitFactor, not by an explicit 62 predicate here, and the own-PIA restriction is a dual-entitlement offset this menu does not adjudicate.",
+      "conventionRationale": "Known defect, registered without changing the calculation. 20 CFR 404.331 splits the worker-entitled path (paragraphs (a) through (e), including a disability-entitled worker under 62) from the independently entitled path (paragraphs (a) through (f), worker at least 62 and not yet entitled, two years divorced). The former-spouse entry (formerSpouseSchema) carries relationship, dob, piaMonthly, and marriageYears, and has no worker-entitlement, fully-insured, or divorce-date fact, so the eligibility check (isDivorcedSpouseEligible) substitutes a calendar-year age-62 blanket. The companion test holds the claimant at FRA so the half-PIA amount is 1,500; worksheet-only facts projected out of the schema are an already-disability-entitled ex at 61 and a not-yet-entitled ex at 62 divorced one year. The claimant age-62 condition is supplied by a valid Plan claimAge and by spousalBenefitFactor, not by an explicit 62 predicate here, and the own-PIA restriction is the dual-entitlement offset priced by usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement, which pays no excess when the own PIA is at least half the ex’s; the companion test holds the claimant without an own benefit.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -29,7 +29,7 @@
           "functions": [
             {
               "name": "isDivorcedSpouseEligible",
-              "line": 71
+              "line": 97
             }
           ]
         }
@@ -40,12 +40,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/socialSecurity/maritalBenefits.eligibility.test.ts",
-          "line": 38,
+          "line": 40,
           "note": null,
           "tests": [
             {
               "title": "pins the calendar-year age-62 blanket against worker entitlement and the two-year independently entitled path",
-              "line": 60
+              "line": 62
             }
           ]
         }
@@ -245,11 +245,11 @@
           "functions": [
             {
               "name": "isWidowEligible",
-              "line": 122
+              "line": 148
             },
             {
               "name": "passesModeledOrdinaryWidowRecordGates",
-              "line": 90
+              "line": 116
             }
           ]
         }
@@ -260,12 +260,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/socialSecurity/maritalBenefits.eligibility.test.ts",
-          "line": 80,
+          "line": 82,
           "note": null,
           "tests": [
             {
               "title": "pins the ordinary nine-month widow path, including currently-single after a pre-60 intervening marriage and coupled null remarriage timing",
-              "line": 122
+              "line": 124
             }
           ]
         }
@@ -355,7 +355,7 @@
           "functions": [
             {
               "name": "passesSurvivorRemarriageGate",
-              "line": 80
+              "line": 106
             }
           ]
         }
@@ -366,12 +366,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/socialSecurity/maritalBenefits.eligibility.test.ts",
-          "line": 201,
+          "line": 207,
           "note": null,
           "tests": [
             {
               "title": "pins the historical remarriedAtAge gate against currently unmarried and (e)(1) preservation",
-              "line": 224
+              "line": 230
             }
           ]
         }
@@ -419,7 +419,7 @@
           "functions": [
             {
               "name": "passesModeledSurvivingDivorcedDurationGates",
-              "line": 103
+              "line": 129
             }
           ]
         }
@@ -430,12 +430,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/socialSecurity/maritalBenefits.eligibility.test.ts",
-          "line": 165,
+          "line": 171,
           "note": null,
           "tests": [
             {
               "title": "pins the surviving-divorced ten-year duration against the ordinary nine-month proxy",
-              "line": 182
+              "line": 188
             }
           ]
         }

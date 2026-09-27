@@ -3033,7 +3033,15 @@ describe('scenario lever contract', () => {
     claimant.claimAge = { years: 62, months: 0 }
     claimant.disability = { onsetAge: 60 }
     claimant.formerSpouses = []
-    spouse.piaMonthly = 1_000
+    // Sam's own 1,600 is above half of Alex's 3,000, so neither has a spouse
+    // benefit and Alex's disability benefit is all the claim age could move.
+    spouse.piaMonthly = 1_600
+    // Sam files at 70, which the lever leaves alone. A spouse benefit starts in
+    // the later of Alex's own claim and Sam's filing and is reduced for Alex's
+    // age then (42 U.S.C. 402(q)(6)(A)(ii), 402(r)), so Alex's claim age can move
+    // it only when Sam files before Alex's latest claim: born 1958, Sam files in
+    // September 2028, when Alex is 797 months old, before his claim at 70.
+    plan.household.people[1]!.dob = '1958-09-02'
     spouse.claimAge = { years: 70, months: 0 }
     spouse.formerSpouses = []
 

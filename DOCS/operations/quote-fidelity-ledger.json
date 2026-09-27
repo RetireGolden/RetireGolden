@@ -4,9 +4,9 @@
   "urlCount": 433,
   "fetched": 0,
   "cached": 433,
-  "entryCount": 1565,
+  "entryCount": 1579,
   "counts": {
-    "EXACT": 1069,
+    "EXACT": 1083,
     "PDF-WORD-LEVEL": 358,
     "ELISION-EXACT": 127,
     "PUNCTUATION": 4,
@@ -6529,6 +6529,36 @@
     },
     {
       "id": "usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement",
+      "citation": "42 U.S.C. 402(q)(6)(A)(ii)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim",
+      "quoteSha256": "65c7469c01488fb6",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement",
+      "citation": "42 U.S.C. 402(q)(5)(C)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim",
+      "quoteSha256": "973a495b2b48881b",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement",
+      "citation": "SSA POMS RS 00202.005, B.2.a",
+      "host": "secure.ssa.gov",
+      "url": "https://secure.ssa.gov/poms.nsf/lnx/0300202005",
+      "quoteSha256": "014a61867eb8b65e",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement",
       "citation": "SSA POMS RS 00615.250, A. Policy",
       "host": "secure.ssa.gov",
       "url": "https://secure.ssa.gov/poms.nsf/lnx/0300615250",
@@ -6774,7 +6804,7 @@
       "citation": "42 U.S.C. 402(e)(2)(D)",
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim",
-      "quoteSha256": "0dccc64d4f3808d2",
+      "quoteSha256": "206de06de3b08658",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null
@@ -6787,6 +6817,16 @@
       "quoteSha256": "1f7156b1dc032b2f",
       "verdict": "PUNCTUATION",
       "detail": "matches only after: fractions",
+      "diagnosis": null
+    },
+    {
+      "id": "poms-rs-00615-320-rib-lim-after-survivor-reduction",
+      "citation": "SSA POMS RS 00615.320, § A.1",
+      "host": "secure.ssa.gov",
+      "url": "https://secure.ssa.gov/poms.nsf/lnx/0300615320",
+      "quoteSha256": "2fd4df4ec213cc75",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
       "diagnosis": null
     },
     {
@@ -15734,6 +15774,106 @@
       "verdict": "PDF-WORD-LEVEL",
       "detail": "6 elision segments, all present in the extracted text",
       "diagnosis": null
+    },
+    {
+      "id": "usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month",
+      "citation": "42 U.S.C. 402(q)(6)(A)(iii)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim",
+      "quoteSha256": "71e2d64431ec5532",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month",
+      "citation": "42 U.S.C. 402(q)(3)(E)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim",
+      "quoteSha256": "174996945df1c0cf",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month",
+      "citation": "42 U.S.C. 402(q)(7)(A)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim",
+      "quoteSha256": "d315ac2b0ec4405e",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month",
+      "citation": "20 CFR 404.410(c)(1)",
+      "host": "www.law.cornell.edu",
+      "url": "https://www.law.cornell.edu/cfr/text/20/404.410",
+      "quoteSha256": "26ac464711ca31fd",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month",
+      "citation": "20 CFR 404.621(a)(4)(ii)",
+      "host": "www.ecfr.gov",
+      "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-G/subject-group-ECFR7863a9f033e7183/section-404.621",
+      "quoteSha256": "808be0d07841a3f5",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-415-e-1-earnings-above-the-base-not-counted",
+      "citation": "42 U.S.C. 415(e)(1)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section415&num=0&edition=prelim",
+      "quoteSha256": "d98a6d5fd9b6807c",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-415-e-1-earnings-above-the-base-not-counted",
+      "citation": "42 U.S.C. 415(b)(2)(B)(ii)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section415&num=0&edition=prelim",
+      "quoteSha256": "dca417b6876886a5",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-415-i-2-A-pia-cost-of-living-since-eligibility",
+      "citation": "42 U.S.C. 415(i)(2)(A)(ii)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section415&num=0&edition=prelim",
+      "quoteSha256": "020661bc9e792b75",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-415-i-2-A-pia-cost-of-living-since-eligibility",
+      "citation": "42 U.S.C. 415(i)(2)(A)(ii)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section415&num=0&edition=prelim",
+      "quoteSha256": "bd315cd7de0c6cbb",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "usc-42-415-i-2-A-pia-cost-of-living-since-eligibility",
+      "citation": "42 U.S.C. 415(i)(2)(A)(iii)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section415&num=0&edition=prelim",
+      "quoteSha256": "ff86c1815cf81acb",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
     }
   ],
   "apostropheStyle": [
@@ -15970,6 +16110,150 @@
         {
           "id": "cfr-26-1-36B-3-g-1-applicable-percentage-rounding",
           "citation": "Instructions for Form 8962 (2025), Worksheet 2, line 4"
+        }
+      ]
+    },
+    {
+      "on": "2026-09-27",
+      "note": "Changed by the D-SS-LAW-2 Social Security law change (the widow's limit applied after the age reduction): the whole of 42 U.S.C. 402(e)(2)(D) and POMS RS 00615.320 A.1 were added to this record, and every authority of the record was checked against its source with verify-quotes on 2026-09-27, filtered to this record: six EXACT and one PUNCTUATION, the 20 CFR 404.338(c) quote, unchanged by this change (its \"82 1/2\" fraction); no other entry was re-run.",
+      "entries": [
+        {
+          "id": "poms-rs-00615-320-rib-lim-after-survivor-reduction",
+          "citation": "42 U.S.C. 402(e)(2)(D)"
+        },
+        {
+          "id": "poms-rs-00615-320-rib-lim-after-survivor-reduction",
+          "citation": "20 CFR 404.338(c)"
+        },
+        {
+          "id": "poms-rs-00615-320-rib-lim-after-survivor-reduction",
+          "citation": "SSA POMS RS 00615.320, § A.1"
+        },
+        {
+          "id": "poms-rs-00615-320-rib-lim-after-survivor-reduction",
+          "citation": "SSA POMS RS 00615.320, § A.2"
+        },
+        {
+          "id": "poms-rs-00615-320-rib-lim-after-survivor-reduction",
+          "citation": "SSA POMS RS 00615.320, § A.3"
+        }
+      ]
+    },
+    {
+      "on": "2026-09-27",
+      "note": "Added by the D-SS-LAW-2 Social Security law change (the widow(er) reduction from the first month of widow(er) entitlement): the new record's five authorities, each checked against its source with verify-quotes on 2026-09-27, filtered to this record: all five EXACT; no other entry was re-run.",
+      "entries": [
+        {
+          "id": "usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month",
+          "citation": "42 U.S.C. 402(q)(6)(A)(iii)"
+        },
+        {
+          "id": "usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month",
+          "citation": "42 U.S.C. 402(q)(3)(E)"
+        },
+        {
+          "id": "usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month",
+          "citation": "42 U.S.C. 402(q)(7)(A)"
+        },
+        {
+          "id": "usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month",
+          "citation": "20 CFR 404.410(c)(1)"
+        },
+        {
+          "id": "usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month",
+          "citation": "20 CFR 404.621(a)(4)(ii)"
+        }
+      ]
+    },
+    {
+      "on": "2026-09-27",
+      "note": "Changed by the D-SS-LAW-2 Social Security law change (own benefit plus the separately reduced spouse excess, for a current and a divorced spouse): 42 U.S.C. 402(q)(6)(A)(ii) and 402(q)(5)(C) were added to this record, and every authority of the record was checked against its source with verify-quotes on 2026-09-27, filtered to this record: all six EXACT; no other entry was re-run.",
+      "entries": [
+        {
+          "id": "usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement",
+          "citation": "42 U.S.C. 402(q)(3)(A)-(B)"
+        },
+        {
+          "id": "usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement",
+          "citation": "42 U.S.C. 402(k)(3)(A)"
+        },
+        {
+          "id": "usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement",
+          "citation": "42 U.S.C. 402(q)(6)(A)(ii)"
+        },
+        {
+          "id": "usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement",
+          "citation": "42 U.S.C. 402(q)(5)(C)"
+        },
+        {
+          "id": "usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement",
+          "citation": "SSA POMS RS 00615.250, A. Policy"
+        },
+        {
+          "id": "usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement",
+          "citation": "SSA POMS RS 00615.694, A. Policy"
+        }
+      ]
+    },
+    {
+      "on": "2026-09-27",
+      "note": "Added by the D-SS-LAW-2 Social Security law change (earnings above each year's contribution and benefit base, from 1951): the new record's two authorities, each checked against its source with verify-quotes on 2026-09-27, filtered to this record: both EXACT; no other entry was re-run.",
+      "entries": [
+        {
+          "id": "usc-42-415-e-1-earnings-above-the-base-not-counted",
+          "citation": "42 U.S.C. 415(e)(1)"
+        },
+        {
+          "id": "usc-42-415-e-1-earnings-above-the-base-not-counted",
+          "citation": "42 U.S.C. 415(b)(2)(B)(ii)"
+        }
+      ]
+    },
+    {
+      "on": "2026-09-27",
+      "note": "Added by the D-SS-LAW-2 Social Security law change (the cost-of-living increases since eligibility for a PIA from earnings): the new record's three authorities, each checked against its source with verify-quotes on 2026-09-27, filtered to this record: all three EXACT; no other entry was re-run.",
+      "entries": [
+        {
+          "id": "usc-42-415-i-2-A-pia-cost-of-living-since-eligibility",
+          "citation": "42 U.S.C. 415(i)(2)(A)(ii)"
+        },
+        {
+          "id": "usc-42-415-i-2-A-pia-cost-of-living-since-eligibility",
+          "citation": "42 U.S.C. 415(i)(2)(A)(iii)"
+        }
+      ]
+    },
+    {
+      "on": "2026-09-27",
+      "note": "Changed in the independent review of the D-SS-LAW-2 change: SSA POMS RS 00202.005 B.2.a (an ex who need not have filed must be 62 throughout the first month of a divorced spouse's benefit) was added to this record, and every authority of the record was checked against its source with verify-quotes on 2026-09-27, filtered to this record; all seven EXACT, no other entry was re-run.",
+      "entries": [
+        {
+          "id": "usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement",
+          "citation": "42 U.S.C. 402(q)(3)(A)-(B)"
+        },
+        {
+          "id": "usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement",
+          "citation": "42 U.S.C. 402(k)(3)(A)"
+        },
+        {
+          "id": "usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement",
+          "citation": "42 U.S.C. 402(q)(6)(A)(ii)"
+        },
+        {
+          "id": "usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement",
+          "citation": "42 U.S.C. 402(q)(5)(C)"
+        },
+        {
+          "id": "usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement",
+          "citation": "SSA POMS RS 00202.005, B.2.a"
+        },
+        {
+          "id": "usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement",
+          "citation": "SSA POMS RS 00615.250, A. Policy"
+        },
+        {
+          "id": "usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement",
+          "citation": "SSA POMS RS 00615.694, A. Policy"
         }
       ]
     }

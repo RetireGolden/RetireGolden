@@ -2,17 +2,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { singlePersonPlan } from '../../testing/planFixtures.js'
 import type { DetectorContext } from '../types.js'
-import { ordinarySimultaneousEarlyCurrentSpouseComponents } from '../../socialSecurity/currentSpouseBenefit.js'
+import { spouseDualEntitlementMonthly } from '../../socialSecurity/dualEntitlement.js'
 import { bestMaritalBenefit } from '../../socialSecurity/maritalBenefits.js'
 
-vi.mock('../../socialSecurity/currentSpouseBenefit.js', async (importOriginal) => {
+vi.mock('../../socialSecurity/dualEntitlement.js', async (importOriginal) => {
   const original =
-    await importOriginal<typeof import('../../socialSecurity/currentSpouseBenefit.js')>()
+    await importOriginal<typeof import('../../socialSecurity/dualEntitlement.js')>()
   return {
     ...original,
-    ordinarySimultaneousEarlyCurrentSpouseComponents: vi.fn(
-      original.ordinarySimultaneousEarlyCurrentSpouseComponents,
-    ),
+    spouseDualEntitlementMonthly: vi.fn(original.spouseDualEntitlementMonthly),
   }
 })
 
@@ -26,29 +24,24 @@ vi.mock('../../socialSecurity/maritalBenefits.js', async (importOriginal) => {
 
 import { ssClaimMilestone } from './ssClaimMilestone.js'
 
-const mockedHelper = vi.mocked(ordinarySimultaneousEarlyCurrentSpouseComponents)
+const mockedHelper = vi.mocked(spouseDualEntitlementMonthly)
 const mockedFormer = vi.mocked(bestMaritalBenefit)
 
 /** Sentinel former monthly — isolates non-owned pricing; annual 15_840 at 12 payable months. */
 const FORMER_SENTINEL_MONTHLY = 1_320
 
+// Both claimed at 62 in January 2026, so the spouse benefit starts with her own
+// claim and carries the 62-year spouse factor, 0.65.
 const expectedHelperInput = {
-  currentSpouseContext: true,
-  bothAliveInPricedPeriod: true,
-  spousalPayableMonths: 12,
-  claimantDob: '1964-01-02',
-  workerDob: '1964-01-02',
-  claimantClaimAge: { years: 62, months: 0 },
-  workerClaimAge: { years: 62, months: 0 },
-  claimantSocialSecurityStreamCount: 1,
-  workerSocialSecurityStreamCount: 1,
-  claimantDisabilityDeclared: false,
-  workerDisabilityDeclared: false,
   ownPiaMonthly: 800,
   ownActualMonthly: 560,
-  workerPiaMonthly: 4_000,
-  spousalFactor: 0.65,
+  spouseBaseMonthly: 2_000,
+  spouseFactor: 0.65,
 }
+
+/** Totals around the sentinel's 15,840 a year: 560 + 780 = 1,340 a month wins, 560 + 740 = 1,300 loses. */
+const WINNING_TOTAL_MONTHLY = 1_340
+const LOSING_TOTAL_MONTHLY = 1_300
 
 type FormerRelationship = 'deceased' | 'surviving-divorced'
 
@@ -234,7 +227,7 @@ describe('ssClaimMilestone current-spouse prior-year competitor wiring', () => {
   })
 
   it('calls the dual-entitlement helper with lower-earner claimant and higher-earner worker mapping', () => {
-    mockedHelper.mockReturnValue({ ownMonthly: 560, auxiliaryMonthly: 780 })
+    mockedHelper.mockReturnValue(WINNING_TOTAL_MONTHLY)
 
     ssClaimMilestone.screen(deathAtStartCurrentSpouseContext())
 
@@ -242,22 +235,22 @@ describe('ssClaimMilestone current-spouse prior-year competitor wiring', () => {
     expect(mockedHelper).toHaveBeenCalledWith(expectedHelperInput)
   })
 
-  it('fires death-at-start survivor when helper components make current-spouse beat the former sentinel', () => {
-    mockedHelper.mockReturnValue({ ownMonthly: 560, auxiliaryMonthly: 780 })
+  it('fires death-at-start survivor when the helper total makes current-spouse beat the former sentinel', () => {
+    mockedHelper.mockReturnValue(WINNING_TOTAL_MONTHLY)
 
     expect(ssClaimMilestone.screen(deathAtStartCurrentSpouseContext())).not.toBeNull()
   })
 
-  it('stays silent when helper refusal leaves legacy spousal below the former sentinel', () => {
-    mockedHelper.mockReturnValue(null)
+  it('stays silent when the helper total leaves current-spouse below the former sentinel', () => {
+    mockedHelper.mockReturnValue(LOSING_TOTAL_MONTHLY)
 
     expect(ssClaimMilestone.screen(deathAtStartCurrentSpouseContext())).toBeNull()
   })
 
-  it('discriminates winner ordering by varying injected helper auxiliary around the former threshold', () => {
+  it('discriminates winner ordering by varying the injected helper total around the former threshold', () => {
     mockedHelper
-      .mockReturnValueOnce({ ownMonthly: 560, auxiliaryMonthly: 700 })
-      .mockReturnValueOnce({ ownMonthly: 560, auxiliaryMonthly: 780 })
+      .mockReturnValueOnce(560 + 700)
+      .mockReturnValueOnce(WINNING_TOTAL_MONTHLY)
 
     expect(ssClaimMilestone.screen(deathAtStartCurrentSpouseContext())).toBeNull()
     expect(ssClaimMilestone.screen(deathAtStartCurrentSpouseContext())).not.toBeNull()
@@ -269,7 +262,7 @@ describe('ssClaimMilestone current-spouse prior-year competitor wiring', () => {
   })
 
   it('includes surviving-divorced formers in prior-year bestMaritalBenefit at death-at-start', () => {
-    mockedHelper.mockReturnValue({ ownMonthly: 560, auxiliaryMonthly: 780 })
+    mockedHelper.mockReturnValue(WINNING_TOTAL_MONTHLY)
 
     ssClaimMilestone.screen(deathAtStartCurrentSpouseContext('surviving-divorced'))
 
@@ -281,13 +274,13 @@ describe('ssClaimMilestone current-spouse prior-year competitor wiring', () => {
   })
 
   it('stays silent at death-at-start when surviving-divorced former won the prior-year menu', () => {
-    mockedHelper.mockReturnValue(null)
+    mockedHelper.mockReturnValue(LOSING_TOTAL_MONTHLY)
 
     expect(ssClaimMilestone.screen(deathAtStartCurrentSpouseContext('surviving-divorced'))).toBeNull()
   })
 
   it('fires at death-at-start when current-spouse beats the surviving-divorced former sentinel', () => {
-    mockedHelper.mockReturnValue({ ownMonthly: 560, auxiliaryMonthly: 780 })
+    mockedHelper.mockReturnValue(WINNING_TOTAL_MONTHLY)
 
     expect(ssClaimMilestone.screen(deathAtStartCurrentSpouseContext('surviving-divorced'))).not.toBeNull()
   })

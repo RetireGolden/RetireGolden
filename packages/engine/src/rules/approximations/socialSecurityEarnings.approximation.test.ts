@@ -1,8 +1,8 @@
 /**
- * Pins the four approximated AIME earnings-history records: initial-computation
- * base window, annual indexed-earnings penny rounding, computation-year
- * count with the five-year dropout and 1951 floor, and disability-freeze AIME
- * exclusion.
+ * Pins the three approximated AIME earnings-history records (initial-computation
+ * base window, annual indexed-earnings penny rounding, and disability-freeze
+ * AIME exclusion) and the computation-year count with the five-year dropout and
+ * 1951 floor, settled on 2026-09-27 (decision D-SS-LAW-2).
  *
  * Official AWI figures are frozen from SSA's National Average Wage Index series
  * (https://www.ssa.gov/oact/cola/AWI.html, retrieved 2026-09-04), not imported
@@ -215,7 +215,7 @@ describeRule('usc-42-415-b-2-a-i-computation-years-five-year-dropout', {
       aimeFromCents(MODERN_AUTHORITY_SUM_CENTS, 35),
       aimeFromCents(HISTORICAL_SUM_CENTS, 34),
     ],
-    engineAlways35: [5322, 460],
+    always35YearsWithoutThe1951Floor: [5322, 460],
     noFiveYearDropout: [
       aimeFromCents(MODERN_AUTHORITY_SUM_CENTS, 40),
       aimeFromCents(HISTORICAL_SUM_CENTS, 39),
@@ -226,10 +226,9 @@ describeRule('usc-42-415-b-2-a-i-computation-years-five-year-dropout', {
     ],
   },
   accepted: 'elapsedMinusFiveWith1951Floor',
-  produced: 'engineAlways35',
   note: 'modern 35-year vs 1951-floor 34-year',
-}, ({ accepted, produced, readings }) => {
-  it('uses 35 computation years even when elapsed years start at the 1951 floor', () => {
+}, ({ accepted, readings }) => {
+  it('uses the elapsed years less five, 34 when elapsed years start at the 1951 floor', () => {
     const modern = aimeOf({
       ...MODERN_DOB,
       earnings: modernCountEarnings(),
@@ -240,8 +239,8 @@ describeRule('usc-42-415-b-2-a-i-computation-years-five-year-dropout', {
       earnings: awiEarnings(HISTORICAL_YEARS),
       lastEarningsYear: 1988,
     })
-    expect([modern, historical]).toEqual(produced)
-    expect([modern, historical]).not.toEqual(accepted)
+    expect([modern, historical]).toEqual(accepted)
+    expect([modern, historical]).not.toEqual(readings.always35YearsWithoutThe1951Floor)
     expect([modern, historical]).not.toEqual(readings.noFiveYearDropout)
     expect([modern, historical]).not.toEqual(readings.firstFiveCalendarYearsDropped)
   })

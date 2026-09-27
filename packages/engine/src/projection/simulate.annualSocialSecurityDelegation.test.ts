@@ -69,6 +69,8 @@ vi.mock('./internal/annualSocialSecurity.js', async (importOriginal) =>
           { personId: 'p1', value: 40 + ordinal },
           { personId: 'p1', value: 45 + ordinal },
         ],
+        withheldSurvivorMonthWrites: [],
+        withheldSpouseMonthWrites: [],
         warnings: [`delegated Social Security warning ${input.year}`],
       }
     },

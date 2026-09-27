@@ -24,6 +24,8 @@ const deceased: FormerSpouse = {
 const baseCtx: MaritalBenefitContext = {
   claimantDob: { year: 1960, month: 6, day: 15 },
   claimantClaimAge: { years: 67, months: 0 },
+  claimantOwnPiaMonthly: 0,
+  claimantOwnActualMonthly: 0,
   claimantAge: 70,
   year: 2030,
   claimantIsSingle: true,
@@ -89,6 +91,8 @@ describe('survivor eligibility', () => {
     const c = maritalBenefitFor(deceased, {
       ...baseCtx,
       claimantClaimAge: { years: 62, months: 0 },
+      claimantOwnPiaMonthly: 0,
+      claimantOwnActualMonthly: 0,
       claimantAge: 62,
     })!
     expect(c.monthly).toBeCloseTo(2_400 * (1 - 0.285 * 0.7), 5)
@@ -134,5 +138,39 @@ describe('bestMaritalBenefit', () => {
     expect(bestMaritalBenefit([{ ...divorced, marriageYears: 1 }], { ...baseCtx, claimantIsSingle: true })).toBeNull()
     expect(bestMaritalBenefit(undefined, baseCtx)).toBeNull()
     expect(bestMaritalBenefit([], baseCtx)).toBeNull()
+  })
+})
+
+describe('divorced-spousal earnings-test credit (402(q)(7))', () => {
+  // Claimant born 1962-06-15 (FRA 67, 804 months), 800 PIA, claims at 64y0m
+  // (768 months); her own benefit is taken as 693.33, already credited to 780
+  // months. The ex, born 1955-01-10 with a 2,400 PIA, was 62 long before her
+  // claim, so the divorced-spouse benefit starts at 768 months (factor 0.75).
+  const ex: FormerSpouse = { ...divorced, dob: '1955-01-10', piaMonthly: 2_400 }
+  const ctx: MaritalBenefitContext = {
+    claimantDob: { year: 1962, month: 6, day: 15 },
+    claimantClaimAge: { years: 64, months: 0 },
+    claimantOwnPiaMonthly: 800,
+    claimantOwnActualMonthly: 800 * (1 - (24 * 5) / 900),
+    claimantAge: 67,
+    year: 2029,
+    claimantIsSingle: true,
+  }
+  const own = 800 * (1 - (24 * 5) / 900)
+
+  it('credits the spouse months withheld from the year she reaches FRA: 780 months, 400 x 0.833333', () => {
+    const c = maritalBenefitFor(ex, { ...ctx, claimantSpouseWithheldMonths: 12 })
+    expect(c?.kind).toBe('divorcedSpousal')
+    expect(c!.monthly).toBeCloseTo(own + 400 * (1 - (24 * 25) / 3600), 9)
+    expect(c!.monthly).toBeCloseTo(1_026.67, 2)
+  })
+
+  it('credits nothing before that year, or when no spouse month was withheld: 400 x 0.75', () => {
+    expect(maritalBenefitFor(ex, { ...ctx, claimantSpouseWithheldMonths: 12, claimantAge: 66, year: 2028 })!.monthly).toBeCloseTo(own + 300, 9)
+    expect(maritalBenefitFor(ex, ctx)!.monthly).toBeCloseTo(own + 300, 9)
+  })
+
+  it('credits no further than FRA: 40 months take the spouse factor to 1, not past it', () => {
+    expect(maritalBenefitFor(ex, { ...ctx, claimantSpouseWithheldMonths: 40 })!.monthly).toBeCloseTo(own + 400, 9)
   })
 })

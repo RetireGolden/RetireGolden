@@ -1,15 +1,13 @@
 import { expect, it } from 'vitest'
 
-import type { IncomeStream, Plan } from '../../model/plan.js'
+import type { Plan } from '../../model/plan.js'
 import { parsePlan } from '../../model/plan.js'
 import { packForYear } from '../../params/index.js'
 import { describeCalculation, withinTolerance } from '../../rules/describeCalculation.js'
-import { claimFactor, spousalBenefitFactor } from '../../socialSecurity/claimFactor.js'
-import { couplePlan, singlePersonPlan } from '../../testing/planFixtures.js'
+import { singlePersonPlan } from '../../testing/planFixtures.js'
 import { createFederalTaxCalculator } from '../../tax/federalTax.js'
 import { simulatePlan } from '../simulate.js'
-import type { PersonYearState } from '../types.js'
-import { annualSocialSecurity, annualSocialSecurityPayableMonths } from './annualSocialSecurity.js'
+import { annualSocialSecurityPayableMonths } from './annualSocialSecurity.js'
 
 const pack = packForYear(2026).pack
 
@@ -79,114 +77,6 @@ describeCalculation(
       // month would also push a 65y0m claim past twelve.
       expect(annualSocialSecurityPayableMonths(inputs.ageInClaimYear!, { years: 65, months: 0 })).toBe(12)
       expect(annualSocialSecurityPayableMonths(inputs.ageInClaimYear!, { years: 65, months: 11 })).toBe(1)
-    })
-  },
-)
-
-describeCalculation(
-  'current-spouse-excess-fallback',
-  {
-    example: {
-      inputs: {
-        ownPiaMonthly: 1_000,
-        ownRetirementClaimFactor: 13 / 15,
-        workerPiaMonthly: 3_000,
-        spousalFactorTwentyFourMonthsEarly: 5 / 6,
-      },
-      expected: { auxiliaryMonthly: 1_150 / 3, combinedMonthly: 1_250 },
-      tolerance: { abs: 1e-9 },
-    },
-    worksheet: 'DOCS/calculations/social-security/current-spouse-excess-fallback.md',
-    mutation: 'DOCS/calculations/social-security/current-spouse-excess-fallback.mutation.md',
-  },
-  ({ example }) => {
-    const inputs = example.inputs as Record<string, number>
-    const expected = example.expected as Record<string, number>
-    // Same people and factors as the POMS-order worksheet, so the difference
-    // the fallback makes is visible rather than hidden behind other facts.
-    const plan = couplePlan({ p1Dob: '1960-03-15', p2Dob: '1955-03-15', p1PlanningAge: 95, p2PlanningAge: 95 })
-    const [claimant, worker] = plan.household.people as [
-      Plan['household']['people'][number],
-      Plan['household']['people'][number],
-    ]
-    const claimantClaimAge = { years: 65, months: 0 }
-    const workerClaimAge = { years: 66, months: 2 }
-    const incomes: IncomeStream[] = [
-      {
-        type: 'socialSecurity',
-        id: 'ss-claimant',
-        personId: claimant.id,
-        piaMonthly: inputs.ownPiaMonthly!,
-        earnings: null,
-        claimAge: claimantClaimAge,
-      },
-      {
-        type: 'socialSecurity',
-        id: 'ss-worker',
-        personId: worker.id,
-        piaMonthly: inputs.workerPiaMonthly!,
-        earnings: null,
-        claimAge: workerClaimAge,
-      },
-    ]
-    const states = new Map<string, PersonYearState>([
-      [claimant.id, { personId: claimant.id, ageAttained: 66, alive: true } as PersonYearState],
-      [worker.id, { personId: worker.id, ageAttained: 71, alive: true } as PersonYearState],
-    ])
-
-    const run = () =>
-      annualSocialSecurity({
-        incomes,
-        people: plan.household.people,
-        personById: new Map(plan.household.people.map((person) => [person.id, person])),
-        stateOf: (personId) => states.get(personId)!,
-        resolvedPiaByStreamId: new Map([
-          ['ss-claimant', inputs.ownPiaMonthly!],
-          ['ss-worker', inputs.workerPiaMonthly!],
-        ]),
-        wagesByPerson: new Map(),
-        withheldMonthsByPerson: new Map(),
-        year: 2026,
-        ssColaFactor: 1,
-        ssHaircutFactor: 1,
-        pack,
-        limitGrowth: 1,
-        // Outside the guarded POMS-order builder, which is the branch this
-        // worksheet is about.
-        currentSpouseContext: false,
-      })
-
-    const claimantMonthly = (): number => {
-      const row = run().socialSecurityStreams.find((entry) => entry.streamId === 'ss-claimant')
-      if (row === undefined) throw new Error('missing claimant stream row')
-      return row.preWithholdingAnnual / 12
-    }
-
-    it('reduces the full spousal amount first, publishing a 1,150/3 auxiliary and a 1,250 combined benefit', () => {
-      const spousalFactor = spousalBenefitFactor(1960, 3, 15, claimantClaimAge)
-      const ownFactor = claimFactor(1960, 3, 15, claimantClaimAge)
-      expectWithin(
-        spousalFactor,
-        inputs.spousalFactorTwentyFourMonthsEarly!,
-        example.tolerance,
-        'spousalFactor',
-      )
-      expectWithin(ownFactor, inputs.ownRetirementClaimFactor!, example.tolerance, 'ownRetirementClaimFactor')
-
-      const combined = claimantMonthly()
-      expectWithin(combined, expected.combinedMonthly!, example.tolerance, 'combinedMonthly')
-      expectWithin(
-        combined - inputs.ownPiaMonthly! * ownFactor,
-        expected.auxiliaryMonthly!,
-        example.tolerance,
-        'auxiliaryMonthly',
-      )
-    })
-
-    it('differs from the POMS-order figure the paired worksheet publishes', () => {
-      // The first wrong reading is the other worksheet's right answer: the
-      // POMS order would publish 3,850/3 combined, not 1,250.
-      expect(claimantMonthly()).toBeLessThan(3_850 / 3)
     })
   },
 )

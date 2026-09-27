@@ -6,9 +6,13 @@
  * Eligibility rules (from the gap analysis):
  *  - Divorced-spousal: marriage lasted ≥10 years, the claimant is currently
  *    unmarried, and the ex is calendar-year age ≥62 — the ex need not have filed.
- *    Worth up to 50% of the ex's PIA, reduced for the claimant's own (early)
- *    claim age, with no delayed credits (same factor as current-spousal). Worker
- *    entitlement, fully-insured status, and years since divorce are unmodeled
+ *    The claimant is paid their own benefit plus the excess of 50% of the ex's
+ *    PIA over their own PIA, reduced for the claimant's age in the first month
+ *    of the divorced-spouse benefit: the later of their own claim and the first
+ *    month the ex is 62 throughout (`dualEntitlement.ts`, POMS RS 00202.005
+ *    B.2.a; 42 U.S.C. 402(q)(3)(B), (k)(3)(A)),
+ *    with no delayed credits. Worker entitlement, fully-insured status, and
+ *    years since divorce are unmodeled
  *    (`cfr-20-404-331-living-divorced-spouse-eligibility`).
  *  - Ordinary survivor (deceased spouse): marriage lasted ≥9 months, the
  *    claimant is ≥60, and remarriage before 60 is treated as an unconditional
@@ -25,14 +29,21 @@
  *
  * Simplifications (spec §6): survivor is modeled at the claimant's own claim age
  * (the ledger doesn't model separate survivor-vs-own claim ages here — that
- * sequencing lives in the actuarial `survivorSwitching` view). Here a person
- * receives the larger of own vs the best marital benefit at their single claim
- * age.
+ * sequencing lives in the actuarial `survivorSwitching` view), and the plan holds
+ * no date of death for a former spouse, so the widow(er) benefit starts with
+ * that claim. The ledger pays the larger of the own benefit and the best
+ * candidate below, which for a divorced spouse already includes the own benefit.
  */
 
 import type { FormerSpouse } from '../model/plan.js'
-import { claimFactor, spousalBenefitFactor, type ClaimAge } from './claimFactor.js'
-import { effectiveBirthYear, fraForBirthYear, fraTotalMonths, survivorFraForBirthYear } from './nra.js'
+import { claimFactor, creditedAgeMonths, type ClaimAge } from './claimFactor.js'
+import {
+  divorcedExFirstMonthIndex,
+  spouseDualEntitlementMonthly,
+  spouseEntitlementAgeMonths,
+  spouseReductionFactorAtAgeMonths,
+} from './dualEntitlement.js'
+import { ageToTotalMonths, effectiveBirthYear, fraForBirthYear, fraTotalMonths, survivorFraForBirthYear } from './nra.js'
 import { survivorBenefitMonthly } from './survivorBenefit.js'
 
 export const DIVORCED_MIN_MARRIAGE_YEARS = 10
@@ -45,8 +56,18 @@ export type MaritalBenefitKind = 'divorcedSpousal' | 'survivor'
 
 export interface MaritalBenefitContext {
   claimantDob: { year: number; month: number; day: number }
-  /** Claim age for retirement/divorced-spousal factors, including any ARF credit the caller applies. */
+  /** The claimant's configured claim age, before any earnings-test credit. */
   claimantClaimAge: ClaimAge
+  /** The claimant's own PIA, for a divorced spouse's dual entitlement; 0 when they have none. */
+  claimantOwnPiaMonthly: number
+  /** The claimant's own old-age benefit as paid (after the claim factor), or 0. */
+  claimantOwnActualMonthly: number
+  /**
+   * Months withheld under the earnings test while a spouse benefit was paid,
+   * credited to the divorced-spouse reduction from the claimant's FRA year
+   * (402(q)(7)); 0 when omitted.
+   */
+  claimantSpouseWithheldMonths?: number
   /** Claim age for survivor factors; defaults to claimantClaimAge for direct helper callers. */
   claimantSurvivorClaimAge?: ClaimAge
   /** Whole age the claimant has attained in the year being evaluated. */
@@ -59,7 +80,12 @@ export interface MaritalBenefitContext {
 
 export interface MaritalBenefitCandidate {
   kind: MaritalBenefitKind
-  /** Monthly benefit at the claimant's claim age, today's dollars, before COLA/haircut. */
+  /**
+   * Monthly amount, today's dollars, before COLA/haircut, that the claimant is
+   * paid when this candidate wins: for a divorced spouse, the own benefit plus
+   * the reduced excess; for a survivor, the widow(er) benefit, which is paid in
+   * place of a smaller own benefit (402(k)(3)(A)).
+   */
   monthly: number
 }
 
@@ -140,11 +166,15 @@ function survivorBenefitFromFormerSpouse(record: FormerSpouse, ctx: MaritalBenef
   const exFra = fraForBirthYear(exEffYear)
   const exClaimAge: ClaimAge = record.deceasedClaimAge ?? { years: exFra.years, months: exFra.extraMonths }
   const deceasedActualMonthly = record.piaMonthly * claimFactor(exDobYear, exDobMonth, exDobDay, exClaimAge)
+  // An ex who claimed before full retirement age was entitled to a reduced
+  // benefit, so the 402(e)(2)(D) limit applies; a null claim age means FRA.
+  const deceasedEverReduced = ageToTotalMonths(exClaimAge.years, exClaimAge.months) < fraTotalMonths(exFra)
   const claimantEffYear = effectiveBirthYear(ctx.claimantDob.year, ctx.claimantDob.month, ctx.claimantDob.day)
   const survivorFraMonths = fraTotalMonths(survivorFraForBirthYear(claimantEffYear))
   const monthly = survivorBenefitMonthly({
     deceasedPiaMonthly: record.piaMonthly,
     deceasedActualMonthly,
+    deceasedEverReduced,
     survivorClaimAge: ctx.claimantSurvivorClaimAge ?? ctx.claimantClaimAge,
     survivorFraMonths,
   })
@@ -158,13 +188,37 @@ export function maritalBenefitFor(record: FormerSpouse, ctx: MaritalBenefitConte
 
   if (record.relationship === 'divorced') {
     if (!isDivorcedSpouseEligible(record, ctx)) return null
-    const factor = spousalBenefitFactor(
-      ctx.claimantDob.year,
-      ctx.claimantDob.month,
-      ctx.claimantDob.day,
-      ctx.claimantClaimAge,
+    // The ex need not have filed: the divorced-spouse benefit starts in the later
+    // of the claimant's own claim and the first month the ex is 62 throughout
+    // (POMS RS 00202.005 B.2.a), and is reduced for the claimant's age then
+    // (deemed filing, 402(r); 402(q)(6)(A)(ii)).
+    const exDob = {
+      year: birthYear(record.dob),
+      month: Number(record.dob.slice(5, 7)),
+      day: Number(record.dob.slice(8, 10)),
+    }
+    const claimantFraMonths = fraTotalMonths(
+      fraForBirthYear(effectiveBirthYear(ctx.claimantDob.year, ctx.claimantDob.month, ctx.claimantDob.day)),
     )
-    return { kind: 'divorcedSpousal', monthly: 0.5 * record.piaMonthly * factor }
+    const spouseAgeMonths = creditedAgeMonths(
+      spouseEntitlementAgeMonths(
+        ctx.claimantDob,
+        ageToTotalMonths(ctx.claimantClaimAge.years, ctx.claimantClaimAge.months),
+        divorcedExFirstMonthIndex(exDob),
+      ),
+      ctx.claimantSpouseWithheldMonths ?? 0,
+      ctx.claimantAge,
+      claimantFraMonths,
+    )
+    return {
+      kind: 'divorcedSpousal',
+      monthly: spouseDualEntitlementMonthly({
+        ownPiaMonthly: ctx.claimantOwnPiaMonthly,
+        ownActualMonthly: ctx.claimantOwnActualMonthly,
+        spouseBaseMonthly: 0.5 * record.piaMonthly,
+        spouseFactor: spouseReductionFactorAtAgeMonths(ctx.claimantDob, spouseAgeMonths),
+      }),
+    }
   }
 
   if (record.relationship === 'surviving-divorced') {

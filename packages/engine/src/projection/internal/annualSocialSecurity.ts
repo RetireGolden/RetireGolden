@@ -9,13 +9,18 @@
  */
 import type { IncomeStream, Person } from '../../model/plan.js'
 import type { ParameterPack } from '../../params/types.js'
-import { claimFactor, spousalBenefitFactor, type ClaimAge } from '../../socialSecurity/claimFactor.js'
-import { ordinarySimultaneousEarlyCurrentSpouseComponents } from '../../socialSecurity/currentSpouseBenefit.js'
+import { claimFactor, creditedAgeMonths, type ClaimAge } from '../../socialSecurity/claimFactor.js'
+import {
+  claimStartMonthIndex,
+  spouseDualEntitlementMonthly,
+  spouseEntitlementAgeMonths,
+  spouseReductionFactorAtAgeMonths,
+} from '../../socialSecurity/dualEntitlement.js'
 import { inSsdiWindow, ssdiMonthlyBenefit, ssdiSuspendedBySga } from '../../socialSecurity/disability.js'
 import { capAuxiliaryForFamilyMaximum, claimAgeTotalMonths } from '../../socialSecurity/familyMaximum.js'
 import { bestMaritalBenefit } from '../../socialSecurity/maritalBenefits.js'
 import { effectiveBirthYear, fraForBirthYear, fraTotalMonths, survivorFraForBirthYear } from '../../socialSecurity/nra.js'
-import { neverClaimedDeceasedFactor, survivorBenefitMonthly } from '../../socialSecurity/survivorBenefit.js'
+import { neverClaimedDeceasedFactor, survivorBenefitMonthly, widowEntitlementAgeMonths } from '../../socialSecurity/survivorBenefit.js'
 import { socialSecurityDobParts } from '../../socialSecurity/annualTiming.js'
 import type {
   SocialSecurityBenefitSource,
@@ -31,12 +36,24 @@ export interface AnnualSocialSecurityInput {
   readonly resolvedPiaByStreamId: ReadonlyMap<string, number>
   readonly wagesByPerson: ReadonlyMap<string, number>
   readonly withheldMonthsByPerson: ReadonlyMap<string, number>
+  /**
+   * Of those months, the ones withheld while the person was paid a widow(er)
+   * benefit. Only these adjust the widow(er) reduction at the survivor FRA:
+   * 42 U.S.C. 402(q)(7) excludes the months in which "such benefit" was
+   * withheld, and an own benefit withheld before the death is not that benefit.
+   */
+  readonly withheldSurvivorMonthsByPerson: ReadonlyMap<string, number>
+  /**
+   * Of those months, the ones withheld while the person was paid a spouse
+   * benefit (current or divorced). Only these adjust the spouse reduction at
+   * FRA, by the same 402(q)(7) rule.
+   */
+  readonly withheldSpouseMonthsByPerson: ReadonlyMap<string, number>
   readonly year: number
   readonly ssColaFactor: number
   readonly ssHaircutFactor: number
   readonly pack: Readonly<ParameterPack>
   readonly limitGrowth: number
-  readonly currentSpouseContext: boolean
 }
 
 export interface AnnualSocialSecurityResult {
@@ -45,6 +62,16 @@ export interface AnnualSocialSecurityResult {
   readonly ssEarningsTestWithheld: number
   readonly ssdiPaid: number
   readonly withheldMonthWrites: readonly {
+    readonly personId: string
+    readonly value: number
+  }[]
+  /** New running totals of `withheldSurvivorMonthsByPerson`, applied by the caller. */
+  readonly withheldSurvivorMonthWrites: readonly {
+    readonly personId: string
+    readonly value: number
+  }[]
+  /** New running totals of `withheldSpouseMonthsByPerson`, applied by the caller. */
+  readonly withheldSpouseMonthWrites: readonly {
     readonly personId: string
     readonly value: number
   }[]
@@ -76,14 +103,17 @@ export function annualSocialSecurity(
     resolvedPiaByStreamId,
     wagesByPerson,
     withheldMonthsByPerson,
+    withheldSurvivorMonthsByPerson,
+    withheldSpouseMonthsByPerson,
     year,
     ssColaFactor,
     ssHaircutFactor,
     pack,
     limitGrowth,
-    currentSpouseContext,
   } = input
   const withheldMonthWrites: { personId: string; value: number }[] = []
+  const withheldSurvivorMonthWrites: { personId: string; value: number }[] = []
+  const withheldSpouseMonthWrites: { personId: string; value: number }[] = []
   const warningValues: string[] = []
 
   const creditedClaimAgeFor = (
@@ -93,19 +123,32 @@ export function annualSocialSecurity(
     capMonths: number,
   ): ClaimAge => {
     const originalMonths = claimAgeTotalMonths(claimAge)
-    if (originalMonths >= capMonths || ageAttained < Math.floor(capMonths / 12)) return claimAge
-    const credited = Math.min(capMonths, originalMonths + (withheldMonthsByPerson.get(person.id) ?? 0))
-    return claimAgeFromTotalMonths(credited)
+    const credited = creditedAgeMonths(originalMonths, withheldMonthsByPerson.get(person.id) ?? 0, ageAttained, capMonths)
+    return credited === originalMonths ? claimAge : claimAgeFromTotalMonths(credited)
   }
+  // The widow(er) reduction age after the ARF: only months withheld while a
+  // widow(er) benefit was paid are credited (402(q)(7)).
+  const creditedSurvivorAgeFor = (person: Readonly<Person>, entitlementMonths: number, ageAttained: number, survivorFraMonths: number): ClaimAge =>
+    claimAgeFromTotalMonths(
+      creditedAgeMonths(entitlementMonths, withheldSurvivorMonthsByPerson.get(person.id) ?? 0, ageAttained, survivorFraMonths),
+    )
+  // The spouse reduction age after the ARF: only months withheld while a spouse
+  // benefit was paid are credited (402(q)(7)).
+  const creditedSpouseAgeMonthsFor = (person: Readonly<Person>, entitlementMonths: number, ageAttained: number, fraMonths: number): number =>
+    creditedAgeMonths(entitlementMonths, withheldSpouseMonthsByPerson.get(person.id) ?? 0, ageAttained, fraMonths)
+  // Whose benefit this year is a widow(er) or a spouse benefit, for the earnings
+  // test's month counts: the last replacement below decides it.
+  const auxiliaryPaidByPerson = new Map<string, 'spouse' | 'survivor'>()
 
   const ssOwnByPerson = new Map<string, number>()
   const ssActualMonthlyByPerson = new Map<string, number>()
-  const ssStreamCountByPerson = new Map<string, number>()
+  // People whose own old-age benefit was paid reduced for a claim before FRA:
+  // only their survivors are held to the 402(e)(2)(D) limit (RIB-LIM).
+  const ssEverReducedByPerson = new Set<string>()
   const ssStreamByPerson = new Map<string, {
     pia: number
     claimAge: { years: number; months: number }
     streamId: string
-    disabilityDeclared: boolean
   }>()
   const ssStreamPub = new Map<string, {
     personId: string
@@ -132,17 +175,12 @@ export function annualSocialSecurity(
 
   for (const stream of incomes) {
     if (stream.type !== 'socialSecurity') continue
-    ssStreamCountByPerson.set(
-      stream.personId,
-      (ssStreamCountByPerson.get(stream.personId) ?? 0) + 1,
-    )
     const pia = resolvedPiaByStreamId.get(stream.id)
     if (pia === undefined) continue
     ssStreamByPerson.set(stream.personId, {
       pia,
       claimAge: stream.claimAge,
       streamId: stream.id,
-      disabilityDeclared: stream.disability !== undefined,
     })
     const streamPub = ensureSsStreamPub(stream.id, stream.personId)
     const person = personById.get(stream.personId)!
@@ -191,6 +229,7 @@ export function annualSocialSecurity(
     const payableMonths = annualSocialSecurityPayableMonths(s.ageAttained, stream.claimAge)
     if (payableMonths <= 0) continue
     const fraMonths = fraTotalMonths(fra)
+    if (claimAgeTotalMonths(stream.claimAge) < fraMonths) ssEverReducedByPerson.add(stream.personId)
     const claimForFactor = creditedClaimAgeFor(person, stream.claimAge, s.ageAttained, fraMonths)
     const factor = claimFactor(y, m, d, claimForFactor)
     const monthly = pia * factor
@@ -216,12 +255,18 @@ export function annualSocialSecurity(
     if (!s.alive || payableMonths <= 0) continue
     const claimant = personById.get(stream.personId)!
     const { y, m, d } = socialSecurityDobParts(claimant)
-    const retirementFraMonths = fraTotalMonths(fraForBirthYear(effectiveBirthYear(y, m, d)))
     const survivorFraMonths = fraTotalMonths(survivorFraForBirthYear(effectiveBirthYear(y, m, d)))
     const best = bestMaritalBenefit(stream.formerSpouses, {
       claimantDob: { year: y, month: m, day: d },
-      claimantClaimAge: creditedClaimAgeFor(claimant, stream.claimAge, s.ageAttained, retirementFraMonths),
-      claimantSurvivorClaimAge: creditedClaimAgeFor(claimant, stream.claimAge, s.ageAttained, survivorFraMonths),
+      claimantClaimAge: stream.claimAge,
+      // A divorced spouse's benefit is the own benefit plus the reduced excess
+      // (402(k)(3)(A)), so the menu takes the claimant's own PIA and benefit.
+      claimantOwnPiaMonthly: ssStreamByPerson.get(stream.personId)?.pia ?? 0,
+      claimantOwnActualMonthly: ssActualMonthlyByPerson.get(stream.personId) ?? 0,
+      claimantSpouseWithheldMonths: withheldSpouseMonthsByPerson.get(stream.personId) ?? 0,
+      // A former spouse's death date is not in the plan; the widow(er) benefit is
+      // taken to start with the claimant's own claim, after that death.
+      claimantSurvivorClaimAge: creditedSurvivorAgeFor(claimant, claimAgeTotalMonths(stream.claimAge), s.ageAttained, survivorFraMonths),
       claimantAge: s.ageAttained,
       year,
       claimantIsSingle: householdIsSingle,
@@ -232,6 +277,7 @@ export function annualSocialSecurity(
         ssOwnByPerson.set(stream.personId, annual)
         const maritalSource: SocialSecurityBenefitSource =
           best.kind === 'survivor' ? 'survivor' : 'spousal'
+        auxiliaryPaidByPerson.set(stream.personId, maritalSource === 'survivor' ? 'survivor' : 'spouse')
         const paying = ensureSsStreamPub(stream.id, stream.personId)
         paying.preWithholdingAnnual = annual
         paying.source = maritalSource
@@ -259,10 +305,8 @@ export function annualSocialSecurity(
       const spousalPayableMonths = Math.min(lowerPayableMonths, higherPayableMonths)
       if (lowerState.alive && higherState.alive && spousalPayableMonths > 0) {
         const { y, m, d } = socialSecurityDobParts(lower.p)
+        const lowerDob = { year: y, month: m, day: d }
         const lowerFraMonths = fraTotalMonths(fraForBirthYear(effectiveBirthYear(y, m, d)))
-        const spousalClaimAge = creditedClaimAgeFor(lower.p, lower.ss.claimAge, lowerState.ageAttained, lowerFraMonths)
-        const spousalFactor = spousalBenefitFactor(y, m, d, spousalClaimAge)
-        const rawSpousalMonthly = 0.5 * higher.ss.pia * spousalFactor
 
         const higherDob = socialSecurityDobParts(higher.p)
         const workerActualMonthly =
@@ -279,41 +323,44 @@ export function annualSocialSecurity(
                 fraTotalMonths(fraForBirthYear(effectiveBirthYear(higherDob.y, higherDob.m, higherDob.d))),
               ),
             )
-        // The worker-record family maximum caps only the auxiliary excess; the
-        // lower earner's own benefit stays on that person's record unchanged.
+        // The spouse benefit starts in the later of the lower earner's own claim
+        // month and the month the worker's benefit starts (deemed filing, 402(r)),
+        // and is reduced for the lower earner's age then (402(q)(6)(A)(ii)).
+        const spouseAgeMonths = creditedSpouseAgeMonthsFor(
+          lower.p,
+          spouseEntitlementAgeMonths(
+            lowerDob,
+            claimAgeTotalMonths(lower.ss.claimAge),
+            claimStartMonthIndex(
+              { year: higherDob.y, month: higherDob.m, day: higherDob.d },
+              claimAgeTotalMonths(higher.ss.claimAge),
+            ),
+          ),
+          lowerState.ageAttained,
+          lowerFraMonths,
+        )
+        // Own benefit plus the separately reduced excess (402(q)(3)(B), (k)(3)(A)).
+        // The worker-record family maximum caps only that excess; the lower
+        // earner's own benefit stays on that person's record unchanged.
         const lowerOwnMonthly = ssActualMonthlyByPerson.get(lower.p.id) ?? 0
-        const guardedComponents = ordinarySimultaneousEarlyCurrentSpouseComponents({
-          currentSpouseContext,
-          bothAliveInPricedPeriod: lowerState.alive && higherState.alive,
-          spousalPayableMonths,
-          claimantDob: lower.p.dob,
-          workerDob: higher.p.dob,
-          claimantClaimAge: lower.ss.claimAge,
-          workerClaimAge: higher.ss.claimAge,
-          claimantSocialSecurityStreamCount: ssStreamCountByPerson.get(lower.p.id) ?? 0,
-          workerSocialSecurityStreamCount: ssStreamCountByPerson.get(higher.p.id) ?? 0,
-          claimantDisabilityDeclared: lower.ss.disabilityDeclared,
-          workerDisabilityDeclared: higher.ss.disabilityDeclared,
+        const combinedMonthly = spouseDualEntitlementMonthly({
           ownPiaMonthly: lower.ss.pia,
           ownActualMonthly: lowerOwnMonthly,
-          workerPiaMonthly: higher.ss.pia,
-          spousalFactor,
+          spouseBaseMonthly: 0.5 * higher.ss.pia,
+          spouseFactor: spouseReductionFactorAtAgeMonths(lowerDob, spouseAgeMonths),
         })
-        const excessSpousalMonthly =
-          guardedComponents?.auxiliaryMonthly ??
-          Math.max(0, rawSpousalMonthly - lowerOwnMonthly)
         const cappedExcessMonthly = capAuxiliaryForFamilyMaximum({
           workerPiaMonthly: higher.ss.pia,
           workerActualMonthly,
           workerDob: { year: higherDob.y, month: higherDob.m, day: higherDob.d },
-          auxiliaryMonthly: excessSpousalMonthly,
+          auxiliaryMonthly: combinedMonthly - lowerOwnMonthly,
         })
-        const spousalTotalMonthly =
-          (guardedComponents?.ownMonthly ?? lowerOwnMonthly) + cappedExcessMonthly
+        const spousalTotalMonthly = lowerOwnMonthly + cappedExcessMonthly
         const spousalAnnual = spousalTotalMonthly * spousalPayableMonths * ssColaFactor * ssHaircutFactor
         const own = ssOwnByPerson.get(lower.p.id) ?? 0
         if (spousalAnnual > own) {
           ssOwnByPerson.set(lower.p.id, spousalAnnual)
+          auxiliaryPaidByPerson.set(lower.p.id, 'spouse')
           const gateStreamId = lower.ss.streamId
           for (const entry of ssStreamPub.values()) {
             if (entry.personId !== lower.p.id) continue
@@ -348,11 +395,28 @@ export function annualSocialSecurity(
       const ownBenefit = ssOwnByPerson.get(survivor.id) ?? 0
       const { y, m, d } = socialSecurityDobParts(survivor)
       const survivorFraMonths = fraTotalMonths(survivorFraForBirthYear(effectiveBirthYear(y, m, d)))
-      const survivorClaimAge = creditedClaimAgeFor(survivor, survivorStream.claimAge, survivorState.ageAttained, survivorFraMonths)
+      // The widow(er) benefit is reduced for the months from its own first month
+      // of entitlement, not from the survivor's earlier own claim (402(q)(6)(A)(iii),
+      // 402(q)(3)(E)): the later of that claim and January after the year of death,
+      // the first month the ledger pays it. The death year is the last year the
+      // ledger keeps the deceased alive; a caller whose person-year state carries
+      // no life age cannot place it, and the reduction then starts at the
+      // survivor's own claim.
+      const deceasedLifeAge = stateOf(deceased.id).lifeAge
+      const ownClaimMonths = claimAgeTotalMonths(survivorStream.claimAge)
+      const entitlementMonths = deceasedLifeAge !== undefined
+        ? widowEntitlementAgeMonths(
+          { year: y, month: m, day: d },
+          socialSecurityDobParts(deceased).y + deceasedLifeAge,
+          ownClaimMonths,
+        )
+        : ownClaimMonths
+      const survivorClaimAge = creditedSurvivorAgeFor(survivor, entitlementMonths, survivorState.ageAttained, survivorFraMonths)
       const survivorAnnual =
         survivorBenefitMonthly({
           deceasedPiaMonthly: deceasedPia,
           deceasedActualMonthly,
+          deceasedEverReduced: ssEverReducedByPerson.has(deceased.id),
           survivorClaimAge,
           survivorFraMonths,
         }) *
@@ -361,6 +425,7 @@ export function annualSocialSecurity(
         ssHaircutFactor
       if (survivorAnnual > ownBenefit) {
         ssOwnByPerson.set(survivor.id, survivorAnnual)
+        auxiliaryPaidByPerson.set(survivor.id, 'survivor')
         const gateStreamId = survivorStream.streamId
         for (const entry of ssStreamPub.values()) {
           if (entry.personId !== survivor.id) continue
@@ -425,6 +490,19 @@ export function annualSocialSecurity(
         personId,
         value: (withheldMonthsByPerson.get(personId) ?? 0) + monthsWithheld,
       })
+      const auxiliaryPaid = auxiliaryPaidByPerson.get(personId)
+      if (auxiliaryPaid === 'survivor' && monthsWithheld > 0) {
+        withheldSurvivorMonthWrites.push({
+          personId,
+          value: (withheldSurvivorMonthsByPerson.get(personId) ?? 0) + monthsWithheld,
+        })
+      }
+      if (auxiliaryPaid === 'spouse' && monthsWithheld > 0) {
+        withheldSpouseMonthWrites.push({
+          personId,
+          value: (withheldSpouseMonthsByPerson.get(personId) ?? 0) + monthsWithheld,
+        })
+      }
       warningValues.push(
         'The earnings test withheld benefits for working early claimants; withheld months are credited back at full retirement age (annual approximation).',
       )
@@ -497,6 +575,8 @@ export function annualSocialSecurity(
     ssEarningsTestWithheld,
     ssdiPaid,
     withheldMonthWrites,
+    withheldSurvivorMonthWrites,
+    withheldSpouseMonthWrites,
     warnings: warningValues,
   }
 }

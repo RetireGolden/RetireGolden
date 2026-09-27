@@ -23,6 +23,8 @@ import {
 const ctx: MaritalBenefitContext = {
   claimantDob: { year: 1960, month: 6, day: 15 },
   claimantClaimAge: { years: 67, months: 0 },
+  claimantOwnPiaMonthly: 0,
+  claimantOwnActualMonthly: 0,
   claimantAge: 67,
   year: 2027,
   claimantIsSingle: true,
@@ -135,6 +137,8 @@ describeRule('cfr-20-404-335-ordinary-widow-eligibility', {
     const at59: MaritalBenefitContext = {
       claimantDob: { year: 1960, month: 6, day: 15 },
       claimantClaimAge: { years: 59, months: 0 },
+      claimantOwnPiaMonthly: 0,
+      claimantOwnActualMonthly: 0,
       claimantAge: 59,
       year: 2019,
       claimantIsSingle: true,
@@ -142,6 +146,8 @@ describeRule('cfr-20-404-335-ordinary-widow-eligibility', {
     const at60: MaritalBenefitContext = {
       ...at59,
       claimantClaimAge: { years: 60, months: 0 },
+      claimantOwnPiaMonthly: 0,
+      claimantOwnActualMonthly: 0,
       claimantAge: 60,
       year: 2020,
     }

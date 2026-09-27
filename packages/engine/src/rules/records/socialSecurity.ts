@@ -263,7 +263,7 @@ export const socialSecurityRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'Section 402(b)(2) is expressly subject to subsection (q), which supplies the early-claim reduction. The engine applies a steeper schedule for the spousal case than for a retirement benefit (25/36 of 1 percent for the first 36 months rather than 5/9), and the spouse base remains one-half of worker PIA without worker delayed credits. The guarded ordinary current-spouse composition is owned by `usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement`; excluded current-spouse shapes retain disclosed legacy behavior. MFJ, a two-person household, and the worker\u2019s configured start date are product proxies and do not establish current-spouse eligibility or actual worker entitlement. Living-divorced entitlement is governed by `cfr-20-404-331-living-divorced-spouse-eligibility`. The ssClaimMilestone pin covers the numerical statutory base in a prior-year insight comparator, not proof of actual historical payment or payable ledger, or complete winner, month, family-maximum, or timing logic.',
+      'Section 402(b)(2) is expressly subject to subsection (q), which supplies the early-claim reduction. The engine applies a steeper schedule for the spousal case than for a retirement benefit (25/36 of 1 percent for the first 36 months rather than 5/9), and the spouse base remains one-half of worker PIA without worker delayed credits. The composition with the claimant’s own benefit, the own benefit plus the separately reduced excess, is owned by `usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement` for a current and a divorced spouse alike. A two-person household is a product proxy for marriage and does not establish current-spouse eligibility or actual worker entitlement. Living-divorced entitlement is governed by `cfr-20-404-331-living-divorced-spouse-eligibility`. The ssClaimMilestone pin covers the numerical statutory base in a prior-year insight comparator, not proof of actual historical payment or payable ledger, or complete winner, month, family-maximum, or timing logic.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -298,14 +298,14 @@ export const socialSecurityRecords = {
     ],
   },
   'usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement': {
-    title: 'An ordinary early current-spouse benefit adds reduced own and reduced excess',
+    title: 'A spouse or divorced-spouse benefit adds the reduced own benefit and the separately reduced excess',
     statement:
-      'For an individual whose first month of wife’s or husband’s benefit at age 62 or older is also a month of old-age entitlement first begun before retirement age, and who is not entitled to disability insurance for the priced month, section 402(q)(3)(B) reduces the combined wife’s or husband’s amount by the paragraph (1) old-age reduction and separately by the reduction applicable to the unreduced wife’s or husband’s excess over the unreduced old-age benefit. Section 402(k)(3)(A) then offsets the reduced old-age benefit against that other benefit without taking the other benefit below zero. The payable total is therefore the reduced old-age benefit plus the separately reduced positive excess.',
+      'For an individual whose first month of wife’s or husband’s benefit at age 62 or older is also a month of old-age entitlement first begun before retirement age, and who is not entitled to disability insurance for the priced month, section 402(q)(3)(B) reduces the combined wife’s or husband’s amount by the paragraph (1) old-age reduction and separately by the reduction applicable to the unreduced wife’s or husband’s excess over the unreduced old-age benefit. Section 402(k)(3)(A) then offsets the reduced old-age benefit against that other benefit without taking the other benefit below zero. The payable total is therefore the reduced old-age benefit plus the separately reduced positive excess, and the excess is reduced for the months from the first month of the spouse benefit (402(q)(6)(A)(ii), with the certificate deemed filed in that month by 402(q)(5)(C)). dualEntitlement.ts#spouseDualEntitlementMonthly computes it for a current spouse (annualSocialSecurity.ts) and for a divorced spouse (maritalBenefits.ts): the own benefit as paid plus max(0, one half of the worker’s PIA minus the own PIA) times the spouse factor at the claimant’s age in the first month of the spouse benefit, the later of the claimant’s own claim and the month the worker’s benefit starts, or, for a divorced spouse, the first month the ex is 62 throughout.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'This record settles component arithmetic only after RetireGolden’s narrow Plan proxy admits the case. The proxy requires marriedFilingJointly with exactly two people; exactly one resolved Social Security stream per person; no disability declaration on either stream; the claimant’s original raw claim age strictly before the claimant’s retirement FRA; strict DOB-plus-raw-claim-age civil dates, with month-end clamping rejected, showing the worker’s configured date no later than the claimant’s; both people alive and both streams payable in the priced period; and a positive half-PIA excess. The helper uses the claimant’s existing actual own monthly amount plus the existing spouse factor applied to max(0, one-half worker PIA minus claimant own PIA). Raw original claim age selects the branch even in later post-FRA projection years; attained age and ARF-credited age do not. A worker configured earlier, including at or after the worker’s FRA, may enter because the spouse base is the worker PIA. MFJ, configured dates, and payable rows are planning proxies, not proof of marriage, application, insured status, prescribed application, or an actual SSA entitlement month. The helper returns null outside the complete guard, leaving staggered later-worker, claimant delayed-own, disability, multiple-stream, clamped-date, and nonpositive-excess shapes on the disclosed legacy paths. POMS RS 00615.694 confirms that delayed-credit composition needs a different sequence and is deliberately excluded.',
+      'Until 2026-09-27 the engine paid this composition only inside a narrow guard (both claims before the claimant’s full retirement age, the worker filing no later than the claimant, one stream each, no disability, married filing jointly) and elsewhere paid the larger of the own benefit and the reduced half of the worker’s PIA, with the spouse factor at the claimant’s own claim age; a divorced spouse always got that larger amount. Every path now uses the one helper. With deemed filing (section 402(r), for people who attain 62 after 2015), a claimant entitled to an own benefit is deemed to apply for a spouse benefit in the first month it is available, which is why the start is the later of the two months; for births before January 2, 1954 the one claim age cannot express a restricted application and prices them as if they applied for both. An own benefit with delayed credits is handled as POMS RS 00615.694 directs: the combined amount is computed without the credits and the own benefit with them is subtracted, so the claimant is paid the larger of the two. The companion tests price simultaneous early claims (a lower earner with an 800 PIA claiming at 62 beside a 4,000 PIA worker also at 62: 16,080 a year, not the 15,600 of the larger-of reading), a husband who claims at 70 when his wife claimed her 800 PIA at 62 (her spouse benefit starts unreduced at 70 years 5 months: 11,520 a year, not 9,360), and a single claimant whose ex is first 62 throughout a month when she is 63 years 9 months (707.50 dollars a month, 8,490 a year, not 7,800). A two-person household is the product proxy for marriage, and configured claim dates stand in for the months of application and entitlement; the family maximum caps a current spouse’s excess only. The identifier predates the divorced-spouse path and is kept so that references to the record stay valid.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -319,6 +319,24 @@ export const socialSecurityRecords = {
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim',
       quotedText:
         '(3)(A) If an individual is entitled to an old-age or disability insurance benefit for any month and to any other monthly insurance benefit for such month, such other insurance benefit for such month, after any reduction under subsection (q), subsection (e)(2) or (f)(2), and any reduction under section 403(a) of this title , shall be reduced, but not below zero, by an amount equal to such old-age or disability insurance benefit (after reduction under such subsection (q)).',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 402(q)(6)(A)(ii)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim',
+      quotedText:
+        'in the case of a wife\'s or husband\'s insurance benefit, with the first day of the first month for which a certificate described in paragraph (5)(A)(i) is effective, or',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 402(q)(5)(C)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim',
+      quotedText:
+        'If an individual does not have in his or her care a child described in subparagraph (A)(ii) in the first month for which he or she is entitled to a wife\'s or husband\'s insurance benefit, and if such first month is a month before the month in which he or she attains retirement age (as defined in section 416(l) of this title), he or she shall be deemed to have filed in such first month the certificate described in subparagraph (A)(i).',
+    }, {
+      kind: 'agencyGuidance',
+      citation: 'SSA POMS RS 00202.005, B.2.a',
+      url: 'https://secure.ssa.gov/poms.nsf/lnx/0300202005',
+      quotedText:
+        'be the divorced spouse (see RS 00202.005A) of a fully insured worker age 62 (the NH must be 62 throughout the first month of entitlement but need not have filed a claim for benefits);',
     }, {
       kind: 'agencyGuidance',
       citation: 'SSA POMS RS 00615.250, A. Policy',
@@ -335,12 +353,19 @@ export const socialSecurityRecords = {
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-09-06',
+    verifiedOn: '2026-09-27',
     implementedBy: [
-      'packages/engine/src/socialSecurity/currentSpouseBenefit.ts',
+      'packages/engine/src/insights/detectors/ssClaimMilestone.ts',
+      'packages/engine/src/projection/internal/annualSocialSecurity.ts',
+      'packages/engine/src/socialSecurity/dualEntitlement.ts',
+      'packages/engine/src/socialSecurity/maritalBenefits.ts',
     ],
     implementedByFunctions: [
-      'packages/engine/src/socialSecurity/currentSpouseBenefit.ts#ordinarySimultaneousEarlyCurrentSpouseComponents',
+      'packages/engine/src/insights/detectors/ssClaimMilestone.ts#resolveCurrentSpouseSpousalAnnualPriorYear',
+      'packages/engine/src/projection/internal/annualSocialSecurity.ts#annualSocialSecurity',
+      'packages/engine/src/socialSecurity/dualEntitlement.ts#spouseDualEntitlementMonthly',
+      'packages/engine/src/socialSecurity/dualEntitlement.ts#spouseEntitlementAgeMonths',
+      'packages/engine/src/socialSecurity/maritalBenefits.ts#maritalBenefitFor',
     ],
   },
   'usc-42-402-worker-claim-window-62-to-70': {
@@ -442,12 +467,12 @@ export const socialSecurityRecords = {
   'usc-42-402-r-1-2-deemed-filing-old-age-and-spousal': {
     title: 'Current eligible old-age and current-spouse benefits are deemed filed together',
     statement:
-      'For a current deemed-filing claim, when an individual is eligible for a wife’s or husband’s insurance benefit and entitled to an old-age insurance benefit for a month, section 402(r) deems an application for the spouse benefit; it reciprocally deems an old-age application when the individual is entitled to the spouse benefit, subject to the provision’s stated exceptions. The post-2015 regime applies to individuals who attain age 62 in any calendar year after 2015, so every not-yet-claimed cohort in a 2026-or-later projection is inside it and no grandfathered restricted application survives. The engine represents a current-spouse claimant with one `claimAge` on their Social Security stream rather than allowing a restricted current-spouse-only claim that leaves the own old-age benefit unclaimed. Within the separately registered guarded ordinary simultaneous early branch, that one raw claim age selects the own and spouse components; current-spouse eligibility and excluded pricing shapes remain partial.',
+      'For a current deemed-filing claim, when an individual is eligible for a wife’s or husband’s insurance benefit and entitled to an old-age insurance benefit for a month, section 402(r) deems an application for the spouse benefit; it reciprocally deems an old-age application when the individual is entitled to the spouse benefit, subject to the provision’s stated exceptions. The post-2015 regime applies to individuals who attain age 62 in any calendar year after 2015, so every not-yet-claimed cohort in a 2026-or-later projection is inside it and no grandfathered restricted application survives. The engine represents a spouse claimant with one `claimAge` on their Social Security stream rather than allowing a restricted spouse-only claim that leaves the own old-age benefit unclaimed, and starts the spouse benefit, as the deemed application does, in the first month it is available: the later of that claim and the month the worker’s benefit starts, or for a divorced spouse the first month the ex is 62 throughout.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'This record owns deemed-filing application coupling and the Plan’s single-claim-age representation; it does not own the dollar composition of dual entitlement. `usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement` owns reduced-own-plus-reduced-excess arithmetic only inside its complete ordinary early guard. MFJ, two people, and configured stream dates remain product proxies rather than proof of eligibility, application, or entitlement month, and all excluded shapes retain their separately disclosed partial behavior.',
+      'This record owns deemed-filing application coupling and the Plan’s single-claim-age representation; the dollar composition of dual entitlement, including the spouse factor at that first month, is owned by `usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement`. A two-person household and configured stream dates remain product proxies rather than proof of eligibility, application, or entitlement month. For people born before January 2, 1954, who could still restrict an application, the one claim age cannot express that choice.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -554,7 +579,7 @@ export const socialSecurityRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'model/plan.ts defines a Social Security stream with one `claimAge` whose years are schema-clamped to 62–70. annualSocialSecurity.ts derives both the own and survivor ages from that same stream field, so no accepted Plan can supply the two claim dates a switch requires (including a survivor-only claim at 60). The separate planner-ui survivorSwitching view illustrates two dates but does not make them ledger inputs.',
+      'model/plan.ts defines a Social Security stream with one `claimAge` whose years are schema-clamped to 62–70. annualSocialSecurity.ts starts both the own and the survivor benefit at that same stream field, reducing the survivor benefit from the later of that claim and the month of death, so no accepted Plan can supply the two claim dates a switch requires (including a survivor-only claim at 60). The separate planner-ui survivorSwitching view illustrates two dates but does not make them ledger inputs.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -626,7 +651,7 @@ export const socialSecurityRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'This record is confined to the reduction curve after a survivor FRA has been supplied. The survivor FRA schedule itself, keyed to the year the survivor turns 60, is recorded separately at usc-42-416-l-survivor-fra-age-60-attainment-cohorts; it is not a competing reading of this helper’s month interpolation.',
+      'This record is confined to the reduction curve after a survivor FRA has been supplied. The survivor FRA schedule itself, keyed to the year the survivor turns 60, is recorded separately at usc-42-416-l-survivor-fra-age-60-attainment-cohorts; it is not a competing reading of this helper’s month interpolation. The month the reduction is measured from, the first month of widow(er) entitlement, is registered at usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -681,28 +706,93 @@ export const socialSecurityRecords = {
     ],
   },
 
+  'usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month': {
+    title: 'A widow(er) benefit is reduced from its own first month of entitlement, not from an earlier own claim',
+    statement:
+      'annualSocialSecurity.ts reduces a current spouse’s widow(er) benefit for the months from the first month of widow(er) entitlement to the survivor’s full retirement age. Under the plan’s one claim age that month is the later of the survivor’s own configured claim month and January of the year after the worker died, the first month the projection pays the survivor (it keeps the worker alive through the last year of the life age); survivorBenefit.ts#widowEntitlementAgeMonths computes the survivor’s age in that month, and survivorReductionFactor adds the age-60 floor. Section 402(q)(6)(A)(iii) starts the widow(er) reduction period with the first month of entitlement or the month of age 60, whichever is later; section 402(q)(3)(E) keeps an old-age benefit claimed earlier from carrying its own reduction months into the widow(er) benefit; and 20 CFR 404.621(a)(4)(ii) lets a widow(er) choose entitlement from the month of death, while the month after it is equally lawful. At the survivor’s full retirement age the reduction months are cut by the months in which the widow(er) benefit itself was withheld under the earnings test (section 402(q)(7)(A)), which the projection counts separately from months withheld from the survivor’s own benefit before the death.',
+    classification: 'settled',
+    contraryReading: null,
+    errorDirection: null,
+    conventionRationale:
+      'The plan states a life age, not a date of death, so December of the last year alive is the latest month of death it allows, the same month the survivor of a worker who died before claiming is priced from, and the projection first pays the survivor in the January after it. Entitlement from the month of death itself (20 CFR 404.621(a)(4)(ii)) is not modeled for the months of the death year: the projection pays no survivor benefit for them, so it starts the reduction with January, the first month it pays, rather than count a month of reduction that buys no payment. A survivor is therefore reduced for her age in that January, or at her own later claim. Until 2026-09-27 the engine reduced the widow(er) benefit at the survivor’s own claim age, as if the survivor had been widowed when she first claimed her own benefit. The companion test prices a survivor born in September 1962 who claimed her own benefit at 62 and is widowed in December 2026, so that her widow(er) benefit starts in January 2027 at 772 months: her widow(er) factor is 1 minus 0.285 times 32 over 84, and as the survivor of a worker with a 2,600 dollar PIA who claimed at 63 she is paid the 2,145 dollar limit, 25,740 dollars in 2027, where a reduction at her own claim age gives 24,848.57. A second test holds that nine months withheld from her own benefit before the death are not credited to the widow(er) benefit at her full retirement age: 27,812.57 dollars in 2029 rather than 28,765.29. The earnings-test months are counted in whole months per year by the same annual approximation as the own benefit (poms-rs-00615-482-arf-crediting-months). For a former spouse who died, the plan holds no date of death, and the widow(er) benefit is taken to start with the claimant’s own claim.',
+    jurisdiction: 'federal',
+    authority: [{
+      kind: 'statute',
+      citation: '42 U.S.C. 402(q)(6)(A)(iii)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim',
+      quotedText:
+        'in the case of a widow\'s or widower\'s insurance benefit, with the first day of the first month for which such individual is entitled to such benefit or the first day of the month in which such individual attains age 60, whichever is the later, and',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 402(q)(3)(E)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim',
+      quotedText:
+        'Notwithstanding subparagraph (A) of this paragraph, if the first month for which an individual is entitled to a widow\'s or widower\'s insurance benefit is a month for which such individual is also entitled to an old-age insurance benefit to which such individual was first entitled for that month or for a month before she or he became entitled to a widow\'s or widower\'s benefit, the reduction in such widow\'s or widower\'s insurance benefit shall be determined under paragraph (1).',
+    }, {
+      kind: 'statute',
+      citation: '42 U.S.C. 402(q)(7)(A)',
+      url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim',
+      quotedText:
+        'For purposes of this subsection, the "adjusted reduction period" for an individual\'s old-age, wife\'s, husband\'s, widow\'s, or widower\'s insurance benefit is the reduction period prescribed in paragraph (6) for such benefit, excluding- (A) any month in which such benefit was subject to deductions under section 403(b), 403(c)(1), 403(d)(1), or 422(b) of this title,',
+    }, {
+      kind: 'regulation',
+      citation: '20 CFR 404.410(c)(1)',
+      url: 'https://www.law.cornell.edu/cfr/text/20/404.410',
+      quotedText:
+        'The number of months of entitlement prior to full retirement age is multiplied by .285 and then divided by the number of months in the period beginning with the month of attainment of age 60 and ending with the month immediately before the month of attainment of full retirement age.',
+    }, {
+      kind: 'regulation',
+      citation: '20 CFR 404.621(a)(4)(ii)',
+      url: 'https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-G/subject-group-ECFR7863a9f033e7183/section-404.621',
+      quotedText:
+        'You are a widow, widower, or surviving divorced spouse of the insured person who died in the month before you applied and you were at least age 60 in the month of death of the insured person on whose earnings record you are claiming benefits. In this case, you can be entitled beginning with the month the insured person died if you choose and if you file your application on or after July 1, 1983.',
+    }],
+    volatility: 'staticStatute',
+    effectiveFrom: 2026,
+    effectiveThrough: null,
+    verifiedOn: '2026-09-27',
+    implementedBy: [
+      'packages/engine/src/projection/internal/annualSocialSecurity.ts',
+      'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/socialSecurity/nra.ts',
+      'packages/engine/src/socialSecurity/survivorBenefit.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualSocialSecurity.ts#annualSocialSecurity',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/socialSecurity/nra.ts#attainedAgeMonthsInMonth',
+      'packages/engine/src/socialSecurity/survivorBenefit.ts#widowEntitlementAgeMonths',
+    ],
+  },
+
   'poms-rs-00615-320-rib-lim-after-survivor-reduction': {
     title: 'RIB-LIM is tested after the widow(er) age reduction',
     statement:
-      'survivorBenefit.ts first chooses the greater of the deceased’s actual reduced benefit and 82.5 percent of the PIA, then applies the survivor’s age-reduction factor. POMS RS 00615.320 instead tests RIB-LIM when the widow(er) benefit after reduction for age is greater than both limits, at which point the payable amount is the greater limit. When both the deceased and survivor claimed early and the limit binds, the engine consequently understates the survivor benefit. The benefit error moves taxable Social Security income directly (at most 85 percent taxable), but when spending is instead funded from a traditional account the engine replaces each missing benefit dollar with a fully taxable withdrawal dollar, so the sign of the tax error depends on how the shortfall is funded.',
-    classification: 'approximated',
+      'survivorBenefit.ts takes the widow(er) base as the deceased’s PIA, deemed up to the deceased’s old-age benefit when that is larger, and reduces it for the survivor’s age first. Only then, and only when the deceased was at some time entitled to an old-age benefit reduced for claiming before full retirement age, does it apply the limit of 42 U.S.C. 402(e)(2)(D): an amount greater than both the deceased’s actual reduced benefit and 82.5 percent of the PIA is cut to the larger of the two. A deceased who never claimed, claimed at or after full retirement age, or was paid disability benefits is not limited.',
+    classification: 'settled',
     contraryReading: null,
-    errorDirection: 'bothDirections',
+    errorDirection: null,
     conventionRationale:
-      'Known defect, registered without changing the calculation. The code evaluates `max(deceasedActualMonthly, 0.825 × deceasedPiaMonthly)` before `survivorReductionFactor`, while POMS evaluates the widow(er) benefit after the age reduction before imposing the larger RIB-LIM amount. The companion test sets a 2,000-dollar PIA, a 1,400-dollar deceased reduced benefit, and a survivor claim at 63 against a 66-year survivor FRA: the authority-derived amount is 1,650 dollars because the widow(er) amount after reduction for age (2,000 x .8575 = 1,715) exceeds both limits, while the engine reduces that 1,650-dollar limit again. The observed engine amount is 1,414.875 (the 1,650-dollar limit reduced again by the .8575 age factor), pinned in the companion test.',
+      'The code computes `min(max(PIA, actual) x factor, max(actual, 0.825 x PIA))` when the deceased was ever paid a reduced old-age benefit, and `max(PIA, actual) x factor` otherwise, where the factor is the widow(er) reduction for age. The two forms agree whenever the deceased’s actual benefit is at or above the PIA. The companion test sets a 2,000-dollar PIA, a 1,400-dollar deceased reduced benefit, and a survivor claim at 63 against a 66-year survivor FRA: the widow(er) amount after reduction for age is 2,000 x .8575 = 1,715, which exceeds both limits, so the survivor is paid the larger limit, 1,650 dollars. The engine until 2026-09-27 chose the 1,650-dollar limit first and reduced it again for age, paying 1,414.875; that reading is rejected in the same test. A second case pays the unlimited 1,715 dollars when the deceased was never paid a reduced benefit. The deceased’s actual benefit keeps any adjustment of the reduction factor for months withheld under the earnings test, as POMS RS 00615.320 B.2.c directs.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
       citation: '42 U.S.C. 402(e)(2)(D)',
       url: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim',
       quotedText:
-        'If the deceased individual (on the basis of whose wages and self-employment income a widow or surviving divorced wife is entitled to widow\'s insurance benefits under this subsection) was, at any time, entitled to an old-age insurance benefit which was reduced by reason of the application of subsection (q), the widow\'s insurance benefit of such widow or surviving divorced wife for any month shall, if the amount of the widow\'s insurance benefit of such widow or surviving divorced wife (as determined under subparagraph (A) and after application of subsection (q)) is greater than-',
+        'If the deceased individual (on the basis of whose wages and self-employment income a widow or surviving divorced wife is entitled to widow\'s insurance benefits under this subsection) was, at any time, entitled to an old-age insurance benefit which was reduced by reason of the application of subsection (q), the widow\'s insurance benefit of such widow or surviving divorced wife for any month shall, if the amount of the widow\'s insurance benefit of such widow or surviving divorced wife (as determined under subparagraph (A) and after application of subsection (q)) is greater than- (i) the amount of the old-age insurance benefit to which such deceased individual would have been entitled (after application of subsection (q)) for such month if such individual were still living and paragraph (5) or (6) of section 415(f) of this title were applied, where applicable, and (ii) 82½ percent of the primary insurance amount (as determined without regard to subparagraph (C)) of such deceased individual, be reduced to the amount referred to in clause (i), or (if greater) the amount referred to in clause (ii).',
     }, {
       kind: 'regulation',
       citation: '20 CFR 404.338(c)',
       url: 'https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR219bf3e41a78e9f/section-404.338',
       quotedText:
         'Your monthly benefit will be reduced if the insured person chooses to receive old-age benefits before reaching full retirement age. If so, your benefit will be reduced to the amount the insured person would be receiving if alive, or 82 1⁄2 percent of his or her primary insurance amount, whichever is larger.',
+    }, {
+      kind: 'agencyGuidance',
+      citation: 'SSA POMS RS 00615.320, § A.1',
+      url: 'https://secure.ssa.gov/poms.nsf/lnx/0300615320',
+      quotedText:
+        'Consider the RIB LIM when the WIB is effective beginning 01/73 or later if the deceased NH was ever entitled to a reduced RIB or reduced DIB.',
     }, {
       kind: 'agencyGuidance',
       citation: 'SSA POMS RS 00615.320, § A.2',
@@ -729,9 +819,15 @@ export const socialSecurityRecords = {
     volatility: 'staticStatute',
     effectiveFrom: 2026,
     effectiveThrough: null,
-    verifiedOn: '2026-08-26',
-    implementedBy: ['packages/engine/src/socialSecurity/survivorBenefit.ts'],
+    verifiedOn: '2026-09-27',
+    implementedBy: [
+      'packages/engine/src/projection/internal/annualSocialSecurity.ts',
+      'packages/engine/src/socialSecurity/maritalBenefits.ts',
+      'packages/engine/src/socialSecurity/survivorBenefit.ts',
+    ],
     implementedByFunctions: [
+      'packages/engine/src/projection/internal/annualSocialSecurity.ts#annualSocialSecurity',
+      'packages/engine/src/socialSecurity/maritalBenefits.ts#maritalBenefitFor',
       'packages/engine/src/socialSecurity/survivorBenefit.ts#survivorBenefitMonthly',
     ],
   },
@@ -994,7 +1090,7 @@ export const socialSecurityRecords = {
   'cfr-20-404-338-survivor-deceased-drc-pass-through': {
     title: 'The deceased worker’s delayed-retirement credits pass through to the survivor base',
     statement:
-      'survivorBenefit.ts accepts the deceased worker’s actual claim-age-adjusted amount as the survivor base and preserves it when it exceeds 82.5 percent of PIA. Section 404.338 expressly permits an increased survivor monthly amount where the insured person delayed filing and earned delayed-retirement credits. The engine therefore carries a deceased worker’s earned DRCs into the survivor base; it does not grant DRCs for the survivor’s own delay. This record covers a worker who claimed before death. For a worker who died before claiming, the base is the benefit the worker would have received for the month before the death, with the credits earned by then, registered as usc-42-402-e-survivor-of-worker-who-died-before-claiming.',
+      'survivorBenefit.ts accepts the deceased worker’s actual claim-age-adjusted amount as the survivor base when it exceeds the PIA, as section 402(e)(2)(C) deems it. Section 404.338 expressly permits an increased survivor monthly amount where the insured person delayed filing and earned delayed-retirement credits. The engine therefore carries a deceased worker’s earned DRCs into the survivor base; it does not grant DRCs for the survivor’s own delay. This record covers a worker who claimed before death. For a worker who died before claiming, the base is the benefit the worker would have received for the month before the death, with the credits earned by then, registered as usc-42-402-e-survivor-of-worker-who-died-before-claiming.',
     classification: 'settled',
     contraryReading: null,
     errorDirection: null,
@@ -1365,7 +1461,7 @@ export const socialSecurityRecords = {
     contraryReading: null,
     errorDirection: 'bothDirections',
     conventionRationale:
-      'simulate.ts has a real PIA-from-earnings path, so this is not an absence record: before projecting any year it resolves each Social Security stream\'s PIA once from `socialSecurityIncomeSchema.earnings` and optional pre-retirement `earningsProjection`. Later `wagesIncomeSchema` income is not appended to that history or recomputed. Closing 415(f)(2) also requires widening the base-year window in piaFromEarnings.ts (`computePiaFromEarnings` clamps `lastBaseYear` to eligibility-1), which is why that file stays in implementedBy. The companion test gives a fully insured worker ten AWI-level covered years (2013-2022), claims at 2029 FRA, and supplies 10,000 dollars of covered wages in 2030. The authority-side recomputation replaces a zero in the top-35 set: indexed earnings rise by 10,000, AIME from 1,518 to 1,542, and 2024 second-band PIA from 1,166.60 to 1,174.30 (delta 7.70, above the one-dollar threshold), so 2031 pays 14,091.60; the engine observably leaves the initially resolved 1,166.60 PIA in force and pays 13,999.20.',
+      'simulate.ts has a real PIA-from-earnings path, so this is not an absence record: before projecting any year it resolves each Social Security stream\'s PIA once from `socialSecurityIncomeSchema.earnings` and optional pre-retirement `earningsProjection`. Later `wagesIncomeSchema` income is not appended to that history or recomputed. Closing 415(f)(2) also requires widening the base-year window in piaFromEarnings.ts (`computePiaFromEarnings` clamps `lastBaseYear` to eligibility-1), which is why that file stays in implementedBy. The companion test gives a fully insured worker ten AWI-level covered years (2013-2022), claims at 2029 FRA, and supplies 10,000 dollars of covered wages in 2030. The authority-side recomputation replaces a zero in the top-35 set: indexed earnings rise by 10,000, AIME from 1,518 to 1,542, and 2024 second-band PIA from 1,166.60 to 1,174.30 (delta 7.70, above the one-dollar threshold). Both are raised by the published 2024 and 2025 cost-of-living increases (2.5 and 2.8 percent, each floored to the dime) and by the plan\'s zero inflation for the increases not yet announced, to 1,229.10 and 1,237.30, so 2031 pays 14,847.60; the engine observably leaves the initially resolved PIA, 1,229.10, in force and pays 14,749.20.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',

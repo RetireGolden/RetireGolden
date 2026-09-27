@@ -1,22 +1,26 @@
 # Mutation receipt: survivor-benefit-rib-lim
 
-Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-eight` at base `989fc81b`, and re-executed 2026-09-22 against RetireGolden base `a046c8f0` (branch `claude/b1-p4-cards-eight`, pull request #728), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-27 against RetireGolden base `7e21cd29` (branch `claude/social-security-law-2`; no pull request is open yet) for the restatement under decision D-SS-LAW-2, replacing the mutation this receipt carried until then (it dropped the widow-limit floor from code the restatement removed), and re-executed 2026-09-27 against RetireGolden base `4dd40692` (branch `claude/social-security-law-2`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/socialSecurity/survivorBenefit.ts`
 
 ```diff
-@@ -77,7 +77,7 @@ export function survivorReductionFactor(ageMonths: number, survivorFraMonths: nu
-  */
- export function survivorBenefitMonthly(input: SurvivorBenefitInput): number {
+diff --git a/packages/engine/src/socialSecurity/survivorBenefit.ts b/packages/engine/src/socialSecurity/survivorBenefit.ts
+index da89ad89..10f471a8 100644
+--- a/packages/engine/src/socialSecurity/survivorBenefit.ts
++++ b/packages/engine/src/socialSecurity/survivorBenefit.ts
+@@ -101,7 +101,7 @@ export function survivorBenefitMonthly(input: SurvivorBenefitInput): number {
    if (input.deceasedPiaMonthly <= 0) return 0
--  const base = Math.max(input.deceasedActualMonthly, WIDOW_LIMIT_PIA_FRACTION * input.deceasedPiaMonthly)
-+  const base = input.deceasedActualMonthly
    const ageMonths = input.survivorClaimAge.years * 12 + input.survivorClaimAge.months
-   return base * survivorReductionFactor(ageMonths, input.survivorFraMonths)
- }
+   const reduced =
+-    Math.max(input.deceasedPiaMonthly, input.deceasedActualMonthly) *
++    Math.max(input.deceasedActualMonthly, WIDOW_LIMIT_PIA_FRACTION * input.deceasedPiaMonthly) *
+     survivorReductionFactor(ageMonths, input.survivorFraMonths)
+   if (!(input.deceasedEverReduced ?? input.deceasedActualMonthly < input.deceasedPiaMonthly)) return reduced
+   return Math.min(
 ```
 
-This drops the RIB-LIM widow's-limit floor and reduces the deceased's actual benefit directly, publishing $1,001.00 — the worksheet's first wrong reading.
+This takes the widow's limit as the base and reduces it for age, the order the engine used until 2026-09-27, publishing $1,576.93 in case A, $1,414.875 in case B and $1,179.75 in case C: the worksheet's first wrong reading.
 
 ## Command
 
@@ -26,44 +30,25 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/socialSecur
 
 ## Captured failing output
 
-Re-executed for D-RECEIPT-DRIFT because its hunk header named a line its production code has since moved from; the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (survivorBenefit.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Executed for the restated record (decision D-SS-LAW-2): the mutation reverts the fix, taking the widow's limit as the base and reducing it for age. Re-executed after the independent review made deceasedEverReduced optional, which changed the line after the hunk; the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (survivorBenefit.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine9/packages/engine
+RUN  v5.0.0 C:/rgwt/engine12/packages/engine
 
- ❯ src/socialSecurity/survivorBenefit.evidence.test.ts (3 tests | 2 failed) 6ms
-   ❯ survivor-benefit-rib-lim — Survivor benefit under RIB-LIM (3)
-     × floors the base at 82.5% of PIA and reduces it 28.5% at age 60 4ms
-     × takes the widow limit over the deceased's smaller actual benefit 1ms
+ ❯ src/socialSecurity/survivorBenefit.evidence.test.ts (6 tests | 3 failed) 6ms
+   ❯ survivor-benefit-rib-lim — Survivor benefit under RIB-LIM (6)
+     × case A: reduces for age first, and the limit does not bind at 62 (1,911.43, not 1,576.93) 4ms
+     × case B: the POMS case is cut to the larger limit after the age reduction (1,650, not 1,414.875) 0ms
+     × case C: at 60 the reduced PIA is paid, below the limit (1,430, not 1,179.75) 0ms
 
  Test Files  1 failed (1)
-      Tests  2 failed | 1 passed (3)
+      Tests  3 failed | 3 passed (6)
 
 
-⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
 
- FAIL  src/socialSecurity/survivorBenefit.evidence.test.ts > survivor-benefit-rib-lim — Survivor benefit under RIB-LIM > floors the base at 82.5% of PIA and reduces it 28.5% at age 60
-AssertionError: monthlyBenefit 1001.0000000000001 is not within {"abs":0.005} of the worksheet's 1179.75: expected false to be true // Object.is equality
-
-- Expected
-+ Received
-
-- true
-+ false
-
- ❯ expectWithin src/socialSecurity/survivorBenefit.evidence.test.ts:22:5
-     20|     withinTolerance(actual, expected, tolerance),
-     21|     `${label} ${actual} is not within ${JSON.stringify(tolerance)} of …
-     22|   ).toBe(true)
-       |     ^
-     23| }
-     24|
- ❯ src/socialSecurity/survivorBenefit.evidence.test.ts:81:7
-
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
-
- FAIL  src/socialSecurity/survivorBenefit.evidence.test.ts > survivor-benefit-rib-lim — Survivor benefit under RIB-LIM > takes the widow limit over the deceased's smaller actual benefit
-AssertionError: monthlyBenefit 1001.0000000000001 is not within {"abs":0.005} of the worksheet's 1179.75: expected false to be true // Object.is equality
+ FAIL  src/socialSecurity/survivorBenefit.evidence.test.ts > survivor-benefit-rib-lim — Survivor benefit under RIB-LIM > case A: reduces for age first, and the limit does not bind at 62 (1,911.43, not 1,576.93)
+AssertionError: caseA62 1576.9285714285716 is not within {"abs":0.005} of the worksheet's 1911.43: expected false to be true // Object.is equality
 
 - Expected
 + Received
@@ -71,16 +56,56 @@ AssertionError: monthlyBenefit 1001.0000000000001 is not within {"abs":0.005} of
 - true
 + false
 
- ❯ expectWithin src/socialSecurity/survivorBenefit.evidence.test.ts:22:5
-     20|     withinTolerance(actual, expected, tolerance),
-     21|     `${label} ${actual} is not within ${JSON.stringify(tolerance)} of …
-     22|   ).toBe(true)
+ ❯ expectWithin src/socialSecurity/survivorBenefit.evidence.test.ts:35:5
+     33|     withinTolerance(actual, expected, tolerance),
+     34|     `${label} ${actual} is not within ${JSON.stringify(tolerance)} of …
+     35|   ).toBe(true)
        |     ^
-     23| }
-     24|
- ❯ src/socialSecurity/survivorBenefit.evidence.test.ts:96:7
+     36| }
+     37|
+ ❯ src/socialSecurity/survivorBenefit.evidence.test.ts:88:7
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
+
+ FAIL  src/socialSecurity/survivorBenefit.evidence.test.ts > survivor-benefit-rib-lim — Survivor benefit under RIB-LIM > case B: the POMS case is cut to the larger limit after the age reduction (1,650, not 1,414.875)
+AssertionError: caseB 1414.875 is not within {"abs":0.005} of the worksheet's 1650: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ expectWithin src/socialSecurity/survivorBenefit.evidence.test.ts:35:5
+     33|     withinTolerance(actual, expected, tolerance),
+     34|     `${label} ${actual} is not within ${JSON.stringify(tolerance)} of …
+     35|   ).toBe(true)
+       |     ^
+     36| }
+     37|
+ ❯ src/socialSecurity/survivorBenefit.evidence.test.ts:99:7
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
+
+ FAIL  src/socialSecurity/survivorBenefit.evidence.test.ts > survivor-benefit-rib-lim — Survivor benefit under RIB-LIM > case C: at 60 the reduced PIA is paid, below the limit (1,430, not 1,179.75)
+AssertionError: caseC 1179.7500000000002 is not within {"abs":0.005} of the worksheet's 1430: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ expectWithin src/socialSecurity/survivorBenefit.evidence.test.ts:35:5
+     33|     withinTolerance(actual, expected, tolerance),
+     34|     `${label} ${actual} is not within ${JSON.stringify(tolerance)} of …
+     35|   ).toBe(true)
+       |     ^
+     36| }
+     37|
+ ❯ src/socialSecurity/survivorBenefit.evidence.test.ts:105:7
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
 ```
 
 ## Revert

@@ -159,7 +159,9 @@ import {
   computePiaFromEarnings,
   isPiaFromEarningsError,
   piaInputFromEarnings,
+  piaWithCostOfLivingIncreases,
   resolveEarningsProjection,
+  socialSecurityColaAssumptionPct,
 } from '../socialSecurity/piaFromEarnings.js'
 import { socialSecurityDobParts } from '../socialSecurity/annualTiming.js'
 import { ABW_DEFAULTS, abwExpectedRealReturnPct } from '../spending/abw.js'
@@ -932,7 +934,19 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     if (result.usesStandInForFutureTables) {
       warnings.add('PIA from earnings uses stand-in SSA tables for years beyond the published data.')
     }
-    resolvedPiaByStreamId.set(stream.id, result.piaMonthly)
+    // The earnings history gives the PIA of the eligibility year; 42 U.S.C.
+    // 415(i)(2)(A)(iii) raises it by every cost-of-living increase since, so
+    // bring it to the projection's first year before the ledger's own COLA.
+    const atStart = piaWithCostOfLivingIncreases(
+      result.piaMonthly,
+      result.eligibilityYear,
+      startYear - 1,
+      socialSecurityColaAssumptionPct(plan.assumptions),
+    )
+    if (atStart.standInYears.length > 0) {
+      warnings.add('PIA from earnings uses the plan\'s COLA assumption for cost-of-living increases SSA has not yet announced.')
+    }
+    resolvedPiaByStreamId.set(stream.id, atStart.piaMonthly)
   }
 
   const years: YearResult[] = []
@@ -1111,6 +1125,12 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
   // credited back at FRA by recomputing the benefit as if claimed that many
   // months later. Accumulated across the pre-FRA years (persists across the loop).
   const withheldMonthsByPerson = new Map<string, number>()
+  // The part of those months withheld while a widow(er) benefit was paid, which
+  // alone adjusts the widow(er) reduction (42 U.S.C. 402(q)(7)).
+  const withheldSurvivorMonthsByPerson = new Map<string, number>()
+  // And the part withheld while a spouse benefit was paid, which alone adjusts
+  // the spouse reduction.
+  const withheldSpouseMonthsByPerson = new Map<string, number>()
   // WS4 inherited-IRA regime cache: classify each inherited account ONCE per
   // simulation. Regime law lives only in strategies/inheritedIra.ts — simulate
   // never re-derives a divisor, deadline, or row. Path:
@@ -1679,17 +1699,23 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       resolvedPiaByStreamId,
       wagesByPerson,
       withheldMonthsByPerson,
+      withheldSurvivorMonthsByPerson,
+      withheldSpouseMonthsByPerson,
       year,
       ssColaFactor,
       ssHaircutFactor,
       pack,
       limitGrowth,
-      currentSpouseContext:
-        plan.household.filingStatus === 'marriedFilingJointly' && people.length === 2,
     })
     incomes.socialSecurity += socialSecurity.socialSecurity
     for (const write of socialSecurity.withheldMonthWrites) {
       withheldMonthsByPerson.set(write.personId, write.value)
+    }
+    for (const write of socialSecurity.withheldSurvivorMonthWrites) {
+      withheldSurvivorMonthsByPerson.set(write.personId, write.value)
+    }
+    for (const write of socialSecurity.withheldSpouseMonthWrites) {
+      withheldSpouseMonthsByPerson.set(write.personId, write.value)
     }
     for (const warning of socialSecurity.warnings) warnings.add(warning)
     const { socialSecurityStreams, ssEarningsTestWithheld, ssdiPaid } =

@@ -72,7 +72,7 @@
           "tolerance": 0.005,
           "unit": "dollars",
           "derivation": "1,800 × 1.08 (effective birth year 1954, FRA 66y0m, 12 months of delayed credit) × 12; own 1,944 a month exceeds half of Morgan's PIA, so no spousal top-up",
-          "contract": "worksheets social-security-benefit-annual, current-spouse-excess-fallback; nra.ts#effectiveBirthYear"
+          "contract": "worksheets social-security-benefit-annual, dual-entitlement-composition; nra.ts#effectiveBirthYear"
         },
         {
           "key": "social-security",

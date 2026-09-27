@@ -30,7 +30,7 @@ import { TypeChip } from './TypeChip'
 import { CheckboxField, DateField, NumberField, MoneyField, SelectField } from './fields'
 import { LearnAboutScreen } from '../learn/LearnAboutScreen'
 import { fmtMoney } from './format'
-import { dobParts, resolvePia } from './ssAnalysis'
+import { dobParts, piaAsOfPlan, resolvePia } from './ssAnalysis'
 import { ordinalSuffixes, PIA_MONTHLY_AT_FRA_LABEL } from './sections/sectionHelpers'
 import { Issues } from './sections/shared'
 
@@ -174,9 +174,9 @@ export function FormerSpousesEditor({
     <div className="mt-ms">
       <h4 style={{ margin: '0 0 0.3rem' }}>Former spouses</h4>
       <p className="card-hint">
-        A {DIVORCED_MIN_MARRIAGE_YEARS}+ year marriage to a living ex (while you're currently unmarried) can pay a divorced-spousal benefit of up to
-        half their benefit; a deceased spouse or a deceased divorced ex can pay a survivor benefit. You receive whichever is largest of your
-        own, spousal, and survivor benefits, so add any that might apply.
+        A {DIVORCED_MIN_MARRIAGE_YEARS}+ year marriage to a living ex (while you're currently unmarried) can pay a divorced-spousal benefit that
+        tops your own up toward half their benefit; a deceased spouse or a deceased divorced ex can pay a survivor benefit. You're paid your own
+        benefit plus any spousal top-up, or a survivor benefit when that is larger, so add any that might apply.
       </p>
       {records.map((r, i) => {
         // A divorced-spousal record cannot pay while a partner is on the plan
@@ -381,7 +381,11 @@ function PersonSsCard({ person, personIndex }: { person: Person; personIndex: nu
 
   const streamIndex = plan.incomes.findIndex((s) => s.id === stream.id)
   const mode: 'quick' | 'earnings' = stream.piaMonthly === null ? 'earnings' : 'quick'
-  const resolved = resolvePia(person, stream)
+  const piaAsOf = piaAsOfPlan(plan)
+  const resolved = resolvePia(person, stream, piaAsOf)
+  // An earnings-derived PIA past eligibility includes the cost-of-living
+  // increases from the eligibility year through the year before the start.
+  const colaFromYear = resolved.detail !== null && resolved.detail.eligibilityYear < piaAsOf.startYear ? resolved.detail.eligibilityYear : null
 
   const earnings = stream.earnings ?? []
   const mostRecentEarnings =
@@ -604,7 +608,17 @@ function PersonSsCard({ person, personIndex }: { person: Person; personIndex: nu
 
           {resolved.piaMonthly !== null ? (
             <p className="field-hint mt-xs">
-              Computed PIA: <strong>{fmtMoney(resolved.piaMonthly)}/mo</strong> at full retirement age.
+              Computed PIA: <strong>{fmtMoney(resolved.piaMonthly)}/mo</strong> at full retirement age
+              {colaFromYear !== null && resolved.detail !== null ? (
+                <>
+                  , as the plan pays it from {piaAsOf.startYear}. Your earnings give{' '}
+                  {fmtMoney(resolved.detail.piaMonthly)}/mo for {colaFromYear}, the year you became eligible at 62,
+                  and Social Security adds every cost-of-living increase from then through {piaAsOf.startYear - 1},
+                  whether or not you have claimed.
+                </>
+              ) : (
+                '.'
+              )}
               {projectedYears > 0 ? (
                 <>
                   {' '}

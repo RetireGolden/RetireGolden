@@ -22,6 +22,8 @@ import { bestMaritalBenefit, maritalBenefitFor, type MaritalBenefitContext } fro
 const baseCtx: MaritalBenefitContext = {
   claimantDob: { year: 1960, month: 6, day: 15 },
   claimantClaimAge: { years: 67, months: 0 },
+  claimantOwnPiaMonthly: 0,
+  claimantOwnActualMonthly: 0,
   claimantAge: 67,
   year: 2027,
   claimantIsSingle: true,

@@ -9,6 +9,7 @@ import {
   awiForYear,
   awiForYearOrLatest,
   bendPointsForEligibilityYearOrLatest,
+  COLA_PCT_BY_YEAR,
   LATEST_PIA_BEND_POINT_ELIGIBILITY_YEAR,
   wageBaseForYearOrLatest,
 } from './ssaWageData.js'
@@ -86,6 +87,12 @@ export interface PiaFromEarningsResult {
   usesStandInForFutureTables: boolean
 }
 
+/**
+ * The first computation base year: 42 U.S.C. 415(b)(2)(B)(ii) counts "the
+ * calendar years after 1950", and (iii) starts the elapsed years there too.
+ */
+export const FIRST_COMPUTATION_BASE_YEAR = 1951
+
 function floorToDime(x: number): number {
   return Math.floor(x * 10 + 1e-9) / 10
 }
@@ -114,9 +121,10 @@ export function piaMonthlyFromAime(aime: number, eligibilityYear: number): numbe
 }
 
 function capEarnings(year: number, amount: number): number {
-  // Cap at the year's taxable maximum, falling back to the latest published wage
-  // base for projected/future years SSA has not set yet (otherwise high earners'
-  // projected years would inflate AIME past the Social Security taxable maximum).
+  // 42 U.S.C. 415(e)(1): earnings above the year's contribution and benefit base
+  // are not counted. The base is SSA's for every year from 1937, and the latest
+  // published one for projected/future years SSA has not set yet (otherwise high
+  // earners' projected years would inflate AIME past the taxable maximum).
   return Math.max(0, Math.min(amount, wageBaseForYearOrLatest(year)))
 }
 
@@ -148,9 +156,10 @@ export function computePiaFromEarnings(input: PiaFromEarningsInput): PiaFromEarn
   }
 
   const effBirth = effectiveBirthYear(dobYear, dobMonth, dobDay)
-  // Elapsed-year span (year age 22 through year before 62), not computation-base
-  // years through the year before first entitlement, and not floored at 1951.
-  const firstBaseYear = effBirth + 22
+  // Elapsed-year span: 1951, or the year the worker turns 22 if later, through the
+  // year before 62 (42 U.S.C. 415(b)(2)(B)(iii)); not the computation-base years
+  // through the year before first entitlement (a registered approximation).
+  const firstBaseYear = Math.max(effBirth + 22, FIRST_COMPUTATION_BASE_YEAR)
   const lastBaseYear = eligibilityYear - 1
 
   if (lastEarningsYear < firstBaseYear || lastEarningsYear > lastBaseYear) {
@@ -223,8 +232,10 @@ export function computePiaFromEarnings(input: PiaFromEarningsInput): PiaFromEarn
     annualIndexedList.push(indexedAnnual)
   }
 
-  // Five lowest of the elapsed span, then at most 35 remaining years — not
-  // elapsed-count minus 5 (34 when elapsed years start at the 1951 floor).
+  // 42 U.S.C. 415(b)(2)(A): the computation years are the elapsed years less
+  // five, the years with the largest indexed earnings. Elapsed years number at
+  // most 40 (age 22 through 61), so at most 35 remain, and fewer when they start
+  // at 1951.
   annualIndexedList.sort((a, b) => a - b)
   const afterDropout = annualIndexedList.slice(5)
   if (afterDropout.length === 0) {
@@ -235,8 +246,8 @@ export function computePiaFromEarnings(input: PiaFromEarningsInput): PiaFromEarn
   }
 
   afterDropout.sort((a, b) => b - a)
-  const top = afterDropout.slice(0, 35)
-  const computationYearCount = Math.min(35, afterDropout.length)
+  const top = afterDropout
+  const computationYearCount = afterDropout.length
   const sumTop = top.reduce((s, v) => s + v, 0)
   const divisorMonths = 12 * computationYearCount
   const aime = Math.floor(sumTop / divisorMonths)
@@ -256,6 +267,55 @@ export function computePiaFromEarnings(input: PiaFromEarningsInput): PiaFromEarn
     piaMonthly: pia,
     usesStandInForFutureTables,
   }
+}
+
+export interface PiaWithCostOfLivingIncreases {
+  /** The PIA after every increase from the eligibility year through `throughYear`. */
+  readonly piaMonthly: number
+  /** Years in that span whose increase SSA has not announced; the stand-in rate was used for them. */
+  readonly standInYears: readonly number[]
+}
+
+/**
+ * The PIA raised by the cost-of-living increases since eligibility: 42 U.S.C.
+ * 415(i)(2)(A)(iii) raises the PIA of a person who becomes eligible in a year
+ * with an increase "by the amount of that increase and subsequent applicable
+ * increases", whatever the time of entitlement, and (ii) floors each increased
+ * amount to a multiple of $0.10. So the PIA an earnings history gives for the
+ * eligibility year `eligibilityYear` is multiplied, year by year from that year
+ * through `throughYear`, by one plus that year's increase (`COLA_PCT_BY_YEAR`),
+ * flooring to the dime after each step. A year SSA has not announced uses
+ * `standInPct` and is reported. Pass `throughYear` = the projection's first year
+ * less one to get the PIA in the first year's dollars; an eligibility year at or
+ * after it leaves the PIA unchanged.
+ */
+export function piaWithCostOfLivingIncreases(
+  piaMonthly: number,
+  eligibilityYear: number,
+  throughYear: number,
+  standInPct: number,
+): PiaWithCostOfLivingIncreases {
+  let pia = piaMonthly
+  const standInYears: number[] = []
+  for (let year = eligibilityYear; year <= throughYear; year++) {
+    const published = COLA_PCT_BY_YEAR[year]
+    if (published === undefined) standInYears.push(year)
+    pia = floorToDime(pia * (1 + (published ?? standInPct) / 100))
+  }
+  return { piaMonthly: pia, standInYears }
+}
+
+/**
+ * The yearly increase a projection assumes for Social Security, used for a year
+ * between the last announced cost-of-living increase and the projection's first
+ * year: the plan's fixed COLA, or its inflation rate when the COLA matches
+ * inflation.
+ */
+export function socialSecurityColaAssumptionPct(assumptions: {
+  readonly inflationPct: number
+  readonly ssCola: { readonly mode: 'matchInflation' } | { readonly mode: 'fixed'; readonly annualPct: number }
+}): number {
+  return assumptions.ssCola.mode === 'fixed' ? assumptions.ssCola.annualPct : assumptions.inflationPct
 }
 
 export function isPiaFromEarningsError(
@@ -278,7 +338,7 @@ export function piaInputFromEarnings(
   projection?: EarningsProjection | null,
 ): PiaFromEarningsInput {
   const effBirth = effectiveBirthYear(dobYear, dobMonth, dobDay)
-  const firstBaseYear = effBirth + 22
+  const firstBaseYear = Math.max(effBirth + 22, FIRST_COMPUTATION_BASE_YEAR)
   const lastBaseYear = effBirth + 61
   // Same elapsed-year clamp computePiaFromEarnings iterates; years outside it are ignored.
   const lastEarningsYear = Math.min(Math.max(...earnings.map((e) => e.year), firstBaseYear), lastBaseYear)

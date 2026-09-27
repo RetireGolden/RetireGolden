@@ -1,15 +1,15 @@
 # Mutation receipt: aca-coverage-year-parameters
 
-Executed 2026-09-27 against RetireGolden base `ef8a0e5f` (branch `claude/aca-2027-coverage-year`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `a5d07d32` (branch `claude/aca-2027-coverage-year`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `fe28be3c` (branch `claude/b2p1-slice2-display-math`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-27 against RetireGolden base `ef8a0e5f` (branch `claude/aca-2027-coverage-year`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `a5d07d32` (branch `claude/aca-2027-coverage-year`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `fe28be3c` (branch `claude/b2p1-slice2-display-math`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `15478aa9` (branch `claude/social-security-law-2`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `5f917180` (branch `claude/social-security-law-2`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `2d5fd40c` (branch `claude/social-security-law-2`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/projection/simulate.ts`
 
 ```diff
 diff --git a/packages/engine/src/projection/simulate.ts b/packages/engine/src/projection/simulate.ts
-index 3296fb90..4571846c 100644
+index 29218e14..7252605f 100644
 --- a/packages/engine/src/projection/simulate.ts
 +++ b/packages/engine/src/projection/simulate.ts
-@@ -1278,10 +1278,10 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
+@@ -1298,10 +1298,10 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
      const {
        params: acaParameters,
        isStandIn: acaParametersStandIn,
@@ -34,14 +34,14 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/params/acaC
 
 ## Captured failing output
 
-Re-executed for D-RECEIPT-DRIFT because its diff was a text substitution that named no line (it is now the git diff of the same substitution); the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (acaCoverageYears.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed for decision D-SS-LAW-2 because lines were added above its hunk (the cost-of-living increases since eligibility); the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (acaCoverageYears.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine9/packages/engine
+RUN  v5.0.0 C:/rgwt/engine12/packages/engine
 
- ❯ src/params/acaCoverageYears.evidence.test.ts (4 tests | 1 failed) 33ms
+ ❯ src/params/acaCoverageYears.evidence.test.ts (4 tests | 1 failed) 30ms
    ❯ aca-coverage-year-parameters — ACA credit figures by coverage year (4)
-     × publishes the same credit through the ledger, with the published line and the projected-income code 30ms
+     × publishes the same credit through the ledger, with the published line and the projected-income code 28ms
 
  Test Files  1 failed (1)
       Tests  1 failed | 3 passed (4)

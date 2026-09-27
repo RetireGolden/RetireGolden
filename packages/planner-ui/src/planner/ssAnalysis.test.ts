@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
 import { createEmptyPlan, parsePlan, type Account, type Plan } from '@retiregolden/engine/model/plan'
-import { benefitsOnlyRanking, candidateClaimAges, claimingPeople, refineClaimingMonthly, resolvePia, ssStreamFor, sweepClaimingStrategies, objectiveIsFlat, sweepVerdict, type SweepRow } from './ssAnalysis'
+import { simulatePlan } from '@retiregolden/engine/projection/simulate'
+import { taxCalculatorFor } from './useProjection'
+import { benefitsOnlyRanking, candidateClaimAges, claimingPeople, piaAsOfPlan, refineClaimingMonthly, resolvePia, ssStreamFor, sweepClaimingStrategies, objectiveIsFlat, sweepVerdict, type SweepRow } from './ssAnalysis'
 
 let counter = 0
 const id = () => `ssa-${++counter}`
@@ -46,7 +48,7 @@ describe('resolvePia / claimingPeople', () => {
   it('reads a quick PIA directly', () => {
     const plan = singlePlan()
     const stream = ssStreamFor(plan, 'p1')!
-    expect(resolvePia(plan.household.people[0]!, stream).piaMonthly).toBe(2_500)
+    expect(resolvePia(plan.household.people[0]!, stream, piaAsOfPlan(plan, 2026)).piaMonthly).toBe(2_500)
     expect(claimingPeople(plan)).toHaveLength(1)
   })
 
@@ -55,9 +57,57 @@ describe('resolvePia / claimingPeople', () => {
     const earnings = Array.from({ length: 35 }, (_, i) => ({ year: 1990 + i, amount: 60_000 }))
     plan.incomes = [{ type: 'socialSecurity', id: id(), personId: 'p1', piaMonthly: null, earnings, claimAge: { years: 67, months: 0 } }]
     const stream = ssStreamFor(plan, 'p1')!
-    const r = resolvePia(plan.household.people[0]!, stream)
+    const r = resolvePia(plan.household.people[0]!, stream, piaAsOfPlan(plan, 2026))
     expect(r.piaMonthly).not.toBeNull()
     expect(r.piaMonthly!).toBeGreaterThan(1_000)
+  })
+
+  // The pia-cost-of-living-since-eligibility worksheet's case A: born
+  // 1960-05-01, $50,000 of covered earnings in each year 1982-2021. The earnings
+  // give 2,846.40 for 2022, the eligibility year; the December 2022 to 2025
+  // increases (8.7%, 3.2%, 2.5%, 2.8%, each floored to the dime) raise it to
+  // 3,364.40, the PIA a projection starting in 2026 pays from.
+  function earningsPlan(): Plan {
+    const plan = singlePlan()
+    plan.household.people[0] = { ...plan.household.people[0]!, dob: '1960-05-01' }
+    plan.assumptions.inflationPct = 0
+    plan.assumptions.ssCola = { mode: 'matchInflation' }
+    const earnings = Array.from({ length: 40 }, (_, i) => ({ year: 1982 + i, amount: 50_000 }))
+    plan.incomes = [{ type: 'socialSecurity', id: id(), personId: 'p1', piaMonthly: null, earnings, claimAge: { years: 67, months: 0 } }]
+    return parsePlanOk(plan)
+  }
+
+  it('raises an earnings-derived PIA by the cost-of-living increases since eligibility (3,364.40, not 2,846.40)', () => {
+    const plan = earningsPlan()
+    const r = resolvePia(plan.household.people[0]!, ssStreamFor(plan, 'p1')!, piaAsOfPlan(plan, 2026))
+    expect(r.detail?.piaMonthly).toBeCloseTo(2_846.4, 6)
+    expect(r.detail?.eligibilityYear).toBe(2022)
+    expect(r.piaMonthly).toBeCloseTo(3_364.4, 6)
+    expect(r.warning).toBeNull()
+    expect(claimingPeople(plan, 2026)[0]!.pia).toBeCloseTo(3_364.4, 6)
+  })
+
+  it('agrees with the ledger, which pays 12 x 3,364.40 in 2027 with a 0% COLA', () => {
+    const plan = earningsPlan()
+    const resolved = resolvePia(plan.household.people[0]!, ssStreamFor(plan, 'p1')!, piaAsOfPlan(plan, 2026)).piaMonthly!
+    const year2027 = simulatePlan(plan, { startYear: 2026, taxCalculator: taxCalculatorFor(plan) }).years.find((y) => y.year === 2027)!
+    expect(year2027.incomes.socialSecurity).toBeCloseTo(resolved * 12, 6)
+    expect(year2027.incomes.socialSecurity).toBeCloseTo(40_372.8, 6)
+  })
+
+  it('applies no increase before the eligibility year, and the plan COLA for years SSA has not announced', () => {
+    const plan = earningsPlan()
+    const person = plan.household.people[0]!
+    const stream = ssStreamFor(plan, 'p1')!
+    const early = resolvePia(person, stream, piaAsOfPlan(plan, 2022))
+    expect(early.piaMonthly).toBeCloseTo(2_846.4, 6)
+    expect(early.warning).toBeNull()
+    // Case C: a projection starting in 2028 needs the 2026 and 2027 increases,
+    // which the plan's fixed 2% stands in for: 3,431.60, then 3,500.20.
+    const fixed = parsePlanOk({ ...plan, assumptions: { ...plan.assumptions, ssCola: { mode: 'fixed', annualPct: 2 } } })
+    const late = resolvePia(person, stream, piaAsOfPlan(fixed, 2028))
+    expect(late.piaMonthly).toBeCloseTo(3_500.2, 6)
+    expect(late.warning).toContain('2026, 2027')
   })
 
   it('excludes people with no benefit', () => {
