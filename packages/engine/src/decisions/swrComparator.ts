@@ -22,6 +22,7 @@
 import type { Plan } from '../model/plan.js'
 import { startingInvestableOf } from '../montecarlo/riskBasedGuardrails.js'
 import { summarizeProjection } from '../projection/compare.js'
+import { projectionDollarBasis, toTodayDollars } from '../projection/dollarBasis.js'
 import { simulatePlan, type SimulateOptions } from '../projection/simulate.js'
 
 export type SwrRuleId = 'bengen-2025' | 'morningstar-2026' | 'ern-cape'
@@ -74,7 +75,16 @@ export interface SwrRuleResult {
    */
   depletionYear: number | null
   endYear: number
+  /** Nominal ending after-tax estate of the rule's run, in endYear dollars. */
   endingAfterTaxEstate: number
+  /**
+   * The same estate in start-year (today's) dollars, divided by the rule's own
+   * run's inflation factor for endYear (`projectionDollarBasis`,
+   * `toTodayDollars`), so the page converts nothing itself. Null when the run
+   * has no years (its horizon ends before its start year), where there is no
+   * factor to divide by.
+   */
+  endingAfterTaxEstateTodayDollars: number | null
   lifetimeTaxesAndPenalties: number
 }
 
@@ -122,6 +132,10 @@ export function compareSwrRules(
       depletionYear: summary.depletionYear,
       endYear: result.endYear,
       endingAfterTaxEstate: summary.endingAfterTaxEstate,
+      endingAfterTaxEstateTodayDollars:
+        result.years.length === 0
+          ? null
+          : toTodayDollars(projectionDollarBasis(result), result.endYear, summary.endingAfterTaxEstate),
       lifetimeTaxesAndPenalties: summary.lifetimeTaxesAndPenalties,
     }
   })

@@ -65,9 +65,10 @@ export function useThresholdSolve(): ThresholdSolve {
         update((d) => {
           const policy = d.expenses.spendingPolicy
           if (!policy || policy.mode !== 'riskBasedGuardrails') return
-          if (solved.lower) policy.lowerBalanceThresholdPct = Math.round(solved.lower.balanceFrac * 10_000) / 100
+          // The solver publishes the percent to persist (two decimals).
+          if (solved.lower) policy.lowerBalanceThresholdPct = solved.lower.balancePct
           else delete policy.lowerBalanceThresholdPct
-          if (solved.upper) policy.upperBalanceThresholdPct = Math.round(solved.upper.balanceFrac * 10_000) / 100
+          if (solved.upper) policy.upperBalanceThresholdPct = solved.upper.balancePct
           else delete policy.upperBalanceThresholdPct
         })
       })

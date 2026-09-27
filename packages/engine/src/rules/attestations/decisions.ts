@@ -22,6 +22,7 @@ export const decisionsAttestations: Readonly<Record<string, CoverageAttestation>
   'decisions/rothConversionCandidateAdapter.ts': Object.freeze({ status: 'partial', sweptOn: '2026-08-29', note: 'same-owner destination gate registered under irc-408-d-3-A-i; the dated-intent gate remains unregistered' }),
   'decisions/search.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
   'decisions/spendingSolver.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
+  'decisions/spendingShapes.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-09-27', note: 'the plan solved per spending shape and the differences between published answers; no statute' }),
   'decisions/spendingSolverDiagnostics.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-09-26', note: null }),
   'decisions/spiaQuotes.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
   'decisions/stochastic.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),

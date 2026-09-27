@@ -1,15 +1,15 @@
 # Mutation receipt: swr-rule-rate-and-initial-spend
 
-Executed 2026-09-17 against RetireGolden base `33e7d546` (branch `codex/b1-p4-cards-cashflow-optimizer-taxes`), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-17 against RetireGolden base `33e7d546` (branch `codex/b1-p4-cards-cashflow-optimizer-taxes`), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `fe28be3c` (branch `claude/b2p1-slice2-display-math`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `2c35d2b8` (branch `claude/b2p1-slice2-display-math`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `b2897dfe` (branch `claude/b2p1-slice2-display-math`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/decisions/swrComparator.ts`
 
 ```diff
 diff --git a/packages/engine/src/decisions/swrComparator.ts b/packages/engine/src/decisions/swrComparator.ts
-index fb930611..2fc56a28 100644
+index 5479cc7b..0b545c83 100644
 --- a/packages/engine/src/decisions/swrComparator.ts
 +++ b/packages/engine/src/decisions/swrComparator.ts
-@@ -54,6 +54,6 @@ export const SWR_RULES: readonly SwrRuleSpec[] = [
+@@ -55,6 +55,6 @@ export const SWR_RULES: readonly SwrRuleSpec[] = [
      id: 'ern-cape',
      label: 'ERN CAPE rule',
      citation: 'Early Retirement Now, SWR series part 18: SWR = 1.75% + 0.5 × (100 ÷ CAPE).',
@@ -29,17 +29,17 @@ npx.cmd vitest run src/decisions/swrComparator.evidence.test.ts
 
 ## Captured failing output
 
-Re-executed for D-RECEIPT-DRIFT because its hunk header's line counts did not match the hunk and the test counts it stated no longer matched the current test file; the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (swrComparator.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed 2026-09-27 after merging RetireGolden #751 into B2-P1 slice 2: the drift check #751 adds flagged this receipt against the slice's code (a hunk header naming a line the code has moved from, a context line the slice changed, a header naming no line, or a stated test count the slice's evidence file no longer has), so the diff header, capture, blob hash and revert note are refreshed against this head. The baseline is green (swrComparator.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine9/packages/engine
+RUN  v5.0.0 C:/rgwt/engine8/packages/engine
 
- ❯ src/decisions/swrComparator.evidence.test.ts (6 tests | 1 failed) 85ms
+ ❯ src/decisions/swrComparator.evidence.test.ts (7 tests | 1 failed) 112ms
    ❯ swr-rule-rate-and-initial-spend — Swr rule rate and initial spend (1)
-     × prices Bengen, Morningstar and ERN at 47000, 39000 and 37500 on one million 50ms
+     × prices Bengen, Morningstar and ERN at 47000, 39000 and 37500 on one million 46ms
 
  Test Files  1 failed (1)
-      Tests  1 failed | 5 passed (6)
+      Tests  1 failed | 6 passed (7)
 
              persist transforms across runs with fsModuleCache: true
              learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns

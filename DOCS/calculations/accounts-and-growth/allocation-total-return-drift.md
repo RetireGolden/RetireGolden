@@ -33,3 +33,5 @@ Ending amounts are `0.66` and `0.38`; total `1.04`. Weights are `0.66/1.04=33/52
 ## Provenance
 
 Derived by: codex (gpt-5.6-sol), 2026-09-14, from the signatures-and-comments extract only, without executing the engine or reading any implementation body. Reviewed by: cursor (composer-2.5), 2026-09-18, by independent recomputation without executing the engine; see REVIEW-2026-09-18.md in this directory.
+
+Revision, 2026-09-27 (B2-P1 slice 2, after the review of RetireGolden #752): the record's limit about `bucket-lens-allocation` was restated because the code moved. It said the bucket lens reads only the published investable total; the lens now lives in the engine (`projection/bucketLens.ts#bucketLens`, its own record `bucket-lens-allocation`) and reads the published investable total and the published net portfolio need, refusing a year whose need is not a finite number. The family above is still reached only through the balances, and this record still does not list it. The record's text changed after the review above, so its `reviewedBy` is `unreviewed` again.

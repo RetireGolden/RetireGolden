@@ -20,7 +20,7 @@
  * - No rounding: formatting to whole dollars belongs to the page.
  *
  * `planDollarBasis` is for a surface that holds no projection result for the
- * rows it converts (the relocation and spending-solver pages today). It runs
+ * rows it converts (the relocation page today). It runs
  * the ledger's own recurrence in the same order, so it is bit-identical to the
  * `inflationScale` a deterministic run at that rate publishes. It is not the
  * factor of a Monte Carlo path, which follows its own inflation series.

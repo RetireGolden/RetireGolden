@@ -77,9 +77,9 @@ function fakeSummary(): MonteCarloSummary {
       p90TotalShortfallDollars: 400_000,
     },
     fan: Array.from({ length: 30 }, (_, i) => ({ year: 2026 + i, ...percentiles(1_000_000 - i * 10_000) })),
-    endingInvestable: { percentiles: percentiles(800_000), histogram: { min: 0, binWidth: 1, counts: [] } },
-    endingNetWorth: { percentiles: percentiles(900_000), histogram: { min: 0, binWidth: 1, counts: [] } },
-    endingAfterTaxEstate: { percentiles: percentiles(850_000), histogram: { min: 0, binWidth: 1, counts: [] } },
+    endingInvestable: { percentiles: percentiles(800_000), histogram: { min: 0, binWidth: 1, counts: [], binCenters: [] } },
+    endingNetWorth: { percentiles: percentiles(900_000), histogram: { min: 0, binWidth: 1, counts: [], binCenters: [] } },
+    endingAfterTaxEstate: { percentiles: percentiles(850_000), histogram: { min: 0, binWidth: 1, counts: [], binCenters: [] } },
     depletionYearCounts: [
       { year: 2047, count: 40 },
       { year: 2050, count: 60 },

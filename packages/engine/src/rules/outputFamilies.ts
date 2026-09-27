@@ -1,7 +1,7 @@
 /**
  * GENERATED FILE — DO NOT EDIT BY HAND.
  *
- * Output families imported from the output-family census at commit 72b68c3340e8c7a251753ab69c33e64a4acb8bdc.
+ * Output families imported from the output-family census at commit 0e6040f713a2dba6e3a47771b0eaf6f3c28b9807.
  * Regenerate: node packages/engine/scripts/import-output-census.mjs <census-dir>
  */
 
@@ -391,8 +391,8 @@ const families = {
       }
     ],
     "relocation": {
-      "status": "pending",
-      "target": null
+      "status": "done",
+      "target": "engine/src/projection/bucketLens.ts#bucketLens"
     }
   },
   "cash-flow-line-amount": {
@@ -415,8 +415,8 @@ const families = {
       }
     ],
     "relocation": {
-      "status": "pending",
-      "target": null
+      "status": "done",
+      "target": "engine/src/projection/annualCashFlowReconciliation.ts#reconcileYearCashFlow"
     }
   },
   "cash-flow-line-plan-dollars": {
@@ -715,9 +715,9 @@ const families = {
     }
   },
   "display-fan-band-widths": {
-    "title": "Fan chart band widths",
+    "title": "Fan chart percentile ranges",
     "group": "monte-carlo",
-    "meaning": "Heights of the stacked p10-p90 and p25-p75 bands drawn on the Range of outcomes chart.",
+    "meaning": "The 10th to 90th and 25th to 75th percentile ranges of investable assets drawn and printed on the Range of outcomes chart, read from the engine's fan percentiles.",
     "unit": "usd",
     "basis": "nominal",
     "dimensions": [
@@ -728,12 +728,12 @@ const families = {
     "surfaces": [
       {
         "surface": "monte-carlo-page",
-        "selector": "Range of outcomes stacked Area dataKeys d.p90 - d.p10 and d.p75 - d.p25"
+        "selector": "Range of outcomes range areas [p10, p90] and [p25, p75]; tooltip \"10th to 90th percentile $X to $Y\""
       }
     ],
     "relocation": {
-      "status": "pending",
-      "target": null
+      "status": "done",
+      "target": "engine/src/montecarlo/run.ts#MonteCarloSummary.fan"
     }
   },
   "display-fi-target-annual": {
@@ -761,9 +761,9 @@ const families = {
   "display-guardrail-balance-thresholds": {
     "title": "Risk-based guardrail dollar thresholds",
     "group": "spending-and-withdrawals",
-    "meaning": "The cut and raise balance thresholds of a risk-based guardrail policy in dollars.",
+    "meaning": "The cut and raise balance thresholds of a risk-based guardrail policy in today's dollars, on the base the ledger acts on (today's investable balances, the ledger's first-year real portfolio).",
     "unit": "usd",
-    "basis": "nominal",
+    "basis": "real",
     "dimensions": [],
     "kind": "ui-transformation",
     "engineSource": null,
@@ -782,8 +782,8 @@ const families = {
       }
     ],
     "relocation": {
-      "status": "pending",
-      "target": null
+      "status": "done",
+      "target": "engine/src/montecarlo/riskBasedGuardrails.ts#guardrailThresholdDollars"
     }
   },
   "display-histogram-bin-label": {
@@ -804,8 +804,8 @@ const families = {
       }
     ],
     "relocation": {
-      "status": "pending",
-      "target": null
+      "status": "done",
+      "target": "engine/src/montecarlo/run.ts#Histogram.binCenters"
     }
   },
   "display-loss-carryforward-used-annual": {
@@ -1521,8 +1521,8 @@ const families = {
       }
     ],
     "relocation": {
-      "status": "pending",
-      "target": null
+      "status": "done",
+      "target": "engine/src/ladder/ladderMath.ts#ladderIncomeYieldPct"
     }
   },
   "income-one-time-annual": {
@@ -4810,7 +4810,7 @@ const families = {
   "solved-initial-withdrawal-rate-pct": {
     "title": "Solved initial withdrawal rate",
     "group": "spending-and-withdrawals",
-    "meaning": "The solved (rounded) baseline spending as a percent of starting investable assets, shown beside the SWR rule rows.",
+    "meaning": "The published solved baseline spending (rounded down to the nearest $100, or the exact level that passed when a guardrail plan fails at the rounded one) as a percent of the starting investable assets of the plan the solve priced, shown beside the SWR rule rows.",
     "unit": "percent",
     "basis": "n/a",
     "dimensions": [],
@@ -4823,14 +4823,14 @@ const families = {
       }
     ],
     "relocation": {
-      "status": "pending",
-      "target": null
+      "status": "done",
+      "target": "engine/src/decisions/spendingSolver.ts#initialWithdrawalRatePct"
     }
   },
   "solved-spending-rounded-to-hundred": {
     "title": "Solved spending rounded down",
     "group": "spending-and-withdrawals",
-    "meaning": "Maximum sustainable baseline spending rounded down to the nearest $100, as applied to the plan and shown in the shape table.",
+    "meaning": "Maximum sustainable baseline spending rounded down to the nearest $100: the amount the solver publishes and every surface shows, applies and measures slack from (the exact level that passed when a guardrail plan fails at the rounded one).",
     "unit": "usd",
     "basis": "real",
     "dimensions": [],
@@ -4843,8 +4843,8 @@ const families = {
       }
     ],
     "relocation": {
-      "status": "pending",
-      "target": null
+      "status": "done",
+      "target": "engine/src/decisions/spendingSolver.ts#roundSolvedSpending"
     }
   },
   "spending-base-annual": {
@@ -5232,8 +5232,8 @@ const families = {
       }
     ],
     "relocation": {
-      "status": "pending",
-      "target": null
+      "status": "done",
+      "target": "engine/src/decisions/spendingShapes.ts#spendingShapeRows"
     }
   },
   "spending-shortfall-annual": {
@@ -5491,9 +5491,9 @@ const families = {
   "sustainable-spending-result-max-base-annual": {
     "title": "maxBaseAnnual",
     "group": "cash-flow-and-summary",
-    "meaning": "Highest annual base spending that satisfies the solver constraints.",
+    "meaning": "Highest annual base spending the solver found feasible, rounded down to the nearest $100 (the exact level that passed when a guardrail plan fails at the rounded one), in today's dollars: the amount every surface shows, applies and measures slack from.",
     "unit": "usd",
-    "basis": "nominal",
+    "basis": "real",
     "dimensions": [],
     "kind": "engine",
     "engineSource": {
@@ -5551,9 +5551,9 @@ const families = {
   "sustainable-spending-result-spending-slack-dollars": {
     "title": "spendingSlackDollars",
     "group": "cash-flow-and-summary",
-    "meaning": "Remaining dollar margin between solved spending and the feasibility boundary.",
+    "meaning": "The published solved spending (rounded down to $100) minus current base spending, in today's dollars; negative means today's spending is above the published amount, which by less than $100 can still be a plan that sustains its own spending.",
     "unit": "usd",
-    "basis": "nominal",
+    "basis": "real",
     "dimensions": [],
     "kind": "engine",
     "engineSource": {

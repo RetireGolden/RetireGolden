@@ -20,7 +20,14 @@ import {
 import * as evaluation from './evaluateCandidate.js'
 import { createDecisionContext, evaluateCandidate } from './evaluateCandidate.js'
 import { makeMaximizeSustainableSpending } from './objectives.js'
-import { solveMaxSustainableSpending, type SustainableSpendingOptions } from './spendingSolver.js'
+import {
+  initialWithdrawalRatePct,
+  roundSolvedSpending,
+  solveMaxSustainableSpending,
+  type SustainableSpendingOptions,
+} from './spendingSolver.js'
+import { isExactAnswerDiagnostic } from './spendingSolverDiagnostics.js'
+import { startingInvestableOf } from '../montecarlo/riskBasedGuardrails.js'
 
 describe('solveMaxSustainableSpending', () => {
   it('returns a stable spending amount under fixed assumptions', () => {
@@ -492,5 +499,252 @@ describe('maximizeSustainableSpending policy', () => {
     })
 
     expect(floored.constraintViolations(evaluation, ctx).some((v) => v.includes('floor'))).toBe(true)
+  })
+})
+
+/**
+ * The published amount (owner decision R4, with the guardrail refinement of
+ * 2026-09-27): the passing probe rounded down to a whole $100 when that level
+ * is known to pass, else the probe itself. Feasibility is supplied by an
+ * evaluation double on the real solver, as in the bisection evidence: every
+ * probe runs the production search, and the double only answers which levels
+ * pass.
+ */
+describe('solveMaxSustainableSpending publishes one amount (R4)', () => {
+  function solveWith(plan: Plan, passes: (amount: number) => boolean, options: SustainableSpendingOptions = {}) {
+    const ctx = evaluation.createDecisionContext(plan, simOptions())
+    const reference = evaluation.evaluateCandidate(ctx, {
+      id: 'r4-shape', source: 'search', category: 'spending', label: 'Shape', explanation: 'Schema scaffolding only',
+    })
+    const spy = vi.spyOn(evaluation, 'evaluateCandidate').mockImplementation((_ctx, candidate) => {
+      const amount = (candidate.planPatch!['expenses'] as { baseAnnual: number }).baseAnnual
+      return {
+        ...reference,
+        recommendationState: 'beneficial',
+        candidateResult: { ...reference.candidateResult, depletionYear: passes(amount) ? null : 2030 },
+        candidateSummary: { ...reference.candidateSummary, endingAfterTaxEstate: 0 },
+      }
+    })
+    try {
+      return { result: solveMaxSustainableSpending(ctx, { resolutionDollars: 500, ...options }), probes: probedAmounts(spy) }
+    } finally {
+      spy.mockRestore()
+    }
+  }
+
+  function planAt(baseAnnual: number, mode?: 'withdrawalRateGuardrails' | 'riskBasedGuardrails'): Plan {
+    const plan = noTraditionalPlan()
+    plan.expenses.baseAnnual = baseAnnual
+    if (mode !== undefined) plan.expenses.spendingPolicy = { mode }
+    return plan
+  }
+
+  const probeSequence = [40_000, 80_000, 60_000, 70_000, 65_000, 62_500, 63_750, 63_125, 62_813]
+
+  it('publishes the probe rounded down to $100 at fixed-target spending, without another run', () => {
+    const { result, probes } = solveWith(planAt(40_000), (amount) => amount <= 62_850)
+    expect(probes).toEqual(probeSequence)
+    expect(result.feasibleBaseAnnual).toBe(62_813)
+    expect(result.maxBaseAnnual).toBe(62_800)
+    expect(result.maxBaseAnnualRounding).toBe('down-to-hundred')
+    expect(result.spendingSlackDollars).toBe(22_800)
+    expect(result.simulationCount).toBe(9)
+    expect(result.bestEvaluation).not.toBeNull()
+  })
+
+  it('runs the rounded amount once more under guardrails and publishes it when it passes', () => {
+    for (const mode of ['withdrawalRateGuardrails', 'riskBasedGuardrails'] as const) {
+      const { result, probes } = solveWith(planAt(40_000, mode), (amount) => amount <= 62_850)
+      expect(probes).toEqual([...probeSequence, 62_800])
+      expect(result.maxBaseAnnual).toBe(62_800)
+      expect(result.feasibleBaseAnnual).toBe(62_813)
+      expect(result.maxBaseAnnualRounding).toBe('down-to-hundred')
+      expect(result.spendingSlackDollars).toBe(22_800)
+      expect(result.simulationCount).toBe(10)
+      expect(result.diagnostics).toEqual([])
+    }
+  })
+
+  it('publishes the exact amount that passed, and says why, when the rounded amount fails under guardrails', () => {
+    // A lower level failing where a higher one passed: what guardrails can do.
+    const { result, probes } = solveWith(
+      planAt(40_000, 'withdrawalRateGuardrails'),
+      (amount) => amount <= 62_850 && amount !== 62_800,
+    )
+    expect(probes).toEqual([...probeSequence, 62_800])
+    expect(result.maxBaseAnnual).toBe(62_813)
+    expect(result.feasibleBaseAnnual).toBe(62_813)
+    expect(result.maxBaseAnnualRounding).toBe('none')
+    expect(result.spendingSlackDollars).toBe(22_813)
+    expect(result.simulationCount).toBe(10)
+    expect(result.diagnostics).toHaveLength(1)
+    expect(isExactAnswerDiagnostic(result.diagnostics[0]!)).toBe(true)
+    expect(result.diagnostics[0]).toContain('$62,800/yr')
+    expect(result.diagnostics[0]).toContain('runs out of money')
+  })
+
+  it('runs nothing more under guardrails when the passing probe is already a whole $100', () => {
+    const { result, probes } = solveWith(planAt(40_000, 'withdrawalRateGuardrails'), (amount) => amount <= 62_500)
+    expect(result.feasibleBaseAnnual).toBe(62_500)
+    expect(result.maxBaseAnnual).toBe(62_500)
+    expect(result.maxBaseAnnualRounding).toBe('down-to-hundred')
+    expect(result.simulationCount).toBe(probes.length)
+    expect(probes.filter((amount) => amount === 62_500)).toHaveLength(1)
+  })
+
+  it('never publishes a rounded amount below the required spending floor', () => {
+    // Seed 40,060 passes and every higher probe fails, so the answer is
+    // 40,060; rounded down it would be 40,000, below the 40,050 floor the plan
+    // checks require.
+    const plan = planAt(40_060)
+    plan.expenses.requiredAnnual = 40_050
+    const { result, probes } = solveWith(plan, (amount) => amount <= 40_060)
+    expect(result.feasibleBaseAnnual).toBe(40_060)
+    expect(result.maxBaseAnnual).toBe(40_060)
+    expect(result.maxBaseAnnualRounding).toBe('none')
+    expect(result.spendingSlackDollars).toBe(0)
+    expect(probes).not.toContain(40_000)
+    expect(
+      result.diagnostics.some((message) => isExactAnswerDiagnostic(message) && message.includes('required spending floor')),
+    ).toBe(true)
+  })
+
+  it('publishes the withdrawal rate of the published amount over the solved plan balances', () => {
+    const plan = planAt(40_000)
+    const { result } = solveWith(plan, (amount) => amount <= 62_850)
+    expect(result.initialWithdrawalRatePct).toBe((62_800 / startingInvestableOf(plan)) * 100)
+  })
+
+  it('checks the rounded amount under guardrails even when the search ends on its simulation budget', () => {
+    // With a budget of 9 and a $100 resolution the ninth probe (62,813) spends
+    // the budget while the bracket (62,813 to 63,125) is still open; the check
+    // of 62,800 is a tenth run, outside the budget, whichever way it goes.
+    const options = { maxSimulations: 9, resolutionDollars: 100 }
+    for (const mode of ['withdrawalRateGuardrails', 'riskBasedGuardrails'] as const) {
+      const passed = solveWith(planAt(40_000, mode), (amount) => amount <= 62_850, options)
+      expect(passed.probes).toEqual([...probeSequence, 62_800])
+      expect(passed.result.converged).toBe(false)
+      expect(passed.result.simulationCount).toBe(10)
+      expect(passed.result.maxBaseAnnual).toBe(62_800)
+      expect(passed.result.maxBaseAnnualRounding).toBe('down-to-hundred')
+      const failed = solveWith(planAt(40_000, mode), (amount) => amount <= 62_850 && amount !== 62_800, options)
+      expect(failed.probes).toEqual([...probeSequence, 62_800])
+      expect(failed.result.simulationCount).toBe(10)
+      expect(failed.result.maxBaseAnnual).toBe(62_813)
+      expect(failed.result.maxBaseAnnualRounding).toBe('none')
+      expect(failed.result.diagnostics.some(isExactAnswerDiagnostic)).toBe(true)
+    }
+    // Fixed-target spending on the same budget publishes the rounded amount without a tenth run.
+    const fixed = solveWith(planAt(40_000), (amount) => amount <= 62_850, options)
+    expect(fixed.probes).toEqual(probeSequence)
+    expect(fixed.result.simulationCount).toBe(9)
+    expect(fixed.result.maxBaseAnnual).toBe(62_800)
+  })
+
+  it('publishes nulls with no answer', () => {
+    const { result } = solveWith(planAt(40_000), () => false)
+    expect(result.maxBaseAnnual).toBeNull()
+    expect(result.feasibleBaseAnnual).toBeNull()
+    expect(result.maxBaseAnnualRounding).toBeNull()
+    expect(result.spendingSlackDollars).toBeNull()
+    expect(result.initialWithdrawalRatePct).toBeNull()
+  })
+})
+
+describe('roundSolvedSpending and initialWithdrawalRatePct', () => {
+  it('rounds whole dollars down to $100 exactly and refuses what is not a spending amount', () => {
+    for (let amount = 0; amount <= 200_000; amount++) {
+      expect(roundSolvedSpending(amount)).toBe(amount - (amount % 100))
+    }
+    for (const amount of [2 ** 40 + 99, 2 ** 52 + 1, 2 ** 53 - 1]) {
+      expect(roundSolvedSpending(amount)).toBe(amount - (amount % 100))
+    }
+    for (const bad of [-1, Number.NaN, Number.POSITIVE_INFINITY]) {
+      expect(() => roundSolvedSpending(bad)).toThrow(RangeError)
+    }
+  })
+
+  it('is null without a positive balance and refuses what is not a rate input', () => {
+    expect(initialWithdrawalRatePct(62_800, 0)).toBeNull()
+    expect(initialWithdrawalRatePct(62_800, -5)).toBeNull()
+    expect(() => initialWithdrawalRatePct(-1, 100)).toThrow(RangeError)
+    expect(() => initialWithdrawalRatePct(Number.NaN, 100)).toThrow(RangeError)
+    expect(() => initialWithdrawalRatePct(1, Number.POSITIVE_INFINITY)).toThrow(RangeError)
+  })
+})
+
+describe('solveMaxSustainableSpending: what else it publishes about the answer', () => {
+  function solveWith(
+    plan: Plan,
+    passes: (amount: number) => boolean,
+    options: SustainableSpendingOptions = {},
+  ) {
+    const ctx = evaluation.createDecisionContext(plan, simOptions())
+    const reference = evaluation.evaluateCandidate(ctx, {
+      id: 'r4-shape', source: 'search', category: 'spending', label: 'Shape', explanation: 'Schema scaffolding only',
+    })
+    const spy = vi.spyOn(evaluation, 'evaluateCandidate').mockImplementation((_ctx, candidate) => {
+      const amount = (candidate.planPatch!['expenses'] as { baseAnnual: number }).baseAnnual
+      return {
+        ...reference,
+        recommendationState: 'beneficial',
+        candidateResult: { ...reference.candidateResult, depletionYear: passes(amount) ? null : 2030 },
+        candidateSummary: { ...reference.candidateSummary, endingAfterTaxEstate: 0 },
+      }
+    })
+    try {
+      return { result: solveMaxSustainableSpending(ctx, { resolutionDollars: 500, ...options }), probes: probedAmounts(spy) }
+    } finally {
+      spy.mockRestore()
+    }
+  }
+
+  function planAt(baseAnnual: number, requiredAnnual?: number, mode?: 'withdrawalRateGuardrails'): Plan {
+    const plan = noTraditionalPlan()
+    plan.expenses.baseAnnual = baseAnnual
+    if (requiredAnnual !== undefined) plan.expenses.requiredAnnual = requiredAnnual
+    if (mode !== undefined) plan.expenses.spendingPolicy = { mode }
+    return plan
+  }
+
+  it("says whether today's base passes, from the first probe, whatever the published amount's sign of slack", () => {
+    // A $72,030 base that passes and is the answer: published 72,000, slack −30, sustained.
+    const held = solveWith(planAt(72_030), (amount) => amount <= 72_030)
+    expect(held.result.maxBaseAnnual).toBe(72_000)
+    expect(held.result.spendingSlackDollars).toBe(-30)
+    expect(held.result.sustainsCurrentBase).toBe(true)
+    // A base above the frontier: not sustained.
+    const over = solveWith(planAt(72_030), (amount) => amount <= 60_000)
+    expect(over.result.sustainsCurrentBase).toBe(false)
+    // Amortized spending runs no probe: no verdict.
+    const abwPlan = planAt(72_030)
+    abwPlan.expenses.spendingPolicy = { mode: 'abw' }
+    expect(solveWith(abwPlan, () => true).result.sustainsCurrentBase).toBeNull()
+  })
+
+  it('publishes a rounded amount equal to the required floor without another run, and reuses a probe already made', () => {
+    // Seed 41,000 fails; the whole-hundred floor 40,000 passes; the search
+    // ends at 40,032, which rounds down to exactly the floor.
+    const passes = (amount: number) => amount <= 40_060
+    for (const mode of [undefined, 'withdrawalRateGuardrails'] as const) {
+      const { result, probes } = solveWith(planAt(41_000, 40_000, mode), passes, { resolutionDollars: 50 })
+      expect(probes, String(mode)).toEqual([41_000, 40_000, 40_500, 40_250, 40_125, 40_063, 40_032])
+      expect(result.feasibleBaseAnnual).toBe(40_032)
+      expect(result.maxBaseAnnual).toBe(40_000)
+      expect(result.maxBaseAnnualRounding).toBe('down-to-hundred')
+      // Under guardrails the floor probe already ran at 40,000 and passed.
+      expect(result.simulationCount).toBe(probes.length)
+      expect(result.diagnostics.some(isExactAnswerDiagnostic)).toBe(false)
+    }
+  })
+
+  it('takes the withdrawal rate over the plan it solved, with any base patch applied', () => {
+    const plan = planAt(40_000)
+    const patched = noTraditionalPlan()
+    const cash = { ...patched.accounts[2]!, balance: 1_000_000 }
+    const { result } = solveWith(plan, (amount) => amount <= 62_850, { basePatch: { accounts: [cash] } })
+    expect(result.maxBaseAnnual).toBe(62_800)
+    expect(result.initialWithdrawalRatePct).toBe((62_800 / 1_000_000) * 100)
+    expect(result.initialWithdrawalRatePct).not.toBe((62_800 / startingInvestableOf(plan)) * 100)
   })
 })

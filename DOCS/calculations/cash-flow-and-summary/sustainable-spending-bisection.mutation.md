@@ -1,6 +1,6 @@
 # Mutation receipt: sustainable-spending-bisection
 
-Executed 2026-09-17 against RetireGolden base `33e7d546` (branch `codex/b1-p4-cards-cashflow-optimizer-taxes`), and re-executed 2026-09-26 against RetireGolden base `6f58be5f` (branch `claude/solver-answers-unpriced-aca`; no pull request is open yet), and re-executed 2026-09-26 against RetireGolden base `5d3a72b1` (branch `claude/solver-answers-unpriced-aca`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `2c780ae5` (branch `claude/solver-answers-unpriced-aca`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `e1709b0e` (branch `claude/solver-answers-unpriced-aca`, pull request #748), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-17 against RetireGolden base `33e7d546` (branch `codex/b1-p4-cards-cashflow-optimizer-taxes`), and re-executed 2026-09-26 against RetireGolden base `6f58be5f` (branch `claude/solver-answers-unpriced-aca`; no pull request is open yet), and re-executed 2026-09-26 against RetireGolden base `5d3a72b1` (branch `claude/solver-answers-unpriced-aca`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `2c780ae5` (branch `claude/solver-answers-unpriced-aca`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `e1709b0e` (branch `claude/solver-answers-unpriced-aca`, pull request #748), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `fe28be3c` (branch `claude/b2p1-slice2-display-math`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `2c35d2b8` (branch `claude/b2p1-slice2-display-math`; no pull request is open yet) in `packages/engine`.
 
 Re-executed 2026-09-18 after the worksheet extension.
 
@@ -8,21 +8,19 @@ Re-executed 2026-09-18 after the worksheet extension.
 
 ```diff
 diff --git a/packages/engine/src/decisions/spendingSolver.ts b/packages/engine/src/decisions/spendingSolver.ts
-index d22c1686..3b472f8f 100644
+index 6d174d4d..16db13a5 100644
 --- a/packages/engine/src/decisions/spendingSolver.ts
 +++ b/packages/engine/src/decisions/spendingSolver.ts
-@@ -289,7 +289,7 @@ export function solveMaxSustainableSpending(
-       )
-     }
-     return {
--      maxBaseAnnual: bestFeasible?.amount ?? null,
-+      maxBaseAnnual: upper,
-       spendingSlackDollars: bestFeasible ? bestFeasible.amount - currentBaseAnnual : null,
-       bestEvaluation: bestFeasible?.evaluation ?? null,
-       converged,
+@@ -421,5 +421,5 @@ export function solveMaxSustainableSpending(
+     // The published amount (R4): the passing probe rounded down to a whole
+     // $100 whenever that level is known to pass, else the probe itself.
+-    const feasibleBaseAnnual = bestFeasible?.amount ?? null
++    const feasibleBaseAnnual = upper
+     let maxBaseAnnual: number | null = null
+     let maxBaseAnnualRounding: SustainableSpendingResult['maxBaseAnnualRounding'] = null
 ```
 
-Publish the infeasible upper bound instead of the last feasible lower bound.
+Publish the infeasible upper bound instead of the last feasible lower bound. Rewritten for B2-P1 slice 2, which moved the solver's answer into `feasibleBaseAnnual` (the published `maxBaseAnnual` is its $100 floor): the mutation is the same wrong reading on the line that now holds it.
 
 ## Command
 

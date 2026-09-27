@@ -50,6 +50,7 @@ import {
   type ScenarioLeverRequest,
 } from '../scenarioLevers'
 import {
+  currentBaseVerdict,
   formatMetricValue,
   formatScenarioDelta,
   isScenarioComparisonCurrent,
@@ -636,7 +637,13 @@ function CapacitySection({
       <div className="item-row-head">
         <div>
           <h3 style={{ margin: 0 }}>Sustainable spending capacity</h3>
-          <p className="card-hint">Annual base spending in today&apos;s dollars, priced on the full year-by-year projection.</p>
+          <p className="card-hint">
+            Annual base spending in today&apos;s dollars, priced on the full year-by-year projection: the amount the
+            spending page shows and applies, rounded down to the nearest $100 (the exact amount that passed when a
+            guardrail plan fails at the rounded one), with the slack measured from it. Because of that rounding a
+            slack of less than $100 below zero can sit beside current spending that holds; the status table says
+            whether each plan&apos;s current base spending is sustained.
+          </p>
         </div>
         <button type="button" className="btn btn-secondary btn-small" disabled={running} onClick={onCalculate}>
           {running ? 'Calculating…' : capacity ? 'Recalculate' : 'Calculate capacity'}
@@ -661,6 +668,7 @@ function CapacitySection({
                   <th scope="col">Status</th>
                   <th scope="col">Simulations</th>
                   <th scope="col">Limiting constraint</th>
+                  <th scope="col">Current base spending</th>
                 </tr>
               </thead>
               <tbody>
@@ -669,12 +677,14 @@ function CapacitySection({
                   <td>{spendingCapacityStatus(capacity.maxBaseAnnual.baseline, capacity.baselineConverged)}</td>
                   <td>{capacity.baselineSimulationCount}</td>
                   <td>{capacity.baselineLimitingConstraint ?? 'Not identified'}</td>
+                  <td>{currentBaseVerdict(capacity.baselineSustainsCurrentBase)}</td>
                 </tr>
                 <tr>
                   <th scope="row">Proposal</th>
                   <td>{spendingCapacityStatus(capacity.maxBaseAnnual.proposal, capacity.proposalConverged)}</td>
                   <td>{capacity.proposalSimulationCount}</td>
                   <td>{capacity.proposalLimitingConstraint ?? 'Not identified'}</td>
+                  <td>{currentBaseVerdict(capacity.proposalSustainsCurrentBase)}</td>
                 </tr>
               </tbody>
             </table>

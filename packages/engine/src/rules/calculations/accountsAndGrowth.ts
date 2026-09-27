@@ -62,8 +62,8 @@ export const accountsAndGrowthRecords = {
     // vector; simulate.ts seeds each allocated account's track with it and the
     // growth phase blends class returns by it, so the balance families are the
     // ones the vector actually enters. The bucket lens
-    // (planner-ui/src/planner/bucketLens.ts) reads only the published
-    // investable total, a path every growth record shares, so it is not listed.
+    // (projection/bucketLens.ts) reads the published investable total and net
+    // portfolio need, a path every growth record shares, so it is not listed.
     outputs: [],
     feeds: ['accounts-balance-per-account-annual', 'accounts-investable-total-annual'],
     statement:
@@ -86,12 +86,12 @@ export const accountsAndGrowthRecords = {
       'Negative weights are floored at 0 before normalizing rather than rejected; the schema already bounds each weight to [0, 100] and the total to 100 +/- 0.5, so a near-100 total normalizes exactly to 1',
       'A zero total returns the all-cash vector instead of refusing; the worksheet\'s domain is a positive total and its test does not reach that branch',
       'Class order is positional and fixed by ASSET_CLASS_IDS; every consumer indexes the vector by that order, never by magnitude',
-      'The worksheet names bucket-lens-allocation upstream; the bucket lens reads only the published investable total, so the family is reached only through the balances every growth record feeds and is not listed here',
+      'The worksheet names bucket-lens-allocation upstream; the bucket lens (its own record) reads the published investable total and the published net portfolio need, and refuses a year whose need is not a finite number, so the family is reached only through the balances every growth record feeds and is not listed here',
     ],
     implementedBy: ['packages/engine/src/allocation/assetClasses.ts'],
     implementedByFunctions: ['packages/engine/src/allocation/assetClasses.ts#weightsToVector'],
-    verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'cursor' },
+    verifiedOn: '2026-09-27',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
   },
   'allocation-glidepath-interpolation': {
     title: 'Glidepath compilation: linear interpolation with flat endpoints, staged as a step function',
@@ -101,8 +101,8 @@ export const accountsAndGrowthRecords = {
     // annualRebalanceToTarget.ts retargets it each year; those tracked weights
     // blend class returns (growth, per-account balances) and class yields
     // (distributedTaxableYieldRows.ts, taxable yield). The worksheet's
-    // bucket-lens-allocation is reached only through published balances and is
-    // not listed (see allocation-weight-normalization).
+    // bucket-lens-allocation is reached only through published balances and the
+    // published need, and is not listed (see allocation-weight-normalization).
     outputs: [],
     feeds: ['income-taxable-yield-annual', 'accounts-balance-per-account-annual'],
     statement:
@@ -130,15 +130,15 @@ export const accountsAndGrowthRecords = {
       'A degenerate linear policy (endYear <= startYear) holds the from vector for every year',
       'A staged policy before its first stage year holds the earliest stage; a custom policy with one target holds it for every year',
       'lerpVectors is module-private; the evidence reaches it through targetWeightsAt',
-      'The worksheet names bucket-lens-allocation upstream; the bucket lens reads only the published investable total and is not listed here',
+      'The worksheet names bucket-lens-allocation upstream; the bucket lens (its own record) reads the published investable total and net portfolio need, refusing a year whose need is not a finite number, and is not listed here',
     ],
     implementedBy: ['packages/engine/src/allocation/assetClasses.ts'],
     implementedByFunctions: [
       'packages/engine/src/allocation/assetClasses.ts#targetWeightsAt',
       'packages/engine/src/allocation/assetClasses.ts#lerpVectors',
     ],
-    verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'cursor' },
+    verifiedOn: '2026-09-27',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
   },
   'allocation-blended-expected-return': {
     title: 'Blended expected nominal return of a weight vector',
@@ -275,7 +275,7 @@ export const accountsAndGrowthRecords = {
     // the shocked class rates; the drifted vector is the next year's tracked
     // weights, which the next year's growth blends. The worksheet's
     // bucket-lens-allocation is reached only through published balances and
-    // is not listed (see allocation-weight-normalization).
+    // the published need, and is not listed (see allocation-weight-normalization).
     outputs: [],
     feeds: ['accounts-balance-per-account-annual', 'accounts-investable-total-annual'],
     statement:
@@ -298,12 +298,12 @@ export const accountsAndGrowthRecords = {
       'Total-return convention: distributions are treated as reinvested pro rata, so a class\'s weight moves with its total return rather than its price return',
       'A class return at or below -100% is floored at zero ending value rather than going negative',
       'A zero total ending value returns the input weights unchanged instead of refusing',
-      'The worksheet names bucket-lens-allocation upstream; the bucket lens reads only the published investable total and is not listed here',
+      'The worksheet names bucket-lens-allocation upstream; the bucket lens (its own record) reads the published investable total and net portfolio need, refusing a year whose need is not a finite number, and is not listed here',
     ],
     implementedBy: ['packages/engine/src/allocation/assetClasses.ts'],
     implementedByFunctions: ['packages/engine/src/allocation/assetClasses.ts#driftWeights'],
-    verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'cursor' },
+    verifiedOn: '2026-09-27',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
   },
   'allocation-rebalance-turnover': {
     title: 'Rebalance turnover: the fraction sold to reach the target weights',

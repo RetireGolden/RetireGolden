@@ -135,20 +135,21 @@ feature-off plans byte-identical, guarded by `cases:diff` and the golden suites)
 - **Solver-per-shape** (same page): re-solves `solveMaxSustainableSpending` under constant-real / smile /
   smirk phase sets to show the shape-aware initial-spending uplift on the user's plan (~25 sims per shape,
   on demand).
-- **Bucket reporting lens** (Results; [planner/bucketLens.ts](../../../packages/planner-ui/src/planner/bucketLens.ts)):
+- **Bucket reporting lens** (Results; [engine/projection/bucketLens.ts](../../../packages/engine/src/projection/bucketLens.ts), with the preset labels in [planner/bucketLens.ts](../../../packages/planner-ui/src/planner/bucketLens.ts)):
   buckets are popular but the evidence (Estrada's bucket studies; Kitces) finds no systematic benefit over
   total-return rebalancing, so RetireGolden *reports* buckets without *managing* them — each year's investable
   total is partitioned into "next N years of net spending" segments (net need = the engine's published
   `YearResult.netPortfolioNeed` — spending plus taxes and penalties, less income, floored at 0; presets
   2yr/8yr/growth and 3yr/growth), reconciling to the ledger total every year by construction. The engine
-  owns that arithmetic; `bucketLens.ts` only reads the published field. Presentation only; no engine
-  feedback.
+  owns that arithmetic: `projection/bucketLens.ts#bucketLens` partitions each year's published
+  `investableTotal` by the published `netPortfolioNeed` (and refuses a year without a finite need), and the
+  Results card only prints its rows. A reporting lens: nothing it computes feeds back into the projection.
 
 **Code:** [engine/spending/abw.ts](../../../packages/engine/src/spending/abw.ts),
 [engine/spending/shapePresets.ts](../../../packages/engine/src/spending/shapePresets.ts),
 [engine/montecarlo/survival.ts](../../../packages/engine/src/montecarlo/survival.ts),
 [engine/decisions/swrComparator.ts](../../../packages/engine/src/decisions/swrComparator.ts),
-[planner/bucketLens.ts](../../../packages/planner-ui/src/planner/bucketLens.ts). Sources: Bogleheads wiki
+[engine/projection/bucketLens.ts](../../../packages/engine/src/projection/bucketLens.ts). Sources: Bogleheads wiki
 "Amortization based withdrawal formulas" and "Variable percentage withdrawal"; Blanchett, *Exploring the
 Retirement Consumption Puzzle* (JFP 2014) and 2025–26 median-spending ("smirk") updates; Bengen, *A Richer
 Retirement* (2025); Morningstar, *State of Retirement Income* (2025); Early Retirement Now SWR series part

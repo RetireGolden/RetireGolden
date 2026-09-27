@@ -192,7 +192,7 @@ spending percentage** scales base + phase spending in years when only one member
 (one-time goals and separately-modeled healthcare/debt/property costs are unaffected). An optional
 **bequest target** (today's dollars) sets the after-tax-estate floor used by the **"How much can I
 spend?"** solver page and the estate-floor optimizer objective — see [optimizer.md](optimizer.md).
-Results offers an honest **bucket reporting lens** ([planner/bucketLens.ts](../../packages/planner-ui/src/planner/bucketLens.ts)):
+Results offers an honest **bucket reporting lens** (the engine's [projection/bucketLens.ts](../../packages/engine/src/projection/bucketLens.ts) allocates it; [planner/bucketLens.ts](../../packages/planner-ui/src/planner/bucketLens.ts) holds only the preset labels):
 the projected balances re-read as "next N years of net spending" buckets, reconciling to the ledger totals
 every year, with the Estrada/Kitces evidence note — the plan is always simulated total-return.
 One-time goals (amount + year). Healthcare:

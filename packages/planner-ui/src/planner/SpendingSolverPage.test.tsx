@@ -27,10 +27,18 @@ const mockedSolve = vi.mocked(runSpendingSolve)
 
 const FIXED_COSTS = 'Fixed costs modeled outside baseline spending'
 
+/**
+ * A worker result as the engine publishes it: the level that passed
+ * (feasibleBaseAnnual), the published answer rounded down to $100
+ * (maxBaseAnnual), and the slack measured from the published answer.
+ */
 function solved(overrides: Partial<SpendingSolveResult>): SpendingSolveResult {
   return {
-    maxBaseAnnual: 92_450,
-    spendingSlackDollars: 12_450,
+    maxBaseAnnual: 92_400,
+    feasibleBaseAnnual: 92_450,
+    maxBaseAnnualRounding: 'down-to-hundred',
+    initialWithdrawalRatePct: null,
+    spendingSlackDollars: 12_400,
     currentBaseAnnual: 80_000,
     estateFloorTodayDollars: 0,
     converged: true,
@@ -249,8 +257,11 @@ describe('SpendingSolverPage statements', () => {
     expect(well).not.toContain(FIXED_COSTS)
   })
 
-  async function applyWith(policy: 'fixedTarget' | 'withdrawalRateGuardrails'): Promise<Plan> {
-    mockedSolve.mockResolvedValue(solved({ maxBaseAnnual: 92_450 }))
+  async function applyWith(
+    policy: 'fixedTarget' | 'withdrawalRateGuardrails',
+    result: SpendingSolveResult = solved({}),
+  ): Promise<Plan> {
+    mockedSolve.mockResolvedValue(result)
     const plan = createSamplePlan()
     plan.expenses.spendingPolicy = { mode: policy }
     let applied: Plan = plan
@@ -282,24 +293,48 @@ describe('SpendingSolverPage statements', () => {
     return applied
   }
 
-  it('applies the floored figure at fixed-target spending', async () => {
+  it('applies the published figure at fixed-target spending', async () => {
     const applied = await applyWith('fixedTarget')
     expect(applied.expenses.baseAnnual).toBe(92_400)
     expect(container.textContent).toContain("sets your plan's baseline spending to $92,400/yr")
-    expect(container.textContent).not.toContain('the one the solver tested')
+    expect(container.textContent).not.toContain('was run too')
   })
 
-  it('applies the exact tested amount under guardrail spending and says so', async () => {
+  it('applies the rounded figure under guardrail spending once the engine has run it and it passes', async () => {
     const applied = await applyWith('withdrawalRateGuardrails')
+    expect(applied.expenses.baseAnnual).toBe(92_400)
+    expect(container.textContent).toContain("sets your plan's baseline spending to $92,400/yr")
+    expect(container.textContent).toContain('so that rounded figure was run too, and it passes')
+  })
+
+  it('shows and applies the exact amount when the rounded figure fails under guardrail spending, and says why', async () => {
+    const why =
+      "The answer is the exact amount that passed ($92,450/yr), not rounded down to $92,400/yr: under this plan's guardrail spending that lower level was run and runs out of money before the plan ends."
+    const applied = await applyWith(
+      'withdrawalRateGuardrails',
+      solved({
+        maxBaseAnnual: 92_450,
+        feasibleBaseAnnual: 92_450,
+        maxBaseAnnualRounding: 'none',
+        spendingSlackDollars: 12_450,
+        diagnostics: [why],
+      }),
+    )
     expect(applied.expenses.baseAnnual).toBe(92_450)
+    expect(heroHeading().textContent).toContain('$92,450')
+    expect(container.querySelector('[data-testid="exact-answer-note"]')!.textContent).toBe(why)
     expect(container.textContent).toContain("sets your plan's baseline spending to $92,450/yr")
-    expect(container.textContent).toContain('both use that exact amount, the one the solver tested')
+    expect(container.querySelector('.ss-explainer')!.textContent).toContain(
+      'at that exact amount, not rounded down to the nearest $100, for the reason given above',
+    )
   })
 
   it('does not call a baseline the plan sustains unsustainable because the shown figure is rounded down', async () => {
     // Today's base 72,030; the seed probe at 72,030 passed and is the answer.
     // The page shows 72,000, $30 under the baseline, but the baseline holds.
-    mockedSolve.mockResolvedValue(solved({ maxBaseAnnual: 72_030, spendingSlackDollars: 0, currentBaseAnnual: 72_030 }))
+    mockedSolve.mockResolvedValue(
+      solved({ maxBaseAnnual: 72_000, feasibleBaseAnnual: 72_030, spendingSlackDollars: -30, currentBaseAnnual: 72_030 }),
+    )
     await renderSolved()
 
     const heading = heroHeading()
@@ -315,7 +350,9 @@ describe('SpendingSolverPage statements', () => {
   })
 
   it('says the plan cannot sustain today’s spending when the exact answer is below it by depletion', async () => {
-    mockedSolve.mockResolvedValue(solved({ maxBaseAnnual: 71_950, spendingSlackDollars: -80, currentBaseAnnual: 72_030 }))
+    mockedSolve.mockResolvedValue(
+      solved({ maxBaseAnnual: 71_900, feasibleBaseAnnual: 71_950, spendingSlackDollars: -130, currentBaseAnnual: 72_030 }),
+    )
     await renderSolved()
 
     expect(heroHeading().style.color).toBe('var(--bad)')
@@ -328,6 +365,7 @@ describe('SpendingSolverPage statements', () => {
     mockedSolve.mockResolvedValue(
       solved({
         maxBaseAnnual: 61_400,
+        feasibleBaseAnnual: 61_437,
         spendingSlackDollars: -10_630,
         currentBaseAnnual: 72_030,
         estateFloorTodayDollars: 300_000,
@@ -344,7 +382,9 @@ describe('SpendingSolverPage statements', () => {
 
   it('judges a fractional baseline against the whole-dollar level the solver seeded', async () => {
     // Base 72,030.40 is seeded at 72,030; that seed passed and is the answer.
-    mockedSolve.mockResolvedValue(solved({ maxBaseAnnual: 72_030, spendingSlackDollars: -0.4, currentBaseAnnual: 72_030.4 }))
+    mockedSolve.mockResolvedValue(
+      solved({ maxBaseAnnual: 72_000, feasibleBaseAnnual: 72_030, spendingSlackDollars: -30.4, currentBaseAnnual: 72_030.4 }),
+    )
     await renderSolved()
 
     expect(heroHeading().style.color).toBe('var(--good)')
@@ -353,12 +393,12 @@ describe('SpendingSolverPage statements', () => {
     expect(hero).not.toContain('cannot sustain')
   })
 
-  it('does not claim the rounded figure passes under guardrail spending', async () => {
+  it('says why the rounded figure passes: implied at fixed-target spending, run under guardrail spending', async () => {
     mockedSolve.mockResolvedValue(solved({}))
     const fixedTarget = createSamplePlan()
     fixedTarget.expenses.spendingPolicy = { mode: 'fixedTarget' }
     await renderSolved(fixedTarget)
-    expect(container.querySelector('.ss-explainer')!.textContent).toContain('which therefore also passes')
+    expect(container.querySelector('.ss-explainer')!.textContent).toContain('a lower level is expected to pass when a higher one does')
 
     await act(async () => root.unmount())
     root = createRoot(container)
@@ -366,8 +406,49 @@ describe('SpendingSolverPage statements', () => {
     guardrails.expenses.spendingPolicy = { mode: 'withdrawalRateGuardrails' }
     await renderSolved(guardrails)
     const explainer = container.querySelector('.ss-explainer')!.textContent
-    expect(explainer).not.toContain('therefore also passes')
-    expect(explainer).toContain('so that rounded figure was not itself tested')
+    expect(explainer).not.toContain('expected to pass when a higher one does')
+    expect(explainer).toContain('so that rounded figure was run too, and it passes')
+  })
+
+  it('describes the solve that ran, not a spending policy the plan switched to before the next solve lands', async () => {
+    async function show(plan: Plan): Promise<void> {
+      const ctx: PlanContextValue = { plan, update: () => {}, discardPendingSave: () => {}, saveState: 'saved', issues: [] }
+      await act(async () => {
+        root.render(
+          <MemoryRouter>
+            <PlanCtx.Provider value={ctx}>
+              <SpendingSolverPage />
+            </PlanCtx.Provider>
+          </MemoryRouter>,
+        )
+      })
+    }
+    const explainer = () => container.querySelector('.ss-explainer')!.textContent
+    const applyHint = () => container.querySelector('.ss-explainer')!.previousElementSibling!.textContent
+    // Solved at fixed-target spending (the rounded figure published without a
+    // run of its own); the plan then switches to guardrails, and until the next
+    // solve lands (it never does here) the copy still describes that solve.
+    mockedSolve.mockResolvedValueOnce(solved({})).mockReturnValue(new Promise<SpendingSolveResult>(() => {}))
+    const fixedTarget = createSamplePlan()
+    fixedTarget.expenses.spendingPolicy = { mode: 'fixedTarget' }
+    await renderSolved(fixedTarget)
+    await show({ ...fixedTarget, expenses: { ...fixedTarget.expenses, spendingPolicy: { mode: 'withdrawalRateGuardrails' } } })
+    expect(explainer()).toContain('at fixed-target spending a lower level is expected to pass when a higher one does')
+    expect(explainer()).not.toContain('was run too')
+    expect(applyHint()).not.toContain('was run too')
+
+    // And the reverse: solved under guardrails, then switched to fixed target.
+    await act(async () => root.unmount())
+    root = createRoot(container)
+    mockedSolve.mockReset()
+    mockedSolve.mockResolvedValueOnce(solved({})).mockReturnValue(new Promise<SpendingSolveResult>(() => {}))
+    const guardrails = createSamplePlan()
+    guardrails.expenses.spendingPolicy = { mode: 'withdrawalRateGuardrails' }
+    await renderSolved(guardrails)
+    await show({ ...guardrails, expenses: { ...guardrails.expenses, spendingPolicy: { mode: 'fixedTarget' } } })
+    expect(explainer()).toContain('so that rounded figure was run too, and it passes')
+    expect(explainer()).not.toContain('expected to pass when a higher one does')
+    expect(applyHint()).toContain('so that rounded figure was run too, and it passes')
   })
 
   async function solveShapes(rows: Partial<SpendingSolveResult>[], plan: Plan = createSamplePlan()): Promise<string> {
@@ -413,5 +494,53 @@ describe('SpendingSolverPage statements', () => {
   it('adds nothing to the shape table when every shape prices its credit', async () => {
     const text = await solveShapes([{}])
     expect(text).not.toContain('premium tax credit')
+  })
+
+  it('does not call an exact published amount rounded when the baseline holds with under $100 to spare', async () => {
+    // A guardrail plan whose rounded amount failed publishes the exact 72,030;
+    // today's base 72,030.40 was seeded at 72,030 and passed.
+    mockedSolve.mockResolvedValue(
+      solved({
+        maxBaseAnnual: 72_030,
+        feasibleBaseAnnual: 72_030,
+        maxBaseAnnualRounding: 'none',
+        sustainsCurrentBase: true,
+        spendingSlackDollars: -0.4,
+        currentBaseAnnual: 72_030.4,
+      }),
+    )
+    await renderSolved()
+    const hero = container.querySelector('.mc-hero')!.textContent
+    expect(hero).toContain('less than $100 a year to spare')
+    expect(hero).not.toContain('rounded down to the nearest $100')
+  })
+
+  it("judges today's baseline on the engine's verdict, not on the slack's sign", async () => {
+    mockedSolve.mockResolvedValue(
+      solved({ maxBaseAnnual: 72_000, feasibleBaseAnnual: 72_030, sustainsCurrentBase: true, spendingSlackDollars: -30, currentBaseAnnual: 72_030 }),
+    )
+    await renderSolved()
+    expect(heroHeading().style.color).toBe('var(--good)')
+    expect(container.querySelector('.mc-hero')!.textContent).not.toContain('cannot sustain')
+  })
+
+  it("prints the evidence estate in today's dollars as the engine converted it, beside the nominal figure", async () => {
+    mockedSolve.mockResolvedValue(
+      solved({
+        evidence: {
+          endingAfterTaxEstate: 500_000,
+          endingAfterTaxEstateTodayDollars: 400_000,
+          endingNetWorth: 500_000,
+          lifetimeTaxesAndPenalties: 100_000,
+          depletionYear: null,
+          endYear: 2075,
+        },
+      }),
+    )
+    await renderSolved()
+    const evidence = Array.from(container.querySelectorAll('.card')).find(
+      (element) => element.querySelector('h2')?.textContent === 'Evidence at that level',
+    )!
+    expect(evidence.textContent).toContain("$400,000 today's dollars ($500,000 nominal)")
   })
 })

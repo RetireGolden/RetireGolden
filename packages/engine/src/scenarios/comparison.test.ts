@@ -563,6 +563,36 @@ describe('compareScenarioPlans', () => {
     expect(result.proposalAcaGrossPremiumReasons).toEqual([])
     expect(result.baselineAcaGrossPremiumDirection).toBeNull()
     expect(result.proposalAcaGrossPremiumDirection).toBeNull()
+    // Nor the B2-P1 slice 2 fields: each reads as null, never inferred.
+    expect(result.feasibleBaseAnnual).toEqual({ baseline: null, proposal: null, delta: null })
+    expect(result.baselineMaxBaseAnnualRounding).toBeNull()
+    expect(result.proposalSustainsCurrentBase).toBeNull()
+  })
+
+  it("carries each side's passing level, rounding and verdict on its own base, so no reader judges by the slack's sign", () => {
+    // The proposal's own $72,030 base passes and is its answer: published
+    // $72,000, a slack of −$30, and sustained.
+    const side = (feasible: number, published: number, slack: number, sustains: boolean) => ({
+      maxBaseAnnual: published,
+      feasibleBaseAnnual: feasible,
+      maxBaseAnnualRounding: 'down-to-hundred' as const,
+      sustainsCurrentBase: sustains,
+      spendingSlackDollars: slack,
+      converged: true,
+      simulationCount: 9,
+      limitingConstraint: 'depletion' as const,
+      acaGrossPremiumYears: [],
+      acaGrossPremiumReasons: [],
+      acaGrossPremiumDirection: null,
+      diagnostics: [],
+    })
+    const result = compareScenarioSpendingCapacityResults(side(80_450, 80_400, 8_370, true), side(72_030, 72_000, -30, true))
+    expect(result.spendingSlack.proposal).toBe(-30)
+    expect(result.proposalSustainsCurrentBase).toBe(true)
+    expect(result.baselineSustainsCurrentBase).toBe(true)
+    expect(result.feasibleBaseAnnual).toEqual({ baseline: 80_450, proposal: 72_030, delta: -8_420 })
+    expect(result.baselineMaxBaseAnnualRounding).toBe('down-to-hundred')
+    expect(result.proposalMaxBaseAnnualRounding).toBe('down-to-hundred')
   })
 
   it('rejects invalid stochastic options before running simulations', () => {

@@ -143,11 +143,14 @@ export const spendingAndWithdrawalsRecords = {
     kind: 'model',
     // Same publication as the withdrawal-rate step: the multiplier is the
     // year's guardrailFactor and the action feeds the Monte Carlo aggregates.
-    // The worksheet's display-guardrail-balance-thresholds is re-derived by
-    // the UI from the same policy percent and never calls this function
-    // (limit below), so it is not listed.
+    // The dollar thresholds the pages print are this step's threshold terms,
+    // published by guardrailThresholdDollars since B2-P1 slice 2.
     outputs: ['spending-guardrail-factor-annual'],
-    feeds: ['monte-carlo-guardrail-action-counts', 'monte-carlo-max-cut-depth-percentiles'],
+    feeds: [
+      'monte-carlo-guardrail-action-counts',
+      'monte-carlo-max-cut-depth-percentiles',
+      'display-guardrail-balance-thresholds',
+    ],
     statement:
       'adj = (adjustmentPct ?? 10)/100; prev = clamp(prevMultiplier) into [0, max(0, maxMultiplier)]. When startingBalance is not > 0, or currentRealBalance is not finite or is negative: hold at prev. lower = (lowerBalanceThresholdPct/100) x startingBalance when that percent is supplied and > 0, else null; upper likewise from upperBalanceThresholdPct. When both are set and lower >= upper: hold. currentRealBalance < lower: multiplier = clamp(prev - adj), action "cut" when it fell by more than 1e-9, else "hold". currentRealBalance > upper: multiplier = clamp(prev + adj), action "raise" when it rose by more than 1e-9, else "hold". Otherwise hold. Units: balances in real (deflated) dollars; thresholds as percent of the starting real portfolio; the multiplier a fraction. Rounding: none. annualGuardrailFunding.ts deflates the start-of-year portfolio by the year\'s inflation factor and anchors startingBalance at the first solvent year\'s real portfolio.',
     formula: {
@@ -168,7 +171,7 @@ export const spendingAndWithdrawalsRecords = {
     },
     limits: [
       'Thresholds come from the shared-path solver (montecarlo/riskBasedGuardrails.ts); a policy whose thresholds are absent, zero or inverted holds, so the mode never acts on unsolved numbers',
-      'The worksheet names display-guardrail-balance-thresholds upstream; the results-page callout re-derives the dollar thresholds as lowerBalanceThresholdPct/100 x the starting investable in planner-ui (ResultsPage.tsx, MonteCarloPage.tsx) and never calls this function, so that family shares this record\'s threshold term but is not fed by it and is not listed',
+      'The dollar thresholds the pages print (display-guardrail-balance-thresholds) are this step\'s L and U on the first-year anchor, published by montecarlo/riskBasedGuardrails.ts#guardrailThresholdDollars (the record guardrail-threshold-dollars); at a zero starting balance the anchor is the first year the portfolio has a balance, which only a simulation knows',
       'Same fixed step and clamp semantics as the withdrawal-rate step; clampRange is module-private and reached through nextBalanceGuardrailMultiplier',
       'The Monte Carlo action counts and cut-depth percentiles aggregate this decision\'s action and multiplier exactly as they do for the withdrawal-rate mode',
     ],
@@ -177,8 +180,8 @@ export const spendingAndWithdrawalsRecords = {
       'packages/engine/src/spending/guardrails.ts#nextBalanceGuardrailMultiplier',
       'packages/engine/src/spending/guardrails.ts#clampRange',
     ],
-    verifiedOn: '2026-09-17',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'cursor' },
+    verifiedOn: '2026-09-27',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
   },
   'spending-shape-annual-delta-phases': {
     title: 'Annual real spending drift compiled to five-year phase rows',
@@ -710,6 +713,147 @@ export const spendingAndWithdrawalsRecords = {
       'packages/engine/src/projection/internal/types/result.ts#YearResult.excessShortfall',
     ],
     verifiedOn: '2026-09-26',
+    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+  },
+  'solved-spending-rounding': {
+    title: 'Sustainable spending rounded down to the hundred',
+    purpose: 'The one amount every surface shows, applies and measures slack from once the spending solver has found the highest level that passed.',
+    kind: 'formula',
+    outputs: ['solved-spending-rounded-to-hundred', 'sustainable-spending-result-max-base-annual'],
+    feeds: [
+      'sustainable-spending-result-spending-slack-dollars',
+      'solved-initial-withdrawal-rate-pct',
+      'spending-shape-delta-vs-flat',
+    ],
+    statement:
+      'decisions/spendingSolver.ts#roundSolvedSpending floors a nonnegative amount to a whole multiple of SOLVED_SPENDING_STEP_DOLLARS (100): floor(x / 100) × 100, refusing an amount that is negative or not finite. The solver publishes feasibleBaseAnnual, the highest level that passed (a whole number of dollars), and maxBaseAnnual, that level rounded down to $100, and measures spendingSlackDollars as maxBaseAnnual minus the current base (owner decision R4: one slack everywhere, from the amount shown). Under fixed-target spending the rounded amount is published without a run of its own, on the decision\'s assumption that a lower base does not fail where a higher one passed (measured, not proven; see the limits). Under withdrawal-rate or risk-based guardrails a lower base can fail, so the rounded amount is published only on a run at it that passed: the search\'s own probe at that level when it made one, else one more run after the search; otherwise the solver publishes feasibleBaseAnnual itself, sets maxBaseAnnualRounding to none and adds a sentence to its diagnostics saying why. A rounded amount below the plan\'s required spending is never published. Whether today\'s spending is sustained is sustainsCurrentBase, the verdict of the first probe (today\'s base rounded to a whole dollar, or the required floor rounded up when that is higher), never the sign of the slack. When the rounded amount is published, bestEvaluation and the unpriced premium-credit years still describe the run at feasibleBaseAnnual. For the worksheet\'s case A (levels up to $62,850 pass, current base $40,000) the probes end at $62,813, the published amount is $62,800 and the slack $22,800; under guardrails, with the rounded amount failing, it is $62,813 and $22,813. Units: today\'s dollars per year. Rounding: down to a whole $100.',
+    formula: {
+      expression: 'M = floor(F / 100) · 100 when that level is known to pass, else M = F; slack = M − current',
+      variables: [
+        { symbol: 'F', meaning: 'feasibleBaseAnnual, the highest level that passed', unit: 'today USD per year', domain: 'nonnegative whole number' },
+        { symbol: 'M', meaning: 'maxBaseAnnual, the published answer', unit: 'today USD per year', domain: 'nonnegative; a multiple of 100 unless published as F' },
+        { symbol: 'current', meaning: 'The base spending the solve started from, after any base patch', unit: 'today USD per year', domain: 'nonnegative' },
+      ],
+      timing: 'once per solve, after the search',
+      rounding: 'down to a whole $100; the page prints whole dollars',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/spending-and-withdrawals/solved-spending-rounded-to-hundred.md',
+    },
+    limits: [
+      'Under fixed-target spending the rounded amount is not run on its own. That it passes is the decision\'s assumption, measured and not proven: every one of the 109 published amounts of the example plans and their shape solves re-simulates feasible, as do 210 fixed-target balance variants (0.70 to 1.30 times) of ten Marketplace-heavy or early-retirement examples, and a scan of every $10 level in the $3,000 below the answer on six Marketplace examples found none that fails. The mechanism it does not exclude is a lower spend dropping the household\'s income below 100 percent of the poverty line, where the premium tax credit is lost and the full premium is budgeted.',
+      'When the rounded amount is published, the evidence figures on the spending page and the unpriced premium-credit years describe the run at feasibleBaseAnnual, not a run at the published amount (under guardrails that run also passed, but its own evidence is not published).',
+      'Under guardrails a check of the rounded amount that the search did not already make is one more simulation after the search, outside maxSimulations, and it is counted in simulationCount.',
+      'A published amount under the current base by less than $100 can belong to a plan that sustains its own spending (the current base passed and is the answer, rounded down); the spending page judges that on feasibleBaseAnnual, and so should any other reader of the slack.',
+      'The search resolves to about $500, so answers less than $100 apart can publish the same amount, and a comparison of two plans can tie there.',
+    ],
+    implementedBy: ['packages/engine/src/decisions/spendingSolver.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/decisions/spendingSolver.ts#roundSolvedSpending',
+      'packages/engine/src/decisions/spendingSolver.ts#solveMaxSustainableSpending',
+    ],
+    verifiedOn: '2026-09-27',
+    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+  },
+  'solved-initial-withdrawal-rate': {
+    title: 'Solved spending as an initial withdrawal rate',
+    purpose: 'The solver\'s published answer as a percent of today\'s investable balances, the base the published withdrawal rules apply their rates to.',
+    kind: 'formula',
+    outputs: ['solved-initial-withdrawal-rate-pct'],
+    statement:
+      'decisions/spendingSolver.ts#initialWithdrawalRatePct returns (annualSpend / startingInvestable) × 100 in that association, or null when startingInvestable is not positive, and refuses an argument that is not finite or a negative spend. The solver publishes initialWithdrawalRatePct for its published answer maxBaseAnnual over startingInvestableOf of the plan it solved (any base patch applied), so the rate never mixes one plan\'s answer with another plan\'s balances. $62,800 over $1,500,000 is 4.186666666666667 percent (printed 4.19); $41,200 over $800,000 is 5.1499999999999995 (printed 5.15); a zero balance gives no rate. Units: percent. Rounding: none; the page prints two decimals.',
+    formula: {
+      expression: 'rate = (M / B) · 100',
+      variables: [
+        { symbol: 'M', meaning: 'The solver\'s published answer (maxBaseAnnual)', unit: 'today USD per year', domain: 'nonnegative' },
+        { symbol: 'B', meaning: 'Starting investable balances of the solved plan (startingInvestableOf)', unit: 'today USD', domain: 'B > 0; null rate otherwise' },
+      ],
+      timing: 'once per solve',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/spending-and-withdrawals/solved-initial-withdrawal-rate-pct.md',
+    },
+    limits: [
+      'The solved amount is base spending under the plan\'s own phases, taxes and horizon, while the published rules\' rates are constant-real spending over the same base, so the row compares a plan-specific answer with rules of thumb, as the page says.',
+      'The other association, (M · 100) / B, differs in the last binary digit on some inputs (4.1866666666666665 against 4.186666666666667 at $62,800 over $1,500,000); the printed two decimals agree.',
+    ],
+    implementedBy: ['packages/engine/src/decisions/spendingSolver.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/decisions/spendingSolver.ts#initialWithdrawalRatePct',
+      'packages/engine/src/decisions/spendingSolver.ts#solveMaxSustainableSpending',
+    ],
+    verifiedOn: '2026-09-27',
+    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+  },
+  'spending-shape-comparison': {
+    title: 'Spending shapes compared with constant-real spending',
+    purpose: 'Each spending shape\'s sustainable amount and its difference from the constant-real shape, as the spending page\'s shape table shows them.',
+    kind: 'composition',
+    outputs: ['spending-shape-delta-vs-flat'],
+    statement:
+      'decisions/spendingShapes.ts#planWithSpendingShape builds the plan solved for each shape in SPENDING_SHAPE_COMPARISON (flat, smile, smirk): the plan\'s own phases replaced by the shape\'s rows on the first person\'s retirement age (65 when unset), and amortized (ABW) spending removed; every other field, a guardrail policy included, is unchanged. spendingShapeRows publishes, for each shape, the solver\'s published maxBaseAnnual and deltaVsFlatDollars, that amount minus the flat shape\'s, null on the flat row and when either amount is null (owner decision R5), so the difference is always the gap between the two amounts shown. It refuses an input without exactly one flat row, a shape listed twice, and any amount that is not a published answer (a rounded amount that is not a whole multiple of $100, or an amount without its rounding). With passing levels of $50,050 (flat) and $50,149 (smile) the published amounts are $50,000 and $50,100 and the difference is +$100, where subtracting the passing levels printed +$99. Units: today\'s dollars per year. Rounding: none beyond the published amounts.',
+    formula: {
+      expression: 'delta_s = M_s − M_flat',
+      variables: [
+        { symbol: 'M_s', meaning: 'The published answer of the solve for shape s', unit: 'today USD per year', domain: 'nonnegative' },
+        { symbol: 'M_flat', meaning: 'The published answer of the constant-real (flat) solve', unit: 'today USD per year', domain: 'nonnegative' },
+      ],
+      timing: 'once per comparison',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/spending-and-withdrawals/spending-shape-delta-vs-flat.md',
+    },
+    limits: [
+      'Each shape is a separate solve that resolves to about $500, so a difference smaller than that is not meaningful.',
+      'Shapes use the first person\'s retirement age (65 when unset); a plan with amortized spending is compared as fixed-target versions of itself.',
+      'Under guardrail spending a row can publish the exact amount that passed rather than the rounded one (see solved-spending-rounding); its difference is still taken between the amounts shown.',
+    ],
+    implementedBy: ['packages/engine/src/decisions/spendingShapes.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/decisions/spendingShapes.ts#spendingShapeRows',
+      'packages/engine/src/decisions/spendingShapes.ts#planWithSpendingShape',
+    ],
+    verifiedOn: '2026-09-27',
+    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+  },
+  'guardrail-threshold-dollars': {
+    title: 'Risk-based guardrail thresholds in dollars',
+    purpose: 'The portfolio levels at which a risk-based guardrail policy cuts or raises spending, in today\'s dollars on the base the ledger acts on.',
+    kind: 'composition',
+    outputs: ['display-guardrail-balance-thresholds'],
+    statement:
+      'montecarlo/riskBasedGuardrails.ts#guardrailThresholdDollars publishes, for a risk-based guardrail policy with persisted percents p_L and p_U, (p_L / 100) × B and (p_U / 100) × B in that association, with B = startingInvestableOf(plan), the ledger\'s first-year real portfolio (the same rows added in the same order, at an inflation factor of exactly 1). With no persisted percent the status is unsolved; with B = 0 the status is no-starting-portfolio and only the percents are published, because the ledger then anchors on the first year the portfolio has a balance; acts is false when both thresholds exist and the cut threshold is not below the raise threshold, where the ledger holds spending every year. The solver persists its fraction as balancePct = balanceThresholdPct(fraction) = round(fraction × 10,000) / 100 (BALANCE_THRESHOLD_PCT_DECIMALS is 2). For the solver\'s worked edges 1.403671875 and 1.901171875 on a $500,000 portfolio the percents are 140.37 and 190.12 and the thresholds $701,850 and $950,600. Units: today\'s dollars; percent. Rounding: the percents carry two decimals; the dollars none.',
+    formula: {
+      expression: 'lower = (p_L / 100) · B; upper = (p_U / 100) · B; p = round(f · 10000) / 100',
+      variables: [
+        { symbol: 'p_L, p_U', meaning: 'Persisted cut and raise thresholds', unit: 'percent of the starting portfolio', domain: '> 0, two decimals' },
+        { symbol: 'B', meaning: 'Today\'s investable balances (startingInvestableOf), the ledger\'s first-year real portfolio', unit: 'today USD', domain: '>= 0' },
+        { symbol: 'f', meaning: 'The solver\'s balance fraction at a band edge', unit: '1', domain: '0.02 to 4' },
+      ],
+      timing: 'from the plan; the same in every year of every path, because the anchor is fixed in the first year',
+      rounding: 'the percents to 0.01 by balanceThresholdPct; the dollars none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/spending-and-withdrawals/display-guardrail-balance-thresholds.md',
+    },
+    limits: [
+      'The published base equals the ledger\'s anchor only because the ledger\'s first year has an inflation factor of exactly 1 and adds the same rows in the same order; an evidence case pins the ledger\'s first-year action on either side of B (a cut at 100.01 percent, a hold at 99.99).',
+      'At a zero starting balance the anchor is known only by simulating (and varies by path in Monte Carlo), so no dollars are published.',
+      'The percents were solved for the balances at the time of the solve; after a balance edit they still act, as percents of the new balance, until the thresholds are solved again.',
+      'The rounding is floating point: at three of the solver\'s 1,024 lattice points the product lands just below a half and rounds down (76.62 where the exact 76.625 rounds half up to 76.63), at most 0.01 percent of the balance, about a fortieth of the solver\'s own step.',
+    ],
+    implementedBy: ['packages/engine/src/montecarlo/riskBasedGuardrails.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/montecarlo/riskBasedGuardrails.ts#guardrailThresholdDollars',
+      'packages/engine/src/montecarlo/riskBasedGuardrails.ts#balanceThresholdPct',
+    ],
+    verifiedOn: '2026-09-27',
     provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
   },
 } satisfies Record<string, CalculationRecord>

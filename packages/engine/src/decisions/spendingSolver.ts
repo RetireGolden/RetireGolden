@@ -12,17 +12,37 @@
  * the ledger cannot price counts its full premium, as the ledger already funds
  * it, and the result names those years. Deterministic under a hard simulation
  * cap: fixed probe sequence, integer-dollar midpoints, no randomness.
+ *
+ * The published answer is the highest passing probe rounded down to a whole
+ * $100 (owner decision R4: every surface shows, applies and measures slack
+ * from one amount). Under fixed-target spending the rounded amount is
+ * published without a run of its own, on the decision's assumption that a
+ * lower base does not fail where a higher one passed. That is measured, not
+ * proven: no counterexample among the 109 published amounts of the example
+ * plans and their shape solves, 210 fixed-target balance variants of ten
+ * examples, or $10 scans below the answer on six Marketplace examples; the
+ * mechanism it does not exclude is a lower spend dropping income below 100
+ * percent of the poverty line, where the premium tax credit is lost and the
+ * full premium is budgeted. Under an adaptive policy (withdrawal-rate or
+ * risk-based guardrails) it is known not to hold, so the solver publishes the
+ * rounded amount only when a run at it passes (a probe at that amount, or
+ * one more run), else the exact amount that passed, and says which.
  */
 
 import { formatGroupedNumber, formatWholeUsd } from '../internal/evidenceFormat.js'
+import { startingInvestableOf } from '../montecarlo/riskBasedGuardrails.js'
 import { evaluateCandidate, planForCandidate, type EvaluateCandidateOptions } from './evaluateCandidate.js'
 import { nominalDollarsAtPlanEnd } from './objectives.js'
-import { ACA_GROSS_PREMIUM_DIAGNOSTIC_LEAD } from './spendingSolverDiagnostics.js'
+import { ACA_GROSS_PREMIUM_DIAGNOSTIC_LEAD, EXACT_ANSWER_DIAGNOSTIC_LEAD } from './spendingSolverDiagnostics.js'
 import { INFORMATIONAL_ACA_SUPPORT_CODES, type AcaSupportCode } from '../projection/types.js'
 import type { DecisionCandidate, DecisionContext, ExactDecisionEvaluation } from './types.js'
 
 export interface SustainableSpendingOptions {
-  /** Hard cap on exact-ledger simulations (bracketing probes + bisection). */
+  /**
+   * Hard cap on the search's exact-ledger simulations (bracketing probes +
+   * bisection). Under an adaptive spending policy the check of the rounded
+   * answer is one more simulation after the search, outside this cap.
+   */
   maxSimulations?: number
   /** Stop when the feasible/infeasible bracket is at most this wide. */
   resolutionDollars?: number
@@ -43,19 +63,64 @@ export interface SustainableSpendingOptions {
 
 export interface SustainableSpendingResult {
   /**
-   * Highest feasible annual base spending found (today's dollars), or null
-   * when even the lowest valid level (the required spending floor, 0 when
-   * the plan has none) depletes or breaks the estate floor, or when the solve
-   * bailed out on a diagnostic evaluation. Under guardrails feasibility is not
-   * monotone in the base amount, so a higher feasible level can exist.
+   * The published answer (today's dollars): the amount every surface shows,
+   * applies and measures slack from. `roundSolvedSpending(feasibleBaseAnnual)`
+   * (rounded down to a whole $100) unless `maxBaseAnnualRounding` is 'none',
+   * when it is `feasibleBaseAnnual` itself. Null when even the lowest valid
+   * level (the required spending floor, 0 when the plan has none) depletes or
+   * breaks the estate floor, or when the solve bailed out on a diagnostic
+   * evaluation. Under guardrails feasibility is not monotone in the base
+   * amount, so a higher feasible level can exist.
    */
   maxBaseAnnual: number | null
   /**
+   * The highest probe that passed (a whole number of dollars, today's
+   * dollars), or null with no answer; `bestEvaluation` is the run at this
+   * level. Whether today's spending is sustained is judged on this amount,
+   * never on the rounded `maxBaseAnnual`.
+   */
+  feasibleBaseAnnual: number | null
+  /**
+   * How `maxBaseAnnual` relates to `feasibleBaseAnnual`. 'down-to-hundred':
+   * rounded down to a whole $100 (the same number when it already is one).
+   * Under fixed-target spending that amount is taken to pass because a lower
+   * base is assumed not to fail where a higher one passed (measured, not
+   * proven; see the module comment); under an adaptive policy (withdrawal-rate
+   * or risk-based guardrails) a run at it passed. 'none': the exact amount
+   * that passed, published because under an adaptive policy a run at the
+   * amount rounded down to $100 failed, or because that amount would fall
+   * below the required spending floor. Null with no answer. When the rounded
+   * amount is published, `bestEvaluation` and the unpriced-year fields still
+   * describe the run at `feasibleBaseAnnual`.
+   */
+  maxBaseAnnualRounding: 'down-to-hundred' | 'none' | null
+  /**
    * maxBaseAnnual minus the current base spending — the basePatch's override
-   * when present, else the plan's own (negative ⇒ overspending today).
+   * when present, else the plan's own. Negative means the published amount
+   * is below today's base, which is not the same as today's spending failing:
+   * a slack between −$100 and 0 can sit beside a plan that sustains its own
+   * spending, because the published amount is rounded down. Read
+   * `sustainsCurrentBase` for that judgment.
    */
   spendingSlackDollars: number | null
-  /** Exact-ledger evaluation of the plan at `maxBaseAnnual`. */
+  /**
+   * Whether today's base spending passes: the result of the solve's first
+   * probe, at the current base (the basePatch's when present) rounded to a
+   * whole dollar, or at the required spending floor rounded up when that is
+   * higher. Judged on the level that passed, so a published amount rounded
+   * below the current base (a slack between −$100 and 0) can still sustain
+   * it. Null when no probe ran (amortized spending) or the first probe could
+   * not be evaluated.
+   */
+  sustainsCurrentBase: boolean | null
+  /**
+   * `initialWithdrawalRatePct(maxBaseAnnual, startingInvestableOf(plan))` for
+   * the plan the solve priced (the basePatch applied): the published answer
+   * as a percent of today's investable balances. Null with no answer or when
+   * those balances are not positive.
+   */
+  initialWithdrawalRatePct: number | null
+  /** Exact-ledger evaluation of the plan at `feasibleBaseAnnual` (the highest passing probe). */
   bestEvaluation: ExactDecisionEvaluation | null
   /** True when the bracket converged to `resolutionDollars` within the budget. */
   converged: boolean
@@ -75,7 +140,9 @@ export interface SustainableSpendingResult {
    * spending floor (`expenses.requiredAnnual` rounded up, 0 when none), one
    * probe at that floor; then one bisection probe per halving while the
    * bracket exceeds the resolution and the budget (maxSimulations) is not
-   * spent.
+   * spent; then, under an adaptive spending policy with an answer that is not
+   * already a whole $100, one run at that answer rounded down to $100 (outside
+   * the budget).
    */
   simulationCount: number
   /**
@@ -135,6 +202,45 @@ const MINIMUM_BRACKET_PROBE_DOLLARS = 20_000
 /** Doubling stops here; past this the plan's income plainly outruns spending. */
 const UNBOUNDED_SPENDING_DOLLARS = 100_000_000
 
+/**
+ * The step the published answer is rounded down to. The search resolves to
+ * about $500 (the default resolution), so dollars below $100 would claim a
+ * precision the answer does not have.
+ */
+export const SOLVED_SPENDING_STEP_DOLLARS = 100
+
+/**
+ * The published amount for a spending level that passed:
+ * floor(amount / SOLVED_SPENDING_STEP_DOLLARS) × SOLVED_SPENDING_STEP_DOLLARS,
+ * today's dollars. Rounding down keeps the amount at or below the level that
+ * passed. Every probe is a whole number of dollars below 2^53, where
+ * amount / 100 is either a whole number or at least 0.01 from one, so this is
+ * exactly amount − (amount mod 100). Refuses (RangeError) an amount that is
+ * not a finite number at or above 0.
+ */
+export function roundSolvedSpending(amount: number): number {
+  if (!Number.isFinite(amount) || amount < 0) {
+    throw new RangeError(`A solved spending amount must be a finite number of dollars at or above 0; got ${amount}.`)
+  }
+  return Math.floor(amount / SOLVED_SPENDING_STEP_DOLLARS) * SOLVED_SPENDING_STEP_DOLLARS
+}
+
+/**
+ * An annual spending level as a percent of the starting investable balance:
+ * (annualSpend / startingInvestable) × 100, in that association, the same
+ * base the published withdrawal rules apply their rates to
+ * (`startingInvestableOf`). Null when the balance is not positive. Refuses
+ * (RangeError) a non-finite argument or a negative annualSpend.
+ */
+export function initialWithdrawalRatePct(annualSpend: number, startingInvestable: number): number | null {
+  if (!Number.isFinite(annualSpend) || annualSpend < 0 || !Number.isFinite(startingInvestable)) {
+    throw new RangeError(
+      `A withdrawal rate needs a finite spending level at or above 0 and a finite balance; got ${annualSpend} and ${startingInvestable}.`,
+    )
+  }
+  return startingInvestable > 0 ? (annualSpend / startingInvestable) * 100 : null
+}
+
 function spendingCandidate(
   basePatch: Record<string, unknown> | undefined,
   baseAnnual: number,
@@ -187,6 +293,10 @@ export function solveMaxSustainableSpending(
   const patchedBase = options.basePatch ? planForCandidate(ctx.plan, { planPatch: options.basePatch }) : null
   const effectivePlan = patchedBase?.ok ? patchedBase.plan : ctx.plan
   const currentBaseAnnual = effectivePlan.expenses.baseAnnual
+  // Under an adaptive spending policy a lower base can fail where a higher one
+  // passed, so a rounded-down answer is run before it is published.
+  const spendingMode = effectivePlan.expenses.spendingPolicy?.mode ?? 'fixedTarget'
+  const adaptiveSpending = spendingMode === 'withdrawalRateGuardrails' || spendingMode === 'riskBasedGuardrails'
 
   // Amortized spending (ABW) computes the year's lifestyle target from the
   // portfolio itself and ignores `baseAnnual`, so bisecting baseAnnual would
@@ -196,7 +306,11 @@ export function solveMaxSustainableSpending(
   if (effectivePlan.expenses.spendingPolicy?.mode === 'abw') {
     return {
       maxBaseAnnual: null,
+      feasibleBaseAnnual: null,
+      maxBaseAnnualRounding: null,
       spendingSlackDollars: null,
+      sustainsCurrentBase: null,
+      initialWithdrawalRatePct: null,
       bestEvaluation: null,
       converged: false,
       limitingConstraint: null,
@@ -219,19 +333,35 @@ export function solveMaxSustainableSpending(
   let seedEvaluation: ExactDecisionEvaluation | null = null
   let floorEvaluation: ExactDecisionEvaluation | null = null
   let zeroSpendingDepletes = false
+  // Every level a probe evaluated, with its verdict, so a level the search
+  // already ran is never run again to decide what to publish.
+  const judged = new Map<number, { feasible: boolean; depleted: boolean; diagnostic: boolean }>()
+  // The first probe's verdict: whether today's base spending passes.
+  let seedVerdict: { feasible: boolean; depleted: boolean; diagnostic: boolean } | null = null
   // Reason the current upper (infeasible) bracket bound failed; tightening the
   // bracket keeps this in sync with the bound the answer finally rests against.
   let limitingConstraint: 'depletion' | 'estate-floor' | null = null
+
+  // A level is feasible when its run is not a diagnostic, never depletes and
+  // keeps the ending after-tax estate at or above the floor.
+  const judge = (
+    evaluation: ExactDecisionEvaluation,
+  ): { feasible: boolean; depleted: boolean; diagnostic: boolean } => {
+    const diagnostic = evaluation.recommendationState === 'diagnostic'
+    const depleted = evaluation.candidateResult.depletionYear !== null
+    const breaksFloor =
+      evaluation.candidateSummary.endingAfterTaxEstate <
+      nominalDollarsAtPlanEnd(estateFloorTodayDollars, effectivePlan, evaluation.candidateResult)
+    return { feasible: !diagnostic && !depleted && !breaksFloor, depleted, diagnostic }
+  }
 
   const probe = (baseAnnual: number): { feasible: boolean; evaluation: ExactDecisionEvaluation } => {
     simulationCount++
     const evaluation = evaluateCandidate(ctx, spendingCandidate(options.basePatch, baseAnnual), evaluationOptions)
     seedEvaluation ??= evaluation
-    const depleted = evaluation.candidateResult.depletionYear !== null
-    const breaksFloor =
-      evaluation.candidateSummary.endingAfterTaxEstate <
-      nominalDollarsAtPlanEnd(estateFloorTodayDollars, effectivePlan, evaluation.candidateResult)
-    const feasible = evaluation.recommendationState !== 'diagnostic' && !depleted && !breaksFloor
+    const verdict = judge(evaluation)
+    judged.set(baseAnnual, verdict)
+    const { feasible, depleted } = verdict
     if (feasible && (bestFeasible === null || baseAnnual > bestFeasible.amount)) {
       bestFeasible = { amount: baseAnnual, evaluation }
     }
@@ -288,9 +418,65 @@ export function solveMaxSustainableSpending(
         `Stopped before converging to $${formatGroupedNumber(resolutionDollars)}; the result is a feasible lower bound.`,
       )
     }
+    // The published amount (R4): the passing probe rounded down to a whole
+    // $100 whenever that level is known to pass, else the probe itself.
+    const feasibleBaseAnnual = bestFeasible?.amount ?? null
+    let maxBaseAnnual: number | null = null
+    let maxBaseAnnualRounding: SustainableSpendingResult['maxBaseAnnualRounding'] = null
+    if (feasibleBaseAnnual !== null) {
+      const rounded = roundSolvedSpending(feasibleBaseAnnual)
+      const requiredFloor = effectivePlan.expenses.requiredAnnual ?? 0
+      if (rounded === feasibleBaseAnnual) {
+        maxBaseAnnual = rounded
+        maxBaseAnnualRounding = 'down-to-hundred'
+      } else if (rounded < requiredFloor) {
+        // The plan checks refuse a base below the required spending floor, so
+        // the rounded amount is not a level this plan can be set to.
+        maxBaseAnnual = feasibleBaseAnnual
+        maxBaseAnnualRounding = 'none'
+        diagnostics.push(
+          `${EXACT_ANSWER_DIAGNOSTIC_LEAD} (${formatWholeUsd(feasibleBaseAnnual)}/yr): rounded down to the nearest $100 it would fall below the required spending floor (${formatWholeUsd(requiredFloor)}/yr).`,
+        )
+      } else if (!adaptiveSpending) {
+        maxBaseAnnual = rounded
+        maxBaseAnnualRounding = 'down-to-hundred'
+      } else {
+        // Under guardrails a lower base can fail where a higher one passed,
+        // so the rounded amount is published only on a run that passed: the
+        // search's own probe at that level when it made one, else one more run.
+        let check = judged.get(rounded)
+        if (check === undefined) {
+          simulationCount++
+          check = judge(evaluateCandidate(ctx, spendingCandidate(options.basePatch, rounded), evaluationOptions))
+        }
+        if (check.feasible) {
+          maxBaseAnnual = rounded
+          maxBaseAnnualRounding = 'down-to-hundred'
+        } else {
+          maxBaseAnnual = feasibleBaseAnnual
+          maxBaseAnnualRounding = 'none'
+          diagnostics.push(
+            `${EXACT_ANSWER_DIAGNOSTIC_LEAD} (${formatWholeUsd(feasibleBaseAnnual)}/yr), not rounded down to ${formatWholeUsd(rounded)}/yr: under this plan's guardrail spending that lower level was run and ${
+              check.diagnostic
+                ? 'could not be evaluated'
+                : check.depleted
+                  ? 'runs out of money before the plan ends'
+                  : 'leaves the ending after-tax estate below the floor'
+            }.`,
+          )
+        }
+      }
+    }
+    const startingInvestable = startingInvestableOf(effectivePlan)
     return {
-      maxBaseAnnual: bestFeasible?.amount ?? null,
-      spendingSlackDollars: bestFeasible ? bestFeasible.amount - currentBaseAnnual : null,
+      maxBaseAnnual,
+      feasibleBaseAnnual,
+      maxBaseAnnualRounding,
+      spendingSlackDollars: maxBaseAnnual === null ? null : maxBaseAnnual - currentBaseAnnual,
+      sustainsCurrentBase:
+        seedVerdict === null || seedVerdict.diagnostic ? null : seedVerdict.feasible,
+      initialWithdrawalRatePct:
+        maxBaseAnnual === null ? null : initialWithdrawalRatePct(maxBaseAnnual, startingInvestable),
       bestEvaluation: bestFeasible?.evaluation ?? null,
       converged,
       limitingConstraint,
@@ -309,6 +495,7 @@ export function solveMaxSustainableSpending(
   // back as an invalid-plan diagnostic.
   const seedAmount = Math.max(0, Math.round(currentBaseAnnual), Math.ceil(effectivePlan.expenses.requiredAnnual ?? 0))
   const seed = probe(seedAmount)
+  seedVerdict = judged.get(seedAmount) ?? null
   if (seed.evaluation.recommendationState === 'diagnostic') {
     diagnostics.push(...seed.evaluation.diagnostics)
     return finish(null, null)

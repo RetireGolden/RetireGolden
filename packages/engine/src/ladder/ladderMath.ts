@@ -19,6 +19,8 @@
  *    FedInvest mode (step 5) exists for users who want real security prices.
  */
 
+import type { TipsLadder } from '../model/plan.js'
+import { EMBEDDED_REAL_YIELD_CURVE } from '../params/index.js'
 import type { RealYieldCurve } from '../params/types.js'
 
 /** Regulatory minimum TIPS coupon rate (percent). */
@@ -203,4 +205,93 @@ export function realPresentValue(flows: Array<{ yearsFromNow: number; realAmount
     pv += flow.realAmount / Math.pow(1 + y, flow.yearsFromNow)
   }
   return pv
+}
+
+/**
+ * A ladder quote's annual real income as a percent of its real cost:
+ * (targetAnnualRealIncome / totalCost) × 100, in that association. Both are
+ * today's dollars, so the ratio is a real rate per year. On a deferred ladder
+ * the cost includes the coupons paid before the first payout year, so the
+ * ratio is below the level-annuity rate; a one-year ladder returns more than
+ * 100 percent (its cost plus one coupon). Refuses (RangeError) a cost that is
+ * not a positive finite number or an income that is not finite.
+ */
+export function ladderIncomeYieldPct(build: Pick<LadderBuild, 'targetAnnualRealIncome' | 'totalCost'>): number {
+  if (!Number.isFinite(build.totalCost) || build.totalCost <= 0 || !Number.isFinite(build.targetAnnualRealIncome)) {
+    throw new RangeError(
+      `A ladder's income yield needs a positive finite cost and a finite income; got cost ${build.totalCost} and income ${build.targetAnnualRealIncome}.`,
+    )
+  }
+  return (build.targetAnnualRealIncome / build.totalCost) * 100
+}
+
+/** Where a plan ladder's rungs sit in time, as the ledger prices them. */
+export interface PlanLadderWindow {
+  /** The year the rungs exist from: the purchase year, or (already owned) the year before the projection. */
+  anchorYear: number
+  /** The first payout year: the ladder's own start year, but never before the year after the anchor. */
+  effectiveStartYear: number
+  /** effectiveStartYear − anchorYear (at least 1). */
+  firstPayoutOffset: number
+  /** endYear − effectiveStartYear + 1. */
+  payoutYears: number
+}
+
+/**
+ * The ledger's anchor rule for a plan ladder: the anchor is the purchase year,
+ * or the year before the projection's start year when the ladder is already
+ * owned, so coupons pay from the first projection year; the first payout is
+ * no earlier than the year after the anchor. Null when the window is empty
+ * (the last payout year is before the first) or the amount is not positive,
+ * where the ledger carries no ladder. `simulatePlan` and `quotePlanLadder`
+ * both call this, so a quote and the ledger never disagree on the window.
+ */
+export function planLadderWindow(ladder: TipsLadder, startYear: number): PlanLadderWindow | null {
+  const anchorYear = ladder.purchase ? ladder.purchase.year : startYear - 1
+  const effectiveStartYear = Math.max(ladder.startYear, anchorYear + 1)
+  if (ladder.endYear < effectiveStartYear || ladder.annualRealAmount <= 0) return null
+  return {
+    anchorYear,
+    effectiveStartYear,
+    firstPayoutOffset: effectiveStartYear - anchorYear,
+    payoutYears: ladder.endYear - effectiveStartYear + 1,
+  }
+}
+
+/** A plan ladder priced as the ledger prices it. */
+export interface PlanLadderQuote {
+  build: LadderBuild
+  /** The window's anchor year (see `planLadderWindow`). */
+  anchorYear: number
+  /** anchorYear + each rung's maturityOffset, in rung order: the calendar year each rung matures. */
+  maturityYears: number[]
+  /** ladderIncomeYieldPct(build). */
+  incomeYieldPct: number
+}
+
+/**
+ * `buildLadder` on `planLadderWindow(ladder, startYear)` with the embedded
+ * real-yield curve (or `curve`), exactly as `simulatePlan` prices the ladder,
+ * with the buy-list's maturity years and the income yield. Null where the
+ * window is.
+ */
+export function quotePlanLadder(
+  ladder: TipsLadder,
+  startYear: number,
+  curve: RealYieldCurve = EMBEDDED_REAL_YIELD_CURVE,
+): PlanLadderQuote | null {
+  const ladderWindow = planLadderWindow(ladder, startYear)
+  if (ladderWindow === null) return null
+  const build = buildLadder({
+    annualRealIncome: ladder.annualRealAmount,
+    firstPayoutOffset: ladderWindow.firstPayoutOffset,
+    payoutYears: ladderWindow.payoutYears,
+    curve,
+  })
+  return {
+    build,
+    anchorYear: ladderWindow.anchorYear,
+    maturityYears: build.rungs.map((rung) => ladderWindow.anchorYear + rung.maturityOffset),
+    incomeYieldPct: ladderIncomeYieldPct(build),
+  }
 }

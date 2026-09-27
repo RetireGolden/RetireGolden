@@ -259,6 +259,9 @@ const projectedFilingStatusSchema = z.enum([
   'qualifyingSurvivingSpouse',
 ])
 
+// Each side's published sustainable-spending answer and its slack (rounded
+// down to $100 unless a guardrail plan fails at the rounded amount), so two
+// strategies whose answers differ by less than $100 can tie here.
 const capacitySchema = z
   .strictObject({
     maxBaseAnnual: tradeoffMetricSchema('higher', 'nullable'),

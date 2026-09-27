@@ -1,26 +1,24 @@
 # Mutation receipt: swr-rule-depletion-year
 
-Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-seven` at base `74916a7e`, and re-executed 2026-09-22 against RetireGolden base `7ae019a8` (branch `claude/b1-p4-cards-seven`, pull request #727) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-seven` at base `74916a7e`, and re-executed 2026-09-22 against RetireGolden base `7ae019a8` (branch `claude/b1-p4-cards-seven`, pull request #727), and re-executed 2026-09-27 against RetireGolden base `fe28be3c` (branch `claude/b2p1-slice2-display-math`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `2c35d2b8` (branch `claude/b2p1-slice2-display-math`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/decisions/swrComparator.ts`
 
 ```diff
 diff --git a/packages/engine/src/decisions/swrComparator.ts b/packages/engine/src/decisions/swrComparator.ts
-index fb930611..be61fb42 100644
+index 5479cc7b..dc87c6de 100644
 --- a/packages/engine/src/decisions/swrComparator.ts
 +++ b/packages/engine/src/decisions/swrComparator.ts
-@@ -119,7 +119,7 @@ export function compareSwrRules(
-       citation: rule.citation,
+@@ -130,5 +130,5 @@ export function compareSwrRules(
        initialRatePct: ratePct,
        initialAnnualSpend,
 -      depletionYear: summary.depletionYear,
 +      depletionYear: [...result.years].sort((a, b) => b.shortfall - a.shortfall)[0]?.year ?? null,
        endYear: result.endYear,
        endingAfterTaxEstate: summary.endingAfterTaxEstate,
-       lifetimeTaxesAndPenalties: summary.lifetimeTaxesAndPenalties,
 ```
 
-Select the largest-shortfall year instead of the first year over the residual budget.
+Select the largest-shortfall year instead of the first year over the residual budget. Rewritten for B2-P1 slice 2, which added the today's-dollar estate to the same result literal: the mutated line is unchanged and only the surrounding context moved.
 
 The assertion this record owns is the one reading `expected 2042 to be 2041`; the mutation also breaks a sibling record's assertion in the same file, because both read the mutated expression. The captured output shows every failure in full.
 
@@ -32,23 +30,28 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/decisions/s
 
 ## Captured failing output
 
-Re-executed 2026-09-22 on the pull-request branch after the review of #727: the heir-tax fixture had grown to two cases since the first execution and the branch was renamed for the pull request, so every capture, blob hash and revert note is refreshed against this head. The baseline is green (swrComparator.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed. Exit code: 1.
+Re-executed 2026-09-27 after the independent review of B2-P1 slice 2 changed this receipt's evidence file or moved the lines it mutates, so every capture, blob hash and revert note is refreshed against this head. The baseline is green (swrComparator.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/TEMP/rg-rehearse2/packages/engine
+RUN  v5.0.0 C:/rgwt/engine8/packages/engine
 
- ❯ src/decisions/swrComparator.evidence.test.ts (6 tests | 3 failed) 90ms
+ ❯ src/decisions/swrComparator.evidence.test.ts (7 tests | 4 failed) 114ms
    ❯ swr-rule-end-year — Swr rule end year (1)
      × publishes the 2055 ledger endpoint, not the 2041 depletion year 5ms
    ❯ swr-rule-depletion-year — Swr rule depletion year (2)
-     × selects 2041, the first year whose shortfall clears the half-cent budget 25ms
-     × publishes null when no year is short 9ms
+     × selects 2041, the first year whose shortfall clears the half-cent budget 21ms
+     × publishes null when no year is short 11ms
+   ❯ display-dollar-basis-conversion — Today's dollars by the ledger's own inflation factor (1)
+     × publishes each rule ending estate divided by that rule run factor for its end year 31ms
 
  Test Files  1 failed (1)
-      Tests  3 failed | 3 passed (6)
+      Tests  4 failed | 3 passed (7)
+
+             persist transforms across runs with fsModuleCache: true
+             learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
 
 
-⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
 
  FAIL  src/decisions/swrComparator.evidence.test.ts > swr-rule-end-year — Swr rule end year > publishes the 2055 ledger endpoint, not the 2041 depletion year
 AssertionError: expected 2026 to be 2041 // Object.is equality
@@ -59,15 +62,15 @@ AssertionError: expected 2026 to be 2041 // Object.is equality
 - 2041
 + 2026
 
- ❯ src/decisions/swrComparator.evidence.test.ts:199:35
-    197|         const row = rows.find((candidate) => candidate.id === BENGEN)!
-    198|         expect(row.endYear).toBe(example.expected.endYear)
-    199|         expect(row.depletionYear).toBe(inputs.depletionYear)
+ ❯ src/decisions/swrComparator.evidence.test.ts:208:35
+    206|         const row = rows.find((candidate) => candidate.id === BENGEN)!
+    207|         expect(row.endYear).toBe(example.expected.endYear)
+    208|         expect(row.depletionYear).toBe(inputs.depletionYear)
        |                                   ^
-    200|         expect(row.endYear).not.toBe(inputs.depletionYear)
-    201|         expect(row.endYear).not.toBe(inputs.startYear + 30)
+    209|         expect(row.endYear).not.toBe(inputs.depletionYear)
+    210|         expect(row.endYear).not.toBe(inputs.startYear + 30)
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
 
  FAIL  src/decisions/swrComparator.evidence.test.ts > swr-rule-depletion-year — Swr rule depletion year > selects 2041, the first year whose shortfall clears the half-cent budget
 AssertionError: expected 2042 to be 2041 // Object.is equality
@@ -78,15 +81,15 @@ AssertionError: expected 2042 to be 2041 // Object.is equality
 - 2041
 + 2042
 
- ❯ src/decisions/swrComparator.evidence.test.ts:259:33
-    257|       // largest-shortfall reading the worksheet rejects would name a …
-    258|       // year; the mutation receipt executes exactly that reading.
-    259|       expect(row.depletionYear).toBe(example.expected.depletionYear)
+ ❯ src/decisions/swrComparator.evidence.test.ts:268:33
+    266|       // largest-shortfall reading the worksheet rejects would name a …
+    267|       // year; the mutation receipt executes exactly that reading.
+    268|       expect(row.depletionYear).toBe(example.expected.depletionYear)
        |                                 ^
-    260|     })
-    261|
+    269|     })
+    270|
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯
 
  FAIL  src/decisions/swrComparator.evidence.test.ts > swr-rule-depletion-year — Swr rule depletion year > publishes null when no year is short
 AssertionError: expected 2026 to be null // Object.is equality
@@ -97,15 +100,34 @@ null
 + Received:
 2026
 
- ❯ src/decisions/swrComparator.evidence.test.ts:267:33
-    265|       const rows = compareSwrRules(depletingPlan(example.inputs.funded…
-    266|       const row = rows.find((candidate) => candidate.id === BENGEN)!
-    267|       expect(row.depletionYear).toBe(example.expected.noShortfallDeple…
+ ❯ src/decisions/swrComparator.evidence.test.ts:276:33
+    274|       const rows = compareSwrRules(depletingPlan(example.inputs.funded…
+    275|       const row = rows.find((candidate) => candidate.id === BENGEN)!
+    276|       expect(row.depletionYear).toBe(example.expected.noShortfallDeple…
        |                                 ^
-    268|     })
-    269|   },
+    277|     })
+    278|   },
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯
+
+ FAIL  src/decisions/swrComparator.evidence.test.ts > display-dollar-basis-conversion — Today's dollars by the ledger's own inflation factor > publishes each rule ending estate divided by that rule run factor for its end year
+AssertionError: bengen-2025: expected 2026 to be null
+
+- Expected:
+null
+
++ Received:
+2026
+
+ ❯ src/decisions/swrComparator.evidence.test.ts:421:43
+    419|       for (const row of rows) {
+    420|         expect(row.endYear, row.id).toBe(inputs.endYear)
+    421|         expect(row.depletionYear, row.id).toBeNull()
+       |                                           ^
+    422|         expect(row.endingAfterTaxEstate, row.id).toBeGreaterThan(0)
+    423|         expect(row.endingAfterTaxEstateTodayDollars, row.id).toBe(
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯
 ```
 
 ## Revert

@@ -1219,6 +1219,16 @@
   },
   {
     "source": "engine/src/montecarlo/run.ts",
+    "owner": "Histogram",
+    "field": "binCenters",
+    "tsType": "number[]",
+    "disposition": "family",
+    "familyId": "display-histogram-bin-label",
+    "reason": null,
+    "reasonKind": null
+  },
+  {
+    "source": "engine/src/montecarlo/run.ts",
     "owner": "MonteCarloSummary",
     "field": "pathCount",
     "tsType": "number",
@@ -2639,6 +2649,46 @@
   },
   {
     "source": "engine/src/decisions/spendingSolver.ts",
+    "owner": "SustainableSpendingResult",
+    "field": "feasibleBaseAnnual",
+    "tsType": "number | null",
+    "disposition": "unsurfaced-evidence",
+    "familyId": null,
+    "reason": "The highest level the search found feasible, a whole number of dollars; the published answer maxBaseAnnual is this rounded down to $100 when that level is known to pass. Pages judge whether today's spending is sustained on it but print only the published amount.",
+    "reasonKind": "runtime-diagnostic"
+  },
+  {
+    "source": "engine/src/decisions/spendingSolver.ts",
+    "owner": "SustainableSpendingResult",
+    "field": "maxBaseAnnualRounding",
+    "tsType": "'down-to-hundred' | 'none' | null",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "Says whether maxBaseAnnual is feasibleBaseAnnual rounded down to $100 or, under guardrails when the rounded amount failed, the exact amount; a category, not an amount.",
+    "reasonKind": "label-or-category"
+  },
+  {
+    "source": "engine/src/decisions/spendingSolver.ts",
+    "owner": "SustainableSpendingResult",
+    "field": "initialWithdrawalRatePct",
+    "tsType": "number | null",
+    "disposition": "family",
+    "familyId": "solved-initial-withdrawal-rate-pct",
+    "reason": null,
+    "reasonKind": null
+  },
+  {
+    "source": "engine/src/decisions/spendingSolver.ts",
+    "owner": "SustainableSpendingResult",
+    "field": "sustainsCurrentBase",
+    "tsType": "boolean | null",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "Whether the solve's first probe, at today's base rounded to a whole dollar (or the required floor rounded up), passed: the verdict on which cannot-sustain copy is judged; a flag, not an amount.",
+    "reasonKind": "boolean-flag"
+  },
+  {
+    "source": "engine/src/decisions/spendingSolver.ts",
     "owner": "module",
     "field": "baseAnnual",
     "tsType": "number",
@@ -2646,6 +2696,16 @@
     "familyId": null,
     "reason": "The module.baseAnnual field is an internal diagnostic used to trace or validate calculation behavior.",
     "reasonKind": "runtime-diagnostic"
+  },
+  {
+    "source": "engine/src/decisions/spendingSolver.ts",
+    "owner": "module",
+    "field": "SOLVED_SPENDING_STEP_DOLLARS",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "The $100 step the published answer is rounded down to; a fixed setting of the solver, not an output.",
+    "reasonKind": "input-parameter"
   },
   {
     "source": "engine/src/decisions/spendingSolver.ts",
@@ -2744,6 +2804,16 @@
     "tsType": "number",
     "disposition": "family",
     "familyId": "swr-rule-result-lifetime-taxes-and-penalties"
+  },
+  {
+    "source": "engine/src/decisions/swrComparator.ts",
+    "owner": "SwrRuleResult",
+    "field": "endingAfterTaxEstateTodayDollars",
+    "tsType": "number | null",
+    "disposition": "family",
+    "familyId": "display-dollar-basis-conversion",
+    "reason": null,
+    "reasonKind": null
   },
   {
     "source": "engine/src/decisions/swrComparator.ts",
@@ -2986,6 +3056,76 @@
     "familyId": null,
     "reasonKind": "input-parameter",
     "reason": "Real amount argument of realPresentValue."
+  },
+  {
+    "source": "engine/src/ladder/ladderMath.ts",
+    "owner": "PlanLadderQuote",
+    "field": "incomeYieldPct",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "income-floor-ladder-yield-pct",
+    "reason": null,
+    "reasonKind": null
+  },
+  {
+    "source": "engine/src/ladder/ladderMath.ts",
+    "owner": "PlanLadderQuote",
+    "field": "anchorYear",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "The calendar year the rungs exist from (the purchase year, or the year before the projection); a coordinate.",
+    "reasonKind": "dimension-coordinate"
+  },
+  {
+    "source": "engine/src/ladder/ladderMath.ts",
+    "owner": "PlanLadderQuote",
+    "field": "maturityYears",
+    "tsType": "number[]",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "The calendar year each rung matures, the buy-list's Matures column; coordinates.",
+    "reasonKind": "dimension-coordinate"
+  },
+  {
+    "source": "engine/src/ladder/ladderMath.ts",
+    "owner": "PlanLadderWindow",
+    "field": "anchorYear",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "The calendar year the rungs exist from; a coordinate of the ledger's window.",
+    "reasonKind": "dimension-coordinate"
+  },
+  {
+    "source": "engine/src/ladder/ladderMath.ts",
+    "owner": "PlanLadderWindow",
+    "field": "effectiveStartYear",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "The first payout year after the anchor rule; a coordinate.",
+    "reasonKind": "dimension-coordinate"
+  },
+  {
+    "source": "engine/src/ladder/ladderMath.ts",
+    "owner": "PlanLadderWindow",
+    "field": "firstPayoutOffset",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "Years from the anchor to the first payout; a coordinate.",
+    "reasonKind": "dimension-coordinate"
+  },
+  {
+    "source": "engine/src/ladder/ladderMath.ts",
+    "owner": "PlanLadderWindow",
+    "field": "payoutYears",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "The number of payout years in the window; a coordinate.",
+    "reasonKind": "dimension-coordinate"
   },
   {
     "source": "engine/src/ladder/fundedRatio.ts",
@@ -4967,56 +5107,6 @@
   },
   {
     "source": "planner-ui/src/planner/bucketLens.ts",
-    "owner": "BucketYearRow",
-    "field": "year",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "The BucketYearRow.year field is a coordinate such as year, age, or offset used to place another value.",
-    "reasonKind": "dimension-coordinate"
-  },
-  {
-    "source": "planner-ui/src/planner/bucketLens.ts",
-    "owner": "BucketYearRow",
-    "field": "need",
-    "tsType": "number",
-    "disposition": "family",
-    "familyId": "portfolio-need-annual"
-  },
-  {
-    "source": "planner-ui/src/planner/bucketLens.ts",
-    "owner": "BucketYearRow",
-    "field": "buckets",
-    "tsType": "number[]",
-    "disposition": "family",
-    "familyId": "bucket-lens-allocation"
-  },
-  {
-    "source": "planner-ui/src/planner/bucketLens.ts",
-    "owner": "BucketYearRow",
-    "field": "investableTotal",
-    "tsType": "number",
-    "disposition": "family",
-    "familyId": "accounts-investable-total-annual"
-  },
-  {
-    "source": "planner-ui/src/planner/bucketLens.ts",
-    "owner": "bucketLens",
-    "field": "spans",
-    "tsType": "number[]",
-    "disposition": "family",
-    "familyId": "bucket-lens-allocation"
-  },
-  {
-    "source": "planner-ui/src/planner/bucketLens.ts",
-    "owner": "bucketLens",
-    "field": "buckets",
-    "tsType": "number[]",
-    "disposition": "family",
-    "familyId": "bucket-lens-allocation"
-  },
-  {
-    "source": "planner-ui/src/planner/bucketLens.ts",
     "owner": "BucketPreset",
     "field": "spans",
     "tsType": "number[]",
@@ -5204,16 +5294,32 @@
     "familyId": "display-fan-band-widths"
   },
   {
-    "source": "planner-ui/src/planner/MonteCarloPage.tsx",
-    "owner": "MonteCarloPage",
+    "source": "planner-ui/src/planner/format.ts",
+    "owner": "fanOuterBand",
+    "field": "p10",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "display-fan-band-widths"
+  },
+  {
+    "source": "planner-ui/src/planner/format.ts",
+    "owner": "fanOuterBand",
+    "field": "p90",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "display-fan-band-widths"
+  },
+  {
+    "source": "planner-ui/src/planner/format.ts",
+    "owner": "fanInnerBand",
     "field": "p25",
     "tsType": "number",
     "disposition": "family",
     "familyId": "display-fan-band-widths"
   },
   {
-    "source": "planner-ui/src/planner/MonteCarloPage.tsx",
-    "owner": "MonteCarloPage",
+    "source": "planner-ui/src/planner/format.ts",
+    "owner": "fanInnerBand",
     "field": "p75",
     "tsType": "number",
     "disposition": "family",
@@ -5636,6 +5742,16 @@
     "reason": "Calendar years whose ACA premium tax credit one spending-shape solve on the solver page could not price; the page names their union in the note under the shape table. A list of years, not a quantity."
   },
   {
+    "source": "planner-ui/src/planner/SpendingSolverPage.tsx",
+    "owner": "ShapeRow",
+    "field": "deltaVsFlatDollars",
+    "tsType": "number | null",
+    "disposition": "family",
+    "familyId": "spending-shape-delta-vs-flat",
+    "reason": null,
+    "reasonKind": null
+  },
+  {
     "source": "planner-ui/src/planner/SsAnalysisPage.tsx",
     "owner": "module",
     "field": "t",
@@ -6040,6 +6156,16 @@
     "familyId": null,
     "reason": "The module.startYear field is a coordinate such as year, age, or offset used to place another value.",
     "reasonKind": "dimension-coordinate"
+  },
+  {
+    "source": "planner-ui/src/planner/sections/IncomeFloorSection.tsx",
+    "owner": "LadderRow",
+    "field": "incomeYieldPct",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "income-floor-ladder-yield-pct",
+    "reason": null,
+    "reasonKind": null
   },
   {
     "source": "planner-ui/src/planner/resultsRows.ts",
@@ -7219,6 +7345,16 @@
     "familyId": "display-histogram-bin-label"
   },
   {
+    "source": "planner-ui/src/planner/format.ts",
+    "owner": "histogramBars",
+    "field": "binCenters",
+    "tsType": "number[]",
+    "disposition": "family",
+    "familyId": "display-histogram-bin-label",
+    "reason": null,
+    "reasonKind": null
+  },
+  {
     "source": "planner-ui/src/planner/OptimizePage.tsx",
     "owner": "OptimizePage",
     "field": "totalConversions",
@@ -7241,31 +7377,6 @@
     "tsType": "number",
     "disposition": "family",
     "familyId": "claim-age-co-optimization-estate-gain"
-  },
-  {
-    "source": "planner-ui/src/planner/SpendingSolverPage.tsx",
-    "owner": "SpendingSolverPage",
-    "field": "solvedRounded",
-    "tsType": "number",
-    "disposition": "family",
-    "familyId": "solved-spending-rounded-to-hundred"
-  },
-  {
-    "source": "planner-ui/src/planner/SpendingSolverPage.tsx",
-    "owner": "SpendingSolverPage",
-    "field": "delta",
-    "tsType": "number",
-    "disposition": "family",
-    "familyId": "spending-shape-delta-vs-flat"
-  },
-  {
-    "source": "planner-ui/src/planner/SpendingSolverPage.tsx",
-    "owner": "SpendingSolverPage",
-    "field": "solvedWithdrawalRatePct",
-    "tsType": "number",
-    "disposition": "family",
-    "familyId": "solved-initial-withdrawal-rate-pct",
-    "note": "SWR comparison 'solved on your exact plan' row in SpendingSolverPage: divides solvedRounded (Math.floor(result.maxBaseAnnual / 100) * 100, the solver's maxBaseAnnual floored to the nearest $100) by startingInvestable (startingInvestableOf(plan) from engine/montecarlo/riskBasedGuardrails), multiplies by 100 and prints with toFixed(2) and a % sign; the row renders only when solvedRounded is not null and startingInvestable > 0."
   },
   {
     "source": "planner-ui/src/planner/SsAnalysisPage.tsx",
@@ -7385,15 +7496,6 @@
     "tsType": "function",
     "disposition": "family",
     "familyId": "display-dollar-basis-conversion"
-  },
-  {
-    "source": "planner-ui/src/planner/sections/IncomeFloorSection.tsx",
-    "owner": "IncomeFloorSection",
-    "field": "yieldPct",
-    "tsType": "number",
-    "disposition": "family",
-    "familyId": "income-floor-ladder-yield-pct",
-    "note": "LadderRow in IncomeFloorSection.tsx: divides ladder.annualRealAmount (the TipsLadder plan input) by quote.totalCost (the LadderBuild that buildLadder in engine/ladder/ladderMath returns, priced on EMBEDDED_REAL_YIELD_CURVE), multiplies by 100 and prints with toFixed(2) and a % sign; the sentence renders only when quote is non-null."
   },
   {
     "source": "engine/src/projection/internal/types/yearLedger.ts",
@@ -9233,6 +9335,56 @@
   },
   {
     "source": "engine/src/scenarios/comparison.ts",
+    "owner": "ScenarioSpendingCapacityComparison",
+    "field": "feasibleBaseAnnual",
+    "tsType": "NullableScalarComparison | undefined",
+    "disposition": "unsurfaced-evidence",
+    "familyId": null,
+    "reason": "Each side's feasibleBaseAnnual, the level its solve found passing, carried so a reader can judge the published amount against it; no surface prints it.",
+    "reasonKind": "runtime-diagnostic"
+  },
+  {
+    "source": "engine/src/scenarios/comparison.ts",
+    "owner": "ScenarioSpendingCapacityComparison",
+    "field": "baselineMaxBaseAnnualRounding",
+    "tsType": "'down-to-hundred' | 'none' | null | undefined",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "Whether that side's published amount is its passing level rounded down to $100 or the exact passing level; a category.",
+    "reasonKind": "label-or-category"
+  },
+  {
+    "source": "engine/src/scenarios/comparison.ts",
+    "owner": "ScenarioSpendingCapacityComparison",
+    "field": "baselineSustainsCurrentBase",
+    "tsType": "boolean | null | undefined",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "Whether that side's own base spending passes (its solve's sustainsCurrentBase); a flag a reader uses instead of the slack's sign.",
+    "reasonKind": "boolean-flag"
+  },
+  {
+    "source": "engine/src/scenarios/comparison.ts",
+    "owner": "ScenarioSpendingCapacityComparison",
+    "field": "proposalMaxBaseAnnualRounding",
+    "tsType": "'down-to-hundred' | 'none' | null | undefined",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "Whether that side's published amount is its passing level rounded down to $100 or the exact passing level; a category.",
+    "reasonKind": "label-or-category"
+  },
+  {
+    "source": "engine/src/scenarios/comparison.ts",
+    "owner": "ScenarioSpendingCapacityComparison",
+    "field": "proposalSustainsCurrentBase",
+    "tsType": "boolean | null | undefined",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "Whether that side's own base spending passes (its solve's sustainsCurrentBase); a flag a reader uses instead of the slack's sign.",
+    "reasonKind": "boolean-flag"
+  },
+  {
+    "source": "engine/src/scenarios/comparison.ts",
     "owner": "AnnualComparisonValues",
     "field": "income",
     "tsType": "number",
@@ -9990,6 +10142,16 @@
   },
   {
     "source": "engine/src/montecarlo/riskBasedGuardrails.ts",
+    "owner": "module",
+    "field": "BALANCE_THRESHOLD_PCT_DECIMALS",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "The two decimal places a persisted threshold percent carries; a fixed setting, not an output.",
+    "reasonKind": "input-parameter"
+  },
+  {
+    "source": "engine/src/montecarlo/riskBasedGuardrails.ts",
     "owner": "RiskBasedGuardrailSolveOptions",
     "field": "startYear",
     "tsType": "number",
@@ -10049,22 +10211,22 @@
   {
     "source": "engine/src/montecarlo/riskBasedGuardrails.ts",
     "owner": "RiskBasedThreshold",
-    "field": "balanceDollars",
-    "tsType": "number",
-    "disposition": "unsurfaced-evidence",
-    "familyId": null,
-    "reason": "balanceFrac x startingInvestable; searched planner-ui/src for balanceDollars: no reader (the callouts print the rounded persisted percent x startingInvestableOf(plan) instead).",
-    "reasonKind": "runtime-diagnostic"
-  },
-  {
-    "source": "engine/src/montecarlo/riskBasedGuardrails.ts",
-    "owner": "RiskBasedThreshold",
     "field": "successAtThreshold",
     "tsType": "number",
     "disposition": "unsurfaced-evidence",
     "familyId": null,
     "reason": "Success re-evaluated at the solved balance (0..1); searched planner-ui/src for successAtThreshold: no reader.",
     "reasonKind": "runtime-diagnostic"
+  },
+  {
+    "source": "engine/src/montecarlo/riskBasedGuardrails.ts",
+    "owner": "RiskBasedThreshold",
+    "field": "balancePct",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "risk-based-guardrail-solved-balance-thresholds",
+    "reason": null,
+    "reasonKind": null
   },
   {
     "source": "engine/src/montecarlo/riskBasedGuardrails.ts",
@@ -10172,6 +10334,76 @@
     "disposition": "family",
     "familyId": "display-guardrail-balance-thresholds",
     "note": "Operand: the dollar base the three threshold callouts multiply the persisted percent by (record risk-based-starting-investable). SpendingSolverPage also divides by it (solved-initial-withdrawal-rate-pct)."
+  },
+  {
+    "source": "engine/src/montecarlo/riskBasedGuardrails.ts",
+    "owner": "GuardrailThresholdDollars",
+    "field": "base",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "display-guardrail-balance-thresholds",
+    "reason": null,
+    "reasonKind": null
+  },
+  {
+    "source": "engine/src/montecarlo/riskBasedGuardrails.ts",
+    "owner": "GuardrailThresholdDollars",
+    "field": "lower",
+    "tsType": "number | null",
+    "disposition": "family",
+    "familyId": "display-guardrail-balance-thresholds",
+    "reason": null,
+    "reasonKind": null
+  },
+  {
+    "source": "engine/src/montecarlo/riskBasedGuardrails.ts",
+    "owner": "GuardrailThresholdDollars",
+    "field": "upper",
+    "tsType": "number | null",
+    "disposition": "family",
+    "familyId": "display-guardrail-balance-thresholds",
+    "reason": null,
+    "reasonKind": null
+  },
+  {
+    "source": "engine/src/montecarlo/riskBasedGuardrails.ts",
+    "owner": "GuardrailThresholdDollars",
+    "field": "lowerPct",
+    "tsType": "number | null",
+    "disposition": "family",
+    "familyId": "display-guardrail-balance-thresholds",
+    "reason": null,
+    "reasonKind": null
+  },
+  {
+    "source": "engine/src/montecarlo/riskBasedGuardrails.ts",
+    "owner": "GuardrailThresholdDollars",
+    "field": "upperPct",
+    "tsType": "number | null",
+    "disposition": "family",
+    "familyId": "display-guardrail-balance-thresholds",
+    "reason": null,
+    "reasonKind": null
+  },
+  {
+    "source": "engine/src/montecarlo/riskBasedGuardrails.ts",
+    "owner": "GuardrailThresholdDollars",
+    "field": "acts",
+    "tsType": "boolean",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "False when both thresholds exist and the cut threshold is not below the raise threshold, where the ledger holds spending every year; a flag.",
+    "reasonKind": "boolean-flag"
+  },
+  {
+    "source": "engine/src/montecarlo/riskBasedGuardrails.ts",
+    "owner": "GuardrailThresholdDollars",
+    "field": "status",
+    "tsType": "'unsolved' | 'anchored' | 'no-starting-portfolio'",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "Whether the thresholds are unsolved, anchored on today's balances, or published as percents only because today's investable balance is zero; a category.",
+    "reasonKind": "label-or-category"
   },
   {
     "source": "engine/src/projection/internal/types/result.ts",
@@ -10340,5 +10572,125 @@
     "tsType": "number",
     "disposition": "family",
     "familyId": "longevity-last-funded-year"
+  },
+  {
+    "source": "engine/src/decisions/spendingShapes.ts",
+    "owner": "SpendingShapeRow",
+    "field": "maxBaseAnnual",
+    "tsType": "number | null",
+    "disposition": "family",
+    "familyId": "sustainable-spending-result-max-base-annual",
+    "reason": null,
+    "reasonKind": null
+  },
+  {
+    "source": "engine/src/decisions/spendingShapes.ts",
+    "owner": "SpendingShapeRow",
+    "field": "deltaVsFlatDollars",
+    "tsType": "number | null",
+    "disposition": "family",
+    "familyId": "spending-shape-delta-vs-flat",
+    "reason": null,
+    "reasonKind": null
+  },
+  {
+    "source": "engine/src/projection/bucketLens.ts",
+    "owner": "BucketYearRow",
+    "field": "year",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "The projection year the row reads; a coordinate.",
+    "reasonKind": "dimension-coordinate"
+  },
+  {
+    "source": "engine/src/projection/bucketLens.ts",
+    "owner": "BucketYearRow",
+    "field": "need",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "portfolio-need-annual",
+    "reason": null,
+    "reasonKind": null
+  },
+  {
+    "source": "engine/src/projection/bucketLens.ts",
+    "owner": "BucketYearRow",
+    "field": "buckets",
+    "tsType": "number[]",
+    "disposition": "family",
+    "familyId": "bucket-lens-allocation",
+    "reason": null,
+    "reasonKind": null
+  },
+  {
+    "source": "engine/src/projection/bucketLens.ts",
+    "owner": "BucketYearRow",
+    "field": "investableTotal",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "accounts-investable-total-annual",
+    "reason": null,
+    "reasonKind": null
+  },
+  {
+    "source": "engine/src/projection/bucketLens.ts",
+    "owner": "bucketLens",
+    "field": "buckets",
+    "tsType": "number[]",
+    "disposition": "family",
+    "familyId": "bucket-lens-allocation",
+    "reason": null,
+    "reasonKind": null
+  },
+  {
+    "source": "engine/src/projection/bucketLens.ts",
+    "owner": "bucketLens",
+    "field": "spans",
+    "tsType": "readonly number[]",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "Year spans of the leading buckets the caller chooses (a preset); an input.",
+    "reasonKind": "input-parameter"
+  },
+  {
+    "source": "engine/src/projection/bucketLens.ts",
+    "owner": "module",
+    "field": "BUCKET_LENS_SPANS",
+    "tsType": "object",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "The two bucket presets the planner offers, [2, 8] and [3] years; inputs.",
+    "reasonKind": "input-parameter"
+  },
+  {
+    "source": "planner-ui/src/planner/yearCashFlow/buildYearCashFlow.ts",
+    "owner": "YearCashFlowSankeyNode",
+    "field": "amountPlanDollars",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "cash-flow-line-amount",
+    "reason": null,
+    "reasonKind": null
+  },
+  {
+    "source": "planner-ui/src/planner/yearCashFlow/buildYearCashFlow.ts",
+    "owner": "YearCashFlowSankeyNode",
+    "field": "totalInPlanDollars",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "A transfer-view endpoint's incoming credits: published transfer lines added by the chart's own node grouping and printed as \"in $X\" (chart aggregation, decision R18).",
+    "reasonKind": "view-aggregation"
+  },
+  {
+    "source": "planner-ui/src/planner/yearCashFlow/buildYearCashFlow.ts",
+    "owner": "YearCashFlowSankeyNode",
+    "field": "totalOutPlanDollars",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "A transfer-view endpoint's outgoing debits: published transfer lines added by the chart's own node grouping and printed as \"out $Y\" (chart aggregation, decision R18).",
+    "reasonKind": "view-aggregation"
   }
 ]

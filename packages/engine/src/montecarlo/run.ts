@@ -258,10 +258,21 @@ export interface YearPercentiles {
 }
 
 export interface Histogram {
+  /** The smallest value of the sample (0 for an empty one). */
   min: number
+  /** (max − min) / bins; 1 when every value is equal, a placeholder that lets every value land in bin 0. */
   binWidth: number
-  /** counts[i] covers [min + i·binWidth, min + (i+1)·binWidth). */
+  /**
+   * counts[i] covers [min + i·binWidth, min + (i+1)·binWidth); the last bin is
+   * closed and also holds the maximum.
+   */
   counts: number[]
+  /**
+   * The centre of each bin, min + (i + 0.5) · binWidth in that association.
+   * When every value is equal there are no intervals, so every entry is min,
+   * the one value the sample holds (0 for an empty sample).
+   */
+  binCenters: number[]
 }
 
 export interface MonteCarloSummary {
@@ -400,8 +411,10 @@ function percentileSet(sorted: number[]): Omit<YearPercentiles, 'year'> {
  * Equal-width histogram of an ascending sample: `min` is the smallest value,
  * `binWidth = (max − min) / bins` (1 when every value is equal), and each
  * value lands in bin `min(bins − 1, floor((v − min) / binWidth))`, so the
- * maximum falls in the last bin. An empty sample gives min 0, width 1 and all
- * counts 0. `aggregateMonteCarlo` uses 30 bins unless told otherwise.
+ * maximum falls in the last bin. Each bin's centre is
+ * `min + (i + 0.5) × binWidth`, or `min` for every bin when every value is
+ * equal. An empty sample gives min 0, width 1, all counts 0 and all centres
+ * 0. `aggregateMonteCarlo` uses 30 bins unless told otherwise.
  */
 function histogramFor(sorted: number[], histogramBins: number): Histogram {
   const min = sorted[0] ?? 0
@@ -411,7 +424,8 @@ function histogramFor(sorted: number[], histogramBins: number): Histogram {
   for (const v of sorted) {
     counts[Math.min(histogramBins - 1, Math.floor((v - min) / binWidth))]!++
   }
-  return { min, binWidth, counts }
+  const binCenters = counts.map((_, i) => (max > min ? min + (i + 0.5) * binWidth : min))
+  return { min, binWidth, counts, binCenters }
 }
 
 export function aggregateMonteCarlo(result: MonteCarloPathsResult, histogramBins = 30): MonteCarloSummary {

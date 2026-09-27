@@ -1,13 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
-import { bucketLens, BUCKET_PRESETS } from './bucketLens'
-import { createFlatTaxCalculator } from '@retiregolden/engine/testing/flatTax'
-import {
-  cashAccount,
-  recurringOrdinaryIncome,
-  runPlan,
-  singlePersonPlan,
-} from '@retiregolden/engine/testing/planFixtures'
+import { bucketLens, BUCKET_LENS_SPANS } from './bucketLens.js'
+import { createFlatTaxCalculator } from '../testing/flatTax.js'
+import { cashAccount, recurringOrdinaryIncome, runPlan, singlePersonPlan } from '../testing/planFixtures.js'
 
 const noTax = createFlatTaxCalculator(0)
 
@@ -23,13 +18,13 @@ function retireePlan() {
 describe('bucketLens', () => {
   it('buckets reconcile to the ledger investable total every year (acceptance)', () => {
     const result = runPlan(retireePlan(), noTax)
-    for (const preset of BUCKET_PRESETS) {
-      const rows = bucketLens(result, preset.spans)
+    for (const spans of Object.values(BUCKET_LENS_SPANS)) {
+      const rows = bucketLens(result, spans)
       expect(rows).toHaveLength(result.years.length)
       for (let i = 0; i < rows.length; i++) {
         const sum = rows[i]!.buckets.reduce((a, b) => a + b, 0)
         expect(sum).toBeCloseTo(result.years[i]!.investableTotal, 6)
-        expect(rows[i]!.buckets).toHaveLength(preset.spans.length + 1)
+        expect(rows[i]!.buckets).toHaveLength(spans.length + 1)
         for (const b of rows[i]!.buckets) expect(b).toBeGreaterThanOrEqual(0)
       }
     }

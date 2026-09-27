@@ -10,7 +10,7 @@ import { useMemo, useState } from 'react'
 
 import type { TipsLadder } from '@retiregolden/engine/model/plan'
 import { EMBEDDED_REAL_YIELD_CURVE } from '@retiregolden/engine/params'
-import { buildLadder, type LadderBuild } from '@retiregolden/engine/ladder/ladderMath'
+import { quotePlanLadder } from '@retiregolden/engine/ladder/ladderMath'
 import { computeFundedRatio } from '@retiregolden/engine/ladder/fundedRatio'
 import { toTodayDollars } from '@retiregolden/engine/projection/dollarBasis'
 import {
@@ -40,19 +40,6 @@ import { ScrollRegion } from '../ScrollRegion'
 
 const CURVE = EMBEDDED_REAL_YIELD_CURVE
 
-/** Quote a ladder exactly the way the ledger prices it (same anchor rules). */
-function quoteLadder(ladder: TipsLadder, startYear: number): LadderBuild | null {
-  const anchorYear = ladder.purchase ? ladder.purchase.year : startYear - 1
-  const effectiveStartYear = Math.max(ladder.startYear, anchorYear + 1)
-  if (ladder.endYear < effectiveStartYear || ladder.annualRealAmount <= 0) return null
-  return buildLadder({
-    annualRealIncome: ladder.annualRealAmount,
-    firstPayoutOffset: effectiveStartYear - anchorYear,
-    payoutYears: ladder.endYear - effectiveStartYear + 1,
-    curve: CURVE,
-  })
-}
-
 function LadderRow({ ladder, startYear }: { ladder: TipsLadder; startYear: number }) {
   const { plan, update, issues } = usePlan()
   // The ladder is addressed by id, not by the position it was mapped at: the
@@ -76,7 +63,13 @@ function LadderRow({ ladder, startYear }: { ladder: TipsLadder; startYear: numbe
   // The path an issue for this row's fields is reported at, from the same
   // index the lookups above use; a row the plan does not hold has no path.
   const fieldPath = (leaf: string) => (ladderIndex >= 0 ? `incomeFloor.ladders.${ladderIndex}.${leaf}` : undefined)
-  const quote = useMemo(() => (onHold ? null : quoteLadder(ladder, startYear)), [ladder, startYear, onHold])
+  // The engine prices the ladder on the ledger's own window (the same anchor
+  // rule simulatePlan uses) and publishes its yield and maturity years.
+  const planQuote = useMemo(
+    () => (onHold ? null : quotePlanLadder(ladder, startYear, CURVE)),
+    [ladder, startYear, onHold],
+  )
+  const quote = planQuote?.build ?? null
   const fundingOptions = plan.accounts
     .filter((a) => a.type === 'cash' || a.type === 'taxable' || a.type === 'equityComp')
     .map((a) => ({ value: a.id, label: a.name }))
@@ -190,7 +183,7 @@ function LadderRow({ ladder, startYear }: { ladder: TipsLadder; startYear: numbe
           <p className="card-hint">
             Quoted cost <strong>{fmtMoney(quote.totalCost)}</strong> (today's $) for {quote.rungs.length} rung
             {quote.rungs.length === 1 ? '' : 's'}, real yields as of {CURVE.asOfIso}. That's{' '}
-            {((ladder.annualRealAmount / quote.totalCost) * 100).toFixed(2)}% of cost per year, inflation-protected.
+            {planQuote!.incomeYieldPct.toFixed(2)}% of cost per year, inflation-protected.
           </p>
           <details>
             <summary>Buy-list (planning-grade)</summary>
@@ -205,9 +198,9 @@ function LadderRow({ ladder, startYear }: { ladder: TipsLadder; startYear: numbe
                   </tr>
                 </thead>
                 <tbody>
-                  {quote.rungs.map((rung) => (
+                  {quote.rungs.map((rung, index) => (
                     <tr key={rung.maturityOffset}>
-                      <td>{(ladder.purchase ? ladder.purchase.year : startYear - 1) + rung.maturityOffset}</td>
+                      <td>{planQuote!.maturityYears[index]}</td>
                       <td>{fmtMoney(rung.face)}</td>
                       <td>{rung.couponRatePct.toFixed(3)}%</td>
                       <td>{fmtMoney(rung.cost)}</td>

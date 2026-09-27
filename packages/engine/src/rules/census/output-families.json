@@ -1,17 +1,17 @@
 [
   {
     "transformations": [
-      "Multiply plan.expenses.spendingPolicy.lowerBalanceThresholdPct / 100 and upperBalanceThresholdPct / 100 by startingInvestableOf(plan)."
+      "(persisted percent / 100) × startingInvestableOf(plan), the ledger's first-year anchor, in montecarlo/riskBasedGuardrails.ts#guardrailThresholdDollars (R3); with no starting balance only the percents are published, and acts is false when the cut threshold is not below the raise threshold."
     ],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": "The percents are the solver's thresholds (risk-based-guardrail-solved-balance-thresholds) rounded to two decimals by useThresholdSolve; the dollar base is today's startingInvestableOf(plan), so the printed figure moves with balances after the solve.",
+    "notes": "Computed in ResultsPage, MonteCarloPage and RiskBasedThresholdsCallout ((pct / 100) × startingInvestableOf(plan)) until B2-P1 slice 2; now engine engine/src/montecarlo/riskBasedGuardrails.ts#guardrailThresholdDollars, which they read. The solver publishes the persisted percent as RiskBasedThreshold.balancePct (two decimals). The printed dollars are the thresholds the ledger acts on; after a balance edit they move with the balances until the thresholds are solved again.",
     "dimensions": [],
-    "basis": "nominal",
+    "basis": "real",
     "id": "display-guardrail-balance-thresholds",
     "group": "spending-and-withdrawals",
     "title": "Risk-based guardrail dollar thresholds",
-    "meaning": "The cut and raise balance thresholds of a risk-based guardrail policy in dollars.",
+    "meaning": "The cut and raise balance thresholds of a risk-based guardrail policy in today's dollars, on the base the ledger acts on (today's investable balances, the ledger's first-year real portfolio).",
     "unit": "usd",
     "kind": "ui-transformation",
     "uiSources": [
@@ -41,7 +41,11 @@
         "surface": "assumptions-card",
         "selector": "Spending card, risk-based guardrails callout \"cut spending if the portfolio falls below $X; raise if it rises above $Y\""
       }
-    ]
+    ],
+    "relocation": {
+      "status": "done",
+      "target": "engine/src/montecarlo/riskBasedGuardrails.ts#guardrailThresholdDollars"
+    }
   },
   {
     "id": "display-total-spending-annual",
@@ -217,17 +221,17 @@
   },
   {
     "transformations": [
-      "Divide solvedRounded by startingInvestable and multiply by 100."
+      "(maxBaseAnnual / startingInvestableOf(solved plan)) × 100 in decisions/spendingSolver.ts#initialWithdrawalRatePct, published as SustainableSpendingResult.initialWithdrawalRatePct; the page prints toFixed(2)."
     ],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": "",
+    "notes": "Computed in planner-ui/src/planner/SpendingSolverPage.tsx#SpendingSolverPage ((solvedRounded / startingInvestableOf(plan)) × 100, on the page's current plan) until B2-P1 slice 2; now engine SustainableSpendingResult.initialWithdrawalRatePct, on the plan the solve priced, which SpendingSolverPage reads. Under R4 the rate is taken on the published amount, so on a guardrail plan whose rounded amount fails it is the exact amount's rate, and over startingInvestableOf of the plan the solve priced (any base patch applied), so a result can no longer pair an old answer with balances edited since.",
     "dimensions": [],
     "basis": "n/a",
     "id": "solved-initial-withdrawal-rate-pct",
     "group": "spending-and-withdrawals",
     "title": "Solved initial withdrawal rate",
-    "meaning": "The solved (rounded) baseline spending as a percent of starting investable assets, shown beside the SWR rule rows.",
+    "meaning": "The published solved baseline spending (rounded down to the nearest $100, or the exact level that passed when a guardrail plan fails at the rounded one) as a percent of the starting investable assets of the plan the solve priced, shown beside the SWR rule rows.",
     "unit": "percent",
     "kind": "ui-native",
     "uiSources": [
@@ -241,27 +245,35 @@
         "surface": "solver-page",
         "selector": "SWR comparison \"Your solved plan\" row rate"
       }
-    ]
+    ],
+    "relocation": {
+      "status": "done",
+      "target": "engine/src/decisions/spendingSolver.ts#initialWithdrawalRatePct"
+    }
   },
   {
     "transformations": [
-      "floor(maxBaseAnnual / 100) × 100."
+      "floor(feasibleBaseAnnual / 100) × 100 in decisions/spendingSolver.ts#roundSolvedSpending (R4), published as SustainableSpendingResult.maxBaseAnnual; under withdrawal-rate or risk-based guardrails the solver runs the rounded amount once more and publishes it only when it passes, else the exact amount, and maxBaseAnnualRounding says which."
     ],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": "",
+    "notes": "Computed in planner-ui/src/planner/SpendingSolverPage.tsx#SpendingSolverPage (Math.floor(maxBaseAnnual / 100) × 100, with the exact amount applied on guardrail plans) until B2-P1 slice 2; now engine engine/src/decisions/spendingSolver.ts#roundSolvedSpending, published as SustainableSpendingResult.maxBaseAnnual, which SpendingSolverPage and CapacitySection read. The insight card, the MCP and the tax-strategy tradeoffs read the same field, so they publish the rounded amount too (surfaces on sustainable-spending-result-max-base-annual).",
     "dimensions": [],
     "basis": "real",
     "id": "solved-spending-rounded-to-hundred",
     "group": "spending-and-withdrawals",
     "title": "Solved spending rounded down",
-    "meaning": "Maximum sustainable baseline spending rounded down to the nearest $100, as applied to the plan and shown in the shape table.",
+    "meaning": "Maximum sustainable baseline spending rounded down to the nearest $100: the amount the solver publishes and every surface shows, applies and measures slack from (the exact level that passed when a guardrail plan fails at the rounded one).",
     "unit": "usd",
     "kind": "ui-transformation",
     "uiSources": [
       {
         "path": "planner-ui/src/planner/SpendingSolverPage.tsx",
         "symbol": "SpendingSolverPage"
+      },
+      {
+        "path": "planner-ui/src/planner/ScenariosPage.tsx",
+        "symbol": "CapacitySection"
       }
     ],
     "surfaces": [
@@ -269,7 +281,11 @@
         "surface": "solver-page",
         "selector": "\"sustain about $X of baseline spending\", Apply-to-Spending amount, per-shape \"$X/yr\""
       }
-    ]
+    ],
+    "relocation": {
+      "status": "done",
+      "target": "engine/src/decisions/spendingSolver.ts#roundSolvedSpending"
+    }
   },
   {
     "id": "spending-base-annual",
@@ -313,11 +329,11 @@
   },
   {
     "transformations": [
-      "Subtract the flat shape's maxBaseAnnual from each shape's maxBaseAnnual (both from solveMaxSustainableSpending)."
+      "Each shape's published maxBaseAnnual minus the flat shape's, in decisions/spendingShapes.ts#spendingShapeRows (R5), on the plans decisions/spendingShapes.ts#planWithSpendingShape builds."
     ],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": "",
+    "notes": "Computed in planner-ui/src/planner/SpendingSolverPage.tsx#SpendingSolverPage (the passing level minus the flat shape's passing level, printed beside amounts rounded down to $100) until B2-P1 slice 2; now engine engine/src/decisions/spendingShapes.ts#spendingShapeRows on the published amounts (R5), which SpendingSolverPage reads.",
     "dimensions": [],
     "basis": "real",
     "id": "spending-shape-delta-vs-flat",
@@ -337,7 +353,11 @@
         "surface": "solver-page",
         "selector": "Per-shape table \"vs. flat\" column"
       }
-    ]
+    ],
+    "relocation": {
+      "status": "done",
+      "target": "engine/src/decisions/spendingShapes.ts#spendingShapeRows"
+    }
   },
   {
     "id": "spending-shortfall-annual",
@@ -2846,7 +2866,7 @@
     "uiSources": [
       {
         "path": "planner-ui/src/planner/sections/IncomeFloorSection.tsx",
-        "symbol": "IncomeFloorSection"
+        "symbol": "LadderRow"
       }
     ],
     "surfaces": [
@@ -2856,11 +2876,15 @@
       }
     ],
     "transformations": [
-      "Compute annualRealAmount / totalCost * 100."
+      "(targetAnnualRealIncome / totalCost) × 100 in ladder/ladderMath.ts#ladderIncomeYieldPct, on the quote ladder/ladderMath.ts#quotePlanLadder builds with the ledger's window (planLadderWindow)."
     ],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": ""
+    "notes": "Computed in planner-ui/src/planner/sections/IncomeFloorSection.tsx#LadderRow ((annualRealAmount / quote.totalCost) × 100, on quoteLadder's copy of the ledger's anchor rule) until B2-P1 slice 2; now engine engine/src/ladder/ladderMath.ts#ladderIncomeYieldPct on quotePlanLadder, which LadderRow reads, with the buy-list's maturity years.",
+    "relocation": {
+      "status": "done",
+      "target": "engine/src/ladder/ladderMath.ts#ladderIncomeYieldPct"
+    }
   },
   {
     "id": "income-tips-ladder-annual",
@@ -3436,41 +3460,57 @@
   },
   {
     "transformations": [
-      "Subtract p10 from p90 and p25 from p75 per fan row so recharts can stack the outer and inner bands on transparent bases."
+      "None after R14: each band is the pair [p10, p90] or [p25, p75] of MonteCarloSummary.fan (format.ts#fanOuterBand and #fanInnerBand, the chart's data keys), drawn as a range area; the tooltip prints the pair as \"$low to $high\" (format.ts#fmtMoneyOrRange)."
     ],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": "",
+    "notes": "Computed in planner-ui/src/planner/MonteCarloPage.tsx#MonteCarloPage (p90 − p10 and p75 − p25, stacked on transparent bases and printed as dollar levels) until B2-P1 slice 2; now the engine's fan percentiles, drawn as ranges (R14), which MonteCarloPage reads. The data keys and the tooltip formatter are named functions in planner-ui format.ts since the review of RetireGolden #752; they are this family's uiSources because the calculation registry pins only engine code (record monte-carlo-fan-chart-ranges).",
     "dimensions": [
       "year"
     ],
     "basis": "nominal",
     "id": "display-fan-band-widths",
     "group": "monte-carlo",
-    "title": "Fan chart band widths",
-    "meaning": "Heights of the stacked p10-p90 and p25-p75 bands drawn on the Range of outcomes chart.",
+    "title": "Fan chart percentile ranges",
+    "meaning": "The 10th to 90th and 25th to 75th percentile ranges of investable assets drawn and printed on the Range of outcomes chart, read from the engine's fan percentiles.",
     "unit": "usd",
     "kind": "ui-transformation",
     "uiSources": [
       {
         "path": "planner-ui/src/planner/MonteCarloPage.tsx",
         "symbol": "MonteCarloPage"
+      },
+      {
+        "path": "planner-ui/src/planner/format.ts",
+        "symbol": "fanOuterBand"
+      },
+      {
+        "path": "planner-ui/src/planner/format.ts",
+        "symbol": "fanInnerBand"
+      },
+      {
+        "path": "planner-ui/src/planner/format.ts",
+        "symbol": "fmtMoneyOrRange"
       }
     ],
     "surfaces": [
       {
         "surface": "monte-carlo-page",
-        "selector": "Range of outcomes stacked Area dataKeys d.p90 - d.p10 and d.p75 - d.p25"
+        "selector": "Range of outcomes range areas [p10, p90] and [p25, p75]; tooltip \"10th to 90th percentile $X to $Y\""
       }
-    ]
+    ],
+    "relocation": {
+      "status": "done",
+      "target": "engine/src/montecarlo/run.ts#MonteCarloSummary.fan"
+    }
   },
   {
     "transformations": [
-      "Compute the bin midpoint min + (i + 0.5) * binWidth from the engine histogram and format it compactly."
+      "The engine's histogram publishes binCenters (min + (i + 0.5) × binWidth, or min when every value is equal); the page formats each compactly (format.ts#histogramBars), and when every centre is one value it draws one bar at that value holding every path."
     ],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": "",
+    "notes": "Computed in planner-ui/src/planner/MonteCarloPage.tsx#MonteCarloPage (min + (i + 0.5) × binWidth, which labelled an all-equal sample $1 to $30) until B2-P1 slice 2; now engine Histogram.binCenters, which MonteCarloPage reads. Since the review of RetireGolden #752 the bars are format.ts#histogramBars, which draws a sample that ended at one value as one bar instead of thirty bars repeating one label.",
     "dimensions": [
       "bin"
     ],
@@ -3485,6 +3525,10 @@
       {
         "path": "planner-ui/src/planner/MonteCarloPage.tsx",
         "symbol": "MonteCarloPage"
+      },
+      {
+        "path": "planner-ui/src/planner/format.ts",
+        "symbol": "histogramBars"
       }
     ],
     "surfaces": [
@@ -3492,7 +3536,11 @@
         "surface": "monte-carlo-page",
         "selector": "Ending balances histogram x-axis labels (histRows)"
       }
-    ]
+    ],
+    "relocation": {
+      "status": "done",
+      "target": "engine/src/montecarlo/run.ts#Histogram.binCenters"
+    }
   },
   {
     "transformations": [],
@@ -5117,8 +5165,8 @@
     "kind": "ui-native",
     "uiSources": [
       {
-        "path": "planner-ui/src/planner/bucketLens.ts",
-        "symbol": "bucketLens"
+        "path": "planner-ui/src/planner/BucketLensCard.tsx",
+        "symbol": "BucketLensCard"
       }
     ],
     "surfaces": [
@@ -5128,11 +5176,15 @@
       }
     ],
     "transformations": [
-      "For each year, walk the user-selected spans (2/8 or 3 years) summing netPortfolioNeed over the covered future years, claim min(remaining investable, bucket need) per bucket, and put the remainder in the growth bucket; the buckets sum exactly to investableTotal."
+      "For each year, walk the selected spans (BUCKET_LENS_SPANS: 2/8 or 3 years) summing netPortfolioNeed over the covered future years, claim min(remaining investable, bucket need) per bucket, and put the remainder in the growth bucket, in projection/bucketLens.ts#bucketLens; the buckets add to investableTotal to within one unit in the last place."
     ],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": ""
+    "notes": "Computed in planner-ui/src/planner/bucketLens.ts#bucketLens until B2-P1 slice 2; now engine engine/src/projection/bucketLens.ts#bucketLens, which BucketLensCard reads. The engine refuses a year without a finite need rather than reading it as 0.",
+    "relocation": {
+      "status": "done",
+      "target": "engine/src/projection/bucketLens.ts#bucketLens"
+    }
   },
   {
     "id": "cash-flow-line-amount",
@@ -5164,11 +5216,15 @@
       }
     ],
     "transformations": [
-      "Map each engine cash-flow source, use and transfer line (YearCashFlow line identities) to a Sankey link; accumulate per-node totalIn and totalOut by summing the linked amounts; format every amount through the dollar-basis displayAmount."
+      "Links are published lines; the Household cash and Unfunded nodes read reconciliation.cash.sourceTotalPlanDollars and reconciliation.uses.unfundedUsesPlanDollars (projection/annualCashFlowReconciliation.ts#reconcileYearCashFlow); transfer-endpoint in and out sums and Other sums are chart aggregation (R18); every amount is shown through the dollar basis."
     ],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": "Line amounts are engine cash-flow facts; the UI arithmetic is the per-node in/out sums and the dollar-basis conversion."
+    "notes": "The hub and unfunded nodes were computed in planner-ui/src/planner/yearCashFlow/buildYearCashFlow.ts#buildCashFlowView (line sums) until B2-P1 slice 2; now the engine's reconciliation totals, which buildCashFlowView reads. R18: the transfer endpoints' in and out totals and the Other node are printed on node labels but are view aggregation of engine lines (coverage rows with reason kind view-aggregation).",
+    "relocation": {
+      "status": "done",
+      "target": "engine/src/projection/annualCashFlowReconciliation.ts#reconcileYearCashFlow"
+    }
   },
   {
     "transformations": [],
@@ -5235,7 +5291,11 @@
       },
       {
         "path": "planner-ui/src/planner/SpendingSolverPage.tsx",
-        "symbol": "todayDollarsOf"
+        "symbol": "SpendingSolverPage"
+      },
+      {
+        "path": "planner-ui/src/optimize/runSpendingSolve.ts",
+        "symbol": "runSpendingSolveRequest"
       },
       {
         "path": "planner-ui/src/planner/sections/IncomeFloorSection.tsx",
@@ -5285,7 +5345,7 @@
       }
     ],
     "transformations": [
-      "Divide a nominal year amount by the ledger's own YearResult.inflationScale for that year (today's dollars), or multiply a start-year amount by it (nominal dollars), through projection/dollarBasis.ts; a page with no projection rows uses planDollarBasis, the same recurrence."
+      "Divide a nominal year amount by the ledger's own YearResult.inflationScale for that year (today's dollars), or multiply a start-year amount by it (nominal dollars), through projection/dollarBasis.ts; the relocation page, which holds no projection rows, uses planDollarBasis, the same recurrence. The spending page's rule rows and evidence estate arrive converted by their own runs (SwrRuleResult.endingAfterTaxEstateTodayDollars; runSpendingSolveRequest)."
     ],
     "candidateRuleIds": [],
     "status": "identified",
@@ -7046,9 +7106,9 @@
     "id": "sustainable-spending-result-max-base-annual",
     "group": "cash-flow-and-summary",
     "title": "maxBaseAnnual",
-    "meaning": "Highest annual base spending that satisfies the solver constraints.",
+    "meaning": "Highest annual base spending the solver found feasible, rounded down to the nearest $100 (the exact level that passed when a guardrail plan fails at the rounded one), in today's dollars: the amount every surface shows, applies and measures slack from.",
     "unit": "usd",
-    "basis": "nominal",
+    "basis": "real",
     "dimensions": [],
     "kind": "engine",
     "engineSource": {
@@ -7077,7 +7137,7 @@
     "transformations": [],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": ""
+    "notes": "Since B2-P1 slice 2 (owner decision R4) this is the published amount; the level that passed is SustainableSpendingResult.feasibleBaseAnnual, on which whether today's spending is sustained is judged."
   },
   {
     "id": "sustainable-spending-result-simulation-count",
@@ -7116,9 +7176,9 @@
     "id": "sustainable-spending-result-spending-slack-dollars",
     "group": "cash-flow-and-summary",
     "title": "spendingSlackDollars",
-    "meaning": "Remaining dollar margin between solved spending and the feasibility boundary.",
+    "meaning": "The published solved spending (rounded down to $100) minus current base spending, in today's dollars; negative means today's spending is above the published amount, which by less than $100 can still be a plan that sustains its own spending.",
     "unit": "usd",
-    "basis": "nominal",
+    "basis": "real",
     "dimensions": [],
     "kind": "engine",
     "engineSource": {
@@ -7147,7 +7207,7 @@
     "transformations": [],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": ""
+    "notes": "Measured from the published amount since B2-P1 slice 2 (owner decision R4); the spending page used to measure it itself, and every other surface read the slack from the level that passed."
   },
   {
     "id": "year-result-contributions",
@@ -7817,11 +7877,11 @@
       }
     ],
     "transformations": [
-      "useThresholdSolve persists Math.round(balanceFrac × 10000) / 100 into plan.expenses.spendingPolicy.lowerBalanceThresholdPct / upperBalanceThresholdPct (percent of today's investable, two decimals); each callout then prints that percent / 100 × startingInvestableOf(plan) through fmtMoney (family display-guardrail-balance-thresholds)."
+      "The solver publishes balancePct = round(balanceFrac × 10,000) / 100 (montecarlo/riskBasedGuardrails.ts#balanceThresholdPct), which useThresholdSolve persists into plan.expenses.spendingPolicy.lowerBalanceThresholdPct / upperBalanceThresholdPct; guardrailThresholdDollars prints it in dollars (family display-guardrail-balance-thresholds)."
     ],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": "Solved on demand (Spending card button) under the lognormal model at 12% volatility around the plan's own expected returns (allocated accounts use their asset classes' volatilities), with 200 paths and the plan-id seed, whatever model the Monte Carlo page shows. The persisted percents also drive the projection's guardrail rule (spending/guardrails.ts: cut below lowerBalanceThresholdPct/100 x the starting real portfolio, raise above upper), so the value feeds spending-guardrail-factor-annual and monte-carlo-guardrail-action-counts. The printed dollars differ from RiskBasedThreshold.balanceDollars by the two-decimal percent rounding and by any balance change since the solve. 'assumptions-card' stands in for the Spending card, which has no surface name in the vocabulary (the census's household-section gap)."
+    "notes": "Solved on demand (Spending card button) under the lognormal model at 12% volatility around the plan's own expected returns (allocated accounts use their asset classes' volatilities), with 200 paths and the plan-id seed, whatever model the Monte Carlo page shows. The persisted percents also drive the projection's guardrail rule (spending/guardrails.ts: cut below lowerBalanceThresholdPct/100 x the starting real portfolio, raise above upper), so the value feeds spending-guardrail-factor-annual and monte-carlo-guardrail-action-counts. RiskBasedThreshold.balanceDollars (the fraction times the balance, which never acted) was removed in B2-P1 slice 2; the printed dollars are the persisted percent of today's balances. 'assumptions-card' stands in for the Spending card, which has no surface name in the vocabulary (the census's household-section gap)."
   },
   {
     "id": "risk-based-guardrail-suggested-adjustment-monthly",

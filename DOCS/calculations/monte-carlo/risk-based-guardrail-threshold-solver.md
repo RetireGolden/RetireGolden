@@ -69,13 +69,13 @@ It ends at `lo = 355`, `hi = 356`. The edge is `0.02 + 356 h = 1.403671875` (as 
 
 `onProbeDone` is last called with `(40, 41)`, because its total of 41 counts no cache hits.
 
-The planner persists `round(balanceFrac x 10000)/100`, 140.37 and 190.12 percent; the callouts then print `1.4037 x 500,000 = $701,850` and `$950,600`, $14.06 away from `balanceDollars`. That rounding is why the printed callout is a different census family (`display-guardrail-balance-thresholds`).
+The planner persists `round(balanceFrac x 10000)/100`, 140.37 and 190.12 percent; the callouts then print `1.4037 x 500,000 = $701,850` and `$950,600`, $14.06 away from the unrounded `balanceFrac x 500,000` ($701,835.9375, which the solver published as `balanceDollars` until the 2026-09-27 revision). That rounding is why the printed callout is a different census family (`display-guardrail-balance-thresholds`).
 
 **Degenerate probes.** A constant 0.99 gives `always-above-band` on both edges, both thresholds null and both adjustments null. `min(1, f/10)` gives `never-reaches-band` on both edges. A probe returning 1.5, -0.1 or NaN is refused on its first call, at `balanceFrac 1`, `spendingMultiplier 1`.
 
 ## Expected
 
-- Edges at lattice indices `k = 356` and `484`: `balanceFrac` `1.403671875` and `1.901171875` (absolute tolerance `1e-12`), `balanceDollars` `$701,835.9375` and `$950,585.9375` (absolute tolerance `1e-6`).
+- Edges at lattice indices `k = 356` and `484`: `balanceFrac` `1.403671875` and `1.901171875` (absolute tolerance `1e-12`), `balancePct` `140.37` and `190.12` (exact: the percents the planner persists, `round(balanceFrac × 10000) / 100`; see the 2026-09-27 revision, which removed `balanceDollars`). The dollar thresholds on the worked $500,000 base, `$701,850` and `$950,600`, are the record `guardrail-threshold-dollars`'s, not this solver's.
 - `successAtCurrent = 0.5`.
 - Cut `m = 0.849609375`, `$6,015.625` a year, `$501.3020833333333` a month, `successAfter = 0.8260689655172412`.
 - Raise `m = 1.1484375`, `$5,937.50` a year, `$494.7916666666667` a month, `successAfter = 0.8277210884353741`.
@@ -107,3 +107,5 @@ Outputs: `risk-based-guardrail-solved-balance-thresholds` (the solved `balanceFr
 Derived by: claude, 2026-09-25, a Claude Opus instance working from the engine source at origin/main `aeb2861a` and the formulas (the Monte Carlo derivation for the decisions of 2026-09-25, section 4). Every number was computed twice, by a replica of the stated contract that imports no engine code and by a reference implementation, and the two probe-call sequences are identical. Checked by: a second Claude Opus instance, which recomputed every figure without the deriver's scripts. The implementation was reviewed 2026-09-26 by a third Claude Opus instance, which ran 45 mutants across two rounds. Reviewed by: unreviewed. The catalog requires the reviewer to be a different agent family from the deriver, and all three instances are Claude, so the record stays unreviewed until a Codex or Cursor review. Implemented 2026-09-26.
 
 Revision: the first derivation (codex, 2026-09-18, reviewed by cursor) could not evidence the edges because the solver took no success rule; it stated the lattice with `k` from 1 through 1023, which is corrected here to 1 through 1024. D-SOLVER-SEAM (decided 2026-09-25) added the optional `successProbe` and the two census families, so the edges and the adjustments are now evidenced against the analytic curve.
+
+Revision, 2026-09-27 (B2-P1 slice 2, decision R3): `RiskBasedThreshold.balanceDollars` is removed; nothing read it and it never acted. The solver publishes instead `balancePct = balanceThresholdPct(balanceFrac) = round(balanceFrac × 10000) / 100`, the percent the planner persists, derived above as 140.37 and 190.12 for the worked edges, and the expected values replace the `balanceDollars` pair with `balancePct` 140.37 and 190.12 (exact). The dollars the ledger acts on are `guardrailThresholdDollars` (worksheet `spending-and-withdrawals/display-guardrail-balance-thresholds.md`), $701,850 and $950,600 here. The floating-point ties of that rounding (76.62, 176.12, 275.62) are that worksheet's limit.

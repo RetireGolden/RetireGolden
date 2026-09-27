@@ -1499,16 +1499,21 @@ describe('calculation registry conformance', () => {
       }
     }
     expect(violations).toEqual([])
-    // Slice 1 of B2-P1 moved these eleven; a later slice adds to the list.
+    // Slice 1 of B2-P1 moved eleven and slice 2 nine; a later slice adds to the list.
     expect(
       Object.entries(families)
         .filter(([, family]) => family.relocation?.status === 'done')
         .map(([id]) => id)
         .sort(),
     ).toEqual([
+      'bucket-lens-allocation',
+      'cash-flow-line-amount',
       'display-balance-by-category-annual',
       'display-dollar-basis-conversion',
+      'display-fan-band-widths',
       'display-fi-target-annual',
+      'display-guardrail-balance-thresholds',
+      'display-histogram-bin-label',
       'display-loss-carryforward-used-annual',
       'display-net-care-cost-annual',
       'display-tax-free-gains-room-annual',
@@ -1517,6 +1522,10 @@ describe('calculation registry conformance', () => {
       'display-upside-shortfall-annual',
       'display-upside-spending-annual',
       'display-years-before-plan-end',
+      'income-floor-ladder-yield-pct',
+      'solved-initial-withdrawal-rate-pct',
+      'solved-spending-rounded-to-hundred',
+      'spending-shape-delta-vs-flat',
     ])
   })
 

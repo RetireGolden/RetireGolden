@@ -6,6 +6,7 @@
  */
 
 import { createDecisionContext, solveMaxSustainableSpending, SPENDING_SOLVER_UI_BUDGET } from '@retiregolden/engine/decisions'
+import { projectionDollarBasis, toTodayDollars } from '@retiregolden/engine/projection/dollarBasis'
 import { taxCalculatorFor } from '../planTaxCalculator'
 import type { SpendingSolveRequest, SpendingSolveResult } from './spendingMessages'
 
@@ -18,9 +19,14 @@ export function runSpendingSolveRequest(req: SpendingSolveRequest): SpendingSolv
     estateFloorTodayDollars,
   })
   const summary = solved.bestEvaluation?.candidateSummary ?? null
+  const run = solved.bestEvaluation?.candidateResult ?? null
   return {
     maxBaseAnnual: solved.maxBaseAnnual,
     spendingSlackDollars: solved.spendingSlackDollars,
+    feasibleBaseAnnual: solved.feasibleBaseAnnual,
+    sustainsCurrentBase: solved.sustainsCurrentBase,
+    maxBaseAnnualRounding: solved.maxBaseAnnualRounding,
+    initialWithdrawalRatePct: solved.initialWithdrawalRatePct,
     currentBaseAnnual: req.plan.expenses.baseAnnual,
     estateFloorTodayDollars,
     converged: solved.converged,
@@ -31,14 +37,27 @@ export function runSpendingSolveRequest(req: SpendingSolveRequest): SpendingSolv
     acaGrossPremiumReasons: solved.acaGrossPremiumReasons,
     acaGrossPremiumDirection: solved.acaGrossPremiumDirection,
     diagnostics: solved.diagnostics,
-    evidence: summary
-      ? {
-          endingAfterTaxEstate: summary.endingAfterTaxEstate,
-          endingNetWorth: summary.endingNetWorth,
-          lifetimeTaxesAndPenalties: summary.lifetimeTaxesAndPenalties,
-          depletionYear: solved.bestEvaluation!.candidateResult.depletionYear,
-          endYear: solved.bestEvaluation!.candidateResult.endYear,
-        }
-      : null,
+    evidence:
+      summary && run
+        ? {
+            endingAfterTaxEstate: summary.endingAfterTaxEstate,
+            // In today's dollars by the answer run's own inflation factor, so
+            // the page divides by nothing itself. A run with no years (its
+            // horizon ends before it starts) has no factor, and none is set.
+            ...(run.years.length === 0
+              ? {}
+              : {
+                  endingAfterTaxEstateTodayDollars: toTodayDollars(
+                    projectionDollarBasis(run),
+                    run.endYear,
+                    summary.endingAfterTaxEstate,
+                  ),
+                }),
+            endingNetWorth: summary.endingNetWorth,
+            lifetimeTaxesAndPenalties: summary.lifetimeTaxesAndPenalties,
+            depletionYear: run.depletionYear,
+            endYear: run.endYear,
+          }
+        : null,
   }
 }

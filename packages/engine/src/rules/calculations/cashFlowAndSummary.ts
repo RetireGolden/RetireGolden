@@ -251,9 +251,9 @@ export const cashFlowAndSummaryRecords = {
       'sustainable-spending-result-spending-slack-dollars',
     ],
     feeds: ['sustainable-spending-result-simulation-count', 'solved-initial-withdrawal-rate-pct', 'solved-spending-rounded-to-hundred'],
-    statement: 'decisions/spendingSolver.ts#solveMaxSustainableSpending finds a lower-bound maximum feasible annual base spending in today\'s dollars using deterministic integer-dollar bracketing and bisection, where feasibility means no depletion and nominal ending after-tax estate at least the inflated today-dollar floor.',
+    statement: 'decisions/spendingSolver.ts#solveMaxSustainableSpending finds a lower-bound maximum feasible annual base spending in today\'s dollars using deterministic integer-dollar bracketing and bisection, where feasibility means no depletion and nominal ending after-tax estate at least the inflated today-dollar floor. The highest level that passed is published as feasibleBaseAnnual; the published answer maxBaseAnnual is that level rounded down to $100 when that level is known to pass (the record solved-spending-rounding), and spendingSlackDollars is measured from maxBaseAnnual.',
     formula: {
-      expression: 'probe integer midpoint; keep feasible lower and infeasible upper until upper-lower <= resolution; return best feasible lower',
+      expression: 'probe integer midpoint; keep feasible lower and infeasible upper until upper-lower <= resolution; feasibleBaseAnnual = best feasible lower; maxBaseAnnual = its $100 floor when that level is known to pass, else feasibleBaseAnnual',
       variables: [
         { symbol: 'spending', meaning: 'Probed annual base spending', unit: 'today USD/year', domain: 'nonnegative integer' },
         { symbol: 'resolution', meaning: 'Maximum bracket width', unit: 'USD/year', domain: 'positive' },
@@ -271,6 +271,7 @@ export const cashFlowAndSummaryRecords = {
       'A Marketplace year whose premium tax credit the ledger could not price (aca.readiness nonActionable) counts its full premium, as the ledger funds it; the credit lies between 0 and that premium (26 U.S.C. 36B(b)(2)). The solver always evaluates its probes with nonActionableAca \'disclose\' (its options leave callers no way to ask for \'refuse\'), so such a year is a disclosed limit, not a refusal. Those years of the run the result rests on (the best feasible probe; with no answer, the probe the failure diagnostic describes: the floor probe when it ran, else the seed), the codes that blocked pricing (every code but the informational ones, INFORMATIONAL_ACA_SUPPORT_CODES, the list the ledger\'s readiness reads) and acaGrossPremiumDirection are published, and the last diagnostic names them.',
       'acaGrossPremiumDirection is \'conservative\' only at fixed-target spending: at fixed spending a lower premium lowers what that year must withdraw, so a credit would likely leave room to spend more. That is measured, not proven for every plan: an independent check priced the stand-in years in a counterfactual and re-solved the 20 fixed-target example answers at $1 resolution (about 6,700 grid points) without finding a credit-priced answer below the gross one (gaps 0 to $6,357 a year). Under guardrails it is \'uncertain\': a lower cost keeps the withdrawal rate under the upper guardrail longer, so cuts start later, and the same check found credit-priced ledgers that solve lower (the aggressive-saver example under 125/90/20 guardrails with raises: $76,707 on the gross premium, $75,170 with the credit priced) or deplete at the gross answer (the barista-fire example under the same 125/90/20 guardrails with raises).',
       'Under an adaptive spending policy (guardrails) feasibility is not monotone in the base amount, so the answer is a level the search found feasible and a higher feasible level can exist. Measured with no Marketplace year at all: the example-couple plan with no Marketplace premium or credit, withdrawal-rate guardrails (upper 125%) and an $86,400 required floor depletes in 2059 at a base of $164,391 and never depletes at $166,971, because the higher base makes its first cut a year earlier (2030 against 2031). The independent check of 2026-09-26 also found it on Marketplace plans, under both the gross-premium and the credit-priced ledgers.',
+      'The published answer is rounded down to $100 (owner decision R4, the record solved-spending-rounding); this record\'s evidence answer, $62,500, is already a whole $100, so it is both the level that passed and the published answer.',
       'When the seed is infeasible the downward bracket starts at the required spending floor (expenses.requiredAnnual rounded up, 0 when the plan has none), the lowest level the plan checks accept; no probe goes below it, and a failure there is reported as the floor failing, naming the constraint that failed. The seed itself is raised to that floor when the base spending would round below it. zeroSpendingDepletes is true only when a probe at 0 ran and depleted.',
     ],
     implementedBy: ['packages/engine/src/decisions/spendingSolver.ts'],
@@ -1821,9 +1822,9 @@ export const cashFlowAndSummaryRecords = {
     kind: 'model',
     outputs: ['sustainable-spending-result-simulation-count'],
     statement:
-      'decisions/spendingSolver.ts#solveMaxSustainableSpending counts one probe at the seed (the patched plan\'s own base spending rounded to a whole dollar, floored at 0, and raised to the required spending floor rounded up when it would fall below it, since the plan checks refuse a base below that floor). When the seed is feasible it counts one probe per doubling from max(2 x seed, $20,000), doubling again after each feasible one, until a probe fails or the budget or the $100,000,000 unbounded ceiling is reached; when the seed is infeasible and above the required spending floor it counts one further probe at that floor (expenses.requiredAnnual rounded up, 0 when the plan has none). It then counts one bisection probe per halving while the bracket is strictly wider than resolutionDollars and simulationCount is below maxSimulations. Units: probes (whole projections). Rounding: none; the value is an integer.',
+      'decisions/spendingSolver.ts#solveMaxSustainableSpending counts one probe at the seed (the patched plan\'s own base spending rounded to a whole dollar, floored at 0, and raised to the required spending floor rounded up when it would fall below it, since the plan checks refuse a base below that floor). When the seed is feasible it counts one probe per doubling from max(2 x seed, $20,000), doubling again after each feasible one, until a probe fails or the budget or the $100,000,000 unbounded ceiling is reached; when the seed is infeasible and above the required spending floor it counts one further probe at that floor (expenses.requiredAnnual rounded up, 0 when the plan has none). It then counts one bisection probe per halving while the bracket is strictly wider than resolutionDollars and simulationCount is below maxSimulations. Under a withdrawal-rate or risk-based guardrail policy, when the level that passed is not a whole $100, rounded down it is not below the required spending floor, and the search did not already probe that rounded level, it counts one more run after the search, at that rounded level, outside maxSimulations (the record solved-spending-rounding). Units: probes (whole projections). Rounding: none; the value is an integer.',
     formula: {
-      expression: 'count = 1 + doublings + bisections, or 2 when a seed above the floor and the floor both fail',
+      expression: 'count = 1 + doublings + bisections (+ 1 under guardrails when the answer rounded down to $100 was not already probed and is not below the floor), or 2 when a seed above the floor and the floor both fail',
       variables: [
         { symbol: 'seed', meaning: 'max(0, round(base spending of the patched plan), ceil(expenses.requiredAnnual))', unit: 'usd/year', domain: 'nonnegative' },
         { symbol: 'floor', meaning: 'ceil(expenses.requiredAnnual), 0 when the plan has no required spending; never above the seed', unit: 'usd/year', domain: 'nonnegative' },
@@ -1889,11 +1890,13 @@ export const cashFlowAndSummaryRecords = {
       'Years outside the projection are refused, never extrapolated; a projection whose horizon ends before its start year has an empty basis in which every year is refused',
       'Owner decision R19 (2026-09-25): the planner pages used to compound the plan\'s rate with Math.pow from the page\'s start year. The ledger\'s factor is a product built one year at a time, which differs from the power in the last binary digit in some years (21 of 41 years at 2.5 percent, one unit each), so a whole-dollar figure can change only on an exact half-dollar tie; the FI target in today\'s-dollar mode becomes exactly fiNumber instead of fiNumber * f / f',
       'The FI target is recorded here rather than in a record of its own: it is projection-summary-fi-number placed in a year through todayForDisplay',
+      'Since B2-P1 slice 2 the spending page converts nothing itself: each published withdrawal rule\'s ending estate is converted by that rule\'s own run (decisions/swrComparator.ts#compareSwrRules publishes endingAfterTaxEstateTodayDollars), and the solver\'s evidence estate by the answer run\'s own factors; planDollarBasis remains for the relocation page',
     ],
     implementedBy: [
       'packages/engine/src/projection/dollarBasis.ts',
       'packages/engine/src/insights/detectorProjection.ts',
       'packages/engine/src/projection/internal/types/result.ts',
+      'packages/engine/src/decisions/swrComparator.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/projection/dollarBasis.ts#projectionDollarBasis',
@@ -1905,8 +1908,72 @@ export const cashFlowAndSummaryRecords = {
       'packages/engine/src/projection/dollarBasis.ts#todayForDisplay',
       'packages/engine/src/insights/detectorProjection.ts#detectorProjection',
       'packages/engine/src/projection/internal/types/result.ts#YearResult.inflationScale',
+      'packages/engine/src/decisions/swrComparator.ts#compareSwrRules',
     ],
-    verifiedOn: '2026-09-26',
+    verifiedOn: '2026-09-27',
+    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+  },
+  'bucket-lens-allocation': {
+    title: 'Bucket view of the investable total',
+    purpose: 'Each year\'s investable total read as buckets: the next years of net spending, then the rest, as the Results bucket card draws it.',
+    kind: 'formula',
+    outputs: ['bucket-lens-allocation'],
+    statement:
+      'projection/bucketLens.ts#bucketLens reads each projection year i with investable total T_i and published net portfolio needs n_j (YearResult.netPortfolioNeed) as spans.length + 1 buckets: bucket k claims the needs of the next spans[k] years, starting with year i and continuing after the earlier buckets\' years, capped by what is left, and the last bucket is the remainder. Needs past the horizon count 0. BUCKET_LENS_SPANS holds the two presets the planner offers, [2, 8] and [3]. It refuses a span that is not a positive whole number and a year whose netPortfolioNeed is not a finite number, naming the year, rather than reading it as 0. For needs 10,000, 20,000, 30,000, 40,000 and 50,000 against totals 200,000, 150,000, 100,000, 60,000 and 20,000, spans [2, 8] give year 0 buckets of 30,000, 120,000 and 50,000 and year 2 buckets of 70,000, 30,000 and 0. Units: nominal dollars of each row\'s year; needs summed undiscounted across future years. Rounding: none; the buckets add to the investable total to within one unit in the last place.',
+    formula: {
+      expression: 'need_k = sum of n_j for j from c_k to min(c_k + s_k, N) − 1; b_k = min(R_k, need_k); R_0 = T_i; R_(k+1) = R_k − b_k; c_0 = i; c_(k+1) = c_k + s_k; growth bucket = R_K',
+      variables: [
+        { symbol: 'T_i', meaning: 'Investable total of year i (YearResult.investableTotal)', unit: 'USD, nominal of year i', domain: '>= 0' },
+        { symbol: 'n_j', meaning: 'Net portfolio need of year j (YearResult.netPortfolioNeed)', unit: 'USD, nominal of year j', domain: '>= 0, finite' },
+        { symbol: 's_k', meaning: 'Span of bucket k', unit: 'years', domain: 'positive whole number' },
+        { symbol: 'N', meaning: 'Number of projection years', unit: 'years', domain: '>= 0' },
+      ],
+      timing: 'annual; each row reads the needs of later rows',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/cash-flow-and-summary/bucket-lens-allocation.md',
+    },
+    limits: [
+      'A reporting view: nothing feeds back into the projection, and the bucket literature (Estrada; Kitces) finds no systematic benefit from managing money as buckets over a rebalanced total-return portfolio.',
+      'Needs past the horizon count 0, so the leading buckets drain near the end of the plan.',
+      'Future needs are nominal and undiscounted, so bucket 2 read in today\'s dollars overstates its real size by the inflation between the row\'s year and each need\'s year.',
+      'The buckets add to the investable total to within one unit in the last place, not exactly: 127 of 2,420 example rows differ by one unit.',
+    ],
+    implementedBy: ['packages/engine/src/projection/bucketLens.ts'],
+    implementedByFunctions: ['packages/engine/src/projection/bucketLens.ts#bucketLens'],
+    verifiedOn: '2026-09-27',
+    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+  },
+  'cash-flow-drilldown-amounts': {
+    title: 'Cash-flow drilldown amounts',
+    purpose: 'Where each amount on the selected year\'s cash-flow chart comes from: published lines and the ledger\'s own reconciliation totals.',
+    kind: 'composition',
+    outputs: ['cash-flow-line-amount'],
+    statement:
+      'In the selected-year cash-flow chart each link amount is one published line\'s Plan-dollar amount; the Household cash node is the cash identity\'s source total, reconciliation.cash.sourceTotalPlanDollars, and the Unfunded node the use identity\'s unfunded total, reconciliation.uses.unfundedUsesPlanDollars, both published by projection/annualCashFlowReconciliation.ts#reconcileYearCashFlow; the Unfunded node appears when that total is above 0. The source total is (spendable sources + portfolio funding) + loan proceeds, each a sum by role in line order, so for source lines of 41,234.11 (spendable), 17,890.20 (portfolio), 3,000.30 (spendable), 0 (loan) and 12.07 (spendable) it is 62,136.68000000001, where adding the lines in order gives 62,136.68; both print $62,137. The transfer view\'s in and out totals and the grouped Other node add engine lines by the chart\'s own grouping and stay in the planner as chart aggregation (decision R18). Units: nominal Plan dollars, shown through the page\'s dollar basis. Rounding: none.',
+    formula: {
+      expression: 'hub = (spendable + portfolioFunding) + loanProceeds; unfunded = sum of unfundedPlanDollars over use lines; link = line amount',
+      variables: [
+        { symbol: 'spendable, portfolioFunding, loanProceeds', meaning: 'Source line amounts summed by role, in line order', unit: 'USD, nominal of the year', domain: '>= 0' },
+        { symbol: 'unfundedPlanDollars', meaning: 'Each use line\'s unfunded part', unit: 'USD, nominal of the year', domain: '>= 0' },
+      ],
+      timing: 'once per captured year',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/cash-flow-and-summary/cash-flow-line-amount.md',
+    },
+    limits: [
+      'The transfer view\'s in and out totals and the Other node\'s amount printed on the chart are sums of engine lines by the chart\'s grouping and have no engine record; the Other threshold is a layout rule.',
+      'The hub differs from the line-order sum the chart used to add only in the last binary digit (32 of 1,210 example years, at most 5.82e-11); no printed whole dollar changes.',
+      'A year whose report is not reconciled is refused by the chart before any amount is read.',
+    ],
+    implementedBy: ['packages/engine/src/projection/annualCashFlowReconciliation.ts'],
+    implementedByFunctions: ['packages/engine/src/projection/annualCashFlowReconciliation.ts#reconcileYearCashFlow'],
+    verifiedOn: '2026-09-27',
     provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
   },
 } satisfies Record<string, CalculationRecord>

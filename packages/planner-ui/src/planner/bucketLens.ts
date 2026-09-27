@@ -1,75 +1,22 @@
 /**
- * Bucket reporting lens (spending-paths & SWR-lenses plan, Goal 5).
+ * Bucket reporting lens (spending-paths & SWR-lenses plan, Goal 5): the
+ * presets the Results card offers. The lens itself (each year's investable
+ * total read as "the next N years of net spending", then the rest) is the
+ * engine's `projection/bucketLens.ts#bucketLens`; this module keeps only the
+ * labels, and each preset's spans are the engine's `BUCKET_LENS_SPANS`.
  *
  * Buckets are hugely popular and academically shaky: Estrada's bucket studies
  * and Kitces' reviews find no systematic benefit over a total-return portfolio
- * with rebalancing — the comfort is real, the mechanism mostly isn't. The
- * honest version this lens implements: keep investing (and simulating) total
- * return, and *report* the ledger's balances as buckets — "years 1–2 of net
- * spending", "years 3–10", "the rest" — purely as a reading of the same
- * numbers. Nothing here feeds back into the engine; it is presentation only.
- *
- * Mapping: for each projection year, the dollars that must come from the
- * portfolio are the engine's published `YearResult.netPortfolioNeed` — total
- * spending including taxes and penalties, less all income that year, floored
- * at 0. The engine owns that arithmetic; this lens only reads it. Bucket k
- * claims the (projected, nominal) need of the next `spans[k]` years,
- * cumulatively, capped by what is actually left; the final bucket is the
- * remainder. Buckets therefore reconcile to the ledger's investable total by
- * construction, every year — the acceptance criterion.
+ * with rebalancing. The lens is a reading of the same numbers, nothing more.
  */
 
-import type { ProjectionResult } from '@retiregolden/engine/projection/types'
-
-export interface BucketYearRow {
-  year: number
-  /** This year's published `netPortfolioNeed` (nominal, ≥ 0). */
-  need: number
-  /** One balance per bucket; sums exactly to `investableTotal`. */
-  buckets: number[]
-  investableTotal: number
-}
-
-/**
- * Partition every year's investable total into `spans.length + 1` buckets:
- * bucket k holds the projected need of the next `spans[k]` years (starting
- * with the current year, cumulatively after earlier buckets), the last bucket
- * holds the remainder. Needs beyond the projection horizon are unknown and
- * count as 0 — near the end of the plan the leading buckets naturally drain.
- */
-export function bucketLens(result: ProjectionResult, spans: number[]): BucketYearRow[] {
-  const years = result.years
-  // `netPortfolioNeed` types as `number` (never optional) because every
-  // `YearResult` this engine build produces sets it. A `ProjectionResult`
-  // deserialized from an engine older than 0.3.0 has no such guarantee — the
-  // field is simply absent at runtime — so a missing value reads as 0 rather
-  // than propagating `NaN` through every downstream bucket sum.
-  const needs = years.map((y) => (typeof y.netPortfolioNeed === 'number' ? y.netPortfolioNeed : 0))
-  return years.map((y, i) => {
-    let remaining = y.investableTotal
-    const buckets: number[] = []
-    let cursor = i
-    for (const span of spans) {
-      let bucketNeed = 0
-      for (let k = 0; k < span; k++) {
-        if (cursor + k >= needs.length) break
-        bucketNeed += needs[cursor + k]!
-      }
-      cursor += span
-      const claimed = Math.min(remaining, bucketNeed)
-      buckets.push(claimed)
-      remaining -= claimed
-    }
-    buckets.push(remaining)
-    return { year: y.year, need: needs[i]!, buckets, investableTotal: y.investableTotal }
-  })
-}
+import { BUCKET_LENS_SPANS } from '@retiregolden/engine/projection/bucketLens'
 
 export interface BucketPreset {
-  id: 'three' | 'two'
+  id: keyof typeof BUCKET_LENS_SPANS
   label: string
-  /** Year spans of the leading buckets; the growth bucket is the remainder. */
-  spans: number[]
+  /** Year spans of the leading buckets (the engine's); the growth bucket is the remainder. */
+  spans: readonly number[]
   bucketLabels: string[]
 }
 
@@ -78,13 +25,13 @@ export const BUCKET_PRESETS: readonly BucketPreset[] = [
   {
     id: 'three',
     label: '3 buckets (2 yrs / 8 yrs / growth)',
-    spans: [2, 8],
+    spans: BUCKET_LENS_SPANS.three,
     bucketLabels: ['Bucket 1, next 2 years of net spending', 'Bucket 2, years 3–10', 'Bucket 3, growth (the rest)'],
   },
   {
     id: 'two',
     label: '2 buckets (3 yrs / growth)',
-    spans: [3],
+    spans: BUCKET_LENS_SPANS.two,
     bucketLabels: ['Bucket 1, next 3 years of net spending', 'Bucket 2, growth (the rest)'],
   },
 ]

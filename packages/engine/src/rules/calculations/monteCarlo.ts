@@ -1032,7 +1032,7 @@ export const monteCarloRecords = {
     outputs: ['risk-based-guardrail-solved-balance-thresholds', 'risk-based-guardrail-suggested-adjustment-monthly'],
     feeds: ['display-guardrail-balance-thresholds', 'spending-guardrail-factor-annual'],
     statement:
-      'Let S(f, m) be the success rate of the plan with fixed target spending, with every investable balance scaled by f and target spending by m, on shared seeded Monte Carlo paths (or the value of the optional successProbe(f, m), which replaces that run). The band is L/U percent (the plan\'s policy, else 70/95) and the recovery target is (L + U)/200. For each edge p = L/100 and U/100: if S(0.02, 1) >= p the outcome is always-above-band; if S(4, 1) < p it is never-reaches-band; otherwise ten bisections on [0.02, 4] move hi to the midpoint when S(mid, 1) >= p and lo otherwise, and the edge is hi, a point 0.02 + k · 3.98/1024 with k a whole number from 1 to 1024 (the smallest such point meeting p), with balanceDollars = hi · starting investable. At a solved lower edge f_L the suggested cut bisects m eight times on [max(0.3, required/base), 1], moving lo when S(f_L, m) >= the recovery target, and returns lo, provided the best case S(f_L, lowest m) reaches the target; at a solved upper edge the raise does the same on [1, 2], and reports m = 2 when even S(f_U, 2) stays above the target. annualDollars = |1 − m| · base spending and monthlyDollars = annualDollars / 12. For S(f, m) = min(1, f/(2m)), one $500,000 taxable account, base spending $40,000, no required spending and a 70/95 band: successAtCurrent is 0.5; the edges are k = 356 and 484, balanceFrac 1.403671875 and 1.901171875, balanceDollars $701,835.9375 and $950,585.9375; the cut multiplier is 0.849609375 ($6,015.625 a year, $501.3020833333333 a month, success after 0.8260689655172412) and the raise multiplier 1.1484375 ($5,937.50 a year, $494.7916666666667 a month, success after 0.8277210884353741); the probe is called 40 times. Units: fractions of starting investable, multipliers, today\'s dollars. Rounding: none; absolute tolerance 1e-12 on fractions and multipliers and 1e-6 on dollars.',
+      'Let S(f, m) be the success rate of the plan with fixed target spending, with every investable balance scaled by f and target spending by m, on shared seeded Monte Carlo paths (or the value of the optional successProbe(f, m), which replaces that run). The band is L/U percent (the plan\'s policy, else 70/95) and the recovery target is (L + U)/200. For each edge p = L/100 and U/100: if S(0.02, 1) >= p the outcome is always-above-band; if S(4, 1) < p it is never-reaches-band; otherwise ten bisections on [0.02, 4] move hi to the midpoint when S(mid, 1) >= p and lo otherwise, and the edge is hi, a point 0.02 + k · 3.98/1024 with k a whole number from 1 to 1024 (the smallest such point meeting p), published with balancePct = round(hi · 10,000) / 100, the percent the planner persists. At a solved lower edge f_L the suggested cut bisects m eight times on [max(0.3, required/base), 1], moving lo when S(f_L, m) >= the recovery target, and returns lo, provided the best case S(f_L, lowest m) reaches the target; at a solved upper edge the raise does the same on [1, 2], and reports m = 2 when even S(f_U, 2) stays above the target. annualDollars = |1 − m| · base spending and monthlyDollars = annualDollars / 12. For S(f, m) = min(1, f/(2m)), one $500,000 taxable account, base spending $40,000, no required spending and a 70/95 band: successAtCurrent is 0.5; the edges are k = 356 and 484, balanceFrac 1.403671875 and 1.901171875, balancePct 140.37 and 190.12; the cut multiplier is 0.849609375 ($6,015.625 a year, $501.3020833333333 a month, success after 0.8260689655172412) and the raise multiplier 1.1484375 ($5,937.50 a year, $494.7916666666667 a month, success after 0.8277210884353741); the probe is called 40 times. Units: fractions of starting investable, multipliers, today\'s dollars. Rounding: none; absolute tolerance 1e-12 on fractions and multipliers and 1e-6 on dollars.',
     formula: {
       expression: 'edge(p) = min { 0.02 + k · 3.98/1024 : k = 1..1024, S(·, 1) >= p } by ten bisections; m_cut = max { m on the eight-step lattice of [m_min, 1] : S(f_L, m) >= (L + U)/200 }; m_raise likewise on [1, 2]; monthly = |1 − m| · base / 12',
       variables: [
@@ -1055,7 +1055,7 @@ export const monteCarloRecords = {
       'The Spending card always solves under the lognormal model at 12 percent volatility around the plan\'s own expected returns (allocated accounts use their asset classes\' volatilities), with 200 paths and the plan-id seed, whatever model the Monte Carlo page shows',
       'Successes are cached by the balance scale rounded to 1e-6; the lattice step is about 3.9e-3, so two lattice points never share a key. The spending phase is not cached, so successAfter re-evaluates a multiplier the bisection has usually tried already',
       'With a single path S is 0 or 1, so the two band edges are the same test and return the same point',
-      'The planner persists each edge as a percent of today\'s investable rounded to two decimals (140.37 and 190.12 in the worked example), and the callouts print that percent of today\'s balances, so the printed dollars can differ from balanceDollars by that rounding and by any balance change since the solve',
+      'balancePct rounds in floating point: at three of the 1,024 lattice points (k = 192, 448 and 704) the product lands just below a half and rounds down, persisting 76.62, 176.12 and 275.62 where the exact values round half up to 76.63, 176.13 and 275.63; the callouts print the persisted percent of today\'s balances (guardrail-threshold-dollars)',
     ],
     implementedBy: ['packages/engine/src/montecarlo/riskBasedGuardrails.ts'],
     implementedByFunctions: ['packages/engine/src/montecarlo/riskBasedGuardrails.ts#solveRiskBasedGuardrails'],
@@ -1285,5 +1285,63 @@ export const monteCarloRecords = {
     ],
     verifiedOn: '2026-09-18',
     provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+  },
+  'monte-carlo-histogram-bin-centres': {
+    title: 'Histogram bin centres',
+    purpose: 'The dollar amount each bar of the ending balance histogram is labelled with.',
+    kind: 'formula',
+    outputs: ['display-histogram-bin-label'],
+    statement:
+      'montecarlo/run.ts#histogramFor publishes, on every histogram aggregateMonteCarlo builds, binCenters[i] = min + (i + 0.5) × binWidth in that association, or min for every bin when every value is equal, where binWidth is only a placeholder of 1 and the one value the sample holds is the only amount it can show. A histogram with min $100,000 and binWidth $50,000 has centres $125,000, $175,000 and so on to $1,575,000; endings [0, 20, 40, 80, 100] in 4 bins have centres 12.5, 37.5, 62.5 and 87.5; four paths all ending at $0 have every centre $0, where the page used to label the bars $1 to $30. Units: the histogram\'s dollars (nominal ending values). Rounding: none; the page formats compactly.',
+    formula: {
+      expression: 'c_i = min + (i + 0.5) · binWidth when max > min, else c_i = min',
+      variables: [
+        { symbol: 'min, max', meaning: 'Smallest and largest value of the sample', unit: 'usd', domain: 'finite; 0 and 0 for an empty sample' },
+        { symbol: 'binWidth', meaning: '(max − min) / bins, or 1 when every value is equal', unit: 'usd', domain: '> 0' },
+        { symbol: 'i', meaning: 'Bin index', unit: '1', domain: '0 to bins − 1' },
+      ],
+      timing: 'once per aggregation',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/monte-carlo/display-histogram-bin-label.md',
+    },
+    limits: [
+      'The last bin is closed (it holds the maximum), so its centre is the midpoint of a closed interval.',
+      'With every value equal the other bins are empty and their centres carry no information; at the page\'s defaults this happens on 5 of the 29 example plans as the library opens them (every path runs out).',
+    ],
+    implementedBy: ['packages/engine/src/montecarlo/run.ts'],
+    implementedByFunctions: ['packages/engine/src/montecarlo/run.ts#histogramFor', 'packages/engine/src/montecarlo/run.ts#Histogram.binCenters'],
+    verifiedOn: '2026-09-27',
+    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+  },
+  'monte-carlo-fan-chart-ranges': {
+    title: 'Fan chart percentile ranges',
+    purpose: 'The two bands the Range of outcomes chart draws each year, as the pairs of percentile levels they span.',
+    kind: 'composition',
+    outputs: ['display-fan-band-widths'],
+    statement:
+      'The Range of outcomes chart draws, for each fan row that montecarlo/run.ts#aggregateMonteCarlo publishes, the range from p10 to p90 and the range from p25 to p75 (owner decision R14): each band is the pair of the row\'s two levels, never their difference, and the tooltip prints the pair as "$low to $high". For a year whose sorted investable balances across eleven paths are 0, 400,000, 600,000, 600,000, 700,000, 800,000, 900,000, 1,000,000, 1,000,000, 1,300,000 and 2,000,000, the outer band spans $400,000 to $1,300,000 and the inner $600,000 to $1,000,000, where the chart used to stack widths of $900,000 and $400,000 on transparent bases. Units: nominal dollars of the year. Rounding: none; the page prints whole dollars.',
+    formula: {
+      expression: 'outer band = [p10, p90]; inner band = [p25, p75], per fan row',
+      variables: [
+        { symbol: 'p10, p25, p75, p90', meaning: 'The fan row\'s interpolated percentile levels of investable balances across paths (monte-carlo-investable-fan-percentiles)', unit: 'usd, nominal of the year', domain: 'p10 <= p25 <= p75 <= p90' },
+      ],
+      timing: 'once per fan row',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/monte-carlo/display-fan-band-widths.md',
+    },
+    limits: [
+      'The pairing and the tooltip text are the chart\'s, done in planner-ui by planner/format.ts fanOuterBand and fanInnerBand (the two bands\' data keys) and fmtMoneyOrRange (the tooltip), which the census names as this family\'s UI sources; the registry pins only engine code, so implementedBy names the engine function that publishes the levels, the engine\'s fan percentiles, whose own record states how each is interpolated.',
+      'A band\'s width (p90 minus p10) is not published: it is not a level of any path, and the chart printed it as one before R14.',
+    ],
+    implementedBy: ['packages/engine/src/montecarlo/run.ts'],
+    implementedByFunctions: ['packages/engine/src/montecarlo/run.ts#aggregateMonteCarlo'],
+    verifiedOn: '2026-09-27',
+    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
   },
 } satisfies Record<string, CalculationRecord>

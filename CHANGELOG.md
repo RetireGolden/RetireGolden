@@ -4,6 +4,97 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## Unreleased
 
+- **Changed: nine more figures the planner pages computed are now published by the
+  engine** (owner decision D-UI-SS; B2-P1 slice 2). The pages only format and select
+  them: the spending solver's answer, its slack and its initial withdrawal rate
+  (`SustainableSpendingResult`), the spending-shape comparison
+  (`@retiregolden/engine/decisions/spendingShapes`), the risk-based guardrail
+  thresholds in dollars (`guardrailThresholdDollars`, and the persisted percent
+  `balancePct`), the TIPS ladder's income yield and buy-list years (`quotePlanLadder`,
+  on the ledger's own window, `planLadderWindow`, which `simulatePlan` now calls), the
+  bucket view (`@retiregolden/engine/projection/bucketLens`), the cash-flow chart's
+  Household cash and Unfunded nodes (the reconciliation totals), the Monte Carlo fan
+  chart's bands (the fan percentiles themselves) and the histogram's bin centres
+  (`Histogram.binCenters`). Each withdrawal rule's ending estate on the spending page
+  arrives in today's dollars converted by the rule's own run
+  (`SwrRuleResult.endingAfterTaxEstateTodayDollars`). Unchanged on every example plan:
+  the withdrawal rates, the guardrail dollars (29 of 29 bit for bit when switched to
+  risk-based guardrails), the ladder yield (no example has a ladder), the buckets
+  (2,420 rows bit for bit) and the cash-flow amounts (the hub differs from the old
+  line sum in the last binary digit in 32 of 1,210 years, and no printed dollar
+  moves). What changes is below.
+
+- **Changed: every surface now shows the sustainable spending the solver page showed**
+  (owner decision R4). The solver's answer is published rounded down to the nearest
+  $100 (`maxBaseAnnual`), with the level that passed kept as `feasibleBaseAnnual` and
+  the slack measured from the published amount, so the insight card, the Scenarios
+  capacity table, the tax-strategy tradeoffs, RetireGolden-Pro and the MCP show the
+  amount the spending page shows and applies. Under fixed-target spending the rounded
+  amount is taken to pass without a run of its own: a lower amount has not been found
+  to fail where a higher one passed on any example plan or variant tried, though a
+  lower spend that drops income below the poverty line and loses the premium tax
+  credit is not ruled out. Under withdrawal-rate or risk-based guardrails, where a
+  lower amount can fail although a higher one passed, the rounded amount is published
+  only when a run at it passes (the search's own probe at that amount, or one more
+  run); otherwise the solver publishes the exact amount that passed, says so
+  (`maxBaseAnnualRounding: 'none'`) and adds a sentence saying why, which the
+  spending page prints. A rounded amount below the plan's required spending is never
+  published. Whether today's spending is sustained is published as
+  `sustainsCurrentBase` (the verdict on the level that passed, as the page judged it
+  before), and the Scenarios capacity comparison carries it per side with each side's
+  passing level and rounding, because the slack alone can read −$30 for a $72,030
+  base that passes; the Scenarios capacity table prints it per side, in a "Current
+  base spending" column (Sustained, Not sustained, or Not judged). On the example plans the spending page changes nothing; on the
+  25 answering examples whose answer is not a whole hundred the other surfaces now
+  show $2 to $91 less (for example `rmd-irmaa` $131,485 → $131,400, and its slack
+  $21,485 → $21,400); 17 of the 19 spending insight cards the examples offer show the
+  lower amount, and none disappears. No example with an answer spends under
+  guardrails, so no probe count changes.
+
+  On guardrail plans the spending page itself changes. Where it applied and added as
+  a scenario the exact amount the solver tested, it now applies the rounded amount
+  once a run at it has passed. Where it showed the rounded amount although that
+  amount fails, it now shows the exact amount and says why: the `lean-fat-fire`
+  example under withdrawal-rate guardrails (upper guardrail 150, a $40,500 required
+  floor) showed $76,600, which runs out of money in 2085, and now shows $76,641.
+  Follow-ups outside this repository: RetireGolden-Pro's meeting view suggests
+  revisiting base spending whenever the proposal's slack is negative
+  (`meetingViewModel`), which now misfires on a sustained base with a slack between
+  −$100 and 0 and should read `proposalSustainsCurrentBase`; the MCP's
+  `solve_max_spending` passes through only the published amount and slack, and should
+  also publish `feasibleBaseAnnual`, `maxBaseAnnualRounding` and `sustainsCurrentBase`.
+
+- **Fixed: the spending-shape table's "vs constant-real" column subtracted amounts it
+  did not show** (owner decision R5). The table printed each shape's amount rounded
+  down to $100 beside a difference of the unrounded amounts, so a $100 gap could read
+  "+$99" and no gap "+$99". The difference is now taken between the two amounts shown:
+  48 of the 54 shape differences on the example plans change, by −$84 to +$88 (for
+  example `under-saved-single`'s smile +$5,063 → +$5,100); no amount changes.
+
+- **Fixed: the Monte Carlo "Range of outcomes" tooltip printed band widths as dollar
+  levels** (owner decision R14). The chart stacked the 90th-minus-10th and
+  75th-minus-25th percentile widths on transparent bases and the tooltip listed them
+  beside the bases, so "10–90% $900,000" read as a level. The bands are now drawn as
+  ranges between the two levels and the tooltip prints "10th to 90th percentile
+  $400,000 to $1,300,000".
+
+- **Fixed: a histogram of paths that all end at the same amount was labelled $1 to
+  $30.** With every ending equal the histogram's bin width is a placeholder of 1, which
+  the page read as a real width. The engine now publishes each bin's centre, the one
+  value itself in that case, and the page then draws one bar at that value holding
+  every path: one bar, $0, on the five example plans whose every path runs out at the
+  page's defaults (`inherited-ira-beneficiary`, `survivor-years`, `ltc-shock`,
+  `brokerage-no-hsa`, `fixed-target-spending`).
+
+- **Changed: the risk-based guardrail thresholds say when they have no dollar figure**
+  (owner decision R3). The pages printed $0 for both thresholds when the plan's
+  investable balances were zero, although the ledger then anchors on the first year
+  the portfolio has a balance; they now print the percents and say where they apply:
+  Results, the projection's first year with a balance; Monte Carlo, each simulated
+  path's; the Spending card, both. A pair whose
+  cut threshold is not below its raise threshold says the rule holds spending every
+  year. On every plan with a balance the printed dollars are unchanged.
+
 - **Mutation receipts are checked against the current code and tests** (decision
   D-RECEIPT-DRIFT). A receipt is the evidence that an evidence test kills a mutant of
   production code, and a reader can rerun it only while its diff and captured output
@@ -802,6 +893,39 @@ has — rather than the runtime contract a consumer needs on the landing page.
   or finalization claim.
 
 ### Breaking (published `@retiregolden/engine` API)
+
+- **`SustainableSpendingResult` (B2-P1 slice 2, owner decision R4):** `maxBaseAnnual`
+  now publishes the answer rounded down to $100 (or, under guardrails when that fails,
+  the exact amount), not the level that passed, and `spendingSlackDollars` is measured
+  from it; `bestEvaluation` is the run at the level that passed. New required fields
+  `feasibleBaseAnnual` (the level that passed), `maxBaseAnnualRounding`
+  (`'down-to-hundred' | 'none' | null`), `sustainsCurrentBase` and
+  `initialWithdrawalRatePct`. Under guardrails `simulationCount` can exceed
+  `maxSimulations` by one (the check of the rounded amount).
+  `ScenarioSpendingCapacityResult` accepts `feasibleBaseAnnual`,
+  `maxBaseAnnualRounding` and `sustainsCurrentBase` as optional fields, and
+  `ScenarioSpendingCapacityComparison` gains the optional `feasibleBaseAnnual`,
+  `baselineMaxBaseAnnualRounding`, `proposalMaxBaseAnnualRounding`,
+  `baselineSustainsCurrentBase` and `proposalSustainsCurrentBase` (null on a side
+  whose result did not carry them). New exports `roundSolvedSpending`, `SOLVED_SPENDING_STEP_DOLLARS`,
+  `initialWithdrawalRatePct`, `EXACT_ANSWER_DIAGNOSTIC_LEAD` and
+  `isExactAnswerDiagnostic`, and the module `decisions/spendingShapes`. A caller that
+  builds the result by hand gets a type error until it adds the fields. planner-ui's
+  `SpendingSolveResult` carries the four new fields as optional ones, and
+  `SpendingSolveEvidence` gains an optional `endingAfterTaxEstateTodayDollars`, so
+  typed results built before them still compile.
+- **`RiskBasedThreshold.balanceDollars` is removed** (decision R3): nothing read it and
+  it never acted. `balancePct` (the percent the planner persists, two decimals) is
+  required in its place; the dollars come from `guardrailThresholdDollars(plan)`.
+- **`Histogram.binCenters`** is a new required field; a hand-built histogram needs it.
+- **`SwrRuleResult.endingAfterTaxEstateTodayDollars`** (`number | null`) is a new
+  required field.
+- **The bucket lens moved to the engine**: planner-ui's `planner/bucketLens` keeps only
+  `BucketPreset` and `BUCKET_PRESETS` (whose `spans` are now `readonly number[]`, the
+  engine's `BUCKET_LENS_SPANS`); `bucketLens` and `BucketYearRow` are
+  `@retiregolden/engine/projection/bucketLens`, which refuses a span that is not a
+  positive whole number and a year without a finite `netPortfolioNeed` instead of
+  reading it as 0.
 
 - **ACA inputs of the annual projection phases** (`@retiregolden/engine/projection/internal/*`,
   decision D-ACA-2027-TABLE): `AnnualAcaResultPublicationInput.isStandIn` is renamed
