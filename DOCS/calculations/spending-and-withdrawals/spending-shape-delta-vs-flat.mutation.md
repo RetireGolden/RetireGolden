@@ -1,15 +1,15 @@
 # Mutation receipt: spending-shape-comparison
 
-Executed 2026-09-27 against RetireGolden base `fe28be3c` (branch `claude/b2p1-slice2-display-math`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `2c35d2b8` (branch `claude/b2p1-slice2-display-math`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-27 against RetireGolden base `fe28be3c` (branch `claude/b2p1-slice2-display-math`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `2c35d2b8` (branch `claude/b2p1-slice2-display-math`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `cb98a3a1` (branch `claude/b2p1-slice2-display-math`, pull request #752) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/decisions/spendingShapes.ts`
 
 ```diff
 diff --git a/packages/engine/src/decisions/spendingShapes.ts b/packages/engine/src/decisions/spendingShapes.ts
-index 95d19dde..ff0d634b 100644
+index 4870fd42..883ead81 100644
 --- a/packages/engine/src/decisions/spendingShapes.ts
 +++ b/packages/engine/src/decisions/spendingShapes.ts
-@@ -93,5 +93,5 @@
+@@ -96,5 +96,5 @@
      maxBaseAnnual: row.maxBaseAnnual,
      deltaVsFlatDollars:
 -      row.shape === 'flat' || row.maxBaseAnnual === null || flat === null ? null : row.maxBaseAnnual - flat,
@@ -28,7 +28,7 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/decisions/s
 
 ## Captured failing output
 
-Re-executed 2026-09-27 after the independent review of B2-P1 slice 2 changed this receipt's evidence file or moved the lines it mutates, so every capture, blob hash and revert note is refreshed against this head. The baseline is green (spendingShapes.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed 2026-09-27 after the review of pull request #752, which typed the comparison's shape list as the three shapes it solves (three lines added above the mutated code), so the hunk header, capture, blob hash and revert note are refreshed against this head. The baseline is green (spendingShapes.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
 RUN  v5.0.0 C:/rgwt/engine8/packages/engine
