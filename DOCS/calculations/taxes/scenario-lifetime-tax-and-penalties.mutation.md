@@ -1,12 +1,12 @@
 # Mutation receipt: scenario-lifetime-tax-and-penalties
 
-Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-seven` at base `74916a7e`, and re-executed 2026-09-22 against RetireGolden base `7ae019a8` (branch `claude/b1-p4-cards-seven`, pull request #727), and re-executed 2026-09-26 against RetireGolden base `5d3a72b1` (branch `claude/solver-answers-unpriced-aca`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-seven` at base `74916a7e`, and re-executed 2026-09-22 against RetireGolden base `7ae019a8` (branch `claude/b1-p4-cards-seven`, pull request #727), and re-executed 2026-09-26 against RetireGolden base `5d3a72b1` (branch `claude/solver-answers-unpriced-aca`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `2c780ae5` (branch `claude/solver-answers-unpriced-aca`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/scenarios/comparison.ts`
 
 ```diff
 diff --git a/packages/engine/src/scenarios/comparison.ts b/packages/engine/src/scenarios/comparison.ts
-index 85415a4c..e66aadd5 100644
+index 90289deb..a688bfed 100644
 --- a/packages/engine/src/scenarios/comparison.ts
 +++ b/packages/engine/src/scenarios/comparison.ts
 @@ -675,8 +675,8 @@ export function compareScenarioPlans(
@@ -32,14 +32,14 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/scenarios/c
 
 ## Captured failing output
 
-Re-executed 2026-09-26 on branch claude/solver-answers-unpriced-aca after the unpriced-ACA, answer-direction and required-floor change to the spending solver, the scenario capacity comparison and the spending-headroom Insight moved lines of the production file, so the capture, blob hashes and revert note are refreshed against this head. The baseline is green (comparisonCells.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed 2026-09-26 on branch claude/solver-answers-unpriced-aca after the review fixes moved lines of the production file (the solver's failure wording, the capacity comparison's tolerance of older results, the search option type), so the capture, blob hashes and revert note are refreshed against this head. The baseline is green (comparisonCells.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
 RUN  v5.0.0 C:/rgwt/engine5/packages/engine
 
- ❯ src/scenarios/comparisonCells.evidence.test.ts (4 tests | 1 failed) 69ms
+ ❯ src/scenarios/comparisonCells.evidence.test.ts (4 tests | 1 failed) 65ms
    ❯ scenario-lifetime-tax-and-penalties — Scenario lifetime tax and penalties (1)
-     × totals each side separately without mixing the tax and penalty channels 6ms
+     × totals each side separately without mixing the tax and penalty channels 5ms
 
  Test Files  1 failed (1)
       Tests  1 failed | 3 passed (4)

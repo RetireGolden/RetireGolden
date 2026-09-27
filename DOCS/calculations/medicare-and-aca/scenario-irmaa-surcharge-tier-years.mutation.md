@@ -1,6 +1,6 @@
 # Mutation receipt: scenario-irmaa-surcharge-tier-years
 
-Executed 2026-09-17 against RetireGolden base `b99ac29b` (branch grok/b1-p4-cards-insights-ss-medicare-roth), and re-executed 2026-09-26 against RetireGolden base `5d3a72b1` (branch `claude/solver-answers-unpriced-aca`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-17 against RetireGolden base `b99ac29b` (branch grok/b1-p4-cards-insights-ss-medicare-roth), and re-executed 2026-09-26 against RetireGolden base `5d3a72b1` (branch `claude/solver-answers-unpriced-aca`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `2c780ae5` (branch `claude/solver-answers-unpriced-aca`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/scenarios/comparison.ts`
 
@@ -26,14 +26,14 @@ npx vitest run src/scenarios/comparison.evidence.test.ts
 
 ## Captured failing output
 
-Re-executed 2026-09-26 on branch claude/solver-answers-unpriced-aca after the unpriced-ACA, answer-direction and required-floor change to the spending solver, the scenario capacity comparison and the spending-headroom Insight moved lines of the production file, so the capture, blob hashes and revert note are refreshed against this head. The baseline is green (comparison.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed 2026-09-26 on branch claude/solver-answers-unpriced-aca after the review fixes moved lines of the production file (the solver's failure wording, the capacity comparison's tolerance of older results, the search option type), so the capture, blob hashes and revert note are refreshed against this head. The baseline is green (comparison.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
 RUN  v5.0.0 C:/rgwt/engine5/packages/engine
 
- ❯ src/scenarios/comparison.evidence.test.ts (1 test | 1 failed) 14ms
+ ❯ src/scenarios/comparison.evidence.test.ts (1 test | 1 failed) 17ms
    ❯ scenario-irmaa-surcharge-tier-years — Scenario comparison: years in an IRMAA surcharge tier (1)
-     × counts 3 baseline and 2 proposal surcharge-tier years (delta −1) 13ms
+     × counts 3 baseline and 2 proposal surcharge-tier years (delta −1) 16ms
 
  Test Files  1 failed (1)
       Tests  1 failed (1)

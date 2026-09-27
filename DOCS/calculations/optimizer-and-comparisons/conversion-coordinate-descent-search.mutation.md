@@ -1,12 +1,12 @@
 # Mutation receipt: conversion-coordinate-descent-search
 
-Executed 2026-09-17 and re-executed with a different mutant 2026-09-18 against RetireGolden base `33e7d546` (branch `codex/b1-p4-cards-cashflow-optimizer-taxes`) in `packages/engine`.
+Executed 2026-09-17 and re-executed with a different mutant 2026-09-18 against RetireGolden base `33e7d546` (branch `codex/b1-p4-cards-cashflow-optimizer-taxes`), and re-executed 2026-09-27 against RetireGolden base `2c780ae5` (branch `claude/solver-answers-unpriced-aca`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/decisions/search.ts`
 
 ```diff
 diff --git a/packages/engine/src/decisions/search.ts b/packages/engine/src/decisions/search.ts
-index 6347ebf7..5275f577 100644
+index 7c011198..ae4c3a19 100644
 --- a/packages/engine/src/decisions/search.ts
 +++ b/packages/engine/src/decisions/search.ts
 @@ -120,7 +120,7 @@ export function refineConversionSchedule(
@@ -30,14 +30,21 @@ npx.cmd vitest run src/decisions/search.evidence.test.ts
 
 ## Captured failing output
 
-Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed. Exit code: 1.
+Re-executed 2026-09-26 on branch claude/solver-answers-unpriced-aca after the review fixes moved lines of the production file (the solver's failure wording, the capacity comparison's tolerance of older results, the search option type), so the capture, blob hashes and revert note are refreshed against this head. The baseline is green (search.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/Users/Nathan/source/repos/RetireGolden/.worktrees/slice4-20260917/packages/engine
+RUN  v5.0.0 C:/rgwt/engine5/packages/engine
 
- ❯ src/decisions/search.evidence.test.ts (1 test | 1 failed) 47ms
+ ❯ src/decisions/search.evidence.test.ts (1 test | 1 failed) 46ms
    ❯ conversion-coordinate-descent-search — Conversion coordinate descent search (1)
-     × retains the coarse 10000 move then the fine 12500 conversion 46ms
+     × retains the coarse 10000 move then the fine 12500 conversion 45ms
+
+ Test Files  1 failed (1)
+      Tests  1 failed (1)
+
+             persist transforms across runs with fsModuleCache: true
+             learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
+
 
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
 
@@ -59,12 +66,8 @@ AssertionError: expected 10000 to be 12500 // Object.is equality
      45|     } finally {
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
-
-
- Test Files  1 failed (1)
-      Tests  1 failed (1)
 ```
 
 ## Revert
 
-Restored the exact original production bytes in a `finally` block, then `git diff --quiet -- packages/engine/src/decisions/search.ts` exited 0, confirming no production change remained. Re-ran the named command after restoration: exit 0, all tests passed.
+The original bytes of `packages/engine/src/decisions/search.ts` were written back and compared byte for byte in the harness, and `git diff --quiet -- packages/engine/src/decisions/search.ts` then exited 0, confirming no production change remained. Re-ran the named command after restoration: the suite returned to its baseline state, green (exit 0).
