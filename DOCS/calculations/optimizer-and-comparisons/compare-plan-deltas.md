@@ -26,7 +26,7 @@ const lasts = moneyLastsDelta({ depletionYear: l.depletionYear, endYear: left.vi
 { label: 'Depletion age (primary)', a: String(ageA), ..., delta: ageDelta(ageA, ageB), unit: 'years' }                    // :195-201
 ```
 
-`formatDelta` (`compareDeltas.ts:65-71`) prints years as "same", "+N yr(s)" or "−N yr(s)" and points as "±N pp"; `deltaClass` (`ComparePlansPage.tsx:46-49`) colours by sign, none below 0.5. Surfaces: the compare page's Money lasts, Success % (deterministic) and Depletion age (primary) rows. The census's `uiSources` named `compareDeltas.ts#compareDeltas`, a symbol that has never existed (`git log -S`/`-G` finds no definition in history); the Docs validator's `REQUIRED_UI` pinned it as well.
+`formatDelta` (`compareDeltas.ts:65-71`) prints years as "same", "+N yr(s)" or "−N yr(s)" and points as "+N pp", "−N pp" or "0 pp" (N the rounded magnitude, the sign from the unrounded value, so the Success row reads "+100 pp", "−100 pp" or "0 pp"; it never prints "±"); `deltaClass` (`ComparePlansPage.tsx:46-49`) colours by sign, none below 0.5. Surfaces: the compare page's Money lasts, Success % (deterministic) and Depletion age (primary) rows. The census's `uiSources` named `compareDeltas.ts#compareDeltas`, a symbol that has never existed (`git log -S`/`-G` finds no definition in history); the Docs validator's `REQUIRED_UI` pinned it as well.
 
 ## Engine publication
 
