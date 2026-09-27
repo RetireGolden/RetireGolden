@@ -46,6 +46,12 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   Under guardrail spending the page no longer says the rounded figure also passes: there
   a lower level can fail where a higher one passed, and the rounded figure is not itself
   tested.
+- **The Optimize page no longer says the 2027 credit figures are unpublished:** its
+  explanation of an unpriced Marketplace year said "sourced ACA tax parameters for those
+  years are not yet published", which is false for 2027 (the IRS published that year's
+  applicable percentage table in Rev. Proc. 2026-26). It now says RetireGolden doesn't
+  have the credit's figures for those years yet, on the Optimize page and the "why this
+  recommendation" panel alike.
 - **Changed: the eleven ledger figures the planner pages computed are now
   published by the engine** (owner decision D-UI-SS; B2-P1 slice 1). The
   pages only format and select them. Six move as they were and no displayed

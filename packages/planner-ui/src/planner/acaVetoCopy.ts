@@ -145,13 +145,13 @@ export function acaVetoExplanation(veto: AcaActionabilityVeto): string {
   const years = acaVetoYears(veto)
   const yearsText = formatYearList(years)
   const those = years.length === 1 ? 'that year' : 'those years'
-  // Name the unpublished-parameters cause only when it is the SOLE code — the
+  // Name the missing-parameters cause only when it is the SOLE code — the
   // engine merges codes across years, so a mixed set (e.g. one year with
   // unknown tax-exempt interest, another past the sourced-pack horizon) must
   // not claim every listed year is waiting on parameters.
   const parameterGapOnly = veto.supportCodes.length === 1 && veto.supportCodes[0] === 'tax-year-parameters-unsupported'
   const lead = parameterGapOnly
-    ? `This plan carries marketplace (ACA) coverage in ${yearsText}, and sourced ACA tax parameters for ${those} are not yet published.`
+    ? `This plan carries marketplace (ACA) coverage in ${yearsText}, and RetireGolden doesn't have the credit's figures for ${those} yet.`
     : `The marketplace (ACA) evidence for ${yearsText} could not be priced as actionable on the full projection.`
   const tail =
     veto.vetoedCandidateIds.length > 0

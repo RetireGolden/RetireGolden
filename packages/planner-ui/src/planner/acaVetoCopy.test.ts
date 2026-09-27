@@ -36,10 +36,10 @@ describe('acaVetoYears', () => {
 })
 
 describe('acaVetoExplanation', () => {
-  it('names the unpublished-parameters cause and the blocked row caveat', () => {
+  it('names the missing-parameters cause and the blocked row caveat', () => {
     const text = acaVetoExplanation(veto())
     expect(text).toContain('marketplace (ACA) coverage in 2027 and 2028')
-    expect(text).toContain('sourced ACA tax parameters for those years are not yet published')
+    expect(text).toContain("RetireGolden doesn't have the credit's figures for those years yet")
     expect(text).toContain('no conversion schedule is presented as actionable')
     expect(text).toContain('leave the unpriced ACA effect out')
   })
@@ -69,7 +69,7 @@ describe('acaVetoExplanation', () => {
       }),
     )
     expect(text).toContain('The marketplace (ACA) evidence for 2026 and 2027 could not be priced as actionable')
-    expect(text).not.toContain('not yet published')
+    expect(text).not.toContain("doesn't have the credit's figures")
   })
 
   it('lists three or more years with commas', () => {
