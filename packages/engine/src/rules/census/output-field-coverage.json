@@ -7315,7 +7315,7 @@
     "tsType": "number",
     "disposition": "family",
     "familyId": "social-security-pia-annualized",
-    "note": "CoupleStrategyPanel in SsAnalysisPage.tsx: multiplies each claimant's pia (the monthly PIA that claimingPeople resolves through resolvePia, a plan input or the engine earnings-record piaMonthly) by 12 and prints it through fmtMoneyCompact as '$X/yr' for the higher and lower earner; there is no rounding beyond fmtMoneyCompact, and the panel renders only for exactly two claiming people."
+    "note": "CoupleStrategyPanel in SsAnalysisPage.tsx: multiplies each claimant's pia (the monthly PIA that claimingPeople resolves through resolvePia, a plan input, or the engine earnings-record piaMonthly raised by the cost-of-living increases since eligibility through the year before the plan starts, as the ledger pays it) by 12 and prints it through fmtMoneyCompact as '$X/yr' for the higher and lower earner; there is no rounding beyond fmtMoneyCompact, and the panel renders only for exactly two claiming people."
   },
   {
     "source": "planner-ui/src/socialSecurity/explain.ts",

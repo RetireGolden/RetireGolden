@@ -8,7 +8,7 @@ claiming wizard UI was retired (its `/social-security` route now redirects to th
 
 **Code:** claiming/PIA math in [packages/engine/src/socialSecurity/](../../packages/engine/src/socialSecurity/)
 (`nra.ts`, `benefitFactor.ts`, `claimFactor.ts`, `piaFromEarnings.ts`, `ssaWageData.ts`, `maritalBenefits.ts`,
-`currentSpouseBenefit.ts`, `survivorBenefit.ts`, `familyMaximum.ts`, `disability.ts`); educational and import
+`dualEntitlement.ts`, `survivorBenefit.ts`, `familyMaximum.ts`, `disability.ts`); educational and import
 modules in [packages/planner-ui/src/socialSecurity/](../../packages/planner-ui/src/socialSecurity/)
 (`ssaStatementXml.ts`, `breakEven.ts`, `explain.ts`, `expectedPv.ts`, `ficaReturn.ts`, `survivorSwitching.ts`,
 `persistedSsGuard.ts`, `ssFormUtils.ts`); the analysis UI in
@@ -29,13 +29,25 @@ Each person's Primary Insurance Amount is entered one of two ways (a per-person 
 Methodology that matters for accuracy:
 
 - **AIME** for an ordinary initial old-age benefit with no disability period or prior disability
-  entitlement selects high years from an age-22-through-year-before-62 window, drops the five lowest, and
-  averages at most **35** remaining years of indexed covered earnings; fewer than 35 inserts **zeros**,
-  lowering the average — the whole point of modeling early retirement honestly. That window is the
-  elapsed-year span, not the statutory computation-base years through the year before first entitlement,
-  so age-21 and age-62-through-pre-entitlement earnings do not enter
-  (`usc-42-415-b-2-b-ii-iii-initial-computation-base-window`). The always-35 count also remains 35 when
-  elapsed years start at the 1951 floor (`usc-42-415-b-2-a-i-computation-years-five-year-dropout`).
+  entitlement selects high years from a window running from 1951 or age 22, whichever is later, through the
+  year before 62, drops the five lowest, and averages the remaining years (35 for anyone born after 1928) of
+  indexed covered earnings; fewer years with earnings inserts **zeros**, lowering the average — the whole
+  point of modeling early retirement honestly. That window is the elapsed-year span, not the statutory
+  computation-base years through the year before first entitlement, so age-21 and
+  age-62-through-pre-entitlement earnings do not enter
+  (`usc-42-415-b-2-b-ii-iii-initial-computation-base-window`); a window starting at 1951 averages the elapsed
+  years less five (`usc-42-415-b-2-a-i-computation-years-five-year-dropout`). Each year counts only up to that
+  year's contribution and benefit base, SSA's figure for every year from 1937 (42 U.S.C. 415(e)(1);
+  `usc-42-415-e-1-earnings-above-the-base-not-counted`); until 2026-09-27 years before 1979 were capped at
+  the latest base instead, so a worker born in 1956 who earned $50,000 in 1978 was credited with the whole
+  $50,000 rather than the $17,700 base (PIA $2,605.00 rather than $2,551.90).
+- **Cost-of-living increases since eligibility**: the formula's PIA is that of the eligibility year, so the
+  projection raises a PIA derived from earnings by SSA's published increases from that year through the year
+  before the plan's first year, floored to the dime each time (42 U.S.C. 415(i)(2)(A);
+  `usc-42-415-i-2-A-pia-cost-of-living-since-eligibility`), and uses the plan's COLA assumption, with a
+  warning, for a year SSA has not announced. Until 2026-09-27 a person already past 62 lost every increase
+  since eligibility (born 1960, $50,000 a year: $34,156.80 a year rather than $40,372.80). An entered PIA is
+  taken as current.
 - **Wage indexing** uses SSA's national Average Wage Index, with the numerator from the year **two years
   before eligibility**; bend points and wage bases are data-driven ([ssaWageData.ts](../../packages/engine/src/socialSecurity/ssaWageData.ts)).
   Each indexed year is floored to a whole dollar rather than rounded to the nearer penny
@@ -67,13 +79,13 @@ Benefits-only analysis separately illustrates survivor switching
 ([maritalBenefits.ts](../../packages/engine/src/socialSecurity/maritalBenefits.ts),
 [survivorSwitching.ts](../../packages/planner-ui/src/socialSecurity/survivorSwitching.ts)):
 
-- **Current-spouse dual entitlement** while both are alive: in the guarded ordinary simultaneous early case, the lower earner receives the existing reduced own amount plus the spousal factor applied to the positive unreduced excess, `max(0, 0.5 × workerPIA - ownPIA)`. The current-spouse auxiliary alone is capped to the room left under the worker's SSA retirement/survivor family maximum. The guard uses the planner's MFJ/two-person proxy, exactly one non-disabled Social Security stream per person, an original claimant claim before FRA, and a strict configured worker start date no later than the claimant's. The plan offers one claim age rather than a restricted current-spouse-only claim, consistent with the post-2015 deemed-filing shape in [42 U.S.C. §402(r)](https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim). MFJ and configured dates do not establish SSA eligibility or an actual entitlement month. Later-worker staggered claims, claimant delayed-own cases, disability, multiple streams, and unavailable historical entitlement facts remain on the disclosed legacy approximation (`usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement`, `usc-42-402-r-1-2-deemed-filing-old-age-and-spousal`). No child/dependent auxiliaries are modeled (`usc-42-402-d-2-child-survivor-benefit`).
+- **Dual entitlement to an own and a spouse benefit**, for a current spouse while both are alive and for a divorced spouse: the claimant is paid the own benefit plus the excess of half the worker's PIA over the own PIA, reduced by the spouse factor for the claimant's age in the first month of the spouse benefit (42 U.S.C. 402(q)(3)(B), 402(k)(3)(A); POMS RS 00615.250, and RS 00615.694 when the own benefit carries delayed credits: `max(own, min(own, ownPIA) + max(0, 0.5 × workerPIA - ownPIA) × spouse factor)`, [dualEntitlement.ts](../../packages/engine/src/socialSecurity/dualEntitlement.ts)). With deemed filing ([42 U.S.C. §402(r)](https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim), for people who attain 62 after 2015), the spouse benefit starts in the later of the claimant's own claim and the month the worker's benefit starts, or for a divorced spouse the first month the ex is 62 throughout (POMS RS 00202.005 B.2.a), and the annual ledger pays the spouse benefit for the whole of the year it starts, so for an ex born in December after the 2nd it starts the year after the ex turns 62; the plan offers one claim age rather than a restricted spouse-only claim. The current-spouse excess alone is capped to the room left under the worker's SSA retirement/survivor family maximum. A two-person household and configured claim dates are the product's stand-ins for marriage and the months of application; they do not establish SSA eligibility or an actual entitlement month (`usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement`, `usc-42-402-r-1-2-deemed-filing-old-age-and-spousal`). Until 2026-09-27 only simultaneous early claims got this composition; a worker filing later, a claimant with delayed credits and every divorced spouse got the larger of the own benefit and the reduced half. No child/dependent auxiliaries are modeled (`usc-42-402-d-2-child-survivor-benefit`).
 - **Survivor step-up** after the first death: the survivor keeps the larger of their own benefit and the
-  deceased's benefit, computed with full precision — the **survivor base is the deceased's actual
-  (claim-age-adjusted) benefit** (including delayed credits if the deceased delayed), **RIB-LIM** currently
-  sets the base at `max(deceased's actual benefit, 82.5% × deceased's PIA)` when the deceased claimed early,
-  then applies the survivor reduction. POMS applies that limit after the survivor reduction, so the ordering
-  gap is disclosed as an approximation (`poms-rs-00615-320-rib-lim-after-survivor-reduction`). When the
+  deceased's benefit, computed with full precision — the **survivor base is the deceased's PIA, or the
+  deceased's actual benefit when that is larger** (delayed credits if the deceased delayed); the survivor
+  reduction applies to it, and then, when the deceased claimed early, **RIB-LIM** holds an amount above both
+  the deceased's actual benefit and 82.5% of the deceased's PIA to the larger of the two (42 U.S.C.
+  402(e)(2)(D), POMS RS 00615.320; `poms-rs-00615-320-rib-lim-after-survivor-reduction`). When the
   deceased died **before claiming**, the survivor is paid from the year after the death (or from the survivor's
   own entered claim age, if later), whatever claim age the plan configured for the deceased, on the PIA plus only the delayed credits earned before death, with no early reduction
   and no RIB-LIM, as the statute gives it; the plan states a life age, not a death date, so the annual ledger
@@ -81,14 +93,20 @@ Benefits-only analysis separately illustrates survivor switching
   the survivor be paid up to eleven months sooner
   (`usc-42-402-e-survivor-of-worker-who-died-before-claiming`). An
   **early-claim widow(er) reduction** (up to 28.5% at age 60, linear to the survivor's FRA) applies when the
-  survivor claims before their **survivor FRA**, which follows the age-60-attainment statute: the retirement
+  widow(er) benefit starts before the **survivor FRA**: it is measured from the first month of widow(er)
+  entitlement, the later of the survivor's own claim and the January after the year of death (the first month the
+  ledger pays it), not from an own claim made
+  before the death (42 U.S.C. 402(q)(6)(A)(iii), (q)(3)(E);
+  `usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month`). The survivor FRA follows the age-60-attainment statute: the retirement
   schedule two birth years later, from 65y2m for 1940 to 67 for 1962 and later
   (`usc-42-416-l-survivor-fra-age-60-attainment-cohorts`). The $255 lump-sum death payment is absent
   (`usc-42-402-i-lump-sum-death-payment`). Current-spouse survivor benefits are built before the earnings-test pass, so they can be
-  withheld for a working survivor and credited back through the same ARF path. The former-spouse survivor path
+  withheld for a working survivor and credited back through the same ARF path, which counts only the months the
+  widow(er) benefit itself was withheld, not months of the survivor's own benefit before the death or of a widow(er) or spouse benefit on another record (402(q)(7)). The
+  former-spouse survivor path
   takes the deceased ex's claim age as a user input.
 - **Divorced-spousal** (10-year marriage, currently unmarried, ex calendar-year age 62+ — the ex need not
-  have filed). The engine does not carry worker entitlement, fully-insured status, or years since divorce,
+  have filed), priced by the same own-plus-reduced-excess composition as above. The engine does not carry worker entitlement, fully-insured status, or years since divorce,
   so an already-disability-entitled ex under 62 is refused and a not-yet-entitled age-62 ex divorced only
   one year is admitted (`cfr-20-404-331-living-divorced-spouse-eligibility`). **Former-spouse survivor
   benefits** use two explicit record types. A **`deceased`** record follows the ordinary-widow path: the
@@ -214,8 +232,8 @@ Cited in [domain rules §4](../domain/domain-rules-reference/04-social-security-
   SSDI are produced via the generic retirement/survivor paths with the named approximation records above.
 - Deemed-filing nuances are simplified; the family maximum is modeled for the current-spouse auxiliary only
   because child/dependent auxiliaries are not yet modeled.
-- Survivor-benefit **documented simplifications** (the early-claim reduction, RIB-LIM — subject to the ordering
-  approximation noted above — and the deceased's claim-age-adjusted base are all modeled; what remains simplified): living
+- Survivor-benefit **documented simplifications** (the early-claim reduction, RIB-LIM after it, and the
+  deceased's claim-age-adjusted base are all modeled; what remains simplified): living
   divorced-spouse eligibility uses a calendar-year age-62 blanket and omits worker entitlement, fully-insured status,
   and the two-year independently entitled path (`cfr-20-404-331-living-divorced-spouse-eligibility`); ordinary-widow
   eligibility on `relationship: deceased` treats remarriage before 60 as an unconditional historical forfeiture
@@ -229,7 +247,8 @@ Cited in [domain rules §4](../domain/domain-rules-reference/04-social-security-
   exception are outside the Plan
   (`cfr-20-404-335-a-widow-duration-exceptions`,
   `cfr-20-404-332-b-3-divorced-spouse-remarriage-continuation`); separate survivor-vs-own claim ages for a
-  current spouse (the step-up uses the survivor's own claim age); the disabled-widow(er) age-50 entry point.
+  current spouse (the step-up is paid from the survivor's own claim age, and reduced from the later of that claim
+  and the month of death); the disabled-widow(er) age-50 entry point.
 
 (The original social-security research audit flagged divorced-spousal and former-spouse survivor
 benefits as missing; both have since shipped.)

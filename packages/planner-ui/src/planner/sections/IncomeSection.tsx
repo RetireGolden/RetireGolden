@@ -7,7 +7,7 @@ import { usePlan } from '../planContextCore'
 import { CheckboxField, MoneyField, NumberField, PercentField, ReadonlyField, SelectField, TextField } from '../fields'
 import { LEARN } from '../learnLinks'
 import { fmtMoney } from '../format'
-import { resolvePia } from '../ssAnalysis'
+import { piaAsOfPlan, resolvePia } from '../ssAnalysis'
 import { TypeChip } from '../TypeChip'
 import { Issues } from './shared'
 import { PIA_MONTHLY_AT_FRA_LABEL, newId } from './sectionHelpers'
@@ -78,7 +78,7 @@ function IncomeFields({ stream, index }: { stream: IncomeStream; index: number }
     case 'socialSecurity': {
       const orphan = isOrphanStream(plan, stream)
       const ssPerson = orphan ? undefined : plan.household.people.find((p) => p.id === stream.personId)
-      const resolved = ssPerson ? resolvePia(ssPerson, stream) : null
+      const resolved = ssPerson ? resolvePia(ssPerson, stream, piaAsOfPlan(plan)) : null
       const pia = resolved?.piaMonthly ?? stream.piaMonthly
       const sourceLabel = stream.piaMonthly === null ? 'earnings record' : 'quick PIA'
       const claim = `${stream.claimAge.years}y${stream.claimAge.months ? ` ${stream.claimAge.months}m` : ''}`

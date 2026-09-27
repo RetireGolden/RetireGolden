@@ -44,6 +44,7 @@ describe('widow benefit base', () => {
       const monthly = survivorBenefitMonthly({
         deceasedPiaMonthly: 2_000,
         deceasedActualMonthly: 2_000,
+        deceasedEverReduced: false,
         survivorClaimAge: { years: 67, months: 0 },
         survivorFraMonths: SURVIVOR_FRA_1960,
       })
@@ -67,6 +68,7 @@ describe('widow benefit base', () => {
       const monthly = survivorBenefitMonthly({
         deceasedPiaMonthly: 2_000,
         deceasedActualMonthly: 2_480,
+        deceasedEverReduced: false,
         survivorClaimAge: { years: 67, months: 0 },
         survivorFraMonths: SURVIVOR_FRA_1960,
       })
@@ -88,6 +90,7 @@ describeRule('usc-42-402-q-1-widow-survivor-early-reduction-schedule', {
     const monthly = survivorBenefitMonthly({
       deceasedPiaMonthly: 2_000,
       deceasedActualMonthly: 2_000,
+      deceasedEverReduced: false,
       survivorClaimAge: age(60),
       survivorFraMonths: SURVIVOR_FRA_1960,
     })
@@ -113,6 +116,7 @@ describeRule('usc-42-402-q-1-widow-survivor-early-reduction-schedule', {
     const monthly = survivorBenefitMonthly({
       deceasedPiaMonthly: 2_000,
       deceasedActualMonthly: 2_000,
+      deceasedEverReduced: false,
       survivorClaimAge: age(63),
       survivorFraMonths: SURVIVOR_FRA_1951TO56,
     })
@@ -123,29 +127,45 @@ describeRule('usc-42-402-q-1-widow-survivor-early-reduction-schedule', {
 })
 
 describeRule('poms-rs-00615-320-rib-lim-after-survivor-reduction', {
-  // POMS applies the limit only after the ordinary widow amount has been
-  // reduced for age. At 63 with survivor FRA 66, the ordinary amount is
-  // 2,000 x .8575 = 1,715, which exceeds both 1,400 and 82.5 percent of PIA
-  // (1,650), so the statutory limit is 1,650. The rejected engine ordering
-  // chooses 1,650 first and then applies the .8575 age factor. Its observed
-  // amount is 1,650 x .8575 = 1,414.875.
+  // 42 U.S.C. 402(e)(2)(D) and POMS apply the limit only after the ordinary
+  // widow amount has been reduced for age. At 63 with survivor FRA 66, the
+  // ordinary amount is 2,000 x .8575 = 1,715, which exceeds both 1,400 and 82.5
+  // percent of PIA (1,650), so the statutory limit is 1,650. The rejected
+  // ordering, the engine's until 2026-09-27, chose 1,650 first and then applied
+  // the .8575 age factor: 1,650 x .8575 = 1,414.875.
   readings: {
     pomsLimitAfterSurvivorReduction: 1_650,
-    engineReducesTheLimitAgain: 1_414.875,
+    limitReducedAgainForAge: 1_414.875,
   },
   accepted: 'pomsLimitAfterSurvivorReduction',
-  produced: 'engineReducesTheLimitAgain',
-}, ({ accepted, produced }) => {
-  it('pins the engine’s pre-reduction RIB-LIM ordering', () => {
+}, ({ accepted, readings }) => {
+  it('reduces the widow amount for age first, then cuts it to the larger limit', () => {
     const monthly = survivorBenefitMonthly({
       deceasedPiaMonthly: 2_000,
       deceasedActualMonthly: 1_400,
+      deceasedEverReduced: true,
       survivorClaimAge: age(63),
       survivorFraMonths: SURVIVOR_FRA_1951TO56,
     })
 
-    expect(monthly).toBeCloseTo(produced, 6)
-    expect(monthly).not.toBeCloseTo(accepted, 6)
+    expect(monthly).toBeCloseTo(accepted, 6)
+    expect(monthly).not.toBeCloseTo(readings.limitReducedAgainForAge, 6)
+  })
+
+  it('applies no limit when the deceased was never paid a reduced benefit', () => {
+    // The same 1,400 and 1,650 cannot bind a survivor whose deceased never
+    // claimed early: 402(e)(2)(D) reaches only a deceased who was "at any
+    // time, entitled to an old-age insurance benefit which was reduced". The
+    // base is the PIA, reduced for age: 2,000 x .8575 = 1,715.
+    const monthly = survivorBenefitMonthly({
+      deceasedPiaMonthly: 2_000,
+      deceasedActualMonthly: 2_000,
+      deceasedEverReduced: false,
+      survivorClaimAge: age(63),
+      survivorFraMonths: SURVIVOR_FRA_1951TO56,
+    })
+
+    expect(monthly).toBeCloseTo(1_715, 6)
   })
 })
 
@@ -209,6 +229,7 @@ describeRule('usc-42-402-e-2-a-survivor-own-delay-no-drc', {
     const monthly = survivorBenefitMonthly({
       deceasedPiaMonthly: 2_000,
       deceasedActualMonthly: 2_000,
+      deceasedEverReduced: false,
       survivorClaimAge: age(70),
       survivorFraMonths: SURVIVOR_FRA_1951TO56,
     })
@@ -263,6 +284,7 @@ describe('survivorBenefitMonthly', () => {
     expect(survivorBenefitMonthly({
       deceasedPiaMonthly: 0,
       deceasedActualMonthly: 0,
+      deceasedEverReduced: false,
       survivorClaimAge: age(67),
       survivorFraMonths: SURVIVOR_FRA_1960,
     })).toBe(0)
@@ -273,6 +295,7 @@ describe('survivorBenefitMonthly', () => {
     expect(survivorBenefitMonthly({
       deceasedPiaMonthly: pia,
       deceasedActualMonthly: pia,
+      deceasedEverReduced: false,
       survivorClaimAge: age(66, 8),
       survivorFraMonths: SURVIVOR_FRA_1960,
     })).toBeCloseTo(pia, 6)
@@ -285,6 +308,7 @@ describe('survivorBenefitMonthly', () => {
     const atFra = survivorBenefitMonthly({
       deceasedPiaMonthly: pia,
       deceasedActualMonthly: actual,
+      deceasedEverReduced: true,
       survivorClaimAge: age(67),
       survivorFraMonths: SURVIVOR_FRA_1960,
     })
@@ -292,17 +316,19 @@ describe('survivorBenefitMonthly', () => {
     expect(atFra).toBeGreaterThan(actual) // RIB-LIM lifts the survivor above the deceased's reduced benefit
   })
 
-  it('applies the widow reduction on top of the RIB-LIM floor', () => {
-    // Deceased claimed at 62 (70% PIA); survivor claims at 60.
-    // base = max(70%, 82.5%) = 82.5% of PIA; × 0.715 = 58.9875% of PIA.
+  it('reduces the widow amount for age before the RIB-LIM limit, which then does not bind', () => {
+    // Deceased claimed at 62 (70% PIA); survivor claims at 60. The PIA reduced
+    // for age is 2,000 × 0.715 = 1,430, below the 1,650 limit, so it is paid;
+    // reducing the 1,650 limit again for age (1,179.75) is the rejected order.
     const pia = 2000
     const actual = pia * 0.70
     expect(survivorBenefitMonthly({
       deceasedPiaMonthly: pia,
       deceasedActualMonthly: actual,
+      deceasedEverReduced: true,
       survivorClaimAge: age(60),
       survivorFraMonths: SURVIVOR_FRA_1960,
-    })).toBeCloseTo(WIDOW_LIMIT_PIA_FRACTION * pia * 0.715, 6)
+    })).toBeCloseTo(pia * 0.715, 6)
   })
 
   it('at survivor FRA: deceased claimed at FRA → 100% of PIA', () => {
@@ -310,6 +336,7 @@ describe('survivorBenefitMonthly', () => {
     expect(survivorBenefitMonthly({
       deceasedPiaMonthly: pia,
       deceasedActualMonthly: pia,
+      deceasedEverReduced: false,
       survivorClaimAge: age(67),
       survivorFraMonths: SURVIVOR_FRA_1960,
     })).toBeCloseTo(pia, 6)
@@ -319,10 +346,36 @@ describe('survivorBenefitMonthly', () => {
     const claim = (pia: number) => survivorBenefitMonthly({
       deceasedPiaMonthly: pia,
       deceasedActualMonthly: pia, // claimed at FRA
+      deceasedEverReduced: false,
       survivorClaimAge: age(60),
       survivorFraMonths: SURVIVOR_FRA_1960,
     })
     expect(claim(1000)).toBeLessThanOrEqual(claim(2000))
     expect(claim(2000)).toBeLessThanOrEqual(claim(3000))
+  })
+
+  it('omitting deceasedEverReduced gives the same amount as passing it', () => {
+    // Omitted, the flag is taken as actual < PIA. For a deceased never reduced
+    // the actual benefit is at least the PIA, so the limit could not bind:
+    // passing true there changes nothing either.
+    const cases = [
+      { pia: 2000, actual: 1400, everReduced: true, claim: age(60) },
+      { pia: 2000, actual: 1400, everReduced: true, claim: age(62) },
+      { pia: 2000, actual: 1400, everReduced: true, claim: age(67) },
+      { pia: 2000, actual: 2000, everReduced: false, claim: age(60) },
+      { pia: 2000, actual: 2480, everReduced: false, claim: age(62) },
+      { pia: 2000, actual: 2480, everReduced: false, claim: age(67) },
+    ]
+    for (const c of cases) {
+      const base = {
+        deceasedPiaMonthly: c.pia,
+        deceasedActualMonthly: c.actual,
+        survivorClaimAge: c.claim,
+        survivorFraMonths: SURVIVOR_FRA_1960,
+      }
+      const passed = survivorBenefitMonthly({ ...base, deceasedEverReduced: c.everReduced })
+      expect(survivorBenefitMonthly(base)).toBe(passed)
+      if (!c.everReduced) expect(survivorBenefitMonthly({ ...base, deceasedEverReduced: true })).toBe(passed)
+    }
   })
 })

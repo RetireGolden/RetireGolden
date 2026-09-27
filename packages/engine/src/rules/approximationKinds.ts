@@ -78,6 +78,15 @@
  *   together with usc-42-416-l-survivor-fra-age-60-attainment-cohorts; both
  *   records are settled and have left this list.
  *
+ * Fixed after the triage, each settled and removed from this list in the change
+ * that fixed it (decision D-SS-LAW-2, 2026-09-27):
+ * - poms-rs-00615-320-rib-lim-after-survivor-reduction: the widow(er) limit is
+ *   applied after the age reduction, and only when the deceased was ever paid a
+ *   reduced old-age benefit.
+ * - usc-42-415-b-2-a-i-computation-years-five-year-dropout: the earnings window
+ *   starts at 1951, so the computation years are the elapsed years less five,
+ *   fixed with the contribution and benefit base table back to 1937.
+ *
  * This text is published. `scripts/rules-coverage.mjs` writes each entry onto
  * its rule in the ledger (`DOCS/operations/rule-coverage/`), and the public
  * methodology site renders it in its known-limits table, so every string must
@@ -199,7 +208,6 @@ export const APPROXIMATION_KINDS: Readonly<Record<ApproximatedTaxRuleId, Approxi
   'or-lro-2026-rate-schedule-and-standard-deduction': { kind: 'fix' },
   'pa-pit-retirement-benefits-not-compensation': { kind: 'needs-fact', missingInput: 'plan age or service requirement and satisfaction at separation' },
   'pl-116-94-div-o-sec-401-b-1-post-2019-inherited-regime-boundary': { kind: 'fix' },
-  'poms-rs-00615-320-rib-lim-after-survivor-reduction': { kind: 'fix' },
   'poms-rs-00615-482-arf-crediting-months': { kind: 'fix' },
   'ri-gen-laws-44-30-12-social-security-and-pension-modification': { kind: 'fix' },
   'sc-code-12-6-1170-retirement-income-deduction': { kind: 'fix' },
@@ -218,7 +226,6 @@ export const APPROXIMATION_KINDS: Readonly<Record<ApproximatedTaxRuleId, Approxi
   'usc-42-402-c-2-ssdi-spouse-auxiliary': { kind: 'fix' },
   'usc-42-403-a-6-ssdi-family-maximum': { kind: 'fix' },
   'usc-42-403-f-1-earnings-test-month-charging': { kind: 'fix' },
-  'usc-42-415-b-2-a-i-computation-years-five-year-dropout': { kind: 'fix' },
   'usc-42-415-b-2-b-disability-freeze-aime-exclusion': { kind: 'fix' },
   'usc-42-415-b-2-b-ii-iii-initial-computation-base-window': { kind: 'fix' },
   'usc-42-415-f-2-post-entitlement-pia-recomputation': { kind: 'fix' },

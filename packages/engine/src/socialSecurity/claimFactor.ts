@@ -34,6 +34,24 @@ export function claimFactor(dobYear: number, dobMonth: number, dobDay: number, c
 }
 
 /**
+ * A reduction age after the earnings-test credit (the adjustment of the
+ * reduction factor, 42 U.S.C. 402(q)(7)): from the year the person reaches
+ * `capMonths`, the full retirement age of the benefit, the months withheld from
+ * that benefit are added back to the age it was reduced at, up to that age.
+ * Before that year, or for an age already at or past it, the age is unchanged.
+ * All ages are total months.
+ */
+export function creditedAgeMonths(
+  ageMonths: number,
+  withheldMonths: number,
+  ageAttained: number,
+  capMonths: number,
+): number {
+  if (ageMonths >= capMonths || ageAttained < Math.floor(capMonths / 12)) return ageMonths
+  return Math.min(capMonths, ageMonths + withheldMonths)
+}
+
+/**
  * Spousal benefit as a fraction of the worker's PIA (so the spousal benefit is
  * this × 0.5 × workerPIA at FRA, before the reduction below).
  *
@@ -42,9 +60,10 @@ export function claimFactor(dobYear: number, dobMonth: number, dobDay: number, c
  * reduction schedule is steeper — 25/36 of 1% per month for the first 36
  * months early, then 5/12 of 1% per month beyond that.
  *
- * Simplifications (deemed-filing era, born 1954+): assumes the worker has
- * already filed so the spouse is eligible, and ignores the spouse's own
- * earnings-test interaction. Returns the fraction to apply to 0.5 × workerPIA.
+ * The claim age passed is the claimant's age in the first month of the spouse
+ * benefit (dualEntitlement.ts#spouseEntitlementAgeMonths), not necessarily
+ * their own claim age. Returns the fraction to apply to the excess of
+ * 0.5 × workerPIA over the claimant's own PIA (dualEntitlement.ts).
  *
  * @see https://www.ssa.gov/benefits/retirement/planner/applying7.html
  */

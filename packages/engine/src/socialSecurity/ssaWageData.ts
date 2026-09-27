@@ -188,8 +188,58 @@ export const FAMILY_MAXIMUM_BEND_POINTS: Readonly<Record<number, { first: number
   2026: { first: 1643, second: 2371, third: 3093 },
 } as const
 
-/** OASDI contribution & benefit base (taxable maximum), dollars. */
+/**
+ * OASDI contribution and benefit base (taxable maximum), dollars, for every year
+ * from 1937, when Social Security taxes began, through 2026: SSA's
+ * "Contribution and benefit bases, 1937-2026" (ssa.gov/oact/cola/cbb.html).
+ * 42 U.S.C. 415(e)(1) excludes a year's earnings above its base from the
+ * computation: $3,600 for 1951-54, $4,200 for 1955-58, $4,800 for 1959-65,
+ * $6,600 for 1966-67, $7,800 for 1968-71, $9,000 for 1972, $10,800 for 1973,
+ * $13,200 for 1974, and the section 430 base from 1975 (1937-50: $3,000).
+ */
 export const WAGE_BASE_BY_YEAR: Readonly<Record<number, number>> = {
+  1937: 3000,
+  1938: 3000,
+  1939: 3000,
+  1940: 3000,
+  1941: 3000,
+  1942: 3000,
+  1943: 3000,
+  1944: 3000,
+  1945: 3000,
+  1946: 3000,
+  1947: 3000,
+  1948: 3000,
+  1949: 3000,
+  1950: 3000,
+  1951: 3600,
+  1952: 3600,
+  1953: 3600,
+  1954: 3600,
+  1955: 4200,
+  1956: 4200,
+  1957: 4200,
+  1958: 4200,
+  1959: 4800,
+  1960: 4800,
+  1961: 4800,
+  1962: 4800,
+  1963: 4800,
+  1964: 4800,
+  1965: 4800,
+  1966: 6600,
+  1967: 6600,
+  1968: 7800,
+  1969: 7800,
+  1970: 7800,
+  1971: 7800,
+  1972: 9000,
+  1973: 10800,
+  1974: 13200,
+  1975: 14100,
+  1976: 15300,
+  1977: 16500,
+  1978: 17700,
   1979: 22900,
   1980: 25900,
   1981: 29700,
@@ -240,6 +290,68 @@ export const WAGE_BASE_BY_YEAR: Readonly<Record<number, number>> = {
   2026: 184500,
 } as const
 
+/**
+ * Social Security cost-of-living adjustments, percent, by the year they took
+ * effect: SSA's "Cost-Of-Living Adjustments" series (ssa.gov/oact/cola/colaseries.html).
+ * The 1975-82 increases were effective for benefits payable for June; from 1983
+ * each is effective for December of its year and first paid in January. The
+ * December 1999 figure is the 2.5 percent Public Law 106-554 made effective.
+ * 42 U.S.C. 415(i)(2)(A)(ii) applies each to the primary insurance amount.
+ */
+export const COLA_PCT_BY_YEAR: Readonly<Record<number, number>> = {
+  1975: 8,
+  1976: 6.4,
+  1977: 5.9,
+  1978: 6.5,
+  1979: 9.9,
+  1980: 14.3,
+  1981: 11.2,
+  1982: 7.4,
+  1983: 3.5,
+  1984: 3.5,
+  1985: 3.1,
+  1986: 1.3,
+  1987: 4.2,
+  1988: 4,
+  1989: 4.7,
+  1990: 5.4,
+  1991: 3.7,
+  1992: 3,
+  1993: 2.6,
+  1994: 2.8,
+  1995: 2.6,
+  1996: 2.9,
+  1997: 2.1,
+  1998: 1.3,
+  1999: 2.5,
+  2000: 3.5,
+  2001: 2.6,
+  2002: 1.4,
+  2003: 2.1,
+  2004: 2.7,
+  2005: 4.1,
+  2006: 3.3,
+  2007: 2.3,
+  2008: 5.8,
+  2009: 0,
+  2010: 0,
+  2011: 3.6,
+  2012: 1.7,
+  2013: 1.5,
+  2014: 1.7,
+  2015: 0,
+  2016: 0.3,
+  2017: 2,
+  2018: 2.8,
+  2019: 1.6,
+  2020: 1.3,
+  2021: 5.9,
+  2022: 8.7,
+  2023: 3.2,
+  2024: 2.5,
+  2025: 2.8,
+} as const
+
 function maxTableYear<T extends Record<number, unknown>>(table: T): number {
   let m = -Infinity
   for (const k of Object.keys(table)) {
@@ -260,6 +372,12 @@ export const LATEST_FAMILY_MAXIMUM_BEND_POINT_ELIGIBILITY_YEAR = maxTableYear(FA
 
 /** Latest calendar year for which `WAGE_BASE_BY_YEAR` has an official taxable maximum. */
 export const LATEST_PUBLISHED_WAGE_BASE_YEAR = maxTableYear(WAGE_BASE_BY_YEAR)
+
+/** Latest year for which `COLA_PCT_BY_YEAR` has SSA's announced increase. */
+export const LATEST_PUBLISHED_COLA_YEAR = maxTableYear(COLA_PCT_BY_YEAR)
+
+/** The first year with a contribution and benefit base: Social Security taxes began in 1937. */
+export const FIRST_WAGE_BASE_YEAR = 1937
 
 export function awiForYear(year: number): number | undefined {
   return AWI_BY_YEAR[year]
@@ -316,11 +434,13 @@ export function wageBaseForYear(year: number): number | undefined {
 }
 
 /**
- * Social Security taxable maximum (wage base) for a year, or the latest on file
- * when SSA has not yet published it (illustrative only). Used to cap projected
- * future earnings so they cannot exceed the taxable maximum.
+ * Social Security taxable maximum (wage base) for a year: the published base
+ * from 1937 on, the latest on file for a year SSA has not yet published
+ * (illustrative only; it caps projected future earnings at the taxable
+ * maximum), and 0 before 1937, when no earnings were covered.
  */
 export function wageBaseForYearOrLatest(year: number): number {
+  if (year < FIRST_WAGE_BASE_YEAR) return 0
   const v = WAGE_BASE_BY_YEAR[year]
   if (v !== undefined && v > 0) return v
   return WAGE_BASE_BY_YEAR[LATEST_PUBLISHED_WAGE_BASE_YEAR]!

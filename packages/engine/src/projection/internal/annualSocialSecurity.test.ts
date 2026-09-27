@@ -47,12 +47,13 @@ function call(overrides: Partial<AnnualSocialSecurityInput> = {}) {
     resolvedPiaByStreamId: new Map(),
     wagesByPerson: new Map(),
     withheldMonthsByPerson: new Map(),
+    withheldSurvivorMonthsBySource: new Map(),
+    withheldSpouseMonthsBySource: new Map(),
     year: 2027,
     ssColaFactor: 1,
     ssHaircutFactor: 1,
     pack: packForYear(2026).pack,
     limitGrowth: 1,
-    currentSpouseContext: false,
     ...overrides,
   })
 }
@@ -285,12 +286,13 @@ describe('annualSocialSecurity — own benefits and publication', () => {
       resolvedPiaByStreamId,
       wagesByPerson,
       withheldMonthsByPerson,
+      withheldSurvivorMonthsBySource: new Map(),
+      withheldSpouseMonthsBySource: new Map(),
       year: 2027,
       ssColaFactor: 1,
       ssHaircutFactor: 1,
       pack,
       limitGrowth: 1,
-      currentSpouseContext: false,
     })
 
     const first = annualSocialSecurity(input)

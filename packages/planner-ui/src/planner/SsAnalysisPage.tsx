@@ -188,7 +188,7 @@ function BridgePanel() {
   const { plan, update } = usePlan()
   const readOnly = useWorkspaceReadOnly()
   const startYear = currentStartYear()
-  const people = useMemo(() => claimingPeople(plan), [plan])
+  const people = useMemo(() => claimingPeople(plan, startYear), [plan, startYear])
 
   const existingLadders = plan.incomeFloor?.ladders
   const sized = useMemo(() => {
@@ -1057,7 +1057,7 @@ function BenefitsOnlyTab({ personIds, personName, applyStrategy }: TabProps) {
         <p className="card-hint">
           For couples, benefits are priced year by year. The lower earner receives the larger of their reduced own
           benefit or a reduced half of the partner&apos;s PIA (monthly at FRA). That simplified rule can differ from In
-          your plan&apos;s supported early-claim calculation (reduced own plus a separately reduced spousal top-up).
+          your plan, which pays reduced own plus a separately reduced spousal top-up.
         </p>
       ) : null}
       <div className="form-grid" style={{ maxWidth: '22rem' }}>
@@ -1081,9 +1081,11 @@ function BenefitsOnlyTab({ personIds, personName, applyStrategy }: TabProps) {
 
       {hasLivingDivorcedRecord ? (
         <div className="callout callout--note" role="note">
-          This ranking assumes each living ex-spouse meets the ex-worker condition from your selected claim age onward; it
-          does not wait for the ex to turn 62. Marriage-length and currently-unmarried gates still apply. The In-your-plan
-          tab uses its documented calendar-year age-62 approximation, not full SSA entitlement rules.
+          With a living ex-spouse, this ranking pays what the plan pays once the spouse benefit starts: your own benefit
+          plus the part of half the ex&apos;s PIA above your own PIA, reduced for your age in the first month the ex is 62
+          throughout. It pays that amount from your selected claim age onward and does not wait for the ex to turn 62.
+          Marriage-length and currently-unmarried gates still apply. The In-your-plan tab waits for the year the spouse
+          benefit starts, and does not check full SSA entitlement rules.
         </div>
       ) : null}
 
@@ -1148,8 +1150,8 @@ function BenefitsOnlyTab({ personIds, personName, applyStrategy }: TabProps) {
 function FicaReturnPanel({ discountPct }: { discountPct: number }) {
   const { plan } = usePlan()
   const [selfEmployed, setSelfEmployed] = useState(false)
-  const people = claimingPeople(plan)
   const startYear = currentStartYear()
+  const people = claimingPeople(plan, startYear)
   const { pack } = packForYear(startYear)
   const discountRate = discountPct / 100
 
@@ -1291,7 +1293,7 @@ function SurvivorSwitchingPanel({ discountPct }: { discountPct: number }) {
         As a widow(er) you can hold both a survivor benefit and your own, and switch between them. Survivor benefits stop
         growing at your full retirement age while your own grows to 70, so the order matters. Ranked by expected value at{' '}
         {discountPct}%{' '}
-        <HelpTip text="Illustrative: the survivor base is the deceased's actual (claim-age-adjusted) benefit, the RIB-LIM widow's-limit caps it at 82.5% of the deceased's PIA when they claimed early, and the early-claim widow(er) reduction (up to 28.5% at 60) applies before the survivor's FRA, the same computation the projection ledger uses. Only one benefit is paid at a time, the larger of those claimed." />.
+        <HelpTip text="Illustrative: the survivor benefit starts from the deceased's full benefit (their PIA, or more if they delayed), is reduced for claiming before your survivor full retirement age (up to 28.5% at 60), and, if the deceased claimed early, is then held to the larger of what they were receiving and 82.5% of their PIA: the same computation the projection ledger uses. Only one benefit is paid at a time, the larger of those claimed." />.
       </p>
       <ScrollRegion label="Survivor vs. personal timing" style={{ border: 'none' }}>
         <table className="claim-table">

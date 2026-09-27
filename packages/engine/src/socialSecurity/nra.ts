@@ -69,3 +69,30 @@ export function fraTotalMonths(fra: FraComponents): number {
 export function survivorFraForBirthYear(birthYearEffective: number): FraComponents {
   return fraForBirthYear(birthYearEffective - 2)
 }
+
+/** A civil date of birth, as the Social Security helpers take it. */
+export interface DobParts {
+  readonly year: number
+  readonly month: number
+  readonly day: number
+}
+
+/**
+ * The calendar month, as `year * 12 + (month - 1)`, in which a person attains
+ * age 0 under SSA's rule that an age is attained on the day before the
+ * birthday: the birth month, or the month before it for a birthday on the 1st.
+ * Adding an age in months gives the month that age is attained.
+ */
+export function attainedAgeZeroMonthIndex(dob: DobParts): number {
+  return dob.year * 12 + (dob.month - 1) - (dob.day === 1 ? 1 : 0)
+}
+
+/**
+ * The whole months of age a person has attained in a calendar month (1 to 12).
+ * SSA counts a person as attaining an age on the day before the birthday, so a
+ * birthday on the 1st attains each age in the month before: a person born
+ * 1960-05-01 attains 67 (804 months) in April 2027, one born 1960-05-02 in May.
+ */
+export function attainedAgeMonthsInMonth(dob: DobParts, year: number, month: number): number {
+  return year * 12 + (month - 1) - attainedAgeZeroMonthIndex(dob)
+}

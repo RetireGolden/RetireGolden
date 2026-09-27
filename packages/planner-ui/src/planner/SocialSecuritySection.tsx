@@ -19,6 +19,7 @@ import {
 import { DIVORCED_MIN_MARRIAGE_YEARS, SURVIVOR_MIN_MARRIAGE_YEARS } from '@retiregolden/engine/socialSecurity/maritalBenefits'
 import { effectiveBirthYear, fraForBirthYear } from '@retiregolden/engine/socialSecurity/nra'
 import type { PiaFromEarningsResult } from '@retiregolden/engine/socialSecurity/piaFromEarnings'
+import { LATEST_PUBLISHED_COLA_YEAR } from '@retiregolden/engine/socialSecurity/ssaWageData'
 import { parseSsaStatementXml } from '../socialSecurity/ssaStatementXml'
 import {
   IMPORT_PENDING_MESSAGE,
@@ -30,7 +31,7 @@ import { TypeChip } from './TypeChip'
 import { CheckboxField, DateField, NumberField, MoneyField, SelectField } from './fields'
 import { LearnAboutScreen } from '../learn/LearnAboutScreen'
 import { fmtMoney } from './format'
-import { dobParts, resolvePia } from './ssAnalysis'
+import { dobParts, piaAsOfPlan, resolvePia } from './ssAnalysis'
 import { ordinalSuffixes, PIA_MONTHLY_AT_FRA_LABEL } from './sections/sectionHelpers'
 import { Issues } from './sections/shared'
 
@@ -48,6 +49,13 @@ function survivorFloorLabel(): string {
 const newId = () => crypto.randomUUID()
 
 type SsStream = Extract<IncomeStream, { type: 'socialSecurity' }>
+
+/** "2026", "2026 and 2027", or "2026 through 2029". */
+function yearSpan(first: number, last: number): string {
+  if (first === last) return String(first)
+  if (last === first + 1) return `${first} and ${last}`
+  return `${first} through ${last}`
+}
 
 /** Teaching panel: how the earnings history becomes a PIA (AIME, zero years, bend tier). */
 function AimeExplainer({ detail, sampleEarnings }: { detail: PiaFromEarningsResult; sampleEarnings: number | null }) {
@@ -174,9 +182,9 @@ export function FormerSpousesEditor({
     <div className="mt-ms">
       <h4 style={{ margin: '0 0 0.3rem' }}>Former spouses</h4>
       <p className="card-hint">
-        A {DIVORCED_MIN_MARRIAGE_YEARS}+ year marriage to a living ex (while you're currently unmarried) can pay a divorced-spousal benefit of up to
-        half their benefit; a deceased spouse or a deceased divorced ex can pay a survivor benefit. You receive whichever is largest of your
-        own, spousal, and survivor benefits, so add any that might apply.
+        A {DIVORCED_MIN_MARRIAGE_YEARS}+ year marriage to a living ex (while you're currently unmarried) can pay a divorced-spousal benefit that
+        tops your own up toward half their benefit; a deceased spouse or a deceased divorced ex can pay a survivor benefit. You're paid your own
+        benefit plus any spousal top-up, or a survivor benefit when that is larger, so add any that might apply.
       </p>
       {records.map((r, i) => {
         // A divorced-spousal record cannot pay while a partner is on the plan
@@ -381,7 +389,16 @@ function PersonSsCard({ person, personIndex }: { person: Person; personIndex: nu
 
   const streamIndex = plan.incomes.findIndex((s) => s.id === stream.id)
   const mode: 'quick' | 'earnings' = stream.piaMonthly === null ? 'earnings' : 'quick'
-  const resolved = resolvePia(person, stream)
+  const piaAsOf = piaAsOfPlan(plan)
+  const resolved = resolvePia(person, stream, piaAsOf)
+  // An earnings-derived PIA past eligibility includes the cost-of-living
+  // increases from the eligibility year through the year before the start:
+  // SSA's published ones, and the plan's COLA assumption for any year SSA has
+  // not yet announced (the resolver's stand-in warning).
+  const colaFromYear = resolved.detail !== null && resolved.detail.eligibilityYear < piaAsOf.startYear ? resolved.detail.eligibilityYear : null
+  const colaThroughYear = piaAsOf.startYear - 1
+  const firstStandInYear = colaFromYear === null ? null : Math.max(colaFromYear, LATEST_PUBLISHED_COLA_YEAR + 1)
+  const standInYears = firstStandInYear !== null && firstStandInYear <= colaThroughYear ? yearSpan(firstStandInYear, colaThroughYear) : null
 
   const earnings = stream.earnings ?? []
   const mostRecentEarnings =
@@ -604,7 +621,26 @@ function PersonSsCard({ person, personIndex }: { person: Person; personIndex: nu
 
           {resolved.piaMonthly !== null ? (
             <p className="field-hint mt-xs">
-              Computed PIA: <strong>{fmtMoney(resolved.piaMonthly)}/mo</strong> at full retirement age.
+              Computed PIA: <strong>{fmtMoney(resolved.piaMonthly)}/mo</strong> at full retirement age
+              {colaFromYear !== null && resolved.detail !== null ? (
+                <>
+                  , as the plan pays it from {piaAsOf.startYear}. Your earnings give{' '}
+                  {fmtMoney(resolved.detail.piaMonthly)}/mo for {colaFromYear}, the year you became eligible at 62,
+                  and Social Security adds each cost-of-living increase from then, whether or not you have claimed:{' '}
+                  {standInYears === null ? (
+                    <>every increase through {colaThroughYear}.</>
+                  ) : colaFromYear !== null && colaFromYear <= LATEST_PUBLISHED_COLA_YEAR ? (
+                    <>
+                      the published increases through {LATEST_PUBLISHED_COLA_YEAR}, and the plan&apos;s COLA assumption for{' '}
+                      {standInYears}, which Social Security has not yet announced.
+                    </>
+                  ) : (
+                    <>the plan&apos;s COLA assumption for {standInYears}, which Social Security has not yet announced.</>
+                  )}
+                </>
+              ) : (
+                '.'
+              )}
               {projectedYears > 0 ? (
                 <>
                   {' '}

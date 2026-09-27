@@ -38,7 +38,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 68
+              "line": 109
             }
           ]
         },
@@ -47,7 +47,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 394
+              "line": 396
             }
           ]
         },
@@ -199,7 +199,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 68
+              "line": 109
             }
           ]
         },
@@ -208,7 +208,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 394
+              "line": 396
             }
           ]
         },
@@ -291,7 +291,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 68
+              "line": 109
             }
           ]
         },
@@ -300,7 +300,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 394
+              "line": 396
             }
           ]
         },
@@ -492,7 +492,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 68
+              "line": 109
             }
           ]
         },
@@ -501,7 +501,7 @@
           "functions": [
             {
               "name": "survivorBenefitMonthly",
-              "line": 78
+              "line": 100
             }
           ]
         }
@@ -512,12 +512,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/socialSecurity/survivorBenefit.test.ts",
-          "line": 61,
+          "line": 62,
           "note": "deceased delayed retirement credits",
           "tests": [
             {
               "title": "carries the deceased worker’s delayed credits into the unreduced survivor amount",
-              "line": 66
+              "line": 67
             }
           ]
         }
@@ -642,7 +642,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 68
+              "line": 109
             }
           ]
         },
@@ -651,7 +651,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 394
+              "line": 396
             }
           ]
         }
@@ -662,12 +662,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 907,
+          "line": 987,
           "note": null,
           "tests": [
             {
               "title": "cannot preserve a grace-year non-service-month benefit from annual wages alone",
-              "line": 921
+              "line": 1001
             }
           ]
         }
@@ -1074,29 +1074,47 @@
     {
       "id": "poms-rs-00615-320-rib-lim-after-survivor-reduction",
       "title": "RIB-LIM is tested after the widow(er) age reduction",
-      "classification": "approximated",
-      "errorDirection": "bothDirections",
-      "approximation": {
-        "kind": "fix"
-      },
-      "conventionRationale": "Known defect, registered without changing the calculation. The code evaluates `max(deceasedActualMonthly, 0.825 × deceasedPiaMonthly)` before `survivorReductionFactor`, while POMS evaluates the widow(er) benefit after the age reduction before imposing the larger RIB-LIM amount. The companion test sets a 2,000-dollar PIA, a 1,400-dollar deceased reduced benefit, and a survivor claim at 63 against a 66-year survivor FRA: the authority-derived amount is 1,650 dollars because the widow(er) amount after reduction for age (2,000 x .8575 = 1,715) exceeds both limits, while the engine reduces that 1,650-dollar limit again. The observed engine amount is 1,414.875 (the 1,650-dollar limit reduced again by the .8575 age factor), pinned in the companion test.",
+      "classification": "settled",
+      "errorDirection": null,
+      "approximation": null,
+      "conventionRationale": "The code computes `min(max(PIA, actual) x factor, max(actual, 0.825 x PIA))` when the deceased was ever paid a reduced old-age benefit, and `max(PIA, actual) x factor` otherwise, where the factor is the widow(er) reduction for age. The two forms agree whenever the deceased’s actual benefit is at or above the PIA. The companion test sets a 2,000-dollar PIA, a 1,400-dollar deceased reduced benefit, and a survivor claim at 63 against a 66-year survivor FRA: the widow(er) amount after reduction for age is 2,000 x .8575 = 1,715, which exceeds both limits, so the survivor is paid the larger limit, 1,650 dollars. The engine until 2026-09-27 chose the 1,650-dollar limit first and reduced it again for age, paying 1,414.875; that reading is rejected in the same test. A second case pays the unlimited 1,715 dollars when the deceased was never paid a reduced benefit. The deceased’s actual benefit keeps any adjustment of the reduction factor for months withheld under the earnings test, as POMS RS 00615.320 B.2.c directs.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-08-26",
-      "dueOn": "2027-08-26",
+      "verifiedOn": "2026-09-27",
+      "dueOn": "2027-09-27",
       "implementedBy": [
+        "packages/engine/src/projection/internal/annualSocialSecurity.ts",
+        "packages/engine/src/socialSecurity/maritalBenefits.ts",
         "packages/engine/src/socialSecurity/survivorBenefit.ts"
       ],
       "implementations": [
+        {
+          "path": "packages/engine/src/projection/internal/annualSocialSecurity.ts",
+          "functions": [
+            {
+              "name": "annualSocialSecurity",
+              "line": 109
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/maritalBenefits.ts",
+          "functions": [
+            {
+              "name": "maritalBenefitFor",
+              "line": 196
+            }
+          ]
+        },
         {
           "path": "packages/engine/src/socialSecurity/survivorBenefit.ts",
           "functions": [
             {
               "name": "survivorBenefitMonthly",
-              "line": 78
+              "line": 100
             }
           ]
         }
@@ -1107,12 +1125,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/socialSecurity/survivorBenefit.test.ts",
-          "line": 125,
+          "line": 129,
           "note": null,
           "tests": [
             {
-              "title": "pins the engine’s pre-reduction RIB-LIM ordering",
-              "line": 139
+              "title": "reduces the widow amount for age first, then cuts it to the larger limit",
+              "line": 142
+            },
+            {
+              "title": "applies no limit when the deceased was never paid a reduced benefit",
+              "line": 155
             }
           ]
         }
@@ -1129,6 +1151,11 @@
           "kind": "regulation",
           "citation": "20 CFR 404.338(c)",
           "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-D/subject-group-ECFR219bf3e41a78e9f/section-404.338"
+        },
+        {
+          "kind": "agencyGuidance",
+          "citation": "SSA POMS RS 00615.320, § A.1",
+          "url": "https://secure.ssa.gov/poms.nsf/lnx/0300615320"
         },
         {
           "kind": "agencyGuidance",
@@ -1169,7 +1196,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 68
+              "line": 109
             }
           ]
         },
@@ -1178,7 +1205,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 394
+              "line": 396
             }
           ]
         },
@@ -1198,12 +1225,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 842,
+          "line": 922,
           "note": null,
           "tests": [
             {
               "title": "rounds annual withholding to one ARF crediting month per year",
-              "line": 850
+              "line": 930
             }
           ]
         }
@@ -1354,7 +1381,7 @@
       "classification": "settled",
       "errorDirection": null,
       "approximation": null,
-      "conventionRationale": "Section 402(b)(2) is expressly subject to subsection (q), which supplies the early-claim reduction. The engine applies a steeper schedule for the spousal case than for a retirement benefit (25/36 of 1 percent for the first 36 months rather than 5/9), and the spouse base remains one-half of worker PIA without worker delayed credits. The guarded ordinary current-spouse composition is owned by `usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement`; excluded current-spouse shapes retain disclosed legacy behavior. MFJ, a two-person household, and the worker’s configured start date are product proxies and do not establish current-spouse eligibility or actual worker entitlement. Living-divorced entitlement is governed by `cfr-20-404-331-living-divorced-spouse-eligibility`. The ssClaimMilestone pin covers the numerical statutory base in a prior-year insight comparator, not proof of actual historical payment or payable ledger, or complete winner, month, family-maximum, or timing logic.",
+      "conventionRationale": "Section 402(b)(2) is expressly subject to subsection (q), which supplies the early-claim reduction. The engine applies a steeper schedule for the spousal case than for a retirement benefit (25/36 of 1 percent for the first 36 months rather than 5/9), and the spouse base remains one-half of worker PIA without worker delayed credits. The composition with the claimant’s own benefit, the own benefit plus the separately reduced excess, is owned by `usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement` for a current and a divorced spouse alike. A two-person household is a product proxy for marriage and does not establish current-spouse eligibility or actual worker entitlement. Living-divorced entitlement is governed by `cfr-20-404-331-living-divorced-spouse-eligibility`. The ssClaimMilestone pin covers the numerical statutory base in a prior-year insight comparator, not proof of actual historical payment or payable ledger, or complete winner, month, family-maximum, or timing logic.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -1375,7 +1402,7 @@
           "functions": [
             {
               "name": "resolveCurrentSpouseSpousalAnnualPriorYear",
-              "line": 159
+              "line": 194
             }
           ]
         },
@@ -1384,7 +1411,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 68
+              "line": 109
             }
           ]
         },
@@ -1393,7 +1420,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 394
+              "line": 396
             }
           ]
         },
@@ -1402,7 +1429,7 @@
           "functions": [
             {
               "name": "spousalBenefitFactor",
-              "line": 51
+              "line": 70
             }
           ]
         },
@@ -1411,7 +1438,7 @@
           "functions": [
             {
               "name": "maritalBenefitFor",
-              "line": 155
+              "line": 196
             }
           ]
         }
@@ -1474,7 +1501,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 68
+              "line": 109
             }
           ]
         },
@@ -1483,7 +1510,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 394
+              "line": 396
             }
           ]
         },
@@ -1765,7 +1792,7 @@
           "functions": [
             {
               "name": "survivorBenefitMonthly",
-              "line": 78
+              "line": 100
             }
           ]
         }
@@ -1776,12 +1803,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/socialSecurity/survivorBenefit.test.ts",
-          "line": 200,
+          "line": 220,
           "note": null,
           "tests": [
             {
               "title": "does not add credits when the survivor waits from FRA to 70",
-              "line": 208
+              "line": 228
             }
           ]
         }
@@ -1824,7 +1851,7 @@
           "functions": [
             {
               "name": "survivorBenefitMonthly",
-              "line": 78
+              "line": 100
             }
           ]
         }
@@ -1879,7 +1906,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 68
+              "line": 109
             }
           ]
         },
@@ -1888,11 +1915,11 @@
           "functions": [
             {
               "name": "neverClaimedDeceasedFactor",
-              "line": 101
+              "line": 129
             },
             {
               "name": "survivorBenefitMonthly",
-              "line": 78
+              "line": 100
             }
           ]
         }
@@ -2102,7 +2129,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 68
+              "line": 109
             }
           ]
         },
@@ -2111,7 +2138,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 394
+              "line": 396
             }
           ]
         }
@@ -2122,16 +2149,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 1041,
+          "line": 1125,
           "note": null,
           "tests": [
             {
               "title": "steps the survivor up to the deceased spouse’s larger benefit without adding both",
-              "line": 1049
+              "line": 1133
             },
             {
               "title": "keeps the survivor’s own larger benefit when the deceased’s amount is smaller",
-              "line": 1076
+              "line": 1160
             }
           ]
         }
@@ -2157,7 +2184,7 @@
       "classification": "settled",
       "errorDirection": null,
       "approximation": null,
-      "conventionRationale": "This record is confined to the reduction curve after a survivor FRA has been supplied. The survivor FRA schedule itself, keyed to the year the survivor turns 60, is recorded separately at usc-42-416-l-survivor-fra-age-60-attainment-cohorts; it is not a competing reading of this helper’s month interpolation.",
+      "conventionRationale": "This record is confined to the reduction curve after a survivor FRA has been supplied. The survivor FRA schedule itself, keyed to the year the survivor turns 60, is recorded separately at usc-42-416-l-survivor-fra-age-60-attainment-cohorts; it is not a competing reading of this helper’s month interpolation. The month the reduction is measured from, the first month of widow(er) entitlement, is registered at usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -2174,7 +2201,7 @@
           "functions": [
             {
               "name": "survivorReductionFactor",
-              "line": 64
+              "line": 78
             }
           ]
         }
@@ -2185,23 +2212,23 @@
       "fixtures": [
         {
           "path": "packages/engine/src/socialSecurity/survivorBenefit.test.ts",
-          "line": 80,
+          "line": 82,
           "note": null,
           "tests": [
             {
               "title": "reduces a non-disabled age-60 survivor to 71.5 percent of the base",
-              "line": 87
+              "line": 89
             }
           ]
         },
         {
           "path": "packages/engine/src/socialSecurity/survivorBenefit.test.ts",
-          "line": 100,
+          "line": 103,
           "note": "midpoint claim at 63",
           "tests": [
             {
               "title": "prorates the widow reduction by the varying fraction at a midpoint before survivor FRA",
-              "line": 112
+              "line": 115
             }
           ]
         }
@@ -2248,28 +2275,62 @@
     },
     {
       "id": "usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement",
-      "title": "An ordinary early current-spouse benefit adds reduced own and reduced excess",
+      "title": "A spouse or divorced-spouse benefit adds the reduced own benefit and the separately reduced excess",
       "classification": "settled",
       "errorDirection": null,
       "approximation": null,
-      "conventionRationale": "This record settles component arithmetic only after RetireGolden’s narrow Plan proxy admits the case. The proxy requires marriedFilingJointly with exactly two people; exactly one resolved Social Security stream per person; no disability declaration on either stream; the claimant’s original raw claim age strictly before the claimant’s retirement FRA; strict DOB-plus-raw-claim-age civil dates, with month-end clamping rejected, showing the worker’s configured date no later than the claimant’s; both people alive and both streams payable in the priced period; and a positive half-PIA excess. The helper uses the claimant’s existing actual own monthly amount plus the existing spouse factor applied to max(0, one-half worker PIA minus claimant own PIA). Raw original claim age selects the branch even in later post-FRA projection years; attained age and ARF-credited age do not. A worker configured earlier, including at or after the worker’s FRA, may enter because the spouse base is the worker PIA. MFJ, configured dates, and payable rows are planning proxies, not proof of marriage, application, insured status, prescribed application, or an actual SSA entitlement month. The helper returns null outside the complete guard, leaving staggered later-worker, claimant delayed-own, disability, multiple-stream, clamped-date, and nonpositive-excess shapes on the disclosed legacy paths. POMS RS 00615.694 confirms that delayed-credit composition needs a different sequence and is deliberately excluded.",
+      "conventionRationale": "Until 2026-09-27 the engine paid this composition only inside a narrow guard (both claims before the claimant’s full retirement age, the worker filing no later than the claimant, one stream each, no disability, married filing jointly) and elsewhere paid the larger of the own benefit and the reduced half of the worker’s PIA, with the spouse factor at the claimant’s own claim age; a divorced spouse always got that larger amount. Every path now uses the one helper. With deemed filing (section 402(r), for people who attain 62 after 2015), a claimant entitled to an own benefit is deemed to apply for a spouse benefit in the first month it is available, which is why the start is the later of the two months; for births before January 2, 1954 the one claim age cannot express a restricted application and prices them as if they applied for both. An own benefit with delayed credits is handled as POMS RS 00615.694 directs: the combined amount is computed without the credits and the own benefit with them is subtracted, so the claimant is paid the larger of the two. The companion tests price simultaneous early claims (a lower earner with an 800 PIA claiming at 62 beside a 4,000 PIA worker also at 62: 16,080 a year, not the 15,600 of the larger-of reading), a husband who claims at 70 when his wife claimed her 800 PIA at 62 (her spouse benefit starts unreduced at 70 years 5 months: 11,520 a year, not 9,360), and a single claimant whose ex is first 62 throughout a month when she is 63 years 9 months (707.50 dollars a month, 8,490 a year, not 7,800). A two-person household is the product proxy for marriage, and configured claim dates stand in for the months of application and entitlement; the family maximum caps a current spouse’s excess only. The identifier predates the divorced-spouse path and is kept so that references to the record stay valid.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
       "effectiveFrom": 2026,
       "effectiveThrough": null,
-      "verifiedOn": "2026-09-06",
-      "dueOn": "2027-09-06",
+      "verifiedOn": "2026-09-27",
+      "dueOn": "2027-09-27",
       "implementedBy": [
-        "packages/engine/src/socialSecurity/currentSpouseBenefit.ts"
+        "packages/engine/src/insights/detectors/ssClaimMilestone.ts",
+        "packages/engine/src/projection/internal/annualSocialSecurity.ts",
+        "packages/engine/src/socialSecurity/dualEntitlement.ts",
+        "packages/engine/src/socialSecurity/maritalBenefits.ts"
       ],
       "implementations": [
         {
-          "path": "packages/engine/src/socialSecurity/currentSpouseBenefit.ts",
+          "path": "packages/engine/src/insights/detectors/ssClaimMilestone.ts",
           "functions": [
             {
-              "name": "ordinarySimultaneousEarlyCurrentSpouseComponents",
-              "line": 67
+              "name": "resolveCurrentSpouseSpousalAnnualPriorYear",
+              "line": 194
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/internal/annualSocialSecurity.ts",
+          "functions": [
+            {
+              "name": "annualSocialSecurity",
+              "line": 109
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/dualEntitlement.ts",
+          "functions": [
+            {
+              "name": "spouseDualEntitlementMonthly",
+              "line": 69
+            },
+            {
+              "name": "spouseEntitlementAgeMonths",
+              "line": 108
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/maritalBenefits.ts",
+          "functions": [
+            {
+              "name": "maritalBenefitFor",
+              "line": 196
             }
           ]
         }
@@ -2288,6 +2349,28 @@
               "line": 450
             }
           ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.social-security.test.ts",
+          "line": 485,
+          "note": "a worker who files after the claimant",
+          "tests": [
+            {
+              "title": "reduces the excess at the claimant’s age when the worker files, and adds it to her own benefit",
+              "line": 493
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.social-security.test.ts",
+          "line": 526,
+          "note": "a divorced spouse",
+          "tests": [
+            {
+              "title": "pays a divorced spouse her own benefit plus the excess reduced when the ex is first 62 throughout a month",
+              "line": 535
+            }
+          ]
         }
       ],
       "refusalFixtureFiles": [],
@@ -2304,6 +2387,21 @@
           "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim"
         },
         {
+          "kind": "statute",
+          "citation": "42 U.S.C. 402(q)(6)(A)(ii)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 402(q)(5)(C)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim"
+        },
+        {
+          "kind": "agencyGuidance",
+          "citation": "SSA POMS RS 00202.005, B.2.a",
+          "url": "https://secure.ssa.gov/poms.nsf/lnx/0300202005"
+        },
+        {
           "kind": "agencyGuidance",
           "citation": "SSA POMS RS 00615.250, A. Policy",
           "url": "https://secure.ssa.gov/poms.nsf/lnx/0300615250"
@@ -2316,12 +2414,160 @@
       ]
     },
     {
+      "id": "usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month",
+      "title": "A widow(er) benefit is reduced from its own first month of entitlement, not from an earlier own claim",
+      "classification": "settled",
+      "errorDirection": null,
+      "approximation": null,
+      "conventionRationale": "The plan states a life age, not a date of death, so December of the last year alive is the latest month of death it allows, the same month the survivor of a worker who died before claiming is priced from, and the projection first pays the survivor in the January after it. Entitlement from the month of death itself (20 CFR 404.621(a)(4)(ii)) is not modeled for the months of the death year: the projection pays no survivor benefit for them, so it starts the reduction with January, the first month it pays, rather than count a month of reduction that buys no payment. A survivor is therefore reduced for her age in that January, or at her own later claim. Until 2026-09-27 the engine reduced the widow(er) benefit at the survivor’s own claim age, as if the survivor had been widowed when she first claimed her own benefit. The companion test prices a survivor born in September 1962 who claimed her own benefit at 62 and is widowed in December 2026, so that her widow(er) benefit starts in January 2027 at 772 months: her widow(er) factor is 1 minus 0.285 times 32 over 84, and as the survivor of a worker with a 2,600 dollar PIA who claimed at 63 she is paid the 2,145 dollar limit, 25,740 dollars in 2027, where a reduction at her own claim age gives 24,848.57. A second test holds that nine months withheld from her own benefit before the death are not credited to the widow(er) benefit at her full retirement age: 27,812.57 dollars in 2029 rather than 28,765.29. The earnings-test months are counted in whole months per year by the same annual approximation as the own benefit (poms-rs-00615-482-arf-crediting-months). For a former spouse who died, the plan holds no date of death, and the widow(er) benefit is taken to start with the claimant’s own claim. The own old-age benefit’s reduction is credited with every withheld month, including the months in which the widow(er) benefit was the one paid: a widow(er) entitled to both is paid the own benefit plus the widow(er) excess (402(k)(3)(A)), which the projection pays as the larger of the two, and the earnings test makes its deductions from every payment to which she is entitled (403(b)(1)), so in such a month the old-age benefit, too, was subject to deductions (402(q)(7)(A); 20 CFR 404.412(a)(1)). A second companion test prices a widow born in June 1965 with a 2,000 dollar PIA who claims at 62 in 2027, widowed in 2026 by a worker with a 2,400 dollar PIA who claimed at 62: 60 months withheld from her widow(er) benefit through 2031 take her own benefit to 2,000 dollars in 2032, above the 1,980 dollar limit, so she is paid 24,000 dollars, where crediting only months in which her own benefit was the one paid would keep it at 1,400 and pay 23,760. The widow(er) and spouse counts are kept for each record the benefit is paid on, the current spouse or each former-spouse entry (annualSocialSecurity.ts#auxiliaryBenefitSourceKey), because 402(q)(7)(A) excludes only the months in which “such benefit” was withheld: a third companion test gives the same widow a 1,000 dollar PIA and a former spouse with a 2,200 dollar PIA who died after claiming at full retirement age; the 60 months withheld from her current husband’s widow(er) benefit take it to the 1,980 dollar limit in 2032 and leave the former spouse’s at 1,752.14, so she is paid 23,760 dollars, where crediting them to both records would pay 26,400.",
+      "contraryReading": null,
+      "jurisdiction": "federal",
+      "volatility": "staticStatute",
+      "effectiveFrom": 2026,
+      "effectiveThrough": null,
+      "verifiedOn": "2026-09-27",
+      "dueOn": "2027-09-27",
+      "implementedBy": [
+        "packages/engine/src/projection/internal/annualSocialSecurity.ts",
+        "packages/engine/src/projection/simulate.ts",
+        "packages/engine/src/socialSecurity/nra.ts",
+        "packages/engine/src/socialSecurity/survivorBenefit.ts"
+      ],
+      "implementations": [
+        {
+          "path": "packages/engine/src/projection/internal/annualSocialSecurity.ts",
+          "functions": [
+            {
+              "name": "annualSocialSecurity",
+              "line": 109
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.ts",
+          "functions": [
+            {
+              "name": "simulatePlan",
+              "line": 396
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/nra.ts",
+          "functions": [
+            {
+              "name": "attainedAgeMonthsInMonth",
+              "line": 96
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/survivorBenefit.ts",
+          "functions": [
+            {
+              "name": "widowEntitlementAgeMonths",
+              "line": 161
+            }
+          ]
+        }
+      ],
+      "fixtureFiles": [
+        "packages/engine/src/projection/simulate.auxiliaryWithheldMonths.test.ts",
+        "packages/engine/src/projection/simulate.widowEntitlement.test.ts"
+      ],
+      "fixtures": [
+        {
+          "path": "packages/engine/src/projection/simulate.auxiliaryWithheldMonths.test.ts",
+          "line": 178,
+          "note": "months withheld from a paid widow(er) benefit credit the own old-age reduction too",
+          "tests": [
+            {
+              "title": "credits months withheld while the widow(er) benefit was paid to the own reduction (24,000 in 2032, not 23,760)",
+              "line": 186
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.auxiliaryWithheldMonths.test.ts",
+          "line": 224,
+          "note": "months withheld from one widow(er) benefit do not credit a widow(er) benefit on another record",
+          "tests": [
+            {
+              "title": "keeps the months withheld from one widow(er) benefit off another record's reduction (23,760 in 2032, not 26,400)",
+              "line": 232
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.widowEntitlement.test.ts",
+          "line": 40,
+          "note": "the first month of widow(er) entitlement",
+          "tests": [
+            {
+              "title": "reduces the widow(er) benefit at the survivor’s age when it is first paid, not at her earlier own claim",
+              "line": 48
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/projection/simulate.widowEntitlement.test.ts",
+          "line": 61,
+          "note": "earnings-test months of the widow(er) benefit only",
+          "tests": [
+            {
+              "title": "credits at the survivor FRA only the months the widow(er) benefit itself was withheld",
+              "line": 69
+            }
+          ]
+        }
+      ],
+      "refusalFixtureFiles": [],
+      "refusalFixtures": [],
+      "authorities": [
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 402(q)(6)(A)(iii)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 402(q)(3)(E)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 402(q)(7)(A)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section402&num=0&edition=prelim"
+        },
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.410(c)(1)",
+          "url": "https://www.law.cornell.edu/cfr/text/20/404.410"
+        },
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.621(a)(4)(ii)",
+          "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-G/subject-group-ECFR7863a9f033e7183/section-404.621"
+        },
+        {
+          "kind": "statute",
+          "citation": "42 U.S.C. 403(b)(1)",
+          "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title42-section403&num=0&edition=prelim"
+        },
+        {
+          "kind": "regulation",
+          "citation": "20 CFR 404.412(a)(1)",
+          "url": "https://www.ecfr.gov/current/title-20/chapter-III/part-404/subpart-E/section-404.412"
+        }
+      ]
+    },
+    {
       "id": "usc-42-402-r-1-2-deemed-filing-old-age-and-spousal",
       "title": "Current eligible old-age and current-spouse benefits are deemed filed together",
       "classification": "settled",
       "errorDirection": null,
       "approximation": null,
-      "conventionRationale": "This record owns deemed-filing application coupling and the Plan’s single-claim-age representation; it does not own the dollar composition of dual entitlement. `usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement` owns reduced-own-plus-reduced-excess arithmetic only inside its complete ordinary early guard. MFJ, two people, and configured stream dates remain product proxies rather than proof of eligibility, application, or entitlement month, and all excluded shapes retain their separately disclosed partial behavior.",
+      "conventionRationale": "This record owns deemed-filing application coupling and the Plan’s single-claim-age representation; the dollar composition of dual entitlement, including the spouse factor at that first month, is owned by `usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement`. A two-person household and configured stream dates remain product proxies rather than proof of eligibility, application, or entitlement month. For people born before January 2, 1954, who could still restrict an application, the one claim age cannot express that choice.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -2349,7 +2595,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 68
+              "line": 109
             }
           ]
         },
@@ -2358,7 +2604,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 394
+              "line": 396
             }
           ]
         }
@@ -2414,7 +2660,7 @@
       "classification": "outOfScope",
       "errorDirection": null,
       "approximation": null,
-      "conventionRationale": "model/plan.ts defines a Social Security stream with one `claimAge` whose years are schema-clamped to 62–70. annualSocialSecurity.ts derives both the own and survivor ages from that same stream field, so no accepted Plan can supply the two claim dates a switch requires (including a survivor-only claim at 60). The separate planner-ui survivorSwitching view illustrates two dates but does not make them ledger inputs.",
+      "conventionRationale": "model/plan.ts defines a Social Security stream with one `claimAge` whose years are schema-clamped to 62–70. annualSocialSecurity.ts starts both the own and the survivor benefit at that same stream field, reducing the survivor benefit from the later of that claim and the month of death, so no accepted Plan can supply the two claim dates a switch requires (including a survivor-only claim at 60). The separate planner-ui survivorSwitching view illustrates two dates but does not make them ledger inputs.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -2442,7 +2688,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 68
+              "line": 109
             }
           ]
         },
@@ -2451,7 +2697,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 394
+              "line": 396
             }
           ]
         }
@@ -2652,7 +2898,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 68
+              "line": 109
             }
           ]
         },
@@ -2661,7 +2907,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 394
+              "line": 396
             }
           ]
         },
@@ -2731,7 +2977,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 68
+              "line": 109
             }
           ]
         },
@@ -2740,7 +2986,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 394
+              "line": 396
             }
           ]
         }
@@ -2751,12 +2997,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 859,
+          "line": 939,
           "note": "shares the ARF observable",
           "tests": [
             {
               "title": "collapses the charging sequence into the annual ratio",
-              "line": 868
+              "line": 948
             }
           ]
         }
@@ -2805,7 +3051,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 68
+              "line": 109
             }
           ]
         },
@@ -2814,7 +3060,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 394
+              "line": 396
             }
           ]
         }
@@ -2825,12 +3071,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 655,
+          "line": 735,
           "note": null,
           "tests": [
             {
               "title": "withholds half the below-FRA excess and one-third of the FRA-year excess",
-              "line": 664
+              "line": 744
             }
           ]
         }
@@ -2884,7 +3130,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 68
+              "line": 109
             }
           ]
         },
@@ -2893,7 +3139,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 394
+              "line": 396
             }
           ]
         }
@@ -2957,7 +3203,7 @@
           "functions": [
             {
               "name": "piaMonthlyFromAime",
-              "line": 104
+              "line": 111
             }
           ]
         },
@@ -3022,7 +3268,7 @@
           "functions": [
             {
               "name": "computePiaFromEarnings",
-              "line": 138
+              "line": 146
             }
           ]
         }
@@ -3033,12 +3279,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/rules/approximations/socialSecurityEarnings.approximation.test.ts",
-          "line": 272,
+          "line": 271,
           "note": "conditional 2019 DIB benchmark; unit AIME",
           "tests": [
             {
               "title": "uses retirement indexing and 35 years instead of the conditional disability computation",
-              "line": 285
+              "line": 284
             }
           ]
         }
@@ -3121,7 +3367,7 @@
       "approximation": {
         "kind": "fix"
       },
-      "conventionRationale": "simulate.ts has a real PIA-from-earnings path, so this is not an absence record: before projecting any year it resolves each Social Security stream's PIA once from `socialSecurityIncomeSchema.earnings` and optional pre-retirement `earningsProjection`. Later `wagesIncomeSchema` income is not appended to that history or recomputed. Closing 415(f)(2) also requires widening the base-year window in piaFromEarnings.ts (`computePiaFromEarnings` clamps `lastBaseYear` to eligibility-1), which is why that file stays in implementedBy. The companion test gives a fully insured worker ten AWI-level covered years (2013-2022), claims at 2029 FRA, and supplies 10,000 dollars of covered wages in 2030. The authority-side recomputation replaces a zero in the top-35 set: indexed earnings rise by 10,000, AIME from 1,518 to 1,542, and 2024 second-band PIA from 1,166.60 to 1,174.30 (delta 7.70, above the one-dollar threshold), so 2031 pays 14,091.60; the engine observably leaves the initially resolved 1,166.60 PIA in force and pays 13,999.20.",
+      "conventionRationale": "simulate.ts has a real PIA-from-earnings path, so this is not an absence record: before projecting any year it resolves each Social Security stream's PIA once from `socialSecurityIncomeSchema.earnings` and optional pre-retirement `earningsProjection`. Later `wagesIncomeSchema` income is not appended to that history or recomputed. Closing 415(f)(2) also requires widening the base-year window in piaFromEarnings.ts (`computePiaFromEarnings` clamps `lastBaseYear` to eligibility-1), which is why that file stays in implementedBy. The companion test gives a fully insured worker ten AWI-level covered years (2013-2022), claims at 2029 FRA, and supplies 10,000 dollars of covered wages in 2030. The authority-side recomputation replaces a zero in the top-35 set: indexed earnings rise by 10,000, AIME from 1,518 to 1,542, and 2024 second-band PIA from 1,166.60 to 1,174.30 (delta 7.70, above the one-dollar threshold). Both are raised by the published 2024 and 2025 cost-of-living increases (2.5 and 2.8 percent, each floored to the dime) and by the plan's zero inflation for the increases not yet announced, to 1,229.10 and 1,237.30, so 2031 pays 14,847.60; the engine observably leaves the initially resolved PIA, 1,229.10, in force and pays 14,749.20.",
       "contraryReading": null,
       "jurisdiction": "federal",
       "volatility": "staticStatute",
@@ -3139,7 +3385,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 394
+              "line": 396
             }
           ]
         },
@@ -3148,7 +3394,7 @@
           "functions": [
             {
               "name": "computePiaFromEarnings",
-              "line": 138
+              "line": 146
             }
           ]
         }
@@ -3159,12 +3405,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/projection/simulate.social-security.test.ts",
-          "line": 1020,
+          "line": 1104,
           "note": null,
           "tests": [
             {
               "title": "does not recompute a higher PIA from post-FRA covered wages",
-              "line": 1028
+              "line": 1112
             }
           ]
         }
@@ -3322,16 +3568,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/socialSecurity/survivorBenefit.test.ts",
-          "line": 167,
+          "line": 187,
           "note": "age-60 cohorts born 1939 to 1962",
           "tests": [
             {
               "title": "follows the statutory schedule for every cohort from 1939 to 1962",
-              "line": 187
+              "line": 207
             },
             {
               "title": "stays at 67 after 1962",
-              "line": 194
+              "line": 214
             }
           ]
         }
@@ -3422,7 +3668,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 68
+              "line": 109
             }
           ]
         },
@@ -3431,7 +3677,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 394
+              "line": 396
             }
           ]
         }
@@ -3497,7 +3743,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 68
+              "line": 109
             }
           ]
         },
@@ -3506,7 +3752,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 394
+              "line": 396
             }
           ]
         },
@@ -3595,7 +3841,7 @@
           "functions": [
             {
               "name": "annualSocialSecurity",
-              "line": 68
+              "line": 109
             }
           ]
         },
@@ -3604,7 +3850,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 394
+              "line": 396
             }
           ]
         },

@@ -62,8 +62,8 @@ export const blocks: ArticleBlock[] = [
     type: 'list',
     items: [
       '**Early-claim widow(er) reduction.** A survivor can claim as early as age 60, but claiming before the survivor\u2019s own full retirement age reduces the benefit by up to 28.5% at 60 (a floor of 71.5%). The survivor full retirement age runs on its own schedule, set by the year the survivor turns 60: 66 for those born 1945 through 1956, rising two months a year to 67 for those born 1962 or later.',
-      '**RIB-LIM (the widow\u2019s limit).** If the deceased claimed reduced benefits early, the survivor is capped at the larger of the deceased\u2019s actual reduced benefit or 82.5% of the deceased\u2019s PIA. This usually lifts the survivor above the deceased\u2019s reduced amount but below 100% of the PIA.',
-      '**The base is the deceased\u2019s actual benefit.** If the deceased delayed past FRA, those delayed retirement credits pass through to the survivor. If the deceased died before claiming, the benefit is the one earned by the death: no early reduction, and only the delayed credits earned by then, with survivor benefits available from the month of death. RetireGolden works in whole years, so it starts the survivor benefit in the year after the death, or in the year the survivor reaches the claim age entered for them, if that is later.',
+      '**RIB-LIM (the widow\u2019s limit).** If the deceased claimed reduced benefits early, the survivor benefit, after its own reduction for age, is held to the larger of the deceased\u2019s actual reduced benefit or 82.5% of the deceased\u2019s PIA. At the survivor\u2019s full retirement age this usually lifts the survivor above the deceased\u2019s reduced amount but below 100% of the PIA; a survivor who claims early is usually reduced below that limit, and then the limit does not apply.',
+      '**The base is the deceased\u2019s full benefit.** It starts from the deceased\u2019s PIA, or from what they were receiving when that is more: if the deceased delayed past FRA, those delayed retirement credits pass through to the survivor, and an early claim lowers the survivor only through the widow\u2019s limit. If the deceased died before claiming, the benefit is the one earned by the death: no early reduction, and only the delayed credits earned by then, with survivor benefits available from the month of death. RetireGolden works in whole years, so it starts the survivor benefit in the year after the death, or in the year the survivor reaches the claim age entered for them, if that is later.',
     ],
   },
   {
@@ -74,7 +74,7 @@ export const blocks: ArticleBlock[] = [
   { type: 'heading', text: 'Why it matters in RetireGolden' },
   {
     type: 'prose',
-    md: 'RetireGolden models a current-spouse top-up while both spouses are alive and both have claimed. It also models a survivor step-up so the surviving spouse keeps the larger benefit, computed with full precision: the deceased\u2019s claim-age-adjusted base, the RIB-LIM widow\u2019s-limit cap, and the early-claim widow(er) reduction. The Social Security entry screen can store former-spouse records (including the deceased ex\u2019s claim age) for divorced-spousal or survivor cases.',
+    md: 'RetireGolden models a current-spouse top-up while both spouses are alive and both have claimed. It also models a survivor step-up so the surviving spouse keeps the larger benefit, computed with full precision: the deceased\u2019s claim-age-adjusted base, the early-claim widow(er) reduction, and the RIB-LIM widow\u2019s limit after it. The Social Security entry screen can store former-spouse records (including the deceased ex\u2019s claim age) for divorced-spousal or survivor cases.',
   },
   { type: 'heading', text: 'Common mistakes' },
   {

@@ -68,7 +68,7 @@ export const blocks: ArticleBlock[] = [
     type: 'list',
     items: [
       'Assuming a divorce always erases Social Security spousal rights.',
-      'Adding your own benefit and a spousal benefit together instead of comparing the larger eligible benefit.',
+      'Adding your own benefit and a full spousal benefit together. A spousal benefit adds only the amount by which half the former spouse’s benefit is more than your own, reduced if it starts early.',
       'Forgetting remarriage rules for survivor benefits.',
       'Entering a former spouse record in RetireGolden without verifying the real SSA eligibility facts.',
     ],

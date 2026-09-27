@@ -27,13 +27,21 @@ import {
   expectedPvSingle,
   type ClaimantInput,
 } from '../socialSecurity/expectedPv'
-import { spousalBenefitFactor } from '@retiregolden/engine/socialSecurity/claimFactor'
+import { claimFactor } from '@retiregolden/engine/socialSecurity/claimFactor'
+import {
+  divorcedExFirstMonthIndex,
+  spouseDualEntitlementMonthly,
+  spouseEntitlementAgeMonths,
+  spouseReductionFactorAtAgeMonths,
+} from '@retiregolden/engine/socialSecurity/dualEntitlement'
 import { DIVORCED_MIN_MARRIAGE_YEARS } from '@retiregolden/engine/socialSecurity/maritalBenefits'
 import {
   computePiaFromEarnings,
   isPiaFromEarningsError,
   piaInputFromEarnings,
+  piaWithCostOfLivingIncreases,
   resolveEarningsProjection,
+  socialSecurityColaAssumptionPct,
   type PiaFromEarningsResult,
 } from '@retiregolden/engine/socialSecurity/piaFromEarnings'
 import { currentStartYear, taxCalculatorFor } from './useProjection'
@@ -61,16 +69,45 @@ export function ssStreamFor(plan: Plan, personId: string): SsStream | undefined 
   return plan.incomes.find((s): s is SsStream => s.type === 'socialSecurity' && s.personId === personId)
 }
 
+/**
+ * The projection's first year and the plan's COLA assumption: what brings an
+ * earnings-derived PIA to the dollars of the year the ledger starts paying.
+ */
+export interface PiaAsOf {
+  startYear: number
+  colaAssumptionPct: number
+}
+
+export function piaAsOfPlan(plan: Plan, startYear: number = currentStartYear()): PiaAsOf {
+  return { startYear, colaAssumptionPct: socialSecurityColaAssumptionPct(plan.assumptions) }
+}
+
 export interface ResolvedPia {
-  /** Monthly PIA at FRA in today's dollars, or null if it can't be resolved. */
+  /**
+   * Monthly PIA as the projection pays it in its first year, or null if it
+   * can't be resolved: an entered PIA as entered, and an earnings-derived PIA
+   * raised by every cost-of-living increase from the eligibility year (the
+   * year the person attains 62) through the year before the projection starts
+   * (42 U.S.C. 415(i)(2)(A)(iii)). A person not yet eligible has no increase.
+   */
   piaMonthly: number | null
   warning: string | null
-  /** Full earnings-mode computation detail (indexed years, projection, AIME), when derived from earnings. */
+  /**
+   * Full earnings-mode computation detail (indexed years, projection, AIME),
+   * when derived from earnings. Its `piaMonthly` is the eligibility-year PIA,
+   * before the cost-of-living increases `piaMonthly` above includes.
+   */
   detail: PiaFromEarningsResult | null
 }
 
-/** Resolve a stream's PIA the same way the engine does: entered, or derived from earnings. */
-export function resolvePia(person: Person, stream: SsStream): ResolvedPia {
+/**
+ * Resolve a stream's PIA the same way the projection does
+ * (projection/simulate.ts, the resolved-PIA loop): entered, or derived from
+ * earnings and raised by the cost-of-living increases since eligibility to the
+ * projection's first year, so the analysis page's models and the household
+ * step show the amount the ledger pays from.
+ */
+export function resolvePia(person: Person, stream: SsStream, asOf: PiaAsOf): ResolvedPia {
   if (stream.piaMonthly !== null) return { piaMonthly: stream.piaMonthly, warning: null, detail: null }
   if (!stream.earnings || stream.earnings.length === 0) {
     return { piaMonthly: null, warning: 'No PIA entered and no earnings history.', detail: null }
@@ -81,20 +118,31 @@ export function resolvePia(person: Person, stream: SsStream): ResolvedPia {
   if (isPiaFromEarningsError(result)) {
     return { piaMonthly: null, warning: `Earnings history could not be used (${result.code}).`, detail: null }
   }
+  const atStart = piaWithCostOfLivingIncreases(result.piaMonthly, result.eligibilityYear, asOf.startYear - 1, asOf.colaAssumptionPct)
+  const warnings = [
+    result.usesStandInForFutureTables ? 'PIA uses stand-in SSA tables for years beyond published data.' : null,
+    atStart.standInYears.length > 0
+      ? `PIA uses the plan's COLA assumption for cost-of-living increases SSA has not yet announced (${atStart.standInYears.join(', ')}).`
+      : null,
+  ].filter((w): w is string => w !== null)
   return {
-    piaMonthly: result.piaMonthly,
-    warning: result.usesStandInForFutureTables ? 'PIA uses stand-in SSA tables for years beyond published data.' : null,
+    piaMonthly: atStart.piaMonthly,
+    warning: warnings.length > 0 ? warnings.join(' ') : null,
     detail: result,
   }
 }
 
-/** People who have a Social Security stream with a resolvable benefit. */
-export function claimingPeople(plan: Plan): { person: Person; stream: SsStream; pia: number }[] {
+/**
+ * People who have a Social Security stream with a resolvable benefit, each
+ * with the PIA the projection starting in `startYear` pays from.
+ */
+export function claimingPeople(plan: Plan, startYear: number = currentStartYear()): { person: Person; stream: SsStream; pia: number }[] {
   const out: { person: Person; stream: SsStream; pia: number }[] = []
+  const asOf = piaAsOfPlan(plan, startYear)
   for (const person of plan.household.people) {
     const stream = ssStreamFor(plan, person.id)
     if (!stream) continue
-    const { piaMonthly } = resolvePia(person, stream)
+    const { piaMonthly } = resolvePia(person, stream, asOf)
     if (piaMonthly !== null && piaMonthly > 0) out.push({ person, stream, pia: piaMonthly })
   }
   return out
@@ -156,7 +204,7 @@ export function sweepClaimingStrategies(
   startYear = currentStartYear(),
   objectivePolicyId: ObjectivePolicyId = 'max-after-tax-estate',
 ): SweepResult {
-  const people = claimingPeople(plan)
+  const people = claimingPeople(plan, startYear)
   const personIds = people.map((p) => p.person.id)
   const taxCalculator = taxCalculatorFor(plan)
   if (personIds.length === 0) {
@@ -230,7 +278,7 @@ export function refineClaimingMonthly(
   baseClaimYears: Record<string, number>,
   startYear = currentStartYear(),
 ): MonthlyRefinement {
-  const people = claimingPeople(plan)
+  const people = claimingPeople(plan, startYear)
   const taxCalculator = taxCalculatorFor(plan)
   const evaluate = (claim: Record<string, MonthlyClaim>): ProjectionSummary => {
     const candidate = planWithClaimAgesMonthly(plan, claim)
@@ -282,21 +330,43 @@ function claimantInput(person: Person, pia: number, claimYears: number, startYea
 }
 
 /**
- * Best divorced-spousal monthly benefit (0.5 × ex PIA, reduced for the claim age)
- * across ex-spouses meeting the marriage-duration gate, for a currently-unmarried claimant.
- * Benefits-only assumes each ex meets the ex-worker condition from the selected claim age; it does not
- * wait for the ex to reach 62. Marriage-length and currently-unmarried gates still apply. The ledger
- * In-your-plan path uses its documented calendar-year age-62 approximation instead. A year-varying floor
- * keyed to availability year is follow-up work. Survivor benefits are handled separately by the
- * survivor-switching analysis.
+ * The monthly benefit a currently-unmarried claimant is paid on the best
+ * divorced-spouse record, the ledger's dual-entitlement composition
+ * (@retiregolden/engine socialSecurity/dualEntitlement.ts): the own benefit at
+ * the claim age, held at the own PIA, plus half the ex's PIA less the own PIA,
+ * reduced for the claimant's age in the first month of the spouse benefit (the
+ * later of the own claim and the first month the ex is 62 throughout), and
+ * never less than the own benefit. 0 when no ex meets the marriage-duration
+ * gate or the household is a couple. Benefits-only is one amount for every year
+ * from the claim, so it pays this from the claim age even when the ex is not
+ * yet 62; the ledger (In your plan) waits for the year the spouse benefit
+ * starts. Survivor benefits are handled by the survivor-switching analysis.
  */
-function divorcedSpousalFloorMonthly(person: Person, stream: SsStream, claimYears: number, householdSingle: boolean): number {
+export function divorcedSpouseTotalMonthly(
+  person: Person,
+  stream: SsStream,
+  ownPiaMonthly: number,
+  claimYears: number,
+  householdSingle: boolean,
+): number {
   if (!householdSingle) return 0
   const { y, m, d } = dobParts(person)
+  const claimantDob = { year: y, month: m, day: d }
+  const ownActualMonthly = ownPiaMonthly * claimFactor(y, m, d, { years: claimYears, months: 0 })
   let best = 0
   for (const r of stream.formerSpouses ?? []) {
     if (r.relationship !== 'divorced' || r.marriageYears < DIVORCED_MIN_MARRIAGE_YEARS) continue
-    best = Math.max(best, 0.5 * r.piaMonthly * spousalBenefitFactor(y, m, d, { years: claimYears, months: 0 }))
+    const exDob = { year: Number(r.dob.slice(0, 4)), month: Number(r.dob.slice(5, 7)), day: Number(r.dob.slice(8, 10)) }
+    const spouseAgeMonths = spouseEntitlementAgeMonths(claimantDob, claimYears * 12, divorcedExFirstMonthIndex(exDob))
+    best = Math.max(
+      best,
+      spouseDualEntitlementMonthly({
+        ownPiaMonthly,
+        ownActualMonthly,
+        spouseBaseMonthly: 0.5 * r.piaMonthly,
+        spouseFactor: spouseReductionFactorAtAgeMonths(claimantDob, spouseAgeMonths),
+      }),
+    )
   }
   return best
 }
@@ -310,7 +380,7 @@ export function benefitsOnlyRanking(plan: Plan, discountRate: number, startYear 
   rows: BenefitsPvRow[]
   ranked: BenefitsPvRow[]
 } {
-  const people = claimingPeople(plan)
+  const people = claimingPeople(plan, startYear)
   const personIds = people.map((p) => p.person.id)
   const householdSingle = plan.household.people.length === 1
   const rows: BenefitsPvRow[] = []
@@ -318,7 +388,7 @@ export function benefitsOnlyRanking(plan: Plan, discountRate: number, startYear 
   if (people.length === 1) {
     const { person, pia, stream } = people[0]!
     for (const age of candidateClaimAges(person, startYear)) {
-      const benefitFloorMonthly = divorcedSpousalFloorMonthly(person, stream, age, householdSingle)
+      const benefitFloorMonthly = divorcedSpouseTotalMonthly(person, stream, pia, age, householdSingle)
       const pv = expectedPvSingle({ ...claimantInput(person, pia, age, startYear), benefitFloorMonthly }, { discountRate })
       rows.push({ claimByPersonId: { [person.id]: age }, expectedPv: pv })
     }

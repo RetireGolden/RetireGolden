@@ -2,26 +2,26 @@
   "kind": "retiregolden.rules-coverage.manifest",
   "version": 5,
   "registry": {
-    "total": 536,
+    "total": 539,
     "byClassification": {
-      "approximated": 121,
+      "approximated": 119,
       "outOfScope": 88,
-      "settled": 321,
+      "settled": 326,
       "unsettled": 6
     },
     "approximatedByKind": {
       "convention": 22,
-      "fix": 75,
+      "fix": 73,
       "needs-fact": 24
     },
     "byVolatility": {
-      "annuallyIndexed": 89,
+      "annuallyIndexed": 90,
       "awaitingGuidance": 12,
-      "staticStatute": 428,
+      "staticStatute": 430,
       "sunsetting": 7
     },
     "byJurisdiction": {
-      "federal": 346,
+      "federal": 349,
       "states": {
         "AK": 1,
         "AL": 9,
@@ -173,8 +173,8 @@
     },
     {
       "path": "insights/detectors/ssClaimMilestone.ts",
-      "sweptOn": "2026-09-09",
-      "note": "the guarded ordinary simultaneous early current-spouse price in the prior-year comparator delegates to the registered currentSpouseBenefit helper with raw stream counts, original claim ages, configured-date facts, and caller-established prior-period alive/payable facts. Former-spouse eligibility delegates to registered bestMaritalBenefit for the caller-selected relationship set (living-divorced vs deceased plus surviving-divorced survivor formers); claim-factor, payable-month, half-PIA, and family-maximum arithmetic remain delegated. Residuals: pre-horizon payable-month and entitlement reconstruction, gate-stream selection, own/former/current winner ordering and family-maximum composition, enabling-event timing, missing-PIA fallback, and all helper-refused current-spouse shapes"
+      "sweptOn": "2026-09-27",
+      "note": "the current-spouse price in the prior-year comparator delegates to the registered dualEntitlement helpers with original claim ages and caller-established prior-period alive/payable facts. Former-spouse eligibility delegates to registered bestMaritalBenefit for the caller-selected relationship set (living-divorced vs deceased plus surviving-divorced survivor formers); claim-factor, payable-month, half-PIA, and family-maximum arithmetic remain delegated. Residuals: pre-horizon payable-month and entitlement reconstruction, gate-stream selection, own/former/current winner ordering and family-maximum composition, enabling-event timing, missing-PIA fallback, and the earnings-test credit the ledger applies to spouse months"
     },
     {
       "path": "internal/ownedNonRothIraAnnualAttemptSettlement.ts",
@@ -333,8 +333,8 @@
     },
     {
       "path": "projection/internal/annualSocialSecurity.ts",
-      "sweptOn": "2026-09-06",
-      "note": "guarded ordinary simultaneous early current-spouse component arithmetic delegates to the registered currentSpouseBenefit helper. This caller supplies MFJ context, all-stream counts, selected raw stream facts, alive/payable facts and existing factors, then retains person/stream selection, resolved PIA, candidate ordering, family maximum, COLA, haircut, publication, earnings withholding and ARF bookkeeping. Former-spouse marital gates remain on socialSecurityMaritalEligibility records and maritalBenefits helpers. Other genuine Social Security surfaces remain on their existing records"
+      "sweptOn": "2026-09-27",
+      "note": "current-spouse dual entitlement delegates to the registered dualEntitlement helpers, the widow(er) entitlement month to survivorBenefit#widowEntitlementAgeMonths, and the widow(er) limit to survivorBenefitMonthly. This caller retains person/stream selection, resolved PIA, candidate ordering, family maximum, COLA, haircut, publication, earnings withholding and the ARF bookkeeping of own, spouse and widow(er) months. Former-spouse marital gates remain on socialSecurityMaritalEligibility records and maritalBenefits helpers. Other genuine Social Security surfaces remain on their existing records"
     },
     {
       "path": "projection/internal/annualStateHouseholdFacts.ts",
@@ -444,7 +444,7 @@
     {
       "path": "projection/simulate.ts",
       "sweptOn": "2026-09-06",
-      "note": "ordered annual projection orchestration. It now passes the existing marriedFilingJointly-plus-two-person product-context fact into annualSocialSecurity; the registered currentSpouseBenefit helper remains the sole pin and the context is not proof of SSA eligibility. Income, expense, contribution, growth, funding-policy, candidate-tax/ACA, withdrawal planning and character, action preflight/input preparation, forced-distribution/QCD/retirement-action execution, aggregate Roth-conversion execution, accepted funding/application/year close, owned-IRA settlement, result assembly, and ACA/optimizer publication are delegated to explicitly attested coordinators. This caller retains longitudinal state initialization, annual input assembly, explicit phase ordering, thin live-state application adapters, transaction-binding construction, capture-sink selection, final settled YearResult/probe publication, and post-loop ProjectionResult assembly"
+      "note": "ordered annual projection orchestration. It keeps the earnings-test month counts (all months, and those withheld from a spouse or a widow(er) benefit) across years for annualSocialSecurity. Income, expense, contribution, growth, funding-policy, candidate-tax/ACA, withdrawal planning and character, action preflight/input preparation, forced-distribution/QCD/retirement-action execution, aggregate Roth-conversion execution, accepted funding/application/year close, owned-IRA settlement, result assembly, and ACA/optimizer publication are delegated to explicitly attested coordinators. This caller retains longitudinal state initialization, annual input assembly, explicit phase ordering, thin live-state application adapters, transaction-binding construction, capture-sink selection, final settled YearResult/probe publication, and post-loop ProjectionResult assembly"
     },
     {
       "path": "rmd/applicableAge.ts",
@@ -453,13 +453,13 @@
     },
     {
       "path": "socialSecurity/maritalBenefits.ts",
-      "sweptOn": "2026-09-09",
-      "note": "Living-divorced, ordinary-widow, surviving-divorced duration, and surviving-divorced remarriage eligibility gates, plus half-PIA and survivor pricing, are named on this file. Residual: claimant-has-claimed timing (claimantAge vs claimAge) is an engine convention with no record; survivor amount assembly is delegated to already-registered survivorBenefit.ts/claimFactor.ts/nra.ts without a borrowed pin here"
+      "sweptOn": "2026-09-27",
+      "note": "Living-divorced, ordinary-widow, surviving-divorced duration, and surviving-divorced remarriage eligibility gates, plus half-PIA and survivor pricing, are named on this file; the divorced-spouse amount delegates to the registered dualEntitlement.ts composition. Residual: claimant-has-claimed timing (claimantAge vs claimAge) is an engine convention with no record; survivor amount assembly is delegated to already-registered survivorBenefit.ts/claimFactor.ts/nra.ts without a borrowed pin here"
     },
     {
       "path": "socialSecurity/piaFromEarnings.ts",
-      "sweptOn": "2026-09-11",
-      "note": "Initial-computation base window, annual indexed-earnings penny rounding, and computation-year count/five-year dropout with 1951 floor registered as approximations on records/socialSecurityEarnings.ts. Residuals: future unpublished AWI/bend points use awiForYearOrLatest / bendPointsForEligibilityYearOrLatest; disability young-worker dropout, disability-year eligibility/indexing, prior-entitlement termination gaps, childcare dropout, and alternative widow indexing remain unmodeled. Disability freeze and post-entitlement recomputation stay on the socialSecurity shard."
+      "sweptOn": "2026-09-27",
+      "note": "Initial-computation base window and annual indexed-earnings penny rounding registered as approximations on records/socialSecurityEarnings.ts; the computation-year count with the 1951 floor, the contribution and benefit base cap and the cost-of-living increases since eligibility are settled there. Residuals: future unpublished AWI/bend points use awiForYearOrLatest / bendPointsForEligibilityYearOrLatest; disability young-worker dropout, disability-year eligibility/indexing, prior-entitlement termination gaps, childcare dropout, and alternative widow indexing remain unmodeled. Disability freeze and post-entitlement recomputation stay on the socialSecurity shard."
     },
     {
       "path": "strategies/accountEligibility.ts",
@@ -780,12 +780,12 @@
     {
       "module": "socialSecurity",
       "path": "rule-coverage/socialSecurity.json",
-      "ruleCount": 50
+      "ruleCount": 51
     },
     {
       "module": "socialSecurityEarnings",
       "path": "rule-coverage/socialSecurityEarnings.json",
-      "ruleCount": 3
+      "ruleCount": 5
     },
     {
       "module": "socialSecurityMaritalEligibility",
@@ -825,13 +825,13 @@
   ],
   "quoteFidelity": {
     "generatedAt": "2026-09-23T22:50:50.754Z",
-    "entryCount": 1565,
+    "entryCount": 1581,
     "fetched": 0,
     "cached": 433,
     "counts": {
       "ELISION-EXACT": 127,
       "ELISION-PUNCTUATION": 1,
-      "EXACT": 1069,
+      "EXACT": 1085,
       "PDF-NOT-VERIFIABLE": 1,
       "PDF-WORD-LEVEL": 358,
       "PUNCTUATION": 4,
@@ -937,6 +937,222 @@
           {
             "id": "cfr-26-1-36B-3-g-1-applicable-percentage-rounding",
             "citation": "Instructions for Form 8962 (2025), Worksheet 2, line 4"
+          }
+        ]
+      },
+      {
+        "on": "2026-09-27",
+        "note": "Changed by the D-SS-LAW-2 Social Security law change (the widow's limit applied after the age reduction): the whole of 42 U.S.C. 402(e)(2)(D) and POMS RS 00615.320 A.1 were added to this record, and every authority of the record was checked against its source with verify-quotes on 2026-09-27, filtered to this record: six EXACT and one PUNCTUATION, the 20 CFR 404.338(c) quote, unchanged by this change (its \"82 1/2\" fraction); no other entry was re-run.",
+        "entries": [
+          {
+            "id": "poms-rs-00615-320-rib-lim-after-survivor-reduction",
+            "citation": "42 U.S.C. 402(e)(2)(D)"
+          },
+          {
+            "id": "poms-rs-00615-320-rib-lim-after-survivor-reduction",
+            "citation": "20 CFR 404.338(c)"
+          },
+          {
+            "id": "poms-rs-00615-320-rib-lim-after-survivor-reduction",
+            "citation": "SSA POMS RS 00615.320, § A.1"
+          },
+          {
+            "id": "poms-rs-00615-320-rib-lim-after-survivor-reduction",
+            "citation": "SSA POMS RS 00615.320, § A.2"
+          },
+          {
+            "id": "poms-rs-00615-320-rib-lim-after-survivor-reduction",
+            "citation": "SSA POMS RS 00615.320, § A.3"
+          }
+        ]
+      },
+      {
+        "on": "2026-09-27",
+        "note": "Added by the D-SS-LAW-2 Social Security law change (the widow(er) reduction from the first month of widow(er) entitlement): the new record's five authorities, each checked against its source with verify-quotes on 2026-09-27, filtered to this record: all five EXACT; no other entry was re-run.",
+        "entries": [
+          {
+            "id": "usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month",
+            "citation": "42 U.S.C. 402(q)(6)(A)(iii)"
+          },
+          {
+            "id": "usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month",
+            "citation": "42 U.S.C. 402(q)(3)(E)"
+          },
+          {
+            "id": "usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month",
+            "citation": "42 U.S.C. 402(q)(7)(A)"
+          },
+          {
+            "id": "usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month",
+            "citation": "20 CFR 404.410(c)(1)"
+          },
+          {
+            "id": "usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month",
+            "citation": "20 CFR 404.621(a)(4)(ii)"
+          }
+        ]
+      },
+      {
+        "on": "2026-09-27",
+        "note": "Changed by the D-SS-LAW-2 Social Security law change (own benefit plus the separately reduced spouse excess, for a current and a divorced spouse): 42 U.S.C. 402(q)(6)(A)(ii) and 402(q)(5)(C) were added to this record, and every authority of the record was checked against its source with verify-quotes on 2026-09-27, filtered to this record: all six EXACT; no other entry was re-run.",
+        "entries": [
+          {
+            "id": "usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement",
+            "citation": "42 U.S.C. 402(q)(3)(A)-(B)"
+          },
+          {
+            "id": "usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement",
+            "citation": "42 U.S.C. 402(k)(3)(A)"
+          },
+          {
+            "id": "usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement",
+            "citation": "42 U.S.C. 402(q)(6)(A)(ii)"
+          },
+          {
+            "id": "usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement",
+            "citation": "42 U.S.C. 402(q)(5)(C)"
+          },
+          {
+            "id": "usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement",
+            "citation": "SSA POMS RS 00615.250, A. Policy"
+          },
+          {
+            "id": "usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement",
+            "citation": "SSA POMS RS 00615.694, A. Policy"
+          }
+        ]
+      },
+      {
+        "on": "2026-09-27",
+        "note": "Added by the D-SS-LAW-2 Social Security law change (earnings above each year's contribution and benefit base, from 1951): the new record's two authorities, each checked against its source with verify-quotes on 2026-09-27, filtered to this record: both EXACT; no other entry was re-run.",
+        "entries": [
+          {
+            "id": "usc-42-415-e-1-earnings-above-the-base-not-counted",
+            "citation": "42 U.S.C. 415(e)(1)"
+          },
+          {
+            "id": "usc-42-415-e-1-earnings-above-the-base-not-counted",
+            "citation": "42 U.S.C. 415(b)(2)(B)(ii)"
+          }
+        ]
+      },
+      {
+        "on": "2026-09-27",
+        "note": "Added by the D-SS-LAW-2 Social Security law change (the cost-of-living increases since eligibility for a PIA from earnings): the new record's three authorities, each checked against its source with verify-quotes on 2026-09-27, filtered to this record: all three EXACT; no other entry was re-run.",
+        "entries": [
+          {
+            "id": "usc-42-415-i-2-A-pia-cost-of-living-since-eligibility",
+            "citation": "42 U.S.C. 415(i)(2)(A)(ii)"
+          },
+          {
+            "id": "usc-42-415-i-2-A-pia-cost-of-living-since-eligibility",
+            "citation": "42 U.S.C. 415(i)(2)(A)(iii)"
+          }
+        ]
+      },
+      {
+        "on": "2026-09-27",
+        "note": "Changed in the independent review of the D-SS-LAW-2 change: SSA POMS RS 00202.005 B.2.a (an ex who need not have filed must be 62 throughout the first month of a divorced spouse's benefit) was added to this record, and every authority of the record was checked against its source with verify-quotes on 2026-09-27, filtered to this record; all seven EXACT, no other entry was re-run.",
+        "entries": [
+          {
+            "id": "usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement",
+            "citation": "42 U.S.C. 402(q)(3)(A)-(B)"
+          },
+          {
+            "id": "usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement",
+            "citation": "42 U.S.C. 402(k)(3)(A)"
+          },
+          {
+            "id": "usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement",
+            "citation": "42 U.S.C. 402(q)(6)(A)(ii)"
+          },
+          {
+            "id": "usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement",
+            "citation": "42 U.S.C. 402(q)(5)(C)"
+          },
+          {
+            "id": "usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement",
+            "citation": "SSA POMS RS 00202.005, B.2.a"
+          },
+          {
+            "id": "usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement",
+            "citation": "SSA POMS RS 00615.250, A. Policy"
+          },
+          {
+            "id": "usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement",
+            "citation": "SSA POMS RS 00615.694, A. Policy"
+          }
+        ]
+      },
+      {
+        "on": "2026-09-27",
+        "note": "Changed in the review of RetireGolden #755 (D-SS-LAW-2): 42 U.S.C. 403(b)(1) and 20 CFR 404.412(a)(1) were added to this record for the rule that months withheld while a widow(er) benefit was paid also credit the own old-age reduction, and every authority of the record was checked against its source with verify-quotes on 2026-09-27, filtered to this record: all seven EXACT; no other entry was re-run.",
+        "entries": [
+          {
+            "id": "usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month",
+            "citation": "42 U.S.C. 402(q)(6)(A)(iii)"
+          },
+          {
+            "id": "usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month",
+            "citation": "42 U.S.C. 402(q)(3)(E)"
+          },
+          {
+            "id": "usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month",
+            "citation": "42 U.S.C. 402(q)(7)(A)"
+          },
+          {
+            "id": "usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month",
+            "citation": "20 CFR 404.410(c)(1)"
+          },
+          {
+            "id": "usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month",
+            "citation": "20 CFR 404.621(a)(4)(ii)"
+          },
+          {
+            "id": "usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month",
+            "citation": "42 U.S.C. 403(b)(1)"
+          },
+          {
+            "id": "usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month",
+            "citation": "20 CFR 404.412(a)(1)"
+          }
+        ]
+      },
+      {
+        "on": "2026-09-27",
+        "note": "Changed in the review of RetireGolden #755 (D-SS-LAW-2): the record's statement now says the age-62 gate on a living ex admits the calendar year of the first month the ex is 62 throughout; every authority of the record was re-checked against its source with verify-quotes on 2026-09-27, filtered to this record: all eight EXACT, unchanged; no other entry was re-run.",
+        "entries": [
+          {
+            "id": "cfr-20-404-331-living-divorced-spouse-eligibility",
+            "citation": "20 CFR 404.331"
+          },
+          {
+            "id": "cfr-20-404-331-living-divorced-spouse-eligibility",
+            "citation": "20 CFR 404.331(a)(2)"
+          },
+          {
+            "id": "cfr-20-404-331-living-divorced-spouse-eligibility",
+            "citation": "20 CFR 404.331(c)"
+          },
+          {
+            "id": "cfr-20-404-331-living-divorced-spouse-eligibility",
+            "citation": "20 CFR 404.331(f)"
+          },
+          {
+            "id": "cfr-20-404-331-living-divorced-spouse-eligibility",
+            "citation": "42 U.S.C. 402(b)(1)"
+          },
+          {
+            "id": "cfr-20-404-331-living-divorced-spouse-eligibility",
+            "citation": "42 U.S.C. 402(b)(4)(A)"
+          },
+          {
+            "id": "cfr-20-404-331-living-divorced-spouse-eligibility",
+            "citation": "42 U.S.C. 402(c)(4)(A)"
+          },
+          {
+            "id": "cfr-20-404-331-living-divorced-spouse-eligibility",
+            "citation": "42 U.S.C. 416(d)(1)"
           }
         ]
       }

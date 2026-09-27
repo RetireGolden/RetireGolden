@@ -7,6 +7,8 @@ they are kept as the approved record of that derivation and no longer describe t
 (2029, with 2027 and 2028 as bridges), at the end of this file, derive the household as it now is**, and the rows
 module and its test hold the engine to them. Their independent check is `REVIEW-2026-09-27.md`.
 
+**Retired Social Security citations (2026-09-27, decision D-SS-LAW-2).** Parts I and II cite `socialSecurity/currentSpouseBenefit.ts` and the worksheets `current-spouse-excess-poms-order` and `current-spouse-excess-fallback`. D-SS-LAW-2 removed them: every spouse path now uses `socialSecurity/dualEntitlement.ts#spouseDualEntitlementMonthly`, and the worksheet is `dual-entitlement-composition` (an absolute $0.005 fixture tolerance), which the walkthrough module cites. Those citations, their line numbers and their tolerances are kept below as the history of the 2026-09-22 derivation; the figures they support are unchanged, and row 19 gives the current references.
+
 Independent hand derivation of the first projection year of the curated example `bracket-fill-roth`
 (`packages/planner-ui/src/planner/examples/buildBracketFillRoth.ts`), for the public walkthrough page and the test
 that will hold the engine to it.
@@ -22,7 +24,7 @@ files: two doc-comment or catalog-string edits (`socialSecurity/currentSpouseBen
 `rules/calculations/socialSecurity.ts`), an optional `unit` field on `WalkthroughRow` (`walkthroughs/walkthrough.ts`),
 the two sibling row files, and four coverage or evidence JSON files. None changes behavior this plan reaches. Line
 numbers below are those of `0907b126`; the one that shifts at the new HEAD is `currentSpouseBenefit.ts` line 98, now
-line 100. The rows author should give the age, count and year rows the new `unit`. I did not run the engine, run any
+line 100 (that module was removed on 2026-09-27; see the note at the top). The rows author should give the age, count and year rows the new `unit`. I did not run the engine, run any
 test, or execute any TypeScript or JavaScript, and I modified no repository file. I did the arithmetic by hand and
 checked it with exact rational arithmetic (Python `fractions`). I replayed one bisection (the conversion sizer) and
 one exact-cent split (the owner allocation) in Python IEEE-754 doubles and integers, written from the loop text; that
@@ -51,7 +53,7 @@ dollar composition, for example `portfolio-need-annual`, `tax-total-annual`, `ro
 line 11); 16 state exact equality because their chosen inputs are whole dollars, whole years, enumerations or exact
 integer cents; 2, `delayed-retirement-credit-factor` and `social-security-cola-factor`, state 1e-12 for exact ratio
 arithmetic; 2, the two current-spouse worksheets, state 1e-9 dollars (one of them adding "exact to cents" for its
-integer-dollar combined result). The full list is at the end of this paragraph. This plan's figures are not whole
+integer-dollar combined result; both retired on 2026-09-27, see the note at the top). The full list is at the end of this paragraph. This plan's figures are not whole
 dollars (the RMD is a multiple of 1/53), so each figure is given as its exact value (a fraction, or a terminating
 decimal) and then rounded half-up to the cent for display. **A test should compare against the exact value with
 tolerance 0.005, not against the cent-rounded display value summed downstream.** Two things differ from the siblings:
@@ -77,7 +79,8 @@ Worksheets cited, by stated tolerance. **$0.005 (22):** `social-security-benefit
 `federal-taxable-social-security-tiers`, `federal-standard-deduction-age-65`, `federal-ordinary-bracket-tax`,
 `federal-amt-screen`, `tax-penalties-annual`, `medicare-irmaa-two-year-lookback`, `irmaa-lookback-selection`,
 `medicare-magi-composition`. **1e-12 (2):** `delayed-retirement-credit-factor`, `social-security-cola-factor`.
-**1e-9 (2):** `current-spouse-excess-poms-order`, `current-spouse-excess-fallback`.
+**1e-9 (2):** `current-spouse-excess-poms-order`, `current-spouse-excess-fallback` (both retired on 2026-09-27 and
+replaced by `dual-entitlement-composition`, $0.005; see the note at the top).
 
 ---
 
@@ -188,7 +191,7 @@ the pack-year scale and the conversion-sizing scale `inflFactorFrom(pack.year 20
 | 16 | COLA factor / haircut factor | 1 / 1 | `matchInflation` compounds from the projection start, so 1 in 2026 whatever the claim year; `ssHaircut` null | `YearIncomes.socialSecurity` doc ("COLA factor: the inflation factor from the start year under matchInflation"); worksheet `social-security-cola-factor` ("factor 1 in the first year"); `simulate.ts` lines 1653–1660 |
 | 17 | Morgan's own benefit | 2,700.00 a month; **32,400.00** a year | 2,500 × 1.08; × 12 × 1 × 1 | worksheet `social-security-benefit-annual`; `YearIncomes.socialSecurity` doc |
 | 18 | Riley's own benefit | 1,944.00 a month; **23,328.00** a year | 1,800 × 1.08; × 12 × 1 × 1 | same |
-| 19 | Spousal candidate for Riley (the lower PIA) | **no top-up**; Riley stays on her own 23,328 | The guarded POMS-order helper returns null because Riley's configured claim (804 months) is not before her FRA (792): `if (claimantDate.claimAgeMonths >= claimantFraMonths) return null`. The fallback then gives excess = max(0, 0.5 × 2,500 × spousal factor 1 − 1,944) = max(0, 1,250 − 1,944) = 0 (the spousal factor is 1 at or after FRA and earns no delayed credits); the family-maximum cap of a zero excess is 0; the candidate 1,944 × 12 = 23,328 is not larger than her own 23,328, so it does not replace it. Morgan, the higher PIA, gets no spousal candidate | `YearIncomes.socialSecurity` doc ("current-spouse spousal (the lower earner's own monthly + max(0, 0.5 × the higher PIA × the spousal factor − own monthly), the excess capped by the family maximum) … replaces the running amount only when larger"); `currentSpouseBenefit.ts` line 98 (body); `claimFactor.ts` line 58 ("no delayed credits on spousal benefits"); `annualSocialSecurity.ts` lines 233–317 (body); worksheets `current-spouse-excess-fallback`, `current-spouse-excess-poms-order`; section 3, A7 |
+| 19 | Spousal candidate for Riley (the lower PIA) | **no top-up**; Riley stays on her own 23,328 | Every spouse path prices dual entitlement with `dualEntitlement.ts#spouseDualEntitlementMonthly`: max(own, min(own, own PIA) + max(0, 0.5 × the higher PIA − own PIA) × spouse factor) = max(1,944, 1,800 + max(0, 1,250 − 1,800) × 1) = 1,944 (the spouse factor is 1 at or after FRA and earns no delayed credits); the family-maximum cap of a zero excess is 0; the candidate 1,944 × 12 = 23,328 is not larger than her own 23,328, so it does not replace it. Morgan, the higher PIA, gets no spousal candidate. (This row was derived on 2026-09-22 against the helper then in force, a guarded POMS-order helper in `currentSpouseBenefit.ts` that returned null because Riley's configured claim, 804 months, is not before her FRA, 792, and a fallback that gave excess = max(0, 1,250 − 1,944) = 0; decision D-SS-LAW-2 replaced both on 2026-09-27, with the same figure here.) | `YearIncomes.socialSecurity` doc ("a divorced-spouse or current-spouse candidate (the claimant's own monthly held at the own PIA, plus the spouse factor × max(0, 0.5 × the other person's PIA − the claimant's own PIA), and never less than the own monthly … replaces the running amount only when larger"); `dualEntitlement.ts#spouseDualEntitlementMonthly` lines 69–74; `claimFactor.ts` line 77 ("no delayed credits on spousal benefits"); `annualSocialSecurity.ts` lines 317–403, the current-spouse pass (body); worksheet `dual-entitlement-composition`; section 3, A7. Line numbers in this row are those of the D-SS-LAW-2 change (RetireGolden #755), not of `0907b126` |
 | 20 | **`incomes.socialSecurity`** | **55,728.00** | 32,400 + 23,328 | worksheet `social-security-benefit-annual`; `YearIncomes.socialSecurity` doc |
 | 21 | `socialSecurityStreams` | `--ss-m`: source `own-retirement`, `annualAmount` 32,400, `claimInForce` true; `--ss-r`: `own-retirement`, 23,328, true | one stream per person, each its person's gate stream | `YearResult.socialSecurityStreams` doc; `annualSocialSecurity.ts` lines 438–477 (body) |
 | 22 | `ssEarningsTestWithheld` / `ssdiPaid` | 0 / 0 | no wages; both past FRA; no disability | `YearResult` docs |

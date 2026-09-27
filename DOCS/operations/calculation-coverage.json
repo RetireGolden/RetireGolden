@@ -150,7 +150,6 @@
       "scenario-lifetime-penalties",
       "scenario-lifetime-tax",
       "sepp-distribution-annual",
-      "social-security-benefit-annual",
       "social-security-bridge-sizing",
       "spending-base-annual",
       "spending-care-cost-gross-annual",
@@ -233,6 +232,7 @@
       "simple-candidate-evaluation-incomplete-computation-years",
       "simple-candidate-evaluation-lifetime-tax-delta",
       "simple-candidate-evaluation-money-lasts-years-delta",
+      "social-security-benefit-annual",
       "solved-initial-withdrawal-rate-pct",
       "solved-spending-rounded-to-hundred",
       "spending-guardrail-factor-annual",
@@ -695,17 +695,19 @@
         "sepp-active-annual-rule"
       ],
       "social-security-benefit-annual": [
-        "current-spouse-excess-fallback",
-        "current-spouse-excess-poms-order",
+        "aime-covered-earnings-cap",
         "delayed-retirement-credit-factor",
+        "dual-entitlement-composition",
         "early-claim-factor",
         "family-maximum-bend-points",
         "income-wages-annual",
         "normal-retirement-age",
+        "pia-cost-of-living-since-eligibility",
         "pia-from-aime-bend-points",
         "social-security-cola-factor",
         "social-security-payable-months",
-        "survivor-benefit-rib-lim"
+        "survivor-benefit-rib-lim",
+        "survivor-reduction-entitlement-month"
       ],
       "solved-initial-withdrawal-rate-pct": [
         "solved-spending-rounding",
@@ -841,16 +843,16 @@
     }
   },
   "records": {
-    "total": 241,
+    "total": 243,
     "byKind": {
-      "composition": 81,
+      "composition": 83,
       "data": 17,
-      "formula": 85,
-      "model": 58
+      "formula": 86,
+      "model": 57
     },
     "byJustificationKind": {
       "dataset": 5,
-      "derivation": 236
+      "derivation": 238
     }
   },
   "oracleExamples": [
@@ -1071,7 +1073,7 @@
     {
       "group": "socialSecurity",
       "path": "calculation-coverage/socialSecurity.json",
-      "recordCount": 12
+      "recordCount": 14
     },
     {
       "group": "spendingAndWithdrawals",

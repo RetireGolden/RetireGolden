@@ -66,6 +66,41 @@ function requireDoc(kind: 'worksheet' | 'mutation', repoPath: string): void {
   }
 }
 
+/**
+ * The rows of the first table under a worksheet's `## Expected` heading, keyed
+ * by the first cell, each mapped to its remaining cells as printed (bold marks
+ * removed). An evidence test takes its expected values from here, so the
+ * figures it asserts are the worksheet's own and cannot drift from them.
+ */
+export function worksheetExpectedRows(repoPath: string): ReadonlyMap<string, readonly string[]> {
+  requireDoc('worksheet', repoPath)
+  const text = docText(repoPath)!.replace(/\r\n/gu, '\n')
+  const start = text.indexOf('\n## Expected')
+  if (start < 0) throw new RangeError(`Worksheet ${repoPath} has no "## Expected" section`)
+  const next = text.indexOf('\n## ', start + 1)
+  const section = text.slice(start, next < 0 ? text.length : next)
+  const lines = section.split('\n')
+  const first = lines.findIndex((line) => line.startsWith('|'))
+  if (first < 0) throw new RangeError(`Worksheet ${repoPath} has no table under "## Expected"`)
+  const rows = new Map<string, readonly string[]>()
+  // The header row and the separator are skipped; the table ends at its first
+  // line that does not start with a bar.
+  for (const line of lines.slice(first + 2)) {
+    if (!line.startsWith('|')) break
+    const cells = line.split('|').slice(1, -1).map((cell) => cell.replace(/\*\*/gu, '').trim())
+    if (rows.has(cells[0]!)) throw new RangeError(`Worksheet ${repoPath} repeats the Expected row "${cells[0]}"`)
+    rows.set(cells[0]!, cells.slice(1))
+  }
+  return rows
+}
+
+/** A worksheet cell such as "1,911.43", "$1,650.00" or "−0.5" as a number. */
+export function worksheetNumber(cell: string): number {
+  const value = Number(cell.replace(/[$,\s]/gu, '').replace(/−/gu, '-'))
+  if (!Number.isFinite(value)) throw new RangeError(`Worksheet cell "${cell}" is not a number`)
+  return value
+}
+
 function integerLeaves(value: unknown, path: string, found: string[]): void {
   if (typeof value === 'number') {
     if (!Number.isInteger(value)) found.push(path)

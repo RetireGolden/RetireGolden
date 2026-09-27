@@ -1,7 +1,7 @@
 /**
  * GENERATED FILE — DO NOT EDIT BY HAND.
  *
- * Output field coverage imported from the output-family census at commit 0410dc80dbb8386a74ad8ab15a4a1be44cd55225.
+ * Output field coverage imported from the output-family census at commit 958f225cf668fa684bdbc05fca4240d7a8601474.
  * Regenerate: node packages/engine/scripts/import-output-census.mjs <census-dir>
  */
 
@@ -7982,7 +7982,7 @@ const coverageCensus = [
     "disposition": "family",
     "familyId": "social-security-pia-annualized",
     "tsType": "number",
-    "note": "CoupleStrategyPanel in SsAnalysisPage.tsx: multiplies each claimant's pia (the monthly PIA that claimingPeople resolves through resolvePia, a plan input or the engine earnings-record piaMonthly) by 12 and prints it through fmtMoneyCompact as '$X/yr' for the higher and lower earner; there is no rounding beyond fmtMoneyCompact, and the panel renders only for exactly two claiming people."
+    "note": "CoupleStrategyPanel in SsAnalysisPage.tsx: multiplies each claimant's pia (the monthly PIA that claimingPeople resolves through resolvePia, a plan input, or the engine earnings-record piaMonthly raised by the cost-of-living increases since eligibility through the year before the plan starts, as the ledger pays it) by 12 and prints it through fmtMoneyCompact as '$X/yr' for the higher and lower earner; there is no rounding beyond fmtMoneyCompact, and the panel renders only for exactly two claiming people."
   },
   {
     "source": "planner-ui/src/planner/SsAnalysisPage.tsx",

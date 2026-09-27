@@ -81,24 +81,24 @@
       "label": "annual helper invocation, caller-owned commit hooks and live result selection",
       "file": "projection/simulate.ts",
       "lines": [
-        1600,
-        1630
+        1621,
+        1651
       ],
       "anchors": [
         {
-          "line": 1600,
+          "line": 1621,
           "text": "const incomeSetup = annualIncomeSetup({"
         },
         {
-          "line": 1615,
+          "line": 1636,
           "text": "commitDistributedYield: yearSites === null"
         },
         {
-          "line": 1618,
+          "line": 1639,
           "text": "commitWage: yearSites === null"
         },
         {
-          "line": 1629,
+          "line": 1650,
           "text": "let ordinaryIncome = incomeSetup.ordinaryIncome"
         }
       ]

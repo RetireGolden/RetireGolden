@@ -3,9 +3,14 @@ import type { Detector, InsightCard } from '../types.js'
 import type { FormerSpouse, Plan } from '../../model/plan.js'
 import type { SocialSecurityStreamActivity } from '../../projection/types.js'
 import { annualSocialSecurityPayableMonths } from '../../projection/internal/annualSocialSecurity.js'
-import { claimFactor, spousalBenefitFactor } from '../../socialSecurity/claimFactor.js'
-import { ordinarySimultaneousEarlyCurrentSpouseComponents } from '../../socialSecurity/currentSpouseBenefit.js'
-import { capAuxiliaryForFamilyMaximum } from '../../socialSecurity/familyMaximum.js'
+import { claimFactor } from '../../socialSecurity/claimFactor.js'
+import {
+  claimStartMonthIndex,
+  spouseDualEntitlementMonthly,
+  spouseEntitlementAgeMonths,
+  spouseReductionFactorAtAgeMonths,
+} from '../../socialSecurity/dualEntitlement.js'
+import { capAuxiliaryForFamilyMaximum, claimAgeTotalMonths } from '../../socialSecurity/familyMaximum.js'
 import { bestMaritalBenefit } from '../../socialSecurity/maritalBenefits.js'
 import { effectiveBirthYear, fraForBirthYear } from '../../socialSecurity/nra.js'
 import { socialSecurityDobParts } from '../../socialSecurity/annualTiming.js'
@@ -13,7 +18,9 @@ import {
   computePiaFromEarnings,
   isPiaFromEarningsError,
   piaInputFromEarnings,
+  piaWithCostOfLivingIncreases,
   resolveEarningsProjection,
+  socialSecurityColaAssumptionPct,
 } from '../../socialSecurity/piaFromEarnings.js'
 
 type SocialSecurityIncome = Extract<Plan['incomes'][number], { type: 'socialSecurity' }>
@@ -39,14 +46,31 @@ function isVisiblePositiveAmount(amount: number): boolean {
 }
 
 /**
+ * The projection's first year and the plan's COLA assumption: what the sim
+ * needs to bring an earnings-derived PIA to the first year's dollars.
+ */
+interface PiaAsOf {
+  readonly startYear: number
+  readonly colaAssumptionPct: number
+}
+
+function piaAsOf(plan: Plan, startYear: number): PiaAsOf {
+  return { startYear, colaAssumptionPct: socialSecurityColaAssumptionPct(plan.assumptions) }
+}
+
+/**
  * Own PIA for the winning-anchor comparison — same resolver the sim uses:
- * entered `piaMonthly`, else AIME → bend points from earnings history.
- * Returns null when neither path yields a usable PIA (cannot prove a
- * pre-horizon marital win over own).
+ * entered `piaMonthly`, else AIME → bend points from earnings history, raised
+ * by the cost-of-living increases from the eligibility year to the projection's
+ * first year (42 U.S.C. 415(i)(2)(A)(iii)) when `asOf` is given; null `asOf`
+ * serves callers that only test whether a PIA resolves. Returns null when
+ * neither path yields a usable PIA (cannot prove a pre-horizon marital win over
+ * own).
  */
 function resolveOwnPiaMonthly(
   streamIncome: SocialSecurityIncome,
   claimant: HouseholdPerson,
+  asOf: PiaAsOf | null,
 ): number | null {
   if (streamIncome.piaMonthly !== null) return streamIncome.piaMonthly
   if (!streamIncome.earnings || streamIncome.earnings.length === 0) return null
@@ -59,7 +83,13 @@ function resolveOwnPiaMonthly(
     piaInputFromEarnings(y, m, d, streamIncome.earnings, projection),
   )
   if (isPiaFromEarningsError(result)) return null
-  return result.piaMonthly
+  if (asOf === null) return result.piaMonthly
+  return piaWithCostOfLivingIncreases(
+    result.piaMonthly,
+    result.eligibilityYear,
+    asOf.startYear - 1,
+    asOf.colaAssumptionPct,
+  ).piaMonthly
 }
 
 /**
@@ -78,6 +108,7 @@ function resolveOwnAnnualSum(
   personId: string,
   claimant: HouseholdPerson,
   ageAttained: number,
+  asOf: PiaAsOf,
 ): number | null {
   const { y: birthYear, m: birthMonth, d: birthDay } = socialSecurityDobParts(claimant)
   const personFraYears = fraForBirthYear(
@@ -88,7 +119,7 @@ function resolveOwnAnnualSum(
   let anyResolved = false
   for (const stream of plan.incomes) {
     if (stream.type !== 'socialSecurity' || stream.personId !== personId) continue
-    const pia = resolveOwnPiaMonthly(stream, claimant)
+    const pia = resolveOwnPiaMonthly(stream, claimant, asOf)
     if (pia === null) continue
     anyResolved = true
 
@@ -121,6 +152,7 @@ function resolveOwnMonthlyRate(
   personId: string,
   person: HouseholdPerson,
   ageAttained: number,
+  asOf: PiaAsOf,
 ): number | null {
   const { y: birthYear, m: birthMonth, d: birthDay } = socialSecurityDobParts(person)
   const personFraYears = fraForBirthYear(
@@ -131,7 +163,7 @@ function resolveOwnMonthlyRate(
   let anyResolved = false
   for (const stream of plan.incomes) {
     if (stream.type !== 'socialSecurity' || stream.personId !== personId) continue
-    const pia = resolveOwnPiaMonthly(stream, person)
+    const pia = resolveOwnPiaMonthly(stream, person, asOf)
     if (pia === null) continue
     anyResolved = true
 
@@ -154,7 +186,10 @@ function resolveOwnMonthlyRate(
 /**
  * Current-spouse spousal total annual that annualSocialSecurity.ts would assign
  * the claimant in the prior year (lower-earner top-up, family-max capped) — 0
- * when not eligible. Mirrors its current-spouse pass after the former-spouse menu.
+ * when not eligible. Mirrors its current-spouse pass after the former-spouse menu:
+ * the shared dual-entitlement composition at the claimant's age in the first
+ * month of the spouse benefit, from the configured claim ages (no earnings-test
+ * credit before the horizon).
  */
 function resolveCurrentSpouseSpousalAnnualPriorYear(args: {
   plan: Plan
@@ -162,7 +197,7 @@ function resolveCurrentSpouseSpousalAnnualPriorYear(args: {
   claimantAgePrior: number
   coPersonId: string
   coPersonAgePrior: number
-  bothAliveInPricedPeriod: boolean
+  asOf: PiaAsOf
 }): number {
   const {
     plan,
@@ -170,7 +205,7 @@ function resolveCurrentSpouseSpousalAnnualPriorYear(args: {
     claimantAgePrior,
     coPersonId,
     coPersonAgePrior,
-    bothAliveInPricedPeriod,
+    asOf,
   } = args
   const claimant = plan.household.people.find((row) => row.id === claimantPersonId)
   const coPerson = plan.household.people.find((row) => row.id === coPersonId)
@@ -182,16 +217,9 @@ function resolveCurrentSpouseSpousalAnnualPriorYear(args: {
   const coStream = lastSsIncomeForPerson(plan, coPersonId)
   if (claimantStream === undefined || coStream === undefined) return 0
 
-  const claimantPia = resolveOwnPiaMonthly(claimantStream, claimant)
-  const coPia = resolveOwnPiaMonthly(coStream, coPerson)
+  const claimantPia = resolveOwnPiaMonthly(claimantStream, claimant, asOf)
+  const coPia = resolveOwnPiaMonthly(coStream, coPerson, asOf)
   if (claimantPia === null || coPia === null) return 0
-
-  const claimantStreamCount = plan.incomes.filter(
-    (income) => income.type === 'socialSecurity' && income.personId === claimantPersonId,
-  ).length
-  const workerStreamCount = plan.incomes.filter(
-    (income) => income.type === 'socialSecurity' && income.personId === coPersonId,
-  ).length
 
   const claimantMonths = annualSocialSecurityPayableMonths(
     claimantAgePrior,
@@ -230,49 +258,32 @@ function resolveCurrentSpouseSpousalAnnualPriorYear(args: {
     month: higherDobParts.m,
     day: higherDobParts.d,
   }
-  const spousalFactor = spousalBenefitFactor(
-    lowerDob.year,
-    lowerDob.month,
-    lowerDob.day,
-    lower.stream.claimAge,
+  const spouseFactor = spouseReductionFactorAtAgeMonths(
+    lowerDob,
+    spouseEntitlementAgeMonths(
+      lowerDob,
+      claimAgeTotalMonths(lower.stream.claimAge),
+      claimStartMonthIndex(higherDob, claimAgeTotalMonths(higher.stream.claimAge)),
+    ),
   )
-  const rawSpousalMonthly = 0.5 * higher.pia * spousalFactor
-  const lowerOwnMonthly = resolveOwnMonthlyRate(plan, lower.person.id, lower.person, lower.age) ?? 0
+  const lowerOwnMonthly = resolveOwnMonthlyRate(plan, lower.person.id, lower.person, lower.age, asOf) ?? 0
   const higherOwnMonthly =
-    resolveOwnMonthlyRate(plan, higher.person.id, higher.person, higher.age) ??
+    resolveOwnMonthlyRate(plan, higher.person.id, higher.person, higher.age, asOf) ??
     higher.pia *
       claimFactor(higherDob.year, higherDob.month, higherDob.day, higher.stream.claimAge)
-  const guardedComponents = ordinarySimultaneousEarlyCurrentSpouseComponents({
-    currentSpouseContext:
-      plan.household.filingStatus === 'marriedFilingJointly' &&
-      plan.household.people.length === 2,
-    bothAliveInPricedPeriod,
-    spousalPayableMonths: spousalMonths,
-    claimantDob: lower.person.dob,
-    workerDob: higher.person.dob,
-    claimantClaimAge: lower.stream.claimAge,
-    workerClaimAge: higher.stream.claimAge,
-    claimantSocialSecurityStreamCount: claimantStreamCount,
-    workerSocialSecurityStreamCount: workerStreamCount,
-    claimantDisabilityDeclared: lower.stream.disability !== undefined,
-    workerDisabilityDeclared: higher.stream.disability !== undefined,
+  const combinedMonthly = spouseDualEntitlementMonthly({
     ownPiaMonthly: lower.pia,
     ownActualMonthly: lowerOwnMonthly,
-    workerPiaMonthly: higher.pia,
-    spousalFactor,
+    spouseBaseMonthly: 0.5 * higher.pia,
+    spouseFactor,
   })
-  const excessSpousalMonthly =
-    guardedComponents?.auxiliaryMonthly ??
-    Math.max(0, rawSpousalMonthly - lowerOwnMonthly)
   const cappedExcessMonthly = capAuxiliaryForFamilyMaximum({
     workerPiaMonthly: higher.pia,
     workerActualMonthly: higherOwnMonthly,
     workerDob: higherDob,
-    auxiliaryMonthly: excessSpousalMonthly,
+    auxiliaryMonthly: combinedMonthly - lowerOwnMonthly,
   })
-  const spousalTotalMonthly =
-    (guardedComponents?.ownMonthly ?? lowerOwnMonthly) + cappedExcessMonthly
-  return spousalTotalMonthly * spousalMonths
+  return (lowerOwnMonthly + cappedExcessMonthly) * spousalMonths
 }
 
 /**
@@ -336,6 +347,13 @@ function formerSpouseWonOverOwnPriorYear(args: {
   }
   const priorYear = startYear - 1
   const claimantAgePrior = projectedAge - 1
+  const asOf = piaAsOf(plan, startYear)
+  // A divorced spouse's candidate is the own benefit plus the reduced excess, so
+  // the menu takes the claimant's own PIA (the gate stream's, as the ledger does)
+  // and own benefit in the prior year; no own benefit prices as zero.
+  const gateStream = lastSsIncomeForPerson(plan, personId)
+  const ownPiaMonthly = gateStream === undefined ? 0 : (resolveOwnPiaMonthly(gateStream, claimant, asOf) ?? 0)
+  const ownActualMonthly = resolveOwnMonthlyRate(plan, personId, claimant, claimantAgePrior, asOf) ?? 0
 
   // Mirror the former-spouse pass in annualSocialSecurity.ts: each stream's formers are priced
   // only when that stream has positive payable months in the year (claim age
@@ -357,6 +375,8 @@ function formerSpouseWonOverOwnPriorYear(args: {
     const bestPrior = bestMaritalBenefit(formers, {
       claimantDob,
       claimantClaimAge: stream.claimAge,
+      claimantOwnPiaMonthly: ownPiaMonthly,
+      claimantOwnActualMonthly: ownActualMonthly,
       claimantAge: claimantAgePrior,
       year: priorYear,
       claimantIsSingle,
@@ -382,12 +402,10 @@ function formerSpouseWonOverOwnPriorYear(args: {
           claimantAgePrior,
           coPersonId: currentSpouseCompetitor.coPersonId,
           coPersonAgePrior: currentSpouseCompetitor.coPersonAgePrior,
-          // The outer screen admits a living claimant; this competitor exists
-          // only when the household co-person was alive in the prior year.
-          bothAliveInPricedPeriod: true,
+          asOf,
         })
 
-  const ownAnnual = resolveOwnAnnualSum(plan, personId, claimant, claimantAgePrior)
+  const ownAnnual = resolveOwnAnnualSum(plan, personId, claimant, claimantAgePrior, asOf)
   if (ownAnnual === null) {
     // Cannot prove former > own; if current-spouse already beats former, former
     // was never the paying source.
@@ -508,7 +526,7 @@ function lastSsIncomeForPerson(plan: Plan, personId: string): SocialSecurityInco
     if (candidate.type !== 'socialSecurity' || candidate.personId !== personId) continue
     // Skip unresolved (no published PIA resolution) — annualSocialSecurity.ts
     // never writes them into ssStreamByPerson for spousal/survivor gating.
-    if (resolveOwnPiaMonthly(candidate, person) === null) continue
+    if (resolveOwnPiaMonthly(candidate, person, null) === null) continue
     last = candidate
   }
   return last
@@ -935,7 +953,7 @@ export const ssClaimMilestone: Detector = {
               return false
             }
             if (streamIncome === undefined) return false
-            const ownResolvedPia = resolveOwnPiaMonthly(streamIncome, person)
+            const ownResolvedPia = resolveOwnPiaMonthly(streamIncome, person, null)
             if (ownResolvedPia === null || !isVisiblePositiveAmount(ownResolvedPia)) {
               return false
             }

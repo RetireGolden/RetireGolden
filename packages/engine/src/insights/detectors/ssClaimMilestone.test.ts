@@ -2852,7 +2852,9 @@ describe('Social Security claim milestone detector', () => {
         id: 'ss-own-resolved',
         type: 'socialSecurity',
         personId: 'p1',
-        piaMonthly: 2_000,
+        // Below half the ex's 3,000, so the divorced-spouse benefit has an
+        // excess to pay (own plus reduced excess, 42 U.S.C. 402(k)(3)(A)).
+        piaMonthly: 1_000,
         earnings: null,
         claimAge: { years: 67, months: 0 },
       },
@@ -3282,5 +3284,75 @@ describe('Social Security claim milestone detector', () => {
         },
       ]),
     })
+  })
+  // The already-paying test compares the former-spouse benefit with the own
+  // PIA the projection pays from: the earnings history's eligibility-year PIA
+  // raised by the cost-of-living increases through the year before the start
+  // (pia-cost-of-living-since-eligibility). Born 1960-05-01 with $50,000 in each
+  // year 1982-2021, the earnings give 2,846.40 for 2022 and the 2022-2025
+  // increases raise it to 3,364.40; the plan's fixed 3% COLA would take a 2026
+  // increase to 3,465.30. A divorced spouse's benefit exceeds the own benefit
+  // only when half the ex's PIA exceeds the own PIA.
+  function earningsResolvedDivorcedContext(exPiaMonthly: number): DetectorContext {
+    const ctx = context(70, 62, 0)
+    ctx.plan.household.people[0] = { ...ctx.plan.household.people[0]!, dob: '1960-05-01' }
+    ctx.plan.assumptions.ssCola = { mode: 'fixed', annualPct: 3 }
+    const earnings = Array.from({ length: 40 }, (_, i) => ({ year: 1982 + i, amount: 50_000 }))
+    ctx.plan.incomes = [
+      {
+        id: 'ss',
+        type: 'socialSecurity',
+        personId: 'p1',
+        piaMonthly: null,
+        earnings,
+        claimAge: { years: 62, months: 0 },
+        formerSpouses: [
+          {
+            id: 'former-spouse',
+            relationship: 'divorced',
+            dob: '1950-01-01', // eligible well before the start
+            piaMonthly: exPiaMonthly,
+            marriageYears: 12,
+            remarriedAtAge: null,
+          },
+        ],
+      },
+    ] as never
+    const years = ctx.projection.result.years as Array<{
+      socialSecurityStreams?: unknown[]
+    }>
+    for (const year of years) {
+      year.socialSecurityStreams = [
+        {
+          personId: 'p1',
+          streamId: 'ss',
+          source: 'spousal',
+          annualAmount: 24_000,
+          claimInForce: true,
+          preWithholdingAnnual: 24_000,
+          isSpousalSurvivorGateStream: true,
+        },
+      ]
+    }
+    return ctx
+  }
+
+  it('prices the own PIA with the cost-of-living increases since eligibility: an ex PIA of 6,000 never won (3,000 < 3,364.40)', () => {
+    // Half of 6,000 is above the eligibility-year 2,846.40 but below the
+    // 3,364.40 the projection pays from, so the divorced-spouse benefit never
+    // beat the own benefit before the horizon and the start-year spousal claim
+    // is new. Read at the eligibility-year PIA it would have won and been
+    // suppressed as already paying.
+    expect(ssClaimMilestone.screen(earningsResolvedDivorcedContext(6_000))).toMatchObject({
+      title: "Pat's Social Security claim is imminent",
+      severity: 'attention',
+    })
+  })
+
+  it('raises the own PIA only through the year before the start: an ex PIA of 6,800 already won (3,400 > 3,364.40)', () => {
+    // Half of 6,800 is above 3,364.40, so the benefit was already paying and
+    // the detector stays silent. Raising the PIA through the start year itself,
+    // by the plan's 3% for 2026 (3,465.30), would make it new.
+    expect(ssClaimMilestone.screen(earningsResolvedDivorcedContext(6_800))).toBeNull()
   })
 })

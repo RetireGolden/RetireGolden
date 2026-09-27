@@ -12,9 +12,10 @@
  *
  * Survivor precision (cited in DOCS/domain/domain-rules-reference.md §4): the
  * early-claim widow(er) reduction (up to 28.5% at 60, measured against the
- * **survivor** FRA — a separate, earlier schedule than the worker FRA) and the
- * **RIB-LIM / widow's-limit** cap (`max(deceased's actual benefit, 82.5% × PIA)`)
- * are computed by the shared `survivorBenefitMonthly` helper, identical to the
+ * **survivor** FRA — a separate, earlier schedule than the worker FRA) and,
+ * after it, the **RIB-LIM / widow's limit** (`max(deceased's actual benefit,
+ * 82.5% × PIA)`, applied only when the deceased claimed early) are computed by
+ * the shared `survivorBenefitMonthly` helper, identical to the
  * projection ledger so the PV view and the ledger can't drift. Illustrative, not
  * a filing tool.
  *

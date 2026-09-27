@@ -4,6 +4,115 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## Unreleased
 
+- **Fixed: a PIA computed from an earnings history now receives the cost-of-living
+  increases since eligibility (displayed numbers change for an entered earnings history
+  of anyone born 1963 or earlier)** (decision D-SS-LAW-2, problem P12, found by the
+  independent check of the B2-P1 slice 4 derivation). The bend-point formula gives the
+  PIA of the eligibility year, and 42 U.S.C. 415(i)(2)(A)(ii)-(iii) raises it by the
+  increase of that year and every later one, floored to the dime each time, whenever the
+  person claims. The projection used it unraised: a man born 1960-05-01 with $50,000 a
+  year from 1982 to 2021 was paid $34,156.80 in 2027 rather than $40,372.80 (his 2022 PIA
+  of $2,846.40 raised by the 2022-2025 increases to $3,364.40). The engine now carries
+  SSA's COLA series (1975-2025, `COLA_PCT_BY_YEAR`) and applies it from the eligibility year
+  through the year before the projection's first year, before the ledger's own COLA; a
+  year SSA has not announced uses the plan's COLA assumption and the projection warns.
+  Maintenance: the series ends with the December 2025 increase, so from 2027-01-01 every
+  earnings-history PIA past eligibility uses that stand-in for 2026 until SSA's 2026
+  increase (announced in October 2026) is added to `COLA_PCT_BY_YEAR`.
+  The claim-milestone insight reads the same start-year PIA. An entered PIA is
+  unchanged. planner-ui's `resolvePia` (the Social Security analysis page's models and
+  the Social Security step's "Computed PIA" line) applies the same
+  `piaWithCostOfLivingIncreases`, so the step now shows that man $3,364 a month, as the
+  plan pays it from 2026, with a note that his earnings give $2,846 for 2022, and the
+  analysis page ranks claim ages on the PIA the ledger pays; `resolvePia` takes the
+  projection's first year and COLA assumption (`piaAsOfPlan`) and `claimingPeople` a
+  start year. B2-P1 slice 4 still moves the resolver into the engine. New record
+  `usc-42-415-i-2-A-pia-cost-of-living-since-eligibility` and calculation
+  `pia-cost-of-living-since-eligibility`.
+
+- **Fixed: earnings before 1979 are counted only up to that year's contribution and
+  benefit base, and the earnings window starts at 1951 (displayed numbers change for an
+  entered earnings history)** (decision D-SS-LAW-2, problem 5 of the B2-P1 slice 4
+  derivation, confirmed by its independent check). 42 U.S.C. 415(e)(1) excludes a year's
+  earnings above that year's base ($3,600 for 1951-54 up to the section 430 base from
+  1975). The engine's base table started in 1979 and capped every earlier year at the
+  latest base, $184,500: a worker born in 1956 with $50,000 a year from 1978 had the whole
+  1978 wage counted, an AIME of 7,790 and a PIA of $2,605.00, where the statute gives
+  7,436 and $2,551.90. The table now carries SSA's bases for every year from 1937, and the
+  window starts at 1951, the first computation base year (415(b)(2)(B)(ii)), which also
+  settles the five-year dropout record for workers born in 1928 or earlier (computation
+  years are the elapsed years less five; approximation fixes 74 to 73). The planner's
+  paid-in estimate reads the same table. New record
+  `usc-42-415-e-1-earnings-above-the-base-not-counted` and calculation
+  `aime-covered-earnings-cap`.
+
+- **Fixed: a spouse or divorced spouse who is also paid an own benefit gets the own
+  benefit plus the separately reduced excess, from the month the spouse benefit starts
+  (displayed numbers change)** (decision D-SS-LAW-2, problem 3 of the B2-P1 slice 4
+  derivation, confirmed by its independent check). 42 U.S.C. 402(q)(3)(B) and
+  402(k)(3)(A) pay the reduced own benefit plus the excess of half the worker's PIA over
+  the own PIA, reduced for the months before full retirement age from the first month of
+  the spouse benefit (402(q)(6)(A)(ii)); with deemed filing (402(r), for people who
+  attain 62 after 2015) that month is the later of the claimant's own claim and the
+  month the worker's benefit starts, or for a divorced spouse the first month the ex is
+  62 throughout (POMS RS 00202.005 B.2.a). The engine priced this only for simultaneous
+  early claims; a worker filing later, a claimant with delayed credits, and every
+  divorced spouse got the larger of the own benefit and half the worker's PIA reduced at
+  the claimant's own claim age. One helper,
+  `dualEntitlement.ts#spouseDualEntitlementMonthly` (the POMS RS 00615.694 one-line
+  form), now prices every path: the ledger's current spouse, the divorced-spouse menu
+  and the claim-milestone insight's prior year. Examples: a wife with an 800 PIA who
+  claimed at 62 and a husband with a 2,400 PIA who claims at 70: her $780 a month
+  becomes $960; a single claimant with an 800 PIA whose ex (PIA $2,000) is first 62
+  throughout a month when she is 63 years 9 months: $650 becomes $707.50. The records
+  `current-spouse-excess-poms-order` and `current-spouse-excess-fallback` are replaced
+  by `dual-entitlement-composition`, and
+  `usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement` now covers both spouse paths.
+  Earnings-test months are credited back to the spouse reduction only for years a spouse
+  benefit was paid (402(q)(7)). A divorced spouse's benefit is paid from the calendar
+  year of the first month the ex is 62 throughout, the whole of that year under the
+  ledger's annual convention; an ex born in December after the 2nd starts it the next
+  January, where the engine had paid it from the year the ex turned 62 (a claimant with
+  an 800 PIA who claims at 62 in 2026, whose ex, born 1964-12-05 with a $4,000 PIA,
+  turns 62 that year: $6,720 in 2026, her own benefit, rather than $15,600; $16,500 from
+  2027).
+
+- **Fixed: a widow(er) benefit is reduced from the month the survivor became a
+  widow(er), not from the survivor's own earlier claim (displayed numbers change)**
+  (decision D-SS-LAW-2, problem 1 of the B2-P1 slice 4 derivation, confirmed by its
+  independent check). 42 U.S.C. 402(q)(6)(A)(iii) starts the widow(er) reduction period
+  with the first month of widow(er) entitlement (or age 60, if later), and 402(q)(3)(E)
+  keeps an own benefit claimed earlier from lending its months to it. The ledger reduced
+  a survivor at her own claim age, as if she had been widowed when she first claimed. It
+  now uses the later of that claim and January after the year of death, the first month
+  the ledger pays the survivor (the plan states a life age, so December of the last year
+  alive is the month of death; 20 CFR 404.621(a)(4)(ii) would also let a widow(er)
+  choose the month of death itself, but the ledger pays nothing for it, so that month is
+  not counted). Example: a survivor born 1964 who claimed her own benefit at 62, widowed
+  in December 2028 by a spouse with a $2,000 PIA who claimed at 62: $15,769.29 a year
+  before, $19,800 now (both fixes). At the survivor's full retirement age, only months
+  withheld from the widow(er) benefit itself under the earnings test are credited back
+  (402(q)(7)), each widow(er) or spouse benefit counting only its own record's months;
+  months withheld from her own benefit before the death no longer are. New
+  record `usc-42-402-q-6-A-iii-widow-reduction-from-entitlement-month` and calculation
+  `survivor-reduction-entitlement-month`.
+
+- **Fixed: the widow's limit (RIB-LIM) is applied after the survivor's age reduction,
+  and only when the deceased claimed early (displayed numbers change)** (decision
+  D-SS-LAW-2, problem 2 of the B2-P1 slice 4 derivation, confirmed by its independent
+  check). 42 U.S.C. 402(e)(2)(D) reduces the widow(er) benefit for age first and then,
+  if it is still above both the deceased's actual reduced benefit and 82.5% of the PIA,
+  cuts it to the larger of the two; POMS RS 00615.320 A.3 says the same. The engine
+  took the limit first and reduced it again for age, so a survivor of an early claimant
+  who also claimed early was paid too little. Example: deceased PIA $2,400 claimed at 62
+  (paid $1,680), survivor at 62: $1,576.93 a month before, $1,911.43 now; at the
+  survivor's full retirement age both give $1,980. It reaches the ledger's survivor
+  step-up, the former-spouse survivor benefit and the survivor-switching panel. The
+  record `poms-rs-00615-320-rib-lim-after-survivor-reduction` is settled (approximation
+  fixes 75 to 74). `SurvivorBenefitInput` gains an optional `deceasedEverReduced`
+  (whether the deceased was ever paid a reduced old-age benefit); omitted, it is taken as
+  an actual benefit below the PIA, which gives the same result.
+
 - **Changed: six comparisons the planner pages computed are now published by the
   engine** (owner decisions D-UI-SS, R11, R13, R15 and R17, and slice 3's open calls
   recorded 2026-09-26; B2-P1 slice 3). One comparison
@@ -1088,6 +1197,39 @@ has — rather than the runtime contract a consumer needs on the landing page.
   or finalization claim.
 
 ### Breaking (published `@retiregolden/engine` API)
+
+- **Social Security spouse benefits (decision D-SS-LAW-2):** the module
+  `@retiregolden/engine/socialSecurity/currentSpouseBenefit` and its
+  `ordinarySimultaneousEarlyCurrentSpouseComponents` are removed; the new module
+  `@retiregolden/engine/socialSecurity/dualEntitlement` exports
+  `spouseDualEntitlementMonthly`, `spouseEntitlementAgeMonths`,
+  `spouseReductionFactorAtAgeMonths`, `claimStartMonthIndex` and
+  `divorcedExFirstMonthIndex`. `MaritalBenefitContext` gains the required
+  `claimantOwnPiaMonthly` and `claimantOwnActualMonthly` and the optional
+  `claimantSpouseWithheldMonths`, and its `claimantClaimAge` is now the configured claim
+  age before any earnings-test credit; a divorced-spouse candidate's `monthly` is now the
+  claimant's total (own benefit plus the reduced excess), not the spouse benefit alone.
+  `AnnualSocialSecurityInput` (`projection/internal/annualSocialSecurity`) loses
+  `currentSpouseContext` (every couple is priced the same way) and gains the required
+  `withheldSurvivorMonthsBySource` and `withheldSpouseMonthsBySource`, keyed by
+  `auxiliaryBenefitSourceKey` (new: the claimant and the record the benefit is paid on);
+  `AnnualSocialSecurityResult` gains `withheldSurvivorMonthWrites` and
+  `withheldSpouseMonthWrites` (`{ sourceKey, value }`). `nra.ts` exports `DobParts`, `attainedAgeZeroMonthIndex`
+  and `attainedAgeMonthsInMonth`, `claimFactor.ts` exports `creditedAgeMonths`, and
+  `survivorBenefit.ts` exports `widowEntitlementAgeMonths`.
+- **`WAGE_BASE_BY_YEAR`** (`@retiregolden/engine/socialSecurity/ssaWageData`) now starts
+  at 1937, and `wageBaseForYearOrLatest` returns 0 before 1937; `FIRST_WAGE_BASE_YEAR` and
+  `piaFromEarnings.ts#FIRST_COMPUTATION_BASE_YEAR` are new. `computePiaFromEarnings` and
+  `piaInputFromEarnings` start their window at 1951 for a worker who turned 22 before it,
+  so `firstBaseYear` and `computationYearCount` change for births in 1928 or earlier.
+  `COLA_PCT_BY_YEAR`, `LATEST_PUBLISHED_COLA_YEAR`, `piaWithCostOfLivingIncreases` and
+  `socialSecurityColaAssumptionPct` are new, and `simulatePlan` resolves an earnings PIA in
+  the first year's dollars.
+- **planner-ui (decision D-SS-LAW-2):** `resolvePia(person, stream, asOf)`
+  (`planner/ssAnalysis`) now requires the projection's first year and COLA assumption,
+  passed as `piaAsOfPlan(plan)` (new), deliberately without a default so no caller
+  silently receives the eligibility-year PIA; `claimingPeople(plan, startYear)` gains an
+  optional start year that defaults to the current year.
 
 - **B2-P1 slice 3 (comparisons):**
   - **`InsightImpact.successRateDeltaPct` is removed**, since no detector publishes it

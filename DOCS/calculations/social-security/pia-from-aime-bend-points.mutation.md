@@ -1,11 +1,11 @@
 # Mutation receipt: pia-from-aime-bend-points
 
-Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-eight` at base `989fc81b`, and re-executed 2026-09-22 against RetireGolden base `a046c8f0` (branch `claude/b1-p4-cards-eight`, pull request #728), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-eight` at base `989fc81b`, and re-executed 2026-09-22 against RetireGolden base `a046c8f0` (branch `claude/b1-p4-cards-eight`, pull request #728), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `81d4bf03` (branch `claude/social-security-law-2`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `2d5fd40c` (branch `claude/social-security-law-2`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/socialSecurity/piaFromEarnings.ts`
 
 ```diff
-@@ -108,7 +108,7 @@ export function piaMonthlyFromAime(aime: number, eligibilityYear: number): numbe
+@@ -115,7 +115,7 @@ export function piaMonthlyFromAime(aime: number, eligibilityYear: number): numbe
    let pia =
      0.9 * Math.min(aime, b1) +
      0.32 * Math.max(0, Math.min(aime, b2) - b1) +
@@ -26,10 +26,10 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/socialSecur
 
 ## Captured failing output
 
-Re-executed for D-RECEIPT-DRIFT because its hunk header named a line its production code has since moved from; the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (piaFromEarnings.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed for decision D-SS-LAW-2 because lines were added above its hunk (the cost-of-living increases since eligibility); the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (piaFromEarnings.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine9/packages/engine
+RUN  v5.0.0 C:/rgwt/engine12/packages/engine
 
  ❯ src/socialSecurity/piaFromEarnings.evidence.test.ts (4 tests | 1 failed) 6ms
    ❯ pia-from-aime-bend-points — PIA from AIME across the bend points (4)
