@@ -26,11 +26,15 @@ import { readPackageSource } from '../../scripts/census-sources.mjs'
  * (b) The quoted test lines still point where they say. For every stack line
  *     the capture prints into a test file (`❯ [function] src/….test.ts:L:C`),
  *     the file exists and has line L. A frame with a function name lies inside
- *     a function of that name in the file. A frame with no function name lies
- *     inside the registration call of the test the enclosing FAIL line names
- *     (that test's title is at or above L and its call has not closed before
- *     L), or else inside the helper the next frame of the same error names
- *     (an unnamed callback such as a `forEach` body within that helper).
+ *     a function of that name in the file (a dotted label is tried whole, as
+ *     `Class.method`, then by its last segment). A frame with no function name
+ *     (`Object.<anonymous>` included) lies inside the registration call of the
+ *     test the enclosing FAIL line names (that test's title is at or above L
+ *     and its call has not closed before L), or else inside the helper the next
+ *     frame of the same error names (an unnamed callback such as a `forEach`
+ *     body within that helper). A dotted label that names no function holding
+ *     L (`Array.forEach` is V8's name for the receiver's method) is held to the
+ *     unnamed-frame rule.
  *     Every code-frame line the capture quotes (`  NN| text`) reads the same as
  *     line NN of the test file it was quoted from, where a line vitest
  *     truncated with "…" must still begin with the kept text. Every test the
@@ -331,11 +335,24 @@ function functionName(node: ts.Node): string | null {
   }
   if (ts.isArrowFunction(node) || ts.isFunctionExpression(node)) {
     const parent = node.parent
-    if ((ts.isVariableDeclaration(parent) || ts.isPropertyAssignment(parent)) && parent.initializer === node) {
+    if (
+      (ts.isVariableDeclaration(parent) || ts.isPropertyAssignment(parent) || ts.isPropertyDeclaration(parent)) &&
+      parent.initializer === node
+    ) {
       return ts.isIdentifier(parent.name) || ts.isStringLiteral(parent.name) ? parent.name.text : null
     }
   }
   return null
+}
+
+/** A function's names as V8 may label its frames: its own name, and `Class.name` for a class member. */
+function functionNames(node: ts.Node): string[] {
+  const name = functionName(node)
+  if (name === null) return []
+  const member = ts.isPropertyDeclaration(node.parent) ? node.parent : node
+  const owner = member.parent
+  const className = owner !== undefined && (ts.isClassDeclaration(owner) || ts.isClassExpression(owner)) ? owner.name?.text : undefined
+  return className === undefined ? [name] : [name, `${className}.${name}`]
 }
 
 /** Registrations, named functions and the static test count of a test file. */
@@ -359,8 +376,9 @@ function testFileShape(path: string, source: string): TestFileShape {
         if (!registersOnce(node)) everyOnce = false
       }
     }
-    const name = functionName(node)
-    if (name !== null) functions.push({ name, startLine: lineOf(node.getStart(file)), endLine: lineOf(node.getEnd()) })
+    for (const name of functionNames(node)) {
+      functions.push({ name, startLine: lineOf(node.getStart(file)), endLine: lineOf(node.getEnd()) })
+    }
     ts.forEachChild(node, visit)
   }
   visit(file)
@@ -406,6 +424,24 @@ function registered(shape: TestFileShape, title: string, fullName: boolean): Reg
 
 type ShapeOf = (enginePath: string) => TestFileShape | undefined
 
+/**
+ * A stack frame's function label as vitest prints it, or null for an unnamed
+ * frame. V8 labels an anonymous function called on a receiver
+ * `Type.<anonymous>`, which names no function either; `async ` and `new `
+ * prefixes are dropped.
+ */
+function frameLabel(method: string | undefined): string | null {
+  if (method === undefined) return null
+  const label = method.replace(/^(?:async|new)(?:\s+|$)/u, '').trim()
+  return label === '' || label.includes('<anonymous>') ? null : label
+}
+
+/** Whether a function the label names (its full dotted form, then its last segment) holds the line. */
+function insideFunction(shape: TestFileShape, label: string, lineNumber: number): boolean {
+  const names = new Set([label, label.split('.').pop()!])
+  return shape.functions.some((fn) => names.has(fn.name) && fn.startLine <= lineNumber && lineNumber <= fn.endLine)
+}
+
 /** Criteria (b) and (c) over one receipt's capture. */
 function captureDrift(receipt: ParsedReceipt, shapeOf: ShapeOf): { quoted: string[]; counts: string[] } {
   const quoted: string[] = []
@@ -427,10 +463,6 @@ function captureDrift(receipt: ParsedReceipt, shapeOf: ShapeOf): { quoted: strin
       quoted.push(`the capture quotes ${path}, which does not exist`)
     }
     return shape
-  }
-  const insideFunction = (shape: TestFileShape, method: string, lineNumber: number): boolean => {
-    const name = method.split('.').pop()!
-    return shape.functions.some((fn) => fn.name === name && fn.startLine <= lineNumber && lineNumber <= fn.endLine)
   }
   /** The next stack frame of the same error: the caller of the frame at `index`. */
   const callerOf = (index: number): RegExpExecArray | null => {
@@ -478,21 +510,29 @@ function captureDrift(receipt: ParsedReceipt, shapeOf: ShapeOf): { quoted: strin
       const shape = shapeOrReport(path)
       if (shape === undefined) continue
       const lineNumber = Number(stack[3])
-      const method = stack[1]
+      const label = frameLabel(stack[1])
       const where = `${path}:${lineNumber}`
       if (lineNumber > shape.lines.length) {
         quoted.push(`${where} is past the end of the file (${shape.lines.length} lines)`)
         continue
       }
-      if (method !== undefined) {
-        if (!insideFunction(shape, method, lineNumber)) {
-          quoted.push(`${where} is no longer inside a function named ${method.split('.').pop()}`)
+      if (label !== null) {
+        if (insideFunction(shape, label, lineNumber)) continue
+        if (!label.includes('.')) {
+          quoted.push(`${where} is no longer inside a function named ${label}`)
+          continue
         }
-      } else if (failName !== null && path === failFile) {
+        // A receiver-qualified label (`Array.forEach`, `Object.next`) is V8's
+        // inferred name and may name the receiver's method rather than a
+        // declaration in this file; when no function of that name holds the
+        // line, the frame is held to the unnamed-frame rule below.
+      }
+      if (failName !== null && path === failFile) {
         // An unnamed frame is the test's own callback, or a callback inside
         // the named helper that the next frame of the same error shows calling it.
         const caller = callerOf(index)
-        if (caller?.[1] !== undefined && enginePath(caller[2]!) === path && insideFunction(shape, caller[1], lineNumber)) {
+        const callerLabel = caller === null ? null : frameLabel(caller[1])
+        if (caller !== null && callerLabel !== null && enginePath(caller[2]!) === path && insideFunction(shape, callerLabel, lineNumber)) {
           continue
         }
         const tests = registered(shape, failName, true)
@@ -768,6 +808,37 @@ describe('mutation receipt drift', () => {
     // A table-driven registration leaves the count to the table, so the count is not checked.
     const table = SYNTHETIC_TEST.replace(NL + '})' + NL, NL + "  it.each([1, 2])('row %i', () => {})" + NL + '})' + NL)
     expect(syntheticDrift(SYNTHETIC_DIFF, { test: table })).toEqual([])
+  })
+
+  it('reads a dotted or <anonymous> frame label as V8 prints it, without failing a frame that is where it says', () => {
+    const TEST_FRAME = SYNTHETIC_CAPTURE.indexOf(' ❯ src/synthetic.evidence.test.ts:10:5')
+    const HELPER_FRAME = SYNTHETIC_CAPTURE.indexOf(' ❯ expectDoubled src/synthetic.evidence.test.ts:5:18')
+    const withFrame = (index: number, frame: string): string[] =>
+      SYNTHETIC_CAPTURE.map((line, at) => (at === index ? frame : line))
+    for (const frame of [
+      ' ❯ Object.<anonymous> src/synthetic.evidence.test.ts:10:5',
+      ' ❯ Array.forEach src/synthetic.evidence.test.ts:10:5',
+      ' ❯ async src/synthetic.evidence.test.ts:10:5',
+    ]) {
+      expect(syntheticDrift(SYNTHETIC_DIFF, { capture: withFrame(TEST_FRAME, frame) }), frame).toEqual([])
+    }
+    const asyncHelper = withFrame(HELPER_FRAME, ' ❯ async expectDoubled src/synthetic.evidence.test.ts:5:18')
+    expect(syntheticDrift(SYNTHETIC_DIFF, { capture: asyncHelper })).toEqual([])
+    // A dotted label that names no function is held to the unnamed-frame rule,
+    // so it still fails when it points outside the test.
+    const outside = withFrame(TEST_FRAME, ' ❯ Array.forEach src/synthetic.evidence.test.ts:2:1')
+    expect(syntheticDrift(SYNTHETIC_DIFF, { capture: outside })).toEqual([
+      'src/synthetic.evidence.test.ts:2 is outside the test "doubles one plus one" (now lines 9-11)',
+    ])
+    // A class member is found by its Class.method label.
+    const withClass = SYNTHETIC_TEST.replace(
+      NL + 'function expectDoubled(actual: number): void {' + NL + '  expect(actual).toBe(4)' + NL + '}',
+      NL + 'class Check { doubled(actual: number): void {' + NL + '  expect(actual).toBe(4)' + NL + '} }',
+    )
+    const classCapture = withFrame(HELPER_FRAME, ' ❯ Check.doubled src/synthetic.evidence.test.ts:5:18').filter(
+      (line) => !/^\s+\d+\|/u.test(line),
+    )
+    expect(syntheticDrift(SYNTHETIC_DIFF, { test: withClass, capture: classCapture })).toEqual([])
   })
 
   it("reads a table title's %% as a literal percent sign and only its specifiers as the row's text", () => {
