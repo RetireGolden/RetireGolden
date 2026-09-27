@@ -1,23 +1,23 @@
 # Mutation receipt: plan-headline-money-comparison
 
-Executed 2026-09-27 against RetireGolden base `373a40f0` (branch `claude/b2p1-slice3-comparisons`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `a1fd6d59` (branch `claude/b2p1-slice3-comparisons`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-27 against RetireGolden base `373a40f0` (branch `claude/b2p1-slice3-comparisons`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `a1fd6d59` (branch `claude/b2p1-slice3-comparisons`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `2d33ac09` (branch `claude/b2p1-slice3-comparisons`, pull request #754) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/scenarios/planHeadlines.ts`
 
 ```diff
 diff --git a/packages/engine/src/scenarios/planHeadlines.ts b/packages/engine/src/scenarios/planHeadlines.ts
-index 841f2ead..f0cc2c81 100644
+index a378737d..2383a53a 100644
 --- a/packages/engine/src/scenarios/planHeadlines.ts
 +++ b/packages/engine/src/scenarios/planHeadlines.ts
-@@ -119,7 +119,7 @@ export function comparePlanHeadlines(
+@@ -143,7 +143,7 @@ export function comparePlanHeadlines(
        `Two plans are compared only from one start year; the baseline starts in ${startYear} and the proposal in ${proposal.result.startYear}`,
      )
    }
 -  const moneyBasis: HeadlineMoneyBasis = baseline.result.endYear === proposal.result.endYear ? 'nominal' : 'today'
 +  const moneyBasis: HeadlineMoneyBasis = 'nominal'
-   const ending = (side: ComparedProjection, nominal: number): number =>
-     moneyBasis === 'nominal'
-       ? nominal
+   // Each side's dollar basis, built once per comparison and only when today's
+   // dollars are needed: every ending row and the lifetime sum read the same one.
+   const bases =
 ```
 
 Compare nominal figures whatever the end years, the reading owner decision R13 retired: case I's estates keep their 2050 and 2060 nominal values and differ by +200,000 where the worksheet expects -131,364.95 in 2026 dollars, and case J's lifetime tax is the nominal sum.
@@ -30,15 +30,15 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/scenarios/p
 
 ## Captured failing output
 
-The slice 3 review fixes moved compareMoneyLasts and conversionScheduleTotal, rewrote comments in these files and added evidence tests, so the hunk headers and test counts are re-pointed. The baseline is green (planHeadlines.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+The PR #754 review fixes changed these production files (the dollar basis built once, typed comparison refusals, the start-year refusal, the engine's material-shortfall flag, the per-candidate stochastic refusal) and one evidence file, so the hunk headers, quoted lines and test counts are re-pointed. The baseline is green (planHeadlines.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
 RUN  v5.0.0 C:/rgwt/engine11/packages/engine
 
  ❯ src/scenarios/planHeadlines.evidence.test.ts (9 tests | 2 failed) 8ms
    ❯ plan-headline-money-comparison — Compare plans: money rows in one stated basis (5)
-     × case I: plans ending in 2050 and 2060 compare in 2026 dollars, each by its own factor, and the sign flips 4ms
-     × case J: lifetime tax plus penalties is re-summed year by year in 2026 dollars 1ms
+     × case I: plans ending in 2050 and 2060 compare in 2026 dollars, each by its own factor, and the sign flips 3ms
+     × case J: lifetime tax plus penalties is re-summed year by year in 2026 dollars 0ms
 
  Test Files  1 failed (1)
       Tests  2 failed | 7 passed (9)
