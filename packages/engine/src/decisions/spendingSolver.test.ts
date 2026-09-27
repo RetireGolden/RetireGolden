@@ -192,19 +192,37 @@ describe('solveMaxSustainableSpending with an unpriced ACA credit', () => {
     )
   })
 
-  it('calls the direction uncertain under guardrail spending', () => {
-    const plan = validatePlan({
-      ...marketplacePlan(),
-      expenses: { ...marketplacePlan().expenses, spendingPolicy: { mode: 'withdrawalRateGuardrails' } },
-    })
-    const solved = solveMaxSustainableSpending(zeroTaxContext(plan))
+  it.each(['withdrawalRateGuardrails', 'riskBasedGuardrails'] as const)(
+    'calls the direction uncertain under %s spending',
+    (mode) => {
+      const plan = validatePlan({
+        ...marketplacePlan(),
+        expenses: { ...marketplacePlan().expenses, spendingPolicy: { mode } },
+      })
+      const solved = solveMaxSustainableSpending(zeroTaxContext(plan))
 
-    expect(solved.maxBaseAnnual).not.toBeNull()
-    expect(solved.acaGrossPremiumDirection).toBe('uncertain')
-    expect(solved.acaGrossPremiumReasons).toContain('guardrail-interaction-unsupported')
-    expect(solved.diagnostics.at(-1)).toMatch(
-      /the ledger budgets the full Marketplace premium in those years, and a credit there could move this answer up or down because the spending guardrails respond to healthcare costs\.$/,
-    )
+      expect(solved.maxBaseAnnual).not.toBeNull()
+      expect(solved.acaGrossPremiumDirection).toBe('uncertain')
+      expect(solved.acaGrossPremiumReasons).toContain('guardrail-interaction-unsupported')
+      expect(solved.diagnostics.at(-1)).toMatch(
+        /the ledger budgets the full Marketplace premium in those years, and a credit there could move this answer up or down because the spending guardrails respond to healthcare costs\.$/,
+      )
+    },
+  )
+
+  it('overrides a JS caller that asks the probes to refuse unpriced ACA years', () => {
+    const ctx = zeroTaxContext(marketplacePlan())
+    const clean = solveMaxSustainableSpending(ctx)
+    const spy = vi.spyOn(evaluation, 'evaluateCandidate')
+    try {
+      const asked = solveMaxSustainableSpending(ctx, {
+        evaluation: { nonActionableAca: 'refuse' } as unknown as SustainableSpendingOptions['evaluation'],
+      })
+      expect(asked.maxBaseAnnual).toBe(clean.maxBaseAnnual)
+      expect(spy.mock.calls.every((call) => call[2]?.nonActionableAca === 'disclose')).toBe(true)
+    } finally {
+      spy.mockRestore()
+    }
   })
 
   it('words the disclosure for a solve with no answer without calling an answer conservative', () => {
@@ -216,7 +234,7 @@ describe('solveMaxSustainableSpending with an unpriced ACA credit', () => {
     expect(solved.maxBaseAnnual).toBeNull()
     expect(solved.acaGrossPremiumYears).toEqual([2027])
     expect(solved.diagnostics).toEqual([
-      'Even zero base spending depletes the portfolio or breaks the estate floor.',
+      'Even zero base spending depletes the portfolio before the plan ends.',
       'The ACA premium tax credit is not priced in 2027 (tax-year-parameters-unsupported); the ledger budgets the full Marketplace premium in those years, and a credit there would lower that cost.',
     ])
   })
@@ -292,12 +310,42 @@ describe('solveMaxSustainableSpending with a required spending floor', () => {
       expect(solved.maxBaseAnnual).toBeNull()
       expect(solved.limitingConstraint).toBe('depletion')
       expect(solved.simulationCount).toBe(2)
-      expect(solved.diagnostics).toEqual([
-        'Even the required spending floor ($20,000/yr) depletes the portfolio or breaks the estate floor.',
-      ])
+      expect(solved.diagnostics).toEqual(['Even the required spending floor ($20,000/yr) depletes the portfolio before the plan ends.'])
     } finally {
       spy.mockRestore()
     }
+  })
+
+  it('probes a fractional floor at its whole-dollar ceiling', () => {
+    // A probe at $20,000 would sit below a $20,000.40 floor and fail the plan checks.
+    const ctx = zeroTaxContext(fourYearFloorPlan(91_000, 30_000, 20_000.4))
+    const spy = vi.spyOn(evaluation, 'evaluateCandidate')
+    try {
+      const solved = solveMaxSustainableSpending(ctx)
+      expect(probedAmounts(spy).slice(0, 2)).toEqual([30_000, 20_001])
+      expect(solved.maxBaseAnnual).not.toBeNull()
+    } finally {
+      spy.mockRestore()
+    }
+  })
+
+  it('stops after one probe when the seed is already at the floor and fails', () => {
+    const solved = solveMaxSustainableSpending(zeroTaxContext(fourYearFloorPlan(50_000, 20_000, 20_000)))
+    expect(solved.maxBaseAnnual).toBeNull()
+    expect(solved.simulationCount).toBe(1)
+    expect(solved.diagnostics).toEqual(['Even the required spending floor ($20,000/yr) depletes the portfolio before the plan ends.'])
+  })
+
+  it('names the ending-estate target, not depletion, when that is what the floor fails', () => {
+    // 4 x $20,000 = $80,000 fits $91,000 but leaves $11,000, short of a $50,000 target.
+    const solved = solveMaxSustainableSpending(zeroTaxContext(fourYearFloorPlan(91_000, 30_000, 20_000)), {
+      estateFloorTodayDollars: 50_000,
+    })
+    expect(solved.maxBaseAnnual).toBeNull()
+    expect(solved.limitingConstraint).toBe('estate-floor')
+    expect(solved.diagnostics).toEqual([
+      "Even the required spending floor ($20,000/yr) leaves an ending after-tax estate below the $50,000 target (today's dollars).",
+    ])
   })
 
   it('bisects between the floor and the seed when the floor is feasible', () => {
@@ -325,7 +373,7 @@ describe('solveMaxSustainableSpending with a required spending floor', () => {
     const solved = solveMaxSustainableSpending(zeroTaxContext(validatePlan(plan)))
 
     expect(solved.maxBaseAnnual).toBeNull()
-    expect(solved.diagnostics).toEqual(['Even zero base spending depletes the portfolio or breaks the estate floor.'])
+    expect(solved.diagnostics).toEqual(['Even zero base spending depletes the portfolio before the plan ends.'])
   })
 })
 

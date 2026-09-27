@@ -29,7 +29,12 @@ export interface CoordinateDescentOptions {
   /** A move must beat the incumbent primary metric by more than this. */
   minimumImprovement?: number
   policy?: ObjectivePolicy
-  evaluation?: EvaluateCandidateOptions
+  /**
+   * Evaluator options for every move. `nonActionableAca` is left out: a
+   * search recommends a schedule, so it keeps the evaluator's refusal of
+   * unpriced ACA evidence.
+   */
+  evaluation?: Omit<EvaluateCandidateOptions, 'nonActionableAca'>
   /** Base plan patch every mutated schedule is applied on top of. */
   basePatch?: Record<string, unknown>
 }

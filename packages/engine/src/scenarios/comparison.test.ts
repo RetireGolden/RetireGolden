@@ -15,7 +15,11 @@ import {
   traditionalAccount,
   validatePlan,
 } from '../testing/planFixtures.js'
-import { compareScenarioPlans, compareScenarioSpendingCapacityResults } from './comparison.js'
+import {
+  compareScenarioPlans,
+  compareScenarioSpendingCapacityResults,
+  type ScenarioSpendingCapacityResult,
+} from './comparison.js'
 import { scenarioPlanSnapshotHash } from './patch.js'
 
 const federalTax = createFederalTaxCalculator()
@@ -541,6 +545,24 @@ describe('compareScenarioPlans', () => {
     expect(result.proposalAcaGrossPremiumYears).toEqual([2027, 2028])
     expect(result.proposalAcaGrossPremiumReasons).toEqual(['tax-year-parameters-unsupported'])
     expect(result.proposalAcaGrossPremiumDirection).toBe('uncertain')
+  })
+
+  it('reads a capacity result from before the unpriced-ACA fields as having none', () => {
+    // An older host or a cached worker message has no acaGrossPremium* fields.
+    const older = {
+      maxBaseAnnual: 50_000,
+      spendingSlackDollars: 5_000,
+      converged: true,
+      simulationCount: 8,
+      limitingConstraint: 'depletion' as const,
+      diagnostics: [],
+    } as unknown as ScenarioSpendingCapacityResult
+    const result = compareScenarioSpendingCapacityResults(older, older)
+    expect(result.maxBaseAnnual.delta).toBe(0)
+    expect(result.baselineAcaGrossPremiumYears).toEqual([])
+    expect(result.proposalAcaGrossPremiumReasons).toEqual([])
+    expect(result.baselineAcaGrossPremiumDirection).toBeNull()
+    expect(result.proposalAcaGrossPremiumDirection).toBeNull()
   })
 
   it('rejects invalid stochastic options before running simulations', () => {

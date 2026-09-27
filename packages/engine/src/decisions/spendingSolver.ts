@@ -94,11 +94,12 @@ export interface SustainableSpendingResult {
   /**
    * How a credit in `acaGrossPremiumYears` would move the answer; null when
    * there are no such years. 'conservative' on a fixed-target plan: at fixed
-   * spending a lower premium lowers every withdrawal, so a credit could only
-   * leave room to spend more. That is measured on the fixed-target examples,
-   * not proven for every plan. 'uncertain' under an adaptive spending policy
-   * (guardrails): a lower cost changes when the guardrails cut or raise, and a
-   * ledger that priced the credit has been measured to solve lower.
+   * spending a lower premium lowers what that year must withdraw, so a credit
+   * would likely leave room to spend more. That is measured on the
+   * fixed-target examples, not proven for every plan. 'uncertain' under an
+   * adaptive spending policy (guardrails): a lower cost changes when the
+   * guardrails cut or raise, and a ledger that priced the credit has been
+   * measured to solve lower.
    */
   acaGrossPremiumDirection: 'conservative' | 'uncertain' | null
   /**
@@ -318,13 +319,23 @@ export function solveMaxSustainableSpending(
     // lowest valid probe is that floor, not 0: a probe at 0 would come back as
     // an invalid-plan diagnostic and read as "even zero spending depletes".
     const floorAmount = Math.min(seedAmount, Math.max(0, Math.ceil(effectivePlan.expenses.requiredAnnual ?? 0)))
-    const floorFails = `${
-      floorAmount === 0
-        ? 'Even zero base spending'
-        : `Even the required spending floor (${formatWholeUsd(floorAmount)}/yr)`
-    } depletes the portfolio or breaks the estate floor.`
+    // Names the constraint the lowest level failed (read when it has failed):
+    // running out of money, or the ending estate falling short of the target;
+    // with no target, only a negative estate can fail it.
+    const floorFails = (): string =>
+      `${
+        floorAmount === 0
+          ? 'Even zero base spending'
+          : `Even the required spending floor (${formatWholeUsd(floorAmount)}/yr)`
+      } ${
+        limitingConstraint !== 'estate-floor'
+          ? 'depletes the portfolio before the plan ends.'
+          : estateFloorTodayDollars > 0
+            ? `leaves an ending after-tax estate below the ${formatWholeUsd(estateFloorTodayDollars)} target (today's dollars).`
+            : 'leaves a negative ending after-tax estate.'
+      }`
     if (upper === floorAmount) {
-      diagnostics.push(floorFails)
+      diagnostics.push(floorFails())
       return finish(null, upper)
     }
     if (simulationCount >= maxSimulations) {
@@ -336,7 +347,7 @@ export function solveMaxSustainableSpending(
       lower = floorAmount
     } else {
       if (floorProbe.evaluation.recommendationState === 'diagnostic') diagnostics.push(...floorProbe.evaluation.diagnostics)
-      else diagnostics.push(floorFails)
+      else diagnostics.push(floorFails())
       return finish(null, upper)
     }
   }

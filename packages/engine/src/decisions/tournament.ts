@@ -99,7 +99,12 @@ export interface DecisionTournamentOptions {
   maxCandidates?: number
   /** Minimum primary-metric improvement before anything is recommended. */
   minimumImprovement?: number
-  evaluation?: EvaluateCandidateOptions
+  /**
+   * Evaluator options for every candidate. `nonActionableAca` is left out: a
+   * tournament recommends actions, so it keeps the evaluator's refusal of
+   * unpriced ACA evidence.
+   */
+  evaluation?: Omit<EvaluateCandidateOptions, 'nonActionableAca'>
 }
 
 const DEFAULT_MAX_CANDIDATES = 32
