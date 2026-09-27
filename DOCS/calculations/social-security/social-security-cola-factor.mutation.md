@@ -1,11 +1,11 @@
 # Mutation receipt: social-security-cola-factor
 
-Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-eight` at base `989fc81b`, and re-executed 2026-09-22 against RetireGolden base `a046c8f0` (branch `claude/b1-p4-cards-eight`, pull request #728), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `fe28be3c` (branch `claude/b2p1-slice2-display-math`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `15478aa9` (branch `claude/social-security-law-2`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `5f917180` (branch `claude/social-security-law-2`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `2d5fd40c` (branch `claude/social-security-law-2`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-eight` at base `989fc81b`, and re-executed 2026-09-22 against RetireGolden base `a046c8f0` (branch `claude/b1-p4-cards-eight`, pull request #728), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `fe28be3c` (branch `claude/b2p1-slice2-display-math`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `15478aa9` (branch `claude/social-security-law-2`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `5f917180` (branch `claude/social-security-law-2`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `2d5fd40c` (branch `claude/social-security-law-2`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `c9e60e7c` (branch `claude/social-security-law-2`, pull request #755) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/projection/simulate.ts`
 
 ```diff
-@@ -1686,7 +1686,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
+@@ -1691,7 +1691,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
      const ssColaFactor =
        plan.assumptions.ssCola.mode === 'matchInflation'
          ? inflFactorFrom(startYear, year)
@@ -26,15 +26,15 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-Re-executed for decision D-SS-LAW-2 because lines were added above its hunk (the cost-of-living increases since eligibility); the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (annualSocialSecurity.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed for decision D-SS-LAW-2 (the review of RetireGolden #755) because lines moved above its hunk in simulate.ts (the Social Security pass's survivor comment restated, and the widow(er) and spouse withheld-month counts kept per record); the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (annualSocialSecurity.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
 RUN  v5.0.0 C:/rgwt/engine12/packages/engine
 
- ❯ src/projection/internal/annualSocialSecurity.evidence.test.ts (4 tests | 2 failed) 33ms
+ ❯ src/projection/internal/annualSocialSecurity.evidence.test.ts (4 tests | 2 failed) 34ms
    ❯ social-security-cola-factor — Social Security COLA factor (2)
-     × compounds 2.8% from the projection start, leaving the first year unescalated 28ms
-     × does not escalate the first projection year 3ms
+     × compounds 2.8% from the projection start, leaving the first year unescalated 29ms
+     × does not escalate the first projection year 4ms
 
  Test Files  1 failed (1)
       Tests  2 failed | 2 passed (4)
