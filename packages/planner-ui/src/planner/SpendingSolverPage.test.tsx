@@ -119,7 +119,7 @@ describe('SpendingSolverPage statements', () => {
     expect(heroHeading().textContent).toContain('$45,300')
     const note = container.querySelector('[data-testid="aca-gross-premium-note"]')
     expect(note?.textContent).toBe(
-      "The premium tax credit isn't counted in 2027 and 2028: the credit's figures for those years aren't published yet. " +
+      "The premium tax credit isn't counted in 2027 and 2028: RetireGolden doesn't have the credit's figures for those years yet. " +
         'The projection pays the full Marketplace premium in those years; if you receive a credit then, you would likely be able to spend somewhat more than this.',
     )
   })
@@ -158,7 +158,7 @@ describe('SpendingSolverPage statements', () => {
         acaGrossPremiumReasons: ['below-100-fpl-exception-unsupported', 'tax-year-parameters-unsupported'],
         acaGrossPremiumDirection: 'conservative',
         diagnostics: [
-          'Even zero base spending depletes the portfolio or breaks the estate floor.',
+          'Even zero base spending depletes the portfolio before the plan ends.',
           'The ACA premium tax credit is not priced in 2026, 2027, 2028 (below-100-fpl-exception-unsupported, tax-year-parameters-unsupported); the ledger budgets the full Marketplace premium in those years, and a credit there would lower that cost.',
         ],
         evidence: null,
@@ -171,7 +171,7 @@ describe('SpendingSolverPage statements', () => {
     expect(container.querySelector('[data-testid="aca-gross-premium-note"]')?.textContent).toBe(
       "The premium tax credit isn't counted in 2026 to 2028. In each of those years, at least one of these applies: " +
         'income is below the poverty line, where there is generally no credit and Medicaid may apply; ' +
-        "the credit's figures for those years aren't published yet. " +
+        "RetireGolden doesn't have the credit's figures for those years yet. " +
         'The projection pays the full Marketplace premium in those years; a credit then would lower that cost.',
     )
   })
@@ -185,7 +185,7 @@ describe('SpendingSolverPage statements', () => {
         spendingSlackDollars: null,
         limitingConstraint: 'depletion',
         simulationCount: 2,
-        diagnostics: ['Even the required spending floor ($34,000/yr) depletes the portfolio or breaks the estate floor.'],
+        diagnostics: ['Even the required spending floor ($34,000/yr) depletes the portfolio before the plan ends.'],
         evidence: null,
       }),
     )
@@ -203,7 +203,7 @@ describe('SpendingSolverPage statements', () => {
         limitingConstraint: 'estate-floor',
         simulationCount: 2,
         estateFloorTodayDollars: 2_000_000,
-        diagnostics: ['Even zero base spending depletes the portfolio or breaks the estate floor.'],
+        diagnostics: ['Even zero base spending depletes the portfolio before the plan ends.'],
         evidence: null,
       }),
     )
@@ -218,7 +218,7 @@ describe('SpendingSolverPage statements', () => {
         spendingSlackDollars: null,
         limitingConstraint: 'depletion',
         simulationCount: 2,
-        diagnostics: ['Even zero base spending depletes the portfolio or breaks the estate floor.'],
+        diagnostics: ['Even zero base spending depletes the portfolio before the plan ends.'],
         evidence: null,
       }),
     )
@@ -270,5 +270,78 @@ describe('SpendingSolverPage statements', () => {
     const hero = container.querySelector('.mc-hero')!.textContent!
     expect(hero).toContain("Your projection cannot sustain today's spending and still leave your bequest target.")
     expect(hero).not.toContain('through the horizon')
+  })
+
+  it('judges a fractional baseline against the whole-dollar level the solver seeded', async () => {
+    // Base 72,030.40 is seeded at 72,030; that seed passed and is the answer.
+    mockedSolve.mockResolvedValue(solved({ maxBaseAnnual: 72_030, spendingSlackDollars: -0.4, currentBaseAnnual: 72_030.4 }))
+    await renderSolved()
+
+    expect(heroHeading().style.color).toBe('var(--good)')
+    const hero = container.querySelector('.mc-hero')!.textContent!
+    expect(hero).toContain('less than $100 a year to spare')
+    expect(hero).not.toContain('cannot sustain')
+  })
+
+  it('does not claim the rounded figure passes under guardrail spending', async () => {
+    mockedSolve.mockResolvedValue(solved({}))
+    const fixedTarget = createSamplePlan()
+    fixedTarget.expenses.spendingPolicy = { mode: 'fixedTarget' }
+    await renderSolved(fixedTarget)
+    expect(container.querySelector('.ss-explainer')!.textContent).toContain('which therefore also passes')
+
+    await act(async () => root.unmount())
+    root = createRoot(container)
+    const guardrails = createSamplePlan()
+    guardrails.expenses.spendingPolicy = { mode: 'withdrawalRateGuardrails' }
+    await renderSolved(guardrails)
+    const explainer = container.querySelector('.ss-explainer')!.textContent!
+    expect(explainer).not.toContain('therefore also passes')
+    expect(explainer).toContain('so that rounded figure was not itself tested')
+  })
+
+  async function solveShapes(rows: Partial<SpendingSolveResult>[], plan: Plan = createSamplePlan()): Promise<string> {
+    // The first call is the page's own auto-run; the next three are the shapes.
+    let call = 0
+    mockedSolve.mockImplementation(() => Promise.resolve(solved(call++ === 0 ? {} : rows[(call - 2) % rows.length]!)))
+    await renderSolved(plan)
+    const button = Array.from(container.querySelectorAll('button')).find((b) => b.textContent?.startsWith('Solve per shape'))
+    expect(button, 'the shape comparison button should render').toBeTruthy()
+    await act(async () => {
+      button!.click()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+    expect(container.querySelector('[aria-label="Spending shape comparison"]'), 'the shape table should render').toBeTruthy()
+    const card = Array.from(container.querySelectorAll('.card')).find(
+      (element) => element.querySelector('h2')?.textContent === 'What shape of spending?',
+    )
+    return card!.textContent!
+  }
+
+  it("names the union of the shapes' unpriced years once, collapsed into a run", async () => {
+    const text = await solveShapes([
+      { acaGrossPremiumYears: [2027, 2028], acaGrossPremiumReasons: ['tax-year-parameters-unsupported'], acaGrossPremiumDirection: 'conservative' },
+      { acaGrossPremiumYears: [2027, 2028, 2029], acaGrossPremiumReasons: ['tax-year-parameters-unsupported'], acaGrossPremiumDirection: 'conservative' },
+      { acaGrossPremiumYears: [2028], acaGrossPremiumReasons: ['tax-year-parameters-unsupported'], acaGrossPremiumDirection: 'conservative' },
+    ])
+    expect(text).toContain(
+      "In these solves the premium tax credit isn't counted in 2027 to 2029, so they pay the full Marketplace premium then; " +
+        'if you receive a credit in those years, you would likely be able to spend somewhat more than these amounts.',
+    )
+  })
+
+  it('uses the guardrail wording for the shapes of a guardrail plan', async () => {
+    const text = await solveShapes([
+      { acaGrossPremiumYears: [2027], acaGrossPremiumReasons: ['guardrail-interaction-unsupported'], acaGrossPremiumDirection: 'uncertain' },
+    ])
+    expect(text).toContain(
+      'a credit in those years could move these amounts up or down, because your spending guardrails respond to what healthcare costs.',
+    )
+    expect(text).not.toContain('would likely be able to spend somewhat more')
+  })
+
+  it('adds nothing to the shape table when every shape prices its credit', async () => {
+    const text = await solveShapes([{}])
+    expect(text).not.toContain('premium tax credit')
   })
 })

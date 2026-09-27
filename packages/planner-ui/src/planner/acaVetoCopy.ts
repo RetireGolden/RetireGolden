@@ -54,8 +54,13 @@ export function formatYearRuns(years: number[]): string {
  * a year) and give no reason; any other code reads as the generic one.
  */
 const UNPRICED_CREDIT_REASONS: Partial<Record<AcaSupportCode, string>> = {
-  'tax-year-parameters-unsupported': "the credit's figures for that year aren't published yet",
-  'missing-year-contract': "the plan doesn't have the household details the credit needs",
+  // Whether the IRS has published a later year's figures is not what blocks
+  // it (the 2027 applicable-percentage table is out): the engine has no
+  // sourced parameter pack for the year yet.
+  'tax-year-parameters-unsupported': "RetireGolden doesn't have the credit's figures for that year yet",
+  // No screen collects the per-year household contract yet, so the reason
+  // points at the planner, not at a field the reader cannot find.
+  'missing-year-contract': "the planner doesn't yet collect the household details the credit needs",
   'guardrail-interaction-unsupported': "the credit isn't modeled together with guardrail spending",
   // Below 100% of the poverty line there is generally no credit (26 U.S.C.
   // 36B(c)(1)(A)); the one pathway left for tax years after 2025 (Treas. Reg.

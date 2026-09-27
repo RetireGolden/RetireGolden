@@ -233,8 +233,15 @@ export function SpendingSolverPage() {
   // Whether the plan sustains today's baseline is the solver's exact answer
   // against it, not the rounded figure: a baseline of $72,030 solved at
   // exactly $72,030 shows as $72,000, and that baseline still passed.
+  // The solver seeds at the baseline rounded to a whole dollar, so that is
+  // the level its answer is measured against.
   const sustainsCurrent =
-    result !== null && result.maxBaseAnnual !== null && result.maxBaseAnnual >= result.currentBaseAnnual
+    result !== null && result.maxBaseAnnual !== null && result.maxBaseAnnual >= Math.round(result.currentBaseAnnual)
+  // Under guardrails feasibility is not monotone in the base amount: a level
+  // below one that passed can fail, so a rounded-down figure is not implied.
+  const guardrailSpending =
+    plan.expenses.spendingPolicy?.mode === 'withdrawalRateGuardrails' ||
+    plan.expenses.spendingPolicy?.mode === 'riskBasedGuardrails'
   // Slack measured against the rounded display value so the two tiles agree.
   const slack = result && solvedRounded !== null ? solvedRounded - result.currentBaseAnnual : null
   // Only the rounding puts the shown figure below a baseline the plan
@@ -470,8 +477,11 @@ export function SpendingSolverPage() {
                       ? `your ${fmtMoney(result.estateFloorTodayDollars)} bequest target`
                       : 'zero (no bequest target set)'}
                     . The solver&apos;s exact answer is the highest level that passed both. It is shown, applied,
-                    and added to scenarios rounded down to the nearest $100 ({fmtMoney(solvedRounded ?? 0)}), which
-                    therefore also passes. The next-higher probe failed on{' '}
+                    and added to scenarios rounded down to the nearest $100 ({fmtMoney(solvedRounded ?? 0)})
+                    {guardrailSpending
+                      ? '. Under guardrail spending a lower level does not always pass when a higher one does, so that rounded figure was not itself tested'
+                      : ', which therefore also passes'}
+                    . The next-higher probe failed on{' '}
                     {result.limitingConstraint === 'estate-floor'
                       ? 'the bequest target'
                       : result.limitingConstraint === 'depletion'

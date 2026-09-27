@@ -12,13 +12,15 @@
  * Pinned 2026-09-26 when the solver stopped refusing plans whose Marketplace
  * credit is unpriced (D-SOLVER-ACA-GATE). Before, 22 of the 29 had no answer:
  * any year whose premium tax credit the projection could not price (every
- * example runs past 2026, the only parameter year) made every probe a
+ * example runs past 2026, the only year RetireGolden has the credit's
+ * figures for) made every probe a
  * refusal. Now those years pay the full Marketplace premium, as the
  * projection already budgets them, and the answer names them. The values
  * were recomputed from the implemented code and match the table of the
  * D-SOLVER-ACA-GATE derivation (2026-09-26). The two that still have no
  * answer are true: ltc-shock depletes even at zero base spending (care costs
- * of about $150,000 a year in 2042 to 2044), and guardrails-flex-goals
+ * of about $150,000 a year in 2042 to 2044 net of the policy benefit, on gross
+ * costs of $223,750, $236,056 and $249,039), and guardrails-flex-goals
  * depletes at its $34,000 required floor, the lowest level its plan checks
  * accept. Characterization values, not a legal oracle: a change to the
  * projection moves them, and the change must say why.
@@ -27,7 +29,9 @@ import { describe, expect, it } from 'vitest'
 
 import type { AcaSupportCode } from '@retiregolden/engine/projection/types'
 import type { Plan } from '@retiregolden/engine/model/plan'
+import { simulatePlan } from '@retiregolden/engine/projection/simulate'
 import { runSpendingSolveRequest } from '../../optimize/runSpendingSolve'
+import { taxCalculatorFor } from '../../planTaxCalculator'
 import { EXAMPLE_FIXED_YEAR, exampleFixedNow } from './buildContext'
 import { EXAMPLE_PLANS, type ExamplePlan } from './registry'
 
@@ -80,8 +84,8 @@ const EXPECTED: Record<string, SolverGolden> = {
 
 /** The only examples with no answer, and the failure each one truly has. */
 const NO_ANSWER: Record<string, string> = {
-  'ltc-shock': 'Even zero base spending depletes the portfolio or breaks the estate floor.',
-  'guardrails-flex-goals': 'Even the required spending floor ($34,000/yr) depletes the portfolio or breaks the estate floor.',
+  'ltc-shock': 'Even zero base spending depletes the portfolio before the plan ends.',
+  'guardrails-flex-goals': 'Even the required spending floor ($34,000/yr) depletes the portfolio before the plan ends.',
 }
 
 /** As `loadExample.ts#stampDemo` stamps a library demo before the planner opens it. */
@@ -141,4 +145,44 @@ describe('sustainable spending on every example', () => {
       }
     }, 120_000)
   }
+})
+
+describe('the unpriced years come from the run the answer rests on', () => {
+  it('reports the answer run, not the seed, when their Marketplace years differ', () => {
+    // hsa-property-depth spent at $80,000: the seed run's income prices its
+    // 2026 credit, but the answer's much lower spending leaves 2026 income
+    // under the poverty line, where the credit is not priced.
+    const example = EXAMPLE_PLANS.find((candidate) => candidate.id === 'hsa-property-depth')!
+    const plan = stampDemo(example)
+    plan.expenses.baseAnnual = 80_000
+    const seedRun = simulatePlan(plan, { startYear: EXAMPLE_FIXED_YEAR, taxCalculator: taxCalculatorFor(plan) })
+    expect(seedRun.years.find((year) => year.year === 2026)?.aca?.readiness).toBe('actionable')
+
+    const solved = runSpendingSolveRequest({ plan, startYear: EXAMPLE_FIXED_YEAR })
+    expect(solved.maxBaseAnnual).toBe(28_750)
+    expect(solved.acaGrossPremiumYears).toEqual([2026, 2027, 2028, 2029])
+    expect(solved.acaGrossPremiumReasons).toContain(BELOW_FPL)
+  }, 120_000)
+})
+
+describe('guardrail feasibility is not monotone in the base amount', () => {
+  it('depletes at a lower base and not at a higher one, with no Marketplace year', () => {
+    // The counterexample the sustainable-spending-bisection record cites.
+    const example = EXAMPLE_PLANS.find((candidate) => candidate.id === 'example-couple')!
+    const plan = example.build()
+    plan.expenses.healthcare = { ...plan.expenses.healthcare, pre65MonthlyPremiumPerPerson: 0, applyAcaCredit: false }
+    delete plan.expenses.healthcare.acaYears
+    plan.expenses.spendingPolicy = { mode: 'withdrawalRateGuardrails', upperGuardrailPct: 125 }
+    plan.expenses.requiredAnnual = 86_400
+    const run = (baseAnnual: number) => {
+      const variant = { ...plan, expenses: { ...plan.expenses, baseAnnual } }
+      return simulatePlan(variant, { startYear: EXAMPLE_FIXED_YEAR, taxCalculator: taxCalculatorFor(variant) })
+    }
+
+    const lower = run(164_391)
+    const higher = run(166_971)
+    expect(lower.years.some((year) => year.aca !== undefined)).toBe(false)
+    expect(lower.depletionYear).toBe(2059)
+    expect(higher.depletionYear).toBeNull()
+  }, 120_000)
 })

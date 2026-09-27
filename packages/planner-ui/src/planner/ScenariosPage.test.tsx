@@ -1015,12 +1015,40 @@ describe('ScenariosPage comparison lifecycle', () => {
     })
 
     expect(container.textContent).toContain(
-      "Proposal: The premium tax credit isn't counted in 2027 to 2029: the credit's figures for those years aren't published yet. " +
+      "Proposal: The premium tax credit isn't counted in 2027 to 2029: RetireGolden doesn't have the credit's figures for those years yet. " +
         'The projection pays the full Marketplace premium in those years; a credit then could move this answer up or down, ' +
         'because your spending guardrails respond to what healthcare costs.',
     )
     expect(container.textContent).not.toContain('tax-year-parameters-unsupported')
     expect(container.textContent).not.toContain('Baseline: The premium tax credit')
+  })
+
+  it('says a note both sides share once, for both', async () => {
+    const unpriced: SpendingSolveResult = {
+      ...solved,
+      acaGrossPremiumYears: [2027, 2028],
+      acaGrossPremiumReasons: ['missing-year-contract'],
+      acaGrossPremiumDirection: 'conservative',
+      diagnostics: ['The ACA premium tax credit is not priced in 2027, 2028 (missing-year-contract); the ledger budgets the full Marketplace premium in those years, so a household that receives a credit there would likely be able to spend somewhat more than this answer.'],
+    }
+    mockedRunSpendingSolve.mockResolvedValueOnce(unpriced).mockResolvedValueOnce(unpriced)
+    await mount()
+    await advanceComparison()
+
+    const calculate = Array.from(container.querySelectorAll('button')).find(
+      (button) => button.textContent === 'Calculate capacity',
+    )
+    await act(async () => {
+      calculate!.click()
+      await Promise.resolve()
+    })
+
+    const text = container.textContent!
+    expect(text).toContain(
+      "Baseline and proposal: The premium tax credit isn't counted in 2027 and 2028: the planner doesn't yet collect the household details the credit needs.",
+    )
+    expect(text.match(/The premium tax credit isn't counted/g)).toHaveLength(1)
+    expect(text).not.toContain('missing-year-contract')
   })
 
   it('clears an in-flight capacity request when switching between equivalent scenarios', async () => {

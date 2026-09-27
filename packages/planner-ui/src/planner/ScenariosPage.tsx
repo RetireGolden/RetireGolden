@@ -590,41 +590,49 @@ function CapacitySection({
   onCalculate: () => void
 }) {
   // Each side's unpriced-credit sentence is replaced by the plain note that
-  // names the years, why, and which way a credit would move that answer.
-  const sideNotes = (
-    label: 'Baseline' | 'Proposal',
-    diagnostics: string[],
+  // names the years, why, and which way a credit would move that answer; when
+  // both sides would say the same thing it is said once, for both.
+  const sideNote = (
     years: number[],
     reasons: AcaSupportCode[],
     direction: 'conservative' | 'uncertain' | null,
     answered: boolean,
-  ): string[] => {
-    const note = unpricedCreditSpendingNote(
+  ): string | null =>
+    unpricedCreditSpendingNote(
       { acaGrossPremiumYears: years, acaGrossPremiumReasons: reasons, acaGrossPremiumDirection: direction },
       answered,
     )
-    return [...diagnosticsWithoutUnpricedCreditSentence(diagnostics, years), ...(note === null ? [] : [note])].map(
-      (message) => `${label}: ${message}`,
-    )
-  }
+  const baselineNote = capacity
+    ? sideNote(
+        capacity.baselineAcaGrossPremiumYears,
+        capacity.baselineAcaGrossPremiumReasons,
+        capacity.baselineAcaGrossPremiumDirection,
+        capacity.maxBaseAnnual.baseline !== null,
+      )
+    : null
+  const proposalNote = capacity
+    ? sideNote(
+        capacity.proposalAcaGrossPremiumYears,
+        capacity.proposalAcaGrossPremiumReasons,
+        capacity.proposalAcaGrossPremiumDirection,
+        capacity.maxBaseAnnual.proposal !== null,
+      )
+    : null
+  const sharedNote = baselineNote !== null && baselineNote === proposalNote
   const diagnostics = capacity
     ? [
-        ...sideNotes(
-          'Baseline',
-          capacity.baselineDiagnostics,
-          capacity.baselineAcaGrossPremiumYears,
-          capacity.baselineAcaGrossPremiumReasons,
-          capacity.baselineAcaGrossPremiumDirection,
-          capacity.maxBaseAnnual.baseline !== null,
+        ...diagnosticsWithoutUnpricedCreditSentence(capacity.baselineDiagnostics, capacity.baselineAcaGrossPremiumYears).map(
+          (message) => `Baseline: ${message}`,
         ),
-        ...sideNotes(
-          'Proposal',
-          capacity.proposalDiagnostics,
-          capacity.proposalAcaGrossPremiumYears,
-          capacity.proposalAcaGrossPremiumReasons,
-          capacity.proposalAcaGrossPremiumDirection,
-          capacity.maxBaseAnnual.proposal !== null,
+        ...diagnosticsWithoutUnpricedCreditSentence(capacity.proposalDiagnostics, capacity.proposalAcaGrossPremiumYears).map(
+          (message) => `Proposal: ${message}`,
         ),
+        ...(sharedNote
+          ? [`Baseline and proposal: ${baselineNote}`]
+          : [
+              ...(baselineNote === null ? [] : [`Baseline: ${baselineNote}`]),
+              ...(proposalNote === null ? [] : [`Proposal: ${proposalNote}`]),
+            ]),
       ]
     : []
   return (

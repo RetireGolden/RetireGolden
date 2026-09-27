@@ -105,7 +105,7 @@ describe('unpricedCreditSpendingNote', () => {
 
   it('names one reason for every year when there is only one', () => {
     expect(unpricedCreditSpendingNote(facts([2027, 2028, 2029], ['tax-year-parameters-unsupported']), true)).toBe(
-      "The premium tax credit isn't counted in 2027 to 2029: the credit's figures for those years aren't published yet. " +
+      "The premium tax credit isn't counted in 2027 to 2029: RetireGolden doesn't have the credit's figures for those years yet. " +
         fixedTail,
     )
   })
@@ -114,8 +114,8 @@ describe('unpricedCreditSpendingNote', () => {
     expect(
       unpricedCreditSpendingNote(facts([2027], ['missing-year-contract', 'tax-year-parameters-unsupported']), true),
     ).toBe(
-      "The premium tax credit isn't counted in 2027: the plan doesn't have the household details the credit needs and " +
-        "the credit's figures for that year aren't published yet. " +
+      "The premium tax credit isn't counted in 2027: the planner doesn't yet collect the household details the credit needs and " +
+        "RetireGolden doesn't have the credit's figures for that year yet. " +
         'The projection pays the full Marketplace premium in that year; if you receive a credit then, you would likely be able to spend somewhat more than this.',
     )
   })
@@ -129,7 +129,7 @@ describe('unpricedCreditSpendingNote', () => {
     expect(text).toBe(
       "The premium tax credit isn't counted in 2026 to 2028. In each of those years, at least one of these applies: " +
         'income is below the poverty line, where there is generally no credit and Medicaid may apply; ' +
-        "the credit's figures for those years aren't published yet. " +
+        "RetireGolden doesn't have the credit's figures for those years yet. " +
         fixedTail,
     )
   })
