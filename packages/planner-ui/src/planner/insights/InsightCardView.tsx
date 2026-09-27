@@ -21,6 +21,7 @@ import type { InsightAction, InsightCard, InsightImpact } from '@retiregolden/en
 import { LearnLink } from '../../learn/LearnLink'
 import { sectionTitleOf } from '../sectionTitles'
 import { fmtMoney, fmtMoneyCompact } from '../format'
+import { insightPreviewErrorSentence } from '../engineRefusalCopy'
 import { uniqueScenarioName } from '../scenarioNames'
 import { formatMcDelta } from './mcDeltaFormat'
 
@@ -153,7 +154,10 @@ export function InsightCardView({ card, onDismiss }: { card: InsightCard; onDism
           }
         }
       } catch (err) {
-        setPreviewError(err instanceof Error ? err.message : 'Failed to evaluate this insight.')
+        // A refusal or failure in plain words with a next step, never the
+        // engine's wording; a detector that found nothing to preview says why
+        // in its own words (PR #754).
+        setPreviewError(insightPreviewErrorSentence(err))
         setLoadingMc(false)
       } finally {
         setLoadingExact(false)

@@ -9,6 +9,7 @@
 import type { CoverageAttestation } from '../coverageAttestations.js'
 
 export const insightsAttestations: Readonly<Record<string, CoverageAttestation>> = Object.freeze({
+  'insights/previewUnavailable.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-09-27', note: 'the error a detector throws when it finds nothing to preview, in words a reader can act on; no statute' }),
   'insights/detectorProjection.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-09-26', note: 'binds the insight cards\' deflate to projection/dollarBasis.ts; no statute' }),
   'insights/detectors/acaThresholdProximity.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),
   'insights/detectors/annuitizationHeadroom.ts': Object.freeze({ status: 'rule-free', sweptOn: '2026-08-24', note: null }),

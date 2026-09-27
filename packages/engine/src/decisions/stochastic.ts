@@ -50,6 +50,21 @@ export interface MonteCarloRateRun {
 }
 
 /**
+ * The refusal of two Monte Carlo runs that cannot be compared: a RangeError
+ * whose `reason` says which of the two things they must share differs, so a
+ * page can say it in plain words (PR #754).
+ */
+export class MonteCarloComparisonRefusal extends RangeError {
+  readonly reason: 'path-counts-differ' | 'start-years-differ'
+
+  constructor(reason: MonteCarloComparisonRefusal['reason'], message: string) {
+    super(message)
+    this.name = 'MonteCarloComparisonRefusal'
+    this.reason = reason
+  }
+}
+
+/**
  * The change in Monte Carlo success rate from a baseline run to a proposal run
  * on the same market paths: compareScalars(baseline.successRate,
  * proposal.successRate), a fraction of paths, proposal minus baseline.
@@ -57,18 +72,21 @@ export interface MonteCarloRateRun {
  * rate on N paths to a rate on M paths is not a change on shared paths, and
  * the baseline would not be the rate the reader was shown. Refuses two runs
  * from different start years for the same reason: their paths cover different
- * years, so the difference is not a change on shared markets.
+ * years, so the difference is not a change on shared markets. Both refusals
+ * are MonteCarloComparisonRefusal.
  *
  * @see DOCS/calculations/insights/insight-monte-carlo-success-delta.md
  */
 export function compareMonteCarloSuccessRates(baseline: MonteCarloRateRun, proposal: MonteCarloRateRun): ScalarComparison {
   if (baseline.pathCount !== proposal.pathCount) {
-    throw new RangeError(
+    throw new MonteCarloComparisonRefusal(
+      'path-counts-differ',
       `Success rates are compared only on the same number of paths; the baseline ran ${baseline.pathCount} and the proposal ${proposal.pathCount}`,
     )
   }
   if (baseline.startYear !== proposal.startYear) {
-    throw new RangeError(
+    throw new MonteCarloComparisonRefusal(
+      'start-years-differ',
       `Success rates are compared only from one start year; the baseline starts in ${baseline.startYear} and the proposal in ${proposal.startYear}`,
     )
   }

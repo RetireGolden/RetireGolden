@@ -23,6 +23,7 @@ import { assetLocationGenerator } from '../../decisions/generators.js'
 import type { DecisionCandidate, DecisionContext } from '../../decisions/types.js'
 import { combineTaxCalculators, createFederalTaxCalculator } from '../../tax/federalTax.js'
 import { createStateTaxCalculator } from '../../tax/stateTax.js'
+import { InsightPreviewUnavailable } from '../previewUnavailable.js'
 import type { Detector, DetectorContext } from '../types.js'
 
 function decisionContextFromDetector(ctx: DetectorContext): DecisionContext {
@@ -103,7 +104,7 @@ export const assetLocation: Detector = {
     const candidates = assetLocationGenerator.generate(decisionCtx)
     const best = pickBestBeneficialCandidate(decisionCtx, candidates)
     if (!best) {
-      throw new Error(
+      throw new InsightPreviewUnavailable(
         'No beneficial asset-location swap was found once taxes, taxable drag, and rebalancing were priced in.',
       )
     }
