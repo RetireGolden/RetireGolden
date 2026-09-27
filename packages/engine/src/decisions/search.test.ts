@@ -23,6 +23,17 @@ function seedSchedule() {
 }
 
 describe('refineConversionSchedule', () => {
+  it("refuses a JS caller's nonActionableAca 'disclose'", () => {
+    const ctx = createDecisionContext(tradHeavyPlan(), simOptions())
+    const evaluation = { nonActionableAca: 'disclose' } as unknown as NonNullable<
+      Parameters<typeof refineConversionSchedule>[2]
+    >['evaluation']
+    expect(() => refineConversionSchedule(ctx, seedSchedule(), { evaluation })).toThrow(TypeError)
+    expect(() => refineConversionSchedule(ctx, seedSchedule(), { evaluation })).toThrow(
+      /refuses evaluation\.nonActionableAca 'disclose'/,
+    )
+  })
+
   it('stops local search at deterministic budget', () => {
     const ctx = createDecisionContext(tradHeavyPlan(), simOptions())
     const budget = 9

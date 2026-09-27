@@ -75,6 +75,14 @@ export function refineConversionSchedule(
   seedConversions: Array<{ year: number; amount: number }>,
   options: CoordinateDescentOptions = {},
 ): CoordinateDescentResult {
+  // The option type omits nonActionableAca, but a JS caller can still pass
+  // it. Refused, not stripped: a copy of the options would lose the
+  // legacy-aggregate capability their identity carries.
+  if ((options.evaluation as EvaluateCandidateOptions | undefined)?.nonActionableAca === 'disclose') {
+    throw new TypeError(
+      "refineConversionSchedule refuses evaluation.nonActionableAca 'disclose': a search recommends a conversion schedule, and a schedule cannot be sized against an unpriced ACA credit.",
+    )
+  }
   const policy = options.policy ?? maximizeAfterTaxEstate
   const maxSimulations = options.maxSimulations ?? DEFAULT_MAX_SIMULATIONS
   const coarseStep = options.coarseStepDollars ?? DEFAULT_COARSE_STEP
