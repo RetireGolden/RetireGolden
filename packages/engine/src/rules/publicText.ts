@@ -12,7 +12,7 @@
  * `publicText.conformance.test.ts` holds exactly these fields to this list:
  *
  * - a tax rule's `title`, `conventionRationale`, `contraryReading` (skipped
- *   when null, as it is for every rule today) and each authority's
+ *   when null; five rules carry one today) and each authority's
  *   `citation` (a `url` is an address, not text);
  * - an approximated rule's entry in `APPROXIMATION_KINDS`: `missingInput`
  *   for a needs-fact entry, `reason` for a convention entry (a fix entry
