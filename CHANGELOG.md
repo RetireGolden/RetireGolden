@@ -1217,6 +1217,11 @@ has — rather than the runtime contract a consumer needs on the landing page.
   `COLA_PCT_BY_YEAR`, `LATEST_PUBLISHED_COLA_YEAR`, `piaWithCostOfLivingIncreases` and
   `socialSecurityColaAssumptionPct` are new, and `simulatePlan` resolves an earnings PIA in
   the first year's dollars.
+- **planner-ui (decision D-SS-LAW-2):** `resolvePia(person, stream, asOf)`
+  (`planner/ssAnalysis`) now requires the projection's first year and COLA assumption,
+  passed as `piaAsOfPlan(plan)` (new), deliberately without a default so no caller
+  silently receives the eligibility-year PIA; `claimingPeople(plan, startYear)` gains an
+  optional start year that defaults to the current year.
 
 - **B2-P1 slice 3 (comparisons):**
   - **`InsightImpact.successRateDeltaPct` is removed**, since no detector publishes it
