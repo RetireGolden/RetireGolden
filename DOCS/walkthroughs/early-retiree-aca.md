@@ -15,7 +15,8 @@ that will hold the engine to it.
 
 **Provenance.** Derived 2026-09-22 by Claude (Opus 5.5 subagent) against the repository checkout at `4fc7d7c7`
 (branch `claude/ss-record-limit-wording`). That is two commits past `main` 119d3351. The two commits change only
-Social Security spousal-benefit wording (`socialSecurity/currentSpouseBenefit.ts`, `rules/calculations/socialSecurity.ts`
+Social Security spousal-benefit wording (`socialSecurity/currentSpouseBenefit.ts`, a module decision D-SS-LAW-2
+removed on 2026-09-27 in favor of `socialSecurity/dualEntitlement.ts`; `rules/calculations/socialSecurity.ts`
 and two coverage JSON files), and this plan reaches none of them. `git status` showed a clean working tree when I
 read it, so every file cited is the committed version. I did not run the engine, run any test, or execute any
 TypeScript or JavaScript. I did the arithmetic by hand and checked it with exact rational arithmetic (Python
