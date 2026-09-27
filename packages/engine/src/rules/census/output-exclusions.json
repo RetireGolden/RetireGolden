@@ -856,6 +856,30 @@
     "reason": "Bisection upper bound; a loop local."
   },
   {
+    "id": "field-engine-src-decisions-spendingsolver-ts-sustainablespendingresult-maxbaseannualrounding",
+    "path": "engine/src/decisions/spendingSolver.ts",
+    "symbol": "SustainableSpendingResult",
+    "field": "maxBaseAnnualRounding",
+    "reasonKind": "label-or-category",
+    "reason": "Says whether maxBaseAnnual is feasibleBaseAnnual rounded down to $100 or, under guardrails when the rounded amount failed, the exact amount; a category, not an amount."
+  },
+  {
+    "id": "field-engine-src-decisions-spendingsolver-ts-sustainablespendingresult-sustainscurrentbase",
+    "path": "engine/src/decisions/spendingSolver.ts",
+    "symbol": "SustainableSpendingResult",
+    "field": "sustainsCurrentBase",
+    "reasonKind": "boolean-flag",
+    "reason": "Whether the solve's first probe, at today's base rounded to a whole dollar (or the required floor rounded up), passed: the verdict on which cannot-sustain copy is judged; a flag, not an amount."
+  },
+  {
+    "id": "field-engine-src-decisions-spendingsolver-ts-module-solved-spending-step-dollars",
+    "path": "engine/src/decisions/spendingSolver.ts",
+    "symbol": "module",
+    "field": "SOLVED_SPENDING_STEP_DOLLARS",
+    "reasonKind": "input-parameter",
+    "reason": "The $100 step the published answer is rounded down to; a fixed setting of the solver, not an output."
+  },
+  {
     "id": "field-engine-src-decisions-swrcomparator-ts-swrrulespec-cape",
     "path": "engine/src/decisions/swrComparator.ts",
     "symbol": "SwrRuleSpec",
@@ -990,6 +1014,54 @@
     "field": "realAmount",
     "reasonKind": "input-parameter",
     "reason": "Real amount argument of realPresentValue."
+  },
+  {
+    "id": "field-engine-src-ladder-laddermath-ts-planladderquote-anchoryear",
+    "path": "engine/src/ladder/ladderMath.ts",
+    "symbol": "PlanLadderQuote",
+    "field": "anchorYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The calendar year the rungs exist from (the purchase year, or the year before the projection); a coordinate."
+  },
+  {
+    "id": "field-engine-src-ladder-laddermath-ts-planladderquote-maturityyears",
+    "path": "engine/src/ladder/ladderMath.ts",
+    "symbol": "PlanLadderQuote",
+    "field": "maturityYears",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The calendar year each rung matures, the buy-list's Matures column; coordinates."
+  },
+  {
+    "id": "field-engine-src-ladder-laddermath-ts-planladderwindow-anchoryear",
+    "path": "engine/src/ladder/ladderMath.ts",
+    "symbol": "PlanLadderWindow",
+    "field": "anchorYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The calendar year the rungs exist from; a coordinate of the ledger's window."
+  },
+  {
+    "id": "field-engine-src-ladder-laddermath-ts-planladderwindow-effectivestartyear",
+    "path": "engine/src/ladder/ladderMath.ts",
+    "symbol": "PlanLadderWindow",
+    "field": "effectiveStartYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The first payout year after the anchor rule; a coordinate."
+  },
+  {
+    "id": "field-engine-src-ladder-laddermath-ts-planladderwindow-firstpayoutoffset",
+    "path": "engine/src/ladder/ladderMath.ts",
+    "symbol": "PlanLadderWindow",
+    "field": "firstPayoutOffset",
+    "reasonKind": "dimension-coordinate",
+    "reason": "Years from the anchor to the first payout; a coordinate."
+  },
+  {
+    "id": "field-engine-src-ladder-laddermath-ts-planladderwindow-payoutyears",
+    "path": "engine/src/ladder/ladderMath.ts",
+    "symbol": "PlanLadderWindow",
+    "field": "payoutYears",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The number of payout years in the window; a coordinate."
   },
   {
     "id": "field-engine-src-ladder-fundedratio-ts-fundedratioinput-startyear",
@@ -1974,14 +2046,6 @@
     "field": "deathAge",
     "reasonKind": "dimension-coordinate",
     "reason": "The module.deathAge field is a coordinate such as year, age, or offset used to place another value."
-  },
-  {
-    "id": "field-planner-ui-src-planner-bucketlens-ts-bucketyearrow-year",
-    "path": "planner-ui/src/planner/bucketLens.ts",
-    "symbol": "BucketYearRow",
-    "field": "year",
-    "reasonKind": "dimension-coordinate",
-    "reason": "The BucketYearRow.year field is a coordinate such as year, age, or offset used to place another value."
   },
   {
     "id": "field-planner-ui-src-planner-bucketlens-ts-bucketpreset-spans",
@@ -3546,6 +3610,38 @@
     "reason": "Calendar year of each cumulative depletion probability row (union of both plans' depletion years)."
   },
   {
+    "id": "field-engine-src-scenarios-comparison-ts-scenariospendingcapacitycomparison-baselinemaxbaseannualrounding",
+    "path": "engine/src/scenarios/comparison.ts",
+    "symbol": "ScenarioSpendingCapacityComparison",
+    "field": "baselineMaxBaseAnnualRounding",
+    "reasonKind": "label-or-category",
+    "reason": "Whether that side's published amount is its passing level rounded down to $100 or the exact passing level; a category."
+  },
+  {
+    "id": "field-engine-src-scenarios-comparison-ts-scenariospendingcapacitycomparison-baselinesustainscurrentbase",
+    "path": "engine/src/scenarios/comparison.ts",
+    "symbol": "ScenarioSpendingCapacityComparison",
+    "field": "baselineSustainsCurrentBase",
+    "reasonKind": "boolean-flag",
+    "reason": "Whether that side's own base spending passes (its solve's sustainsCurrentBase); a flag a reader uses instead of the slack's sign."
+  },
+  {
+    "id": "field-engine-src-scenarios-comparison-ts-scenariospendingcapacitycomparison-proposalmaxbaseannualrounding",
+    "path": "engine/src/scenarios/comparison.ts",
+    "symbol": "ScenarioSpendingCapacityComparison",
+    "field": "proposalMaxBaseAnnualRounding",
+    "reasonKind": "label-or-category",
+    "reason": "Whether that side's published amount is its passing level rounded down to $100 or the exact passing level; a category."
+  },
+  {
+    "id": "field-engine-src-scenarios-comparison-ts-scenariospendingcapacitycomparison-proposalsustainscurrentbase",
+    "path": "engine/src/scenarios/comparison.ts",
+    "symbol": "ScenarioSpendingCapacityComparison",
+    "field": "proposalSustainsCurrentBase",
+    "reasonKind": "boolean-flag",
+    "reason": "Whether that side's own base spending passes (its solve's sustainsCurrentBase); a flag a reader uses instead of the slack's sign."
+  },
+  {
     "id": "field-engine-src-projection-internal-types-cashflow-ts-yearcashflowreconciliationdiagnostic-expectedplandollars",
     "path": "engine/src/projection/internal/types/cashFlow.ts",
     "symbol": "YearCashFlowReconciliationDiagnostic",
@@ -3690,6 +3786,30 @@
     "reason": "Echo of the probe seed; a reproducibility setting."
   },
   {
+    "id": "field-engine-src-montecarlo-riskbasedguardrails-ts-module-balance-threshold-pct-decimals",
+    "path": "engine/src/montecarlo/riskBasedGuardrails.ts",
+    "symbol": "module",
+    "field": "BALANCE_THRESHOLD_PCT_DECIMALS",
+    "reasonKind": "input-parameter",
+    "reason": "The two decimal places a persisted threshold percent carries; a fixed setting, not an output."
+  },
+  {
+    "id": "field-engine-src-montecarlo-riskbasedguardrails-ts-guardrailthresholddollars-acts",
+    "path": "engine/src/montecarlo/riskBasedGuardrails.ts",
+    "symbol": "GuardrailThresholdDollars",
+    "field": "acts",
+    "reasonKind": "boolean-flag",
+    "reason": "False when both thresholds exist and the cut threshold is not below the raise threshold, where the ledger holds spending every year; a flag."
+  },
+  {
+    "id": "field-engine-src-montecarlo-riskbasedguardrails-ts-guardrailthresholddollars-status",
+    "path": "engine/src/montecarlo/riskBasedGuardrails.ts",
+    "symbol": "GuardrailThresholdDollars",
+    "field": "status",
+    "reasonKind": "label-or-category",
+    "reason": "Whether the thresholds are unsolved, anchored on today's balances, or published as percents only because today's investable balance is zero; a category."
+  },
+  {
     "id": "field-engine-src-projection-yearfigures-ts-yeardisplayfigures-year",
     "path": "engine/src/projection/yearFigures.ts",
     "symbol": "YearDisplayFigures",
@@ -3720,5 +3840,45 @@
     "field": "endYear",
     "reasonKind": "dimension-coordinate",
     "reason": "The DollarBasis.endYear field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-engine-src-projection-bucketlens-ts-bucketyearrow-year",
+    "path": "engine/src/projection/bucketLens.ts",
+    "symbol": "BucketYearRow",
+    "field": "year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The projection year the row reads; a coordinate."
+  },
+  {
+    "id": "field-engine-src-projection-bucketlens-ts-bucketlens-spans",
+    "path": "engine/src/projection/bucketLens.ts",
+    "symbol": "bucketLens",
+    "field": "spans",
+    "reasonKind": "input-parameter",
+    "reason": "Year spans of the leading buckets the caller chooses (a preset); an input."
+  },
+  {
+    "id": "field-engine-src-projection-bucketlens-ts-module-bucket-lens-spans",
+    "path": "engine/src/projection/bucketLens.ts",
+    "symbol": "module",
+    "field": "BUCKET_LENS_SPANS",
+    "reasonKind": "input-parameter",
+    "reason": "The two bucket presets the planner offers, [2, 8] and [3] years; inputs."
+  },
+  {
+    "id": "field-planner-ui-src-planner-yearcashflow-buildyearcashflow-ts-yearcashflowsankeynode-totalinplandollars",
+    "path": "planner-ui/src/planner/yearCashFlow/buildYearCashFlow.ts",
+    "symbol": "YearCashFlowSankeyNode",
+    "field": "totalInPlanDollars",
+    "reasonKind": "view-aggregation",
+    "reason": "A transfer-view endpoint's incoming credits: published transfer lines added by the chart's own node grouping and printed as \"in $X\" (chart aggregation, decision R18)."
+  },
+  {
+    "id": "field-planner-ui-src-planner-yearcashflow-buildyearcashflow-ts-yearcashflowsankeynode-totaloutplandollars",
+    "path": "planner-ui/src/planner/yearCashFlow/buildYearCashFlow.ts",
+    "symbol": "YearCashFlowSankeyNode",
+    "field": "totalOutPlanDollars",
+    "reasonKind": "view-aggregation",
+    "reason": "A transfer-view endpoint's outgoing debits: published transfer lines added by the chart's own node grouping and printed as \"out $Y\" (chart aggregation, decision R18)."
   }
 ]

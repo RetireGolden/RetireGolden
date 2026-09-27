@@ -15,9 +15,15 @@ export interface SpendingSolveRequest {
   maxSimulations?: number
 }
 
-/** Exact-ledger evidence for the plan run at the solved spending level. */
+/** Exact-ledger evidence for the plan run at the level that passed (`feasibleBaseAnnual`). */
 export interface SpendingSolveEvidence {
   endingAfterTaxEstate: number
+  /**
+   * The same estate in start-year (today's) dollars, divided by that run's own
+   * inflation factor for its end year. Optional on the wire so results built
+   * before it existed still type-check; the worker always sets it.
+   */
+  endingAfterTaxEstateTodayDollars?: number
   endingNetWorth: number
   lifetimeTaxesAndPenalties: number
   depletionYear: number | null
@@ -25,10 +31,40 @@ export interface SpendingSolveEvidence {
 }
 
 export interface SpendingSolveResult {
-  /** Highest feasible annual base spending (today's dollars), or null. */
+  /**
+   * The solver's published answer (today's dollars), or null: the amount the
+   * page shows, applies and measures slack from. Rounded down to a whole $100
+   * unless `maxBaseAnnualRounding` is 'none'.
+   */
   maxBaseAnnual: number | null
-  /** maxBaseAnnual − current base spending (negative ⇒ overspending today). */
+  /**
+   * maxBaseAnnual − current base spending. Negative means the published amount
+   * is below today's base, which by less than $100 can still be a plan whose
+   * own spending passes (the amount is rounded down); `sustainsCurrentBase`
+   * says whether it does.
+   */
   spendingSlackDollars: number | null
+  /**
+   * The highest level that passed (a whole dollar). The next four fields are
+   * optional on the wire so results built before they existed still
+   * type-check; the worker always sets them.
+   */
+  feasibleBaseAnnual?: number | null
+  /**
+   * Whether today's base spending passes (the solve's first probe, at the
+   * current base rounded to a whole dollar or the required floor rounded up);
+   * null when no probe could be evaluated.
+   */
+  sustainsCurrentBase?: boolean | null
+  /**
+   * 'down-to-hundred' when maxBaseAnnual is feasibleBaseAnnual rounded down to
+   * a whole $100; 'none' when it is feasibleBaseAnnual itself, because under
+   * guardrail spending the rounded amount was run and failed (or would fall
+   * below the required floor). Null with no answer.
+   */
+  maxBaseAnnualRounding?: 'down-to-hundred' | 'none' | null
+  /** maxBaseAnnual as a percent of today's investable balances; null when those are not positive. */
+  initialWithdrawalRatePct?: number | null
   /** The plan's own base spending the slack is measured against. */
   currentBaseAnnual: number
   /** The bequest target the solve enforced (today's dollars; 0 = none). */

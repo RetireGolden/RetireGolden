@@ -162,8 +162,35 @@ export interface ScenarioEstateComparison {
 }
 
 export interface ScenarioSpendingCapacityComparison {
+  /**
+   * Each side's published answer (`SustainableSpendingResult.maxBaseAnnual`:
+   * rounded down to $100 unless a guardrail plan fails at the rounded amount),
+   * the same amount the spending page shows and applies.
+   */
   maxBaseAnnual: NullableScalarComparison
+  /**
+   * Each side's `spendingSlackDollars`, measured from its published answer.
+   * Its sign does not say whether today's spending is sustained (a sustained
+   * $72,030 base can show a slack of −$30); read the SustainsCurrentBase
+   * fields for that.
+   */
   spendingSlack: NullableScalarComparison
+  /**
+   * Each side's `feasibleBaseAnnual`, the level that passed. Optional so a
+   * comparison stored before it existed still types; null on a side whose
+   * result did not carry it.
+   */
+  feasibleBaseAnnual?: NullableScalarComparison
+  /** Each side's `maxBaseAnnualRounding`; optional and null as above. */
+  baselineMaxBaseAnnualRounding?: SustainableSpendingResult['maxBaseAnnualRounding']
+  proposalMaxBaseAnnualRounding?: SustainableSpendingResult['maxBaseAnnualRounding']
+  /**
+   * Each side's `sustainsCurrentBase`: whether that plan's own base spending
+   * passes. Optional and null as above; a reader deciding whether to say
+   * today's spending cannot be sustained reads this, never the slack's sign.
+   */
+  baselineSustainsCurrentBase?: boolean | null
+  proposalSustainsCurrentBase?: boolean | null
   baselineConverged: boolean
   proposalConverged: boolean
   baselineSimulationCount: number
@@ -192,7 +219,10 @@ export type ScenarioSpendingCapacityResult = Pick<
   | 'acaGrossPremiumReasons'
   | 'acaGrossPremiumDirection'
   | 'diagnostics'
->
+> &
+  // Optional so a result built before B2-P1 slice 2 (or by a host that does
+  // not carry them) still compares; each reads as null when absent.
+  Partial<Pick<SustainableSpendingResult, 'feasibleBaseAnnual' | 'maxBaseAnnualRounding' | 'sustainsCurrentBase'>>
 
 export interface AnnualComparisonValues {
   income: number
@@ -352,6 +382,11 @@ export function compareScenarioSpendingCapacityResults(
   return {
     maxBaseAnnual: nullableScalar(baseline.maxBaseAnnual, proposal.maxBaseAnnual),
     spendingSlack: nullableScalar(baseline.spendingSlackDollars, proposal.spendingSlackDollars),
+    feasibleBaseAnnual: nullableScalar(baseline.feasibleBaseAnnual ?? null, proposal.feasibleBaseAnnual ?? null),
+    baselineMaxBaseAnnualRounding: baseline.maxBaseAnnualRounding ?? null,
+    proposalMaxBaseAnnualRounding: proposal.maxBaseAnnualRounding ?? null,
+    baselineSustainsCurrentBase: baseline.sustainsCurrentBase ?? null,
+    proposalSustainsCurrentBase: proposal.sustainsCurrentBase ?? null,
     baselineConverged: baseline.converged,
     proposalConverged: proposal.converged,
     baselineSimulationCount: baseline.simulationCount,

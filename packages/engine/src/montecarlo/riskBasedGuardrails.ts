@@ -66,12 +66,39 @@ export interface RiskBasedGuardrailSolveOptions {
 }
 
 export interface RiskBasedThreshold {
-  /** Balance level as a fraction of today's investable portfolio. */
+  /** Balance level as a fraction of today's investable portfolio (a lattice point of the search). */
   balanceFrac: number
-  /** The same level in dollars (today's dollars). */
-  balanceDollars: number
+  /**
+   * The same level as the percent the planner persists on the policy
+   * (`lowerBalanceThresholdPct` / `upperBalanceThresholdPct`):
+   * `balanceThresholdPct(balanceFrac)`, two decimals. The ledger acts on this
+   * percent, never on `balanceFrac`; `guardrailThresholdDollars` gives it in
+   * dollars.
+   */
+  balancePct: number
   /** Success probability re-evaluated at the threshold (0..1). */
   successAtThreshold: number
+}
+
+/** Decimal places of a persisted threshold percent (0.01 percent). */
+export const BALANCE_THRESHOLD_PCT_DECIMALS = 2
+
+/**
+ * The percent the planner persists for a solved balance fraction:
+ * Math.round(balanceFrac × 10^(2 + BALANCE_THRESHOLD_PCT_DECIMALS)) / 10^BALANCE_THRESHOLD_PCT_DECIMALS,
+ * that is Math.round(balanceFrac × 10,000) / 100 at two decimals, in floating
+ * point. At three of the solver's 1,024 lattice points the product lands a
+ * hair below a half and rounds down (76.62 where the exact 76.625 rounds half
+ * up to 76.63): at most 0.01 percent of the balance, about a fortieth of the
+ * solver's own step. Refuses (RangeError) a fraction that is not a positive
+ * finite number.
+ */
+export function balanceThresholdPct(balanceFrac: number): number {
+  if (!Number.isFinite(balanceFrac) || balanceFrac <= 0) {
+    throw new RangeError(`A balance threshold must be a positive finite fraction of the portfolio; got ${balanceFrac}.`)
+  }
+  const scale = 10 ** BALANCE_THRESHOLD_PCT_DECIMALS
+  return Math.round(balanceFrac * (100 * scale)) / scale
 }
 
 /**
@@ -123,6 +150,14 @@ function isInvestable(account: Account): boolean {
   return INVESTABLE_ACCOUNT_TYPES.has(account.type)
 }
 
+/**
+ * Today's investable balances: the entered balance of every cash, taxable,
+ * equityComp, traditional, Roth and HSA account, added in plan order. Property,
+ * annuities and other rows are excluded by type. This is the ledger's own
+ * first-year real portfolio (the same rows in the same order, at an inflation
+ * factor of exactly 1), which is why the risk-based guardrail thresholds in
+ * dollars are this sum times the persisted percents.
+ */
 export function startingInvestableOf(plan: Plan): number {
   let total = 0
   for (const account of plan.accounts) {
@@ -240,7 +275,7 @@ export function solveRiskBasedGuardrails(plan: Plan, opts: RiskBasedGuardrailSol
       else lo = mid
     }
     return {
-      threshold: { balanceFrac: hi, balanceDollars: hi * startingInvestable, successAtThreshold: successAtFrac(hi) },
+      threshold: { balanceFrac: hi, balancePct: balanceThresholdPct(hi), successAtThreshold: successAtFrac(hi) },
       outcome: 'solved',
     }
   }
@@ -302,4 +337,46 @@ export function solveRiskBasedGuardrails(plan: Plan, opts: RiskBasedGuardrailSol
     pathCount: opts.pathCount,
     seed: opts.seed,
   }
+}
+
+/**
+ * A risk-based guardrail policy's thresholds as the planner shows them.
+ * 'unsolved': no percent is persisted yet, so the policy adjusts nothing.
+ * 'anchored': today's investable balance `base` is positive, and `lower` and
+ * `upper` are (percent / 100) × base in today's dollars, null where no percent
+ * is persisted; `acts` is false when both exist and lower ≥ upper, where the
+ * ledger holds spending every year. 'no-starting-portfolio': today's
+ * investable balance is zero, so the ledger anchors on the first year the
+ * portfolio has a balance, which only a simulation knows (and which varies by
+ * path in Monte Carlo); the percents are published, no dollars.
+ */
+export type GuardrailThresholdDollars =
+  | { readonly status: 'unsolved' }
+  | {
+      readonly status: 'anchored'
+      readonly base: number
+      readonly lower: number | null
+      readonly upper: number | null
+      readonly acts: boolean
+    }
+  | { readonly status: 'no-starting-portfolio'; readonly lowerPct: number | null; readonly upperPct: number | null }
+
+/**
+ * The cut and raise thresholds of a risk-based guardrail policy in today's
+ * dollars, on the base the ledger acts on: (lowerBalanceThresholdPct / 100) × B
+ * and (upperBalanceThresholdPct / 100) × B in that association, with
+ * B = startingInvestableOf(plan), the ledger's first-year real portfolio. Null
+ * unless the plan's spending policy is risk-based guardrails.
+ */
+export function guardrailThresholdDollars(plan: Plan): GuardrailThresholdDollars | null {
+  const policy = plan.expenses.spendingPolicy
+  if (policy?.mode !== 'riskBasedGuardrails') return null
+  const lowerPct = policy.lowerBalanceThresholdPct ?? null
+  const upperPct = policy.upperBalanceThresholdPct ?? null
+  if (lowerPct === null && upperPct === null) return { status: 'unsolved' }
+  const base = startingInvestableOf(plan)
+  if (!(base > 0)) return { status: 'no-starting-portfolio', lowerPct, upperPct }
+  const lower = lowerPct === null ? null : (lowerPct / 100) * base
+  const upper = upperPct === null ? null : (upperPct / 100) * base
+  return { status: 'anchored', base, lower, upper, acts: !(lower !== null && upper !== null && lower >= upper) }
 }

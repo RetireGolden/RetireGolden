@@ -78,7 +78,8 @@ describe('solveRiskBasedGuardrails', { timeout: 120_000 }, () => {
     expect(solution.lowerOutcome).toBe('solved')
     expect(solution.upperOutcome).toBe('solved')
     expect(solution.lower!.balanceFrac).toBeLessThan(solution.upper!.balanceFrac)
-    expect(solution.lower!.balanceDollars).toBeCloseTo(solution.lower!.balanceFrac * 900_000, 6)
+    // The solver publishes the percent the planner persists, two decimals.
+    expect(solution.lower!.balancePct).toBe(Math.round(solution.lower!.balanceFrac * 10_000) / 100)
 
     // Success at each solved threshold sits at its band edge, within the
     // discreteness of 80 shared paths plus the bisection resolution.

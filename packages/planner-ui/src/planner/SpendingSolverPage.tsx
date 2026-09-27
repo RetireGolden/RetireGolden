@@ -11,9 +11,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 
 import { compareSwrRules } from '@retiregolden/engine/decisions/swrComparator'
-import { startingInvestableOf } from '@retiregolden/engine/montecarlo/riskBasedGuardrails'
-import { planDollarBasis, toTodayDollars } from '@retiregolden/engine/projection/dollarBasis'
-import { spendingShapePhases, type SpendingShapeId } from '@retiregolden/engine/spending/shapePresets'
+import { isExactAnswerDiagnostic } from '@retiregolden/engine/decisions/spendingSolverDiagnostics'
+import {
+  planWithSpendingShape,
+  SPENDING_SHAPE_COMPARISON,
+  spendingShapeRows,
+  type SolvedSpendingShape,
+} from '@retiregolden/engine/decisions/spendingShapes'
+import type { SpendingShapeId } from '@retiregolden/engine/spending/shapePresets'
 import type { Plan } from '@retiregolden/engine/model/plan'
 import type { SpendingSolveResult } from '../optimize/spendingMessages'
 import { runSpendingSolve } from '../optimize/spendingRunner'
@@ -27,16 +32,6 @@ import { fmtMoney } from './format'
 import { LEARN } from './learnLinks'
 import { currentStartYear, taxCalculatorFor } from './useProjection'
 import { ScrollRegion } from './ScrollRegion'
-
-/**
- * A nominal amount of `year` in `startYear` dollars, by the engine's dollar
- * basis for a run at `inflationPct` (the ledger's own recurrence). Null when
- * `year` falls before `startYear`, where a run has no factor to divide by.
- */
-function todayDollarsOf(inflationPct: number, startYear: number, year: number, amount: number): number | null {
-  if (year < startYear) return null
-  return toTodayDollars(planDollarBasis(inflationPct, startYear, year), year, amount)
-}
 
 function makeScenarioId(): string {
   return typeof crypto !== 'undefined' && 'randomUUID' in crypto
@@ -71,17 +66,21 @@ function Stat({
 interface ShapeRow {
   id: SpendingShapeId
   label: string
+  /** The shape solve's published answer, as the engine's comparison rows carry it. */
   maxBaseAnnual: number | null
+  /** The engine's difference from the flat row's published answer (R5); null on the flat row. */
+  deltaVsFlatDollars: number | null
   /** Years whose premium tax credit that row's solve could not price. */
   acaGrossPremiumYears: number[]
   acaGrossPremiumDirection: SpendingSolveResult['acaGrossPremiumDirection']
 }
 
-const SHAPE_DEFS: { id: SpendingShapeId; label: string }[] = [
-  { id: 'flat', label: 'Constant-real (no decline)' },
-  { id: 'smile', label: 'Smile: average retiree (−10% at 75, −20% at 85)' },
-  { id: 'smirk', label: 'Smirk: median retiree (−1%/yr real)' },
-]
+const SHAPE_LABELS: Record<SpendingShapeId, string> = {
+  flat: 'Constant-real (no decline)',
+  smile: 'Smile: average retiree (−10% at 75, −20% at 85)',
+  smirk: 'Smirk: median retiree (−1%/yr real)',
+  frontLoaded: 'Front-loaded (+10% until 75)',
+}
 
 export function SpendingSolverPage() {
   const { plan, update } = usePlan()
@@ -89,13 +88,10 @@ export function SpendingSolverPage() {
   const navigate = useNavigate()
   const startYear = currentStartYear()
 
-  // The solve's answer kept beside the start year and inflation rate it ran
-  // with, so its today's-dollar evidence is anchored on that run rather than
-  // on the clock (or the plan) at render.
-  const [solve, setSolve] = useState<{ result: SpendingSolveResult; startYear: number; inflationPct: number } | null>(
-    null,
-  )
-  const result = solve?.result ?? null
+  // The solve's answer; its today's-dollar evidence arrives converted by the
+  // answer run's own inflation factor, so nothing here depends on the clock
+  // (or the plan) at render.
+  const [result, setResult] = useState<SpendingSolveResult | null>(null)
   const [running, setRunning] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const runToken = useRef(0)
@@ -123,30 +119,31 @@ export function SpendingSolverPage() {
     const forPlan = plan
     setShapesRunning(true)
     setShapeState(null)
-    const retirementAge = plan.household.people[0]?.retirementAge ?? 65
     void (async () => {
       try {
-        const rows: ShapeRow[] = []
-        for (const def of SHAPE_DEFS) {
-          const variant: Plan = {
-            ...forPlan,
-            expenses: {
-              ...forPlan.expenses,
-              phases: spendingShapePhases(def.id, retirementAge),
-              // Under ABW the ledger ignores baseAnnual/phases entirely, so a
-              // per-shape solve must price fixed-target variants; guardrail
-              // policies stay (the solver handles them).
-              ...(forPlan.expenses.spendingPolicy?.mode === 'abw' ? { spendingPolicy: undefined } : {}),
+        // The engine builds each shape's plan (ABW is solved as fixed-target
+        // variants; guardrail policies stay) and the rows' differences from
+        // the flat shape, taken between the published answers (R5).
+        const solves: { solved: SolvedSpendingShape; result: SpendingSolveResult }[] = []
+        for (const shape of SPENDING_SHAPE_COMPARISON) {
+          const solvedShape = await runSpendingSolve({ plan: planWithSpendingShape(forPlan, shape), startYear })
+          solves.push({
+            solved: {
+              shape,
+              maxBaseAnnual: solvedShape.maxBaseAnnual,
+              maxBaseAnnualRounding: solvedShape.maxBaseAnnualRounding ?? null,
             },
-          }
-          const solved = await runSpendingSolve({ plan: variant, startYear })
-          rows.push({
-            ...def,
-            maxBaseAnnual: solved.maxBaseAnnual,
-            acaGrossPremiumYears: solved.acaGrossPremiumYears,
-            acaGrossPremiumDirection: solved.acaGrossPremiumDirection,
+            result: solvedShape,
           })
         }
+        const rows: ShapeRow[] = spendingShapeRows(solves.map((entry) => entry.solved)).map((row, index) => ({
+          id: row.shape,
+          label: SHAPE_LABELS[row.shape],
+          maxBaseAnnual: row.maxBaseAnnual,
+          deltaVsFlatDollars: row.deltaVsFlatDollars,
+          acaGrossPremiumYears: solves[index]!.result.acaGrossPremiumYears,
+          acaGrossPremiumDirection: solves[index]!.result.acaGrossPremiumDirection,
+        }))
         if (token === shapeToken.current) setShapeState({ forPlan, rows, error: null })
       } catch (e: unknown) {
         if (token === shapeToken.current) {
@@ -159,33 +156,25 @@ export function SpendingSolverPage() {
   }
 
   // --- published SWR rules on this plan (three deterministic ledger runs) --
-  // The rows are kept beside the start year and rate they ran with, which is
-  // the base year their today's-dollar estate column divides back to.
-  const swr = useMemo(
-    () => ({
-      startYear,
-      inflationPct: plan.assumptions.inflationPct,
-      rows: compareSwrRules(plan, { startYear, taxCalculator: taxCalculatorFor(plan) }),
-    }),
+  // Each row carries its ending estate in today's dollars, converted by the
+  // rule's own run.
+  const swrRows = useMemo(
+    () => compareSwrRules(plan, { startYear, taxCalculator: taxCalculatorFor(plan) }),
     [plan, startYear],
   )
-  const swrRows = swr.rows
-  const startingInvestable = useMemo(() => startingInvestableOf(plan), [plan])
 
   const run = useCallback(() => {
     const token = ++runToken.current
-    const runStartYear = startYear
-    const runInflationPct = plan.assumptions.inflationPct
     setRunning(true)
     setError(null)
-    runSpendingSolve({ plan, startYear: runStartYear })
+    runSpendingSolve({ plan, startYear })
       .then((r) => {
-        if (token === runToken.current) setSolve({ result: r, startYear: runStartYear, inflationPct: runInflationPct })
+        if (token === runToken.current) setResult(r)
       })
       .catch((e: unknown) => {
         if (token === runToken.current) {
           setError(e instanceof Error ? e.message : String(e))
-          setSolve(null)
+          setResult(null)
         }
       })
       .finally(() => {
@@ -200,22 +189,25 @@ export function SpendingSolverPage() {
     return () => window.clearTimeout(t)
   }, [run, abwActive])
 
-  // Under guardrails feasibility is not monotone in the base amount: a level
-  // below one that passed can fail, so a rounded-down figure is not implied.
+  // Under guardrails a lower level can fail where a higher one passed, which
+  // is why the engine runs its rounded-down answer once more on such plans.
   const guardrailSpending =
     plan.expenses.spendingPolicy?.mode === 'withdrawalRateGuardrails' ||
     plan.expenses.spendingPolicy?.mode === 'riskBasedGuardrails'
-  // The solver bisects to ~$500 resolution; a to-the-dollar headline claims
-  // precision the answer doesn't have, so the page shows it floored to $100.
-  // At fixed-target spending feasibility is monotone, so that floored figure,
-  // below the level that passed, passes too, and Apply and scenarios use it.
-  // Under guardrails it is not implied, so they use the exact tested amount.
-  const solvedRounded = result?.maxBaseAnnual != null ? Math.floor(result.maxBaseAnnual / 100) * 100 : null
-  const appliedAmount = guardrailSpending ? (result?.maxBaseAnnual ?? null) : solvedRounded
+  // The engine publishes one amount (R4): the level that passed rounded down
+  // to the nearest $100, or that exact level when the rounded one is not
+  // known to pass. The page shows it, applies it, adds it as a scenario and
+  // reads the slack the engine measured from it.
+  const published = result?.maxBaseAnnual ?? null
+  // The level that passed, on which "sustains today's spending" is judged.
+  const passed = result === null ? null : (result.feasibleBaseAnnual ?? result.maxBaseAnnual)
+  const exactPublished = result?.maxBaseAnnualRounding === 'none'
+  // The engine's own sentence saying why the exact amount is published.
+  const exactAnswerNote = exactPublished ? (result?.diagnostics.find(isExactAnswerDiagnostic) ?? null) : null
 
   const applyToSpending = () => {
-    if (appliedAmount === null) return
-    const solved = appliedAmount
+    if (published === null) return
+    const solved = published
     update((d) => {
       d.expenses.baseAnnual = solved
     })
@@ -224,8 +216,8 @@ export function SpendingSolverPage() {
   }
 
   const addScenario = () => {
-    if (appliedAmount === null) return
-    const solved = appliedAmount
+    if (published === null) return
+    const solved = published
     const baseName = `Spend ${fmtMoney(solved)}/yr (max sustainable)`
     const names = new Set(plan.scenarios.map((s) => s.name))
     let name = baseName
@@ -237,15 +229,16 @@ export function SpendingSolverPage() {
     void navigate(`/plan/${plan.id}/scenarios`)
   }
 
-  // Whether the plan sustains today's baseline is the solver's exact answer
-  // against it, not the rounded figure: a baseline of $72,030 solved at
-  // exactly $72,030 shows as $72,000, and that baseline still passed.
-  // The solver seeds at the baseline rounded to a whole dollar, so that is
-  // the level its answer is measured against.
+  // Whether the plan sustains today's baseline is the engine's verdict on its
+  // first probe, at the baseline rounded to a whole dollar, not the rounded
+  // figure: a baseline of $72,030 solved at exactly $72,030 shows as $72,000,
+  // and that baseline still passed. A result from before the engine published
+  // the verdict is judged the same way, on the level that passed.
   const sustainsCurrent =
-    result !== null && result.maxBaseAnnual !== null && result.maxBaseAnnual >= Math.round(result.currentBaseAnnual)
-  // Slack measured against the rounded display value so the two tiles agree.
-  const slack = result && solvedRounded !== null ? solvedRounded - result.currentBaseAnnual : null
+    result !== null &&
+    (result.sustainsCurrentBase ?? (passed !== null && passed >= Math.round(result.currentBaseAnnual)))
+  // The engine's slack, measured from the published amount the tiles show.
+  const slack = result?.spendingSlackDollars ?? null
   // Only the rounding puts the shown figure below a baseline the plan
   // sustains: the headroom is under $100, not negative.
   const headroomUnderHundred = sustainsCurrent && slack !== null && slack < 0
@@ -261,17 +254,9 @@ export function SpendingSolverPage() {
   const shapeAcaYears = shapeRows?.flatMap((row) => row.acaGrossPremiumYears) ?? []
   const shapesAdaptive = shapeRows?.some((row) => row.acaGrossPremiumDirection === 'uncertain') ?? false
   // The nominal end-of-plan estate in today's dollars, so it reads on the same
-  // scale as the today's-dollars spending answer: divided by the factor the
-  // solve's own run grew it with (its start year and rate).
-  const evidenceEstateToday =
-    solve !== null && solve.result.evidence !== null
-      ? todayDollarsOf(
-          solve.inflationPct,
-          solve.startYear,
-          solve.result.evidence.endYear,
-          solve.result.evidence.endingAfterTaxEstate,
-        )
-      : null
+  // scale as the today's-dollars spending answer: the engine divided it by the
+  // factor the answer's own run grew it with.
+  const evidenceEstateToday = result?.evidence?.endingAfterTaxEstateTodayDollars ?? null
 
   return (
     <section>
@@ -354,11 +339,11 @@ export function SpendingSolverPage() {
             <div className="mc-hero">
               <div>
                 <h2 style={{ margin: '0 0 0.35rem', color: sustainsCurrent ? 'var(--good)' : 'var(--bad)' }}>
-                  Your plan can sustain about {fmtMoney(solvedRounded ?? 0)} of baseline spending per year.
+                  Your plan can sustain about {fmtMoney(published ?? 0)} of baseline spending per year.
                 </h2>
                 <p className="muted" style={{ margin: 0 }}>
                   {headroomUnderHundred
-                    ? `That covers your current ${fmtMoney(result.currentBaseAnnual)} baseline with less than $100 a year to spare (today's dollars). The figure above is rounded down to the nearest $100.`
+                    ? `That covers your current ${fmtMoney(result.currentBaseAnnual)} baseline with less than $100 a year to spare (today's dollars).${exactPublished ? '' : ' The figure above is rounded down to the nearest $100.'}`
                     : sustainsCurrent
                       ? `That is ${fmtMoney(slack ?? 0)} per year of headroom above your current ${fmtMoney(result.currentBaseAnnual)} baseline (today's dollars).`
                       : `That is ${fmtMoney(Math.abs(slack ?? 0))} per year BELOW your current ${fmtMoney(result.currentBaseAnnual)} baseline. ${
@@ -370,6 +355,11 @@ export function SpendingSolverPage() {
                     ? ' The simulation budget ran out before the answer fully converged, so this is a feasible lower bound.'
                     : ''}
                 </p>
+                {exactAnswerNote ? (
+                  <p className="field-hint mt-sm" style={{ marginBottom: 0 }} data-testid="exact-answer-note">
+                    {exactAnswerNote}
+                  </p>
+                ) : null}
                 {acaNote ? (
                   <p className="field-hint mt-sm" style={{ marginBottom: 0 }} data-testid="aca-gross-premium-note">
                     {acaNote}
@@ -381,9 +371,9 @@ export function SpendingSolverPage() {
             <div className="stat-grid">
               <Stat
                 label="Max sustainable spending"
-                value={`${fmtMoney(solvedRounded ?? 0)}/yr`}
+                value={`${fmtMoney(published ?? 0)}/yr`}
                 tone="neutral"
-                help="Highest annual baseline spending (today's dollars) whose full year-by-year projection never depletes investable assets and keeps the ending after-tax estate at or above your bequest target. Solved by bisection to ~$500 resolution, then shown rounded down to the nearest $100. The same rounded figure is what Apply and scenarios use, except under guardrail spending, where they use the exact amount the solver tested."
+                help="Highest annual baseline spending (today's dollars) whose full year-by-year projection never depletes investable assets and keeps the ending after-tax estate at or above your bequest target. Solved by bisection to ~$500 resolution, then rounded down to the nearest $100, the figure Apply and scenarios use too. Under guardrail spending that rounded figure is used only if a run at it passes; otherwise this is the exact amount that passed."
               />
               <Stat
                 label="Spending slack"
@@ -414,9 +404,9 @@ export function SpendingSolverPage() {
               <div className="card">
                 <h2>Evidence at that level</h2>
                 <p className="card-hint">
-                  From the full projection run at the solver&apos;s exact answer (shown as{' '}
-                  {fmtMoney(solvedRounded ?? 0)}/yr, rounded down to the nearest $100), the same year-by-year
-                  numbers Results shows, not an approximation.
+                  From the full projection run at the solver&apos;s exact answer
+                  {passed !== published ? ` (shown as ${fmtMoney(published ?? 0)}/yr, rounded down to the nearest $100)` : ''},
+                  the same year-by-year numbers Results shows, not an approximation.
                 </p>
                 <ul style={{ margin: '0.25rem 0 0.75rem 1.1rem', lineHeight: 1.7 }}>
                   <li>
@@ -458,11 +448,11 @@ export function SpendingSolverPage() {
                   </button>
                 </div>
                 <p className="field-hint mt-sm">
-                  "Apply to Spending" sets your plan's baseline spending to {fmtMoney(appliedAmount ?? 0)}/yr and opens
+                  "Apply to Spending" sets your plan's baseline spending to {fmtMoney(published ?? 0)}/yr and opens
                   the Spending screen. "Add as scenario" instead creates a side-by-side scenario under Scenarios without
                   changing your plan.
-                  {guardrailSpending
-                    ? ' Under guardrail spending both use that exact amount, the one the solver tested, not the figure rounded down to $100 above, because a lower level can fail where a higher one passed.'
+                  {guardrailSpending && !exactPublished && passed !== published
+                    ? ' Under guardrail spending a lower level can fail where a higher one passed, so that rounded figure was run too, and it passes.'
                     : null}
                 </p>
                 <details className="ss-explainer">
@@ -476,9 +466,11 @@ export function SpendingSolverPage() {
                       ? `your ${fmtMoney(result.estateFloorTodayDollars)} bequest target`
                       : 'zero (no bequest target set)'}
                     . The solver&apos;s exact answer is the highest level that passed both.{' '}
-                    {guardrailSpending
-                      ? `It is shown rounded down to the nearest $100 (${fmtMoney(solvedRounded ?? 0)}), but applied and added to scenarios at the exact amount that passed (${fmtMoney(appliedAmount ?? 0)}): under guardrail spending a lower level does not always pass when a higher one does, so that rounded figure was not itself tested`
-                      : `It is shown, applied, and added to scenarios rounded down to the nearest $100 (${fmtMoney(solvedRounded ?? 0)}), which therefore also passes`}
+                    {exactPublished
+                      ? 'It is shown, applied, and added to scenarios at that exact amount, not rounded down to the nearest $100, for the reason given above'
+                      : guardrailSpending
+                        ? `It is shown, applied, and added to scenarios rounded down to the nearest $100 (${fmtMoney(published ?? 0)}); under guardrail spending a lower level does not always pass when a higher one does, so that rounded figure was run too, and it passes`
+                        : `It is shown, applied, and added to scenarios rounded down to the nearest $100 (${fmtMoney(published ?? 0)}); at fixed-target spending a lower level is expected to pass when a higher one does, and none has been found that fails`}
                     . The next-higher probe failed on{' '}
                     {result.limitingConstraint === 'estate-floor'
                       ? 'the bequest target'
@@ -528,21 +520,19 @@ export function SpendingSolverPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {shapeRows.map((row) => {
-                    const flat = shapeRows.find((r) => r.id === 'flat')?.maxBaseAnnual ?? null
-                    const delta = row.maxBaseAnnual !== null && flat !== null ? row.maxBaseAnnual - flat : null
-                    return (
-                      <tr key={row.id}>
-                        <td>{row.label}</td>
-                        <td style={{ textAlign: 'right' }}>
-                          {row.maxBaseAnnual !== null ? `${fmtMoney(Math.floor(row.maxBaseAnnual / 100) * 100)}/yr` : '—'}
-                        </td>
-                        <td style={{ textAlign: 'right' }}>
-                          {delta === null || row.id === 'flat' ? '—' : `${delta >= 0 ? '+' : ''}${fmtMoney(delta)}/yr`}
-                        </td>
-                      </tr>
-                    )
-                  })}
+                  {shapeRows.map((row) => (
+                    <tr key={row.id}>
+                      <td>{row.label}</td>
+                      <td style={{ textAlign: 'right' }}>
+                        {row.maxBaseAnnual !== null ? `${fmtMoney(row.maxBaseAnnual)}/yr` : '—'}
+                      </td>
+                      <td style={{ textAlign: 'right' }}>
+                        {row.deltaVsFlatDollars === null
+                          ? '—'
+                          : `${row.deltaVsFlatDollars >= 0 ? '+' : ''}${fmtMoney(row.deltaVsFlatDollars)}/yr`}
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </ScrollRegion>
@@ -588,10 +578,7 @@ export function SpendingSolverPage() {
             </thead>
             <tbody>
               {swrRows.map((row) => {
-                const estateToday =
-                  row.depletionYear === null
-                    ? todayDollarsOf(swr.inflationPct, swr.startYear, row.endYear, row.endingAfterTaxEstate)
-                    : null
+                const estateToday = row.depletionYear === null ? row.endingAfterTaxEstateTodayDollars : null
                 return (
                   <tr key={row.id}>
                     <td>
@@ -612,14 +599,14 @@ export function SpendingSolverPage() {
                   </tr>
                 )
               })}
-              {solvedRounded !== null && startingInvestable > 0 ? (
+              {published !== null && result?.initialWithdrawalRatePct != null ? (
                 <tr>
                   <td>
                     <strong>This plan&apos;s solver</strong>{' '}
                     <HelpTip text="The full-projection answer from the top of this page, expressed as an initial rate on the same starting investable balance so it can sit in the same table. Unlike the published rules it prices your actual phases, taxes, healthcare, and horizon." />
                   </td>
-                  <td style={{ textAlign: 'right' }}>{((solvedRounded / startingInvestable) * 100).toFixed(2)}%</td>
-                  <td style={{ textAlign: 'right' }}>{fmtMoney(solvedRounded)}</td>
+                  <td style={{ textAlign: 'right' }}>{result.initialWithdrawalRatePct.toFixed(2)}%</td>
+                  <td style={{ textAlign: 'right' }}>{fmtMoney(published)}</td>
                   <td className="year-table-text">solved on your exact plan</td>
                   <td style={{ textAlign: 'right' }}>—</td>
                 </tr>

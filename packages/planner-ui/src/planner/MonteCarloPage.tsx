@@ -23,7 +23,7 @@ import {
 import { planUsesAssetAllocation } from '@retiregolden/engine/allocation/assetClasses'
 import type { Plan } from '@retiregolden/engine/model/plan'
 import { DEFAULT_LTC_SHOCK } from '@retiregolden/engine/montecarlo/ltcShock'
-import { startingInvestableOf } from '@retiregolden/engine/montecarlo/riskBasedGuardrails'
+import { guardrailThresholdDollars } from '@retiregolden/engine/montecarlo/riskBasedGuardrails'
 import type { MarketModelConfig } from '@retiregolden/engine/montecarlo/marketModels'
 import type { AnnuitizationSweep } from '@retiregolden/engine/decisions/annuitization'
 import type { StochasticFrontierPoint } from '@retiregolden/engine/montecarlo/frontiers'
@@ -41,7 +41,7 @@ import { WhySuccessPanel } from './explainPanels'
 import { LiveStatus } from './LiveStatus'
 import { CheckboxField, HelpTip } from './fields'
 import { LearnAboutScreen } from '../learn/LearnAboutScreen'
-import { fmtMoney, fmtMoneyCompact } from './format'
+import { fmtMoney, fmtMoneyCompact, fmtMoneyOrRange } from './format'
 import {
   buildModel,
   catalogLabelOf,
@@ -137,6 +137,9 @@ export function MonteCarloPage() {
   const [historicalError, setHistoricalError] = useState<string | null>(null)
   const runToken = useRef(0)
 
+  // The risk-based thresholds in today's dollars, as the engine publishes them
+  // on the base the ledger acts on (null unless the policy is risk-based).
+  const riskThresholds = useMemo(() => guardrailThresholdDollars(plan), [plan])
   const model = useMemo(
     () => buildModel(modelKind, plan.assumptions.inflationPct, returnVolPct, equityWeightPct, plan),
     [modelKind, plan, returnVolPct, equityWeightPct],
@@ -260,10 +263,12 @@ export function MonteCarloPage() {
   }, [run, cachedHeadline])
 
   const fanRows = useMemo(() => summary?.fan ?? [], [summary])
+  // Each bar is labelled with the centre the engine publishes for its bin
+  // (the one value every path ended at, when they all ended at the same one).
   const histRows = useMemo(() => {
     if (!summary) return []
-    const { min, binWidth, counts } = summary.endingInvestable.histogram
-    return counts.map((count, i) => ({ label: fmtMoneyCompact(min + (i + 0.5) * binWidth), count }))
+    const { counts, binCenters } = summary.endingInvestable.histogram
+    return counts.map((count, i) => ({ label: fmtMoneyCompact(binCenters[i]!), count }))
   }, [summary])
   const depletionRows = useMemo(
     () =>
@@ -664,19 +669,25 @@ export function MonteCarloPage() {
                 </div>
               </details>
               {plan.expenses.spendingPolicy.mode === 'riskBasedGuardrails' ? (
-                plan.expenses.spendingPolicy.lowerBalanceThresholdPct !== undefined ||
-                plan.expenses.spendingPolicy.upperBalanceThresholdPct !== undefined ? (
+                riskThresholds?.status === 'anchored' ? (
                   <p className="card-hint">
                     Risk-based dollar guardrails ({plan.expenses.spendingPolicy.targetSuccessLowerPct ?? 70}–
                     {plan.expenses.spendingPolicy.targetSuccessUpperPct ?? 95}% success band):{' '}
-                    {plan.expenses.spendingPolicy.lowerBalanceThresholdPct !== undefined
-                      ? `cut below ${fmtMoney((plan.expenses.spendingPolicy.lowerBalanceThresholdPct / 100) * startingInvestableOf(plan))}`
-                      : 'no cut threshold'}
+                    {riskThresholds.lower !== null ? `cut below ${fmtMoney(riskThresholds.lower)}` : 'no cut threshold'}
                     {' · '}
-                    {plan.expenses.spendingPolicy.upperBalanceThresholdPct !== undefined
-                      ? `raise above ${fmtMoney((plan.expenses.spendingPolicy.upperBalanceThresholdPct / 100) * startingInvestableOf(plan))}`
-                      : 'no raise threshold'}
-                    {' '}(today's dollars, solved on Spending).
+                    {riskThresholds.upper !== null ? `raise above ${fmtMoney(riskThresholds.upper)}` : 'no raise threshold'}
+                    {' '}(today's dollars, solved on Spending)
+                    {riskThresholds.acts ? '.' : '; the cut threshold is not below the raise threshold, so the rule holds spending every year.'}
+                  </p>
+                ) : riskThresholds?.status === 'no-starting-portfolio' ? (
+                  <p className="card-hint">
+                    Risk-based guardrails ({plan.expenses.spendingPolicy.targetSuccessLowerPct ?? 70}–
+                    {plan.expenses.spendingPolicy.targetSuccessUpperPct ?? 95}% success band):{' '}
+                    {riskThresholds.lowerPct !== null ? `cut below ${riskThresholds.lowerPct}%` : 'no cut threshold'}
+                    {' · '}
+                    {riskThresholds.upperPct !== null ? `raise above ${riskThresholds.upperPct}%` : 'no raise threshold'}{' '}
+                    of the portfolio in the first year it has a balance on each path; this plan has no investable balance
+                    today, so there is no dollar figure to show.
                   </p>
                 ) : (
                   <p className="card-hint">
@@ -935,11 +946,11 @@ export function MonteCarloPage() {
                   <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
                   <XAxis dataKey="year" tick={{ fill: 'var(--muted)', fontSize: 12 }} />
                   <YAxis tickFormatter={fmtMoneyCompact} tick={{ fill: 'var(--muted)', fontSize: 12 }} width={70} />
-                  <Tooltip formatter={(v: unknown) => fmtMoney(Number(v))} contentStyle={chartTooltipStyle} />
-                  <Area dataKey="p10" stackId="outer" stroke="none" fill="transparent" name="p10" />
-                  <Area dataKey={(d: { p10: number; p90: number }) => d.p90 - d.p10} stackId="outer" stroke="none" fill="var(--chart-1)" fillOpacity={0.18} name="10–90%" />
-                  <Area dataKey="p25" stackId="inner" stroke="none" fill="transparent" name="p25" legendType="none" />
-                  <Area dataKey={(d: { p25: number; p75: number }) => d.p75 - d.p25} stackId="inner" stroke="none" fill="var(--chart-1)" fillOpacity={0.3} name="25–75%" />
+                  {/* Each band is a range area between two of the engine's percentile
+                      levels (R14): no widths are computed, stacked or printed. */}
+                  <Tooltip formatter={(v: unknown) => fmtMoneyOrRange(v)} contentStyle={chartTooltipStyle} />
+                  <Area dataKey={(d: { p10: number; p90: number }) => [d.p10, d.p90]} stroke="none" fill="var(--chart-1)" fillOpacity={0.18} name="10th to 90th percentile" />
+                  <Area dataKey={(d: { p25: number; p75: number }) => [d.p25, d.p75]} stroke="none" fill="var(--chart-1)" fillOpacity={0.3} name="25th to 75th percentile" />
                   <Line dataKey="p50" stroke="var(--chart-1)" strokeWidth={2.5} dot={false} name="Median" />
                 </ComposedChart>
               </ResponsiveContainer>

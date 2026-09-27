@@ -20,7 +20,8 @@ import {
 } from 'recharts'
 
 import type { ProjectionResult } from '@retiregolden/engine/projection/types'
-import { bucketLens, BUCKET_PRESETS } from './bucketLens'
+import { bucketLens } from '@retiregolden/engine/projection/bucketLens'
+import { BUCKET_PRESETS } from './bucketLens'
 import { chartTooltipStyle } from './chartStyle'
 import { frameH } from './chartFrame'
 import { fmtMoney, fmtMoneyCompact } from './format'

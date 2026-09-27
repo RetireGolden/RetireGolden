@@ -95,7 +95,12 @@ interface ParsedReceipt {
 }
 
 interface Registration {
-  readonly pattern: RegExp
+  /**
+   * The title as the literal texts between its wildcards, in order: a title
+   * matches when it is these texts with any text (none included) between each
+   * pair, so one entry means an exact title (see `matchesTitle`).
+   */
+  readonly titleSegments: readonly string[]
   readonly startLine: number
   readonly endLine: number
 }
@@ -306,35 +311,67 @@ function hunkDrift(receipt: ParsedReceipt, sourceOf: (repoPath: string) => strin
   return reasons
 }
 
-function escapeRegExp(text: string): string {
-  return text.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&')
-}
+/** A part of a test title whose text is known only when the suite runs. */
+const WILDCARD = Symbol('any text')
 
-const WILDCARD = '[\\s\\S]*?'
+type TitlePart = string | typeof WILDCARD
 
-function titlePattern(node: ts.Expression, formatted: boolean): string {
-  const literal = (text: string): string => {
-    if (!formatted) return escapeRegExp(text)
+function titleParts(node: ts.Expression, formatted: boolean): TitlePart[] {
+  const literal = (text: string): TitlePart[] => {
+    if (!formatted) return [text]
     // it.each/it.for titles are formatted per row: a specifier (%s %d %i %f %j
     // %o %c %#) or an object row's $name becomes that row's text, and %% is a
     // literal percent sign.
-    let pattern = ''
+    const parts: TitlePart[] = []
     let from = 0
     for (const token of text.matchAll(/%%|%[sdifjoc#]|\$[\w.]+/gu)) {
-      pattern += escapeRegExp(text.slice(from, token.index)) + (token[0] === '%%' ? '%' : WILDCARD)
+      parts.push(text.slice(from, token.index), token[0] === '%%' ? '%' : WILDCARD)
       from = token.index + token[0].length
     }
-    return pattern + escapeRegExp(text.slice(from))
+    parts.push(text.slice(from))
+    return parts
   }
   if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) return literal(node.text)
   if (ts.isTemplateExpression(node)) {
-    return literal(node.head.text) + node.templateSpans.map((span) => WILDCARD + literal(span.literal.text)).join('')
+    return [...literal(node.head.text), ...node.templateSpans.flatMap((span): TitlePart[] => [WILDCARD, ...literal(span.literal.text)])]
   }
-  if (ts.isParenthesizedExpression(node)) return titlePattern(node.expression, formatted)
+  if (ts.isParenthesizedExpression(node)) return titleParts(node.expression, formatted)
   if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.PlusToken) {
-    return titlePattern(node.left, formatted) + titlePattern(node.right, formatted)
+    return [...titleParts(node.left, formatted), ...titleParts(node.right, formatted)]
   }
-  return WILDCARD
+  return [WILDCARD]
+}
+
+/** The literal texts between a title's wildcards, in order (adjacent literals joined). */
+function titleSegments(parts: readonly TitlePart[]): string[] {
+  const segments = ['']
+  for (const part of parts) {
+    if (part === WILDCARD) segments.push('')
+    else segments[segments.length - 1] += part
+  }
+  return segments
+}
+
+/**
+ * Whether `title` is the segments in order with any text (none included) in
+ * each gap between them: the first segment begins it, the last ends it, and
+ * each middle segment is found at its leftmost place after the one before and
+ * before the last. Taking the leftmost place never loses a match, because a
+ * gap takes any text. A single segment has no gap, so it must be the whole title.
+ */
+function matchesTitle(segments: readonly string[], title: string): boolean {
+  const first = segments[0]!
+  if (segments.length === 1) return title === first
+  const last = segments[segments.length - 1]!
+  const end = title.length - last.length
+  if (end < first.length || !title.startsWith(first) || !title.endsWith(last)) return false
+  let at = first.length
+  for (const segment of segments.slice(1, -1)) {
+    const found = title.indexOf(segment, at)
+    if (found < 0 || found + segment.length > end) return false
+    at = found + segment.length
+  }
+  return true
 }
 
 /** The member chain of a callee (`it.skip` → ['it', 'skip']), with '()' for a call in the chain. */
@@ -428,7 +465,7 @@ function testFileShape(path: string, source: string): TestFileShape {
         const formatted = chain!.some((part) => TABLE_FACTORIES.has(part))
         const title = node.arguments[0]
         registrations.push({
-          pattern: new RegExp(`^${title === undefined ? WILDCARD : titlePattern(title, formatted)}$`, 'u'),
+          titleSegments: titleSegments(title === undefined ? [WILDCARD] : titleParts(title, formatted)),
           startLine: lineOf(node.getStart(file)),
           endLine: lineOf(node.getEnd()),
         })
@@ -470,12 +507,12 @@ function enginePath(printed: string): string {
 
 function registered(shape: TestFileShape, title: string, fullName: boolean): Registration[] {
   return shape.registrations.filter((registration) => {
-    if (!fullName) return registration.pattern.test(title)
+    if (!fullName) return matchesTitle(registration.titleSegments, title)
     // A FAIL line names the suites too (`suite > test`); the test's own title is a
     // ` > `-bounded suffix of it.
-    if (registration.pattern.test(title)) return true
+    if (matchesTitle(registration.titleSegments, title)) return true
     for (let at = title.indexOf(' > '); at >= 0; at = title.indexOf(' > ', at + 1)) {
-      if (registration.pattern.test(title.slice(at + 3))) return true
+      if (matchesTitle(registration.titleSegments, title.slice(at + 3))) return true
     }
     return false
   })
@@ -960,5 +997,28 @@ describe('mutation receipt drift', () => {
     expect(syntheticDrift(SYNTHETIC_DIFF, { test: table, capture: withFailedRow('keeps 10 of 50 at 2') })).toEqual([
       '× names "keeps 10 of 50 at 2", which src/synthetic.evidence.test.ts no longer registers',
     ])
+  })
+
+  it('reads a title with two wildcards as its literal parts in order, each gap taking any text and no part overlapping the next', () => {
+    const titles = SYNTHETIC_TEST.replace(
+      NL + '})' + NL,
+      NL +
+        "  it.each([['x', 'y']])('%s at %s at', () => {})" +
+        NL +
+        "  it(`holds ${'a'} then ${'b'} (${'c'})`, () => {})" +
+        NL +
+        '})' +
+        NL,
+    )
+    const withFailedRow = (title: string): string[] => [...SYNTHETIC_CAPTURE.slice(0, 2), `     × ${title} 1ms`, ...SYNTHETIC_CAPTURE.slice(2)]
+    const unregistered = (title: string): string[] => [`× names "${title}", which src/synthetic.evidence.test.ts no longer registers`]
+    for (const title of ['x at y at', 'x at  at', 'x at y at z at', 'holds 1 then 2 (3)', 'holds  then  ()', 'holds a then b then c (d (e))']) {
+      expect(syntheticDrift(SYNTHETIC_DIFF, { test: titles, capture: withFailedRow(title) }), title).toEqual([])
+    }
+    // 'x at at' has " at " and a closing " at", but only by sharing one space: the
+    // middle part must end before the last one begins.
+    for (const title of ['x at', 'x at at', 'x y at', 'x at y', 'holds 1 (3) then 2', 'holds 1 then 2 (3']) {
+      expect(syntheticDrift(SYNTHETIC_DIFF, { test: titles, capture: withFailedRow(title) }), title).toEqual(unregistered(title))
+    }
   })
 })

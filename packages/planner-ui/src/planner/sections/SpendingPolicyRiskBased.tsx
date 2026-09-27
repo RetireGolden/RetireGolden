@@ -9,7 +9,7 @@
  * `useThresholdSolve.ts` and the card wires both halves to it.
  */
 
-import { startingInvestableOf } from '@retiregolden/engine/montecarlo/riskBasedGuardrails'
+import { guardrailThresholdDollars } from '@retiregolden/engine/montecarlo/riskBasedGuardrails'
 
 import { usePlan } from '../planContextCore'
 import { CheckboxField, PercentField } from '../fields'
@@ -113,27 +113,27 @@ export function RiskBasedThresholdsCallout({ thresholds }: { thresholds: Thresho
   const { plan } = usePlan()
   const e = plan.expenses
   const { solving: solvingThresholds, error: thresholdSolveError, solution: thresholdSolution, solve: solveThresholds } = thresholds
-  if (e.spendingPolicy?.mode !== 'riskBasedGuardrails') return null
+  // The thresholds in today's dollars, as the engine publishes them on the
+  // base the ledger acts on.
+  const published = guardrailThresholdDollars(plan)
+  if (e.spendingPolicy?.mode !== 'riskBasedGuardrails' || published === null) return null
   return (
     <div className="callout callout--info">
-      {e.spendingPolicy.lowerBalanceThresholdPct !== undefined ||
-      e.spendingPolicy.upperBalanceThresholdPct !== undefined ? (
+      {published.status === 'anchored' ? (
         <p className="card-hint">
           Solved dollar guardrails for the {e.spendingPolicy.targetSuccessLowerPct ?? 70}–
           {e.spendingPolicy.targetSuccessUpperPct ?? 95}% success band:{' '}
-          {e.spendingPolicy.lowerBalanceThresholdPct !== undefined ? (
+          {published.lower !== null ? (
             <>
-              cut spending if the portfolio falls below{' '}
-              <strong>{fmtMoney((e.spendingPolicy.lowerBalanceThresholdPct / 100) * startingInvestableOf(plan))}</strong>
+              cut spending if the portfolio falls below <strong>{fmtMoney(published.lower)}</strong>
             </>
           ) : (
             <>no cut threshold was solved for this band</>
           )}
           {'; '}
-          {e.spendingPolicy.upperBalanceThresholdPct !== undefined ? (
+          {published.upper !== null ? (
             <>
-              raise if it rises above{' '}
-              <strong>{fmtMoney((e.spendingPolicy.upperBalanceThresholdPct / 100) * startingInvestableOf(plan))}</strong>
+              raise if it rises above <strong>{fmtMoney(published.upper)}</strong>
             </>
           ) : (
             <>no raise threshold was solved for this band</>
@@ -141,6 +141,18 @@ export function RiskBasedThresholdsCallout({ thresholds }: { thresholds: Thresho
           . Thresholds are in today's dollars, solved under the standard smooth-randomness market model
           (12% return volatility, 60/40 weighting) with your plan's inflation, custom Monte Carlo page
           model settings are not reflected here. Re-solve after meaningful plan changes.
+          {published.acts
+            ? null
+            : ' The cut threshold is not below the raise threshold, so the rule holds spending every year until you re-solve.'}
+        </p>
+      ) : published.status === 'no-starting-portfolio' ? (
+        <p className="card-hint">
+          Solved guardrails for the {e.spendingPolicy.targetSuccessLowerPct ?? 70}–
+          {e.spendingPolicy.targetSuccessUpperPct ?? 95}% success band:{' '}
+          {published.lowerPct !== null ? `cut below ${published.lowerPct}%` : 'no cut threshold'} and{' '}
+          {published.upperPct !== null ? `raise above ${published.upperPct}%` : 'no raise threshold'} of the portfolio.
+          This plan has no investable balance today, so those percents apply to the portfolio in the first year the
+          projection gives it a balance, and there is no dollar figure to show. Re-solve after adding balances.
         </p>
       ) : (
         <p className="card-hint">

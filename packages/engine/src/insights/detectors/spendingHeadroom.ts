@@ -6,7 +6,10 @@
  * the bequest target ⇒ the plan is leaving lifestyle on the table) and offers
  * a ROUGH estimate. `evaluate()` runs the exact-ledger sustainable-spending
  * solver under the same fixed budget the "How much can I spend?" page uses,
- * so the card and that surface report the same solved level.
+ * so the card and that surface report the same solved level: the solver's
+ * published amount (rounded down to $100, or the exact amount that passed
+ * when a guardrail plan fails at the rounded one), which the card names and
+ * previews, and the slack measured from it, which its gate reads.
  *
  * What `screen()` publishes, when it publishes: with E the ending after-tax
  * estate deflated to the start year (`projection.deflate(endYear, ...)`), B the

@@ -62,10 +62,14 @@ describe('Spending Solver — Apply to Spending', () => {
   })
 
   const result: SpendingSolveResult = {
-    // Deliberately NOT a multiple of 100 so the test exercises the
-    // floor-to-$100 display/apply rule.
-    maxBaseAnnual: 92_450,
-    spendingSlackDollars: 12_450,
+    // The engine publishes the level that passed (92,450, deliberately NOT a
+    // multiple of 100) rounded down to 92,400, and the page applies exactly
+    // the published amount.
+    maxBaseAnnual: 92_400,
+    feasibleBaseAnnual: 92_450,
+    maxBaseAnnualRounding: 'down-to-hundred',
+    initialWithdrawalRatePct: null,
+    spendingSlackDollars: 12_400,
     currentBaseAnnual: 80_000,
     estateFloorTodayDollars: 0,
     converged: true,
@@ -119,8 +123,8 @@ describe('Spending Solver — Apply to Spending', () => {
     expect(applyBtn, 'the solver answer should offer Apply to Spending').toBeTruthy()
     await act(async () => applyBtn!.click())
 
-    // 92,450 floors to 92,400 — applying the raw solver dollars (or rounding
-    // up) would fail here.
+    // The published 92,400, not the 92,450 that passed: applying the passing
+    // probe (or rounding up) would fail here.
     expect(mutated.expenses.baseAnnual).toBe(92_400)
   })
 })

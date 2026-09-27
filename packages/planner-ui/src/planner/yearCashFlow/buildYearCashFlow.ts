@@ -1023,15 +1023,17 @@ function compareLinks(a: YearCashFlowSankeyLink, b: YearCashFlowSankeyLink): num
 function buildCashFlowView(index: PlanIndex, cashFlow: YearCashFlow): YearCashFlowSankeyView {
   const nodes: YearCashFlowSankeyNode[] = []
   const links: YearCashFlowSankeyLink[] = []
-  let sourceTotal = 0
-  let unfundedTotal = 0
+  // The hub and the unfunded origin are the engine's reconciliation totals
+  // (the cash identity's source total, the use identity's unfunded total), so
+  // the chart and the summary strip print the same figures.
+  const sourceTotal = cashFlow.reconciliation.cash.sourceTotalPlanDollars
+  const unfundedTotal = cashFlow.reconciliation.uses.unfundedUsesPlanDollars
 
   for (const line of cashFlow.sourceLines) {
     const role = sourceRole(line)
     if (role === null) continue
     const kindLabel = SOURCE_KIND_LABEL[line.kind]
     const resolved = resolveLineLabel(index, line.identities, kindLabel)
-    sourceTotal += line.amountPlanDollars
     nodes.push(makeNode({
       id: line.id,
       view: 'cashFlow',
@@ -1101,7 +1103,6 @@ function buildCashFlowView(index: PlanIndex, cashFlow: YearCashFlow): YearCashFl
       ))
     }
     if (line.unfundedPlanDollars > 0) {
-      unfundedTotal += line.unfundedPlanDollars
       const unfundedId = `unfunded:${line.id}`
       nodes.push(makeNode({
         id: unfundedId,

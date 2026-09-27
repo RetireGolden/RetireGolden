@@ -1,11 +1,11 @@
 # Mutation receipt: ladder-real-present-value
 
-Executed 2026-09-14 against RetireGolden base `319c16ca` (branch claude/b1-p4-cards-ladders), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-14 against RetireGolden base `319c16ca` (branch claude/b1-p4-cards-ladders), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `fe28be3c` (branch `claude/b2p1-slice2-display-math`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `b2897dfe` (branch `claude/b2p1-slice2-display-math`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/ladder/ladderMath.ts`
 
 ```diff
-@@ -199,7 +199,7 @@ export function realPresentValue(flows: Array<{ yearsFromNow: number; realAmount
+@@ -201,7 +201,7 @@ export function realPresentValue(flows: Array<{ yearsFromNow: number; realAmount
        pv += flow.realAmount
        continue
      }
@@ -26,14 +26,14 @@ npx vitest run src/ladder/ladderMath.evidence.test.ts
 
 ## Captured failing output
 
-Re-executed for D-RECEIPT-DRIFT because the test lines it quoted no longer matched the current test file; the mutation is unchanged, and the capture, blob hashes and revert note are refreshed against this head. The baseline is green (ladderMath.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed 2026-09-27 after merging RetireGolden #751 into B2-P1 slice 2: the drift check #751 adds flagged this receipt against the slice's code (a hunk header naming a line the code has moved from, a context line the slice changed, a header naming no line, or a stated test count the slice's evidence file no longer has), so the diff header, capture, blob hash and revert note are refreshed against this head. The baseline is green (ladderMath.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine9/packages/engine
+RUN  v5.0.0 C:/rgwt/engine8/packages/engine
 
- ❯ src/ladder/ladderMath.evidence.test.ts (15 tests | 1 failed) 8ms
+ ❯ src/ladder/ladderMath.evidence.test.ts (15 tests | 1 failed) 7ms
    ❯ ladder-real-present-value — Real present value of a cash-flow stream on the TIPS curve (2)
-     × discounts $100 at 2 years (interpolated 2%) plus $100 at 4 years (flat 3%) to $184.9655829154 4ms
+     × discounts $100 at 2 years (interpolated 2%) plus $100 at 4 years (flat 3%) to $184.9655829154 3ms
 
  Test Files  1 failed (1)
       Tests  1 failed | 14 passed (15)

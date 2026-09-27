@@ -118,8 +118,17 @@ function ledgerYear(year: number, overrides: Partial<YearResult> = {}): YearResu
     hecmLoanBalance: 0,
     netWorth: 0,
     netPortfolioNeed: 0,
+    // The evidence plans set inflation to 0, so every year's factor is 1.
+    inflationScale: 1,
     ...overrides,
   }
+}
+
+/** Every year from startYear to endYear, as a real run publishes them; the last carries `last`. */
+function contiguousYears(startYear: number, endYear: number, last: Partial<YearResult> = {}): YearResult[] {
+  const years: YearResult[] = []
+  for (let year = startYear; year <= endYear; year++) years.push(ledgerYear(year, year === endYear ? last : {}))
+  return years
 }
 
 function ruleRunLedger(overrides: Partial<ProjectionResult> = {}): ProjectionResult {
@@ -185,7 +194,7 @@ describeCalculation(
         startYear: inputs.startYear,
         endYear: inputs.endYear,
         depletionYear: inputs.depletionYear,
-        years: [ledgerYear(inputs.startYear), ledgerYear(inputs.endYear)],
+        years: contiguousYears(inputs.startYear, inputs.endYear),
       })
       const spy = vi.spyOn(simulation, 'simulatePlan').mockReturnValue(ledger)
       try {
@@ -297,7 +306,7 @@ describeCalculation(
       })
       const ledger = ruleRunLedger({
         endYear: 2055,
-        years: [ledgerYear(2055, { balances: { 'trad-1': traditionalBalance }, netWorth: inputs.endingNetWorth })],
+        years: contiguousYears(2026, 2055, { balances: { 'trad-1': traditionalBalance }, netWorth: inputs.endingNetWorth }),
         endingNetWorth: inputs.endingNetWorth,
       })
       const spy = vi.spyOn(simulation, 'simulatePlan').mockReturnValue(ledger)
@@ -358,6 +367,64 @@ describeCalculation(
         )
       } finally {
         spy.mockRestore()
+      }
+    })
+  },
+)
+
+/**
+ * B2-P1 slice 2: each rule's ending estate in today's dollars is converted by
+ * the rule's own run, on the dollar-basis worksheet's worked plan (a single
+ * filer born 1963, 2.5 percent inflation, 2026 to 2066), whose 2066 factor by
+ * the ledger's recurrence is 2.685063838389963. The cash account holds
+ * $1,000,000 at a 10 percent return, so every rule's spending (3.75 to 4.7
+ * percent of it, constant-real) leaves a positive estate: a conversion at the
+ * wrong year's factor, or none, cannot pass by dividing zero.
+ */
+describeCalculation(
+  'display-dollar-basis-conversion',
+  {
+    example: {
+      inputs: { dob: '1963-01-01', planningAge: 95, cash: 1_000_000, returnPct: 10, inflationPct: 2.5, startYear: 2026, endYear: 2066 },
+      expected: { factor2066: 2.685063838389963 },
+      tolerance: { abs: 0 },
+    },
+    worksheet: 'DOCS/calculations/cash-flow-and-summary/display-dollar-basis-conversion.md',
+    mutation: 'DOCS/calculations/cash-flow-and-summary/display-dollar-basis-conversion.mutation.md',
+  },
+  ({ example }) => {
+    it('publishes each rule ending estate divided by that rule run factor for its end year', () => {
+      const inputs = example.inputs as {
+        dob: string
+        planningAge: number
+        cash: number
+        returnPct: number
+        inflationPct: number
+        startYear: number
+        endYear: number
+      }
+      const plan = evidencePlan((draft) => {
+        draft.household.people[0] = { ...draft.household.people[0]!, dob: inputs.dob, longevity: { planningAge: inputs.planningAge, source: 'manual' } }
+        draft.assumptions.inflationPct = inputs.inflationPct
+        draft.accounts = [
+          { type: 'cash', id: 'cash-1', name: 'Cash', ownerPersonId: null, annualReturnPct: inputs.returnPct, balance: inputs.cash, annualContribution: 0 },
+        ]
+      })
+      const rows = compareSwrRules(plan, {
+        startYear: inputs.startYear,
+        horizonEndYear: inputs.endYear,
+        taxCalculator: createFlatTaxCalculator(0),
+      })
+      expect(rows).toHaveLength(3)
+      for (const row of rows) {
+        expect(row.endYear, row.id).toBe(inputs.endYear)
+        expect(row.depletionYear, row.id).toBeNull()
+        expect(row.endingAfterTaxEstate, row.id).toBeGreaterThan(0)
+        expect(row.endingAfterTaxEstateTodayDollars, row.id).toBe(
+          row.endingAfterTaxEstate / (example.expected.factor2066 as number),
+        )
+        // Not the nominal estate (the start year's factor, 1).
+        expect(row.endingAfterTaxEstateTodayDollars, row.id).not.toBe(row.endingAfterTaxEstate)
       }
     })
   },

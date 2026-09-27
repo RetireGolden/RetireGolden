@@ -68,6 +68,12 @@ function solverFixture(
     Partial<SustainableSpendingResult>,
 ): SustainableSpendingResult {
   return {
+    // The published amount and the passing probe agree unless a case says
+    // otherwise; the detector reads only the published amount and slack.
+    feasibleBaseAnnual: partial.maxBaseAnnual,
+    maxBaseAnnualRounding: partial.maxBaseAnnual === null ? null : 'down-to-hundred',
+    sustainsCurrentBase: null,
+    initialWithdrawalRatePct: null,
     bestEvaluation: null,
     converged: true,
     limitingConstraint: null,

@@ -102,8 +102,8 @@ describeCalculation(
         upperLatticeIndex: 484,
         lowerBalanceFrac: 1.403671875,
         upperBalanceFrac: 1.901171875,
-        lowerBalanceDollars: 701_835.9375,
-        upperBalanceDollars: 950_585.9375,
+        lowerBalancePct: 140.37,
+        upperBalancePct: 190.12,
         cutMultiplier: 0.849609375,
         cutAnnualDollars: 6_015.625,
         cutMonthlyDollars: 501.3020833333333,
@@ -147,7 +147,7 @@ describeCalculation(
 
     const analytic = (f: number, m: number) => Math.min(1, f / (2 * m))
 
-    it('edges at k = 356 and 484 on 0.02 + k · 3.98/1024: 1.403671875 ($701,835.9375) and 1.901171875 ($950,585.9375)', () => {
+    it('edges at k = 356 and 484 on 0.02 + k · 3.98/1024: 1.403671875 and 1.901171875, persisted as 140.37 and 190.12 percent', () => {
       const solution = solve(analytic)
       expect(solution.successAtCurrent).toBe(expected.successAtCurrent)
       expect(solution.lowerOutcome).toBe('solved')
@@ -156,8 +156,9 @@ describeCalculation(
       expect(Math.round((solution.upper!.balanceFrac - 0.02) / STEP)).toBe(expected.upperLatticeIndex)
       expectWithin(solution.lower!.balanceFrac, expected.lowerBalanceFrac!, 'lower balanceFrac')
       expectWithin(solution.upper!.balanceFrac, expected.upperBalanceFrac!, 'upper balanceFrac')
-      expectWithin(solution.lower!.balanceDollars, expected.lowerBalanceDollars!, 'lower balanceDollars', DOLLARS)
-      expectWithin(solution.upper!.balanceDollars, expected.upperBalanceDollars!, 'upper balanceDollars', DOLLARS)
+      // The percents are exact two-decimal values of the float the solver reaches.
+      expect(solution.lower!.balancePct).toBe(expected.lowerBalancePct)
+      expect(solution.upper!.balancePct).toBe(expected.upperBalancePct)
       expectWithin(solution.lower!.successAtThreshold, expected.lowerBalanceFrac! / 2, 'lower successAtThreshold')
       expectWithin(solution.upper!.successAtThreshold, expected.upperBalanceFrac! / 2, 'upper successAtThreshold')
     })

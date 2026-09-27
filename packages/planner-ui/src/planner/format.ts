@@ -17,6 +17,15 @@ export function fmtMoney(v: number): string {
 }
 
 /**
+ * A chart tooltip value: one amount, or a range area's `[low, high]` pair of
+ * amounts printed "$low to $high" (a range is two levels, never a width).
+ */
+export function fmtMoneyOrRange(value: unknown): string {
+  if (Array.isArray(value)) return `${fmtMoney(Number(value[0]))} to ${fmtMoney(Number(value[1]))}`
+  return fmtMoney(Number(value))
+}
+
+/**
  * Exact-cent money, for the two places whole dollars would lie: a
  * reconciliation remainder (rounding a real 1-cent gap to $0 says the ledger
  * balanced when it did not) and a money field the household types cents into.

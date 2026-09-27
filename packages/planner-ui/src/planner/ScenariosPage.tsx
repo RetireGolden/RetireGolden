@@ -636,7 +636,11 @@ function CapacitySection({
       <div className="item-row-head">
         <div>
           <h3 style={{ margin: 0 }}>Sustainable spending capacity</h3>
-          <p className="card-hint">Annual base spending in today&apos;s dollars, priced on the full year-by-year projection.</p>
+          <p className="card-hint">
+            Annual base spending in today&apos;s dollars, priced on the full year-by-year projection: the amount the
+            spending page shows and applies, rounded down to the nearest $100 (the exact amount that passed when a
+            guardrail plan fails at the rounded one), with the slack measured from it.
+          </p>
         </div>
         <button type="button" className="btn btn-secondary btn-small" disabled={running} onClick={onCalculate}>
           {running ? 'Calculating…' : capacity ? 'Recalculate' : 'Calculate capacity'}

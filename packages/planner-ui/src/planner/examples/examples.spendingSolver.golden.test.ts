@@ -37,6 +37,12 @@
  * 29,087; the answer-run case below goes 28,750 -> 29,063. Probe counts and
  * every other answer are unchanged. Recomputed from the implemented code;
  * they match the D-ACA-2027-TABLE derivation's table and its check.
+ *
+ * B2-P1 slice 2 (owner decision R4, 2026-09-27): the solver publishes the
+ * level that passed as feasibleBaseAnnual and its answer, maxBaseAnnual, as
+ * that level rounded down to $100 (the figure the page showed). No example
+ * with an answer spends under guardrails, so every published answer is the
+ * rounded one, no extra run happens and the probe counts are unchanged.
  */
 import { describe, expect, it } from 'vitest'
 
@@ -53,9 +59,9 @@ const BELOW_FPL: AcaSupportCode = 'below-100-fpl-exception-unsupported'
 const GUARDRAIL: AcaSupportCode = 'guardrail-interaction-unsupported'
 
 interface SolverGolden {
-  /** The solver's exact answer, today's dollars. */
+  /** The level that passed (the solver's feasibleBaseAnnual), today's dollars. */
   maxBaseAnnual: number | null
-  /** What the page shows: the exact answer floored to $100. */
+  /** The published answer (the solver's maxBaseAnnual): that level rounded down to $100. */
   displayed: number | null
   probes: number
   /** Every year whose credit is unpriced, ascending; null when none. */
@@ -131,8 +137,12 @@ describe('sustainable spending on every example', () => {
       expect(expected, `missing golden fixture for ${example.id}`).toBeDefined()
       const solved = runSpendingSolveRequest({ plan: stampDemo(example), startYear: EXAMPLE_FIXED_YEAR })
 
-      expect(solved.maxBaseAnnual).toBe(expected!.maxBaseAnnual)
-      expect(solved.maxBaseAnnual === null ? null : Math.floor(solved.maxBaseAnnual / 100) * 100).toBe(expected!.displayed)
+      expect(solved.feasibleBaseAnnual).toBe(expected!.maxBaseAnnual)
+      expect(solved.maxBaseAnnual).toBe(expected!.displayed)
+      expect(solved.maxBaseAnnualRounding).toBe(expected!.displayed === null ? null : 'down-to-hundred')
+      expect(solved.spendingSlackDollars).toBe(
+        expected!.displayed === null ? null : expected!.displayed - stampDemo(example).expenses.baseAnnual,
+      )
       expect(solved.simulationCount).toBe(expected!.probes)
       expect(solved.acaGrossPremiumYears).toEqual(expected!.acaYears ?? [])
       expect(solved.acaGrossPremiumReasons).toEqual(expected!.reasons)
@@ -177,7 +187,8 @@ describe('the unpriced years come from the run the answer rests on', () => {
     expect(seedRun.years.find((year) => year.year === 2026)?.aca?.readiness).toBe('actionable')
 
     const solved = runSpendingSolveRequest({ plan, startYear: EXAMPLE_FIXED_YEAR })
-    expect(solved.maxBaseAnnual).toBe(29_063)
+    expect(solved.feasibleBaseAnnual).toBe(29_063)
+    expect(solved.maxBaseAnnual).toBe(29_000)
     expect(solved.acaGrossPremiumYears).toEqual([2026, 2028, 2029])
     expect(solved.acaGrossPremiumReasons).toContain(BELOW_FPL)
   }, 120_000)
@@ -202,5 +213,31 @@ describe('guardrail feasibility is not monotone in the base amount', () => {
     expect(lower.years.some((year) => year.aca !== undefined)).toBe(false)
     expect(lower.depletionYear).toBe(2059)
     expect(higher.depletionYear).toBeNull()
+  }, 120_000)
+})
+
+describe('under guardrails a rounded amount that fails is not published', () => {
+  it('publishes the exact $76,641 for lean-fat-fire under withdrawal-rate guardrails, because $76,600 runs out', () => {
+    // Found by the independent review of B2-P1 slice 2 (2026-09-27): the
+    // example under withdrawal-rate guardrails (upper 150) with a $40,500
+    // required floor passes at $76,641 and depletes at $76,600, the amount
+    // rounded down to the hundred, so the solver publishes the exact amount.
+    const example = EXAMPLE_PLANS.find((candidate) => candidate.id === 'lean-fat-fire')!
+    const plan = stampDemo(example)
+    plan.expenses.spendingPolicy = { mode: 'withdrawalRateGuardrails', upperGuardrailPct: 150 }
+    plan.expenses.requiredAnnual = 40_500
+    const solved = runSpendingSolveRequest({ plan, startYear: EXAMPLE_FIXED_YEAR })
+    expect(solved.feasibleBaseAnnual).toBe(76_641)
+    expect(solved.maxBaseAnnual).toBe(76_641)
+    expect(solved.maxBaseAnnualRounding).toBe('none')
+    expect(solved.spendingSlackDollars).toBe(76_641 - plan.expenses.baseAnnual)
+    expect(solved.diagnostics.some((message) => message.includes('not rounded down to $76,600/yr'))).toBe(true)
+
+    const run = (baseAnnual: number) => {
+      const variant = { ...plan, expenses: { ...plan.expenses, baseAnnual } }
+      return simulatePlan(variant, { startYear: EXAMPLE_FIXED_YEAR, taxCalculator: taxCalculatorFor(variant) })
+    }
+    expect(run(76_641).depletionYear).toBeNull()
+    expect(run(76_600).depletionYear).toBe(2085)
   }, 120_000)
 })

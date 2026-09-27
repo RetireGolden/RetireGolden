@@ -67,7 +67,7 @@ import {
   createAnnualCashFlowYearSites,
   type SealableAnnualCashFlowYearSites,
 } from './annualCashFlowYearSites.js'
-import { buildLadder } from '../ladder/ladderMath.js'
+import { buildLadder, planLadderWindow } from '../ladder/ladderMath.js'
 import {
   AnnualLogicalBalanceLedger,
   type PhysicalBalanceState,
@@ -701,13 +701,13 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
   for (const ladder of plan.incomeFloor?.ladders ?? []) {
     // Anchor = the year the rungs exist from: the purchase year, or (already
     // owned) the year before the projection so coupons pay from year one.
-    const anchorYear = ladder.purchase ? ladder.purchase.year : startYear - 1
-    const effectiveStartYear = Math.max(ladder.startYear, anchorYear + 1)
-    if (ladder.endYear < effectiveStartYear || ladder.annualRealAmount <= 0) continue
+    const ladderWindow = planLadderWindow(ladder, startYear)
+    if (ladderWindow === null) continue
+    const { anchorYear } = ladderWindow
     const build = buildLadder({
       annualRealIncome: ladder.annualRealAmount,
-      firstPayoutOffset: effectiveStartYear - anchorYear,
-      payoutYears: ladder.endYear - effectiveStartYear + 1,
+      firstPayoutOffset: ladderWindow.firstPayoutOffset,
+      payoutYears: ladderWindow.payoutYears,
       curve: EMBEDDED_REAL_YIELD_CURVE,
     })
     ladderStates.push({

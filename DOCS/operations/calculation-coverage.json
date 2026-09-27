@@ -165,7 +165,6 @@
       "spending-debt-service-annual",
       "spending-excess-requested-annual",
       "spending-excess-shortfall-annual",
-      "spending-guardrail-factor-annual",
       "spending-ideal-requested-annual",
       "spending-ideal-shortfall-annual",
       "spending-insurance-premiums-annual",
@@ -204,9 +203,14 @@
       "aca-economic-net-premium-annual",
       "aca-modeled-allowable-ptc-annual",
       "accounts-ending-balance-by-category",
+      "bucket-lens-allocation",
+      "cash-flow-line-amount",
       "display-balance-by-category-annual",
       "display-dollar-basis-conversion",
+      "display-fan-band-widths",
       "display-fi-target-annual",
+      "display-guardrail-balance-thresholds",
+      "display-histogram-bin-label",
       "display-loss-carryforward-used-annual",
       "display-net-care-cost-annual",
       "display-tax-free-gains-room-annual",
@@ -215,6 +219,7 @@
       "display-upside-shortfall-annual",
       "display-upside-spending-annual",
       "display-years-before-plan-end",
+      "income-floor-ladder-yield-pct",
       "longevity-last-funded-year",
       "risk-based-guardrail-solved-balance-thresholds",
       "risk-based-guardrail-suggested-adjustment-monthly",
@@ -223,21 +228,19 @@
       "simple-candidate-evaluation-incomplete-computation-years",
       "simple-candidate-evaluation-lifetime-tax-delta",
       "simple-candidate-evaluation-money-lasts-years-delta",
+      "solved-initial-withdrawal-rate-pct",
+      "solved-spending-rounded-to-hundred",
+      "spending-guardrail-factor-annual",
       "spending-healthcare-annual",
+      "spending-shape-delta-vs-flat",
       "sustainable-spending-result-max-base-annual",
       "sustainable-spending-result-simulation-count",
       "sustainable-spending-result-spending-slack-dollars"
     ],
     "noRecordYet": [
-      "bucket-lens-allocation",
-      "cash-flow-line-amount",
       "claim-age-co-optimization-estate-gain",
       "compare-plan-deltas",
       "compare-plan-money-deltas",
-      "display-fan-band-widths",
-      "display-guardrail-balance-thresholds",
-      "display-histogram-bin-label",
-      "income-floor-ladder-yield-pct",
       "insight-monte-carlo-success-delta",
       "mcp-batch-cumulative-tax-objective",
       "mcp-batch-ending-traditional-objective",
@@ -254,24 +257,15 @@
       "social-security-pia-annualized",
       "social-security-survivor-switch-pv",
       "social-security-zero-year-replacement-gain",
-      "solved-initial-withdrawal-rate-pct",
-      "solved-spending-rounded-to-hundred",
-      "spending-shape-delta-vs-flat",
       "survivor-scenario-row-estate-delta",
       "survivor-scenario-row-lifetime-tax-delta",
       "survivor-scenario-row-ssa44premium-savings",
       "survivor-scenario-row-survivor-shortfall-years"
     ],
     "relocationPending": [
-      "bucket-lens-allocation",
-      "cash-flow-line-amount",
       "claim-age-co-optimization-estate-gain",
       "compare-plan-deltas",
       "compare-plan-money-deltas",
-      "display-fan-band-widths",
-      "display-guardrail-balance-thresholds",
-      "display-histogram-bin-label",
-      "income-floor-ladder-yield-pct",
       "insight-monte-carlo-success-delta",
       "optimizer-schedule-conversion-total",
       "relocation-tax-comparison",
@@ -285,9 +279,6 @@
       "social-security-pia-annualized",
       "social-security-survivor-switch-pv",
       "social-security-zero-year-replacement-gain",
-      "solved-initial-withdrawal-rate-pct",
-      "solved-spending-rounded-to-hundred",
-      "spending-shape-delta-vs-flat",
       "survivor-scenario-row-estate-delta",
       "survivor-scenario-row-lifetime-tax-delta",
       "survivor-scenario-row-ssa44premium-savings",
@@ -352,6 +343,7 @@
         "projection-summary-fi-number"
       ],
       "display-guardrail-balance-thresholds": [
+        "balance-risk-guardrail-step",
         "risk-based-guardrail-threshold-solver",
         "risk-based-starting-investable"
       ],
@@ -716,6 +708,7 @@
         "survivor-benefit-rib-lim"
       ],
       "solved-initial-withdrawal-rate-pct": [
+        "solved-spending-rounding",
         "sustainable-spending-bisection"
       ],
       "solved-spending-rounded-to-hundred": [
@@ -753,6 +746,7 @@
         "spending-required-requested-annual"
       ],
       "spending-shape-delta-vs-flat": [
+        "solved-spending-rounding",
         "spending-shape-annual-delta-phases",
         "spending-shape-preset-compilation"
       ],
@@ -785,6 +779,7 @@
         "sustainable-spending-bisection"
       ],
       "sustainable-spending-result-spending-slack-dollars": [
+        "solved-spending-rounding",
         "spending-shape-annual-delta-phases"
       ],
       "swr-rule-result-depletion-year": [
@@ -846,16 +841,16 @@
     }
   },
   "records": {
-    "total": 226,
+    "total": 235,
     "byKind": {
-      "composition": 72,
+      "composition": 76,
       "data": 17,
-      "formula": 79,
+      "formula": 84,
       "model": 58
     },
     "byJustificationKind": {
       "dataset": 5,
-      "derivation": 221
+      "derivation": 230
     }
   },
   "oracleExamples": [
@@ -1018,7 +1013,7 @@
     }
   ],
   "attestationsDerived": {
-    "catalogued": 64,
+    "catalogued": 66,
     "excludedWithReason": 0,
     "notYetReviewed": 165
   },
@@ -1031,7 +1026,7 @@
     {
       "group": "cashFlowAndSummary",
       "path": "calculation-coverage/cashFlowAndSummary.json",
-      "recordCount": 54
+      "recordCount": 56
     },
     {
       "group": "insights",
@@ -1041,7 +1036,7 @@
     {
       "group": "laddersAndValuation",
       "path": "calculation-coverage/laddersAndValuation.json",
-      "recordCount": 11
+      "recordCount": 12
     },
     {
       "group": "longevity",
@@ -1056,7 +1051,7 @@
     {
       "group": "monteCarlo",
       "path": "calculation-coverage/monteCarlo.json",
-      "recordCount": 36
+      "recordCount": 38
     },
     {
       "group": "optimizerAndComparisons",
@@ -1081,7 +1076,7 @@
     {
       "group": "spendingAndWithdrawals",
       "path": "calculation-coverage/spendingAndWithdrawals.json",
-      "recordCount": 18
+      "recordCount": 22
     },
     {
       "group": "taxes",

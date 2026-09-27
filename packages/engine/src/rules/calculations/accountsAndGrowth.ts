@@ -62,8 +62,8 @@ export const accountsAndGrowthRecords = {
     // vector; simulate.ts seeds each allocated account's track with it and the
     // growth phase blends class returns by it, so the balance families are the
     // ones the vector actually enters. The bucket lens
-    // (planner-ui/src/planner/bucketLens.ts) reads only the published
-    // investable total, a path every growth record shares, so it is not listed.
+    // (projection/bucketLens.ts) reads the published investable total and net
+    // portfolio need, a path every growth record shares, so it is not listed.
     outputs: [],
     feeds: ['accounts-balance-per-account-annual', 'accounts-investable-total-annual'],
     statement:

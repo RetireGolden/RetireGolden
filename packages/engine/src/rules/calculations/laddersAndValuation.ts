@@ -473,4 +473,38 @@ export const laddersAndValuationRecords = {
     verifiedOn: '2026-09-18',
     provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
   },
+  'ladder-income-yield': {
+    title: 'Ladder income as a percent of its cost',
+    purpose: 'How much level real income a ladder quote pays each year for each dollar it costs, as the Income floor section prints it.',
+    kind: 'formula',
+    outputs: ['income-floor-ladder-yield-pct'],
+    statement:
+      'ladder/ladderMath.ts#ladderIncomeYieldPct returns (targetAnnualRealIncome / totalCost) × 100 for a ladder quote and refuses a cost that is not a positive finite number. quotePlanLadder prices a plan ladder with buildLadder on planLadderWindow, the anchor rule simulatePlan also calls (the purchase year, or the year before the projection for a ladder already owned; the first payout no earlier than the year after the anchor; no ladder when the window is empty or the amount is not positive), and publishes the yield and each rung\'s maturity year, the anchor year plus the rung\'s maturity offset. A one-year ladder of $10,200 at a flat 2 percent costs $10,000 and yields 102 percent; two years of $10,200 at 2 percent cost $19,803.92156862745 and yield 51.504950495049506 percent, the level annuity rate 1.0404 / 2.02. Units: percent per year, real. Rounding: none; the page prints two decimals.',
+    formula: {
+      expression: 'yield = (A / C) · 100, with C the sum of the rung prices',
+      variables: [
+        { symbol: 'A', meaning: 'Level real income the ladder pays each payout year (targetAnnualRealIncome)', unit: 'today USD per year', domain: '> 0' },
+        { symbol: 'C', meaning: 'Total real cost of the rungs (totalCost)', unit: 'today USD', domain: '> 0' },
+      ],
+      timing: 'at quote time, on the curve the quote used',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/ladders-and-valuation/income-floor-ladder-yield-pct.md',
+    },
+    limits: [
+      'The ratio inherits the construction\'s planning simplifications: annual coupons, par yields read as spot rates, and the embedded curve\'s date.',
+      'On a deferred ladder the cost includes the coupons paid before the first payout year, which the target income does not count, so the yield is below the level annuity rate; a one-year ladder yields more than 100 percent.',
+    ],
+    implementedBy: ['packages/engine/src/ladder/ladderMath.ts', 'packages/engine/src/projection/simulate.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/ladder/ladderMath.ts#ladderIncomeYieldPct',
+      'packages/engine/src/ladder/ladderMath.ts#quotePlanLadder',
+      'packages/engine/src/ladder/ladderMath.ts#planLadderWindow',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+    ],
+    verifiedOn: '2026-09-27',
+    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+  },
 } satisfies Record<string, CalculationRecord>

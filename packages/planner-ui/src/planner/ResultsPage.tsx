@@ -23,7 +23,7 @@ import {
 } from 'recharts'
 
 import type { Plan } from '@retiregolden/engine/model/plan'
-import { startingInvestableOf } from '@retiregolden/engine/montecarlo/riskBasedGuardrails'
+import { guardrailThresholdDollars } from '@retiregolden/engine/montecarlo/riskBasedGuardrails'
 import { nominalForDisplay, toTodayDollars } from '@retiregolden/engine/projection/dollarBasis'
 import { moneyLasts } from '@retiregolden/engine/projection/moneyLasts'
 import type { InheritedIraRefusalCode, YearResult } from '@retiregolden/engine/projection/types'
@@ -783,6 +783,9 @@ export function ResultsPage() {
     plan.household.capitalLossCarryforward,
     view.result.years,
   )
+  // The risk-based thresholds in today's dollars, as the engine publishes them
+  // on the base the ledger acts on (null unless the policy is risk-based).
+  const riskThresholds = guardrailThresholdDollars(plan)
 
   const rows = useMemo(() => buildResultsRows(view, plan, dollars), [view, plan, dollars])
   const incomeRows = useMemo(() => buildIncomeRows(view, dollars), [view, dollars])
@@ -951,38 +954,43 @@ export function ResultsPage() {
         </div>
       ) : null}
 
-      {plan.expenses.spendingPolicy?.mode === 'riskBasedGuardrails' ? (
+      {plan.expenses.spendingPolicy?.mode === 'riskBasedGuardrails' && riskThresholds !== null ? (
         <div className="callout callout--info">
           <strong>Risk-based spending guardrails</strong>
-          {plan.expenses.spendingPolicy.lowerBalanceThresholdPct !== undefined ||
-          plan.expenses.spendingPolicy.upperBalanceThresholdPct !== undefined ? (
+          {riskThresholds.status === 'anchored' ? (
             <p>
               Solved for the {plan.expenses.spendingPolicy.targetSuccessLowerPct ?? 70}–
               {plan.expenses.spendingPolicy.targetSuccessUpperPct ?? 95}% success band (today's dollars):{' '}
-              {plan.expenses.spendingPolicy.lowerBalanceThresholdPct !== undefined ? (
+              {riskThresholds.lower !== null ? (
                 <>
-                  if the portfolio falls below{' '}
-                  <strong>
-                    {fmtMoney((plan.expenses.spendingPolicy.lowerBalanceThresholdPct / 100) * startingInvestableOf(plan))}
-                  </strong>
-                  , flexible spending is trimmed in {plan.expenses.spendingPolicy.adjustmentPct ?? 10}% steps
+                  if the portfolio falls below <strong>{fmtMoney(riskThresholds.lower)}</strong>, flexible spending is
+                  trimmed in {plan.expenses.spendingPolicy.adjustmentPct ?? 10}% steps
                 </>
               ) : (
                 <>no cut threshold was solved for this band (see Spending for why)</>
               )}
               {'; '}
-              {plan.expenses.spendingPolicy.upperBalanceThresholdPct !== undefined ? (
+              {riskThresholds.upper !== null ? (
                 <>
-                  above{' '}
-                  <strong>
-                    {fmtMoney((plan.expenses.spendingPolicy.upperBalanceThresholdPct / 100) * startingInvestableOf(plan))}
-                  </strong>
-                  , spending can be restored or raised
+                  above <strong>{fmtMoney(riskThresholds.upper)}</strong>, spending can be restored or raised
                 </>
               ) : (
                 <>no raise threshold was solved for this band</>
               )}
-              . The required floor is never cut. Watch the “Guardrails” column below for the years the rule acted.
+              . The required floor is never cut.{' '}
+              {riskThresholds.acts
+                ? 'Watch the “Guardrails” column below for the years the rule acted.'
+                : 'The cut threshold is not below the raise threshold, so the rule holds spending every year; re-solve the thresholds on Spending.'}
+            </p>
+          ) : riskThresholds.status === 'no-starting-portfolio' ? (
+            <p>
+              Solved for the {plan.expenses.spendingPolicy.targetSuccessLowerPct ?? 70}–
+              {plan.expenses.spendingPolicy.targetSuccessUpperPct ?? 95}% success band:{' '}
+              {riskThresholds.lowerPct !== null ? `cut below ${riskThresholds.lowerPct}%` : 'no cut threshold'} and{' '}
+              {riskThresholds.upperPct !== null ? `raise above ${riskThresholds.upperPct}%` : 'no raise threshold'} of the
+              portfolio. This plan has no investable balance today, so those percents apply to the portfolio in the
+              first year the projection gives it a balance, and there is no dollar figure to show. Re-solve them on
+              Spending after adding balances.
             </p>
           ) : (
             <p>
