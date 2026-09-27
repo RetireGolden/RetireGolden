@@ -550,8 +550,19 @@ function shapeOnDisk(path: string): TestFileShape | undefined {
   return shapeCache.get(path)
 }
 
+/**
+ * A receipt's label in messages: its glob key cut at the `DOCS/` marker, so it
+ * reads `DOCS/calculations/<group>/<id>.mutation.md` whatever the Vite root
+ * made of the relative prefix.
+ */
+function receiptLabel(globKey: string): string {
+  const unified = globKey.replace(/\\/gu, '/')
+  const marker = unified.lastIndexOf('DOCS/calculations/')
+  return marker >= 0 ? unified.slice(marker) : unified
+}
+
 const receipts = Object.entries(receiptSources)
-  .map(([key, raw]) => [key.replace(/^(\.\.\/)+/u, ''), raw] as const)
+  .map(([key, raw]) => [receiptLabel(key), raw] as const)
   .sort(([a], [b]) => a.localeCompare(b))
 
 const parsedReceipts = receipts.map(([path, raw]) => [path, parseReceipt(raw)] as const)
@@ -670,7 +681,19 @@ const crlf = (text: string): string => text.split(NL).join('\r\n')
 describe('mutation receipt drift', () => {
   it('parses every mutation receipt in DOCS/calculations', () => {
     expect(receipts.length).toBeGreaterThan(0)
+    expect(receipts.filter(([path]) => !/^DOCS\/calculations\/[^/]+\/[^/]+\.mutation\.md$/u.test(path))).toEqual([])
     expect(parsedReceipts.filter(([, receipt]) => typeof receipt === 'string')).toEqual([])
+  })
+
+  it('labels a receipt from the DOCS/ marker, whatever prefix the Vite root gives its glob key', () => {
+    for (const key of [
+      '../../../../DOCS/calculations/taxes/x.mutation.md',
+      '/DOCS/calculations/taxes/x.mutation.md',
+      'C:/work/repo/DOCS/calculations/taxes/x.mutation.md',
+      'C:\\work\\repo\\DOCS\\calculations\\taxes\\x.mutation.md',
+    ]) {
+      expect(receiptLabel(key), key).toBe('DOCS/calculations/taxes/x.mutation.md')
+    }
   })
 
   it('(a) anchors every hunk once in its production file, at the line its @@ header names', () => {
