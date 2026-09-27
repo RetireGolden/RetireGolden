@@ -115,7 +115,7 @@ export const assetLocation: Detector = {
         patch: best.candidate.planPatch as Record<string, unknown>,
       },
       impact: {
-        qualitative: `On the full year-by-year projection, "${best.candidate.label}" improves after-tax estate by about ${formatWholeUsd(best.delta)} (today's dollars).`,
+        qualitative: `On the full year-by-year projection, "${best.candidate.label}" improves after-tax estate by about ${formatWholeUsd(best.delta)} in ${decisionCtx.baselineResult.endYear} dollars.`,
         endingAfterTaxEstateDelta: best.delta,
       },
     }

@@ -307,7 +307,7 @@ export const insightsRecords = {
     kind: 'formula',
     outputs: ['insight-impact-ending-after-tax-estate-delta', 'insight-impact-lifetime-tax-delta'],
     statement:
-      'decisions/evaluateCandidate.ts#evaluateCandidate prices the candidate on its own full year-by-year projection and subtracts the shared baseline in the same direction for both fields: endingAfterTaxEstateDelta = candidateSummary.endingAfterTaxEstate - baselineSummary.endingAfterTaxEstate, and lifetimeTaxDelta = candidateSummary.lifetimeTaxesAndPenalties - baselineSummary.lifetimeTaxesAndPenalties. The estate field\'s comment states that order outright and the lifetime-tax field defines a negative value as savings, which is the same convention: an estate improvement is positive and a tax saving is negative. Units: today\'s dollars. Rounding: none.',
+      'decisions/evaluateCandidate.ts#evaluateCandidate prices the candidate on its own full year-by-year projection and subtracts the shared baseline in the same direction for both fields: endingAfterTaxEstateDelta = candidateSummary.endingAfterTaxEstate - baselineSummary.endingAfterTaxEstate, and lifetimeTaxDelta = candidateSummary.lifetimeTaxesAndPenalties - baselineSummary.lifetimeTaxesAndPenalties. The estate field\'s comment states that order outright and the lifetime-tax field defines a negative value as savings, which is the same convention: an estate improvement is positive and a tax saving is negative. Units: nominal dollars, not today\'s: the estate delta is in dollars of the plan\'s last year (both runs end in that year), and the lifetime tax delta sums each year\'s own dollars. Rounding: none.',
     formula: {
       expression: 'estateDelta = E_candidate - E_baseline; taxDelta = T_candidate - T_baseline',
       variables: [
@@ -337,8 +337,12 @@ export const insightsRecords = {
       'packages/engine/src/insights/types.ts#InsightImpact',
       'packages/engine/src/decisions/insightsAdapter.ts#evaluateInsightAction',
     ],
-    verifiedOn: '2026-09-18',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+    verifiedOn: '2026-09-27',
+    // Restated 2026-09-27 (PR #754 review, finding 7): the statement named
+    // today's dollars, while both deltas are differences of nominal summary
+    // figures, as InsightImpact's comments and the census say. The record is
+    // unreviewed until the review lane checks the correction.
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'unreviewed' },
   },
   'monte-carlo-success-rate-comparison': {
     title: 'Monte Carlo success rate change on shared paths',

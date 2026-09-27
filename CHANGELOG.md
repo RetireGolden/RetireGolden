@@ -91,6 +91,10 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   card and the report row name the year whose dollars the claim gain is in, and the
   relocation table names its first row as the baseline ("Deltas are against the first
   row (Your plan (FL → KY))", column "Δ vs your plan") instead of "staying in KY".
+  The asset-location Insight's evaluated line named its estate gain in today's dollars;
+  the figure is nominal, and the line now names the plan's last year ("in YYYY
+  dollars"), and the `insight-impact-estate-and-lifetime-tax-deltas` record, which also
+  said today's dollars, is corrected (unreviewed until the review lane checks it).
 
   Follow-ups outside this repository. RetireGolden-Pro: its review queue
   (`reviewEvaluate.worker.ts`) reads `InsightImpact.successRateDeltaPct`, which is
@@ -98,7 +102,11 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   change until Pro runs the Monte Carlo pair itself (its card parser needs no change,
   since the flag is not on the card); its meeting view should read
   `headline.moneyLasts` (money lasts "through" a year, and the bounded difference) and
-  print both end years when a scenario changes the horizon; the next planner-ui bump
+  print both end years when a scenario changes the horizon; wherever its review queue
+  or meeting view prints `InsightImpact.endingAfterTaxEstateDelta` or
+  `lifetimeTaxDelta`, it should not call them today's dollars (they are nominal: the
+  estate delta in dollars of the plan's last year, the lifetime delta each year's own
+  dollars summed), which needs checking in Pro's own rendering; the next planner-ui bump
   brings every page change above.
   RetireGolden-MCP: `compare_scenarios` should read `comparePlanHeadlines` (its basis and
   both end years) rather than subtract nominal estates across horizons, which changes
