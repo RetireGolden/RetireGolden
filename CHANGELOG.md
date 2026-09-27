@@ -43,7 +43,8 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   `sustainsCurrentBase` (the verdict on the level that passed, as the page judged it
   before), and the Scenarios capacity comparison carries it per side with each side's
   passing level and rounding, because the slack alone can read −$30 for a $72,030
-  base that passes. On the example plans the spending page changes nothing; on the
+  base that passes; the Scenarios capacity table prints it per side, in a "Current
+  base spending" column (Sustained, Not sustained, or Not judged). On the example plans the spending page changes nothing; on the
   25 answering examples whose answer is not a whole hundred the other surfaces now
   show $2 to $91 less (for example `rmd-irmaa` $131,485 → $131,400, and its slack
   $21,485 → $21,400); 17 of the 19 spending insight cards the examples offer show the
@@ -80,14 +81,17 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 - **Fixed: a histogram of paths that all end at the same amount was labelled $1 to
   $30.** With every ending equal the histogram's bin width is a placeholder of 1, which
   the page read as a real width. The engine now publishes each bin's centre, the one
-  value itself in that case, so the bars read $0 on the five example plans whose every
-  path runs out at the page's defaults (`inherited-ira-beneficiary`, `survivor-years`,
-  `ltc-shock`, `brokerage-no-hsa`, `fixed-target-spending`).
+  value itself in that case, and the page then draws one bar at that value holding
+  every path: one bar, $0, on the five example plans whose every path runs out at the
+  page's defaults (`inherited-ira-beneficiary`, `survivor-years`, `ltc-shock`,
+  `brokerage-no-hsa`, `fixed-target-spending`).
 
 - **Changed: the risk-based guardrail thresholds say when they have no dollar figure**
   (owner decision R3). The pages printed $0 for both thresholds when the plan's
   investable balances were zero, although the ledger then anchors on the first year
-  the portfolio has a balance; they now print the percents and say that. A pair whose
+  the portfolio has a balance; they now print the percents and say where they apply:
+  Results, the projection's first year with a balance; Monte Carlo, each simulated
+  path's; the Spending card, both. A pair whose
   cut threshold is not below its raise threshold says the rule holds spending every
   year. On every plan with a balance the printed dollars are unchanged.
 
