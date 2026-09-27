@@ -34,11 +34,11 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   portfolio before the plan ends." for Guardrails and flexible goals; an ending estate
   below the target is named as that), and no probe goes below the floor, the first one
   included: a base spending that rounds below a fractional floor is seeded at the floor
-  rounded up instead of failing the plan checks. The same
-  example's smirk spending shape now answers $37,000. The page's "fixed costs may
-  already exceed what the plan can fund" sentence now appears only when even zero base
-  spending runs out of money, never after a floor, a bequest-target miss or a solve that
-  could not run.
+  rounded up instead of failing the plan checks. The same example's smirk spending
+  shape now answers $37,000. The page's "fixed costs may
+  already exceed what the plan can fund" sentence now appears only when a probe at zero
+  base spending ran and ran out of money, never after a floor, a bequest-target miss, a
+  budget that stopped before zero was tried, or a solve that could not run.
 - **The solver page no longer calls a sustainable baseline unsustainable:** the answer
   is shown rounded down to $100, and the page judged today's baseline against that
   rounded figure, so a $72,030 baseline the plan sustains exactly read as "$30 below …
