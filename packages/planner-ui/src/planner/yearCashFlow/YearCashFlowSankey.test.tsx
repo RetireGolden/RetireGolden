@@ -232,7 +232,7 @@ describe('YearCashFlowSankey', () => {
           kindLabel: 'Rollover IRA',
           personKey: 'p1',
           personLabel: 'Pat',
-          label: 'Pat - Rollover IRA (IRA)',
+          label: 'Pat · Rollover IRA (IRA)',
           amountPlanDollars: 12_000,
           totalInPlanDollars: 7_000,
           totalOutPlanDollars: 12_000,
@@ -303,7 +303,7 @@ describe('YearCashFlowSankey', () => {
               kind: link!.kind,
               kindLabel: link!.kindLabel,
               label: link!.lineLabel,
-              name: `${link!.kindLabel} - $40,000`,
+              name: `${link!.kindLabel}: $40,000`,
               displayAmount: 40_000,
               amountLabel: '$40,000',
             }}
@@ -360,7 +360,7 @@ describe('YearCashFlowSankey', () => {
         ]}
       />,
     )
-    expect(tooltipHtml).toContain('Required lifestyle - $40,000')
+    expect(tooltipHtml).toContain('Required lifestyle: $40,000')
     expect(tooltipHtml).not.toContain('Household cash')
   })
 

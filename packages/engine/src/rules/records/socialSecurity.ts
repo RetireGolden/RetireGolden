@@ -23,7 +23,7 @@ export const socialSecurityRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The statute caps the carried amount at 4,500 dollars single and 6,000 joint. The engine computes half the spread between the base and adjusted base amounts instead, which equals those figures exactly -- 0.5 x (34,000 - 25,000) and 0.5 x (44,000 - 32,000) -- so the cap stays correct if the thresholds are ever re-indexed, rather than drifting from two hard-coded constants.',
+      'The statute caps the carried amount at 4,500 dollars single and 6,000 joint. The engine computes half the spread between the base and adjusted base amounts instead, which equals those figures exactly (0.5 x (34,000 - 25,000) and 0.5 x (44,000 - 32,000)), so the cap stays correct if the thresholds are ever re-indexed, rather than drifting from two hard-coded constants.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -224,7 +224,7 @@ export const socialSecurityRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'Withholding is applied annually against annual wages rather than month by month, and the withheld months are credited back at full retirement age through an adjustment-reduction-factor approximation. The statute operates on monthly benefits payable, so this is an annual-granularity convention rather than a reading of section 403(f). The cap at benefits payable is not part of that convention -- it is section 403(b) -- but it is worth naming here because it means a fixture whose wages are high enough for the cap to bind tests the cap rather than the 403(f)(3) rate.',
+      'Withholding is applied annually against annual wages rather than month by month, and the withheld months are credited back at full retirement age through an adjustment-reduction-factor approximation. The statute operates on monthly benefits payable, so this is an annual-granularity convention rather than a reading of section 403(f). The cap at benefits payable is not part of that convention (it is section 403(b)), but it is worth naming here because it means a test whose wages are high enough for the cap to bind tests the cap rather than the 403(f)(3) rate.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -263,7 +263,7 @@ export const socialSecurityRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'Section 402(b)(2) is expressly subject to subsection (q), which supplies the early-claim reduction. The engine applies a steeper schedule for the spousal case than for a retirement benefit -- 25/36 of 1 percent for the first 36 months rather than 5/9 -- and the spouse base remains one-half of worker PIA without worker delayed credits. The guarded ordinary current-spouse composition is owned by `usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement`; excluded current-spouse shapes retain disclosed legacy behavior. MFJ, a two-person household, and the worker\u2019s configured start date are product proxies and do not establish current-spouse eligibility or actual worker entitlement. Living-divorced entitlement is governed by `cfr-20-404-331-living-divorced-spouse-eligibility`. The ssClaimMilestone pin covers the numerical statutory base in a prior-year insight comparator, not proof of actual historical payment or payable ledger, or complete winner, month, family-maximum, or timing logic.',
+      'Section 402(b)(2) is expressly subject to subsection (q), which supplies the early-claim reduction. The engine applies a steeper schedule for the spousal case than for a retirement benefit (25/36 of 1 percent for the first 36 months rather than 5/9), and the spouse base remains one-half of worker PIA without worker delayed credits. The guarded ordinary current-spouse composition is owned by `usc-42-402-q-3-B-k-3-A-current-spouse-dual-entitlement`; excluded current-spouse shapes retain disclosed legacy behavior. MFJ, a two-person household, and the worker\u2019s configured start date are product proxies and do not establish current-spouse eligibility or actual worker entitlement. Living-divorced entitlement is governed by `cfr-20-404-331-living-divorced-spouse-eligibility`. The ssClaimMilestone pin covers the numerical statutory base in a prior-year insight comparator, not proof of actual historical payment or payable ledger, or complete winner, month, family-maximum, or timing logic.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -389,7 +389,7 @@ export const socialSecurityRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'A projection scenario, not law: current law simply stops paying beyond trust fund income once reserves deplete, and Congress may act before 2034. Two simplifications are deliberate. The scenario holds the cut flat at 17 percent, where the report projects payability declining from 83 percent at depletion to 65 percent by 2100 - a one-step stand-in for a declining path. And the combined OASDI basis is used rather than the OASI-standalone projection (fourth quarter of 2032, 78 percent payable) because the combined basis is the conventional indicator of the program as a whole.',
+      'A projection scenario, not law: current law simply stops paying beyond trust fund income once reserves deplete, and Congress may act before 2034. Two simplifications are deliberate. The scenario holds the cut flat at 17 percent, where the report projects payability declining from 83 percent at depletion to 65 percent by 2100; the flat 17 percent cut is a one-step stand-in for a declining path. And the combined OASDI basis is used rather than the OASI-standalone projection (fourth quarter of 2032, 78 percent payable) because the combined basis is the conventional indicator of the program as a whole.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'agencyGuidance',
@@ -417,7 +417,7 @@ export const socialSecurityRecords = {
     contraryReading: null,
     errorDirection: 'bothDirections',
     conventionRationale:
-      'The table is refreshed deliberately, not silently: longevity feeds Monte Carlo horizons and annuitization comparisons, so a vintage bump changes results and belongs in a reviewed change, and this record is what goes stale to force that review. Direction is both ways - longer published expectancies lengthen horizons for some households and shift claiming and conversion comparisons in either direction.',
+      'The table is refreshed deliberately, not silently: longevity feeds Monte Carlo horizons and annuitization comparisons, so an edition update changes results and belongs in a reviewed change, and this record is what goes stale to force that review. Direction is both ways: longer published expectancies lengthen horizons for some households and shift claiming and conversion comparisons in either direction.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'agencyGuidance',
@@ -506,7 +506,7 @@ export const socialSecurityRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'Absence-record surface is model/plan.ts: the Plan has no WEP/GPO flag, non-covered-pension fact, or covered-service fact. A code sweep found no WEP or GPO adjustment in socialSecurity/benefitFactor.ts, socialSecurity/claimFactor.ts, socialSecurity/disability.ts, socialSecurity/familyMaximum.ts, socialSecurity/maritalBenefits.ts, socialSecurity/nra.ts, socialSecurity/piaFromEarnings.ts, socialSecurity/ssaWageData.ts, socialSecurity/survivorBenefit.ts, projection/internal/annualSocialSecurity.ts, or projection/simulate.ts — consistent with those trigger facts being unrepresentable for any startYear.',
+      'Absence-record surface is model/plan.ts: the Plan has no WEP/GPO flag, non-covered-pension fact, or covered-service fact. A code sweep found no WEP or GPO adjustment in socialSecurity/benefitFactor.ts, socialSecurity/claimFactor.ts, socialSecurity/disability.ts, socialSecurity/familyMaximum.ts, socialSecurity/maritalBenefits.ts, socialSecurity/nra.ts, socialSecurity/piaFromEarnings.ts, socialSecurity/ssaWageData.ts, socialSecurity/survivorBenefit.ts, projection/internal/annualSocialSecurity.ts, or projection/simulate.ts, which is consistent with those trigger facts being unrepresentable for any startYear.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -599,7 +599,7 @@ export const socialSecurityRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'This record covers the whole-PIA limb only: its fixture holds the deceased at FRA so the whole-versus-half readings discriminate without delayed credits in play. The subparagraph (C) deeming that carries the deceased\u2019s delayed credits into the survivor base is fixture-pinned at cfr-20-404-338-survivor-deceased-drc-pass-through. The early-deceased RIB-LIM amount and its ordering relative to the survivor\u2019s own age reduction are registered separately at poms-rs-00615-320-rib-lim-after-survivor-reduction.',
+      'This record covers the whole-PIA limb only: its test holds the deceased at FRA so the whole-versus-half readings discriminate without delayed credits in play. The subparagraph (C) deeming that carries the deceased\u2019s delayed credits into the survivor base is pinned by a test at cfr-20-404-338-survivor-deceased-drc-pass-through. The early-deceased RIB-LIM amount and its ordering relative to the survivor\u2019s own age reduction are registered separately at poms-rs-00615-320-rib-lim-after-survivor-reduction.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -689,7 +689,7 @@ export const socialSecurityRecords = {
     contraryReading: null,
     errorDirection: 'bothDirections',
     conventionRationale:
-      'DEFECT — no behavior change in this registry slice. The code evaluates `max(deceasedActualMonthly, 0.825 × deceasedPiaMonthly)` before `survivorReductionFactor`, while POMS evaluates the widow(er) benefit after the age reduction before imposing the larger RIB-LIM amount. The companion fixture sets a 2,000-dollar PIA, a 1,400-dollar deceased reduced benefit, and a survivor claim at 63 against a 66-year survivor FRA: the authority-derived amount is 1,650 dollars because the widow(er) amount after reduction for age (2,000 x .8575 = 1,715) exceeds both limits, while the engine reduces that 1,650-dollar limit again. The observed engine amount is 1,414.875 - the 1,650-dollar limit reduced again by the .8575 age factor - pinned in the companion fixture.',
+      'Known defect, registered without changing the calculation. The code evaluates `max(deceasedActualMonthly, 0.825 × deceasedPiaMonthly)` before `survivorReductionFactor`, while POMS evaluates the widow(er) benefit after the age reduction before imposing the larger RIB-LIM amount. The companion test sets a 2,000-dollar PIA, a 1,400-dollar deceased reduced benefit, and a survivor claim at 63 against a 66-year survivor FRA: the authority-derived amount is 1,650 dollars because the widow(er) amount after reduction for age (2,000 x .8575 = 1,715) exceeds both limits, while the engine reduces that 1,650-dollar limit again. The observed engine amount is 1,414.875 (the 1,650-dollar limit reduced again by the .8575 age factor), pinned in the companion test.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -753,7 +753,7 @@ export const socialSecurityRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The engine has no death-payment surface at all — no simulate.ts pass emits a lump sum and no accepted input feeds one — and the further statutory facts (fully or currently insured status as such, the application within two years, alternative payees) have no Plan fields. A married couple where one dies is expressible, so outOfScope does not rest on unrepresentable household facts. A one-time $255 payment is an absence, not an approximation, because the engine emits no figure the rule could correct.',
+      'The engine has no death-payment input or output at all (no simulate.ts pass emits a lump sum and no accepted input feeds one), and the further statutory facts (fully or currently insured status as such, the application within two years, alternative payees) have no Plan fields. A married couple where one dies is expressible, so outOfScope does not rest on unrepresentable household facts. A one-time $255 payment is an absence, not an approximation, because the engine emits no figure the rule could correct.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -999,7 +999,7 @@ export const socialSecurityRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The general DRC-accrual rule is registered at cfr-20-404-313-delayed-retirement-credit. This narrower record covers its survivor consequence and is tested without a survivor reduction so the fixture isolates whether the deceased worker’s actual increased amount survives into the base.',
+      'The general DRC-accrual rule is registered at cfr-20-404-313-delayed-retirement-credit. This narrower record covers its survivor consequence and is tested without a survivor reduction so the test isolates whether the deceased worker’s actual increased amount survives into the base.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -1171,7 +1171,7 @@ export const socialSecurityRecords = {
     contraryReading: null,
     errorDirection: 'bothDirections',
     conventionRationale:
-      'The annualized convention is explicit in annualSocialSecurity.ts: after applying one annual earnings-test amount, it calculates `Math.round((withheld / benefit) * payableMonths)` and caps that integer to the year\'s payable months. That is not a record of the calendar months carrying a full or partial work deduction. The companion fixture withholds 2,000 dollars in each of the five below-FRA working years: the statute charges 1,400 dollars to the first month and 600 to the next, so POMS credits two months per year, ten in all, and a post-FRA year pays 17,800 dollars. The engine\'s annual ratio rounds to one credited month per year, five in all, and observably pays 17,300.',
+      'The annualized convention is explicit in annualSocialSecurity.ts: after applying one annual earnings-test amount, it calculates `Math.round((withheld / benefit) * payableMonths)` and caps that integer to the year\'s payable months. That is not a record of the calendar months carrying a full or partial work deduction. The companion test withholds 2,000 dollars in each of the five below-FRA working years: the statute charges 1,400 dollars to the first month and 600 to the next, so POMS credits two months per year, ten in all, and a post-FRA year pays 17,800 dollars. The engine\'s annual ratio rounds to one credited month per year, five in all, and observably pays 17,300.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -1222,7 +1222,7 @@ export const socialSecurityRecords = {
     contraryReading: null,
     errorDirection: 'bothDirections',
     conventionRationale:
-      'The annual earnings amount itself is implemented by the existing `usc-42-403-f-3-retirement-earnings-test` record. This distinct convention record covers its missing month-charging unit: annualSocialSecurity.ts neither carries an ordered sequence of monthly entitlements nor consumes excess earnings against that sequence. In the companion fixture each below-FRA working year\'s 2,000 dollars of excess earnings must charge a 1,400-dollar first month and a 600-dollar second month, two partial-or-full deduction months per year; the annual ratio rounds to one per year, and the observed post-FRA benefit is 17,300 dollars against the statute-derived 17,800. This record and `poms-rs-00615-482-arf-crediting-months` share a single engine observable (the annualized month count feeds the ARF), so their fixtures intentionally pin the same produced figure from distinct legal limbs. A charging-only implementation could not be verified apart from the ARF credit with this observable — reclassifying either record requires a distinct charging observable (ordered months or unequal monthly entitlements).',
+      'The annual earnings amount itself is implemented by the existing `usc-42-403-f-3-retirement-earnings-test` record. This distinct convention record covers its missing month-charging unit: annualSocialSecurity.ts neither carries an ordered sequence of monthly entitlements nor consumes excess earnings against that sequence. In the companion test each below-FRA working year\'s 2,000 dollars of excess earnings must charge a 1,400-dollar first month and a 600-dollar second month, two partial-or-full deduction months per year; the annual ratio rounds to one per year, and the observed post-FRA benefit is 17,300 dollars against the statute-derived 17,800. This record and `poms-rs-00615-482-arf-crediting-months` share a single engine observable (the annualized month count feeds the ARF), so their tests intentionally pin the same produced figure from distinct legal limbs. A charging-only implementation could not be verified apart from the ARF credit with this observable; reclassifying either record requires a distinct charging observable (ordered months or unequal monthly entitlements).',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -1253,7 +1253,7 @@ export const socialSecurityRecords = {
     contraryReading: null,
     errorDirection: 'bothDirections',
     conventionRationale:
-      'The accepted Plan surface is model/plan.ts: `wagesIncomeSchema` has `annualGross` and `endAge`, while a Social Security stream has one `claimAge`; neither carries service by calendar month, monthly wages, a grace-year designation, or non-service months. annualSocialSecurity.ts applies its annual earnings test to the emitted annual wage amount. The companion fixture gives the engine one 60,000-dollar annual wage total and stands that single observed annual figure against both authority limbs: (1) six July-through-December non-service months and (2) service in all twelve months. The monthly rule pays 8,400 dollars only in the first limb; the annual proxy observably pays zero for both, because the Plan carries no service-month fact and the annual test withholds the entire year\'s benefit. That collapse of one engine input against both limbs is the approximation.',
+      'The accepted Plan input is defined in model/plan.ts: `wagesIncomeSchema` has `annualGross` and `endAge`, while a Social Security stream has one `claimAge`; neither carries service by calendar month, monthly wages, a grace-year designation, or non-service months. annualSocialSecurity.ts applies its annual earnings test to the emitted annual wage amount. The companion test gives the engine one 60,000-dollar annual wage total and stands that single observed annual figure against both authority limbs: (1) six July-through-December non-service months and (2) service in all twelve months. The monthly rule pays 8,400 dollars only in the first limb; the annual proxy observably pays zero for both, because the Plan carries no service-month fact and the annual test withholds the entire year\'s benefit. That collapse of one engine input against both limbs is the approximation.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'regulation',
@@ -1365,7 +1365,7 @@ export const socialSecurityRecords = {
     contraryReading: null,
     errorDirection: 'bothDirections',
     conventionRationale:
-      'simulate.ts has a real PIA-from-earnings path, so this is not an absence record: before projecting any year it resolves each Social Security stream\'s PIA once from `socialSecurityIncomeSchema.earnings` and optional pre-retirement `earningsProjection`. Later `wagesIncomeSchema` income is not appended to that history or recomputed. Closing 415(f)(2) also requires widening the base-year window in piaFromEarnings.ts (`computePiaFromEarnings` clamps `lastBaseYear` to eligibility-1), which is why that file stays in implementedBy. The companion fixture gives a fully insured worker ten AWI-level covered years (2013-2022), claims at 2029 FRA, and supplies 10,000 dollars of covered wages in 2030. The authority-side recomputation replaces a zero in the top-35 set: indexed earnings rise by 10,000, AIME from 1,518 to 1,542, and 2024 second-band PIA from 1,166.60 to 1,174.30 (delta 7.70, above the one-dollar threshold), so 2031 pays 14,091.60; the engine observably leaves the initially resolved 1,166.60 PIA in force and pays 13,999.20.',
+      'simulate.ts has a real PIA-from-earnings path, so this is not an absence record: before projecting any year it resolves each Social Security stream\'s PIA once from `socialSecurityIncomeSchema.earnings` and optional pre-retirement `earningsProjection`. Later `wagesIncomeSchema` income is not appended to that history or recomputed. Closing 415(f)(2) also requires widening the base-year window in piaFromEarnings.ts (`computePiaFromEarnings` clamps `lastBaseYear` to eligibility-1), which is why that file stays in implementedBy. The companion test gives a fully insured worker ten AWI-level covered years (2013-2022), claims at 2029 FRA, and supplies 10,000 dollars of covered wages in 2030. The authority-side recomputation replaces a zero in the top-35 set: indexed earnings rise by 10,000, AIME from 1,518 to 1,542, and 2024 second-band PIA from 1,166.60 to 1,174.30 (delta 7.70, above the one-dollar threshold), so 2031 pays 14,091.60; the engine observably leaves the initially resolved 1,166.60 PIA in force and pays 13,999.20.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -1510,7 +1510,7 @@ export const socialSecurityRecords = {
     contraryReading: null,
     errorDirection: 'bothDirections',
     conventionRationale:
-      'Section 403(a)(6)\'s 85/100/150 percentages are the controlling disability-family formula. POMS RS 00615.736 is omitted here because it instructs the ordinary PIA bend-point maximum for people who become disabled — the exact retirement/survivor reading this record rejects. The sign is not one-sided in taxpayer-tax terms: a too-large or too-small Social Security amount changes taxable benefits, and a spending shortfall can instead be funded with withdrawals whose tax character depends on the account used.',
+      'Section 403(a)(6)\'s 85/100/150 percentages are the controlling disability-family formula. POMS RS 00615.736 is omitted here because it instructs the ordinary PIA bend-point maximum for people who become disabled (the exact retirement/survivor reading this record rejects). The sign is not one-sided in taxpayer-tax terms: a too-large or too-small Social Security amount changes taxable benefits, and a spending shortfall can instead be funded with withdrawals whose tax character depends on the account used.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -1678,7 +1678,7 @@ export const socialSecurityRecords = {
     contraryReading: null,
     errorDirection: 'bothDirections',
     conventionRationale:
-      'The companion fixture assigns the same 20,281-dollar 2026 total either to a first January service month or to a ninth December service month after entitlement, leaving the other eleven months at zero in each case. Both are still protected trial-work months, so the authority-side annual benefit remains 24,000 dollars on a 2,000-dollar PIA. The annual Plan makes those distinct monthly cases identical and annualSocialSecurity.ts treats both as annual SGA, returning a suspended annual benefit. The opposite monthly concentration can make an annual total look harmless while an SGA month is payable differently, and replacement-spending taxation depends on its funding source; neither tax direction is one-sided.',
+      'The companion test assigns the same 20,281-dollar 2026 total either to a first January service month or to a ninth December service month after entitlement, leaving the other eleven months at zero in each case. Both are still protected trial-work months, so the authority-side annual benefit remains 24,000 dollars on a 2,000-dollar PIA. The annual Plan makes those distinct monthly cases identical and annualSocialSecurity.ts treats both as annual SGA, returning a suspended annual benefit. The opposite monthly concentration can make an annual total look harmless while an SGA month is payable differently, and replacement-spending taxation depends on its funding source; neither tax direction is one-sided.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'regulation',
@@ -1719,7 +1719,7 @@ export const socialSecurityRecords = {
     contraryReading: null,
     errorDirection: 'bothDirections',
     conventionRationale:
-      'The companion fixtures use the same expressible 20,281-dollar annual wage total after trial work has ended. When it is earned in January alone, January and the next two months are payable under the grace rule and payment restarts from April, for a 24,000-dollar annual benefit on a 2,000-dollar PIA. When it is spread at more than monthly SGA across all twelve months, only the three grace months are payable, for 6,000 dollars. annualSocialSecurity.ts cannot distinguish the two monthly histories and produces its whole-year SGA suspension for both. The taxpayer-tax direction changes with the monthly pattern and with the account used to fill any spending shortfall.',
+      'The companion tests use the same expressible 20,281-dollar annual wage total after trial work has ended. When it is earned in January alone, January and the next two months are payable under the grace rule and payment restarts from April, for a 24,000-dollar annual benefit on a 2,000-dollar PIA. When it is spread at more than monthly SGA across all twelve months, only the three grace months are payable, for 6,000 dollars. annualSocialSecurity.ts cannot distinguish the two monthly histories and produces its whole-year SGA suspension for both. The taxpayer-tax direction changes with the monthly pattern and with the account used to fill any spending shortfall.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'regulation',
@@ -1808,7 +1808,7 @@ export const socialSecurityRecords = {
     contraryReading: null,
     errorDirection: 'bothDirections',
     conventionRationale:
-      'The companion worksheet conditions the accepted value on an established 2019 period of disability, a 2019 DIB benchmark with insured status met no later than onset, first DIB entitlement after June 1980, and no prior-DIB, child-care-dropout, or higher-alternate-computation adjustment. Those are authority-side preconditions, not facts that `disability.onsetAge` proves. With 1986–2018 earnings equal to each year\'s published AWI, 2017 is the indexing year. The 32 earnings years through 2017 become 50,321.89 dollars each; 2018 remains its nominal 52,145.80 dollars. Thirty-three elapsed years yield five disability dropout years and 28 computation years, so the accepted AIME is floor((27 × 50,321.89 + 52,145.80) / 336) = 4,198. A partial implementation that uses the 2017 index but retains an ordinary 35-year divisor gives 3,958. The current retirement-only helper instead uses 2026 age-62 eligibility, the 2024 index, and 35 years and produces the already observed 5,487. The old 5,820 figure was a fixed-2024-index diagnostic, not a statutory reading, and is not retained as the accepted fixture. A wrong Social Security amount changes both taxable benefits and replacement funding, so taxpayer tax can move either way.',
+      'The companion worksheet conditions the accepted value on an established 2019 period of disability, a 2019 DIB benchmark with insured status met no later than onset, first DIB entitlement after June 1980, and no prior-DIB, child-care-dropout, or higher-alternate-computation adjustment. Those are authority-side preconditions, not facts that `disability.onsetAge` proves. With 1986–2018 earnings equal to each year\'s published AWI, 2017 is the indexing year. The 32 earnings years through 2017 become 50,321.89 dollars each; 2018 remains its nominal 52,145.80 dollars. Thirty-three elapsed years yield five disability dropout years and 28 computation years, so the accepted AIME is floor((27 × 50,321.89 + 52,145.80) / 336) = 4,198. A partial implementation that uses the 2017 index but retains an ordinary 35-year divisor gives 3,958. The current retirement-only helper instead uses 2026 age-62 eligibility, the 2024 index, and 35 years and produces the already observed 5,487. The old 5,820 figure was a fixed-2024-index diagnostic, not a statutory reading, and is not retained as the test’s accepted value. A wrong Social Security amount changes both taxable benefits and replacement funding, so taxpayer tax can move either way.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -1933,7 +1933,7 @@ export const socialSecurityRecords = {
     contraryReading: null,
     errorDirection: 'bothDirections',
     conventionRationale:
-      'DEFECT — no behavior change in this registry slice. For a January-equivalent onset and a 2,000-dollar PIA, section 423 pays at most seven months (14,000) in the onset year while the engine observably pays twelve (24,000). Extra early benefit raises taxable Social Security income; when spending is instead funded from a traditional account the missing-benefit case replaces each dollar with a fully taxable withdrawal, so the taxpayer-tax sign flips with the funding channel.',
+      'Known defect, registered without changing the calculation. For a January-equivalent onset and a 2,000-dollar PIA, section 423 pays at most seven months (14,000) in the onset year while the engine observably pays twelve (24,000). Extra early benefit raises taxable Social Security income; when spending is instead funded from a traditional account the missing-benefit case replaces each dollar with a fully taxable withdrawal, so the taxpayer-tax sign flips with the funding channel.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -1972,7 +1972,7 @@ export const socialSecurityRecords = {
     contraryReading: null,
     errorDirection: 'bothDirections',
     conventionRationale:
-      'DEFECT — no behavior change in this registry slice. For claimAge 62, onsetAge 65, FRA 67, and a 2,000-dollar PIA, the authority-side amounts are 16,800 before onset (70 percent retirement factor) and 19,200 from onset (402(q)(2) treats retirement age as attained in the first DIB month, so a 36-month reduction period yields an 80 percent factor). The engine observably pays 0 before onset and 24,000 from onset. Extra or missing benefit changes taxable Social Security income, and a spending shortfall can be funded from accounts whose tax character differs, so the taxpayer-tax sign is not one-sided.',
+      'Known defect, registered without changing the calculation. For claimAge 62, onsetAge 65, FRA 67, and a 2,000-dollar PIA, the authority-side amounts are 16,800 before onset (70 percent retirement factor) and 19,200 from onset (402(q)(2) treats retirement age as attained in the first DIB month, so a 36-month reduction period yields an 80 percent factor). The engine observably pays 0 before onset and 24,000 from onset. Extra or missing benefit changes taxable Social Security income, and a spending shortfall can be funded from accounts whose tax character differs, so the taxpayer-tax sign is not one-sided.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -2017,7 +2017,7 @@ export const socialSecurityRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The stream\'s `claimAge` is deliberately ignored while its disability onset is active before FRA, so importing the ordinary age-62 factor would give the wrong amount. At FRA the code stays on the SSDI branch and only relabels the published source to own retirement at the same full PIA, rather than treating the change as a new claim or a DRC opportunity. The companion fixture extends the observed object through the first post-FRA year so the no-DRC continuation is pinned, and adds a 1959-born (FRA 66y10m) cohort observation for the fra.years-only gate.',
+      'The stream\'s `claimAge` is deliberately ignored while its disability onset is active before FRA, so importing the ordinary age-62 factor would give the wrong amount. At FRA the code stays on the SSDI branch and only relabels the published source to own retirement at the same full PIA, rather than treating the change as a new claim or a DRC opportunity. The companion test extends the observed object through the first post-FRA year so the no-DRC continuation is pinned, and adds a 1959-born (FRA 66y10m) cohort observation for the fra.years-only gate.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -2182,7 +2182,7 @@ export const socialSecurityRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The parameter pack carries the base but no engine calculator reads it yet, and the engine has no national-average-wage path to carry it forward on: the plan supplies a general inflation assumption and nothing else. When a calculator does read it, scaling by general inflation will be a stand-in for wage indexing rather than a reading of section 230, and this record is where that has to be said. The same caution applies to the retirement earnings test exempt amounts, which are wage-indexed by the same ratio.',
+      'The published parameters carry the base but no engine calculator reads it yet, and the engine has no national-average-wage path to carry it forward on: the plan supplies a general inflation assumption and nothing else. When a calculator does read it, scaling by general inflation will be a stand-in for wage indexing rather than a reading of section 230, and this record is where that has to be said. The same caution applies to the retirement earnings test exempt amounts, which are wage-indexed by the same ratio.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -2296,7 +2296,7 @@ export const socialSecurityRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The rate is carried in the parameter pack and consumed outside the engine, by the Social Security analysis page in the planner package, which the registry cannot name because implementedBy is checked against engine sources. The pack and its type are listed instead, which are the files a later reader would change.',
+      'The rate is carried in the tax-year parameters and consumed outside the engine, by the Social Security analysis page in the planner package, which the registry cannot name because implementedBy is checked against engine sources. The parameters and their type are listed instead, which are the files a later reader would change.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',

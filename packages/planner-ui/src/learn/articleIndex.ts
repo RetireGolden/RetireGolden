@@ -1964,7 +1964,7 @@ export const ARTICLE_INDEX: LearningArticleMeta[] = [
     title: 'How to use assumptions and provenance',
     description: 'Where each default comes from and how to override it responsibly.',
     category: 'using-retiregolden',
-    tags: ['retiregolden', 'assumptions', 'provenance', 'defaults', 'parameter pack'],
+    tags: ['retiregolden', 'assumptions', 'provenance', 'defaults', 'parameter set'],
     audience: 'beginner',
     status: 'ready',
     lastReviewed: '2026-06-20',

@@ -1619,7 +1619,7 @@
       "classification": "settled",
       "errorDirection": null,
       "approximation": null,
-      "conventionRationale": "DOR publishes the annually adjusted whole-dollar ranges. bracketTax uses endpoint breakpoints over continuous modeled dollars; at whole-dollar inputs this represents the published ranges. The record expires after TY2026. Later plan years may reuse the latest 2026 pack as a planning stand-in and are not certified by this annual record.",
+      "conventionRationale": "DOR publishes the annually adjusted whole-dollar ranges. bracketTax uses endpoint breakpoints over continuous modeled dollars; at whole-dollar inputs this represents the published ranges. The record expires after TY2026. Later plan years may reuse the latest 2026 tax parameters as a planning stand-in and are not certified by this annual record.",
       "contraryReading": null,
       "jurisdiction": "state:MN",
       "volatility": "annuallyIndexed",
@@ -1763,12 +1763,12 @@
       "authorities": [
         {
           "kind": "stateAgencyPublication",
-          "citation": "Minnesota DOR, Seniors — Pension Income",
+          "citation": "Minnesota DOR, Seniors: Pension Income",
           "url": "https://www.revenue.state.mn.us/seniors"
         },
         {
           "kind": "stateAgencyPublication",
-          "citation": "Minnesota DOR, Seniors — military carve-out scope (excluded limb)",
+          "citation": "Minnesota DOR, Seniors: military carve-out scope (excluded limb)",
           "url": "https://www.revenue.state.mn.us/seniors"
         }
       ]
@@ -1781,7 +1781,7 @@
       "approximation": {
         "kind": "fix"
       },
-      "conventionRationale": "The existing subdivision 26(c)(1)-(2) quotations are statutory-year base amounts. Subdivision 26(j) requires annual adjustment of the simplified-subtraction thresholds, and the DOR TY2026 table supplies the operative values. The quoted DOR table marks the alternate maxima as Not Indexed. The engine has no field or enforcer for either subtraction; later pack fallback remains an annually stale stand-in.",
+      "conventionRationale": "The existing subdivision 26(c)(1)-(2) quotations are statutory-year base amounts. Subdivision 26(j) requires annual adjustment of the simplified-subtraction thresholds, and the DOR TY2026 table supplies the operative values. The quoted DOR table marks the alternate maxima as Not Indexed. The engine has no field or enforcer for either subtraction; in later years, the fallback to the per-state tax data remains an annually stale stand-in.",
       "contraryReading": null,
       "jurisdiction": "state:MN",
       "volatility": "annuallyIndexed",
@@ -2348,7 +2348,7 @@
         },
         {
           "kind": "formInstruction",
-          "citation": "2025 Form ND-1 instructions, Line 8 — U.S. Railroad Retirement Board benefits",
+          "citation": "2025 Form ND-1 instructions, Line 8: U.S. Railroad Retirement Board benefits",
           "url": "https://www.tax.nd.gov/sites/www/files/documents/forms/individual/2025-iit/2025-individual-income-tax-booklet.pdf"
         },
         {
@@ -2472,7 +2472,7 @@
         },
         {
           "kind": "formInstruction",
-          "citation": "2025 Form ND-1 instructions, Line 13 — Qualified dividend exclusion",
+          "citation": "2025 Form ND-1 instructions, Line 13: Qualified dividend exclusion",
           "url": "https://www.tax.nd.gov/sites/www/files/documents/forms/individual/2025-iit/2025-individual-income-tax-booklet.pdf"
         }
       ]
@@ -3273,7 +3273,7 @@
       "classification": "settled",
       "errorDirection": null,
       "approximation": null,
-      "conventionRationale": "For the legal TY2026 nonbusiness schedule the current statute plus enacted analysis controls the supported reading. The captured 2026 IT 1040 ES estimated-payment worksheet reproduces the 2025 schedule ($342 plus 2.75% of excess over $26,050, then $2,394.32 plus 3.125% above $100,000) and conflicts directly with enacted §5747.02(A)(3)(c) and the LSC enacted-budget Greenbook; that administrative artifact is disclosed but not adopted as support for the pack. Part-year residency uses the engine's existing linear month-proration convention (prorateParams scales bracket breakpoints and baseTax); that scaling is a model convention, not authority-backed Ohio part-year law. The record expires after TY2026; later plan years may reuse the latest 2026 pack as a planning stand-in and are not certified by this annual record.",
+      "conventionRationale": "For the legal TY2026 nonbusiness schedule the current statute plus enacted analysis controls the supported reading. The captured 2026 IT 1040 ES estimated-payment worksheet reproduces the 2025 schedule ($342 plus 2.75% of excess over $26,050, then $2,394.32 plus 3.125% above $100,000) and conflicts directly with enacted §5747.02(A)(3)(c) and the LSC enacted-budget Greenbook; that administrative artifact is disclosed but not adopted as support for the per-state tax data. Part-year residency uses the engine's existing linear month-proration convention (prorateParams scales bracket breakpoints and baseTax); that scaling is a model convention, not authority-backed Ohio part-year law. The record expires after TY2026; later plan years may reuse the latest 2026 per-state tax data as a planning stand-in and are not certified by this annual record.",
       "contraryReading": null,
       "jurisdiction": "state:OH",
       "volatility": "annuallyIndexed",
@@ -3413,7 +3413,7 @@
       "authorities": [
         {
           "kind": "stateAgencyPublication",
-          "citation": "S.D. Dept. of Revenue, Individuals — Taxes, \"Income Tax\"",
+          "citation": "S.D. Dept. of Revenue, Individuals: Taxes, \"Income Tax\"",
           "url": "https://dor.sd.gov/individuals/taxes/"
         },
         {

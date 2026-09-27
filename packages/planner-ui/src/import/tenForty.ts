@@ -282,7 +282,7 @@ export function seedPlanFromTenForty(
         'and none of it was applied. Check line 3b on your return. ' +
         (estimateSeeded
           ? `The draft already holds a “${ESTIMATED_BROKERAGE_NAME}” account, sized from your line 2b interest alone, so its ` +
-            'dividend yield and qualified share are both 0 — set them on that account on the Accounts screen rather than adding a second one.'
+            'dividend yield and qualified share are both 0; set them on that account on the Accounts screen rather than adding a second one.'
           : 'Then add the brokerage account with its real balance and qualified share on the Accounts screen.'),
       locator: form1040('3a'),
       confidence: 'unmapped',
@@ -328,7 +328,7 @@ export function seedPlanFromTenForty(
       source: 'From your 1040, line 5b (pensions & annuities)',
       detail:
         `A pension paying $${Math.round(inputs.pensionsAndAnnuities / 12).toLocaleString('en-US')} /mo starting now, with no COLA and a 50% ` +
-        'survivor benefit. Line 5b does not show whether this is private, employer, IRA, or public retirement income — open the pension on the Accounts screen and record its characterized source.',
+        'survivor benefit. Line 5b does not show whether this is private, employer, IRA, or public retirement income; open the pension on the Accounts screen and record its characterized source.',
       locator: form1040('5b'),
       confidence: 'assumed',
       target: `accounts[${plan.accounts.length - 1}]`,

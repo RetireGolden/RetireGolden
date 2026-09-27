@@ -56,7 +56,7 @@ export const blocks: ArticleBlock[] = [
   { type: 'heading', text: 'Why it matters in RetireGolden' },
   {
     type: 'prose',
-    md: 'RetireGolden models HSA accounts separately from cash, taxable, traditional, and Roth accounts. Annual HSA contributions are capped by the parameter pack and reduce taxable income in the projection. The default withdrawal order spends HSA dollars last, and early non-medical HSA withdrawals can trigger a modeled pre-65 penalty.',
+    md: 'RetireGolden models HSA accounts separately from cash, taxable, traditional, and Roth accounts. Annual HSA contributions are capped by the parameter set and reduce taxable income in the projection. The default withdrawal order spends HSA dollars last, and early non-medical HSA withdrawals can trigger a modeled pre-65 penalty.',
   },
   { type: 'heading', text: 'Common mistakes' },
   {

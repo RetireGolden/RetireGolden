@@ -306,7 +306,7 @@
         "The four band rates 150/272/134/175 percent are the retirement and survivor family maximum, not the disability family maximum, which SSA computes differently",
         "The bend points are eligibility-year values (the year the worker attains 62 under familyMaximumEligibilityYearFromDobParts), not the benefit year; an eligibility year the table does not price falls back to the latest published triplet",
         "RetireGolden models no child dependents, so capAuxiliaryForFamilyMaximum gives the whole room above the worker's own benefit to the single current-spouse auxiliary; the worker's own benefit is never reduced by this ceiling",
-        "The dime floor is part of the published contract: the fixture compares the floored figure exactly and treats the unrounded sum as an intermediate"
+        "The dime floor is part of the published contract: the test compares the floored figure exactly and treats the unrounded sum as an intermediate"
       ],
       "worksheet": "DOCS/calculations/social-security/family-maximum-bend-points.md",
       "mutation": "DOCS/calculations/social-security/family-maximum-bend-points.mutation.md",
@@ -398,7 +398,7 @@
         "social-security-benefit-annual"
       ],
       "purpose": "Apply 90/32/15 percent across the eligibility-year bend points and floor to a dime.",
-      "statement": "socialSecurity/piaFromEarnings.ts#piaMonthlyFromAime computes monthly PIA from AIME by applying 90% through the first eligibility-year bend point, 32% between the two bend points and 15% above the second, then rounding the result DOWN to the next lower ten cents. The 2026 bend points come from socialSecurity/ssaWageData.ts#PIA_BEND_POINTS, not from the tax parameter pack. Units: nominal USD per month. Rounding: floor to a dime.",
+      "statement": "socialSecurity/piaFromEarnings.ts#piaMonthlyFromAime computes monthly PIA from AIME by applying 90% through the first eligibility-year bend point, 32% between the two bend points and 15% above the second, then rounding the result DOWN to the next lower ten cents. The 2026 bend points come from socialSecurity/ssaWageData.ts#PIA_BEND_POINTS, not from the tax parameters. Units: nominal USD per month. Rounding: floor to a dime.",
       "formula": {
         "expression": "pia = floorToDime(0.90 x min(A, b1) + 0.32 x max(0, min(A, b2) - b1) + 0.15 x max(0, A - b2))",
         "variables": [
@@ -426,7 +426,7 @@
       },
       "limits": [
         "The rounding is a floor, not a round-to-nearest; the worksheet's cross-both case happens not to distinguish them, so the evidence carries a separate discriminator that does",
-        "Bend points live in the SSA wage data, not in year2026: reading them from the tax pack finds nothing",
+        "Bend points live in the SSA wage data, not in year2026: reading them from the tax parameters finds nothing",
         "An eligibility year past the last published table falls back to the latest published bend points"
       ],
       "worksheet": "DOCS/calculations/social-security/pia-from-aime-bend-points.md",
@@ -465,7 +465,7 @@
       ],
       "feeds": [],
       "purpose": "The Social Security cash the household is paid in one projection year, after the earnings test.",
-      "statement": "YearResult.incomes.socialSecurity is the sum over living people of that person's benefit. Each own retirement row is PIA x the claim-age factor x payable months (0 before the claim year, 12 − claim months in it, 12 after) x the COLA factor x the haircut factor. A divorced-spouse, current-spouse spousal — the claimant's own monthly PLUS max(0, 0.5 x the higher PIA x the spousal factor − own monthly), that excess capped by the family maximum — or survivor candidate REPLACES the running amount when it is larger, rather than adding to it. While the person is under FRA the earnings test then withholds max(0, (wages − the below-FRA annual limit) / 2), or the excess over the FRA-year limit divided by 3 in the FRA year itself, capped at the benefit. Units: nominal dollars per year. Rounding: none.",
+      "statement": "YearResult.incomes.socialSecurity is the sum over living people of that person's benefit. Each own retirement row is PIA x the claim-age factor x payable months (0 before the claim year, 12 − claim months in it, 12 after) x the COLA factor x the haircut factor. A divorced-spouse, current-spouse spousal (the claimant's own monthly PLUS max(0, 0.5 x the higher PIA x the spousal factor − own monthly), that excess capped by the family maximum) or survivor candidate REPLACES the running amount when it is larger, rather than adding to it. While the person is under FRA the earnings test then withholds max(0, (wages − the below-FRA annual limit) / 2), or the excess over the FRA-year limit divided by 3 in the FRA year itself, capped at the benefit. Units: nominal dollars per year. Rounding: none.",
       "formula": {
         "expression": "benefit = Σ_people max(own, marital candidate) x months x cola x haircut, less max(0, (wages − limit)/2) capped at the benefit",
         "variables": [
@@ -495,7 +495,7 @@
           },
           {
             "symbol": "limit",
-            "meaning": "Pack earnings-test limit, below-FRA or FRA-year, scaled for the year",
+            "meaning": "Earnings-test limit from the published parameters, below-FRA or FRA-year, scaled for the year",
             "unit": "usd/year",
             "domain": "positive"
           }
@@ -504,10 +504,10 @@
         "rounding": "none"
       },
       "limits": [
-        "The own-claim-year case is constructible exactly as the worksheet now states it: a 1960 birth has FRA 67y0m, so a 64y3m claim is 33 months early and the factor is 1 − 33 x (5/9 of 1%) = 49/60, while the claim-age month of 3 pays 12 − 3 = 9 months in the claim year. The first derivation instead paired a 0.8 factor with those nine months — 0.8 is exactly 36 months before FRA, whose claim-age month is 0 and which therefore pays all 12 — and that was corrected on 2026-09-18; the incompatible pair is now the worksheet's first wrong reading, asserted as not matching",
+        "The own-claim-year case is constructible exactly as the worksheet now states it: a 1960 birth has FRA 67y0m, so a 64y3m claim is 33 months early and the factor is 1 − 33 x (5/9 of 1%) = 49/60, while the claim-age month of 3 pays 12 − 3 = 9 months in the claim year. The first derivation instead paired a 0.8 factor with those nine months (0.8 is exactly 36 months before FRA, whose claim-age month is 0 and which therefore pays all 12), and that was corrected on 2026-09-18; the incompatible pair is now the worksheet's first wrong reading, asserted as not matching",
         "Beyond the worksheet's inputs the evidence plans fix, for the claim-year and later-year cases: a 1960-born single filer claiming at 64y3m on one plan whose projection starts in 2024, the year that birth attains 64, so the claim year is the first projection year and its COLA factor is exactly 1; zero inflation and zero return; a fixed 6%/year ssCola so the second projection year's factor is exactly 1.06; ssHaircut cutPct 5 from the start year; and a cash account to fund the year",
         "The two-person case asserts the REPLACEMENT rule, so both people claim at their own FRA (claim and spousal factors 1) in the projection's first year, where the COLA factor is 1 and no haircut applies; the family maximum is left non-binding by the PIAs chosen",
-        "The earnings-test case is a separate 1962-born plan claiming at 64y0m, where the 0.8 factor and 12 payable months ARE the compatible pair, and is asserted in 2026 so the pack's $24,480 below-FRA limit is unindexed; the wage row that drives it is ordinary income and is taxed, which does not enter this family",
+        "The earnings-test case is a separate 1962-born plan claiming at 64y0m, where the 0.8 factor and 12 payable months ARE the compatible pair, and is asserted in 2026 so the published parameters’ $24,480 below-FRA limit is unindexed; the wage row that drives it is ordinary income and is taxed, which does not enter this family",
         "The published field is the PAID benefit; the amount withheld is a separate field (ssEarningsTestWithheld), and withheld months are credited back into a later claim age rather than lost",
         "No discrepancy remains in the two-person case: annualSocialSecurity builds the current-spouse candidate as the claimant's own monthly benefit PLUS the capped spousal excess ($300 + $700 = $1,000) and replaces the running amount with that total, which is what a dually-entitled spouse is actually paid, so the household is $36,000 and the worksheet expects $36,000. The first derivation read the ledger comment's \"replaces the running amount\" as replacing the own benefit with the excess alone and expected $32,400; it was corrected on 2026-09-18, and $32,400 is now the worksheet's second wrong reading, asserted as not matching"
       ],
@@ -575,7 +575,7 @@
       "limits": [
         "Asserted at the plan level the comments state rather than by reading a private local: the evidence runs a real projection of a single stream already in force, with twelve payable months and no haircut and no earnings test, so the year's published benefit over the start year's IS the factor the phase received",
         "The two modes are alternatives, never combined: a plan on matchInflation does not additionally apply the fixed rate",
-        "The worksheet's 2.8% is year2026.socialSecurity.colaPct used as the plan's fixed rate; the pack figure is not itself the plan default"
+        "The worksheet's 2.8% is year2026.socialSecurity.colaPct used as the plan's fixed rate; the parameter figure is not itself the plan default"
       ],
       "worksheet": "DOCS/calculations/social-security/social-security-cola-factor.md",
       "mutation": "DOCS/calculations/social-security/social-security-cola-factor.mutation.md",

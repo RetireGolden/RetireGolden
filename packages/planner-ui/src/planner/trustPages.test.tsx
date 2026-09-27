@@ -77,9 +77,9 @@ describe('HowTestedPage', () => {
     const text = el.textContent
     // Counts are glob-derived from the source tree; sanity-floor them so the
     // page can never render an empty validation story.
-    const externalCount = Number(text.match(/(\d+) external-oracle golden suites/)?.[1])
+    const externalCount = Number(text.match(/(\d+) external-oracle suites/)?.[1])
     expect(externalCount).toBeGreaterThanOrEqual(5)
-    const goldenCount = Number(text.match(/(\d+) golden suites/)?.[1])
+    const goldenCount = Number(text.match(/(\d+) suites hold fixed expected values/)?.[1])
     expect(goldenCount).toBeGreaterThan(externalCount)
     // Named oracles and the invariance fixture citation.
     expect(text).toContain('PolicyEngine-US')

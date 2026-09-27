@@ -15,7 +15,7 @@ export const blocks: ArticleBlock[] = [
     items: [
       'Part B is medical insurance; Part D is prescription drug coverage.',
       'IRMAA is income-related and generally uses MAGI from two tax years earlier.',
-      'RetireGolden models Part B and Part D IRMAA separately from verified parameter-pack values.',
+      'RetireGolden models Part B and Part D IRMAA separately from verified parameter-set values.',
     ],
   },
   { type: 'heading', text: 'The basic idea' },
@@ -56,7 +56,7 @@ export const blocks: ArticleBlock[] = [
   { type: 'heading', text: 'Why it matters in RetireGolden' },
   {
     type: 'prose',
-    md: 'RetireGolden calls the Medicare premium model for each living person age 65 or older. It uses MAGI from two years earlier, the household filing status, and the parameter pack. The model returns Part B annual premium, Part D surcharge, and the IRMAA tier. User-entered Medicare extras are added separately.',
+    md: 'RetireGolden calls the Medicare premium model for each living person age 65 or older. It uses MAGI from two years earlier, the household filing status, and the parameter set. The model returns Part B annual premium, Part D surcharge, and the IRMAA tier. User-entered Medicare extras are added separately.',
   },
   {
     type: 'callout',

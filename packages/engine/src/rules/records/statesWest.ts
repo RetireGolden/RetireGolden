@@ -578,7 +578,7 @@ export const westStateRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'This record transcribes a 2026 estimated-tax instruction, not a final 2026 resident-return schedule. The record expires after 2026. Because stateParamsFor reuses the latest pack in later plan years, any later-year use is a 2026-pack stand-in rather than a claim that these amounts remain legally current.',
+      'This record transcribes a 2026 estimated-tax instruction, not a final 2026 resident-return schedule. The record expires after 2026. Because stateParamsFor reuses the latest per-state tax data in later plan years, any later-year use is a stand-in using the 2026 per-state tax data rather than a claim that these amounts remain legally current.',
     jurisdiction: 'state:CA',
     authority: [{
       kind: 'formInstruction',
@@ -963,13 +963,13 @@ export const westStateRecords = {
         'House Bill 337 (HB337) changes income taxes for individuals by expanding the bracket for the lower rate and reducing the upper rate. These changes apply to tax years 2026 and 2027, as shown below:',
     }, {
       kind: 'stateAgencyPublication',
-      citation: 'Montana DOR, HB337 — Tax Year 2026 Income Tax Brackets table',
+      citation: 'Montana DOR, HB337: Tax Year 2026 Income Tax Brackets table',
       url: 'https://revenuefiles.mt.gov/news/recent-news/HB-337',
       quotedText:
         'Tax Year 2026 Income Tax Brackets\nTax Year 2026 – Montana Individual Income Tax Rates\nTax rate on taxable income*\nMarried filing Jointly and Surviving Spouse\nHead of Household\nSingle and Married filing Separately\n4.7% on taxable income*\n$0.00 to $95,000\n$0.00 to $71,250\n$0.00 to $47,500\n5.65% on taxable income*\nover $95,000\nover $71,250\nover $47,500',
     }, {
       kind: 'stateAgencyPublication',
-      citation: 'Montana DOR, HB337 — ordinary-income scope note',
+      citation: 'Montana DOR, HB337: ordinary-income scope note',
       url: 'https://revenuefiles.mt.gov/news/recent-news/HB-337',
       quotedText:
         '*taxable income does not include long-term capital gains',
@@ -1074,7 +1074,7 @@ export const westStateRecords = {
     contraryReading: null,
     errorDirection: 'bothDirections',
     conventionRationale:
-      'The signed gap at LRO boundary coordinates is +$0.125 at single $4,550 taxable, −$0.50 at single $11,400, +$0.25 at joint $9,100, and $0 at joint $22,800 — so the continuous engine neither uniformly over- nor under-states relative to LRO\'s printed whole-dollar table. This record registers the continuous-breakpoint representation authorized for the current single/MFJ pack fields and does not claim exact replication of Oregon\'s printed table or whole-return fidelity. Primary gate evidence is LRO Report #1-26; final resident-return closure is outside this record. The record expires after TY2026.',
+      'The signed gap at LRO boundary coordinates is +$0.125 at single $4,550 taxable, −$0.50 at single $11,400, +$0.25 at joint $9,100, and $0 at joint $22,800, so the continuous engine neither uniformly over- nor under-states relative to LRO\'s printed whole-dollar table. This record registers the continuous-breakpoint representation authorized for the current single/MFJ per-state parameter fields and does not claim exact replication of Oregon\'s printed table or whole-return fidelity. Primary gate evidence is LRO Report #1-26; final resident-return closure is outside this record. The record expires after TY2026.',
     jurisdiction: 'state:OR',
     authority: [{
       kind: 'statute',
@@ -1404,7 +1404,7 @@ export const westStateRecords = {
   },
 
   'wa-dor-no-broad-individual-income-tax': {
-    title: 'Washington has no broad individual income-tax figure in this pack',
+    title: 'Washington has no broad individual income-tax figure in the per-state tax data',
     statement:
       'Washington\'s staged Department of Revenue page describes a capital-gains excise that applies only to individuals and only on sales or exchanges of long-term capital assets under RCW 82.87, not a broad tax on wages, pensions, IRA distributions, or Social Security. The pack therefore keeps `hasIncomeTax: false`, so the ordinary-income state-tax path returns zero and `capitalGainsAsOrdinary: true` is inert on that path. The separate capital-gains excise levy itself is registered at `wa-rcw-82-87-capital-gains-excise` and is not settled by this record.',
     classification: 'settled',

@@ -345,7 +345,7 @@ function GiftDraftForm({
       <div className="nested-form-section field-span-full">
         <h4>What you&apos;re telling the model about this gift</h4>
         <p className="card-hint">
-          RetireGolden models this gift only when all five are true. It cannot check them — those
+          RetireGolden models this gift only when all five are true. It cannot check them; those
           answers come from your custodian and the charity.
         </p>
         <div className="form-grid">

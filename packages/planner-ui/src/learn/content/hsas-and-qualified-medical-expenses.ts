@@ -35,7 +35,7 @@ export const blocks: ArticleBlock[] = [
     caption: 'Three different HSA questions.',
     columns: ['Question', 'Planning answer', 'RetireGolden treatment'],
     rows: [
-      ['Can I contribute?', 'Depends on HSA eligibility and annual limits', 'Contributions are capped by the parameter pack'],
+      ['Can I contribute?', 'Depends on HSA eligibility and annual limits', 'Contributions are capped by the parameter set'],
       ['Can money grow?', 'Yes, depending on the account and investments chosen', 'Balance grows using the account return assumption'],
       ['Can I withdraw tax-free?', 'Only for qualified medical expenses with proper records', 'The app does not certify expenses or store receipts'],
       ['What if I use it for non-medical needs?', 'Tax and penalties can apply, especially before age 65', 'Forced pre-65 non-medical HSA withdrawals can trigger a modeled penalty'],

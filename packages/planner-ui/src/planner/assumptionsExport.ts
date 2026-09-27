@@ -300,7 +300,7 @@ function strategyGroup(plan: Plan): AssumptionGroup {
 function taxParametersGroup(): AssumptionGroup {
   return {
     id: 'tax-parameters',
-    label: `Tax & benefit parameters (${LATEST_PACK_YEAR} pack)`,
+    label: `Tax & benefit parameters (${LATEST_PACK_YEAR} parameter set)`,
     rows: PARAMETER_PROVENANCE.map((s) => ({
       id: s.id,
       label: s.label,
@@ -359,7 +359,7 @@ export function assumptionsExportText(snapshot: AssumptionsSnapshot): string {
   const sourceById = new Map(PARAMETER_PROVENANCE.map((s) => [s.id, s]))
   const lines: string[] = [
     `RetireGolden assumptions, ${snapshot.planName}`,
-    `Tax parameters: ${snapshot.packYear} pack, compiled ${snapshot.dataAsOf}.`,
+    `Tax parameters: ${snapshot.packYear} parameter set, compiled ${snapshot.dataAsOf}.`,
     '',
   ]
   for (const group of snapshot.groups) {

@@ -965,7 +965,7 @@ describe('RetirementActionsEditor', () => {
 
     expect(mounted.container.textContent).toContain('Needs source review')
     expect(mounted.container.textContent).toContain(
-      'Manual review required — QCD source editing is not supported yet.',
+      'Manual review required: QCD source editing is not supported yet.',
     )
     // The row renders the engine's sentence, and the engine's sentence is now
     // about the aggregate kind rather than about a missing allocator arm: the

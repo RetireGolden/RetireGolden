@@ -96,7 +96,7 @@ export const northeastStateRecords = {
     jurisdiction: 'state:PA',
     authority: [{
       kind: 'stateAgencyPublication',
-      citation: 'Pennsylvania Department of Revenue, Personal Income Tax Guide — Gross Compensation, Income Items Never Taxable as PA Compensation',
+      citation: 'Pennsylvania Department of Revenue, Personal Income Tax Guide: Gross Compensation, Income Items Never Taxable as PA Compensation',
       url: 'https://www.pa.gov/agencies/revenue/forms-and-publications/pa-personal-income-tax-guide/gross-compensation',
       quotedText:
         'Income Items Never Taxable as PA Compensation \u2026 Retirement income, such as: distributions from eligible Pennsylvania retirement plans* after retirement age; Social Security payments; railroad retirement benefits',
@@ -169,19 +169,19 @@ export const northeastStateRecords = {
     jurisdiction: 'state:NY',
     authority: [{
       kind: 'stateAgencyPublication',
-      citation: 'New York State Department of Taxation and Finance, Information for retired persons — Pensions of New York State, local governments, and the federal government',
+      citation: 'New York State Department of Taxation and Finance, Information for retired persons: Pensions of New York State, local governments, and the federal government',
       url: 'https://www.tax.ny.gov/pit/file/information_for_seniors.htm',
       quotedText:
         'If you received a pension or other distribution from a New York State or local government pension plan or federal government pension plan, you may subtract the amount of distribution that was included in your federal adjusted gross income, regardless of your age or of the form the payment(s) take.',
     }, {
       kind: 'stateAgencyPublication',
-      citation: 'New York State Department of Taxation and Finance, Information for retired persons — federal government pensions including military',
+      citation: 'New York State Department of Taxation and Finance, Information for retired persons: federal government pensions including military',
       url: 'https://www.tax.ny.gov/pit/file/information_for_seniors.htm',
       quotedText:
         'The United States, its territories, possessions (or political subdivisions thereof), or any agency, instrumentality of the United States (including the military), or the District of Columbia.',
     }, {
       kind: 'stateAgencyPublication',
-      citation: 'New York State Department of Taxation and Finance, Information for retired persons — Optional Retirement Program limitation',
+      citation: 'New York State Department of Taxation and Finance, Information for retired persons: Optional Retirement Program limitation',
       url: 'https://www.tax.ny.gov/pit/file/information_for_seniors.htm',
       quotedText:
         'New York State, including the State and City Universities of New York and the New York State Education Department, who belongs to the Optional Retirement Program. Optional Retirement Program members may only subtract that portion attributable to employment with the State or City University of New York or the New York State Education Department.',
@@ -211,23 +211,23 @@ export const northeastStateRecords = {
       'Department guidance ties the full subtraction to qualifying New York State, local, or federal-government issuers and, for Optional Retirement Program members, to the employment-attributable portion only. A $60,000 ORP distribution fully included in federal adjusted gross income but entirely outside SUNY, CUNY, or New York State Education Department employment adds $60,000 to New York adjusted gross income relative to the same household without that distribution; age 40 keeps the private $20,000 exclusion from applying.',
     errorDirection: 'understatesTax',
     conventionRationale:
-      'The public bucket is one `{ kind: \'full\' }` flag because `pensionSchema.source` carries no issuer, plan, or ORP portion facts and `annualPensionAndAnnuityIncome` routes explicit `source: \'public\'` to `publicPensionIncome` without validating them. The pin uses the 2026 observed model window — baseline ordinary income $90,000 at age 40, scenario ordinary income $150,000 with $60,000 routed `publicPensionIncome` — not a new enactment. Absolute totals of $82,000 in both limbs on main are a routing observation, not the legal oracle.',
+      'The public bucket is one `{ kind: \'full\' }` flag because `pensionSchema.source` carries no issuer, plan, or ORP portion facts and `annualPensionAndAnnuityIncome` routes explicit `source: \'public\'` to `publicPensionIncome` without validating them. The pin uses the 2026 observed model window (baseline ordinary income $90,000 at age 40, scenario ordinary income $150,000 with $60,000 routed `publicPensionIncome`), not a new enactment. Absolute totals of $82,000 in both limbs on main are a routing observation, not the legal oracle.',
     jurisdiction: 'state:NY',
     authority: [{
       kind: 'stateAgencyPublication',
-      citation: 'New York State Department of Taxation and Finance, Information for retired persons — Pensions of New York State, local governments, and the federal government',
+      citation: 'New York State Department of Taxation and Finance, Information for retired persons: Pensions of New York State, local governments, and the federal government',
       url: 'https://www.tax.ny.gov/pit/file/information_for_seniors.htm',
       quotedText:
         'If you received a pension or other distribution from a New York State or local government pension plan or federal government pension plan, you may subtract the amount of distribution that was included in your federal adjusted gross income, regardless of your age or of the form the payment(s) take.',
     }, {
       kind: 'stateAgencyPublication',
-      citation: 'New York State Department of Taxation and Finance, Information for retired persons — federal government pensions including military',
+      citation: 'New York State Department of Taxation and Finance, Information for retired persons: federal government pensions including military',
       url: 'https://www.tax.ny.gov/pit/file/information_for_seniors.htm',
       quotedText:
         'The United States, its territories, possessions (or political subdivisions thereof), or any agency, instrumentality of the United States (including the military), or the District of Columbia.',
     }, {
       kind: 'stateAgencyPublication',
-      citation: 'New York State Department of Taxation and Finance, Information for retired persons — Optional Retirement Program limitation',
+      citation: 'New York State Department of Taxation and Finance, Information for retired persons: Optional Retirement Program limitation',
       url: 'https://www.tax.ny.gov/pit/file/information_for_seniors.htm',
       quotedText:
         'New York State, including the State and City Universities of New York and the New York State Education Department, who belongs to the Optional Retirement Program. Optional Retirement Program members may only subtract that portion attributable to employment with the State or City University of New York or the New York State Education Department.',
@@ -263,7 +263,7 @@ export const northeastStateRecords = {
     jurisdiction: 'state:NY',
     authority: [{
       kind: 'stateAgencyPublication',
-      citation: 'New York State Department of Taxation and Finance, Information for retired persons — Social Security',
+      citation: 'New York State Department of Taxation and Finance, Information for retired persons: Social Security',
       url: 'https://www.tax.ny.gov/pit/file/information_for_seniors.htm',
       quotedText:
         'Social security benefits that are included in federal adjusted gross income may be subtracted from your federal adjusted gross income when computing your New York adjusted gross income.',
@@ -301,13 +301,13 @@ export const northeastStateRecords = {
     jurisdiction: 'state:NY',
     authority: [{
       kind: 'stateAgencyPublication',
-      citation: 'New York State Department of Taxation and Finance, Information for retired persons — Railroad Retirement benefits (IT-225 code S-122)',
+      citation: 'New York State Department of Taxation and Finance, Information for retired persons: Railroad Retirement benefits (IT-225 code S-122)',
       url: 'https://www.tax.ny.gov/pit/file/information_for_seniors.htm',
       quotedText:
         'If you included in your federal adjusted gross income either: supplemental annuity or Tier 2 benefits received under the Railroad Retirement Act of 1974, or benefits received under the Railroad Unemployment Insurance Act, and those benefits are exempt from state income taxes under Title 45 of the United States Code, you may subtract the amount of those benefits from your federal adjusted gross income when computing your New York adjusted gross income using Form IT-225 . See IT-225-I, New York State Modifications, code S-122 Certain railroad retirement income and railroad unemployment insurance benefits.',
     }, {
       kind: 'stateAgencyPublication',
-      citation: 'New York State Department of Taxation and Finance, Information for retired persons — Social Security equivalent Railroad Retirement benefits',
+      citation: 'New York State Department of Taxation and Finance, Information for retired persons: Social Security equivalent Railroad Retirement benefits',
       url: 'https://www.tax.ny.gov/pit/file/information_for_seniors.htm',
       quotedText:
         'Social Security equivalent Tier 1 railroad retirement benefits that are included in federal adjusted gross income may be subtracted from your federal adjusted gross income when computing your New York adjusted gross income.',
@@ -335,7 +335,7 @@ export const northeastStateRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'This record settles only the published-basic-plus-age-65-addition component for tax years beginning 2026. The combined total is then subject to the §5124-C(2) phase-out through sibling `mrs-36-5124-c-2-standard-deduction-phaseout`. The unmodeled personal exemption can move complete-return tax the other way, so this record does not assert a net Form 1040ME tax direction. Pre-2026 inputs use the sole 2026 state pack as a parameter stand-in and are not certified historical Maine dollar amounts; projected future age amounts scale with assumed plan inflation rather than a statutory COLA oracle. It does not register Maine\'s personal exemption, blindness (not modeled — the engine\'s age counter drives only IRC 63(f) age relief, not blindness), head-of-household amounts, or any other return line. A fixture taxable income in this subset is pack taxable income, not Form 1040ME taxable income. The statutory $12,000 basic in §5124-C(1-B)(A) is the statutory base subject to index; the pack\'s $15,700 / $31,400 are the MRS-published figures for 2026 — reconciling that indexed statutory base to the published table is separate research beyond this record. Maine must NOT be tagged `standardDeductionConformity: \'federal\'`: that tag federally scales a borrowed basic amount and is not how Maine adopts only the federal age additional amount while setting its own basic. The federal conformity sibling (`irc-63-c-7-B-ii-conformed-state-deduction-tracks-federal`) does not decide Maine\'s roster; decoupling the basic is untagging, while Maine\'s IRC 63(c)(3)/63(f)(1) age adoption is registered here. Implementation is filing-status-scoped to single and married amounts the engine models; MFS and HOH are not represented.',
+      'This record settles only the published-basic-plus-age-65-addition component for tax years beginning 2026. The combined total is then subject to the §5124-C(2) phase-out through sibling `mrs-36-5124-c-2-standard-deduction-phaseout`. The unmodeled personal exemption can move complete-return tax the other way, so this record does not assert a net Form 1040ME tax direction. Pre-2026 inputs use the sole 2026 per-state tax data as a parameter stand-in and are not certified historical Maine dollar amounts; projected future age amounts scale with assumed plan inflation rather than a statutory COLA oracle. It does not register Maine\'s personal exemption, blindness (not modeled; the engine\'s age counter drives only IRC 63(f) age relief, not blindness), head-of-household amounts, or any other return line. A test’s taxable income in this subset is taxable income computed from the per-state tax data, not Form 1040ME taxable income. The statutory $12,000 basic in §5124-C(1-B)(A) is the statutory base subject to index; the $15,700 / $31,400 in the per-state tax data are the MRS-published figures for 2026. Reconciling that indexed statutory base to the published table is separate research beyond this record. Maine must NOT be tagged `standardDeductionConformity: \'federal\'`: that tag federally scales a borrowed basic amount and is not how Maine adopts only the federal age additional amount while setting its own basic. The federal conformity sibling (`irc-63-c-7-B-ii-conformed-state-deduction-tracks-federal`) does not decide Maine\'s roster; decoupling the basic is untagging, while Maine\'s IRC 63(c)(3)/63(f)(1) age adoption is registered here. Implementation is filing-status-scoped to single and married amounts the engine models; MFS and HOH are not represented.',
     jurisdiction: 'state:ME',
     authority: [{
       kind: 'statute',
@@ -416,7 +416,7 @@ export const northeastStateRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'Narrow formula record: it settles the §5124-C(2) proportional reduction of the already-determined total standard deduction once annual Maine AGI and the applicable published start/range parameters are supplied. It does not certify construction of Maine AGI, Form 1040ME additions or subtractions, the personal exemption, blindness, or any other return line — a fixture taxable income here is the modeled pack taxable-income component after that phased standard deduction, not Form 1040ME taxable income. The StateTax consumer remains partial: the engine\'s modeled Maine AGI is a proxy (§5122 additions not all representable), and part-year residency is the existing month-proration approximation rather than certified statutory apportionment — but the annual phase-out fraction is now chosen from full-year modeled income before residency scaling, so split-year segments no longer compare prorated income to annual thresholds. Effective 2026+; the sole 2026 pack is the parameter stand-in for other years. Starts are annually indexed under §5403(4) while the statutory range widths stay fixed; projected or historical pack fallbacks are nominal and are not certified future or historical Maine figures. The worksheet displays the fraction to four decimal places; this engine retains the exact ratio and does not claim cent-for-cent form reproduction at arbitrary incomes. Sibling `mrs-36-5124-c-1-b-decoupled-standard-deduction` remains the basic-plus-age component before this phase-out. Implementation is filing-status-scoped to single and married amounts the engine models; MFS and HOH are not represented.',
+      'Narrow formula record: it settles the §5124-C(2) proportional reduction of the already-determined total standard deduction once annual Maine AGI and the applicable published start/range parameters are supplied. It does not certify construction of Maine AGI, Form 1040ME additions or subtractions, the personal exemption, blindness, or any other return line; the test’s taxable income here is the taxable-income component modeled from the per-state tax data after that phased standard deduction, not Form 1040ME taxable income. The StateTax consumer remains partial: the engine\'s modeled Maine AGI is a proxy (§5122 additions not all representable), and part-year residency is the existing month-proration approximation rather than certified statutory apportionment; but the annual phase-out fraction is now chosen from full-year modeled income before residency scaling, so split-year segments no longer compare prorated income to annual thresholds. Effective 2026+; the per-state tax data carries only the 2026 parameters, and they are the parameter stand-in for other years. Starts are annually indexed under §5403(4) while the statutory range widths stay fixed; projected or historical parameter fallbacks are nominal and are not certified future or historical Maine figures. The worksheet displays the fraction to four decimal places; this engine retains the exact ratio and does not claim cent-for-cent form reproduction at arbitrary incomes. Sibling `mrs-36-5124-c-1-b-decoupled-standard-deduction` remains the basic-plus-age component before this phase-out. Implementation is filing-status-scoped to single and married amounts the engine models; MFS and HOH are not represented.',
     jurisdiction: 'state:ME',
     authority: [{
       kind: 'statute',
@@ -444,13 +444,13 @@ export const northeastStateRecords = {
         'For individuals filing married joint returns or surviving spouses permitted to file a joint return, the numerator is the taxpayer\'s Maine adjusted gross income less $160,000, except that the numerator may not be less than zero, and the denominator is $150,000. In no case may the fraction calculated pursuant to this paragraph produce a result that is more than one. The $160,000 amount used to calculate the numerator in this paragraph must be adjusted for inflation in accordance with section 5403, subsection 4.',
     }, {
       kind: 'stateAgencyPublication',
-      citation: 'MRS 2026 Estimated Tax Worksheet, Line 6a — Phaseout of Itemized / Standard Deductions Worksheet (rev. December 2025)',
+      citation: 'MRS 2026 Estimated Tax Worksheet, Line 6a: Phaseout of Itemized / Standard Deductions Worksheet (rev. December 2025)',
       url: 'https://www.maine.gov/revenue/sites/maine.gov.revenue/files/inline-files/26_item_stand_%20ded_phaseout_wksht_0.pdf',
       quotedText:
         'You must use this Worksheet to calculate the reduction of your standard deduction amount or itemized deduction amount if your estimated Maine adjusted gross income for 2026 is greater than $102,250 if single or married filing separately; $153,400 if head of household; or $204,550 if married filing jointly or qualifying surviving spouse.',
     }, {
       kind: 'stateAgencyPublication',
-      citation: 'MRS 2026 Estimated Tax Worksheet, Line 6a — Phaseout worksheet lines 7–8 (rev. December 2025)',
+      citation: 'MRS 2026 Estimated Tax Worksheet, Line 6a: Phaseout worksheet lines 7–8 (rev. December 2025)',
       url: 'https://www.maine.gov/revenue/sites/maine.gov.revenue/files/inline-files/26_item_stand_%20ded_phaseout_wksht_0.pdf',
       quotedText:
         'Multiply line 6 by line 5.…Subtract line 7 from line 6. Enter this amount on your 2026 Estimated Tax Worksheet, line 6a.',
@@ -483,7 +483,7 @@ export const northeastStateRecords = {
     contraryReading: null,
     errorDirection: 'bothDirections',
     conventionRationale:
-      'The July 2026 MRS Form 1040ES-ME instructions publish the exact 2026 maximum; the parameter refresh aligned the flat cap to $49,824. The statutory limbs in §5122(2)(M-2) and (M-3) still bound what the flat cap omits. M-3 phases on federal AGI against an indexed applicable amount defined in the quoted authority, not Maine\'s §5124-C standard-deduction phaseout. This record settles only that published TY2026 maximum and the lesser-of-benefits-included-in-federal-AGI limb for the nonmilitary deduction before offset and phaseout. It does not certify plan qualification under M-2, military separation under M-2(1)(b), the gross Social Security/RRB reduction, the M-3 AGI phaseout, per-recipient MFJ attribution, personal exemption, blindness, unsupported filing statuses, historical or future years, or whole Form 1040ME accuracy. A fixture taxable income here is modeled pack taxable income after the flat cap, not Form 1040ME taxable income. The gross-benefit offset remains unmodeled, so the with-offset fixture stays discriminating; `agesAlive.length` doubling remains unmodeled for MFJ one-recipient cases.',
+      'The July 2026 MRS Form 1040ES-ME instructions publish the exact 2026 maximum; the parameter refresh aligned the flat cap to $49,824. The statutory limbs in §5122(2)(M-2) and (M-3) still bound what the flat cap omits. M-3 phases on federal AGI against an indexed applicable amount defined in the quoted authority, not Maine\'s §5124-C standard-deduction phaseout. This record settles only that published TY2026 maximum and the lesser-of-benefits-included-in-federal-AGI limb for the nonmilitary deduction before offset and phaseout. It does not certify plan qualification under M-2, military separation under M-2(1)(b), the gross Social Security/RRB reduction, the M-3 AGI phaseout, per-recipient MFJ attribution, personal exemption, blindness, unsupported filing statuses, historical or future years, or whole Form 1040ME accuracy. The test’s taxable income here is taxable income modeled from the per-state tax data after the flat cap, not Form 1040ME taxable income. The gross-benefit offset remains unmodeled, so the with-offset test stays discriminating; `agesAlive.length` doubling remains unmodeled for MFJ one-recipient cases.',
     jurisdiction: 'state:ME',
     authority: [{
       kind: 'stateAgencyPublication',

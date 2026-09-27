@@ -45,6 +45,12 @@
  * engine's moneyLasts, "Through 2045 (runs short in 2046)" where it said
  * "Depletes in 2046" (under-saved-single; survivor-years and incomplete-data
  * likewise). No figure changed; report-model JSON goldens are unchanged.
+ * 2026-09-26: wording only (decision D-PUBLIC-RECORD-WORDING): the page title
+ * separator is a middle dot instead of a spaced hyphen, income rows read
+ * "Wages (Alex)" and "Social Security (Alex)" instead of "Wages - Alex", and
+ * the provenance rows say "parameter set" instead of "parameter pack", and
+ * the TIPS curve source in the appendix is "refreshed annually with the
+ * parameter sets". No figure in these goldens changed.
  */
 import { describe, expect, it } from 'vitest'
 

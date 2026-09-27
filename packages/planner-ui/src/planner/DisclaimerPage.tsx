@@ -64,7 +64,7 @@ export function DisclaimerPage() {
       <h2>Where the numbers come from</h2>
       <p>
         These are the defaults the engine applies. They are summaries at planning precision. See each linked source
-        for the authoritative figures. For the harnesses that check the engine itself against independent
+        for the authoritative figures. For the tests that check the engine itself against independent
         implementations, see <Link to="/how-tested">How RetireGolden is tested</Link>.
       </p>
       <ProvenancePanel />

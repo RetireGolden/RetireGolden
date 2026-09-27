@@ -110,7 +110,7 @@ export const medicareAndAcaRecords = {
     outputs: [],
     feeds: ['aca-modeled-allowable-ptc-annual', 'aca-economic-net-premium-annual'],
     statement:
-      'tax/aca.ts#acaFederalPovertyLine, #acaApplicablePct and #acaEconomicPremiumByMonth compute the 2026 expected annual benchmark-premium contribution as household MAGI times the piecewise-linear applicable percentage selected from MAGI as a percentage of the regional poverty line. The poverty line is the first-person amount plus one additional-person amount for each member past the first; the applicable percentage is interpolated between pack breakpoints with a real step at exactly 133%. Units: nominal USD. Rounding: none stated.',
+      'tax/aca.ts#acaFederalPovertyLine, #acaApplicablePct and #acaEconomicPremiumByMonth compute the 2026 expected annual benchmark-premium contribution as household MAGI times the piecewise-linear applicable percentage selected from MAGI as a percentage of the regional poverty line. The poverty line is the first-person amount plus one additional-person amount for each member past the first; the applicable percentage is interpolated between breakpoints from the tax parameters with a real step at exactly 133%. Units: nominal USD. Rounding: none stated.',
     formula: {
       expression: 'FPL = (first + (h - 1) x perAdditional) x fplScale; f = 100 x M / FPL; C = M x r(f) / 100',
       variables: [
@@ -128,7 +128,7 @@ export const medicareAndAcaRecords = {
     },
     limits: [
       'The contribution is an intermediate: no census family publishes it, and it is visible only through the credit and the net premium it produces',
-      'The applicable-percentage curve is linear between published breakpoints with a discontinuous step at exactly 133%; it is the pack\'s reproduction of a published table, not a statutory formula',
+      'The applicable-percentage curve is linear between published breakpoints with a discontinuous step at exactly 133%; it is the tax parameters’ reproduction of a published table, not a statutory formula',
     ],
     implementedBy: ['packages/engine/src/tax/aca.ts'],
     implementedByFunctions: [
@@ -224,7 +224,7 @@ export const medicareAndAcaRecords = {
       variables: [
         { symbol: 'base', meaning: 'year2026.medicare.partBStandardMonthly', unit: 'usd/person/month', domain: 'positive' },
         { symbol: 'applicablePct', meaning: 'Beneficiary share of program cost; 25 at tier 0', unit: 'percent', domain: '25 <= applicablePct <= 85' },
-        { symbol: 'premiumScale', meaning: 'Healthcare-inflation scale to the premium year', unit: '1', domain: 'positive; 1 in the pack year' },
+        { symbol: 'premiumScale', meaning: 'Healthcare-inflation scale to the premium year', unit: '1', domain: 'positive; 1 in the year of the published parameters' },
       ],
       timing: 'one premium year, per covered person',
       rounding: 'none stated',
@@ -235,7 +235,7 @@ export const medicareAndAcaRecords = {
     },
     limits: [
       'Per person, not per household: a two-person Medicare year charges this twice',
-      'The Part D out-of-pocket threshold the pack also carries is not a premium and never enters this figure',
+      'The Part D out-of-pocket threshold the published parameters also carry is not a premium and never enters this figure',
     ],
     implementedBy: ['packages/engine/src/tax/medicare.ts'],
     implementedByFunctions: ['packages/engine/src/tax/medicare.ts#medicareAnnualPremiumPerPerson'],
@@ -332,7 +332,7 @@ export const medicareAndAcaRecords = {
     },
     limits: [
       'Asserted on real simulatePlan runs rather than at a seam. The positive case is a real plan whose single year realizes all five terms exactly as the worksheet states them (a recurring ordinary stream, a one-time capital-gain income, a taxable account whose wholly qualified dividend yield and municipal sleeve carry the third and fifth terms, and a Social Security benefit sized so that section 86 makes exactly the fourth taxable, with cost basis equal to balance so nothing else can realize a gain), and the published magi is checked against that year\'s own published components',
-      'The floor case is the only negative sum the ledger can reach: a deductible capital loss on the capital line with nothing else realized, because the ordinary-income term is applyCapitalLossCarryforward\'s ordinaryAfter and is floored at zero. The worksheet\'s first floor case gave ordinary income realized as minus 10,000, which that floor rules out; it was re-derived on the reachable path (a 20,000 carryforward carried into a year that realizes nothing else deducts the 3,000 annual limit on the capital line) and re-checked, and the fixture builds that year and checks each of the five terms and the published magi against the worksheet\'s inputs',
+      'The floor case is the only negative sum the ledger can reach: a deductible capital loss on the capital line with nothing else realized, because the ordinary-income term is applyCapitalLossCarryforward\'s ordinaryAfter and is floored at zero. The worksheet\'s first floor case gave ordinary income realized as minus 10,000, which that floor rules out; it was re-derived on the reachable path (a 20,000 carryforward carried into a year that realizes nothing else deducts the 3,000 annual limit on the capital line) and re-checked, and the test builds that year and checks each of the five terms and the published magi against the worksheet\'s inputs',
     ],
     implementedBy: [
       'packages/engine/src/projection/internal/types/result.ts',
@@ -353,7 +353,7 @@ export const medicareAndAcaRecords = {
     outputs: ['scenario-irmaa-surcharge-tier-years'],
     feeds: ['scenario-comparison-cell'],
     statement:
-      'For each side, surchargeTierYears = count of projection years whose published irmaaTier is strictly greater than 0 (tier 0 is the standard premium; tiers 1–5 are surcharge tiers). The comparison is the integer triple (baseline count, proposal count, proposal − baseline). Units: year counts. Rounding: none — exact integers.',
+      'For each side, surchargeTierYears = count of projection years whose published irmaaTier is strictly greater than 0 (tier 0 is the standard premium; tiers 1–5 are surcharge tiers). The comparison is the integer triple (baseline count, proposal count, proposal − baseline). Units: year counts. Rounding: none (exact integers).',
     formula: {
       expression: 'count = sum_y 1[irmaaTier_y > 0]; delta = count_proposal − count_baseline',
       variables: [
@@ -382,7 +382,7 @@ export const medicareAndAcaRecords = {
     kind: 'composition',
     outputs: ['aca-gross-enrollment-premium-annual', 'aca-applicable-slcsp-premium-annual'],
     statement:
-      'YearAcaResult.grossEnrollmentPremium is the sum over all 12 months of every covered member\'s enrollment premium for that month (negatives floored at 0). YearAcaResult.applicableSlcspPremium sums that member\'s SLCSP benchmark premium only in months whose own enrollment premium is strictly above 0, so a benchmark quote in a month with no enrollment is excluded; it is null — not 0 — when the year carries no ACA contract, when contracts for the year are duplicated, or when an example plan\'s contract inputs mismatch. Units: nominal dollars per year, or null. Rounding: none.',
+      'YearAcaResult.grossEnrollmentPremium is the sum over all 12 months of every covered member\'s enrollment premium for that month (negatives floored at 0). YearAcaResult.applicableSlcspPremium sums that member\'s SLCSP benchmark premium only in months whose own enrollment premium is strictly above 0, so a benchmark quote in a month with no enrollment is excluded; it is null (not 0) when the year carries no ACA contract, when contracts for the year are duplicated, or when an example plan\'s contract inputs mismatch. Units: nominal dollars per year, or null. Rounding: none.',
     formula: {
       expression: 'gross = sum_m sum_i max(0, E_i,m); applicable = sum_m sum_i [E_i,m > 0] max(0, B_i,m)',
       variables: [
@@ -401,7 +401,7 @@ export const medicareAndAcaRecords = {
       'The monthly gate is per MEMBER, not per household: a month can be applicable for one member and not another, which a household-level test would miss',
       'The null case is asserted by turning the credit on with no contract for the year; the same null is produced by duplicate contracts and by an example-contract mismatch, which the evidence does not construct',
       'These two totals are inputs to the credit, not the credit: the allowable PTC and the economic net premium are separate families with their own records',
-      'The monthly gate is applied where the per-member arrays are assembled, annualHealthcareExpenses.ts, and annualAcaResultPublication.ts sums the gated arrays onto YearAcaResult, which is what the fixture reads and what the receipt mutates; tax/aca.ts#acaEconomicPremiumByMonth repeats the gate for the credit and is the allowable-PTC record\'s site, not this one\'s',
+      'The monthly gate is applied where the per-member arrays are assembled, annualHealthcareExpenses.ts, and annualAcaResultPublication.ts sums the gated arrays onto YearAcaResult, which is what the test reads and what the receipt mutates; tax/aca.ts#acaEconomicPremiumByMonth repeats the gate for the credit and is the allowable-PTC record\'s site, not this one\'s',
     ],
     implementedBy: [
       'packages/engine/src/projection/internal/annualHealthcareExpenses.ts',
@@ -422,7 +422,7 @@ export const medicareAndAcaRecords = {
     kind: 'composition',
     outputs: ['spending-healthcare-annual'],
     statement:
-      'YearResult.expenses.healthcare adds, for each LIVING person: the tier-priced annual Medicare premium (Part B plus any Part D IRMAA surcharge, itself scaled by the healthcare factor from the pack year to this year) prorated by Medicare months / 12, plus medicareExtrasMonthlyPerPerson x Medicare months x the healthcare inflation factor from the start year, plus — with the ACA credit OFF — pre65MonthlyPremiumPerPerson x marketplace months x that same factor. Medicare months are 12 minus marketplace months, and marketplace months are 12 below 65, birth month minus 1 in the year 65 is attained, and 0 after. With the credit ON the marketplace component instead enters the ACA gross enrollment premium during the solve, and a converged fixed point republishes healthcare excluding enrollment plus the economic net premium (gross premium on non-convergence). Units: nominal dollars per year. Rounding: none.',
+      'YearResult.expenses.healthcare adds, for each LIVING person: the tier-priced annual Medicare premium (Part B plus any Part D IRMAA surcharge, itself scaled by the healthcare factor from the year of the published parameters to this year) prorated by Medicare months / 12, plus medicareExtrasMonthlyPerPerson x Medicare months x the healthcare inflation factor from the start year, plus (with the ACA credit OFF) pre65MonthlyPremiumPerPerson x marketplace months x that same factor. Medicare months are 12 minus marketplace months, and marketplace months are 12 below 65, birth month minus 1 in the year 65 is attained, and 0 after. With the credit ON the marketplace component instead enters the ACA gross enrollment premium during the solve, and a converged fixed point republishes healthcare excluding enrollment plus the economic net premium (gross premium on non-convergence). Units: nominal dollars per year. Rounding: none.',
     formula: {
       expression: 'healthcare = sum_p [ P_tier(p) x M_p/12 + extras x M_p x h + premium x A_p x h ], M_p = 12 - A_p',
       variables: [
@@ -439,7 +439,7 @@ export const medicareAndAcaRecords = {
     },
     limits: [
       'The worksheet\'s household is constructible on one plan as it now stands: the second person\'s 4 marketplace months and 8 Medicare months partition that person\'s year, so a March-1958 birth (12 Medicare months) and a May-1961 birth (4 marketplace, 8 Medicare) are one household whose published healthcare is $8,831.20. The first derivation gave the second person the 4 marketplace months with no Medicare months and totalled $6,002.72, an impossible annual partition; it was corrected on 2026-09-18, and $6,002.72 is now the worksheet\'s third wrong reading, asserted as not matching',
-      'Beyond the worksheet\'s inputs the evidence plans fix: startYear 2025 with the asserted row in 2026, inflationPct 0 and healthcareExtraInflationPct 10, so the factor from the start year is 1.10 while the factor from the pack year (2026) to the asserted year is 1 — which is what leaves the tier-priced premium unscaled while extras and the marketplace premium are scaled, the distinction the worksheet\'s first wrong reading names. Each person\'s own component is asserted on that person\'s own single-filer plan, and the household plan asserts the total and the 12 + 8 Medicare months behind it',
+      'Beyond the worksheet\'s inputs the evidence plans fix: startYear 2025 with the asserted row in 2026, inflationPct 0 and healthcareExtraInflationPct 10, so the factor from the start year is 1.10 while the factor from the year of the published parameters (2026) to the asserted year is 1; this is what leaves the tier-priced premium unscaled while extras and the marketplace premium are scaled, the distinction the worksheet\'s first wrong reading names. Each person\'s own component is asserted on that person\'s own single-filer plan, and the household plan asserts the total and the 12 + 8 Medicare months behind it',
       'Tier 1 is reached through assumptions.recentAnnualMagi, because the 2024 lookback year is before the projection and resolves to that plan fallback rather than to a projected MAGI. The two-person household files jointly, so it reaches the SAME tier 1 through the $218,000 joint threshold rather than the worksheet\'s $109,000 single threshold; the tier-priced premium is a function of the tier alone, so it is $3,582.72 either way',
       'The second person\'s marketplace component is read as healthcare minus medicarePremiums minus that person\'s extras, since the phase result itself is not published on the year row; the extras rule it subtracts is pinned independently by the first person, whose zero marketplace months make healthcare minus medicarePremiums the extras exactly',
       'The credit-on branch carries no numeric expectation: the worksheet states none without a complete ACA quote and a converged fixed point',

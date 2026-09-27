@@ -25,7 +25,7 @@ describe('law pack drift detector', () => {
       evidence: [
         { label: 'Plan last-updated year', value: '2025', year: 2025 },
         { label: 'Active parameter year', value: '2026', year: 2026 },
-        { label: 'Parameter data vintage', value: PARAMETER_DATA_AS_OF },
+        { label: 'Parameter data as of', value: PARAMETER_DATA_AS_OF },
         { label: 'Parameter data basis', value: PARAMETER_DATA_BASIS },
       ],
     })

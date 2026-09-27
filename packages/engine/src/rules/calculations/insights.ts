@@ -16,7 +16,7 @@ export const insightsRecords = {
     kind: 'model',
     outputs: ['insight-annuitization-headroom-illustrative-spia'],
     statement:
-      'For a plan whose maximum planning age is at least 95, with a qualifying largest cash-or-taxable account of at least $100,000 and no annuity or pension covering the floor: premium = min(0.25 × liquidBalance, $250,000); monthly payout = premium × spiaPayoutRate(startAge) / 12, where startAge = min(95, max(currentAge, 65)). Units: nominal dollars. Rounding: none — the production function returns a binary float, formatted to whole dollars only at the card.',
+      'For a plan whose maximum planning age is at least 95, with a qualifying largest cash-or-taxable account of at least $100,000 and no annuity or pension covering the floor: premium = min(0.25 × liquidBalance, $250,000); monthly payout = premium × spiaPayoutRate(startAge) / 12, where startAge = min(95, max(currentAge, 65)). Units: nominal dollars. Rounding: none; the production function returns a binary float, formatted to whole dollars only at the card.',
     formula: {
       expression: 'premium = min(0.25 L, 250000); monthly = premium × r(startAge) / 12',
       variables: [
@@ -55,7 +55,7 @@ export const insightsRecords = {
         { symbol: 'id', meaning: 'Generator candidate identifier, in generator order', unit: '1', domain: 'string' },
         { symbol: 'swappedDollars', meaning: 'Class exposure the selected candidate relocates between wrappers', unit: 'usd', domain: '>= 0, or absent' },
       ],
-      timing: 'screen-time metadata of a bounded swap; the estate delta is ignored here and priced on the exact ledger by evaluate()',
+      timing: 'screen-time metadata of a bounded swap; the estate delta is ignored here and priced on the full year-by-year projection by evaluate()',
       rounding: 'the generator rounds swapped dollars to whole dollars; the card publishes whole-dollar strings (formatWholeUsd, Math.round) and the evidence asserts the published figure',
     },
     justification: {
@@ -65,7 +65,7 @@ export const insightsRecords = {
     limits: [
       'A screening choice, not a claim that asset location always helps',
       'screen() never prices candidates; selection is by preferred id then generator position, independent of exposure size',
-      'The largest-positive ending-after-tax-estate-delta rule belongs to evaluate(), which runs the exact ledger, not to this published screen quantity',
+      'The largest-positive ending-after-tax-estate-delta rule belongs to evaluate(), which runs the full year-by-year projection, not to this published screen quantity',
     ],
     implementedBy: ['packages/engine/src/insights/detectors/assetLocation.ts'],
     implementedByFunctions: ['packages/engine/src/insights/detectors/assetLocation.ts#assetLocation.screen'],
@@ -96,7 +96,7 @@ export const insightsRecords = {
     },
     limits: [
       'An illustration from the published age factor, not a lender quote or a claim the line is valuable on the deterministic path',
-      'The worksheet supplies the already-resolved principal-limit factor of 45% at age 65; the evidence passes that factor through rather than re-reading the pack table (the 2026 pack\'s age-65 factor is 37.2%)',
+      'The worksheet supplies the already-resolved principal-limit factor of 45% at age 65; the evidence passes that factor through rather than re-reading the table in the published parameters (the age-65 factor in the 2026 parameters is 37.2%)',
     ],
     implementedBy: ['packages/engine/src/insights/detectors/hecmBufferCandidate.ts'],
     implementedByFunctions: ['packages/engine/src/insights/detectors/hecmBufferCandidate.ts#hecmBufferCandidate.screen'],
@@ -132,7 +132,7 @@ export const insightsRecords = {
     limits: [
       'A rough avoidance signal, not a claim that reducing current-year income changes a premium already charged',
       'The worksheet supplies the already-resolved per-person premiums; the evidence passes those through rather than recomputing medicareAnnualPremiumPerPerson',
-      'The detector only fires when MAGI is at most $5,000 over the next threshold; that proximity window is a screen, not part of the cliff identity',
+      'The Insight only fires when MAGI is at most $5,000 over the next threshold; that proximity window is a screen, not part of the cliff identity',
     ],
     implementedBy: ['packages/engine/src/insights/detectors/irmaaTierEdge.ts'],
     implementedByFunctions: ['packages/engine/src/insights/detectors/irmaaTierEdge.ts#irmaaTierEdge.screen'],
@@ -185,7 +185,7 @@ export const insightsRecords = {
         { symbol: 'bequestTarget', meaning: 'Bequest target in today\'s dollars (0 when unset)', unit: 'usd', domain: '>= 0' },
         { symbol: 'N', meaning: 'Year boundaries between the start and end years, max(1, endYear − startYear)', unit: 'years', domain: 'integer N >= 1' },
       ],
-      timing: 'straight-line over the remaining modeled years, before the exact-ledger solver',
+      timing: 'straight-line over the remaining modeled years, before the full-projection solver',
       rounding: 'the card publishes whole-dollar strings (formatWholeUsd, Math.round) and the evidence asserts the published figure; the quotient itself is not published',
     },
     justification: {
@@ -307,7 +307,7 @@ export const insightsRecords = {
     kind: 'formula',
     outputs: ['insight-impact-ending-after-tax-estate-delta', 'insight-impact-lifetime-tax-delta'],
     statement:
-      'decisions/evaluateCandidate.ts#evaluateCandidate prices the candidate on its own exact-ledger projection and subtracts the shared baseline in the same direction for both fields: endingAfterTaxEstateDelta = candidateSummary.endingAfterTaxEstate - baselineSummary.endingAfterTaxEstate, and lifetimeTaxDelta = candidateSummary.lifetimeTaxesAndPenalties - baselineSummary.lifetimeTaxesAndPenalties. The estate field\'s comment states that order outright and the lifetime-tax field defines a negative value as savings, which is the same convention: an estate improvement is positive and a tax saving is negative. Units: today\'s dollars. Rounding: none.',
+      'decisions/evaluateCandidate.ts#evaluateCandidate prices the candidate on its own full year-by-year projection and subtracts the shared baseline in the same direction for both fields: endingAfterTaxEstateDelta = candidateSummary.endingAfterTaxEstate - baselineSummary.endingAfterTaxEstate, and lifetimeTaxDelta = candidateSummary.lifetimeTaxesAndPenalties - baselineSummary.lifetimeTaxesAndPenalties. The estate field\'s comment states that order outright and the lifetime-tax field defines a negative value as savings, which is the same convention: an estate improvement is positive and a tax saving is negative. Units: today\'s dollars. Rounding: none.',
     formula: {
       expression: 'estateDelta = E_candidate - E_baseline; taxDelta = T_candidate - T_baseline',
       variables: [
@@ -322,10 +322,10 @@ export const insightsRecords = {
       worksheet: 'DOCS/calculations/insights/insight-impact-estate-and-lifetime-tax-deltas.md',
     },
     limits: [
-      'Beyond the worksheet\'s inputs the evidence plan fixes two real one-year projections that land on the worksheet\'s four summary figures exactly: a 1963-born single filer (over 59.5 so no early-distribution rule, under 65 so no Medicare premium) with one $1,800,000 traditional account, a flat 25% tax double, heirTaxRatePct 50, zero return and zero inflation, and base spending of $600,000 in the baseline against $555,000 in the candidate patch. At a flat rate r the withdrawal funding spending S is S / (1 - r) and the tax is r x that, and the estate is the remaining balance net of the heir rate',
-      'The flat calculator is a test double, never the shipped stack: it exists so the fixture can name exact dollars without recomputing federal law, and it must not be read as a tax result',
-      'Both deltas are differences of SUMMARIES, so they inherit every convention of summarizeProjection — the heir-tax haircut, charity carve-outs, and the fact that property, debts and ladder face ride through net worth without per-account estate rows',
-      'The irmaa-tier-edge detector writes its annual premium cliff into endingAfterTaxEstateDelta as an avoidance signal rather than an estate change; that exception belongs to that detector\'s own record and the evidence here does not exercise it',
+      'Beyond the worksheet\'s inputs the evidence plan fixes two real one-year projections that land on the worksheet\'s four summary figures exactly: a 1963-born single filer (over 59.5 so no early-distribution rule, under 65 so no Medicare premium) with one $1,800,000 traditional account, a flat 25% tax double, heirTaxRatePct 50, zero return and zero inflation, and base spending of $600,000 in the baseline against $555,000 in the candidate scenario. At a flat rate r the withdrawal funding spending S is S / (1 - r) and the tax is r x that, and the estate is the remaining balance net of the heir rate',
+      'The flat calculator is a test double, never the shipped stack: it exists so the test can name exact dollars without recomputing federal law, and it must not be read as a tax result',
+      'Both deltas are differences of SUMMARIES, so they inherit every convention of summarizeProjection: the heir-tax haircut, charity carve-outs, and the fact that property, debts and ladder face ride through net worth without per-account estate rows',
+      'The irmaa-tier-edge Insight writes its annual premium cliff into endingAfterTaxEstateDelta as an avoidance signal rather than an estate change; that exception belongs to that Insight’s own record and the evidence here does not exercise it',
     ],
     implementedBy: [
       'packages/engine/src/decisions/evaluateCandidate.ts',

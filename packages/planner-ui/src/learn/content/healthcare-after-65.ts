@@ -36,9 +36,9 @@ export const blocks: ArticleBlock[] = [
     caption: 'Post-65 healthcare costs are not all modeled the same way.',
     columns: ['Cost type', 'How to think about it', 'RetireGolden treatment'],
     rows: [
-      ['Part B premium', 'Common monthly Medicare premium', 'Added automatically from the parameter pack at 65+'],
+      ['Part B premium', 'Common monthly Medicare premium', 'Added automatically from the parameter set at 65+'],
       ['IRMAA', 'Income-related surcharge for higher MAGI', 'Modeled with the two-year lookback'],
-      ['Part D surcharge', 'Drug-plan-related IRMAA surcharge', 'Modeled from the parameter pack where available'],
+      ['Part D surcharge', 'Drug-plan-related IRMAA surcharge', 'Modeled from the parameter set where available'],
       ['Supplemental or Advantage premium', 'Plan-specific monthly cost', 'Enter as Medicare extras'],
       ['Out-of-pocket medical costs', 'Deductibles, copays, uncovered care', 'Include in broader spending or a separate goal/assumption'],
     ],

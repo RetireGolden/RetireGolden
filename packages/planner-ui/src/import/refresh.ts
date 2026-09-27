@@ -664,7 +664,7 @@ function dateFlagReview(candidate: RefreshCandidate, flag: RefreshSourceDateFlag
     source: candidate.source.accountLabel,
     detail:
       flag.kind === 'staleDate'
-        ? `This balance is dated ${candidate.source.asOfIso} — ${flag.ageDays} days ago; review it before applying. The flag does not block refresh.`
+        ? `This balance is dated ${candidate.source.asOfIso}, ${flag.ageDays} days ago; review it before applying. The flag does not block refresh.`
         : 'The broker file did not carry a readable as-of date; review this balance before applying it. The flag does not block refresh.',
     locator: aggregateLocator(flag.kind === 'staleDate' ? `broker as-of date ${candidate.source.asOfIso}` : 'broker as-of date unavailable'),
     confidence: 'assumed',

@@ -305,7 +305,7 @@ function EstateBeneficiaryFields({
     return (
       <p className="card-hint">
         Guaranteed income does not pass to the estate. What continues after a death comes from the contract
-        itself — a survivor benefit, guaranteed years, or a lump sum — not from an estate beneficiary.
+        itself (a survivor benefit, guaranteed years, or a lump sum), not from an estate beneficiary.
       </p>
     )
   }

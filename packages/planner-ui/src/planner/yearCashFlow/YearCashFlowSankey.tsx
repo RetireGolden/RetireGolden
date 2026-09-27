@@ -170,7 +170,7 @@ function toChartData(
     const value = displayAmount(year, link.amountPlanDollars)
     if (value <= 0) continue
     const amountLabel = fmtMoney(value)
-    const headline = `${link.kindLabel} - ${amountLabel}`
+    const headline = `${link.kindLabel}: ${amountLabel}`
     links.push({
       source,
       target,
@@ -228,7 +228,7 @@ export function YearCashFlowSankeyTooltip({
   if (fields.isLink) {
     return (
       <div className="year-cash-flow-sankey-tooltip" style={chartTooltipStyle}>
-        <div>{`${fields.kind} - ${fields.amountLabel || fmtMoney(fields.amount)}`}</div>
+        <div>{`${fields.kind}: ${fields.amountLabel || fmtMoney(fields.amount)}`}</div>
         {fields.label && fields.label !== fields.kind ? (
           <div className="small">{fields.label}</div>
         ) : null}

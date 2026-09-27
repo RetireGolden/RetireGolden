@@ -376,11 +376,11 @@ export function annuityStartAgeHelp(bounds: AnnuityStartAgeBounds | null): strin
   const helps = ifToggled > binding
   if (isQlac) {
     return helps
-      ? `A QLAC has to start paying by age ${binding}. To start later than that, untick "QLAC (qualified longevity annuity)" below — bought this late, an ordinary pre-tax purchase may start as late as age ${ifToggled}.`
+      ? `A QLAC has to start paying by age ${binding}. To start later than that, untick "QLAC (qualified longevity annuity)" below; bought this late, an ordinary pre-tax purchase may start as late as age ${ifToggled}.`
       : `A QLAC has to start paying by age ${binding}. Unticking "QLAC (qualified longevity annuity)" below would not buy a later start: a pre-tax purchase that is not a QLAC has to start by age ${ifToggled}.`
   }
   return helps
-    ? `A pre-tax annuity purchase has to start paying by age ${binding}. To start later than that, tick "QLAC (qualified longevity annuity)" below — a QLAC is the only kind of deferred annuity the IRA rules allow, and it has to start by age ${ifToggled}.`
+    ? `A pre-tax annuity purchase has to start paying by age ${binding}. To start later than that, tick "QLAC (qualified longevity annuity)" below; a QLAC is the only kind of deferred annuity the IRA rules allow, and it has to start by age ${ifToggled}.`
     : `A pre-tax annuity purchase has to start paying by age ${binding}. Ticking "QLAC (qualified longevity annuity)" below would not buy a later start: a QLAC has to start by age ${ifToggled}.`
 }
 

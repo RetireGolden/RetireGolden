@@ -34,7 +34,7 @@ export const contributionAndDeferralLimitRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The plan model carries an employer-plan balance only: traditionalAccountSchema\'s nondeductibleBasis is IRA-only, and the schema comment says employer-plan after-tax money is not modeled. After-tax employee basis exists only as runtime classifier evidence (afterTaxEmployeeBasisBeforeDistribution) on traditionalEmployerPlanWithdrawalCharacter, whose withdrawal character is basis return or ordinary income. The action contract rejects a NUA action kind. The action-kind refusal is covered in actions/contract.test.ts. Notice 98-24 now extends this record because its sale-side holding-period treatment is inseparable from the excluded NUA whose amount the Plan cannot state; it does not warrant a computed result or a separate record when the engine has neither the NUA/security facts nor the later sale facts.',
+      'The plan model carries an employer-plan balance only: traditionalAccountSchema\'s nondeductibleBasis is IRA-only, and the schema comment says employer-plan after-tax money is not modeled. After-tax employee basis exists only as runtime classifier evidence (afterTaxEmployeeBasisBeforeDistribution) on traditionalEmployerPlanWithdrawalCharacter, whose withdrawal character is basis return or ordinary income. The action contract rejects a NUA action kind. The action-kind refusal is covered in the action-contract tests (actions/contract.test.ts). Notice 98-24 now extends this record because its sale-side holding-period treatment is inseparable from the excluded NUA whose amount the Plan cannot state; it does not warrant a computed result or a separate record when the engine has neither the NUA/security facts nor the later sale facts.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -164,7 +164,7 @@ export const contributionAndDeferralLimitRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'Section 414(v)(2)(C)(i) adjusts the adjusted dollar amounts applicable under (E), so the amount produced by the greater-of test — 11,250 dollars for a non-SIMPLE plan in 2026 — is the indexed amount; the 10,000 dollar operand is not a separate projected leg. The 2026 pack therefore carries 11,250, and the ages-60-through-63 branch sends that operative amount and cumulative limitGrowth to indexWithStatutoryRounding, which floors the cumulative increase to a multiple of 500 dollars. limitGrowth follows the plan or Monte Carlo inflation path, not the statutory CPI series; it is measured from the 2026 parameter year rather than the calendar quarter beginning July 1, 2024, and the projection does not consume future IRS-published annual limits, so projected dollar amounts remain a planning approximation. Notice 2025-67 is consistent with the published 2026 amount; that the amount remained at 11,250 while the ordinary catch-up rose from 7,500 to 8,000 does not discriminate a permanently fixed amount from an indexed increase below a 500-dollar step. The age-55 HSA addition is registered separately because section 223(g) omits it from indexing entirely.',
+      'Section 414(v)(2)(C)(i) adjusts the adjusted dollar amounts applicable under (E), so the amount produced by the greater-of test (11,250 dollars for a non-SIMPLE plan in 2026) is the indexed amount; the 10,000 dollar operand is not a separate projected leg. The 2026 tax parameters therefore carry 11,250, and the ages-60-through-63 branch sends that operative amount and cumulative limitGrowth to indexWithStatutoryRounding, which floors the cumulative increase to a multiple of 500 dollars. limitGrowth follows the plan or Monte Carlo inflation path, not the statutory CPI series; it is measured from the 2026 parameter year rather than the calendar quarter beginning July 1, 2024, and the projection does not consume future IRS-published annual limits, so projected dollar amounts remain a planning approximation. Notice 2025-67 is consistent with the published 2026 amount; that the amount remained at 11,250 while the ordinary catch-up rose from 7,500 to 8,000 does not discriminate a permanently fixed amount from an indexed increase below a 500-dollar step. The age-55 HSA addition is registered separately because section 223(g) omits it from indexing entirely.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -361,7 +361,7 @@ export const contributionAndDeferralLimitRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'Section 219(c)(2)(B) is a strict-lesser compensation gate: section 219(c)(1) applies only when one spouse\'s compensation is less than the other\'s, so equal or higher earners remain on section 219(b)(1) alone. Each owner still faces the annual dollar limit ($7,500 in 2026 before age 50) regardless of pooling. The lesser earner\'s combined-compensation room is both spouses\' compensation minus the other spouse\'s traditional, designated nondeductible, and Roth IRA contributions already made (section 219(c)(1)(B)(ii)). When scarce room remains, competing requests apply in Plan account order — a modeling convention under scarcity, not a statutory priority rule. Pooling every living MFJ pair without the strict-lesser gate overfunds equal and higher earners; applying only each spouse\'s own wages denies the non-earning spouse an IRA the statute allows.',
+      'Section 219(c)(2)(B) is a strict-lesser compensation gate: section 219(c)(1) applies only when one spouse\'s compensation is less than the other\'s, so equal or higher earners remain on section 219(b)(1) alone. Each owner still faces the annual dollar limit ($7,500 in 2026 before age 50) regardless of pooling. The lesser earner\'s combined-compensation room is both spouses\' compensation minus the other spouse\'s traditional, designated nondeductible, and Roth IRA contributions already made (section 219(c)(1)(B)(ii)). When scarce room remains, competing requests apply in Plan account order (a modeling convention under scarcity, not a statutory priority rule). Pooling every living MFJ pair without the strict-lesser gate overfunds equal and higher earners; applying only each spouse\'s own wages denies the non-earning spouse an IRA the statute allows.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -565,7 +565,7 @@ export const contributionAndDeferralLimitRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The pack carries the published 2026 step. The projection now reads that figure for the 414(v)(7)(A) wage test; the character mandate and the Box 3 input proxy are registered separately at irc-414-v-7-A-high-earner-roth-catch-up-mandate and irc-414-v-7-A-prior-year-fica-wage-proxy. What remains settled here is the FIGURE and the five-thousand-dollar rounding, not the character of the catch-up.',
+      'The tax-year parameters carry the published 2026 step. The projection now reads that figure for the 414(v)(7)(A) wage test; the character mandate and the Box 3 input proxy are registered separately at irc-414-v-7-A-high-earner-roth-catch-up-mandate and irc-414-v-7-A-prior-year-fica-wage-proxy. What remains settled here is the FIGURE and the five-thousand-dollar rounding, not the character of the catch-up.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -603,7 +603,7 @@ export const contributionAndDeferralLimitRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The wage figure the engine compares to the threshold is a user-entered prior-calendar-year FICA amount on the employer account, not a Form W-2 Box 3 retrieved per sponsoring employer; that input gap is registered separately at irc-414-v-7-A-prior-year-fica-wage-proxy. Roth capability is inferred from the presence of a Roth employer account for the same owner, because the plan model has no employer identity and no qualified-Roth-contribution-program flag. Catch-up redirected onto that sibling remains elective deferral of the source plan for employer match. SEP and SIMPLE IRA are the IRA kind and never enter this allocator. Regular (non-catch-up) elective deferrals keep the account type the plan already states. Named-arm RMD coordination and the age-70½ proxy are outside this record. Desired incremental requests are not historical evidence — prior YTD amounts are the sibling prior-offset record.',
+      'The wage figure the engine compares to the threshold is a user-entered prior-calendar-year FICA amount on the employer account, not a Form W-2 Box 3 retrieved per sponsoring employer; that input gap is registered separately at irc-414-v-7-A-prior-year-fica-wage-proxy. Roth capability is inferred from the presence of a Roth employer account for the same owner, because the plan model has no employer identity and no qualified-Roth-contribution-program flag. Catch-up redirected onto that sibling remains elective deferral of the source plan for employer match. SEP and SIMPLE IRA are the IRA kind and never enter this allocator. Regular (non-catch-up) elective deferrals keep the account type the plan already states. Named-arm RMD coordination and the age-70½ proxy are outside this record. Desired incremental requests are not historical evidence; prior YTD amounts are the related prior-offset record.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -708,14 +708,14 @@ export const contributionAndDeferralLimitRecords = {
   },
 
   'irc-414-v-7-A-prior-year-fica-wage-proxy': {
-    title: 'The 414(v)(7) wage test uses a user-entered Box 3 proxy, and omission fails closed',
+    title: 'The 414(v)(7) wage test uses a user-entered Box 3 proxy, and an omitted entry is treated as zero',
     statement:
       'Section 414(v)(7)(A) turns on wages as defined in section 3121(a) from the employer sponsoring the plan for the preceding calendar year — Social Security wages reported in Form W-2 Box 3, not MAGI and not the section 414(q) highly compensated employee dollar amount. The plan model has no W-2 and no employer identity, so the engine compares a user-entered prior-calendar-year FICA wage figure on the employer account to the published threshold. When that field is omitted it defaults to zero, and a zero figure does not exceed the threshold, so the participant is treated as not subject. That is the statutory result for a new hire or a partner with only self-employment income, and it understates tax whenever the omitted Box 3 would have exceeded the threshold: the catch-up remains pre-tax, ordinary income and MAGI fall, and later section 86, ACA, and IRMAA readings follow the flatter income. Current-year wages are not substituted.',
     classification: 'approximated',
     contraryReading: null,
     errorDirection: 'understatesTax',
     conventionRationale:
-      'The mandate itself is enacted; the approximation is the input. Inferring Box 3 from current-year wages, MAGI, or the HCE test would invent a wage test the statute does not use and would over-apply the mandate to self-employment and to wages from a different employer. Leaving the field at zero matches T.D. 10033\'s no-FICA result and is the fail-closed reading the fixtures pin. The field is a single static figure for every contribution year 2026 and later; the engine does not reconstruct a year-by-year Box 3 series.',
+      'The mandate itself is enacted; the approximation is the input. Inferring Box 3 from current-year wages, MAGI, or the HCE test would invent a wage test the statute does not use and would over-apply the mandate to self-employment and to wages from a different employer. Leaving the field at zero matches T.D. 10033\'s no-FICA result and is the reading the engine’s own tests pin for a missing entry. The field is a single static figure for every contribution year 2026 and later; the engine does not reconstruct a year-by-year Box 3 series.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -761,7 +761,7 @@ export const contributionAndDeferralLimitRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'Most limits in the 415(d) family — including 402(g), the ordinary age-50 catch-up, and the 415(c)(1)(A) cap — multiply the pack figure by limitGrowth, the plan or Monte Carlo inflation path from the parameter year; neither path uses actual future IRS annual CPI determinations. The ages-60-through-63 catch-up is the exception: it sends the pack greater-of amount through indexWithStatutoryRounding, flooring the cumulative dollar increase to 500-dollar steps. Matching future IRS-published limits would require future CPI inputs; plan inflation is a deliberate planning approximation, and its divergence from the statutory series is not bounded by one rounding step. What this convention must not be extended to is a figure with no adjustment provision at all, where the same multiplication produces a number the statute never allows.',
+      'Most limits in the 415(d) family (including 402(g), the ordinary age-50 catch-up, and the 415(c)(1)(A) cap) multiply the parameter figure by limitGrowth, the plan or Monte Carlo inflation path from the parameter year; neither path uses actual future IRS annual CPI determinations. The ages-60-through-63 catch-up is the exception: it sends the greater-of amount from the published parameters through indexWithStatutoryRounding, flooring the cumulative dollar increase to 500-dollar steps. Matching future IRS-published limits would require future CPI inputs; plan inflation is a deliberate planning approximation, and its divergence from the statutory series is not bounded by one rounding step. What this convention must not be extended to is a figure with no adjustment provision at all, where the same multiplication produces a number the statute never allows.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -898,7 +898,7 @@ export const contributionAndDeferralLimitRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The authority fixes that a Roth-IRA rollover needs a distribution, and that elective deferrals are not distributable before a 401(k)(2)(B)(i) event. It selects nothing about how a year-granularity projection proves those events from the facts a Plan already carries, so those two proofs are engine conventions. Separation is the owner’s attained age at or past retirementAge, the same proxy the Rule of 55 and the 72(t)(3)(B) SEPP path already use; no separation-from-service schema field was added. Age 59½ is the attained-age-60 threshold the 72(t) additional-tax path already uses, because the aggregate conversion has no day-of-year execution date on which a half-year test could be proved. kind employer is the only discriminant a traditional account carries, so 403(b) and governmental 457(b) balances fail closed under the same gate rather than being told apart. Hardship is not treated as convertible: it is distributable but not rollable. 402A(c)(4)(E), added by ATRA section 902 for transfers after 2012-12-31, is a different act -- an optional in-plan transfer of otherwise nondistributable amounts to a designated Roth account in the same plan, which Notice 2013-74 Q-3 keeps under the old distribution lock -- and is not this path. Match and nonelective in-service distributions, and a real in-plan feature flag, are later splits.',
+      'The authority fixes that a Roth-IRA rollover needs a distribution, and that elective deferrals are not distributable before a 401(k)(2)(B)(i) event. It selects nothing about how a year-granularity projection proves those events from the facts a Plan already carries, so those two proofs are engine conventions. Separation is the owner’s attained age at or past retirementAge, the same proxy the Rule of 55 and the 72(t)(3)(B) SEPP path already use; no separation-from-service schema field was added. Age 59½ is the attained-age-60 threshold the 72(t) additional-tax path already uses, because the aggregate conversion has no day-of-year execution date on which a half-year test could be proved. kind employer is the only discriminant a traditional account carries, so 403(b) and governmental 457(b) balances go through the same gate, which refuses the conversion unless one of those two events can be proved, rather than being told apart. Hardship is not treated as convertible: it is distributable but not rollable. 402A(c)(4)(E), added by ATRA section 902 for transfers after 2012-12-31, is a different act (an optional in-plan transfer of otherwise nondistributable amounts to a designated Roth account in the same plan, which Notice 2013-74 Q-3 keeps under the old distribution lock) and is not this path. Match and nonelective in-service distributions, and a real in-plan feature flag, are later splits.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -955,7 +955,7 @@ export const contributionAndDeferralLimitRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The IRA-only nondeductibleBasis field is intentionally not an employer-plan after-tax contribution record: model/plan.ts rejects it on an employer traditional account. The employer-account schemas retain neither a separate employee-contribution/basis pool nor the plan permission and distribution facts that select a route. model/plan.test.ts pins that schema vocabulary, and actions/contract.test.ts pins the absence of a corresponding action from both request unions. The existing Notice 2014-54 record remains narrower: it covers allocation of an already-expressible simultaneous employer-plan disbursement to multiple destinations, not the absent source and feature facts here.',
+      'The IRA-only nondeductibleBasis field is intentionally not an employer-plan after-tax contribution record: model/plan.ts rejects it on an employer traditional account. The employer-account schemas retain neither a separate employee-contribution/basis pool nor the plan permission and distribution facts that select a route. The plan-model tests (model/plan.test.ts) pin that schema vocabulary, and the action-contract tests (actions/contract.test.ts) pin the absence of a corresponding action from both request unions. The existing Notice 2014-54 record remains narrower: it covers allocation of an already-expressible simultaneous employer-plan disbursement to multiple destinations, not the absent source and feature facts here.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -1006,7 +1006,7 @@ export const contributionAndDeferralLimitRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The generic 402(g) aggregate record is deliberately not extended to call a 401(k) SIMPLE: that plan-document status is absent. model/plan.test.ts gates the employer-plan-type membership, and actions/contract.test.ts gates the absence of a plan-term correction/action arm. The enhanced-limit election under 408(p)(2)(E)(i)(II) is not carried here — one claim per record.',
+      'The generic 402(g) aggregate record is deliberately not extended to call a 401(k) SIMPLE: that plan-document status is absent. The plan-model tests (model/plan.test.ts) check the employer-plan-type membership, and the action-contract tests (actions/contract.test.ts) check that there is no plan-term correction/action arm. The enhanced-limit election under 408(p)(2)(E)(i)(II) is not carried here: one claim per record.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -1053,7 +1053,7 @@ export const contributionAndDeferralLimitRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'Separated from irc-401-k-11-simple-401-k-elective-deferral-limit so each record carries one claim: that record is the generally applicable (i)(III) amount; this one is the election limb. model/plan.test.ts gates employer-plan-type membership against a simple401k arm, and actions/contract.test.ts gates the absence of a plan-term election/action.',
+      'Separated from irc-401-k-11-simple-401-k-elective-deferral-limit so each record carries one claim: that record is the generally applicable (i)(III) amount; this one is the election limb. The plan-model tests (model/plan.test.ts) check that the employer-plan-type membership has no simple401k arm, and the action-contract tests (actions/contract.test.ts) check that there is no plan-term election/action.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -1110,7 +1110,7 @@ export const contributionAndDeferralLimitRecords = {
     contraryReading: null,
     errorDirection: 'understatesTax',
     conventionRationale:
-      'DEFECT — no behavior change in this registration slice. The match dollars are not current-year taxable income; they inflate tax-deferred balances and therefore defer and understate future tax while overstating resources. That is the same resource-inflating / future-tax-understating shape as irc-414-v-1-plan-permitted-catch-up and irc-408A-c-3-roth-contribution-agi-phase-out, which also use understatesTax when the engine admits more tax-advantaged contribution than the authority allows. The fixture pins employerMatch at the uncapped 24,500 against the statute\'s 21,600 until a separately authorized implementation fix changes it. model/plan.test.ts still gates the absent plan-defined compensation field.',
+      'Known defect, registered without changing the calculation. The match dollars are not current-year taxable income; they inflate tax-deferred balances and therefore defer and understate future tax while overstating resources. That is the same resource-inflating / future-tax-understating shape as irc-414-v-1-plan-permitted-catch-up and irc-408A-c-3-roth-contribution-agi-phase-out, which also use understatesTax when the engine admits more tax-advantaged contribution than the authority allows. The test pins employerMatch at the uncapped 24,500 against the statute\'s 21,600 until a separately authorized implementation fix changes it. The plan-model tests (model/plan.test.ts) still check that the plan has no plan-defined compensation field.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -1159,7 +1159,7 @@ export const contributionAndDeferralLimitRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The contribution allocator prevents modeled requests from exceeding its aggregate ceiling; it is not a record of an actual excess or a corrective distribution. actions/contract.test.ts gates the request and persisted action unions against a correction kind. The correction facts are absent from model/plan.ts; the current model/plan.test.ts membership list does not separately assert those correction facts.',
+      'The contribution allocator prevents modeled requests from exceeding its aggregate ceiling; it is not a record of an actual excess or a corrective distribution. The action-contract tests (actions/contract.test.ts) check that the request and persisted action unions have no correction kind. The correction facts are absent from model/plan.ts; the current membership list in the plan-model tests (model/plan.test.ts) does not separately assert those correction facts.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -1213,7 +1213,7 @@ export const contributionAndDeferralLimitRecords = {
     contraryReading: null,
     errorDirection: 'understatesTax',
     conventionRationale:
-      'DEFECT — no behavior change in this registration slice. projection/simulate.ts has a Roth contribution path and a penalties total, but no section 4973 IRA/Roth excess-contribution term. The companion fixture uses a 100-dollar Roth contribution at income already above the 2026 Roth phase-out and derives 6 dollars as 100 × 0.06; the observed produced value is 0 — no excise term exists, so penalties stay untouched — pinned until a separately authorized implementation fix changes it.',
+      'Known defect, registered without changing the calculation. The projection (projection/simulate.ts) has a Roth contribution path and a penalties total, but no section 4973 IRA/Roth excess-contribution term. The companion test uses a 100-dollar Roth contribution at income already above the 2026 Roth phase-out and derives 6 dollars as 100 × 0.06; the observed produced value is 0 (no excise term exists, so penalties stay untouched), pinned until a separately authorized implementation fix changes it.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -1286,7 +1286,7 @@ export const contributionAndDeferralLimitRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'A projected account balance is not evidence that each underlying employer contribution is vested. model/plan.test.ts gates the absence of vesting schedule and service fields, and actions/contract.test.ts gates the absence of a vesting action or certification.',
+      'A projected account balance is not evidence that each underlying employer contribution is vested. The plan-model tests (model/plan.test.ts) check that vesting schedule and service fields are absent, and the action-contract tests (actions/contract.test.ts) check that there is no vesting action or certification.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -1339,7 +1339,7 @@ export const contributionAndDeferralLimitRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'employerPlanType: 403b is an RMD-aggregation label only; it does not establish any of the section 402(g)(7) predicates. model/plan.test.ts gates those absent membership fields and actions/contract.test.ts gates the absence of a catch-up certification/action.',
+      'employerPlanType: 403b is an RMD-aggregation label only; it does not establish any of the section 402(g)(7) predicates. The plan-model tests (model/plan.test.ts) check that those membership fields are absent, and the action-contract tests (actions/contract.test.ts) check that there is no catch-up certification/action.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -1391,7 +1391,7 @@ export const contributionAndDeferralLimitRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'This is not a duplicate of irc-414-v-7-A-high-earner-roth-catch-up-mandate: that record covers the 414(v)(1) catch-up, including SIMPLE IRA and Roth-program limbs. The missing 402(g)(7) membership facts are gated in model/plan.test.ts.',
+      'This is not a duplicate of irc-414-v-7-A-high-earner-roth-catch-up-mandate: that record covers the 414(v)(1) catch-up, including SIMPLE IRA and Roth-program limbs. The plan-model tests (model/plan.test.ts) check that the plan has no 402(g)(7) membership facts.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -1430,7 +1430,7 @@ export const contributionAndDeferralLimitRecords = {
     contraryReading: null,
     errorDirection: 'understatesTax',
     conventionRationale:
-      'DEFECT — no behavior change in this registration slice. The Plan can carry a traditional IRA, wages, filing status, and an employer account, but has no active-participant fact or section 219(g) MAGI calculation. projection/simulate.ts nevertheless adds an allowed traditional IRA deposit to preTaxContributions. The fixture supplies a one-dollar employer deferral to establish actual participation, uses 100,000 dollars of wages, and derives the accepted 99,999-dollar 100-percent-flat-tax base by allowing the employer deferral but no 100-dollar IRA deduction; the observed engine output is 99,899 — the deposit is deducted despite the phaseout — pinned until a separately authorized implementation fix changes it.',
+      'Known defect, registered without changing the calculation. The Plan can carry a traditional IRA, wages, filing status, and an employer account, but has no active-participant fact or section 219(g) MAGI calculation. The projection (projection/simulate.ts) nevertheless adds an allowed traditional IRA deposit to preTaxContributions. The test supplies a one-dollar employer deferral to establish actual participation, uses 100,000 dollars of wages, and derives the accepted 99,999-dollar 100-percent-flat-tax base by allowing the employer deferral but no 100-dollar IRA deduction; the observed engine output is 99,899 (the deposit is deducted despite the phaseout), pinned until a separately authorized implementation fix changes it.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -1522,7 +1522,7 @@ export const contributionAndDeferralLimitRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The generic employer-deferral allocator treats 457b only as a plan class and has no final-three-year state. model/plan.test.ts gates the missing sponsor, normal-retirement-age, and unused-deferral fields; actions/contract.test.ts gates the absence of an attested special-catch-up action. The id drops "governmental" because section 457(b)(3) is not limited to governmental sponsors.',
+      'The generic employer-deferral allocator treats 457b only as a plan class and has no final-three-year state. The plan-model tests (model/plan.test.ts) check that the plan has no sponsor, normal-retirement-age, or unused-deferral fields; the action-contract tests (actions/contract.test.ts) check that an attested special-catch-up action is absent. The id drops "governmental" because section 457(b)(3) is not limited to governmental sponsors.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -1567,7 +1567,7 @@ export const contributionAndDeferralLimitRecords = {
     contraryReading: null,
     errorDirection: 'bothDirections',
     conventionRationale:
-      'DEFECT — no behavior change in this registration slice. actions/execution.ts emits fullyTaxableCompensationAtExecution with ordinaryIncomeAmount equal to the whole executed amount. One structured fixture drives both alreadyVested and sameYearCliff readings, exercised by two preserved observation tests. The alreadyVested test derives a zero section 83(a) compensation amount in the later execution year while the engine classifies the whole 75-dollar execution as ordinary income (overstates tax). The sameYearCliff test stipulates a zero-basis cliff vesting 100 dollars in the execution year with only 75 executed: section 83(a) includes the full 100 of vested value, but the executor reports ordinary income only on the executed 75 (understates tax). Both signs are pinned until a separately authorized implementation fix changes them.',
+      'Known defect, registered without changing the calculation. actions/execution.ts emits fullyTaxableCompensationAtExecution with ordinaryIncomeAmount equal to the whole executed amount. One structured set of test data drives both alreadyVested and sameYearCliff readings, exercised by two preserved observation tests. The alreadyVested test derives a zero section 83(a) compensation amount in the later execution year while the engine classifies the whole 75-dollar execution as ordinary income (overstates tax). The sameYearCliff test stipulates a zero-basis cliff vesting 100 dollars in the execution year with only 75 executed: section 83(a) includes the full 100 of vested value, but the executor reports ordinary income only on the executed 75 (understates tax). Both signs are pinned until a separately authorized implementation fix changes them.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -1612,7 +1612,7 @@ export const contributionAndDeferralLimitRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'This is deliberately registered ahead of the first statutory tax year rather than projected as a 2026 credit. The plan model has no Saver\'s Match eligibility, qualifying-contribution, match-payment, or match-account fields, and the action contract has no claim or deposit kind. Those schema and action-vocabulary refusals are covered in model/plan.test.ts and actions/contract.test.ts. effectiveFrom is 2027 because the enacting applicability is taxable years beginning after December 31, 2026 — the rule cannot govern a 2026 pack year.',
+      'This is deliberately registered ahead of the first statutory tax year rather than projected as a 2026 credit. The plan model has no Saver\'s Match eligibility, qualifying-contribution, match-payment, or match-account fields, and the action contract has no claim or deposit kind. Those schema and action-vocabulary refusals are covered in the plan-model tests (model/plan.test.ts) and the action-contract tests (actions/contract.test.ts). effectiveFrom is 2027 because the enacting applicability is taxable years beginning after December 31, 2026; the rule cannot govern a 2026 parameter year.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -1668,7 +1668,7 @@ export const contributionAndDeferralLimitRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'The recovery rule depends on a section 6433(a)(2) contribution history, end-of-year Saver\'s Match balance, and the specified-early-distribution classification. None is expressible on an account or a retirement action. The missing Saver\'s Match schema and action vocabulary are refused by the additive gates in model/plan.test.ts and actions/contract.test.ts. effectiveFrom is 2027 because the enacting applicability is taxable years beginning after December 31, 2026 — the rule cannot govern a 2026 pack year.',
+      'The recovery rule depends on a section 6433(a)(2) contribution history, end-of-year Saver\'s Match balance, and the specified-early-distribution classification. None is expressible on an account or a retirement action. The plan-model tests (model/plan.test.ts) and the action-contract tests (actions/contract.test.ts) check that no Saver\'s Match schema or action vocabulary has been added. effectiveFrom is 2027 because the enacting applicability is taxable years beginning after December 31, 2026; the rule cannot govern a 2026 parameter year.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -1705,7 +1705,7 @@ export const contributionAndDeferralLimitRecords = {
     contraryReading: null,
     errorDirection: 'understatesTax',
     conventionRationale:
-      'The input model identifies an account as kind employer but has no plan-permits-catch-up fact. simulate.ts consequently assigns employerCatchUpForAge to every employer account at the eligible age. The fixture in employerRothCatchUp.test.ts uses an age-62 participant who requests 24,500 plus 11,250: a plan without the optional feature allows only 24,500, but the engine accepts 35,750 as a pre-tax contribution and understates tax. The published 11,250 figure used by that fixture is Notice 2025-67\'s 2026 figure, not a reconstruction of SECURE 2.0\'s formula.',
+      'The input model identifies an account as kind employer but has no plan-permits-catch-up fact. simulate.ts consequently assigns employerCatchUpForAge to every employer account at the eligible age. The employer Roth catch-up test (employerRothCatchUp.test.ts) uses an age-62 participant who requests 24,500 plus 11,250: a plan without the optional feature allows only 24,500, but the engine accepts 35,750 as a pre-tax contribution and understates tax. The published 11,250 figure used by that test is Notice 2025-67\'s 2026 figure, not a reconstruction of SECURE 2.0\'s formula.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',
@@ -1751,7 +1751,7 @@ export const contributionAndDeferralLimitRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'simulate.ts separates employer accounts, which call employerCatchUpForAge, from traditional and Roth IRA accounts, which add only contributionLimits.iraCatchUp50 at age 50 or later. The fixture in employerRothCatchUp.test.ts discriminates the published 2026 7,500 plus 1,100 IRA total from the employer-plan 7,500 plus 11,250 reading for an age-62 owner. The 11,250 comparison value comes from Notice 2025-67; it is not calculated from the statutory formula.',
+      'simulate.ts separates employer accounts, which call employerCatchUpForAge, from traditional and Roth IRA accounts, which add only contributionLimits.iraCatchUp50 at age 50 or later. The test in employerRothCatchUp.test.ts discriminates the published 2026 7,500 plus 1,100 IRA total from the employer-plan 7,500 plus 11,250 reading for an age-62 owner. The 11,250 comparison value comes from Notice 2025-67; it is not calculated from the statutory formula.',
     jurisdiction: 'federal',
     authority: [{
       kind: 'statute',

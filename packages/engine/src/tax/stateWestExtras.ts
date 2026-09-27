@@ -159,7 +159,7 @@ export function oregonRetirementIncomeCredit(args: {
 }): StateLeafAdjustment {
   if (args.recipientAgeYears < 62) return emptyLeafAdjustment()
   const cfg = args.config ?? stateParamsFor('OR', 2026)?.oregonRetirementIncomeCredit
-  if (!cfg) return { taxableIncomeDelta: 0, taxCredit: 0, warnings: [{ code: 'or-credit-pack-missing', message: 'Oregon retirement credit requires the versioned parameter pack.', missingFacts: ['oregonRetirementIncomeCredit'] }] }
+  if (!cfg) return { taxableIncomeDelta: 0, taxCredit: 0, warnings: [{ code: 'or-credit-pack-missing', message: 'Oregon retirement credit requires the published parameter set.', missingFacts: ['oregonRetirementIncomeCredit'] }] }
 
   const pensionCeiling = args.joint ? cfg.pensionCeilingJoint : cfg.pensionCeilingSingle
   const incomeThreshold = args.joint ? cfg.incomeThresholdJoint : cfg.incomeThresholdSingle
@@ -206,7 +206,7 @@ export function utahSocialSecurityCredit(args: {
   taxRate?: number
 }): StateLeafAdjustment {
   if (!args.config) {
-    return { taxableIncomeDelta: 0, taxCredit: 0, warnings: [{ code: 'ut-ss-credit-pack-missing', ruleId: 'ut-59-10-1042-social-security-credit', message: 'Utah Social Security credit requires the versioned 2026 statutory pack and MAGI facts.', missingFacts: ['utahRetirementCredits', 'utahMagi'] }] }
+    return { taxableIncomeDelta: 0, taxCredit: 0, warnings: [{ code: 'ut-ss-credit-pack-missing', ruleId: 'ut-59-10-1042-social-security-credit', message: 'Utah Social Security credit requires the published 2026 statutory parameter set and MAGI facts.', missingFacts: ['utahRetirementCredits', 'utahMagi'] }] }
   }
   if (args.socialSecurityIncludedInUtahTaxableIncome === undefined || args.utahMagi === undefined || !args.filingStatus) {
     return { taxableIncomeDelta: 0, taxCredit: 0, warnings: [{ code: 'ut-ss-credit-incomplete', ruleId: 'ut-59-10-1042-social-security-credit', message: 'Utah Social Security credit requires Utah taxable SS, statutory MAGI, and filing status.', missingFacts: ['socialSecurityIncludedInUtahTaxableIncome', 'utahMagi', 'stateFilingStatus'] }] }
@@ -236,7 +236,7 @@ export function utahRetirementCredit(args: {
   taxRate?: number
 }): StateLeafAdjustment {
   if (!args.config) {
-    return { taxableIncomeDelta: 0, taxCredit: 0, warnings: [{ code: 'ut-retirement-credit-pack-missing', ruleId: 'ut-59-10-1019-general-retirement-credit', message: 'Utah retirement credit requires the versioned 2026 statutory pack and exact birth-date facts.', missingFacts: ['utahRetirementCredits', 'claimantDatesOfBirth'] }] }
+    return { taxableIncomeDelta: 0, taxCredit: 0, warnings: [{ code: 'ut-retirement-credit-pack-missing', ruleId: 'ut-59-10-1019-general-retirement-credit', message: 'Utah retirement credit requires the published 2026 statutory parameter set and exact birth-date facts.', missingFacts: ['utahRetirementCredits', 'claimantDatesOfBirth'] }] }
   }
   if (args.claimantDatesOfBirth === undefined || args.utahMagi === undefined || !args.filingStatus) {
     return { taxableIncomeDelta: 0, taxCredit: 0, warnings: [{ code: 'ut-retirement-credit-incomplete', ruleId: 'ut-59-10-1019-general-retirement-credit', message: 'Utah general retirement credit requires exact claimant dates of birth, statutory MAGI, and filing status.', missingFacts: ['claimantDatesOfBirth', 'utahMagi', 'stateFilingStatus'] }] }

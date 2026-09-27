@@ -394,7 +394,7 @@ export function LivePricesCard() {
                   return (
                     <tr key={year}>
                       <td>{year}</td>
-                      <td className="year-table-text">{match ? match.cusip : '— none matures nearby —'}</td>
+                      <td className="year-table-text">{match ? match.cusip : '(none matures nearby)'}</td>
                       <td>{match ? `${match.ratePct.toFixed(3)}%` : ''}</td>
                       <td className="year-table-text">{match ? match.maturityIso : ''}</td>
                       <td>{match ? match.endOfDayPrice.toFixed(2) : ''}</td>

@@ -166,7 +166,7 @@ describe('PlanRepairNotice', () => {
       },
     ])
     expect(items()).toEqual([
-      'Longevity annuity was bought with pre-tax money and set to start paying at age 90. A purchase like this one has to start by age 76, and buying it as a QLAC would not keep the later start either — a QLAC has to start by age 85. No pre-tax purchase can wait until 90. The purchase was cleared and Longevity annuity pays nothing, so the premium stayed in the account it would have come from. Open Accounts to set it up again with an earlier start age.',
+      'Longevity annuity was bought with pre-tax money and set to start paying at age 90. A purchase like this one has to start by age 76, and buying it as a QLAC would not keep the later start either: a QLAC has to start by age 85. No pre-tax purchase can wait until 90. The purchase was cleared and Longevity annuity pays nothing, so the premium stayed in the account it would have come from. Open Accounts to set it up again with an earlier start age.',
     ])
     expect(items()[0]).not.toContain('Only a QLAC can start that late')
     expect(items()[0]).not.toContain('or to buy it as a QLAC')
@@ -188,7 +188,7 @@ describe('PlanRepairNotice', () => {
       },
     ])
     expect(items()).toEqual([
-      'Longevity annuity was bought as a QLAC and set to start paying at age 90. A QLAC is the longest a pre-tax purchase can wait, but it still has to start by age 85 — the IRA rules put the last start on the first of the month after your 85th birthday. The purchase was cleared and Longevity annuity pays nothing, so the premium stayed in the account it would have come from. Open Accounts to set it up again with an earlier start age.',
+      'Longevity annuity was bought as a QLAC and set to start paying at age 90. A QLAC is the longest a pre-tax purchase can wait, but it still has to start by age 85; the IRA rules put the last start on the first of the month after your 85th birthday. The purchase was cleared and Longevity annuity pays nothing, so the premium stayed in the account it would have come from. Open Accounts to set it up again with an earlier start age.',
     ])
   })
 
@@ -208,7 +208,7 @@ describe('PlanRepairNotice', () => {
       },
     ])
     expect(items()).toEqual([
-      'Longevity annuity was bought as a QLAC and set to start paying at age 90. A QLAC has to start by age 85 — the IRA rules put the last start on the first of the month after your 85th birthday. Bought as late as this one was, an ordinary pre-tax purchase could still start at 90. The purchase was cleared and Longevity annuity pays nothing, so the premium stayed in the account it would have come from. Open Accounts to set it up again with an earlier start age, or without the QLAC box ticked.',
+      'Longevity annuity was bought as a QLAC and set to start paying at age 90. A QLAC has to start by age 85; the IRA rules put the last start on the first of the month after your 85th birthday. Bought as late as this one was, an ordinary pre-tax purchase could still start at 90. The purchase was cleared and Longevity annuity pays nothing, so the premium stayed in the account it would have come from. Open Accounts to set it up again with an earlier start age, or without the QLAC box ticked.',
     ])
   })
 

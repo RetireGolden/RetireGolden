@@ -398,7 +398,12 @@ describe('YearCashFlowDialog', () => {
 
     expect(createObjectURL).toHaveBeenCalledTimes(1)
     expect(blobs).toHaveLength(1)
-    expect(await blobs[0]!.text()).toBe(serializeYearCashFlowDetailCsv(model))
+    // The file opens with the UTF-8 byte-order mark (so Excel on Windows reads
+    // the middle dots in person-owned labels), then the serialized CSV
+    // unchanged. Blob.text() would hide the mark, so the bytes are checked.
+    const bytes = new Uint8Array(await blobs[0]!.arrayBuffer())
+    expect([...bytes.slice(0, 3)]).toEqual([0xef, 0xbb, 0xbf])
+    expect(new TextDecoder('utf-8', { ignoreBOM: true }).decode(bytes.slice(3))).toBe(serializeYearCashFlowDetailCsv(model))
     expect(revokeObjectURL).toHaveBeenCalledWith('blob:year-cash-flow-test')
     createObjectURL.mockRestore()
     revokeObjectURL.mockRestore()

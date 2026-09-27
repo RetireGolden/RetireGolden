@@ -27,7 +27,7 @@ export const lawPackDrift: Detector = {
       evidence: [
         { label: 'Plan last-updated year', value: String(planAsOfYear), year: planAsOfYear },
         { label: 'Active parameter year', value: String(ctx.params.year), year: ctx.params.year },
-        { label: 'Parameter data vintage', value: PARAMETER_DATA_AS_OF },
+        { label: 'Parameter data as of', value: PARAMETER_DATA_AS_OF },
         { label: 'Parameter data basis', value: PARAMETER_DATA_BASIS },
       ],
       action: { kind: 'advisory' },

@@ -761,7 +761,7 @@
       "classification": "settled",
       "errorDirection": null,
       "approximation": null,
-      "conventionRationale": "This record transcribes a 2026 estimated-tax instruction, not a final 2026 resident-return schedule. The record expires after 2026. Because stateParamsFor reuses the latest pack in later plan years, any later-year use is a 2026-pack stand-in rather than a claim that these amounts remain legally current.",
+      "conventionRationale": "This record transcribes a 2026 estimated-tax instruction, not a final 2026 resident-return schedule. The record expires after 2026. Because stateParamsFor reuses the latest per-state tax data in later plan years, any later-year use is a stand-in using the 2026 per-state tax data rather than a claim that these amounts remain legally current.",
       "contraryReading": null,
       "jurisdiction": "state:CA",
       "volatility": "annuallyIndexed",
@@ -1798,12 +1798,12 @@
         },
         {
           "kind": "stateAgencyPublication",
-          "citation": "Montana DOR, HB337 — Tax Year 2026 Income Tax Brackets table",
+          "citation": "Montana DOR, HB337: Tax Year 2026 Income Tax Brackets table",
           "url": "https://revenuefiles.mt.gov/news/recent-news/HB-337"
         },
         {
           "kind": "stateAgencyPublication",
-          "citation": "Montana DOR, HB337 — ordinary-income scope note",
+          "citation": "Montana DOR, HB337: ordinary-income scope note",
           "url": "https://revenuefiles.mt.gov/news/recent-news/HB-337"
         }
       ]
@@ -2399,7 +2399,7 @@
       "approximation": {
         "kind": "fix"
       },
-      "conventionRationale": "The signed gap at LRO boundary coordinates is +$0.125 at single $4,550 taxable, −$0.50 at single $11,400, +$0.25 at joint $9,100, and $0 at joint $22,800 — so the continuous engine neither uniformly over- nor under-states relative to LRO's printed whole-dollar table. This record registers the continuous-breakpoint representation authorized for the current single/MFJ pack fields and does not claim exact replication of Oregon's printed table or whole-return fidelity. Primary gate evidence is LRO Report #1-26; final resident-return closure is outside this record. The record expires after TY2026.",
+      "conventionRationale": "The signed gap at LRO boundary coordinates is +$0.125 at single $4,550 taxable, −$0.50 at single $11,400, +$0.25 at joint $9,100, and $0 at joint $22,800, so the continuous engine neither uniformly over- nor under-states relative to LRO's printed whole-dollar table. This record registers the continuous-breakpoint representation authorized for the current single/MFJ per-state parameter fields and does not claim exact replication of Oregon's printed table or whole-return fidelity. Primary gate evidence is LRO Report #1-26; final resident-return closure is outside this record. The record expires after TY2026.",
       "contraryReading": null,
       "jurisdiction": "state:OR",
       "volatility": "annuallyIndexed",
@@ -3182,7 +3182,7 @@
     },
     {
       "id": "wa-dor-no-broad-individual-income-tax",
-      "title": "Washington has no broad individual income-tax figure in this pack",
+      "title": "Washington has no broad individual income-tax figure in the per-state tax data",
       "classification": "settled",
       "errorDirection": null,
       "approximation": null,

@@ -68,7 +68,7 @@ export function HowTestedPage() {
 
       <h2>Checked against independent implementations</h2>
       <p>
-        {HAS_SUITE_DATA ? `${EXTERNAL_ORACLE_SUITES.length} external-oracle` : 'External-oracle'} golden suites pin
+        {HAS_SUITE_DATA ? `${EXTERNAL_ORACLE_SUITES.length} external-oracle` : 'External-oracle'} suites pin
         RetireGolden's calculations to third-party references that share no code with it:
       </p>
       <ul>
@@ -92,10 +92,10 @@ export function HowTestedPage() {
         </p>
       )}
       <p>
-        The Roth-conversion optimizer additionally runs through a <strong>parity harness</strong>: a shared matrix of
+        The Roth-conversion optimizer additionally runs through a <strong>parity check</strong>: a shared matrix of
         test plans is solved both by RetireGolden and by an independent open-source conversion optimizer (pinned
         version), and both tools' schedules are priced on RetireGolden's own year-by-year projection. As of July 2026
-        the harness passes on every test plan, with RetireGolden's schedules ahead on projected after-tax estate. It
+        the check passes on every test plan, with RetireGolden's schedules ahead on projected after-tax estate. It
         re-runs on a maintenance cadence.
       </p>
 
@@ -122,12 +122,12 @@ export function HowTestedPage() {
       <p>
         {HAS_SUITE_DATA ? (
           <>
-            {GOLDEN_SUITES.length} golden suites hold fixed expected values for the tax engine, RMDs, Social Security,
+            {GOLDEN_SUITES.length} suites hold fixed expected values for the tax engine, RMDs, Social Security,
             and full-plan projections, out of {ALL_TEST_FILES.length} automated test files overall.
           </>
         ) : (
           <>
-            Golden suites hold fixed expected values for the tax engine, RMDs, Social Security, and full-plan
+            Test suites hold fixed expected values for the tax engine, RMDs, Social Security, and full-plan
             projections.
           </>
         )}{' '}

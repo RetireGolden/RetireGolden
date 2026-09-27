@@ -391,7 +391,7 @@ function ReportBody() {
         </table>
         <p className="muted small">
           Federal tax brackets, contribution limits, RMD tables, Medicare/IRMAA, and FPL come from dated parameter
-          packs; values beyond the latest published year are indexed forward at the assumed inflation rate.
+          sets; values beyond the latest published year are indexed forward at the assumed inflation rate.
         </p>
       </section>
 

@@ -7,6 +7,7 @@
 
 import { useState } from 'react'
 
+import { downloadCsv } from '../../csvDownload'
 import { LearnLink } from '../../learn/LearnLink'
 import { LEARN } from '../learnLinks'
 import { Modal } from '../Modal'
@@ -89,12 +90,7 @@ function hasCollapsedLinesInView(
 }
 
 function downloadDetailCsv(model: YearCashFlowSankeyModel, year: number): void {
-  const blob = new Blob([serializeYearCashFlowDetailCsv(model)], { type: 'text/csv' })
-  const a = document.createElement('a')
-  a.href = URL.createObjectURL(blob)
-  a.download = `${year}-cash-flow-detail.csv`
-  a.click()
-  URL.revokeObjectURL(a.href)
+  downloadCsv(serializeYearCashFlowDetailCsv(model), `${year}-cash-flow-detail.csv`)
 }
 
 function YearCashFlowLearnMore() {

@@ -191,7 +191,7 @@ function noFormatLimitations(displayName: string): readonly string[] {
     // source. `buildMigrationReview` says what actually came across, because it
     // is the only place that can see it.
     'The data is not unimportant. The format is unsubstantiated. What can be brought across from this file is stated separately below.',
-    `What would change this: a real ${displayName} export from a trial account, checked in as a substantiated format with its own fixtures and version sniffing. Then, and only then, is field mapping in scope.`,
+    `What would change this: a real ${displayName} export from a trial account, checked in as a substantiated format with its own test files and version sniffing. Then, and only then, is field mapping in scope.`,
   ]
 }
 

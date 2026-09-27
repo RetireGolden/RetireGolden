@@ -61,6 +61,6 @@ describe('WeightsGrid mismatch chrome', () => {
     expect(total.className).toBe('field-error')
     expect(total.className).not.toContain('field-warning')
     expect(total.getAttribute('role')).toBe('alert')
-    expect(total.textContent).toBe('Total 110% (weights must sum to 100% — not saved until they do)')
+    expect(total.textContent).toBe('Total 110% (weights must sum to 100%; not saved until they do)')
   })
 })

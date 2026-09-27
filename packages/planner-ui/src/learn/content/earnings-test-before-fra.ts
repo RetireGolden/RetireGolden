@@ -56,7 +56,7 @@ export const blocks: ArticleBlock[] = [
   { type: 'heading', text: 'Why it matters in RetireGolden' },
   {
     type: 'prose',
-    md: 'RetireGolden runs wages before Social Security in each projection year, applies the annual earnings-test limits from the parameter pack, withholds benefits when needed, and credits whole withheld months back at full retirement age. This is an annual planning approximation, not a month-by-month SSA filing model.',
+    md: 'RetireGolden runs wages before Social Security in each projection year, applies the annual earnings-test limits from the parameter set, withholds benefits when needed, and credits whole withheld months back at full retirement age. This is an annual planning approximation, not a month-by-month SSA filing model.',
   },
   { type: 'heading', text: 'Common mistakes' },
   {

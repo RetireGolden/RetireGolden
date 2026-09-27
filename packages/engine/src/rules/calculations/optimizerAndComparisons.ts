@@ -8,7 +8,7 @@ export const optimizerAndComparisonsRecords = {
     kind: 'model',
     outputs: [],
     feeds: ['optimizer-recommended-conversion-annual', 'optimizer-schedule-conversion-total'],
-    statement: 'decisions/search.ts#refineConversionSchedule deterministically searches annual Roth-conversion dollars by fixed-order coordinate descent, first coarse then fine steps, retaining only hard-constraint-feasible moves whose exact-ledger primary metric improves by more than the minimum, subject to simulation and sweep caps.',
+    statement: 'decisions/search.ts#refineConversionSchedule deterministically searches annual Roth-conversion dollars by fixed-order coordinate descent, first coarse then fine steps, retaining only hard-constraint-feasible moves whose full-projection primary metric improves by more than the minimum, subject to simulation and sweep caps.',
     formula: {
       expression: 'for coarse then fine step, for each year coordinate try amount +/- step; retain a feasible candidate only when score > incumbent + minimumImprovement',
       variables: [
@@ -24,7 +24,7 @@ export const optimizerAndComparisonsRecords = {
       worksheet: 'DOCS/calculations/optimizer-and-comparisons/conversion-coordinate-descent-search.md',
     },
     limits: [
-      'Local search only; no global-optimum claim. The worksheet score table is injected at the evaluation seam with a four-evaluation budget covering exactly its four entries; any unspecified probe fails closed. This proves search selection only. The returned aggregate schedule still passes downstream legal-owner/action readiness and publication gates, so it feeds rather than publishes optimizer recommendations.',
+      'Local search only; no global-optimum claim. The worksheet score table is injected at the evaluation seam with a four-evaluation budget covering exactly its four entries; any unspecified probe is refused rather than guessed. This proves search selection only. The returned aggregate schedule still passes downstream legal-owner/action readiness and publication gates, so it feeds rather than publishes optimizer recommendations.',
     ],
     implementedBy: ['packages/engine/src/decisions/search.ts'],
     implementedByFunctions: ['packages/engine/src/decisions/search.ts#refineConversionSchedule'],
@@ -238,8 +238,8 @@ export const optimizerAndComparisonsRecords = {
     provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
   },
   'exact-ledger-summary-comparison': {
-    title: 'Exact ledger summary comparison',
-    purpose: 'Publish the two exact-ledger estates and the ending-net-worth delta between them.',
+    title: 'Full projection summary comparison',
+    purpose: 'Publish the two full-projection estates and the ending-net-worth delta between them.',
     kind: 'formula',
     outputs: [
       'optimization-baseline-after-tax-estate',
@@ -264,7 +264,7 @@ export const optimizerAndComparisonsRecords = {
       worksheet: 'DOCS/calculations/optimizer-and-comparisons/exact-ledger-summary-comparison.md',
     },
     limits: [
-      'No value from one result may be paired with the other result\'s label: the baseline estate is the shared baseline run\'s summary and the candidate estate is the candidate schedule\'s own run, and the delta is on ending net worth rather than on after-tax estate. Beyond the worksheet\'s four summary figures the fixture assumes a validated plan whose only estate-discounted holding is one non-inherited traditional account at a 25 percent flat heir rate, so each result\'s final-year balance for that account is what turns its ending net worth into the worksheet\'s after-tax estate; both projections are supplied as ProjectionResult values at the exported validation entry, so the summary composition and the validation wrapper are the real functions while neither ledger run is exercised here. The entry also requires a requested schedule, which the worksheet does not name and the fixture leaves empty. recommendationState has no census family this round and is not published by this record.',
+      'No value from one result may be paired with the other result\'s label: the baseline estate is the shared baseline run\'s summary and the candidate estate is the candidate schedule\'s own run, and the delta is on ending net worth rather than on after-tax estate. Beyond the worksheet\'s four summary figures the test assumes a validated plan whose only estate-discounted holding is one non-inherited traditional account at a 25 percent flat heir rate, so each result\'s final-year balance for that account is what turns its ending net worth into the worksheet\'s after-tax estate; both projections are supplied as ProjectionResult values at the exported validation entry, so the summary composition and the validation wrapper are the real functions while neither ledger run is exercised here. The entry also requires a requested schedule, which the worksheet does not name and the test leaves empty. recommendationState has no census family this round and is not published by this record.',
     ],
     implementedBy: [
       'packages/engine/src/projection/optimizePlan.ts',
@@ -279,8 +279,8 @@ export const optimizerAndComparisonsRecords = {
     provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
   },
   'exact-ledger-conversion-execution': {
-    title: 'Exact ledger conversion execution',
-    purpose: 'Report how much of a requested conversion schedule the exact ledger actually executed.',
+    title: 'Full projection conversion execution',
+    purpose: 'Report how much of a requested conversion schedule the full year-by-year projection actually executed.',
     kind: 'formula',
     outputs: [
       'exact-ledger-validation-requested-conversion-total',
@@ -297,7 +297,7 @@ export const optimizerAndComparisonsRecords = {
         { symbol: 'DECISION_MATERIAL_SHORTFALL_DOLLARS', meaning: 'Absolute material shortfall margin', unit: 'nominal USD', domain: '1000' },
         { symbol: 'DECISION_MATERIAL_SHORTFALL_PCT', meaning: 'Proportional material shortfall margin', unit: '1', domain: '0.05' },
       ],
-      timing: 'one candidate schedule against its own exact-ledger run, requested years tested in ascending order',
+      timing: 'one candidate schedule against its own full-projection run, requested years tested in ascending order',
       rounding: 'none; the dollar sums carry binary floating-point representation and the materiality comparison is strict',
     },
     justification: {
@@ -305,7 +305,7 @@ export const optimizerAndComparisonsRecords = {
       worksheet: 'DOCS/calculations/optimizer-and-comparisons/exact-ledger-conversion-execution.md',
     },
     limits: [
-      'The materiality margin is resolved per year from that year\'s own requested amount, not once from the schedule total, and the comparison is strictly more than, so a shortfall equal to its margin does not qualify; the ratio is capped at 1 so an over-execution cannot read as more than the whole request, and the zero-request branch is the stated exact 1 rather than a division. Beyond the worksheet\'s rows the fixture assumes a validated plan with one non-inherited traditional account and a baseline result that the entry requires and the worksheet does not name; both projections are supplied as ProjectionResult values at the exported validation entry, so the requested-versus-executed arithmetic is the real function while neither ledger run is exercised here. ExactLedgerValidation.executedConversionTotal has no census family this round, so it is read only as the ratio\'s numerator and is not published by this record.',
+      'The materiality margin is resolved per year from that year\'s own requested amount, not once from the schedule total, and the comparison is strictly more than, so a shortfall equal to its margin does not qualify; the ratio is capped at 1 so an over-execution cannot read as more than the whole request, and the zero-request branch is the stated exact 1 rather than a division. Beyond the worksheet\'s rows the test assumes a validated plan with one non-inherited traditional account and a baseline result that the entry requires and the worksheet does not name; both projections are supplied as ProjectionResult values at the exported validation entry, so the requested-versus-executed arithmetic is the real function while neither ledger run is exercised here. ExactLedgerValidation.executedConversionTotal has no census family this round, so it is read only as the ratio\'s numerator and is not published by this record.',
     ],
     implementedBy: [
       'packages/engine/src/projection/optimizePlan.ts',
@@ -320,7 +320,7 @@ export const optimizerAndComparisonsRecords = {
     provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
   },
   'exact-ledger-traditional-depletion': {
-    title: 'Exact ledger traditional depletion',
+    title: 'Full projection traditional depletion',
     purpose: 'Name the first year the plan\'s own traditional balances are exhausted under a candidate schedule.',
     kind: 'formula',
     outputs: ['exact-ledger-validation-traditional-depletion-year'],
@@ -340,7 +340,7 @@ export const optimizerAndComparisonsRecords = {
       worksheet: 'DOCS/calculations/optimizer-and-comparisons/exact-ledger-traditional-depletion.md',
     },
     limits: [
-      'Inherited traditional balances are excluded, the boundary is inclusive so an owned sum of exactly the tolerance qualifies, and a later fully drained year cannot displace the first qualifying one. Beyond the worksheet\'s three account balance columns the fixture assumes a validated plan whose two owned traditional accounts and one inherited traditional account carry the worksheet\'s ids, an empty requested schedule, and a baseline result that the entry requires and the worksheet does not name; the candidate projection is supplied as a ProjectionResult value at the exported validation entry, so the selection is the real function while no ledger run is exercised here.',
+      'Inherited traditional balances are excluded, the boundary is inclusive so an owned sum of exactly the tolerance qualifies, and a later fully drained year cannot displace the first qualifying one. Beyond the worksheet\'s three account balance columns the test assumes a validated plan whose two owned traditional accounts and one inherited traditional account carry the worksheet\'s ids, an empty requested schedule, and a baseline result that the entry requires and the worksheet does not name; the candidate projection is supplied as a ProjectionResult value at the exported validation entry, so the selection is the real function while no ledger run is exercised here.',
     ],
     implementedBy: [
       'packages/engine/src/projection/optimizePlan.ts',
@@ -355,7 +355,7 @@ export const optimizerAndComparisonsRecords = {
   },
   'simple-candidate-evaluation-comparison': {
     title: 'Simple candidate evaluation comparison',
-    purpose: 'Compare one simple conversion candidate with the shared baseline on the exact ledger.',
+    purpose: 'Compare one simple conversion candidate with the shared baseline on the full year-by-year projection.',
     kind: 'formula',
     outputs: [
       'simple-candidate-evaluation-after-tax-estate-delta',
@@ -382,7 +382,7 @@ export const optimizerAndComparisonsRecords = {
       worksheet: 'DOCS/calculations/optimizer-and-comparisons/simple-candidate-evaluation-comparison.md',
     },
     limits: [
-      'Every difference is candidate minus baseline, the conversion sum is the candidate result\'s rows alone, a non-depleting result is funded through its endYear and a depleting one through its depletionYear - 1 (owner decision R15, 2026-09-25; restated 2026-09-26; it replaced the earlier count of depletionYear or endYear + 1, and both shift every result by one year, so every delta is unchanged), and the incomplete years are a de-duplicated ascending union across both results rather than a concatenation. Beyond the worksheet\'s inputs the smallest exported entry that publishes these fields generates its own fixed set of fill-to-target candidates and runs each one through the ledger, so the fixture supplies the candidate result at the simulate seam and the baseline result directly; it also assumes a validated plan whose only estate-discounted holding is one non-inherited traditional account at a 20 percent flat heir rate, so each result\'s final-year balance for that account is what turns its ending net worth into the worksheet\'s after-tax estate. In the no-incomplete-status branch the optional incompleteComputationYears key is omitted, not set to an empty list, as the worksheet states since its 2026-09-18 revision (the first derivation expected an empty list, which the fixture found); the fixture asserts the omission and the empty union it stands for. recommendationState has no census family this round and is not published by this record.',
+      'Every difference is candidate minus baseline, the conversion sum is the candidate result\'s rows alone, a non-depleting result is funded through its endYear and a depleting one through its depletionYear - 1 (owner decision R15, 2026-09-25; restated 2026-09-26; it replaced the earlier count of depletionYear or endYear + 1, and both shift every result by one year, so every delta is unchanged), and the incomplete years are a de-duplicated ascending union across both results rather than a concatenation. Beyond the worksheet\'s inputs the smallest exported entry that publishes these fields generates its own fixed set of fill-to-target candidates and runs each one through the ledger, so the test supplies the candidate result at the simulate seam and the baseline result directly; it also assumes a validated plan whose only estate-discounted holding is one non-inherited traditional account at a 20 percent flat heir rate, so each result\'s final-year balance for that account is what turns its ending net worth into the worksheet\'s after-tax estate. In the no-incomplete-status branch the optional incompleteComputationYears key is omitted, not set to an empty list, as the worksheet states since its 2026-09-18 revision (the first derivation expected an empty list, which the test found); the test asserts the omission and the empty union it stands for. recommendationState has no census family this round and is not published by this record.',
     ],
     implementedBy: [
       'packages/engine/src/projection/optimizePlan.ts',
@@ -402,7 +402,7 @@ export const optimizerAndComparisonsRecords = {
     provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
   },
   'exact-ledger-tournament-margin': {
-    title: 'Exact ledger tournament margin',
+    title: 'Full projection tournament margin',
     purpose: 'Report how far the tournament winner beat the solver schedule it displaced, and zero when it displaced none.',
     kind: 'model',
     outputs: ['exact-ledger-tournament-margin-over-milp-dollars'],
@@ -423,7 +423,7 @@ export const optimizerAndComparisonsRecords = {
       worksheet: 'DOCS/calculations/optimizer-and-comparisons/exact-ledger-tournament-margin.md',
     },
     limits: [
-      'The zero convention is the evidenced branch: with no MILP result supplied the published margin is 0 on both the none and the incumbent outcome, so a candidate-versus-incumbent difference must never be reported there, and a no-traditional plan reports source none with an empty schedule rather than an incumbent request. The worksheet\'s third case — a candidate that beats a recommendable MILP by more than the 1000-dollar switch margin, and the strictness of that threshold at exactly 1000 — is a solver-run limit and was NOT constructed: the worksheet supplies no estate inputs for the MILP schedule, and the entry takes a post-processed solver schedule rather than a dollar figure, so no assertion here can pin that branch or its published difference. Beyond the worksheet\'s two inputs the fixture assumes, for the none case, a validated single-person plan with one cash account, zero returns, zero inflation, zero state tax and zero base spending, and for the incumbent case a validated single-person retiree plan with an 800000-dollar traditional account beside a taxable and a cash account, 4 percent returns, a 25 percent heir rate, 45000 dollars of base spending and a planning age of 85, both run with the production federal tax calculator from start year 2026 so Y1 is 2026; on the incumbent plan the tournament\'s own candidate winner is withheld by the retirement-action readiness veto, which is what routes the run to the incumbent fallback the worksheet describes. Both runs exercise the real ledger; nothing is supplied at a seam.',
+      'The zero convention is the evidenced branch: with no MILP result supplied the published margin is 0 on both the none and the incumbent outcome, so a candidate-versus-incumbent difference must never be reported there, and a no-traditional plan reports source none with an empty schedule rather than an incumbent request. The worksheet\'s third case (a candidate that beats a recommendable MILP by more than the 1000-dollar switch margin, and the strictness of that threshold at exactly 1000) is a solver-run limit and was NOT constructed: the worksheet supplies no estate inputs for the MILP schedule, and the entry takes a post-processed solver schedule rather than a dollar figure, so no assertion here can pin that branch or its published difference. Beyond the worksheet\'s two inputs the test assumes, for the none case, a validated single-person plan with one cash account, zero returns, zero inflation, zero state tax and zero base spending, and for the incumbent case a validated single-person retiree plan with an 800000-dollar traditional account beside a taxable and a cash account, 4 percent returns, a 25 percent heir rate, 45000 dollars of base spending and a planning age of 85, both run with the production federal tax calculator from start year 2026 so Y1 is 2026; on the incumbent plan the tournament\'s own candidate winner is withheld by the retirement-action readiness veto, which is what routes the run to the incumbent fallback the worksheet describes. Both runs exercise the real ledger; nothing is supplied at a seam.',
     ],
     implementedBy: ['packages/engine/src/projection/optimizePlan.ts'],
     implementedByFunctions: [
@@ -435,8 +435,8 @@ export const optimizerAndComparisonsRecords = {
     provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
   },
   'exact-ledger-cleaned-schedule': {
-    title: 'Exact ledger cleaned schedule',
-    purpose: 'Trim a raw solver conversion schedule to what the exact ledger actually executes.',
+    title: 'Full projection cleaned schedule',
+    purpose: 'Trim a raw solver conversion schedule to what the full year-by-year projection actually executes.',
     kind: 'model',
     outputs: ['optimizer-recommended-conversion-annual'],
     feeds: ['exact-ledger-tournament-margin-over-milp-dollars'],
@@ -448,7 +448,7 @@ export const optimizerAndComparisonsRecords = {
         { symbol: 'executed_y', meaning: 'max(0, the rerun ledger\'s rothConversion for year y)', unit: 'nominal USD', domain: 'nonnegative' },
         { symbol: 'neutralTolerance', meaning: 'DECISION_NEUTRAL_TOLERANCE_DOLLARS', unit: 'nominal USD', domain: '1' },
       ],
-      timing: 'raw request, exact-ledger execution, rerun, repeated to a fixed point within the stabilization budget',
+      timing: 'raw request, full-projection execution, rerun, repeated to a fixed point within the stabilization budget',
       rounding: 'adjustment rows carry cents-rounded requested, executed and cleaned amounts; the dollar totals carry binary floating-point representation',
     },
     justification: {
@@ -456,7 +456,7 @@ export const optimizerAndComparisonsRecords = {
       worksheet: 'DOCS/calculations/optimizer-and-comparisons/exact-ledger-cleaned-schedule.md',
     },
     limits: [
-      'Cleaned is the per-year minimum, not the request: keeping the request republishes 15000 dollars in a year the ledger funded with 5000, and summing the raw requests publishes 30000 dollars rather than the cleaned 20000. The reason on that year is ledger-capped. A fourth member, rounding, was once declared on the reason union and never assigned; decision D-ADJUSTMENT-ROUNDING-REASON removed it on 2026-09-25, and the evidence still asserts it is not among the reasons the run assigns. Of the worksheet\'s three live reasons only ledger-capped is realized by its stated inputs; dropped-zero and estate-pruned were NOT constructed from them, because each needs a different raw schedule and, for estate-pruned, a plan whose trailing conversion year harms the exact estate; the worksheet states neither, so the fixture asserts instead that the run\'s reasons lie inside the three live values and that rounding is not among them. Beyond the worksheet\'s inputs the fixture assumes a validated single-person plan with a 10000-dollar cash account and an empty Roth account beside the 20000-dollar traditional one, zero healthcare expenses, a planning age of 67 and the production federal tax calculator from start year 2026, so Y1 is 2026 and Y2 is 2027; the raw schedule is a full OptimizedSchedule literal whose per-year solver rows are zero apart from the conversion, which the entry requires and the worksheet does not name. The MILP-sourced winning schedule the worksheet mentions is a solver-run limit with no number and is not asserted here.',
+      'Cleaned is the per-year minimum, not the request: keeping the request republishes 15000 dollars in a year the ledger funded with 5000, and summing the raw requests publishes 30000 dollars rather than the cleaned 20000. The reason on that year is ledger-capped. A fourth member, rounding, was once declared on the reason union and never assigned; decision D-ADJUSTMENT-ROUNDING-REASON removed it on 2026-09-25, and the evidence still asserts it is not among the reasons the run assigns. Of the worksheet\'s three live reasons only ledger-capped is realized by its stated inputs; dropped-zero and estate-pruned were NOT constructed from them, because each needs a different raw schedule and, for estate-pruned, a plan whose trailing conversion year harms the exact estate; the worksheet states neither, so the test asserts instead that the run\'s reasons lie inside the three live values and that rounding is not among them. Beyond the worksheet\'s inputs the test assumes a validated single-person plan with a 10000-dollar cash account and an empty Roth account beside the 20000-dollar traditional one, zero healthcare expenses, a planning age of 67 and the production federal tax calculator from start year 2026, so Y1 is 2026 and Y2 is 2027; the raw schedule is a full OptimizedSchedule literal whose per-year solver rows are zero apart from the conversion, which the entry requires and the worksheet does not name. The MILP-sourced winning schedule the worksheet mentions is a solver-run limit with no number and is not asserted here.',
     ],
     implementedBy: ['packages/engine/src/projection/optimizePlan.ts'],
     implementedByFunctions: [
@@ -493,7 +493,7 @@ export const optimizerAndComparisonsRecords = {
       worksheet: 'DOCS/calculations/optimizer-and-comparisons/claim-age-co-optimization.md',
     },
     limits: [
-      'The count includes the current claim and excludes the stream\'s own current age as a candidate: a stream already claiming at 70y0m generates two candidates and so evaluates three combinations, and a plan with no stream still evaluates one. The middle point is the person’s own full retirement age from socialSecurity/nra.ts#fraForBirthYear, 66y2m for the example’s 1956-01-01 birth (effective birth year 1955). The two estates are RUN-PINNED, not derived: the worksheet states no dollar figure for either, so the fixture\'s example carries the value one execution of the co-optimizer produced on the stated plan, and it is evidence of that execution rather than of an independent derivation. What is derived is their equality: with no traditional balance every schedule is empty and no claim clears the 1000-dollar margin, so the joint estate IS the current-claim estate and both claim outputs are null. The strictness of that margin at exactly 1000 dollars was NOT constructed: it needs a candidate whose exact estate sits one margin above the current-claim optimum, which no plan input the worksheet states can produce. Beyond the worksheet\'s inputs the fixture assumes validated single-person plans with one cash account and no traditional balance, zero returns, zero inflation, zero state tax, zero base spending, a birth date that makes the person 70 in the start year, an integer planning age of 70 (the plan schema admits no 70y1m) and the production federal tax calculator from start year 2026; the count is asserted at the generator itself, whose context takes the plan\'s own baseline ledger run.',
+      'The count includes the current claim and excludes the stream\'s own current age as a candidate: a stream already claiming at 70y0m generates two candidates and so evaluates three combinations, and a plan with no stream still evaluates one. The middle point is the person’s own full retirement age from socialSecurity/nra.ts#fraForBirthYear, 66y2m for the example’s 1956-01-01 birth (effective birth year 1955). The two estates are RUN-PINNED, not derived: the worksheet states no dollar figure for either, so the test\'s example carries the value one execution of the co-optimizer produced on the stated plan, and it is evidence of that execution rather than of an independent derivation. What is derived is their equality: with no traditional balance every schedule is empty and no claim clears the 1000-dollar margin, so the joint estate IS the current-claim estate and both claim outputs are null. The strictness of that margin at exactly 1000 dollars was NOT constructed: it needs a candidate whose exact estate sits one margin above the current-claim optimum, which no plan input the worksheet states can produce. Beyond the worksheet\'s inputs the test assumes validated single-person plans with one cash account and no traditional balance, zero returns, zero inflation, zero state tax, zero base spending, a birth date that makes the person 70 in the start year, an integer planning age of 70 (the plan schema admits no 70y1m) and the production federal tax calculator from start year 2026; the count is asserted at the generator itself, whose context takes the plan\'s own baseline ledger run.',
     ],
     implementedBy: [
       'packages/engine/src/projection/optimizePlan.ts',

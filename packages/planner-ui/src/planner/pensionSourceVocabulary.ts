@@ -61,8 +61,8 @@ export const EARLY_DISTRIBUTION_OPTIONS: ReadonlyArray<{
   label: string
 }> = [
   { value: 'unknown', label: 'Unknown' },
-  { value: 'true', label: 'Yes — premature distribution penalty applies' },
-  { value: 'false', label: 'No — not a premature distribution' },
+  { value: 'true', label: 'Yes (premature distribution penalty applies)' },
+  { value: 'false', label: 'No (not a premature distribution)' },
 ]
 
 export const CONTRIBUTORY_STATUS_OPTIONS: ReadonlyArray<{
@@ -87,7 +87,7 @@ export const DISTRIBUTION_REASON_OPTIONS: ReadonlyArray<{
 
 /** Jurisdictions for recorded pension plan and prior-tax facts. */
 export const PENSION_STATE_OPTIONS: ReadonlyArray<{ value: string; label: string }> = [
-  { value: '', label: 'Unknown — not recorded' },
+  { value: '', label: 'Unknown (not recorded)' },
   { value: 'AL', label: 'Alabama' },
   { value: 'AK', label: 'Alaska' },
   { value: 'AZ', label: 'Arizona' },

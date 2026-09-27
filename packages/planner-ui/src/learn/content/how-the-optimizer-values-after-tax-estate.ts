@@ -21,7 +21,7 @@ export const blocks: ArticleBlock[] = [
   { type: 'heading', text: 'The basic idea' },
   {
     type: 'prose',
-    md: 'A pre-tax account can look larger than a Roth account, but some of that balance may really belong to future tax. For estate comparison, RetireGolden treats leftover traditional dollars as partly taxable to heirs, while Roth, taxable, cash, property, and life-insurance death benefit use simpler pass-through assumptions. A spouse-designated HSA (or the legacy default) gets no estate haircut; a non-spouse HSA is estimated at your heir tax rate on the ending gross, without the qualifying pre-death medical expense reduction — a terminal comparison, not an actual death return.',
+    md: 'A pre-tax account can look larger than a Roth account, but some of that balance may really belong to future tax. For estate comparison, RetireGolden treats leftover traditional dollars as partly taxable to heirs, while Roth, taxable, cash, property, and life-insurance death benefit use simpler pass-through assumptions. A spouse-designated HSA (or the legacy default) gets no estate haircut; a non-spouse HSA is estimated at your heir tax rate on the ending gross, without the qualifying pre-death medical expense reduction; this is a terminal comparison, not an actual death return.',
   },
   {
     type: 'figure',
@@ -40,7 +40,7 @@ export const blocks: ArticleBlock[] = [
       { symbol: 'heir tax rate', meaning: 'the assumed income-tax rate heirs pay on inherited pre-tax dollars' },
     ],
     basis: 'nominal',
-    note: 'A simplified illustration for fully pre-tax traditional dollars left to a non-spouse heir, without HSA, basis, spouse, or charity adjustments — the full comparison handles those separately. The optimizer uses the assumption you set, then RetireGolden re-runs the full ledger and applies only a cleaned schedule that the ledger can execute.',
+    note: 'A simplified illustration for fully pre-tax traditional dollars left to a non-spouse heir, without HSA, basis, spouse, or charity adjustments; the full comparison handles those separately. The optimizer uses the assumption you set, then RetireGolden re-runs the full ledger and applies only a cleaned schedule that the ledger can execute.',
   },
   { type: 'heading', text: 'Why conversions can help the estate' },
   {

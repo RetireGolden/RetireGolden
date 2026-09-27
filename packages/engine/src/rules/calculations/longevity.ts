@@ -42,7 +42,7 @@ export const longevityRecords = {
       'The period table is applied unchanged to the cohort; the identity describes the table, not an individual\'s risk',
       'The result is clamped into [0, 1] and a negative age returns 0; neither case is flagged',
       'Sex "average" derives q(x) from the elementwise mean of the male and female e(x) rows, not from the mean of the two q(x) values',
-      'DUPLICATION: packages/planner-ui/src/socialSecurity/expectedPv.ts#oneYearSurvival re-derives p(x) = (e(x) - 0.5)/(e(x+1) + 0.5) from the same rows (with an optional multiplier scaling e(x) and Math.round instead of floor on the age); packages/planner-ui/src/socialSecurity/expectedPv.mortalityParity.test.ts proves the two agree at multiplier 1 for the worksheet rows x = 65, 66, 67 within 1e-12, in the planner-ui suite so the engine suite never loads a UI module. Moving the UI copy into the engine is packet B2-P1 of the bidirectional validation plan',
+      'DUPLICATION: packages/planner-ui/src/socialSecurity/expectedPv.ts#oneYearSurvival re-derives p(x) = (e(x) - 0.5)/(e(x+1) + 0.5) from the same rows (with an optional multiplier scaling e(x) and Math.round instead of floor on the age); a mortality parity test (packages/planner-ui/src/socialSecurity/expectedPv.mortalityParity.test.ts) proves the two agree at multiplier 1 for the worksheet rows x = 65, 66, 67 within 1e-12, in the planner-ui suite so the engine suite never loads a UI module. Moving the UI copy into the engine is packet B2-P1 of the bidirectional validation plan',
     ],
     implementedBy: ['packages/engine/src/montecarlo/mortality.ts'],
     implementedByFunctions: ['packages/engine/src/montecarlo/mortality.ts#annualMortality'],
@@ -266,7 +266,7 @@ export const longevityRecords = {
       'The questionnaire\'s factors are not validated here; the record maps a given multiplier, whatever its source',
       'The expectancy sum stops once the running survival falls to 1e-12, and the bisection runs a fixed 40 halvings rather than to a stated tolerance',
       'expectancyUnderHazard is module-private; the evidence recomputes the adjusted expectancy through survivalProbabilityTo at the solved power',
-      'The worksheet example is the identity point m = 1, so the evidence pins the fixed point and the expectancy identity, not the bisection away from it; survival.test.ts covers direction and monotonicity for m = 0.8 and 1.12, and a non-identity worksheet case is owed by a later derive round',
+      'The worksheet example is the identity point m = 1, so the evidence pins the fixed point and the expectancy identity, not the bisection away from it; the survival tests (survival.test.ts) cover direction and monotonicity for m = 0.8 and 1.12, and a non-identity worksheet case is owed by a later derive round',
     ],
     implementedBy: ['packages/engine/src/montecarlo/survival.ts'],
     implementedByFunctions: [
@@ -283,7 +283,7 @@ export const longevityRecords = {
     outputs: ['longevity-depletion-year'],
     feeds: ['display-years-before-plan-end', 'longevity-last-funded-year'],
     statement:
-      'ProjectionResult.depletionYear is the first projection year, in year order, whose YearResult.shortfall — the funding shortfall left after every withdrawal and any HECM backstop draw — is strictly greater than projection/moneyTolerance.ts#ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS ($0.005, the ledger\'s own residual budget). A residual at or below that budget is not depletion; once a year is recorded the value is never replaced by a later one; and the field is null when no year exceeds the tolerance. Units: calendar year, or null. Rounding: none; the comparison is strict.',
+      'ProjectionResult.depletionYear is the first projection year, in year order, whose YearResult.shortfall (the funding shortfall left after every withdrawal and any HECM backstop draw) is strictly greater than projection/moneyTolerance.ts#ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS ($0.005, the ledger\'s own residual budget). A residual at or below that budget is not depletion; once a year is recorded the value is never replaced by a later one; and the field is null when no year exceeds the tolerance. Units: calendar year, or null. Rounding: none; the comparison is strict.',
     formula: {
       expression: 'depletionYear = min{ y : shortfall_y > ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS }, else null',
       variables: [

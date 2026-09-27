@@ -91,12 +91,12 @@ export const blocks: ArticleBlock[] = [
     items: [
       'Do not treat a default as personal advice; it is a starting point you can override.',
       'Change one major assumption at a time when testing sensitivity, or it becomes hard to know what moved the result.',
-      'Dated rule packs, such as tax brackets and Medicare thresholds, are different from user-overridable assumptions.',
+      'Dated rule sets, such as tax brackets and Medicare thresholds, are different from user-overridable assumptions.',
     ],
   },
   { type: 'heading', text: 'Where to manage these in the app' },
   {
     type: 'prose',
-    md: 'You can view and override all forward-looking assumptions on the **Assumptions** screen. For planning ages, you can adjust these per household member under the **Household** step, which feeds into the longevity module. The dated rule packs (like tax brackets and Medicare thresholds) are non-overridable and can be reviewed via the **Disclaimer** page.',
+    md: 'You can view and override all forward-looking assumptions on the **Assumptions** screen. For planning ages, you can adjust these per household member under the **Household** step, which feeds into the longevity module. The dated rule sets (like tax brackets and Medicare thresholds) are non-overridable and can be reviewed via the **Disclaimer** page.',
   },
 ]

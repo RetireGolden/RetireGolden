@@ -628,7 +628,7 @@ export const midwestStateRecords = {
       // and military exclusions. There is no line for a civil-service annuity,
       // which is the shape of the negative this record rests on.
       kind: 'formInstruction',
-      citation: '2025 Form ND-1 instructions, Line 8 — U.S. Railroad Retirement Board benefits',
+      citation: '2025 Form ND-1 instructions, Line 8: U.S. Railroad Retirement Board benefits',
       url: 'https://www.tax.nd.gov/sites/www/files/documents/forms/individual/2025-iit/2025-individual-income-tax-booklet.pdf',
       quotedText:
         'Enter on this line the portion of any unemployment, sick pay, or retirement benefits received from the U.S. Railroad Retirement Board that are taxable on your federal income tax return.',
@@ -707,7 +707,7 @@ export const midwestStateRecords = {
         'Qualified dividends as defined under Internal Revenue Code section 1(h) (11), added by section 302(a) of the Jobs and Growth Tax Relief Reconciliation Act of 2003 [Pub. L. 108-27; 117 Stat. 752; 2 U.S.C. 963 et seq.], but only if taxed at a federal income tax rate that is lower than the regular federal income tax rates applicable to ordinary income. If, for any taxable year, qualified dividends are taxed at the regular federal income tax rates applicable to ordinary income, the reduction allowed under this subdivision is equal to thirty percent of all dividends included in federal taxable income.',
     }, {
       kind: 'formInstruction',
-      citation: '2025 Form ND-1 instructions, Line 13 — Qualified dividend exclusion',
+      citation: '2025 Form ND-1 instructions, Line 13: Qualified dividend exclusion',
       url: 'https://www.tax.nd.gov/sites/www/files/documents/forms/individual/2025-iit/2025-individual-income-tax-booklet.pdf',
       quotedText:
         'If you were a full-year resident of North Dakota during the tax year, multiply the qualified dividends from Form 1040 or 1040-SR, line 3a, by 40 percent and enter the result.',
@@ -745,7 +745,7 @@ export const midwestStateRecords = {
       // negative is the department's own. It is not corroboration here; it is
       // the authority.
       kind: 'stateAgencyPublication',
-      citation: 'S.D. Dept. of Revenue, Individuals — Taxes, "Income Tax"',
+      citation: 'S.D. Dept. of Revenue, Individuals: Taxes, "Income Tax"',
       url: 'https://dor.sd.gov/individuals/taxes/',
       quotedText: 'South Dakota is one of seven states that does not impose a state income tax.',
     }, {
@@ -1444,7 +1444,7 @@ export const midwestStateRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'DOR publishes the annually adjusted whole-dollar ranges. bracketTax uses endpoint breakpoints over continuous modeled dollars; at whole-dollar inputs this represents the published ranges. The record expires after TY2026. Later plan years may reuse the latest 2026 pack as a planning stand-in and are not certified by this annual record.',
+      'DOR publishes the annually adjusted whole-dollar ranges. bracketTax uses endpoint breakpoints over continuous modeled dollars; at whole-dollar inputs this represents the published ranges. The record expires after TY2026. Later plan years may reuse the latest 2026 tax parameters as a planning stand-in and are not certified by this annual record.',
     jurisdiction: 'state:MN',
     authority: [{
       kind: 'stateAgencyPublication',
@@ -1497,13 +1497,13 @@ export const midwestStateRecords = {
     jurisdiction: 'state:MN',
     authority: [{
       kind: 'stateAgencyPublication',
-      citation: 'Minnesota DOR, Seniors — Pension Income',
+      citation: 'Minnesota DOR, Seniors: Pension Income',
       url: 'https://www.revenue.state.mn.us/seniors',
       quotedText:
         'Pensions, including federal pensions, received while a Minnesota resident are taxable by Minnesota regardless of where your pension was earned.',
     }, {
       kind: 'stateAgencyPublication',
-      citation: 'Minnesota DOR, Seniors — military carve-out scope (excluded limb)',
+      citation: 'Minnesota DOR, Seniors: military carve-out scope (excluded limb)',
       url: 'https://www.revenue.state.mn.us/seniors',
       quotedText:
         'Military retirement pay (including pensions) is not taxable in Minnesota.',
@@ -1531,7 +1531,7 @@ export const midwestStateRecords = {
     contraryReading: null,
     errorDirection: 'overstatesTax',
     conventionRationale:
-      'The existing subdivision 26(c)(1)-(2) quotations are statutory-year base amounts. Subdivision 26(j) requires annual adjustment of the simplified-subtraction thresholds, and the DOR TY2026 table supplies the operative values. The quoted DOR table marks the alternate maxima as Not Indexed. The engine has no field or enforcer for either subtraction; later pack fallback remains an annually stale stand-in.',
+      'The existing subdivision 26(c)(1)-(2) quotations are statutory-year base amounts. Subdivision 26(j) requires annual adjustment of the simplified-subtraction thresholds, and the DOR TY2026 table supplies the operative values. The quoted DOR table marks the alternate maxima as Not Indexed. The engine has no field or enforcer for either subtraction; in later years, the fallback to the per-state tax data remains an annually stale stand-in.',
     jurisdiction: 'state:MN',
     authority: [{
       kind: 'statute',
@@ -1836,7 +1836,7 @@ export const midwestStateRecords = {
     contraryReading: null,
     errorDirection: null,
     conventionRationale:
-      'For the legal TY2026 nonbusiness schedule the current statute plus enacted analysis controls the supported reading. The captured 2026 IT 1040 ES estimated-payment worksheet reproduces the 2025 schedule ($342 plus 2.75% of excess over $26,050, then $2,394.32 plus 3.125% above $100,000) and conflicts directly with enacted §5747.02(A)(3)(c) and the LSC enacted-budget Greenbook; that administrative artifact is disclosed but not adopted as support for the pack. Part-year residency uses the engine\'s existing linear month-proration convention (prorateParams scales bracket breakpoints and baseTax); that scaling is a model convention, not authority-backed Ohio part-year law. The record expires after TY2026; later plan years may reuse the latest 2026 pack as a planning stand-in and are not certified by this annual record.',
+      'For the legal TY2026 nonbusiness schedule the current statute plus enacted analysis controls the supported reading. The captured 2026 IT 1040 ES estimated-payment worksheet reproduces the 2025 schedule ($342 plus 2.75% of excess over $26,050, then $2,394.32 plus 3.125% above $100,000) and conflicts directly with enacted §5747.02(A)(3)(c) and the LSC enacted-budget Greenbook; that administrative artifact is disclosed but not adopted as support for the per-state tax data. Part-year residency uses the engine\'s existing linear month-proration convention (prorateParams scales bracket breakpoints and baseTax); that scaling is a model convention, not authority-backed Ohio part-year law. The record expires after TY2026; later plan years may reuse the latest 2026 per-state tax data as a planning stand-in and are not certified by this annual record.',
     jurisdiction: 'state:OH',
     authority: [{
       kind: 'statute',

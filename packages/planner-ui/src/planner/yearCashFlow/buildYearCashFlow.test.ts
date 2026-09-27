@@ -202,13 +202,13 @@ describe('buildYearCashFlowSankey', () => {
   it('labels two spouses\' IRA and 401(k) from current Plan names and kinds', () => {
     const model = ready(twoOwnerPlan(), twoOwnerCashFlow())
     const labels = model.views.cashFlow.nodes.map((n) => n.label)
-    expect(labels).toContain('Pat - Rollover IRA (IRA)')
-    expect(labels).toContain('Robin - Workplace (401(k))')
-    expect(labels).toContain('Pat - Wages')
+    expect(labels).toContain('Pat · Rollover IRA (IRA)')
+    expect(labels).toContain('Robin · Workplace (401(k))')
+    expect(labels).toContain('Pat · Wages')
     const ira = model.table.find((row) => row.id === 'source:needBasedPortfolioWithdrawal:ira-pat')
     const k = model.table.find((row) => row.id === 'source:needBasedPortfolioWithdrawal:k-robin')
-    expect(ira?.label).toBe('Pat - Rollover IRA (IRA)')
-    expect(k?.label).toBe('Robin - Workplace (401(k))')
+    expect(ira?.label).toBe('Pat · Rollover IRA (IRA)')
+    expect(k?.label).toBe('Robin · Workplace (401(k))')
   })
 
   it('renders an unknown Plan reference as its own node and never folds it into household cash', () => {
@@ -396,13 +396,13 @@ describe('buildYearCashFlowSankey', () => {
     })
     const model = ready(plan, cashFlow)
     const node = model.views.cashFlow.nodes.find((n) => n.id === 'source:pension:pen-p2')
-    expect(node?.label).toBe('Pat - Pension (Pension)')
+    expect(node?.label).toBe('Pat · Pension (Pension)')
     expect(node?.personKey).toBe('p1')
     expect(node?.personLabel).toBe('Pat')
     expect(node?.label).not.toContain('Robin')
     const row = model.table.find((item) => item.id === 'source:pension:pen-p2')
-    expect(row?.label).toBe('Pat - Pension (Pension)')
-    expect(row?.entityLabels).toEqual(expect.arrayContaining(['Robin - Pension (Pension)', 'Pat']))
+    expect(row?.label).toBe('Pat · Pension (Pension)')
+    expect(row?.entityLabels).toEqual(expect.arrayContaining(['Robin · Pension (Pension)', 'Pat']))
   })
 
   it('discloses a secondary unknown identity on the label, table, and chart node', () => {

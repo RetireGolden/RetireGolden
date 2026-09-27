@@ -150,10 +150,10 @@ export function PensionAccountEditor({
         </div>
         <SelectField
           label="Pension source"
-          help="State retirement exclusions need a characterized source. A 1040 line 5b total cannot establish private, employer, IRA, or public-system identity — confirm the source from your plan documents."
+          help="State retirement exclusions need a characterized source. A 1040 line 5b total cannot establish private, employer, IRA, or public-system identity; confirm the source from your plan documents."
           hint={sourceConfirmed ? `On record: ${pensionSourceLabel(recordedSource)}. Source changes are saved only when you record them.` : `Source is unconfirmed: ${pensionSourceLabel(recordedSource)}. Choose and record a characterized source before editing eligibility.`}
           value={draftSource}
-          options={[{ value: '', label: 'Unknown — clear recorded source' }, ...PENSION_SOURCE_OPTIONS]}
+          options={[{ value: '', label: 'Unknown (clear recorded source)' }, ...PENSION_SOURCE_OPTIONS]}
           wide
           onCommit={(value) => {
             setDraftSource(value)
@@ -184,7 +184,7 @@ export function PensionAccountEditor({
             <SelectField
               label="Qualified plan type"
               value={eligibility?.qualifiedPlanType ?? ''}
-              options={[{ value: '', label: 'Unknown — not recorded' }, ...QUALIFIED_PLAN_TYPE_OPTIONS]}
+              options={[{ value: '', label: 'Unknown (not recorded)' }, ...QUALIFIED_PLAN_TYPE_OPTIONS]}
               onCommit={(value) =>
                 onCommit('stateEligibility', {
                   ...eligibility,
@@ -195,9 +195,9 @@ export function PensionAccountEditor({
             />
             <SelectField
               label="Premature distribution disqualifier"
-              help="Whether a state exclusion is disqualified by an early-distribution penalty. Never defaults to No — choose Unknown when you do not know."
+              help="Whether a state exclusion is disqualified by an early-distribution penalty. Never defaults to No; choose Unknown when you do not know."
               value={eligibility?.earlyDistributionDisqualifier ?? ''}
-              options={[{ value: '', label: 'Unknown — not recorded' }, ...EARLY_DISTRIBUTION_OPTIONS]}
+              options={[{ value: '', label: 'Unknown (not recorded)' }, ...EARLY_DISTRIBUTION_OPTIONS]}
               onCommit={(value) =>
                 onCommit('stateEligibility', {
                   ...eligibility,
@@ -209,7 +209,7 @@ export function PensionAccountEditor({
             <SelectField
               label="Contributory status"
               value={eligibility?.contributoryStatus ?? ''}
-              options={[{ value: '', label: 'Unknown — not recorded' }, ...CONTRIBUTORY_STATUS_OPTIONS]}
+              options={[{ value: '', label: 'Unknown (not recorded)' }, ...CONTRIBUTORY_STATUS_OPTIONS]}
               onCommit={(value) =>
                 onCommit('stateEligibility', {
                   ...eligibility,
@@ -221,7 +221,7 @@ export function PensionAccountEditor({
             <SelectField
               label="Distribution reason"
               value={eligibility?.distributionReason ?? ''}
-              options={[{ value: '', label: 'Unknown — not recorded' }, ...DISTRIBUTION_REASON_OPTIONS]}
+              options={[{ value: '', label: 'Unknown (not recorded)' }, ...DISTRIBUTION_REASON_OPTIONS]}
               onCommit={(value) =>
                 onCommit('stateEligibility', {
                   ...eligibility,
@@ -291,7 +291,7 @@ export function PensionAccountEditor({
             {isPensionSourceLegacy(recordedSource) ? (
               <ReadonlyField
                 label="Legacy source on record"
-                value={`${pensionSourceLabel(recordedSource)} — the engine preserves this identity until you record a characterized source above.`}
+                value={`${pensionSourceLabel(recordedSource)}; the engine preserves this identity until you record a characterized source above.`}
               />
             ) : null}
           </fieldset>
@@ -580,7 +580,7 @@ export function AnnuityAccountEditor({
           {account.purchase.taxQualification === 'qualified' ? (
             <CheckboxField
               label="QLAC (qualified longevity annuity)"
-              help="A deferred-start longevity annuity purchased inside a traditional account. The premium is capped at the SECURE 2.0 statutory limit ($210,000 for 2026) and excluded from the RMD base until payouts begin. Payments still have to begin by the first of the month after your 85th birthday — that is what makes it a QLAC."
+              help="A deferred-start longevity annuity purchased inside a traditional account. The premium is capped at the SECURE 2.0 statutory limit ($210,000 for 2026) and excluded from the RMD base until payouts begin. Payments still have to begin by the first of the month after your 85th birthday; that is what makes it a QLAC."
               value={account.purchase.qlac === true}
               onCommit={(v) => setPurchase({ ...account.purchase!, qlac: v || undefined })}
             />

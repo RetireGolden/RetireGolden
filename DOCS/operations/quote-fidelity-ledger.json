@@ -8668,7 +8668,7 @@
     },
     {
       "id": "irc-1400z-2-qof-deferral-and-ten-year-basis-election",
-      "citation": "Amendment note to IRC 1400Z-2, P.L. 119-21 sec. 70421 - post-2026 (a)(2)",
+      "citation": "Amendment note to IRC 1400Z-2, P.L. 119-21 sec. 70421: post-2026 (a)(2)",
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1400Z-2&num=0&edition=prelim",
       "quoteSha256": "d471dc25dceb4eb8",
@@ -8678,7 +8678,7 @@
     },
     {
       "id": "irc-1400z-2-qof-deferral-and-ten-year-basis-election",
-      "citation": "Amendment note to IRC 1400Z-2, P.L. 119-21 sec. 70421 - post-2026 (b)(1)",
+      "citation": "Amendment note to IRC 1400Z-2, P.L. 119-21 sec. 70421: post-2026 (b)(1)",
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section1400Z-2&num=0&edition=prelim",
       "quoteSha256": "d1da260df0ff0517",
@@ -8808,7 +8808,7 @@
     },
     {
       "id": "irc-1411-d-modified-agi-foreign-exclusion-addback",
-      "citation": "Instructions for Form 8960 (2025), Part III, Line 13—MAGI, Section 911",
+      "citation": "Instructions for Form 8960 (2025), Part III, Line 13: MAGI, Section 911",
       "host": "www.irs.gov",
       "url": "https://www.irs.gov/instructions/i8960#en_US_2025_publink10004435",
       "quoteSha256": "9024d05e3519dd47",
@@ -10288,7 +10288,7 @@
     },
     {
       "id": "pa-pit-social-security-not-compensation",
-      "citation": "Pennsylvania Department of Revenue, Personal Income Tax Guide — Gross Compensation, Income Items Never Taxable as PA Compensation",
+      "citation": "Pennsylvania Department of Revenue, Personal Income Tax Guide: Gross Compensation, Income Items Never Taxable as PA Compensation",
       "host": "www.pa.gov",
       "url": "https://www.pa.gov/agencies/revenue/forms-and-publications/pa-personal-income-tax-guide/gross-compensation",
       "quoteSha256": "aeed29fee3ae0286",
@@ -10328,7 +10328,7 @@
     },
     {
       "id": "ny-dtf-qualified-government-pension-full-subtraction",
-      "citation": "New York State Department of Taxation and Finance, Information for retired persons — Pensions of New York State, local governments, and the federal government",
+      "citation": "New York State Department of Taxation and Finance, Information for retired persons: Pensions of New York State, local governments, and the federal government",
       "host": "www.tax.ny.gov",
       "url": "https://www.tax.ny.gov/pit/file/information_for_seniors.htm",
       "quoteSha256": "305e5f4289c8e92e",
@@ -10338,7 +10338,7 @@
     },
     {
       "id": "ny-dtf-qualified-government-pension-full-subtraction",
-      "citation": "New York State Department of Taxation and Finance, Information for retired persons — federal government pensions including military",
+      "citation": "New York State Department of Taxation and Finance, Information for retired persons: federal government pensions including military",
       "host": "www.tax.ny.gov",
       "url": "https://www.tax.ny.gov/pit/file/information_for_seniors.htm",
       "quoteSha256": "b823d25b1c1c0e11",
@@ -10348,7 +10348,7 @@
     },
     {
       "id": "ny-dtf-qualified-government-pension-full-subtraction",
-      "citation": "New York State Department of Taxation and Finance, Information for retired persons — Optional Retirement Program limitation",
+      "citation": "New York State Department of Taxation and Finance, Information for retired persons: Optional Retirement Program limitation",
       "host": "www.tax.ny.gov",
       "url": "https://www.tax.ny.gov/pit/file/information_for_seniors.htm",
       "quoteSha256": "4e6bf34c431614f9",
@@ -10358,7 +10358,7 @@
     },
     {
       "id": "ny-government-pension-issuer-qualification-not-modeled",
-      "citation": "New York State Department of Taxation and Finance, Information for retired persons — Pensions of New York State, local governments, and the federal government",
+      "citation": "New York State Department of Taxation and Finance, Information for retired persons: Pensions of New York State, local governments, and the federal government",
       "host": "www.tax.ny.gov",
       "url": "https://www.tax.ny.gov/pit/file/information_for_seniors.htm",
       "quoteSha256": "305e5f4289c8e92e",
@@ -10368,7 +10368,7 @@
     },
     {
       "id": "ny-government-pension-issuer-qualification-not-modeled",
-      "citation": "New York State Department of Taxation and Finance, Information for retired persons — federal government pensions including military",
+      "citation": "New York State Department of Taxation and Finance, Information for retired persons: federal government pensions including military",
       "host": "www.tax.ny.gov",
       "url": "https://www.tax.ny.gov/pit/file/information_for_seniors.htm",
       "quoteSha256": "b823d25b1c1c0e11",
@@ -10378,7 +10378,7 @@
     },
     {
       "id": "ny-government-pension-issuer-qualification-not-modeled",
-      "citation": "New York State Department of Taxation and Finance, Information for retired persons — Optional Retirement Program limitation",
+      "citation": "New York State Department of Taxation and Finance, Information for retired persons: Optional Retirement Program limitation",
       "host": "www.tax.ny.gov",
       "url": "https://www.tax.ny.gov/pit/file/information_for_seniors.htm",
       "quoteSha256": "4e6bf34c431614f9",
@@ -10388,7 +10388,7 @@
     },
     {
       "id": "ny-dtf-social-security-subtraction",
-      "citation": "New York State Department of Taxation and Finance, Information for retired persons — Social Security",
+      "citation": "New York State Department of Taxation and Finance, Information for retired persons: Social Security",
       "host": "www.tax.ny.gov",
       "url": "https://www.tax.ny.gov/pit/file/information_for_seniors.htm",
       "quoteSha256": "3cc44ef04dcd8983",
@@ -10398,7 +10398,7 @@
     },
     {
       "id": "ny-it225-s122-non-ss-railroad-benefits-not-modeled",
-      "citation": "New York State Department of Taxation and Finance, Information for retired persons — Railroad Retirement benefits (IT-225 code S-122)",
+      "citation": "New York State Department of Taxation and Finance, Information for retired persons: Railroad Retirement benefits (IT-225 code S-122)",
       "host": "www.tax.ny.gov",
       "url": "https://www.tax.ny.gov/pit/file/information_for_seniors.htm",
       "quoteSha256": "7dca9f8e6afbe507",
@@ -10408,7 +10408,7 @@
     },
     {
       "id": "ny-it225-s122-non-ss-railroad-benefits-not-modeled",
-      "citation": "New York State Department of Taxation and Finance, Information for retired persons — Social Security equivalent Railroad Retirement benefits",
+      "citation": "New York State Department of Taxation and Finance, Information for retired persons: Social Security equivalent Railroad Retirement benefits",
       "host": "www.tax.ny.gov",
       "url": "https://www.tax.ny.gov/pit/file/information_for_seniors.htm",
       "quoteSha256": "cfea62d7ad7d26ed",
@@ -10548,7 +10548,7 @@
     },
     {
       "id": "mrs-36-5124-c-2-standard-deduction-phaseout",
-      "citation": "MRS 2026 Estimated Tax Worksheet, Line 6a — Phaseout of Itemized / Standard Deductions Worksheet (rev. December 2025)",
+      "citation": "MRS 2026 Estimated Tax Worksheet, Line 6a: Phaseout of Itemized / Standard Deductions Worksheet (rev. December 2025)",
       "host": "www.maine.gov",
       "url": "https://www.maine.gov/revenue/sites/maine.gov.revenue/files/inline-files/26_item_stand_%20ded_phaseout_wksht_0.pdf",
       "quoteSha256": "dfb24bb4ebe63c95",
@@ -10558,7 +10558,7 @@
     },
     {
       "id": "mrs-36-5124-c-2-standard-deduction-phaseout",
-      "citation": "MRS 2026 Estimated Tax Worksheet, Line 6a — Phaseout worksheet lines 7–8 (rev. December 2025)",
+      "citation": "MRS 2026 Estimated Tax Worksheet, Line 6a: Phaseout worksheet lines 7–8 (rev. December 2025)",
       "host": "www.maine.gov",
       "url": "https://www.maine.gov/revenue/sites/maine.gov.revenue/files/inline-files/26_item_stand_%20ded_phaseout_wksht_0.pdf",
       "quoteSha256": "0a9d4bcd94311185",
@@ -11708,7 +11708,7 @@
     },
     {
       "id": "ndcc-57-38-30-3-2-closed-subtraction-list",
-      "citation": "2025 Form ND-1 instructions, Line 8 — U.S. Railroad Retirement Board benefits",
+      "citation": "2025 Form ND-1 instructions, Line 8: U.S. Railroad Retirement Board benefits",
       "host": "www.tax.nd.gov",
       "url": "https://www.tax.nd.gov/sites/www/files/documents/forms/individual/2025-iit/2025-individual-income-tax-booklet.pdf",
       "quoteSha256": "a30afb104ec3170d",
@@ -11798,7 +11798,7 @@
     },
     {
       "id": "ndcc-57-38-30-3-2-d-2-qualified-dividend-exclusion",
-      "citation": "2025 Form ND-1 instructions, Line 13 — Qualified dividend exclusion",
+      "citation": "2025 Form ND-1 instructions, Line 13: Qualified dividend exclusion",
       "host": "www.tax.nd.gov",
       "url": "https://www.tax.nd.gov/sites/www/files/documents/forms/individual/2025-iit/2025-individual-income-tax-booklet.pdf",
       "quoteSha256": "02fdcf1ced4ce65c",
@@ -11808,7 +11808,7 @@
     },
     {
       "id": "sd-no-individual-income-tax",
-      "citation": "S.D. Dept. of Revenue, Individuals — Taxes, \"Income Tax\"",
+      "citation": "S.D. Dept. of Revenue, Individuals: Taxes, \"Income Tax\"",
       "host": "dor.sd.gov",
       "url": "https://dor.sd.gov/individuals/taxes/",
       "quoteSha256": "e195834628855b35",
@@ -12337,7 +12337,7 @@
     },
     {
       "id": "mn-dor-seniors-resident-pension-inclusion",
-      "citation": "Minnesota DOR, Seniors — Pension Income",
+      "citation": "Minnesota DOR, Seniors: Pension Income",
       "host": "www.revenue.state.mn.us",
       "url": "https://www.revenue.state.mn.us/seniors",
       "quoteSha256": "b2fa43244c1790d0",
@@ -12347,7 +12347,7 @@
     },
     {
       "id": "mn-dor-seniors-resident-pension-inclusion",
-      "citation": "Minnesota DOR, Seniors — military carve-out scope (excluded limb)",
+      "citation": "Minnesota DOR, Seniors: military carve-out scope (excluded limb)",
       "host": "www.revenue.state.mn.us",
       "url": "https://www.revenue.state.mn.us/seniors",
       "quoteSha256": "0d815463ce2481d9",
@@ -13347,7 +13347,7 @@
     },
     {
       "id": "va-railroad-retirement-and-unemployment-benefits-not-modeled",
-      "citation": "Virginia Department of Taxation, Subtractions — Social Security Act and Equivalent Tier 1 Railroad Retirement Act Benefits",
+      "citation": "Virginia Department of Taxation, Subtractions: Social Security Act and Equivalent Tier 1 Railroad Retirement Act Benefits",
       "host": "www.tax.virginia.gov",
       "url": "https://www.tax.virginia.gov/subtractions",
       "quoteSha256": "b3b94cefc1383537",
@@ -13357,7 +13357,7 @@
     },
     {
       "id": "va-railroad-retirement-and-unemployment-benefits-not-modeled",
-      "citation": "Virginia Department of Taxation, Subtractions — Tier 2 and other Railroad Retirement and Railroad Unemployment Benefits",
+      "citation": "Virginia Department of Taxation, Subtractions: Tier 2 and other Railroad Retirement and Railroad Unemployment Benefits",
       "host": "www.tax.virginia.gov",
       "url": "https://www.tax.virginia.gov/subtractions",
       "quoteSha256": "4bcd2e99ca0464e1",
@@ -13557,7 +13557,7 @@
     },
     {
       "id": "tn-hall-income-tax-repealed-from-2021",
-      "citation": "TN Dept. of Revenue, Hall Income Tax — Due Date and Tax Rates",
+      "citation": "TN Dept. of Revenue, Hall Income Tax: Due Date and Tax Rates",
       "host": "www.tn.gov",
       "url": "https://www.tn.gov/revenue/taxes/hall-income-tax/due-date-and-tax-rates.html",
       "quoteSha256": "2284aa3871cc969d",
@@ -13957,7 +13957,7 @@
     },
     {
       "id": "ms-27-7-5-rate-ramp",
-      "citation": "MS DOR, Individual Income Tax — Tax Rates",
+      "citation": "MS DOR, Individual Income Tax: Tax Rates",
       "host": "www.dor.ms.gov",
       "url": "https://www.dor.ms.gov/individual/tax-rates",
       "quoteSha256": "57c051255b355bac",
@@ -14027,7 +14027,7 @@
     },
     {
       "id": "ms-early-or-excess-distribution-not-exempt",
-      "citation": "MS DOR, 2025 Form 80-100 instructions, Line 46 — Total Pensions and Annuities",
+      "citation": "MS DOR, 2025 Form 80-100 instructions, Line 46: Total Pensions and Annuities",
       "host": "www.dor.ms.gov",
       "url": "https://www.dor.ms.gov/sites/default/files/tax-forms/individual/80100251%202.pdf",
       "quoteSha256": "017cf61a415fbff1",
@@ -14037,7 +14037,7 @@
     },
     {
       "id": "ms-early-or-excess-distribution-not-exempt",
-      "citation": "MS DOR, Individual Income Tax FAQ — \"Is retirement income taxable?\"",
+      "citation": "MS DOR, Individual Income Tax FAQ: \"Is retirement income taxable?\"",
       "host": "www.dor.ms.gov",
       "url": "https://www.dor.ms.gov/individual/individual-income-tax-frequently-asked-questions",
       "quoteSha256": "54ad03ca0ec8baec",
@@ -14127,7 +14127,7 @@
     },
     {
       "id": "ms-combined-return-runs-the-schedule-per-spouse",
-      "citation": "MS DOR, Individual Income Tax — Tax Rates, combined returns",
+      "citation": "MS DOR, Individual Income Tax: Tax Rates, combined returns",
       "host": "www.dor.ms.gov",
       "url": "https://www.dor.ms.gov/individual/tax-rates",
       "quoteSha256": "0157c0b061b0b410",
@@ -14167,7 +14167,7 @@
     },
     {
       "id": "ms-capital-gains-taxed-as-ordinary",
-      "citation": "MS DOR, 2025 Form 80-100 instructions, Line 40 — Capital Gain or Loss",
+      "citation": "MS DOR, 2025 Form 80-100 instructions, Line 40: Capital Gain or Loss",
       "host": "www.dor.ms.gov",
       "url": "https://www.dor.ms.gov/sites/default/files/tax-forms/individual/80100251%202.pdf",
       "quoteSha256": "f5d901403e5019f5",
@@ -14407,7 +14407,7 @@
     },
     {
       "id": "al-form40-defined-benefit-414j-exemption",
-      "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Pensions and Annuities — amounts not taxable",
+      "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Pensions and Annuities: amounts not taxable",
       "host": "www.revenue.alabama.gov",
       "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf",
       "quoteSha256": "f40d97ee29f4660e",
@@ -14417,7 +14417,7 @@
     },
     {
       "id": "al-form40-ira-dc-distributions-taxable",
-      "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Line 4 — Retirement Income (Schedule RS)",
+      "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Line 4: Retirement Income (Schedule RS)",
       "host": "www.revenue.alabama.gov",
       "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf",
       "quoteSha256": "832c8c519e77d4b7",
@@ -14437,7 +14437,7 @@
     },
     {
       "id": "al-form40-cost-recovery-not-modeled",
-      "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Worksheet for Partially Taxable Pensions — pre-1987 recovery",
+      "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Worksheet for Partially Taxable Pensions: pre-1987 recovery",
       "host": "www.revenue.alabama.gov",
       "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf",
       "quoteSha256": "abf1873770700a4f",
@@ -14467,7 +14467,7 @@
     },
     {
       "id": "al-form40-personal-and-dependent-exemptions-not-modeled",
-      "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Line 13 — Personal Exemption",
+      "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Line 13: Personal Exemption",
       "host": "www.revenue.alabama.gov",
       "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf",
       "quoteSha256": "dc15f3d90ea5e4d0",
@@ -14477,7 +14477,7 @@
     },
     {
       "id": "al-form40-personal-and-dependent-exemptions-not-modeled",
-      "citation": "Alabama Department of Revenue, Individual Income Tax — Rate (applicability levels)",
+      "citation": "Alabama Department of Revenue, Individual Income Tax: Rate (applicability levels)",
       "host": "www.revenue.alabama.gov",
       "url": "https://www.revenue.alabama.gov/individual-corporate/taxes-administered-by-individual-corporate-income-tax/individual-income-tax/",
       "quoteSha256": "5ae12c148fcc3f9c",
@@ -14497,7 +14497,7 @@
     },
     {
       "id": "al-form40-age-65-retirement-exclusion-cap",
-      "citation": "Ala. Code § 40-18-19(a)(13), as retained by 2026 Ala. H.B. 341, p. 6 — amount",
+      "citation": "Ala. Code § 40-18-19(a)(13), as retained by 2026 Ala. H.B. 341, p. 6: amount",
       "host": "alison.legislature.state.al.us",
       "url": "https://alison.legislature.state.al.us/files/pdf/SearchableInstruments/2026RS/HB341-enr.pdf",
       "quoteSha256": "dc7ebeceb563b26e",
@@ -14507,7 +14507,7 @@
     },
     {
       "id": "al-form40-age-65-retirement-exclusion-cap",
-      "citation": "Ala. Code § 40-18-19(a)(13), as retained by 2026 Ala. H.B. 341, p. 6 — age restriction",
+      "citation": "Ala. Code § 40-18-19(a)(13), as retained by 2026 Ala. H.B. 341, p. 6: age restriction",
       "host": "alison.legislature.state.al.us",
       "url": "https://alison.legislature.state.al.us/files/pdf/SearchableInstruments/2026RS/HB341-enr.pdf",
       "quoteSha256": "2200f9774ab237f7",
@@ -14517,7 +14517,7 @@
     },
     {
       "id": "al-form40-age-65-retirement-exclusion-cap",
-      "citation": "Alabama Department of Revenue, 2025 Form 40, Schedule RS — retirement income exclusion",
+      "citation": "Alabama Department of Revenue, 2025 Form 40, Schedule RS: retirement income exclusion",
       "host": "www.revenue.alabama.gov",
       "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40.pdf",
       "quoteSha256": "212570196e7b9adb",
@@ -14537,7 +14537,7 @@
     },
     {
       "id": "al-form40-age-65-retirement-exclusion-cap",
-      "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Line 4 — Retirement Income (Schedule RS)",
+      "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Line 4: Retirement Income (Schedule RS)",
       "host": "www.revenue.alabama.gov",
       "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf",
       "quoteSha256": "832c8c519e77d4b7",
@@ -14547,7 +14547,7 @@
     },
     {
       "id": "al-form40-standard-deduction-agi-slide",
-      "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Line 11 — Standard Deduction",
+      "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, Line 11: Standard Deduction",
       "host": "www.revenue.alabama.gov",
       "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf",
       "quoteSha256": "0f44b10347670695",
@@ -14557,7 +14557,7 @@
     },
     {
       "id": "al-form40-standard-deduction-agi-slide",
-      "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, page 9 Standard Deduction chart — Single column",
+      "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, page 9 Standard Deduction chart: Single column",
       "host": "www.revenue.alabama.gov",
       "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf",
       "quoteSha256": "4688bbb54eba02e4",
@@ -14567,7 +14567,7 @@
     },
     {
       "id": "al-form40-standard-deduction-agi-slide",
-      "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, page 9 Standard Deduction chart — Married Filing Joint column",
+      "citation": "Alabama Department of Revenue, 2025 Form 40 booklet, page 9 Standard Deduction chart: Married Filing Joint column",
       "host": "www.revenue.alabama.gov",
       "url": "https://www.revenue.alabama.gov/wp-content/uploads/2026/01/25f40bk.pdf",
       "quoteSha256": "9180576e862c42ad",
@@ -14577,7 +14577,7 @@
     },
     {
       "id": "al-dor-individual-income-tax-rate-schedule",
-      "citation": "Alabama Department of Revenue, Individual Income Tax — Rate",
+      "citation": "Alabama Department of Revenue, Individual Income Tax: Rate",
       "host": "www.revenue.alabama.gov",
       "url": "https://www.revenue.alabama.gov/individual-corporate/taxes-administered-by-individual-corporate-income-tax/individual-income-tax/",
       "quoteSha256": "8293445ec6f7e497",
@@ -14587,7 +14587,7 @@
     },
     {
       "id": "al-dor-individual-income-tax-rate-schedule",
-      "citation": "Alabama Department of Revenue, Individual Income Tax — Rate (joint)",
+      "citation": "Alabama Department of Revenue, Individual Income Tax: Rate (joint)",
       "host": "www.revenue.alabama.gov",
       "url": "https://www.revenue.alabama.gov/individual-corporate/taxes-administered-by-individual-corporate-income-tax/individual-income-tax/",
       "quoteSha256": "722fcd615666515b",
@@ -15107,7 +15107,7 @@
     },
     {
       "id": "mt-hb337-2026-ordinary-rate-schedule",
-      "citation": "Montana DOR, HB337 — Tax Year 2026 Income Tax Brackets table",
+      "citation": "Montana DOR, HB337: Tax Year 2026 Income Tax Brackets table",
       "host": "revenuefiles.mt.gov",
       "url": "https://revenuefiles.mt.gov/news/recent-news/HB-337",
       "quoteSha256": "24ec3e483188d2c4",
@@ -15117,7 +15117,7 @@
     },
     {
       "id": "mt-hb337-2026-ordinary-rate-schedule",
-      "citation": "Montana DOR, HB337 — ordinary-income scope note",
+      "citation": "Montana DOR, HB337: ordinary-income scope note",
       "host": "revenuefiles.mt.gov",
       "url": "https://revenuefiles.mt.gov/news/recent-news/HB-337",
       "quoteSha256": "1ab1140d3db1112e",

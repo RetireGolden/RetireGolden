@@ -195,8 +195,8 @@ describe('serializeYearCashFlowDetailCsv', () => {
     }
     const model = buildYearCashFlowSankey(plan, { year: 2031, cashFlow })
     const csv = serializeYearCashFlowDetailCsv(model)
-    expect(csv).toContain('"Pat - Rollover ""IRA"", primary (IRA)"')
-    expect(csv).not.toMatch(/,Pat - Rollover "IRA", primary/)
+    expect(csv).toContain('"Pat · Rollover ""IRA"", primary (IRA)"')
+    expect(csv).not.toMatch(/,Pat · Rollover "IRA", primary/)
   })
 
   it('serializes characterizes lineage for standalone tax-character metadata rows', () => {

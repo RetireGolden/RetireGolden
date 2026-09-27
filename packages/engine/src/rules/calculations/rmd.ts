@@ -33,9 +33,9 @@ export const rmdRecords = {
       worksheet: 'DOCS/calculations/rmd/qcd-income-offset-qualified-slice.md',
     },
     limits: [
-      'The qualification ceiling is statutory: section 408(d)(8)(B), last sentence, treats a distribution as a qualified charitable distribution only to the extent it would be includible in gross income, and section 408(d)(8)(D) measures that extent as if every IRA of the owner were one contract distributed in full, which is the aggregate includible amount (pre-distribution owned-IRA balance less aggregate basis) this record uses; the second sentence of section 408(d)(8)(A) supplies the post-70.5 section 219 reduction. The allocation of the non-qualified remainder between the from-RMD and beyond-RMD portions has no statutory text and is an engine convention: the remainder is charged to the from-RMD portion first. Either order gives the same total ordinary inclusion (25,000 on the worksheet inputs: 50,000 - 35,000 + 10,000 under a qualified-first allocation, 50,000 - 30,000 + 5,000 under the engine\'s), so tax-total-annual and magi-annual do not depend on the order; only the split between the two published character rows does. The worksheet was first derived on the qualified-first order and re-derived on the engine\'s; the evidence pins the re-derived 30,000 and 5,000 and is green. The gross gift (YearResult.qcd) and the gross RMD are written by the gift planner and the RMD phase, not by the character planner this fixture exercises, so they are not asserted here.',
+      'The qualification ceiling is statutory: section 408(d)(8)(B), last sentence, treats a distribution as a qualified charitable distribution only to the extent it would be includible in gross income, and section 408(d)(8)(D) measures that extent as if every IRA of the owner were one contract distributed in full, which is the aggregate includible amount (pre-distribution owned-IRA balance less aggregate basis) this record uses; the second sentence of section 408(d)(8)(A) supplies the post-70.5 section 219 reduction. The allocation of the non-qualified remainder between the from-RMD and beyond-RMD portions has no statutory text and is an engine convention: the remainder is charged to the from-RMD portion first. Either order gives the same total ordinary inclusion (25,000 on the worksheet inputs: 50,000 - 35,000 + 10,000 under a qualified-first allocation, 50,000 - 30,000 + 5,000 under the engine\'s), so tax-total-annual and magi-annual do not depend on the order; only the split between the two published character rows does. The worksheet was first derived on the qualified-first order and re-derived on the engine\'s; the evidence pins the re-derived 30,000 and 5,000 and is green. The gross gift (YearResult.qcd) and the gross RMD are written by the gift planner and the RMD phase, not by the character planner this test exercises, so they are not asserted here.',
       'The evidence asserts the qualified slice through the exported plan builder rather than reading a private local: the slice is recovered from the published qualifiedFromRmd and nonQualifiedBeyondRmd rows',
-      'An unprovable or contradictory offset history fails closed to a zero exclusion and writes nothing to the cross-year ledger; this record is asserted on a provable history',
+      'An unprovable or contradictory offset history falls back to a zero exclusion rather than guessing, and writes nothing to the cross-year ledger; this record is asserted on a provable history',
     ],
     implementedBy: [
       'packages/engine/src/projection/internal/types/result.ts',
@@ -63,7 +63,7 @@ export const rmdRecords = {
         'eligible(p) = alive(p) and (age(p) >= 71 or (age(p) = 70 and birthMonth(p) <= 6)); cap = qcdAnnualLimit x limitGrowth; requested = min(qcdAnnual x inflFactor, cap x donorCount)',
       variables: [
         { symbol: 'qcdAnnualLimit', meaning: 'year2026.rmd.qcdAnnualLimit', unit: 'usd/donor/year', domain: 'positive' },
-        { symbol: 'limitGrowth', meaning: 'Limit-growth factor to the projection year; 1 in the published pack year', unit: '1', domain: 'positive' },
+        { symbol: 'limitGrowth', meaning: 'Limit-growth factor to the projection year; 1 in the year of the published parameters', unit: '1', domain: 'positive' },
         { symbol: 'age(p)', meaning: 'Attained age of person p this year', unit: 'years', domain: 'integer >= 0' },
         { symbol: 'birthMonth(p)', meaning: 'Birth month of person p', unit: 'month', domain: 'integer 1..12' },
       ],
@@ -207,13 +207,13 @@ export const rmdRecords = {
     outputs: ['rmd-required-annual'],
     feeds: [],
     statement:
-      'rmd/rmd.ts#requiredMinimumDistribution computes an owner RMD for the age-attained year as the prior December 31 traditional-account balance divided by the 2026 pack\'s Uniform Lifetime Table divisor, when no qualifying more-than-ten-years-younger sole-spouse beneficiary applies. Nothing is required before the owner attains the cohort applicable age. Units: nominal USD. Rounding: none.',
+      'rmd/rmd.ts#requiredMinimumDistribution computes an owner RMD for the age-attained year as the prior December 31 traditional-account balance divided by the Uniform Lifetime Table divisor in the 2026 tax parameters, when no qualifying more-than-ten-years-younger sole-spouse beneficiary applies. Nothing is required before the owner attains the cohort applicable age. Units: nominal USD. Rounding: none.',
     formula: {
       expression: 'rmd = priorYearEndBalance / uniformLifetimeTable[ageAttained], and 0 when ageAttained < applicableAge',
       variables: [
         { symbol: 'priorYearEndBalance', meaning: 'Traditional-account balance at the prior December 31', unit: 'usd', domain: 'positive; a nonpositive balance returns 0' },
         { symbol: 'ageAttained', meaning: 'Owner age attained in the distribution year', unit: 'years', domain: 'integer' },
-        { symbol: 'uniformLifetimeTable', meaning: 'year2026.rmd.uniformLifetimeTable, the pack\'s reproduction of IRS Pub. 590-B', unit: 'years', domain: 'positive entries' },
+        { symbol: 'uniformLifetimeTable', meaning: 'year2026.rmd.uniformLifetimeTable, the tax parameters’ reproduction of IRS Pub. 590-B', unit: 'years', domain: 'positive entries' },
       ],
       timing: 'one account-year',
       rounding: 'none',
@@ -255,7 +255,7 @@ export const rmdRecords = {
     },
     limits: [
       'Decision D-INHERITED-ROTH-SLICE (2026-09-25) settled the meaning of inheritedTraditionalDistribution as the ordinary income from inherited accounts, the composition the code publishes: an earlier comment excluded Roth dollars outright, and the field comment now says what the figure is. The 8,600 is asserted, and separately the Roth row\'s 3,000 gross and 600 slice. The same decision moved the withdrawal categories so the 600 is counted in roth only',
-      'Asserted at the exported phase with the worksheet\'s three rows realized from plan facts: a traditional annual-RMD row whose 8,000 executed amount is min(required, live balance) at a live balance of exactly 8,000, a Roth final-sweep row executing its whole 3,000 live balance with an injected characterization returning the worksheet\'s 600 of ordinary income, and a traditional row inside a ten-year window with no annual requirement. Plan assumptions beyond the worksheet\'s inputs: each account is a sole designated-individual beneficiary IRA with asserted provenance and a 2026 owner death, and the voluntary amounts the worksheet lists belong to a later phase and are not supplied here — the fixture asserts that this phase writes zero voluntary on every row',
+      'Asserted at the exported phase with the worksheet\'s three rows realized from plan facts: a traditional annual-RMD row whose 8,000 executed amount is min(required, live balance) at a live balance of exactly 8,000, a Roth final-sweep row executing its whole 3,000 live balance with an injected characterization returning the worksheet\'s 600 of ordinary income, and a traditional row inside a ten-year window with no annual requirement. Plan assumptions beyond the worksheet\'s inputs: each account is a sole designated-individual beneficiary IRA with asserted provenance and a 2026 owner death, and the voluntary amounts the worksheet lists belong to a later phase and are not supplied here; the test asserts that this phase writes zero voluntary on every row',
     ],
     implementedBy: [
       'packages/engine/src/projection/internal/types/result.ts',

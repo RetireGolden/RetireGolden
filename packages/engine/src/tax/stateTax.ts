@@ -1318,7 +1318,7 @@ export function computeStateTaxDetailResult(
       const distributions = knownDistributions ?? []
       const config = params.utahRetirementCredits
       if (!config) {
-        warnings.push({ code: 'ut-credit-pack-missing', ruleId: 'ut-retirement-credits', message: 'Utah credit calculation requires a versioned Utah credit pack.', missingFacts: ['utahRetirementCredits'] })
+        warnings.push({ code: 'ut-credit-pack-missing', ruleId: 'ut-retirement-credits', message: 'Utah credit calculation requires a published set of Utah credit parameters.', missingFacts: ['utahRetirementCredits'] })
       } else {
       const facts = opts.householdFacts
       const militaryAmt = utahOrVirginiaMilitaryFromFacts(distributions)
@@ -1725,7 +1725,7 @@ export function computeStateTaxYearResult(
   }
   if (!input.state) return { amount: 0, taxableIncome: 0, stateTax: 0, localTax: 0, totalTax: 0, taxCredit: 0, status: 'complete', warnings: [] }
   const published = stateParamsFor(input.state, input.year)
-  if (!published) return { amount: 0, taxableIncome: 0, stateTax: 0, localTax: 0, totalTax: 0, taxCredit: 0, status: 'incomplete', warnings: [{ code: 'state-pack-unavailable', message: `No versioned state pack is available for ${input.state} tax year ${input.year}.`, missingFacts: ['stateTaxPack'] }] }
+  if (!published) return { amount: 0, taxableIncome: 0, stateTax: 0, localTax: 0, totalTax: 0, taxCredit: 0, status: 'incomplete', warnings: [{ code: 'state-pack-unavailable', message: `No published state parameter set is available for ${input.state} tax year ${input.year}.`, missingFacts: ['stateTaxPack'] }] }
   const { pack } = packForYear(input.year)
   const params = opts.mapParams ? opts.mapParams(conformStateStandardDeduction(published, pack.federalTax.age65Addition, input.inflationScale ?? 1)) : conformStateStandardDeduction(published, pack.federalTax.age65Addition, input.inflationScale ?? 1)
   return computeStateTaxDetailResult(params, input, { ...opts, localRatePct })

@@ -69,12 +69,12 @@ export const blocks: ArticleBlock[] = [
   {
     type: 'callout',
     tone: 'note',
-    md: 'Example: a deceased worker with a $2,400 PIA who claimed at 62 was receiving 70% ($1,680). At the survivor FRA, the widow\u2019s limit floors the survivor at 82.5% of PIA \u2014 $1,980 \u2014 even though the deceased only got $1,680. If instead the deceased had delayed to 70, the survivor would receive the full delayed amount (about 124% of PIA).',
+    md: 'Example: a deceased worker with a $2,400 PIA who claimed at 62 was receiving 70% ($1,680). At the survivor FRA, the widow\u2019s limit floors the survivor at 82.5% of PIA ($1,980), even though the deceased only got $1,680. If instead the deceased had delayed to 70, the survivor would receive the full delayed amount (about 124% of PIA).',
   },
   { type: 'heading', text: 'Why it matters in RetireGolden' },
   {
     type: 'prose',
-    md: 'RetireGolden models a current-spouse top-up while both spouses are alive and both have claimed. It also models a survivor step-up so the surviving spouse keeps the larger benefit, computed with full precision \u2014 the deceased\u2019s claim-age-adjusted base, the RIB-LIM widow\u2019s-limit cap, and the early-claim widow(er) reduction. The Social Security entry screen can store former-spouse records (including the deceased ex\u2019s claim age) for divorced-spousal or survivor cases.',
+    md: 'RetireGolden models a current-spouse top-up while both spouses are alive and both have claimed. It also models a survivor step-up so the surviving spouse keeps the larger benefit, computed with full precision: the deceased\u2019s claim-age-adjusted base, the RIB-LIM widow\u2019s-limit cap, and the early-claim widow(er) reduction. The Social Security entry screen can store former-spouse records (including the deceased ex\u2019s claim age) for divorced-spousal or survivor cases.',
   },
   { type: 'heading', text: 'Common mistakes' },
   {
