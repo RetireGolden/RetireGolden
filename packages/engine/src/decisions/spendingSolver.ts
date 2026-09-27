@@ -215,7 +215,7 @@ export function solveMaxSustainableSpending(
       acaGrossPremiumReasons: [],
       acaGrossPremiumDirection: null,
       diagnostics: [
-        'This plan uses amortized spending (ABW), which recomputes annual spending from the portfolio each year — there is no fixed base-spending level to solve for. Switch the spending policy to fixed target or guardrails to use this solver.',
+        'This plan uses amortized spending (ABW), which recomputes annual spending from the portfolio each year, so there is no fixed base-spending level to solve for. Switch the spending policy to fixed target or guardrails to use this solver.',
       ],
     }
   }
@@ -330,7 +330,7 @@ export function solveMaxSustainableSpending(
     while (simulationCount < maxSimulations) {
       if (next > UNBOUNDED_SPENDING_DOLLARS) {
         diagnostics.push(
-          'Spending appears unbounded at the probed range — guaranteed income outruns spending at every tested level.',
+          'Spending appears unbounded at the probed range: guaranteed income outruns spending at every tested level.',
         )
         return finish(lower, upper)
       }
