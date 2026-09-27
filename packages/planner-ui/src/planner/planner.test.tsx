@@ -379,8 +379,8 @@ describe('report ACA wording', () => {
     plan.expenses.healthcare.applyAcaCredit = true
     expect(
       acaReportStatus(plan, [
-        { aca: { readiness: 'actionable' } } as never,
-        { aca: { readiness: 'actionable' } } as never,
+        { year: 2026, aca: { readiness: 'actionable', supportCodes: ['actionable'] } } as never,
+        { year: 2026, aca: { readiness: 'actionable', supportCodes: ['actionable'] } } as never,
       ]),
     ).toBe(', ACA credit modeled for evidenced years')
   })
@@ -390,10 +390,30 @@ describe('report ACA wording', () => {
     plan.expenses.healthcare.applyAcaCredit = true
     expect(
       acaReportStatus(plan, [
-        { aca: { readiness: 'actionable' } } as never,
-        { aca: { readiness: 'nonActionable' } } as never,
+        { year: 2026, aca: { readiness: 'actionable', supportCodes: ['actionable'] } } as never,
+        { year: 2027, aca: { readiness: 'nonActionable', supportCodes: ['tax-year-parameters-unsupported'] } } as never,
       ]),
     ).toBe(', ACA credit modeled for supported years; unsupported years use gross premium')
+  })
+
+  it('names the priced years whose income rests on projected tax brackets', () => {
+    // The engine appends income-tax-parameters-projected to a year priced on
+    // its published Marketplace figures while its income-tax figures are a
+    // stand-in (decision D-ACA-2027-TABLE); the status line says so by year.
+    const plan = createSamplePlan()
+    plan.expenses.healthcare.applyAcaCredit = true
+    const priced = { year: 2026, aca: { readiness: 'actionable', supportCodes: ['actionable'] } } as never
+    const projected = {
+      year: 2027,
+      aca: { readiness: 'actionable', supportCodes: ['actionable', 'income-tax-parameters-projected'] },
+    } as never
+    const unpriced = { year: 2028, aca: { readiness: 'nonActionable', supportCodes: ['tax-year-parameters-unsupported'] } } as never
+    expect(acaReportStatus(plan, [priced, projected])).toBe(
+      ', ACA credit modeled for evidenced years; 2027 priced on published Marketplace figures, with income from projected tax brackets',
+    )
+    expect(acaReportStatus(plan, [priced, projected, unpriced])).toBe(
+      ', ACA credit modeled for supported years; unsupported years use gross premium; 2027 priced on published Marketplace figures, with income from projected tax brackets',
+    )
   })
 
   it('describes all non-actionable years as unsupported gross-premium years', () => {
@@ -401,8 +421,8 @@ describe('report ACA wording', () => {
     plan.expenses.healthcare.applyAcaCredit = true
     expect(
       acaReportStatus(plan, [
-        { aca: { readiness: 'nonActionable' } } as never,
-        { aca: { readiness: 'nonActionable' } } as never,
+        { year: 2027, aca: { readiness: 'nonActionable', supportCodes: ['tax-year-parameters-unsupported'] } } as never,
+        { year: 2028, aca: { readiness: 'nonActionable', supportCodes: ['tax-year-parameters-unsupported'] } } as never,
       ]),
     ).toBe(', ACA credit not modeled; unsupported years use gross premium')
   })

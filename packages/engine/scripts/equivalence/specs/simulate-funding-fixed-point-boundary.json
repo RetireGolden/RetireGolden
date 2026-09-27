@@ -119,20 +119,20 @@
       "label": "settled annual funding facts grouped at the coordinator callsite",
       "file": "projection/internal/annualFundingApplicationAndClosePhase.ts",
       "lines": [
-        1056,
-        1066
+        1068,
+        1078
       ],
       "anchors": [
         {
-          "line": 1056,
+          "line": 1068,
           "text": "const fundingFixedPoint = annualFundingFixedPoint({"
         },
         {
-          "line": 1057,
+          "line": 1069,
           "text": "spendingUsesBeforeTax: expenses.total + contributions,"
         },
         {
-          "line": 1065,
+          "line": 1077,
           "text": "evaluate: evaluateWithdrawalNeed,"
         }
       ]
@@ -142,20 +142,20 @@
       "label": "accepted cash, HECM, evaluation, and convergence handoff",
       "file": "projection/internal/annualFundingApplicationAndClosePhase.ts",
       "lines": [
-        1067,
-        1076
+        1079,
+        1088
       ],
       "anchors": [
         {
-          "line": 1067,
+          "line": 1079,
           "text": "const cashInflows = fundingFixedPoint.acceptedCashInflows"
         },
         {
-          "line": 1068,
+          "line": 1080,
           "text": "hecmDraw = fundingFixedPoint.acceptedCoordinatedHecmDraw"
         },
         {
-          "line": 1074,
+          "line": 1086,
           "text": "evaluationCount: acaEvaluationCount,"
         }
       ]

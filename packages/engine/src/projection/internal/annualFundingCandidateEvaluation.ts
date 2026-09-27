@@ -1,4 +1,4 @@
-import type { ParameterPack } from '../../params/types.js'
+import type { AcaPricingParameters } from '../../params/acaCoverageYears.js'
 import type { RothBasisState } from '../../strategies/rothBasis.js'
 import {
   acaEconomicPremiumByMonth,
@@ -13,6 +13,7 @@ import {
   computeFederalTax,
 } from '../../tax/federalTax.js'
 import {
+  isBlockingAcaSupportCode,
   normalizeTaxComputation,
   type AcaSupportCode,
   type TaxCalculator,
@@ -103,6 +104,7 @@ export interface AnnualFundingCandidateAcaInput {
   readonly enrollmentPremiums: readonly number[]
   readonly slcspBenchmarkPremiums: readonly number[]
   readonly healthcareExcludingEnrollment: number
+  /** Poverty-line scale: 1 for a published coverage year, whose guidelines are used as published. */
   readonly pricingInflationScale: number
 }
 
@@ -130,7 +132,8 @@ export interface AnnualFundingCandidateEvaluationContext {
   readonly currentHealthcare: number
   readonly aca: Readonly<AnnualFundingCandidateAcaInput>
   readonly hsa: Readonly<AnnualFundingCandidateHsaInput>
-  readonly parameterPack: ParameterPack
+  /** The coverage year's credit figures (`acaParametersForCoverageYear`), never the income-tax pack's copy. */
+  readonly acaParameters: AcaPricingParameters
   readonly spendingAndContributions: number
   readonly rmdShortfallExciseTax: number
   readonly tolerancePlanDollars: number
@@ -398,18 +401,14 @@ export function annualFundingCandidateEvaluation<
         dependents: aca.contract.dependents,
       })
       acaSupportCodes.push(...acaMagiProbe.blockers)
-      const blockingAcaCodes = acaSupportCodes.filter(
-        (code) =>
-          code !== 'tax-exempt-interest-plan-derived' &&
-          code !== 'tax-exempt-interest-contract-contradicted',
-      )
+      const blockingAcaCodes = acaSupportCodes.filter(isBlockingAcaSupportCode)
       if (
         blockingAcaCodes.length === 0 &&
         acaMagiProbe.magi !== null &&
         !request.forceGrossAca
       ) {
         const priced = acaEconomicPremiumByMonth(
-          input.parameterPack,
+          input.acaParameters,
           aca.contract.taxFamilySize,
           acaMagiProbe.magi,
           aca.enrollmentPremiums,

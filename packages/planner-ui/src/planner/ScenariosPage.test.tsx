@@ -996,11 +996,11 @@ describe('ScenariosPage comparison lifecycle', () => {
   it("names each side's unpriced credit years in plain words instead of the raw engine sentence", async () => {
     const unpriced: SpendingSolveResult = {
       ...solved,
-      acaGrossPremiumYears: [2027, 2028, 2029],
+      acaGrossPremiumYears: [2028, 2029, 2030],
       acaGrossPremiumReasons: ['tax-year-parameters-unsupported'],
       acaGrossPremiumDirection: 'uncertain',
       diagnostics: [
-        'The ACA premium tax credit is not priced in 2027, 2028, 2029 (tax-year-parameters-unsupported); the ledger budgets the full Marketplace premium in those years, and a credit there could move this answer up or down because the spending guardrails respond to healthcare costs.',
+        'The ACA premium tax credit is not priced in 2028, 2029, 2030 (tax-year-parameters-unsupported); the ledger budgets the full Marketplace premium in those years, and a credit there could move this answer up or down because the spending guardrails respond to healthcare costs.',
       ],
     }
     mockedRunSpendingSolve.mockResolvedValueOnce(solved).mockResolvedValueOnce(unpriced)
@@ -1016,7 +1016,7 @@ describe('ScenariosPage comparison lifecycle', () => {
     })
 
     expect(container.textContent).toContain(
-      "Proposal: The premium tax credit isn't counted in 2027 to 2029: RetireGolden doesn't have the credit's figures for those years yet. " +
+      "Proposal: The premium tax credit isn't counted in 2028 to 2030: RetireGolden doesn't have the credit's figures for those years yet. " +
         'The projection pays the full Marketplace premium in those years; a credit then could move this answer up or down, ' +
         'because your spending guardrails respond to what healthcare costs.',
     )

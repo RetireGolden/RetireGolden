@@ -1,17 +1,17 @@
 # Mutation receipt: withdrawals-by-category-annual
 
-Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-nine` at base `39f8f460`, and re-executed 2026-09-22 against RetireGolden base `4fe87f00` (branch `claude/b1-p4-cards-nine-ten`, pull request #729) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-nine` at base `39f8f460`, and re-executed 2026-09-22 against RetireGolden base `4fe87f00` (branch `claude/b1-p4-cards-nine-ten`, pull request #729), and re-executed 2026-09-27 against RetireGolden base `d9447bec` (branch `claude/aca-2027-coverage-year`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/projection/internal/annualFundingApplicationAndClosePhase.ts`
 
 ```diff
-@@ -1998,6 +1998,7 @@ export function annualFundingApplicationAndClosePhase(
+@@ -2019,6 +2019,7 @@ export function annualFundingApplicationAndClosePhase(
        traditional:
          withdrawalPlan.byCategory.traditional +
          rmdTotal +
 +        rmdTotal +
          seppTotal +
-         inheritedOrdinaryIncome,
+         inheritedTraditionalForced,
        roth: withdrawalPlan.byCategory.roth + inheritedRothForced,
 ```
 
@@ -25,14 +25,14 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/projection/
 
 ## Captured failing output
 
-Re-executed 2026-09-22 on the pull-request branch after the review of #729: the branch was renamed for the pull request and several fixtures changed, so every capture, blob hash and revert note is refreshed against this head. The baseline is green (annualFundingApplicationAndClosePhase.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed. Exit code: 1.
+Re-executed 2026-09-27 for the review of decision D-ACA-2027-TABLE: #745 renamed inheritedOrdinaryIncome to inheritedTraditionalForced in annualFundingApplicationAndClosePhase.ts, which removed the diff's context line, so that line and the hunk header were updated to the current file; the mutation itself (the owner RMD added to traditional a second time) is unchanged. The baseline is green (annualFundingApplicationAndClosePhase.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/TEMP/rg-rehearse2/packages/engine
+RUN  v5.0.0 C:/rgwt/engine7/packages/engine
 
- ❯ src/projection/internal/annualFundingApplicationAndClosePhase.evidence.test.ts (6 tests | 3 failed) 41ms
+ ❯ src/projection/internal/annualFundingApplicationAndClosePhase.evidence.test.ts (6 tests | 3 failed) 40ms
    ❯ withdrawals-total-annual — Annual withdrawal total (1)
-     × sums the five categories to 42000 9ms
+     × sums the five categories to 42000 8ms
    ❯ withdrawals-by-category-annual — Annual withdrawals partitioned by source-account category (2)
      × reports each account's draw in its own source category 2ms
      × keeps the RMD inside traditional rather than adding it again 2ms
@@ -40,7 +40,6 @@ RUN  v5.0.0 C:/TEMP/rg-rehearse2/packages/engine
  Test Files  1 failed (1)
       Tests  3 failed | 3 passed (6)
 
-  Transform  transforming modules took 2.13s · 44% of tracked time, re-done on every run
              persist transforms across runs with fsModuleCache: true
              learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
 

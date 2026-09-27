@@ -26,14 +26,14 @@ describe('ACA pack arithmetic fixtures', () => {
     }
   })
 
-  it('linearly interpolates inside each non-flat band', () => {
-    // Independent worksheets:
-    // 141.5% FPL is halfway from 133@3.14 to 150@4.19 -> 3.665.
-    // 175% FPL is halfway from 150@4.19 to 200@6.60 -> 5.395.
+  it('linearly interpolates inside each non-flat band, rounded half up to 0.01', () => {
+    // Independent worksheets, rounded as 26 CFR 1.36B-3(g)(1) requires:
+    // 141.5% FPL is halfway from 133@3.14 to 150@4.19 -> 3.665 -> 3.67.
+    // 175% FPL is halfway from 150@4.19 to 200@6.60 -> 5.395 -> 5.40.
     // 225% FPL is halfway from 200@6.60 to 250@8.44 -> 7.52.
     // 275% FPL is halfway from 250@8.44 to 300@9.96 -> 9.20.
-    expectPercent(acaApplicablePct(pack, 141.5), 3.665)
-    expectPercent(acaApplicablePct(pack, 175), 5.395)
+    expectPercent(acaApplicablePct(pack, 141.5), 3.67)
+    expectPercent(acaApplicablePct(pack, 175), 5.4)
     expectPercent(acaApplicablePct(pack, 225), 7.52)
     expectPercent(acaApplicablePct(pack, 275), 9.2)
   })

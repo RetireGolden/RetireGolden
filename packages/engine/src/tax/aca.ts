@@ -8,7 +8,7 @@
  * @see DOCS/domain/domain-rules-reference.md §8
  */
 
-import type { ParameterPack } from '../params/types.js'
+import type { AcaPricingParameters } from '../params/acaCoverageYears.js'
 
 export type AcaFplRegion = 'contiguous' | 'alaska' | 'hawaii'
 
@@ -116,7 +116,7 @@ export function buildAcaHouseholdMagi(input: AcaHouseholdMagiInput): AcaHousehol
 }
 
 export function acaFederalPovertyLine(
-  pack: ParameterPack,
+  pack: AcaPricingParameters,
   householdSize: number,
   region: AcaFplRegion = 'contiguous',
   fplScale = 1,
@@ -128,8 +128,41 @@ export function acaFederalPovertyLine(
   )
 }
 
-/** Piecewise-linear applicable percentage with the statutory step at 133%. */
-export function acaApplicablePct(pack: ParameterPack, fplPct: number): number {
+/**
+ * The poverty-line percentage the applicable percentage is read at: the exact
+ * percentage with its fraction dropped. Form 8962's Worksheet 2, line 4, is
+ * the IRS's own computation: "Do not round; instead, multiply this number by
+ * 100 (to express it as a percentage) and then drop any numbers after the
+ * decimal point." The billionth added before the floor keeps a percentage
+ * that is a whole number in exact arithmetic from dropping a point to binary
+ * representation error (29,206.80 of 15,960 is 183% and evaluates to
+ * 182.99999999999997). Only the table is read at this figure: the 100% and
+ * 400% tests compare the exact percentage, as the form's own cliff test
+ * compares income with 4 times the poverty line.
+ */
+export function acaWholeFplPct(fplPct: number): number {
+  return Math.floor(fplPct + 1e-9)
+}
+
+/**
+ * Piecewise-linear applicable percentage with the statutory step at 133%,
+ * rounded to the nearest one-hundredth of one percent, half up, as 26 CFR
+ * 1.36B-3(g)(1) requires ("increases on a sliding scale in a linear manner
+ * and is rounded to the nearest one-hundredth of one percent"; its example
+ * rounds 8.775 to 8.78). The billionth added before rounding keeps a tie that
+ * is exact in decimal from rounding down when its binary value lands a hair
+ * below the half: at 141.5% in 2027 the rate is 3.765 in decimal, but
+ * 3.23 + 0.5 × (4.30 − 3.23) evaluates to 3.7649999999999997, which would
+ * round to 3.76 instead of 3.77. The credit reads the table at a whole-number
+ * percentage (acaWholeFplPct), where no tie in the 2026 or 2027 table needs
+ * it (5.395 at 175% in 2026 is exactly 539.5 after × 100); it guards a
+ * fractional read and future tables.
+ */
+export function acaApplicablePct(pack: AcaPricingParameters, fplPct: number): number {
+  return Math.round(interpolatedApplicablePct(pack, fplPct) * 100 + 1e-9) / 100
+}
+
+function interpolatedApplicablePct(pack: AcaPricingParameters, fplPct: number): number {
   const points = pack.aca.applicablePctBreakpoints
   if (fplPct < points[0]!.fplPct) return pack.aca.applicablePctBelowFirstBreakpoint
   if (fplPct === points[0]!.fplPct) return points[0]!.applicablePct
@@ -168,12 +201,17 @@ function noCreditResult(
 /**
  * Monthly planning-year allowable PTC. The SLCSP determines the preliminary
  * credit; actual enrollment premium caps the allowable credit. The annual
- * expected contribution is applied month by month as one twelfth against
- * each month's benchmark premium: `min(enrollment, max(0, benchmark −
- * contribution / 12))`, summed over the months with enrollment.
+ * expected contribution is MAGI times the applicable percentage read at the
+ * whole-number poverty-line percentage and rounded to a hundredth of a
+ * percent (`acaWholeFplPct`, `acaApplicablePct`), and it is applied month by
+ * month as one twelfth against each month's benchmark premium: `min(enrollment,
+ * max(0, benchmark − contribution / 12))`, summed over the months with
+ * enrollment. The contribution and the credit are kept to the cent and beyond:
+ * Form 8962 rounds its lines 8a and 8b to whole dollars, which the engine does
+ * not (a stated limit on the calculation records).
  */
 export function acaEconomicPremiumByMonth(
-  pack: ParameterPack,
+  pack: AcaPricingParameters,
   householdSize: number,
   magi: number,
   enrollmentPremiums: readonly number[],
@@ -202,7 +240,7 @@ export function acaEconomicPremiumByMonth(
     )
   }
 
-  const expectedContribution = (acaApplicablePct(pack, fplPct) / 100) * magi
+  const expectedContribution = (acaApplicablePct(pack, acaWholeFplPct(fplPct)) / 100) * magi
   let modeledAllowablePtc = 0
   for (let month = 0; month < 12; month++) {
     const enrollment = Math.max(0, enrollmentPremiums[month] ?? 0)
@@ -227,7 +265,7 @@ export function acaEconomicPremiumByMonth(
 
 /** Backward-compatible annual helper: enrollment premium is also the benchmark. */
 export function acaNetAnnualPremium(
-  pack: ParameterPack,
+  pack: AcaPricingParameters,
   householdSize: number,
   magi: number,
   fullAnnualPremium: number,
@@ -239,7 +277,7 @@ export function acaNetAnnualPremium(
 
 /** Backward-compatible monthly helper: enrollment premium is also the benchmark. */
 export function acaNetAnnualPremiumByMonth(
-  pack: ParameterPack,
+  pack: AcaPricingParameters,
   householdSize: number,
   magi: number,
   monthlyPremiums: readonly number[],

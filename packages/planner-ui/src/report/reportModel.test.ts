@@ -62,6 +62,12 @@ describe('buildReportModel', () => {
     expect(model.startYear).toBe(START_YEAR)
     expect(model.endYear).toBeGreaterThanOrEqual(START_YEAR)
     expect(model.provenance.federalParameterPackYear).toBeGreaterThanOrEqual(2025)
+    // The ACA credit figures are published per coverage year, ahead of the
+    // income-tax pack: the provenance names every year the engine prices.
+    expect(model.provenance.acaCoverageYears).toEqual([
+      { coverageYear: 2026, applicablePercentageSource: 'Rev. Proc. 2025-25', povertyGuidelineSource: 'HHS 2025 poverty guidelines, 90 FR 5917' },
+      { coverageYear: 2027, applicablePercentageSource: 'Rev. Proc. 2026-26', povertyGuidelineSource: 'HHS 2026 poverty guidelines, 91 FR 1797' },
+    ])
     expect(model.provenance.stateParameterPackYear).toBeGreaterThanOrEqual(2025)
     expect(model.provenance.parameterDataAsOf).not.toBe('')
     // Build identifiers are host-supplied facts, never guessed.
@@ -178,6 +184,37 @@ describe('buildReportModel', () => {
     expect(html).toContain(fmtMoney(row!.modeledAllowablePtc!))
     expect(html).toContain(fmtMoney(row!.economicNetPremium))
     expect(html).toContain('Actionable')
+    // 2026 has published income-tax figures, so no projected-income note.
+    expect(model.blocks['aca-ledger'].projectedIncomeTaxNote).toBeNull()
+    expect(html).not.toContain('projected tax brackets')
+  })
+
+  it('says under the ACA ledger which priced years rest on projected tax brackets', () => {
+    // 2027 is priced on its published credit figures while its income-tax
+    // figures are projected from 2026 (decision D-ACA-2027-TABLE). The
+    // downloadable report carries the sentence the on-screen status line
+    // carries, so a printed "Actionable" row does not read as fully published.
+    const plan = validatePlan(
+      (() => {
+        const candidate = singlePersonPlan({ planningAge: 62 })
+        candidate.accounts.push(taxableAccount('acct-taxable', 500_000, 250_000))
+        candidate.incomes = [recurringOrdinaryIncome('income', 30_000, 2026)]
+        for (const year of [2026, 2027]) {
+          setAcaYearContract(candidate, { year, monthlyEnrollment: 1_000, monthlySlcsp: 1_000, coveredPersonIds: ['p1'] })
+        }
+        candidate.expenses.healthcare.pre65MonthlyPremiumPerPerson = 0
+        return candidate
+      })(),
+    )
+    const model = modelFor(plan)
+    const block = model.blocks['aca-ledger']
+    expect(block.rows.map((row) => [row.year, row.readiness])).toEqual([
+      [2026, 'actionable'],
+      [2027, 'actionable'],
+    ])
+    const note = '2027 is priced on published Marketplace figures, with income from projected tax brackets.'
+    expect(block.projectedIncomeTaxNote).toBe(note)
+    expect(renderStandaloneReportHtml(model)).toContain(`<p class="muted">${note}</p></section>`)
   })
 
   it('leaves modeled findings and advisor content null unless supplied', () => {
@@ -275,6 +312,30 @@ describe('parseReportModel', () => {
     raw.kind = 'other.report-model'
 
     expect(parseReportModel(JSON.stringify(raw))).toMatchObject({ ok: false, reason: 'wrong_kind' })
+  })
+
+  it('renders a version-3 model saved before the ACA coverage years and the projected note were added', () => {
+    // REPORT_MODEL_VERSION stayed 3 when provenance.acaCoverageYears and the
+    // ACA block's projectedIncomeTaxNote were added, so a host may hold a
+    // version-3 model without them and assert it to ReportModel.
+    const plan = fixturePlan((candidate) => {
+      candidate.incomes = [recurringOrdinaryIncome('income', 30_000, 2026)]
+      setAcaYearContract(candidate, { year: 2026, monthlyEnrollment: 1_000, monthlySlcsp: 1_000, coveredPersonIds: ['p1'] })
+    })
+    const raw = JSON.parse(serializeReportModel(modelFor(plan)))
+    delete raw.provenance.acaCoverageYears
+    delete raw.blocks['aca-ledger'].projectedIncomeTaxNote
+    const parsed = parseReportModel(JSON.stringify(raw))
+    if (!parsed.ok) throw new Error('expected the older version-3 model to parse')
+    expect(parsed.model.version).toBe(REPORT_MODEL_VERSION)
+    const older = parsed.model as unknown as ReportModel
+    expect(older.provenance.acaCoverageYears).toBeUndefined()
+
+    const html = renderStandaloneReportHtml(older)
+    expect(html).toContain('Assumptions and provenance')
+    expect(html).toContain('ACA current-year ledger')
+    expect(html).not.toContain('ACA premium tax credit figures')
+    expect(html).not.toContain('projected tax brackets')
   })
 
   it('rejects a newer version and tells the caller to upgrade', () => {

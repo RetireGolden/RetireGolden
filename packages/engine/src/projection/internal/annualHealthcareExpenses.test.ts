@@ -21,6 +21,8 @@ function run(
     birthMonths?: readonly number[]
     birthMonthByPerson?: ReadonlyMap<string, number>
     configurePack?: (pack: ParameterPack) => void
+    year?: number
+    inflFactorFrom?: (fromYear: number, toYear: number) => number
   } = {},
 ) {
   const { pack: sourcePack, isStandIn } = packForYear(2026)
@@ -29,7 +31,7 @@ function run(
   return annualHealthcareExpenses({
     plan,
     pack,
-    year: 2026,
+    year: options.year ?? 2026,
     startYear: 2026,
     peopleStates,
     birthMonthByPerson: options.birthMonthByPerson ?? new Map(peopleStates.map((state, position) => [
@@ -44,9 +46,9 @@ function run(
     ssa44ActiveInYear: () => options.ssa44Active ?? false,
     filingStatusForYear: 'single',
     taxFilingStatusForYear: 'single',
-    inflFactorFrom: () => 1,
+    inflFactorFrom: options.inflFactorFrom ?? (() => 1),
     healthInflFactorFrom: () => 1,
-    isStandIn,
+    acaParametersStandIn: isStandIn,
     hasModeledPerson: (personId) =>
       peopleStates.some((state) => state.personId === personId),
     resolvePerson: (personId) =>
@@ -391,5 +393,44 @@ describe('annualHealthcareExpenses', () => {
     legacyFallback.expenses.healthcare.pre65MonthlyPremiumPerPerson = 100
     expect(run(legacyFallback).acaGeneralTaxCompatibilityEligible).toBe(false)
     expect(run(legacyFallback).acaActive).toBe(true)
+  })
+
+  it('prices the resumed top IRMAA row of a 2027 pack from the August 2026 base on a varying inflation path', () => {
+    // The ledger's own wiring of irmaaTierThreshold, for the premium and the
+    // next-tier threshold: a synthetic 2027 pack (the 2026 figures under a
+    // 2027 year) and an inflation path of 3% into 2027, 2% into 2028, 5% into
+    // 2029. 42 U.S.C. 1395r(i)(5)(C)(ii) measures a 2029 premium year from
+    // August 2026 to August 2028: 500,000 x 1.03 x 1.02 = 525,300, rounded to
+    // 525,000. A factor anchored at the pack year instead reads 2027 to 2028
+    // (510,000) or 2027 to 2029 (535,500, so 536,000), and a missing factor
+    // is refused for a pack year other than 2026; each fails here.
+    const rates: Record<number, number> = { 2027: 0.03, 2028: 0.02, 2029: 0.05 }
+    const between = (fromYear: number, toYear: number): number => {
+      let factor = 1
+      for (let year = fromYear + 1; year <= toYear; year++) factor *= 1 + (rates[year] ?? 0.025)
+      return factor
+    }
+    const onMedicare: PersonYearState[] = [{ personId: 'p1', ageAttained: 70, alive: true }]
+    const on2027Pack = (magi: number) =>
+      run(singlePersonPlan(), onMedicare, {
+        magi,
+        year: 2029,
+        inflFactorFrom: between,
+        configurePack: (pack) => {
+          pack.year = 2027
+        },
+      })
+
+    // Above the fourth row (205,000 x 1.02 x 1.05 = 219,555) and under the
+    // top: the next threshold the ledger publishes is the top row itself.
+    const inFourthTier = on2027Pack(300_000)
+    expect(inFourthTier.irmaaTier).toBe(4)
+    expect(inFourthTier.irmaaNextTierThreshold).toBe(525_000)
+    // The premium's tier reads the same row: 520,000 is under it (a 2027-to-2028
+    // factor would put it over 510,000), and 526,000 is over it (a 2027-to-2029
+    // factor would leave it under 536,000).
+    expect(on2027Pack(520_000).irmaaTier).toBe(4)
+    expect(on2027Pack(526_000).irmaaTier).toBe(5)
+    expect(on2027Pack(526_000).irmaaSurcharge).toBeGreaterThan(on2027Pack(520_000).irmaaSurcharge)
   })
 })

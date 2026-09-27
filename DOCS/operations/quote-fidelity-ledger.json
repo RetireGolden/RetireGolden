@@ -4,10 +4,10 @@
   "urlCount": 433,
   "fetched": 0,
   "cached": 433,
-  "entryCount": 1546,
+  "entryCount": 1565,
   "counts": {
-    "EXACT": 1061,
-    "PDF-WORD-LEVEL": 347,
+    "EXACT": 1069,
+    "PDF-WORD-LEVEL": 358,
     "ELISION-EXACT": 127,
     "PUNCTUATION": 4,
     "ELISION-PUNCTUATION": 1,
@@ -5668,6 +5668,56 @@
       "diagnosis": null
     },
     {
+      "id": "rev-proc-2026-26-aca-applicable-percentage-2027",
+      "citation": "Rev. Proc. 2026-26, section 3.01",
+      "host": "www.irs.gov",
+      "url": "https://www.irs.gov/pub/irs-drop/rp-26-26.pdf",
+      "quoteSha256": "754262a5440aeaf7",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "rev-proc-2026-26-aca-applicable-percentage-2027",
+      "citation": "Rev. Proc. 2026-26, section 3.02",
+      "host": "www.irs.gov",
+      "url": "https://www.irs.gov/pub/irs-drop/rp-26-26.pdf",
+      "quoteSha256": "681823b5a2bdd048",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "cfr-26-1-36B-3-g-1-applicable-percentage-rounding",
+      "citation": "26 CFR 1.36B-3(g)(1)",
+      "host": "www.ecfr.gov",
+      "url": "https://www.ecfr.gov/current/title-26/section-1.36B-3",
+      "quoteSha256": "ea9a0e56df185503",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "cfr-26-1-36B-3-g-1-applicable-percentage-rounding",
+      "citation": "26 CFR 1.36B-3(g)(3), Example 1",
+      "host": "www.ecfr.gov",
+      "url": "https://www.ecfr.gov/current/title-26/section-1.36B-3",
+      "quoteSha256": "3f154625b2c59c68",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "cfr-26-1-36B-3-g-1-applicable-percentage-rounding",
+      "citation": "Instructions for Form 8962 (2025), Worksheet 2, line 4",
+      "host": "www.irs.gov",
+      "url": "https://www.irs.gov/pub/irs-pdf/i8962.pdf",
+      "quoteSha256": "f5eb6fafcd247f43",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
       "id": "usc-42-1395w-113-b-pl-117-169-part-d-penalty-and-cost-sharing",
       "citation": "42 U.S.C. 1395w-113(b)(3)(A)-(B)",
       "host": "uscode.house.gov",
@@ -5888,6 +5938,16 @@
       "diagnosis": null
     },
     {
+      "id": "irc-36B-c-1-A-applicable-taxpayer-range",
+      "citation": "IRC 36B(c)(1)(E)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section36B&num=0&edition=prelim",
+      "quoteSha256": "41423f0af82958e1",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
       "id": "irc-36B-d-2-B-aca-household-magi-composition",
       "citation": "IRC 36B(d)(2)(A)",
       "host": "uscode.house.gov",
@@ -5903,6 +5963,136 @@
       "host": "uscode.house.gov",
       "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section36B&num=0&edition=prelim",
       "quoteSha256": "d2f41ac322bc8eb1",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-36B-d-3-B-poverty-line-for-coverage-year",
+      "citation": "IRC 36B(d)(3)(B)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section36B&num=0&edition=prelim",
+      "quoteSha256": "ad1ceaec092f16f8",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-36B-d-3-B-poverty-line-for-coverage-year",
+      "citation": "26 CFR 1.36B-1(h)",
+      "host": "www.ecfr.gov",
+      "url": "https://www.ecfr.gov/current/title-26/section-1.36B-1",
+      "quoteSha256": "0f0255706f4b4e6b",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-36B-d-3-B-poverty-line-for-coverage-year",
+      "citation": "45 CFR 155.410(e)(5)(i)",
+      "host": "www.ecfr.gov",
+      "url": "https://www.ecfr.gov/current/title-45/section-155.410",
+      "quoteSha256": "f7af299bcc2c6f26",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "hhs-2026-poverty-guidelines-2027-coverage",
+      "citation": "HHS, Annual Update of the HHS Poverty Guidelines, 91 FR 1797 (Jan. 15, 2026), FR Doc. 2026-00755",
+      "host": "www.govinfo.gov",
+      "url": "https://www.govinfo.gov/content/pkg/FR-2026-01-15/pdf/2026-00755.pdf",
+      "quoteSha256": "f6f622bba7210b73",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "hhs-2026-poverty-guidelines-2027-coverage",
+      "citation": "91 FR 1798, 2026 poverty guidelines for the 48 contiguous states and the District of Columbia",
+      "host": "www.govinfo.gov",
+      "url": "https://www.govinfo.gov/content/pkg/FR-2026-01-15/pdf/2026-00755.pdf",
+      "quoteSha256": "b9aa36b7070b4557",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "hhs-2026-poverty-guidelines-2027-coverage",
+      "citation": "91 FR 1798, 2026 poverty guidelines for Alaska",
+      "host": "www.govinfo.gov",
+      "url": "https://www.govinfo.gov/content/pkg/FR-2026-01-15/pdf/2026-00755.pdf",
+      "quoteSha256": "60b0039fb58b3a4c",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "hhs-2026-poverty-guidelines-2027-coverage",
+      "citation": "91 FR 1798, 2026 poverty guidelines for Hawaii",
+      "host": "www.govinfo.gov",
+      "url": "https://www.govinfo.gov/content/pkg/FR-2026-01-15/pdf/2026-00755.pdf",
+      "quoteSha256": "aca3b6db1e86dc1f",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "hhs-2025-poverty-guidelines-2026-coverage",
+      "citation": "HHS, Annual Update of the HHS Poverty Guidelines, 90 FR 5917 (Jan. 17, 2025), FR Doc. 2025-01377",
+      "host": "www.govinfo.gov",
+      "url": "https://www.govinfo.gov/content/pkg/FR-2025-01-17/pdf/2025-01377.pdf",
+      "quoteSha256": "2d6bdc34eef242ed",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "hhs-2025-poverty-guidelines-2026-coverage",
+      "citation": "90 FR 5917, 2025 poverty guidelines for the 48 contiguous states and the District of Columbia",
+      "host": "www.govinfo.gov",
+      "url": "https://www.govinfo.gov/content/pkg/FR-2025-01-17/pdf/2025-01377.pdf",
+      "quoteSha256": "7870873aa609bb00",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "hhs-2025-poverty-guidelines-2026-coverage",
+      "citation": "90 FR 5917, 2025 poverty guidelines for Alaska",
+      "host": "www.govinfo.gov",
+      "url": "https://www.govinfo.gov/content/pkg/FR-2025-01-17/pdf/2025-01377.pdf",
+      "quoteSha256": "0689ed5c0e648772",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "hhs-2025-poverty-guidelines-2026-coverage",
+      "citation": "90 FR 5917, 2025 poverty guidelines for Hawaii",
+      "host": "www.govinfo.gov",
+      "url": "https://www.govinfo.gov/content/pkg/FR-2025-01-17/pdf/2025-01377.pdf",
+      "quoteSha256": "426272e613c49fb5",
+      "verdict": "PDF-WORD-LEVEL",
+      "detail": "present in the extracted text; character fidelity is not verifiable from a PDF",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-36B-e-eligible-alien-2027-coverage-eligibility-not-modeled",
+      "citation": "IRC 36B, Amendment of Subsection (e), Pub. L. 119-21, sec. 71301(a), (b), (e)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section36B&num=0&edition=prelim",
+      "quoteSha256": "52b95e12a69b79a8",
+      "verdict": "EXACT",
+      "detail": "literal substring of the source",
+      "diagnosis": null
+    },
+    {
+      "id": "irc-36B-e-eligible-alien-2027-coverage-eligibility-not-modeled",
+      "citation": "IRC 36B, Effective Date of 2025 Amendment, Pub. L. 119-21, sec. 71301(e)",
+      "host": "uscode.house.gov",
+      "url": "https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title26-section36B&num=0&edition=prelim",
+      "quoteSha256": "5d62f089f21d5e6a",
       "verdict": "EXACT",
       "detail": "literal substring of the source",
       "diagnosis": null
@@ -15692,6 +15882,94 @@
         {
           "id": "usc-42-402-e-survivor-of-worker-who-died-before-claiming",
           "citation": "42 U.S.C. 402(w)(2)(A)"
+        }
+      ]
+    },
+    {
+      "on": "2026-09-26",
+      "note": "Added by the D-ACA-2027-TABLE change (the 2027 premium tax credit figures): the new records for Rev. Proc. 2026-26, IRC 36B(d)(3)(B) with 26 CFR 1.36B-1(h) and 45 CFR 155.410(e)(5), the HHS 2026 and 2025 poverty guidelines and the 2027 eligible-alien rule, and the IRC 36B(c)(1)(E) authority added to the cliff record, each checked against its source with verify-quotes on 2026-09-26, filtered to these records; no other entry was re-run.",
+      "entries": [
+        {
+          "id": "rev-proc-2026-26-aca-applicable-percentage-2027",
+          "citation": "Rev. Proc. 2026-26, section 3.01"
+        },
+        {
+          "id": "rev-proc-2026-26-aca-applicable-percentage-2027",
+          "citation": "Rev. Proc. 2026-26, section 3.02"
+        },
+        {
+          "id": "irc-36B-d-3-B-poverty-line-for-coverage-year",
+          "citation": "IRC 36B(d)(3)(B)"
+        },
+        {
+          "id": "irc-36B-d-3-B-poverty-line-for-coverage-year",
+          "citation": "26 CFR 1.36B-1(h)"
+        },
+        {
+          "id": "irc-36B-d-3-B-poverty-line-for-coverage-year",
+          "citation": "45 CFR 155.410(e)(5)(i)"
+        },
+        {
+          "id": "hhs-2026-poverty-guidelines-2027-coverage",
+          "citation": "HHS, Annual Update of the HHS Poverty Guidelines, 91 FR 1797 (Jan. 15, 2026), FR Doc. 2026-00755"
+        },
+        {
+          "id": "hhs-2026-poverty-guidelines-2027-coverage",
+          "citation": "91 FR 1798, 2026 poverty guidelines for the 48 contiguous states and the District of Columbia"
+        },
+        {
+          "id": "hhs-2026-poverty-guidelines-2027-coverage",
+          "citation": "91 FR 1798, 2026 poverty guidelines for Alaska"
+        },
+        {
+          "id": "hhs-2026-poverty-guidelines-2027-coverage",
+          "citation": "91 FR 1798, 2026 poverty guidelines for Hawaii"
+        },
+        {
+          "id": "hhs-2025-poverty-guidelines-2026-coverage",
+          "citation": "HHS, Annual Update of the HHS Poverty Guidelines, 90 FR 5917 (Jan. 17, 2025), FR Doc. 2025-01377"
+        },
+        {
+          "id": "hhs-2025-poverty-guidelines-2026-coverage",
+          "citation": "90 FR 5917, 2025 poverty guidelines for the 48 contiguous states and the District of Columbia"
+        },
+        {
+          "id": "hhs-2025-poverty-guidelines-2026-coverage",
+          "citation": "90 FR 5917, 2025 poverty guidelines for Alaska"
+        },
+        {
+          "id": "hhs-2025-poverty-guidelines-2026-coverage",
+          "citation": "90 FR 5917, 2025 poverty guidelines for Hawaii"
+        },
+        {
+          "id": "irc-36B-e-eligible-alien-2027-coverage-eligibility-not-modeled",
+          "citation": "IRC 36B, Amendment of Subsection (e), Pub. L. 119-21, sec. 71301(a), (b), (e)"
+        },
+        {
+          "id": "irc-36B-e-eligible-alien-2027-coverage-eligibility-not-modeled",
+          "citation": "IRC 36B, Effective Date of 2025 Amendment, Pub. L. 119-21, sec. 71301(e)"
+        },
+        {
+          "id": "irc-36B-c-1-A-applicable-taxpayer-range",
+          "citation": "IRC 36B(c)(1)(E)"
+        }
+      ]
+    },
+    {
+      "on": "2026-09-26",
+      "note": "Added by the D-ACA-2027-TABLE rounding change: the new record for the applicable percentage's rounding (26 CFR 1.36B-3(g)(1) and (g)(3) Example 1, and the Form 8962 instructions' Worksheet 2), checked against its sources with verify-quotes on 2026-09-26, filtered to this record; no other entry was re-run.",
+      "entries": [
+        {
+          "id": "cfr-26-1-36B-3-g-1-applicable-percentage-rounding",
+          "citation": "26 CFR 1.36B-3(g)(1)"
+        },
+        {
+          "id": "cfr-26-1-36B-3-g-1-applicable-percentage-rounding",
+          "citation": "26 CFR 1.36B-3(g)(3), Example 1"
+        },
+        {
+          "id": "cfr-26-1-36B-3-g-1-applicable-percentage-rounding",
+          "citation": "Instructions for Form 8962 (2025), Worksheet 2, line 4"
         }
       ]
     }

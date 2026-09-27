@@ -28,7 +28,7 @@
           "functions": [
             {
               "name": "year2026",
-              "line": 16
+              "line": 17
             }
           ]
         },
@@ -125,7 +125,7 @@
           "functions": [
             {
               "name": "indexFederalTaxPack",
-              "line": 102
+              "line": 113
             }
           ]
         },
@@ -143,7 +143,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         }
@@ -242,7 +242,7 @@
           "functions": [
             {
               "name": "year2026",
-              "line": 16
+              "line": 17
             }
           ]
         },
@@ -349,7 +349,7 @@
           "functions": [
             {
               "name": "indexFederalTaxPack",
-              "line": 102
+              "line": 113
             }
           ]
         },
@@ -426,7 +426,7 @@
           "functions": [
             {
               "name": "itemizedDeductionsSchema",
-              "line": 2323
+              "line": 2335
             }
           ]
         },
@@ -530,7 +530,7 @@
           "functions": [
             {
               "name": "itemizedDeductionsSchema",
-              "line": 2323
+              "line": 2335
             }
           ]
         },
@@ -705,7 +705,7 @@
           "functions": [
             {
               "name": "year2026",
-              "line": 16
+              "line": 17
             }
           ]
         },
@@ -782,7 +782,7 @@
           "functions": [
             {
               "name": "year2026",
-              "line": 16
+              "line": 17
             }
           ]
         },
@@ -914,7 +914,7 @@
           "functions": [
             {
               "name": "year2026",
-              "line": 16
+              "line": 17
             }
           ]
         },
@@ -1251,7 +1251,7 @@
           "functions": [
             {
               "name": "year2026",
-              "line": 16
+              "line": 17
             }
           ]
         },
@@ -1322,7 +1322,7 @@
           "functions": [
             {
               "name": "indexFederalTaxPack",
-              "line": 102
+              "line": 113
             }
           ]
         },
@@ -1457,7 +1457,7 @@
           "functions": [
             {
               "name": "year2026",
-              "line": 16
+              "line": 17
             }
           ]
         },
@@ -1466,11 +1466,11 @@
           "functions": [
             {
               "name": "age65StandardDeductionAddition",
-              "line": 383
+              "line": 408
             },
             {
               "name": "standardDeduction",
-              "line": 391
+              "line": 416
             }
           ]
         },

@@ -24,6 +24,19 @@
  * depletes at its $34,000 required floor, the lowest level its plan checks
  * accept. Characterization values, not a legal oracle: a change to the
  * projection moves them, and the change must say why.
+ *
+ * Re-pinned 2026-09-26 (decision D-ACA-2027-TABLE): 2027 is priced on its
+ * published credit figures (Rev. Proc. 2026-26 and the HHS 2026 poverty
+ * guidelines), so 2027 leaves the unpriced years of the 18 examples that had
+ * it: glidepath-allocation and static-allocation-control lose the disclosure
+ * entirely, and hsa-property-depth's years become 2026, 2028 and 2029, no
+ * longer one span, which is why the years are listed rather than bounded. Two
+ * answers move up, as a priced credit can only move a fixed-target answer:
+ * early-retiree-aca 45,313 -> 45,625 (its 2027 credit, 10,924.78 with the IRS
+ * rounding, lowers what 2027 must withdraw) and hsa-property-depth 28,688 ->
+ * 29,087; the answer-run case below goes 28,750 -> 29,063. Probe counts and
+ * every other answer are unchanged. Recomputed from the implemented code;
+ * they match the D-ACA-2027-TABLE derivation's table and its check.
  */
 import { describe, expect, it } from 'vitest'
 
@@ -45,41 +58,46 @@ interface SolverGolden {
   /** What the page shows: the exact answer floored to $100. */
   displayed: number | null
   probes: number
-  /** First and last year whose credit is unpriced (every span is contiguous); null when none. */
-  acaYears: [number, number] | null
+  /** Every year whose credit is unpriced, ascending; null when none. */
+  acaYears: number[] | null
   reasons: AcaSupportCode[]
 }
 
+/** The years from `first` to `last`, inclusive. */
+function span(first: number, last: number): number[] {
+  return Array.from({ length: last - first + 1 }, (_, i) => first + i)
+}
+
 const EXPECTED: Record<string, SolverGolden> = {
-  'example-couple': { maxBaseAnnual: 117_000, displayed: 117_000, probes: 10, acaYears: [2027, 2029], reasons: [PARAMS] },
+  'example-couple': { maxBaseAnnual: 117_000, displayed: 117_000, probes: 10, acaYears: span(2028, 2029), reasons: [PARAMS] },
   'under-saved-single': { maxBaseAnnual: 65_250, displayed: 65_200, probes: 10, acaYears: null, reasons: [] },
   'bracket-fill-roth': { maxBaseAnnual: 101_602, displayed: 101_600, probes: 10, acaYears: null, reasons: [] },
-  'early-retiree-aca': { maxBaseAnnual: 45_313, displayed: 45_300, probes: 9, acaYears: [2027, 2028], reasons: [PARAMS] },
+  'early-retiree-aca': { maxBaseAnnual: 45_625, displayed: 45_600, probes: 9, acaYears: [2028], reasons: [PARAMS] },
   'rmd-irmaa': { maxBaseAnnual: 131_485, displayed: 131_400, probes: 10, acaYears: null, reasons: [] },
   'inherited-ira-beneficiary': { maxBaseAnnual: 26_438, displayed: 26_400, probes: 10, acaYears: null, reasons: [] },
   'survivor-years': { maxBaseAnnual: 59_063, displayed: 59_000, probes: 10, acaYears: null, reasons: [] },
-  'moving-state-tax': { maxBaseAnnual: 107_657, displayed: 107_600, probes: 10, acaYears: [2027, 2030], reasons: [PARAMS] },
-  'ltc-shock': { maxBaseAnnual: null, displayed: null, probes: 2, acaYears: [2026, 2028], reasons: [BELOW_FPL, PARAMS] },
-  'early-career-match': { maxBaseAnnual: 59_766, displayed: 59_700, probes: 9, acaYears: [2027, 2065], reasons: [PARAMS] },
-  'aggressive-saver': { maxBaseAnnual: 90_352, displayed: 90_300, probes: 11, acaYears: [2027, 2060], reasons: [PARAMS] },
-  'coast-fire': { maxBaseAnnual: 66_407, displayed: 66_400, probes: 9, acaYears: [2027, 2060], reasons: [PARAMS] },
-  'barista-fire': { maxBaseAnnual: 52_032, displayed: 52_000, probes: 9, acaYears: [2027, 2060], reasons: [PARAMS] },
-  'bridge-early-retirement': { maxBaseAnnual: 70_704, displayed: 70_700, probes: 9, acaYears: [2027, 2045], reasons: [PARAMS] },
-  'lean-fat-fire': { maxBaseAnnual: 74_532, displayed: 74_500, probes: 9, acaYears: [2027, 2055], reasons: [PARAMS] },
-  'hsa-stealth-retirement': { maxBaseAnnual: 54_688, displayed: 54_600, probes: 9, acaYears: [2027, 2050], reasons: [PARAMS] },
-  'salary-growth-escalation': { maxBaseAnnual: 68_204, displayed: 68_200, probes: 9, acaYears: [2027, 2060], reasons: [PARAMS] },
-  'guardrails-flex-goals': { maxBaseAnnual: null, displayed: null, probes: 2, acaYears: [2026, 2028], reasons: [GUARDRAIL, PARAMS] },
+  'moving-state-tax': { maxBaseAnnual: 107_657, displayed: 107_600, probes: 10, acaYears: span(2028, 2030), reasons: [PARAMS] },
+  'ltc-shock': { maxBaseAnnual: null, displayed: null, probes: 2, acaYears: span(2026, 2028), reasons: [BELOW_FPL, PARAMS] },
+  'early-career-match': { maxBaseAnnual: 59_766, displayed: 59_700, probes: 9, acaYears: span(2028, 2065), reasons: [PARAMS] },
+  'aggressive-saver': { maxBaseAnnual: 90_352, displayed: 90_300, probes: 11, acaYears: span(2028, 2060), reasons: [PARAMS] },
+  'coast-fire': { maxBaseAnnual: 66_407, displayed: 66_400, probes: 9, acaYears: span(2028, 2060), reasons: [PARAMS] },
+  'barista-fire': { maxBaseAnnual: 52_032, displayed: 52_000, probes: 9, acaYears: span(2028, 2060), reasons: [PARAMS] },
+  'bridge-early-retirement': { maxBaseAnnual: 70_704, displayed: 70_700, probes: 9, acaYears: span(2028, 2045), reasons: [PARAMS] },
+  'lean-fat-fire': { maxBaseAnnual: 74_532, displayed: 74_500, probes: 9, acaYears: span(2028, 2055), reasons: [PARAMS] },
+  'hsa-stealth-retirement': { maxBaseAnnual: 54_688, displayed: 54_600, probes: 9, acaYears: span(2028, 2050), reasons: [PARAMS] },
+  'salary-growth-escalation': { maxBaseAnnual: 68_204, displayed: 68_200, probes: 9, acaYears: span(2028, 2060), reasons: [PARAMS] },
+  'guardrails-flex-goals': { maxBaseAnnual: null, displayed: null, probes: 2, acaYears: span(2026, 2028), reasons: [GUARDRAIL, PARAMS] },
   'annuity-purchases-estate': { maxBaseAnnual: 114_259, displayed: 114_200, probes: 10, acaYears: null, reasons: [] },
-  'glidepath-allocation': { maxBaseAnnual: 75_563, displayed: 75_500, probes: 9, acaYears: [2027, 2027], reasons: [PARAMS] },
-  'hsa-property-depth': { maxBaseAnnual: 28_688, displayed: 28_600, probes: 9, acaYears: [2026, 2029], reasons: [BELOW_FPL, PARAMS] },
-  'fixed-target-spending': { maxBaseAnnual: 30_813, displayed: 30_800, probes: 9, acaYears: [2026, 2028], reasons: [BELOW_FPL, PARAMS] },
+  'glidepath-allocation': { maxBaseAnnual: 75_563, displayed: 75_500, probes: 9, acaYears: null, reasons: [] },
+  'hsa-property-depth': { maxBaseAnnual: 29_087, displayed: 29_000, probes: 9, acaYears: [2026, 2028, 2029], reasons: [BELOW_FPL, PARAMS] },
+  'fixed-target-spending': { maxBaseAnnual: 30_813, displayed: 30_800, probes: 9, acaYears: span(2026, 2028), reasons: [BELOW_FPL, PARAMS] },
   'no-annuity-brokerage': { maxBaseAnnual: 116_391, displayed: 116_300, probes: 10, acaYears: null, reasons: [] },
-  'static-allocation-control': { maxBaseAnnual: 71_688, displayed: 71_600, probes: 9, acaYears: [2027, 2027], reasons: [PARAMS] },
-  'brokerage-no-hsa': { maxBaseAnnual: 28_290, displayed: 28_200, probes: 9, acaYears: [2026, 2029], reasons: [BELOW_FPL, PARAMS] },
-  'all-401k-no-bridge': { maxBaseAnnual: 71_250, displayed: 71_200, probes: 10, acaYears: [2027, 2051], reasons: [PARAMS] },
-  'brokerage-bridge-401k': { maxBaseAnnual: 71_250, displayed: 71_200, probes: 10, acaYears: [2027, 2051], reasons: [PARAMS] },
-  'no-head-start-grad': { maxBaseAnnual: 55_000, displayed: 55_000, probes: 9, acaYears: [2027, 2069], reasons: [PARAMS] },
-  'trump-account-head-start': { maxBaseAnnual: 64_282, displayed: 64_200, probes: 9, acaYears: [2027, 2069], reasons: [PARAMS] },
+  'static-allocation-control': { maxBaseAnnual: 71_688, displayed: 71_600, probes: 9, acaYears: null, reasons: [] },
+  'brokerage-no-hsa': { maxBaseAnnual: 28_290, displayed: 28_200, probes: 9, acaYears: span(2026, 2029), reasons: [BELOW_FPL, PARAMS] },
+  'all-401k-no-bridge': { maxBaseAnnual: 71_250, displayed: 71_200, probes: 10, acaYears: span(2028, 2051), reasons: [PARAMS] },
+  'brokerage-bridge-401k': { maxBaseAnnual: 71_250, displayed: 71_200, probes: 10, acaYears: span(2028, 2051), reasons: [PARAMS] },
+  'no-head-start-grad': { maxBaseAnnual: 55_000, displayed: 55_000, probes: 9, acaYears: span(2028, 2069), reasons: [PARAMS] },
+  'trump-account-head-start': { maxBaseAnnual: 64_282, displayed: 64_200, probes: 9, acaYears: span(2028, 2069), reasons: [PARAMS] },
 }
 
 /** The only examples with no answer, and the failure each one truly has. */
@@ -102,10 +120,6 @@ function stampDemo(example: ExamplePlan): Plan {
   }
 }
 
-function yearsBetween(first: number, last: number): number[] {
-  return Array.from({ length: last - first + 1 }, (_, i) => first + i)
-}
-
 describe('sustainable spending on every example', () => {
   it('pins every example in the library', () => {
     expect(EXAMPLE_PLANS.map((example) => example.id).sort()).toEqual(Object.keys(EXPECTED).sort())
@@ -120,7 +134,7 @@ describe('sustainable spending on every example', () => {
       expect(solved.maxBaseAnnual).toBe(expected!.maxBaseAnnual)
       expect(solved.maxBaseAnnual === null ? null : Math.floor(solved.maxBaseAnnual / 100) * 100).toBe(expected!.displayed)
       expect(solved.simulationCount).toBe(expected!.probes)
-      expect(solved.acaGrossPremiumYears).toEqual(expected!.acaYears ? yearsBetween(...expected!.acaYears) : [])
+      expect(solved.acaGrossPremiumYears).toEqual(expected!.acaYears ?? [])
       expect(solved.acaGrossPremiumReasons).toEqual(expected!.reasons)
       // Only Guardrails and flexible goals spends under guardrails, where a
       // credit could move the answer either way.
@@ -154,7 +168,8 @@ describe('the unpriced years come from the run the answer rests on', () => {
   it('reports the answer run, not the seed, when their Marketplace years differ', () => {
     // hsa-property-depth spent at $80,000: the seed run's income prices its
     // 2026 credit, but the answer's much lower spending leaves 2026 income
-    // under the poverty line, where the credit is not priced.
+    // under the poverty line, where the credit is not priced. 2027 is priced
+    // on its published figures in both runs.
     const example = EXAMPLE_PLANS.find((candidate) => candidate.id === 'hsa-property-depth')!
     const plan = stampDemo(example)
     plan.expenses.baseAnnual = 80_000
@@ -162,8 +177,8 @@ describe('the unpriced years come from the run the answer rests on', () => {
     expect(seedRun.years.find((year) => year.year === 2026)?.aca?.readiness).toBe('actionable')
 
     const solved = runSpendingSolveRequest({ plan, startYear: EXAMPLE_FIXED_YEAR })
-    expect(solved.maxBaseAnnual).toBe(28_750)
-    expect(solved.acaGrossPremiumYears).toEqual([2026, 2027, 2028, 2029])
+    expect(solved.maxBaseAnnual).toBe(29_063)
+    expect(solved.acaGrossPremiumYears).toEqual([2026, 2028, 2029])
     expect(solved.acaGrossPremiumReasons).toContain(BELOW_FPL)
   }, 120_000)
 })

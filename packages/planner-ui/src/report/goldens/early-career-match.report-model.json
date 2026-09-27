@@ -1,6 +1,7 @@
 {
   "blocks": {
     "aca-ledger": {
+      "projectedIncomeTaxNote": "2027 is priced on published Marketplace figures, with income from projected tax brackets.",
       "rows": [
         {
           "applicableSlcspPremium": 4200,
@@ -14,8 +15,8 @@
           "applicableSlcspPremium": 4389,
           "economicNetPremium": 4389,
           "grossEnrollmentPremium": 4389,
-          "modeledAllowablePtc": null,
-          "readiness": "nonActionable",
+          "modeledAllowablePtc": 0,
+          "readiness": "actionable",
           "year": 2027
         },
         {
@@ -1223,16 +1224,22 @@
           "url": "https://www.ssa.gov/news/en/cola/factsheets/2026.html"
         },
         {
-          "figures": "2025 HHS guideline ($15,650 first person, +$5,500 each additional) applied to the 2026 ACA coverage year.",
+          "figures": "2025 HHS guideline ($15,650 first person, +$5,500 each additional) applied to the 2026 ACA coverage year; 2026 HHS guideline ($15,960 first person, +$5,680 each additional) applied to the 2027 ACA coverage year. Each coverage year uses the guidelines in effect when its open enrollment began, as published.",
           "label": "Federal poverty guideline (ACA)",
           "publisher": "HHS",
           "url": "https://aspe.hhs.gov/topics/poverty-economic-mobility/poverty-guidelines"
         },
         {
-          "figures": "Applicable-percentage schedule per Rev. Proc. 2025-25 (2.10% under 133% FPL up to 9.96% at 300–400%), with the 400% FPL subsidy cliff restored (enhanced credits expired 12/31/2025).",
-          "label": "ACA premium tax credit",
+          "figures": "Applicable-percentage schedule for 2026 coverage (Rev. Proc. 2025-25: 2.10% under 133% FPL up to 9.96% at 300–400%), with the 400% FPL subsidy cliff restored (enhanced credits expired 12/31/2025).",
+          "label": "ACA premium tax credit, 2026 coverage",
           "publisher": "IRS",
           "url": "https://www.irs.gov/pub/irs-drop/rp-25-25.pdf"
+        },
+        {
+          "figures": "Applicable-percentage schedule for 2027 coverage (Rev. Proc. 2026-26: 2.15% under 133% FPL up to 10.22% at 300–400%), under the same 400% FPL cliff. Later coverage years are not priced until their figures are published.",
+          "label": "ACA premium tax credit, 2027 coverage",
+          "publisher": "IRS",
+          "url": "https://www.irs.gov/pub/irs-drop/rp-26-26.pdf"
         },
         {
           "figures": "Par real yields as of 2026-06-30: 1.85% (5y), 2.05% (7y), 2.25% (10y), 2.55% (20y), 2.70% (30y). Prices TIPS-ladder quotes and the funded-ratio discounting; refreshed annually with the parameter sets.",
@@ -2116,6 +2123,18 @@
   "kind": "retiregolden.report-model",
   "planName": "Just getting started",
   "provenance": {
+    "acaCoverageYears": [
+      {
+        "applicablePercentageSource": "Rev. Proc. 2025-25",
+        "coverageYear": 2026,
+        "povertyGuidelineSource": "HHS 2025 poverty guidelines, 90 FR 5917"
+      },
+      {
+        "applicablePercentageSource": "Rev. Proc. 2026-26",
+        "coverageYear": 2027,
+        "povertyGuidelineSource": "HHS 2026 poverty guidelines, 91 FR 1797"
+      }
+    ],
     "engineVersion": null,
     "federalParameterPackYear": 2026,
     "hostVersion": null,

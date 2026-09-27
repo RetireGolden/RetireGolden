@@ -56,6 +56,7 @@ import {
   targetWeightsAt,
 } from '../allocation/assetClasses.js'
 import { packForYear, EMBEDDED_REAL_YIELD_CURVE } from '../params/index.js'
+import { acaParametersForCoverageYear } from '../params/acaCoverageYears.js'
 import { indexingScaleFor } from '../params/indexingScale.js'
 import type { AnnualCashFlowPenaltySnapshot } from './annualCashFlowCapture.js'
 import {
@@ -1269,6 +1270,18 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     const inflFactor = inflFactorFrom(startYear, year)
     const { pack, isStandIn } = packForYear(year)
     const limitGrowth = limitScale(pack, isStandIn, year)
+    // The premium tax credit reads its own coverage-year figures, published on
+    // their own calendar (params/acaCoverageYears.ts), so a year can be priced
+    // while its income-tax pack is still a stand-in. Published guidelines are
+    // used as published: the poverty-line scale is 1 in a published coverage
+    // year, never the plan's inflation since the tax pack's year.
+    const {
+      params: acaParameters,
+      isStandIn: acaParametersStandIn,
+    } = acaParametersForCoverageYear(year)
+    const acaFplScale = acaParametersStandIn
+      ? inflFactorFrom(acaParameters.coverageYear, year)
+      : 1
     const annualRetirementRuntimeOccurrences:
       SimulatorAnnualRetirementRuntimeOccurrence[] = []
     const recordAnnualRetirementRuntimeOccurrence = (
@@ -1832,7 +1845,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       year,
       startYear,
       inflFactor,
-      isStandIn,
+      acaParametersStandIn,
       inflFactorFrom,
       healthInflFactorFrom,
       aliveCount,
@@ -2620,7 +2633,10 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         marketplaceMonthsByPersonPosition,
         pre65MonthlyPremiumPerPerson,
         healthInflFactor,
-        isStandIn,
+        acaParametersStandIn,
+        incomeTaxParametersProjected: isStandIn && !acaParametersStandIn,
+        acaParameters,
+        acaFplScale,
         planHasInheritedAccounts,
         ownedNonRothIraContributions,
         socialSecurityStreams,

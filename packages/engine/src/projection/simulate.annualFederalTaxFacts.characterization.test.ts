@@ -95,7 +95,7 @@ function acaHealthcareAssembly(plan: Plan) {
     taxFilingStatusForYear: 'single',
     inflFactorFrom: () => 1,
     healthInflFactorFrom: () => 1,
-    isStandIn,
+    acaParametersStandIn: isStandIn,
     hasModeledPerson: (personId) => personId === 'p1',
     resolvePerson: () => peopleStates[0]!,
     planHasTaxExemptYieldAttestation: false,

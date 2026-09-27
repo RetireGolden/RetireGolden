@@ -36,7 +36,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         }
@@ -92,7 +92,7 @@
           "functions": [
             {
               "name": "year2026",
-              "line": 16
+              "line": 17
             }
           ]
         },
@@ -110,7 +110,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         }
@@ -181,7 +181,7 @@
           "functions": [
             {
               "name": "year2026",
-              "line": 16
+              "line": 17
             }
           ]
         },
@@ -199,7 +199,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         }
@@ -327,7 +327,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         }
@@ -486,7 +486,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         }
@@ -572,7 +572,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         }
@@ -654,7 +654,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         }
@@ -732,7 +732,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         }
@@ -808,7 +808,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         },
@@ -977,7 +977,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         }
@@ -1104,7 +1104,7 @@
           "functions": [
             {
               "name": "year2026",
-              "line": 16
+              "line": 17
             }
           ]
         },
@@ -1131,7 +1131,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         }
@@ -1275,7 +1275,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         }
@@ -1400,7 +1400,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         }
@@ -1547,7 +1547,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         }
@@ -1631,7 +1631,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         }
@@ -1687,7 +1687,7 @@
           "functions": [
             {
               "name": "year2026",
-              "line": 16
+              "line": 17
             }
           ]
         },
@@ -1705,7 +1705,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         }
@@ -1826,7 +1826,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         }
@@ -1913,7 +1913,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         }
@@ -1992,7 +1992,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         }
@@ -2040,7 +2040,7 @@
           "functions": [
             {
               "name": "year2026",
-              "line": 16
+              "line": 17
             }
           ]
         },
@@ -2071,7 +2071,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         }
@@ -2265,7 +2265,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         }
@@ -2331,7 +2331,7 @@
           "functions": [
             {
               "name": "year2026",
-              "line": 16
+              "line": 17
             }
           ]
         },
@@ -2361,12 +2361,12 @@
       "fixtures": [
         {
           "path": "packages/engine/src/params/params.test.ts",
-          "line": 573,
+          "line": 614,
           "note": null,
           "tests": [
             {
               "title": "carries the adjusted threshold on a five-thousand-dollar step",
-              "line": 577
+              "line": 618
             }
           ]
         },
@@ -2433,7 +2433,7 @@
           "functions": [
             {
               "name": "year2026",
-              "line": 16
+              "line": 17
             }
           ]
         },
@@ -2451,7 +2451,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         }
@@ -2512,7 +2512,7 @@
           "functions": [
             {
               "name": "year2026",
-              "line": 16
+              "line": 17
             }
           ]
         },
@@ -2530,7 +2530,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         }
@@ -2541,16 +2541,16 @@
       "fixtures": [
         {
           "path": "packages/engine/src/params/params.test.ts",
-          "line": 587,
+          "line": 628,
           "note": null,
           "tests": [
             {
               "title": "moves the annual additions limit on a thousand-dollar step",
-              "line": 591
+              "line": 632
             },
             {
               "title": "leaves every borrowing limit on the step its own provision names",
-              "line": 597
+              "line": 638
             }
           ]
         }
@@ -2613,7 +2613,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         }
@@ -2689,7 +2689,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         }
@@ -2855,7 +2855,7 @@
           "functions": [
             {
               "name": "planSchema",
-              "line": 2623
+              "line": 2635
             }
           ]
         }
@@ -2920,7 +2920,7 @@
           "functions": [
             {
               "name": "planSchema",
-              "line": 2623
+              "line": 2635
             }
           ]
         }
@@ -3050,7 +3050,7 @@
           "functions": [
             {
               "name": "strategiesSchema",
-              "line": 2330
+              "line": 2342
             }
           ]
         }
@@ -3097,7 +3097,7 @@
           "functions": [
             {
               "name": "planSchema",
-              "line": 2623
+              "line": 2635
             }
           ]
         },
@@ -3115,7 +3115,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 393
+              "line": 394
             }
           ]
         }

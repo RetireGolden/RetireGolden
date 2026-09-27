@@ -1,10 +1,10 @@
 ## Claim
 
-Kind: data. `tax/aca.ts#acaEconomicPremiumByMonth` allows 2026 PTC at exactly 400% FPL but no credit strictly above 400% FPL, reflecting the restored post-2025 cliff; below-100%-FPL exception pathways are outside this calculation.
+Kind: data. `tax/aca.ts#acaEconomicPremiumByMonth` allows the credit at exactly 400% FPL but no credit strictly above 400% FPL, reflecting the restored post-2025 cliff, in the 2026 and 2027 coverage years alike: each year's parameters set `maxFplPctForCredit` at 400. The worked example below is a 2026 household; the separate 100% floor still applies, and below-100%-FPL exception pathways are outside this calculation.
 
 ## Justification
 
-`year2026.aca.maxFplPctForCredit` is `400`, and `AcaResult.overCliff` is true only above, not at, the ceiling. Thus the eligibility predicate is \(f\le400\), subject to the separate 100% floor.
+The coverage year's `maxFplPctForCredit` (`params/acaCoverageYears.ts#acaParametersForCoverageYear`; `year2026.aca` is the 2026 block) is `400` in 2026 and 2027, and `AcaResult.overCliff` is true only above, not at, the ceiling. Thus the eligibility predicate is \(f\le400\), subject to the separate 100% floor.
 
 ## Inputs
 
@@ -15,7 +15,7 @@ Kind: data. `tax/aca.ts#acaEconomicPremiumByMonth` allows 2026 PTC at exactly 40
 | SLCSP premium | 12,000 | 12,000 | dollars/year |
 | Enrollment premium | 10,000 | 10,000 | dollars/year |
 
-The FPL constants and 400% ceiling are `year2026.federalPovertyLine.contiguous` and `year2026.aca.maxFplPctForCredit`.
+The FPL constants and 400% ceiling are the 2026 coverage-year block's (`acaCoverageYear2026.federalPovertyLine.contiguous` and `.aca.maxFplPctForCredit`, which `year2026` references).
 
 ## Arithmetic
 
@@ -41,3 +41,7 @@ feeds: `aca-modeled-allowable-ptc-annual`; `aca-economic-net-premium-annual`; `s
 ## Provenance
 
 Derived by: codex (gpt-5.6-sol), 2026-09-18, from the signatures-and-comments extract only, without executing the engine or reading any implementation body. Reviewed by: cursor (composer-2.5), 2026-09-18, by independent recomputation without executing the engine; see REVIEW-2026-09-18-round-three.md in this directory.
+
+Revision, 2026-09-26: the claim now reads the ceiling from the coverage year's block (decision D-ACA-2027-TABLE); the 2026 example and its figures are unchanged. The rewording is unreviewed until a Codex or Cursor review, so the record carries reviewedBy 'unreviewed'.
+
+Revision, 2026-09-27: the Claim names both coverage years, as the record's statement and limits do (review of #750); the 2026 worked example is unchanged.

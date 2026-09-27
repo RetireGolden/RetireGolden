@@ -312,11 +312,11 @@ objective policy lets tournaments rank spending-level candidates under the same 
 never probes below the plan's required spending floor (`expenses.requiredAnnual`, rounded up), which the
 plan checks enforce.
 
-A Marketplace year whose premium tax credit the ledger cannot price (a year past the latest parameter year
-RetireGolden has, or a plan without the per-year credit details) does not stop the solve: the ledger
+A Marketplace year whose premium tax credit the ledger cannot price (a coverage year past the latest one
+with published credit figures, or a plan without the per-year credit details) does not stop the solve: the ledger
 already pays that year's full premium, which the credit can only lower, so every probe runs on that
 gross-premium ledger (`nonActionableAca: 'disclose'`) and the result names the years, the blocking support
-codes, and which way a credit there would move the answer (`acaGrossPremiumYears`,
+codes (every code outside `INFORMATIONAL_ACA_SUPPORT_CODES`), and which way a credit there would move the answer (`acaGrossPremiumYears`,
 `acaGrossPremiumReasons`, `acaGrossPremiumDirection`: 'conservative' at fixed-target spending, measured
 rather than proven; 'uncertain' under guardrails). Tournaments, local search and every other Insights
 preview keep refusing such evidence.

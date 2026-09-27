@@ -1,6 +1,6 @@
 import { formatEvidenceUsd } from '../../internal/evidenceFormat.js'
 import type { Detector, InsightCard } from '../types.js'
-import { packForYear } from '../../params/index.js'
+import { acaParametersForCoverageYear } from '../../params/acaCoverageYears.js'
 
 /**
  * Format a positive FPL overage so it never rounds to zero and never uses
@@ -25,7 +25,7 @@ function formatOverageDelta(delta: number): string {
   return Number(precise).toFixed(-exp + 1)
 }
 
-/** Flags Marketplace years just above the parameter-pack ACA credit cliff. */
+/** Flags Marketplace years just above the coverage year's ACA credit cliff. */
 export const acaThresholdProximity: Detector = {
   id: 'aca-threshold-proximity',
   category: 'tax-brackets',
@@ -33,7 +33,7 @@ export const acaThresholdProximity: Detector = {
   screen(ctx): InsightCard | null {
     for (const year of ctx.projection.result.years) {
       const aca = year.aca
-      const boundary = packForYear(year.year).pack.aca.maxFplPctForCredit
+      const boundary = acaParametersForCoverageYear(year.year).params.aca.maxFplPctForCredit
       const justOverBoundary =
         aca !== undefined &&
         aca.fplPct !== null &&

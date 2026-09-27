@@ -17,6 +17,7 @@ import { stateRetirementEventsFromAccountAmounts } from './annualStateRetirement
  */
 import type { Account, Person, Plan } from '../../model/plan.js'
 import type { ParameterPack } from '../../params/types.js'
+import type { AcaPricingParameters } from '../../params/acaCoverageYears.js'
 import type { IraProRataYear } from '../../strategies/iraBasis.js'
 import type { SimulatorAnnualRetirementRuntimeOccurrence } from '../annualRetirementRuntimeJournal.js'
 import type {
@@ -179,7 +180,14 @@ interface AnnualFundingApplicationAndClosePhaseFacts {
   readonly marketplaceMonthsByPersonPosition: readonly number[]
   readonly pre65MonthlyPremiumPerPerson: number
   readonly healthInflFactor: number
-  readonly isStandIn: boolean
+  /** True when the coverage year has no published ACA block (`acaParametersForCoverageYear`). */
+  readonly acaParametersStandIn: boolean
+  /** The coverage year's published ACA block is priced while its income-tax pack is a stand-in. */
+  readonly incomeTaxParametersProjected: boolean
+  /** The coverage year's credit figures, which every ACA reader in this phase prices on. */
+  readonly acaParameters: AcaPricingParameters
+  /** Poverty-line scale: 1 for a published coverage year, whose guidelines are used as published. */
+  readonly acaFplScale: number
   readonly planHasInheritedAccounts: boolean
   readonly ownedNonRothIraContributions: number
   readonly socialSecurityStreams: readonly SocialSecurityStreamActivity[]
@@ -483,7 +491,10 @@ export function annualFundingApplicationAndClosePhase(
     marketplaceMonthsByPersonPosition,
     pre65MonthlyPremiumPerPerson,
     healthInflFactor,
-    isStandIn,
+    acaParametersStandIn,
+    incomeTaxParametersProjected,
+    acaParameters,
+    acaFplScale,
     planHasInheritedAccounts,
     ownedNonRothIraContributions,
     socialSecurityStreams,
@@ -1013,7 +1024,7 @@ export function annualFundingApplicationAndClosePhase(
           enrollmentPremiums: acaEnrollmentPremiums,
           slcspBenchmarkPremiums: acaSlcspBenchmarkPremiums,
           healthcareExcludingEnrollment: healthcareExcludingAcaEnrollment,
-          pricingInflationScale: inflFactorFrom(pack.year, year),
+          pricingInflationScale: acaFplScale,
         }),
         hsa: Object.freeze({
           initialQualifiedCap: hsaQualifiedCap,
@@ -1022,7 +1033,7 @@ export function annualFundingApplicationAndClosePhase(
             netCare +
             (hsaReimburseLaterActive ? hsaReimbursablePool : 0),
         }),
-        parameterPack: pack,
+        acaParameters,
         spendingAndContributions: expenses.total + contributions,
         rmdShortfallExciseTax,
         tolerancePlanDollars: ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS,
@@ -1422,7 +1433,7 @@ export function annualFundingApplicationAndClosePhase(
         contract: acaContractSnapshot,
         contractCount: acaContractsForYear.length,
         exampleContractInputMismatch,
-        isStandIn,
+        acaParametersStandIn,
         people: Object.freeze(
           peopleStates.map((person) => Object.freeze({
             personId: person.personId,
@@ -1434,8 +1445,9 @@ export function annualFundingApplicationAndClosePhase(
         ]),
         pre65MonthlyPremiumPerPerson,
         healthInflationScale: healthInflFactor,
-        parameterPack: pack,
-        fplInflationScale: inflFactorFrom(pack.year, year),
+        acaParameters,
+        fplInflationScale: acaFplScale,
+        incomeTaxParametersProjected,
         federalAgi: federalDetail.agiBeforeFloor,
         grossSocialSecurity: incomes.socialSecurity,
         taxableSocialSecurity: federalDetail.taxableSocialSecurity,
@@ -1606,7 +1618,7 @@ export function annualFundingApplicationAndClosePhase(
         taxExemptInterest: yearTaxExemptInterest,
         acaForeignExclusionAddback,
         yearAcaResult: optimizerAcaSnapshot,
-        maxFplPctForCredit: pack.aca.maxFplPctForCredit,
+        maxFplPctForCredit: acaParameters.aca.maxFplPctForCredit,
         totalRothConversionTaxable,
         traditionalWithdrawal:
           withdrawalPlan.byCategory.traditional,

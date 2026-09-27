@@ -129,6 +129,33 @@ describe('irmaaTierEdge', () => {
     expect(notConversionDriven?.action).toEqual({ kind: 'advisory' })
   })
 
+  it('reads a 2027 pack\'s resumed top row from the August 2026 base', () => {
+    // A synthetic 2027 pack (the 2026 figures under a 2027 year) and the
+    // plan's 2.5% inflation. A 2027 MAGI prices 2029 premiums, whose top row
+    // 42 U.S.C. 1395r(i)(5)(C)(ii) measures from August 2026 to August 2028:
+    // 500,000 x 1.025 x 1.025 = 525,312.50, rounded to 525,000. A factor
+    // anchored at the pack year reads 2027 to 2028 (512,500) and puts this
+    // MAGI $14,500 over, outside the $5,000 window; a missing factor is
+    // refused for a pack year other than 2026. The detector compounds the
+    // plan's single rate, so it has no varying path: at a constant rate the
+    // 2027-to-2029 reading gives the same 525,000, and the ledger test in
+    // annualHealthcareExpenses.test.ts is the one that separates it.
+    const plan = singlePersonPlan({ dob: '1956-01-01' })
+    plan.assumptions.inflationPct = 2.5
+    const ctx = {
+      plan,
+      params: { ...pack, year: 2027 },
+      projection: {
+        startYear: 2027,
+        result: { years: [year(2027, { magi: 527_000 }), year(2028), year(2029, { ages: [73] })] },
+      },
+    } as unknown as DetectorContext
+
+    const card = irmaaTierEdge.screen(ctx)
+    expect(card?.evidence).toContainEqual({ label: 'IRMAA tier threshold (2029 premiums)', value: '$525,000', year: 2029 })
+    expect(card?.evidence).toContainEqual({ label: 'Amount over threshold', value: '$2,000', year: 2027 })
+  })
+
   it('evaluate() refuses a plan with no tier-edge year', () => {
     expect(() => irmaaTierEdge.evaluate!(context({ magi: 0 }))).toThrow(/not eligible/i)
   })

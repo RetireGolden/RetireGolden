@@ -160,7 +160,7 @@ describe('simulatePlan delegates annual ACA result publication', () => {
       acaConversionMagiHeadroom: Math.max(
         0,
         INJECTED_FPL *
-          (call.input.parameterPack.aca.maxFplPctForCredit / 100) -
+          (call.input.acaParameters.aca.maxFplPctForCredit / 100) -
           INJECTED_MAGI,
       ),
     })

@@ -18,7 +18,7 @@ export const medicareAndAcaRecords = {
       'spending-healthcare-annual',
     ],
     statement:
-      'tax/aca.ts#acaEconomicPremiumByMonth allows 2026 PTC at exactly 400% FPL but no credit strictly above it, reflecting the restored post-2025 cliff: year2026.aca.maxFplPctForCredit is 400 and AcaResult.overCliff is true only above, not at, the ceiling. The separate 100% floor still applies, and below-100%-FPL exception pathways are outside this calculation. Units: percent of the federal poverty line, and nominal USD for the resulting credit.',
+      'tax/aca.ts#acaEconomicPremiumByMonth allows the credit at exactly 400% FPL but no credit strictly above it, reflecting the restored post-2025 cliff: the coverage year\'s parameters (params/acaCoverageYears.ts#acaParametersForCoverageYear) set maxFplPctForCredit at 400 in 2026 and in 2027, and AcaResult.overCliff is true only above, not at, the ceiling. The separate 100% floor still applies, and below-100%-FPL exception pathways are outside this calculation. Units: percent of the federal poverty line, and nominal USD for the resulting credit.',
     formula: {
       expression: 'f = 100 x MAGI / FPL; overCliff = f > 400; credit = 0 when overCliff',
       variables: [
@@ -27,7 +27,7 @@ export const medicareAndAcaRecords = {
         { symbol: 'FPL', meaning: 'Regional federal poverty line for the household size', unit: 'usd/year', domain: 'positive' },
       ],
       timing: 'one coverage year',
-      rounding: 'none; the comparison is on the unrounded percentage',
+      rounding: 'none: both the 400% and the 100% tests compare the exact percentage, never the whole number the applicable-percentage table is read at, as Form 8962 Worksheet 2 line 4 compares household income with 4 times the poverty line in dollars',
     },
     justification: {
       kind: 'derivation',
@@ -36,11 +36,12 @@ export const medicareAndAcaRecords = {
     limits: [
       'The cliff is the only eligibility question this record answers: the separate below-100%-FPL floor and its exception pathways are outside it',
       'It is annual planning math, not APTC cash timing or a Form 8962 reconciliation',
+      'The worksheet\'s household is a 2026 one; the 2027 cliff reads the same 400 from the 2027 block, and its dollar amounts (63,840 for one person, 132,000 for four) are pinned by a test built from the published 2027 guidelines',
     ],
     implementedBy: ['packages/engine/src/tax/aca.ts'],
     implementedByFunctions: ['packages/engine/src/tax/aca.ts#acaEconomicPremiumByMonth'],
-    verifiedOn: '2026-09-18',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+    verifiedOn: '2026-09-26',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
   },
   'aca-allowable-premium-tax-credit': {
     title: 'ACA modeled allowable premium tax credit',
@@ -49,7 +50,7 @@ export const medicareAndAcaRecords = {
     outputs: ['aca-modeled-allowable-ptc-annual'],
     feeds: ['aca-economic-net-premium-annual', 'spending-healthcare-annual'],
     statement:
-      'tax/aca.ts#acaEconomicPremiumByMonth computes current-year modeled allowable PTC from the SLCSP benchmark less the expected contribution, floored at zero and capped by the actual enrollment premium. The month loop applies both the floor and the enrollment cap on each month against a twelfth of the annual contribution, so the annual figure is the sum of twelve monthly credits. Units: nominal USD. Rounding: none stated.',
+      'tax/aca.ts#acaEconomicPremiumByMonth computes current-year modeled allowable PTC from the SLCSP benchmark less the expected contribution, floored at zero and capped by the actual enrollment premium. The month loop applies both the floor and the enrollment cap on each month against a twelfth of the annual contribution, so the annual figure is the sum of twelve monthly credits. Units: nominal USD. Rounding: the contribution carries the applicable percentage\'s rounding (aca-expected-contribution); the monthly credit is then computed from the unrounded contribution, where Form 8962 rounds line 8b to a whole dollar (a stated limit).',
     formula: {
       expression: 'P = sum over months m of min(E_m, max(0, S_m - C/12))',
       variables: [
@@ -58,7 +59,7 @@ export const medicareAndAcaRecords = {
         { symbol: 'C', meaning: 'Expected annual contribution toward the benchmark premium', unit: 'usd/year', domain: 'nonnegative' },
       ],
       timing: 'twelve coverage months of one year',
-      rounding: 'none stated',
+      rounding: 'none beyond the applicable percentage rounded to 0.01% inside C (26 CFR 1.36B-3(g)(1)); C / 12 is not rounded to a whole dollar as Form 8962 line 8b rounds it',
     },
     justification: {
       kind: 'derivation',
@@ -67,11 +68,12 @@ export const medicareAndAcaRecords = {
     limits: [
       'Annual planning math: APTC cash timing, refunds and balances due, and Form 8962 reconciliation are outside this module',
       'A month with no enrollment premium contributes no benchmark and no credit, so the annual benchmark is the enrolled-month benchmark rather than a full-year figure',
+      'Form 8962 rounds the annual contribution (line 8a) and the monthly contribution (line 8b) to whole dollars; the engine keeps both unrounded, which moves the annual credit by at most about $0.50 on the annual path and about $6 on the monthly path',
     ],
     implementedBy: ['packages/engine/src/tax/aca.ts'],
     implementedByFunctions: ['packages/engine/src/tax/aca.ts#acaEconomicPremiumByMonth'],
-    verifiedOn: '2026-09-18',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+    verifiedOn: '2026-09-26',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
   },
   'aca-economic-net-premium': {
     title: 'ACA economic net premium',
@@ -80,7 +82,7 @@ export const medicareAndAcaRecords = {
     outputs: ['aca-economic-net-premium-annual'],
     feeds: ['spending-healthcare-annual'],
     statement:
-      'tax/aca.ts#acaEconomicPremiumByMonth computes annual economic net premium as gross enrollment premium minus modeled allowable PTC. The monthly credit is itself capped at that month\'s enrollment premium, so the difference cannot fall below zero. Units: nominal USD. Rounding: none stated.',
+      'tax/aca.ts#acaEconomicPremiumByMonth computes annual economic net premium as gross enrollment premium minus modeled allowable PTC. The monthly credit is itself capped at that month\'s enrollment premium, so the difference cannot fall below zero. Units: nominal USD. Rounding: none; it inherits the credit\'s (aca-allowable-premium-tax-credit).',
     formula: {
       expression: 'N = E - P, where each month\'s P is capped at that month\'s E',
       variables: [
@@ -88,7 +90,7 @@ export const medicareAndAcaRecords = {
         { symbol: 'P', meaning: 'Modeled allowable premium tax credit', unit: 'usd/year', domain: '0 <= P <= E' },
       ],
       timing: 'one coverage year',
-      rounding: 'none stated',
+      rounding: 'none; the difference is not rounded',
     },
     justification: {
       kind: 'derivation',
@@ -100,8 +102,8 @@ export const medicareAndAcaRecords = {
     ],
     implementedBy: ['packages/engine/src/tax/aca.ts'],
     implementedByFunctions: ['packages/engine/src/tax/aca.ts#acaEconomicPremiumByMonth'],
-    verifiedOn: '2026-09-18',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+    verifiedOn: '2026-09-26',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
   },
   'aca-expected-contribution': {
     title: 'ACA expected contribution',
@@ -110,17 +112,18 @@ export const medicareAndAcaRecords = {
     outputs: [],
     feeds: ['aca-modeled-allowable-ptc-annual', 'aca-economic-net-premium-annual'],
     statement:
-      'tax/aca.ts#acaFederalPovertyLine, #acaApplicablePct and #acaEconomicPremiumByMonth compute the 2026 expected annual benchmark-premium contribution as household MAGI times the piecewise-linear applicable percentage selected from MAGI as a percentage of the regional poverty line. The poverty line is the first-person amount plus one additional-person amount for each member past the first; the applicable percentage is interpolated between breakpoints from the tax parameters with a real step at exactly 133%. Units: nominal USD. Rounding: none stated.',
+      'tax/aca.ts#acaFederalPovertyLine, #acaApplicablePct and #acaEconomicPremiumByMonth compute the expected annual benchmark-premium contribution as household MAGI times the piecewise-linear applicable percentage selected from MAGI as a percentage of the regional poverty line, both read from the coverage year\'s parameters (params/acaCoverageYears.ts#acaParametersForCoverageYear: the Rev. Proc. 2025-25 table and the HHS 2025 guidelines for 2026 coverage, Rev. Proc. 2026-26 and the HHS 2026 guidelines for 2027). The poverty line is the first-person amount plus one additional-person amount for each member past the first; the applicable percentage is interpolated between the breakpoints with a real step at exactly 133%. Units: nominal USD. Rounding: the poverty-line percentage is truncated to a whole number before the table is read (Form 8962 instructions, Worksheet 2, line 4: "drop any numbers after the decimal point"), and the applicable percentage there is rounded half up to the nearest one-hundredth of one percent (26 CFR 1.36B-3(g)(1): "is rounded to the nearest one-hundredth of one percent"); the contribution itself is not rounded to the whole dollar Form 8962 line 8a prints.',
     formula: {
-      expression: 'FPL = (first + (h - 1) x perAdditional) x fplScale; f = 100 x M / FPL; C = M x r(f) / 100',
+      expression: 'FPL = (first + (h - 1) x perAdditional) x fplScale; f = 100 x M / FPL; w = floor(f); C = M x round(r(w), 0.01) / 100',
       variables: [
         { symbol: 'h', meaning: 'Household size', unit: 'people', domain: 'integer >= 1' },
         { symbol: 'M', meaning: 'Household MAGI', unit: 'usd/year', domain: 'nonnegative' },
         { symbol: 'f', meaning: 'MAGI as a percentage of the poverty line', unit: 'percent', domain: 'nonnegative' },
-        { symbol: 'r(f)', meaning: 'Applicable percentage interpolated from year2026.aca.applicablePctBreakpoints', unit: 'percent', domain: 'positive' },
+        { symbol: 'w', meaning: 'The whole-number percentage the table is read at (Form 8962, Worksheet 2, line 4)', unit: 'percent', domain: 'integer' },
+        { symbol: 'r(w)', meaning: 'Applicable percentage interpolated from the coverage year\'s applicablePctBreakpoints (acaParametersForCoverageYear), then rounded half up to 0.01', unit: 'percent', domain: 'positive' },
       ],
       timing: 'one coverage year',
-      rounding: 'none stated',
+      rounding: 'f truncated to a whole number (Form 8962 instructions, Worksheet 2, line 4); r rounded half up to 0.01 percent (26 CFR 1.36B-3(g)(1)); C not rounded (Form 8962 line 8a rounds it to a whole dollar: a stated limit)',
     },
     justification: {
       kind: 'derivation',
@@ -128,16 +131,66 @@ export const medicareAndAcaRecords = {
     },
     limits: [
       'The contribution is an intermediate: no census family publishes it, and it is visible only through the credit and the net premium it produces',
-      'The applicable-percentage curve is linear between published breakpoints with a discontinuous step at exactly 133%; it is the tax parameters’ reproduction of a published table, not a statutory formula',
+      'The applicable-percentage curve is linear between published breakpoints with a discontinuous step at exactly 133%; it is the coverage-year parameters’ reproduction of a published table, not a statutory formula',
+      'The worksheet\'s household is a 2026 one; the 2027 poverty line and table are evidenced on aca-coverage-year-parameters',
+      'Form 8962 rounds the annual contribution (line 8a) and the monthly contribution (line 8b) to whole dollars; the engine keeps both unrounded, which moves the annual credit by at most about $0.50 on the annual path and about $6 on the monthly path',
     ],
     implementedBy: ['packages/engine/src/tax/aca.ts'],
     implementedByFunctions: [
       'packages/engine/src/tax/aca.ts#acaFederalPovertyLine',
+      'packages/engine/src/tax/aca.ts#acaWholeFplPct',
       'packages/engine/src/tax/aca.ts#acaApplicablePct',
       'packages/engine/src/tax/aca.ts#acaEconomicPremiumByMonth',
     ],
-    verifiedOn: '2026-09-18',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+    verifiedOn: '2026-09-26',
+    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+  },
+  'aca-coverage-year-parameters': {
+    title: 'ACA credit figures by coverage year',
+    purpose: 'Price a Marketplace year on its own published applicable-percentage table and poverty guidelines, as published, and price no year whose figures are not published.',
+    kind: 'data',
+    outputs: [],
+    feeds: [
+      'aca-modeled-allowable-ptc-annual',
+      'aca-economic-net-premium-annual',
+      'spending-healthcare-annual',
+    ],
+    statement:
+      'params/acaCoverageYears.ts#acaParametersForCoverageYear returns the published block for a coverage year: the Applicable Percentage Table of that year\'s revenue procedure and the HHS poverty guidelines in effect when that year\'s open enrollment began (Rev. Proc. 2025-25 and the HHS 2025 guidelines for 2026; Rev. Proc. 2026-26 and the HHS 2026 guidelines for 2027). projection/simulate.ts#simulatePlan resolves the block for each year beside the income-tax figures and prices the credit, publishes the poverty line, sizes the acaCliff conversion ceiling and reads the cliff for the optimizer probe from it, at a poverty-line scale of exactly 1, so a published guideline is never inflated. A year with no published block resolves to its nearest block as a stand-in: it is marked tax-year-parameters-unsupported, withholds its poverty line and budgets the gross premium. A priced year whose income-tax figures are projected from an earlier year (2027, while only the 2026 income-tax figures are published) publishes the informational support code income-tax-parameters-projected beside actionable, because its household MAGI was computed on projected brackets. Units: nominal USD for the poverty line and the credit, percent for the table. Rounding: none of its own; the credit it feeds reads the table at the whole-number poverty-line percentage and rounds the applicable percentage to 0.01 (aca-expected-contribution).',
+    formula: {
+      expression: 'block(Y) = published block for Y, else stand-in; FPL = first + (h - 1) x perAdditional, scale 1; priced only when block(Y) is published; codes += income-tax-parameters-projected when the income-tax figures for Y are projected',
+      variables: [
+        { symbol: 'Y', meaning: 'Coverage year (the taxable year of the credit)', unit: 'year', domain: 'integer' },
+        { symbol: 'h', meaning: 'Tax-family size', unit: 'people', domain: 'integer >= 1' },
+        { symbol: 'first, perAdditional', meaning: 'The block\'s poverty guidelines for the region', unit: 'usd/year', domain: 'positive' },
+      ],
+      timing: 'one coverage year',
+      rounding: 'none of its own; the pricing it feeds rounds as aca-expected-contribution states',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/medicare-and-aca/aca-coverage-year-parameters.md',
+    },
+    limits: [
+      'Coverage years after the latest published block (2028 and later today) are stand-ins and are not priced: no source projects the Applicable Percentage Table, which moves with premium growth against income growth',
+      'A year priced on its published ACA figures while its income-tax figures are projected from an earlier year has a household MAGI that rests on those projected figures through bracket-sized conversions, the tax fixed point and indexed contribution caps; measured, a 1% change in those figures moves early-retiree-aca\'s 2027 credit by about $44 of $10,925, moves the MAGI of two other examples by about $1,350, and can move a credit by its whole jump where the income lands within about 1% of 100%, 133% or 400% of the poverty line. The year says so with income-tax-parameters-projected rather than being refused',
+      'The 2027 required contribution percentage (10.22%, Rev. Proc. 2026-26 section 3.02) is recorded and read by no calculation: employer-coverage affordability is the household\'s coverageEligibility assertion',
+      '26 CFR 1.36B-1(h) applies the higher poverty guideline when a household\'s primary residence moves during the year between states with different guidelines, or when married taxpayers live in separate states with different guidelines (Alaska or Hawaii and another state). The engine does not apply that rule: the year contract names one fplRegion for the household and the year, and the credit reads that region\'s guideline, so such a year gets the rule\'s result only when its contract names the region with the higher guideline',
+    ],
+    implementedBy: [
+      'packages/engine/src/params/acaCoverageYears.ts',
+      'packages/engine/src/projection/simulate.ts',
+      'packages/engine/src/projection/internal/annualAcaResultPublication.ts',
+      'packages/engine/src/strategies/rothConversion.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/params/acaCoverageYears.ts#acaParametersForCoverageYear',
+      'packages/engine/src/projection/simulate.ts#simulatePlan',
+      'packages/engine/src/projection/internal/annualAcaResultPublication.ts#annualAcaResultPublication',
+      'packages/engine/src/strategies/rothConversion.ts#sizeRothConversion',
+    ],
+    verifiedOn: '2026-09-26',
+    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
   },
   'aca-household-magi-composition': {
     title: 'ACA household MAGI composition',
@@ -443,6 +496,7 @@ export const medicareAndAcaRecords = {
       'Tier 1 is reached through assumptions.recentAnnualMagi, because the 2024 lookback year is before the projection and resolves to that plan fallback rather than to a projected MAGI. The two-person household files jointly, so it reaches the SAME tier 1 through the $218,000 joint threshold rather than the worksheet\'s $109,000 single threshold; the tier-priced premium is a function of the tier alone, so it is $3,582.72 either way',
       'The second person\'s marketplace component is read as healthcare minus medicarePremiums minus that person\'s extras, since the phase result itself is not published on the year row; the extras rule it subtracts is pinned independently by the first person, whose zero marketplace months make healthcare minus medicarePremiums the extras exactly',
       'The credit-on branch carries no numeric expectation: the worksheet states none without a complete ACA quote and a converged fixed point',
+      'A household funded just above 100% of the poverty line by need-driven withdrawals can have no self-consistent credit: the credit lowers the withdrawal need and with it MAGI, to below 100% where no credit is allowed, while the gross-funded MAGI is back above 100%. The fixed point then runs out its evaluations, publishes fixed-point-nonconvergent and budgets the gross premium (fixed-target-spending and brokerage-no-hsa in 2027, at 114.7% and 124.1% of the poverty line). That is the engine\'s model, not the law: 26 CFR 1.36B-2(b)(6) treats a household whose income ends below 100% as an applicable taxpayer when an Exchange estimated 100% to 400% at enrollment and advance credit was paid, and the engine does not model that exception (below-100-fpl-exception-unsupported), which is the truer reason such a year stays unpriced',
     ],
     implementedBy: [
       'packages/engine/src/projection/internal/annualHealthcareExpenses.ts',
@@ -452,8 +506,8 @@ export const medicareAndAcaRecords = {
       'packages/engine/src/projection/internal/annualHealthcareExpenses.ts#annualHealthcareExpenses',
       'packages/engine/src/tax/medicare.ts#medicareAnnualPremiumPerPerson',
     ],
-    verifiedOn: '2026-09-18',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+    verifiedOn: '2026-09-26',
+    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
   },
   'display-net-care-cost-annual': {
     title: 'Net long-term-care cost after the LTC benefit',

@@ -252,7 +252,12 @@ describe('full-plan characterization fixtures', () => {
 
     // Characterization review note: this fixture pins the ACA bridge behavior
     // where a deliberate Roth conversion crosses the sourced 2026 cliff and
-    // the future stand-in year fails closed to gross premium.
+    // the first year without published ACA figures (2028) fails closed to gross
+    // premium. Re-baselined 2026-09-26 (decision D-ACA-2027-TABLE): 2027 is
+    // now priced on Rev. Proc. 2026-26 and the HHS 2026 guidelines. MAGI
+    // 55,000 on a 15,960 poverty line is 344.61%, in the flat 10.22% band, so
+    // the contribution is 5,621 and the credit 6,379: 2027 healthcare goes from
+    // 12,000 to 5,621, and every later investable balance rises by 6,379.
     const summary = {
       depletionYear: result.depletionYear,
       endingInvestable: dollars(result.endingInvestable),
@@ -264,7 +269,7 @@ describe('full-plan characterization fixtures', () => {
 
     expect(summary).toEqual({
       depletionYear: null,
-      endingInvestable: 442_931.2,
+      endingInvestable: 449_310.2,
       warnings: [
         'Some pre-65 years exceed 400% of the federal poverty line: no ACA credit (the cliff).',
         'Some Marketplace years use gross enrollment premium because required ACA reconciliation facts are missing or unsupported.',
@@ -287,14 +292,14 @@ describe('full-plan characterization fixtures', () => {
         year: 2027,
         income: 55_000,
         socialSecurity: 0,
-        healthcare: 12_000,
+        healthcare: 5_621,
         withdrawals: 0,
         rmd: 0,
         qcd: 0,
         rothConversion: 0,
         tax: 4_420,
         magi: 55_000,
-        investable: 415_960,
+        investable: 422_339,
         shortfall: 0,
       },
       y2029: {
@@ -308,7 +313,7 @@ describe('full-plan characterization fixtures', () => {
         rothConversion: 0,
         tax: 4_174,
         magi: 55_000,
-        investable: 442_931.2,
+        investable: 449_310.2,
         shortfall: 0,
       },
     })

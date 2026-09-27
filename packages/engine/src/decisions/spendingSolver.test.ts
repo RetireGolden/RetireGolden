@@ -128,14 +128,15 @@ describe('solveMaxSustainableSpending', () => {
 })
 
 /**
- * A single filer, 62 in 2026, on the Marketplace in both years of a
- * 2026-2027 plan, with $30,000 of wages and $300,000 of cash at zero return
- * and zero tax. 2026 has a parameter pack, so its credit is priced; 2027 rides
- * the 2026 pack as a stand-in, so its credit is not
- * (tax-year-parameters-unsupported) and the ledger budgets its full premium.
+ * A single filer, 62 in 2026, on the Marketplace in every year of a
+ * 2026-2028 plan, with $30,000 of wages and $300,000 of cash at zero return
+ * and zero tax. 2026 and 2027 have published credit figures, so their credits
+ * are priced; 2028 has none yet (the latest coverage-year block is 2027's), so
+ * its credit is not (tax-year-parameters-unsupported) and the ledger budgets
+ * its full premium.
  */
-function marketplacePlan(contractYears: number[] = [2026, 2027]): Plan {
-  const plan = singlePersonPlan({ dob: '1964-06-15', planningAge: 63 })
+function marketplacePlan(contractYears: number[] = [2026, 2027, 2028]): Plan {
+  const plan = singlePersonPlan({ dob: '1964-06-15', planningAge: 64 })
   plan.accounts = [cashAccount('cash', 300_000)]
   plan.incomes = [recurringOrdinaryIncome('wages', 30_000, 2026)]
   plan.expenses.baseAnnual = 40_000
@@ -170,8 +171,8 @@ describe('solveMaxSustainableSpending with an unpriced ACA credit', () => {
   it('answers on the gross-premium ledger and names the unpriced year and its reason', () => {
     const plan = marketplacePlan()
     const ctx = zeroTaxContext(plan)
-    // The fixture really has one priced and one unpriced Marketplace year.
-    expect(ctx.baselineResult.years.map((year) => year.aca?.readiness)).toEqual(['actionable', 'nonActionable'])
+    // The fixture really has priced and unpriced Marketplace years.
+    expect(ctx.baselineResult.years.map((year) => year.aca?.readiness)).toEqual(['actionable', 'actionable', 'nonActionable'])
 
     const solved = solveMaxSustainableSpending(ctx)
 
@@ -181,15 +182,15 @@ describe('solveMaxSustainableSpending with an unpriced ACA credit', () => {
     expect(solved.bestEvaluation!.recommendationState).not.toBe('diagnostic')
     expect(solved.bestEvaluation!.candidateResult.depletionYear).toBeNull()
     // The unpriced year budgets exactly its gross premium.
-    const unpriced = solved.bestEvaluation!.candidateResult.years[1]!
+    const unpriced = solved.bestEvaluation!.candidateResult.years[2]!
     expect(unpriced.aca!.economicNetPremium).toBe(unpriced.aca!.grossEnrollmentPremium)
-    expect(solved.acaGrossPremiumYears).toEqual([2027])
+    expect(solved.acaGrossPremiumYears).toEqual([2028])
     expect(solved.acaGrossPremiumReasons).toEqual(['tax-year-parameters-unsupported'])
     // Fixed-target spending: a credit could only lower withdrawals.
     expect(solved.acaGrossPremiumDirection).toBe('conservative')
     // The disclosure is the last diagnostic, and it names the blocking codes.
     expect(solved.diagnostics.at(-1)).toBe(
-      'The ACA premium tax credit is not priced in 2027 (tax-year-parameters-unsupported); the ledger budgets the full Marketplace premium in those years, so a household that receives a credit there would likely be able to spend somewhat more than this answer.',
+      'The ACA premium tax credit is not priced in 2028 (tax-year-parameters-unsupported); the ledger budgets the full Marketplace premium in those years, so a household that receives a credit there would likely be able to spend somewhat more than this answer.',
     )
   })
 
@@ -233,10 +234,10 @@ describe('solveMaxSustainableSpending with an unpriced ACA credit', () => {
     const solved = solveMaxSustainableSpending(zeroTaxContext(validatePlan(plan)))
 
     expect(solved.maxBaseAnnual).toBeNull()
-    expect(solved.acaGrossPremiumYears).toEqual([2027])
+    expect(solved.acaGrossPremiumYears).toEqual([2028])
     expect(solved.diagnostics).toEqual([
       'Even zero base spending depletes the portfolio before the plan ends.',
-      'The ACA premium tax credit is not priced in 2027 (tax-year-parameters-unsupported); the ledger budgets the full Marketplace premium in those years, and a credit there would lower that cost.',
+      'The ACA premium tax credit is not priced in 2028 (tax-year-parameters-unsupported); the ledger budgets the full Marketplace premium in those years, and a credit there would lower that cost.',
     ])
   })
 
@@ -276,8 +277,8 @@ describe('solveMaxSustainableSpending with an unpriced ACA credit', () => {
     expect(on.maxBaseAnnual).not.toBeNull()
     expect(on.maxBaseAnnual).toBe(off.maxBaseAnnual)
     expect(on.simulationCount).toBe(off.simulationCount)
-    expect(on.acaGrossPremiumYears).toEqual([2026, 2027])
-    // 2027 is also past the latest parameter pack.
+    expect(on.acaGrossPremiumYears).toEqual([2026, 2027, 2028])
+    // 2028 is also past the latest coverage year with published credit figures.
     expect(on.acaGrossPremiumReasons).toEqual(['missing-year-contract', 'tax-year-parameters-unsupported'])
     expect(off.acaGrossPremiumYears).toEqual([])
     expect(off.acaGrossPremiumReasons).toEqual([])
@@ -286,22 +287,24 @@ describe('solveMaxSustainableSpending with an unpriced ACA credit', () => {
     // Two years and two codes merged across them: the sentence does not pin
     // both codes on both years.
     expect(on.diagnostics.at(-1)).toContain(
-      'not priced in 2026, 2027 (in each of those years, at least one of these applies: missing-year-contract, tax-year-parameters-unsupported);',
+      'not priced in 2026, 2027, 2028 (in each of those years, at least one of these applies: missing-year-contract, tax-year-parameters-unsupported);',
     )
   })
 
   it('with no answer, reports the unpriced years of the probe the failure names, not the seed', () => {
     // Spending comes out of a traditional IRA, so MAGI follows spending: the
-    // $40,000 seed prices 2026, but the $0 floor probe leaves 2026 MAGI under
-    // the poverty line, where the credit is not priced. A $5,000,000 goal in
-    // 2027 makes every level deplete.
-    const plan = singlePersonPlan({ dob: '1964-06-15', planningAge: 63 })
+    // $40,000 seed prices 2026 and 2027, but the $0 floor probe leaves their
+    // MAGI under the poverty line, where the credit is not priced. 2028 has no
+    // published credit figures in either run. A $5,000,000 goal in 2028 makes
+    // every level deplete.
+    const plan = singlePersonPlan({ dob: '1964-06-15', planningAge: 64 })
     plan.accounts = [traditionalAccount('ira', 300_000)]
     plan.expenses.baseAnnual = 40_000
     plan.expenses.healthcare = { pre65MonthlyPremiumPerPerson: 1_000, applyAcaCredit: true, medicareExtrasMonthlyPerPerson: 0 }
     setAcaYearContract(plan, { year: 2026 })
     setAcaYearContract(plan, { year: 2027 })
-    plan.expenses.oneTimeGoals = [{ id: 'goal', label: 'Unfundable', year: 2027, amount: 5_000_000 }]
+    setAcaYearContract(plan, { year: 2028 })
+    plan.expenses.oneTimeGoals = [{ id: 'goal', label: 'Unfundable', year: 2028, amount: 5_000_000 }]
     const ctx = zeroTaxContext(validatePlan(plan))
     const spy = vi.spyOn(evaluation, 'evaluateCandidate')
     try {
@@ -310,12 +313,12 @@ describe('solveMaxSustainableSpending with an unpriced ACA credit', () => {
       const unpricedIn = (run: ReturnType<typeof evaluateCandidate>) =>
         run.candidateResult.years.filter((year) => year.aca?.readiness === 'nonActionable').map((year) => year.year)
       expect(probedAmounts(spy)).toEqual([40_000, 0])
-      expect(unpricedIn(seedRun!)).toEqual([2027])
-      expect(unpricedIn(floorRun!)).toEqual([2026, 2027])
+      expect(unpricedIn(seedRun!)).toEqual([2028])
+      expect(unpricedIn(floorRun!)).toEqual([2026, 2027, 2028])
 
       expect(solved.maxBaseAnnual).toBeNull()
       expect(solved.diagnostics[0]).toBe('Even zero base spending depletes the portfolio before the plan ends.')
-      expect(solved.acaGrossPremiumYears).toEqual([2026, 2027])
+      expect(solved.acaGrossPremiumYears).toEqual([2026, 2027, 2028])
       expect(solved.acaGrossPremiumReasons).toContain('below-100-fpl-exception-unsupported')
     } finally {
       spy.mockRestore()

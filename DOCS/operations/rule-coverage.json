@@ -2,11 +2,11 @@
   "kind": "retiregolden.rules-coverage.manifest",
   "version": 5,
   "registry": {
-    "total": 530,
+    "total": 536,
     "byClassification": {
       "approximated": 121,
-      "outOfScope": 87,
-      "settled": 316,
+      "outOfScope": 88,
+      "settled": 321,
       "unsettled": 6
     },
     "approximatedByKind": {
@@ -15,13 +15,13 @@
       "needs-fact": 24
     },
     "byVolatility": {
-      "annuallyIndexed": 86,
+      "annuallyIndexed": 89,
       "awaitingGuidance": 12,
-      "staticStatute": 425,
+      "staticStatute": 428,
       "sunsetting": 7
     },
     "byJurisdiction": {
-      "federal": 340,
+      "federal": 346,
       "states": {
         "AK": 1,
         "AL": 9,
@@ -79,10 +79,10 @@
     }
   },
   "attestations": {
-    "totalFiles": 435,
+    "totalFiles": 436,
     "byStatus": {
       "partial": 90,
-      "registered": 116,
+      "registered": 117,
       "rule-free": 229,
       "unswept": 0
     },
@@ -627,10 +627,10 @@
     },
     {
       "directory": "params",
-      "files": 9,
+      "files": 10,
       "byStatus": {
         "partial": 2,
-        "registered": 5,
+        "registered": 6,
         "rule-free": 2
       }
     },
@@ -764,7 +764,7 @@
     {
       "module": "medicareAndHealthCoverage",
       "path": "rule-coverage/medicareAndHealthCoverage.json",
-      "ruleCount": 18
+      "ruleCount": 24
     },
     {
       "module": "requiredMinimumDistributions",
@@ -824,15 +824,15 @@
   ],
   "quoteFidelity": {
     "generatedAt": "2026-09-23T22:50:50.754Z",
-    "entryCount": 1546,
+    "entryCount": 1565,
     "fetched": 0,
     "cached": 433,
     "counts": {
       "ELISION-EXACT": 127,
       "ELISION-PUNCTUATION": 1,
-      "EXACT": 1061,
+      "EXACT": 1069,
       "PDF-NOT-VERIFIABLE": 1,
-      "PDF-WORD-LEVEL": 347,
+      "PDF-WORD-LEVEL": 358,
       "PUNCTUATION": 4,
       "UNFETCHABLE": 5
     },
@@ -848,6 +848,94 @@
           {
             "id": "usc-42-402-e-survivor-of-worker-who-died-before-claiming",
             "citation": "42 U.S.C. 402(w)(2)(A)"
+          }
+        ]
+      },
+      {
+        "on": "2026-09-26",
+        "note": "Added by the D-ACA-2027-TABLE change (the 2027 premium tax credit figures): the new records for Rev. Proc. 2026-26, IRC 36B(d)(3)(B) with 26 CFR 1.36B-1(h) and 45 CFR 155.410(e)(5), the HHS 2026 and 2025 poverty guidelines and the 2027 eligible-alien rule, and the IRC 36B(c)(1)(E) authority added to the cliff record, each checked against its source with verify-quotes on 2026-09-26, filtered to these records; no other entry was re-run.",
+        "entries": [
+          {
+            "id": "rev-proc-2026-26-aca-applicable-percentage-2027",
+            "citation": "Rev. Proc. 2026-26, section 3.01"
+          },
+          {
+            "id": "rev-proc-2026-26-aca-applicable-percentage-2027",
+            "citation": "Rev. Proc. 2026-26, section 3.02"
+          },
+          {
+            "id": "irc-36B-d-3-B-poverty-line-for-coverage-year",
+            "citation": "IRC 36B(d)(3)(B)"
+          },
+          {
+            "id": "irc-36B-d-3-B-poverty-line-for-coverage-year",
+            "citation": "26 CFR 1.36B-1(h)"
+          },
+          {
+            "id": "irc-36B-d-3-B-poverty-line-for-coverage-year",
+            "citation": "45 CFR 155.410(e)(5)(i)"
+          },
+          {
+            "id": "hhs-2026-poverty-guidelines-2027-coverage",
+            "citation": "HHS, Annual Update of the HHS Poverty Guidelines, 91 FR 1797 (Jan. 15, 2026), FR Doc. 2026-00755"
+          },
+          {
+            "id": "hhs-2026-poverty-guidelines-2027-coverage",
+            "citation": "91 FR 1798, 2026 poverty guidelines for the 48 contiguous states and the District of Columbia"
+          },
+          {
+            "id": "hhs-2026-poverty-guidelines-2027-coverage",
+            "citation": "91 FR 1798, 2026 poverty guidelines for Alaska"
+          },
+          {
+            "id": "hhs-2026-poverty-guidelines-2027-coverage",
+            "citation": "91 FR 1798, 2026 poverty guidelines for Hawaii"
+          },
+          {
+            "id": "hhs-2025-poverty-guidelines-2026-coverage",
+            "citation": "HHS, Annual Update of the HHS Poverty Guidelines, 90 FR 5917 (Jan. 17, 2025), FR Doc. 2025-01377"
+          },
+          {
+            "id": "hhs-2025-poverty-guidelines-2026-coverage",
+            "citation": "90 FR 5917, 2025 poverty guidelines for the 48 contiguous states and the District of Columbia"
+          },
+          {
+            "id": "hhs-2025-poverty-guidelines-2026-coverage",
+            "citation": "90 FR 5917, 2025 poverty guidelines for Alaska"
+          },
+          {
+            "id": "hhs-2025-poverty-guidelines-2026-coverage",
+            "citation": "90 FR 5917, 2025 poverty guidelines for Hawaii"
+          },
+          {
+            "id": "irc-36B-e-eligible-alien-2027-coverage-eligibility-not-modeled",
+            "citation": "IRC 36B, Amendment of Subsection (e), Pub. L. 119-21, sec. 71301(a), (b), (e)"
+          },
+          {
+            "id": "irc-36B-e-eligible-alien-2027-coverage-eligibility-not-modeled",
+            "citation": "IRC 36B, Effective Date of 2025 Amendment, Pub. L. 119-21, sec. 71301(e)"
+          },
+          {
+            "id": "irc-36B-c-1-A-applicable-taxpayer-range",
+            "citation": "IRC 36B(c)(1)(E)"
+          }
+        ]
+      },
+      {
+        "on": "2026-09-26",
+        "note": "Added by the D-ACA-2027-TABLE rounding change: the new record for the applicable percentage's rounding (26 CFR 1.36B-3(g)(1) and (g)(3) Example 1, and the Form 8962 instructions' Worksheet 2), checked against its sources with verify-quotes on 2026-09-26, filtered to this record; no other entry was re-run.",
+        "entries": [
+          {
+            "id": "cfr-26-1-36B-3-g-1-applicable-percentage-rounding",
+            "citation": "26 CFR 1.36B-3(g)(1)"
+          },
+          {
+            "id": "cfr-26-1-36B-3-g-1-applicable-percentage-rounding",
+            "citation": "26 CFR 1.36B-3(g)(3), Example 1"
+          },
+          {
+            "id": "cfr-26-1-36B-3-g-1-applicable-percentage-rounding",
+            "citation": "Instructions for Form 8962 (2025), Worksheet 2, line 4"
           }
         ]
       }

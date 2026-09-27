@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { REAL_YIELD_CURVE_2026 } from './data/realYieldCurve2026.js'
-import { packForYear, rmdStartAgeForBirthYear } from './index.js'
+import { acaParametersForCoverageYear, packForYear, rmdStartAgeForBirthYear } from './index.js'
 import { PARAMETER_PROVENANCE } from './provenance.js'
 import { stateParamsFor } from './state/index.js'
 import type { StateTaxParams } from './state/types.js'
@@ -379,10 +379,15 @@ function socialSecurityClauses(): FigureClause[] {
 }
 
 function federalPovertyLineClauses(): FigureClause[] {
+  const block2027 = acaParametersForCoverageYear(2027).params
   return [
     {
       label: 'contiguous FPL first/additional person amounts',
       clause: `(${usd(pack.federalPovertyLine.contiguous.firstPerson)} first person, +${usd(pack.federalPovertyLine.contiguous.perAdditionalPerson)} each additional)`,
+    },
+    {
+      label: '2027 coverage-year contiguous FPL first/additional person amounts',
+      clause: `(${usd(block2027.federalPovertyLine.contiguous.firstPerson)} first person, +${usd(block2027.federalPovertyLine.contiguous.perAdditionalPerson)} each additional)`,
     },
   ]
 }
@@ -408,6 +413,25 @@ function acaPtcClauses(): FigureClause[] {
     {
       label: '400% FPL subsidy cliff',
       clause: `${pack.aca.maxFplPctForCredit}% FPL subsidy cliff restored`,
+    },
+  ]
+}
+
+/** The 2027 coverage year's schedule, read from its own block (Rev. Proc. 2026-26). */
+function acaPtc2027Clauses(): FigureClause[] {
+  const block2027 = acaParametersForCoverageYear(2027).params
+  return [
+    {
+      label: '2027 applicable percentage below first breakpoint',
+      clause: `${block2027.aca.applicablePctBelowFirstBreakpoint.toFixed(2)}% under ${block2027.aca.applicablePctBreakpoints[0]!.fplPct}% FPL`,
+    },
+    {
+      label: '2027 applicable percentage at 300–400% FPL band',
+      clause: `${block2027.aca.applicablePctBreakpoints.find((row) => row.fplPct === 300)!.applicablePct}% at 300–${block2027.aca.maxFplPctForCredit}%`,
+    },
+    {
+      label: '2027 400% FPL cliff',
+      clause: `same ${block2027.aca.maxFplPctForCredit}% FPL cliff`,
     },
   ]
 }
@@ -552,6 +576,7 @@ const PACK_FIGURE_CLAUSES: Record<string, () => FigureClause[]> = {
   'social-security': socialSecurityClauses,
   'federal-poverty-line': federalPovertyLineClauses,
   'aca-ptc': acaPtcClauses,
+  'aca-ptc-2027': acaPtc2027Clauses,
   'real-yield-curve': realYieldCurveClauses,
   'state-income-tax': stateIncomeTaxClauses,
 }
@@ -639,6 +664,8 @@ const NON_PACK_DISPLAY_CONTRACTS: NonPackDisplayContract[] = [
     clauses: [
       { label: '2025 HHS guideline coverage-year prose', clause: '2025 HHS guideline' },
       { label: '2026 ACA coverage year application', clause: 'applied to the 2026 ACA coverage year' },
+      { label: '2026 HHS guideline coverage-year prose', clause: '2026 HHS guideline' },
+      { label: '2027 ACA coverage year application', clause: 'applied to the 2027 ACA coverage year' },
     ],
   },
   {
@@ -646,6 +673,13 @@ const NON_PACK_DISPLAY_CONTRACTS: NonPackDisplayContract[] = [
     clauses: [
       { label: 'Rev. Proc. citation', clause: 'Rev. Proc. 2025-25' },
       { label: 'enhanced-credit expiry', clause: 'enhanced credits expired 12/31/2025' },
+    ],
+  },
+  {
+    id: 'aca-ptc-2027',
+    clauses: [
+      { label: '2027 Rev. Proc. citation', clause: 'Rev. Proc. 2026-26' },
+      { label: 'later coverage years unpriced', clause: 'Later coverage years are not priced until their figures are published' },
     ],
   },
   {
@@ -676,6 +710,15 @@ describe('parameter provenance', () => {
       expect(s.publisher, `${s.id} publisher`).toBeTruthy()
       expect(s.url, `${s.id} url`).toMatch(/^https:\/\//)
     }
+  })
+
+  it('links each ACA coverage year to the revenue procedure that publishes its schedule', () => {
+    // One row per coverage year, so the report appendix never links a year's
+    // figures to a document that does not hold them.
+    expect(byId('aca-ptc').url).toBe('https://www.irs.gov/pub/irs-drop/rp-25-25.pdf')
+    expect(byId('aca-ptc').figures).not.toContain('2026-26')
+    expect(byId('aca-ptc-2027').url).toBe('https://www.irs.gov/pub/irs-drop/rp-26-26.pdf')
+    expect(byId('aca-ptc-2027').figures).not.toContain('2025-25')
   })
 
   it('has unique ids', () => {

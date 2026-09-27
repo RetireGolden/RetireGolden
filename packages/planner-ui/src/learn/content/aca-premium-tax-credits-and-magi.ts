@@ -58,7 +58,7 @@ export const blocks: ArticleBlock[] = [
   { type: 'heading', text: 'Why it matters in RetireGolden' },
   {
     type: 'prose',
-    md: 'RetireGolden reconciles an evidenced Marketplace year against that same year\'s final household MAGI, including withdrawals, conversions, gains, and required ACA add-backs. The standard planner can request ACA modeling but cannot yet author the annual tax-family, enrollment-premium, and SLCSP evidence contract. Without complete evidence, or when tax-year parameters are not sourced, the projection funds the gross enrollment premium and marks the year non-actionable.',
+    md: 'RetireGolden reconciles an evidenced Marketplace year against that same year\'s final household MAGI, including withdrawals, conversions, gains, and required ACA add-backs. The standard planner can request ACA modeling but cannot yet author the annual tax-family, enrollment-premium, and SLCSP evidence contract. Without complete evidence, or in a coverage year whose credit figures are not yet published (2028 and later today), the projection funds the gross enrollment premium and marks the year non-actionable. 2026 and 2027 are priced on their published figures; a 2027 year notes that its income uses tax brackets projected from 2026.',
   },
   { type: 'heading', text: 'Common mistakes' },
   {

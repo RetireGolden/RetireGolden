@@ -11,19 +11,19 @@ The registry is the machine-checked chain from a rule to its implementation and 
 
 | Metric | Count |
 | --- | ---: |
-| Total rules | 530 |
+| Total rules | 536 |
 | Classification: approximated | 121 |
-| Classification: outOfScope | 87 |
-| Classification: settled | 316 |
+| Classification: outOfScope | 88 |
+| Classification: settled | 321 |
 | Classification: unsettled | 6 |
 | Approximated kind: convention | 22 |
 | Approximated kind: fix | 75 |
 | Approximated kind: needs-fact | 24 |
-| Volatility: annuallyIndexed | 86 |
+| Volatility: annuallyIndexed | 89 |
 | Volatility: awaitingGuidance | 12 |
-| Volatility: staticStatute | 425 |
+| Volatility: staticStatute | 428 |
 | Volatility: sunsetting | 7 |
-| Federal jurisdiction | 340 |
+| Federal jurisdiction | 346 |
 | State jurisdiction total | 190 |
 
 | State jurisdiction | Count |
@@ -84,11 +84,11 @@ The registry is the machine-checked chain from a rule to its implementation and 
 
 | Metric | Value |
 | --- | ---: |
-| Engine source files | 435 |
+| Engine source files | 436 |
 | Swept | 100.0% |
 | Grandfathered unswept baseline | 0 |
 | partial | 90 |
-| registered | 116 |
+| registered | 117 |
 | rule-free | 229 |
 | unswept | 0 |
 
@@ -106,7 +106,7 @@ The registry is the machine-checked chain from a rule to its implementation and 
 | longevity | 2 | 0 | 1 | 1 | 0 |
 | model | 9 | 6 | 0 | 3 | 0 |
 | montecarlo | 11 | 1 | 0 | 10 | 0 |
-| params | 9 | 2 | 5 | 2 | 0 |
+| params | 10 | 2 | 6 | 2 | 0 |
 | projection | 125 | 42 | 20 | 63 | 0 |
 | rmd | 5 | 1 | 4 | 0 | 0 |
 | rules | 68 | 0 | 22 | 46 | 0 |
@@ -232,7 +232,7 @@ Per-rule payloads are sharded one file per record module under `DOCS/operations/
 | rule-coverage/individualIncomeTax.json | 20 |
 | rule-coverage/investmentIncomeAndBasis.json | 31 |
 | rule-coverage/iraBasisAndRollovers.json | 15 |
-| rule-coverage/medicareAndHealthCoverage.json | 18 |
+| rule-coverage/medicareAndHealthCoverage.json | 24 |
 | rule-coverage/requiredMinimumDistributions.json | 47 |
 | rule-coverage/rothAccounts.json | 13 |
 | rule-coverage/socialSecurity.json | 50 |
@@ -247,7 +247,7 @@ Per-rule payloads are sharded one file per record module under `DOCS/operations/
 
 ## Re-verification due dates
 
-The 25 earliest due dates are shown below (530 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
+The 25 earliest due dates are shown below (536 rules total). Comparing dueOn to today is deliberately excluded so this page stays deterministic; run `pnpm rules:due` to see what is due (add `-- --horizon N` for upcoming), or call taxRulesDueForVerification() from @retiregolden/engine/rules programmatically.
 
 | Rule | Volatility | Verified on | Due on |
 | --- | --- | --- | --- |
@@ -266,16 +266,16 @@ The 25 earliest due dates are shown below (530 rules total). Comparing dueOn to 
 | irc-415-d-cost-of-living-adjustment-anchor | annuallyIndexed | 2026-08-03 | 2026-12-01 |
 | treas-reg-1-401-a-9-6-q-2-qlac-premium-dollar-limit | annuallyIndexed | 2026-08-03 | 2026-12-01 |
 | usc-42-1395r-a-3-part-b-standard-premium | annuallyIndexed | 2026-08-03 | 2026-12-01 |
-| usc-42-1395r-i-5-C-top-irmaa-threshold-frozen | annuallyIndexed | 2026-08-03 | 2026-12-01 |
 | usc-42-403-f-8-earnings-test-exempt-amounts | annuallyIndexed | 2026-08-03 | 2026-12-01 |
 | usc-42-430-b-contribution-and-benefit-base | annuallyIndexed | 2026-08-03 | 2026-12-01 |
 | irc-415-c-1-annual-additions-lesser-of | annuallyIndexed | 2026-08-04 | 2026-12-02 |
 | irc-55-d-exemption-phase-out-rate | annuallyIndexed | 2026-08-04 | 2026-12-02 |
 | irc-63-c-7-B-ii-conformed-state-deduction-tracks-federal | annuallyIndexed | 2026-08-04 | 2026-12-02 |
-| rev-proc-2025-25-aca-applicable-percentage-2026 | annuallyIndexed | 2026-08-04 | 2026-12-02 |
 | usc-42-403-a-2-family-maximum-formula | annuallyIndexed | 2026-08-04 | 2026-12-02 |
 | usc-42-403-f-3-retirement-earnings-test | annuallyIndexed | 2026-08-04 | 2026-12-02 |
 | usc-42-415-a-1-pia-bend-point-formula | annuallyIndexed | 2026-08-04 | 2026-12-02 |
+| aca-26-51-201-published-indexed-rate-schedule | annuallyIndexed | 2026-08-05 | 2026-12-03 |
+| aca-26-51-430-c-published-indexed-standard-deduction | annuallyIndexed | 2026-08-05 | 2026-12-03 |
 
 ## Manifest contract
 
@@ -289,19 +289,21 @@ Version 5 is a breaking discriminator for strict version checks: manifest.rules 
 
 ## Quote fidelity
 
-Committed ledger generated at 2026-09-23T22:50:50.754Z (0 fetched live, 433 from cache) and amended afterwards, over 1546 authority entries.
+Committed ledger generated at 2026-09-23T22:50:50.754Z (0 fetched live, 433 from cache) and amended afterwards, over 1565 authority entries.
 Amended on 2026-09-26: 2 entries verified individually after that run (cfr-20-404-313-delayed-retirement-credit, 20 CFR 404.313(a), (b)(2); usc-42-402-e-survivor-of-worker-who-died-before-claiming, 42 U.S.C. 402(w)(2)(A)). Both were changed by RetireGolden #744 and checked against their sources with verify-quotes on 2026-09-26; a full re-run that day moved 25 unrelated PDF verdicts, which are left for a separate quote-maintenance pass rather than merged unexamined.
+Amended on 2026-09-26: 16 entries verified individually after that run (rev-proc-2026-26-aca-applicable-percentage-2027, Rev. Proc. 2026-26, section 3.01; rev-proc-2026-26-aca-applicable-percentage-2027, Rev. Proc. 2026-26, section 3.02; irc-36B-d-3-B-poverty-line-for-coverage-year, IRC 36B(d)(3)(B); irc-36B-d-3-B-poverty-line-for-coverage-year, 26 CFR 1.36B-1(h); irc-36B-d-3-B-poverty-line-for-coverage-year, 45 CFR 155.410(e)(5)(i); hhs-2026-poverty-guidelines-2027-coverage, HHS, Annual Update of the HHS Poverty Guidelines, 91 FR 1797 (Jan. 15, 2026), FR Doc. 2026-00755; hhs-2026-poverty-guidelines-2027-coverage, 91 FR 1798, 2026 poverty guidelines for the 48 contiguous states and the District of Columbia; hhs-2026-poverty-guidelines-2027-coverage, 91 FR 1798, 2026 poverty guidelines for Alaska; hhs-2026-poverty-guidelines-2027-coverage, 91 FR 1798, 2026 poverty guidelines for Hawaii; hhs-2025-poverty-guidelines-2026-coverage, HHS, Annual Update of the HHS Poverty Guidelines, 90 FR 5917 (Jan. 17, 2025), FR Doc. 2025-01377; hhs-2025-poverty-guidelines-2026-coverage, 90 FR 5917, 2025 poverty guidelines for the 48 contiguous states and the District of Columbia; hhs-2025-poverty-guidelines-2026-coverage, 90 FR 5917, 2025 poverty guidelines for Alaska; hhs-2025-poverty-guidelines-2026-coverage, 90 FR 5917, 2025 poverty guidelines for Hawaii; irc-36B-e-eligible-alien-2027-coverage-eligibility-not-modeled, IRC 36B, Amendment of Subsection (e), Pub. L. 119-21, sec. 71301(a), (b), (e); irc-36B-e-eligible-alien-2027-coverage-eligibility-not-modeled, IRC 36B, Effective Date of 2025 Amendment, Pub. L. 119-21, sec. 71301(e); irc-36B-c-1-A-applicable-taxpayer-range, IRC 36B(c)(1)(E)). Added by the D-ACA-2027-TABLE change (the 2027 premium tax credit figures): the new records for Rev. Proc. 2026-26, IRC 36B(d)(3)(B) with 26 CFR 1.36B-1(h) and 45 CFR 155.410(e)(5), the HHS 2026 and 2025 poverty guidelines and the 2027 eligible-alien rule, and the IRC 36B(c)(1)(E) authority added to the cliff record, each checked against its source with verify-quotes on 2026-09-26, filtered to these records; no other entry was re-run.
+Amended on 2026-09-26: 3 entries verified individually after that run (cfr-26-1-36B-3-g-1-applicable-percentage-rounding, 26 CFR 1.36B-3(g)(1); cfr-26-1-36B-3-g-1-applicable-percentage-rounding, 26 CFR 1.36B-3(g)(3), Example 1; cfr-26-1-36B-3-g-1-applicable-percentage-rounding, Instructions for Form 8962 (2025), Worksheet 2, line 4). Added by the D-ACA-2027-TABLE rounding change: the new record for the applicable percentage's rounding (26 CFR 1.36B-3(g)(1) and (g)(3) Example 1, and the Form 8962 instructions' Worksheet 2), checked against its sources with verify-quotes on 2026-09-26, filtered to this record; no other entry was re-run.
 
-5 serious, 6 advisory, 1535 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
+5 serious, 6 advisory, 1554 verify clean. Serious verdicts are dispositioned through the rules:due re-verification queue,
 not treated as a CI gate; how to read each verdict: DOCS/operations/quote-fidelity.md.
 
 | Verdict | Class | Count |
 | --- | --- | ---: |
 | ELISION-EXACT | ok | 127 |
 | ELISION-PUNCTUATION | advisory | 1 |
-| EXACT | ok | 1061 |
+| EXACT | ok | 1069 |
 | PDF-NOT-VERIFIABLE | advisory | 1 |
-| PDF-WORD-LEVEL | ok | 347 |
+| PDF-WORD-LEVEL | ok | 358 |
 | PUNCTUATION | advisory | 4 |
 | UNFETCHABLE | serious | 5 |
 

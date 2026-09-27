@@ -51,6 +51,29 @@
  * the provenance rows say "parameter set" instead of "parameter pack", and
  * the TIPS curve source in the appendix is "refreshed annually with the
  * parameter sets". No figure in these goldens changed.
+ * 2026-09-26 (decision D-ACA-2027-TABLE): 2027 is priced on its published
+ * credit figures (Rev. Proc. 2026-26 and the HHS 2026 poverty guidelines).
+ * example-couple (952% of the poverty line) and early-career-match (391%, a
+ * contribution above the benchmark) show their 2027 ACA ledger row as a $0
+ * credit, Actionable, where it read "Not modeled", Non-actionable; the first
+ * gross-premium year is now 2028, so example-couple's gross-premium modeling
+ * note moves after the Roth note it used to precede. Every report gains the
+ * "ACA premium tax credit figures" provenance row and the model's
+ * provenance.acaCoverageYears, and the parameter appendix's poverty-line and
+ * ACA rows name both coverage years. No other figure changed.
+ * 2026-09-27 (same decision, review finding F2): the ACA ledger block gains
+ * projectedIncomeTaxNote, and the standalone report prints it under the ACA
+ * table: "2027 is priced on published Marketplace figures, with income from
+ * projected tax brackets." in example-couple (both HTML goldens) and
+ * early-career-match, whose 2027 rows are priced while their income-tax
+ * figures are projected; the other report models carry null. That sentence is
+ * the only HTML change.
+ * 2026-09-27 (same decision, review of #750): the parameter appendix's one
+ * "ACA premium tax credit" row, which linked both years' schedules to Rev.
+ * Proc. 2025-25, is two rows, "ACA premium tax credit, 2026 coverage" (Rev.
+ * Proc. 2025-25) and "ACA premium tax credit, 2027 coverage" (Rev. Proc.
+ * 2026-26, rp-26-26.pdf), in every golden and in each model's
+ * parameter-sources block; nothing else in any golden changed.
  */
 import { describe, expect, it } from 'vitest'
 

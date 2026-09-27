@@ -26,9 +26,7 @@
     },
     "complete": [
       "aca-applicable-slcsp-premium-annual",
-      "aca-economic-net-premium-annual",
       "aca-gross-enrollment-premium-annual",
-      "aca-modeled-allowable-ptc-annual",
       "accounts-balance-per-account-annual",
       "accounts-investable-total-annual",
       "accounts-net-worth-annual",
@@ -168,7 +166,6 @@
       "spending-excess-requested-annual",
       "spending-excess-shortfall-annual",
       "spending-guardrail-factor-annual",
-      "spending-healthcare-annual",
       "spending-ideal-requested-annual",
       "spending-ideal-shortfall-annual",
       "spending-insurance-premiums-annual",
@@ -204,6 +201,8 @@
       "year-result-tax-exempt-interest"
     ],
     "partial": [
+      "aca-economic-net-premium-annual",
+      "aca-modeled-allowable-ptc-annual",
       "accounts-ending-balance-by-category",
       "display-balance-by-category-annual",
       "display-dollar-basis-conversion",
@@ -224,6 +223,7 @@
       "simple-candidate-evaluation-incomplete-computation-years",
       "simple-candidate-evaluation-lifetime-tax-delta",
       "simple-candidate-evaluation-money-lasts-years-delta",
+      "spending-healthcare-annual",
       "sustainable-spending-result-max-base-annual",
       "sustainable-spending-result-simulation-count",
       "sustainable-spending-result-spending-slack-dollars"
@@ -297,11 +297,13 @@
       "aca-economic-net-premium-annual": [
         "aca-400-percent-cliff",
         "aca-allowable-premium-tax-credit",
+        "aca-coverage-year-parameters",
         "aca-expected-contribution",
         "aca-household-magi-composition"
       ],
       "aca-modeled-allowable-ptc-annual": [
         "aca-400-percent-cliff",
+        "aca-coverage-year-parameters",
         "aca-expected-contribution",
         "aca-household-magi-composition"
       ],
@@ -733,6 +735,7 @@
       "spending-healthcare-annual": [
         "aca-400-percent-cliff",
         "aca-allowable-premium-tax-credit",
+        "aca-coverage-year-parameters",
         "aca-economic-net-premium",
         "medicare-base-part-b-premium",
         "medicare-irmaa-first-tier-boundary"
@@ -843,16 +846,16 @@
     }
   },
   "records": {
-    "total": 225,
+    "total": 226,
     "byKind": {
       "composition": 72,
-      "data": 16,
+      "data": 17,
       "formula": 79,
       "model": 58
     },
     "byJustificationKind": {
       "dataset": 5,
-      "derivation": 220
+      "derivation": 221
     }
   },
   "oracleExamples": [
@@ -886,15 +889,21 @@
     },
     {
       "file": "packages/engine/src/tax/aca.external.golden.test.ts",
-      "count": 5,
+      "count": 9,
       "tolerances": [
-        "$1, or 0.01 percentage point"
+        "$1, or 0.01 percentage point",
+        "$0.01, or 0.0001 percentage point"
       ],
       "oracles": [
         {
           "id": "ORACLE-003",
           "domain": "ACA",
           "source": "IRS Rev. Proc. 2025-25 and the HHS 2025 poverty guidelines: the applicable-percentage schedule and the 400% cliff."
+        },
+        {
+          "id": "ORACLE-018",
+          "domain": "ACA",
+          "source": "IRS Rev. Proc. 2026-26 and the HHS 2026 poverty guidelines (the 2027 coverage year's, by 26 U.S.C. 36B(d)(3)(B)): the 2027 schedule, the 400% cliffs ($63,840 single, $132,000 for four), and two example households priced by hand."
         }
       ]
     },
@@ -1042,7 +1051,7 @@
     {
       "group": "medicareAndAca",
       "path": "calculation-coverage/medicareAndAca.json",
-      "recordCount": 14
+      "recordCount": 15
     },
     {
       "group": "monteCarlo",

@@ -163,6 +163,20 @@ describeCalculation(
       expect(onePersonLine).toBe(inputs.firstPersonFpl)
       expect(acaFederalPovertyLine(pack, inputs.householdSize!)).toBeGreaterThan(onePersonLine)
     })
+
+    it('reads the table at the whole-number percentage and rounds the rate: 5.73% of 28,500 for one person', () => {
+      // The worksheet's second case: 28,500 / 15,650 = 182.1086%, read at 182;
+      // 4.19 + 32/50 x 2.41 = 5.7324%, rounded to 5.73%; 1,633.05. The wrong
+      // readings: unrounded 1,635.23, regulation rounding alone 1,635.90,
+      // truncation alone 1,633.73.
+      const result = acaEconomicPremiumByMonth(pack, 1, 28_500, byMonth(12_000), byMonth(12_000))
+      expect(acaApplicablePct(pack, 182)).toBe(5.73)
+      expectWithin(result.fplPct, 182.1086261981, { abs: 1e-9 }, 'fplPct')
+      expectWithin(result.expectedContribution, 1_633.05, example.tolerance, 'expectedContribution')
+      for (const wrong of [1_635.23, 1_635.9, 1_633.73]) {
+        expect(withinTolerance(result.expectedContribution, wrong, example.tolerance)).toBe(false)
+      }
+    })
   },
 )
 

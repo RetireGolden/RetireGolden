@@ -3799,6 +3799,16 @@
   },
   {
     "source": "planner-ui/src/report/reportModel.ts",
+    "owner": "ReportAcaCoverageYear",
+    "field": "coverageYear",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "The ReportAcaCoverageYear.coverageYear field is a coordinate such as year, age, or offset used to place another value.",
+    "reasonKind": "dimension-coordinate"
+  },
+  {
+    "source": "planner-ui/src/report/reportModel.ts",
     "owner": "ReportModel",
     "field": "startYear",
     "tsType": "number",

@@ -30,6 +30,34 @@ sized by bisection "to $0.01" per their own contracts, `rothConversion` and `ltc
 The conversion lands on exactly 10,500. The headroom lands at 37,049.996650218963623046875, which is 0.00335 below its
 closed form. So a 0.005 comparison passes today, but the contract only promises $0.01 (section 3, A3).
 
+**Revision (2026-09-26): the IRS rounding of the applicable percentage.** Decision D-ACA-2027-TABLE. The "Rounding
+convention" above says no contract states a rounding step; one governs the credit. 26 CFR 1.36B-3(g)(1) says the
+applicable percentage "is rounded to the nearest one-hundredth of one percent", and the Form 8962 instructions
+(Worksheet 2, line 4) read the table at the poverty-line percentage with its fraction dropped: "Do not round;
+instead, multiply this number by 100 (to express it as a percentage) and then drop any numbers after the decimal
+point." The engine now does both. `aca.fplPct` stays the exact 182.11% (row 50) and the cliff and floor tests stay on
+it (row 51); the table is read at **182**. The rows below supersede those of section 2 they name; every other figure
+stands.
+
+| Row | Figure | Value | Derivation |
+|---|---|---|---|
+| 52 | Applicable percentage | **5.73%** | 4.19 + (182 − 150)/50 × 2.41 = 5.7324%, rounded to the nearest hundredth |
+| 53 | Expected contribution | **1,633.05** | 28,500 × 5.73% |
+| 54 | Monthly credit | 863.9125 | min(1,000, 1,000 − 1,633.05/12) = 1,000 − 136.0875 |
+| 55 | `aca.modeledAllowablePtc` | **10,366.95** | 12 × 863.9125 = 12,000 − 1,633.05 |
+| 56, 63 | `aca.economicNetPremium`; `expenses.healthcare` | **1,633.05** | 12,000 − 10,366.95 |
+| 66, 67 | `expenses.total`; required, target and intended spending | **41,633.05** | 40,000 + 1,633.05 |
+| 70, 73 | the solve's required need; `netPortfolioNeed` | **24,873.05** | 41,633.05 + 1,240 − 18,000 |
+| 75, 76 | funding account; cash identity | cash, 24,873.05; 42,873.05 = 42,873.05 | inflows 18,000 + 24,873.05; outflows 41,633.05 + 1,240 |
+| 78, 80 | `withdrawals.cash`, `withdrawals.total` | **24,873.05** | row 73 |
+| 83 | the conversion's added cost | **2,305.05** = tax 1,050 + lost credit 1,255.05 | 24,873.05 − 22,568 (row 82 does not move: at 115% the flat 2.10% band needs no rounding); 21.95% of the 10,500 converted |
+| 86, 87 | cash pre-growth; `balances[cash]` | 175,126.95; **178,629.49** (178,629.489) | 200,000 − 24,873.05; × 1.02 |
+| 93, 94 | `investableTotal`, `netWorth` | **777,129.49** | 178,629.489 + 461,475 + 137,025 |
+
+Derived 2026-09-26 by a Claude Opus instance; the independent check of the rounding (evidence/aca-2027-check.md in the
+validation program, section 3) recomputed 5.73% and the 10,366.95 credit for this household. Unreviewed by a second
+walkthrough lane until one recomputes it.
+
 ---
 
 ## 1. Inputs, as built
@@ -526,6 +554,69 @@ lines; the order of the two fragments quoted from the `rothConversion` doc), and
 allocation module added beside that doc, since a literal reading of "exact cents" would quantize a single owner's
 conversion and move four rows outside their bands. No figure changed.
 
+**Revision 2 (2026-09-26): the 2027 credit is priced.** Decision D-ACA-2027-TABLE. The 2027 credit figures are
+published: Rev. Proc. 2026-26 section 3.01 gives the 2027 Applicable Percentage Table (2.15% below 133%; 3.23 to 4.30;
+4.30 to 6.78; 6.78 to 8.66; 8.66 to 10.22; 10.22 from 300% to 400%), and the HHS 2026 poverty guidelines (91 FR 1797,
+15,960 for one person in the contiguous states) are the 2027 coverage year's, because 26 U.S.C. 36B(d)(3)(B) and
+26 CFR 1.36B-1(h) take the guidelines in effect when that year's open enrollment begins, which is in 2026 (45 CFR
+155.410(e)(5)). The engine now resolves them per coverage year (`params/acaCoverageYears.ts`) and prices 2027 on them
+at a poverty-line scale of 1, while every income-tax figure stays the 2026 pack's at the plan's 2.5%. The rows of
+sections 2f to 2k that the credit reaches are superseded by the table below; every other figure in part II stands,
+including the conversion, taxable income, MAGI and tax, which the credit does not reach (the conversion is sized on
+taxable income, and the credit adds no taxable income). Hand values are at the closed-form MAGI 29,212.50; the
+conversion's bar (at most 0.01 below) moves the credit by at most 0.15 × 0.01 = 0.0015, so every row below keeps the
+half-cent tolerance.
+
+| Row | Figure | Value | Derivation |
+|---|---|---|---|
+| 48 to 51 | the gate, pricing, `readiness`, `supportCodes` | **`actionable`**; **['actionable', 'income-tax-parameters-projected']** | no blocking code: the 2027 coverage year has a published block, so `tax-year-parameters-unsupported` is not raised; the quote is priced; the informational code is appended at publication because the income-tax pack is a stand-in |
+| 52 | `aca.householdMagi` | **29,212.50** (one-sided 0.01 below) | AGI 29,212.50 + 0 + 0 + 0 + 0 |
+| 55 | `aca.federalPovertyLine` | **15,960** | the HHS 2026 guideline as published, not 15,960 × 1.025 = 16,359 and not 15,650 × 1.025 = 16,041.25 |
+| 56 | `aca.fplPct` | **183.0357%** (exact 29,212.5 / 159.6) | 29,212.50 ÷ 15,960 × 100 |
+| 57 | `aca.cliffState` | **`below-cliff`** | at least 100% and at or below 400%; the 2027 cliff MAGI is 4 × 15,960 = 63,840, 34,627.50 away |
+| (new) | applicable percentage | **5.938571%** | 4.30 + (183.035714 − 150) / 50 × (6.78 − 4.30) = 4.30 + 0.660714 × 2.48 |
+| (new) | expected contribution | **1,734.81** (1,734.805179) | 29,212.50 × 5.938571% |
+| 61 | `aca.modeledAllowablePtc` | **10,925.19** (10,925.194821) | each month min(1,055, 1,055 − 1,734.805179 / 12) = 910.432902; twelve months |
+| 62 | `aca.economicNetPremium` | **1,734.81** | 12,660 − 10,925.19, the expected contribution, because benchmark equals premium |
+| 64 | `aca.convergence.grossPremiumFallback` | **false** ("credit priced") | the year is actionable |
+| 65 | run-level warning | still published | 2028 (a contract with no published credit figures) is still a gross-premium year |
+| 66 | does the ACA feed the fixed point? | **yes** | the credit lowers healthcare, and with it the need; MAGI does not move with the cash draw, so the solve converges at once |
+| 69 | `expenses.healthcare` | **1,734.81** | the net premium; no Medicare, no extras |
+| 72, 73 | `expenses.total`; required / target / intended | **42,734.81** | 41,000 + 1,734.81 |
+| 79 | `netPortfolioNeed` | **25,555.81** (25,555.805179) | 42,734.81 + tax 1,271 − consulting 18,450 |
+| 80 | how the conversion is paid for | its tax, 1,076.25, plus a smaller credit: the 10,762.50 raises MAGI inside the 150 to 200 band | as in 2026, a conversion now costs its tax and part of the credit |
+| 82 | cash identity | 44,005.81 = 44,005.81 | inflows 18,450 + 25,555.81; outflows 42,734.81 + 1,271 |
+| 84 | need versus 2026 | **+680.58** | 25,555.805179 − 24,875.226198 |
+| 85, 87 | `withdrawals.cash`, `withdrawals.total` | **25,555.81** | row 79 |
+| 89 to 91 | the section 2j counterfactuals | superseded | the credit is no longer missing; row 89's figures (the 2026 schedule with the 2025 guidelines scaled by 1.025, credit 10,983.89) are now the worksheet's first wrong reading (`DOCS/calculations/medicare-and-aca/aca-coverage-year-parameters.md`) |
+| 92, 93 | cash pre-growth; `balances[cash]` | 153,071.46; **156,132.89** | (178,627.269278 − 25,555.805179) × 1.02 = 156,132.893381 |
+| 99, 100 | `investableTotal`, `netWorth` | **784,557.89** | 156,132.893381 + 473,248.125 + 155,176.875; the IRA and Roth offsets still cancel |
+
+Derived 2026-09-26 by a Claude Opus instance from the plan's inputs and the published sources above, matching the
+independent check of the same figures (evidence/aca-2027-check.md in the validation program, which recomputed the
+credit to the cent). This revision has not had the second-lane recomputation part I and revision 1 had; it is
+unreviewed until one is done.
+
+**Revision 3 (2026-09-26): the IRS rounding.** The same decision applies the rounding revision of part I to 2027: the
+table is read at the whole-number percentage, **183**, and the applicable percentage rounded to a hundredth, and 2027
+opens on part I's revised cash balance, 178,629.49. These rows supersede Revision 2's where they differ.
+
+| Row | Figure | Value | Derivation |
+|---|---|---|---|
+| (new) | applicable percentage | **5.94%** | 4.30 + (183 − 150)/50 × 2.48 = 5.9368%, rounded to the nearest hundredth |
+| (new) | expected contribution | **1,735.22** (1,735.2225) | 29,212.50 × 5.94% |
+| 61 | `aca.modeledAllowablePtc` | **10,924.78** (10,924.7775) | each month 1,055 − 1,735.2225/12 = 910.398125; twelve months |
+| 62, 69 | `aca.economicNetPremium`; `expenses.healthcare` | **1,735.22** | 12,660 − 10,924.78 |
+| 72, 73 | `expenses.total`; required, target and intended | **42,735.22** | 41,000 + 1,735.22 |
+| 79, 85, 87 | `netPortfolioNeed`; `withdrawals.cash`, `.total` | **25,556.22** (25,556.2225) | 42,735.2225 + 1,271 − 18,450 |
+| 82 | cash identity | 44,006.22 = 44,006.22 | inflows 18,450 + 25,556.22; outflows 42,735.22 + 1,271 |
+| 84 | need versus 2026 | **+683.17** | 25,556.2225 − 24,873.05 |
+| 92, 93 | cash pre-growth; `balances[cash]` | 153,073.27; **156,134.73** (156,134.731830) | (178,629.489 − 25,556.2225) × 1.02 |
+| 99, 100 | `investableTotal`, `netWorth` | **784,559.73** | 156,134.731830 + 473,248.125 + 155,176.875 |
+
+A cent of MAGI no longer moves the rate, which is read at the whole number 183, so the conversion's bar reaches the
+credit only through MAGI × 5.94%: at most 0.0594 × 0.01, inside half a cent.
+
 ## 1. What carries over, and every indexing rule applied
 
 The inputs are exactly those of the 2026 document, section 1. The plan is built by `createExamplePlan`,
@@ -643,7 +734,10 @@ were actionable. Then come flows, growth and the snapshot.
 | 45 | **`irmaaLookbackMagi` / source / year** | **50,000 / `planFallback` / 2025** | 2027 − 2 = 2025 is before the ledger and `historicalAnnualMagiByYear` is absent, so the seed `recentAnnualMagi` answers. Casey has no Medicare months, so it prices nothing. It is not an ACA input | `YearResult.irmaaLookbackMagi`, `…Source` and `…Year` docs; `simulate.ts#resolveMagiFor` lines 867–878; worksheet and record `irmaa-lookback-selection` | exact |
 | 46 | Federal-detail `magi` (senior-deduction MAGI) | 29,212.50 | AGI + 0; unused, because nobody is 65 | `FederalTaxDetail.magi` doc | not asserted |
 
-### 2f. The ACA year: contract present, credit not priced
+### 2f. The ACA year: contract present, credit not priced (superseded: see Revision 2)
+
+This section records the derivation as it stood before the 2027 credit figures had their own coverage-year block.
+Rows 48 to 66 that Revision 2 lists are superseded by it; rows 47, 53, 54, 58 to 60 and 63 stand.
 
 | # | Figure | Value | Derivation | Contract source | Tolerance |
 |---|---|---|---|---|---|
@@ -670,6 +764,8 @@ were actionable. Then come flows, growth and the snapshot.
 
 ### 2g. Healthcare and total spending
 
+Rows that Revision 2 lists are superseded by it.
+
 | # | Figure | Value | Derivation | Contract source | Tolerance |
 |---|---|---|---|---|---|
 | 67 | `medicarePremiums` / `irmaaSurcharge` / `irmaaTier` / `irmaaNextTierThreshold` | 0 / 0 / 0 / **null** | no Medicare months | `YearResult` docs | exact |
@@ -681,6 +777,8 @@ were actionable. Then come flows, growth and the snapshot.
 | 73 | required / target / intended; `guardrailFactor` | 53,660 each; 1 | healthcare counts as required; no spending policy | `YearExpenses` docs | 0.005 |
 
 ### 2h. The fixed point and the cash flow
+
+Rows that Revision 2 lists are superseded by it.
 
 | # | Figure | Value | Derivation | Contract source | Tolerance |
 |---|---|---|---|---|---|
@@ -698,6 +796,8 @@ were actionable. Then come flows, growth and the snapshot.
 
 ### 2i. Withdrawals (published)
 
+Rows that Revision 2 lists are superseded by it.
+
 | # | Figure | Value | Derivation | Contract source | Tolerance |
 |---|---|---|---|---|---|
 | 85 | **`withdrawals.cash`** | **36,481.00**; traced 36,480.99948680401 | row 79 | worksheet `withdrawals-by-category-annual` | 0.005 |
@@ -707,6 +807,8 @@ were actionable. Then come flows, growth and the snapshot.
 
 ### 2j. What the missing credit costs (counterfactuals; no published field)
 
+Rows that Revision 2 lists are superseded by it.
+
 | # | Figure | Value | Derivation |
 |---|---|---|---|
 | 89 | 2027 priced with the 2026 schedule and the poverty line scaled by the engine's own would-be factor | FPL 16,041.25 (64,165/4). fplPct 57,000/313 = **182.11%**, identical to 2026, because MAGI and the line both scale by 1.025. Rate 44,897/7,825 = 5.7376%. Contribution 104,924,289/62,600 = **1,676.11**. Monthly credit 1,055 − 139.68 = 915.32. Credit 687,591,711/62,600 = **10,983.89**. Net premium 1,676.11; need 25,497.11; cash year-end 156,192.77 | the formulas of 2026 rows 50–56, with 1,055 a month and `pricingInflationScale` 1.025 |
@@ -714,6 +816,8 @@ were actionable. Then come flows, growth and the snapshot.
 | 91 | The conversion's cost in 2027 | **1,076.25**, all of it tax | row 80 |
 
 ### 2k. Year-end balances
+
+Rows that Revision 2 lists are superseded by it.
 
 Growth is applied at year end to post-flow balances, as in 2026 section 2k.
 

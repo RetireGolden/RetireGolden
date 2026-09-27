@@ -23,6 +23,7 @@ import { fmtMoney } from '../planner/format'
 import {
   buildReportModel,
   chartDataCsv,
+  type ReportAcaCoverageYear,
   type ReportAdvisorRecommendationsBlock,
   type ReportModel,
   type ReportRecommendationEvidence,
@@ -218,9 +219,18 @@ function incomeSection(model: ReportModel): string {
   )}</section>`
 }
 
+/** "2026 (Rev. Proc. 2025-25; HHS 2025 poverty guidelines, 90 FR 5917), 2027 (...)". */
+function acaCoverageYearsText(years: ReportAcaCoverageYear[]): string {
+  return years
+    .map((year) => `${year.coverageYear} (${year.applicablePercentageSource}; ${year.povertyGuidelineSource})`)
+    .join(', ')
+}
+
 function assumptionsSection(model: ReportModel): string {
   const assumptions = model.blocks['assumptions']
   const provenance = model.provenance
+  // A version-3 model saved before the field was added has none; it prints no row.
+  const acaCoverageYears = provenance.acaCoverageYears ?? []
   const rows = [
     ['General inflation', fmtPct(assumptions.inflationPct)],
     ['Healthcare extra inflation', fmtPct(assumptions.healthcareExtraInflationPct)],
@@ -233,6 +243,9 @@ function assumptionsSection(model: ReportModel): string {
     ['Withdrawal order', escapeHtml(assumptions.withdrawalOrderSummary)],
     ['Spending policy', escapeHtml(assumptions.spendingPolicySummary)],
     ['Federal parameter set', `${provenance.federalParameterPackYear}`],
+    ...(acaCoverageYears.length === 0
+      ? []
+      : [['ACA premium tax credit figures', escapeHtml(acaCoverageYearsText(acaCoverageYears))]]),
     ['State parameter set', `${provenance.stateParameterPackYear}`],
     ['Parameter data as of', escapeHtml(provenance.parameterDataAsOf)],
     ['Parameter data basis', escapeHtml(provenance.parameterDataBasis)],
@@ -241,8 +254,9 @@ function assumptionsSection(model: ReportModel): string {
 }
 
 function acaLedgerSection(model: ReportModel): string {
-  const rows = model.blocks['aca-ledger'].rows
+  const { rows, projectedIncomeTaxNote } = model.blocks['aca-ledger']
   if (rows.length === 0) return ''
+  const note = projectedIncomeTaxNote ? `<p class="muted">${escapeHtml(projectedIncomeTaxNote)}</p>` : ''
   return `<section><h2>ACA current-year ledger</h2>${table(
     ['Year', 'Gross enrollment premium', 'Applicable SLCSP', 'Modeled allowable PTC', 'Economic net premium', 'Readiness'],
     rows.map((row) => [
@@ -253,7 +267,7 @@ function acaLedgerSection(model: ReportModel): string {
       fmtMoney(row.economicNetPremium),
       row.readiness === 'actionable' ? 'Actionable' : 'Non-actionable',
     ]),
-  )}</section>`
+  )}${note}</section>`
 }
 
 function warningsSection(model: ReportModel): string {

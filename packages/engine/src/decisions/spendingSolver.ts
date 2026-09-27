@@ -18,7 +18,7 @@ import { formatGroupedNumber, formatWholeUsd } from '../internal/evidenceFormat.
 import { evaluateCandidate, planForCandidate, type EvaluateCandidateOptions } from './evaluateCandidate.js'
 import { nominalDollarsAtPlanEnd } from './objectives.js'
 import { ACA_GROSS_PREMIUM_DIAGNOSTIC_LEAD } from './spendingSolverDiagnostics.js'
-import type { AcaSupportCode } from '../projection/types.js'
+import { INFORMATIONAL_ACA_SUPPORT_CODES, type AcaSupportCode } from '../projection/types.js'
 import type { DecisionCandidate, DecisionContext, ExactDecisionEvaluation } from './types.js'
 
 export interface SustainableSpendingOptions {
@@ -100,7 +100,8 @@ export interface SustainableSpendingResult {
   /**
    * The support codes that blocked pricing in those years, distinct, in
    * first-seen order: every code the ledger treats as blocking, which is all
-   * but the two informational tax-exempt-interest codes.
+   * but the informational ones (`INFORMATIONAL_ACA_SUPPORT_CODES`, the one
+   * list the ledger's readiness also reads).
    */
   acaGrossPremiumReasons: AcaSupportCode[]
   /**
@@ -120,16 +121,6 @@ export interface SustainableSpendingResult {
    */
   diagnostics: string[]
 }
-
-/**
- * Support codes the ledger publishes on a year without blocking it
- * (`projection/internal/annualAcaResultPublication.ts` prices a year only when
- * every other code is absent), so they are never a reason a year is unpriced.
- */
-const INFORMATIONAL_ACA_SUPPORT_CODES: ReadonlySet<AcaSupportCode> = new Set([
-  'tax-exempt-interest-plan-derived',
-  'tax-exempt-interest-contract-contradicted',
-])
 
 const DEFAULT_MAX_SIMULATIONS = 24
 const DEFAULT_RESOLUTION_DOLLARS = 500
@@ -262,6 +253,8 @@ export function solveMaxSustainableSpending(
         ? []
         : reported.candidateResult.years.filter((year) => year.aca?.readiness === 'nonActionable')
     const acaGrossPremiumYears = grossPremiumYears.map((year) => year.year)
+    // Informational codes (the ledger's own list) are never a reason a year
+    // is unpriced.
     const acaGrossPremiumReasons = [
       ...new Set(grossPremiumYears.flatMap((year) => year.aca?.supportCodes ?? [])),
     ].filter((code) => !INFORMATIONAL_ACA_SUPPORT_CODES.has(code))

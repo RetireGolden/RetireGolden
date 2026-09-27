@@ -1,6 +1,6 @@
 # Mutation receipt: aca-expected-contribution
 
-Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-eight` at base `989fc81b`, and re-executed 2026-09-22 against RetireGolden base `a046c8f0` (branch `claude/b1-p4-cards-eight`, pull request #728) in `packages/engine`.
+Executed 2026-09-18 on branch `claude/b1-p4-cards-slice-eight` at base `989fc81b`, and re-executed 2026-09-22 against RetireGolden base `a046c8f0` (branch `claude/b1-p4-cards-eight`, pull request #728), and re-executed 2026-09-27 against RetireGolden base `a5d07d32` (branch `claude/aca-2027-coverage-year`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/tax/aca.ts`
 
@@ -26,24 +26,24 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/tax/aca.evi
 
 ## Captured failing output
 
-Re-executed 2026-09-22 on the pull-request branch after the review of #728: the branch was renamed for the pull request and two fixtures and one mutation changed, so every capture, blob hash and revert note is refreshed against this head. The baseline is green (aca.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed. Exit code: 1.
+Re-executed after the IRS rounding change added the rounding case to the evidence file. The baseline is green (aca.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/TEMP/rg-rehearse2/packages/engine
+RUN  v5.0.0 C:/rgwt/engine7/packages/engine
 
- ❯ src/tax/aca.evidence.test.ts (13 tests | 5 failed) 8ms
+ ❯ src/tax/aca.evidence.test.ts (14 tests | 5 failed) 9ms
    ❯ aca-400-percent-cliff — ACA 400% FPL cliff (3)
      × allows the credit at exactly 400% of the poverty line 4ms
-   ❯ aca-expected-contribution — ACA expected contribution (2)
+   ❯ aca-expected-contribution — ACA expected contribution (3)
      × builds a 21,150 poverty line for two people and contributes 6.60% of 42,300 0ms
      × counts every household member in the poverty line, not just the first 0ms
    ❯ aca-allowable-premium-tax-credit — ACA modeled allowable premium tax credit (3)
      × credits the 12,000 benchmark less the 2,791.80 contribution, under the 10,000 enrollment cap 0ms
    ❯ aca-economic-net-premium — ACA economic net premium (2)
-     × bears 791.80 of the 10,000 gross premium after a 9,208.20 credit 0ms
+     × bears 791.80 of the 10,000 gross premium after a 9,208.20 credit 1ms
 
  Test Files  1 failed (1)
-      Tests  5 failed | 8 passed (13)
+      Tests  5 failed | 9 passed (14)
 
 
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 5 ⎯⎯⎯⎯⎯⎯⎯
@@ -94,12 +94,12 @@ AssertionError: expected 15650 to be greater than 15650
     164|       expect(acaFederalPovertyLine(pack, inputs.householdSize!)).toBeG…
        |                                                                  ^
     165|     })
-    166|   },
+    166|
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/5]⎯
 
  FAIL  src/tax/aca.evidence.test.ts > aca-allowable-premium-tax-credit — ACA modeled allowable premium tax credit > credits the 12,000 benchmark less the 2,791.80 contribution, under the 10,000 enrollment cap
-AssertionError: expectedContribution 3831.001533546326 is not within {"abs":0.005} of the worksheet's 2791.8: expected false to be true // Object.is equality
+AssertionError: expectedContribution 3828.1500000000005 is not within {"abs":0.005} of the worksheet's 2791.8: expected false to be true // Object.is equality
 
 - Expected
 + Received
@@ -114,12 +114,12 @@ AssertionError: expectedContribution 3831.001533546326 is not within {"abs":0.00
        |     ^
      29| }
      30|
- ❯ src/tax/aca.evidence.test.ts:199:7
+ ❯ src/tax/aca.evidence.test.ts:213:7
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/5]⎯
 
  FAIL  src/tax/aca.evidence.test.ts > aca-economic-net-premium — ACA economic net premium > bears 791.80 of the 10,000 gross premium after a 9,208.20 credit
-AssertionError: modeledAllowablePtc 8168.998466453675 is not within {"abs":0.005} of the worksheet's 9208.2: expected false to be true // Object.is equality
+AssertionError: modeledAllowablePtc 8171.850000000001 is not within {"abs":0.005} of the worksheet's 9208.2: expected false to be true // Object.is equality
 
 - Expected
 + Received
@@ -134,7 +134,7 @@ AssertionError: modeledAllowablePtc 8168.998466453675 is not within {"abs":0.005
        |     ^
      29| }
      30|
- ❯ src/tax/aca.evidence.test.ts:270:7
+ ❯ src/tax/aca.evidence.test.ts:284:7
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/5]⎯
 ```
