@@ -36,10 +36,15 @@ export interface YearIncomes {
    * Σ over living people of that person's benefit. Own retirement (or SSDI)
    * rows add pia × claim-age factor × payable months (0 before the claim year,
    * 12 − claim months in it, 12 after) × the COLA factor × the haircut factor;
-   * a divorced-spouse marital, current-spouse spousal (the lower earner's own
-   * monthly + max(0, 0.5 × the higher PIA × the spousal factor − own monthly),
-   * the excess capped by the family maximum) or survivor step-up candidate
-   * replaces the running amount only when larger;
+   * a divorced-spouse or current-spouse candidate (the claimant's own monthly
+   * held at the own PIA, plus the spouse factor × max(0, 0.5 × the other
+   * person's PIA − the claimant's own PIA), and never less than the own monthly,
+   * socialSecurity/dualEntitlement.ts#spouseDualEntitlementMonthly; for a
+   * current spouse that excess is capped by the family maximum; e.g. an 800 PIA
+   * claimed at 62 (560) beside a 2,400 PIA claimed at 70, spouse factor 1:
+   * 560 + 400 = 960) or a survivor candidate (the widow(er) benefit,
+   * socialSecurity/survivorBenefit.ts#survivorBenefitMonthly) replaces the
+   * running amount only when larger;
    * then, while under FRA, the earnings test withholds max(0, (wages − the
    * below-FRA limit) / 2), or ÷ 3 against the FRA-year limit in that year,
    * capped at the benefit. COLA factor: the inflation factor from the start
