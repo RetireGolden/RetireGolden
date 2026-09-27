@@ -528,7 +528,7 @@ function characterizedRetirementDelta(
       const military = rows.filter((fact) => isMilitarySource(fact.sourceKind)).reduce((sum, fact) => sum + Math.max(0, fact.federallyIncludedAmount), 0)
       if (age60Plus) {
         const cap = params.retirementPrivate.capPerPerson
-        if (cap === undefined) warnings.push({ code: 'de-pension-cap-pack-missing', ruleId: 'de-pension-exclusion-age-60', message: 'Delaware age-60 pension exclusion requires a versioned annual cap.', missingFacts: ['retirementPrivate.capPerPerson'] })
+        if (cap === undefined) warnings.push({ code: 'de-pension-cap-pack-missing', ruleId: 'de-pension-exclusion-age-60', message: 'Delaware age-60 pension exclusion requires an annual cap from the published parameter set.', missingFacts: ['retirementPrivate.capPerPerson'] })
         else taxableIncomeDelta -= Math.min(cap, ordinary + military)
         continue
       }
@@ -741,7 +741,7 @@ function characterizedRetirementDelta(
       } else {
         const fullThrough = joint ? params.vermontExtras?.civilServiceFullThroughJoint : params.vermontExtras?.civilServiceFullThroughNonjoint
         const zeroAt = joint ? params.vermontExtras?.civilServiceZeroAtJoint : params.vermontExtras?.civilServiceZeroAtNonjoint
-        if (fullThrough === undefined || zeroAt === undefined) warnings.push({ code: 'vt-social-security-pack-missing', ruleId: 'vt-5830e-social-security-inclusion', message: 'Vermont Social Security election requires versioned phaseout parameters.', missingFacts: ['vermontExtras'] })
+        if (fullThrough === undefined || zeroAt === undefined) warnings.push({ code: 'vt-social-security-pack-missing', ruleId: 'vt-5830e-social-security-inclusion', message: 'Vermont Social Security election requires its phaseout figures from the published parameter set.', missingFacts: ['vermontExtras'] })
         else {
           const factor = agi <= fullThrough ? 1 : agi >= zeroAt ? 0 : (zeroAt - agi) / (zeroAt - fullThrough)
           taxableIncomeDelta -= Math.max(0, facts.federallyIncludedSocialSecurity) * factor
@@ -1096,7 +1096,7 @@ export function computeStateTaxableIncomeResult(
     const status = opts.householdFacts?.stateFilingStatus
     const agi = opts.householdFacts?.federalAgi
     if (!status || agi === undefined) acc.warnings.push({ code: 'sc-sciad-incomplete', ruleId: 'sc-sciad-deduction', message: 'South Carolina SCIAD deduction requires federal AGI and full filing status.', missingFacts: ['federalAgi', 'stateFilingStatus'] })
-    else if (!params.southCarolinaSciad) acc.warnings.push({ code: 'sc-sciad-pack-missing', ruleId: 'sc-sciad-deduction', message: 'South Carolina SCIAD selection requires its versioned annual schedule.', missingFacts: ['southCarolinaSciad'] })
+    else if (!params.southCarolinaSciad) acc.warnings.push({ code: 'sc-sciad-pack-missing', ruleId: 'sc-sciad-deduction', message: 'South Carolina SCIAD selection requires its annual schedule from the published parameter set.', missingFacts: ['southCarolinaSciad'] })
     else {
       const sciad = scSciadDeduction({ filingStatus: status, federalAgi: agi, config: params.southCarolinaSciad })
       acc.warnings.push(...sciad.warnings)
