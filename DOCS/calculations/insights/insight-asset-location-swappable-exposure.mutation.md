@@ -1,15 +1,15 @@
 # Mutation receipt: insight-asset-location-swappable-exposure
 
-Executed 2026-09-17 and re-executed 2026-09-18 against RetireGolden base `b99ac29b` (branch grok/b1-p4-cards-insights-ss-medicare-roth) in `packages/engine`.
+Executed 2026-09-17 and re-executed 2026-09-18 against RetireGolden base `b99ac29b` (branch grok/b1-p4-cards-insights-ss-medicare-roth), and re-executed 2026-09-27 against RetireGolden base `e73e5175` (branch `claude/b2p1-slice3-comparisons`, pull request #754) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/insights/detectors/assetLocation.ts`
 
 ```diff
 diff --git a/packages/engine/src/insights/detectors/assetLocation.ts b/packages/engine/src/insights/detectors/assetLocation.ts
-index 1c8c3094..94147d60 100644
+index 9d8db6f5..ab3cc5b6 100644
 --- a/packages/engine/src/insights/detectors/assetLocation.ts
 +++ b/packages/engine/src/insights/detectors/assetLocation.ts
-@@ -64,8 +64,11 @@ export const assetLocation: Detector = {
+@@ -65,8 +65,11 @@ export const assetLocation: Detector = {
      const candidates = assetLocationGenerator.generate({ plan: ctx.plan } as DecisionContext)
      if (candidates.length === 0) return null
  
@@ -35,18 +35,21 @@ npx vitest run src/insights/detectors/assetLocation.evidence.test.ts
 
 ## Captured failing output
 
-Re-executed 2026-09-18 after the evidence fixture moved to the exact tolerance on the published whole-dollar figure (round three of the #720 review). The baseline is green (assetLocation.evidence.test.ts passes on unmodified production). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time and duration lines were removed. Exit code: 1.
+The PR #754 follow-up review typed two refusals (MonteCarloComparisonRefusal in the success comparison, InsightPreviewUnavailable in the detectors that find nothing to preview) and added their imports, so the hunk headers are re-pointed. The baseline is green (assetLocation.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/TEMP/rg-s6/packages/engine
+RUN  v5.0.0 C:/rgwt/engine11/packages/engine
 
- ❯ src/insights/detectors/assetLocation.evidence.test.ts (2 tests | 2 failed) 15ms
+ ❯ src/insights/detectors/assetLocation.evidence.test.ts (2 tests | 2 failed) 14ms
    ❯ insight-asset-location-swappable-exposure — Swappable class exposure of the preferred asset-location candidate (2)
-     × publishes the preferred id's $120,000 exposure even though a later candidate has $150,000 14ms
+     × publishes the preferred id's $120,000 exposure even though a later candidate has $150,000 13ms
      × publishes the first candidate's $70,000 exposure when the preferred id is absent 1ms
 
  Test Files  1 failed (1)
       Tests  2 failed (2)
+
+             persist transforms across runs with fsModuleCache: true
+             learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
 
 
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
@@ -92,4 +95,4 @@ AssertionError: swappableExposure 200000 is not within "exact" of the worksheet'
 
 ## Revert
 
-`git checkout -- packages/engine/src/insights/detectors/assetLocation.ts`, then `git diff --quiet -- packages/engine/src/insights/detectors/assetLocation.ts` exited 0, confirming no change to production code after the run; the named suite passes again on the restored file.
+The original bytes of `packages/engine/src/insights/detectors/assetLocation.ts` were written back and compared byte for byte in the harness, and `git diff --quiet -- packages/engine/src/insights/detectors/assetLocation.ts` then exited 0, confirming no production change remained. Re-ran the named command after restoration: the suite returned to its baseline state, green (exit 0).
