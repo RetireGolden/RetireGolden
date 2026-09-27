@@ -251,9 +251,17 @@ const WILDCARD = '[\\s\\S]*?'
 
 function titlePattern(node: ts.Expression, formatted: boolean): string {
   const literal = (text: string): string => {
-    const escaped = escapeRegExp(text)
-    // it.each/it.for titles are formatted per row (%s, %i, $name, ...).
-    return formatted ? escaped.replace(/%[sdifjoc#%]|\\\$[\w.]+/gu, WILDCARD) : escaped
+    if (!formatted) return escapeRegExp(text)
+    // it.each/it.for titles are formatted per row: a specifier (%s %d %i %f %j
+    // %o %c %#) or an object row's $name becomes that row's text, and %% is a
+    // literal percent sign.
+    let pattern = ''
+    let from = 0
+    for (const token of text.matchAll(/%%|%[sdifjoc#]|\$[\w.]+/gu)) {
+      pattern += escapeRegExp(text.slice(from, token.index)) + (token[0] === '%%' ? '%' : WILDCARD)
+      from = token.index + token[0].length
+    }
+    return pattern + escapeRegExp(text.slice(from))
   }
   if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) return literal(node.text)
   if (ts.isTemplateExpression(node)) {
@@ -665,9 +673,9 @@ function syntheticReceipt(diff: readonly string[], capture: readonly string[]): 
 
 function syntheticDrift(
   diff: readonly string[],
-  options: { readonly production?: string; readonly test?: string } = {},
+  options: { readonly production?: string; readonly test?: string; readonly capture?: readonly string[] } = {},
 ): string[] {
-  const receipt = parseReceipt(syntheticReceipt(diff, SYNTHETIC_CAPTURE))
+  const receipt = parseReceipt(syntheticReceipt(diff, options.capture ?? SYNTHETIC_CAPTURE))
   if (typeof receipt === 'string') return [receipt]
   const shape = testFileShape('src/synthetic.evidence.test.ts', options.test ?? SYNTHETIC_TEST)
   const { quoted, counts } = captureDrift(receipt, (path) =>
@@ -760,5 +768,18 @@ describe('mutation receipt drift', () => {
     // A table-driven registration leaves the count to the table, so the count is not checked.
     const table = SYNTHETIC_TEST.replace(NL + '})' + NL, NL + "  it.each([1, 2])('row %i', () => {})" + NL + '})' + NL)
     expect(syntheticDrift(SYNTHETIC_DIFF, { test: table })).toEqual([])
+  })
+
+  it("reads a table title's %% as a literal percent sign and only its specifiers as the row's text", () => {
+    const table = SYNTHETIC_TEST.replace(
+      NL + '})' + NL,
+      NL + "  it.each([[50, 2]])('keeps %% of %i at %s', () => {})" + NL + '})' + NL,
+    )
+    const withFailedRow = (title: string): string[] => [...SYNTHETIC_CAPTURE.slice(0, 2), `     × ${title} 1ms`, ...SYNTHETIC_CAPTURE.slice(2)]
+    expect(syntheticDrift(SYNTHETIC_DIFF, { test: table, capture: withFailedRow('keeps % of 50 at 2') })).toEqual([])
+    // Read as a specifier, %% would take any text, and a title the table cannot print would pass.
+    expect(syntheticDrift(SYNTHETIC_DIFF, { test: table, capture: withFailedRow('keeps 10 of 50 at 2') })).toEqual([
+      '× names "keeps 10 of 50 at 2", which src/synthetic.evidence.test.ts no longer registers',
+    ])
   })
 })
