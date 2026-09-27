@@ -96,7 +96,7 @@ describe('the spending solver page reads the engine on every example', () => {
         const variant = planWithSpendingShape(plan, shape)
         // The engine's plan is the page's retired construction (an ABW policy
         // is left out rather than set to undefined, which toEqual treats alike).
-        expect(variant, `${example.id} ${shape}`).toEqual(retiredVariant(plan, shape as 'flat' | 'smile' | 'smirk'))
+        expect(variant, `${example.id} ${shape}`).toEqual(retiredVariant(plan, shape))
         const result = runSpendingSolveRequest({ plan: variant, startYear: EXAMPLE_FIXED_YEAR })
         return { shape, result }
       })

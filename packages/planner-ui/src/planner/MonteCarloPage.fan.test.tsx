@@ -76,7 +76,7 @@ function contextFor(plan: Plan): PlanContextValue {
 
 /** Mounts the page on a run whose fan and ending-investable histogram are given. */
 async function mountWith(histogram: MonteCarloSummary['endingInvestable']['histogram']): Promise<void> {
-  const summary: MonteCarloSummary = { ...base!, fan: FAN as MonteCarloSummary['fan'], endingInvestable: { ...base!.endingInvestable, histogram } }
+  const summary: MonteCarloSummary = { ...base!, fan: FAN, endingInvestable: { ...base!.endingInvestable, histogram } }
   mockedRunMc.mockResolvedValue(summary)
   await act(async () => {
     root.render(
