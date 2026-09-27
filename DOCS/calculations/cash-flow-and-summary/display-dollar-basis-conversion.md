@@ -2,7 +2,7 @@
 
 Kind: formula. `projection/dollarBasis.ts` converts a nominal amount `x` of projection year `y` to start-year ("today's") dollars as `x / f(y)`, and a start-year amount to year-`y` dollars as `x × f(y)`, where `f(y)` is the ledger's own cumulative general-inflation factor `YearResult.inflationScale`: the left-to-right product of `(1 + inflationPct/100)` taken `y − startYear` times from 1. The FI target line (`display-fi-target-annual`) is `ProjectionSummary.fiNumber` placed through the same basis: `todayForDisplay(basis, mode, y, fiNumber)`, which is `fiNumber` itself in today's-dollar mode and `fiNumber × f(y)` in nominal mode.
 
-Constructors: `projectionDollarBasis(result)` reads `result.years[k].inflationScale`; `planDollarBasis(inflationPct, startYear, endYear)` runs the ledger's recurrence for a page that holds no projection rows (the relocation and spending-solver pages). Conversions: `inflationFactor`, `toTodayDollars`, `toNominalDollars`, `nominalForDisplay`, `todayForDisplay`; and `insights/detectorProjection.ts#detectorProjection`, whose `deflate` is `toTodayDollars` on the run's own basis.
+Constructors: `projectionDollarBasis(result)` reads `result.years[k].inflationScale`; `planDollarBasis(inflationPct, startYear, endYear)` runs the ledger's recurrence for a page that holds no projection rows (the relocation page; since B2-P1 slice 2 the spending-solver page receives its estates already converted, each by its own run's `projectionDollarBasis`). Conversions: `inflationFactor`, `toTodayDollars`, `toNominalDollars`, `nominalForDisplay`, `todayForDisplay`; and `insights/detectorProjection.ts#detectorProjection`, whose `deflate` is `toTodayDollars` on the run's own basis.
 
 ## Justification
 

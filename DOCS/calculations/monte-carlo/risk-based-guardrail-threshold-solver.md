@@ -69,13 +69,13 @@ It ends at `lo = 355`, `hi = 356`. The edge is `0.02 + 356 h = 1.403671875` (as 
 
 `onProbeDone` is last called with `(40, 41)`, because its total of 41 counts no cache hits.
 
-The planner persists `round(balanceFrac x 10000)/100`, 140.37 and 190.12 percent; the callouts then print `1.4037 x 500,000 = $701,850` and `$950,600`, $14.06 away from `balanceDollars`. That rounding is why the printed callout is a different census family (`display-guardrail-balance-thresholds`).
+The planner persists `round(balanceFrac x 10000)/100`, 140.37 and 190.12 percent; the callouts then print `1.4037 x 500,000 = $701,850` and `$950,600`, $14.06 away from the unrounded `balanceFrac x 500,000` ($701,835.9375, which the solver published as `balanceDollars` until the 2026-09-27 revision). That rounding is why the printed callout is a different census family (`display-guardrail-balance-thresholds`).
 
 **Degenerate probes.** A constant 0.99 gives `always-above-band` on both edges, both thresholds null and both adjustments null. `min(1, f/10)` gives `never-reaches-band` on both edges. A probe returning 1.5, -0.1 or NaN is refused on its first call, at `balanceFrac 1`, `spendingMultiplier 1`.
 
 ## Expected
 
-- Edges at lattice indices `k = 356` and `484`: `balanceFrac` `1.403671875` and `1.901171875` (absolute tolerance `1e-12`), `balanceDollars` `$701,835.9375` and `$950,585.9375` (absolute tolerance `1e-6`).
+- Edges at lattice indices `k = 356` and `484`: `balanceFrac` `1.403671875` and `1.901171875` (absolute tolerance `1e-12`), `balancePct` `140.37` and `190.12` (exact: the percents the planner persists, `round(balanceFrac × 10000) / 100`; see the 2026-09-27 revision, which removed `balanceDollars`). The dollar thresholds on the worked $500,000 base, `$701,850` and `$950,600`, are the record `guardrail-threshold-dollars`'s, not this solver's.
 - `successAtCurrent = 0.5`.
 - Cut `m = 0.849609375`, `$6,015.625` a year, `$501.3020833333333` a month, `successAfter = 0.8260689655172412`.
 - Raise `m = 1.1484375`, `$5,937.50` a year, `$494.7916666666667` a month, `successAfter = 0.8277210884353741`.
