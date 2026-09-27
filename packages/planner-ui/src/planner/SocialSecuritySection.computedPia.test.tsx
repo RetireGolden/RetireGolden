@@ -91,7 +91,33 @@ describe('Social Security step: computed PIA', () => {
     const text = computedPiaLine(await mount(plan('1960-05-01', earnings)))
     expect(text).toContain('Computed PIA: $3,364/mo at full retirement age, as the plan pays it from 2026.')
     expect(text).toContain('Your earnings give $2,846/mo for 2022, the year you became eligible at 62')
-    expect(text).toContain('from then through 2025')
+    expect(text).toContain('adds each cost-of-living increase from then, whether or not you have claimed: every increase through 2025.')
+  })
+
+  it('names the plan\'s COLA assumption for the years SSA has not announced (a 2028 start: 2026 and 2027)', async () => {
+    // The same earnings, priced for a projection starting in 2028: the
+    // published increases through 2025, then the plan's assumption (0% here,
+    // inflation with a matched COLA) for 2026 and 2027.
+    vi.setSystemTime(new Date('2028-06-15T12:00:00Z'))
+    const earnings = Array.from({ length: 40 }, (_, i) => ({ year: 1982 + i, amount: 50_000 }))
+    const text = computedPiaLine(await mount(plan('1960-05-01', earnings)))
+    expect(text).toContain('as the plan pays it from 2028.')
+    expect(text).toContain(
+      "the published increases through 2025, and the plan's COLA assumption for 2026 and 2027, which Social Security has not yet announced.",
+    )
+    expect(text).not.toContain('every increase')
+  })
+
+  it('names only the plan\'s COLA assumption when every year since eligibility is unannounced', async () => {
+    // Born 1965-04-20: eligible in 2027. A 2029 start raises the PIA by the
+    // plan's assumption for 2027 and 2028 only.
+    vi.setSystemTime(new Date('2029-06-15T12:00:00Z'))
+    const earnings = Array.from({ length: 35 }, (_, i) => ({ year: 1990 + i, amount: 50_000 }))
+    const text = computedPiaLine(await mount(plan('1965-04-20', earnings)))
+    expect(text).toContain('for 2027, the year you became eligible at 62')
+    expect(text).toContain(
+      "whether or not you have claimed: the plan's COLA assumption for 2027 and 2028, which Social Security has not yet announced.",
+    )
   })
 
   it('shows the earnings PIA unchanged, with no note, for a person not yet eligible', async () => {
