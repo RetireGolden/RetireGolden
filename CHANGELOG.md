@@ -4,6 +4,57 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## Unreleased
 
+- **"How much can I spend?" answers plans with an unpriced premium tax credit:** the
+  solver gave no answer on 22 of the 29 examples, and on every plan with a Marketplace
+  year whose credit the projection could not price, which includes every plan built in
+  the editor with the credit box on, since the editor never writes the per-year credit
+  details. Such a year (one past the latest parameter year RetireGolden has, or one
+  without those details) made every probe a refusal, and the page then said fixed costs
+  might exceed what the plan can fund. That refusal is meant for actions whose value
+  depends on the credit, such as Roth conversions, and stays there. A spending probe
+  now runs on the ledger as it already is: those years pay the full Marketplace
+  premium, which the credit can only lower (26 U.S.C. 36B(b)(2)), and the result names
+  them and which way a credit there would move the answer (`acaGrossPremiumYears`,
+  `acaGrossPremiumReasons`, `acaGrossPremiumDirection`). At fixed-target spending a
+  lower premium lowers what that year must withdraw, so a credit would likely leave
+  room to spend somewhat more (measured on the examples, not proven); under guardrails
+  it could move the answer either way, because cuts and raises respond to healthcare
+  costs. The page, its spending shapes, the Scenarios capacity section and the
+  spending-headroom Insight say which years, why, and which way. Before → after, from a
+  2026 start: Early retiree & the ACA cliff, no answer → $45,300; Aggressive saver to
+  early retirement, no answer → $90,300. 20 examples gain an answer and the 7 that had
+  one do not move. The two still without one are true: Long-term-care shock depletes
+  even at zero spending, and Guardrails and flexible goals at its required floor (next
+  item).
+- **The solver probes the required spending floor, not zero:** when today's spending
+  fails, the solver used to probe $0, which the plan checks refuse for a plan with
+  required spending, and then reported that even zero spending "depletes the portfolio
+  or breaks the estate floor". It now probes the required floor and names it and the
+  constraint that failed ("Even the required spending floor ($34,000/yr) depletes the
+  portfolio before the plan ends." for Guardrails and flexible goals; an ending estate
+  below the target is named as that), and no probe goes below the floor, the first one
+  included: a base spending that rounds below a fractional floor is seeded at the floor
+  rounded up instead of failing the plan checks. The same example's smirk spending
+  shape now answers $37,000. The page's "fixed costs may
+  already exceed what the plan can fund" sentence now appears only when a probe at zero
+  base spending ran and ran out of money, never after a floor, a bequest-target miss, a
+  budget that stopped before zero was tried, or a solve that could not run.
+- **The solver page no longer calls a sustainable baseline unsustainable:** the answer
+  is shown rounded down to $100, and the page judged today's baseline against that
+  rounded figure, so a $72,030 baseline the plan sustains exactly read as "$30 below …
+  cannot sustain today's spending". The hero and the slack tile now judge by the exact
+  answer ("less than $100 a year to spare"), and when the bequest target is what limits
+  the answer, the page says the plan cannot sustain today's spending and still leave it.
+  Under guardrail spending the page no longer says the rounded figure also passes: there
+  a lower level can fail where a higher one passed, so Apply to Spending and Add as
+  scenario use the exact amount the solver tested, and the page says so; fixed-target
+  plans keep the figure rounded down to $100.
+- **The Optimize page no longer says the 2027 credit figures are unpublished:** its
+  explanation of an unpriced Marketplace year said "sourced ACA tax parameters for those
+  years are not yet published", which is false for 2027 (the IRS published that year's
+  applicable percentage table in Rev. Proc. 2026-26). It now says RetireGolden doesn't
+  have the credit's figures for those years yet, on the Optimize page and the "why this
+  recommendation" panel alike.
 - **Changed: the eleven ledger figures the planner pages computed are now
   published by the engine** (owner decision D-UI-SS; B2-P1 slice 1). The
   pages only format and select them. Six move as they were and no displayed
@@ -633,6 +684,27 @@ has — rather than the runtime contract a consumer needs on the landing page.
 
 ### Breaking (published `@retiregolden/engine` API)
 
+- **Sustainable-spending result fields (required):** `SustainableSpendingResult` gains
+  `acaGrossPremiumYears`, `acaGrossPremiumReasons`, `acaGrossPremiumDirection` and
+  `zeroSpendingDepletes` (true only when a probe at zero base spending ran and depleted);
+  `ScenarioSpendingCapacityResult` (a `Pick` of it) gains the same three, and
+  `ScenarioSpendingCapacityComparison` gains `baselineAcaGrossPremiumYears`,
+  `proposalAcaGrossPremiumYears`, `baselineAcaGrossPremiumReasons`,
+  `proposalAcaGrossPremiumReasons`, `baselineAcaGrossPremiumDirection` and
+  `proposalAcaGrossPremiumDirection`. A caller that builds any of these objects by hand
+  gets a type error until it adds them; `compareScenarioSpendingCapacityResults` still
+  reads an untyped result without them as having no unpriced years rather than
+  throwing. planner-ui's `SpendingSolveResult` (the `spendingSolve` export) carries the
+  same four fields. New exports `ACA_GROSS_PREMIUM_DIAGNOSTIC_LEAD` and
+  `isAcaGrossPremiumDiagnostic` recognize the solver's unpriced-credit diagnostic by its
+  text, not its position.
+- **`EvaluateCandidateOptions.nonActionableAca`** (`'refuse' | 'disclose'`, default
+  `'refuse'`, which is today's behavior). `evaluateInsightAction` now defaults it to
+  `'disclose'` for the `spending-headroom` card only; every other card, tournaments and
+  coordinate-descent search keep the refusal: their `evaluation` option types omit the
+  field, and `runDecisionTournament` and `refineConversionSchedule` throw a TypeError when
+  an untyped caller passes `'disclose'`. `SustainableSpendingOptions.evaluation` omits it
+  too: the solver always discloses.
 - **`GarchModelConfig`:** `omega` is deleted (it is now set from the volatility, so an
   explicit value would either be ignored or contradict it), and `returnVolScalePct` is
   renamed `returnVolPct`, which now means the long-run standard deviation of the return

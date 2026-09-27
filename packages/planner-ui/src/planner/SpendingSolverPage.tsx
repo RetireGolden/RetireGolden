@@ -17,6 +17,7 @@ import { spendingShapePhases, type SpendingShapeId } from '@retiregolden/engine/
 import type { Plan } from '@retiregolden/engine/model/plan'
 import type { SpendingSolveResult } from '../optimize/spendingMessages'
 import { runSpendingSolve } from '../optimize/spendingRunner'
+import { diagnosticsWithoutUnpricedCreditSentence, formatYearRuns, unpricedCreditSpendingNote } from './acaVetoCopy'
 import { usePlan } from './planContextCore'
 import { useWorkspaceReadOnly } from '../data/workspaceReadOnly'
 import { HelpTip } from './fields'
@@ -71,6 +72,9 @@ interface ShapeRow {
   id: SpendingShapeId
   label: string
   maxBaseAnnual: number | null
+  /** Years whose premium tax credit that row's solve could not price. */
+  acaGrossPremiumYears: number[]
+  acaGrossPremiumDirection: SpendingSolveResult['acaGrossPremiumDirection']
 }
 
 const SHAPE_DEFS: { id: SpendingShapeId; label: string }[] = [
@@ -136,7 +140,12 @@ export function SpendingSolverPage() {
             },
           }
           const solved = await runSpendingSolve({ plan: variant, startYear })
-          rows.push({ ...def, maxBaseAnnual: solved.maxBaseAnnual })
+          rows.push({
+            ...def,
+            maxBaseAnnual: solved.maxBaseAnnual,
+            acaGrossPremiumYears: solved.acaGrossPremiumYears,
+            acaGrossPremiumDirection: solved.acaGrossPremiumDirection,
+          })
         }
         if (token === shapeToken.current) setShapeState({ forPlan, rows, error: null })
       } catch (e: unknown) {
@@ -191,15 +200,22 @@ export function SpendingSolverPage() {
     return () => window.clearTimeout(t)
   }, [run, abwActive])
 
+  // Under guardrails feasibility is not monotone in the base amount: a level
+  // below one that passed can fail, so a rounded-down figure is not implied.
+  const guardrailSpending =
+    plan.expenses.spendingPolicy?.mode === 'withdrawalRateGuardrails' ||
+    plan.expenses.spendingPolicy?.mode === 'riskBasedGuardrails'
   // The solver bisects to ~$500 resolution; a to-the-dollar headline claims
-  // precision the answer doesn't have. Floor to $100 (still feasible — it's
-  // below the level that passed) and use the same number everywhere: display,
-  // Apply, and scenarios.
+  // precision the answer doesn't have, so the page shows it floored to $100.
+  // At fixed-target spending feasibility is monotone, so that floored figure,
+  // below the level that passed, passes too, and Apply and scenarios use it.
+  // Under guardrails it is not implied, so they use the exact tested amount.
   const solvedRounded = result?.maxBaseAnnual != null ? Math.floor(result.maxBaseAnnual / 100) * 100 : null
+  const appliedAmount = guardrailSpending ? (result?.maxBaseAnnual ?? null) : solvedRounded
 
   const applyToSpending = () => {
-    if (solvedRounded === null) return
-    const solved = solvedRounded
+    if (appliedAmount === null) return
+    const solved = appliedAmount
     update((d) => {
       d.expenses.baseAnnual = solved
     })
@@ -208,8 +224,8 @@ export function SpendingSolverPage() {
   }
 
   const addScenario = () => {
-    if (solvedRounded === null) return
-    const solved = solvedRounded
+    if (appliedAmount === null) return
+    const solved = appliedAmount
     const baseName = `Spend ${fmtMoney(solved)}/yr (max sustainable)`
     const names = new Set(plan.scenarios.map((s) => s.name))
     let name = baseName
@@ -221,8 +237,29 @@ export function SpendingSolverPage() {
     void navigate(`/plan/${plan.id}/scenarios`)
   }
 
+  // Whether the plan sustains today's baseline is the solver's exact answer
+  // against it, not the rounded figure: a baseline of $72,030 solved at
+  // exactly $72,030 shows as $72,000, and that baseline still passed.
+  // The solver seeds at the baseline rounded to a whole dollar, so that is
+  // the level its answer is measured against.
+  const sustainsCurrent =
+    result !== null && result.maxBaseAnnual !== null && result.maxBaseAnnual >= Math.round(result.currentBaseAnnual)
   // Slack measured against the rounded display value so the two tiles agree.
   const slack = result && solvedRounded !== null ? solvedRounded - result.currentBaseAnnual : null
+  // Only the rounding puts the shown figure below a baseline the plan
+  // sustains: the headroom is under $100, not negative.
+  const headroomUnderHundred = sustainsCurrent && slack !== null && slack < 0
+  const acaNote = result ? unpricedCreditSpendingNote(result, result.maxBaseAnnual !== null) : null
+  // The failure well prints the engine's reasons verbatim, except the
+  // unpriced-credit sentence, which the plain note under it replaces.
+  const failureDiagnostics = result ? diagnosticsWithoutUnpricedCreditSentence(result.diagnostics) : []
+  // "Fixed costs may exceed what the plan can fund" is true only when a probe
+  // at zero base spending ran and ran out of money: not after a required
+  // floor failed (the diagnostic names that floor), a bequest miss, a budget
+  // that stopped before zero was tried, or a solve that never ran a probe.
+  const fixedCostsMayExceedFunding = result !== null && result.maxBaseAnnual === null && result.zeroSpendingDepletes
+  const shapeAcaYears = shapeRows?.flatMap((row) => row.acaGrossPremiumYears) ?? []
+  const shapesAdaptive = shapeRows?.some((row) => row.acaGrossPremiumDirection === 'uncertain') ?? false
   // The nominal end-of-plan estate in today's dollars, so it reads on the same
   // scale as the today's-dollars spending answer: divided by the factor the
   // solve's own run grew it with (its start year and rate).
@@ -291,12 +328,18 @@ export function SpendingSolverPage() {
                 the two places a fix usually lives. */}
             <h2 style={{ marginTop: 0 }}>No sustainable spending level found</h2>
             <p className="muted">
-              {result.diagnostics.length > 0
-                ? result.diagnostics.join(' ')
-                : 'Even minimal base spending depletes the portfolio or breaks the bequest target within the plan horizon.'}{' '}
-              Fixed costs modeled outside baseline spending (healthcare, debt service, property carrying costs, one-time
-              goals) may already exceed what the plan can fund.
+              {failureDiagnostics.length > 0
+                ? failureDiagnostics.join(' ')
+                : 'Even minimal base spending depletes the portfolio or breaks the bequest target within the plan horizon.'}
+              {fixedCostsMayExceedFunding
+                ? ' Fixed costs modeled outside baseline spending (healthcare, debt service, property carrying costs, one-time goals) may already exceed what the plan can fund.'
+                : null}
             </p>
+            {acaNote ? (
+              <p className="muted" data-testid="aca-gross-premium-note">
+                {acaNote}
+              </p>
+            ) : null}
             <p className="picker-actions">
               <Link to={`/plan/${plan.id}/spending`} className="btn btn-secondary btn-small">
                 Review Spending
@@ -310,17 +353,28 @@ export function SpendingSolverPage() {
           <>
             <div className="mc-hero">
               <div>
-                <h2 style={{ margin: '0 0 0.35rem', color: slack !== null && slack >= 0 ? 'var(--good)' : 'var(--bad)' }}>
+                <h2 style={{ margin: '0 0 0.35rem', color: sustainsCurrent ? 'var(--good)' : 'var(--bad)' }}>
                   Your plan can sustain about {fmtMoney(solvedRounded ?? 0)} of baseline spending per year.
                 </h2>
                 <p className="muted" style={{ margin: 0 }}>
-                  {slack !== null && slack >= 0
-                    ? `That is ${fmtMoney(slack)} per year of headroom above your current ${fmtMoney(result.currentBaseAnnual)} baseline (today's dollars).`
-                    : `That is ${fmtMoney(Math.abs(slack ?? 0))} per year BELOW your current ${fmtMoney(result.currentBaseAnnual)} baseline. Your projection cannot sustain today's spending through the horizon.`}
+                  {headroomUnderHundred
+                    ? `That covers your current ${fmtMoney(result.currentBaseAnnual)} baseline with less than $100 a year to spare (today's dollars). The figure above is rounded down to the nearest $100.`
+                    : sustainsCurrent
+                      ? `That is ${fmtMoney(slack ?? 0)} per year of headroom above your current ${fmtMoney(result.currentBaseAnnual)} baseline (today's dollars).`
+                      : `That is ${fmtMoney(Math.abs(slack ?? 0))} per year BELOW your current ${fmtMoney(result.currentBaseAnnual)} baseline. ${
+                          result.limitingConstraint === 'estate-floor'
+                            ? "Your projection cannot sustain today's spending and still leave your bequest target."
+                            : "Your projection cannot sustain today's spending through the horizon."
+                        }`}
                   {!result.converged
                     ? ' The simulation budget ran out before the answer fully converged, so this is a feasible lower bound.'
                     : ''}
                 </p>
+                {acaNote ? (
+                  <p className="field-hint mt-sm" style={{ marginBottom: 0 }} data-testid="aca-gross-premium-note">
+                    {acaNote}
+                  </p>
+                ) : null}
               </div>
             </div>
 
@@ -329,12 +383,16 @@ export function SpendingSolverPage() {
                 label="Max sustainable spending"
                 value={`${fmtMoney(solvedRounded ?? 0)}/yr`}
                 tone="neutral"
-                help="Highest annual baseline spending (today's dollars) whose full year-by-year projection never depletes investable assets and keeps the ending after-tax estate at or above your bequest target. Solved by bisection to ~$500 resolution, then shown rounded down to the nearest $100. The same rounded figure is what Apply and scenarios use."
+                help="Highest annual baseline spending (today's dollars) whose full year-by-year projection never depletes investable assets and keeps the ending after-tax estate at or above your bequest target. Solved by bisection to ~$500 resolution, then shown rounded down to the nearest $100. The same rounded figure is what Apply and scenarios use, except under guardrail spending, where they use the exact amount the solver tested."
               />
               <Stat
                 label="Spending slack"
-                value={`${slack !== null && slack >= 0 ? '+' : ''}${fmtMoney(slack ?? 0)}/yr`}
-                tone={slack !== null && slack > 0 ? 'good' : slack !== null && slack < 0 ? 'bad' : 'neutral'}
+                value={
+                  headroomUnderHundred ? 'Under $100/yr' : `${slack !== null && slack >= 0 ? '+' : ''}${fmtMoney(slack ?? 0)}/yr`
+                }
+                tone={
+                  headroomUnderHundred ? 'neutral' : slack !== null && slack > 0 ? 'good' : slack !== null && slack < 0 ? 'bad' : 'neutral'
+                }
                 help="Max sustainable spending minus your current baseline. Positive = headroom you are not using; negative = the current baseline overspends what your plan can sustain."
               />
               <Stat
@@ -400,9 +458,12 @@ export function SpendingSolverPage() {
                   </button>
                 </div>
                 <p className="field-hint mt-sm">
-                  "Apply to Spending" sets your plan's baseline spending to {fmtMoney(solvedRounded ?? 0)}/yr and opens
+                  "Apply to Spending" sets your plan's baseline spending to {fmtMoney(appliedAmount ?? 0)}/yr and opens
                   the Spending screen. "Add as scenario" instead creates a side-by-side scenario under Scenarios without
                   changing your plan.
+                  {guardrailSpending
+                    ? ' Under guardrail spending both use that exact amount, the one the solver tested, not the figure rounded down to $100 above, because a lower level can fail where a higher one passed.'
+                    : null}
                 </p>
                 <details className="ss-explainer">
                   <summary>Why this number?</summary>
@@ -414,9 +475,11 @@ export function SpendingSolverPage() {
                     {result.estateFloorTodayDollars > 0
                       ? `your ${fmtMoney(result.estateFloorTodayDollars)} bequest target`
                       : 'zero (no bequest target set)'}
-                    . The solver&apos;s exact answer is the highest level that passed both. It is shown, applied,
-                    and added to scenarios rounded down to the nearest $100 ({fmtMoney(solvedRounded ?? 0)}), which
-                    therefore also passes. The next-higher probe failed on{' '}
+                    . The solver&apos;s exact answer is the highest level that passed both.{' '}
+                    {guardrailSpending
+                      ? `It is shown rounded down to the nearest $100 (${fmtMoney(solvedRounded ?? 0)}), but applied and added to scenarios at the exact amount that passed (${fmtMoney(appliedAmount ?? 0)}): under guardrail spending a lower level does not always pass when a higher one does, so that rounded figure was not itself tested`
+                      : `It is shown, applied, and added to scenarios rounded down to the nearest $100 (${fmtMoney(solvedRounded ?? 0)}), which therefore also passes`}
+                    . The next-higher probe failed on{' '}
                     {result.limitingConstraint === 'estate-floor'
                       ? 'the bequest target'
                       : result.limitingConstraint === 'depletion'
@@ -487,6 +550,13 @@ export function SpendingSolverPage() {
               Each row re-solves your full plan with that shape&apos;s phase rows (initial spend in today&apos;s
               dollars; later years follow the shape). No shape is &quot;the answer&quot;. They are framings of how
               your own later-life spending might behave.
+              {shapeAcaYears.length > 0
+                ? ` In these solves the premium tax credit isn't counted in ${formatYearRuns(shapeAcaYears)}, so they pay the full Marketplace premium then; ${
+                    shapesAdaptive
+                      ? 'a credit in those years could move these amounts up or down, because your spending guardrails respond to what healthcare costs.'
+                      : 'if you receive a credit in those years, you would likely be able to spend somewhat more than these amounts.'
+                  }`
+                : null}
             </p>
           </>
         ) : null}

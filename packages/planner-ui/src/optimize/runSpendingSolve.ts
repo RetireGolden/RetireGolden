@@ -26,6 +26,10 @@ export function runSpendingSolveRequest(req: SpendingSolveRequest): SpendingSolv
     converged: solved.converged,
     limitingConstraint: solved.limitingConstraint,
     simulationCount: solved.simulationCount,
+    zeroSpendingDepletes: solved.zeroSpendingDepletes,
+    acaGrossPremiumYears: solved.acaGrossPremiumYears,
+    acaGrossPremiumReasons: solved.acaGrossPremiumReasons,
+    acaGrossPremiumDirection: solved.acaGrossPremiumDirection,
     diagnostics: solved.diagnostics,
     evidence: summary
       ? {

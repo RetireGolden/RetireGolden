@@ -14,6 +14,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import type { Plan } from '@retiregolden/engine/model/plan'
+import type { AcaSupportCode } from '@retiregolden/engine/projection/types'
 import { TRUSTEES_DEFAULT_SS_HAIRCUT } from '@retiregolden/engine/params'
 import {
   compareScenarioPlans,
@@ -36,6 +37,7 @@ import { LearnAboutScreen } from '../learn/LearnAboutScreen'
 import { ScrollRegion } from './ScrollRegion'
 import { scenarioPatchSignature, uniqueScenarioName, withDistinctNames } from './scenarioNames'
 import { runSpendingSolve } from '../optimize/spendingRunner'
+import { diagnosticsWithoutUnpricedCreditSentence, unpricedCreditSpendingNote } from './acaVetoCopy'
 import { fmtMoneyCompact } from './format'
 import { LiveStatus } from './LiveStatus'
 import { ScenarioActionComparisonTable } from './ScenarioActionComparisonTable'
@@ -587,10 +589,46 @@ function CapacitySection({
   running: boolean
   onCalculate: () => void
 }) {
+  // Each side's unpriced-credit sentence is replaced by the plain note that
+  // names the years, why, and which way a credit would move that answer; when
+  // both sides would say the same thing it is said once, for both.
+  const sideNote = (
+    years: number[],
+    reasons: AcaSupportCode[],
+    direction: 'conservative' | 'uncertain' | null,
+    answered: boolean,
+  ): string | null =>
+    unpricedCreditSpendingNote(
+      { acaGrossPremiumYears: years, acaGrossPremiumReasons: reasons, acaGrossPremiumDirection: direction },
+      answered,
+    )
+  const baselineNote = capacity
+    ? sideNote(
+        capacity.baselineAcaGrossPremiumYears,
+        capacity.baselineAcaGrossPremiumReasons,
+        capacity.baselineAcaGrossPremiumDirection,
+        capacity.maxBaseAnnual.baseline !== null,
+      )
+    : null
+  const proposalNote = capacity
+    ? sideNote(
+        capacity.proposalAcaGrossPremiumYears,
+        capacity.proposalAcaGrossPremiumReasons,
+        capacity.proposalAcaGrossPremiumDirection,
+        capacity.maxBaseAnnual.proposal !== null,
+      )
+    : null
+  const sharedNote = baselineNote !== null && baselineNote === proposalNote
   const diagnostics = capacity
     ? [
-        ...capacity.baselineDiagnostics.map((message) => `Baseline: ${message}`),
-        ...capacity.proposalDiagnostics.map((message) => `Proposal: ${message}`),
+        ...diagnosticsWithoutUnpricedCreditSentence(capacity.baselineDiagnostics).map((message) => `Baseline: ${message}`),
+        ...diagnosticsWithoutUnpricedCreditSentence(capacity.proposalDiagnostics).map((message) => `Proposal: ${message}`),
+        ...(sharedNote
+          ? [`Baseline and proposal: ${baselineNote}`]
+          : [
+              ...(baselineNote === null ? [] : [`Baseline: ${baselineNote}`]),
+              ...(proposalNote === null ? [] : [`Proposal: ${proposalNote}`]),
+            ]),
       ]
     : []
   return (

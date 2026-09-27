@@ -15,7 +15,11 @@ import {
   traditionalAccount,
   validatePlan,
 } from '../testing/planFixtures.js'
-import { compareScenarioPlans, compareScenarioSpendingCapacityResults } from './comparison.js'
+import {
+  compareScenarioPlans,
+  compareScenarioSpendingCapacityResults,
+  type ScenarioSpendingCapacityResult,
+} from './comparison.js'
 import { scenarioPlanSnapshotHash } from './patch.js'
 
 const federalTax = createFederalTaxCalculator()
@@ -514,6 +518,9 @@ describe('compareScenarioPlans', () => {
         converged: false,
         simulationCount: 8,
         limitingConstraint: 'depletion',
+        acaGrossPremiumYears: [],
+        acaGrossPremiumReasons: [],
+        acaGrossPremiumDirection: null,
         diagnostics: ['Feasible lower bound only.'],
       },
       {
@@ -522,6 +529,9 @@ describe('compareScenarioPlans', () => {
         converged: true,
         simulationCount: 7,
         limitingConstraint: 'estate-floor',
+        acaGrossPremiumYears: [2027, 2028],
+        acaGrossPremiumReasons: ['tax-year-parameters-unsupported'],
+        acaGrossPremiumDirection: 'uncertain',
         diagnostics: [],
       },
     )
@@ -529,6 +539,30 @@ describe('compareScenarioPlans', () => {
     expect(result.baselineConverged).toBe(false)
     expect(result.baselineDiagnostics).toEqual(['Feasible lower bound only.'])
     expect(result.proposalConverged).toBe(true)
+    // Each side's unpriced ACA years travel with it, so the page can name them.
+    expect(result.baselineAcaGrossPremiumYears).toEqual([])
+    expect(result.baselineAcaGrossPremiumDirection).toBeNull()
+    expect(result.proposalAcaGrossPremiumYears).toEqual([2027, 2028])
+    expect(result.proposalAcaGrossPremiumReasons).toEqual(['tax-year-parameters-unsupported'])
+    expect(result.proposalAcaGrossPremiumDirection).toBe('uncertain')
+  })
+
+  it('reads a capacity result from before the unpriced-ACA fields as having none', () => {
+    // An older host or a cached worker message has no acaGrossPremium* fields.
+    const older = {
+      maxBaseAnnual: 50_000,
+      spendingSlackDollars: 5_000,
+      converged: true,
+      simulationCount: 8,
+      limitingConstraint: 'depletion' as const,
+      diagnostics: [],
+    } as unknown as ScenarioSpendingCapacityResult
+    const result = compareScenarioSpendingCapacityResults(older, older)
+    expect(result.maxBaseAnnual.delta).toBe(0)
+    expect(result.baselineAcaGrossPremiumYears).toEqual([])
+    expect(result.proposalAcaGrossPremiumReasons).toEqual([])
+    expect(result.baselineAcaGrossPremiumDirection).toBeNull()
+    expect(result.proposalAcaGrossPremiumDirection).toBeNull()
   })
 
   it('rejects invalid stochastic options before running simulations', () => {

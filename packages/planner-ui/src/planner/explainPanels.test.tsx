@@ -415,7 +415,7 @@ describe('WhyRecommendationPanel', () => {
     const text = container.textContent
     expect(text).toContain('Why nothing qualified.')
     expect(text).toContain('marketplace (ACA) coverage in 2027 and 2028')
-    expect(text).toContain('sourced ACA tax parameters for those years are not yet published')
+    expect(text).toContain("RetireGolden doesn't have the credit's figures for those years yet")
     expect(text).toContain('no conversion schedule is presented as actionable')
     // The blocked row is annotated; the merely-negative row is not.
     expect(text).toContain('Fill the 10% bracket (not actionable (unpriced ACA years))')

@@ -1,7 +1,7 @@
 /**
  * GENERATED FILE — DO NOT EDIT BY HAND.
  *
- * Output field coverage imported from the output-family census at commit 3b5f835ac782036ec1417c64a36c6fb2ba10188b.
+ * Output field coverage imported from the output-family census at commit ba123d312b8d16c8bcd00acec37f79bf9478faf9.
  * Regenerate: node packages/engine/scripts/import-output-census.mjs <census-dir>
  */
 
@@ -316,6 +316,26 @@ const coverageCensus = [
     "reasonKind": "runtime-diagnostic",
     "reason": "The SustainableSpendingOptions.resolutionDollars field is an internal diagnostic used to trace or validate calculation behavior.",
     "tsType": "number"
+  },
+  {
+    "source": "engine/src/decisions/spendingSolver.ts",
+    "owner": "SustainableSpendingResult",
+    "field": "acaGrossPremiumDirection",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "label-or-category",
+    "reason": "Which way a credit in the unpriced ACA years would move the sustainable-spending answer: 'conservative' at fixed-target spending, 'uncertain' under guardrails, null when no year is unpriced. The solver page, the Scenarios capacity notes and the spending-headroom Insight choose their wording by it; a classification, not a quantity.",
+    "tsType": "'conservative' | 'uncertain' | null"
+  },
+  {
+    "source": "engine/src/decisions/spendingSolver.ts",
+    "owner": "SustainableSpendingResult",
+    "field": "acaGrossPremiumYears",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "dimension-coordinate",
+    "reason": "Calendar years whose ACA premium tax credit the ledger could not price in the run the sustainable-spending answer rests on (the best feasible probe, else the seed); the solver page names them in its note under the answer. A list of years that places the full-premium budget, not a quantity.",
+    "tsType": "number[]"
   },
   {
     "source": "engine/src/decisions/spendingSolver.ts",
@@ -6171,6 +6191,16 @@ const coverageCensus = [
   {
     "source": "engine/src/scenarios/comparison.ts",
     "owner": "ScenarioSpendingCapacityComparison",
+    "field": "baselineAcaGrossPremiumYears",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "dimension-coordinate",
+    "reason": "Calendar years whose ACA premium tax credit the baseline plan's sustainable-spending solve could not price; the Scenarios capacity section names them in a plain note for that side. A list of years that places the full-premium budget, not a quantity.",
+    "tsType": "number[]"
+  },
+  {
+    "source": "engine/src/scenarios/comparison.ts",
+    "owner": "ScenarioSpendingCapacityComparison",
     "field": "baselineSimulationCount",
     "disposition": "family",
     "familyId": "sustainable-spending-result-simulation-count",
@@ -6187,6 +6217,16 @@ const coverageCensus = [
   {
     "source": "engine/src/scenarios/comparison.ts",
     "owner": "ScenarioSpendingCapacityComparison",
+    "field": "proposalAcaGrossPremiumYears",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "dimension-coordinate",
+    "reason": "Calendar years whose ACA premium tax credit the proposal plan's sustainable-spending solve could not price; the Scenarios capacity section names them in a plain note for that side. A list of years that places the full-premium budget, not a quantity.",
+    "tsType": "number[]"
+  },
+  {
+    "source": "engine/src/scenarios/comparison.ts",
+    "owner": "ScenarioSpendingCapacityComparison",
     "field": "proposalSimulationCount",
     "disposition": "family",
     "familyId": "sustainable-spending-result-simulation-count",
@@ -6199,6 +6239,16 @@ const coverageCensus = [
     "disposition": "family",
     "familyId": "sustainable-spending-result-spending-slack-dollars",
     "tsType": "NullableScalarComparison"
+  },
+  {
+    "source": "engine/src/scenarios/comparison.ts",
+    "owner": "ScenarioSpendingCapacityResult",
+    "field": "acaGrossPremiumYears",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "dimension-coordinate",
+    "reason": "The solver's unpriced ACA years as the Scenarios capacity comparison receives them from each side's solve (SustainableSpendingResult.acaGrossPremiumYears); a list of calendar years, not a quantity.",
+    "tsType": "number[]"
   },
   {
     "source": "engine/src/scenarios/comparison.ts",
@@ -7351,6 +7401,16 @@ const coverageCensus = [
     "reasonKind": "dimension-coordinate",
     "reason": "The module.startYear field is a coordinate such as year, age, or offset used to place another value.",
     "tsType": "number"
+  },
+  {
+    "source": "planner-ui/src/planner/SpendingSolverPage.tsx",
+    "owner": "ShapeRow",
+    "field": "acaGrossPremiumYears",
+    "disposition": "excluded",
+    "familyId": null,
+    "reasonKind": "dimension-coordinate",
+    "reason": "Calendar years whose ACA premium tax credit one spending-shape solve on the solver page could not price; the page names their union in the note under the shape table. A list of years, not a quantity.",
+    "tsType": "number[]"
   },
   {
     "source": "planner-ui/src/planner/SpendingSolverPage.tsx",
@@ -10712,6 +10772,22 @@ const exclusionCensus = [
     "reason": "The SustainableSpendingOptions.resolutionDollars field is an internal diagnostic used to trace or validate calculation behavior."
   },
   {
+    "id": "field-engine-src-decisions-spendingsolver-ts-sustainablespendingresult-acagrosspremiumdirection",
+    "path": "engine/src/decisions/spendingSolver.ts",
+    "symbol": "SustainableSpendingResult",
+    "field": "acaGrossPremiumDirection",
+    "reasonKind": "label-or-category",
+    "reason": "Which way a credit in the unpriced ACA years would move the sustainable-spending answer: 'conservative' at fixed-target spending, 'uncertain' under guardrails, null when no year is unpriced. The solver page, the Scenarios capacity notes and the spending-headroom Insight choose their wording by it; a classification, not a quantity."
+  },
+  {
+    "id": "field-engine-src-decisions-spendingsolver-ts-sustainablespendingresult-acagrosspremiumyears",
+    "path": "engine/src/decisions/spendingSolver.ts",
+    "symbol": "SustainableSpendingResult",
+    "field": "acaGrossPremiumYears",
+    "reasonKind": "dimension-coordinate",
+    "reason": "Calendar years whose ACA premium tax credit the ledger could not price in the run the sustainable-spending answer rests on (the best feasible probe, else the seed); the solver page names them in its note under the answer. A list of years that places the full-premium budget, not a quantity."
+  },
+  {
     "id": "field-engine-src-decisions-swrcomparator-ts-compareswrrules-cape",
     "path": "engine/src/decisions/swrComparator.ts",
     "symbol": "compareSwrRules",
@@ -12240,6 +12316,30 @@ const exclusionCensus = [
     "reason": "Seed of the shared market paths; printed in the risk caption 'N paths, seed S' as provenance."
   },
   {
+    "id": "field-engine-src-scenarios-comparison-ts-scenariospendingcapacitycomparison-baselineacagrosspremiumyears",
+    "path": "engine/src/scenarios/comparison.ts",
+    "symbol": "ScenarioSpendingCapacityComparison",
+    "field": "baselineAcaGrossPremiumYears",
+    "reasonKind": "dimension-coordinate",
+    "reason": "Calendar years whose ACA premium tax credit the baseline plan's sustainable-spending solve could not price; the Scenarios capacity section names them in a plain note for that side. A list of years that places the full-premium budget, not a quantity."
+  },
+  {
+    "id": "field-engine-src-scenarios-comparison-ts-scenariospendingcapacitycomparison-proposalacagrosspremiumyears",
+    "path": "engine/src/scenarios/comparison.ts",
+    "symbol": "ScenarioSpendingCapacityComparison",
+    "field": "proposalAcaGrossPremiumYears",
+    "reasonKind": "dimension-coordinate",
+    "reason": "Calendar years whose ACA premium tax credit the proposal plan's sustainable-spending solve could not price; the Scenarios capacity section names them in a plain note for that side. A list of years that places the full-premium budget, not a quantity."
+  },
+  {
+    "id": "field-engine-src-scenarios-comparison-ts-scenariospendingcapacityresult-acagrosspremiumyears",
+    "path": "engine/src/scenarios/comparison.ts",
+    "symbol": "ScenarioSpendingCapacityResult",
+    "field": "acaGrossPremiumYears",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The solver's unpriced ACA years as the Scenarios capacity comparison receives them from each side's solve (SustainableSpendingResult.acaGrossPremiumYears); a list of calendar years, not a quantity."
+  },
+  {
     "id": "field-engine-src-tax-aca-ts-acaapplicablepct-fplpct",
     "path": "engine/src/tax/aca.ts",
     "symbol": "acaApplicablePct",
@@ -12934,6 +13034,14 @@ const exclusionCensus = [
     "field": "startYear",
     "reasonKind": "dimension-coordinate",
     "reason": "The module.startYear field is a coordinate such as year, age, or offset used to place another value."
+  },
+  {
+    "id": "field-planner-ui-src-planner-spendingsolverpage-tsx-shaperow-acagrosspremiumyears",
+    "path": "planner-ui/src/planner/SpendingSolverPage.tsx",
+    "symbol": "ShapeRow",
+    "field": "acaGrossPremiumYears",
+    "reasonKind": "dimension-coordinate",
+    "reason": "Calendar years whose ACA premium tax credit one spending-shape solve on the solver page could not price; the page names their union in the note under the shape table. A list of years, not a quantity."
   },
   {
     "id": "field-planner-ui-src-planner-ssanalysis-ts-benefitsonlyranking-discountrate",

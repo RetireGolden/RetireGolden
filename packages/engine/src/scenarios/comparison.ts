@@ -22,7 +22,7 @@ import {
 import type { MonteCarloSummary } from '../montecarlo/run.js'
 import { summarizeProjection } from '../projection/compare.js'
 import { simulatePlan } from '../projection/simulate.js'
-import type { ProjectionResult, TaxCalculator, YearResult } from '../projection/types.js'
+import type { AcaSupportCode, ProjectionResult, TaxCalculator, YearResult } from '../projection/types.js'
 import {
   compareScenarioActionRows,
   type ScenarioActionComparisonRow,
@@ -170,6 +170,13 @@ export interface ScenarioSpendingCapacityComparison {
   proposalSimulationCount: number
   baselineLimitingConstraint: 'depletion' | 'estate-floor' | null
   proposalLimitingConstraint: 'depletion' | 'estate-floor' | null
+  /** Each side's years whose ACA premium tax credit its solve could not price (SustainableSpendingResult). */
+  baselineAcaGrossPremiumYears: number[]
+  proposalAcaGrossPremiumYears: number[]
+  baselineAcaGrossPremiumReasons: AcaSupportCode[]
+  proposalAcaGrossPremiumReasons: AcaSupportCode[]
+  baselineAcaGrossPremiumDirection: SustainableSpendingResult['acaGrossPremiumDirection']
+  proposalAcaGrossPremiumDirection: SustainableSpendingResult['acaGrossPremiumDirection']
   baselineDiagnostics: string[]
   proposalDiagnostics: string[]
 }
@@ -181,6 +188,9 @@ export type ScenarioSpendingCapacityResult = Pick<
   | 'converged'
   | 'simulationCount'
   | 'limitingConstraint'
+  | 'acaGrossPremiumYears'
+  | 'acaGrossPremiumReasons'
+  | 'acaGrossPremiumDirection'
   | 'diagnostics'
 >
 
@@ -330,7 +340,11 @@ function nullableScalar(baseline: number | null, proposal: number | null): Nulla
   return scalar(baseline, proposal)
 }
 
-/** Compare two independently solved capacity results without moving dollar arithmetic into a UI. */
+/**
+ * Compare two independently solved capacity results without moving dollar
+ * arithmetic into a UI. A result from before the unpriced-ACA fields existed
+ * (a cached worker message, an older host) reads as having no unpriced years.
+ */
 export function compareScenarioSpendingCapacityResults(
   baseline: ScenarioSpendingCapacityResult,
   proposal: ScenarioSpendingCapacityResult,
@@ -344,6 +358,12 @@ export function compareScenarioSpendingCapacityResults(
     proposalSimulationCount: proposal.simulationCount,
     baselineLimitingConstraint: baseline.limitingConstraint,
     proposalLimitingConstraint: proposal.limitingConstraint,
+    baselineAcaGrossPremiumYears: [...(baseline.acaGrossPremiumYears ?? [])],
+    proposalAcaGrossPremiumYears: [...(proposal.acaGrossPremiumYears ?? [])],
+    baselineAcaGrossPremiumReasons: [...(baseline.acaGrossPremiumReasons ?? [])],
+    proposalAcaGrossPremiumReasons: [...(proposal.acaGrossPremiumReasons ?? [])],
+    baselineAcaGrossPremiumDirection: baseline.acaGrossPremiumDirection ?? null,
+    proposalAcaGrossPremiumDirection: proposal.acaGrossPremiumDirection ?? null,
     baselineDiagnostics: [...baseline.diagnostics],
     proposalDiagnostics: [...proposal.diagnostics],
   }

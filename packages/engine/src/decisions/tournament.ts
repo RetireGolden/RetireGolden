@@ -99,7 +99,12 @@ export interface DecisionTournamentOptions {
   maxCandidates?: number
   /** Minimum primary-metric improvement before anything is recommended. */
   minimumImprovement?: number
-  evaluation?: EvaluateCandidateOptions
+  /**
+   * Evaluator options for every candidate. `nonActionableAca` is left out: a
+   * tournament recommends actions, so it keeps the evaluator's refusal of
+   * unpriced ACA evidence.
+   */
+  evaluation?: Omit<EvaluateCandidateOptions, 'nonActionableAca'>
 }
 
 const DEFAULT_MAX_CANDIDATES = 32
@@ -156,6 +161,14 @@ export function runDecisionTournament(
   generators: CandidateGenerator[],
   options: DecisionTournamentOptions = {},
 ): DecisionTournamentResult {
+  // The option type omits nonActionableAca, but a JS caller can still pass
+  // it. Refused, not stripped: a copy of the options would lose the
+  // legacy-aggregate capability their identity carries.
+  if ((options.evaluation as EvaluateCandidateOptions | undefined)?.nonActionableAca === 'disclose') {
+    throw new TypeError(
+      "runDecisionTournament refuses evaluation.nonActionableAca 'disclose': a tournament recommends actions, and an action cannot be sized against an unpriced ACA credit.",
+    )
+  }
   const policy = options.policy ?? maximizeAfterTaxEstate
   const maxCandidates = options.maxCandidates ?? DEFAULT_MAX_CANDIDATES
   const minimumImprovement = options.minimumImprovement ?? DEFAULT_MINIMUM_IMPROVEMENT

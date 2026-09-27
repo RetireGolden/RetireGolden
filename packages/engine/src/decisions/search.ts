@@ -29,7 +29,12 @@ export interface CoordinateDescentOptions {
   /** A move must beat the incumbent primary metric by more than this. */
   minimumImprovement?: number
   policy?: ObjectivePolicy
-  evaluation?: EvaluateCandidateOptions
+  /**
+   * Evaluator options for every move. `nonActionableAca` is left out: a
+   * search recommends a schedule, so it keeps the evaluator's refusal of
+   * unpriced ACA evidence.
+   */
+  evaluation?: Omit<EvaluateCandidateOptions, 'nonActionableAca'>
   /** Base plan patch every mutated schedule is applied on top of. */
   basePatch?: Record<string, unknown>
 }
@@ -70,6 +75,14 @@ export function refineConversionSchedule(
   seedConversions: Array<{ year: number; amount: number }>,
   options: CoordinateDescentOptions = {},
 ): CoordinateDescentResult {
+  // The option type omits nonActionableAca, but a JS caller can still pass
+  // it. Refused, not stripped: a copy of the options would lose the
+  // legacy-aggregate capability their identity carries.
+  if ((options.evaluation as EvaluateCandidateOptions | undefined)?.nonActionableAca === 'disclose') {
+    throw new TypeError(
+      "refineConversionSchedule refuses evaluation.nonActionableAca 'disclose': a search recommends a conversion schedule, and a schedule cannot be sized against an unpriced ACA credit.",
+    )
+  }
   const policy = options.policy ?? maximizeAfterTaxEstate
   const maxSimulations = options.maxSimulations ?? DEFAULT_MAX_SIMULATIONS
   const coarseStep = options.coarseStepDollars ?? DEFAULT_COARSE_STEP

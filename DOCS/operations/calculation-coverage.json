@@ -183,9 +183,6 @@
       "spending-total-annual",
       "stochastic-frontier-variant-axis",
       "surplus-invested-annual",
-      "sustainable-spending-result-max-base-annual",
-      "sustainable-spending-result-simulation-count",
-      "sustainable-spending-result-spending-slack-dollars",
       "swr-rule-result-depletion-year",
       "swr-rule-result-end-year",
       "swr-rule-result-ending-after-tax-estate",
@@ -226,7 +223,10 @@
       "simple-candidate-evaluation-executed-conversion-total",
       "simple-candidate-evaluation-incomplete-computation-years",
       "simple-candidate-evaluation-lifetime-tax-delta",
-      "simple-candidate-evaluation-money-lasts-years-delta"
+      "simple-candidate-evaluation-money-lasts-years-delta",
+      "sustainable-spending-result-max-base-annual",
+      "sustainable-spending-result-simulation-count",
+      "sustainable-spending-result-spending-slack-dollars"
     ],
     "noRecordYet": [
       "bucket-lens-allocation",
@@ -1011,7 +1011,7 @@
   "attestationsDerived": {
     "catalogued": 64,
     "excludedWithReason": 0,
-    "notYetReviewed": 163
+    "notYetReviewed": 164
   },
   "shards": [
     {

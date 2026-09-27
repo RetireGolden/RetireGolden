@@ -396,6 +396,17 @@ describe('objective policies and ranking', () => {
 })
 
 describe('runDecisionTournament', () => {
+  it("refuses a JS caller's nonActionableAca 'disclose' before evaluating anything", () => {
+    const ctx = createDecisionContext(tradHeavyPlan(), simOptions())
+    const evaluation = { nonActionableAca: 'disclose' } as unknown as NonNullable<
+      Parameters<typeof runDecisionTournament>[2]
+    >['evaluation']
+    expect(() => runDecisionTournament(ctx, [simpleRothConversionGenerator], { evaluation })).toThrow(TypeError)
+    expect(() => runDecisionTournament(ctx, [simpleRothConversionGenerator], { evaluation })).toThrow(
+      /refuses evaluation\.nonActionableAca 'disclose'/,
+    )
+  })
+
   it('prices aggregate bracket-fill and milp candidates without selecting either', () => {
     const ctx = createDecisionContext(tradHeavyPlan(), simOptions())
     // A deliberately over-converting "solver" schedule alongside the simple fills.

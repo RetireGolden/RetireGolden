@@ -8,13 +8,17 @@
  * bequest target, entered in today's dollars and inflated to nominal
  * end-of-plan dollars). Spending phases, one-time goals, healthcare, taxes, and
  * every other ledger cross-effect apply unchanged — the solver never builds
- * its own cash-flow approximation. Deterministic under a hard simulation cap:
- * fixed probe sequence, integer-dollar midpoints, no randomness.
+ * its own cash-flow approximation. A Marketplace year whose premium tax credit
+ * the ledger cannot price counts its full premium, as the ledger already funds
+ * it, and the result names those years. Deterministic under a hard simulation
+ * cap: fixed probe sequence, integer-dollar midpoints, no randomness.
  */
 
 import { formatGroupedNumber, formatWholeUsd } from '../internal/evidenceFormat.js'
 import { evaluateCandidate, planForCandidate, type EvaluateCandidateOptions } from './evaluateCandidate.js'
 import { nominalDollarsAtPlanEnd } from './objectives.js'
+import { ACA_GROSS_PREMIUM_DIAGNOSTIC_LEAD } from './spendingSolverDiagnostics.js'
+import type { AcaSupportCode } from '../projection/types.js'
 import type { DecisionCandidate, DecisionContext, ExactDecisionEvaluation } from './types.js'
 
 export interface SustainableSpendingOptions {
@@ -34,13 +38,16 @@ export interface SustainableSpendingOptions {
    * `candidateResult` is excluded: every probe must simulate its own spending
    * level, so a cached projection would poison the feasibility test.
    */
-  evaluation?: Omit<EvaluateCandidateOptions, 'candidateResult'>
+  evaluation?: Omit<EvaluateCandidateOptions, 'candidateResult' | 'nonActionableAca'>
 }
 
 export interface SustainableSpendingResult {
   /**
    * Highest feasible annual base spending found (today's dollars), or null
-   * when even zero base spending depletes or breaks the estate floor.
+   * when even the lowest valid level (the required spending floor, 0 when
+   * the plan has none) depletes or breaks the estate floor, or when the solve
+   * bailed out on a diagnostic evaluation. Under guardrails feasibility is not
+   * monotone in the base amount, so a higher feasible level can exist.
    */
   maxBaseAnnual: number | null
   /**
@@ -60,15 +67,69 @@ export interface SustainableSpendingResult {
   limitingConstraint: 'depletion' | 'estate-floor' | null
   /**
    * Number of full-projection probes the solve ran: one seed probe at the
-   * plan's base spending; when feasible, doubling probes from max(2 × seed,
+   * plan's base spending (rounded to a whole dollar, and raised to the
+   * required spending floor rounded up when it would fall below it); when
+   * feasible, doubling probes from max(2 × seed,
    * MINIMUM_BRACKET_PROBE_DOLLARS) until one fails or the budget or the
-   * unbounded ceiling is reached; when infeasible, one probe at 0; then one
-   * bisection probe per halving while the bracket exceeds the resolution and
-   * the budget (maxSimulations) is not spent.
+   * unbounded ceiling is reached; when infeasible and above the required
+   * spending floor (`expenses.requiredAnnual` rounded up, 0 when none), one
+   * probe at that floor; then one bisection probe per halving while the
+   * bracket exceeds the resolution and the budget (maxSimulations) is not
+   * spent.
    */
   simulationCount: number
+  /**
+   * True when the solve ran a probe at a base of 0 (a plan with no required
+   * spending floor) and that run depleted: spending nothing still runs out of
+   * money, so costs outside base spending exceed what the plan can fund.
+   * False otherwise, including when the budget ran out before 0 was probed.
+   */
+  zeroSpendingDepletes: boolean
+  /**
+   * Years whose ACA premium tax credit the ledger could not price
+   * (`aca.readiness === 'nonActionable'`) in the evaluation the result rests
+   * on: the best feasible probe; with no answer, the probe the failure
+   * diagnostic describes (the floor probe when it ran, else the seed). The
+   * ledger budgets the full Marketplace premium in each; the credit lies
+   * between 0 and that premium (26 U.S.C. 36B(b)(2)). Which way a credit
+   * there would move the answer is `acaGrossPremiumDirection`. Empty when
+   * every Marketplace year is priced, the plan has none, or the solve bailed
+   * out on a diagnostic evaluation.
+   */
+  acaGrossPremiumYears: number[]
+  /**
+   * The support codes that blocked pricing in those years, distinct, in
+   * first-seen order: every code the ledger treats as blocking, which is all
+   * but the two informational tax-exempt-interest codes.
+   */
+  acaGrossPremiumReasons: AcaSupportCode[]
+  /**
+   * How a credit in `acaGrossPremiumYears` would move the answer; null when
+   * there are no such years. 'conservative' on a fixed-target plan: at fixed
+   * spending a lower premium lowers what that year must withdraw, so a credit
+   * would likely leave room to spend more. That is measured on the
+   * fixed-target examples, not proven for every plan. 'uncertain' under an
+   * adaptive spending policy (guardrails): a lower cost changes when the
+   * guardrails cut or raise, and a ledger that priced the credit has been
+   * measured to solve lower.
+   */
+  acaGrossPremiumDirection: 'conservative' | 'uncertain' | null
+  /**
+   * Why the solve stopped where it did, in order. When `acaGrossPremiumYears`
+   * is non-empty the last entry is the sentence naming them.
+   */
   diagnostics: string[]
 }
+
+/**
+ * Support codes the ledger publishes on a year without blocking it
+ * (`projection/internal/annualAcaResultPublication.ts` prices a year only when
+ * every other code is absent), so they are never a reason a year is unpriced.
+ */
+const INFORMATIONAL_ACA_SUPPORT_CODES: ReadonlySet<AcaSupportCode> = new Set([
+  'tax-exempt-interest-plan-derived',
+  'tax-exempt-interest-contract-contradicted',
+])
 
 const DEFAULT_MAX_SIMULATIONS = 24
 const DEFAULT_RESOLUTION_DOLLARS = 500
@@ -120,7 +181,11 @@ export function solveMaxSustainableSpending(
 
   // Runtime guard behind the Omit: a cached candidateResult from a JS caller
   // would make every probe reuse one projection instead of simulating its own.
-  const evaluationOptions: EvaluateCandidateOptions = { ...options.evaluation }
+  // A year whose ACA credit cannot be priced is already funded at its full
+  // premium by the ledger, so a probe stays a valid feasibility test on that
+  // ledger; the solve discloses those years instead of refusing every probe.
+  // Always 'disclose': the option type leaves callers no way to ask for 'refuse'.
+  const evaluationOptions: EvaluateCandidateOptions = { ...options.evaluation, nonActionableAca: 'disclose' }
   delete evaluationOptions.candidateResult
 
   // Every probe runs on the basePatch-applied plan, so both the "current"
@@ -145,6 +210,10 @@ export function solveMaxSustainableSpending(
       converged: false,
       limitingConstraint: null,
       simulationCount: 0,
+      zeroSpendingDepletes: false,
+      acaGrossPremiumYears: [],
+      acaGrossPremiumReasons: [],
+      acaGrossPremiumDirection: null,
       diagnostics: [
         'This plan uses amortized spending (ABW), which recomputes annual spending from the portfolio each year — there is no fixed base-spending level to solve for. Switch the spending policy to fixed target or guardrails to use this solver.',
       ],
@@ -154,6 +223,11 @@ export function solveMaxSustainableSpending(
   const diagnostics: string[] = []
   let simulationCount = 0
   let bestFeasible: { amount: number; evaluation: ExactDecisionEvaluation } | null = null
+  // The seed probe's evaluation, and the floor probe's once it runs: a solve
+  // with no feasible level reports on the one its failure diagnostic names.
+  let seedEvaluation: ExactDecisionEvaluation | null = null
+  let floorEvaluation: ExactDecisionEvaluation | null = null
+  let zeroSpendingDepletes = false
   // Reason the current upper (infeasible) bracket bound failed; tightening the
   // bracket keeps this in sync with the bound the answer finally rests against.
   let limitingConstraint: 'depletion' | 'estate-floor' | null = null
@@ -161,6 +235,7 @@ export function solveMaxSustainableSpending(
   const probe = (baseAnnual: number): { feasible: boolean; evaluation: ExactDecisionEvaluation } => {
     simulationCount++
     const evaluation = evaluateCandidate(ctx, spendingCandidate(options.basePatch, baseAnnual), evaluationOptions)
+    seedEvaluation ??= evaluation
     const depleted = evaluation.candidateResult.depletionYear !== null
     const breaksFloor =
       evaluation.candidateSummary.endingAfterTaxEstate <
@@ -172,11 +247,49 @@ export function solveMaxSustainableSpending(
     if (!feasible && evaluation.recommendationState !== 'diagnostic') {
       limitingConstraint = depleted ? 'depletion' : 'estate-floor'
     }
+    if (baseAnnual === 0 && depleted && evaluation.recommendationState !== 'diagnostic') zeroSpendingDepletes = true
     return { feasible, evaluation }
   }
 
   const finish = (lower: number | null, upper: number | null): SustainableSpendingResult => {
     const converged = lower !== null && upper !== null && upper - lower <= resolutionDollars
+    // Unpriced ACA years of the run the result rests on (the best feasible
+    // probe; with no answer, the floor probe when it ran, else the seed); a
+    // diagnostic run is no basis and reports none.
+    const reported = bestFeasible?.evaluation ?? floorEvaluation ?? seedEvaluation
+    const grossPremiumYears =
+      reported === null || reported.recommendationState === 'diagnostic'
+        ? []
+        : reported.candidateResult.years.filter((year) => year.aca?.readiness === 'nonActionable')
+    const acaGrossPremiumYears = grossPremiumYears.map((year) => year.year)
+    const acaGrossPremiumReasons = [
+      ...new Set(grossPremiumYears.flatMap((year) => year.aca?.supportCodes ?? [])),
+    ].filter((code) => !INFORMATIONAL_ACA_SUPPORT_CODES.has(code))
+    const acaGrossPremiumDirection =
+      acaGrossPremiumYears.length === 0
+        ? null
+        : (effectivePlan.expenses.spendingPolicy?.mode ?? 'fixedTarget') === 'fixedTarget'
+          ? 'conservative'
+          : 'uncertain'
+    // The codes are merged across years, so with several years and several
+    // codes the sentence says each year has at least one of them.
+    const acaReasonsText =
+      acaGrossPremiumReasons.length === 0
+        ? ''
+        : acaGrossPremiumYears.length === 1 || acaGrossPremiumReasons.length === 1
+          ? ` (${acaGrossPremiumReasons.join(', ')})`
+          : ` (in each of those years, at least one of these applies: ${acaGrossPremiumReasons.join(', ')})`
+    const acaLead =
+      `${ACA_GROSS_PREMIUM_DIAGNOSTIC_LEAD}${acaGrossPremiumYears.join(', ')}${acaReasonsText}; ` +
+      'the ledger budgets the full Marketplace premium in those years'
+    const acaDisclosure =
+      acaGrossPremiumDirection === null
+        ? null
+        : bestFeasible === null
+          ? `${acaLead}, and a credit there would lower that cost.`
+          : acaGrossPremiumDirection === 'conservative'
+            ? `${acaLead}, so a household that receives a credit there would likely be able to spend somewhat more than this answer.`
+            : `${acaLead}, and a credit there could move this answer up or down because the spending guardrails respond to healthcare costs.`
     if (!converged && lower !== null) {
       diagnostics.push(
         `Stopped before converging to $${formatGroupedNumber(resolutionDollars)}; the result is a feasible lower bound.`,
@@ -189,12 +302,19 @@ export function solveMaxSustainableSpending(
       converged,
       limitingConstraint,
       simulationCount,
-      diagnostics,
+      zeroSpendingDepletes,
+      acaGrossPremiumYears,
+      acaGrossPremiumReasons,
+      acaGrossPremiumDirection,
+      diagnostics: acaDisclosure === null ? diagnostics : [...diagnostics, acaDisclosure],
     }
   }
 
-  // Bracket the answer starting from the current base spending.
-  const seedAmount = Math.max(0, Math.round(currentBaseAnnual))
+  // Bracket the answer starting from the current base spending, rounded to a
+  // whole dollar but never below the required floor rounded up: the plan
+  // checks refuse a base below that floor, so a probe there would only come
+  // back as an invalid-plan diagnostic.
+  const seedAmount = Math.max(0, Math.round(currentBaseAnnual), Math.ceil(effectivePlan.expenses.requiredAnnual ?? 0))
   const seed = probe(seedAmount)
   if (seed.evaluation.recommendationState === 'diagnostic') {
     diagnostics.push(...seed.evaluation.diagnostics)
@@ -224,18 +344,40 @@ export function solveMaxSustainableSpending(
     }
   } else {
     upper = seedAmount
-    if (upper === 0) {
-      diagnostics.push('Even zero base spending depletes the portfolio or breaks the estate floor.')
+    // The plan checks refuse a base below the required spending floor, so the
+    // lowest valid probe is that floor, not 0: a probe at 0 would come back as
+    // an invalid-plan diagnostic and read as "even zero spending depletes".
+    const floorAmount = Math.min(seedAmount, Math.max(0, Math.ceil(effectivePlan.expenses.requiredAnnual ?? 0)))
+    // Names the constraint the lowest level failed (read when it has failed):
+    // running out of money, or the ending estate falling short of the target;
+    // with no target, only a negative estate can fail it.
+    const floorFails = (): string =>
+      `${
+        floorAmount === 0
+          ? 'Even zero base spending'
+          : `Even the required spending floor (${formatWholeUsd(floorAmount)}/yr)`
+      } ${
+        limitingConstraint !== 'estate-floor'
+          ? 'depletes the portfolio before the plan ends.'
+          : estateFloorTodayDollars > 0
+            ? `leaves an ending after-tax estate below the ${formatWholeUsd(estateFloorTodayDollars)} target (today's dollars).`
+            : 'leaves a negative ending after-tax estate.'
+      }`
+    if (upper === floorAmount) {
+      diagnostics.push(floorFails())
       return finish(null, upper)
     }
     if (simulationCount >= maxSimulations) {
       diagnostics.push('Simulation budget exhausted before any feasible spending level was found.')
       return finish(null, upper)
     }
-    if (probe(0).feasible) {
-      lower = 0
+    const floorProbe = probe(floorAmount)
+    floorEvaluation = floorProbe.evaluation
+    if (floorProbe.feasible) {
+      lower = floorAmount
     } else {
-      diagnostics.push('Even zero base spending depletes the portfolio or breaks the estate floor.')
+      if (floorProbe.evaluation.recommendationState === 'diagnostic') diagnostics.push(...floorProbe.evaluation.diagnostics)
+      else diagnostics.push(floorFails())
       return finish(null, upper)
     }
   }
