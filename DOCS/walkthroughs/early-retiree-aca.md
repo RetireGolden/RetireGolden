@@ -1,5 +1,14 @@
 # Walkthrough reference: "Early retiree & the ACA cliff", year 2026 by hand
 
+**Read this first (2026-09-27).** Parts I and II were derived on 2026-09-22, when 2026 was the only year whose
+Marketplace credit the engine could price. Since decision D-ACA-2027-TABLE (2026-09-26) 2027 is priced too, on its
+published figures (Rev. Proc. 2026-26 and the HHS 2026 poverty guidelines), with its income-tax figures still projected
+from 2026; 2028 and later stay unpriced until their figures are published. Part II's revisions 2 and 3 give the 2027
+figures the rows module holds, and the example's copy says the same since decision D-ACA-EXAMPLE-COPY (2026-09-27).
+Where a passage below describes 2027 as unpriced it records the state it was derived against: part I §3 A5 is restated
+with that state kept as history, part I §4, part II §2 row 28, §2f and §6 carry a note, and part II's revision 2 lists
+the 2027 rows the credit reaches and supersedes them.
+
 Independent hand derivation of the first projection year of the curated example `early-retiree-aca`
 (`packages/planner-ui/src/planner/examples/buildEarlyRetireeAca.ts`), for the public walkthrough page and the test
 that will hold the engine to it.
@@ -390,22 +399,26 @@ from `parseExamplePlan`, a planner-ui helper, and it sets SLCSP = enrollment = t
 The standard UI "does not yet author `acaYears`" (domain rules §8), so a user-built copy of this plan would show no
 credit at all.
 
-**A5. Only 2026 is an actionable ACA year.** *Resolved 2026-09-27 (decision D-ACA-EXAMPLE-COPY): the example's
-`lookFor` and learn article now say what it shows, against the engine of that day, on which 2027 is priced too
-(decision D-ACA-2027-TABLE): credits in 2026 and 2027, the full premium from 2028, the benchmark assumed equal to
-the $1,000 premium (so editing the premium turns the credit off), and conversions sized to the 10% bracket, not to
-the cliff. The text below records the state it was derived against.* 2027 and 2028 have contracts, but no published pack. A stand-in year
-"reports `tax-year-parameters-unsupported`, exposes no inflation-scaled FPL as actionable evidence, and funds gross
-premium" (domain rules §8; `annualHealthcareExpenses.ts` lines 285–287). So the credit exists in exactly one year of
-this example. The golden-test retune comment ("its only actionable ACA year") says the same. The public copy is
-looser than the mechanics in two places:
-- `lookFor` says "A positive premium credit in the current-year ACA ledger", which is right, but only for 2026.
-- The learn article says the conversions are "sized to stay below the subsidy cliff". The mechanism is `topOfBracket`,
-  not `acaCliff`: the sizing reads only the bracket, and the builder comment says the 10% target was chosen so the
-  baseline stays under the cliff (filling the 12% bracket would cross it). The copy is right about the intent and
-  loose about the mechanism; the conversion lands 34,100 below the cliff because of the chosen target.
+**A5. Which years are actionable, and what the example's copy says (restated 2026-09-27).** On the engine since
+decision D-ACA-2027-TABLE (2026-09-26), **2026 and 2027 are actionable ACA years**: each coverage year has published
+figures (`params/acaCoverageYears.ts`), and 2027 carries the informational code `income-tax-parameters-projected`
+because its income-tax figures are the 2026 ones projected at the plan's 2.5%. **2028** has a contract but no published
+coverage-year figures, so it reports `tax-year-parameters-unsupported` and funds the gross premium. The conversions
+fill the top of the **10% bracket** (`topOfBracket`), not the cliff (`acaCliff`): the sizing reads only the bracket,
+and the builder chose that target because it keeps the baseline under the cliff where filling the 12% bracket would
+cross it; the 2026 conversion lands 34,100 below the cliff because of it. Since decision D-ACA-EXAMPLE-COPY (2026-09-27)
+the example's `lookFor` and learn article say exactly this (credits in 2026 and 2027, the full premium from 2028, the
+benchmark assumed equal to the $1,000 premium so that editing the premium turns the credit off, and conversions sized to
+the bracket), and `exampleCopyFigures.test.ts` holds the copy's years and figures to the engine.
 
-The page should say both plainly.
+*As derived on 2026-09-22 (history).* Only 2026 was actionable then: 2027 and 2028 had contracts but no published
+figures, a stand-in year "reports `tax-year-parameters-unsupported`, exposes no inflation-scaled FPL as actionable
+evidence, and funds gross premium" (domain rules §8; `annualHealthcareExpenses.ts` lines 285–287), so the credit existed
+in exactly one year of the example, as the golden-test retune comment ("its only actionable ACA year") also said. The
+copy of that day was looser than the mechanics in two places: its `lookFor` said "A positive premium credit in the
+current-year ACA ledger", which was right only for 2026, and its learn article said the conversions were "sized to stay
+below the subsidy cliff", when the mechanism was the bracket, as above. This section asked for both to be said plainly,
+which the copy now does.
 
 **A6. Medicare start for someone born on the 1st.** The `YearExpenses.healthcare` doc splits the year "at the
 Medicare birth month". Only an in-body comment (`annualHealthcareExpenses.ts` lines 120–121) says "the prior-month
@@ -461,7 +474,8 @@ only in years with a credit-enabled Marketplace premium"). 2029 is not a numeric
 threshold is far away. It does sit on the boundary described in A6: the real Medicare start would be December 2028.
 
 **2027 is the better second year for this example**, because it shows what happens to the example's headline
-mechanism, and nothing in it is a knife-edge.
+mechanism, and nothing in it is a knife-edge. *(Written 2026-09-22, when 2027 was not priced. Since decision
+D-ACA-2027-TABLE it is, so point 1 below describes that state; part II's revisions 2 and 3 give the priced year.)*
 1. **The credit disappears, and not because of the cliff.** 2027 has no published pack. The year reports
    `readiness: 'nonActionable'`, `supportCodes: ['tax-year-parameters-unsupported']` and `cliffState: 'unsupported'`.
    `householdMagi`, `federalPovertyLine`, `fplPct` and `modeledAllowablePtc` are all null, and
@@ -708,7 +722,7 @@ were actionable. Then come flows, growth and the snapshot.
 | 25 | Bisection landing (traced) | **10,762.494868040083** = 5,916,744,125,644,799/2³⁹. That is **0.005131959917 below** 10,762.50, and it displays as **10,762.49** | The loop starts with `hi` = max(12,709.999999999998 − 1,947.5, 1,000) = 10,762.499999999998. For `metricAt(hi)`, the sum 18,450 + 10,762.499999999998 is a round-half-to-even tie and rounds to 29,212.5, so the metric is 29,212.5 − 16,502.5 = 12,710.0, which is **above** the ceiling. The doubling loop never runs. 21 halvings of [0, hi] follow, and every midpoint tests at or under the ceiling, so `lo` ends at hi × (1 − 2⁻²¹). **It does not land on 10,762.50.** | `rothConversion.ts#sizeRothConversion` lines 173–186 (body); Appendix B1 | |
 | 26 | Gross conversion | equals the taxable amount | No nondeductible basis, so the taxable fraction is 1. One owner, so the raw sized amount is used with no cent split | `grossAmountForTaxable` (TargetPlan lines 161–184, body); `aggregateRothConversionOwnerAllocation.ts` lines 374–388 ("A household with one convertible owner has nothing to split, and its slice is the sized amount itself") | |
 | 27 | Safety-net trim | none | the floor is 0 | TargetPlan lines 299–303 (body) | |
-| 28 | Does the ACA enter sizing? | **No** | `topOfBracket` reads only taxable income. In 2027 there is no credit to price anyway | `rothConversion.ts#metricFor` | |
+| 28 | Does the ACA enter sizing? | **No** | `topOfBracket` reads only taxable income. In 2027 there is no credit to price anyway (as derived on 2026-09-22; since revision 2 the 2027 credit is priced, and the sizing still reads only taxable income) | `rothConversion.ts#metricFor` | |
 | 29 | Execution | IRA −10,762.50; Roth +10,762.50 | a pre-growth flow; not a withdrawal, and never penalized | 2026 rows 25 and 79 | |
 
 ### 2d. Federal tax and Florida (indexed stand-in figures)
@@ -1047,7 +1061,15 @@ and not from the stream's own `startYear`. The stream starts in 2026, the projec
 
 ## 6. What the page should tell a reader
 
-**Why the credit is gone in 2027.** Say it plainly, in words close to these:
+*Superseded (2026-09-26, decision D-ACA-2027-TABLE).* This section was written for a 2027 whose credit the engine
+could not price, and it no longer describes the example: 2027 is now priced at 10,924.78 on its published figures
+(revisions 2 and 3 above), with the note that its income-tax figures are projected, so the cash and investable figures
+in its cent table moved too (revision 3). Do not put this text on the page; it is kept as the record of what was
+recommended then. What still holds is the reason for the cent differences: the conversion is found by a search that
+stops within a cent below the bracket top, and the figures computed from it inherit that. The rows module and the
+evidence file carry the current hand and engine figures side by side.
+
+**Why the credit is gone in 2027 (as of 2026-09-22).** Say it plainly, in words close to these:
 
 > In 2027 the plan pays the full Marketplace premium, 12,660, with no premium tax credit. That is not the cliff.
 > Casey's 2027 income is about the same distance below the 400% line as in 2026: about 182% of the poverty line,
