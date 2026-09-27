@@ -166,7 +166,7 @@ describe('SpendingSolverPage statements', () => {
       }),
     )
     await renderSolved()
-    const well = container.querySelector('.solver-failure')!.textContent!
+    const well = container.querySelector('.solver-failure')!.textContent
     expect(well).toContain('Even zero base spending depletes')
     expect(well).not.toContain('below-100-fpl-exception-unsupported')
     expect(container.querySelector('[data-testid="aca-gross-premium-note"]')?.textContent).toBe(
@@ -191,7 +191,7 @@ describe('SpendingSolverPage statements', () => {
       }),
     )
     await renderSolved(plan)
-    const well = container.querySelector('.solver-failure')!.textContent!
+    const well = container.querySelector('.solver-failure')!.textContent
     expect(well).toContain('Even the required spending floor ($34,000/yr) depletes')
     expect(well).not.toContain(FIXED_COSTS)
   })
@@ -241,7 +241,7 @@ describe('SpendingSolverPage statements', () => {
       }),
     )
     await renderSolved()
-    const well = container.querySelector('.solver-failure')!.textContent!
+    const well = container.querySelector('.solver-failure')!.textContent
     expect(well).toContain('Simulation budget exhausted')
     expect(well).not.toContain(FIXED_COSTS)
   })
@@ -302,11 +302,11 @@ describe('SpendingSolverPage statements', () => {
     const heading = heroHeading()
     expect(heading.textContent).toContain('$72,000')
     expect(heading.style.color).toBe('var(--good)')
-    const hero = container.querySelector('.mc-hero')!.textContent!
+    const hero = container.querySelector('.mc-hero')!.textContent
     expect(hero).toContain('That covers your current $72,030 baseline with less than $100 a year to spare')
     expect(hero).not.toContain('BELOW')
     expect(hero).not.toContain('cannot sustain')
-    const tiles = container.querySelector('.stat-grid')!.textContent!
+    const tiles = container.querySelector('.stat-grid')!.textContent
     expect(tiles).toContain('Under $100/yr')
     expect(tiles).not.toContain('-$30')
   })
@@ -316,7 +316,7 @@ describe('SpendingSolverPage statements', () => {
     await renderSolved()
 
     expect(heroHeading().style.color).toBe('var(--bad)')
-    const hero = container.querySelector('.mc-hero')!.textContent!
+    const hero = container.querySelector('.mc-hero')!.textContent
     expect(hero).toContain('That is $130 per year BELOW your current $72,030 baseline.')
     expect(hero).toContain("Your projection cannot sustain today's spending through the horizon.")
   })
@@ -334,7 +334,7 @@ describe('SpendingSolverPage statements', () => {
     await renderSolved()
 
     expect(heroHeading().style.color).toBe('var(--bad)')
-    const hero = container.querySelector('.mc-hero')!.textContent!
+    const hero = container.querySelector('.mc-hero')!.textContent
     expect(hero).toContain("Your projection cannot sustain today's spending and still leave your bequest target.")
     expect(hero).not.toContain('through the horizon')
   })
@@ -345,7 +345,7 @@ describe('SpendingSolverPage statements', () => {
     await renderSolved()
 
     expect(heroHeading().style.color).toBe('var(--good)')
-    const hero = container.querySelector('.mc-hero')!.textContent!
+    const hero = container.querySelector('.mc-hero')!.textContent
     expect(hero).toContain('less than $100 a year to spare')
     expect(hero).not.toContain('cannot sustain')
   })
@@ -362,7 +362,7 @@ describe('SpendingSolverPage statements', () => {
     const guardrails = createSamplePlan()
     guardrails.expenses.spendingPolicy = { mode: 'withdrawalRateGuardrails' }
     await renderSolved(guardrails)
-    const explainer = container.querySelector('.ss-explainer')!.textContent!
+    const explainer = container.querySelector('.ss-explainer')!.textContent
     expect(explainer).not.toContain('therefore also passes')
     expect(explainer).toContain('so that rounded figure was not itself tested')
   })
@@ -382,7 +382,7 @@ describe('SpendingSolverPage statements', () => {
     const card = Array.from(container.querySelectorAll('.card')).find(
       (element) => element.querySelector('h2')?.textContent === 'What shape of spending?',
     )
-    return card!.textContent!
+    return card!.textContent
   }
 
   it("names the union of the shapes' unpriced years once, collapsed into a run", async () => {

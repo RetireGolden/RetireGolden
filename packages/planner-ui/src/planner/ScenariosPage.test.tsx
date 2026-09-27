@@ -1044,7 +1044,7 @@ describe('ScenariosPage comparison lifecycle', () => {
       await Promise.resolve()
     })
 
-    const text = container.textContent!
+    const text = container.textContent
     expect(text).toContain(
       "Baseline and proposal: The premium tax credit isn't counted in 2027 and 2028: the planner doesn't yet collect the household details the credit needs.",
     )
