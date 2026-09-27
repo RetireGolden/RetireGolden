@@ -38,22 +38,38 @@ function metricsFromSummary(summary: MonteCarloSummary, seed: number): Stochasti
 }
 
 /**
+ * What two Monte Carlo runs must share to be compared: the success rate, the
+ * number of paths it came from, and the calendar year the paths start in
+ * (a MonteCarloSummary does not carry its start year, so the caller states
+ * the one it ran with).
+ */
+export interface MonteCarloRateRun {
+  successRate: MonteCarloSummary['successRate']
+  pathCount: MonteCarloSummary['pathCount']
+  startYear: number
+}
+
+/**
  * The change in Monte Carlo success rate from a baseline run to a proposal run
  * on the same market paths: compareScalars(baseline.successRate,
  * proposal.successRate), a fraction of paths, proposal minus baseline.
  * Refuses (RangeError) two runs with different path counts: a change from a
  * rate on N paths to a rate on M paths is not a change on shared paths, and
- * the baseline would not be the rate the reader was shown.
+ * the baseline would not be the rate the reader was shown. Refuses two runs
+ * from different start years for the same reason: their paths cover different
+ * years, so the difference is not a change on shared markets.
  *
  * @see DOCS/calculations/insights/insight-monte-carlo-success-delta.md
  */
-export function compareMonteCarloSuccessRates(
-  baseline: Pick<MonteCarloSummary, 'successRate' | 'pathCount'>,
-  proposal: Pick<MonteCarloSummary, 'successRate' | 'pathCount'>,
-): ScalarComparison {
+export function compareMonteCarloSuccessRates(baseline: MonteCarloRateRun, proposal: MonteCarloRateRun): ScalarComparison {
   if (baseline.pathCount !== proposal.pathCount) {
     throw new RangeError(
       `Success rates are compared only on the same number of paths; the baseline ran ${baseline.pathCount} and the proposal ${proposal.pathCount}`,
+    )
+  }
+  if (baseline.startYear !== proposal.startYear) {
+    throw new RangeError(
+      `Success rates are compared only from one start year; the baseline starts in ${baseline.startYear} and the proposal in ${proposal.startYear}`,
     )
   }
   return compareScalars(baseline.successRate, proposal.successRate)

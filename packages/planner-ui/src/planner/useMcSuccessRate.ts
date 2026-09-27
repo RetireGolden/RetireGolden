@@ -20,6 +20,7 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 
+import type { MonteCarloRateRun } from '@retiregolden/engine/decisions'
 import type { Plan } from '@retiregolden/engine/model/plan'
 import type { MonteCarloSummary } from '@retiregolden/engine/montecarlo/run'
 import { DEFAULT_PATH_COUNT, runMonteCarlo, type MonteCarloRunOptions } from '../mc/pool'
@@ -56,10 +57,11 @@ export function isHeadlineMcConfig(plan: Plan, config: McHeadlineConfig): boolea
   )
 }
 
-/** What an in-flight run resolves to: the rate and the path count it came from. */
+/** What an in-flight run resolves to: the rate, the path count it came from, and the year its paths start. */
 interface McRunResult {
   rate: number
   pathCount: number
+  startYear: number
 }
 
 const inflight = new WeakMap<Plan, Promise<McRunResult>>()
@@ -71,18 +73,26 @@ const pendingPathCount = new WeakMap<Plan, number>()
 // like the in-flight map: an edit produces a new plan object, so a published
 // run can never outlive its plan.
 const published = new WeakMap<Plan, MonteCarloSummary>()
+// The start year each published run's paths begin in. A plan object outlives
+// a New Year when it is not edited, so a published run can be from an earlier
+// start year than the clock's; whatever is compared with it must run from the
+// same year (PR #754 findings 1 and 2).
+const publishedStartYear = new WeakMap<Plan, number>()
 const listeners = new Set<() => void>()
 
 /**
- * Adopt a completed headline-configuration run for every subscriber of this
- * plan object. Precision is never traded away: a coarser later run does not
- * replace a finer one. The Monte Carlo page shows the published run whenever
- * one exists under this configuration, so the store and the page agree.
+ * Adopt a completed headline-configuration run, simulated from `startYear`,
+ * for every subscriber of this plan object. Precision is never traded away: a
+ * coarser later run from the same start year does not replace a finer one (a
+ * run from another start year is a different simulation and replaces it). The
+ * Monte Carlo page shows the published run whenever one exists under this
+ * configuration, so the store and the page agree.
  */
-export function publishMcHeadline(plan: Plan, summary: MonteCarloSummary): void {
+export function publishMcHeadline(plan: Plan, summary: MonteCarloSummary, startYear: number): void {
   const current = published.get(plan)
-  if (current !== undefined && current.pathCount > summary.pathCount) return
+  if (current !== undefined && publishedStartYear.get(plan) === startYear && current.pathCount > summary.pathCount) return
   published.set(plan, summary)
+  publishedStartYear.set(plan, startYear)
   for (const listener of listeners) listener()
 }
 
@@ -96,9 +106,14 @@ export function publishedMcSummary(plan: Plan): MonteCarloSummary | undefined {
  * the KPI bar attaches to it instead of launching a second simulation of the
  * same configuration. A run already in flight for this plan object is kept.
  */
-export function registerMcHeadlineRun(plan: Plan, run: Promise<MonteCarloSummary>, pathCount: number): void {
+export function registerMcHeadlineRun(
+  plan: Plan,
+  run: Promise<MonteCarloSummary>,
+  pathCount: number,
+  startYear: number,
+): void {
   if (inflight.get(plan) !== undefined) return
-  const result = run.then((s) => ({ rate: s.successRate, pathCount: s.pathCount }))
+  const result = run.then((s) => ({ rate: s.successRate, pathCount: s.pathCount, startYear }))
   result.catch(() => {
     inflight.delete(plan)
   })
@@ -137,12 +152,17 @@ export function useMcHeadline(plan: Plan): MonteCarloSummary | undefined {
  * The headline configuration's run options for a plan: the headline model
  * built from this plan (its inflation mean, 12 percent return volatility, and
  * per-class shocks when it holds allocated accounts), the plan-id seed, the
- * clock's start year, and the given path count. A comparison run for a
- * changed plan passes the base plan here, so both runs see one market.
+ * given start year (the clock's by default), and the given path count. A
+ * comparison run for a changed plan passes the base plan and the base run's
+ * path count and start year here, so both runs see one market.
  */
-export function headlineMcRunOptions(plan: Plan, pathCount: number = DEFAULT_PATH_COUNT): MonteCarloRunOptions {
+export function headlineMcRunOptions(
+  plan: Plan,
+  pathCount: number = DEFAULT_PATH_COUNT,
+  startYear: number = currentStartYear(),
+): MonteCarloRunOptions {
   return {
-    startYear: currentStartYear(),
+    startYear,
     pathCount,
     seed: seedFromPlanId(plan.id),
     model: buildModel(
@@ -160,20 +180,32 @@ export function headlineMcRunOptions(plan: Plan, pathCount: number = DEFAULT_PAT
  * shows: the published run when there is one (a 10,000-path Monte Carlo page
  * run included), else the run in flight, else a new default run, shared with
  * the KPI bar through the in-flight map. What an Insight preview compares a
- * changed plan against, so its "before" is the rate the reader was shown.
+ * changed plan against, so its "before" is the rate the reader was shown. It
+ * carries the start year its paths begin in, which can be earlier than the
+ * clock's when the plan object outlived a New Year; the preview runs the
+ * changed plan from that same year.
  */
-export function headlineMcRun(plan: Plan): Promise<Pick<MonteCarloSummary, 'successRate' | 'pathCount'>> {
+export function headlineMcRun(plan: Plan): Promise<MonteCarloRateRun> {
   const summary = published.get(plan)
-  if (summary !== undefined) return Promise.resolve({ successRate: summary.successRate, pathCount: summary.pathCount })
-  return successRateOf(plan).then((result) => ({ successRate: result.rate, pathCount: result.pathCount }))
+  const startYear = publishedStartYear.get(plan)
+  if (summary !== undefined && startYear !== undefined) {
+    return Promise.resolve({ successRate: summary.successRate, pathCount: summary.pathCount, startYear })
+  }
+  return successRateOf(plan).then((result) => ({
+    successRate: result.rate,
+    pathCount: result.pathCount,
+    startYear: result.startYear,
+  }))
 }
 
 function successRateOf(plan: Plan): Promise<McRunResult> {
   const existing = inflight.get(plan)
   if (existing !== undefined) return existing
-  const run = runMonteCarlo(plan, headlineMcRunOptions(plan)).then((s) => ({
+  const options = headlineMcRunOptions(plan)
+  const run = runMonteCarlo(plan, options).then((s) => ({
     rate: s.successRate,
     pathCount: s.pathCount,
+    startYear: options.startYear,
   }))
   // Successful runs stay cached (later subscribers reuse the result), but a
   // rejection is evicted so the next subscriber retries instead of replaying

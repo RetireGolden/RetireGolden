@@ -24,8 +24,10 @@ The engine's delta helper `decisions/stochastic.ts#attachment` was module-privat
 
 ```ts
 // engine/src/decisions/stochastic.ts
-/** proposal.successRate − baseline.successRate as compareScalars (a fraction); refuses summaries with different pathCount (RangeError). */
-export function compareMonteCarloSuccessRates(baseline: Pick<MonteCarloSummary, 'successRate' | 'pathCount'>, proposal: Pick<MonteCarloSummary, 'successRate' | 'pathCount'>): ScalarComparison
+/** What two runs must share to be compared (since the PR #754 review): the rate, its path count and the year its paths start in. */
+export interface MonteCarloRateRun { successRate: number; pathCount: number; startYear: number }
+/** proposal.successRate − baseline.successRate as compareScalars (a fraction); refuses runs with different pathCount or startYear (RangeError). */
+export function compareMonteCarloSuccessRates(baseline: MonteCarloRateRun, proposal: MonteCarloRateRun): ScalarComparison
 /** The private `attachment` deltas, exported, each via compareScalars. */
 export function stochasticDeltas(baseline: StochasticDecisionMetrics, candidate: StochasticDecisionMetrics): StochasticDecisionAttachment['deltas']
 // attachStochasticMetrics: each SharedPathPlan entry carries taxCalculator: ctx.taxCalculatorForPlan(entry.plan) (the baseline too) when the context has a per-plan builder; otherwise opts.taxCalculator, as before.
@@ -37,7 +39,7 @@ Detector.previewsMonteCarlo?: true        // the preview flag, on the detector, 
 export const EDITORIAL_RANKING_WEIGHT_DOLLARS = { 'spending-guardrails': 120_000 }   // replaces SUCCESS_RATE_POINT_DOLLAR_EQUIVALENT
 ```
 
-- The planner keeps its worker pool and the headline configuration, which is product configuration and already lives in one place (`HEADLINE_MC_MODEL`, `DEFAULT_PATH_COUNT`, `seedFromPlanId`). `useMcSuccessRate.ts` exports `headlineMcRun(plan)` (the published run, else the one in flight, else a new default run shared with the KPI bar; check correction 10) and `headlineMcRunOptions(plan, pathCount)` (the headline model built from this plan, the plan-id seed, the clock's start year). The card reuses the headline run for the base side, runs the previewed plan with `headlineMcRunOptions(basePlan, base.pathCount)` (the model built once, from the base plan, and the base run's path count, 10,000 included; check corrections 9 and 11), and prints `formatMcDelta(compareMonteCarloSuccessRates(base, previewed).delta)`; the formatter takes the fraction and prints points.
+- The planner keeps its worker pool and the headline configuration, which is product configuration and already lives in one place (`HEADLINE_MC_MODEL`, `DEFAULT_PATH_COUNT`, `seedFromPlanId`). `useMcSuccessRate.ts` exports `headlineMcRun(plan)` (the published run, else the one in flight, else a new default run shared with the KPI bar; check correction 10), which carries the start year its paths begin in, and `headlineMcRunOptions(plan, pathCount, startYear)` (the headline model built from this plan, the plan-id seed, the given start year, the clock's by default). The card reuses the headline run for the base side, runs the previewed plan with `headlineMcRunOptions(basePlan, base.pathCount, base.startYear)` (the model built once, from the base plan, and the base run's path count, 10,000 included, and start year; check corrections 9 and 11, and the PR #754 review below), and prints `formatMcDelta(compareMonteCarloSuccessRates(base, previewed).delta)`; the formatter takes the fraction and prints points.
 - The card reads whether to run the pair from its detector (`previewsMonteCarlo`), not from a figure on the card. RetireGolden-Pro's card parser accepts a fixed set of `impact` keys and top-level keys, so a new key on the card would have made Pro reject the guardrails card (check correction 13).
 - Ranking: `computeCardScore` credits a card with the named editorial weight where it credited the retired success figure (after a measured estate delta, before a lifetime-tax delta), so the spending-guardrails card scores 120,000 × 0.7 = 84,000 exactly as before and the Insights order does not change.
 - Timing: per Preview. Units: a fraction of paths (printed in percentage points). Rounding: none (the formatter prints one decimal; with 1,000 paths the delta is a multiple of 0.1 points).
@@ -60,11 +62,12 @@ Paths are seeded by `(seed, global path index)` (`montecarlo/run.ts`), so two ru
 | AB | 501 / 1,000 | 500 / 1,000 |
 | AC | 0 / 1,000 | 0 / 1,000 |
 | AD | 912 / 1,000 | 229 / 250 (different path counts) |
+| AF | 912 / 1,000, paths from 2026 | 948 / 1,000, paths from 2027 (different start years) |
 | AE | a retiree born 1960 spending $50,000 a year from a $2.5M traditional IRA; the candidate sets a 5 percent flat state income tax; 100 lognormal paths | the context builds each plan's own tax stack |
 
 ## Arithmetic
 
-Y: 0.948 − 0.912 = 0.03599999999999992 in binary (bits `3fa26e978d4fdf30`); ×100 = 3.599999999999992, printed "+3.6 pts". Z: 0, "no change". AA: 0.916 − 0.912 = 0.0040000000000000036, 0.40000000000000036 points, "+0.4 pts" (one path at 250 paths is 0.4 points; at 1,000, 0.1). AB: −0.0010000000000000009, "−0.1 pts" (red). AC: 0, "no change". AD: refused (`RangeError`). AE: the candidate's attached metrics equal an independent run of the candidate plan with its own stack (success rate and median estate), and differ from a run with the base plan's stack, whose median estate is higher (no state tax).
+Y: 0.948 − 0.912 = 0.03599999999999992 in binary (bits `3fa26e978d4fdf30`); ×100 = 3.599999999999992, printed "+3.6 pts". Z: 0, "no change". AA: 0.916 − 0.912 = 0.0040000000000000036, 0.40000000000000036 points, "+0.4 pts" (one path at 250 paths is 0.4 points; at 1,000, 0.1). AB: −0.0010000000000000009, "−0.1 pts" (red). AC: 0, "no change". AD: refused (`RangeError`). AF: refused (`RangeError`: "Success rates are compared only from one start year; the baseline starts in 2026 and the proposal in 2027"); the same two rates from one start year give case Y's 0.03599999999999992. AE: the candidate's attached metrics equal an independent run of the candidate plan with its own stack (success rate and median estate), and differ from a run with the base plan's stack, whose median estate is higher (no state tax).
 
 ## Expected
 
@@ -76,6 +79,7 @@ Y: 0.948 − 0.912 = 0.03599999999999992 in binary (bits `3fa26e978d4fdf30`); ×
 | AB | −0.0010000000000000009 | "−0.1 pts" (red) |
 | AC | 0 | "no change" |
 | AD | throws `RangeError` | — |
+| AF | throws `RangeError` (different start years) | — |
 
 Tolerance exact (`{ abs: 0 }`; one subtraction of two exact binary quotients).
 
@@ -142,3 +146,7 @@ Derived by: claude (opus 5.5), 2026-09-27; cases Y to AD by hand and `scripts/in
 ## Review fixes (independent review of B2-P1 slice 3, 2026-09-27)
 
 - `planner-ui/src/planner/insights/InsightCardView.mcCallSite.test.tsx` pins the preview's own call (F6; corrections 9 and 11): with a published 200-path base run for the plan, the previewed plan runs once, at 200 paths, on options built from the base plan object (`headlineMcRunOptions(plan, 200)`), and the card prints the pair's difference. A call at the default path count, or options built from the previewed plan, fails it.
+
+## PR #754 review fixes (2026-09-27)
+
+- Findings 1 and 2: a published headline run is kept per plan object, and a plan object that is not edited outlives a New Year, so the preview could subtract a rate simulated from last year's start year from a previewed run simulated from this year's. The headline store now records the start year with every published and in-flight run (`publishMcHeadline(plan, summary, startYear)`, `registerMcHeadlineRun(plan, run, pathCount, startYear)`; the Monte Carlo page reads the year once and passes it to the run and to both), `headlineMcRun` returns it, and the preview runs the changed plan from that same year, so the pair stays on one market. `compareMonteCarloSuccessRates` takes `MonteCarloRateRun` (rate, path count and start year) and refuses runs from different start years as it refuses different path counts (case AF). A later run from a new start year replaces a finer run from the old one, since it is a different simulation. Tests: `InsightCardView.mcCallSite.test.tsx` publishes a 200-path run from 2026, moves the clock to 2 January 2027, and asserts the previewed run starts in 2026 and the line prints (a preview run from the clock's year fails it: the engine refuses the pair); `useMcSuccessRate.headline.test.tsx` keeps a published and an in-flight run's start year across the New Year.

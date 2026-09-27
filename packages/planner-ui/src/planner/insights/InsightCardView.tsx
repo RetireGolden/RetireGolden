@@ -130,12 +130,21 @@ export function InsightCardView({ card, onDismiss }: { card: InsightCard; onDism
               // decision R11): the base side is the run whose rate the KPI bar
               // shows, reused when it is published or in flight, and the
               // previewed plan runs on the same model (built from the base
-              // plan), seed and path count, so path N is one market for both.
+              // plan), seed, path count and start year, so path N is one
+              // market for both, even when the base run is from before a New
+              // Year the plan object outlived (PR #754 findings 1 and 2).
               if (previewsMonteCarlo) {
                 setLoadingMc(true)
                 const base = await headlineMcRun(plan)
-                const previewed = await runMonteCarlo(applied.plan, headlineMcRunOptions(plan, base.pathCount))
-                setMcDelta(compareMonteCarloSuccessRates(base, previewed).delta)
+                const options = headlineMcRunOptions(plan, base.pathCount, base.startYear)
+                const previewed = await runMonteCarlo(applied.plan, options)
+                setMcDelta(
+                  compareMonteCarloSuccessRates(base, {
+                    successRate: previewed.successRate,
+                    pathCount: previewed.pathCount,
+                    startYear: options.startYear,
+                  }).delta,
+                )
                 setLoadingMc(false)
               }
             }

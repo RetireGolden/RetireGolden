@@ -198,23 +198,23 @@ describe('Design-QA cluster A: source pins', () => {
     expect(results).toContain('Across {pathCountLabel} varied markets')
     expect(results).not.toContain('PATH_COUNT_LABEL')
     const mc = sheet('./MonteCarloPage.tsx')
-    expect(mc).toContain('publishMcHeadline(plan, s)')
+    expect(mc).toContain('publishMcHeadline(plan, s, startYear)')
     // The store keeps the finest run and the hook never starts a default run
     // once a published one answers for the plan (review round 2).
     const hook = sheet('./useMcSuccessRate.ts')
-    expect(hook).toContain('if (current !== undefined && current.pathCount > summary.pathCount) return')
+    expect(hook).toContain('if (current !== undefined && publishedStartYear.get(plan) === startYear && current.pathCount > summary.pathCount) return')
     expect(hook).toContain('if (headline !== undefined) return undefined')
     // The page subscribes to the store (any publisher re-renders it), shares
     // its in-flight run with the hook, and stands its auto-run down when the
     // reader has already started one. The count-less wrapper is gone.
     expect(mc).toContain('const publishedHeadline = useMcHeadline(plan)')
     expect(mc).not.toContain('publishedMcSummary(plan)')
-    expect(mc).toContain('if (headlineRun) registerMcHeadlineRun(plan, simulation, paths)')
+    expect(mc).toContain('if (headlineRun) registerMcHeadlineRun(plan, simulation, paths, startYear)')
     expect(mc).toContain('if (runToken.current === scheduledAt) run(DEFAULT_PATH_COUNT)')
     // A superseded headline run still publishes: the publish sits before the token check.
-    expect(mc.indexOf('if (headlineRun) publishMcHeadline(plan, s)')).toBeLessThan(mc.indexOf('if (token === runToken.current) {\n            setSummary(s)'))
+    expect(mc.indexOf('if (headlineRun) publishMcHeadline(plan, s, startYear)')).toBeLessThan(mc.indexOf('if (token === runToken.current) {\n            setSummary(s)'))
     // The in-flight result carries its path count, and the store snapshot serves both renders.
-    expect(hook).toContain('.then((s) => ({ rate: s.successRate, pathCount: s.pathCount }))')
+    expect(hook).toContain('.then((s) => ({ rate: s.successRate, pathCount: s.pathCount, startYear }))')
     expect(hook).toContain('return useSyncExternalStore(subscribe, snapshot, snapshot)')
     expect(hook).toContain('export function useInFlightMcPathCount(plan: Plan): number | undefined')
     expect(hook).toContain('pathCount: current?.pathCount ?? inFlightPathCount ?? DEFAULT_PATH_COUNT')
@@ -222,7 +222,7 @@ describe('Design-QA cluster A: source pins', () => {
     // show are the last completed run while a replacement runs.
     expect(mc).toContain('same plan {(summary?.pathCount ?? inFlightPaths).toLocaleString()} times')
     expect(mc).toContain('Showing the last completed run ({summary.pathCount.toLocaleString()} paths) while')
-    expect(mc).toContain('registerMcHeadlineRun(plan, simulation, paths)')
+    expect(mc).toContain('registerMcHeadlineRun(plan, simulation, paths, startYear)')
     expect(results).not.toContain('keeps verdict copy in sync')
     expect(hook).not.toMatch(/export function useMcSuccessRate\(/)
     expect(hook).toContain('export function useMcHeadline(plan: Plan): MonteCarloSummary | undefined')

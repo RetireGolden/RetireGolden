@@ -14,8 +14,15 @@ import { createRoot, type Root } from 'react-dom/client'
 import type { Plan } from '@retiregolden/engine/model/plan'
 import type { MonteCarloSummary } from '@retiregolden/engine/montecarlo/run'
 import { createSamplePlan } from '../testSupport/samplePlan'
-import { seedFromPlanId } from './useProjection'
-import { isHeadlineMcConfig, publishMcHeadline, publishedMcSummary, registerMcHeadlineRun, useMcSuccessRateState } from './useMcSuccessRate'
+import { currentStartYear, seedFromPlanId } from './useProjection'
+import {
+  headlineMcRun,
+  isHeadlineMcConfig,
+  publishMcHeadline,
+  publishedMcSummary,
+  registerMcHeadlineRun,
+  useMcSuccessRateState,
+} from './useMcSuccessRate'
 
 vi.mock('../mc/pool', async (importOriginal) => {
   const original = await importOriginal<typeof import('../mc/pool')>()
@@ -58,15 +65,15 @@ describe('Monte Carlo headline (#497)', () => {
     expect(container.textContent).toBe('running|null|1000')
 
     const tenK = summaryOf(0.42, 10_000)
-    await act(async () => publishMcHeadline(plan, tenK))
+    await act(async () => publishMcHeadline(plan, tenK, currentStartYear()))
     expect(container.textContent).toBe('done|0.42|10000')
     expect(publishedMcSummary(plan)).toBe(tenK)
 
     // A later coarser run never trades the precision away; an equal or finer
     // one replaces it.
-    await act(async () => publishMcHeadline(plan, summaryOf(0.41, 1_000)))
+    await act(async () => publishMcHeadline(plan, summaryOf(0.41, 1_000), currentStartYear()))
     expect(container.textContent).toBe('done|0.42|10000')
-    await act(async () => publishMcHeadline(plan, summaryOf(0.43, 10_000)))
+    await act(async () => publishMcHeadline(plan, summaryOf(0.43, 10_000), currentStartYear()))
     expect(container.textContent).toBe('done|0.43|10000')
 
     // An edit is a new plan object: the published run belongs to the old one.
@@ -78,7 +85,7 @@ describe('Monte Carlo headline (#497)', () => {
 
   it('starts no default run of its own once a run is published for the plan', async () => {
     const plan = createSamplePlan()
-    publishMcHeadline(plan, summaryOf(0.5, 10_000))
+    publishMcHeadline(plan, summaryOf(0.5, 10_000), currentStartYear())
     await act(async () => root.render(<Probe plan={plan} />))
     expect(container.textContent).toBe('done|0.5|10000')
     // Past the 1,200 ms debounce: nothing was scheduled, so nothing runs.
@@ -91,7 +98,7 @@ describe('Monte Carlo headline (#497)', () => {
   it('attaches to a Monte Carlo page run registered for the plan instead of launching its own', async () => {
     const plan = createSamplePlan()
     let settle: (s: MonteCarloSummary) => void = () => {}
-    registerMcHeadlineRun(plan, new Promise<MonteCarloSummary>((resolve) => { settle = resolve }), 10_000)
+    registerMcHeadlineRun(plan, new Promise<MonteCarloSummary>((resolve) => { settle = resolve }), 10_000, currentStartYear())
     await act(async () => root.render(<Probe plan={plan} />))
     // Busy copy names the run in flight, not the default (#497 review round 5).
     expect(container.textContent).toBe('running|null|10000')
@@ -101,6 +108,35 @@ describe('Monte Carlo headline (#497)', () => {
     await act(async () => settle(summaryOf(0.37, 10_000)))
     expect(container.textContent).toBe('done|0.37|10000')
     expect(mockedRunMc).not.toHaveBeenCalled()
+  })
+
+  // PR #754 findings 1 and 2: a headline run carries the start year its
+  // paths begin in, which outlives a New Year with the plan object.
+  it('keeps each headline run\'s own start year across a New Year, published or in flight', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    try {
+      vi.setSystemTime(new Date('2026-12-31T12:00:00.000Z'))
+      const published = createSamplePlan()
+      publishMcHeadline(published, summaryOf(0.42, 10_000), currentStartYear())
+      const inFlight = createSamplePlan()
+      let settle: (s: MonteCarloSummary) => void = () => {}
+      registerMcHeadlineRun(inFlight, new Promise<MonteCarloSummary>((resolve) => { settle = resolve }), 10_000, currentStartYear())
+
+      vi.setSystemTime(new Date('2027-01-02T12:00:00.000Z'))
+      expect(currentStartYear()).toBe(2027)
+      await expect(headlineMcRun(published)).resolves.toEqual({ successRate: 0.42, pathCount: 10_000, startYear: 2026 })
+      const pending = headlineMcRun(inFlight)
+      settle(summaryOf(0.37, 10_000))
+      await expect(pending).resolves.toEqual({ successRate: 0.37, pathCount: 10_000, startYear: 2026 })
+
+      // A run from the new year replaces a finer one from the old year: it is
+      // a different simulation, not a coarser copy of the same one.
+      publishMcHeadline(published, summaryOf(0.4, 1_000), currentStartYear())
+      await expect(headlineMcRun(published)).resolves.toEqual({ successRate: 0.4, pathCount: 1_000, startYear: 2027 })
+      expect(mockedRunMc).not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('only the headline configuration may publish: same model, vol, weight, seed, no shocks', () => {

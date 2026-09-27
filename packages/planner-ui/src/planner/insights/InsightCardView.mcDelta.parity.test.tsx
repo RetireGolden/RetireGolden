@@ -66,8 +66,9 @@ describe('the Insight preview Monte Carlo line on bracket-fill-roth (B2-P1 slice
     const plan = appExamplePlanById('bracket-fill-roth')
     const previewed = previewedPlan(plan, guardrailsCard(plan))
     const options = headlineMcRunOptions(plan, 200)
-    const run = (p: Plan, slices: [number, number][]): MonteCarloSummary =>
-      aggregateMonteCarlo(
+    const run = (p: Plan, slices: [number, number][]) => ({
+      startYear: options.startYear,
+      ...aggregateMonteCarlo(
         mergePathResults(
           slices.map(([firstPathIndex, pathCount]) =>
             runMcRequest({
@@ -82,7 +83,8 @@ describe('the Insight preview Monte Carlo line on bracket-fill-roth (B2-P1 slice
             }),
           ),
         ),
-      )
+      ),
+    })
     const single = compareMonteCarloSuccessRates(run(plan, [[0, 200]]), run(previewed, [[0, 200]]))
     const split = compareMonteCarloSuccessRates(run(plan, [[0, 80], [80, 120]]), run(previewed, [[0, 120], [120, 80]]))
     expect(Object.is(split.delta, single.delta)).toBe(true)
@@ -91,12 +93,12 @@ describe('the Insight preview Monte Carlo line on bracket-fill-roth (B2-P1 slice
 
   it('reuses a published finer headline run as the base, and runs the previewed plan at its path count', async () => {
     const plan = appExamplePlanById('bracket-fill-roth')
-    publishMcHeadline(plan, { successRate: 0.5, pathCount: 10_000 } as MonteCarloSummary)
+    publishMcHeadline(plan, { successRate: 0.5, pathCount: 10_000 } as MonteCarloSummary, EXAMPLE_FIXED_YEAR)
     const base = await headlineMcRun(plan)
-    expect(base).toEqual({ successRate: 0.5, pathCount: 10_000 })
-    expect(headlineMcRunOptions(plan, base.pathCount).pathCount).toBe(10_000)
+    expect(base).toEqual({ successRate: 0.5, pathCount: 10_000, startYear: EXAMPLE_FIXED_YEAR })
+    expect(headlineMcRunOptions(plan, base.pathCount, base.startYear).pathCount).toBe(10_000)
     // A 1,000-path previewed run against it is refused, not printed.
-    expect(() => compareMonteCarloSuccessRates(base, { successRate: 0.6, pathCount: 1_000 })).toThrow(RangeError)
+    expect(() => compareMonteCarloSuccessRates(base, { successRate: 0.6, pathCount: 1_000, startYear: EXAMPLE_FIXED_YEAR })).toThrow(RangeError)
   })
 })
 

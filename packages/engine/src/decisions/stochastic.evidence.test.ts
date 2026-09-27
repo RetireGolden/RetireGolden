@@ -58,6 +58,10 @@ describeCalculation(
         caseAB: { baseline: { successes: 501, paths: 1_000 }, proposal: { successes: 500, paths: 1_000 } },
         caseAC: { baseline: { successes: 0, paths: 1_000 }, proposal: { successes: 0, paths: 1_000 } },
         caseAD: { baseline: { successes: 912, paths: 1_000 }, proposal: { successes: 229, paths: 250 } },
+        caseAF: {
+          baseline: { successes: 912, paths: 1_000, startYear: 2026 },
+          proposal: { successes: 948, paths: 1_000, startYear: 2027 },
+        },
         perPlanTax: { candidateStateEffectiveTaxPct: 5, pathCount: 100, seed: 20_260_927 },
       },
       expected: {
@@ -73,10 +77,11 @@ describeCalculation(
     mutation: 'DOCS/calculations/insights/insight-monte-carlo-success-delta.mutation.md',
   },
   ({ example }) => {
-    type Run = { successes: number; paths: number }
+    type Run = { successes: number; paths: number; startYear?: number }
     const inputs = example.inputs as Record<string, { baseline: Run; proposal: Run }>
     const expected = example.expected as Record<string, number>
-    const summary = (run: Run) => ({ successRate: run.successes / run.paths, pathCount: run.paths })
+    // Every case's runs start in 2026 unless the case names another year.
+    const summary = (run: Run) => ({ successRate: run.successes / run.paths, pathCount: run.paths, startYear: run.startYear ?? 2026 })
 
     it('cases Y to AC: proposal minus baseline on the same paths, a fraction of paths', () => {
       for (const key of ['caseY', 'caseZ', 'caseAA', 'caseAB', 'caseAC']) {
@@ -96,6 +101,17 @@ describeCalculation(
     it('case AD: runs on different path counts are refused', () => {
       const c = inputs.caseAD!
       expect(() => compareMonteCarloSuccessRates(summary(c.baseline), summary(c.proposal))).toThrow(RangeError)
+    })
+
+    it('case AF: runs from different start years are refused', () => {
+      const c = inputs.caseAF!
+      expect(() => compareMonteCarloSuccessRates(summary(c.baseline), summary(c.proposal))).toThrow(
+        'Success rates are compared only from one start year; the baseline starts in 2026 and the proposal in 2027',
+      )
+      // The same two rates from one start year compare.
+      expect(
+        compareMonteCarloSuccessRates(summary(c.baseline), summary({ ...c.proposal, startYear: 2026 })).delta,
+      ).toBe(expected.caseY)
     })
 
     it('prices each shared-path entry with its own plan\'s tax stack when the context has a per-plan builder', () => {
@@ -144,7 +160,7 @@ describeCalculation(
       expect(shared.endingAfterTaxEstate.percentiles.p50).toBeGreaterThan(own.endingAfterTaxEstate.percentiles.p50)
       expect(attached.candidate.medianEndingAfterTaxEstate).not.toBe(shared.endingAfterTaxEstate.percentiles.p50)
       expect(attached.deltas.successRate).toBe(
-        compareMonteCarloSuccessRates(attached.baseline, attached.candidate).delta,
+        compareMonteCarloSuccessRates({ ...attached.baseline, startYear: 2026 }, { ...attached.candidate, startYear: 2026 }).delta,
       )
     })
   },

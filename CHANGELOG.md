@@ -55,7 +55,8 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   success rate shown everywhere else, so it reported a change from a rate the reader
   had not been shown. It now reuses the headline run for the plan (the rate the KPI bar
   shows, 1,000 paths or a finer published run) and runs the previewed plan on the same
-  model, seed and path count: `bracket-fill-roth` reads +25.1 points where it read
+  model, seed, path count and start year (a published run that outlived a New Year keeps
+  its own start year, and the engine refuses two runs from different years): `bracket-fill-roth` reads +25.1 points where it read
   +30.8, `rmd-irmaa` +17.5 where +20.0, `annuity-purchases-estate` "no change" where
   +0.8, and `no-annuity-brokerage` +0.1 where +2.4. The engine's shared-path helper
   (`attachStochasticMetrics`) prices each plan with its own tax stack when the decision
@@ -1107,8 +1108,10 @@ has — rather than the runtime contract a consumer needs on the landing page.
   - **`attachStochasticMetrics`** publishes its deltas through `compareScalars`
     (exported as `stochasticDeltas`): a negative zero reads 0 and a metric that is not
     finite throws; with a decision context that has `taxCalculatorForPlan`, every
-    entry is priced with its own plan's stack. New export
-    `compareMonteCarloSuccessRates`.
+    entry is priced with its own plan's stack. New exports
+    `compareMonteCarloSuccessRates` and `MonteCarloRateRun`: it compares two runs'
+    success rates only when they share a path count and a start year, which each run
+    states, and refuses (RangeError) otherwise.
   - **New module `@retiregolden/engine/scenarios/planHeadlines`**
     (`comparePlanHeadlines`), which refuses two projections with different start years
     and a depleting side whose first person has no birth date (`PlanHeadlineRefusal`, a
@@ -1127,8 +1130,10 @@ has — rather than the runtime contract a consumer needs on the landing page.
     (`deterministicSuccessPct`, `moneyLastsDelta`, `ageDelta`, `MoneyLastsDelta` and the
     `lastFundedYear` re-export are removed); `formatMcDelta` takes the engine's fraction
     rather than percentage points; `recommendationBody` takes an optional context (the
-    tournament's ACA veto); `planner/useMcSuccessRate` exports `headlineMcRun` and
-    `headlineMcRunOptions`.
+    tournament's ACA veto); `planner/useMcSuccessRate` exports `headlineMcRun` (which
+    returns the run's start year) and `headlineMcRunOptions` (which takes one), and
+    `publishMcHeadline` and `registerMcHeadlineRun` take the start year of the run they
+    publish or register.
 
 - **`SustainableSpendingResult` (B2-P1 slice 2, owner decision R4):** `maxBaseAnnual`
   now publishes the answer rounded down to $100 (or, under guardrails when that fails,
