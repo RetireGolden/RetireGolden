@@ -14,8 +14,9 @@ and absent means no behavior change (feature-off byte-identical, `cases:diff` cl
   a flat curve where coupon equals yield and the regulatory floor is nonbinding, each rung prices at face and
   the total cost equals the level-annuity PV exactly (golden-tested).
 - **Real-yield curve.** Embedded snapshot of the U.S. Treasury Daily Par Real Yield Curve Rates
-  (`params/data/realYieldCurve2026.ts`; 5y 1.85 / 7y 2.05 / 10y 2.25 / 20y 2.55 / 30y 2.70 as of
-  2026-06-30), linear interpolation, flat endpoints. Provenance id `real-yield-curve`; annual refresh per the
+  (`params/data/realYieldCurve2026.ts`; 5y 1.93 / 7y 2.06 / 10y 2.20 / 20y 2.54 / 30y 2.73 as of
+  2026-06-30, the official row exactly as published, with no rounding; decision D-TREASURY, 2026-09-25),
+  linear interpolation, flat endpoints. Provenance id `real-yield-curve`; annual refresh per the
   maintenance schedule; the "curve as of" date is shown beside every quote.
 - **Taxation (federal).** Coupons and the year's inflation accretion on outstanding face (phantom OID) are
   ordinary income and count as investment income for NIIT; maturing principal is a tax-free return of

@@ -137,6 +137,8 @@ Engine run in the scratch copy (start year 2026, the page's budget of 25). Only 
 | annuity-purchases-estate | 78,000 | 114,259 | 114,200 | 36,259 | 36,200 | −59 |
 | no-annuity-brokerage | 78,000 | 116,391 | 116,300 | 38,391 | 38,300 | −91 |
 
+Since decision D-BRACKET-FILL-ROTH-EXAMPLE (2026-09-27) Riley holds her own Roth IRA in the bracket-fill example, and its row reads 90,000, 100,899, 100,800, 10,899, 10,800, −99 (engine run at that change).
+
 The solver page's own figures do not change on any example. No insight gate flips on the examples (every slack of 1,000 or more stays at or above 1,000). Every exact probe is a whole number, and on all 7 the rounded amount re-simulated at the page's start year is itself feasible (no depletion, estate at or above the floor).
 
 ## Parity test for the switch-over

@@ -106,6 +106,8 @@ Example library (engine run in the scratch copy; the 7 examples that produce a s
 | annuity-purchases-estate | 106,000 | +10,055 → +10,000 | +12,187 → +12,200 |
 | no-annuity-brokerage | 108,400 | +9,750 → +9,800 | +11,884 → +11,900 |
 
+Since decision D-BRACKET-FILL-ROTH-EXAMPLE (2026-09-27) Riley holds her own Roth IRA in the bracket-fill example: flat shown 91,000 (exact 91,056), smile 105,100 and smirk 107,200 (exact 105,118 and 107,227), so its printed deltas are still +14,100 and +16,200 (engine run at that change).
+
 The amount column does not change (it was already floored). The other 22 examples have no shape answers either (the same ACA diagnostic as the base solve).
 
 ## Wrong readings

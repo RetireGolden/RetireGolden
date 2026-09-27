@@ -83,13 +83,17 @@ const exampleUnderSavedSingleBody = exampleBody(
 )
 
 const exampleBracketFillRothBody = exampleBody(
-  'Morgan and Riley are retired with large traditional IRAs, Social Security, and a strategy to fill the 22% bracket with Roth conversions. QCDs offset part of the RMD tax bite.',
+  `Morgan and Riley are retired with large traditional IRAs, Social Security, and a strategy to fill the 22% bracket with Roth conversions. QCDs offset part of the RMD tax bite.
+
+Each of them has a Roth IRA, because a conversion can land only in its owner's own Roth IRA: the year's conversion is sized for the household and split between them by their IRA balances. The conversion is sized before the year's spending is drawn, so once the cash reserve runs out in 2027 the spending comes out of the IRAs on top of the filled bracket: taxable income ends $72,410, $94,900 and $118,893 above the top of the 22% bracket in 2027, 2028 and 2029, taxed at 24%, and Results warns about it. Filling the bracket every year empties both IRAs by 2030, so the RMDs and the charitable gifts from the IRAs stop there, and the larger incomes of those years raise Medicare premiums two years later, from 2028 to 2031.`,
   'Compare lifetime tax vs ending Roth balance, and watch conversion amounts year by year.',
 )
 
 const exampleEarlyRetireeAcaBody = exampleBody(
-  'Casey retired before Medicare with marketplace coverage, part-time consulting income, and Roth conversions sized to stay below the subsidy cliff. Both income sources flow into MAGI, so converting one bracket higher can forfeit the entire credit.',
-  'Check the current-year premium credit in the printable report\'s ACA ledger, then raise the conversion bracket on Strategy and watch it go to zero.',
+  `Casey retired at 58 and buys marketplace coverage until Medicare. She has part-time consulting income, and her Roth conversions fill the 10% tax bracket each year. The conversions are sized to the bracket, not to the subsidy cliff: the top of the 10% bracket happens to keep her income below the cliff, and filling the 12% bracket would cross it. Both income sources count toward MAGI, so converting one bracket higher forfeits the entire credit.
+
+The credit is priced for 2026 and 2027, the two coverage years whose figures are published so far. From 2028 the plan budgets the full premium until that year's figures are published. The example also assumes the benchmark silver plan costs the same $1,000 a month Casey pays, so the credit brings her premium down to exactly the share of income the law expects her to pay. Its coverage details are written for that premium: change the premium and the credit is no longer priced.`,
+  'Check the 2026 and 2027 premium credits in the printable report\'s ACA ledger, then raise the conversion bracket to 12% on Strategy and watch both go to zero.',
 )
 
 const exampleRmdIrmaaBody = exampleBody(
@@ -336,10 +340,10 @@ const exampleAll401kNoBridgeBody = exampleBody(
 
 The deduction feels great every year. The problem surfaces at 52: nearly everything they own is inaccessible before 59½ without a 10% penalty (or a rigid SEPP program).
 
-Once their cash and small brokerage run dry, penalized 401(k) withdrawals carry the bridge years. Each withdrawal is ordinary income, so MAGI jumps. In a year with sourced ACA parameters and complete annual evidence, that can reduce or eliminate the modeled credit; unsourced future years stay at gross premium.
+Once their cash and small brokerage run dry, penalized 401(k) withdrawals carry the bridge years: $87,045 of early-withdrawal penalties from 2042 to 2045. Each withdrawal is ordinary income, so MAGI jumps. In a coverage year whose ACA figures are published and whose annual evidence is complete, that can reduce or eliminate the modeled credit. These bridge years come after the last published coverage year, so both plans budget the full marketplace premium.
 
-The identical savings budget, placed differently, avoids all of this. That comparison is the point of the pair.`,
-  'Watch Results ages 52–59: penalties once the taxable money is gone, marketplace premiums jumping when MAGI clears the ACA cliff, and a depletion year the bridge version avoids.',
+The identical savings budget, placed differently, avoids the penalties and lasts one year longer: this plan runs out of money in 2067, the bridge version in 2068. That comparison is the point of the pair.`,
+  'Watch Results ages 52–59: penalties once the taxable money is gone, then compare the depletion year, 2067, with the bridge version\'s 2068.',
   {
     name: 'The Sam & Jordan household (all-401(k) version)',
     assumptions: [
@@ -359,10 +363,10 @@ const exampleBrokerageBridge401kBody = exampleBody(
 
 Because the gross budget is held constant, this plan pays more income tax during the accumulation years: the contributions above the match lose their deduction. That honesty is the tradeoff being taught.
 
-At 52 the brokerage is large and mostly basis. Selling it to fund the bridge years realizes modest capital gains, so MAGI stays lower than in the control and no early-withdrawal penalties apply. In sourced, fully evidenced ACA years that lower MAGI can preserve more credit; unsourced future years remain gross in both plans.
+At 52 the brokerage is large. Cash covers the first bridge years, and selling the brokerage covers the rest at low capital-gains rates, so no early-withdrawal penalties apply and MAGI stays far below the control's from 2042 to 2045. Lower MAGI could preserve premium tax credit in a coverage year whose ACA figures are published, but these bridge years come after the last published coverage year, so both plans budget the full marketplace premium. Over its lifetime this plan pays less in tax and penalties than the control ($876,459 against $950,722, of which $87,045 is the control's penalties) and lasts one year longer, to 2068 against 2067; neither reaches the end of the plan in 2078.
 
-The built-in scenario stress-tests the popular "convert to Roth during the bridge" advice. For this lean plan the conversion tax can drain the bridge fund, and an actionable ACA year can add a lost-credit cost. Cheap conversions need spare money. This household's bridge fund is the spending money.`,
-  'Compare bridge-year MAGI, net healthcare premiums, penalties, and the depletion year against the all-401(k) control; then run the conversion scenario and watch the advantage evaporate.',
+The built-in scenario tests the popular "convert to Roth during the bridge" advice: each bridge year, 2038 to 2045, it sizes a conversion to the top of the 12% bracket. Only Sam holds a Roth IRA, so only his share of each year's amount converts, and Results says Jordan's share was skipped. On this plan it pays: lifetime tax falls from $876,459 to $566,785 and the money lasts to 2070 instead of 2068. The conversion tax comes out of the same bridge money, and the brokerage still lasts into 2046.`,
+  'Compare bridge-year MAGI, penalties and the depletion year against the all-401(k) control; then run the conversion scenario and compare its lifetime tax and depletion year with the base plan.',
   {
     name: 'The Sam & Jordan household (bridge version)',
     assumptions: [
@@ -371,9 +375,9 @@ The built-in scenario stress-tests the popular "convert to Roth during the bridg
       { label: 'Wages', value: '$105,000 + $75,000, 1% real growth' },
       { label: 'Savings', value: '$14,400/yr to 401(k)s (full match kept) + $30,600/yr brokerage' },
       { label: 'Key difference', value: 'Savings destination only; budget, balances, and household identical' },
-      { label: 'Built-in scenario', value: 'Bracket-fill Roth conversions during the bridge (a cautionary tale here)' },
+      { label: 'Built-in scenario', value: 'Bracket-fill Roth conversions during the bridge (on this plan they lower lifetime tax and the money lasts longer)' },
     ],
-    summary: 'Feature case: the taxable bridge keeps MAGI lower through 52–59½, avoids penalties, and preserves credit room only in sourced, actionable ACA years.',
+    summary: 'Feature case: the taxable bridge keeps MAGI lower through 52–59½ and avoids penalties. No bridge year has published ACA figures, so both plans budget the full marketplace premium.',
   },
 )
 

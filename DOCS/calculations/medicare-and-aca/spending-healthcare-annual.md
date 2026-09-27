@@ -1,6 +1,6 @@
 ## Claim
 
-Kind: composition. `projection/internal/types/result.ts#YearResult.expenses.healthcare`, assembled by `projection/internal/annualHealthcareExpenses.ts#annualHealthcareExpenses`, adds for each living person Medicare annual premium with IRMAA prorated by Medicare months plus monthly extras inflated for those months, and credit-off marketplace premium inflated for marketplace months. With the ACA credit on, the fixed point substitutes economic net premium when converged (gross premium on failure). The composition is stated by the `YearExpenses.healthcare` comment.
+Kind: composition. `projection/internal/types/result.ts#YearResult.expenses.healthcare`, assembled by `projection/internal/annualHealthcareExpenses.ts#annualHealthcareExpenses`, adds for each living person Medicare annual premium with IRMAA prorated by Medicare months plus monthly extras inflated for those months, and credit-off marketplace premium inflated for marketplace months. With the ACA credit on, a year is published actionable (`YearAcaResult.readiness`) only when its coverage year has published figures, no support code blocks pricing, and the funding fixed point converges; it then publishes healthcare excluding enrollment plus the economic net premium. Every other year budgets the gross premium, for one of two reasons: by design, when the credit cannot be priced at all (a coverage year with no published figures, 2028 and later today, or a blocking support code), or as a fallback, when the fixed point does not converge (the engine then adds `fixed-point-nonconvergent`, which blocks pricing). `YearAcaResult.convergence.converged` is true exactly when the year is actionable, so it reads false in a year whose credit cannot be priced even when the funding solve converged; only the `fixed-point-nonconvergent` code marks a failed solve. The composition is stated by the `YearExpenses.healthcare` comment.
 
 ## Justification
 
@@ -27,7 +27,7 @@ Second person: four marketplace months and `12 - 4 = 8` Medicare months partitio
 
 Household healthcare `= $4,242.72 + $4,588.48 = $8,831.20`. The tier-priced annual premium is already the helper's premium-year amount; only Medicare extras and marketplace premium use the stated `1.10` health inflation factor here.
 
-Credit-on branch: the marketplace component enters gross enrollment premium during the solve, then a converged ACA fixed point publishes healthcare excluding enrollment plus the economic net premium; no numeric result is asserted without fixed-point inputs.
+Credit-on branch: the marketplace component enters gross enrollment premium during the solve. In an actionable year, the converged fixed point then publishes healthcare excluding enrollment plus the economic net premium. In a year whose credit cannot be priced the gross premium stays, which is the intended figure and not a failure; in a year whose fixed point does not converge it stays as a fallback, and `fixed-point-nonconvergent` says so. No numeric result is asserted without fixed-point inputs.
 
 ## Expected
 
@@ -38,7 +38,7 @@ Exact value for the credit-off case: `$8,831.20`. Fixture tolerance: absolute `$
 - Inflating the tier-priced Medicare annual premium again applies the health factor twice; the `$3,582.72` intermediate is already priced for the premium year.
 - Omitting the health factor from marketplace premiums prices the second person's four marketplace months at `$1,600` instead of `$1,760`.
 - Forgetting the second person's eight Medicare months gives only `$4,242.72 + $1,760 = $6,002.72` and violates the per-person 12-month partition.
-- With the credit on, retaining gross enrollment premium after convergence ignores the required economic-net-premium substitution.
+- In an actionable year, retaining the gross enrollment premium after the fixed point converges ignores the required economic-net-premium substitution. In a year whose credit cannot be priced the gross premium is the published figure by design (the credit is not modeled, so the full premium is budgeted), and reading it there as this wrong reading, or reading `convergence.converged: false` there as a failed solve, is itself a misreading: a failed solve is marked by the `fixed-point-nonconvergent` code.
 
 ## Family
 
@@ -53,3 +53,7 @@ Derived by: codex (gpt-5.6-sol), 2026-09-18, from the signatures-and-comments ex
 Revision: The first derivation gave the second person four marketplace months without the complementary eight Medicare months, an impossible annual partition that the implementation's fixture found.
 
 Revision, 2026-09-26: the record gains a stated limit (decision D-ACA-2027-TABLE): a household funded just above 100% of the poverty line by need-driven withdrawals can have no self-consistent credit, because the credit lowers the withdrawal need and with it MAGI to below 100%. The fixed point then publishes fixed-point-nonconvergent and budgets the gross premium. The truer reason is that the engine does not model 26 CFR 1.36B-2(b)(6), under which a household whose income ends below 100% remains an applicable taxpayer when an Exchange estimated 100% to 400% at enrollment and advance credit was paid. No figure in this worksheet moves; the limit is unreviewed until a Codex or Cursor review, so the record carries reviewedBy 'unreviewed'.
+
+Revision, 2026-09-27 (decision D-WALKTHROUGH-WORKSHEET-WORDING): the claim, the credit-on paragraph and the fourth wrong reading are reworded. They read "gross premium on failure" and "retaining gross enrollment premium after convergence" as a wrong reading, while a year whose credit is not priced keeps the gross premium by design (the early-retiree walkthrough's 2027 and 2028 found this when those years were unpriced; since decision D-ACA-2027-TABLE, 2027 is priced and 2028 and later are not). No figure moves. The wording is unreviewed until the review lane recomputes it, and the record stays reviewedBy 'unreviewed'.
+
+Reworded again the same day after the branch review: the first rewording used "priced" in two senses (a year published actionable, and a year whose credit can be priced but whose fixed point does not converge, which the engine publishes non-actionable with `fixed-point-nonconvergent`). The claim, the credit-on paragraph and the wrong reading now say "actionable" for the first and "a year whose credit cannot be priced" for a year with no published figures or a blocking support code, and name the non-converging year as its own case. No figure moves.

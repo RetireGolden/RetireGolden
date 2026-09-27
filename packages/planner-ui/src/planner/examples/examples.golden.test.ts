@@ -144,7 +144,24 @@ const EXPECTED: Record<string, { depletionYear: number | null; endingInvestable:
   // giving is the small positive left over -- lower ending wealth from giving
   // more away is the correct outcome, the same reading the 408(d)(8) pre-RMD
   // window note above records.
-  'bracket-fill-roth': { depletionYear: null, endingInvestable: 623_753.79, lifetimeTax: 163_853.34, lifetimeRoth: 472_533.42 },
+  //
+  // Re-baselined 2026-09-27 (decision D-BRACKET-FILL-ROTH-EXAMPLE): Riley now
+  // holds her own Roth IRA, so the paragraphs above describe a household the
+  // example no longer has. Both owners' shares convert, and each year fills the
+  // 22% bracket the example is named for: in 2026 the whole 183,448.24 converts
+  // (Morgan 115,098.46, Riley 68,349.78), and joint taxable income ends at
+  // 211,399.99, a cent under the 211,400 top. The IRAs are emptied by 2030
+  // (that year's conversion is cut to the 29,390.16 left, and the ledger says
+  // so), so the RMDs and the QCDs out of them stop after 2030: lifetime QCDs
+  // fall back to 52,563.29 from 165,189.53. Tax moves forward into the
+  // conversion years, with Medicare's income surcharge at tier 1 in 2028 and
+  // tier 2 in 2029 to 2031 on the MAGI of two years before: lifetime tax
+  // 163,853.34 -> 218,889.90, lifetime conversions 472,533.42 -> 808,047.79,
+  // ending investable 623,753.79 -> 587,705.63. That is close to where the
+  // example stood before the 2026-08-04 owner boundary (conversions 806,028.59,
+  // tax 219,203.75, ending 586,419.24, QCDs 52,563.29), when the engine
+  // converted both IRAs into Morgan's Roth; now each share lands in its owner's.
+  'bracket-fill-roth': { depletionYear: null, endingInvestable: 587_705.63, lifetimeTax: 218_889.9, lifetimeRoth: 808_047.79 },
   // early-retiree-aca retuned 2026-07-30: the old baseline (55k consulting,
   // fill to the 12% bracket) had its only actionable ACA year above 400% FPL,
   // so the example could not show a credit at all. It now converts to the 10%
@@ -269,10 +286,13 @@ const EXPECTED: Record<string, { depletionYear: number | null; endingInvestable:
   'brokerage-no-hsa': { depletionYear: 2043, endingInvestable: 0, lifetimeTax: 24_137.83, lifetimeRoth: 0 },
   // A-B decision pairs (savings location for early retirement; Trump-account IRA head start).
   // The A-vs-B deltas are the story: the all-401(k) control pays $87.0k of
-  // early-withdrawal penalties and loses ACA credits to withdrawal-driven
-  // current-year MAGI, depleting before the identical-budget bridge version
-  // (2067 against 2068); the seeded IRA still compounds into a ~$8.4M larger
-  // estate on identical behavior.
+  // early-withdrawal penalties, depleting before the identical-budget bridge
+  // version (2067 against 2068); the seeded IRA still compounds into a ~$8.4M
+  // larger estate on identical behavior. Neither bridge plan prices an ACA
+  // credit in any year (restated 2026-09-27): the bridge years, 2038 on, come
+  // after the last coverage year with published ACA figures, and the priced
+  // years 2026 and 2027 are working years above the cliff, so the old
+  // "loses ACA credits" reading was false; the premiums are identical.
   // Both figures restated 2026-08-03. The estate gap widened from ~$7.6M with
   // the indexing fix, which is the expected shape: the head-start plan carries a
   // larger balance for longer, so it gained more from removing the frozen

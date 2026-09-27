@@ -43,6 +43,12 @@
  * that level rounded down to $100 (the figure the page showed). No example
  * with an answer spends under guardrails, so every published answer is the
  * rounded one, no extra run happens and the probe counts are unchanged.
+ *
+ * Re-pinned 2026-09-27 (decision D-BRACKET-FILL-ROTH-EXAMPLE): Riley holds
+ * her own Roth IRA, so the bracket-fill example converts both shares and
+ * front-loads its tax; its answer moves 101,602 -> 100,899 (shown 101,600 ->
+ * 100,800, slack 11,600 -> 10,800) on the same 10 probes. No other example
+ * moves.
  */
 import { describe, expect, it } from 'vitest'
 
@@ -77,7 +83,7 @@ function span(first: number, last: number): number[] {
 const EXPECTED: Record<string, SolverGolden> = {
   'example-couple': { maxBaseAnnual: 117_000, displayed: 117_000, probes: 10, acaYears: span(2028, 2029), reasons: [PARAMS] },
   'under-saved-single': { maxBaseAnnual: 65_250, displayed: 65_200, probes: 10, acaYears: null, reasons: [] },
-  'bracket-fill-roth': { maxBaseAnnual: 101_602, displayed: 101_600, probes: 10, acaYears: null, reasons: [] },
+  'bracket-fill-roth': { maxBaseAnnual: 100_899, displayed: 100_800, probes: 10, acaYears: null, reasons: [] },
   'early-retiree-aca': { maxBaseAnnual: 45_625, displayed: 45_600, probes: 9, acaYears: [2028], reasons: [PARAMS] },
   'rmd-irmaa': { maxBaseAnnual: 131_485, displayed: 131_400, probes: 10, acaYears: null, reasons: [] },
   'inherited-ira-beneficiary': { maxBaseAnnual: 26_438, displayed: 26_400, probes: 10, acaYears: null, reasons: [] },

@@ -475,7 +475,7 @@ export const medicareAndAcaRecords = {
     kind: 'composition',
     outputs: ['spending-healthcare-annual'],
     statement:
-      'YearResult.expenses.healthcare adds, for each LIVING person: the tier-priced annual Medicare premium (Part B plus any Part D IRMAA surcharge, itself scaled by the healthcare factor from the year of the published parameters to this year) prorated by Medicare months / 12, plus medicareExtrasMonthlyPerPerson x Medicare months x the healthcare inflation factor from the start year, plus (with the ACA credit OFF) pre65MonthlyPremiumPerPerson x marketplace months x that same factor. Medicare months are 12 minus marketplace months, and marketplace months are 12 below 65, birth month minus 1 in the year 65 is attained, and 0 after. With the credit ON the marketplace component instead enters the ACA gross enrollment premium during the solve, and a converged fixed point republishes healthcare excluding enrollment plus the economic net premium (gross premium on non-convergence). Units: nominal dollars per year. Rounding: none.',
+      'YearResult.expenses.healthcare adds, for each LIVING person: the tier-priced annual Medicare premium (Part B plus any Part D IRMAA surcharge, itself scaled by the healthcare factor from the year of the published parameters to this year) prorated by Medicare months / 12, plus medicareExtrasMonthlyPerPerson x Medicare months x the healthcare inflation factor from the start year, plus (with the ACA credit OFF) pre65MonthlyPremiumPerPerson x marketplace months x that same factor. Medicare months are 12 minus marketplace months, and marketplace months are 12 below 65, birth month minus 1 in the year 65 is attained, and 0 after. With the credit ON the marketplace component instead enters the ACA gross enrollment premium during the solve, and when the year is published actionable (its coverage year has published figures, no support code blocks pricing, and the funding fixed point converges) healthcare is republished as healthcare excluding enrollment plus the economic net premium; every other year keeps the gross premium, by design in a year whose credit cannot be priced (no published coverage-year figures, or a blocking support code) and as a fallback in a year whose fixed point does not converge, which the engine marks fixed-point-nonconvergent and publishes non-actionable. Units: nominal dollars per year. Rounding: none.',
     formula: {
       expression: 'healthcare = sum_p [ P_tier(p) x M_p/12 + extras x M_p x h + premium x A_p x h ], M_p = 12 - A_p',
       variables: [
@@ -506,8 +506,8 @@ export const medicareAndAcaRecords = {
       'packages/engine/src/projection/internal/annualHealthcareExpenses.ts#annualHealthcareExpenses',
       'packages/engine/src/tax/medicare.ts#medicareAnnualPremiumPerPerson',
     ],
-    verifiedOn: '2026-09-26',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
+    verifiedOn: '2026-09-27',
+    provenance: { derivedBy: 'claude', implementedBy: 'claude-subagent', reviewedBy: 'unreviewed' },
   },
   'display-net-care-cost-annual': {
     title: 'Net long-term-care cost after the LTC benefit',

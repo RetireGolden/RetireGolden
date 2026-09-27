@@ -390,7 +390,11 @@ from `parseExamplePlan`, a planner-ui helper, and it sets SLCSP = enrollment = t
 The standard UI "does not yet author `acaYears`" (domain rules §8), so a user-built copy of this plan would show no
 credit at all.
 
-**A5. Only 2026 is an actionable ACA year.** 2027 and 2028 have contracts, but no published pack. A stand-in year
+**A5. Only 2026 is an actionable ACA year.** *Resolved 2026-09-27 (decision D-ACA-EXAMPLE-COPY): the example's
+`lookFor` and learn article now say what it shows, against the engine of that day, on which 2027 is priced too
+(decision D-ACA-2027-TABLE): credits in 2026 and 2027, the full premium from 2028, the benchmark assumed equal to
+the $1,000 premium (so editing the premium turns the credit off), and conversions sized to the 10% bracket, not to
+the cliff. The text below records the state it was derived against.* 2027 and 2028 have contracts, but no published pack. A stand-in year
 "reports `tax-year-parameters-unsupported`, exposes no inflation-scaled FPL as actionable evidence, and funds gross
 premium" (domain rules §8; `annualHealthcareExpenses.ts` lines 285–287). So the credit exists in exactly one year of
 this example. The golden-test retune comment ("its only actionable ACA year") says the same. The public copy is

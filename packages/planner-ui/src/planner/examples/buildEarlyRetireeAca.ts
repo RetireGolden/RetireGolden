@@ -11,10 +11,13 @@ export function buildEarlyRetireeAca(): Plan {
     exampleId: EXAMPLE_ID,
     name: 'Early retiree & the ACA cliff',
     strategies: {
-      // The baseline must keep MAGI under 400% FPL for a single filer so the
-      // current year shows a positive credit; filling the 12% bracket lands MAGI
-      // above the cliff regardless of other income, so the demo (raise the
-      // bracket, watch the credit vanish) only works from the 10% baseline.
+      // Sized to the top of the 10% bracket, not to the cliff (the sizing reads
+      // only the bracket). That bracket keeps MAGI under 400% FPL for a single
+      // filer, so the priced coverage years (2026 and 2027; 2028 has no
+      // published figures yet and budgets the gross premium) show a positive
+      // credit; filling the 12% bracket lands MAGI above the cliff regardless
+      // of other income, so the demo (raise the bracket, watch the credit
+      // vanish) only works from the 10% baseline.
       rothConversion: {
         mode: 'fillToTarget',
         target: 'topOfBracket',

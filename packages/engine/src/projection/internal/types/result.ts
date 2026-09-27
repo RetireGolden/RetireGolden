@@ -261,6 +261,11 @@ export interface YearResult {
    * traditional balances pro rata (exact cents, after any unsatisfied RMD is
    * reserved), and each share converts only into that owner's own Roth IRA: an
    * owner with none loses the share (a warning names them), so this can be less.
+   * With one convertible owner nothing is split, and the amount converts as
+   * sized when that owner holds a Roth IRA (without one it is trimmed like any
+   * other share); with two or more the split is in exact cents, so when every
+   * share converts this is the sized amount rounded half up to the cent, which
+   * can exceed it by up to half a cent.
    */
   rothConversion: number
   /**
@@ -536,7 +541,11 @@ export interface YearResult {
    * largest extra gain, by bisection to $0.01, that keeps max(0, ordinary
    * income excluding Social Security + gains + qualified dividends + the extra
    * gain + the resulting taxable Social Security − deduction) at or under that
-   * threshold. Without benefits that is threshold − taxable income.
+   * threshold. Without benefits that is threshold − taxable income. The
+   * threshold is the year's: the published figure in a year with its own tax
+   * figures, and in a later year the latest published figure indexed to that
+   * year by the plan's general inflation, as the brackets and the deduction
+   * are (a single filer at 2.5%: 49,450 in 2026, 50,686.25 in 2027).
    *
    * It is room in the 0% band, not room at no tax: it ignores the capital-loss
    * carryforward (the extra gain is not netted through it, and a gain that

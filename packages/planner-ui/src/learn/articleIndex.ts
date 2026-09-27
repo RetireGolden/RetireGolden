@@ -2731,7 +2731,7 @@ export const ARTICLE_INDEX: LearningArticleMeta[] = [
     tags: ['example-plan', 'worked example', 'planner', 'fire'],
     audience: 'beginner',
     status: 'ready',
-    lastReviewed: '2026-07-07',
+    lastReviewed: '2026-09-27',
     reviewCadence: 'stable',
     sourceUrls: [],
     relatedArticles: [
@@ -2752,7 +2752,7 @@ export const ARTICLE_INDEX: LearningArticleMeta[] = [
     tags: ['example-plan', 'worked example', 'planner', 'fire'],
     audience: 'beginner',
     status: 'ready',
-    lastReviewed: '2026-07-07',
+    lastReviewed: '2026-09-27',
     reviewCadence: 'stable',
     sourceUrls: [],
     relatedArticles: [
@@ -3151,7 +3151,7 @@ export const ARTICLE_INDEX: LearningArticleMeta[] = [
     tags: ['example-plan', 'worked example', 'planner', 'fire'],
     audience: 'beginner',
     status: 'ready',
-    lastReviewed: '2026-07-07',
+    lastReviewed: '2026-09-27',
     reviewCadence: 'stable',
     sourceUrls: [],
     relatedArticles: ['aca-premium-tax-credits-and-magi', 'rule-of-55-and-72t', 'withdrawal-order-basics'],
@@ -3168,7 +3168,7 @@ export const ARTICLE_INDEX: LearningArticleMeta[] = [
     tags: ['example-plan', 'worked example', 'planner', 'fire'],
     audience: 'beginner',
     status: 'ready',
-    lastReviewed: '2026-07-07',
+    lastReviewed: '2026-09-27',
     reviewCadence: 'stable',
     sourceUrls: [],
     relatedArticles: [

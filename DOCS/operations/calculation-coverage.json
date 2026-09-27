@@ -134,7 +134,6 @@
       "optimization-baseline-after-tax-estate",
       "optimization-candidate-after-tax-estate",
       "optimizer-recommended-conversion-annual",
-      "pension-election-annuity-present-value",
       "portfolio-need-annual",
       "projection-result-ending-investable",
       "projection-result-ending-net-worth",
@@ -152,7 +151,6 @@
       "relocation-lifetime-state-local-tax",
       "relocation-state-tax-driver-savings",
       "rmd-required-annual",
-      "roth-conversion-annual",
       "scenario-comparison-cell",
       "scenario-irmaa-surcharge-tier-years",
       "scenario-lifetime-penalties",
@@ -196,7 +194,6 @@
       "withdrawals-total-annual",
       "year-result-contributions",
       "year-result-employer-match",
-      "year-result-ltcg-zero-headroom",
       "year-result-tax-exempt-interest"
     ],
     "partial": [
@@ -221,8 +218,10 @@
       "display-years-before-plan-end",
       "income-floor-ladder-yield-pct",
       "longevity-last-funded-year",
+      "pension-election-annuity-present-value",
       "risk-based-guardrail-solved-balance-thresholds",
       "risk-based-guardrail-suggested-adjustment-monthly",
+      "roth-conversion-annual",
       "simple-candidate-evaluation-after-tax-estate-delta",
       "simple-candidate-evaluation-executed-conversion-total",
       "simple-candidate-evaluation-incomplete-computation-years",
@@ -235,7 +234,8 @@
       "spending-shape-delta-vs-flat",
       "sustainable-spending-result-max-base-annual",
       "sustainable-spending-result-simulation-count",
-      "sustainable-spending-result-spending-slack-dollars"
+      "sustainable-spending-result-spending-slack-dollars",
+      "year-result-ltcg-zero-headroom"
     ],
     "noRecordYet": [
       "claim-age-co-optimization-estate-gain",

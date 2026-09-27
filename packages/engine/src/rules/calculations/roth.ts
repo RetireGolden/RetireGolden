@@ -62,9 +62,10 @@ export const rothRecords = {
     },
     limits: [
       'Beyond the worksheet\'s inputs the evidence plan fixes: a 63-year-old single filer (over 59.5 so no early-distribution exposure, under 65 so the deduction is the base standard deduction with no age addition), the $70,000 as an uninflated recurring ordinary stream, zero returns and zero inflation so the 2026 bracket ladder is unindexed, a cash account large enough to pay the conversion tax, and no base spending',
-      'The published year figure is the executed gross movement: the sized amount is the ceiling, and a traditional balance smaller than it (or an RMD reserve) lowers what the row shows',
+      'The published year figure is the executed gross movement: the sized amount is the ceiling (to within half a cent: with two or more convertible owners it is first split in exact cents, so the executed total is the sized amount rounded half up to the cent), and a traditional balance smaller than it (or an RMD reserve) lowers what the row shows',
       'The bisection\'s $0.01 stopping width is a real error bar on the published dollar; the worksheet\'s $51,800 is reached exactly here only because the first midpoint of the expanded bracket lands on the root',
       'The benefits branch is asserted as a branch, not as a number: the worksheet states no closed form for it, so the evidence shows only that a positive benefit makes the answer differ from the no-benefit subtraction',
+      'The amount is sized once for the household and then split between the owners of traditional balances in proportion to those balances after any unsatisfied RMD is reserved, in exact cents, and each share converts only into that owner\'s own Roth IRA. An owner with no Roth IRA of their own loses the share, with a warning naming them, so the published figure is the converting owners\' shares and can be well below the sized amount, which is published beside it as YearResult.aggregateRothConversionAllocationDesired (decision D-BRACKET-FILL-ROTH-EXAMPLE)',
     ],
     implementedBy: [
       'packages/engine/src/strategies/rothConversion.ts',
@@ -74,7 +75,13 @@ export const rothRecords = {
       'packages/engine/src/strategies/rothConversion.ts#sizeRothConversion',
       'packages/engine/src/projection/internal/annualAggregateRothConversionTargetPlan.ts#annualAggregateRothConversionTargetPlan',
     ],
-    verifiedOn: '2026-09-18',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+    verifiedOn: '2026-09-27',
+    // Restated 2026-09-27 (decision D-WALKTHROUGH-WORKSHEET-WORDING): the
+    // worksheet's claim and tolerance now state the bisection's one-sided
+    // $0.01 and the owner split, so the record is unreviewed until the review
+    // lane checks the rewording; Codex derived and Cursor reviewed the case.
+    // The owner-split limit (decision D-BRACKET-FILL-ROTH-EXAMPLE) is also
+    // unreviewed.
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
   },
 } satisfies Record<string, CalculationRecord>

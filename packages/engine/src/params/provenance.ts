@@ -148,7 +148,7 @@ export const PARAMETER_PROVENANCE: ParameterSource[] = [
     id: 'real-yield-curve',
     label: 'TIPS real-yield curve (income floor & bridge)',
     figures:
-      'Par real yields as of 2026-06-30: 1.85% (5y), 2.05% (7y), 2.25% (10y), 2.55% (20y), 2.70% (30y). Prices TIPS-ladder quotes and the funded-ratio discounting; refreshed annually with the parameter sets.',
+      'Par real yields as of 2026-06-30: 1.93% (5y), 2.06% (7y), 2.20% (10y), 2.54% (20y), 2.73% (30y), as published. Prices TIPS-ladder quotes and the funded-ratio discounting; refreshed annually with the parameter sets.',
     publisher: 'U.S. Treasury',
     url: 'https://home.treasury.gov/resource-center/data-chart-center/interest-rates',
   },
