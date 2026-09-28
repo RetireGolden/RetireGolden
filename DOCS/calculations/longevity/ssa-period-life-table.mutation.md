@@ -1,6 +1,6 @@
 # Mutation receipt: ssa-period-life-table
 
-Executed 2026-09-28 against RetireGolden base `2a93de55` (branch `claude/life-table-2023`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `476abd6e` (branch `claude/life-table-2023`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-28 against RetireGolden base `2a93de55` (branch `claude/life-table-2023`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `476abd6e` (branch `claude/life-table-2023`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `b8927e7e` (branch `claude/life-table-2023`, pull request #759) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/longevity/ssaPeriodLifeTable.ts`
 
@@ -26,19 +26,19 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/longevity/s
 
 ## Captured failing output
 
-Re-executed after the D-LIFE-TABLE-2023 review fixes (the death probability in a leaf module, the new evidence cases). The baseline is green (ssaPeriodLifeTable.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed after the PR #759 review fixes: a non-finite age now throws first in sampleDeathAge, jointLastSurvivorExpectancy and hazardForExpectancyMultiplier (review 5), the table module gained the known editions and the published curve gap (reviews 7 and 8), and the provenance catalog gained the 2022 edition (review 1), which moved the lines, test titles and counts these receipts quote. The baseline is green (ssaPeriodLifeTable.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
 RUN  v5.0.0 C:/rgwt/engine15/packages/engine
 
- ❯ src/longevity/ssaPeriodLifeTable.evidence.test.ts (5 tests | 3 failed) 13ms
-   ❯ ssa-period-life-table — SSA period life table, 2023 (2026 Trustees Report) (5)
-     × carries SSA's q and e for both sexes at every age 0 to 119, cell for cell as the worksheet transcribes the page 5ms
-     × rebuilds the columns' SHA-256 from the numbers: toFixed(6) and toFixed(2) give back the printed strings 6ms
+ ❯ src/longevity/ssaPeriodLifeTable.evidence.test.ts (6 tests | 3 failed) 13ms
+   ❯ ssa-period-life-table — SSA period life table, 2023 (2026 Trustees Report) (6)
+     × carries SSA's q and e for both sexes at every age 0 to 119, cell for cell as the worksheet transcribes the page 6ms
+     × rebuilds the columns' SHA-256 from the numbers: toFixed(6) and toFixed(2) give back the printed strings 5ms
      × prints the rows the records quote: 65 is 0.016455 / 18.12 / 0.010188 / 20.66, and 119 is 0.926604 / 0.58 for both sexes 1ms
 
  Test Files  1 failed (1)
-      Tests  3 failed | 2 passed (5)
+      Tests  3 failed | 3 passed (6)
 
 
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
@@ -54,13 +54,13 @@ AssertionError: expected [ Array(1) ] to deeply equal []
 +   "65: 0.016456, 18.12, 0.010188, 20.66 against 0.016455, 18.12, 0.010188, 20.66",
 + ]
 
- ❯ src/longevity/ssaPeriodLifeTable.evidence.test.ts:59:26
-     57|         if (table.some((value, i) => value !== sheet[i])) mismatches.p…
-     58|       }
-     59|       expect(mismatches).toEqual([])
+ ❯ src/longevity/ssaPeriodLifeTable.evidence.test.ts:61:26
+     59|         if (table.some((value, i) => value !== sheet[i])) mismatches.p…
+     60|       }
+     61|       expect(mismatches).toEqual([])
        |                          ^
-     60|     })
-     61|
+     62|     })
+     63|
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
 
@@ -70,13 +70,13 @@ AssertionError: expected 'ccaac424f362e772f5e11eb5687254305d9ad…' to be '32e6a
 Expected: "32e6a4c36584ea44d7778c48397c8650d882288cb1bcb6f9861edfd8c3acfe4c"
 Received: "ccaac424f362e772f5e11eb5687254305d9ad9818a9aba8920ee21346ee345ed"
 
- ❯ src/longevity/ssaPeriodLifeTable.evidence.test.ts:67:37
-     65|         text += `${x},${male.q[x]!.toFixed(6)},${male.e[x]!.toFixed(2)…
-     66|       }
-     67|       expect(await sha256Hex(text)).toBe(source.columnsSha256)
+ ❯ src/longevity/ssaPeriodLifeTable.evidence.test.ts:69:37
+     67|         text += `${x},${male.q[x]!.toFixed(6)},${male.e[x]!.toFixed(2)…
+     68|       }
+     69|       expect(await sha256Hex(text)).toBe(source.columnsSha256)
        |                                     ^
-     68|       // The same text is what the worksheet's Expected table prints, …
-     69|       for (const [age, cells] of rows) {
+     70|       // The same text is what the worksheet's Expected table prints, …
+     71|       for (const [age, cells] of rows) {
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
 
@@ -94,13 +94,13 @@ AssertionError: expected [ 0.016456, 18.12, 0.010188, 20.66 ] to deeply equal [ 
     20.66,
   ]
 
- ❯ src/longevity/ssaPeriodLifeTable.evidence.test.ts:76:68
-     74|
-     75|     it('prints the rows the records quote: 65 is 0.016455 / 18.12 / 0.…
-     76|       expect([male.q[65], male.e[65], female.q[65], female.e[65]]).toE…
+ ❯ src/longevity/ssaPeriodLifeTable.evidence.test.ts:78:68
+     76|
+     77|     it('prints the rows the records quote: 65 is 0.016455 / 18.12 / 0.…
+     78|       expect([male.q[65], male.e[65], female.q[65], female.e[65]]).toE…
        |                                                                    ^
-     77|       expect([male.q[119], male.e[119], female.q[119], female.e[119]])…
-     78|       expect(LAST_TABLE_AGE).toBe(expected.lastAge)
+     79|       expect([male.q[119], male.e[119], female.q[119], female.e[119]])…
+     80|       expect(LAST_TABLE_AGE).toBe(expected.lastAge)
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
 ```

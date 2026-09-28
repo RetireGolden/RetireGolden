@@ -1,11 +1,11 @@
 # Mutation receipt: mortality-joint-last-survivor-expectancy
 
-Executed 2026-09-14 against RetireGolden head `efaeb827` (branch claude/b1-p4-cards-longevity, with the PR #714 round-1 revision of `src/montecarlo/mortality.evidence.test.ts` applied: the planner-ui comparison moved to the planner-ui suite, and B2-P1 slice 4 deleted it with the planner-ui copy of the identity; that run replaced the same-day run against base `2dc2011c`), and re-executed 2026-09-27 against RetireGolden base `b338e430` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `2a93de55` (branch `claude/life-table-2023`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `476abd6e` (branch `claude/life-table-2023`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-14 against RetireGolden head `efaeb827` (branch claude/b1-p4-cards-longevity, with the PR #714 round-1 revision of `src/montecarlo/mortality.evidence.test.ts` applied: the planner-ui comparison moved to the planner-ui suite, and B2-P1 slice 4 deleted it with the planner-ui copy of the identity; that run replaced the same-day run against base `2dc2011c`), and re-executed 2026-09-27 against RetireGolden base `b338e430` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `2a93de55` (branch `claude/life-table-2023`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `476abd6e` (branch `claude/life-table-2023`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `b8927e7e` (branch `claude/life-table-2023`, pull request #759) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/montecarlo/mortality.ts`
 
 ```diff
-@@ -50,7 +50,7 @@
+@@ -55,7 +55,7 @@
    const survivalB = lifeSurvival(ageB, sexB)
    let expectancy = 0.5
    for (let t = 1; t <= MAX_AGE + 1; t++) {
@@ -26,19 +26,22 @@ npx vitest run src/montecarlo/mortality.evidence.test.ts
 
 ## Captured failing output
 
-Re-executed after the D-LIFE-TABLE-2023 review fixes (the death probability in a leaf module, the new evidence cases). The baseline is green (mortality.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed after the PR #759 review fixes: a non-finite age now throws first in sampleDeathAge, jointLastSurvivorExpectancy and hazardForExpectancyMultiplier (review 5), the table module gained the known editions and the published curve gap (reviews 7 and 8), and the provenance catalog gained the 2022 edition (review 1), which moved the lines, test titles and counts these receipts quote. The baseline is green (mortality.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
 RUN  v5.0.0 C:/rgwt/engine15/packages/engine
 
- ❯ src/montecarlo/mortality.evidence.test.ts (16 tests | 3 failed) 172ms
+ ❯ src/montecarlo/mortality.evidence.test.ts (16 tests | 3 failed) 252ms
    ❯ mortality-joint-last-survivor-expectancy — Joint last-survivor life expectancy of two independent lives (5)
-     × two male lives at 118: 0.5 + (1 - 0.88248^2) = 0.7212290496 years 4ms
-     × a man of 70 and a woman of 67: 21.80655867930931 years; two 'average' lives of those ages: the mean of the four sex pairings, 21.52705755500049 0ms
-     × floors fractional ages, and a negative age survives with certainty until it reaches 0 0ms
+     × two male lives at 118: 0.5 + (1 - 0.88248^2) = 0.7212290496 years 5ms
+     × a man of 70 and a woman of 67: 21.80655867930931 years; two 'average' lives of those ages: the mean of the four sex pairings, 21.52705755500049 1ms
+     × floors fractional ages, and a negative age survives with certainty until it reaches 0 1ms
 
  Test Files  1 failed (1)
       Tests  3 failed | 13 passed (16)
+
+             persist transforms across runs with fsModuleCache: true
+             learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
 
 
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯

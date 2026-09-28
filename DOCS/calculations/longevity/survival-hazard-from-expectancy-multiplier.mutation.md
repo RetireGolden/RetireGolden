@@ -1,15 +1,20 @@
 # Mutation receipt: survival-hazard-from-expectancy-multiplier
 
-Executed 2026-09-14 against RetireGolden base `2dc2011c` (branch claude/b1-p4-cards-longevity), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `20b95c74` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `2a93de55` (branch `claude/life-table-2023`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `476abd6e` (branch `claude/life-table-2023`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-14 against RetireGolden base `2dc2011c` (branch claude/b1-p4-cards-longevity), and re-executed 2026-09-27 against RetireGolden base `7d1a6225` (branch `claude/receipt-drift`; no pull request is open yet), and re-executed 2026-09-27 against RetireGolden base `20b95c74` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `2a93de55` (branch `claude/life-table-2023`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `476abd6e` (branch `claude/life-table-2023`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `b8927e7e` (branch `claude/life-table-2023`, pull request #759) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/montecarlo/survival.ts`
 
 ```diff
-@@ -263,7 +263,6 @@
-  * range so extreme questionnaire answers cannot degenerate the curve.
+diff --git a/packages/engine/src/montecarlo/survival.ts b/packages/engine/src/montecarlo/survival.ts
+index 268d6b3c..8df9e9e6 100644
+--- a/packages/engine/src/montecarlo/survival.ts
++++ b/packages/engine/src/montecarlo/survival.ts
+@@ -265,7 +265,7 @@ function expectancyUnderHazard(age: number, sex: Sex, hazard: number): number {
   */
  export function hazardForExpectancyMultiplier(age: number, sex: Sex, m: number): number {
+   if (!Number.isFinite(age)) throw new RangeError(`A hazard power is solved at a finite age; got ${age}`)
 -  if (m === 1) return 1
++
    const target = Math.max(0.1, m) * expectancyUnderHazard(age, sex, 1)
    let lo = 0.2 // far healthier than the table
    let hi = 8 // far sicker than the table
@@ -25,17 +30,20 @@ npx vitest run src/montecarlo/survival.evidence.test.ts
 
 ## Captured failing output
 
-Re-executed after the D-LIFE-TABLE-2023 review fixes (the death probability in a leaf module, the new evidence cases). The baseline is green (survival.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+Re-executed after the PR #759 review fixes: a non-finite age now throws first in sampleDeathAge, jointLastSurvivorExpectancy and hazardForExpectancyMultiplier (review 5), the table module gained the known editions and the published curve gap (reviews 7 and 8), and the provenance catalog gained the 2022 edition (review 1), which moved the lines, test titles and counts these receipts quote. The baseline is green (survival.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
 RUN  v5.0.0 C:/rgwt/engine15/packages/engine
 
- ❯ src/montecarlo/survival.evidence.test.ts (22 tests | 1 failed) 167ms
+ ❯ src/montecarlo/survival.evidence.test.ts (22 tests | 1 failed) 223ms
    ❯ survival-hazard-from-expectancy-multiplier — Hazard power for a remaining-years multiplier: exactly 1 at m = 1, otherwise solved by bisection (5)
-     × the identity multiplier m = 1 is exactly power 1 at all 279 age and sex points from 18 to 110 53ms
+     × the identity multiplier m = 1 is exactly power 1 at all 279 age and sex points from 18 to 110 77ms
 
  Test Files  1 failed (1)
       Tests  1 failed | 21 passed (22)
+
+             persist transforms across runs with fsModuleCache: true
+             learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
 
 
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
