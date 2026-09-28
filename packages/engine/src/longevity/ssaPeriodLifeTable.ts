@@ -171,6 +171,39 @@ export const LIFE_TABLE_EDITION_BEFORE_THE_FIELD: LifeTableEdition = Object.free
   trusteesReportYear: 2025,
 })
 
+/** An edition of SSA's period life table a stored figure can name, with SSA's page for it. */
+export interface KnownLifeTableEdition {
+  readonly edition: LifeTableEdition
+  /** SSA's page for the edition: the live page for the one the engine carries, the page SSA keeps for an earlier one. */
+  readonly url: string
+}
+
+/**
+ * The editions a stored figure can name, a closed set: the 2022 period table
+ * of the 2025 Trustees Report, which the engine carried until 2026-09-27
+ * (its page, `table4c6_2022_TR2025.html`, was read live that day by the
+ * D-LIFE-TABLE-2023 derivation, its check and its review), and the table the
+ * engine carries now. A yearly refresh adds the outgoing edition with its page.
+ */
+export const KNOWN_LIFE_TABLE_EDITIONS: readonly KnownLifeTableEdition[] = Object.freeze([
+  Object.freeze({ edition: LIFE_TABLE_EDITION_BEFORE_THE_FIELD, url: 'https://www.ssa.gov/oact/STATS/table4c6_2022_TR2025.html' }),
+  Object.freeze({ edition: CURRENT_LIFE_TABLE_EDITION, url: SSA_PERIOD_LIFE_TABLE.source.url }),
+])
+
+/**
+ * The known edition a stored figure was made on (a figure that names none was
+ * made on the 2022 table), or null when it names an edition outside
+ * #KNOWN_LIFE_TABLE_EDITIONS.
+ */
+export function knownLifeTableEdition(stored: LifeTableEdition | undefined): KnownLifeTableEdition | null {
+  const edition = storedLifeTableEdition(stored)
+  return (
+    KNOWN_LIFE_TABLE_EDITIONS.find(
+      (known) => known.edition.periodYear === edition.periodYear && known.edition.trusteesReportYear === edition.trusteesReportYear,
+    ) ?? null
+  )
+}
+
 /** The edition a stored figure was made on: its own field, or the 2022 table when it has none. */
 export function storedLifeTableEdition(stored: LifeTableEdition | undefined): LifeTableEdition {
   return stored ?? LIFE_TABLE_EDITION_BEFORE_THE_FIELD

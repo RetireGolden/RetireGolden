@@ -85,4 +85,15 @@ describe('LongevityResults and the SSA table edition', () => {
     expect(text).toContain('The life expectancy they imply differs from SSA\'s printed figure above by at most 0.005 years.')
     expect(el.querySelector('[data-testid="longevity-older-table"]')).toBeNull()
   })
+
+  it("says an edition outside the known set is not recognized and links SSA's live page (PR #759 review 7)", () => {
+    const el = mount(saved({ periodYear: 2024, trusteesReportYear: 2027 }))
+    const text = (el.textContent ?? '').replace(/\s+/gu, ' ')
+    expect(text).toContain('SSA period life table (table edition not recognized)')
+    expect(text).not.toContain('2024')
+    expect(el.querySelector('a')!.getAttribute('href')).toBe('https://www.ssa.gov/oact/STATS/table4c6.html')
+    expect(el.querySelector('[data-testid="longevity-older-table"]')!.textContent.replace(/\s+/gu, ' ')).toBe(
+      'Saved on the SSA period life table (table edition not recognized). The planner now uses the SSA period life table, 2023 (2026 Trustees Report). Edit your answers to recompute this estimate on it.',
+    )
+  })
 })

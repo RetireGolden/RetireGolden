@@ -1,4 +1,6 @@
+import { knownLifeTableEdition } from '@retiregolden/engine/longevity/ssaPeriodLifeTable'
 import type { LifeTableEdition, LongevityAnswers, LongevityPersisted, LongevityResult } from '@retiregolden/engine/longevity/types'
+import { UNRECOGNIZED_LIFE_TABLE_EDITION } from './constants'
 
 const SEX: LongevityAnswers['sex'][] = ['male', 'female', 'average']
 const BMI: LongevityAnswers['bmiCategory'][] = [
@@ -87,23 +89,27 @@ function parseAnswers(raw: unknown): LongevityAnswers | null {
 }
 
 /**
- * The saved result's table edition: absent on a result saved before the field
- * existed (read as the 2022 table by storedLifeTableEdition), and otherwise
- * two whole years. Anything else is corruption: `null`.
+ * The saved result's table edition (PR #759 review 7): absent on a result
+ * saved before the field existed (read as the 2022 table by
+ * storedLifeTableEdition), else one of the engine's known editions
+ * (engine/longevity/ssaPeriodLifeTable.ts#KNOWN_LIFE_TABLE_EDITIONS). Anything
+ * else, an unknown edition or a value that is not an edition, is read as
+ * UNRECOGNIZED_LIFE_TABLE_EDITION: the result is kept, and its source says
+ * the edition is not recognized rather than naming a page for it.
  */
-function parseTableEdition(raw: unknown): LifeTableEdition | undefined | null {
+function parseTableEdition(raw: unknown): LifeTableEdition | undefined {
   if (raw === undefined) return undefined
-  if (!isRecord(raw)) return null
-  const periodYear = num(raw.periodYear)
-  const trusteesReportYear = num(raw.trusteesReportYear)
-  if (periodYear == null || trusteesReportYear == null || !Number.isInteger(periodYear) || !Number.isInteger(trusteesReportYear)) return null
-  return { periodYear, trusteesReportYear }
+  if (!isRecord(raw)) return UNRECOGNIZED_LIFE_TABLE_EDITION
+  const known = knownLifeTableEdition({
+    periodYear: num(raw.periodYear) ?? Number.NaN,
+    trusteesReportYear: num(raw.trusteesReportYear) ?? Number.NaN,
+  })
+  return known ? known.edition : UNRECOGNIZED_LIFE_TABLE_EDITION
 }
 
 function parseResult(raw: unknown): LongevityResult | null {
   if (!isRecord(raw)) return null
   const tableEdition = parseTableEdition(raw.tableEdition)
-  if (tableEdition === null) return null
   const baselineRemainingYears = num(raw.baselineRemainingYears)
   const rawMultiplier = num(raw.rawMultiplier)
   const appliedMultiplier = num(raw.appliedMultiplier)

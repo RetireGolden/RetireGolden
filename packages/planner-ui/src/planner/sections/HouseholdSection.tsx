@@ -2,12 +2,9 @@
 
 import { useState } from 'react'
 
-import {
-  CURRENT_LIFE_TABLE_EDITION,
-  isCurrentLifeTableEdition,
-  storedLifeTableEdition,
-} from '@retiregolden/engine/longevity/ssaPeriodLifeTable'
+import { CURRENT_LIFE_TABLE_EDITION, isCurrentLifeTableEdition } from '@retiregolden/engine/longevity/ssaPeriodLifeTable'
 
+import { storedLifeTablePhrase } from '../../longevity/constants'
 import { invalidateAcaEvidence, removePartner, updatePersonLongevity } from '../householdActions'
 import { updatePersonDob } from '../eligibilityFactActions'
 import { SINGLE_WITH_PARTNER_NOTE } from '../filingStatusNotice'
@@ -193,8 +190,7 @@ export function HouseholdSection() {
                   person.longevity.percentile.partnerHealthMultiplier !== undefined
                     ? ', health-adjusted'
                     : ''}{' '}
-                  (SSA {storedLifeTableEdition(person.longevity.percentile.tableEdition).periodYear} period life
-                  table
+                  ({storedLifeTablePhrase(person.longevity.percentile.tableEdition)}
                   {isCurrentLifeTableEdition(person.longevity.percentile.tableEdition)
                     ? ''
                     : `; the planner now uses the ${CURRENT_LIFE_TABLE_EDITION.periodYear} table`}

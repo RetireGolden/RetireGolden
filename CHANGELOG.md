@@ -84,20 +84,24 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
     before this change has none, was made on the 2022 table, and is labelled so: the
     Household line reads "(SSA 2022 period life table; the planner now uses the 2023
     table)", the questionnaire result links the 2022 page and says the planner has moved
-    on; the Assumptions card and its exports print "(25% survival percentile, SSA 2022 period
-    life table, 2025 Trustees Report)" and cite SSA's table. The Social Security form's
-    default end age reuses a saved result's age as it was saved and carries its table's
-    label (`savedEndAge`). Plan storage: the plan schema's `longevity.percentile` gains the
-    optional `tableEdition` (`{ periodYear, trusteesReportYear }`); saved plans stay valid,
-    `CURRENT_PLAN_SCHEMA_VERSION` stays 5, and `schema/plan.v5.json` is regenerated
-    (`DOCS/features/plan-file-format.md` lists the field). The questionnaire's localStorage
-    result gains the same optional field. A plan that makes a round trip through an engine
-    that predates the field (0.3.0, which RetireGolden-Pro and RetireGolden-MCP pin) loses
-    `tableEdition`, because that engine drops keys it does not know; the pick keeps its
-    age, and back in this planner a 2023 pick then reads as a 2022 pick. The effect is on
-    the label only, and in the older direction: the pick is shown as made on an earlier
-    table than it was, with the note that the planner now uses the 2023 table, and no
-    figure changes.
+    on. The editions a stored figure can name are a closed set, the 2022 and 2023 tables,
+    each with SSA's own page (`longevity/ssaPeriodLifeTable#KNOWN_LIFE_TABLE_EDITIONS`):
+    any other edition, or a saved result's value that is not an edition, reads "table
+    edition not recognized" and links SSA's live page, and the saved result is kept; the
+    Assumptions card and its exports print "(25% survival percentile, SSA 2022 period life
+    table, 2025 Trustees Report)" and cite SSA's table. The Social Security form's default
+    end age reuses a saved result's age as it was saved and carries its table's label
+    (`savedEndAge`). Plan storage: the plan schema's `longevity.percentile` gains the
+    optional `tableEdition` (`{ periodYear, trusteesReportYear }`); saved plans stay
+    valid, `CURRENT_PLAN_SCHEMA_VERSION` stays 5, and `schema/plan.v5.json` is regenerated
+    (`DOCS/features/plan-file-format.md` lists the field). The questionnaire's
+    localStorage result gains the same optional field. A plan that makes a round trip
+    through an engine that predates the field (0.3.0, which RetireGolden-Pro and
+    RetireGolden-MCP pin) loses `tableEdition`, because that engine drops keys it does not
+    know; the pick keeps its age, and back in this planner a 2023 pick then reads as a
+    2022 pick. The effect is on the label only, and in the older direction: the pick is
+    shown as made on an earlier table than it was, with the note that the planner now uses
+    the 2023 table, and no figure changes.
   - **Sources.** `params/provenance.ts#PARAMETER_PROVENANCE` gains `ssa-life-table` (SSA's
     Table 4C6, the 2023 period table of the 2026 Trustees Report), 20 ids in all; the
     Assumptions card and the report's parameter appendix list it, and the report goldens
@@ -1685,27 +1689,30 @@ has — rather than the runtime contract a consumer needs on the landing page.
   expectancy arrays are replaced by `SSA_PERIOD_LIFE_TABLE` (`{ source, male: { q, e },
   female: { q, e } }`, SSA's 2023 period table) with `LAST_TABLE_AGE`,
   `CURRENT_LIFE_TABLE_EDITION`, `LIFE_TABLE_EDITION_BEFORE_THE_FIELD`,
-  `storedLifeTableEdition`, `isCurrentLifeTableEdition` and the types `PeriodLifeTable`,
+  `storedLifeTableEdition`, `isCurrentLifeTableEdition`, `KNOWN_LIFE_TABLE_EDITIONS`,
+  `knownLifeTableEdition` and the types `KnownLifeTableEdition`, `PeriodLifeTable`,
   `PeriodLifeTableColumns` and `PeriodLifeTableSource`; `baselineRemainingYears` keeps its
   signature and reads the 2023 life expectancies. `montecarlo/mortality#annualMortality`
-  no longer accepts 'average': it takes the new `TableSex` ('male' | 'female') and throws a
-  `RangeError` for anything else, since 'average' has no single death probability (read
-  `montecarlo/survival#survivalCurve`). `SurvivalCurve` gains `deathProbabilityGivenAlive`.
-  `longevity/types` gains `LifeTableEdition` and the optional
-  `LongevityResult.tableEdition`, and the plan schema's `longevity.percentile` the optional
-  `tableEdition`. planner-ui (published source): `longevity/constants` gains
-  `lifeTableCitation`, `lifeTableName` and `LifeTableCitation`, and `BASELINE_CITATION` is
-  built from the engine's source record. RetireGolden-Pro and RetireGolden-MCP import none
-  of the renamed or narrowed exports. The one-year death probability lives in the new leaf
-  module `montecarlo/deathProbability` (`annualMortality`, `MAX_AGE`, `Sex`, `TableSex`),
-  which `montecarlo/mortality` re-exports, so the mortality and survival modules no longer
-  import each other. Bad input now throws where it returned a value: `sampleDeathAge` with
-  a NaN age throws a `RangeError` (it returned 119), and `jointLastSurvivorExpectancy` with
-  a NaN or infinite age throws one (it returned NaN, or for an infinite age the other
-  life's expectancy); `hazardForExpectancyMultiplier` with a NaN age returns 8 (it returned
-  0.2). No caller passes such an age: ages come from whole birth years. The source record's
-  `archive` loses `sha256`, and `PARAMETER_PROVENANCE` gains the id `ssa-life-table`.
-  planner-ui: `socialSecurity/ssFormUtils` gains `savedEndAge` and `SavedEndAge`.
+  no longer accepts 'average': it takes the new `TableSex` ('male' | 'female') and throws
+  a `RangeError` for anything else, since 'average' has no single death probability (read
+  `montecarlo/survival#survivalCurve`). `SurvivalCurve` gains
+  `deathProbabilityGivenAlive`. `longevity/types` gains `LifeTableEdition` and the
+  optional `LongevityResult.tableEdition`, and the plan schema's `longevity.percentile`
+  the optional `tableEdition`. planner-ui (published source): `longevity/constants` gains
+  `lifeTableCitation` (over the known editions only), `lifeTableName`,
+  `storedLifeTablePhrase`, `UNRECOGNIZED_LIFE_TABLE_EDITION` and `LifeTableCitation`, and
+  `BASELINE_CITATION` is built from the engine's source record. RetireGolden-Pro and
+  RetireGolden-MCP import none of the renamed or narrowed exports. The one-year death
+  probability lives in the new leaf module `montecarlo/deathProbability`
+  (`annualMortality`, `MAX_AGE`, `Sex`, `TableSex`), which `montecarlo/mortality`
+  re-exports, so the mortality and survival modules no longer import each other. Bad input
+  now throws where it returned a value: `sampleDeathAge` with a NaN age throws a
+  `RangeError` (it returned 119), and `jointLastSurvivorExpectancy` with a NaN or infinite
+  age throws one (it returned NaN, or for an infinite age the other life's expectancy);
+  `hazardForExpectancyMultiplier` with a NaN age returns 8 (it returned 0.2). No caller
+  passes such an age: ages come from whole birth years. The source record's `archive`
+  loses `sha256`, and `PARAMETER_PROVENANCE` gains the id `ssa-life-table`. planner-ui:
+  `socialSecurity/ssFormUtils` gains `savedEndAge` and `SavedEndAge`.
 
 - **Claim-age searches and the survivor analysis (B2-P1 slice 5):** new modules
   `decisions/claimAgeSweep` (`sweepClaimAges`, `refineClaimAgeMonthly`, `refineClaimMonths`,

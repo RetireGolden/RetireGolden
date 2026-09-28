@@ -84,4 +84,13 @@ describe('Household sex and the SSA life table', () => {
     expect(text).toContain('(SSA 2023 period life table). Re-open Percentile to refresh it as ages change.')
     expect(text).not.toContain('the planner now uses')
   })
+
+  it('says a pick naming an edition outside the known set is on an unrecognized table (PR #759 review 7)', () => {
+    const el = mount(withPercentilePick({ periodYear: 2024, trusteesReportYear: 2027 }))
+    const text = (el.textContent ?? '').replace(/\s+/gu, ' ')
+    expect(text).toContain(
+      '(SSA period life table, table edition not recognized; the planner now uses the 2023 table). Re-open Percentile to refresh it as ages change.',
+    )
+    expect(text).not.toContain('SSA 2024')
+  })
 })

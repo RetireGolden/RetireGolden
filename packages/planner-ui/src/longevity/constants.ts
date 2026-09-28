@@ -1,5 +1,5 @@
 import { STORAGE_KEYS } from '../data/localStore'
-import { CURRENT_LIFE_TABLE_EDITION, SSA_PERIOD_LIFE_TABLE } from '@retiregolden/engine/longevity/ssaPeriodLifeTable'
+import { CURRENT_LIFE_TABLE_EDITION, SSA_PERIOD_LIFE_TABLE, knownLifeTableEdition } from '@retiregolden/engine/longevity/ssaPeriodLifeTable'
 import type { LifeTableEdition } from '@retiregolden/engine/longevity/types'
 
 /** localStorage key for saved longevity answers + last result (primary / household member A) */
@@ -15,22 +15,46 @@ export interface LifeTableCitation {
 }
 
 /**
+ * What a saved result names when its edition is outside the engine's closed
+ * set (engine/longevity/ssaPeriodLifeTable.ts#KNOWN_LIFE_TABLE_EDITIONS) or is
+ * not an edition at all (PR #759 review 7). No edition has year 0, so it
+ * reads as unrecognized wherever it goes, back through storage included.
+ */
+export const UNRECOGNIZED_LIFE_TABLE_EDITION: LifeTableEdition = Object.freeze({ periodYear: 0, trusteesReportYear: 0 })
+
+/**
  * The citation for an edition of SSA's period life table, read from the
- * engine's source record so a table refresh cannot leave it stale. The table
- * the engine carries links to SSA's live page; an earlier edition links to the
- * page SSA keeps for it (`table4c6_<period>_TR<report>.html`; the 2022
- * edition's page, the only earlier one a stored figure can name, was read on
- * 2026-09-27).
+ * engine's closed set of known editions, each with SSA's own page for it (the
+ * live page for the table the engine carries, `table4c6_2022_TR2025.html` for
+ * the 2022 table), so a table refresh cannot leave it stale and no page is
+ * made up for an edition the engine does not know. An unrecognized edition
+ * says so and links SSA's live page (PR #759 review 7).
  */
 export function lifeTableCitation(edition: LifeTableEdition): LifeTableCitation {
-  const { periodYear, trusteesReportYear } = edition
-  const current =
-    periodYear === CURRENT_LIFE_TABLE_EDITION.periodYear && trusteesReportYear === CURRENT_LIFE_TABLE_EDITION.trusteesReportYear
+  const known = knownLifeTableEdition(edition)
+  if (!known) {
+    return {
+      label: 'SSA period life table (table edition not recognized)',
+      url: SSA_PERIOD_LIFE_TABLE.source.url,
+      note: 'The saved result names a table edition the planner does not recognize; the link is SSA’s current table.',
+    }
+  }
+  const { periodYear, trusteesReportYear } = known.edition
   return {
     label: `SSA period life table, ${periodYear} (${trusteesReportYear} Trustees Report)`,
-    url: current ? SSA_PERIOD_LIFE_TABLE.source.url : `https://www.ssa.gov/oact/STATS/table4c6_${periodYear}_TR${trusteesReportYear}.html`,
+    url: known.url,
     note: `The “Life expectancy” column is the average remaining years for the Social Security area population, by sex, using ${periodYear} mortality rates.`,
   }
+}
+
+/**
+ * A stored figure's table in running text (a figure that names none was made
+ * on the 2022 table): "SSA 2022 period life table", or "SSA period life
+ * table, table edition not recognized" for an edition outside the closed set.
+ */
+export function storedLifeTablePhrase(stored: LifeTableEdition | undefined): string {
+  const known = knownLifeTableEdition(stored)
+  return known ? `SSA ${known.edition.periodYear} period life table` : 'SSA period life table, table edition not recognized'
 }
 
 /** An edition named in running text: "period life table for 2023, as used in the 2026 Trustees Report". */

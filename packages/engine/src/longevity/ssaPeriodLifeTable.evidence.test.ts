@@ -3,11 +3,13 @@ import { expect, it } from 'vitest'
 import { describeCalculation, withinTolerance, worksheetExpectedRows, worksheetNumber } from '../rules/describeCalculation.js'
 import {
   CURRENT_LIFE_TABLE_EDITION,
+  KNOWN_LIFE_TABLE_EDITIONS,
   LAST_TABLE_AGE,
   LIFE_TABLE_EDITION_BEFORE_THE_FIELD,
   SSA_PERIOD_LIFE_TABLE,
   baselineRemainingYears,
   isCurrentLifeTableEdition,
+  knownLifeTableEdition,
   storedLifeTableEdition,
 } from './ssaPeriodLifeTable.js'
 
@@ -115,6 +117,25 @@ describeCalculation(
       // Both years must match: a mixed pair is not the table the engine carries.
       expect(isCurrentLifeTableEdition({ periodYear: 2023, trusteesReportYear: 2025 })).toBe(false)
       expect(isCurrentLifeTableEdition({ periodYear: 2022, trusteesReportYear: 2026 })).toBe(false)
+    })
+
+    it("knows two editions, each with SSA's own page, and no other (PR #759 review 7)", () => {
+      expect(KNOWN_LIFE_TABLE_EDITIONS).toEqual([
+        { edition: { periodYear: 2022, trusteesReportYear: 2025 }, url: 'https://www.ssa.gov/oact/STATS/table4c6_2022_TR2025.html' },
+        { edition: { periodYear: 2023, trusteesReportYear: 2026 }, url: SSA_PERIOD_LIFE_TABLE.source.url },
+      ])
+      // A figure that names no edition was made on the 2022 table.
+      expect(knownLifeTableEdition(undefined)).toBe(KNOWN_LIFE_TABLE_EDITIONS[0])
+      expect(knownLifeTableEdition({ periodYear: 2023, trusteesReportYear: 2026 })).toBe(KNOWN_LIFE_TABLE_EDITIONS[1])
+      // A mixed pair, a later edition and a malformed one are none of them: no page is made up for them.
+      for (const other of [
+        { periodYear: 2023, trusteesReportYear: 2025 },
+        { periodYear: 2024, trusteesReportYear: 2027 },
+        { periodYear: 0, trusteesReportYear: 0 },
+        { periodYear: Number.NaN, trusteesReportYear: 2026 },
+      ]) {
+        expect(knownLifeTableEdition(other), JSON.stringify(other)).toBeNull()
+      }
     })
   },
 )
