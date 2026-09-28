@@ -131,6 +131,9 @@ describe('Social Security analysis page on the engine models', () => {
     expect(page).not.toContain('What your projected work will pay')
     expect(page).toContain('Ratio (get back ÷ paid in)2.38×')
     expect(page).not.toContain('3.80×')
+    // The panel names the parts the Learning Center article describes (learn/socialSecurityTaxesVsBenefits.article.test.ts).
+    expect(page).toContain("the tax your projected work will pay, in today's dollars")
+    expect(page).toContain("(on your record, or a former spouse's when larger): those already received")
   })
 
   it('paid in: the projected work the PIA counts is paid in too, so the ratio is 1.53×, not 2.36×', async () => {
