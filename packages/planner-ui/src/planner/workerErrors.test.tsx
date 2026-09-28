@@ -105,7 +105,12 @@ describe('MonteCarloPage worker failures', () => {
 describe('SsAnalysisPage robustness check failure', () => {
   it('renders an error and re-enables the button when Monte Carlo rejects', async () => {
     mockedRunMc.mockImplementation(() => Promise.reject(new Error('worker exploded')))
-    await mount(<SsAnalysisPage />, createSamplePlan())
+    // The check is offered only on a ranking the page stands behind (B2-P1
+    // slice 5 review, L6). The sample plan's Marketplace credit is unpriced
+    // from 2028, which refuses the ranking; without the credit it ranks.
+    const plan = createSamplePlan()
+    plan.expenses.healthcare = { ...plan.expenses.healthcare, applyAcaCredit: false }
+    await mount(<SsAnalysisPage />, plan)
     // The claim-age sweep is debounced 200 ms off the render path; the
     // robustness button only exists once it has settled.
     await advanceBy(400)

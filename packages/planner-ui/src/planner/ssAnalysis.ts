@@ -1,28 +1,19 @@
 /**
- * Social Security claiming analysis for the planner.
+ * Social Security claiming analysis for the planner: the page's helpers
+ * around the engine's models.
  *
- * Two layers, mirroring the V5 plan:
- *  - whole-plan sweep: for every combination of claim ages, run the full
- *    deterministic projection and rank by ending after-tax estate (the choice
- *    interacts with taxes, Roth conversions, IRMAA, ACA, RMDs);
+ * Both layers are computed in the engine:
+ *  - whole-plan sweep and its month refinement: every combination of claim
+ *    ages run through the full deterministic projection, ranked by the chosen
+ *    objective (@retiregolden/engine/decisions/claimAgeSweep);
  *  - benefits-only: mortality-weighted expected present value of the benefits
- *    alone, the actuarial lens, which the engine computes
+ *    alone, the actuarial lens
  *    (@retiregolden/engine/socialSecurity/analysis/expectedValue).
  *
  * @see DOCS/features/social-security.md
  */
 
 import type { IncomeStream, Person, Plan } from '@retiregolden/engine/model/plan'
-import { summarizeProjection, type ProjectionSummary } from '@retiregolden/engine/projection/compare'
-import { simulatePlan } from '@retiregolden/engine/projection/simulate'
-import {
-  createDecisionContext,
-  evaluateCandidate,
-  objectivePolicyForPlan,
-  rankEvaluations,
-  socialSecurityClaimGridGenerator,
-  type ObjectivePolicyId,
-} from '@retiregolden/engine/decisions'
 // The claimants module, not expectedValue: the Social Security step imports
 // this file eagerly, and the models belong to the analysis page's own chunk.
 import { benefitsOnlyClaimAges, socialSecurityClaimants } from '@retiregolden/engine/socialSecurity/analysis/claimants'
@@ -31,7 +22,7 @@ import {
   socialSecurityColaAssumptionPct,
   type PiaFromEarningsResult,
 } from '@retiregolden/engine/socialSecurity/piaFromEarnings'
-import { currentStartYear, taxCalculatorFor } from './useProjection'
+import { currentStartYear } from './useProjection'
 
 type SsStream = Extract<IncomeStream, { type: 'socialSecurity' }>
 
@@ -121,37 +112,11 @@ export function claimingPeople(plan: Plan, startYear: number = currentStartYear(
   return socialSecurityClaimants(plan, startYear).map(({ person, stream, piaMonthly }) => ({ person, stream, pia: piaMonthly }))
 }
 
-// ---------------------------------------------------------------------------
-// Whole-plan sweep
-// ---------------------------------------------------------------------------
-
-export interface SweepRow {
-  /** Claim age (years) per claiming person, keyed by personId. */
-  claimByPersonId: Record<string, number>
-  summary: ProjectionSummary
-  /** Objective-policy metric delta versus the current plan; higher is better. */
-  primaryValue: number
-  eligible: boolean
-  lossReason: string | null
-}
-
-export interface SweepResult {
-  /** personId order the grid axes follow (1 entry = single, 2 = couple). */
-  personIds: string[]
-  objectivePolicyId: ObjectivePolicyId
-  primaryMetricLabel: string
-  rows: SweepRow[]
-  /** Rows sorted by the selected objective policy, descending. */
-  ranked: SweepRow[]
-  /**
-   * The engine's pick: the first eligible row that strictly improves the
-   * objective over the current claim, after tie-breakers. Null when nothing
-   * does, which is the only state in which a claim age may be called best.
-   */
-  winner: SweepRow | null
-}
-
-export function planWithClaimAges(plan: Plan, claimByPersonId: Record<string, number>): Plan {
+/**
+ * The plan with each named person's Social Security claim set to a whole
+ * year (the robustness check's and the bridge panel's variants).
+ */
+export function planWithClaimAges(plan: Plan, claimByPersonId: Readonly<Record<string, number>>): Plan {
   const next = structuredClone(plan)
   for (const stream of next.incomes) {
     if (stream.type === 'socialSecurity' && claimByPersonId[stream.personId] !== undefined) {
@@ -160,157 +125,3 @@ export function planWithClaimAges(plan: Plan, claimByPersonId: Record<string, nu
   }
   return next
 }
-
-/**
- * Run the full projection for every claim-age combination (62-70 per claiming
- * person) and rank by ending after-tax estate: 9 evaluations for one claimer,
- * 81 for two.
- *
- * That is not a frame's worth of work. A two-person run of this module's own
- * test plan measured 139 ms, so the caller keeps it off the render path and
- * shows a loading state, the way the survivor-transition sweep does. The
- * comment here used to claim the opposite ("well under a frame budget on the
- * main thread"), which is how the page came to call it inside a `useMemo`.
- */
-export function sweepClaimingStrategies(
-  plan: Plan,
-  startYear = currentStartYear(),
-  objectivePolicyId: ObjectivePolicyId = 'max-after-tax-estate',
-): SweepResult {
-  const people = claimingPeople(plan, startYear)
-  const personIds = people.map((p) => p.person.id)
-  const taxCalculator = taxCalculatorFor(plan)
-  if (personIds.length === 0) {
-    const policy = objectivePolicyForPlan(objectivePolicyId, plan)
-    return { personIds, objectivePolicyId, primaryMetricLabel: policy.primaryMetricLabel, rows: [], ranked: [], winner: null }
-  }
-
-  const ctx = createDecisionContext(plan, { startYear, taxCalculator })
-  const policy = objectivePolicyForPlan(objectivePolicyId, plan)
-  const candidates = socialSecurityClaimGridGenerator.generate(ctx)
-  const evaluations = candidates.map((candidate) => evaluateCandidate(ctx, candidate))
-  const { ranked: rankedDecisions, winner: winningDecision } = rankEvaluations(evaluations, ctx, policy, 0)
-
-  const rowByCandidateId = new Map<string, SweepRow>()
-  for (const row of rankedDecisions) {
-    const claimByPersonId = row.evaluation.candidate.metadata?.['claimByPersonId']
-    if (!claimByPersonId || typeof claimByPersonId !== 'object') continue
-    const claim = claimByPersonId as Record<string, number>
-    if (!personIds.every((id) => typeof claim[id] === 'number')) continue
-    rowByCandidateId.set(row.evaluation.candidate.id, {
-      claimByPersonId: Object.fromEntries(personIds.map((id) => [id, claim[id]!])),
-      summary: row.evaluation.candidateSummary,
-      primaryValue: row.primaryValue,
-      eligible: row.eligible,
-      lossReason: row.lossReason,
-    })
-  }
-
-  const rows = candidates
-    .map((candidate) => rowByCandidateId.get(candidate.id))
-    .filter((row): row is SweepRow => row !== undefined)
-  const ranked = rankedDecisions
-    .map((row) => rowByCandidateId.get(row.evaluation.candidate.id))
-    .filter((row): row is SweepRow => row !== undefined)
-  const winner = winningDecision ? (rowByCandidateId.get(winningDecision.evaluation.candidate.id) ?? null) : null
-  return { personIds, objectivePolicyId, primaryMetricLabel: policy.primaryMetricLabel, rows, ranked, winner }
-}
-
-// ---------------------------------------------------------------------------
-// Monthly refinement around the best whole-year strategy
-// ---------------------------------------------------------------------------
-
-export interface MonthlyClaim {
-  years: number
-  months: number
-}
-
-export interface MonthlyRefinement {
-  claimByPersonId: Record<string, MonthlyClaim>
-  summary: ProjectionSummary
-}
-
-export function planWithClaimAgesMonthly(plan: Plan, claimByPersonId: Record<string, MonthlyClaim>): Plan {
-  const next = structuredClone(plan)
-  for (const stream of next.incomes) {
-    if (stream.type === 'socialSecurity' && claimByPersonId[stream.personId] !== undefined) {
-      stream.claimAge = { ...claimByPersonId[stream.personId]! }
-    }
-  }
-  return next
-}
-
-/**
- * Second-pass monthly refinement: starting from the best whole-year strategy,
- * sweep each claiming person's claim age to the month within ±1 year (clamped to
- * 62y0m–70y0m and the current age) by coordinate ascent, keeping the best
- * after-tax estate. ~25 runs per person, so it stays on the main thread.
- */
-export function refineClaimingMonthly(
-  plan: Plan,
-  baseClaimYears: Record<string, number>,
-  startYear = currentStartYear(),
-): MonthlyRefinement {
-  const people = claimingPeople(plan, startYear)
-  const taxCalculator = taxCalculatorFor(plan)
-  const evaluate = (claim: Record<string, MonthlyClaim>): ProjectionSummary => {
-    const candidate = planWithClaimAgesMonthly(plan, claim)
-    return summarizeProjection(candidate, simulatePlan(candidate, { startYear, taxCalculator }))
-  }
-
-  let best: Record<string, MonthlyClaim> = {}
-  for (const id of Object.keys(baseClaimYears)) best[id] = { years: baseClaimYears[id]!, months: 0 }
-  let bestSummary = evaluate(best)
-
-  for (const { person } of people) {
-    const baseYear = best[person.id]!.years
-    const currentAge = startYear - dobParts(person).y
-    let localBest = best[person.id]!
-    for (let yy = baseYear - 1; yy <= baseYear + 1; yy++) {
-      if (yy < 62 || yy > 70 || yy < currentAge) continue
-      const maxMonth = yy === 70 ? 0 : 11 // engine caps claim at 70y0m
-      for (let mm = 0; mm <= maxMonth; mm++) {
-        const summary = evaluate({ ...best, [person.id]: { years: yy, months: mm } })
-        if (summary.endingAfterTaxEstate > bestSummary.endingAfterTaxEstate) {
-          bestSummary = summary
-          localBest = { years: yy, months: mm }
-        }
-      }
-    }
-    best = { ...best, [person.id]: localBest }
-  }
-  return { claimByPersonId: best, summary: bestSummary }
-}
-
-/** Half a unit of the objective metric (a dollar or a year): closer than this is the same score. */
-const FLAT_TOLERANCE = 0.5
-
-/**
- * True when the selected objective scores every eligible candidate the same
- * (for example, every after-tax estate is $0 on a plan with no assets), so
- * no claim age can honestly be called best on it (#454). Ineligible rows are
- * ranked below the eligible ones and do not count.
- */
-export function objectiveIsFlat(ranked: readonly SweepRow[]): boolean {
-  const eligible = ranked.filter((row) => row.eligible)
-  if (eligible.length < 2) return false
-  const first = eligible[0]!.primaryValue
-  return eligible.every((row) => Math.abs(row.primaryValue - first) <= FLAT_TOLERANCE)
-}
-
-export type SweepVerdict = 'winner' | 'flat' | 'current-best' | 'ineligible' | 'empty'
-
-/**
- * What the page may say about the sweep. Only `winner` crowns a claim age:
- * the engine found an eligible row that strictly improves on the current
- * claim. The rest are notes: the objective cannot separate the candidates
- * (`flat`), the current claim already leads (`current-best`), nothing meets
- * the objective's constraints (`ineligible`), or nobody claims (`empty`).
- */
-export function sweepVerdict(sweep: Pick<SweepResult, 'ranked' | 'winner'>): SweepVerdict {
-  if (sweep.ranked.length === 0) return 'empty'
-  if (sweep.winner) return 'winner'
-  if (!sweep.ranked.some((row) => row.eligible)) return 'ineligible'
-  return objectiveIsFlat(sweep.ranked) ? 'flat' : 'current-best'
-}
-

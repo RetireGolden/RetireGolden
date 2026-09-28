@@ -32,6 +32,8 @@ import {
   piaInputFromEarnings,
   resolveEarningsProjection,
 } from '@retiregolden/engine/socialSecurity/piaFromEarnings'
+import { claimYearOf, isClaimAlreadyMade, type AlreadyClaimed } from '@retiregolden/engine/socialSecurity/openClaims'
+import { ALREADY_CLAIMED_LIMITS, alreadyClaimedText } from './planner/claimAgeCopy'
 import {
   acceptsContributions,
   isConvertibleToRoth,
@@ -1122,6 +1124,16 @@ function buildSpendingLever({
 
 /**
  * Set every eligible person's Social Security claim age.
+ *
+ * A claim already made (its claim year, birth year plus claim years, before
+ * the start year: `socialSecurity/openClaims.ts#isClaimAlreadyMade`, the test
+ * every claim-age search uses) is left as it is, and a claim age the person
+ * has already passed is not applied, since it would be a claim in the past:
+ * below full retirement age 20 CFR 404.621(a)(3) forbids paying a reduced
+ * benefit for any month before the application, and at or after it (a)(2)
+ * reaches back at most six months, which a claim year before the start year
+ * cannot be known to fall within (the conservative side). When no claim is
+ * left to change, the lever says who claimed and when.
  */
 function buildSocialSecurityClaimLever({
   plan,
@@ -1143,8 +1155,45 @@ function buildSocialSecurityClaimLever({
     return unavailable(definition, ['Add a Social Security income stream before changing claim age.'])
   }
   const proposedClaimAge = { years: request.claimAge, months: 0 }
+  const personName = (personId: string) => edited.household.people.find((p) => p.id === personId)?.name ?? personId
+  const claimMade = (stream: SocialSecurityIncome, claimAge: { years: number; months: number }) => {
+    const person = personForSocialSecurity(edited, stream)
+    return person !== undefined && isClaimAlreadyMade(person, claimAge, context.startYear)
+  }
+  const alreadyClaimed: AlreadyClaimed[] = streams
+    .filter((stream) => claimMade(stream, stream.claimAge))
+    .map((stream) => ({
+      personId: stream.personId,
+      streamId: stream.id,
+      claimAge: { ...stream.claimAge },
+      claimYear: claimYearOf(personForSocialSecurity(edited, stream)!, stream.claimAge),
+    }))
+  const openStreams = streams.filter((stream) => !alreadyClaimed.some((claim) => claim.streamId === stream.id))
+  if (openStreams.length === 0) {
+    return unavailable(definition, [
+      `${alreadyClaimedText(alreadyClaimed, personName)}, before the plan starts in ${context.startYear}, so there is no claim age left to change. ${ALREADY_CLAIMED_LIMITS}`,
+    ])
+  }
+  // A claim at an age the person has already passed would be backdated.
+  const passed = openStreams.filter((stream) => claimMade(stream, proposedClaimAge))
+  const changeable = openStreams.filter((stream) => !passed.includes(stream))
+  if (changeable.length === 0) {
+    return unavailable(definition, [
+      `${passed.map((stream) => personName(stream.personId)).join(' and ')} ${passed.length === 1 ? 'is' : 'are'} already past ${request.claimAge}, so a claim at that age would be in the past.`,
+    ])
+  }
+  if (alreadyClaimed.length > 0) {
+    warnings.push(
+      `${alreadyClaimedText(alreadyClaimed, personName)}, before the plan starts in ${context.startYear}, so ${alreadyClaimed.length === 1 ? 'that claim is' : 'those claims are'} left as ${alreadyClaimed.length === 1 ? 'it is' : 'they are'}.`,
+    )
+  }
+  if (passed.length > 0) {
+    warnings.push(
+      `${passed.map((stream) => personName(stream.personId)).join(' and ')} ${passed.length === 1 ? 'is' : 'are'} already past ${request.claimAge}, so ${passed.length === 1 ? 'that claim is' : 'those claims are'} left as ${passed.length === 1 ? 'it is' : 'they are'}.`,
+    )
+  }
   const projectionEndYear = householdPlanningHorizonYear(plan)
-  const eligible = streams.filter(
+  const eligible = changeable.filter(
     (stream) =>
       !disabilityControlsClaim(edited, stream) ||
       claimChangeCanAffectProjection(
@@ -1177,7 +1226,7 @@ function buildSocialSecurityClaimLever({
   if (!effectiveChange) {
     return unavailable(definition, ['No Social Security stream has a modeled benefit to change.'])
   }
-  if (eligible.length !== streams.length) {
+  if (eligible.length !== changeable.length) {
     warnings.push(
       'Social Security disability streams whose claim age changes nothing are left unchanged: they are paid from the end of the five-month waiting period after the month and year the disability began. A disability stream whose date leaves no disability month before full retirement age follows its claim age and is changed like any other.',
     )

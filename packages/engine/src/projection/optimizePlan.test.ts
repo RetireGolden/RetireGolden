@@ -2871,6 +2871,36 @@ describe('co-optimized SS claim age (Step 5)', () => {
     expect(joint.claimAge.winningClaimPatch).toBeNull()
     expect(joint.optimizedPlan.incomes).toEqual(plan.incomes)
     expect(joint.tournament.retirementActionReadinessVeto).not.toBeNull()
+    expect(joint.claimAge.outcome).toBe('searched')
+    expect(joint.claimAge.alreadyClaimed).toEqual([])
+  })
+
+  it('moves no claim already made: a claim year before the start year leaves nothing to search', async () => {
+    const plan = bridgeClaimPlan()
+    plan.household.people[0]!.dob = '1955-01-01' // claimed at 62 in 2017
+    const joint = await optimizePlanCoOptimizingClaimAge(validate(plan), opts)
+    expect(joint.claimAge.outcome).toBe('already-claimed')
+    expect(joint.claimAge.alreadyClaimed.map((c) => [c.personId, c.claimYear])).toEqual([['p1', 2017]])
+    expect(joint.claimAge.combinationsEvaluated).toBe(1)
+    expect(joint.claimAge.winningClaimPatch).toBeNull()
+  })
+
+  it('refuses to price a claim change against a premium credit it cannot price, naming the years and reasons', async () => {
+    const plan = bridgeClaimPlan()
+    plan.incomes = [socialSecurityIncome('ss', 2_600, 67)]
+    for (const year of [2026, 2027, 2028]) setAcaYearContract(plan, { year })
+    const joint = await optimizePlanCoOptimizingClaimAge(validate(plan), opts)
+    expect(joint.claimAge.outcome).toBe('aca-unpriced')
+    // Each year keeps its own reason: 2026 and 2027 are priced figures but the
+    // household's income is below the poverty line; 2028 has no figures yet.
+    expect(joint.claimAge.unpricedAca).toEqual([
+      { year: 2026, reasons: ['below-100-fpl-exception-unsupported'] },
+      { year: 2027, reasons: ['below-100-fpl-exception-unsupported'] },
+      { year: 2028, reasons: ['tax-year-parameters-unsupported'] },
+    ])
+    expect(joint.claimAge.combinationsEvaluated).toBe(1)
+    expect(joint.claimAge.winningClaimPatch).toBeNull()
+    expect(joint.optimizedPlan.incomes).toEqual(validate(plan).incomes)
   })
 })
 

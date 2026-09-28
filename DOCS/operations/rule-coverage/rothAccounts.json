@@ -114,7 +114,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 390
+              "line": 415
             }
           ]
         },
@@ -379,7 +379,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 390
+              "line": 415
             }
           ]
         }
@@ -455,7 +455,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 390
+              "line": 415
             }
           ]
         }
@@ -520,7 +520,7 @@
           "functions": [
             {
               "name": "annualAggregateRothConversionPhase",
-              "line": 216
+              "line": 225
             }
           ]
         },
@@ -547,7 +547,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 390
+              "line": 415
             }
           ]
         },
@@ -791,7 +791,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 390
+              "line": 415
             }
           ]
         },
@@ -924,7 +924,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 390
+              "line": 415
             }
           ]
         },

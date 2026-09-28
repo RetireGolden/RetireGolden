@@ -660,7 +660,7 @@ export const socialSecurityRecords = {
     outputs: ['social-security-expected-present-value'],
     feeds: ['social-security-fica-return-ratio'],
     statement:
-      'socialSecurity/analysis/expectedValue.ts#expectedPvSingle sums, for each year t from the start year while the person is at most 119, S(t) x monthly(t) x payable months(t) x scale(y) x (1 + r)^-t, where S is montecarlo/survival.ts#survivalCurve from the current age, monthly is the start-year PIA x the claim factor with its months or a larger former-spouse benefit socialSecurity/maritalBenefits.ts#bestMaritalBenefit would pay that year (a divorced spouse\'s only for a single household), the payable months are the ledger\'s, and scale(y) is the ledger\'s COLA factor over its inflation factor times the haircut (1 when the COLA matches inflation and there is no haircut). #expectedPvCouple sums, for independent lives, S_A(t) S_B(t) both(t) plus, for each earlier death year k of one spouse, the survivor\'s S(t) x the other\'s probability of dying in year k x alone(t, k): both(t) pays each own benefit, and the lower earner by PIA (the second on a tie, as the ledger) the own benefit plus the spouse excess reduced for their age in the spouse benefit\'s first month (socialSecurity/dualEntitlement.ts, capped by the worker\'s family maximum) for the months both are paid; alone(t, k) pays the survivor, once their own claim has started, the larger of the own benefit and the widow(er) benefit, on the deceased\'s claimed benefit or, if the deceased had not claimed by the December death, the benefit for the month before it, reduced for the survivor\'s age in January after the death or at their own later claim, and then held to the widow\'s limit when the deceased claimed before full retirement age (socialSecurity/survivorBenefit.ts). #benefitsOnlyRanking prices every whole-year claim-age combination from 62 to 70 (none before the age reached in the start year; 70 alone past it) for one or two claimants on the PIA the projection pays from, and ranks them highest first; a claimant whose benefit is paid as a disability benefit from its onset is named instead. Units: start-year dollars. Rounding: none.',
+      'socialSecurity/analysis/expectedValue.ts#expectedPvSingle sums, for each year t from the start year while the person is at most 119, S(t) x monthly(t) x payable months(t) x scale(y) x (1 + r)^-t, where S is montecarlo/survival.ts#survivalCurve from the current age, monthly is the start-year PIA x the claim factor with its months or a larger former-spouse benefit socialSecurity/maritalBenefits.ts#bestMaritalBenefit would pay that year (a divorced spouse\'s only for a single household), the payable months are the ledger\'s, and scale(y) is the ledger\'s COLA factor over its inflation factor times the haircut (1 when the COLA matches inflation and there is no haircut). #expectedPvCouple sums, for independent lives, S_A(t) S_B(t) both(t) plus, for each earlier death year k of one spouse, the survivor\'s S(t) x the other\'s probability of dying in year k x alone(t, k): both(t) pays each own benefit, and the lower earner by PIA (the second on a tie, as the ledger) the own benefit plus the spouse excess reduced for their age in the spouse benefit\'s first month (socialSecurity/dualEntitlement.ts, capped by the worker\'s family maximum) for the months both are paid; alone(t, k) pays the survivor, once their own claim has started, the larger of the own benefit and the widow(er) benefit, on the deceased\'s claimed benefit or, if the deceased had not claimed by the December death, the benefit for the month before it, reduced for the survivor\'s age in January after the death or at their own later claim, and then held to the widow\'s limit when the deceased claimed before full retirement age (socialSecurity/survivorBenefit.ts). #benefitsOnlyRanking prices every whole-year claim-age combination from 62 to 70 (none before the age reached in the start year; 70 alone past it) for one or two claimants on the PIA the projection pays from, and ranks them highest first; a claim already made (its claim year, birth year plus claim years, before the start year: socialSecurity/openClaims.ts#isClaimAlreadyMade, the claim-age searches\' one test) is held at its own claim age and named, and nothing is ranked when every claim is; a claimant whose benefit is paid as a disability benefit from its onset is named instead. Units: start-year dollars. Rounding: none.',
     formula: {
       expression: 'single: sum_t S(t) m(t) n(t) s(y) (1 + r)^-t; couple: sum_t (1 + r)^-t s(y) [S_A S_B both(t) + sum_{k<t} S_A(t) D_B(k) alone_A(t, k) + sum_{k<t} S_B(t) D_A(k) alone_B(t, k)]',
       variables: [
@@ -687,12 +687,14 @@ export const socialSecurityRecords = {
       'A death before 62 passes on the PIA as entered, as the survivor benefit calculation does',
       'Former-spouse records of a person in a couple are not priced, although the ledger prices a deceased-spouse record for such a person',
       'Benefits are scheduled in full unless the plan sets a haircut, and are worth their start-year amount in real terms unless the plan\'s COLA differs from its inflation',
+      'A claim already made is not re-ranked: withdrawal of an application within 12 months and voluntary suspension from full retirement age are not modeled, as in the claim-age sweep',
     ],
     implementedBy: [
       'packages/engine/src/socialSecurity/analysis/expectedValue.ts',
       'packages/engine/src/socialSecurity/analysis/claimants.ts',
       'packages/engine/src/socialSecurity/familyMaximum.ts',
       'packages/engine/src/montecarlo/survival.ts',
+      'packages/engine/src/socialSecurity/openClaims.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/socialSecurity/analysis/expectedValue.ts#expectedPvSingle',
@@ -703,6 +705,7 @@ export const socialSecurityRecords = {
       'packages/engine/src/socialSecurity/analysis/claimants.ts#disabilityReplacesClaimAge',
       'packages/engine/src/socialSecurity/familyMaximum.ts#currentSpouseMonthlyUnderFamilyMaximum',
       'packages/engine/src/montecarlo/survival.ts#survivalCurve',
+      'packages/engine/src/socialSecurity/openClaims.ts#isClaimAlreadyMade',
     ],
     verifiedOn: '2026-09-27',
     provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
@@ -1019,6 +1022,235 @@ export const socialSecurityRecords = {
       'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
     verifiedOn: '2026-09-27',
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+  },
+  'social-security-claim-already-made': {
+    title: 'Social Security claim already made',
+    purpose: 'Decide, for every claim-age search, whether a claim was already made before the plan starts, so it is held rather than re-made.',
+    kind: 'model',
+    outputs: [],
+    feeds: ['social-security-claiming-sweep-objective', 'claim-age-co-optimization-combinations-evaluated'],
+    statement:
+      'socialSecurity/openClaims.ts#isClaimAlreadyMade says a claim at a claim age is already made when its claim year (#claimYearOf: the calendar year of the date of birth plus the claim age\'s whole years, the months ignored) is before the plan\'s start year, and open otherwise, the ledger\'s annual convention. It is the one test every claim-age search applies: #openClaims for the Social Security page\'s sweep and its month refinement, socialSecurity/analysis/expectedValue.ts#benefitsOnlyRanking, decisions/generators.ts#socialSecurityClaimGenerator for a stream and for each canonical age, projection/optimizePlan.ts#optimizePlanCoOptimizingClaimAge, and the Scenarios page\'s claim-age lever. A claim already made is held at its own claim age; a claim age whose claim year is before the start year is not offered. Units: calendar years. Rounding: none.',
+    formula: {
+      expression: 'claimYear = birthYear + claimAge.years; alreadyMade = claimYear < startYear',
+      variables: [
+        { symbol: 'birthYear', meaning: 'The calendar year of the person\'s date of birth as entered (no birth-month or January-1 adjustment)', unit: 'calendar year', domain: 'integer' },
+        { symbol: 'claimAge.years', meaning: 'The whole years of the stream\'s claim age; its months are ignored', unit: 'years', domain: 'integer 62 to 70' },
+        { symbol: 'startYear', meaning: 'The plan\'s first projection year', unit: 'calendar year', domain: 'integer' },
+      ],
+      timing: 'once per claim, against the start year',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/social-security/social-security-claim-already-made.md',
+    },
+    limits: [
+      'The birth-month convention: the test reads years only, so a claim whose month has already passed in the start year is still open, and a claim age\'s months never move the claim year (born 1964-06-15, a claim at 62y6m falls in 2026, open in 2026 and made from 2027)',
+      'A claim at or after full retirement age that was never filed can still be paid up to six months back (20 CFR 404.621(a)(2)); a claim year before the start year cannot be known to fall within those six months, so the test treats it as made, the conservative side',
+      'Withdrawing an application within 12 months of the first month of entitlement, repaying every benefit (20 CFR 404.640(b)(3), (b)(4); a withdrawn application is treated as never filed, 404.640(d)), is not modeled: a claim made stays made',
+      'Voluntary suspension from full retirement age to 70 (42 U.S.C. 402(z)) is not modeled, so a claim made cannot earn delayed credits here',
+    ],
+    implementedBy: ['packages/engine/src/socialSecurity/openClaims.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/socialSecurity/openClaims.ts#isClaimAlreadyMade',
+      'packages/engine/src/socialSecurity/openClaims.ts#claimYearOf',
+      'packages/engine/src/socialSecurity/openClaims.ts#openClaims',
+    ],
+    verifiedOn: '2026-09-28',
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+  },
+  'social-security-claim-age-sweep': {
+    title: 'Whole-plan Social Security claim-age sweep',
+    purpose: 'Rank every whole-year claim age of the plan\'s open claims on the full ledger by a chosen objective, and publish the winner\'s signed estate change against the plan as entered.',
+    kind: 'model',
+    outputs: ['social-security-claiming-sweep-objective'],
+    statement:
+      'decisions/claimAgeSweep.ts#sweepClaimAges takes the plan\'s open claims (socialSecurity/openClaims.ts#openClaims: of the first two Social Security streams with a positive entered PIA or an earnings history, those whose claim year, the birth year plus the claim age\'s whole years, is not before the start year; the others are already made and keep their own claim age in every row, #isClaimAlreadyMade, social-security-claim-already-made), holds an open claim that is paid as a disability benefit from its onset as the ledger pays it (decisions/generators.ts#claimAgeGridClaims), prices every combination of whole-year ages of the other open claims from #gridClaimAges (62 to 70, none below the age reached in the start year; decisions/generators.ts#socialSecurityClaimGridGenerator) with decisions/evaluateCandidate.ts#evaluateCandidate against the plan as entered, and ranks the rows with decisions/tournament.ts#rankEvaluations under the chosen objective policy with a margin of 0. The verdict (#claimAgeSweepVerdict) is empty with no claim, already-claimed when every claim is already made, disability when every open claim is paid as a disability benefit from its onset (those claims are published as disabilityPersonIds, and held in a ranked sweep), winner when an eligible row strictly improves the objective, otherwise aca-unpriced when no row is eligible and the plan as entered has a year whose premium tax credit cannot be priced (#unpricedAcaYears: each such year with its blocking support codes), ineligible when no row is eligible, flat when two or more eligible rows lie within 0.5 of the first and current-best otherwise. It publishes winnerEstateChangeVsCurrent, the winner\'s ending after-tax estate minus the plan as entered\'s (claim months included), signed and unrounded, each row\'s change the same way, a row as current only when every open claim is a whole year equal to it, and per row whether the objective ranked it on its own metric (objective) or on the estate fallback, because the plan as entered has no survivor or bridge years (estate-fallback-plan, then every row) or because this row has none (estate-fallback-row) (decisions/objectives.ts#rankedMetricBasis). Units: nominal dollars of the plan\'s last year, published as estateYear. Rounding: none.',
+    formula: {
+      expression: 'change(row) = estate(row) - estate(plan as entered); winner = the first eligible ranked row whose primary metric is above 0; verdict = claimAgeSweepVerdict(ranked, winner exists, unpriced credit years)',
+      variables: [
+        { symbol: 'estate(row)', meaning: 'Ending after-tax estate of the plan with the row\'s whole-year claim ages', unit: 'nominal USD of the plan\'s last year', domain: 'finite' },
+        { symbol: 'estate(plan as entered)', meaning: 'Ending after-tax estate of the plan with its own claims, months included (the decision context\'s baseline run)', unit: 'nominal USD of the plan\'s last year', domain: 'finite' },
+        { symbol: 'primary', meaning: 'The objective policy\'s metric against the plan as entered, higher is better', unit: 'the policy\'s own (dollars or years)', domain: 'finite' },
+        { symbol: 'claimYear', meaning: 'Birth year plus the claim age\'s whole years; before the start year means already made', unit: 'calendar year', domain: 'integer' },
+      ],
+      timing: 'one full ledger run per grid row, from the start year',
+      rounding: 'none; the page prints the sign of the printed magnitude, so a change that prints as $0 has neither',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/social-security/social-security-claim-age-sweep.md',
+    },
+    limits: [
+      'The plan\'s own conversion strategy is held fixed: a bracket fill resizes to each claim age, a fixed schedule does not. The Optimize page\'s co-optimization re-optimizes conversions but tries only 62, full retirement age and 70, one stream at a time, on the estate with a 1,000-dollar margin (claim-age-co-optimization), so the two searches can pick different ages, and a gain found here is measured with the plan\'s own conversions',
+      'Whole years only, and at most two streams',
+      'A claim counts as already made when its claim year is before the start year, the ledger\'s annual convention: the ledger ignores the birth month, so a claim in the start year whose month has passed is still treated as open; and a claim at or after full retirement age that was never filed can be paid up to six months back (20 CFR 404.621(a)(2)), which the test treats as made, the conservative side',
+      'Withdrawing an application within 12 months of the first month of entitlement, repaying every benefit (20 CFR 404.640(b)(3), (b)(4)), and voluntary suspension from full retirement age (42 U.S.C. 402(z)) are not modeled',
+      'Where the premium tax credit cannot be priced in a year of the plan as entered, no row is ranked: a claim age moves the income the credit depends on (26 U.S.C. 36B(d)(2)(B)(iii)); ranking only the rows that leave that income unchanged was measured and is not safe in either direction (an equal stand-in credit changed three of eleven such winners on the example plans)',
+      'Bridge durability and survivor liquidity rank a row on the estate change when that row or the plan has no bridge or survivor years, within one ranking; each row says which of the two lacked them, and ranking both on one fixed window in today\'s dollars is a separate objective-policy change',
+      'A disability benefit from its onset has no claim age to sweep: the sweep holds it as the ledger pays it and ranks the other claim, and refuses only when every open claim is one. The benefits-only ranking prices a couple\'s claims as pairs of claim ages and cannot place a disability benefit on that grid, so it ranks no claim age for either person',
+    ],
+    implementedBy: [
+      'packages/engine/src/decisions/claimAgeSweep.ts',
+      'packages/engine/src/socialSecurity/openClaims.ts',
+      'packages/engine/src/decisions/generators.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/decisions/claimAgeSweep.ts#sweepClaimAges',
+      'packages/engine/src/decisions/claimAgeSweep.ts#claimAgeSweepVerdict',
+      'packages/engine/src/decisions/claimAgeSweep.ts#unpricedAcaYears',
+      'packages/engine/src/socialSecurity/openClaims.ts#openClaims',
+      'packages/engine/src/socialSecurity/openClaims.ts#isClaimAlreadyMade',
+      'packages/engine/src/socialSecurity/openClaims.ts#gridClaimAges',
+      'packages/engine/src/decisions/generators.ts#socialSecurityClaimGridGenerator',
+      'packages/engine/src/decisions/generators.ts#claimAgeGridClaims',
+    ],
+    verifiedOn: '2026-09-28',
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+  },
+  'social-security-claim-age-monthly-refinement': {
+    title: 'Claim-age refinement to the month',
+    purpose: 'Refine the sweep\'s whole-year winner to the month on the same objective, and publish its signed changes against the winner.',
+    kind: 'model',
+    outputs: ['social-security-claiming-sweep-objective'],
+    statement:
+      'decisions/claimAgeSweep.ts#refineClaimAgeMonthly prices, through #refineClaimMonths, for each open claim in household order, every claim from a year below the winner\'s age to a year above it (62 to 70, none below the age reached in the start year; months 0 to 11, and only 70y0m at 70), with the other claims at the running best, each month through decisions/evaluateCandidate.ts#evaluateCandidate against the plan as entered and ranked alone by the sweep\'s objective policy (decisions/tournament.ts#rankEvaluations, margin 0). A month replaces the incumbent only when its row is eligible under the objective\'s constraints and its primary metric is strictly greater; a greater but ineligible month is counted and rejected. It publishes estateChangeVsWinner, the refined ending after-tax estate minus the winner\'s, and primaryChangeVsWinner, the objective\'s own difference, both signed and unrounded. Units: nominal dollars of the plan\'s last year, and the objective\'s own units. Rounding: none.',
+    formula: {
+      expression: 'take month m over incumbent i  <=>  eligible(m) and primary(m) > primary(i); estateChangeVsWinner = estate(refined) - estate(winner); primaryChangeVsWinner = primary(refined) - primary(winner)',
+      variables: [
+        { symbol: 'primary(m)', meaning: 'The objective policy\'s metric of month m against the plan as entered', unit: 'the policy\'s own', domain: 'finite' },
+        { symbol: 'eligible(m)', meaning: 'Month m meets every hard constraint of the policy (money-lasts, the estate floor, a structural diagnostic)', unit: 'boolean', domain: 'true or false' },
+        { symbol: 'estate(m)', meaning: 'Ending after-tax estate of the plan with month m\'s claim', unit: 'nominal USD of the plan\'s last year', domain: 'finite' },
+      ],
+      timing: 'one full ledger run per month tried: up to 25 per claim, 13 to 72 in all',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/social-security/social-security-claim-age-monthly-refinement.md',
+    },
+    limits: [
+      'One coordinate pass per open claim, within a year of the whole-year winner: a month further away, or a combination that needs both claims moved together, is not tried, and the page says "no month within a year of the whole-year pick ranks higher" rather than "optimal"',
+      'Bridge durability and survivor liquidity score a month that removes the bridge or survivor years on the estate change, as the sweep does, until the objective-policy change ranks them on one fixed window',
+      'Runs on request, 0.2 to 0.6 seconds on the example couples',
+    ],
+    implementedBy: ['packages/engine/src/decisions/claimAgeSweep.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/decisions/claimAgeSweep.ts#refineClaimAgeMonthly',
+      'packages/engine/src/decisions/claimAgeSweep.ts#refineClaimMonths',
+    ],
+    verifiedOn: '2026-09-28',
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+  },
+  'survivor-convert-early-lever': {
+    title: 'Survivor convert-early lever',
+    purpose: 'Price, for one death timing, adding Roth conversions that fill the 12% bracket to the plan\'s own conversions through the year of the first death.',
+    kind: 'model',
+    outputs: ['survivor-scenario-row-estate-delta', 'survivor-scenario-row-lifetime-tax-delta'],
+    statement:
+      'projection/survivorTransition.ts#survivorTransitionAnalysis runs each death timing twice through projection/simulate.ts#simulatePlan with the same death override and the plan\'s own SSA-44 setting: the base run, and the lever run with SimulateOptions.additionalBracketFill { bracketPct: 12, startYear: the start year, endYear: the death year }. In each window year the lever run\'s aggregate conversion target (projection/internal/annualAggregateRothConversionTargetPlan.ts#annualAggregateRothConversionTargetPlan) is the larger of the plan\'s own target and a fill of taxable income to the top of the 12% bracket for the year\'s filing status, both sized on the same state of the year, the fill capped first at the convertible traditional balance; outside the window, and in a year a named conversion action suppresses the aggregate strategy, the plan\'s own strategy runs unchanged. It publishes estateDelta, the lever run\'s ending after-tax estate minus the base run\'s, and lifetimeTaxDelta, the lever run\'s lifetime taxes and penalties minus the base run\'s, and, from the lever run\'s window rows (#leverYears), each window year\'s reason read from executed dollars (the ledger\'s rothConversion) against own (the plan\'s own target capped at the convertible balance) and the capped fill, in this order: named-conversions when a named conversion action suppressed the aggregate strategy, raised when it converted more than own, covered when it converted something and at least the fill, short when it converted less than the fill, and with no fill asked no-balance (no convertible balance), fill-limited (the fill\'s own sizing cut it to nothing) or no-room; with each year the ledger\'s own words (AdditionalBracketFillYear.fillNotes on a fill-limited year, and on any year ledgerNotes, the messages the ledger raised when it converted less than the year\'s target asked). raisedYears and coveredYears are the raised and covered years. Units: nominal dollars of the timing\'s last year (endYear) for the estate, an undiscounted sum of nominal dollars for the tax. Rounding: none.',
+    formula: {
+      expression: 'conversion(y) = max(own(y), min(fill12(y), convertible(y))) for y in [start, death year], own(y) otherwise; estateDelta = estate(lever) - estate(base); lifetimeTaxDelta = tax(lever) - tax(base)',
+      variables: [
+        { symbol: 'own(y)', meaning: 'The plan\'s own aggregate conversion target for year y (its schedule amount, its own fill, or 0)', unit: 'nominal USD', domain: 'nonnegative' },
+        { symbol: 'fill12(y)', meaning: 'The conversion that brings federal taxable income to the top of the 12% bracket for the year\'s filing status, sized on the same state of the year', unit: 'nominal USD', domain: 'nonnegative' },
+        { symbol: 'convertible(y)', meaning: 'The traditional balance convertible in year y', unit: 'nominal USD', domain: 'nonnegative' },
+        { symbol: 'estate, tax', meaning: 'ProjectionSummary.endingAfterTaxEstate and .lifetimeTaxesAndPenalties of each run', unit: 'nominal USD', domain: 'finite' },
+      ],
+      timing: 'annual, the window from the start year through the year of the first death',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/social-security/survivor-convert-early-lever.md',
+    },
+    limits: [
+      'The window ends in the death year, the last joint return (26 U.S.C. 6013(a)(2)); a surviving spouse with a dependent child keeps joint rates for two more years (26 U.S.C. 2(a)), which the window does not extend into',
+      'A year with a named conversion action converts only that action, so the lever adds nothing in it',
+      'Marketplace years are priced as the ledger prices them: the added income moves a priced credit, and an unpriced year stays unpriced',
+      'The estate change is in dollars of the timing\'s last year, which differs between the two people\'s tables; the tax change is an undiscounted sum of nominal dollars and carries every later year\'s knock-on (required distributions, IRMAA, the survivor\'s single brackets), not only the added conversions\' tax',
+      'The widows-penalty insight keeps its replacement patch (a 12% fill instead of the plan\'s strategy) because it fires only on plans that convert nothing, where replacing and adding coincide',
+      'A fill the ledger cannot execute is reported, not repaired: when an owner of the traditional balance has no Roth account (a conversion lands only in the same person\'s own Roth), the owner\'s share of every conversion is skipped and the year reads short with the ledger\'s message; on example-couple Sam has no Roth account, so when Alex dies at 90 the lever is short in 2033 to 2041 and adds nothing, and opening a Roth IRA for Sam is the change that would let it convert',
+    ],
+    implementedBy: [
+      'packages/engine/src/projection/survivorTransition.ts',
+      'packages/engine/src/projection/internal/annualAggregateRothConversionTargetPlan.ts',
+      'packages/engine/src/projection/internal/annualAggregateRothConversionPhase.ts',
+      'packages/engine/src/projection/simulate.ts',
+    ],
+    implementedByFunctions: [
+      'packages/engine/src/projection/survivorTransition.ts#survivorTransitionAnalysis',
+      'packages/engine/src/projection/survivorTransition.ts#leverYears',
+      'packages/engine/src/projection/internal/annualAggregateRothConversionTargetPlan.ts#annualAggregateRothConversionTargetPlan',
+      'packages/engine/src/projection/simulate.ts#checkAdditionalBracketFill',
+      'packages/engine/src/projection/internal/annualAggregateRothConversionPhase.ts#annualAggregateRothConversionPhase',
+    ],
+    verifiedOn: '2026-09-28',
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+  },
+  'survivor-ssa44-premium-difference': {
+    title: 'SSA-44 survivor premium difference',
+    purpose: 'Show, for one death timing, what Medicare premiums SSA-44 survivor relief saves over the whole projection, and how much of that falls in the two relief years.',
+    kind: 'formula',
+    outputs: ['survivor-scenario-row-ssa44premium-savings'],
+    statement:
+      'projection/survivorTransition.ts#survivorTransitionAnalysis runs each death timing with SSA-44 survivor relief switched off and on (#withSurvivorSsa44: expenses.healthcare.ssa44.survivorYears, the retirement-years setting kept) and #ssa44PremiumDifference publishes ssa44PremiumSavings, the sum over every year of the run without relief (that the other run also has) of medicarePremiums without minus with, and ssa44ReliefYearSavings, the same sum over the death year + 1 and + 2 only. The relief years\' MAGI is selected by the ledger\'s irmaa-lookback-selection. Units: nominal dollars summed across years. Rounding: none; the page prints whole dollars.',
+    formula: {
+      expression: 'total = sum_y (premiums_off(y) - premiums_on(y)); relief = sum over y in {death year + 1, death year + 2} of the same',
+      variables: [
+        { symbol: 'premiums_off(y), premiums_on(y)', meaning: 'YearResult.medicarePremiums of the run without and with SSA-44 survivor relief', unit: 'nominal USD', domain: 'nonnegative' },
+      ],
+      timing: 'every projection year of the two runs',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/social-security/survivor-ssa44-premium-difference.md',
+    },
+    limits: [
+      'Two runs of the whole ledger: the total carries the later years\' knock-on (lower premiums leave more money, which changes later withdrawals, MAGI and tiers), and the relief-year part is published beside it; the page says "no surcharge to relieve" only when the relief-year part is at most 50 cents',
+      'Nominal dollars of different years summed',
+      'The first relief year still looks back to the joint death year, as irmaa-lookback-selection states',
+    ],
+    implementedBy: ['packages/engine/src/projection/survivorTransition.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/projection/survivorTransition.ts#ssa44PremiumDifference',
+      'packages/engine/src/projection/survivorTransition.ts#withSurvivorSsa44',
+    ],
+    verifiedOn: '2026-09-28',
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
+  },
+  'survivor-shortfall-year-count': {
+    title: 'Survivor shortfall years',
+    purpose: 'Count the years after the first death in which the survivor\'s required spending is not covered.',
+    kind: 'formula',
+    outputs: ['survivor-scenario-row-survivor-shortfall-years'],
+    statement:
+      'projection/survivorTransition.ts#survivorShortfallYearCount counts, in a death timing\'s base run, the years after the death year in which someone is alive and YearResult.requiredShortfall exceeds ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS (0.005, projection/moneyTolerance.ts). The degenerate-timing test (#isDegenerateTiming) reads required spending on both sides of the death. Units: years. Rounding: none; a count.',
+    formula: {
+      expression: 'count = |{ y : y > death year, someone alive in y, requiredShortfall(y) > 0.005 }|',
+      variables: [
+        { symbol: 'requiredShortfall(y)', meaning: 'The ledger\'s required-spending shortfall in year y of the base run', unit: 'nominal USD', domain: 'nonnegative' },
+      ],
+      timing: 'the base run\'s years after the death year',
+      rounding: 'none',
+    },
+    justification: {
+      kind: 'derivation',
+      worksheet: 'DOCS/calculations/social-security/survivor-shortfall-year-count.md',
+    },
+    limits: [
+      'The base run only, at the plan\'s own SSA-44 setting; the lever run is not counted',
+      'Required spending only: under a guardrail policy discretionary spending can be cut with no required shortfall, so "required spending covered" says no more than that',
+    ],
+    implementedBy: ['packages/engine/src/projection/survivorTransition.ts'],
+    implementedByFunctions: [
+      'packages/engine/src/projection/survivorTransition.ts#survivorShortfallYearCount',
+      'packages/engine/src/projection/survivorTransition.ts#isDegenerateTiming',
+    ],
+    verifiedOn: '2026-09-28',
     provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
   },
 } satisfies Record<string, CalculationRecord>

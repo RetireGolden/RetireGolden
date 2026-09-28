@@ -4,7 +4,7 @@ import { createEmptyPlan, parsePlan, type Account, type Plan } from '@retiregold
 import { simulatePlan } from '@retiregolden/engine/projection/simulate'
 import { taxCalculatorFor } from './useProjection'
 import { benefitsOnlyRanking, expectedPvSingle, singleBenefitInYear } from '@retiregolden/engine/socialSecurity/analysis/expectedValue'
-import { candidateClaimAges, claimingPeople, piaAsOfPlan, refineClaimingMonthly, resolvePia, ssStreamFor, sweepClaimingStrategies, objectiveIsFlat, sweepVerdict, type SweepRow } from './ssAnalysis'
+import { candidateClaimAges, claimingPeople, piaAsOfPlan, resolvePia, ssStreamFor } from './ssAnalysis'
 
 let counter = 0
 const id = () => `ssa-${++counter}`
@@ -124,75 +124,6 @@ function parsePlanOk(plan: Plan): Plan {
   return r.plan
 }
 
-describe('sweepClaimingStrategies', () => {
-  it('runs the 9-age grid for a single person and ranks by after-tax estate', () => {
-    const plan = singlePlan() // born 1964 -> age 62 in 2026, full 62–70 grid
-    const result = sweepClaimingStrategies(plan, 2026)
-    expect(result.personIds).toEqual(['p1'])
-    expect(result.rows).toHaveLength(candidateClaimAges(plan.household.people[0]!, 2026).length)
-    for (let i = 1; i < result.ranked.length; i++) {
-      expect(result.ranked[i - 1]!.summary.endingAfterTaxEstate).toBeGreaterThanOrEqual(
-        result.ranked[i]!.summary.endingAfterTaxEstate,
-      )
-    }
-  })
-
-  it('runs the full claim-age grid for a couple', () => {
-    const plan = couplePlan()
-    const result = sweepClaimingStrategies(plan, 2026)
-    expect(result.personIds).toHaveLength(2)
-    const expected =
-      candidateClaimAges(plan.household.people[0]!, 2026).length *
-      candidateClaimAges(plan.household.people[1]!, 2026).length
-    expect(result.rows).toHaveLength(expected)
-    expect(result.ranked[0]!.summary.endingAfterTaxEstate).toBeGreaterThan(0)
-  })
-
-  it('ranks whole-plan claim candidates through the selected objective policy', () => {
-    const result = sweepClaimingStrategies(singlePlan(), 2026, 'max-spending-durability')
-    expect(result.objectivePolicyId).toBe('max-spending-durability')
-    expect(result.primaryMetricLabel).toBe('Money-lasts delta (years)')
-    expect(result.ranked.every((row) => Number.isFinite(row.primaryValue))).toBe(true)
-  })
-
-  it('only offers claim ages at or beyond the current age', () => {
-    const older = singlePlan()
-    older.household.people[0] = { ...older.household.people[0]!, dob: '1958-06-15' } // 68 in 2026
-    expect(candidateClaimAges(older.household.people[0], 2026)).toEqual([68, 69, 70])
-  })
-
-  it('returns no rows when nobody claims Social Security', () => {
-    const plan = singlePlan()
-    plan.incomes = []
-    const result = sweepClaimingStrategies(parsePlanOk(plan), 2026)
-    expect(result.rows).toHaveLength(0)
-  })
-})
-
-describe('refineClaimingMonthly', () => {
-  it('never does worse than the whole-year best and stays within ±1 year, valid months', () => {
-    const plan = singlePlan()
-    const sweep = sweepClaimingStrategies(plan, 2026)
-    const bestYear = sweep.ranked[0]
-    const refined = refineClaimingMonthly(plan, bestYear!.claimByPersonId, 2026)
-
-    expect(refined.summary.endingAfterTaxEstate).toBeGreaterThanOrEqual(bestYear!.summary.endingAfterTaxEstate)
-    const claim = refined.claimByPersonId['p1']
-    expect(Math.abs(claim!.years - bestYear!.claimByPersonId['p1']!)).toBeLessThanOrEqual(1)
-    expect(claim!.months).toBeGreaterThanOrEqual(0)
-    expect(claim!.months).toBeLessThanOrEqual(11)
-    if (claim!.years === 70) expect(claim!.months).toBe(0) // engine caps at 70y0m
-  })
-
-  it('refines both spouses for a couple', () => {
-    const plan = couplePlan()
-    const sweep = sweepClaimingStrategies(plan, 2026)
-    const refined = refineClaimingMonthly(plan, sweep.ranked[0]!.claimByPersonId, 2026)
-    expect(Object.keys(refined.claimByPersonId).sort()).toEqual(['p1', 'p2'])
-    expect(refined.summary.endingAfterTaxEstate).toBeGreaterThanOrEqual(sweep.ranked[0]!.summary.endingAfterTaxEstate)
-  })
-})
-
 describe('benefitsOnlyRanking', () => {
   it('prefers delay at a low discount rate and early at a high one (single)', () => {
     const low = benefitsOnlyRanking(singlePlan(), 0, 2026)
@@ -298,36 +229,3 @@ describe('benefitsOnlyRanking', () => {
     expect(r.ranked[0]!.claimByPersonId['p1']).toBeGreaterThanOrEqual(r.ranked[0]!.claimByPersonId['p2']!)
   })
 })
-describe('sweep verdict (#454)', () => {
-  it('crowns nothing on an asset-free plan: every estate is $0, so the engine has no winner', () => {
-    const plan = singlePlan()
-    plan.accounts = []
-    const sweep = sweepClaimingStrategies(parsePlanOk(plan), 2026)
-    expect(sweep.ranked.length).toBeGreaterThan(1)
-    expect(sweep.ranked.every((row) => row.summary.endingAfterTaxEstate === 0)).toBe(true)
-    expect(sweep.winner).toBeNull()
-    expect(sweepVerdict(sweep)).not.toBe('winner')
-    expect(['flat', 'ineligible']).toContain(sweepVerdict(sweep))
-  })
-
-  it('crowns the engine winner on a funded plan, and it is the top ranked row', () => {
-    const sweep = sweepClaimingStrategies(singlePlan(), 2026)
-    expect(sweep.winner, 'a funded single with a 67 claim has a better estate claim age').not.toBeNull()
-    expect(sweep.winner).toBe(sweep.ranked[0])
-    expect(sweep.winner!.eligible).toBe(true)
-    expect(sweep.winner!.primaryValue).toBeGreaterThan(0)
-    expect(sweepVerdict(sweep)).toBe('winner')
-  })
-
-  it('reads flatness over eligible rows within half a unit, and reports an all-ineligible sweep', () => {
-    const row = (primaryValue: number, eligible = true) =>
-      ({ claimByPersonId: { p1: 62 }, primaryValue, eligible, lossReason: null }) as unknown as SweepRow
-    expect(objectiveIsFlat([row(0), row(0.4), row(-0.3)])).toBe(true)
-    expect(objectiveIsFlat([row(0), row(0), row(1_500, false)])).toBe(true)
-    expect(objectiveIsFlat([row(0), row(1_500)])).toBe(false)
-    expect(sweepVerdict({ ranked: [row(0, false), row(-5, false)], winner: null })).toBe('ineligible')
-    expect(sweepVerdict({ ranked: [row(0), row(-5)], winner: null })).toBe('current-best')
-    expect(sweepVerdict({ ranked: [], winner: null })).toBe('empty')
-  })
-})
-

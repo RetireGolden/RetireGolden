@@ -39,6 +39,8 @@ import {
   type ObjectivePolicyId,
   type RetirementActionCandidateReadiness,
 } from '../decisions/index.js'
+import { unpricedAcaYears, type UnpricedAcaYear } from '../decisions/claimAgeSweep.js'
+import { claimYearOf, isClaimAlreadyMade, type AlreadyClaimed } from '../socialSecurity/openClaims.js'
 import { compareScalars } from '../scenarios/scalarComparison.js'
 import { applyScenarioPatch } from '../scenarios/scenarios.js'
 import { conversionScheduleTotal } from '../strategies/conversionScheduleTotal.js'
@@ -2865,11 +2867,29 @@ export async function optimizePlan(plan: Plan, opts: OptimizePlanOptions): Promi
 /** A claim candidate must beat the current-claim optimum by this to switch. */
 const DEFAULT_CLAIM_SWITCH_MARGIN_DOLLARS = 1_000
 
+/**
+ * What the claim-age co-optimization did. 'searched': the claim candidates were
+ * priced. 'already-claimed': every claim was made before the plan starts, so
+ * there is no claim age to move. 'aca-unpriced': the plan has a Marketplace year
+ * whose premium tax credit cannot be priced, and a claim age moves the income
+ * that credit depends on, so no candidate was priced. 'no-age-left': an open
+ * claim remains, but none of the ages the search tries (62, full retirement
+ * age, 70) is both different from the current claim and not already past, so
+ * there was no candidate to price. 'no-claims': the plan has no Social
+ * Security stream.
+ */
+export type ClaimAgeCoOptimizationOutcome = 'searched' | 'already-claimed' | 'aca-unpriced' | 'no-age-left' | 'no-claims'
+
 export interface ClaimAgeCoOptimization {
   /** Numeric estate fields are informational when the current-claim valuation is incomplete. */
   incompleteComputationYears?: number[]
   /** True when claim-age co-optimization actually ran. */
   enabled: boolean
+  outcome: ClaimAgeCoOptimizationOutcome
+  /** The plan's unpriced credit years, each with its reasons; non-empty exactly when the outcome is 'aca-unpriced'. */
+  unpricedAca: UnpricedAcaYear[]
+  /** Claims made before the plan starts (socialSecurity/openClaims.ts#isClaimAlreadyMade), held fixed. */
+  alreadyClaimed: AlreadyClaimed[]
   /**
    * 1 for the current claim plus one per generated candidate whose claim patch
    * applied cleanly (a candidate without a patch, or whose patch fails, is not
@@ -2934,6 +2954,20 @@ function winnerExactEstate(plan: Plan, tournament: ExactLedgerTournament, simula
  * claim patch is not published separately. Returns the winning actionable plan
  * (current or claim-patched) and its optimizer result plus a diagnostic of the
  * joint decision.
+ *
+ * The search refuses, pricing no candidate and keeping the current claims,
+ * when every claim was made before the plan starts ('already-claimed'), and
+ * when the plan has a Marketplace year whose premium tax credit cannot be
+ * priced ('aca-unpriced', the years and their reasons published), the same
+ * refusals as the Social Security page's sweep (decisions/claimAgeSweep.ts).
+ * When the generator has no candidate for the open claims (every age it tries
+ * is the current claim or already past) the outcome is 'no-age-left'.
+ *
+ * Limit: its streams are the first two Social Security streams, where the
+ * page's sweep takes the first two with a benefit (socialSecurity/openClaims.ts
+ * #claimAgeStreams: a positive entered PIA or an earnings history). A plan
+ * with a zero-PIA stream among its first two, on which the ledger can still
+ * pay a spouse benefit, is searched differently on the two pages.
  */
 export async function optimizePlanCoOptimizingClaimAge(
   plan: Plan,
@@ -2947,8 +2981,33 @@ export async function optimizePlanCoOptimizingClaimAge(
   const baseValuation = winnerExactEstate(plan, baseResult.tournament, simulateOptions)
   const baseEstate = baseValuation.estate
 
-  const ctx = decisionContext(plan, simulatePlan(plan, simulateOptions), simulateOptions)
-  const candidates = socialSecurityClaimGenerator.generate(ctx)
+  const baseline = simulatePlan(plan, simulateOptions)
+  const ctx = decisionContext(plan, baseline, simulateOptions)
+  // The generator's streams (the first two Social Security streams); a claim
+  // already made is history, and when every one is, there is nothing to move.
+  const claimStreams = plan.incomes
+    .filter((income): income is Extract<Plan['incomes'][number], { type: 'socialSecurity' }> => income.type === 'socialSecurity')
+    .slice(0, 2)
+  const alreadyClaimed: AlreadyClaimed[] = claimStreams.flatMap((stream) => {
+    const person = plan.household.people.find((p) => p.id === stream.personId)
+    if (person === undefined || !isClaimAlreadyMade(person, stream.claimAge, opts.startYear)) return []
+    const claimAge = { years: stream.claimAge.years, months: stream.claimAge.months }
+    return [{ personId: person.id, streamId: stream.id, claimAge, claimYear: claimYearOf(person, claimAge) }]
+  })
+  // A claim age moves the income the premium tax credit depends on (26 U.S.C.
+  // 36B(d)(2)(B)(iii)); where the ledger cannot price that credit, no claim
+  // change can be priced either way, so the search refuses and names the years.
+  const unpricedAca = unpricedAcaYears(baseline)
+  const refusal: ClaimAgeCoOptimizationOutcome | null =
+    claimStreams.length === 0
+      ? 'no-claims'
+      : alreadyClaimed.length === claimStreams.length
+        ? 'already-claimed'
+        : unpricedAca.length > 0
+          ? 'aca-unpriced'
+          : null
+  const candidates = refusal === null ? socialSecurityClaimGenerator.generate(ctx) : []
+  const outcome: ClaimAgeCoOptimizationOutcome = refusal ?? (candidates.length === 0 ? 'no-age-left' : 'searched')
   const estateYear = ctx.baselineResult.endYear
 
   let bestPlan = plan
@@ -2991,6 +3050,9 @@ export async function optimizePlanCoOptimizingClaimAge(
     claimAge: {
       ...(baseValuation.incompleteComputationYears.length ? { incompleteComputationYears: baseValuation.incompleteComputationYears } : {}),
       enabled: true,
+      outcome,
+      unpricedAca: outcome === 'aca-unpriced' ? unpricedAca : [],
+      alreadyClaimed,
       combinationsEvaluated: evaluated,
       winningClaimLabel: winningLabel,
       winningClaimPatch: winningPatch,

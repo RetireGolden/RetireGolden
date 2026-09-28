@@ -18,13 +18,48 @@ import { LearnLink } from '../learn/LearnLink'
 import { LEARN } from './learnLinks'
 import { ScrollRegion } from './ScrollRegion'
 import { fmtMoney, fmtMoneyCompact } from './format'
+import { formatYearRuns } from './acaVetoCopy'
 import { currentStartYear, taxCalculatorFor, useProjection } from './useProjection'
 import {
-  buildSurvivorAnalysis,
   isDegenerateTiming,
-  type SurvivorAnalysis,
-  type SurvivorScenarioRow,
-} from './survivorAnalysis'
+  survivorTransitionAnalysis,
+  type SurvivorConversionLever,
+  type SurvivorLeverYearReason,
+  type SurvivorTimingRow,
+  type SurvivorTransitionAnalysis,
+} from '@retiregolden/engine/projection/survivorTransition'
+
+type SurvivorScenarioRow = SurvivorTimingRow
+/** The engine's analysis, or the page's whole-sweep error state. */
+type SurvivorAnalysis = SurvivorTransitionAnalysis & { error?: boolean }
+
+/** Why the lever added nothing in a window year, as a clause ending "in {years}". */
+const LEVER_REASON_CLAUSE: Record<Exclude<SurvivorLeverYearReason, 'raised'>, string> = {
+  covered: 'your plan already converts at or past the top of the 12% bracket',
+  short: 'the ledger converted less than the fill asked',
+  'no-balance': 'no pre-tax balance it can convert',
+  'fill-limited': 'the fill was cut to nothing',
+  'no-room': 'no room left in the 12% bracket',
+  'named-conversions': 'a conversion your plan names replaces its conversion strategy',
+}
+
+/**
+ * The lever cell's account of its window, year by year from the engine
+ * (SurvivorConversionLever.years): the years it added conversions, then each
+ * other reason with its own years, and every message the ledger raised in the
+ * window, each once.
+ */
+function leverWindowText(lever: SurvivorConversionLever): { summary: string; notes: string[] } {
+  const reasons: SurvivorLeverYearReason[] = []
+  for (const y of lever.years) if (y.reason !== 'raised' && !reasons.includes(y.reason)) reasons.push(y.reason)
+  const yearsOf = (reason: SurvivorLeverYearReason) => lever.years.filter((y) => y.reason === reason).map((y) => y.year)
+  const clauses = reasons.map((reason) => `${LEVER_REASON_CLAUSE[reason as Exclude<SurvivorLeverYearReason, 'raised'>]} in ${formatYearRuns(yearsOf(reason))}`)
+  const head = lever.raisedYears.length > 0 ? `adds conversions in ${formatYearRuns(lever.raisedYears)}` : 'no added conversions'
+  return {
+    summary: clauses.length > 0 ? `${head}; ${clauses.join('; ')}` : head,
+    notes: [...new Set(lever.years.flatMap((y) => y.notes))],
+  }
+}
 
 function filingLabel(status: SurvivorScenarioRow['firstSurvivorYear']['filingStatus']): string {
   return status === 'marriedFilingJointly'
@@ -67,6 +102,36 @@ function partitionByContent(rows: SurvivorScenarioRow[]) {
     live: rows.filter((r) => !isDegenerateTiming(r)),
     degenerate: rows.filter((r) => isDegenerateTiming(r)),
   }
+}
+
+/**
+ * The SSA-44 column: the premium difference over the whole projection, with
+ * the relief years' tier changes, and what later years add. "No surcharge to
+ * relieve" is decided on the two relief years alone.
+ */
+function Ssa44Cell({ row }: { row: SurvivorScenarioRow }) {
+  const later = row.ssa44PremiumSavings - row.ssa44ReliefYearSavings
+  const laterText = Math.abs(later) >= 1 ? `${later > 0 ? '' : '−'}${fmtMoney(Math.round(Math.abs(later)))}` : null
+  if (row.ssa44ReliefYearSavings <= 0.5) {
+    return (
+      <>
+        —<div className="small">no surcharge to relieve at this timing{laterText ? `; later years differ by ${laterText}` : ''}</div>
+      </>
+    )
+  }
+  const tiers = row.irmaaYears
+    .filter((y) => y.tierWithoutSsa44 !== y.tierWithSsa44)
+    .map((y) => `${y.year}: tier ${y.tierWithoutSsa44} → ${y.tierWithSsa44}`)
+    .join('; ')
+  return (
+    <>
+      <span className="delta-pos">{fmtMoney(Math.round(row.ssa44PremiumSavings))}</span>
+      <div className="small">
+        {tiers || 'premium difference in the relief years'}
+        {laterText ? `, including ${laterText} in later years` : ''}
+      </div>
+    </>
+  )
 }
 
 function ScenarioTable({
@@ -145,25 +210,11 @@ function ScenarioTable({
                 </div>
               </td>
               <td>
-                {row.ssa44PremiumSavings > 0.5 ? (
-                  <>
-                    <span className="delta-pos">{fmtMoney(Math.round(row.ssa44PremiumSavings))}</span>
-                    <div className="small">
-                      {row.irmaaYears
-                        .filter((y) => y.tierWithoutSsa44 !== y.tierWithSsa44)
-                        .map((y) => `${y.year}: tier ${y.tierWithoutSsa44} → ${y.tierWithSsa44}`)
-                        .join('; ') || 'premium difference across survivor years'}
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    —<div className="small">no surcharge to relieve at this timing</div>
-                  </>
-                )}
+                <Ssa44Cell row={row} />
               </td>
               <td>
                 {row.survivorShortfallYears === 0 ? (
-                  <span className="delta-pos">covered</span>
+                  <span className="delta-pos">required spending covered</span>
                 ) : (
                   <span className="delta-neg">{row.survivorShortfallYears} shortfall yrs</span>
                 )}
@@ -186,9 +237,10 @@ function ScenarioTable({
                     </span>
                     <div className="small">
                       after-tax estate ({row.conversionLever.lifetimeTaxDelta > 0 ? '+' : ''}
-                      {fmtMoneyCompact(row.conversionLever.lifetimeTaxDelta)} lifetime tax), filling the 12% bracket
-                      through {row.deathYear}
+                      {fmtMoneyCompact(row.conversionLever.lifetimeTaxDelta)} lifetime tax), adding a 12% bracket fill
+                      through {row.deathYear}, in {row.endYear} dollars
                     </div>
+                    <LeverWindow lever={row.conversionLever} />
                   </>
                 ) : (
                   '—'
@@ -206,6 +258,22 @@ function ScenarioTable({
         transition.
       </p>
     ) : null}
+    </>
+  )
+}
+
+function LeverWindow({ lever }: { lever: SurvivorConversionLever }) {
+  const { summary, notes } = leverWindowText(lever)
+  return (
+    <>
+      <div className="small" data-lever-window>
+        {summary}
+      </div>
+      {notes.length > 0 ? (
+        <div className="small muted" data-lever-notes>
+          The ledger: {notes.join(' ')}
+        </div>
+      ) : null}
     </>
   )
 }
@@ -233,7 +301,7 @@ export function SurvivorTransitionPage() {
       try {
         setSnapshot({
           plan,
-          analysis: buildSurvivorAnalysis(plan, { startYear: currentStartYear(), taxCalculator: taxCalculatorFor(plan) }),
+          analysis: survivorTransitionAnalysis(plan, { startYear: currentStartYear(), taxCalculator: taxCalculatorFor(plan) }),
           depletionYear,
         })
       } catch {
@@ -249,7 +317,7 @@ export function SurvivorTransitionPage() {
   const analysisDepletionYear = snapshot !== null && snapshot.plan === plan ? snapshot.depletionYear : null
 
   const anySsa44Savings = useMemo(
-    () => (analysis?.rows ?? []).some((r) => r.ssa44PremiumSavings > 0.5),
+    () => (analysis?.rows ?? []).some((r) => r.ssa44ReliefYearSavings > 0.5),
     [analysis],
   )
 
@@ -287,14 +355,17 @@ export function SurvivorTransitionPage() {
           <li>
             <strong>IRMAA relief (SSA-44):</strong> the death of a spouse is a qualifying life-changing event, so the
             survivor can ask Social Security to price IRMAA on current income instead of the two-year lookback. The
-            column shows the premium difference between modeling that relief and not. The model is deliberately
+            column shows the premium difference between modeling that relief and not, over the whole projection: the
+            two relief years and any later effect of the lower premiums. The model is deliberately
             conservative in the first survivor year, its income estimate still references the death year's joint
             income, where a real filing could use the survivor's own, so year-one relief can be understated.{' '}
             <LearnLink slug={LEARN.ssa44.slug} label={LEARN.ssa44.label} />
           </li>
           <li>
-            <strong>Convert-early lever:</strong> the change in ending after-tax estate from filling the 12% bracket
-            with Roth conversions while joint brackets last, priced on the same ledger as everything else.
+            <strong>Convert-early lever:</strong> the change in ending after-tax estate from adding Roth conversions
+            that fill the 12% bracket, on top of any your plan already makes, through the year of the first death,
+            priced on the same ledger as everything else and in dollars of that timing's last year.{' '}
+            <strong>Survivor spending</strong> counts the years after the death with required spending not covered.
           </li>
         </ul>
         {anySsa44Savings && !plan.expenses.healthcare.ssa44?.survivorYears ? (

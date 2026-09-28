@@ -1499,7 +1499,7 @@ describe('calculation registry conformance', () => {
       }
     }
     expect(violations).toEqual([])
-    // Slice 1 of B2-P1 moved eleven, slice 2 nine, slice 3 six and slice 4 nine; a later slice adds to the list.
+    // Slice 1 of B2-P1 moved eleven, slice 2 nine, slice 3 six, slice 4 nine and slice 5 five; a later slice adds to the list.
     expect(
       Object.entries(families)
         .filter(([, family]) => family.relocation?.status === 'done')
@@ -1530,6 +1530,7 @@ describe('calculation registry conformance', () => {
       'optimizer-schedule-conversion-total',
       'relocation-tax-comparison',
       'social-security-break-even',
+      'social-security-claiming-sweep-objective',
       'social-security-computation-summary-counts',
       'social-security-credit-estimate',
       'social-security-expected-present-value',
@@ -1541,12 +1542,19 @@ describe('calculation registry conformance', () => {
       'solved-initial-withdrawal-rate-pct',
       'solved-spending-rounded-to-hundred',
       'spending-shape-delta-vs-flat',
+      'survivor-scenario-row-estate-delta',
+      'survivor-scenario-row-lifetime-tax-delta',
+      'survivor-scenario-row-ssa44premium-savings',
+      'survivor-scenario-row-survivor-shortfall-years',
     ])
   })
 
   it('publishes relocation-pending for exactly the ui families whose relocation is pending, and counts none of them complete', () => {
     const { complete, relocationPending } = publishedManifest().families
-    const expected = Object.entries(OUTPUT_FAMILIES)
+    // Typed as the census record, not the imported literals: once every UI
+    // family is relocated (B2-P1 slice 5), no literal 'pending' is left to compare.
+    const families: Readonly<Record<string, OutputFamily>> = OUTPUT_FAMILIES
+    const expected = Object.entries(families)
       .filter(([, family]) => family.relocation !== null && family.relocation.status === 'pending')
       .map(([id]) => id)
       .sort()

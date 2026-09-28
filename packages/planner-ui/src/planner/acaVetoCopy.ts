@@ -75,8 +75,24 @@ const UNPRICED_CREDIT_REASONS: Partial<Record<AcaSupportCode, string>> = {
   'below-100-fpl-exception-unsupported':
     'income is below the poverty line, where there is generally no credit and Medicaid may apply',
   'example-contract-input-mismatch': "the example's inputs were edited, so its stated credit figures no longer apply",
+  // The ledger's own fixed points: the credit and the income it depends on are
+  // solved together each year, and these say the solution did not settle, not
+  // that any fact is missing (annualAcaResultPublication.ts,
+  // annualFundingCandidateEvaluation.ts). The HSA one is the loop on
+  // hsa.qualifiedExpenseCap, the medical expenses (Marketplace premiums
+  // excluded) that HSA withdrawals can count against, not a contribution limit.
+  'fixed-point-nonconvergent': "the credit and the income it depends on didn't settle on one value in that year",
+  'conflicting-cliff-fixed-points': "the income can settle on either side of the credit's cliff in that year",
+  'hsa-cap-fixed-point-nonconvergent':
+    "the credit and the amount of HSA withdrawals that count as medical expenses didn't settle on one value in that year",
 }
 const OTHER_UNPRICED_CREDIT_REASON = 'some facts the credit needs are missing'
+
+/** A support code's reason in plain words, for one year or for several. */
+function creditReasonText(code: AcaSupportCode, oneYear: boolean): string {
+  const reason = UNPRICED_CREDIT_REASONS[code] ?? OTHER_UNPRICED_CREDIT_REASON
+  return oneYear ? reason : reason.replace('for that year', 'for those years').replace('in that year', 'in those years')
+}
 const NOT_A_REASON: ReadonlySet<AcaSupportCode> = new Set<AcaSupportCode>([
   'actionable',
   ...INFORMATIONAL_ACA_SUPPORT_CODES,
@@ -97,13 +113,7 @@ export interface UnpricedCreditFacts {
  */
 function unpricedCreditSentence(years: readonly number[], codes: readonly AcaSupportCode[]): string {
   const one = new Set(years).size === 1
-  const reasons = [
-    ...new Set(
-      codes
-        .filter((code) => !NOT_A_REASON.has(code))
-        .map((code) => UNPRICED_CREDIT_REASONS[code] ?? OTHER_UNPRICED_CREDIT_REASON),
-    ),
-  ].map((reason) => (one ? reason : reason.replace('for that year', 'for those years')))
+  const reasons = [...new Set(codes.filter((code) => !NOT_A_REASON.has(code)).map((code) => creditReasonText(code, one)))]
   const lead = `The premium tax credit isn't counted in ${formatYearRuns([...years])}`
   return reasons.length === 0
     ? `${lead}: ${OTHER_UNPRICED_CREDIT_REASON}.`
@@ -174,6 +184,53 @@ export function guardrailPreviewUnpricedCreditRefusal(
  */
 export function diagnosticsWithoutUnpricedCreditSentence(diagnostics: readonly string[]): string[] {
   return diagnostics.filter((message) => !isAcaGrossPremiumDiagnostic(message))
+}
+
+/** A Marketplace year whose credit could not be priced, with its own blocking support codes (the engine's UnpricedAcaYear). */
+export interface UnpricedCreditYear {
+  readonly year: number
+  readonly reasons: readonly AcaSupportCode[]
+}
+
+/**
+ * The unpriced credit years in plain words, each with its own reason: years
+ * that share their reasons are grouped as runs ("2028 to 2060 (RetireGolden
+ * doesn't have the credit's figures for those years yet)"), the groups in
+ * order of their first year and joined with semicolons.
+ */
+export function unpricedCreditYearsText(years: readonly UnpricedCreditYear[]): string {
+  const groups = new Map<string, { years: number[]; codes: AcaSupportCode[] }>()
+  for (const entry of [...years].sort((a, b) => a.year - b.year)) {
+    const codes = [...new Set(entry.reasons.filter((code) => !NOT_A_REASON.has(code)))]
+    const key = codes.map((code) => creditReasonText(code, true)).join('|')
+    const group = groups.get(key) ?? { years: [], codes }
+    group.years.push(entry.year)
+    groups.set(key, group)
+  }
+  return [...groups.values()]
+    .map((group) => {
+      const one = group.years.length === 1
+      const reasons = group.codes.length > 0 ? [...new Set(group.codes.map((code) => creditReasonText(code, one)))] : [OTHER_UNPRICED_CREDIT_REASON]
+      return `${formatYearRuns(group.years)} (${reasons.join('; ')})`
+    })
+    .join('; ')
+}
+
+/**
+ * Why a claim-age search refuses on a plan with unpriced credit years: every
+ * Social Security benefit counts in the credit's income (26 U.S.C.
+ * 36B(d)(2)(B)(iii) adds back the part not taxed) in the years it is paid, so
+ * a credit left unpriced there can change which claim age comes out ahead, in
+ * either direction (the decision of 2026-09-25). Shared by the Social Security
+ * page's sweep and the Optimize page's claim-age co-optimization, so the two
+ * pages refuse in the same words.
+ */
+export function claimAgeUnpricedCreditReason(years: readonly UnpricedCreditYear[]): string {
+  return (
+    `Your plan's premium tax credit can't be priced in ${unpricedCreditYearsText(years)}. ` +
+    'All of your Social Security counts in the income that credit depends on, in the years it is paid, so a credit ' +
+    'left unpriced there could change which claim age comes out ahead, in either direction.'
+  )
 }
 
 /** Short marker appended to a vetoed candidate row in the alternatives table. */

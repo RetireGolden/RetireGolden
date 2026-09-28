@@ -584,12 +584,28 @@
         }
       ],
       "claimAge": {
-        "claimChangeEstateGain": 118000,
-        "combinationsEvaluated": 3,
+        "alreadyClaimed": [],
+        "claimChangeEstateGain": 0,
+        "combinationsEvaluated": 1,
         "currentClaimExactEstate": 1000000,
         "estateYear": 2059,
-        "jointExactEstate": 1118000,
-        "winningClaimLabel": "Pat claims Social Security at 70"
+        "jointExactEstate": 1000000,
+        "outcome": "aca-unpriced",
+        "unpricedAca": [
+          {
+            "reasons": [
+              "tax-year-parameters-unsupported"
+            ],
+            "year": 2028
+          },
+          {
+            "reasons": [
+              "tax-year-parameters-unsupported"
+            ],
+            "year": 2029
+          }
+        ],
+        "winningClaimLabel": null
       },
       "objectiveId": "max-after-tax-estate",
       "objectiveLabel": "Maximize after-tax estate",

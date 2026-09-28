@@ -346,9 +346,12 @@ Two dedicated what-if views on the Explore rail run the user's **actual plan** t
   zero-income-tax shortlist.
 - **Survivor transition view** (`/plan/:id/survivor`, couples-only, 2026-07-09): sweeps earlier first-death
   timings (ages 70–90, either spouse first) via `deathAgeByPersonId` overrides
-  ([planner/survivorAnalysis.ts](../../packages/planner-ui/src/planner/survivorAnalysis.ts)) — filing-status timeline,
-  survivor SS step, tax on similar MAGI across the transition, IRMAA with/without SSA-44, survivor spending
-  coverage, and the convert-while-joint lever priced as an ordinary scenario. Educational framing throughout:
+  ([projection/survivorTransition.ts](../../packages/engine/src/projection/survivorTransition.ts), in the engine
+  since B2-P1 slice 5) — filing-status timeline, survivor SS step, tax on similar MAGI across the transition, the
+  Medicare premium difference with and without SSA-44 over the whole projection (its relief years' part named),
+  the years with survivor required spending not covered, and the convert-early lever: Roth conversions that fill
+  the 12% bracket **added to** the plan's own through the year of the first death (owner decision R16), in dollars
+  of the timing's last year, with a sentence saying why when it adds nothing. Educational framing throughout:
   timings are chosen scenarios, never predictions. The `widows-penalty-roth` detector quantifies the survivor
   bracket jump and points at SSA-44 when relief is unmodeled.
 

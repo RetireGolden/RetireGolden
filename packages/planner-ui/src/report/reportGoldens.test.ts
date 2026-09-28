@@ -143,12 +143,21 @@ function syntheticFindings(summary: ProjectionSummary): ReportRecommendationEvid
         lossReason: 'Trailed the selected recommendation by $500.',
       },
     ],
+    // example-couple's own claim-age outcome since B2-P1 slice 5: its 2028 and
+    // 2029 Marketplace credits cannot be priced, so the search refuses and the
+    // report prints the Optimize card's refusal, each year with its reason.
     claimAge: {
-      combinationsEvaluated: 3,
-      winningClaimLabel: 'Pat claims Social Security at 70',
-      jointExactEstate: 1_118_000,
+      outcome: 'aca-unpriced',
+      unpricedAca: [
+        { year: 2028, reasons: ['tax-year-parameters-unsupported'] },
+        { year: 2029, reasons: ['tax-year-parameters-unsupported'] },
+      ],
+      alreadyClaimed: [],
+      combinationsEvaluated: 1,
+      winningClaimLabel: null,
+      jointExactEstate: 1_000_000,
       currentClaimExactEstate: 1_000_000,
-      claimChangeEstateGain: 118_000,
+      claimChangeEstateGain: 0,
       estateYear: 2059,
     },
   }

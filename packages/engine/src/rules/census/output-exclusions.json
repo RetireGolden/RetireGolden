@@ -1472,150 +1472,6 @@
     "reason": "The claimingPeople.pia field is an internal diagnostic used to trace or validate calculation behavior."
   },
   {
-    "id": "field-planner-ui-src-planner-ssanalysis-ts-monthlyclaim-years",
-    "path": "planner-ui/src/planner/ssAnalysis.ts",
-    "symbol": "MonthlyClaim",
-    "field": "years",
-    "reasonKind": "dimension-coordinate",
-    "reason": "Whole-year part of a month-granular claim age; a coordinate."
-  },
-  {
-    "id": "field-planner-ui-src-planner-survivoranalysis-ts-survivoranalysisoptions-startyear",
-    "path": "planner-ui/src/planner/survivorAnalysis.ts",
-    "symbol": "SurvivorAnalysisOptions",
-    "field": "startYear",
-    "reasonKind": "dimension-coordinate",
-    "reason": "The SurvivorAnalysisOptions.startYear field is a coordinate such as year, age, or offset used to place another value."
-  },
-  {
-    "id": "field-planner-ui-src-planner-survivoranalysis-ts-survivoranalysisoptions-deathages",
-    "path": "planner-ui/src/planner/survivorAnalysis.ts",
-    "symbol": "SurvivorAnalysisOptions",
-    "field": "deathAges",
-    "reasonKind": "dimension-coordinate",
-    "reason": "The SurvivorAnalysisOptions.deathAges field is a coordinate such as year, age, or offset used to place another value."
-  },
-  {
-    "id": "field-planner-ui-src-planner-survivoranalysis-ts-filingsegment-fromyear",
-    "path": "planner-ui/src/planner/survivorAnalysis.ts",
-    "symbol": "FilingSegment",
-    "field": "fromYear",
-    "reasonKind": "dimension-coordinate",
-    "reason": "First year of a filing-status run in the survivor timeline chip."
-  },
-  {
-    "id": "field-planner-ui-src-planner-survivoranalysis-ts-filingsegment-toyear",
-    "path": "planner-ui/src/planner/survivorAnalysis.ts",
-    "symbol": "FilingSegment",
-    "field": "toYear",
-    "reasonKind": "dimension-coordinate",
-    "reason": "Last year of a filing-status run in the survivor timeline chip."
-  },
-  {
-    "id": "field-planner-ui-src-planner-survivoranalysis-ts-survivoryearfacts-year",
-    "path": "planner-ui/src/planner/survivorAnalysis.ts",
-    "symbol": "SurvivorYearFacts",
-    "field": "year",
-    "reasonKind": "dimension-coordinate",
-    "reason": "The SurvivorYearFacts.year field is a coordinate such as year, age, or offset used to place another value."
-  },
-  {
-    "id": "field-planner-ui-src-planner-survivoranalysis-ts-survivorirmaayear-year",
-    "path": "planner-ui/src/planner/survivorAnalysis.ts",
-    "symbol": "SurvivorIrmaaYear",
-    "field": "year",
-    "reasonKind": "dimension-coordinate",
-    "reason": "The SurvivorIrmaaYear.year field is a coordinate such as year, age, or offset used to place another value."
-  },
-  {
-    "id": "field-planner-ui-src-planner-survivoranalysis-ts-survivorirmaayear-tierwithoutssa44",
-    "path": "planner-ui/src/planner/survivorAnalysis.ts",
-    "symbol": "SurvivorIrmaaYear",
-    "field": "tierWithoutSsa44",
-    "reasonKind": "label-or-category",
-    "reason": "Engine irmaaTier read from the run without SSA-44 relief; a classification shown as \"tier a → b\" on the survivor page. The premium dollars are the numeric family (medicare-premiums-annual, survivor-scenario-row-ssa44premium-savings)."
-  },
-  {
-    "id": "field-planner-ui-src-planner-survivoranalysis-ts-survivorirmaayear-tierwithssa44",
-    "path": "planner-ui/src/planner/survivorAnalysis.ts",
-    "symbol": "SurvivorIrmaaYear",
-    "field": "tierWithSsa44",
-    "reasonKind": "label-or-category",
-    "reason": "Engine irmaaTier read from the run with SSA-44 relief forced on (the recomputation is engine-side via the plan flag); a classification shown as \"tier a → b\" on the survivor page."
-  },
-  {
-    "id": "field-planner-ui-src-planner-survivoranalysis-ts-survivorscenariorow-deathage",
-    "path": "planner-ui/src/planner/survivorAnalysis.ts",
-    "symbol": "SurvivorScenarioRow",
-    "field": "deathAge",
-    "reasonKind": "dimension-coordinate",
-    "reason": "Swept death age from the SURVIVOR_DEATH_AGES grid (70..90 clamped to the person's ages); the row's coordinate, printed as \"Dies at\"."
-  },
-  {
-    "id": "field-planner-ui-src-planner-survivoranalysis-ts-survivorscenariorow-deathyear",
-    "path": "planner-ui/src/planner/survivorAnalysis.ts",
-    "symbol": "SurvivorScenarioRow",
-    "field": "deathYear",
-    "reasonKind": "dimension-coordinate",
-    "reason": "Birth year plus the swept death age; a coordinate printed under \"Dies at\" and in the lever sentence."
-  },
-  {
-    "id": "field-planner-ui-src-planner-survivoranalysis-ts-module-v",
-    "path": "planner-ui/src/planner/survivorAnalysis.ts",
-    "symbol": "module",
-    "field": "v",
-    "reasonKind": "runtime-diagnostic",
-    "reason": "The module.v field is an internal diagnostic used to trace or validate calculation behavior."
-  },
-  {
-    "id": "field-planner-ui-src-planner-survivoranalysis-ts-survivoranalysis-failedtimings",
-    "path": "planner-ui/src/planner/survivorAnalysis.ts",
-    "symbol": "SurvivorAnalysis",
-    "field": "failedTimings",
-    "reasonKind": "runtime-diagnostic",
-    "reason": "Count of death timings whose ledger run threw and was skipped; a run diagnostic printed as \"N death timings could not be simulated\", not a plan quantity."
-  },
-  {
-    "id": "field-planner-ui-src-planner-survivoranalysis-ts-conversionleverpatch-startyear",
-    "path": "planner-ui/src/planner/survivorAnalysis.ts",
-    "symbol": "conversionLeverPatch",
-    "field": "startYear",
-    "reasonKind": "dimension-coordinate",
-    "reason": "The conversionLeverPatch.startYear field is a coordinate such as year, age, or offset used to place another value."
-  },
-  {
-    "id": "field-planner-ui-src-planner-survivoranalysis-ts-conversionleverpatch-lastjointyear",
-    "path": "planner-ui/src/planner/survivorAnalysis.ts",
-    "symbol": "conversionLeverPatch",
-    "field": "lastJointYear",
-    "reasonKind": "dimension-coordinate",
-    "reason": "The conversionLeverPatch.lastJointYear field is a coordinate such as year, age, or offset used to place another value."
-  },
-  {
-    "id": "field-planner-ui-src-planner-survivoranalysis-ts-candidatedeathages-startyear",
-    "path": "planner-ui/src/planner/survivorAnalysis.ts",
-    "symbol": "candidateDeathAges",
-    "field": "startYear",
-    "reasonKind": "dimension-coordinate",
-    "reason": "The candidateDeathAges.startYear field is a coordinate such as year, age, or offset used to place another value."
-  },
-  {
-    "id": "field-planner-ui-src-planner-survivoranalysis-ts-candidatedeathages-grid",
-    "path": "planner-ui/src/planner/survivorAnalysis.ts",
-    "symbol": "candidateDeathAges",
-    "field": "grid",
-    "reasonKind": "runtime-diagnostic",
-    "reason": "The candidateDeathAges.grid field is an internal diagnostic used to trace or validate calculation behavior."
-  },
-  {
-    "id": "field-planner-ui-src-planner-survivoranalysis-ts-module-deathage",
-    "path": "planner-ui/src/planner/survivorAnalysis.ts",
-    "symbol": "module",
-    "field": "deathAge",
-    "reasonKind": "dimension-coordinate",
-    "reason": "The module.deathAge field is a coordinate such as year, age, or offset used to place another value."
-  },
-  {
     "id": "field-planner-ui-src-planner-bucketlens-ts-bucketpreset-spans",
     "path": "planner-ui/src/planner/bucketLens.ts",
     "symbol": "BucketPreset",
@@ -3218,14 +3074,6 @@
     "reason": "Cash-conservation tolerance aligned with the annual funding fixed point; a reconciliation constant."
   },
   {
-    "id": "field-planner-ui-src-planner-survivoranalysis-ts-survivoryearfacts-shortfall",
-    "path": "planner-ui/src/planner/survivorAnalysis.ts",
-    "symbol": "SurvivorYearFacts",
-    "field": "shortfall",
-    "reasonKind": "runtime-diagnostic",
-    "reason": "Engine YearResult.shortfall for the last joint and first survivor years, read only by isDegenerateTiming to decide whether a timing row is shown as degenerate; a display gate, never printed (the shortfall family is surfaced elsewhere)."
-  },
-  {
     "id": "field-engine-src-projection-optimizeplan-ts-retirementactionpromotion-searchsimulations",
     "path": "engine/src/projection/optimizePlan.ts",
     "symbol": "RetirementActionPromotion",
@@ -3672,5 +3520,309 @@
     "field": "amount",
     "reasonKind": "input-parameter",
     "reason": "The sample earnings put in the replaced year, printed in the explainer's sentence."
+  },
+  {
+    "id": "field-engine-src-decisions-claimagesweep-ts-claimagesweeprow-claimbypersonid",
+    "path": "engine/src/decisions/claimAgeSweep.ts",
+    "symbol": "ClaimAgeSweepRow",
+    "field": "claimByPersonId",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The whole-year claim age of each open claim's person a sweep row prices, printed as the row's claim ages and the heatmap's axes."
+  },
+  {
+    "id": "field-engine-src-decisions-claimagesweep-ts-claimagesweep-estateyear",
+    "path": "engine/src/decisions/claimAgeSweep.ts",
+    "symbol": "ClaimAgeSweep",
+    "field": "estateYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The plan's last projection year, whose dollars the sweep's estates are in, named beside the verdict's change."
+  },
+  {
+    "id": "field-engine-src-decisions-claimagesweep-ts-unpricedacayear-year",
+    "path": "engine/src/decisions/claimAgeSweep.ts",
+    "symbol": "UnpricedAcaYear",
+    "field": "year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "A Marketplace year whose premium tax credit could not be priced, named with its reasons in the refusal note."
+  },
+  {
+    "id": "field-engine-src-decisions-claimagesweep-ts-claimagesweepoptions-startyear",
+    "path": "engine/src/decisions/claimAgeSweep.ts",
+    "symbol": "ClaimAgeSweepOptions",
+    "field": "startYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The plan's first projection year, from which claims already made and the grid's ages are read."
+  },
+  {
+    "id": "field-engine-src-socialsecurity-openclaims-ts-claimagevalue-years",
+    "path": "engine/src/socialSecurity/openClaims.ts",
+    "symbol": "ClaimAgeValue",
+    "field": "years",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The whole years of a claim age, printed as the claim age."
+  },
+  {
+    "id": "field-engine-src-socialsecurity-openclaims-ts-claimagevalue-months",
+    "path": "engine/src/socialSecurity/openClaims.ts",
+    "symbol": "ClaimAgeValue",
+    "field": "months",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The months of a claim age, printed as \"67y 6m\"."
+  },
+  {
+    "id": "field-engine-src-socialsecurity-openclaims-ts-alreadyclaimed-claimyear",
+    "path": "engine/src/socialSecurity/openClaims.ts",
+    "symbol": "AlreadyClaimed",
+    "field": "claimYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The year a claim already made was made, printed in the refusal notes (\"claimed at 67 in 2020\")."
+  },
+  {
+    "id": "field-engine-src-projection-survivortransition-ts-survivortransitionoptions-startyear",
+    "path": "engine/src/projection/survivorTransition.ts",
+    "symbol": "SurvivorTransitionOptions",
+    "field": "startYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The plan's first projection year, the start of every death timing's runs and of the lever's window."
+  },
+  {
+    "id": "field-engine-src-projection-survivortransition-ts-survivortransitionoptions-deathages",
+    "path": "engine/src/projection/survivorTransition.ts",
+    "symbol": "SurvivorTransitionOptions",
+    "field": "deathAges",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The death-age grid each first-to-die person is swept over (70, 75, 80, 85, 90 by default)."
+  },
+  {
+    "id": "field-engine-src-projection-survivortransition-ts-filingsegment-fromyear",
+    "path": "engine/src/projection/survivorTransition.ts",
+    "symbol": "FilingSegment",
+    "field": "fromYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The first year of a run of one filing status, printed in the filing timeline."
+  },
+  {
+    "id": "field-engine-src-projection-survivortransition-ts-filingsegment-toyear",
+    "path": "engine/src/projection/survivorTransition.ts",
+    "symbol": "FilingSegment",
+    "field": "toYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The last year of a run of one filing status, printed in the filing timeline."
+  },
+  {
+    "id": "field-engine-src-projection-survivortransition-ts-survivoryearfacts-year",
+    "path": "engine/src/projection/survivorTransition.ts",
+    "symbol": "SurvivorYearFacts",
+    "field": "year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The last joint or first survivor year the facts are read from, printed under the Social Security and tax cells."
+  },
+  {
+    "id": "field-engine-src-projection-survivortransition-ts-survivoryearfacts-requiredshortfall",
+    "path": "engine/src/projection/survivorTransition.ts",
+    "symbol": "SurvivorYearFacts",
+    "field": "requiredShortfall",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The ledger's required-spending shortfall in the last joint or first survivor year, read only by the degenerate-timing test; not printed."
+  },
+  {
+    "id": "field-engine-src-projection-survivortransition-ts-survivorirmaayear-year",
+    "path": "engine/src/projection/survivorTransition.ts",
+    "symbol": "SurvivorIrmaaYear",
+    "field": "year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "A relief year (death year + 1 or + 2), printed with its tier change."
+  },
+  {
+    "id": "field-engine-src-projection-survivortransition-ts-survivorirmaayear-tierwithoutssa44",
+    "path": "engine/src/projection/survivorTransition.ts",
+    "symbol": "SurvivorIrmaaYear",
+    "field": "tierWithoutSsa44",
+    "reasonKind": "label-or-category",
+    "reason": "The IRMAA tier without SSA-44 relief, printed as \"tier 3 → 2\"."
+  },
+  {
+    "id": "field-engine-src-projection-survivortransition-ts-survivorirmaayear-tierwithssa44",
+    "path": "engine/src/projection/survivorTransition.ts",
+    "symbol": "SurvivorIrmaaYear",
+    "field": "tierWithSsa44",
+    "reasonKind": "label-or-category",
+    "reason": "The IRMAA tier with SSA-44 relief, printed as \"tier 3 → 2\"."
+  },
+  {
+    "id": "field-engine-src-projection-survivortransition-ts-survivorconversionlever-raisedyears",
+    "path": "engine/src/projection/survivorTransition.ts",
+    "symbol": "SurvivorConversionLever",
+    "field": "raisedYears",
+    "reasonKind": "dimension-coordinate",
+    "reason": "Window years in which the lever converted more than the plan's own target (executed dollars), printed as the years it adds conversions."
+  },
+  {
+    "id": "field-engine-src-projection-survivortransition-ts-survivorconversionlever-coveredyears",
+    "path": "engine/src/projection/survivorTransition.ts",
+    "symbol": "SurvivorConversionLever",
+    "field": "coveredYears",
+    "reasonKind": "dimension-coordinate",
+    "reason": "Window years in which the lever run converted something and at least the 12% fill (executed dollars); the page prints them as the years the plan already converts at or past the bracket."
+  },
+  {
+    "id": "field-engine-src-projection-survivortransition-ts-survivorleveryear-year",
+    "path": "engine/src/projection/survivorTransition.ts",
+    "symbol": "SurvivorLeverYear",
+    "field": "year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "A window year of the lever, printed in the lever cell with its reason (raised, covered, short, no balance, fill cut, no room, named conversion)."
+  },
+  {
+    "id": "field-engine-src-projection-survivortransition-ts-survivortimingrow-deathage",
+    "path": "engine/src/projection/survivorTransition.ts",
+    "symbol": "SurvivorTimingRow",
+    "field": "deathAge",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The first-to-die person's death age, printed as \"Dies at\"."
+  },
+  {
+    "id": "field-engine-src-projection-survivortransition-ts-survivortimingrow-deathyear",
+    "path": "engine/src/projection/survivorTransition.ts",
+    "symbol": "SurvivorTimingRow",
+    "field": "deathYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The last year the person is alive, printed under the death age and as the lever window's end."
+  },
+  {
+    "id": "field-engine-src-projection-survivortransition-ts-survivortimingrow-endyear",
+    "path": "engine/src/projection/survivorTransition.ts",
+    "symbol": "SurvivorTimingRow",
+    "field": "endYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The timing's last projection year, printed as the year whose dollars the lever's change is in."
+  },
+  {
+    "id": "field-engine-src-projection-survivortransition-ts-survivortransitionanalysis-failedtimings",
+    "path": "engine/src/projection/survivorTransition.ts",
+    "symbol": "SurvivorTransitionAnalysis",
+    "field": "failedTimings",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The number of death timings whose ledger runs threw and were skipped, reported in the page's warning."
+  },
+  {
+    "id": "field-engine-src-projection-survivortransition-ts-module-v",
+    "path": "engine/src/projection/survivorTransition.ts",
+    "symbol": "module",
+    "field": "v",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The value the degenerate-timing test compares with half a dollar."
+  },
+  {
+    "id": "field-engine-src-projection-survivortransition-ts-module-deathage",
+    "path": "engine/src/projection/survivorTransition.ts",
+    "symbol": "module",
+    "field": "deathAge",
+    "reasonKind": "dimension-coordinate",
+    "reason": "A death age of the grid, iterated to build each timing."
+  },
+  {
+    "id": "field-engine-src-projection-survivortransition-ts-candidatedeathages-startyear",
+    "path": "engine/src/projection/survivorTransition.ts",
+    "symbol": "candidateDeathAges",
+    "field": "startYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The plan's first projection year, from which the current attained age is read."
+  },
+  {
+    "id": "field-engine-src-projection-survivortransition-ts-candidatedeathages-grid",
+    "path": "engine/src/projection/survivorTransition.ts",
+    "symbol": "candidateDeathAges",
+    "field": "grid",
+    "reasonKind": "runtime-diagnostic",
+    "reason": "The death-age grid clamped to the current and planning ages."
+  },
+  {
+    "id": "field-engine-src-projection-survivortransition-ts-conversionleverpatch-startyear",
+    "path": "engine/src/projection/survivorTransition.ts",
+    "symbol": "conversionLeverPatch",
+    "field": "startYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The widows-penalty preview's first conversion year."
+  },
+  {
+    "id": "field-engine-src-projection-survivortransition-ts-conversionleverpatch-lastjointyear",
+    "path": "engine/src/projection/survivorTransition.ts",
+    "symbol": "conversionLeverPatch",
+    "field": "lastJointYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The widows-penalty preview's last conversion year, the last joint year."
+  },
+  {
+    "id": "field-engine-src-projection-simulate-ts-simulateoptions-startyear",
+    "path": "engine/src/projection/simulate.ts",
+    "symbol": "SimulateOptions",
+    "field": "startYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The projection's first year, an input of every run."
+  },
+  {
+    "id": "field-engine-src-projection-simulate-ts-simulateoptions-horizonendyear",
+    "path": "engine/src/projection/simulate.ts",
+    "symbol": "SimulateOptions",
+    "field": "horizonEndYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "A forced last projection year (Monte Carlo's shared year grid); an input."
+  },
+  {
+    "id": "field-engine-src-projection-simulate-ts-simulateoptions-additionalbracketfill-bracketpct",
+    "path": "engine/src/projection/simulate.ts",
+    "symbol": "SimulateOptions",
+    "field": "additionalBracketFill.bracketPct",
+    "reasonKind": "input-parameter",
+    "reason": "The bracket the survivor page's lever fills (12), an analysis input."
+  },
+  {
+    "id": "field-engine-src-projection-simulate-ts-simulateoptions-additionalbracketfill-startyear",
+    "path": "engine/src/projection/simulate.ts",
+    "symbol": "SimulateOptions",
+    "field": "additionalBracketFill.startYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The first year of the lever's window, the plan's start year."
+  },
+  {
+    "id": "field-engine-src-projection-simulate-ts-simulateoptions-additionalbracketfill-endyear",
+    "path": "engine/src/projection/simulate.ts",
+    "symbol": "SimulateOptions",
+    "field": "additionalBracketFill.endYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The last year of the lever's window, the death year."
+  },
+  {
+    "id": "field-planner-ui-src-report-reportmodel-ts-reportclaimageevidence-unpricedaca-year",
+    "path": "planner-ui/src/report/reportModel.ts",
+    "symbol": "ReportClaimAgeEvidence",
+    "field": "unpricedAca[].year",
+    "reasonKind": "dimension-coordinate",
+    "reason": "A Marketplace year whose premium tax credit the co-optimization could not price, printed with its reason in the report's claim-age refusal."
+  },
+  {
+    "id": "field-planner-ui-src-report-reportmodel-ts-reportclaimageevidence-alreadyclaimed-claimyear",
+    "path": "planner-ui/src/report/reportModel.ts",
+    "symbol": "ReportClaimAgeEvidence",
+    "field": "alreadyClaimed[].claimYear",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The year a claim the search held was made, printed in the report (\"claimed at 67 in 2020\")."
+  },
+  {
+    "id": "field-planner-ui-src-report-reportmodel-ts-reportclaimageevidence-alreadyclaimed-claimage-years",
+    "path": "planner-ui/src/report/reportModel.ts",
+    "symbol": "ReportClaimAgeEvidence",
+    "field": "alreadyClaimed[].claimAge.years",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The whole years of a claim the search held, printed as its claim age."
+  },
+  {
+    "id": "field-planner-ui-src-report-reportmodel-ts-reportclaimageevidence-alreadyclaimed-claimage-months",
+    "path": "planner-ui/src/report/reportModel.ts",
+    "symbol": "ReportClaimAgeEvidence",
+    "field": "alreadyClaimed[].claimAge.months",
+    "reasonKind": "dimension-coordinate",
+    "reason": "The months of a claim the search held, printed as \"66y 6m\"."
   }
 ]

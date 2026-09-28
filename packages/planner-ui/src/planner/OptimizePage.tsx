@@ -26,6 +26,8 @@ import { downloadStandaloneReport } from '../report/downloadReport'
 import { useReportBranding } from '../report/brandingContext'
 import { reportEvidenceFromOptimizeResult } from '../report/reportHtml'
 import { acaVetoExplanation } from './acaVetoCopy'
+import { claimAgeHeldText, claimAgeSearchRefusal } from './claimAgeCopy'
+import { isClaimAlreadyMade } from '@retiregolden/engine/socialSecurity/openClaims'
 import { StateTaxIncompleteGuidancePanel } from './stateTaxIncompleteGuidance'
 import {
   OPTIMIZER_RETIREMENT_ACTION_HEADING,
@@ -204,6 +206,16 @@ export function OptimizePage() {
 
   const hasSocialSecurityIncome = plan.incomes.some((s) => s.type === 'socialSecurity')
   const coOptimizeRequested = coOptimizeClaim && hasSocialSecurityIncome
+  const personName = (id: string) => plan.household.people.find((p) => p.id === id)?.name ?? id
+  // The co-optimization's own streams (the first two Social Security streams)
+  // tested with the claim-age searches' shared predicate.
+  const allClaimsAlreadyMade = useMemo(() => {
+    const streams = plan.incomes.filter((income) => income.type === 'socialSecurity').slice(0, 2)
+    return streams.length > 0 && streams.every((stream) => {
+      const person = plan.household.people.find((p) => p.id === stream.personId)
+      return person !== undefined && isClaimAlreadyMade(person, stream.claimAge, startYear)
+    })
+  }, [plan, startYear])
 
   // Derived-state-during-render (same pattern as fields.tsx useLocalText): if
   // every SS stream is removed the checkbox unmounts but its state would
@@ -522,7 +534,7 @@ export function OptimizePage() {
       result: view.result,
       summary: view.summary,
       startYear,
-      recommendationEvidence: reportEvidenceFromOptimizeResult(heldResult),
+      recommendationEvidence: reportEvidenceFromOptimizeResult(heldResult, plan.household.people),
       branding: reportBranding,
     })
   }
@@ -560,8 +572,12 @@ export function OptimizePage() {
           {hasSocialSecurityIncome ? (
             <CheckboxField
               label="Also optimize Social Security claim age"
-              help="Re-runs the full conversion optimizer at each canonical claim age (62 / full retirement age / 70, for up to two Social Security streams) and surfaces the claim-age and conversion pair with the highest projected after-tax estate. Note that claim combinations are always compared on after-tax estate, even when you have picked a different objective above; that objective still ranks the schedules within each combination. A claim change has to beat the current-claim optimum by a clear margin before it is surfaced."
-              hint="Re-runs the full optimizer once per claim combination, so expect several times longer than a standard run."
+              help="Re-runs the full conversion optimizer at each canonical claim age (62 / full retirement age / 70, for up to two Social Security streams) and surfaces the claim-age and conversion pair with the highest projected after-tax estate. Note that claim combinations are always compared on after-tax estate, even when you have picked a different objective above; that objective still ranks the schedules within each combination. A claim change has to beat the current-claim optimum by a clear margin before it is surfaced. A claim made before the plan starts is held as it is, and no claim age is searched while a Marketplace year's premium tax credit cannot be priced. The Social Security page's In your plan tab searches every whole year instead, with your conversions held as they are."
+              hint={
+                allClaimsAlreadyMade
+                  ? 'Every Social Security claim in this plan was made before it starts, so there is no claim age to move.'
+                  : 'Re-runs the full optimizer once per claim combination, so expect several times longer than a standard run.'
+              }
               value={coOptimizeClaim}
               onCommit={setCoOptimizeClaim}
             />
@@ -665,12 +681,20 @@ export function OptimizePage() {
               </div>
             ) : null}
           </div>
+        ) : claimAge.outcome === 'aca-unpriced' || claimAge.outcome === 'no-age-left' || claimAge.outcome === 'already-claimed' ? (
+          // The same sentence the downloadable report prints (claimAgeCopy.ts#claimAgeSearchRefusal).
+          <div className="card">
+            <p className="field-hint" style={{ margin: 0 }} data-claim-age-outcome={claimAge.outcome}>
+              {claimAgeSearchRefusal(claimAge, personName, startYear)}
+            </p>
+          </div>
         ) : (
           <div className="card">
             <p className="field-hint" style={{ margin: 0 }}>
               Social Security claim age co-optimized: {claimAge.combinationsEvaluated} claim combinations were each
               fully re-optimized; none beat your current claim ages by a meaningful margin, so the recommendation
               below keeps them.
+              {claimAge.alreadyClaimed.length > 0 ? ` ${claimAgeHeldText(claimAge.alreadyClaimed, personName)}` : ''}
             </p>
           </div>
         )

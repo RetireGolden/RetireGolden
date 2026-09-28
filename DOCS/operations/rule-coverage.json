@@ -79,11 +79,11 @@
     }
   },
   "attestations": {
-    "totalFiles": 454,
+    "totalFiles": 457,
     "byStatus": {
-      "partial": 91,
+      "partial": 92,
       "registered": 121,
-      "rule-free": 242,
+      "rule-free": 244,
       "unswept": 0
     },
     "sweptPct": 100,
@@ -259,7 +259,7 @@
     {
       "path": "projection/internal/annualAggregateRothConversionTargetPlan.ts",
       "sweptOn": "2026-09-02",
-      "note": "the pure annual target coordinator composes the partially attested strategies/rothConversion.ts federal bracket, IRMAA and ACA sizing producer with caller-supplied Form 8606 taxable fractions and an annual-tax callback. It owns named-action suppression of the legacy aggregate strategy, exact ordered manual folds, taxable-to-gross source translation, the pre-existing three-pass taxable-safety-net-floor trim, and the ACA sizing envelope over the already-validated annual contract. These are projection composition, numerical and liquidity conventions rather than new filing-grade rules. internal/annualAggregateRothConversionPhase.ts retains source-context construction and lazy current-balance readers, every aggregate conversion debit/credit, Form 8606 and Roth-basis mutation, runtime-journal ordering, warning insertion, optimizer inputs, and all live aggregate-conversion commits; simulatePlan supplies the surrounding annual facts and consumes the typed phase result"
+      "note": "the pure annual target coordinator composes the partially attested strategies/rothConversion.ts federal bracket, IRMAA and ACA sizing producer with caller-supplied Form 8606 taxable fractions and an annual-tax callback. It owns named-action suppression of the legacy aggregate strategy, exact ordered manual folds, taxable-to-gross source translation, the pre-existing three-pass taxable-safety-net-floor trim, and the ACA sizing envelope over the already-validated annual contract. These are projection composition, numerical and liquidity conventions rather than new filing-grade rules. internal/annualAggregateRothConversionPhase.ts retains source-context construction and lazy current-balance readers, every aggregate conversion debit/credit, Form 8606 and Roth-basis mutation, runtime-journal ordering, warning insertion, optimizer inputs, and all live aggregate-conversion commits; simulatePlan supplies the surrounding annual facts and consumes the typed phase result. With the analysis-only additionalBracketFill input it also sizes a fill to the top of that bracket on the same input, caps it at the convertible balance and keeps the larger of it and the own target of the strategy in the window (survivor-convert-early-lever)"
     },
     {
       "path": "projection/internal/annualContributionReconciliationPhase.ts",
@@ -444,7 +444,7 @@
     {
       "path": "projection/simulate.ts",
       "sweptOn": "2026-09-06",
-      "note": "ordered annual projection orchestration. It keeps the earnings-test month counts (all months, and those withheld from a spouse or a widow(er) benefit) across years for annualSocialSecurity. Income, expense, contribution, growth, funding-policy, candidate-tax/ACA, withdrawal planning and character, action preflight/input preparation, forced-distribution/QCD/retirement-action execution, aggregate Roth-conversion execution, accepted funding/application/year close, owned-IRA settlement, result assembly, and ACA/optimizer publication are delegated to explicitly attested coordinators. This caller retains longitudinal state initialization, annual input assembly, explicit phase ordering, thin live-state application adapters, transaction-binding construction, capture-sink selection, final settled YearResult/probe publication, and post-loop ProjectionResult assembly"
+      "note": "ordered annual projection orchestration. It keeps the earnings-test month counts (all months, and those withheld from a spouse or a widow(er) benefit) across years for annualSocialSecurity. Income, expense, contribution, growth, funding-policy, candidate-tax/ACA, withdrawal planning and character, action preflight/input preparation, forced-distribution/QCD/retirement-action execution, aggregate Roth-conversion execution (with the analysis-only additionalBracketFill option that the survivor page lever sets), accepted funding/application/year close, owned-IRA settlement, result assembly, and ACA/optimizer publication are delegated to explicitly attested coordinators. This caller retains longitudinal state initialization, annual input assembly, explicit phase ordering, thin live-state application adapters, transaction-binding construction, capture-sink selection, final settled YearResult/probe publication, and post-loop ProjectionResult assembly"
     },
     {
       "path": "rmd/applicableAge.ts",
@@ -460,6 +460,11 @@
       "path": "socialSecurity/maritalBenefits.ts",
       "sweptOn": "2026-09-27",
       "note": "Living-divorced, ordinary-widow, surviving-divorced duration, and surviving-divorced remarriage eligibility gates, plus half-PIA and survivor pricing, are named on this file; the divorced-spouse amount delegates to the registered dualEntitlement.ts composition. Residual: claimant-has-claimed timing (claimantAge vs claimAge) is an engine convention with no record; survivor amount assembly is delegated to already-registered survivorBenefit.ts/claimFactor.ts/nra.ts without a borrowed pin here"
+    },
+    {
+      "path": "socialSecurity/openClaims.ts",
+      "sweptOn": "2026-09-28",
+      "note": "the whole-year claim-age grid, registered under usc-42-402-worker-claim-window-62-to-70 (gridClaimAges). Residual: the already-claimed test (a claim whose year is before the plan's start year is fixed: 42 U.S.C. 402(a), 20 CFR 404.621(a)(3), withdrawal under 404.640(b)(4) and suspension under 402(z) not modeled) has no rule record; the social-security-claim-age-sweep calculation record states and cites it"
     },
     {
       "path": "socialSecurity/piaFromEarnings.ts",
@@ -573,11 +578,11 @@
     },
     {
       "directory": "decisions",
-      "files": 20,
+      "files": 21,
       "byStatus": {
         "partial": 1,
         "registered": 3,
-        "rule-free": 16
+        "rule-free": 17
       }
     },
     {
@@ -641,11 +646,11 @@
     },
     {
       "directory": "projection",
-      "files": 126,
+      "files": 127,
       "byStatus": {
         "partial": 42,
         "registered": 21,
-        "rule-free": 63
+        "rule-free": 64
       }
     },
     {
@@ -680,9 +685,9 @@
     },
     {
       "directory": "socialSecurity",
-      "files": 22,
+      "files": 23,
       "byStatus": {
-        "partial": 3,
+        "partial": 4,
         "registered": 11,
         "rule-free": 8
       }

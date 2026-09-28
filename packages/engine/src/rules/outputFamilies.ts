@@ -1,7 +1,7 @@
 /**
  * GENERATED FILE — DO NOT EDIT BY HAND.
  *
- * Output families imported from the output-family census at commit 087248709efc6fe8f317fe33757997002f5748f4.
+ * Output families imported from the output-family census at commit aed0e71652fba9c5e6cd4693d008761aa3da6093.
  * Regenerate: node packages/engine/scripts/import-output-census.mjs <census-dir>
  */
 
@@ -4648,9 +4648,9 @@ const families = {
     "relocation": null
   },
   "social-security-claiming-sweep-objective": {
-    "title": "Claim-age sweep advantage: best versus current, refined versus best",
+    "title": "Claim-age sweep: winner versus the plan as entered, and the month refinement versus the winner",
     "group": "social-security",
-    "meaning": "On the Social Security page's claim-age sweep, the best whole-year strategy's ending after-tax estate minus the estate at the plan's current claim ages (the '+$X' beside the verdict), and the month-refined strategy's ending after-tax estate minus the best whole-year strategy's (the '+$Y' under 'To the month').",
+    "meaning": "The signed change in ending after-tax estate of the sweep's winning whole-year claim against the plan as entered (claim months included), and of the month refinement against that winner, the refinement ranked on the same objective; nominal at the plan's last year.",
     "unit": "usd",
     "basis": "nominal",
     "dimensions": [],
@@ -4659,7 +4659,7 @@ const families = {
     "surfaces": [
       {
         "surface": "ss-page",
-        "selector": "Sweep verdict \"+$X vs current claim ages\" and refinement \"+$Y\" over the best whole-year strategy"
+        "selector": "In-your-plan verdict \"(±$X)\" against the current claim ages, in the plan's last-year dollars, and the refinement \"(±$Y over the whole-year pick)\""
       },
       {
         "surface": "ss-page",
@@ -4667,8 +4667,8 @@ const families = {
       }
     ],
     "relocation": {
-      "status": "pending",
-      "target": null
+      "status": "done",
+      "target": "engine/src/decisions/claimAgeSweep.ts#sweepClaimAges"
     }
   },
   "social-security-computation-summary-counts": {
@@ -5433,9 +5433,9 @@ const families = {
     "relocation": null
   },
   "survivor-scenario-row-estate-delta": {
-    "title": "estateDelta",
+    "title": "Convert-early lever: after-tax estate change",
     "group": "social-security",
-    "meaning": "Change in after-tax estate from the convert-early survivor lever versus the same death-timing baseline.",
+    "meaning": "Change in ending after-tax estate, for one death timing, from adding Roth conversions that fill the 12% bracket on top of the plan's own from the start year through the year of the first death; nominal at the timing's last year.",
     "unit": "usd",
     "basis": "nominal",
     "dimensions": [],
@@ -5444,18 +5444,18 @@ const families = {
     "surfaces": [
       {
         "surface": "survivor-page",
-        "selector": "convert-early after-tax estate delta"
+        "selector": "Convert-early lever cell \"±$X\" after-tax estate, \"in YEAR dollars\", with its reason when the lever adds nothing"
       }
     ],
     "relocation": {
-      "status": "pending",
-      "target": null
+      "status": "done",
+      "target": "engine/src/projection/survivorTransition.ts#SurvivorConversionLever.estateDelta"
     }
   },
   "survivor-scenario-row-lifetime-tax-delta": {
     "title": "Convert-early lifetime tax delta",
     "group": "social-security",
-    "meaning": "Lifetime taxes and penalties under the pre-death conversion lever minus the base run, for one death timing.",
+    "meaning": "Lifetime taxes and penalties (undiscounted nominal sum) with the convert-early lever minus without it, for one death timing; the lever adds a 12%-bracket fill to the plan's own conversions through the year of the first death.",
     "unit": "usd",
     "basis": "nominal",
     "dimensions": [],
@@ -5464,18 +5464,18 @@ const families = {
     "surfaces": [
       {
         "surface": "survivor-page",
-        "selector": "Convert-early lever cell \"(+$X lifetime tax)\""
+        "selector": "Convert-early lever cell \"(±$X lifetime tax)\""
       }
     ],
     "relocation": {
-      "status": "pending",
-      "target": null
+      "status": "done",
+      "target": "engine/src/projection/survivorTransition.ts#SurvivorConversionLever.lifetimeTaxDelta"
     }
   },
   "survivor-scenario-row-ssa44premium-savings": {
-    "title": "ssa44PremiumSavings",
+    "title": "SSA-44 survivor premium difference",
     "group": "social-security",
-    "meaning": "Medicare premium savings produced by applying SSA-44 relief after the modeled life-changing event.",
+    "meaning": "For one death timing, Medicare premiums over the whole projection without SSA-44 survivor relief minus with it (nominal dollars summed across years): the two relief years plus any later knock-on, the relief-year part published beside it.",
     "unit": "usd",
     "basis": "nominal",
     "dimensions": [],
@@ -5484,18 +5484,18 @@ const families = {
     "surfaces": [
       {
         "surface": "survivor-page",
-        "selector": "IRMAA relief SSA-44"
+        "selector": "IRMAA relief (SSA-44) cell \"$X\", with the relief years' tier changes and \", including $Y in later years\""
       }
     ],
     "relocation": {
-      "status": "pending",
-      "target": null
+      "status": "done",
+      "target": "engine/src/projection/survivorTransition.ts#SurvivorTimingRow.ssa44PremiumSavings"
     }
   },
   "survivor-scenario-row-survivor-shortfall-years": {
-    "title": "survivorShortfallYears",
+    "title": "Survivor shortfall years",
     "group": "social-security",
-    "meaning": "Number of survivor years in which planned spending is not fully funded.",
+    "meaning": "Number of years after the year of the first death, with the survivor alive, whose required-spending shortfall exceeds the ledger's funding tolerance ($0.005).",
     "unit": "count",
     "basis": "n/a",
     "dimensions": [],
@@ -5504,12 +5504,12 @@ const families = {
     "surfaces": [
       {
         "surface": "survivor-page",
-        "selector": "survivor shortfall years"
+        "selector": "Survivor spending cell \"required spending covered\" or \"N shortfall yrs\""
       }
     ],
     "relocation": {
-      "status": "pending",
-      "target": null
+      "status": "done",
+      "target": "engine/src/projection/survivorTransition.ts#SurvivorTimingRow.survivorShortfallYears"
     }
   },
   "sustainable-spending-result-max-base-annual": {

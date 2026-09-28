@@ -10,6 +10,8 @@
 import { formatWholeUsd } from '../internal/evidenceFormat.js'
 import { socialSecurityDobParts } from '../socialSecurity/annualTiming.js'
 import { effectiveBirthYear, fraForBirthYear } from '../socialSecurity/nra.js'
+import { gridClaimAges, isClaimAlreadyMade, openClaims, type OpenClaim } from '../socialSecurity/openClaims.js'
+import { disabilityReplacesClaimAge } from '../socialSecurity/analysis/claimants.js'
 import type { Account, AllocationWeights, IncomeStream, Plan, TipsLadder } from '../model/plan.js'
 import { packForYear, rmdStartAgeForBirthYear, LATEST_PACK_YEAR, EMBEDDED_REAL_YIELD_CURVE } from '../params/index.js'
 import { BRIDGE_FUNDING_MIN_FRACTION, sizeBridge } from '../ladder/bridge.js'
@@ -331,23 +333,17 @@ function canonicalClaimAges(person: Plan['household']['people'][number] | undefi
   ]
 }
 
-const SS_GRID_CLAIM_AGES = [62, 63, 64, 65, 66, 67, 68, 69, 70] as const
-
-function dobYear(dob: string): number {
-  return Number(dob.slice(0, 4))
-}
-
-function gridClaimAgesForPerson(person: Plan['household']['people'][number], startYear: number): number[] {
-  const currentAge = startYear - dobYear(person.dob)
-  const ages = SS_GRID_CLAIM_AGES.filter((age) => age >= currentAge)
-  return ages.length > 0 ? [...ages] : [70]
-}
-
 /**
  * Bounded Social Security claim-age candidates: for up to two SS streams, the
  * three canonical claim ages (62 / FRA / 70) that differ from the current
  * claim. Each candidate replaces the whole incomes array (scenario patches
  * replace arrays wholesale, keeping the patch order-safe).
+ *
+ * A claim already made (its claim year before the start year,
+ * socialSecurity/openClaims.ts#isClaimAlreadyMade) is not moved, and a
+ * canonical age whose claim year is before the start year is not offered: it
+ * would be a claim in the past, which 20 CFR 404.621(a)(3) forbids for a
+ * reduced benefit and (a)(2) limits to six months otherwise.
  */
 export const socialSecurityClaimGenerator: CandidateGenerator = {
   id: 'social-security-claim',
@@ -356,11 +352,14 @@ export const socialSecurityClaimGenerator: CandidateGenerator = {
     const ssStreams = ctx.plan.incomes.filter(
       (income): income is Extract<IncomeStream, { type: 'socialSecurity' }> => income.type === 'socialSecurity',
     )
+    const startYear = ctx.simulateOptions.startYear
     for (const stream of ssStreams.slice(0, 2)) {
       const person = ctx.plan.household.people.find((p) => p.id === stream.personId)
+      if (person !== undefined && isClaimAlreadyMade(person, stream.claimAge, startYear)) continue
       const personLabel = person?.name ?? 'household member'
       for (const claim of canonicalClaimAges(person)) {
         if (stream.claimAge.years === claim.years && stream.claimAge.months === claim.months) continue
+        if (person !== undefined && isClaimAlreadyMade(person, claim, startYear)) continue
         const incomes = ctx.plan.incomes.map((income) =>
           income === stream ? { ...stream, claimAge: { years: claim.years, months: claim.months } } : income,
         )
@@ -493,36 +492,49 @@ export const assetLocationGenerator: CandidateGenerator = {
   },
 }
 
+function dobYear(dob: string): number {
+  return Number(dob.slice(0, 4))
+}
+
 /**
- * Full Social Security claiming grid for the optimizer page: every whole-year
- * claim combination from 62-70 (respecting current age) for up to two claiming
- * streams. When a stream's current claim age is a whole year within range, that
- * combination reproduces the current plan; a current claim age with months, below
- * 62, above 70, or already past is not emitted here. Bounded: 9 single-person
- * candidates or 81 couple candidates.
+ * The claims the whole-year grid sweeps: the plan's open claims
+ * (socialSecurity/openClaims.ts#openClaims) that are not paid as a disability
+ * benefit from their onset (socialSecurity/analysis/expectedValue.ts#disabilityReplacesClaimAge),
+ * since a claim age does not start such a benefit. A claim already made and a
+ * disability benefit keep their own claim age in every candidate.
+ */
+export function claimAgeGridClaims(plan: Plan, startYear: number): OpenClaim[] {
+  const people = new Map(plan.household.people.map((person) => [person.id, person]))
+  return openClaims(plan, startYear).open.filter((claim) => {
+    const stream = plan.incomes.find((income) => income.id === claim.streamId)
+    return !(stream?.type === 'socialSecurity' && disabilityReplacesClaimAge(stream, people.get(claim.personId)!))
+  })
+}
+
+/**
+ * Full Social Security claiming grid for the Social Security page: every
+ * whole-year claim combination from 62 to 70 (none below the age reached in the
+ * start year) for the claims #claimAgeGridClaims sweeps (a positive entered PIA
+ * or an earnings history, the first two streams, whose claim year is not before
+ * the start year and which are not a disability benefit from onset). A claim
+ * already made and a disability benefit keep their own claim age in every
+ * candidate. When a swept claim is a whole year within the grid, that
+ * combination reproduces the current plan; a claim age with months is not
+ * emitted here. Bounded: 9 single-person candidates or 81 couple candidates;
+ * none when no claim is left to sweep.
  */
 export const socialSecurityClaimGridGenerator: CandidateGenerator = {
   id: 'social-security-claim-grid',
   generate(ctx: DecisionContext): DecisionCandidate[] {
-    const entries = ctx.plan.incomes
-      .filter((income): income is Extract<IncomeStream, { type: 'socialSecurity' }> => income.type === 'socialSecurity')
-      // Match the planner's claiming-person logic: a default record carries
-      // piaMonthly 0 (not null), which resolves to no benefit, so treat only a
-      // positive entered PIA or an earnings history as a real claiming stream.
-      // Otherwise a zero-PIA spouse inflates the grid with duplicate finalists.
-      .filter((income) => (income.piaMonthly !== null && income.piaMonthly > 0) || (income.earnings?.length ?? 0) > 0)
-      .slice(0, 2)
-      .map((stream) => ({ stream, person: ctx.plan.household.people.find((p) => p.id === stream.personId) }))
-      .filter(
-        (entry): entry is { stream: Extract<IncomeStream, { type: 'socialSecurity' }>; person: Plan['household']['people'][number] } =>
-          entry.person !== undefined,
-      )
+    const startYear = ctx.simulateOptions.startYear
+    const people = new Map(ctx.plan.household.people.map((person) => [person.id, person]))
+    const entries = claimAgeGridClaims(ctx.plan, startYear).map((claim) => ({ claim, person: people.get(claim.personId)! }))
 
     if (entries.length === 0) return []
 
     const combos: Record<string, number>[] = [{}]
     for (const { person } of entries) {
-      const ages = gridClaimAgesForPerson(person, ctx.simulateOptions.startYear)
+      const ages = gridClaimAges(person, startYear)
       const next: Record<string, number>[] = []
       for (const partial of combos) {
         for (const age of ages) next.push({ ...partial, [person.id]: age })
@@ -533,7 +545,7 @@ export const socialSecurityClaimGridGenerator: CandidateGenerator = {
 
     return combos.map((claimByPersonId) => {
       const incomes = ctx.plan.incomes.map((income) =>
-        income.type === 'socialSecurity' && claimByPersonId[income.personId] !== undefined
+        income.type === 'socialSecurity' && entries.some((entry) => entry.claim.streamId === income.id)
           ? { ...income, claimAge: { years: claimByPersonId[income.personId]!, months: 0 } }
           : income,
       )

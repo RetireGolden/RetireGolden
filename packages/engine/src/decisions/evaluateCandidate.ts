@@ -742,6 +742,7 @@ function invalidCandidateEvaluation(
     traditionalDepletionYear: null,
     diagnostics: [error],
     recommendationState: 'diagnostic',
+    diagnosticCauses: [error],
   }
 }
 
@@ -790,12 +791,13 @@ export function evaluateCandidate(
   }
 
   const diagnostics: string[] = []
+  let unexecutedDiagnostic: string | null = null
   if (conversionExecution && conversionExecution.firstMateriallyUnexecutedYear !== null) {
-    diagnostics.push(
+    unexecutedDiagnostic =
       `Your plan could not execute the requested conversion in ${conversionExecution.firstMateriallyUnexecutedYear}: ` +
-        `requested ${formatWholeUsd(conversionExecution.requestedTotal)} in total, ` +
-        `executed ${formatWholeUsd(conversionExecution.executedTotal)}.`,
-    )
+      `requested ${formatWholeUsd(conversionExecution.requestedTotal)} in total, ` +
+      `executed ${formatWholeUsd(conversionExecution.executedTotal)}.`
+    diagnostics.push(unexecutedDiagnostic)
   }
   if (deltas.moneyLastsYears < 0) {
     diagnostics.push(`Money lasts ${-deltas.moneyLastsYears} year(s) less than the baseline.`)
@@ -810,15 +812,16 @@ export function evaluateCandidate(
     .filter((year) => year.aca?.readiness === 'nonActionable')
     .map((year) => year.year)
   const refuseNonActionableAca = (options.nonActionableAca ?? 'refuse') === 'refuse'
+  const diagnosticCauses: string[] = []
   if (refuseNonActionableAca && unsafeBaselineAcaYears.length > 0) {
-    diagnostics.push(
-      `ACA evidence from the full projection is non-actionable in the baseline for ${unsafeBaselineAcaYears.join(', ')}; no candidate can be applied as executable.`,
-    )
+    const cause = `ACA evidence from the full projection is non-actionable in the baseline for ${unsafeBaselineAcaYears.join(', ')}; no candidate can be applied as executable.`
+    diagnostics.push(cause)
+    diagnosticCauses.push(cause)
   }
   if (refuseNonActionableAca && unsafeCandidateAcaYears.length > 0) {
-    diagnostics.push(
-      `ACA evidence from the full projection is non-actionable in the candidate for ${unsafeCandidateAcaYears.join(', ')}; this candidate cannot be applied as executable.`,
-    )
+    const cause = `ACA evidence from the full projection is non-actionable in the candidate for ${unsafeCandidateAcaYears.join(', ')}; this candidate cannot be applied as executable.`
+    diagnostics.push(cause)
+    diagnosticCauses.push(cause)
   }
   if (!refuseNonActionableAca && unsafeCandidateAcaYears.length > 0) {
     diagnostics.push(
@@ -836,7 +839,28 @@ export function evaluateCandidate(
     (legacyAggregateCalculation || !candidateChangesRetirementActions(candidate, ctx.plan)
       ? null
       : retirementActionExecutionDiagnostic(candidate, candidateResult, ctx.plan))
-  if (retirementActionDiagnostic) diagnostics.push(retirementActionDiagnostic)
+  if (retirementActionDiagnostic) {
+    diagnostics.push(retirementActionDiagnostic)
+    diagnosticCauses.push(retirementActionDiagnostic)
+  }
+
+  const recommendationState: DecisionRecommendationState =
+    hasUnsafeAcaEvidence || retirementActionDiagnostic !== null
+      ? 'diagnostic'
+      : classifyRecommendationState({
+          afterTaxEstateDelta: deltas.endingAfterTaxEstate,
+          conversionExecution,
+          neutralToleranceDollars,
+        })
+  // The only other route to 'diagnostic' is the classifier's materially
+  // unexecuted conversion schedule; name it with the ledger's own figures.
+  if (recommendationState === 'diagnostic' && diagnosticCauses.length === 0 && conversionExecution) {
+    diagnosticCauses.push(
+      unexecutedDiagnostic ??
+        `The requested conversion schedule was materially unexecuted: requested ${formatWholeUsd(conversionExecution.requestedTotal)} in total, ` +
+          `executed ${formatWholeUsd(conversionExecution.executedTotal)}.`,
+    )
+  }
 
   return {
     candidate,
@@ -847,13 +871,7 @@ export function evaluateCandidate(
     conversionExecution,
     traditionalDepletionYear: findTraditionalDepletionYear(built.plan, candidateResult, neutralToleranceDollars),
     diagnostics,
-    recommendationState:
-      hasUnsafeAcaEvidence || retirementActionDiagnostic !== null
-        ? 'diagnostic'
-        : classifyRecommendationState({
-            afterTaxEstateDelta: deltas.endingAfterTaxEstate,
-            conversionExecution,
-            neutralToleranceDollars,
-          }),
+    recommendationState,
+    diagnosticCauses: recommendationState === 'diagnostic' ? diagnosticCauses : [],
   }
 }

@@ -93,7 +93,9 @@ amounts with optimizer provenance. A default-off **"Also optimize Social Securit
 when the plan has an SS stream) runs the Step 5 joint grid — one full optimize per claim combination, a small
 multiple of a normal run; the exact count is reported on the result card and the cost is called out in the
 running state — and, when a claim change wins, renders it as a prominent card and makes Apply install the claim
-change and the schedule atomically.
+change and the schedule atomically. It searches no claim age, and says why, when every claim was made before the
+plan starts (who claimed and when) or the plan has a Marketplace year whose premium credit cannot be priced (each
+year with its reason), the Social Security page's refusals in the same words.
 
 **Exact-ledger candidate tournament:** after post-processing, six simple fill-to-target strategies
 (10/12/22/24% bracket fills, ACA-cliff cap, first-IRMAA-tier cap) are each run through the exact ledger
@@ -186,7 +188,12 @@ models what it used to approximate away:
   winning claim change (label + exact-estate gain over the current-claim optimum) and applies the claim change
   and the conversion schedule *together* — the schedule is computed against the claim-patched plan, so applying
   it alone would be wrong. The claim evidence also lands in the downloadable recommendation report. On a bridge
-  fixture delaying to 70 can beat the current-claim optimum by six figures of exact estate.
+  fixture delaying to 70 can beat the current-claim optimum by six figures of exact estate. Since B2-P1 slice 5
+  (`claim-age-co-optimization`) the search publishes its `outcome`: a claim made before the plan starts is held
+  and never offered again (nor is a canonical age already passed), and a plan with an unpriced premium-credit
+  year is refused with the years and their reasons, because a claim age moves the income the credit depends on.
+  It differs from the Social Security page's sweep, which tries every whole year with the plan's conversions
+  held; adding the sweep's winner as one more candidate is a later change.
 
 Every one of these is priced and gated by the exact-ledger tournament. The richer candidate set matters too:
 **windowed bracket fills** stop converting at income boundaries (liquid-reserve depletion, SS claim, RMD

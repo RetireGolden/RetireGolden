@@ -565,7 +565,8 @@
       "outputs": [],
       "feeds": [
         "irmaa-surcharge-annual",
-        "medicare-premiums-annual"
+        "medicare-premiums-annual",
+        "survivor-scenario-row-ssa44premium-savings"
       ],
       "purpose": "Choose which calendar year's MAGI, and from which source, prices a premium year's IRMAA.",
       "statement": "projection/internal/annualHealthcareExpenses.ts#annualHealthcareExpenses resolves premium-year IRMAA MAGI from year minus two, except that an active SSA-44 life-changing event selects year minus one only when it is strictly lower; a tie retains year minus two and its source. For lookback years before the projection ledger, projection/simulate.ts#simulatePlan resolves them through its own resolveMagiFor closure, which falls back to the plan's matching historicalAnnualMagiByYear entry, then to its coarse recentAnnualMagi stand-in, and publishes which arm supplied the figure. Units: calendar years, nominal USD and a source enum. Rounding: none; the selection performs no numerical approximation.",
@@ -612,7 +613,7 @@
       "provenance": {
         "derivedBy": "codex",
         "implementedBy": "claude",
-        "reviewedBy": "cursor"
+        "reviewedBy": "unreviewed"
       },
       "fixtureFiles": [
         "packages/engine/src/projection/internal/annualHealthcareExpenses.evidence.test.ts"

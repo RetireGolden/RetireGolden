@@ -230,7 +230,7 @@ export const medicareAndAcaRecords = {
     purpose: 'Choose which calendar year\'s MAGI, and from which source, prices a premium year\'s IRMAA.',
     kind: 'model',
     outputs: [],
-    feeds: ['irmaa-surcharge-annual', 'medicare-premiums-annual'],
+    feeds: ['irmaa-surcharge-annual', 'medicare-premiums-annual', 'survivor-scenario-row-ssa44premium-savings'],
     statement:
       'projection/internal/annualHealthcareExpenses.ts#annualHealthcareExpenses resolves premium-year IRMAA MAGI from year minus two, except that an active SSA-44 life-changing event selects year minus one only when it is strictly lower; a tie retains year minus two and its source. For lookback years before the projection ledger, projection/simulate.ts#simulatePlan resolves them through its own resolveMagiFor closure, which falls back to the plan\'s matching historicalAnnualMagiByYear entry, then to its coarse recentAnnualMagi stand-in, and publishes which arm supplied the figure. Units: calendar years, nominal USD and a source enum. Rounding: none; the selection performs no numerical approximation.',
     formula: {
@@ -262,7 +262,7 @@ export const medicareAndAcaRecords = {
       'packages/engine/src/projection/simulate.ts#simulatePlan',
     ],
     verifiedOn: '2026-09-18',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'unreviewed' },
   },
   'medicare-base-part-b-premium': {
     title: 'Medicare base Part B premium',

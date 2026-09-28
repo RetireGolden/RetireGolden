@@ -56,9 +56,17 @@ function moneyLastsViolations(evaluation: ExactDecisionEvaluation): string[] {
   return []
 }
 
+/**
+ * The hard constraint every policy shares: a diagnostic evaluation cannot win.
+ * The violation names the diagnostic the evaluator actually raised (an invalid
+ * patch, a Marketplace year whose premium tax credit cannot be priced,
+ * incomplete retirement-action evidence, or a materially unexecuted schedule),
+ * so a loss reason never blames a cause that did not occur.
+ */
 function structuralViolations(evaluation: ExactDecisionEvaluation): string[] {
   if (evaluation.recommendationState === 'diagnostic') {
-    return ['diagnostic-only evaluation (invalid patch or materially unexecuted schedule)']
+    const causes = evaluation.diagnosticCauses ?? []
+    return [causes.length > 0 ? `diagnostic-only evaluation: ${causes.join(' ')}` : 'diagnostic-only evaluation']
   }
   return []
 }
@@ -80,6 +88,17 @@ function minInvestableOver(result: ProjectionResult, selectYears: (year: Project
 function survivorYearFilter(year: ProjectionResult['years'][number]): boolean {
   const alive = year.people.filter((person) => person.alive).length
   return year.people.length > 1 && alive === 1
+}
+
+/**
+ * Whether a projection has survivor years (a two-person plan with exactly one
+ * person alive), the years the survivor-liquidity policy ranks on. A plan
+ * without them (one adult, or both people reaching the plan's end) is ranked
+ * by that policy on the estate change alone, so a surface should not offer it
+ * under its own name.
+ */
+export function hasSurvivorYears(result: ProjectionResult): boolean {
+  return result.years.some(survivorYearFilter)
 }
 
 /** Pre-RMD, post-wage years with no Social Security yet — the early-retirement bridge. Exported for the cohort-boundary test only. */
@@ -244,6 +263,33 @@ export const improveBridgeDurability: ObjectivePolicy = {
   tieBreaker: (evaluation) => evaluation.deltas.endingAfterTaxEstate,
   constraintViolations: (evaluation) => [...structuralViolations(evaluation), ...moneyLastsViolations(evaluation)],
   secondaryMetrics: standardSecondaryMetrics,
+}
+
+/**
+ * What a policy's primary metric actually measured for one evaluation.
+ * Survivor liquidity and bridge durability rank on the change in the lowest
+ * investable balance over the survivor or bridge years, and fall back to the
+ * after-tax estate change when the baseline (the plan as entered) or the
+ * candidate has no such years: 'estate-fallback-plan' when the plan as entered
+ * has none (then every row of the ranking falls back), 'estate-fallback-row'
+ * when the plan has them and this candidate does not. Within one ranking some
+ * rows can be on the metric and others on the fallback. 'objective' for every
+ * other policy.
+ */
+export type RankedMetricBasis = 'objective' | 'estate-fallback-plan' | 'estate-fallback-row'
+
+export function rankedMetricBasis(
+  policyId: ObjectivePolicyId,
+  evaluation: ExactDecisionEvaluation,
+  ctx: DecisionContext,
+): RankedMetricBasis {
+  const filter =
+    policyId === 'protect-survivor-liquidity' ? survivorYearFilter : policyId === 'bridge-durability' ? bridgeYearFilter : null
+  if (filter === null) return 'objective'
+  const candidateMin = minInvestableOver(evaluation.candidateResult, filter)
+  const baselineMin = minInvestableOver(ctx.baselineResult, filter)
+  if (baselineMin === null) return 'estate-fallback-plan'
+  return candidateMin === null ? 'estate-fallback-row' : 'objective'
 }
 
 /**

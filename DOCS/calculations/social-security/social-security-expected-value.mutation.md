@@ -1,15 +1,15 @@
 # Mutation receipt: social-security-expected-value
 
-Executed 2026-09-27 against RetireGolden base `20b95c74` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `df4b4cbf` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `f7a4d2f7` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet) in `packages/engine`.
+Executed 2026-09-27 against RetireGolden base `20b95c74` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `df4b4cbf` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `f7a4d2f7` (branch `claude/b2p1-slice4-ss-models`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `1176b2e5` (branch `claude/b2p1-slice5-sweeps`; no pull request is open yet), and re-executed 2026-09-28 against RetireGolden base `dc0c6c3f` (branch `claude/b2p1-slice5-sweeps`; no pull request is open yet) in `packages/engine`.
 
 ## Mutation applied to `packages/engine/src/socialSecurity/analysis/expectedValue.ts`
 
 ```diff
 diff --git a/packages/engine/src/socialSecurity/analysis/expectedValue.ts b/packages/engine/src/socialSecurity/analysis/expectedValue.ts
-index 870d3959..298111aa 100644
+index 8a75a53a..22c64c2f 100644
 --- a/packages/engine/src/socialSecurity/analysis/expectedValue.ts
 +++ b/packages/engine/src/socialSecurity/analysis/expectedValue.ts
-@@ -214,7 +214,7 @@ function widowMonthly(survivor: CouplePerson, deceased: CouplePerson, deathYear:
+@@ -215,7 +215,7 @@ function widowMonthly(survivor: CouplePerson, deceased: CouplePerson, deathYear:
      ? deceased.own
      : deceased.claimant.piaMonthly * neverClaimedDeceasedFactor(deceased.claimant.dob, deathYear, 12)
    if (actual <= 0) return 0
@@ -30,12 +30,12 @@ NO_COLOR=1 FORCE_COLOR=0 node node_modules/vitest/vitest.mjs run src/socialSecur
 
 ## Captured failing output
 
-Its production file's lines moved when the claimant helpers left expectedValue.ts, so it is re-executed on the current code. The baseline is green (expectedValue.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
+the merge of slice 4's final head (slice 3 #754, #755, #756, the claimants split) moved the production lines and test titles these receipts quote The baseline is green (expectedValue.evidence.test.ts passes on unmodified production, exit 0). Captured with `NO_COLOR=1` and `FORCE_COLOR=0`; stdout precedes stderr. Start time, duration and module-transform timing lines were removed. Exit code: 1.
 
 ```
-RUN  v5.0.0 C:/rgwt/engine13/packages/engine
+RUN  v5.0.0 C:/rgwt/engine16/packages/engine
 
- ❯ src/socialSecurity/analysis/expectedValue.evidence.test.ts (9 tests | 2 failed) 41ms
+ ❯ src/socialSecurity/analysis/expectedValue.evidence.test.ts (9 tests | 2 failed) 26ms
    ❯ social-security-expected-value — Benefits-only expected present value of Social Security (9)
      × C-A, the R7 case: 690 a month while both live (25,080 in 2026) and the widow benefit reduced in January after the death 5ms
      × C-B: a spouse benefit that starts with the worker's claim at 70 is unreduced (960 a month, not 780) 1ms

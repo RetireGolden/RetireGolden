@@ -500,12 +500,12 @@ export const socialSecurityRecords = {
     implementedBy: [
       'packages/engine/src/socialSecurity/claimFactor.ts',
       'packages/engine/src/socialSecurity/benefitFactor.ts',
-      'packages/engine/src/decisions/generators.ts',
+      'packages/engine/src/socialSecurity/openClaims.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/socialSecurity/claimFactor.ts#claimFactor',
       'packages/engine/src/socialSecurity/benefitFactor.ts#retirementBenefitPiaFactor',
-      'packages/engine/src/decisions/generators.ts#SS_GRID_CLAIM_AGES',
+      'packages/engine/src/socialSecurity/openClaims.ts#gridClaimAges',
     ],
   },
   'ssa-2026-trustees-oasdi-depletion-default-haircut': {
