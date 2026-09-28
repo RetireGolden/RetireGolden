@@ -80,6 +80,8 @@ Example library (scratch run at `4a80669e`: every example with Social Security i
 
 The other 20 publish 0 (the card reads "none beat your current claim ages by a meaningful margin"). rmd-irmaa's solver hit its 10-second limit in every run on the deriver's machine; its claim result is still the current claim.
 
+Since B2-P1 slice 5 (`claim-age-co-optimization`, the refusals decided 2026-09-25) none of the five wins: each has Marketplace years whose premium tax credit the ledger cannot price, so the search refuses there and publishes 0, and no example's claim change wins. The winning case is carried by the constructed plan above, and the planner's parity test runs on a constructed plan too.
+
 ## Wrong readings
 
 - Current minus joint: R reads −$118,000 on a card that says "more".

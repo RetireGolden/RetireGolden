@@ -197,7 +197,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 390
+              "line": 415
             }
           ]
         },
@@ -418,11 +418,11 @@
           "functions": [
             {
               "name": "LP_LTCG_RATE",
-              "line": 85
+              "line": 87
             },
             {
               "name": "buildOptimizerInput",
-              "line": 492
+              "line": 494
             }
           ]
         }
@@ -509,7 +509,7 @@
           "functions": [
             {
               "name": "BalanceState",
-              "line": 388
+              "line": 402
             }
           ]
         }
@@ -579,7 +579,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 390
+              "line": 415
             }
           ]
         },
@@ -742,7 +742,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 390
+              "line": 415
             }
           ]
         },
@@ -1065,7 +1065,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 390
+              "line": 415
             }
           ]
         },
@@ -1609,7 +1609,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 390
+              "line": 415
             }
           ]
         }
@@ -1684,7 +1684,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 390
+              "line": 415
             }
           ]
         }
@@ -1895,7 +1895,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 390
+              "line": 415
             }
           ]
         }
@@ -1996,7 +1996,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 390
+              "line": 415
             }
           ]
         }
@@ -2080,7 +2080,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 390
+              "line": 415
             }
           ]
         }
@@ -2140,7 +2140,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 390
+              "line": 415
             }
           ]
         }

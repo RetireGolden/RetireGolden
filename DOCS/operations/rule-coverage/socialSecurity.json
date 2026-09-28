@@ -47,7 +47,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 390
+              "line": 415
             }
           ]
         },
@@ -208,7 +208,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 390
+              "line": 415
             }
           ]
         },
@@ -300,7 +300,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 390
+              "line": 415
             }
           ]
         },
@@ -786,7 +786,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 390
+              "line": 415
             }
           ]
         }
@@ -1340,7 +1340,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 390
+              "line": 415
             }
           ]
         },
@@ -1555,7 +1555,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 390
+              "line": 415
             }
           ]
         },
@@ -1645,7 +1645,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 390
+              "line": 415
             }
           ]
         },
@@ -2273,7 +2273,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 390
+              "line": 415
             }
           ]
         }
@@ -2583,7 +2583,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 390
+              "line": 415
             }
           ]
         },
@@ -2739,7 +2739,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 390
+              "line": 415
             }
           ]
         }
@@ -2832,7 +2832,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 390
+              "line": 415
             }
           ]
         }
@@ -2874,20 +2874,11 @@
       "verifiedOn": "2026-08-29",
       "dueOn": "2027-08-29",
       "implementedBy": [
-        "packages/engine/src/decisions/generators.ts",
         "packages/engine/src/socialSecurity/benefitFactor.ts",
-        "packages/engine/src/socialSecurity/claimFactor.ts"
+        "packages/engine/src/socialSecurity/claimFactor.ts",
+        "packages/engine/src/socialSecurity/openClaims.ts"
       ],
       "implementations": [
-        {
-          "path": "packages/engine/src/decisions/generators.ts",
-          "functions": [
-            {
-              "name": "SS_GRID_CLAIM_AGES",
-              "line": 334
-            }
-          ]
-        },
         {
           "path": "packages/engine/src/socialSecurity/benefitFactor.ts",
           "functions": [
@@ -2903,6 +2894,15 @@
             {
               "name": "claimFactor",
               "line": 22
+            }
+          ]
+        },
+        {
+          "path": "packages/engine/src/socialSecurity/openClaims.ts",
+          "functions": [
+            {
+              "name": "gridClaimAges",
+              "line": 107
             }
           ]
         }
@@ -3107,7 +3107,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 390
+              "line": 415
             }
           ]
         },
@@ -3186,7 +3186,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 390
+              "line": 415
             }
           ]
         }
@@ -3261,7 +3261,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 390
+              "line": 415
             }
           ]
         },
@@ -3349,7 +3349,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 390
+              "line": 415
             }
           ]
         }
@@ -3595,7 +3595,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 390
+              "line": 415
             }
           ]
         },
@@ -3887,7 +3887,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 390
+              "line": 415
             }
           ]
         }
@@ -3962,7 +3962,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 390
+              "line": 415
             }
           ]
         },
@@ -4070,7 +4070,7 @@
           "functions": [
             {
               "name": "simulatePlan",
-              "line": 390
+              "line": 415
             }
           ]
         },

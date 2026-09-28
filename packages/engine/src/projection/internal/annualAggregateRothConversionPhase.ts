@@ -38,6 +38,7 @@ import {
 } from './annualAggregateRothConversionPlan.js'
 import {
   annualAggregateRothConversionTargetPlan,
+  type AnnualAggregateRothConversionTargetPlanInput,
   type AnnualAggregateRothConversionTargetPlanResult,
 } from './annualAggregateRothConversionTargetPlan.js'
 import type { OwnedNonRothIraAnnualSettlementEffect } from '../../internal/ownedNonRothIraAnnualAttemptSettlement.js'
@@ -108,6 +109,8 @@ interface AnnualAggregateRothConversionPhaseFacts {
   readonly stateHsaYearFacts?: TaxYearInput['stateHsaYearFacts']
   readonly stateQcdEventFacts?: TaxYearInput['stateQcdEventFacts']
   readonly stateQcdYearFacts?: TaxYearInput['stateQcdYearFacts']
+  /** Analysis only (SimulateOptions.additionalBracketFill); absent in every product projection. */
+  readonly additionalBracketFill?: AnnualAggregateRothConversionTargetPlanInput['additionalBracketFill']
   readonly stateNjIraOwnerPools?: TaxYearInput['stateNjIraOwnerPools']
 }
 
@@ -207,6 +210,12 @@ export interface AnnualAggregateRothConversionPhaseResult {
   readonly aggregateRothConversionAllocationBalances:
   Readonly<Record<string, number>> | undefined
   readonly aggregateRothConversionAllocationDesired: number | undefined
+  /**
+   * The warnings this year's aggregate conversion raised because it executed
+   * less than its target asked, in the order raised; the survivor page's
+   * lever reads them per window year (AdditionalBracketFillYear.ledgerNotes).
+   */
+  readonly aggregateRothConversionShortfallNotes: readonly string[]
   readonly yearConvertibleToRoth: (
     account: Account,
   ) => account is Extract<Account, { type: 'traditional' }>
@@ -469,6 +478,7 @@ export function annualAggregateRothConversionPhase(
       namedConversionActionCount: currentYearConversionActions.length,
       anyAlive,
       year,
+      ...(facts.additionalBracketFill === undefined ? {} : { additionalBracketFill: facts.additionalBracketFill }),
       readSources: () => rmdBalances.map((state) => {
         const convertible = yearConvertibleToRoth(state.account)
         return Object.freeze({
@@ -618,6 +628,13 @@ export function annualAggregateRothConversionPhase(
   for (const warning of aggregateRothConversionTarget.warnings) {
     warnings.add(warning)
   }
+  // Each message below says why the year converted less than it was asked.
+  // It goes to the run's warnings as before and is also kept for this year.
+  const aggregateRothConversionShortfallNotes: string[] = []
+  const noteShortfall = (message: string): void => {
+    warnings.add(message)
+    aggregateRothConversionShortfallNotes.push(message)
+  }
   const desired = aggregateRothConversionTarget.desiredPlanDollars
   if (desired > AGGREGATE_ROTH_CONVERSION_EPSILON_PLAN_DOLLARS) {
     // A conversion is a rollover inside one individual's own accounts:
@@ -669,7 +686,7 @@ export function annualAggregateRothConversionPhase(
       () => plannedAllocation.allocation,
     )
     if (allocation.status === 'refused') {
-      warnings.add(allocation.reason === 'householdHoldsNoRothAccount'
+      noteShortfall(allocation.reason === 'householdHoldsNoRothAccount'
         ? 'Roth conversions were requested but the plan has no Roth account; conversions skipped.'
         : 'Roth conversions were requested but every Roth account in the plan sits inside an employer plan, ' +
         'and a Roth conversion here can land only in a Roth IRA; conversions skipped.')
@@ -679,7 +696,7 @@ export function annualAggregateRothConversionPhase(
       // against a Roth that sits where this conversion cannot go.
       for (const trim of allocation.trims) {
         const ownerName = personById.get(trim.ownerPersonId)?.name ?? trim.ownerPersonId
-        warnings.add(trim.reason === 'ownerHoldsOnlyEmployerDesignatedRoth'
+        noteShortfall(trim.reason === 'ownerHoldsOnlyEmployerDesignatedRoth'
           ? `${ownerName}’s only Roth account is inside an employer plan, and this Roth ` +
           `conversion can land only in ${ownerName}’s own Roth IRA, so ${ownerName}’s share ` +
           'was skipped. ' +
@@ -872,13 +889,13 @@ export function annualAggregateRothConversionPhase(
           // the shortfall, including when an IRA filled only part of the
           // request. Silence on that unused balance reads as assent.
           for (const ownerName of gatedEmployerOwners) {
-            warnings.add(
+            noteShortfall(
               `${ownerName}’s employer-plan balance is not distributable this year ` +
               `(no separation from service and under 59½), so that Roth conversion was skipped.`,
             )
           }
         } else {
-          warnings.add('A requested Roth conversion exceeded the available traditional balance and was reduced.')
+          noteShortfall('A requested Roth conversion exceeded the available traditional balance and was reduced.')
         }
       }
     }
@@ -920,6 +937,7 @@ export function annualAggregateRothConversionPhase(
     aggregateRothConversionTarget,
     aggregateRothConversionAllocationBalances,
     aggregateRothConversionAllocationDesired,
+    aggregateRothConversionShortfallNotes,
     yearConvertibleToRoth,
     ownedIraConversionTaxableFraction,
   }

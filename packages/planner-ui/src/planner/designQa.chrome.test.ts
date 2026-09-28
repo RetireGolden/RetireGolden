@@ -403,7 +403,7 @@ describe('Shared native-control treatment (#447, #451, #458, #466, #467, #469)',
     )
     expect(solver).toMatch(/Review Spending[\s\S]*Review Assumptions/)
     const ss: string = sheet('./SsAnalysisPage.tsx')
-    expect(ss).toMatch(/verdict === 'flat' \|\| verdict === 'current-best' \|\| verdict === 'ineligible' \? \(\s*<div className="callout callout--note" role="note">/)
+    expect(ss).toMatch(/sweep\.verdict === 'flat' \|\| sweep\.verdict === 'current-best' \|\| sweep\.verdict === 'ineligible' \? \(\s*<div className="callout callout--note" role="note">/)
     // Nothing on the page reads the top ranked row as "best" any more.
     expect(ss).not.toMatch(/sweep\.ranked\[0\]!?\.claimByPersonId/)
     expect(workspace).toContain("mcStatus === 'failed'")

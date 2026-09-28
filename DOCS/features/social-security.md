@@ -154,16 +154,53 @@ the [tax engine](taxes.md).
 
 The headline capability. Two complementary views, mirroring the two questions in the literature:
 
-- **"In your plan" (whole-plan sweep)** — the engine sweeps every claim-age combination (9 single, up to
-  9×9 couple), clones the plan, sets the claim ages, and runs the full projection for each, ranking by
-  the selected shared decision-engine objective. **Ending after-tax estate** (traditional balances haircut by
-  an heir-tax-rate assumption) remains the default; the same exact-ledger evaluations can also be re-ranked
-  by spending durability, lifetime tax subject to an estate floor, survivor-year liquidity, or bridge-year
-  durability, with an optional Monte-Carlo success-% check on the finalists.
-  Each runs through the same tax/withdrawal fixed-point engine, so the sweep prices the real trade-offs —
-  the **tax torpedo** (an extra IRA dollar dragging benefits into taxable income), the **bridge-years**
-  play (delaying to 70 to open low-income years for cheap conversions), and the counter-case (claim early
-  so a Roth keeps compounding). No new solver is needed — claim age is a small discrete grid.
+- **"In your plan" (whole-plan sweep)** — the engine sweeps every whole-year claim-age combination of the
+  plan's open claims, from 62 (or the age reached this year, if later) to 70 (9 single, up to 9×9 couple), runs the full
+  projection for each, and ranks them by the selected shared decision-engine objective
+  ([decisions/claimAgeSweep.ts](../../packages/engine/src/decisions/claimAgeSweep.ts),
+  `social-security-claim-age-sweep`). **Ending after-tax estate** (traditional balances haircut by an
+  heir-tax-rate assumption) remains the default; the same exact-ledger evaluations can also be re-ranked by
+  spending durability, lifetime tax subject to an estate floor, survivor-year liquidity (offered only when the
+  plan has years with one spouse surviving), or bridge-year durability, with an optional Monte-Carlo success-%
+  check on the finalists. The winner's change is signed and measured against the plan as entered, claim months
+  included, in dollars of the plan's last year, which the page names. Bridge durability and survivor liquidity
+  compare a claim age on the after-tax estate instead when it, or the plan as entered, has no bridge or survivor
+  years, and the page says which: "your plan as entered has no bridge years to compare against" (then every claim
+  age), or how many claim ages leave none. The robustness check is offered only on a ranking the page stands
+  behind, not when it has refused to rank.
+  Each runs through the same tax/withdrawal fixed-point engine with the plan's own Roth conversion strategy
+  held as it is, so the sweep prices the real trade-offs: the **tax torpedo** (an extra IRA dollar dragging
+  benefits into taxable income), the **bridge-years** play (delaying to 70 to open low-income years for cheap
+  conversions, which this sweep captures only when the plan's conversions are a bracket fill that resizes to
+  each claim age; a fixed schedule stays as entered), and the counter-case (claim early so a Roth keeps
+  compounding). No new solver is needed; claim age is a small discrete grid.
+  - **Claims already made are not swept.** A claim whose year (birth year plus claim years) is before the plan's
+    start year is history: an early claim cannot be paid for months before its application (20 CFR
+    404.621(a)(3)), and undoing one takes a withdrawal within 12 months with every benefit repaid (404.640) or a
+    suspension from full retirement age (42 U.S.C. 402(z)), neither modeled. Such a claim is held as it is in
+    every row, and when every claim is made the page says who claimed and when. The benefits-only ranking, the
+    bridge panel's earliest-claim comparison, the Optimize page's co-optimization and the Scenarios page's
+    claim-age lever (which also skips a claim age the person has already passed) use the same test
+    (`socialSecurity/openClaims.ts`).
+  - **No ranking against an unpriced premium credit.** All Social Security counts in the income the premium tax
+    credit depends on, in the years it is paid (26 U.S.C. 36B(d)(2)(B)(iii)), so a credit the ledger cannot price
+    could change which claim age comes out ahead, in either direction. When the plan has such a Marketplace year,
+    no claim age is ranked and the page names each such year with its own reason (figures not yet published for
+    the year, guardrail spending, income below the poverty line, a calculation that did not settle); the table
+    still shows each claim age without the credit in those years.
+  - A disability benefit paid from its onset has no claim age to sweep: the page says so, naming the person, holds
+    it as the plan pays it and compares the partner's claim ages. The Benefits-only tab prices a couple's claims as
+    pairs of claim ages and cannot place a disability benefit on that grid, so it ranks neither and says so.
+  - **Refine to the month** tries every claim month within a year of the whole-year pick, one person at a time,
+    ranked on the same objective: a month is taken only when it meets the objective's constraints and ranks
+    strictly higher (`social-security-claim-age-monthly-refinement`). When none does, the page says no month
+    within a year of the pick ranks higher. The refinement and the robustness table are dropped when the plan or
+    the ranking changes.
+  - **How it differs from the Optimize page's claim-age option.** This sweep tries every whole year and keeps the
+    plan's conversions; the Optimize page re-optimizes conversions but tries only 62, full retirement age and
+    70, one person at a time, compares on after-tax estate alone and needs a $1,000 margin
+    (`claim-age-co-optimization`). The two can pick different ages, and a gain shown here is measured with the
+    plan's own conversions.
 - **"Benefits only" (actuarial view)** — the Open-Social-Security-style lens: expected present value per
   claim age, each future **year** weighted by survival probability (the engine's one survival curve on the SSA
   period table) and discounted at a user-set **real** rate (~long TIPS yield)
@@ -195,7 +232,8 @@ Modeling the earnings test and those records in the benefits-only models is a se
 The Roth & Tax Optimizer can also **co-optimize the claim age jointly with a conversion schedule** — a
 default-off "Also optimize Social Security claim age" toggle on the Optimize tab runs a full optimize per
 bounded claim candidate and applies the winning claim change and schedule together — see
-[optimizer.md](optimizer.md).
+[optimizer.md](optimizer.md). It refuses in the same words as the sweep when every claim is already made or a
+premium credit year cannot be priced.
 
 ## Break-even education
 

@@ -470,7 +470,7 @@ export const optimizerAndComparisonsRecords = {
   },
   'claim-age-co-optimization': {
     title: 'Claim age co-optimization',
-    purpose: 'Count the Social Security claim combinations priced and publish the current-claim and joint exact estates.',
+    purpose: 'Count the Social Security claim combinations priced and publish the current-claim and joint exact estates, or say why no claim age was searched.',
     kind: 'model',
     outputs: [
       'claim-age-co-optimization-combinations-evaluated',
@@ -478,11 +478,11 @@ export const optimizerAndComparisonsRecords = {
       'claim-age-co-optimization-joint-exact-estate',
     ],
     feeds: ['optimizer-recommended-conversion-annual'],
-    statement: 'projection/optimizePlan.ts#optimizePlanCoOptimizingClaimAge publishes ClaimAgeCoOptimization.combinationsEvaluated as one plus the claim candidates decisions/generators.ts#socialSecurityClaimGenerator produced (up to two Social Security streams times the three canonical claim ages 62y0m, the person’s own full retirement age computed from the birth year and labelled FRA, and 70y0m, skipping each stream\'s own current claim age), currentClaimExactEstate as the exact after-tax estate of the optimum at the current claim ages, and jointExactEstate as the exact after-tax estate of the best evaluated claim-and-schedule pair, which stays the current-claim estate unless a candidate beats it by more than DEFAULT_CLAIM_SWITCH_MARGIN_DOLLARS, which is 1000 dollars.',
+    statement: 'projection/optimizePlan.ts#optimizePlanCoOptimizingClaimAge publishes ClaimAgeCoOptimization.outcome: already-claimed when every one of the first two Social Security streams was claimed before the start year (socialSecurity/openClaims.ts#isClaimAlreadyMade: birth year plus claim years before the start year), aca-unpriced when the plan as entered has a year whose premium tax credit cannot be priced (each year published with its blocking support codes), no-claims with no stream, no-age-left when a claim is open but the generator offers no candidate (every canonical age is the current claim or before the start year), and searched otherwise; only a searched outcome prices candidates. combinationsEvaluated is one plus the claim candidates decisions/generators.ts#socialSecurityClaimGenerator produced (for each of the first two streams whose claim is not already made, the three canonical claim ages 62y0m, the person\'s own full retirement age computed from the birth year and labelled FRA, and 70y0m, skipping the stream\'s own current claim age and any age whose claim year is before the start year), currentClaimExactEstate is the exact after-tax estate of the optimum at the current claim ages, and jointExactEstate is the exact after-tax estate of the best evaluated claim-and-schedule pair, which stays the current-claim estate unless a candidate beats it by more than DEFAULT_CLAIM_SWITCH_MARGIN_DOLLARS, which is 1000 dollars. The claims held fixed are published as alreadyClaimed.',
     formula: {
-      expression: 'combinationsEvaluated = 1 + generatedClaimCandidates; jointExactEstate = the best pair estate that clears currentClaimExactEstate + 1000, else currentClaimExactEstate; winningClaimLabel and winningClaimPatch are null exactly when no pair clears it',
+      expression: 'combinationsEvaluated = 1 + generatedClaimCandidates (0 candidates unless the outcome is searched); jointExactEstate = the best pair estate that clears currentClaimExactEstate + 1000, else currentClaimExactEstate; winningClaimLabel and winningClaimPatch are null exactly when no pair clears it',
       variables: [
-        { symbol: 'generatedClaimCandidates', meaning: 'Claim candidates from socialSecurityClaimGenerator: streams (at most 2) times the canonical ages that differ from that stream\'s current claim', unit: 'count', domain: 'integer 0 to 6' },
+        { symbol: 'generatedClaimCandidates', meaning: 'Claim candidates from socialSecurityClaimGenerator: for each open stream (at most 2), the canonical ages that differ from its current claim and are not before the start year', unit: 'count', domain: 'integer 0 to 6' },
         { symbol: 'currentClaimExactEstate', meaning: 'Exact after-tax estate of the optimum at the plan\'s current claim ages', unit: 'nominal USD at horizon', domain: 'finite' },
         { symbol: 'jointExactEstate', meaning: 'Exact after-tax estate of the winning claim-and-schedule pair', unit: 'nominal USD at horizon', domain: 'finite' },
         { symbol: 'claimSwitchMarginDollars', meaning: 'DEFAULT_CLAIM_SWITCH_MARGIN_DOLLARS', unit: 'nominal USD', domain: '1000' },
@@ -495,19 +495,25 @@ export const optimizerAndComparisonsRecords = {
       worksheet: 'DOCS/calculations/optimizer-and-comparisons/claim-age-co-optimization.md',
     },
     limits: [
-      'The count includes the current claim and excludes the stream\'s own current age as a candidate: a stream already claiming at 70y0m generates two candidates and so evaluates three combinations, and a plan with no stream still evaluates one. The middle point is the person’s own full retirement age from socialSecurity/nra.ts#fraForBirthYear, 66y2m for the example’s 1956-01-01 birth (effective birth year 1955). The two estates are RUN-PINNED, not derived: the worksheet states no dollar figure for either, so the test\'s example carries the value one execution of the co-optimizer produced on the stated plan, and it is evidence of that execution rather than of an independent derivation. What is derived is their equality: with no traditional balance every schedule is empty and no claim clears the 1000-dollar margin, so the joint estate IS the current-claim estate and both claim outputs are null. The strictness of that margin at exactly 1000 dollars was NOT constructed: it needs a candidate whose exact estate sits one margin above the current-claim optimum, which no plan input the worksheet states can produce. Beyond the worksheet\'s inputs the test assumes validated single-person plans with one cash account and no traditional balance, zero returns, zero inflation, zero state tax, zero base spending, a birth date that makes the person 70 in the start year, an integer planning age of 70 (the plan schema admits no 70y1m) and the production federal tax calculator from start year 2026; the count is asserted at the generator itself, whose context takes the plan\'s own baseline ledger run.',
+      'The count includes the current claim and excludes the stream\'s own current age as a candidate: an open stream claiming at 70y0m generates two candidates and so evaluates three combinations, and a plan with no stream, or whose claims are all made, still evaluates one. The middle point is the person\'s own full retirement age from socialSecurity/nra.ts#fraForBirthYear. The two estates are RUN-PINNED, not derived: the worksheet states no dollar figure for either, so the test\'s example carries the value one execution of the co-optimizer produced on the stated plan, and it is evidence of that execution rather than of an independent derivation. What is derived is their equality: with no traditional balance every schedule is empty and no claim clears the 1000-dollar margin, so the joint estate IS the current-claim estate and both claim outputs are null. The strictness of that margin at exactly 1000 dollars was NOT constructed: it needs a candidate whose exact estate sits one margin above the current-claim optimum, which no plan input the worksheet states can produce',
+      'It differs from the Social Security page\'s whole-plan sweep (social-security-claim-age-sweep): it re-optimizes conversions for each candidate but tries only 62, full retirement age and 70, one stream at a time, compares on the estate alone under every objective, and needs a 1000-dollar margin; the sweep holds the plan\'s conversions and tries every whole year. Adding the sweep\'s winner as one more candidate is a later change',
+      'A claim already made, and a canonical age whose claim year is before the start year, is not offered: an early claim cannot be paid for months before its application (20 CFR 404.621(a)(3)), and a later one only six months back ((a)(2)); withdrawal within 12 months and voluntary suspension from full retirement age are not modeled',
+      'Where the premium tax credit cannot be priced in a year of the plan as entered, no claim candidate is priced, since a claim age moves the income that credit depends on and the ledger cannot say which way; the conversion side keeps its own refusal (the tournament\'s ACA veto)',
+      'Its streams are the first two Social Security streams, where the page\'s sweep takes the first two with a benefit (socialSecurity/openClaims.ts#claimAgeStreams: a positive entered PIA or an earnings history). A plan with a zero-PIA stream among its first two, on which the ledger can still pay a spouse benefit, is searched differently on the two pages, and a past claim on such a stream is named on the Optimize card only; no example plan has one',
     ],
     implementedBy: [
       'packages/engine/src/projection/optimizePlan.ts',
       'packages/engine/src/decisions/generators.ts',
+      'packages/engine/src/socialSecurity/openClaims.ts',
     ],
     implementedByFunctions: [
       'packages/engine/src/projection/optimizePlan.ts#optimizePlanCoOptimizingClaimAge',
       'packages/engine/src/projection/optimizePlan.ts#winnerExactEstate',
       'packages/engine/src/decisions/generators.ts#socialSecurityClaimGenerator',
+      'packages/engine/src/socialSecurity/openClaims.ts#isClaimAlreadyMade',
     ],
-    verifiedOn: '2026-09-18',
-    provenance: { derivedBy: 'codex', implementedBy: 'claude', reviewedBy: 'cursor' },
+    verifiedOn: '2026-09-28',
+    provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
   },
   'plan-headline-money-comparison': {
     title: 'Compare plans: money rows in one stated basis',

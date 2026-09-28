@@ -4,6 +4,131 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
 
 ## Unreleased
 
+- **Changed: the claim-age sweep and the survivor figures move into the engine; claims
+  already made are no longer searched, no claim age is ranked against a premium credit
+  the ledger cannot price, and the survivor lever adds to the plan's conversions
+  (displayed numbers change)** (B2-P1 slice 5, owner decisions R12 and R16 of
+  D-B2P1-PARITY and the claim-age decisions of 2026-09-25; derived and independently
+  checked, RetireGolden-Docs `evidence/b2p1-slice5-*.md`). Five figures on the Social
+  Security and survivor pages were computed in planner-ui; each is now an engine function
+  the page reads, with a calculation record, a worksheet, evidence and an executed
+  mutation receipt:
+  - **Claims already made** (`socialSecurity/openClaims.ts#isClaimAlreadyMade`, its own
+    record `social-security-claim-already-made`): a claim whose year (birth year + claim
+    years) is before the plan's start year is history, not a choice (42 U.S.C. 402(a); 20
+    CFR 404.621(a)(3)); the birth-month convention, (a)(2)'s six months, withdrawal within
+    12 months (404.640) and suspension from full retirement age (402(z)) are stated
+    limits. The sweep, its month refinement, the benefits-only ranking, the bridge panel's
+    earliest-claim comparison, the Optimize page's co-optimization and the Scenarios
+    page's claim-age lever use this one test, written once. On the 29
+    examples: the bracket-fill couple (claimed 2020 and 2022) and rmd-irmaa (2023) now read
+    "Every claim here is already made", naming who claimed and when, on the In-your-plan
+    tab (10 of 125 ranking pairs; the bracket-fill couple was told "claim at 70 / 70 …
+    your current choice" under three rankings) and on the Benefits-only tab (which offered
+    "Apply 70 / 70"); the co-optimization's candidates fall from 66 to 46.
+  - **The claim-age sweep** (`decisions/claimAgeSweep.ts#sweepClaimAges`, R12): the
+    winner's change is signed and measured from the plan as entered, claim months
+    included, in dollars of the plan's last year, which the page names. Four
+    bridge-durability changes that printed "+−$16k", "+−$134k", "+−$146k" and "+−$178k" in
+    green now print "−$16k" … in red, and four "+$0" print "$0". Every one of the 2,505
+    rows the sweep still prices is bit-identical, and every positive change is the old
+    figure to the bit. When the plan has a Marketplace year whose premium tax credit the
+    ledger cannot price, no claim age is ranked (all Social Security counts in the
+    credit's income in the years it is paid, so an unpriced credit could change which
+    claim age comes out ahead, in either direction), and the note names each year with
+    its own reason instead of "No claim age meets this ranking's constraints": 85 notes
+    (17 examples × 5 rankings; 13 for years whose figures are not yet published, four with
+    2026 or 2027 years refused for guardrail spending, income below the poverty line or a
+    calculation that did not settle), with no robustness check offered on a ranking the
+    page refused. A disability benefit from its onset is held as the plan pays it and the
+    partner's claim ages are compared; the sweep refuses only when every open claim is
+    one. The heatmap's axes are the ages the engine swept, and a missing cell is an error,
+    not $0. Rows that bridge durability ranked on the estate instead are named, saying
+    whether the claim age or the plan as entered lacked the bridge years (11 displayed
+    pairs; survivor liquidity would name 19 more, on plans where it is hidden), survivor
+    liquidity is offered only when the plan has survivor years (hidden on 20 of the 25
+    examples that offer the tab), and the tab says how its search differs from the
+    Optimize page's and that its grid starts at 62, or at the age reached this year if
+    later.
+  - **The month refinement** (`#refineClaimAgeMonthly`, R12): ranked on the chosen
+    objective, taking a month only when it meets the objective's constraints and ranks
+    strictly higher; the page says "no month within a year of the whole-year pick ranks
+    higher" rather than "optimal to the month", and the refinement and the robustness
+    table are dropped when the plan or the ranking changes. 8 refinement lines change
+    (bridge durability no longer undoes its own pick: glidepath-allocation's "66y 9m
+    (+$55k)" is 65; under-saved-single's lifetime-tax pick moves to 64y 8m, +$2,519 of tax
+    saved) and the bracket-fill couple's 3 go.
+  - **The survivor lever** (`projection/survivorTransition.ts`, R16): Roth conversions
+    filling the 12% bracket are added to the plan's own through the year of the first
+    death (`SimulateOptions.additionalBracketFill`: the larger of the two in each window
+    year, the fill capped at the convertible balance), not substituted for them. On the 7
+    couples' 56 timing rows: the 24 rows of the three plans that convert nothing are
+    unchanged bit for bit; on the four converting plans 31 estate figures, 15 colours and
+    32 tax figures change (example-couple "+$147k" to "+$277k" becomes $0; annuity-purchases-estate
+    "+$463k" to "+$546k" becomes +$135k and +$105k; no-annuity-brokerage's "me dies at
+    70" tax "+$37k" becomes "−$20k"). Every lever cell names its year's dollars and says,
+    year by year from executed dollars, what the lever did and why: the years it added
+    conversions, the years the plan already converts at or past the top of the 12%
+    bracket, the years the ledger converted less than the fill asked, the years with no
+    pre-tax balance it can convert, no room in the bracket, a fill cut to nothing or a named conversion,
+    with every message the ledger raised shown once. example-couple's $0 is partly a
+    skipped conversion, not only a plan already past 12%: Sam has no Roth account, so
+    Sam's share of every conversion is skipped (when Alex dies at 90: no room in 2026 and
+    2027, at or past the fill in 2028 to 2032, short in 2033 to 2041 with the ledger's
+    "Sam has no Roth account …", no balance left from 2042). The same message now shows on
+    the all-401k-no-bridge and brokerage-bridge-401k rows (Jordan has no Roth account).
+  - **The SSA-44 difference and the survivor shortfall count**: the SSA-44 figure stays
+    the whole-projection difference, with its relief-year part published beside it and
+    ", including $X in later years" when they differ (no example row today); "no
+    surcharge to relieve" is decided on the relief years. The shortfall facts read
+    required spending at the ledger's funding tolerance, and "covered" reads "required
+    spending covered" (33 rows); no count or degenerate row changes.
+  - **The Optimize page's claim-age option** (`claim-age-co-optimization`, restated)
+    refuses in the Social Security page's words: the five example recommendations (for
+    example the aggressive saver's "claim at 62", +$193,083.87, which started benefits
+    inside its unpriced years) and twelve "none beat your current claim ages" notes
+    become the refusal naming each year and its reason (17 examples; Monte Carlo, the
+    report and Apply revert to the plan as entered on the five), the two examples whose
+    claims are all made say so, and six plans' "N claim combinations" fall because past
+    canonical ages are no longer tried (5 to 3, and 3 to 2). An open claim with no
+    canonical age left to try (a claim at 70 in the start year, the earlier ages past)
+    has the new outcome `no-age-left`, and the card says no claim age was left to try
+    instead of "1 claim combinations were each fully re-optimized".
+  - A diagnostic evaluation's loss reason names the diagnostic raised ("diagnostic-only
+    evaluation: ACA evidence … is non-actionable in the baseline for 2028, …") instead of
+    "invalid patch or materially unexecuted schedule", on the Optimize report's tournament
+    rows too.
+  - **The claim-age scenario lever** (planner-ui `scenarioLevers.ts`, the Scenarios page's
+    "Claim age for all eligible streams" and RetireGolden-Pro's meeting view "Claim Social
+    Security at 70"): a claim already made is left as it is, with a warning naming who
+    claimed and when; a claim age the person has already passed is not applied; when no
+    claim is left to change, the lever says who claimed and when instead of rewriting the
+    claims (the bracket-fill couple's "at 70" lever no longer re-makes their 2020 and 2022
+    claims).
+  - **The spending note's reasons** (`planner/acaVetoCopy.ts`, the "How much can I spend?"
+    page and the Scenarios capacity section): a year whose credit and income did not
+    settle on one value, whose income can land on either side of the credit's cliff, or
+    whose credit and amount of HSA withdrawals that count as medical expenses did not
+    settle is named as that, where the note said "some facts the credit needs are
+    missing"; the claim-age refusals use the same words.
+  - **A disability benefit is named, and no longer stops the partner's ranking in the
+    plan**: the In-your-plan tab holds the disabled person's benefit as the plan pays it
+    and compares the partner's claim ages; the Benefits-only tab, which prices a couple's
+    claims as pairs of claim ages and cannot place a disability benefit on that grid,
+    names the person and gives that as its reason for ranking neither.
+  - The couple primer describes the "lower earlier, higher later" pattern without
+    crediting the top-ranked strategy to survivor protection, which the chosen objective
+    may not weigh.
+  planner-ui's `planner/survivorAnalysis.ts` and the sweep, refinement and verdict code of
+  `planner/ssAnalysis.ts` are deleted. RetireGolden-Pro picks all of this up with the
+  next planner-ui bump (its meeting lever calls planner-ui's `scenarioLevers.ts`, and it
+  imports none of the deleted modules). A plan with a zero-PIA stream among its first two
+  is searched differently on the two pages (the co-optimization counts it, the sweep does
+  not), a stated limit; no example has one. **Follow-up outside this repository** (after the
+  next engine release): RetireGolden-MCP's `batch_evaluate` writes `claim_ages` for every
+  person with no already-made check (`src/adapter.ts`) and should refuse or caveat
+  through `socialSecurity/openClaims.ts`.
+
 - **Changed: the Social Security analysis models move into the engine; the break-even
   chart shows the plan's dollars, the benefits-only ranking prices couples on the
   ledger's rules, and "what you paid in" is in today's dollars (displayed numbers
@@ -1433,6 +1558,47 @@ has — rather than the runtime contract a consumer needs on the landing page.
   or finalization claim.
 
 ### Breaking (published `@retiregolden/engine` API)
+
+- **Claim-age searches and the survivor analysis (B2-P1 slice 5):** new modules
+  `decisions/claimAgeSweep` (`sweepClaimAges`, `refineClaimAgeMonthly`, `refineClaimMonths`,
+  `claimAgeSweepVerdict`, `unpricedAcaYears` and their types, also exported from
+  `decisions`), `socialSecurity/openClaims` (`openClaims`, `isClaimAlreadyMade`,
+  `claimYearOf`, `claimAgeStreams`, `gridClaimAges`, `earliestOpenClaimAge`) and
+  `projection/survivorTransition` (`survivorTransitionAnalysis`, `isDegenerateTiming`,
+  `candidateDeathAges`, `conversionLeverPatch`, `leverYears`, `ssa44PremiumDifference`,
+  `survivorShortfallYearCount`, `withSurvivorSsa44`, `SURVIVOR_DEATH_AGES`,
+  `SURVIVOR_LEVER_BRACKET_PCT`). `socialSecurityClaimGridGenerator` emits candidates only
+  for claims not already made and not a disability benefit from onset (none when no such
+  claim is left, and no longer 70 alone for someone past every grid age) and patches the
+  claims by stream;
+  `socialSecurityClaimGenerator` skips a claim already made and any canonical age whose
+  claim year is before the start year. `ClaimAgeCoOptimization` gains the required
+  `outcome`, `unpricedAca` and `alreadyClaimed`, and `optimizePlanCoOptimizingClaimAge`
+  prices no candidate when every claim is made or the plan has an unpriced credit year.
+  `BenefitsOnlyRanking` gains the required `alreadyClaimed`, and its `personIds` and each
+  row's `claimByPersonId` now name only the open claims. `SimulateOptions` gains
+  `additionalBracketFill` (a malformed one throws a `RangeError`), `ProjectionResult` the
+  optional `additionalBracketFill` rows (`AdditionalBracketFillYear`).
+  `ExactDecisionEvaluation` gains the optional `diagnosticCauses`, and a diagnostic
+  evaluation's constraint violation now reads "diagnostic-only evaluation: <the causes>".
+  `decisions/objectives` exports `hasSurvivorYears`, `rankedMetricBasis` and
+  `RankedMetricBasis` (`'objective' | 'estate-fallback-plan' | 'estate-fallback-row'`).
+  `decisions/generators` exports `claimAgeGridClaims`, and the grid holds a disability
+  benefit from its onset; a ranked `ClaimAgeSweep` publishes those claims in
+  `disabilityPersonIds`. `ClaimAgeCoOptimizationOutcome` gains `'no-age-left'`.
+  `AdditionalBracketFillYear` gains the required `fillNotes` and `ledgerNotes`, its
+  sizing half is the new `AdditionalBracketFillTarget`, and `SurvivorConversionLever`
+  gains the required `years` (`SurvivorLeverYear`, `SurvivorLeverYearReason`). The rule `usc-42-402-worker-claim-window-62-to-70` now pins
+  `socialSecurity/openClaims.ts#gridClaimAges` (`decisions/generators.ts#SS_GRID_CLAIM_AGES`
+  is gone). planner-ui (published source): `planner/survivorAnalysis` is deleted (its
+  `buildSurvivorAnalysis` is the engine's `survivorTransitionAnalysis`, whose rows carry a
+  non-null `conversionLever` with `raisedYears` and `coveredYears`, `endYear`,
+  `ssa44ReliefYearSavings`, and facts with `requiredShortfall` for `shortfall`);
+  `planner/ssAnalysis` loses `sweepClaimingStrategies`, `refineClaimingMonthly`,
+  `planWithClaimAgesMonthly`, `objectiveIsFlat`, `sweepVerdict`, `SweepVerdict`,
+  `SweepRow`, `SweepResult`, `MonthlyClaim` and `MonthlyRefinement`; `planner/acaVetoCopy` gains
+  `unpricedCreditYearsText`, `claimAgeUnpricedCreditReason` and `UnpricedCreditYear`, and
+  the new `planner/claimAgeCopy` holds the already-claimed sentences.
 
 - **Social Security analysis (B2-P1 slice 4):** the parameter field
   `socialSecurity.oasdiEmployeeRatePct` is removed from `ParameterPack` and the 2026

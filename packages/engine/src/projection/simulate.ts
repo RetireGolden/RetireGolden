@@ -166,6 +166,7 @@ import {
 import { createGoalScheduler, toSchedulableGoal, type GoalScheduler } from '../spending/flexibleGoals.js'
 import {
   taxParameterFilingStatus,
+  type AdditionalBracketFillYear,
   type MarketSeries,
   type OptimizerYearProbe,
   type PersonYearState,
@@ -241,6 +242,19 @@ export interface SimulateOptions {
    * only and do not synthesize the corrective account movement or its income.
    */
   rmdShortfallReliefElections?: readonly RmdShortfallReliefElection[]
+  /**
+   * Analysis only: the survivor page's convert-early lever. In each year from
+   * `startYear` through `endYear` the aggregate Roth conversion is the larger
+   * of the plan's own target and a fill of taxable income to the top of the
+   * `bracketPct` bracket (for the year's filing status), both sized on the same
+   * state of the year, the fill capped at the convertible balance: the fill is
+   * added to the plan's conversions, never a replacement for them. Outside the
+   * window the plan's own strategy runs unchanged, and a year with a named
+   * conversion action converts only that action. The run publishes the window
+   * years on `ProjectionResult.additionalBracketFill`. Omitted in every
+   * product projection.
+   */
+  additionalBracketFill?: Readonly<{ bracketPct: number; startYear: number; endYear: number }>
 }
 
 /**
@@ -387,8 +401,20 @@ function canonicalRuntimeOccurrenceOrder(
 }
 type BalanceState = PhysicalBalanceState
 
+function checkAdditionalBracketFill(lever: SimulateOptions['additionalBracketFill']): void {
+  if (lever === undefined) return
+  const { bracketPct, startYear, endYear } = lever
+  if (!Number.isFinite(bracketPct) || bracketPct <= 0 || bracketPct >= 100) {
+    throw new RangeError(`additionalBracketFill.bracketPct must be a bracket rate in percent; got ${bracketPct}`)
+  }
+  if (!Number.isInteger(startYear) || !Number.isInteger(endYear) || endYear < startYear) {
+    throw new RangeError(`additionalBracketFill needs whole years with endYear at or after startYear; got ${startYear} to ${endYear}`)
+  }
+}
+
 export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResult {
   const { startYear, taxCalculator, market } = opts
+  checkAdditionalBracketFill(opts.additionalBracketFill)
   const preHorizonFirstRmdDeferral = (opts.rmdFirstYearDeferrals ?? [])
     .find((election) => election.distributionCalendarYear < startYear)
   if (preHorizonFirstRmdDeferral !== undefined) {
@@ -949,6 +975,8 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
   }
 
   const years: YearResult[] = []
+  /** The bracket-fill lever's committed window years (published only when the option is set). */
+  const additionalBracketFillYears: AdditionalBracketFillYear[] = []
   /** First-distribution-calendar-year amounts elected into the following RBD year. */
   const deferredFirstRmdByApplicablePlan =
     new Map<string, SimulatorAnnualPassDeferredFirstRmd>()
@@ -1287,6 +1315,10 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
   const planHasInheritedAccounts = inheritedClassCache.size > 0
 
   for (let year = startYear; year <= endYear; year++) {
+    // Written by every annual pass the year runs; the committed pass is the
+    // last one (annualOwnedNonRothIraSettlementPhase), so its value is read
+    // after the year settles.
+    let yearAdditionalBracketFill: AdditionalBracketFillYear | null = null
     const inflFactor = inflFactorFrom(startYear, year)
     const { pack, isStandIn } = packForYear(year)
     const limitGrowth = limitScale(pack, isStandIn, year)
@@ -2578,6 +2610,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         inflFactorFrom,
         stateRetirementDistributions: [...stateRetirementDistributions.map((fact) => ({ ...fact, federallyIncludedAmount: Math.max(0, fact.federallyIncludedAmount - (forcedDistributionPhase.annuityStateBasisReturnByAccount?.get(fact.accountId ?? '') ?? 0)) })), ...forcedDistributionPhase.stateRetirementDistributionFacts],
         stateQcdEventFacts: forcedDistributionPhase.stateQcdEventFacts,
+        ...(opts.additionalBracketFill === undefined ? {} : { additionalBracketFill: opts.additionalBracketFill }),
       }),
       prior: forcedDistributionPhase,
       ledger: {
@@ -2600,6 +2633,10 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
         : null,
     }))
     conversionNontaxable = aggregateRothPhase.conversionNontaxable
+    const yearBracketFillTarget = aggregateRothPhase.aggregateRothConversionTarget.additionalBracketFill
+    yearAdditionalBracketFill = yearBracketFillTarget === null
+      ? null
+      : { ...yearBracketFillTarget, ledgerNotes: aggregateRothPhase.aggregateRothConversionShortfallNotes }
 
     const fundingCloseLedger = {
       balances,
@@ -2900,6 +2937,7 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
       acceptedStateHsaBasis = commitAcceptedHsaBasis(year, settledAnnualPass.yearResult.taxComputation, acceptedStateHsaBasis)
     }
     years.push(settledAnnualPass.yearResult)
+    if (yearAdditionalBracketFill !== null) additionalBracketFillYears.push(yearAdditionalBracketFill)
     if (settledAnnualPass.optimizerProbe !== null) {
       opts.captureOptimizerInputs?.(settledAnnualPass.optimizerProbe)
     }
@@ -2935,5 +2973,6 @@ export function simulatePlan(plan: Plan, opts: SimulateOptions): ProjectionResul
     endingNetWorth: last?.netWorth ?? 0,
     endingNondeductibleIraBasis,
     warnings: [...warnings],
+    ...(opts.additionalBracketFill === undefined ? {} : { additionalBracketFill: additionalBracketFillYears }),
   }
 }

@@ -1,7 +1,7 @@
 /** @vitest-environment jsdom */
 /**
  * The claim-age sweep's debounce backstop (SsAnalysisPage.tsx) absorbs any
- * throw from `sweepClaimingStrategies` into an error card. `sweep === null`
+ * throw from the engine's `sweepClaimAges` into an error card. `sweep === null`
  * has exactly one cause — this catch — so the card no longer calls it a
  * plan-validation problem (that was only sometimes true; see #598 round 2).
  * This pins that a genuine exception is (a) logged to the console, the way
@@ -18,11 +18,11 @@ import { waitFor } from '../testSupport/settle'
 import { SsAnalysisPage } from './SsAnalysisPage'
 import { PlanCtx, type PlanContextValue } from './planContextCore'
 
-vi.mock('./ssAnalysis', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('./ssAnalysis')>()
+vi.mock('@retiregolden/engine/decisions/claimAgeSweep', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@retiregolden/engine/decisions/claimAgeSweep')>()
   return {
     ...actual,
-    sweepClaimingStrategies: () => {
+    sweepClaimAges: () => {
       throw new Error('boom: unexpected candidate shape')
     },
   }

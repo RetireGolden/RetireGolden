@@ -37,9 +37,6 @@
       "cash-flow-line-plan-dollars",
       "cash-flow-reconciliation-totals",
       "cash-flow-tax-character-amount",
-      "claim-age-co-optimization-combinations-evaluated",
-      "claim-age-co-optimization-current-claim-exact-estate",
-      "claim-age-co-optimization-joint-exact-estate",
       "estate-heir-income-tax",
       "estate-to-charity",
       "exact-ledger-tournament-margin-over-milp-dollars",
@@ -195,7 +192,10 @@
       "accounts-ending-balance-by-category",
       "bucket-lens-allocation",
       "cash-flow-line-amount",
+      "claim-age-co-optimization-combinations-evaluated",
+      "claim-age-co-optimization-current-claim-exact-estate",
       "claim-age-co-optimization-estate-gain",
+      "claim-age-co-optimization-joint-exact-estate",
       "compare-plan-deltas",
       "compare-plan-money-deltas",
       "display-balance-by-category-annual",
@@ -234,6 +234,7 @@
       "simple-candidate-evaluation-money-lasts-years-delta",
       "social-security-benefit-annual",
       "social-security-break-even",
+      "social-security-claiming-sweep-objective",
       "social-security-computation-summary-counts",
       "social-security-credit-estimate",
       "social-security-expected-present-value",
@@ -247,6 +248,10 @@
       "spending-guardrail-factor-annual",
       "spending-healthcare-annual",
       "spending-shape-delta-vs-flat",
+      "survivor-scenario-row-estate-delta",
+      "survivor-scenario-row-lifetime-tax-delta",
+      "survivor-scenario-row-ssa44premium-savings",
+      "survivor-scenario-row-survivor-shortfall-years",
       "sustainable-spending-result-max-base-annual",
       "sustainable-spending-result-simulation-count",
       "sustainable-spending-result-spending-slack-dollars",
@@ -255,20 +260,9 @@
     "noRecordYet": [
       "mcp-batch-cumulative-tax-objective",
       "mcp-batch-ending-traditional-objective",
-      "mcp-compare-ending-after-tax-estate-delta",
-      "social-security-claiming-sweep-objective",
-      "survivor-scenario-row-estate-delta",
-      "survivor-scenario-row-lifetime-tax-delta",
-      "survivor-scenario-row-ssa44premium-savings",
-      "survivor-scenario-row-survivor-shortfall-years"
+      "mcp-compare-ending-after-tax-estate-delta"
     ],
-    "relocationPending": [
-      "social-security-claiming-sweep-objective",
-      "survivor-scenario-row-estate-delta",
-      "survivor-scenario-row-lifetime-tax-delta",
-      "survivor-scenario-row-ssa44premium-savings",
-      "survivor-scenario-row-survivor-shortfall-years"
-    ],
+    "relocationPending": [],
     "fedBy": {
       "aca-economic-net-premium-annual": [
         "aca-400-percent-cliff",
@@ -319,6 +313,9 @@
         "cash-flow-line-plan-dollars",
         "surplus-invested-annual",
         "year-result-contributions"
+      ],
+      "claim-age-co-optimization-combinations-evaluated": [
+        "social-security-claim-already-made"
       ],
       "compare-plan-deltas": [
         "display-years-before-plan-end"
@@ -705,6 +702,9 @@
       "social-security-break-even": [
         "social-security-cola-factor"
       ],
+      "social-security-claiming-sweep-objective": [
+        "social-security-claim-already-made"
+      ],
       "social-security-expected-present-value": [
         "dual-entitlement-composition",
         "mortality-ex-to-qx-identity",
@@ -792,6 +792,9 @@
         "tax-total-annual",
         "year-result-contributions"
       ],
+      "survivor-scenario-row-ssa44premium-savings": [
+        "irmaa-lookback-selection"
+      ],
       "sustainable-spending-result-max-base-annual": [
         "spending-shape-annual-delta-phases"
       ],
@@ -861,16 +864,16 @@
     }
   },
   "records": {
-    "total": 255,
+    "total": 261,
     "byKind": {
       "composition": 85,
       "data": 19,
-      "formula": 91,
-      "model": 60
+      "formula": 93,
+      "model": 64
     },
     "byJustificationKind": {
       "dataset": 5,
-      "derivation": 250
+      "derivation": 256
     }
   },
   "oracleExamples": [
@@ -1033,7 +1036,7 @@
     }
   ],
   "attestationsDerived": {
-    "catalogued": 76,
+    "catalogued": 78,
     "excludedWithReason": 0,
     "notYetReviewed": 166
   },
@@ -1091,7 +1094,7 @@
     {
       "group": "socialSecurity",
       "path": "calculation-coverage/socialSecurity.json",
-      "recordCount": 26
+      "recordCount": 32
     },
     {
       "group": "spendingAndWithdrawals",

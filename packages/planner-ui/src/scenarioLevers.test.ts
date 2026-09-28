@@ -1398,6 +1398,59 @@ describe('scenario lever contract', () => {
     expect(lateDefaultReturn.ok).toBe(false)
   })
 
+  it('leaves a claim already made alone and says who claimed and when when none is left to change (B2-P1 slice 5)', () => {
+    const plan = buildExampleCouple()
+    plan.household.people[0]!.dob = '1953-06-15' // Alex, claiming at 70: 2023
+    plan.household.people[1]!.dob = '1955-03-10' // Sam, claiming at 67: 2022
+    const none = buildScenarioLever(plan, { id: 'socialSecurityClaim', claimAge: 70 }, context)
+    expect(none.ok).toBe(false)
+    if (!none.ok) {
+      expect(none.issues.join(' ')).toBe(
+        'Alex claimed at 70 in 2023 and Sam at 67 in 2022, before the plan starts in 2026, so there is no claim age left to change. ' +
+          'A claim cannot be made again at another age, and this plan does not model withdrawing an application (possible within 12 months of the first month of entitlement, repaying every benefit) or suspending benefits from full retirement age.',
+      )
+    }
+
+    // One claim made, one open: only the open one changes, and the warning names the other.
+    const mixed = buildExampleCouple()
+    mixed.household.people[0]!.dob = '1953-06-15'
+    const partial = buildScenarioLever(mixed, { id: 'socialSecurityClaim', claimAge: 70 }, context)
+    expect(partial.ok).toBe(true)
+    if (!partial.ok) return
+    expect(partial.warnings).toContain('Alex claimed at 70 in 2023, before the plan starts in 2026, so that claim is left as it is.')
+    const applied = applyScenarioPatch(mixed, partial.patch)
+    expect(applied.ok).toBe(true)
+    if (!applied.ok) return
+    const claims = Object.fromEntries(
+      applied.plan.incomes.flatMap((income) => (income.type === 'socialSecurity' ? [[income.personId, income.claimAge.years]] : [])),
+    )
+    expect(claims[mixed.household.people[0]!.id]).toBe(70)
+    expect(claims[mixed.household.people[1]!.id]).toBe(70)
+    const sam = applied.plan.incomes.find((income) => income.type === 'socialSecurity' && income.personId === mixed.household.people[1]!.id)
+    const before = mixed.incomes.find((income) => income.type === 'socialSecurity' && income.personId === mixed.household.people[1]!.id)
+    expect(before?.type === 'socialSecurity' ? before.claimAge.years : null).toBe(67)
+    expect(sam?.type === 'socialSecurity' ? sam.claimAge.years : null).toBe(70)
+  })
+
+  it('does not apply a claim age the person has already passed (B2-P1 slice 5)', () => {
+    const plan = buildExampleCouple() // Alex born 1962 (64 in 2026), Sam 1964 (62)
+    const result = buildScenarioLever(plan, { id: 'socialSecurityClaim', claimAge: 62 }, context)
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.warnings).toContain('Alex is already past 62, so that claim is left as it is.')
+    const applied = applyScenarioPatch(plan, result.patch)
+    expect(applied.ok).toBe(true)
+    if (!applied.ok) return
+    const alex = applied.plan.incomes.find((income) => income.type === 'socialSecurity' && income.personId === plan.household.people[0]!.id)
+    expect(alex?.type === 'socialSecurity' ? alex.claimAge.years : null).toBe(70)
+
+    const alexOnly = buildExampleCouple()
+    alexOnly.incomes = alexOnly.incomes.filter((income) => income.type !== 'socialSecurity' || income.personId === alexOnly.household.people[0]!.id)
+    const past = buildScenarioLever(alexOnly, { id: 'socialSecurityClaim', claimAge: 63 }, context)
+    expect(past.ok).toBe(false)
+    if (!past.ok) expect(past.issues).toEqual(['Alex is already past 63, so a claim at that age would be in the past.'])
+  })
+
   it('uses canonical FRA rules to decide whether disability controls claim age', () => {
     const janFirst = buildExampleCouple()
     const janFirstPerson = janFirst.household.people[0]!
@@ -1410,9 +1463,12 @@ describe('scenario lever contract', () => {
     // A May 2026 onset is first payable in November 2026. Born 1960-01-01, FRA
     // (66y10m from the effective birth year 1959) is attained in October 2026,
     // so there is no disability month; born 1960-01-02, FRA 67 is January 2027
-    // and November and December 2026 are disability months.
+    // and November and December 2026 are disability months. The claim at 66
+    // falls in 2026, the start year, so it is still a choice (B2-P1 slice 5: a
+    // claim year before the start year is already made and the lever leaves it
+    // alone).
     janFirstStream.disability = { onsetAge: 66, onsetMonth: 5 }
-    janFirstStream.claimAge = { years: 62, months: 0 }
+    janFirstStream.claimAge = { years: 66, months: 0 }
     const normalRetirement = buildScenarioLever(
       janFirst,
       { id: 'socialSecurityClaim', claimAge: 70 },
@@ -1449,7 +1505,9 @@ describe('scenario lever contract', () => {
     const secondStream = streams.find((income) => income.personId === second!.id)!
     firstStream.piaMonthly = 2_000
     firstStream.disability = { onsetAge: 66, onsetMonth: 5 }
-    firstStream.claimAge = { years: 62, months: 0 }
+    // At 66 the claim falls in 2026, the start year, so it is still open (B2-P1
+    // slice 5: a claim at 62, in 2022, would be already made and held as such).
+    firstStream.claimAge = { years: 66, months: 0 }
     secondStream.piaMonthly = 1_500
     secondStream.disability = { onsetAge: 2036 - Number(second!.dob.slice(0, 4)) }
     const result = buildScenarioLever(plan, { id: 'socialSecurityClaim', claimAge: 70 }, context)
@@ -1463,7 +1521,7 @@ describe('scenario lever contract', () => {
     if (!applied.ok) return
     const claimOf = (personId: string) =>
       applied.plan.incomes.find((income) => income.type === 'socialSecurity' && income.personId === personId)
-    expect(claimOf(first!.id)).toMatchObject({ claimAge: { years: 62, months: 0 } })
+    expect(claimOf(first!.id)).toMatchObject({ claimAge: { years: 66, months: 0 } })
     expect(claimOf(second!.id)).toMatchObject({ claimAge: { years: 70, months: 0 } })
   })
 
@@ -1916,7 +1974,9 @@ describe('scenario lever contract', () => {
   it('keeps effective pre-FRA SSDI claim ages available for former-spouse benefits', () => {
     const plan = buildExampleCouple()
     const stream = plan.incomes.find((income) => income.type === 'socialSecurity')!
-    stream.claimAge = { years: 62, months: 0 }
+    // A claim in 2026, the start year, is still a choice (B2-P1 slice 5: a claim
+    // year before the start year is already made and the lever leaves it alone).
+    stream.claimAge = { years: 64, months: 0 }
     stream.disability = { onsetAge: 60 }
     stream.formerSpouses = [
       {
@@ -1947,7 +2007,7 @@ describe('scenario lever contract', () => {
     })
   })
 
-  it('rejects projection-equivalent post-FRA former-spouse SSDI claim changes', () => {
+  it('moves a post-FRA former-spouse SSDI claim while it is open, since the survivor benefit starts with it', () => {
     const plan = buildExampleCouple()
     const stream = plan.incomes.find((income) => income.type === 'socialSecurity')!
     plan.incomes = [stream]
@@ -1965,22 +2025,19 @@ describe('scenario lever contract', () => {
         remarriedAtAge: 60,
       },
     ]
-    const lateContext = { ...context, startYear: 2040 }
-
-    const equivalent = buildScenarioLever(
-      plan,
-      { id: 'socialSecurityClaim', claimAge: 70 },
-      lateContext,
-    )
-    stream.claimAge = { years: 62, months: 0 }
-    const factorChange = buildScenarioLever(
-      plan,
-      { id: 'socialSecurityClaim', claimAge: 67 },
-      lateContext,
-    )
-
-    expect(equivalent.ok).toBe(false)
-    expect(factorChange.ok).toBe(true)
+    // Alex (born 1962-04-15) reaches full retirement age, 67, in 2029, the plan's first year here, so both claims
+    // below are open and at or after full retirement age. The disability benefit converts at full retirement age
+    // whatever the claim, but the survivor benefit on the former spouse's record starts with the claim, so moving
+    // the claim from 67 (2029) to 70 (2032) moves three years of it: not projection-equivalent, and applied.
+    const fraContext = { ...context, startYear: 2029 }
+    const survivorStartMoves = buildScenarioLever(plan, { id: 'socialSecurityClaim', claimAge: 70 }, fraContext)
+    expect(survivorStartMoves.ok).toBe(true)
+    // The equivalence this test was written for needs both claims before the plan starts (from 2040 the survivor
+    // benefit is paid in every projection year at 67 or at 70); those claims are already made, and the lever says so
+    // before it asks whether the projection would change (B2-P1 slice 5).
+    const late = buildScenarioLever(plan, { id: 'socialSecurityClaim', claimAge: 70 }, { ...context, startYear: 2040 })
+    expect(late.ok).toBe(false)
+    if (!late.ok) expect(late.issues.join(' ')).toContain('Alex claimed at 67 in 2029, before the plan starts in 2040')
   })
 
   it('rejects projection-equivalent post-FRA current-spouse SSDI claim changes', () => {
@@ -2000,13 +2057,17 @@ describe('scenario lever contract', () => {
     delete spouse.disability
     spouse.formerSpouses = []
 
-    const result = buildScenarioLever(
-      plan,
-      { id: 'socialSecurityClaim', claimAge: 70 },
-      { ...context, startYear: 2040 },
-    )
+    // From 2026 both claims are open: Alex's at 67 (2029) and Sam's at 70 (2034). Alex's disability benefit converts
+    // at full retirement age whatever the claim, and his spouse benefit on Sam's record cannot start before Sam files
+    // in 2034, after either claim of Alex's, so moving Alex to 70 changes nothing the projection pays; Sam already
+    // claims at 70. The lever refuses on the equivalence itself, not on a claim already made.
+    const result = buildScenarioLever(plan, { id: 'socialSecurityClaim', claimAge: 70 }, context)
 
     expect(result.ok).toBe(false)
+    if (!result.ok) {
+      expect(result.issues).toEqual(['No Social Security stream has a modeled benefit to change.'])
+      expect(result.issues.join(' ')).not.toContain('before the plan starts')
+    }
   })
 
   it('preserves delayed-retirement factor changes for non-disability own benefits', () => {
@@ -2022,10 +2083,17 @@ describe('scenario lever contract', () => {
     const result = buildScenarioLever(
       plan,
       { id: 'socialSecurityClaim', claimAge: 70 },
+      context,
+    )
+    // From 2040 the claim at 67 was made in 2029, before the plan starts: not re-made.
+    const late = buildScenarioLever(
+      plan,
+      { id: 'socialSecurityClaim', claimAge: 70 },
       { ...context, startYear: 2040 },
     )
 
     expect(result.ok).toBe(true)
+    expect(late.ok).toBe(false)
   })
 
   it('changes pre-start annuity purchases but excludes purchases at projection start', () => {
@@ -2076,7 +2144,9 @@ describe('scenario lever contract', () => {
     )!
     currentSpouseStream.piaMonthly = null
     currentSpouseStream.earnings = null
-    currentSpouseStream.claimAge = { years: 62, months: 0 }
+    // A claim in 2026, the start year, is still a choice (B2-P1 slice 5: a claim
+    // year before the start year is already made and the lever leaves it alone).
+    currentSpouseStream.claimAge = { years: 64, months: 0 }
     currentSpouseStream.disability = { onsetAge: 60 }
     currentSpouseStream.formerSpouses = []
     const currentSpouseClaim = buildScenarioLever(
@@ -2099,7 +2169,7 @@ describe('scenario lever contract', () => {
     )
     formerSpouseStream.piaMonthly = null
     formerSpouseStream.earnings = null
-    formerSpouseStream.claimAge = { years: 62, months: 0 }
+    formerSpouseStream.claimAge = { years: 64, months: 0 }
     formerSpouseStream.disability = { onsetAge: 60 }
     formerSpouseStream.formerSpouses = [
       {
@@ -2366,7 +2436,7 @@ describe('scenario lever contract', () => {
 
     const explicitZeroClaim = buildScenarioLever(
       plan,
-      { id: 'socialSecurityClaim', claimAge: 62 },
+      { id: 'socialSecurityClaim', claimAge: 64 },
       context,
     )
     const explicitZeroCut = buildScenarioLever(
@@ -2377,7 +2447,7 @@ describe('scenario lever contract', () => {
     stream.piaMonthly = null
     const earningsClaim = buildScenarioLever(
       plan,
-      { id: 'socialSecurityClaim', claimAge: 62 },
+      { id: 'socialSecurityClaim', claimAge: 64 },
       context,
     )
     const earningsCut = buildScenarioLever(
@@ -3033,7 +3103,9 @@ describe('scenario lever contract', () => {
       .find((income) => income.personId === person.id)!
     plan.incomes = [stream]
     stream.piaMonthly = 3_000
-    stream.claimAge = { years: 62, months: 0 }
+    // A claim in 2026, the start year, is still a choice (B2-P1 slice 5: a claim
+    // year before the start year is already made and the lever leaves it alone).
+    stream.claimAge = { years: 64, months: 0 }
     stream.disability = { onsetAge: 60 }
     stream.formerSpouses = [
       {
@@ -3069,7 +3141,9 @@ describe('scenario lever contract', () => {
     const spouse = streams[1]!
     plan.incomes = streams
     claimant.piaMonthly = 3_000
-    claimant.claimAge = { years: 62, months: 0 }
+    // A claim in 2026, the start year, is still a choice (B2-P1 slice 5: a claim
+    // year before the start year is already made and the lever leaves it alone).
+    claimant.claimAge = { years: 64, months: 0 }
     claimant.disability = { onsetAge: 60 }
     claimant.formerSpouses = []
     // Sam's own 1,600 is above half of Alex's 3,000, so neither has a spouse

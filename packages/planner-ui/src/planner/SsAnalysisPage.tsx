@@ -38,7 +38,16 @@ import {
   survivorSwitchingInputs,
   type SwitchStrategy,
 } from '@retiregolden/engine/socialSecurity/analysis/survivorSwitching'
-import { objectivePolicies, type ObjectivePolicyId } from '@retiregolden/engine/decisions'
+import { hasSurvivorYears, objectivePolicies, type ObjectivePolicyId } from '@retiregolden/engine/decisions'
+import {
+  refineClaimAgeMonthly,
+  sweepClaimAges,
+  type ClaimAgeRefinement,
+  type ClaimAgeSweep,
+  type ClaimAgeSweepRow,
+  type ClaimAgeValue,
+} from '@retiregolden/engine/decisions/claimAgeSweep'
+import { earliestOpenClaimAge } from '@retiregolden/engine/socialSecurity/openClaims'
 import { moneyLasts } from '@retiregolden/engine/projection/moneyLasts'
 import { moneyLastsValue } from './format'
 import { usePlan } from './planContextCore'
@@ -48,21 +57,10 @@ import { LEARN } from './learnLinks'
 import { LearnLink } from '../learn/LearnLink'
 import { LearnAboutScreen } from '../learn/LearnAboutScreen'
 import { fmtMoney, fmtMoneyCompact } from './format'
-import { currentStartYear, projectPlan, seedFromPlanId } from './useProjection'
-import {
-  candidateClaimAges,
-  claimingPeople,
-  dobParts,
-  piaAsOfPlan,
-  planWithClaimAges,
-  refineClaimingMonthly,
-  sweepClaimingStrategies,
-  type MonthlyClaim,
-  type MonthlyRefinement,
-  type SweepResult,
-  type SweepRow,
-  sweepVerdict,
-} from './ssAnalysis'
+import { currentStartYear, projectPlan, seedFromPlanId, taxCalculatorFor, useProjection } from './useProjection'
+import { claimingPeople, dobParts, piaAsOfPlan, planWithClaimAges } from './ssAnalysis'
+import { claimAgeUnpricedCreditReason } from './acaVetoCopy'
+import { ALREADY_CLAIMED_LIMITS, alreadyClaimedText, fmtClaimAge } from './claimAgeCopy'
 import { chartTooltipStyle } from './chartStyle'
 import { ScrollRegion } from './ScrollRegion'
 
@@ -81,7 +79,7 @@ const OBJECTIVE_CHOICES: ReadonlyArray<{ value: ObjectivePolicyId; label: string
   'bridge-durability',
 ].map((id) => ({ value: id as ObjectivePolicyId, label: objectivePolicies[id as ObjectivePolicyId].label }))
 
-function ageLabel(claim: Readonly<Record<string, number>>, ids: string[]): string {
+function ageLabel(claim: Readonly<Record<string, number>>, ids: readonly string[]): string {
   return ids.map((id) => claim[id]).join(' / ')
 }
 
@@ -136,7 +134,7 @@ export function SsAnalysisPage() {
   }
 
   const personName = (id: string) => plan.household.people.find((p) => p.id === id)?.name ?? id
-  const applyStrategy = (claim: Record<string, number>) =>
+  const applyStrategy = (claim: Readonly<Record<string, number>>) =>
     update((d) => {
       for (const s of d.incomes) {
         if (s.type === 'socialSecurity' && claim[s.personId] !== undefined) {
@@ -161,7 +159,7 @@ export function SsAnalysisPage() {
           </button>
         </div>
         {tab === 'plan' ? (
-          <InYourPlanTab personIds={people.map((p) => p.person.id)} personName={personName} applyStrategy={applyStrategy} />
+          <InYourPlanTab personName={personName} applyStrategy={applyStrategy} />
         ) : tab === 'benefits' ? (
           <BenefitsOnlyTab personIds={people.map((p) => p.person.id)} personName={personName} applyStrategy={applyStrategy} />
         ) : (
@@ -244,7 +242,9 @@ function BridgePanel() {
     .map((a) => ({ value: a.id, label: a.name }))
   const [fundingId, setFundingId] = useState<string>('')
   const funding = fundingOptions.find((o) => o.value === fundingId) ?? fundingOptions[0]
-  const [rows, setRows] = useState<BridgeComparisonRow[] | null>(null)
+  // Held with the plan it was computed for, like the sweep: an edit retires it.
+  const [rowsFor, setRowsFor] = useState<{ plan: typeof plan; rows: BridgeComparisonRow[] } | null>(null)
+  const rows = rowsFor !== null && rowsFor.plan === plan ? rowsFor.rows : null
   const [comparing, setComparing] = useState(false)
   const [compareError, setCompareError] = useState<string | null>(null)
 
@@ -288,17 +288,29 @@ function BridgePanel() {
       else d.incomeFloor = { ladders }
     })
 
+  // The earliest claim each bridged person can still make: 62, or the age
+  // reached this year when later (a claim at an age already passed would be
+  // backdated; socialSecurity/openClaims.ts, the claim-age searches' own test).
+  const earliestClaims = sized.map((s) => {
+    const person = plan.household.people.find((p) => p.id === s.personId)!
+    return { personId: s.personId, name: s.name, age: earliestOpenClaimAge(person, startYear) ?? 70 }
+  })
+  const earliestLabel = earliestClaims.every((c) => c.age === 62)
+    ? 'Claim at 62, no bridge'
+    : `Claim at the earliest age still open (${earliestClaims.map((c) => `${c.name} ${c.age}`).join(', ')}), no bridge`
+
   const runComparison = async () => {
+    const forPlan = plan
     setComparing(true)
     setCompareError(null)
     try {
       const claimEarly = planWithClaimAges(
         plan,
-        Object.fromEntries(sized.map((s) => [s.personId, 62])),
+        Object.fromEntries(earliestClaims.map((c) => [c.personId, c.age])),
       )
       const bridged = planWithBridge()
       const variants: Array<{ name: string; plan: typeof plan }> = [
-        { name: 'Claim at 62, no bridge', plan: claimEarly },
+        { name: earliestLabel, plan: claimEarly },
         { name: 'Current claim ages, no bridge', plan },
         { name: 'Current claim ages + TIPS bridge', plan: bridged },
       ]
@@ -320,7 +332,7 @@ function BridgePanel() {
           successRate: mc.successRate,
         })
       }
-      setRows(out)
+      setRowsFor({ plan: forPlan, rows: out })
     } catch (e) {
       setCompareError(e instanceof Error ? e.message : 'The comparison failed.')
     } finally {
@@ -382,7 +394,7 @@ function BridgePanel() {
           onClick={() => void runComparison()}
           disabled={comparing || !funding}
         >
-          {comparing ? 'Comparing…' : 'Compare vs claiming at 62'}
+          {comparing ? 'Comparing…' : earliestClaims.every((c) => c.age === 62) ? 'Compare vs claiming at 62' : 'Compare vs claiming at the earliest open age'}
         </button>
       </div>
       {!funding ? (
@@ -431,32 +443,52 @@ function BridgePanel() {
 interface TabProps {
   personIds: string[]
   personName: (id: string) => string
-  applyStrategy: (claim: Record<string, number>) => void
+  applyStrategy: (claim: Readonly<Record<string, number>>) => void
 }
 
-function currentClaim(plan: ReturnType<typeof usePlan>['plan'], ids: string[]): Record<string, number> {
-  const out: Record<string, number> = {}
-  for (const s of plan.incomes) {
-    if (s.type === 'socialSecurity' && ids.includes(s.personId)) out[s.personId] = s.claimAge.years
-  }
-  return out
+const fmtClaim = fmtClaimAge
+
+function claimsLabel(claim: Readonly<Record<string, ClaimAgeValue>>, ids: readonly string[]): string {
+  return ids.map((id) => fmtClaim(claim[id]!)).join(' / ')
 }
 
-function fmtClaim(c: MonthlyClaim): string {
-  return c.months > 0 ? `${c.years}y ${c.months}m` : `${c.years}`
+/**
+ * A signed dollar change whose sign follows the printed magnitude: "+$19k"
+ * in the positive colour, "−$68k" in the negative one, and a change that
+ * prints as $0 with no sign and no colour.
+ */
+function SignedMoney({ value }: { value: number }) {
+  const printed = fmtMoneyCompact(Math.abs(value))
+  if (printed === fmtMoneyCompact(0)) return <span>{printed}</span>
+  return <span className={value > 0 ? 'delta-pos' : 'delta-neg'}>{value > 0 ? '+' : '−'}{printed}</span>
 }
 
+/** An objective's own difference, signed the same way ("+1 yr", "+$2,519", "$0"). */
 function fmtObjectiveDelta(label: string, value: number): string {
-  const sign = value >= 0 ? '+' : ''
-  if (label.toLowerCase().includes('years')) return `${sign}${value} yr`
-  return `${sign}${fmtMoneyCompact(value)}`
+  if (label.toLowerCase().includes('years')) return `${value > 0 ? '+' : value < 0 ? '−' : ''}${Math.abs(value)} yr`
+  const printed = fmtMoneyCompact(Math.abs(value))
+  if (printed === fmtMoneyCompact(0)) return printed
+  return `${value > 0 ? '+' : '−'}${printed}`
 }
 
-function InYourPlanTab({ personIds, personName, applyStrategy }: TabProps) {
+
+/** What an objective's fallback rows lack: the years it ranks on. */
+function fallbackYearsNoun(objectiveId: ObjectivePolicyId): string {
+  return objectiveId === 'bridge-durability' ? 'bridge years' : 'survivor years'
+}
+
+function InYourPlanTab({ personName, applyStrategy }: Omit<TabProps, 'personIds'>) {
   const { plan, update } = usePlan()
   const readOnly = useWorkspaceReadOnly()
   const startYear = currentStartYear()
-  const [objectiveId, setObjectiveId] = useState<ObjectivePolicyId>('max-after-tax-estate')
+  const { result: baselineProjection } = useProjection(plan)
+  // Survivor liquidity ranks on the years exactly one spouse is alive; a plan
+  // with none (one adult, or both people reaching the plan's end) would be
+  // ranked by it on the estate alone, so it is not offered under its name.
+  const survivorYears = hasSurvivorYears(baselineProjection)
+  const objectiveChoices = OBJECTIVE_CHOICES.filter((c) => survivorYears || c.value !== 'protect-survivor-liquidity')
+  const [chosenObjectiveId, setObjectiveId] = useState<ObjectivePolicyId>('max-after-tax-estate')
+  const objectiveId = objectiveChoices.some((c) => c.value === chosenObjectiveId) ? chosenObjectiveId : 'max-after-tax-estate'
   /**
    * The sweep, off the render path.
    *
@@ -470,14 +502,11 @@ function InYourPlanTab({ personIds, personName, applyStrategy }: TabProps) {
   const [snapshot, setSnapshot] = useState<{
     plan: typeof plan
     objectiveId: ObjectivePolicyId
-    sweep: SweepResult | null
+    sweep: ClaimAgeSweep | null
     /**
-     * `sweep === null` has exactly one cause: the catch below. There is no
-     * "no eligible candidate" null here (that is an empty `rows`/`ranked` on
-     * a real `SweepResult`, handled by `sweepVerdict`), so the card used to
-     * call every one of these a plan-validation problem — which is only
-     * sometimes true; the other case is a bug in the sweep itself. This
-     * carries the caught error's own message so the card can say what
+     * `sweep === null` has exactly one cause: the catch below. A sweep that
+     * ranks nothing is a real `ClaimAgeSweep` whose verdict says why, so this
+     * carries the caught error's own message and the card can say what
      * actually happened instead of guessing.
      */
     sweepError: string | null
@@ -485,7 +514,12 @@ function InYourPlanTab({ personIds, personName, applyStrategy }: TabProps) {
   useEffect(() => {
     const timer = window.setTimeout(() => {
       try {
-        setSnapshot({ plan, objectiveId, sweep: sweepClaimingStrategies(plan, startYear, objectiveId), sweepError: null })
+        setSnapshot({
+          plan,
+          objectiveId,
+          sweep: sweepClaimAges(plan, { startYear, taxCalculator: taxCalculatorFor(plan), objectivePolicyId: objectiveId }),
+          sweepError: null,
+        })
       } catch (err) {
         // Logged the way the error boundaries above this tab do
         // (ShellErrorBoundary, RouteErrorBoundary), so this is never silent
@@ -501,22 +535,25 @@ function InYourPlanTab({ personIds, personName, applyStrategy }: TabProps) {
   }, [plan, startYear, objectiveId])
   const settled = snapshot !== null && snapshot.plan === plan && snapshot.objectiveId === objectiveId ? snapshot : null
   const sweep = settled?.sweep ?? null
-  const [mc, setMc] = useState<Record<string, number> | null>(null)
+  // The refinement and the robustness table are held, like the sweep, with the
+  // plan and ranking they were computed for: an edit or a ranking change
+  // retires them, so neither mixes two plans nor applies an old claim.
+  const [refinedFor, setRefinedFor] = useState<{ plan: typeof plan; objectiveId: ObjectivePolicyId; refinement: ClaimAgeRefinement } | null>(null)
+  const refinement = refinedFor !== null && refinedFor.plan === plan && refinedFor.objectiveId === objectiveId ? refinedFor.refinement : null
+  const [mcFor, setMcFor] = useState<{ plan: typeof plan; objectiveId: ObjectivePolicyId; rates: Record<string, number> } | null>(null)
+  const mc = mcFor !== null && mcFor.plan === plan && mcFor.objectiveId === objectiveId ? mcFor.rates : null
   const [mcRunning, setMcRunning] = useState(false)
-  const [mcError, setMcError] = useState<string | null>(null)
-  const [refined, setRefined] = useState<MonthlyRefinement | null>(null)
+  const [mcErrorFor, setMcErrorFor] = useState<{ plan: typeof plan; objectiveId: ObjectivePolicyId; message: string } | null>(null)
+  const mcError = mcErrorFor !== null && mcErrorFor.plan === plan && mcErrorFor.objectiveId === objectiveId ? mcErrorFor.message : null
 
   // Only the engine's winner is ever crowned (banner, Apply, refine, table and
   // heatmap highlights). A flat objective, a current claim that already leads,
-  // or no eligible candidate gets a note instead (#454).
-  const verdict = sweep === null ? null : sweepVerdict(sweep)
-  const best: SweepRow | undefined =
-    sweep !== null && verdict === 'winner' ? (sweep.winner ?? undefined) : undefined
-  const current = currentClaim(plan, personIds)
-  const currentRow = sweep?.rows.find((r) => personIds.every((id) => r.claimByPersonId[id] === current[id]))
-  const keyOf = (r: SweepRow) => personIds.map((id) => r.claimByPersonId[id]).join('-')
+  // or a refusal gets a note instead (#454).
+  const best = sweep?.verdict === 'winner' ? (sweep.winner ?? undefined) : undefined
+  const personIds = [...(sweep?.personIds ?? [])]
+  const keyOf = (r: { claimByPersonId: Readonly<Record<string, number>> }) => personIds.map((id) => r.claimByPersonId[id]).join('-')
 
-  const applyMonthly = (claim: Record<string, MonthlyClaim>) =>
+  const applyMonthly = (claim: Readonly<Record<string, ClaimAgeValue>>) =>
     update((d) => {
       for (const s of d.incomes) {
         if (s.type === 'socialSecurity' && claim[s.personId] !== undefined) s.claimAge = { ...claim[s.personId]! }
@@ -525,47 +562,54 @@ function InYourPlanTab({ personIds, personName, applyStrategy }: TabProps) {
 
   const runRobustness = async () => {
     if (sweep === null) return
+    const forPlan = plan
+    const forObjective = objectiveId
     setMcRunning(true)
-    setMcError(null)
+    setMcErrorFor(null)
     try {
       const top = sweep.ranked.slice(0, 5)
       const out: Record<string, number> = {}
       for (const row of top) {
-        const candidate = planWithClaimAges(plan, row.claimByPersonId)
+        const candidate = planWithClaimAges(forPlan, row.claimByPersonId)
         const summary = await runMonteCarlo(candidate, {
           startYear,
           pathCount: 500,
-          seed: seedFromPlanId(plan.id),
-          model: { type: 'lognormal', inflationMeanPct: plan.assumptions.inflationPct },
+          seed: seedFromPlanId(forPlan.id),
+          model: { type: 'lognormal', inflationMeanPct: forPlan.assumptions.inflationPct },
         })
         out[keyOf(row)] = summary.successRate
       }
-      setMc(out)
+      setMcFor({ plan: forPlan, objectiveId: forObjective, rates: out })
     } catch (e: unknown) {
-      setMcError(e instanceof Error ? e.message : String(e))
+      setMcErrorFor({ plan: forPlan, objectiveId: forObjective, message: e instanceof Error ? e.message : String(e) })
     } finally {
       setMcRunning(false)
     }
   }
 
+  const objectiveLabel = objectivePolicies[objectiveId].label.toLowerCase()
   // The header stays on screen in every state, so the ranking can be changed
   // while the previous one is still being swept.
   const header = (
     <>
       <p className="card-hint">
-        Each claim-age combination is run through your full plan: taxes, Roth conversions, IRMAA, ACA, and RMDs
-        included, and ranked by the objective you choose{' '}
-        <HelpTip text="Ending net worth minus the income tax heirs owe on inherited pre-tax (traditional) balances, at the heir tax rate in Assumptions. This is the deterministic, single-planning-age view; the Benefits-only tab adds the mortality-weighted insurance angle." />.
-        Results assume your expected returns; use the robustness check to see how the ranking holds up across markets.
+        Each whole-year claim-age combination, from 62 (or the age reached this year, if later) to 70, is run through your full plan:
+        taxes, Roth conversions, IRMAA, ACA, and RMDs included, and ranked by the objective you choose{' '}
+        <HelpTip text="Ending net worth minus the income tax heirs owe on inherited pre-tax (traditional) balances, at the heir tax rate in Assumptions, in dollars of the plan's last year. This is the deterministic, single-planning-age view; the Benefits-only tab adds the mortality-weighted insurance angle." />.
+        Your plan's own Roth conversion strategy stays as it is for every claim age: a bracket fill resizes itself, a
+        fixed schedule does not. The Optimize page's claim-age option searches differently. It re-optimizes the
+        conversions, but tries only 62, full retirement age and 70, one person at a time, compares on after-tax
+        estate alone and needs a $1,000 margin, so the two pages can pick different ages. Results assume your expected
+        returns; use the robustness check to see how the ranking holds up across markets.
       </p>
       <div className="form-grid" style={{ marginBottom: '0.75rem', maxWidth: '26rem' }}>
         <div className="field-span-full">
         <SelectField
           label="Rank claim ages by"
-          help="Every whole-year Social Security claim-age candidate is evaluated on your full year-by-year projection, then those same evaluations are re-ranked by this objective."
+          help="Every whole-year Social Security claim-age candidate is evaluated on your full year-by-year projection, then those same evaluations are re-ranked by this objective. Survivor liquidity is offered only when your plan has years with one spouse surviving."
           hint={objectivePolicies[objectiveId].description}
           value={objectiveId}
-          options={OBJECTIVE_CHOICES}
+          options={objectiveChoices}
           onCommit={setObjectiveId}
         />
         </div>
@@ -580,12 +624,12 @@ function InYourPlanTab({ personIds, personName, applyStrategy }: TabProps) {
         {settled === null ? (
           <div className="skeleton" style={{ height: '12rem' }} aria-label="Comparing claim ages" />
         ) : (
-          // sweep === null here is always the catch above, never "no eligible
-          // candidate" (that is a real SweepResult with empty rows). The copy
-          // stays neutral about the cause — it can be a plan combination the
-          // sweep does not handle, or a bug — rather than telling the household
-          // this is a validation problem they should go find on the Enter
-          // screens (#598).
+          // sweep === null here is always the catch above, never a refusal
+          // (that is a real ClaimAgeSweep with its verdict). The copy stays
+          // neutral about the cause — it can be a plan combination the sweep
+          // does not handle, or a bug — rather than telling the household this
+          // is a validation problem they should go find on the Enter screens
+          // (#598).
           <div className="callout callout--warn" role="alert">
             <p>
               The claim-age comparison hit an error and could not run. The rest of the planner is unaffected.
@@ -599,22 +643,63 @@ function InYourPlanTab({ personIds, personName, applyStrategy }: TabProps) {
     )
   }
 
+  const current = sweep.current
+  const fallbackRows = sweep.rows.filter((r) => r.rankedOn !== 'objective').length
+  const planHasNoFallbackYears = sweep.rows.some((r) => r.rankedOn === 'estate-fallback-plan')
+  // The ranking is refused (no row eligible, or an unpriced credit), so its
+  // order is not a ranking to check for robustness (L6).
+  const ranksRows = sweep.verdict === 'winner' || sweep.verdict === 'current-best' || sweep.verdict === 'flat'
+  const heldDisability =
+    sweep.disabilityPersonIds.length > 0 && sweep.rows.length > 0 ? (
+      <p className="card-hint" data-sweep-held="disability">
+        {sweep.disabilityPersonIds.map((id) => `${disabilityNote(personName(id))} It stays as your plan pays it in every claim age below.`).join(' ')}
+      </p>
+    ) : null
+  const heldFixed =
+    sweep.alreadyClaimed.length > 0 && sweep.personIds.length > 0 && sweep.rows.length > 0 ? (
+      <p className="card-hint">
+        {alreadyClaimedText(sweep.alreadyClaimed, personName)}, before the plan starts in {startYear}, so{' '}
+        {sweep.alreadyClaimed.length === 1 ? 'that claim is' : 'those claims are'} held as they are in every claim age
+        below.
+      </p>
+    ) : null
+
   return (
     <div>
       {header}
 
-      {verdict === 'flat' || verdict === 'current-best' || verdict === 'ineligible' ? (
+      {sweep.verdict === 'already-claimed' ? (
         <div className="callout callout--note" role="note">
-          {verdict === 'flat' ? (
+          <strong>Every claim here is already made.</strong> {alreadyClaimedText(sweep.alreadyClaimed, personName)},
+          before the plan starts in {startYear}, so there is no claim age left to compare. {ALREADY_CLAIMED_LIMITS}
+        </div>
+      ) : sweep.verdict === 'disability' ? (
+        <div className="callout callout--note" role="note" data-sweep-refusal="disability">
+          {sweep.disabilityPersonIds.map((id) => disabilityNote(personName(id))).join(' ')}
+          {sweep.alreadyClaimed.length > 0
+            ? ` ${alreadyClaimedText(sweep.alreadyClaimed, personName)}, before the plan starts in ${startYear}, so no claim age is left to compare there either.`
+            : ''}
+        </div>
+      ) : sweep.verdict === 'empty' ? (
+        <div className="callout callout--note" role="note">
+          No Social Security claim with a benefit to compare.
+        </div>
+      ) : sweep.verdict === 'aca-unpriced' ? (
+        <div className="callout callout--note" role="note">
+          <strong>No claim age is ranked.</strong> {claimAgeUnpricedCreditReason(sweep.unpricedAca)} The table below
+          shows each claim age without the credit in those years.
+        </div>
+      ) : sweep.verdict === 'flat' || sweep.verdict === 'current-best' || sweep.verdict === 'ineligible' ? (
+        <div className="callout callout--note" role="note">
+          {sweep.verdict === 'flat' ? (
             <>
-              <strong>No best claim age to recommend.</strong> Every claim age scores the same on{' '}
-              {objectivePolicies[objectiveId].label.toLowerCase()}, so this ranking cannot separate them. Try another
-              ranking, or compare the claim ages in the table below.
+              <strong>No best claim age to recommend.</strong> Every claim age scores the same on {objectiveLabel}, so
+              this ranking cannot separate them. Try another ranking, or compare the claim ages in the table below.
             </>
-          ) : verdict === 'current-best' ? (
+          ) : sweep.verdict === 'current-best' ? (
             <>
               <strong>Your current claim age already leads.</strong> No other claim age improves on it by{' '}
-              {objectivePolicies[objectiveId].label.toLowerCase()}; the table below shows how the others compare.
+              {objectiveLabel}; the table below shows how the others compare.
             </>
           ) : (
             <>
@@ -623,30 +708,41 @@ function InYourPlanTab({ personIds, personName, applyStrategy }: TabProps) {
             </>
           )}
         </div>
-      ) : best ? (
+      ) : best && current ? (
         <div className="callout callout--info">
-          <strong>Best by {objectivePolicies[objectiveId].label.toLowerCase()}: claim at {ageLabel(best.claimByPersonId, personIds)}</strong>
+          <strong>Best by {objectiveLabel}: claim at {ageLabel(best.claimByPersonId, personIds)}</strong>
           {personIds.length === 2 ? ` (${personIds.map(personName).join(' / ')})` : ''}, after-tax estate{' '}
-          {fmtMoneyCompact(best.summary.endingAfterTaxEstate)}
-          {currentRow && keyOf(currentRow) !== keyOf(best) ? (
+          {fmtMoneyCompact(best.endingAfterTaxEstate)}
+          {!best.isCurrent ? (
             <>
               {' '}
-              vs {fmtMoneyCompact(currentRow.summary.endingAfterTaxEstate)} at your current{' '}
-              {ageLabel(current, personIds)} (
-              <span className="delta-pos">
-                +{fmtMoneyCompact(best.summary.endingAfterTaxEstate - currentRow.summary.endingAfterTaxEstate)}
-              </span>
-              ).
+              vs {fmtMoneyCompact(current.endingAfterTaxEstate)} at your current{' '}
+              {claimsLabel(current.claimByPersonId, personIds)} (<SignedMoney value={sweep.winnerEstateChangeVsCurrent!} />
+              ), in {sweep.estateYear} dollars.
             </>
-          ) : ', your current choice.'}
+          ) : `, your current choice (${sweep.estateYear} dollars).`}
           {objectiveId !== 'max-after-tax-estate' ? (
-            <>
-              {' '}
-              Ranked on {sweep.primaryMetricLabel.toLowerCase()} ({fmtObjectiveDelta(sweep.primaryMetricLabel, best.primaryValue)} vs current);
-              estate is shown for context.
-            </>
+            best.rankedOn === 'estate-fallback-plan' ? (
+              <>
+                {' '}
+                Your plan as entered has no {fallbackYearsNoun(objectiveId)} to compare against, so this claim age was
+                ranked on the after-tax estate change ({fmtObjectiveDelta('estate', best.primaryValue)} vs current).
+              </>
+            ) : best.rankedOn === 'estate-fallback-row' ? (
+              <>
+                {' '}
+                This claim age leaves no {fallbackYearsNoun(objectiveId)}, so it was ranked on the after-tax estate
+                change ({fmtObjectiveDelta('estate', best.primaryValue)} vs current).
+              </>
+            ) : (
+              <>
+                {' '}
+                Ranked on {sweep.primaryMetricLabel.toLowerCase()} ({fmtObjectiveDelta(sweep.primaryMetricLabel, best.primaryValue)} vs current);
+                estate is shown for context.
+              </>
+            )
           ) : null}
-          {best && keyOf(best) !== keyOf(currentRow ?? best) ? (
+          {!best.isCurrent ? (
             <div style={{ marginTop: '0.6rem' }}>
               <button type="button" className="btn btn-primary btn-small" disabled={readOnly} onClick={() => applyStrategy(best.claimByPersonId)}>
                 Apply {ageLabel(best.claimByPersonId, personIds)}
@@ -656,29 +752,53 @@ function InYourPlanTab({ personIds, personName, applyStrategy }: TabProps) {
         </div>
       ) : null}
 
+      {heldFixed}
+      {heldDisability}
+
+      {fallbackRows > 0 && sweep.rows.length > 0 ? (
+        <p className="card-hint" data-ranked-on={planHasNoFallbackYears ? 'estate-fallback-plan' : 'estate-fallback-row'}>
+          {planHasNoFallbackYears
+            ? `Your plan as entered has no ${fallbackYearsNoun(objectiveId)} to compare against, so this ranking compares every claim age on the after-tax estate change.`
+            : fallbackRows === sweep.rows.length
+              ? `None of these claim ages leaves ${fallbackYearsNoun(objectiveId)} to rank on, so this ranking compares them on the after-tax estate change.`
+              : `${fallbackRows} of the ${sweep.rows.length} claim ages leave no ${fallbackYearsNoun(objectiveId)}, so this ranking compares those on the after-tax estate change, and the rest on the lowest balance in those years.`}
+        </p>
+      ) : null}
+
       {personIds.length === 2 ? <CoupleStrategyPanel personName={personName} best={best} /> : null}
 
-      {personIds.length === 1 ? (
-        <SingleSweepTable personIds={personIds} sweep={sweep} current={current} applyStrategy={applyStrategy} />
+      {sweep.rows.length === 0 ? null : personIds.length === 1 ? (
+        <SingleSweepTable sweep={sweep} applyStrategy={applyStrategy} />
       ) : (
         <>
           <a className="skip-link" href="#ss-claim-age-heatmap-actions">
             Skip claim-age choices
           </a>
-          <CoupleHeatmap personIds={personIds} personName={personName} sweep={sweep} current={current} applyStrategy={applyStrategy} />
+          <CoupleHeatmap personName={personName} sweep={sweep} applyStrategy={applyStrategy} />
         </>
       )}
 
-      <div id="ss-claim-age-heatmap-actions" className="add-row mt-md">
-        {best ? (
-          <button type="button" className="btn btn-secondary btn-small" onClick={() => setRefined(refineClaimingMonthly(plan, best.claimByPersonId, startYear))}>
-            Refine to the month
-          </button>
-        ) : null}
-        <button type="button" className="btn btn-secondary btn-small" disabled={mcRunning} onClick={() => void runRobustness()}>
-          {mcRunning ? 'Running…' : 'Check robustness (Monte Carlo, top 5)'}
-        </button>
-      </div>
+      {sweep.rows.length > 0 ? (
+        <div id="ss-claim-age-heatmap-actions" className="add-row mt-md">
+          {best ? (
+            <button
+              type="button"
+              className="btn btn-secondary btn-small"
+              onClick={() => {
+                const result = refineClaimAgeMonthly(plan, sweep, { startYear, taxCalculator: taxCalculatorFor(plan) })
+                if (result !== null) setRefinedFor({ plan, objectiveId, refinement: result })
+              }}
+            >
+              Refine to the month
+            </button>
+          ) : null}
+          {ranksRows ? (
+            <button type="button" className="btn btn-secondary btn-small" disabled={mcRunning} onClick={() => void runRobustness()}>
+              {mcRunning ? 'Running…' : 'Check robustness (Monte Carlo, top 5)'}
+            </button>
+          ) : null}
+        </div>
+      ) : null}
       {mcError ? (
         <div className="error-recovery" role="alert">
           <p className="error-text">Robustness check error: {mcError}</p>
@@ -688,22 +808,30 @@ function InYourPlanTab({ personIds, personName, applyStrategy }: TabProps) {
         </div>
       ) : null}
 
-      {refined && best ? (
+      {refinement && best ? (
         <div className="callout callout--info mt-ms">
-          <strong>To the month: claim at {personIds.map((id) => fmtClaim(refined.claimByPersonId[id]!)).join(' / ')}</strong>
-          {personIds.length === 2 ? ` (${personIds.map(personName).join(' / ')})` : ''}, after-tax estate{' '}
-          {fmtMoneyCompact(refined.summary.endingAfterTaxEstate)}
-          {refined.summary.endingAfterTaxEstate > best.summary.endingAfterTaxEstate ? (
+          {refinement.moved ? (
             <>
-              {' '}
-              (<span className="delta-pos">+{fmtMoneyCompact(refined.summary.endingAfterTaxEstate - best.summary.endingAfterTaxEstate)}</span>{' '}
-              over the whole-year pick).
+              <strong>To the month: claim at {claimsLabel(refinement.claimByPersonId, personIds)}</strong>
+              {personIds.length === 2 ? ` (${personIds.map(personName).join(' / ')})` : ''}, after-tax estate{' '}
+              {fmtMoneyCompact(refinement.endingAfterTaxEstate)} (<SignedMoney value={refinement.estateChangeVsWinner} /> over
+              the whole-year pick
+              {objectiveId !== 'max-after-tax-estate'
+                ? `; ${fmtObjectiveDelta(sweep.primaryMetricLabel, refinement.primaryChangeVsWinner)} on ${sweep.primaryMetricLabel.toLowerCase()}`
+                : ''}
+              ), in {sweep.estateYear} dollars.
             </>
-          ) : '. The whole-year pick is already optimal to the month.'}
-          {personIds.some((id) => refined.claimByPersonId[id]!.months > 0) ? (
+          ) : (
+            <>
+              <strong>No month within a year of the whole-year pick ranks higher</strong> on {objectiveLabel}: each
+              claim month from a year below to a year above {ageLabel(best.claimByPersonId, personIds)} was tried, one
+              person at a time, and none improved on it while meeting this ranking's constraints.
+            </>
+          )}
+          {personIds.some((id) => refinement.claimByPersonId[id]!.months > 0) ? (
             <div style={{ marginTop: '0.6rem' }}>
-              <button type="button" className="btn btn-primary btn-small" disabled={readOnly} onClick={() => applyMonthly(refined.claimByPersonId)}>
-                Apply {personIds.map((id) => fmtClaim(refined.claimByPersonId[id]!)).join(' / ')}
+              <button type="button" className="btn btn-primary btn-small" disabled={readOnly} onClick={() => applyMonthly(refinement.claimByPersonId)}>
+                Apply {claimsLabel(refinement.claimByPersonId, personIds)}
               </button>
             </div>
           ) : null}
@@ -722,7 +850,7 @@ function InYourPlanTab({ personIds, personName, applyStrategy }: TabProps) {
             {sweep.ranked.slice(0, 5).map((r) => (
               <tr key={keyOf(r)}>
                 <td>{ageLabel(r.claimByPersonId, personIds)}</td>
-                <td>{fmtMoneyCompact(r.summary.endingAfterTaxEstate)}</td>
+                <td>{fmtMoneyCompact(r.endingAfterTaxEstate)}</td>
                 <td>{mc[keyOf(r)] !== undefined ? `${Math.round(mc[keyOf(r)]! * 100)}%` : '—'}</td>
               </tr>
             ))}
@@ -736,9 +864,11 @@ function InYourPlanTab({ personIds, personName, applyStrategy }: TabProps) {
 /**
  * Couple primer beside the heatmap: which spouse has the higher benefit, why
  * survivor protection usually argues for delaying that one, and whether the
- * recommended strategy follows the common "lower earlier / higher later" pattern.
+ * recommended strategy follows the common "lower earlier / higher later"
+ * pattern. It credits the ranking only to the objective chosen: the pattern
+ * is described, never given as the ranking's reason.
  */
-function CoupleStrategyPanel({ personName, best }: { personName: (id: string) => string; best?: SweepRow }) {
+function CoupleStrategyPanel({ personName, best }: { personName: (id: string) => string; best?: ClaimAgeSweepRow }) {
   const { plan } = usePlan()
   const people = claimingPeople(plan)
   if (people.length !== 2) return null
@@ -758,15 +888,15 @@ function CoupleStrategyPanel({ personName, best }: { personName: (id: string) =>
           <>
             {' '}
             The top-ranked strategy above follows the common pattern: <strong>{lowerName}</strong> claims at{' '}
-            {lowerClaim} and <strong>{higherName}</strong> delays to {higherClaim}, locking in the larger survivor
-            check.
+            {lowerClaim} and <strong>{higherName}</strong> at {higherClaim}, which also keeps the larger check for the
+            survivor. It ranks first on the objective you chose, not on survivor protection alone.
           </>
         ) : (
           <>
             {' '}
             Here the top-ranked strategy has <strong>{higherName}</strong> ({higherClaim}) claim before{' '}
-            <strong>{lowerName}</strong> ({lowerClaim}), because taxes, longevity, or portfolio assumptions outweigh
-            the usual survivor-protection delay.
+            <strong>{lowerName}</strong> ({lowerClaim}), the reverse of the common pattern: on the objective you chose,
+            this plan's taxes and balances rank it first.
           </>
         )
     }
@@ -793,18 +923,14 @@ function CoupleStrategyPanel({ personName, best }: { personName: (id: string) =>
 }
 
 function SingleSweepTable({
-  personIds,
   sweep,
-  current,
   applyStrategy,
 }: {
-  personIds: string[]
-  sweep: ReturnType<typeof sweepClaimingStrategies>
-  current: Record<string, number>
-  applyStrategy: (claim: Record<string, number>) => void
+  sweep: ClaimAgeSweep
+  applyStrategy: (claim: Readonly<Record<string, number>>) => void
 }) {
   const readOnly = useWorkspaceReadOnly()
-  const id = personIds[0]!
+  const id = sweep.personIds[0]!
   const byAge = [...sweep.rows].sort((a, b) => a.claimByPersonId[id]! - b.claimByPersonId[id]!)
   const bestKey = sweep.winner?.claimByPersonId[id] ?? null
   return (
@@ -823,16 +949,16 @@ function SingleSweepTable({
           {byAge.map((r) => {
             const age = r.claimByPersonId[id]
             return (
-              <tr key={age} className={(age === bestKey ? 'claim-row--best ' : '') + (age === current[id] ? 'claim-row--current' : '')}>
+              <tr key={age} className={(age === bestKey ? 'claim-row--best ' : '') + (r.isCurrent ? 'claim-row--current' : '')}>
                 <td>{age}</td>
-                <td>{fmtMoneyCompact(r.summary.endingAfterTaxEstate)}</td>
-                <td>{fmtMoneyCompact(r.summary.lifetimeTaxesAndPenalties)}</td>
-                <td>{r.summary.depletionYear ?? 'never'}</td>
+                <td>{fmtMoneyCompact(r.endingAfterTaxEstate)}</td>
+                <td>{fmtMoneyCompact(r.lifetimeTaxesAndPenalties)}</td>
+                <td>{r.depletionYear ?? 'never'}</td>
                 <td>
                   <button
                     type="button"
                     className="btn btn-secondary btn-small"
-                    disabled={age === current[id] || readOnly}
+                    disabled={r.isCurrent || readOnly}
                     onClick={() => applyStrategy(r.claimByPersonId)}
                   >
                     Use
@@ -848,27 +974,32 @@ function SingleSweepTable({
 }
 
 function CoupleHeatmap({
-  personIds,
   personName,
   sweep,
-  current,
   applyStrategy,
 }: {
-  personIds: string[]
   personName: (id: string) => string
-  sweep: ReturnType<typeof sweepClaimingStrategies>
-  current: Record<string, number>
-  applyStrategy: (claim: Record<string, number>) => void
+  sweep: ClaimAgeSweep
+  applyStrategy: (claim: Readonly<Record<string, number>>) => void
 }) {
-  const { plan } = usePlan()
   const readOnly = useWorkspaceReadOnly()
-  const rowId = personIds[0]!
-  const colId = personIds[1]!
-  const rowAges = candidateClaimAges(plan.household.people.find((p) => p.id === rowId)!, currentStartYear())
-  const colAges = candidateClaimAges(plan.household.people.find((p) => p.id === colId)!, currentStartYear())
-  const estate = (ra: number, ca: number) =>
-    sweep.rows.find((r) => r.claimByPersonId[rowId] === ra && r.claimByPersonId[colId] === ca)?.summary.endingAfterTaxEstate ?? 0
-  const values = sweep.rows.map((r) => r.summary.endingAfterTaxEstate)
+  const rowId = sweep.personIds[0]!
+  const colId = sweep.personIds[1]!
+  // The axes are the ages the engine swept, so every cell names a row it ran.
+  const rowAges = sweep.agesByPersonId[rowId] ?? []
+  const colAges = sweep.agesByPersonId[colId] ?? []
+  const byKey = new Map(sweep.rows.map((r) => [`${r.claimByPersonId[rowId]}-${r.claimByPersonId[colId]}`, r]))
+  const missing = rowAges.flatMap((ra) => colAges.filter((ca) => !byKey.has(`${ra}-${ca}`)).map((ca) => `${ra} / ${ca}`))
+  if (missing.length > 0) {
+    // A cell with no row is a bug in the sweep, never a $0 estate.
+    return (
+      <div className="callout callout--warn" role="alert">
+        The claim-age comparison is missing {missing.length === 1 ? 'a combination' : `${missing.length} combinations`} (
+        {missing.join(', ')}), so the heatmap is not shown. That points to a bug rather than something you entered.
+      </div>
+    )
+  }
+  const values = sweep.rows.map((r) => r.endingAfterTaxEstate)
   const min = Math.min(...values)
   const max = Math.max(...values)
   const norm = (v: number) => (max > min ? (v - min) / (max - min) : 1)
@@ -895,9 +1026,10 @@ function CoupleHeatmap({
               <tr key={ra}>
                 <th scope="row">{ra}</th>
                 {colAges.map((ca) => {
-                  const v = estate(ra, ca)
+                  const row = byKey.get(`${ra}-${ca}`)!
+                  const v = row.endingAfterTaxEstate
                   const isBest = `${ra}-${ca}` === bestKey
-                  const isCurrent = current[rowId] === ra && current[colId] === ca
+                  const isCurrent = row.isCurrent
                   const actionLabel = `Apply claim ages: ${personName(rowId)} at ${ra}, ${personName(colId)} at ${ca}; after-tax estate ${fmtMoneyCompact(v)}${isCurrent ? ', current plan selection' : ''}${isBest ? ', best strategy' : ''}`
                   const tooltip = `${personName(rowId)} ${ra} / ${personName(colId)} ${ca}: ${fmtMoneyCompact(v)}${isCurrent ? ' (current)' : ''}${isBest ? ' (best)' : ''}`
                   return (
@@ -1066,6 +1198,30 @@ function disabilityNote(name: string): string {
   return `${name}'s benefit is a disability benefit, paid from the onset of the disability rather than from a claim age, so there is no claim age to compare here.`
 }
 
+/**
+ * The benefits-only ranking's refusal when a claimant's benefit is a
+ * disability benefit: it names each such person as the cause and, for a
+ * couple whose other claim is an ordinary one, gives the ranking's own reason
+ * for leaving that claim unranked too: it prices the couple's claims as pairs
+ * of claim ages and cannot place a disability benefit on that grid. (The
+ * In-your-plan sweep holds the disability benefit and ranks the other claim.)
+ */
+function benefitsOnlyDisabilityRefusal(
+  disabilityPersonIds: readonly string[],
+  claimantIds: readonly string[],
+  personName: (id: string) => string,
+): string {
+  const others = claimantIds.filter((id) => !disabilityPersonIds.includes(id))
+  return [
+    ...disabilityPersonIds.map((id) => disabilityNote(personName(id))),
+    ...(others.length > 0
+      ? [
+          `This ranking prices the couple's claims as pairs of claim ages and cannot place a disability benefit on that grid, so it ranks no claim age for ${others.map(personName).join(' or ')} either.`,
+        ]
+      : []),
+  ].join(' ')
+}
+
 /** Whole-year ages in words: runs of consecutive ages as "62 to 66", the rest listed with "or". */
 function ageListText(ages: readonly number[]): string {
   const runs: string[] = []
@@ -1112,6 +1268,14 @@ function EarningsTestNotice({
   )
 }
 
+function currentClaim(plan: ReturnType<typeof usePlan>['plan'], ids: readonly string[]): Record<string, number> {
+  const out: Record<string, number> = {}
+  for (const s of plan.incomes) {
+    if (s.type === 'socialSecurity' && ids.includes(s.personId)) out[s.personId] = s.claimAge.years
+  }
+  return out
+}
+
 function BenefitsOnlyTab({ personIds, personName, applyStrategy }: TabProps) {
   const { plan } = usePlan()
   const readOnly = useWorkspaceReadOnly()
@@ -1120,20 +1284,23 @@ function BenefitsOnlyTab({ personIds, personName, applyStrategy }: TabProps) {
     () => benefitsOnlyRanking(plan, discountPct / 100, currentStartYear()),
     [plan, discountPct],
   )
+  // The ranking's own people: its open claims (a claim already made is held
+  // at its own age and not ranked).
+  const rankedIds = ranking.personIds
   const best = ranking.ranked[0]
-  const current = currentClaim(plan, personIds)
-  const keyOf = (claim: Readonly<Record<string, number>>) => personIds.map((id) => claim[id]).join('-')
+  const current = currentClaim(plan, [...rankedIds])
+  const keyOf = (claim: Readonly<Record<string, number>>) => rankedIds.map((id) => claim[id]).join('-')
   // The ranking prices a living ex's record only for a claimant living alone:
   // a couple's model does not read former-spouse records, and a lone claimant
   // in a two-person household is not single. The note is shown only when the
   // record is priced.
   const rankingPricesDivorcedRecord =
     plan.household.people.length === 1 &&
-    personIds.length === 1 &&
+    rankedIds.length === 1 &&
     plan.incomes.some(
       (s) =>
         s.type === 'socialSecurity' &&
-        s.personId === personIds[0] &&
+        s.personId === rankedIds[0] &&
         (s.formerSpouses ?? []).some((r) => r.relationship === 'divorced'),
     )
 
@@ -1191,18 +1358,30 @@ function BenefitsOnlyTab({ personIds, personName, applyStrategy }: TabProps) {
       ) : null}
 
       {ranking.disabilityPersonIds.length > 0 ? (
-        <p className="card-hint">{ranking.disabilityPersonIds.map((id) => disabilityNote(personName(id))).join(' ')}</p>
+        <p className="card-hint" data-benefits-only-refusal="disability">
+          {benefitsOnlyDisabilityRefusal(ranking.disabilityPersonIds, personIds, personName)}
+        </p>
+      ) : null}
+
+      {ranking.alreadyClaimed.length > 0 && ranking.disabilityPersonIds.length === 0 ? (
+        <div className="callout callout--note" role="note">
+          {rankedIds.length === 0 ? <strong>Every claim here is already made. </strong> : null}
+          {alreadyClaimedText(ranking.alreadyClaimed, personName)}, before the plan starts in {currentStartYear()}
+          {rankedIds.length === 0
+            ? `, so there is no claim age left to compare. ${ALREADY_CLAIMED_LIMITS}`
+            : `, so ${ranking.alreadyClaimed.length === 1 ? 'that claim is' : 'those claims are'} held as they are below.`}
+        </div>
       ) : null}
 
       {best ? (
         <div className="callout callout--info">
-          <strong>Highest expected value: claim at {ageLabel(best.claimByPersonId, personIds)}</strong>
-          {personIds.length === 2 ? ` (${personIds.map(personName).join(' / ')})` : ''}, expected PV{' '}
+          <strong>Highest expected value: claim at {ageLabel(best.claimByPersonId, rankedIds)}</strong>
+          {rankedIds.length === 2 ? ` (${rankedIds.map(personName).join(' / ')})` : ''}, expected PV{' '}
           {fmtMoneyCompact(best.expectedPv)}.
           {keyOf(best.claimByPersonId) !== keyOf(current) ? (
             <div style={{ marginTop: '0.6rem' }}>
               <button type="button" className="btn btn-primary btn-small" disabled={readOnly} onClick={() => applyStrategy({ ...best.claimByPersonId })}>
-                Apply {ageLabel(best.claimByPersonId, personIds)}
+                Apply {ageLabel(best.claimByPersonId, rankedIds)}
               </button>
             </div>
           ) : null}
@@ -1214,7 +1393,7 @@ function BenefitsOnlyTab({ personIds, personName, applyStrategy }: TabProps) {
           <table className="claim-table">
             <thead>
               <tr>
-                <th scope="col">Claim age{personIds.length === 2 ? 's' : ''}</th>
+                <th scope="col">Claim age{rankedIds.length === 2 ? 's' : ''}</th>
                 <th scope="col">Expected PV</th>
                 <th scope="col" aria-label="apply" />
               </tr>
@@ -1224,7 +1403,7 @@ function BenefitsOnlyTab({ personIds, personName, applyStrategy }: TabProps) {
                 const isCurrent = keyOf(r.claimByPersonId) === keyOf(current)
                 return (
                   <tr key={keyOf(r.claimByPersonId)} className={isCurrent ? 'claim-row--current' : undefined}>
-                    <td>{ageLabel(r.claimByPersonId, personIds)}</td>
+                    <td>{ageLabel(r.claimByPersonId, rankedIds)}</td>
                     <td>{fmtMoneyCompact(r.expectedPv)}</td>
                     <td>
                       <button type="button" className="btn btn-secondary btn-small" disabled={isCurrent || readOnly} onClick={() => applyStrategy({ ...r.claimByPersonId })}>

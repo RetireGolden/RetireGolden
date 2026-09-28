@@ -4128,332 +4128,6 @@
     "reasonKind": "runtime-diagnostic"
   },
   {
-    "source": "planner-ui/src/planner/ssAnalysis.ts",
-    "owner": "SweepRow",
-    "field": "primaryValue",
-    "tsType": "number",
-    "disposition": "family",
-    "familyId": "social-security-claiming-sweep-objective"
-  },
-  {
-    "source": "planner-ui/src/planner/ssAnalysis.ts",
-    "owner": "MonthlyClaim",
-    "field": "years",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reasonKind": "dimension-coordinate",
-    "reason": "Whole-year part of a month-granular claim age; a coordinate."
-  },
-  {
-    "source": "planner-ui/src/planner/ssAnalysis.ts",
-    "owner": "MonthlyClaim",
-    "field": "months",
-    "tsType": "number",
-    "disposition": "family",
-    "familyId": "social-security-claiming-sweep-objective"
-  },
-  {
-    "source": "planner-ui/src/planner/survivorAnalysis.ts",
-    "owner": "SurvivorAnalysisOptions",
-    "field": "startYear",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "The SurvivorAnalysisOptions.startYear field is a coordinate such as year, age, or offset used to place another value.",
-    "reasonKind": "dimension-coordinate"
-  },
-  {
-    "source": "planner-ui/src/planner/survivorAnalysis.ts",
-    "owner": "SurvivorAnalysisOptions",
-    "field": "deathAges",
-    "tsType": "number[]",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "The SurvivorAnalysisOptions.deathAges field is a coordinate such as year, age, or offset used to place another value.",
-    "reasonKind": "dimension-coordinate"
-  },
-  {
-    "source": "planner-ui/src/planner/survivorAnalysis.ts",
-    "owner": "FilingSegment",
-    "field": "fromYear",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reasonKind": "dimension-coordinate",
-    "reason": "First year of a filing-status run in the survivor timeline chip."
-  },
-  {
-    "source": "planner-ui/src/planner/survivorAnalysis.ts",
-    "owner": "FilingSegment",
-    "field": "toYear",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reasonKind": "dimension-coordinate",
-    "reason": "Last year of a filing-status run in the survivor timeline chip."
-  },
-  {
-    "source": "planner-ui/src/planner/survivorAnalysis.ts",
-    "owner": "SurvivorYearFacts",
-    "field": "year",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "The SurvivorYearFacts.year field is a coordinate such as year, age, or offset used to place another value.",
-    "reasonKind": "dimension-coordinate"
-  },
-  {
-    "source": "planner-ui/src/planner/survivorAnalysis.ts",
-    "owner": "SurvivorYearFacts",
-    "field": "magi",
-    "tsType": "number",
-    "disposition": "family",
-    "familyId": "magi-annual"
-  },
-  {
-    "source": "planner-ui/src/planner/survivorAnalysis.ts",
-    "owner": "SurvivorYearFacts",
-    "field": "tax",
-    "tsType": "number",
-    "disposition": "family",
-    "familyId": "tax-total-annual"
-  },
-  {
-    "source": "planner-ui/src/planner/survivorAnalysis.ts",
-    "owner": "SurvivorYearFacts",
-    "field": "shortfall",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "Engine YearResult.shortfall for the last joint and first survivor years, read only by isDegenerateTiming to decide whether a timing row is shown as degenerate; a display gate, never printed (the shortfall family is surfaced elsewhere).",
-    "reasonKind": "runtime-diagnostic"
-  },
-  {
-    "source": "planner-ui/src/planner/survivorAnalysis.ts",
-    "owner": "SurvivorIrmaaYear",
-    "field": "year",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "The SurvivorIrmaaYear.year field is a coordinate such as year, age, or offset used to place another value.",
-    "reasonKind": "dimension-coordinate"
-  },
-  {
-    "source": "planner-ui/src/planner/survivorAnalysis.ts",
-    "owner": "SurvivorIrmaaYear",
-    "field": "tierWithoutSsa44",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "Engine irmaaTier read from the run without SSA-44 relief; a classification shown as \"tier a → b\" on the survivor page. The premium dollars are the numeric family (medicare-premiums-annual, survivor-scenario-row-ssa44premium-savings).",
-    "reasonKind": "label-or-category"
-  },
-  {
-    "source": "planner-ui/src/planner/survivorAnalysis.ts",
-    "owner": "SurvivorIrmaaYear",
-    "field": "premiumsWithoutSsa44",
-    "tsType": "number",
-    "disposition": "family",
-    "familyId": "survivor-scenario-row-ssa44premium-savings"
-  },
-  {
-    "source": "planner-ui/src/planner/survivorAnalysis.ts",
-    "owner": "SurvivorIrmaaYear",
-    "field": "tierWithSsa44",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "Engine irmaaTier read from the run with SSA-44 relief forced on (the recomputation is engine-side via the plan flag); a classification shown as \"tier a → b\" on the survivor page.",
-    "reasonKind": "label-or-category"
-  },
-  {
-    "source": "planner-ui/src/planner/survivorAnalysis.ts",
-    "owner": "SurvivorIrmaaYear",
-    "field": "premiumsWithSsa44",
-    "tsType": "number",
-    "disposition": "family",
-    "familyId": "survivor-scenario-row-ssa44premium-savings"
-  },
-  {
-    "source": "planner-ui/src/planner/survivorAnalysis.ts",
-    "owner": "SurvivorScenarioRow",
-    "field": "deathAge",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "Swept death age from the SURVIVOR_DEATH_AGES grid (70..90 clamped to the person's ages); the row's coordinate, printed as \"Dies at\".",
-    "reasonKind": "dimension-coordinate"
-  },
-  {
-    "source": "planner-ui/src/planner/survivorAnalysis.ts",
-    "owner": "SurvivorScenarioRow",
-    "field": "deathYear",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "Birth year plus the swept death age; a coordinate printed under \"Dies at\" and in the lever sentence.",
-    "reasonKind": "dimension-coordinate"
-  },
-  {
-    "source": "planner-ui/src/planner/survivorAnalysis.ts",
-    "owner": "SurvivorScenarioRow",
-    "field": "ssBeforeDeath",
-    "tsType": "number",
-    "disposition": "family",
-    "familyId": "social-security-benefit-annual"
-  },
-  {
-    "source": "planner-ui/src/planner/survivorAnalysis.ts",
-    "owner": "SurvivorScenarioRow",
-    "field": "ssAfterDeath",
-    "tsType": "number",
-    "disposition": "family",
-    "familyId": "social-security-benefit-annual"
-  },
-  {
-    "source": "planner-ui/src/planner/survivorAnalysis.ts",
-    "owner": "SurvivorScenarioRow",
-    "field": "ssa44PremiumSavings",
-    "tsType": "number",
-    "disposition": "family",
-    "familyId": "survivor-scenario-row-ssa44premium-savings"
-  },
-  {
-    "source": "planner-ui/src/planner/survivorAnalysis.ts",
-    "owner": "SurvivorScenarioRow",
-    "field": "survivorShortfallYears",
-    "tsType": "number",
-    "disposition": "family",
-    "familyId": "survivor-scenario-row-survivor-shortfall-years"
-  },
-  {
-    "source": "planner-ui/src/planner/survivorAnalysis.ts",
-    "owner": "SurvivorScenarioRow",
-    "field": "minSurvivorInvestable",
-    "tsType": "number",
-    "disposition": "family",
-    "familyId": "accounts-investable-total-annual"
-  },
-  {
-    "source": "planner-ui/src/planner/survivorAnalysis.ts",
-    "owner": "SurvivorScenarioRow",
-    "field": "baseEndingAfterTaxEstate",
-    "tsType": "number",
-    "disposition": "family",
-    "familyId": "survivor-scenario-row-estate-delta"
-  },
-  {
-    "source": "planner-ui/src/planner/survivorAnalysis.ts",
-    "owner": "SurvivorScenarioRow",
-    "field": "baseLifetimeTax",
-    "tsType": "number",
-    "disposition": "family",
-    "familyId": "survivor-scenario-row-lifetime-tax-delta"
-  },
-  {
-    "source": "planner-ui/src/planner/survivorAnalysis.ts",
-    "owner": "SurvivorScenarioRow",
-    "field": "endingAfterTaxEstate",
-    "tsType": "number",
-    "disposition": "family",
-    "familyId": "survivor-scenario-row-estate-delta"
-  },
-  {
-    "source": "planner-ui/src/planner/survivorAnalysis.ts",
-    "owner": "SurvivorScenarioRow",
-    "field": "lifetimeTax",
-    "tsType": "number",
-    "disposition": "family",
-    "familyId": "survivor-scenario-row-lifetime-tax-delta"
-  },
-  {
-    "source": "planner-ui/src/planner/survivorAnalysis.ts",
-    "owner": "SurvivorScenarioRow",
-    "field": "estateDelta",
-    "tsType": "number",
-    "disposition": "family",
-    "familyId": "survivor-scenario-row-estate-delta"
-  },
-  {
-    "source": "planner-ui/src/planner/survivorAnalysis.ts",
-    "owner": "SurvivorScenarioRow",
-    "field": "lifetimeTaxDelta",
-    "tsType": "number",
-    "disposition": "family",
-    "familyId": "survivor-scenario-row-lifetime-tax-delta"
-  },
-  {
-    "source": "planner-ui/src/planner/survivorAnalysis.ts",
-    "owner": "module",
-    "field": "v",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "The module.v field is an internal diagnostic used to trace or validate calculation behavior.",
-    "reasonKind": "runtime-diagnostic"
-  },
-  {
-    "source": "planner-ui/src/planner/survivorAnalysis.ts",
-    "owner": "SurvivorAnalysis",
-    "field": "failedTimings",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "Count of death timings whose ledger run threw and was skipped; a run diagnostic printed as \"N death timings could not be simulated\", not a plan quantity.",
-    "reasonKind": "runtime-diagnostic"
-  },
-  {
-    "source": "planner-ui/src/planner/survivorAnalysis.ts",
-    "owner": "conversionLeverPatch",
-    "field": "startYear",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "The conversionLeverPatch.startYear field is a coordinate such as year, age, or offset used to place another value.",
-    "reasonKind": "dimension-coordinate"
-  },
-  {
-    "source": "planner-ui/src/planner/survivorAnalysis.ts",
-    "owner": "conversionLeverPatch",
-    "field": "lastJointYear",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "The conversionLeverPatch.lastJointYear field is a coordinate such as year, age, or offset used to place another value.",
-    "reasonKind": "dimension-coordinate"
-  },
-  {
-    "source": "planner-ui/src/planner/survivorAnalysis.ts",
-    "owner": "candidateDeathAges",
-    "field": "startYear",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "The candidateDeathAges.startYear field is a coordinate such as year, age, or offset used to place another value.",
-    "reasonKind": "dimension-coordinate"
-  },
-  {
-    "source": "planner-ui/src/planner/survivorAnalysis.ts",
-    "owner": "candidateDeathAges",
-    "field": "grid",
-    "tsType": "number[]",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "The candidateDeathAges.grid field is an internal diagnostic used to trace or validate calculation behavior.",
-    "reasonKind": "runtime-diagnostic"
-  },
-  {
-    "source": "planner-ui/src/planner/survivorAnalysis.ts",
-    "owner": "module",
-    "field": "deathAge",
-    "tsType": "number",
-    "disposition": "excluded",
-    "familyId": null,
-    "reason": "The module.deathAge field is a coordinate such as year, age, or offset used to place another value.",
-    "reasonKind": "dimension-coordinate"
-  },
-  {
     "source": "planner-ui/src/planner/bucketLens.ts",
     "owner": "BucketPreset",
     "field": "spans",
@@ -10606,5 +10280,627 @@
     "disposition": "family",
     "familyId": "social-security-computation-summary-counts",
     "note": "detail.zeroYearsInAime, the engine's PiaFromEarningsResult.zeroYearsInAime, printed as \"M of those N years are $0\"."
+  },
+  {
+    "source": "engine/src/decisions/claimAgeSweep.ts",
+    "owner": "ClaimAgeSweepRow",
+    "field": "claimByPersonId",
+    "tsType": "Readonly<Record<string, number>>",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "The whole-year claim age of each open claim's person a sweep row prices, printed as the row's claim ages and the heatmap's axes.",
+    "reasonKind": "dimension-coordinate"
+  },
+  {
+    "source": "engine/src/decisions/claimAgeSweep.ts",
+    "owner": "ClaimAgeSweepRow",
+    "field": "endingAfterTaxEstate",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "projection-summary-ending-after-tax-estate"
+  },
+  {
+    "source": "engine/src/decisions/claimAgeSweep.ts",
+    "owner": "ClaimAgeSweepRow",
+    "field": "lifetimeTaxesAndPenalties",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "projection-summary-lifetime-taxes-and-penalties"
+  },
+  {
+    "source": "engine/src/decisions/claimAgeSweep.ts",
+    "owner": "ClaimAgeSweepRow",
+    "field": "depletionYear",
+    "tsType": "number | null",
+    "disposition": "family",
+    "familyId": "longevity-depletion-year"
+  },
+  {
+    "source": "engine/src/decisions/claimAgeSweep.ts",
+    "owner": "ClaimAgeSweepRow",
+    "field": "primaryValue",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "social-security-claiming-sweep-objective"
+  },
+  {
+    "source": "engine/src/decisions/claimAgeSweep.ts",
+    "owner": "ClaimAgeSweepRow",
+    "field": "estateChangeVsCurrent",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "social-security-claiming-sweep-objective"
+  },
+  {
+    "source": "engine/src/decisions/claimAgeSweep.ts",
+    "owner": "ClaimAgeSweep",
+    "field": "winnerEstateChangeVsCurrent",
+    "tsType": "number | null",
+    "disposition": "family",
+    "familyId": "social-security-claiming-sweep-objective"
+  },
+  {
+    "source": "engine/src/decisions/claimAgeSweep.ts",
+    "owner": "ClaimAgeSweep",
+    "field": "estateYear",
+    "tsType": "number | null",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "The plan's last projection year, whose dollars the sweep's estates are in, named beside the verdict's change.",
+    "reasonKind": "dimension-coordinate"
+  },
+  {
+    "source": "engine/src/decisions/claimAgeSweep.ts",
+    "owner": "ClaimAgeRefinement",
+    "field": "endingAfterTaxEstate",
+    "tsType": "number",
+    "disposition": "unsurfaced-evidence",
+    "familyId": null,
+    "reason": "The refined claim's ending after-tax estate, one ledger run's summary; the page prints it beside the change, which is the family figure.",
+    "reasonKind": "runtime-diagnostic"
+  },
+  {
+    "source": "engine/src/decisions/claimAgeSweep.ts",
+    "owner": "ClaimAgeRefinement",
+    "field": "primaryValue",
+    "tsType": "number",
+    "disposition": "unsurfaced-evidence",
+    "familyId": null,
+    "reason": "The refined claim's objective metric against the plan as entered, published for evidence; the page prints its difference from the winner.",
+    "reasonKind": "runtime-diagnostic"
+  },
+  {
+    "source": "engine/src/decisions/claimAgeSweep.ts",
+    "owner": "ClaimAgeRefinement",
+    "field": "estateChangeVsWinner",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "social-security-claiming-sweep-objective"
+  },
+  {
+    "source": "engine/src/decisions/claimAgeSweep.ts",
+    "owner": "ClaimAgeRefinement",
+    "field": "primaryChangeVsWinner",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "social-security-claiming-sweep-objective"
+  },
+  {
+    "source": "engine/src/decisions/claimAgeSweep.ts",
+    "owner": "ClaimAgeRefinement",
+    "field": "evaluations",
+    "tsType": "number",
+    "disposition": "unsurfaced-evidence",
+    "familyId": null,
+    "reason": "The number of ledger runs the refinement spent, published for evidence and timing.",
+    "reasonKind": "runtime-diagnostic"
+  },
+  {
+    "source": "engine/src/decisions/claimAgeSweep.ts",
+    "owner": "ClaimAgeRefinement",
+    "field": "rejectedIneligibleBetter",
+    "tsType": "number",
+    "disposition": "unsurfaced-evidence",
+    "familyId": null,
+    "reason": "Months that ranked higher on the objective's metric but broke one of its constraints, so were not taken; published for evidence.",
+    "reasonKind": "runtime-diagnostic"
+  },
+  {
+    "source": "engine/src/decisions/claimAgeSweep.ts",
+    "owner": "UnpricedAcaYear",
+    "field": "year",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "A Marketplace year whose premium tax credit could not be priced, named with its reasons in the refusal note.",
+    "reasonKind": "dimension-coordinate"
+  },
+  {
+    "source": "engine/src/decisions/claimAgeSweep.ts",
+    "owner": "ClaimAgeSweepOptions",
+    "field": "startYear",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "The plan's first projection year, from which claims already made and the grid's ages are read.",
+    "reasonKind": "dimension-coordinate"
+  },
+  {
+    "source": "engine/src/socialSecurity/openClaims.ts",
+    "owner": "ClaimAgeValue",
+    "field": "years",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "The whole years of a claim age, printed as the claim age.",
+    "reasonKind": "dimension-coordinate"
+  },
+  {
+    "source": "engine/src/socialSecurity/openClaims.ts",
+    "owner": "ClaimAgeValue",
+    "field": "months",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "The months of a claim age, printed as \"67y 6m\".",
+    "reasonKind": "dimension-coordinate"
+  },
+  {
+    "source": "engine/src/socialSecurity/openClaims.ts",
+    "owner": "OpenClaim",
+    "field": "claimYear",
+    "tsType": "number",
+    "disposition": "unsurfaced-evidence",
+    "familyId": null,
+    "reason": "An open claim's claim year (birth year + claim years), the predicate's operand; not printed.",
+    "reasonKind": "dimension-coordinate"
+  },
+  {
+    "source": "engine/src/socialSecurity/openClaims.ts",
+    "owner": "AlreadyClaimed",
+    "field": "claimYear",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "The year a claim already made was made, printed in the refusal notes (\"claimed at 67 in 2020\").",
+    "reasonKind": "dimension-coordinate"
+  },
+  {
+    "source": "engine/src/projection/survivorTransition.ts",
+    "owner": "SurvivorTransitionOptions",
+    "field": "startYear",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "The plan's first projection year, the start of every death timing's runs and of the lever's window.",
+    "reasonKind": "dimension-coordinate"
+  },
+  {
+    "source": "engine/src/projection/survivorTransition.ts",
+    "owner": "SurvivorTransitionOptions",
+    "field": "deathAges",
+    "tsType": "number[]",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "The death-age grid each first-to-die person is swept over (70, 75, 80, 85, 90 by default).",
+    "reasonKind": "dimension-coordinate"
+  },
+  {
+    "source": "engine/src/projection/survivorTransition.ts",
+    "owner": "FilingSegment",
+    "field": "fromYear",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "The first year of a run of one filing status, printed in the filing timeline.",
+    "reasonKind": "dimension-coordinate"
+  },
+  {
+    "source": "engine/src/projection/survivorTransition.ts",
+    "owner": "FilingSegment",
+    "field": "toYear",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "The last year of a run of one filing status, printed in the filing timeline.",
+    "reasonKind": "dimension-coordinate"
+  },
+  {
+    "source": "engine/src/projection/survivorTransition.ts",
+    "owner": "SurvivorYearFacts",
+    "field": "year",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "The last joint or first survivor year the facts are read from, printed under the Social Security and tax cells.",
+    "reasonKind": "dimension-coordinate"
+  },
+  {
+    "source": "engine/src/projection/survivorTransition.ts",
+    "owner": "SurvivorYearFacts",
+    "field": "magi",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "magi-annual"
+  },
+  {
+    "source": "engine/src/projection/survivorTransition.ts",
+    "owner": "SurvivorYearFacts",
+    "field": "tax",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "tax-total-annual"
+  },
+  {
+    "source": "engine/src/projection/survivorTransition.ts",
+    "owner": "SurvivorYearFacts",
+    "field": "requiredShortfall",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "The ledger's required-spending shortfall in the last joint or first survivor year, read only by the degenerate-timing test; not printed.",
+    "reasonKind": "runtime-diagnostic"
+  },
+  {
+    "source": "engine/src/projection/survivorTransition.ts",
+    "owner": "SurvivorIrmaaYear",
+    "field": "year",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "A relief year (death year + 1 or + 2), printed with its tier change.",
+    "reasonKind": "dimension-coordinate"
+  },
+  {
+    "source": "engine/src/projection/survivorTransition.ts",
+    "owner": "SurvivorIrmaaYear",
+    "field": "tierWithoutSsa44",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "The IRMAA tier without SSA-44 relief, printed as \"tier 3 → 2\".",
+    "reasonKind": "label-or-category"
+  },
+  {
+    "source": "engine/src/projection/survivorTransition.ts",
+    "owner": "SurvivorIrmaaYear",
+    "field": "premiumsWithoutSsa44",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "survivor-scenario-row-ssa44premium-savings"
+  },
+  {
+    "source": "engine/src/projection/survivorTransition.ts",
+    "owner": "SurvivorIrmaaYear",
+    "field": "tierWithSsa44",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "The IRMAA tier with SSA-44 relief, printed as \"tier 3 → 2\".",
+    "reasonKind": "label-or-category"
+  },
+  {
+    "source": "engine/src/projection/survivorTransition.ts",
+    "owner": "SurvivorIrmaaYear",
+    "field": "premiumsWithSsa44",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "survivor-scenario-row-ssa44premium-savings"
+  },
+  {
+    "source": "engine/src/projection/survivorTransition.ts",
+    "owner": "SurvivorConversionLever",
+    "field": "endingAfterTaxEstate",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "survivor-scenario-row-estate-delta"
+  },
+  {
+    "source": "engine/src/projection/survivorTransition.ts",
+    "owner": "SurvivorConversionLever",
+    "field": "lifetimeTax",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "survivor-scenario-row-lifetime-tax-delta"
+  },
+  {
+    "source": "engine/src/projection/survivorTransition.ts",
+    "owner": "SurvivorConversionLever",
+    "field": "estateDelta",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "survivor-scenario-row-estate-delta"
+  },
+  {
+    "source": "engine/src/projection/survivorTransition.ts",
+    "owner": "SurvivorConversionLever",
+    "field": "lifetimeTaxDelta",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "survivor-scenario-row-lifetime-tax-delta"
+  },
+  {
+    "source": "engine/src/projection/survivorTransition.ts",
+    "owner": "SurvivorConversionLever",
+    "field": "raisedYears",
+    "tsType": "number[]",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "Window years in which the lever converted more than the plan's own target (executed dollars), printed as the years it adds conversions.",
+    "reasonKind": "dimension-coordinate"
+  },
+  {
+    "source": "engine/src/projection/survivorTransition.ts",
+    "owner": "SurvivorConversionLever",
+    "field": "coveredYears",
+    "tsType": "number[]",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "Window years in which the lever run converted something and at least the 12% fill (executed dollars); the page prints them as the years the plan already converts at or past the bracket.",
+    "reasonKind": "dimension-coordinate"
+  },
+  {
+    "source": "engine/src/projection/survivorTransition.ts",
+    "owner": "SurvivorLeverYear",
+    "field": "year",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "A window year of the lever, printed in the lever cell with its reason (raised, covered, short, no balance, fill cut, no room, named conversion).",
+    "reasonKind": "dimension-coordinate"
+  },
+  {
+    "source": "engine/src/projection/survivorTransition.ts",
+    "owner": "SurvivorTimingRow",
+    "field": "deathAge",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "The first-to-die person's death age, printed as \"Dies at\".",
+    "reasonKind": "dimension-coordinate"
+  },
+  {
+    "source": "engine/src/projection/survivorTransition.ts",
+    "owner": "SurvivorTimingRow",
+    "field": "deathYear",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "The last year the person is alive, printed under the death age and as the lever window's end.",
+    "reasonKind": "dimension-coordinate"
+  },
+  {
+    "source": "engine/src/projection/survivorTransition.ts",
+    "owner": "SurvivorTimingRow",
+    "field": "endYear",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "The timing's last projection year, printed as the year whose dollars the lever's change is in.",
+    "reasonKind": "dimension-coordinate"
+  },
+  {
+    "source": "engine/src/projection/survivorTransition.ts",
+    "owner": "SurvivorTimingRow",
+    "field": "ssBeforeDeath",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "social-security-benefit-annual"
+  },
+  {
+    "source": "engine/src/projection/survivorTransition.ts",
+    "owner": "SurvivorTimingRow",
+    "field": "ssAfterDeath",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "social-security-benefit-annual"
+  },
+  {
+    "source": "engine/src/projection/survivorTransition.ts",
+    "owner": "SurvivorTimingRow",
+    "field": "ssa44PremiumSavings",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "survivor-scenario-row-ssa44premium-savings"
+  },
+  {
+    "source": "engine/src/projection/survivorTransition.ts",
+    "owner": "SurvivorTimingRow",
+    "field": "ssa44ReliefYearSavings",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "survivor-scenario-row-ssa44premium-savings"
+  },
+  {
+    "source": "engine/src/projection/survivorTransition.ts",
+    "owner": "SurvivorTimingRow",
+    "field": "survivorShortfallYears",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "survivor-scenario-row-survivor-shortfall-years"
+  },
+  {
+    "source": "engine/src/projection/survivorTransition.ts",
+    "owner": "SurvivorTimingRow",
+    "field": "minSurvivorInvestable",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "accounts-investable-total-annual"
+  },
+  {
+    "source": "engine/src/projection/survivorTransition.ts",
+    "owner": "SurvivorTimingRow",
+    "field": "baseEndingAfterTaxEstate",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "survivor-scenario-row-estate-delta"
+  },
+  {
+    "source": "engine/src/projection/survivorTransition.ts",
+    "owner": "SurvivorTimingRow",
+    "field": "baseLifetimeTax",
+    "tsType": "number",
+    "disposition": "family",
+    "familyId": "survivor-scenario-row-lifetime-tax-delta"
+  },
+  {
+    "source": "engine/src/projection/survivorTransition.ts",
+    "owner": "SurvivorTransitionAnalysis",
+    "field": "failedTimings",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "The number of death timings whose ledger runs threw and were skipped, reported in the page's warning.",
+    "reasonKind": "runtime-diagnostic"
+  },
+  {
+    "source": "engine/src/projection/survivorTransition.ts",
+    "owner": "module",
+    "field": "v",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "The value the degenerate-timing test compares with half a dollar.",
+    "reasonKind": "runtime-diagnostic"
+  },
+  {
+    "source": "engine/src/projection/survivorTransition.ts",
+    "owner": "module",
+    "field": "deathAge",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "A death age of the grid, iterated to build each timing.",
+    "reasonKind": "dimension-coordinate"
+  },
+  {
+    "source": "engine/src/projection/survivorTransition.ts",
+    "owner": "candidateDeathAges",
+    "field": "startYear",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "The plan's first projection year, from which the current attained age is read.",
+    "reasonKind": "dimension-coordinate"
+  },
+  {
+    "source": "engine/src/projection/survivorTransition.ts",
+    "owner": "candidateDeathAges",
+    "field": "grid",
+    "tsType": "readonly number[]",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "The death-age grid clamped to the current and planning ages.",
+    "reasonKind": "runtime-diagnostic"
+  },
+  {
+    "source": "engine/src/projection/survivorTransition.ts",
+    "owner": "conversionLeverPatch",
+    "field": "startYear",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "The widows-penalty preview's first conversion year.",
+    "reasonKind": "dimension-coordinate"
+  },
+  {
+    "source": "engine/src/projection/survivorTransition.ts",
+    "owner": "conversionLeverPatch",
+    "field": "lastJointYear",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "The widows-penalty preview's last conversion year, the last joint year.",
+    "reasonKind": "dimension-coordinate"
+  },
+  {
+    "source": "engine/src/projection/internal/types/result.ts",
+    "owner": "AdditionalBracketFillYear",
+    "field": "year",
+    "tsType": "number",
+    "disposition": "unsurfaced-evidence",
+    "familyId": null,
+    "reason": "A window year of the bracket-fill lever's run.",
+    "reasonKind": "dimension-coordinate"
+  },
+  {
+    "source": "engine/src/projection/internal/types/result.ts",
+    "owner": "AdditionalBracketFillYear",
+    "field": "ownTargetPlanDollars",
+    "tsType": "number",
+    "disposition": "unsurfaced-evidence",
+    "familyId": null,
+    "reason": "The plan's own aggregate conversion target in a lever window year; decides each window year's reason (raised, covered, short), not printed.",
+    "reasonKind": "runtime-diagnostic"
+  },
+  {
+    "source": "engine/src/projection/internal/types/result.ts",
+    "owner": "AdditionalBracketFillYear",
+    "field": "fillTargetPlanDollars",
+    "tsType": "number",
+    "disposition": "unsurfaced-evidence",
+    "familyId": null,
+    "reason": "The 12% fill in a lever window year, capped at the convertible balance; decides each window year's reason (covered, short, no room), not printed.",
+    "reasonKind": "runtime-diagnostic"
+  },
+  {
+    "source": "engine/src/projection/internal/types/result.ts",
+    "owner": "AdditionalBracketFillYear",
+    "field": "convertiblePlanDollars",
+    "tsType": "number",
+    "disposition": "unsurfaced-evidence",
+    "familyId": null,
+    "reason": "The convertible traditional balance both targets were sized on; caps the plan's own target when the raised years are read.",
+    "reasonKind": "runtime-diagnostic"
+  },
+  {
+    "source": "engine/src/projection/simulate.ts",
+    "owner": "SimulateOptions",
+    "field": "startYear",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "The projection's first year, an input of every run.",
+    "reasonKind": "dimension-coordinate"
+  },
+  {
+    "source": "engine/src/projection/simulate.ts",
+    "owner": "SimulateOptions",
+    "field": "horizonEndYear",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "A forced last projection year (Monte Carlo's shared year grid); an input.",
+    "reasonKind": "dimension-coordinate"
+  },
+  {
+    "source": "engine/src/projection/simulate.ts",
+    "owner": "SimulateOptions",
+    "field": "additionalBracketFill.bracketPct",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "The bracket the survivor page's lever fills (12), an analysis input.",
+    "reasonKind": "input-parameter"
+  },
+  {
+    "source": "engine/src/projection/simulate.ts",
+    "owner": "SimulateOptions",
+    "field": "additionalBracketFill.startYear",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "The first year of the lever's window, the plan's start year.",
+    "reasonKind": "dimension-coordinate"
+  },
+  {
+    "source": "engine/src/projection/simulate.ts",
+    "owner": "SimulateOptions",
+    "field": "additionalBracketFill.endYear",
+    "tsType": "number",
+    "disposition": "excluded",
+    "familyId": null,
+    "reason": "The last year of the lever's window, the death year.",
+    "reasonKind": "dimension-coordinate"
   }
 ]

@@ -163,6 +163,16 @@ export interface ExactDecisionEvaluation {
   stochastic?: StochasticDecisionAttachment
   diagnostics: string[]
   recommendationState: DecisionRecommendationState
+  /**
+   * The diagnostics that made `recommendationState` 'diagnostic', in the
+   * order they were raised: an invalid patch's error, a Marketplace year
+   * whose premium tax credit cannot be priced, incomplete retirement-action
+   * evidence, or a materially unexecuted conversion schedule. Empty for any
+   * other state. `evaluateCandidate` always publishes it; optional for
+   * callers that build evaluations by hand, where absence means the cause was
+   * not recorded.
+   */
+  diagnosticCauses?: string[]
 }
 
 export interface CandidateGenerator {

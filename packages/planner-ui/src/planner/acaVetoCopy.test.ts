@@ -13,6 +13,7 @@ import {
   diagnosticsWithoutUnpricedCreditSentence,
   formatYearRuns,
   unpricedCreditSpendingNote,
+  unpricedCreditYearsText,
   type UnpricedCreditFacts,
 } from './acaVetoCopy'
 
@@ -144,8 +145,45 @@ describe('unpricedCreditSpendingNote', () => {
 
   it('ignores informational codes and gives the generic reason for an unmapped one', () => {
     expect(
-      unpricedCreditSpendingNote(facts([2027, 2028], ['tax-exempt-interest-plan-derived', 'fixed-point-nonconvergent']), true),
+      unpricedCreditSpendingNote(facts([2027, 2028], ['tax-exempt-interest-plan-derived', 'tax-family-member-unknown']), true),
     ).toBe("The premium tax credit isn't counted in 2027 and 2028: some facts the credit needs are missing. " + fixedTail)
+  })
+
+  it('names a fixed point that did not settle as that, not as missing facts (B2-P1 slice 5)', () => {
+    // The ledger solves the credit and the income it depends on together; these
+    // codes say the solution did not settle, and no fact is missing.
+    expect(unpricedCreditSpendingNote(facts([2027], ['fixed-point-nonconvergent']), true)).toBe(
+      "The premium tax credit isn't counted in 2027: the credit and the income it depends on didn't settle on one value in that year. " +
+        'The projection pays the full Marketplace premium in that year; if you receive a credit then, you would likely be able to spend somewhat more than this.',
+    )
+    expect(unpricedCreditSpendingNote(facts([2027, 2028], ['conflicting-cliff-fixed-points']), true)).toBe(
+      "The premium tax credit isn't counted in 2027 and 2028: the income can settle on either side of the credit's cliff in those years. " + fixedTail,
+    )
+    const merged = unpricedCreditSpendingNote(
+      facts([2026, 2027, 2028], ['below-100-fpl-exception-unsupported', 'hsa-cap-fixed-point-nonconvergent', 'tax-year-parameters-unsupported']),
+      true,
+    )!
+    // The engine's loop is on hsa.qualifiedExpenseCap, the medical expenses HSA withdrawals can count against.
+    expect(merged).toContain(
+      "the credit and the amount of HSA withdrawals that count as medical expenses didn't settle on one value in those years",
+    )
+    expect(merged).not.toContain('contribution limit')
+    expect(merged).not.toContain('some facts the credit needs are missing')
+  })
+
+  it('gives the claim-age refusals the same reasons, each year with its own', () => {
+    expect(
+      unpricedCreditYearsText([
+        { year: 2026, reasons: ['below-100-fpl-exception-unsupported'] },
+        { year: 2027, reasons: ['fixed-point-nonconvergent'] },
+        { year: 2028, reasons: ['tax-year-parameters-unsupported'] },
+        { year: 2029, reasons: ['tax-year-parameters-unsupported'] },
+      ]),
+    ).toBe(
+      '2026 (income is below the poverty line, where there is generally no credit and Medicaid may apply); ' +
+        "2027 (the credit and the income it depends on didn't settle on one value in that year); " +
+        "2028 and 2029 (RetireGolden doesn't have the credit's figures for those years yet)",
+    )
   })
 
   it('says a credit could move a guardrail answer either way', () => {

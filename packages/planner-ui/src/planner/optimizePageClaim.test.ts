@@ -43,6 +43,9 @@ function claimAgeWithPatch(plan: Plan): ClaimAgeCoOptimization {
   )
   return {
     enabled: true,
+    outcome: 'searched',
+    unpricedAca: [],
+    alreadyClaimed: [],
     combinationsEvaluated: 3,
     winningClaimLabel: 'Pat claims Social Security at 70',
     winningClaimPatch: { incomes },
@@ -55,6 +58,9 @@ function claimAgeWithPatch(plan: Plan): ClaimAgeCoOptimization {
 
 const noChange: ClaimAgeCoOptimization = {
   enabled: true,
+  outcome: 'searched',
+  unpricedAca: [],
+  alreadyClaimed: [],
   combinationsEvaluated: 3,
   winningClaimLabel: null,
   winningClaimPatch: null,

@@ -16,6 +16,7 @@ import {
   type ConversionSizingInput,
 } from '../../strategies/rothConversion.js'
 import type { FederalTaxDetail } from '../../tax/federalTax.js'
+import type { AdditionalBracketFillTarget } from './types/result.js'
 import {
   AGGREGATE_ROTH_CONVERSION_EPSILON_PLAN_DOLLARS,
   ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS,
@@ -78,6 +79,14 @@ export interface AnnualAggregateRothConversionTargetPlanInput {
   readonly namedConversionActionCount: number
   readonly anyAlive: boolean
   readonly year: number
+  /**
+   * Analysis only (SimulateOptions.additionalBracketFill, the survivor page's
+   * convert-early lever): in the window, the year's target is the larger of
+   * the strategy's own and a fill to the top of `bracketPct`, both sized on
+   * this same input, the fill capped at the convertible balance. Absent in
+   * every product projection.
+   */
+  readonly additionalBracketFill?: Readonly<{ bracketPct: number; startYear: number; endYear: number }>
   /** Read lazily: manual, optimized, suppressed, and out-of-window modes do not need it. */
   readonly readSources: () => readonly AnnualAggregateRothConversionTargetSource[]
   readonly sizing: Readonly<AnnualAggregateRothConversionTargetSizingInput>
@@ -106,6 +115,8 @@ export interface AnnualAggregateRothConversionTargetPlanResult
   readonly fillTarget: AnnualAggregateRothConversionFillTarget | null
   /** Reads the caller's then-current source snapshots when invoked. */
   readonly taxableAmountForGross: (grossPlanDollars: number) => number
+  /** The bracket-fill lever's facts for this year; null outside its window or when not requested. */
+  readonly additionalBracketFill: AdditionalBracketFillTarget | null
 }
 
 export interface AnnualAggregateRothConversionFillTarget {
@@ -235,17 +246,59 @@ function trimForSafetyNet(
   }
 }
 
-/** Select and size this year's legacy aggregate Roth-conversion target. */
+/**
+ * Select and size this year's legacy aggregate Roth-conversion target. With
+ * the analysis-only `additionalBracketFill` input, a window year also sizes a
+ * fill to the top of that bracket on the same input and keeps the larger of
+ * the two targets: the fill is added to the plan's conversions, never a
+ * replacement for them (owner decision R16). The fill is capped at the
+ * convertible balance before the comparison, because its gross-up keeps an
+ * above-capacity request (the reduced-conversion signal) that must neither win
+ * nor raise that warning.
+ */
 export function annualAggregateRothConversionTargetPlan(
   input: Readonly<AnnualAggregateRothConversionTargetPlanInput>,
 ): AnnualAggregateRothConversionTargetPlanResult {
+  const own = strategyTargetPlan(input)
+  const lever = input.additionalBracketFill
+  if (lever === undefined || input.year < lever.startYear || input.year > lever.endYear) {
+    return { ...own, additionalBracketFill: null }
+  }
+  const fill = strategyTargetPlan({
+    ...input,
+    strategy: { mode: 'fillToTarget', target: 'topOfBracket', targetValue: lever.bracketPct, startYear: lever.startYear, endYear: lever.endYear },
+  })
+  let convertiblePlanDollars = 0
+  for (const source of input.readSources()) {
+    if (source.convertible) convertiblePlanDollars += Math.max(0, source.balancePlanDollars)
+  }
+  const fillTargetPlanDollars = Math.min(fill.desiredPlanDollars, convertiblePlanDollars)
+  const selected = fillTargetPlanDollars > own.desiredPlanDollars ? 'fill' : 'own'
+  const facts: AdditionalBracketFillTarget = {
+    year: input.year,
+    ownTargetPlanDollars: own.desiredPlanDollars,
+    fillTargetPlanDollars,
+    convertiblePlanDollars,
+    selected,
+    suppressedByNamedConversions: input.namedConversionActionCount > 0,
+    fillNotes: fill.warnings,
+  }
+  return selected === 'fill'
+    ? { ...fill, desiredPlanDollars: fillTargetPlanDollars, additionalBracketFill: facts }
+    : { ...own, additionalBracketFill: facts }
+}
+
+/** The target the strategy itself selects and sizes for the year. */
+function strategyTargetPlan(
+  input: Readonly<AnnualAggregateRothConversionTargetPlanInput>,
+): Omit<AnnualAggregateRothConversionTargetPlanResult, 'additionalBracketFill'> {
   const strategy: RothConversionStrategy =
     input.namedConversionActionCount > 0 ? { mode: 'none' } : input.strategy
   const annualAcaSizingInput = acaSizingInput(input.sizing.aca)
   const result = (
     decision: AnnualAggregateRothConversionTargetDecision,
     fillTarget: AnnualAggregateRothConversionFillTarget | null = null,
-  ): AnnualAggregateRothConversionTargetPlanResult => ({
+  ): Omit<AnnualAggregateRothConversionTargetPlanResult, 'additionalBracketFill'> => ({
     ...decision,
     acaSizingInput: annualAcaSizingInput,
     fillToTargetSelected: strategy.mode === 'fillToTarget',

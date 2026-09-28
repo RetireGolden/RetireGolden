@@ -263,14 +263,16 @@ describe('Design-QA cluster A: source pins', () => {
     expect(survivor).toContain('data-survivor-empty="degenerate"')
     // The criterion covers lifetime tax; the shortfall count is deliberately
     // not a criterion (a lone red shortfall count is the finding itself).
-    const analysis = sheet('./survivorAnalysis.ts')
-    const gate = analysis.slice(analysis.indexOf('export function isDegenerateTiming'), analysis.indexOf('export interface SurvivorAnalysis {'))
+    // The analysis is the engine's since B2-P1 slice 5.
+    const analysis = sheet('../../../engine/src/projection/survivorTransition.ts')
+    const gate = analysis.slice(analysis.indexOf('export function isDegenerateTiming'), analysis.indexOf('function dobYearOf('))
     expect(gate.length).toBeGreaterThan(0)
     expect(gate).toContain('nearZero(row.baseLifetimeTax)')
     // Shortfall is symmetric across the transition: survivor shortfall counts
-    // only when the last joint year had none (the death introduced it).
-    expect(gate).toContain('(nearZero(row.survivorShortfallYears) || row.lastJointYear.shortfall > 0.5)')
-    expect(sheet('./survivorAnalysis.ts')).toContain('export function isDegenerateTiming(row: SurvivorScenarioRow): boolean')
+    // only when the last joint year had none (the death introduced it), on
+    // required spending on both sides.
+    expect(gate).toContain('(nearZero(row.survivorShortfallYears) || row.lastJointYear.requiredShortfall > 0.5)')
+    expect(analysis).toContain('export function isDegenerateTiming(row: SurvivorTimingRow): boolean')
     expect(survivor).toContain('live: rows.filter((r) => !isDegenerateTiming(r))')
     // The gate is the row's own content, never the base plan's depletion year:
     // a depleted plan with Social Security keeps its rows.

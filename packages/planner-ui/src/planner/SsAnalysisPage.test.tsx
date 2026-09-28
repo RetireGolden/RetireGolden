@@ -264,6 +264,10 @@ describe('flat objective (#454)', () => {
   it('shows a note and no Best, Apply, or best-strategy chrome when every claim age scores the same', async () => {
     const plan = createSamplePlan()
     plan.accounts = []
+    // Without the premium credit: a plan with an unpriced credit year is
+    // refused before any ranking (its own note), and this test is about a
+    // ranking that cannot separate the claim ages.
+    plan.expenses.healthcare = { ...plan.expenses.healthcare, applyAcaCredit: false, acaYears: undefined }
     await act(async () => {
       root.render(
         <MemoryRouter>

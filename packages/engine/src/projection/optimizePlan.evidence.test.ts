@@ -4,7 +4,7 @@ import { socialSecurityClaimGenerator } from '../decisions/generators.js'
 import { createEmptyPlan, parsePlan, type Plan } from '../model/plan.js'
 import { createFederalTaxCalculator } from '../tax/federalTax.js'
 import { createFlatTaxCalculator } from '../testing/flatTax.js'
-import { socialSecurityIncome } from '../testing/planFixtures.js'
+import { setAcaYearContract, socialSecurityIncome } from '../testing/planFixtures.js'
 import { conversionScheduleTotal, type OptimizedSchedule } from '../strategies/optimizer.js'
 import { summarizeProjection } from './compare.js'
 import * as simulation from './simulate.js'
@@ -885,25 +885,37 @@ describeCalculation(
   {
     example: {
       inputs: {
-        canonicalClaimAges: ['62y0m', '66y2m (FRA)', '70y0m'],
-        oneStreamFixture: { streams: 1, currentClaimAgeYears: 70 },
+        openFixture: { dob: '1966-01-01', currentClaimAgeYears: 70 },
+        pastAgesFixture: { dob: '1956-01-01', currentClaimAgeYears: 70 },
+        januaryFirstFixture: { dob: '1960-01-01', currentClaimAgeYears: 67 },
+        alreadyClaimedFixture: { dob: '1950-01-01', currentClaimAgeYears: 70 },
+        alreadyClaimedUnpricedFixture: { dob: '1950-01-01', currentClaimAgeYears: 70, marketplaceYears: [2026, 2027, 2028] },
+        partlyClaimedCoupleFixture: { made: { dob: '1963-06-15', currentClaimAgeYears: 62 }, open: { dob: '1966-01-01', currentClaimAgeYears: 70 } },
+        unpricedCreditFixture: { dob: '1966-01-01', currentClaimAgeYears: 67, marketplaceYears: [2026, 2027, 2028] },
         noStreamFixture: { streams: 0 },
-        currentClaimWinsFixture: { traditionalBalance: 0, currentClaimAgeYears: 70, planningAge: 70 },
+        currentClaimWinsFixture: { dob: '1966-01-01', currentClaimAgeYears: 70, planningAge: 95 },
         claimSwitchMarginDollars: 1_000,
       },
       expected: {
-        oneStreamGeneratedCandidates: 2,
-        oneStreamCombinationsEvaluated: 3,
+        openGeneratedCandidates: 2,
+        openCombinationsEvaluated: 3,
+        pastAgesGeneratedCandidates: 0,
+        pastAgesCombinationsEvaluated: 1,
+        januaryFirstCandidateLabels: ['Pat claims Social Security at 66 and 10 months (FRA)', 'Pat claims Social Security at 70'],
+        partlyClaimedCombinationsEvaluated: 3,
+        partlyClaimedClaimYear: 2025,
+        alreadyClaimedCombinationsEvaluated: 1,
+        alreadyClaimedClaimYear: 2020,
+        unpricedCombinationsEvaluated: 1,
         noStreamGeneratedCandidates: 0,
         noStreamCombinationsEvaluated: 1,
         winningClaimLabel: null,
         winningClaimPatch: null,
-        // RUN-PINNED, not derived. The worksheet leaves both estates
-        // unnumbered because the extract does not state the optimizer's full
-        // inputs; this is the value one execution of the co-optimizer produced
-        // on the stated plan, and the derived claim is that the two are equal.
-        currentClaimExactEstate: 238_333.2,
-        jointExactEstate: 238_333.2,
+        // RUN-PINNED, not derived: the value one execution of the co-optimizer
+        // produced on the stated plan; the derived claim is that the two are
+        // equal.
+        currentClaimExactEstate: 1_130_409.2,
+        jointExactEstate: 1_130_409.2,
       },
       tolerance: { abs: 0.005 },
     },
@@ -911,33 +923,28 @@ describeCalculation(
     mutation: 'DOCS/calculations/optimizer-and-comparisons/claim-age-co-optimization.mutation.md',
   },
   ({ example }) => {
-    const inputs = example.inputs as Record<
-      string,
-      { streams: number; currentClaimAgeYears?: number; planningAge?: number }
-    >
+    interface Fixture { dob?: string; currentClaimAgeYears?: number; planningAge?: number; streams?: number; marketplaceYears?: number[] }
+    const inputs = example.inputs as Record<string, Fixture>
 
-    /** One person turning 70 in the start year, with nothing to convert. */
-    function claimPlan(streams: number): Plan {
+    /** One person with cash only and a Social Security stream (or none), from the start year 2026. */
+    function claimPlan(fixture: Fixture): Plan {
       return evidencePlan((draft) => {
         draft.household.people[0] = {
           id: 'p1',
           name: 'Pat',
-          dob: '1956-01-01',
+          dob: fixture.dob ?? '1966-01-01',
           sex: 'average',
-          retirementAge: 65,
-          longevity: { planningAge: inputs.currentClaimWinsFixture.planningAge as number, source: 'manual' },
+          retirementAge: 60,
+          longevity: { planningAge: fixture.planningAge ?? 95, source: 'manual' },
         }
         draft.accounts = [cashAccount('cash', 200_000)]
-        draft.incomes =
-          streams === 0
-            ? []
-            : [socialSecurityIncome('ss', 2_600, inputs.oneStreamFixture.currentClaimAgeYears as number)]
+        draft.incomes = fixture.streams === 0 ? [] : [socialSecurityIncome('ss', 2_600, fixture.currentClaimAgeYears!)]
+        for (const year of fixture.marketplaceYears ?? []) setAcaYearContract(draft, { year })
       })
     }
 
-    function generatedCandidates(streams: number) {
+    function generatedCandidates(plan: Plan) {
       const options = federalOptions()
-      const plan = claimPlan(streams)
       const baselineResult = simulatePlan(plan, options)
       return socialSecurityClaimGenerator.generate({
         plan,
@@ -947,44 +954,98 @@ describeCalculation(
       })
     }
 
-    it('generates 2 candidates for a stream already claiming at 70y0m, so 3 combinations are evaluated', () => {
-      const candidates = generatedCandidates(inputs.oneStreamFixture.streams)
-
-      // The canonical grid is {62y0m, the person's FRA, 70y0m}; born 1956-01-01
-      // (effective birth year 1955) the FRA is 66y2m. The stream's own
-      // current 70y0m age is skipped, so 3 - 1 = 2 candidates are generated.
-      expect(candidates.length).toBe(example.expected.oneStreamGeneratedCandidates)
+    it('generates 2 candidates for an open claim at 70y0m, so 3 combinations are evaluated', () => {
+      const candidates = generatedCandidates(claimPlan(inputs.openFixture!))
+      // Born 1966-01-01: full retirement age 67; 62 falls in 2028 and 67 in
+      // 2033, both open. The stream's own 70y0m is skipped: 3 - 1 = 2.
       expect(candidates.map((candidate) => candidate.label).sort()).toEqual([
         'Pat claims Social Security at 62',
-        'Pat claims Social Security at 66 and 2 months (FRA)',
+        'Pat claims Social Security at 67 (FRA)',
       ])
-      // Including the current claim is the published count. Counting the
-      // stream's own 70y0m age as a candidate would give 4; omitting the
-      // current claim would give 2.
-      expect(1 + candidates.length).toBe(example.expected.oneStreamCombinationsEvaluated)
+      expect(candidates.length).toBe(example.expected.openGeneratedCandidates)
+      expect(1 + candidates.length).toBe(example.expected.openCombinationsEvaluated)
+    })
+
+    it('offers no canonical age already passed: a 70-year-old claiming at 70 has none to try, and says so', async () => {
+      const plan = claimPlan(inputs.pastAgesFixture!)
+      // Born 1956-01-01: 62 fell in 2018 and 66y2m in 2022, both before 2026.
+      expect(generatedCandidates(plan).length).toBe(example.expected.pastAgesGeneratedCandidates)
+      const joint = await optimizePlanCoOptimizingClaimAge(plan, federalOptions())
+      expect(joint.claimAge.outcome).toBe('no-age-left')
+      expect(joint.claimAge.combinationsEvaluated).toBe(example.expected.pastAgesCombinationsEvaluated)
+      expect(joint.claimAge.winningClaimPatch).toBeNull()
+    })
+
+    it('names a full retirement age with months by the January 1 rule: born 1960-01-01, 66 and 10 months', () => {
+      // Born on January 1, Pat attains each age on December 31 and counts as born in 1959:
+      // full retirement age 66y10m (1960 + 66 = 2026, open). 62 fell in 2022; the current 67 is skipped.
+      const labels = generatedCandidates(claimPlan(inputs.januaryFirstFixture!)).map((candidate) => candidate.label).sort()
+      expect(labels).toEqual(example.expected.januaryFirstCandidateLabels)
+    })
+
+    it('searches the open claim of a couple whose other claim is already made, and holds that one', async () => {
+      const fixture = inputs.partlyClaimedCoupleFixture as unknown as { made: Fixture; open: Fixture }
+      const plan = evidencePlan((draft) => {
+        draft.household.filingStatus = 'marriedFilingJointly'
+        draft.household.people = [
+          { id: 'p1', name: 'Pat', dob: fixture.made.dob!, sex: 'average', retirementAge: 60, longevity: { planningAge: 90, source: 'manual' } },
+          { id: 'p2', name: 'Sam', dob: fixture.open.dob!, sex: 'average', retirementAge: 60, longevity: { planningAge: 90, source: 'manual' } },
+        ]
+        draft.accounts = [cashAccount('cash', 200_000)]
+        draft.incomes = [
+          socialSecurityIncome('ss-pat', 2_600, fixture.made.currentClaimAgeYears!, 'p1'),
+          socialSecurityIncome('ss-sam', 1_400, fixture.open.currentClaimAgeYears!, 'p2'),
+        ]
+      })
+      // Pat claimed at 62 in 2025, before the plan: no candidate moves it. Sam (1966-01-01, FRA 67) gets 62 and 67.
+      expect(generatedCandidates(plan).map((candidate) => candidate.label).sort()).toEqual([
+        'Sam claims Social Security at 62',
+        'Sam claims Social Security at 67 (FRA)',
+      ])
+      const joint = await optimizePlanCoOptimizingClaimAge(plan, federalOptions())
+      expect(joint.claimAge.outcome).toBe('searched')
+      expect(joint.claimAge.combinationsEvaluated).toBe(example.expected.partlyClaimedCombinationsEvaluated)
+      expect(joint.claimAge.alreadyClaimed.map((claim) => [claim.personId, claim.claimYear])).toEqual([['p1', example.expected.partlyClaimedClaimYear]])
+    })
+
+    it('holds a claim already made and names it', async () => {
+      const joint = await optimizePlanCoOptimizingClaimAge(claimPlan(inputs.alreadyClaimedFixture!), federalOptions())
+      expect(joint.claimAge.outcome).toBe('already-claimed')
+      expect(joint.claimAge.alreadyClaimed.map((claim) => claim.claimYear)).toEqual([example.expected.alreadyClaimedClaimYear])
+      expect(joint.claimAge.combinationsEvaluated).toBe(example.expected.alreadyClaimedCombinationsEvaluated)
+      expect(joint.claimAge.winningClaimPatch).toBeNull()
+    })
+
+    it('publishes unpriced credit years only on an aca-unpriced outcome: a claim already made refuses first', async () => {
+      const plan = claimPlan(inputs.alreadyClaimedUnpricedFixture!)
+      const joint = await optimizePlanCoOptimizingClaimAge(plan, federalOptions())
+      expect(joint.claimAge.outcome).toBe('already-claimed')
+      expect(joint.claimAge.unpricedAca).toEqual([])
+    })
+
+    it('refuses on a Marketplace year whose credit it cannot price, each year with its own reason', async () => {
+      const joint = await optimizePlanCoOptimizingClaimAge(claimPlan(inputs.unpricedCreditFixture!), federalOptions())
+      expect(joint.claimAge.outcome).toBe('aca-unpriced')
+      expect(joint.claimAge.unpricedAca.map((year) => year.year)).toContain(2028)
+      expect(joint.claimAge.unpricedAca.find((year) => year.year === 2028)!.reasons).toEqual(['tax-year-parameters-unsupported'])
+      expect(joint.claimAge.combinationsEvaluated).toBe(example.expected.unpricedCombinationsEvaluated)
+      expect(joint.claimAge.winningClaimPatch).toBeNull()
     })
 
     it('generates 0 candidates with no stream, so 1 combination is evaluated', () => {
-      const candidates = generatedCandidates(inputs.noStreamFixture.streams)
-
+      const candidates = generatedCandidates(claimPlan(inputs.noStreamFixture!))
       expect(candidates.length).toBe(example.expected.noStreamGeneratedCandidates)
-      // Omitting the current claim from the count would publish 0 here.
       expect(1 + candidates.length).toBe(example.expected.noStreamCombinationsEvaluated)
     })
 
     it('holds the current claim, so the joint estate IS the current-claim estate', async () => {
-      const plan = claimPlan(inputs.oneStreamFixture.streams)
-
-      const joint = await optimizePlanCoOptimizingClaimAge(plan, federalOptions())
-
-      expect(joint.claimAge.combinationsEvaluated).toBe(example.expected.oneStreamCombinationsEvaluated)
+      const joint = await optimizePlanCoOptimizingClaimAge(claimPlan(inputs.currentClaimWinsFixture!), federalOptions())
+      expect(joint.claimAge.combinationsEvaluated).toBe(example.expected.openCombinationsEvaluated)
       // No traditional balance, so every conversion schedule is empty and no
       // claim candidate clears the $1,000 switch margin.
       expect(joint.claimAge.winningClaimLabel).toBe(example.expected.winningClaimLabel)
       expect(joint.claimAge.winningClaimPatch).toBe(example.expected.winningClaimPatch)
-      // The derived claim: the two estates are the same number.
       expect(joint.claimAge.jointExactEstate).toBe(joint.claimAge.currentClaimExactEstate)
-      // …and the run-pinned dollar figure that one execution produced.
       const expectedCurrent = example.expected.currentClaimExactEstate as number
       const expectedJoint = example.expected.jointExactEstate as number
       expect(

@@ -40,6 +40,7 @@ import {
 import { claimAgeTotalMonths, currentSpouseMonthlyUnderFamilyMaximum } from '../familyMaximum.js'
 import { bestMaritalBenefit } from '../maritalBenefits.js'
 import { effectiveBirthYear, fraForBirthYear, fraTotalMonths, survivorFraForBirthYear, type DobParts } from '../nra.js'
+import { claimYearOf, isClaimAlreadyMade, type AlreadyClaimed } from '../openClaims.js'
 import { neverClaimedDeceasedFactor, survivorBenefitMonthly, widowEntitlementAgeMonths } from '../survivorBenefit.js'
 import { planInflationFactorFrom } from './breakEven.js'
 import { benefitsOnlyClaimAges, disabilityReplacesClaimAge, socialSecurityClaimants, type SocialSecurityClaimant } from './claimants.js'
@@ -328,21 +329,29 @@ export interface BenefitsPvRow {
 }
 
 export interface BenefitsOnlyRanking {
+  /** The claimants whose claim age is ranked: the open claims, in household order. */
   readonly personIds: readonly string[]
+  /** Each row's `claimByPersonId` names the open claimants only; a claim already made is held at its own age. */
   readonly rows: readonly BenefitsPvRow[]
   /** The rows by expected value, highest first. */
   readonly ranked: readonly BenefitsPvRow[]
   /** People whose benefit is a disability benefit from its onset; when any, nothing is ranked. */
   readonly disabilityPersonIds: readonly string[]
+  /**
+   * Claimants whose claim was made before the start year
+   * (socialSecurity/openClaims.ts#isClaimAlreadyMade), held at their own claim
+   * age; when every claimant is here, nothing is ranked.
+   */
+  readonly alreadyClaimed: readonly AlreadyClaimed[]
 }
 
-function claimantOf(entry: SocialSecurityClaimant, claimYears: number): ExpectedValueClaimant {
+function claimantOf(entry: SocialSecurityClaimant, claimAge: ClaimAge): ExpectedValueClaimant {
   const { y, m, d } = socialSecurityDobParts(entry.person)
   return {
     dob: { year: y, month: m, day: d },
     sex: entry.person.sex,
     piaMonthly: entry.piaMonthly,
-    claimAge: { years: claimYears, months: 0 },
+    claimAge: { years: claimAge.years, months: claimAge.months },
     formerSpouses: entry.stream.formerSpouses ?? [],
   }
 }
@@ -350,35 +359,56 @@ function claimantOf(entry: SocialSecurityClaimant, claimYears: number): Expected
 /**
  * The expected value of every whole-year claim-age combination for the plan's
  * one or two claimants (#benefitsOnlyClaimAges each), ranked highest first. A
- * claimant whose benefit the ledger pays as a disability benefit from its onset
- * is named and nothing is ranked, since the claim age would not start it.
+ * claim already made (its claim year before the start year,
+ * socialSecurity/openClaims.ts#isClaimAlreadyMade) is held at its own claim age
+ * and named in `alreadyClaimed`; when every claim is already made, nothing is
+ * ranked. A claimant whose benefit the ledger pays as a disability benefit
+ * from its onset is named and nothing is ranked, since the claim age would not
+ * start it.
  */
 export function benefitsOnlyRanking(plan: Plan, discountRate: number, startYear: number): BenefitsOnlyRanking {
   const claimants = socialSecurityClaimants(plan, startYear)
-  const personIds = claimants.map((entry) => entry.person.id)
+  const isOpen = (entry: SocialSecurityClaimant) => !isClaimAlreadyMade(entry.person, entry.stream.claimAge, startYear)
+  const open = claimants.filter(isOpen)
+  const personIds = open.map((entry) => entry.person.id)
+  const alreadyClaimed: AlreadyClaimed[] = claimants
+    .filter((entry) => !isOpen(entry))
+    .map((entry) => ({
+      personId: entry.person.id,
+      streamId: entry.stream.id,
+      claimAge: { years: entry.stream.claimAge.years, months: entry.stream.claimAge.months },
+      claimYear: claimYearOf(entry.person, entry.stream.claimAge),
+    }))
   const disabilityPersonIds = claimants.filter((entry) => disabilityReplacesClaimAge(entry.stream, entry.person)).map((entry) => entry.person.id)
-  if (disabilityPersonIds.length > 0 || claimants.length === 0 || claimants.length > 2) {
-    return { personIds, rows: [], ranked: [], disabilityPersonIds }
+  if (disabilityPersonIds.length > 0 || open.length === 0 || claimants.length > 2) {
+    return { personIds, rows: [], ranked: [], disabilityPersonIds, alreadyClaimed }
   }
   const options: ExpectedValueOptions = { startYear, discountRate, assumptions: plan.assumptions }
   const rows: BenefitsPvRow[] = []
+  // A claimant's claim at each whole-year age, or its own claim when already made.
+  const claimsOf = (entry: SocialSecurityClaimant): Array<{ age: number | null; claimant: ExpectedValueClaimant }> =>
+    isOpen(entry)
+      ? benefitsOnlyClaimAges(entry.person, startYear).map((age) => ({ age, claimant: claimantOf(entry, { years: age, months: 0 }) }))
+      : [{ age: null, claimant: claimantOf(entry, entry.stream.claimAge) }]
+  const key = (entry: SocialSecurityClaimant, age: number | null): Record<string, number> =>
+    age === null ? {} : { [entry.person.id]: age }
   if (claimants.length === 1) {
     const entry = claimants[0]!
     const household = { single: plan.household.people.length === 1 }
-    for (const age of benefitsOnlyClaimAges(entry.person, startYear)) {
-      rows.push({ claimByPersonId: { [entry.person.id]: age }, expectedPv: expectedPvSingle(claimantOf(entry, age), household, options) })
+    for (const { age, claimant } of claimsOf(entry)) {
+      rows.push({ claimByPersonId: key(entry, age), expectedPv: expectedPvSingle(claimant, household, options) })
     }
   } else {
     const [first, second] = claimants as [SocialSecurityClaimant, SocialSecurityClaimant]
-    for (const ageA of benefitsOnlyClaimAges(first.person, startYear)) {
-      for (const ageB of benefitsOnlyClaimAges(second.person, startYear)) {
+    for (const a of claimsOf(first)) {
+      for (const b of claimsOf(second)) {
         rows.push({
-          claimByPersonId: { [first.person.id]: ageA, [second.person.id]: ageB },
-          expectedPv: expectedPvCouple(claimantOf(first, ageA), claimantOf(second, ageB), options),
+          claimByPersonId: { ...key(first, a.age), ...key(second, b.age) },
+          expectedPv: expectedPvCouple(a.claimant, b.claimant, options),
         })
       }
     }
   }
   const ranked = [...rows].sort((x, y) => y.expectedPv - x.expectedPv)
-  return { personIds, rows, ranked, disabilityPersonIds: [] }
+  return { personIds, rows, ranked, disabilityPersonIds: [], alreadyClaimed }
 }

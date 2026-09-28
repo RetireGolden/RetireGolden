@@ -41,7 +41,7 @@ Exact derived selections: ordinary `(2026, $120,000, projected)`; SSA-44 lower `
 
 outputs: none.
 
-feeds: `irmaa-surcharge-annual`; `medicare-premiums-annual`.
+feeds: `irmaa-surcharge-annual`; `medicare-premiums-annual`; `survivor-scenario-row-ssa44premium-savings` (the survivor page's SSA-44 difference prices each death timing twice, with the relief's year − 1 selection off and on; `survivor-ssa44-premium-difference`, B2-P1 slice 5).
 
 ## Provenance
 

@@ -753,6 +753,45 @@ export interface YearResult {
   unassignedCash?: number
 }
 
+/**
+ * One window year of the analysis-only bracket-fill lever
+ * (`SimulateOptions.additionalBracketFill`): the plan's own aggregate
+ * conversion target and the fill to the top of the bracket, both sized on the
+ * same state of the year, which of the two the year selected, and what the
+ * ledger said when it converted less than the selected target asked.
+ */
+export interface AdditionalBracketFillYear {
+  year: number
+  /** The plan's own aggregate conversion target for the year (plan dollars; 0 outside its window or with no strategy). */
+  ownTargetPlanDollars: number
+  /** The conversion that brings taxable income to the top of the bracket, capped at the convertible balance (plan dollars). */
+  fillTargetPlanDollars: number
+  /** The convertible traditional balance both targets were sized on (plan dollars). */
+  convertiblePlanDollars: number
+  /** 'fill' when the fill was larger than the plan's own target and replaced it for the year; otherwise 'own'. */
+  selected: 'own' | 'fill'
+  /** A named conversion action suppressed the aggregate strategy this year, so neither target converts. */
+  suppressedByNamedConversions: boolean
+  /**
+   * The messages the fill's own sizing raised (a trim to keep the conversion's
+   * tax payable above the taxable safety-net floor, a target the year's pack
+   * cannot size); empty when it raised none. When the fill is selected these
+   * are also the projection's warnings.
+   */
+  fillNotes: readonly string[]
+  /**
+   * The messages the ledger raised this year when the conversion it executed
+   * fell short of the selected target (no Roth account for an owner's share to
+   * land in, an employer balance not yet distributable, a traditional balance
+   * short of the request); empty when it raised none. They are also the
+   * projection's warnings, which name each message once for the whole run.
+   */
+  ledgerNotes: readonly string[]
+}
+
+/** The sizing half of #AdditionalBracketFillYear, before the year executes (the target coordinator's result). */
+export type AdditionalBracketFillTarget = Omit<AdditionalBracketFillYear, 'ledgerNotes'>
+
 export interface ProjectionResult {
   /** The first projected calendar year; its inflation factor is exactly 1, so it is the year of "today's dollars". */
   startYear: number
@@ -780,4 +819,9 @@ export interface ProjectionResult {
   endingNondeductibleIraBasis: number
   /** Modeling caveats hit during this run (e.g. SS stream without a PIA). */
   warnings: string[]
+  /**
+   * Present only when the run was given `SimulateOptions.additionalBracketFill`:
+   * one row per committed year of its window, in year order.
+   */
+  additionalBracketFill?: AdditionalBracketFillYear[]
 }

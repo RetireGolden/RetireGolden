@@ -1300,30 +1300,22 @@
   {
     "id": "social-security-claiming-sweep-objective",
     "group": "social-security",
-    "title": "Claim-age sweep advantage: best versus current, refined versus best",
-    "meaning": "On the Social Security page's claim-age sweep, the best whole-year strategy's ending after-tax estate minus the estate at the plan's current claim ages (the '+$X' beside the verdict), and the month-refined strategy's ending after-tax estate minus the best whole-year strategy's (the '+$Y' under 'To the month').",
+    "title": "Claim-age sweep: winner versus the plan as entered, and the month refinement versus the winner",
+    "meaning": "The signed change in ending after-tax estate of the sweep's winning whole-year claim against the plan as entered (claim months included), and of the month refinement against that winner, the refinement ranked on the same objective; nominal at the plan's last year.",
     "unit": "usd",
     "basis": "nominal",
     "dimensions": [],
     "kind": "ui-native",
     "uiSources": [
       {
-        "path": "planner-ui/src/planner/ssAnalysis.ts",
-        "symbol": "sweepClaimingStrategies"
-      },
-      {
-        "path": "planner-ui/src/planner/ssAnalysis.ts",
-        "symbol": "refineClaimingMonthly"
-      },
-      {
         "path": "planner-ui/src/planner/SsAnalysisPage.tsx",
-        "symbol": "SsAnalysisPage"
+        "symbol": "InYourPlanTab"
       }
     ],
     "surfaces": [
       {
         "surface": "ss-page",
-        "selector": "Sweep verdict \"+$X vs current claim ages\" and refinement \"+$Y\" over the best whole-year strategy"
+        "selector": "In-your-plan verdict \"(±$X)\" against the current claim ages, in the plan's last-year dollars, and the refinement \"(±$Y over the whole-year pick)\""
       },
       {
         "surface": "ss-page",
@@ -1331,13 +1323,17 @@
       }
     ],
     "transformations": [
-      "bestMinusCurrent = best.summary.endingAfterTaxEstate − currentRow.summary.endingAfterTaxEstate, where best is the engine winner (SweepResult.winner) and currentRow is the sweep row whose claim ages equal the plan's current claim ages (SsAnalysisPage.tsx).",
-      "refinedMinusBest = refined.summary.endingAfterTaxEstate − best.summary.endingAfterTaxEstate, where refineClaimingMonthly re-simulates month-granular claim variants (62y0m to 70y0m, coordinate ascent per person, never below the current age) and keeps the maximum ending after-tax estate (ssAnalysis.ts).",
-      "sweepClaimingStrategies performs no arithmetic of its own: it maps engine candidates (socialSecurityClaimGridGenerator), evaluations (evaluateCandidate) and the ranking (rankEvaluations) into SweepRow records and forwards the engine winner; SweepRow.primaryValue is the engine objective delta versus the current plan."
+      "decisions/claimAgeSweep.ts#sweepClaimAges: winnerEstateChangeVsCurrent = the winner's ending after-tax estate − the plan as entered's (the decision context's baseline run, claim months included), signed and unrounded; the page prints the sign of the printed magnitude (a change that prints as $0 has no sign and no colour).",
+      "decisions/claimAgeSweep.ts#refineClaimAgeMonthly: from the winner, every claim month within a year of it for each open claim in household order (62 to 70, none below the age reached, 70y0m only at 70), keeping a month only when its row is eligible under the objective and its primary metric is strictly greater; estateChangeVsWinner = refined − winner estate, and primaryChangeVsWinner the objective's own difference.",
+      "Claims made before the plan's start year are held fixed and not swept (socialSecurity/openClaims.ts#openClaims: claim year = birth year + claim years); a plan with a Marketplace year whose premium tax credit cannot be priced is refused (verdict 'aca-unpriced', each year with its reasons), as is a disability benefit."
     ],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": "The objective value the sweep ranks on (SweepRow.primaryValue, printed as '(+$Z vs current)' under non-estate objectives by fmtObjectiveDelta) is computed by engine/src/decisions/tournament.ts rankEvaluations and passed through, not recomputed. The validator's REQUIRED_UI entry names ssAnalysis.ts#sweepClaimingStrategies; the UI arithmetic that entry stands for is the two displayed differences above, so the family stays ui-native on their strength."
+    "notes": "Computed in planner-ui/src/planner/ssAnalysis.ts#sweepClaimingStrategies, #refineClaimingMonthly and SsAnalysisPage.tsx#InYourPlanTab until B2-P1 slice 5 (a \"+\" prefixed to any value, the whole-year row as \"current\", a refinement that maximised the estate under every ranking, claims already made swept as choices); now engine engine/src/decisions/claimAgeSweep.ts#sweepClaimAges and #refineClaimAgeMonthly (owner decision R12: a signed change; the refinement ranked on the chosen objective), which InYourPlanTab reads. The objective value each row is ranked on (primaryValue, and rankedOn when bridge durability or survivor liquidity falls back to the estate) is engine/src/decisions/tournament.ts#rankEvaluations and objectives.ts#rankedMetricBasis.",
+    "relocation": {
+      "status": "done",
+      "target": "engine/src/decisions/claimAgeSweep.ts#sweepClaimAges"
+    }
   },
   {
     "transformations": [
@@ -1602,114 +1598,130 @@
   {
     "id": "survivor-scenario-row-estate-delta",
     "group": "social-security",
-    "title": "estateDelta",
-    "meaning": "Change in after-tax estate from the convert-early survivor lever versus the same death-timing baseline.",
+    "title": "Convert-early lever: after-tax estate change",
+    "meaning": "Change in ending after-tax estate, for one death timing, from adding Roth conversions that fill the 12% bracket on top of the plan's own from the start year through the year of the first death; nominal at the timing's last year.",
     "unit": "usd",
     "basis": "nominal",
     "dimensions": [],
     "kind": "ui-native",
     "uiSources": [
       {
-        "path": "planner-ui/src/planner/survivorAnalysis.ts",
-        "symbol": "buildSurvivorAnalysis"
+        "path": "planner-ui/src/planner/SurvivorTransitionPage.tsx",
+        "symbol": "ScenarioTable"
       }
     ],
     "surfaces": [
       {
         "surface": "survivor-page",
-        "selector": "convert-early after-tax estate delta"
+        "selector": "Convert-early lever cell \"±$X\" after-tax estate, \"in YEAR dollars\", with its reason when the lever adds nothing"
       }
     ],
     "transformations": [
-      "Subtract the base run's ProjectionSummary.endingAfterTaxEstate from the conversion-lever run's (same death timing, conversions filling the 12% bracket through the death year)."
+      "projection/survivorTransition.ts#survivorTransitionAnalysis: estateDelta = the lever run's ProjectionSummary.endingAfterTaxEstate − the base run's, both with the timing's death override and the plan's own SSA-44 setting; the lever run is the plan as entered with SimulateOptions.additionalBracketFill { 12%, start year, death year }, which converts max(the plan's own target, a 12% fill capped at the convertible balance) in each window year."
     ],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": "Operands: SurvivorScenarioRow.endingAfterTaxEstate (lever run) and baseEndingAfterTaxEstate (base run) are engine summary values read in survivorAnalysis.ts."
+    "notes": "Computed in planner-ui/src/planner/survivorAnalysis.ts#buildTimingRow (as a replacement of the plan's conversion strategy by a 12% fill) until B2-P1 slice 5; now engine engine/src/projection/survivorTransition.ts (owner decision R16: in addition to the plan's conversions), which ScenarioTable reads with the lever's raisedYears and coveredYears for its reason sentence.",
+    "relocation": {
+      "status": "done",
+      "target": "engine/src/projection/survivorTransition.ts#SurvivorConversionLever.estateDelta"
+    }
   },
   {
     "transformations": [
-      "Subtract the base run's ProjectionSummary.lifetimeTaxesAndPenalties from the conversion-lever run's."
+      "projection/survivorTransition.ts#survivorTransitionAnalysis: lifetimeTaxDelta = the lever run's ProjectionSummary.lifetimeTaxesAndPenalties − the base run's (the lever as for survivor-scenario-row-estate-delta); the sum carries every later year's knock-on, not only the added conversions' tax."
     ],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": "Operands: SurvivorScenarioRow.lifetimeTax (lever run) and baseLifetimeTax (base run) are engine lifetimeTaxesAndPenalties read in survivorAnalysis.ts.",
+    "notes": "Computed in planner-ui/src/planner/survivorAnalysis.ts#buildTimingRow on the replacement lever until B2-P1 slice 5; now engine engine/src/projection/survivorTransition.ts (owner decision R16), which ScenarioTable reads.",
     "dimensions": [],
     "basis": "nominal",
     "id": "survivor-scenario-row-lifetime-tax-delta",
     "group": "social-security",
     "title": "Convert-early lifetime tax delta",
-    "meaning": "Lifetime taxes and penalties under the pre-death conversion lever minus the base run, for one death timing.",
+    "meaning": "Lifetime taxes and penalties (undiscounted nominal sum) with the convert-early lever minus without it, for one death timing; the lever adds a 12%-bracket fill to the plan's own conversions through the year of the first death.",
     "unit": "usd",
     "kind": "ui-native",
     "uiSources": [
       {
-        "path": "planner-ui/src/planner/survivorAnalysis.ts",
-        "symbol": "buildTimingRow"
+        "path": "planner-ui/src/planner/SurvivorTransitionPage.tsx",
+        "symbol": "ScenarioTable"
       }
     ],
     "surfaces": [
       {
         "surface": "survivor-page",
-        "selector": "Convert-early lever cell \"(+$X lifetime tax)\""
+        "selector": "Convert-early lever cell \"(±$X lifetime tax)\""
       }
-    ]
+    ],
+    "relocation": {
+      "status": "done",
+      "target": "engine/src/projection/survivorTransition.ts#SurvivorConversionLever.lifetimeTaxDelta"
+    }
   },
   {
     "id": "survivor-scenario-row-ssa44premium-savings",
     "group": "social-security",
-    "title": "ssa44PremiumSavings",
-    "meaning": "Medicare premium savings produced by applying SSA-44 relief after the modeled life-changing event.",
+    "title": "SSA-44 survivor premium difference",
+    "meaning": "For one death timing, Medicare premiums over the whole projection without SSA-44 survivor relief minus with it (nominal dollars summed across years): the two relief years plus any later knock-on, the relief-year part published beside it.",
     "unit": "usd",
     "basis": "nominal",
     "dimensions": [],
     "kind": "ui-native",
     "uiSources": [
       {
-        "path": "planner-ui/src/planner/survivorAnalysis.ts",
-        "symbol": "buildSurvivorAnalysis"
+        "path": "planner-ui/src/planner/SurvivorTransitionPage.tsx",
+        "symbol": "Ssa44Cell"
       }
     ],
     "surfaces": [
       {
         "surface": "survivor-page",
-        "selector": "IRMAA relief SSA-44"
+        "selector": "IRMAA relief (SSA-44) cell \"$X\", with the relief years' tier changes and \", including $Y in later years\""
       }
     ],
     "transformations": [
-      "Sum over every projection year of medicarePremiums from the run without SSA-44 relief minus medicarePremiums from the run with relief forced on."
+      "projection/survivorTransition.ts#survivorTransitionAnalysis: ssa44PremiumSavings = Σ over every projection year of medicarePremiums without relief − with it (the plan with ssa44.survivorYears forced off and on, same death override); ssa44ReliefYearSavings is the same sum over the death year + 1 and + 2 only. The page prints the whole sum, names the later-year part when it is at least $1, and says \"no surcharge to relieve\" exactly when the relief-year part is at most $0.50."
     ],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": "Operands: SurvivorIrmaaYear.premiumsWithoutSsa44 and premiumsWithSsa44 are engine medicarePremiums read from the two runs (survivorAnalysis.ts)."
+    "notes": "Computed in planner-ui/src/planner/survivorAnalysis.ts#buildTimingRow until B2-P1 slice 5, with a note naming only the relief years; now engine engine/src/projection/survivorTransition.ts, the total unchanged and the relief-year part published beside it, which Ssa44Cell in SurvivorTransitionPage.tsx reads. The relief-year MAGI selection is the engine's irmaa-lookback-selection.",
+    "relocation": {
+      "status": "done",
+      "target": "engine/src/projection/survivorTransition.ts#SurvivorTimingRow.ssa44PremiumSavings"
+    }
   },
   {
     "id": "survivor-scenario-row-survivor-shortfall-years",
     "group": "social-security",
-    "title": "survivorShortfallYears",
-    "meaning": "Number of survivor years in which planned spending is not fully funded.",
+    "title": "Survivor shortfall years",
+    "meaning": "Number of years after the year of the first death, with the survivor alive, whose required-spending shortfall exceeds the ledger's funding tolerance ($0.005).",
     "unit": "count",
     "basis": "n/a",
     "dimensions": [],
     "kind": "ui-native",
     "uiSources": [
       {
-        "path": "planner-ui/src/planner/survivorAnalysis.ts",
-        "symbol": "buildSurvivorAnalysis"
+        "path": "planner-ui/src/planner/SurvivorTransitionPage.tsx",
+        "symbol": "ScenarioTable"
       }
     ],
     "surfaces": [
       {
         "surface": "survivor-page",
-        "selector": "survivor shortfall years"
+        "selector": "Survivor spending cell \"required spending covered\" or \"N shortfall yrs\""
       }
     ],
     "transformations": [
-      "Count the survivor years (after the death year, someone alive) whose engine requiredShortfall exceeds 0.005."
+      "projection/survivorTransition.ts#survivorTransitionAnalysis: count the base run's years after the death year in which someone is alive and YearResult.requiredShortfall > ANNUAL_FUNDING_TOLERANCE_PLAN_DOLLARS (0.005)."
     ],
     "candidateRuleIds": [],
     "status": "identified",
-    "notes": ""
+    "notes": "Computed in planner-ui/src/planner/survivorAnalysis.ts#buildTimingRow until B2-P1 slice 5 with the literal 0.005, beside transition facts that read the total shortfall; now engine engine/src/projection/survivorTransition.ts, whose facts read required spending on both sides of the death (owner decision R16), which ScenarioTable reads.",
+    "relocation": {
+      "status": "done",
+      "target": "engine/src/projection/survivorTransition.ts#SurvivorTimingRow.survivorShortfallYears"
+    }
   },
   {
     "transformations": [],
