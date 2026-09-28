@@ -1268,12 +1268,16 @@ function EarningsTestNotice({
   )
 }
 
-function currentClaim(plan: ReturnType<typeof usePlan>['plan'], ids: readonly string[]): Record<string, number> {
-  const out: Record<string, number> = {}
-  for (const s of plan.incomes) {
-    if (s.type === 'socialSecurity' && ids.includes(s.personId)) out[s.personId] = s.claimAge.years
-  }
-  return out
+/**
+ * The key of the ranking's whole-year row that is the plan's own claim, or null
+ * when a claim carries months: a 67y 6m claim is not the 67 row, so no row is
+ * current and every row can be applied (as the In-your-plan tab compares with
+ * the plan as entered, claim months included).
+ */
+function currentClaimKey(plan: ReturnType<typeof usePlan>['plan'], ids: readonly string[]): string | null {
+  const claims = ids.map((id) => plan.incomes.find((s) => s.type === 'socialSecurity' && s.personId === id))
+  if (claims.some((s) => s === undefined || s.type !== 'socialSecurity' || s.claimAge.months !== 0)) return null
+  return claims.map((s) => (s!.type === 'socialSecurity' ? s!.claimAge.years : 0)).join('-')
 }
 
 function BenefitsOnlyTab({ personIds, personName, applyStrategy }: TabProps) {
@@ -1288,7 +1292,7 @@ function BenefitsOnlyTab({ personIds, personName, applyStrategy }: TabProps) {
   // at its own age and not ranked).
   const rankedIds = ranking.personIds
   const best = ranking.ranked[0]
-  const current = currentClaim(plan, [...rankedIds])
+  const currentKey = currentClaimKey(plan, rankedIds)
   const keyOf = (claim: Readonly<Record<string, number>>) => rankedIds.map((id) => claim[id]).join('-')
   // The ranking prices a living ex's record only for a claimant living alone:
   // a couple's model does not read former-spouse records, and a lone claimant
@@ -1378,7 +1382,7 @@ function BenefitsOnlyTab({ personIds, personName, applyStrategy }: TabProps) {
           <strong>Highest expected value: claim at {ageLabel(best.claimByPersonId, rankedIds)}</strong>
           {rankedIds.length === 2 ? ` (${rankedIds.map(personName).join(' / ')})` : ''}, expected PV{' '}
           {fmtMoneyCompact(best.expectedPv)}.
-          {keyOf(best.claimByPersonId) !== keyOf(current) ? (
+          {keyOf(best.claimByPersonId) !== currentKey ? (
             <div style={{ marginTop: '0.6rem' }}>
               <button type="button" className="btn btn-primary btn-small" disabled={readOnly} onClick={() => applyStrategy({ ...best.claimByPersonId })}>
                 Apply {ageLabel(best.claimByPersonId, rankedIds)}
@@ -1400,7 +1404,7 @@ function BenefitsOnlyTab({ personIds, personName, applyStrategy }: TabProps) {
             </thead>
             <tbody>
               {ranking.ranked.slice(0, 10).map((r) => {
-                const isCurrent = keyOf(r.claimByPersonId) === keyOf(current)
+                const isCurrent = keyOf(r.claimByPersonId) === currentKey
                 return (
                   <tr key={keyOf(r.claimByPersonId)} className={isCurrent ? 'claim-row--current' : undefined}>
                     <td>{ageLabel(r.claimByPersonId, rankedIds)}</td>

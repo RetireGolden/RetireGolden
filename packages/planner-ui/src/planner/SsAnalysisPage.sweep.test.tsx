@@ -214,6 +214,27 @@ describe('In your plan on the engine sweep', () => {
     expect([...container.querySelectorAll('button')].some((b) => /Check robustness/u.test(b.textContent ?? ''))).toBe(true)
   }, 120_000)
 
+  it('treats a claim with months as no whole-year row on the Benefits-only tab: 67y 6m is not the 67 row (PR #758 review 2)', async () => {
+    const benefitsOnly = async () => {
+      const tab = [...container.querySelectorAll<HTMLButtonElement>('button[role="tab"]')].find((b) => b.textContent === 'Benefits only')!
+      await act(async () => tab.click())
+      const row = [...container.querySelectorAll('tr')].find((tr) => tr.querySelector('td')?.textContent === '67')!
+      return { row, use: row.querySelector('button')! }
+    }
+    await render(single({ years: 67, months: 6 }))
+    await settled()
+    const withMonths = await benefitsOnly()
+    expect(withMonths.row.classList.contains('claim-row--current')).toBe(false)
+    expect(withMonths.use.disabled).toBe(false)
+    expect(container.querySelectorAll('tr.claim-row--current')).toHaveLength(0)
+    // The whole-year claim at 67 is the 67 row.
+    await render(single({ years: 67, months: 0 }))
+    await settled()
+    const whole = await benefitsOnly()
+    expect(whole.row.classList.contains('claim-row--current')).toBe(true)
+    expect(whole.use.disabled).toBe(true)
+  }, 120_000)
+
   it('drops the refinement when the plan changes', async () => {
     const plan = single({ years: 67, months: 0 })
     await render(plan)
