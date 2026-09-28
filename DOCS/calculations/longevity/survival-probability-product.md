@@ -73,7 +73,9 @@ The curve's cases:
 
 ## Family
 
-`longevity-survival-percentile-age`; since 2026-09-27 also `social-security-expected-present-value`, `social-security-survivor-switch-pv` and `social-security-fica-return-ratio`, whose models read the curve.
+outputs: none.
+
+feeds: `longevity-survival-percentile-age`; since 2026-09-27 also `social-security-expected-present-value`, `social-security-survivor-switch-pv` and `social-security-fica-return-ratio`, whose models read the curve, `income-annuity-annual` (a joint-and-survivor annuity's joint life expectancy, `mortality-joint-last-survivor-expectancy`, reads it) and `spending-base-annual` (the amortization-based spending policy's survival-percentile horizon, worked out again on every projection).
 
 Revision 2026-09-14: the first derivation also listed `monte-carlo-success-rate` and `monte-carlo-ending-investable-histogram`. The Monte Carlo reaches mortality through the sampled death age, which since 2026-09-27 reads this curve's `deathProbabilityGivenAlive` (`mortality-sampled-death-age` feeds those two families).
 

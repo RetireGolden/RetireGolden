@@ -45,7 +45,9 @@ Exact integers.
 
 ## Family
 
-`longevity-survival-percentile-age`.
+outputs: `longevity-survival-percentile-age`.
+
+feeds: `spending-base-annual` (the amortization-based spending policy's survival-percentile horizon, worked out again on every projection).
 
 ## Provenance
 

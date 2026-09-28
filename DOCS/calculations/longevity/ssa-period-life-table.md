@@ -165,7 +165,7 @@ Tolerance: exact. Every one of the 120 ages from 0 to 119 is in the table once, 
 
 outputs: none.
 
-feeds: `longevity-survival-percentile-age`, `monte-carlo-success-rate`, `monte-carlo-ending-investable-histogram`, `social-security-expected-present-value`, `social-security-survivor-switch-pv`, `social-security-fica-return-ratio`, `income-annuity-annual` (through `mortality-published-death-probability` and the survival curve).
+feeds: `longevity-survival-percentile-age`, `monte-carlo-success-rate`, `monte-carlo-ending-investable-histogram`, `social-security-expected-present-value`, `social-security-survivor-switch-pv`, `social-security-fica-return-ratio`, `income-annuity-annual`, `spending-base-annual` (the amortization-based spending policy's survival-percentile horizon, worked out again on every projection) (through `mortality-published-death-probability` and the survival curve).
 
 ## Provenance
 

@@ -52,7 +52,7 @@ Tolerance: exact. Every x from 0 to 118, for each sex, equals the `ssa-period-li
 
 outputs: none.
 
-feeds: `longevity-survival-percentile-age`, `monte-carlo-success-rate`, `monte-carlo-ending-investable-histogram`, `social-security-expected-present-value`, `social-security-survivor-switch-pv`, `social-security-fica-return-ratio`, `income-annuity-annual` (every reader goes through the survival curve).
+feeds: `longevity-survival-percentile-age`, `monte-carlo-success-rate`, `monte-carlo-ending-investable-histogram`, `social-security-expected-present-value`, `social-security-survivor-switch-pv`, `social-security-fica-return-ratio`, `income-annuity-annual`, `spending-base-annual` (the amortization-based spending policy's survival-percentile horizon, worked out again on every projection) (every reader goes through the survival curve).
 
 ## Provenance
 
