@@ -33,7 +33,12 @@
 import type { Plan } from '../../model/plan.js'
 import { socialSecurityDobParts } from '../annualTiming.js'
 import { CPI_U_ANNUAL_AVERAGE, CPI_U_LATEST_YEAR } from '../cpiU.js'
-import { FIRST_OASDI_TAX_YEAR, OASDI_TAX_RATE_BY_YEAR, type OasdiTaxRates } from '../oasdiTaxRates.js'
+import {
+  FIRST_OASDI_TAX_YEAR,
+  LATEST_PUBLISHED_OASDI_TAX_RATE_YEAR,
+  OASDI_TAX_RATE_BY_YEAR,
+  type OasdiTaxRates,
+} from '../oasdiTaxRates.js'
 import { resolveStreamPiaMonthly, type YearEarning } from '../piaFromEarnings.js'
 import { wageBaseForYearOrLatest } from '../ssaWageData.js'
 import {
@@ -83,8 +88,7 @@ export interface OasdiPaidInOptions {
 /** The rates for a year: SSA's table, current law (the latest row) after it, and none before 1937. */
 function ratesForYear(year: number): OasdiTaxRates | undefined {
   if (year < FIRST_OASDI_TAX_YEAR) return undefined
-  const latest = Math.max(...Object.keys(OASDI_TAX_RATE_BY_YEAR).map(Number))
-  return OASDI_TAX_RATE_BY_YEAR[year] ?? OASDI_TAX_RATE_BY_YEAR[latest]
+  return OASDI_TAX_RATE_BY_YEAR[year] ?? OASDI_TAX_RATE_BY_YEAR[LATEST_PUBLISHED_OASDI_TAX_RATE_YEAR]
 }
 
 /**

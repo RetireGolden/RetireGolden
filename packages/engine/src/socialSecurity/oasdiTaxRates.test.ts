@@ -1,7 +1,7 @@
 import { expect, it } from 'vitest'
 
 import { describeRule } from '../rules/describeRule.js'
-import { FIRST_OASDI_TAX_YEAR, OASDI_TAX_RATE_BY_YEAR } from './oasdiTaxRates.js'
+import { FIRST_OASDI_TAX_YEAR, LATEST_PUBLISHED_OASDI_TAX_RATE_YEAR, OASDI_TAX_RATE_BY_YEAR } from './oasdiTaxRates.js'
 
 // 3101(a) imposes the tax on the employee at a flat 6.2 percent. The
 // employer pays the same again and a self-employed individual pays both, so
@@ -23,6 +23,7 @@ it('covers every year from 1937 through 2026 with no gap, and no self-employment
   const years = Object.keys(OASDI_TAX_RATE_BY_YEAR).map(Number)
   expect(Math.min(...years)).toBe(FIRST_OASDI_TAX_YEAR)
   expect(Math.max(...years)).toBe(2026)
+  expect(LATEST_PUBLISHED_OASDI_TAX_RATE_YEAR).toBe(2026)
   expect(years).toHaveLength(2026 - 1937 + 1)
   for (const year of years) {
     const rates = OASDI_TAX_RATE_BY_YEAR[year]!

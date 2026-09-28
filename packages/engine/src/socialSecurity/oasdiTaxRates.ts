@@ -129,3 +129,6 @@ export const OASDI_TAX_RATE_BY_YEAR: Readonly<Record<number, OasdiTaxRates>> = {
 
 /** The first year of the OASDI payroll tax. */
 export const FIRST_OASDI_TAX_YEAR = 1937
+
+/** The last year the table carries; a later year is taxed at its rates, current law. */
+export const LATEST_PUBLISHED_OASDI_TAX_RATE_YEAR = Math.max(...Object.keys(OASDI_TAX_RATE_BY_YEAR).map(Number))

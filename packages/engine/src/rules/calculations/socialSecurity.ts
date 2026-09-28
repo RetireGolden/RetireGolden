@@ -776,6 +776,7 @@ export const socialSecurityRecords = {
     implementedByFunctions: [
       'packages/engine/src/socialSecurity/oasdiTaxRates.ts#OASDI_TAX_RATE_BY_YEAR',
       'packages/engine/src/socialSecurity/oasdiTaxRates.ts#FIRST_OASDI_TAX_YEAR',
+      'packages/engine/src/socialSecurity/oasdiTaxRates.ts#LATEST_PUBLISHED_OASDI_TAX_RATE_YEAR',
     ],
     verifiedOn: '2026-09-27',
     provenance: { derivedBy: 'claude', implementedBy: 'claude', reviewedBy: 'unreviewed' },
