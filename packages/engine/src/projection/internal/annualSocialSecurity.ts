@@ -109,6 +109,15 @@ function claimAgeFromTotalMonths(totalMonths: number): ClaimAge {
 export const ssdiNotPayableBeforeFraWarning = (personName: string): string =>
   `The date ${personName}'s disability began leaves no Social Security disability month before full retirement age (the first payment would fall at or after it), so ${personName}'s benefit is priced as a retirement claim at the claim age.`
 
+/**
+ * The same fall-through for a worker who died before the year of that claim
+ * age: the stream is then priced as never claimed, the survivor on the benefit
+ * the worker would have received for the month before the death (42 U.S.C.
+ * 402(e)(2)(C)), not as a retirement claim.
+ */
+export const ssdiNotPayableBeforeFraNeverClaimedWarning = (personName: string): string =>
+  `The date ${personName}'s disability began leaves no Social Security disability month before full retirement age (the first payment would fall at or after it), and ${personName} died before the claim age, so the survivor benefit is priced as if ${personName} never claimed.`
+
 /** Annual-ledger approximation: a same-year claim pays only months after the claim month. */
 export function annualSocialSecurityPayableMonths(
   ageAttained: number,
@@ -223,11 +232,11 @@ export function annualSocialSecurity(
     // disability month is payable before the full-retirement-age month
     // (42 U.S.C. 423(a)(1), (c)(2)). When the first payable month is at or after
     // it, entitlement never begins: the stream is an ordinary retirement claim
-    // at its claim age, and the plan says so.
+    // at its claim age (or, for a worker who died before it, never claimed),
+    // and the plan says which.
     const schedule = stream.disability === undefined
       ? null
       : ssdiSchedule({ year: y, month: m, day: d }, stream.disability)
-    if (stream.disability !== undefined && schedule === null) warningValues.push(ssdiNotPayableBeforeFraWarning(person.name))
     // A worker who died before the year his benefit would first have been paid
     // (his configured claim age, or the first month after the disability waiting
     // period) never claimed. His survivor is priced on the benefit he would upon
@@ -239,8 +248,15 @@ export function annualSocialSecurity(
     const firstPaidYear = schedule !== null
       ? Math.floor(schedule.firstPayableMonthIndex / 12)
       : y + stream.claimAge.years
-    if (!s.alive && s.lifeAge !== undefined && firstPaidYear > y + s.lifeAge) {
-      const monthly = pia * neverClaimedDeceasedFactor({ year: y, month: m, day: d }, y + s.lifeAge, 12)
+    const deathYear = !s.alive && s.lifeAge !== undefined ? y + s.lifeAge : null
+    const neverClaimed = deathYear !== null && firstPaidYear > deathYear
+    if (stream.disability !== undefined && schedule === null) {
+      warningValues.push(neverClaimed
+        ? ssdiNotPayableBeforeFraNeverClaimedWarning(person.name)
+        : ssdiNotPayableBeforeFraWarning(person.name))
+    }
+    if (neverClaimed) {
+      const monthly = pia * neverClaimedDeceasedFactor({ year: y, month: m, day: d }, deathYear, 12)
       ssActualMonthlyByPerson.set(stream.personId, (ssActualMonthlyByPerson.get(stream.personId) ?? 0) + monthly)
       continue
     }

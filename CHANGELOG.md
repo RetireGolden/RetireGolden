@@ -55,7 +55,9 @@ This is a high-level, time-ordered summary of changes to the system, synthesized
   year that holds the FRA month, now placed by month (a worker born 1959-06-15, whose
   FRA of 66y10m falls in April 2026, now reads `ssdi` for all of 2025). When the first payable month is at or after the FRA month there is
   no disability benefit: the stream is priced as a retirement claim at its claim age
-  and the projection warns, naming the person (`ssdiNotPayableBeforeFraWarning`); the old
+  and the projection warns, naming the person (`ssdiNotPayableBeforeFraWarning`, or
+  `ssdiNotPayableBeforeFraNeverClaimedWarning` when the worker died before the claim age and
+  the stream is priced as never claimed); the old
   onset-at-or-after-FRA fall-through was silent. An onset age equal to the FRA years
   can now pay disability months where the engine priced a retirement claim. With a
   blank month that takes a birthday after July 1 when FRA is a whole number of years,

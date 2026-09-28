@@ -13,7 +13,7 @@ import { year2026 } from '../params/data/year2026.js'
 import { computePiaFromEarnings, isPiaFromEarningsError } from '../socialSecurity/piaFromEarnings.js'
 import { AWI_BY_YEAR } from '../socialSecurity/ssaWageData.js'
 import { simulatePlan } from './simulate.js'
-import { ssdiNotPayableBeforeFraWarning } from './internal/annualSocialSecurity.js'
+import { ssdiNotPayableBeforeFraNeverClaimedWarning, ssdiNotPayableBeforeFraWarning } from './internal/annualSocialSecurity.js'
 import { claimFactor } from '../socialSecurity/claimFactor.js'
 import {
   basePlan,
@@ -226,6 +226,33 @@ describe('social security', () => {
     expect(result.warnings).not.toContain(ssdiNotPayableBeforeFraWarning('Sam'))
     expect(ssdiNotPayableBeforeFraWarning('Pat')).toBe(
       "The date Pat's disability began leaves no Social Security disability month before full retirement age (the first payment would fall at or after it), so Pat's benefit is priced as a retirement claim at the claim age.",
+    )
+  })
+
+  it('says the stream was priced as never claimed, not as a retirement claim, when the worker died before the claim age', () => {
+    // Pat, born 1960-06-15 (FRA 67, June 2027), has a December 2026 onset:
+    // first payable June 2027, her FRA month, so there is no disability month.
+    // She claims at 70 (2030) but has a life age of 62: she died in 2022,
+    // before the projection starts and before 2030. Her stream is then priced
+    // as never claimed, Sam's widow benefit on the benefit Pat would have had
+    // for the month before her death (402(e)(2)(C)), so the warning says that
+    // and not that the benefit is priced as a retirement claim at the claim age.
+    const plan = ssdiWorkerPlan({ onsetAge: 66, onsetMonth: 12 }, 70)
+    plan.household.filingStatus = 'marriedFilingJointly'
+    plan.household.people[0] = { ...plan.household.people[0]!, dob: '1960-06-15', longevity: { planningAge: 62, source: 'manual' } }
+    plan.household.people.push({
+      id: 'p2', name: 'Sam', dob: '1960-06-15', sex: 'average',
+      retirementAge: null, longevity: { planningAge: 90, source: 'manual' },
+    })
+    plan.incomes.push({
+      type: 'socialSecurity', id: testIds(), personId: 'p2', piaMonthly: 500, earnings: null,
+      claimAge: { years: 67, months: 0 },
+    })
+    const result = ssdiRun(plan)
+    expect(result.warnings).toContain(ssdiNotPayableBeforeFraNeverClaimedWarning('Pat'))
+    expect(result.warnings).not.toContain(ssdiNotPayableBeforeFraWarning('Pat'))
+    expect(ssdiNotPayableBeforeFraNeverClaimedWarning('Pat')).toBe(
+      "The date Pat's disability began leaves no Social Security disability month before full retirement age (the first payment would fall at or after it), and Pat died before the claim age, so the survivor benefit is priced as if Pat never claimed.",
     )
   })
 
