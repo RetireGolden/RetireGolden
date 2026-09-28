@@ -670,8 +670,8 @@ function InYourPlanTab({ personName, applyStrategy }: Omit<TabProps, 'personIds'
     sweep.alreadyClaimed.length > 0 && sweep.personIds.length > 0 && sweep.rows.length > 0 ? (
       <p className="card-hint">
         {alreadyClaimedText(sweep.alreadyClaimed, personName)}, before the plan starts in {startYear}, so{' '}
-        {sweep.alreadyClaimed.length === 1 ? 'that claim is' : 'those claims are'} held as they are in every claim age
-        below.
+        {sweep.alreadyClaimed.length === 1 ? 'that claim is held as it is' : 'those claims are held as they are'} in every
+        claim age below.
       </p>
     ) : null
 
@@ -1384,7 +1384,7 @@ function BenefitsOnlyTab({ personIds, personName, applyStrategy }: TabProps) {
           {alreadyClaimedText(ranking.alreadyClaimed, personName)}, before the plan starts in {currentStartYear()}
           {rankedIds.length === 0
             ? `, so there is no claim age left to compare. ${ALREADY_CLAIMED_LIMITS}`
-            : `, so ${ranking.alreadyClaimed.length === 1 ? 'that claim is' : 'those claims are'} held as they are below.`}
+            : `, so ${ranking.alreadyClaimed.length === 1 ? 'that claim is held as it is' : 'those claims are held as they are'} below.`}
         </div>
       ) : null}
 

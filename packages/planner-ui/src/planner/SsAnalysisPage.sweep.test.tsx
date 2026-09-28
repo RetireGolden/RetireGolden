@@ -235,6 +235,34 @@ describe('In your plan on the engine sweep', () => {
     expect(whole.use.disabled).toBe(true)
   }, 120_000)
 
+  it('says "that claim is held as it is" for a couple with one claim made and one open (PR #758 review 4)', async () => {
+    const draft = createEmptyPlan({ newId: (() => { let n = 0; return () => `held-${++n}` })() })
+    draft.household.filingStatus = 'marriedFilingJointly'
+    draft.household.people = [
+      { id: 'p1', name: 'High', dob: '1963-06-15', sex: 'male', retirementAge: null, longevity: { planningAge: 90, source: 'manual' } },
+      { id: 'p2', name: 'Low', dob: '1966-01-01', sex: 'female', retirementAge: null, longevity: { planningAge: 94, source: 'manual' } },
+    ]
+    draft.assumptions.inflationPct = 2
+    draft.assumptions.defaultReturnPct = 5
+    draft.expenses.baseAnnual = 45_000
+    draft.accounts = [{ type: 'taxable', id: 'brokerage', name: 'Brokerage', ownerPersonId: null, annualReturnPct: null, balance: 900_000, costBasis: 900_000, annualContribution: 0 }]
+    draft.incomes = [
+      { type: 'socialSecurity', id: 'ss-high', personId: 'p1', piaMonthly: 3_000, earnings: null, claimAge: { years: 62, months: 0 } },
+      { type: 'socialSecurity', id: 'ss-low', personId: 'p2', piaMonthly: 1_200, earnings: null, claimAge: { years: 70, months: 0 } },
+    ]
+    const parsed = parsePlan(draft)
+    if (!parsed.ok) throw new Error(parsed.issues.join('; '))
+    await render(parsed.plan)
+    await settled()
+    // High claimed at 62 in 2025, before the plan; Low's claim is open and swept.
+    expect(text()).toContain('High claimed at 62 in 2025, before the plan starts in 2026, so that claim is held as it is in every claim age below.')
+    expect(text()).not.toContain('held as they are')
+    const tab = [...container.querySelectorAll<HTMLButtonElement>('button[role="tab"]')].find((b) => b.textContent === 'Benefits only')!
+    await act(async () => tab.click())
+    expect(text()).toContain('High claimed at 62 in 2025, before the plan starts in 2026, so that claim is held as it is below.')
+    expect(text()).not.toContain('held as they are')
+  }, 120_000)
+
   it('drops the refinement when the plan changes', async () => {
     const plan = single({ years: 67, months: 0 })
     await render(plan)
