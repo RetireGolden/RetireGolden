@@ -1450,6 +1450,35 @@ describe('social security', () => {
     expect(result.warnings.join(' ')).toContain('SGA')
   })
 
+  it('counts each disability stream of one person by its own months in the FRA year (two streams)', () => {
+    // The plan schema admits two Social Security streams for one person.
+    // Born 1960-09-15, FRA 67 is attained in September 2027. Stream A (PIA
+    // 1,000) has a 2020 onset, so in 2027 it pays January to August as
+    // disability (8 months) and September to December converted (4). Stream B
+    // (PIA 500) began in September 2026, so its first payment is for March
+    // 2027: March to August disability (6), September to December converted
+    // (4). 2027 SSDI is each stream's own disability months, 8 x 1,000 +
+    // 6 x 500 = 11,000, of a total 12 x 1,000 + 10 x 500 = 17,000; one share
+    // over the combined benefit would give 17,000 x 6/10 = 10,200 or
+    // 17,000 x 8/12 = 11,333.33.
+    const plan = basePlan()
+    plan.household.people[0]! = { ...plan.household.people[0]!, dob: '1960-09-15', retirementAge: null }
+    plan.incomes = [
+      { type: 'socialSecurity', id: testIds(), personId: 'p1', piaMonthly: 1_000, earnings: null, claimAge: { years: 67, months: 0 }, disability: { onsetAge: 60 } },
+      { type: 'socialSecurity', id: testIds(), personId: 'p1', piaMonthly: 500, earnings: null, claimAge: { years: 67, months: 0 }, disability: { onsetAge: 66, onsetMonth: 9 } },
+    ]
+    plan.accounts = [cash(2_000_000)]
+    const result = simulatePlan(validate(plan), { startYear: 2026, taxCalculator: noTax })
+
+    const y = (year: number) => result.years.find((row) => row.year === year)!
+    expect(y(2026).incomes.socialSecurity).toBeCloseTo(12 * 1_000, 6)
+    expect(y(2026).ssdiPaid).toBeCloseTo(12 * 1_000, 6)
+    expect(y(2027).incomes.socialSecurity).toBeCloseTo(12 * 1_000 + 10 * 500, 6)
+    expect(y(2027).ssdiPaid).toBeCloseTo(8 * 1_000 + 6 * 500, 6)
+    expect(y(2028).incomes.socialSecurity).toBeCloseTo(12 * 1_500, 6)
+    expect(y(2028).ssdiPaid).toBe(0)
+  })
+
   it('SSDI is off by default: a normal plan pays no SSDI anywhere (feature-off regression)', () => {
     const plan = basePlan()
     plan.incomes = [

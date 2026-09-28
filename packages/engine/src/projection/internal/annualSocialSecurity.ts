@@ -208,10 +208,13 @@ export function annualSocialSecurity(
     }
     return entry
   }
-  // Per person on a disability path this year: the share of the stream's paid
-  // months that are disability months (the rest are the converted old-age
-  // benefit from the FRA month), and whether the annual SGA test applies.
-  const ssdiByPerson = new Map<string, { disabilityShare: number; sgaApplies: boolean }>()
+  // Per person on a disability path this year: the share of the paid dollars
+  // that are disability months (the rest are the converted old-age benefit
+  // from the FRA month), over every such stream of the person, each weighted
+  // by its own dollars so each counts its own months (a person may hold two
+  // streams); those dollars; and whether the annual SGA test applies, which
+  // every paying stream of one person agrees on, since they share the FRA month.
+  const ssdiByPerson = new Map<string, { disabilityShare: number; ssdiAnnual: number; sgaApplies: boolean }>()
 
   for (const stream of incomes) {
     if (stream.type !== 'socialSecurity') continue
@@ -276,9 +279,15 @@ export function annualSocialSecurity(
         // the FRA month, whose disability months are in `ssdiPaid`.
         ssOwnByPerson.set(stream.personId, (ssOwnByPerson.get(stream.personId) ?? 0) + annual)
         ssActualMonthlyByPerson.set(stream.personId, (ssActualMonthlyByPerson.get(stream.personId) ?? 0) + monthly)
+        const share = months.disability / paidMonths
+        const priorSsdi = ssdiByPerson.get(stream.personId)
+        const ssdiAnnual = (priorSsdi?.ssdiAnnual ?? 0) + annual
         ssdiByPerson.set(stream.personId, {
-          disabilityShare: months.disability / paidMonths,
-          sgaApplies: inSsdiWindow(months),
+          disabilityShare: priorSsdi === undefined || ssdiAnnual <= 0
+            ? share
+            : (priorSsdi.disabilityShare * priorSsdi.ssdiAnnual + share * annual) / ssdiAnnual,
+          ssdiAnnual,
+          sgaApplies: (priorSsdi?.sgaApplies ?? false) || inSsdiWindow(months),
         })
         if (s.alive) {
           streamPub.claimInForce = true
@@ -516,7 +525,8 @@ export function annualSocialSecurity(
         }
       }
       // Only the disability months are SSDI; in the year that holds the FRA
-      // month the months from it on are the converted old-age benefit.
+      // month the months from it on are the converted old-age benefit, each
+      // stream by its own months (the dollar-weighted share above).
       ssdiPaid += paid * ssdi.disabilityShare
       continue
     }
