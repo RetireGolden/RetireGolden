@@ -22,7 +22,7 @@ import {
 import { runMonteCarlo } from '../mc/pool'
 import { sizeBridge, type BridgeSizing } from '@retiregolden/engine/ladder/bridge'
 import { EMBEDDED_REAL_YIELD_CURVE } from '@retiregolden/engine/params'
-import type { TipsLadder } from '@retiregolden/engine/model/plan'
+import type { Person, Plan, TipsLadder } from '@retiregolden/engine/model/plan'
 import { breakEvenClaimAges, claimBreakEven } from '@retiregolden/engine/socialSecurity/analysis/breakEven'
 import { earningsTestReach } from '@retiregolden/engine/socialSecurity/analysis/earningsTestReach'
 import {
@@ -30,7 +30,9 @@ import {
   benefitsOnlyRanking,
   disabilityReplacesClaimAge,
 } from '@retiregolden/engine/socialSecurity/analysis/expectedValue'
-import { oasdiReturnForPerson } from '@retiregolden/engine/socialSecurity/analysis/oasdiReturn'
+import { socialSecurityStreamFor } from '@retiregolden/engine/socialSecurity/analysis/claimants'
+import { oasdiPaidIn, oasdiReturnForPerson, type OasdiPaidIn } from '@retiregolden/engine/socialSecurity/analysis/oasdiReturn'
+import { resolveStreamPiaMonthly } from '@retiregolden/engine/socialSecurity/piaFromEarnings'
 import {
   rankSwitchStrategies,
   survivorSwitchingInputs,
@@ -51,6 +53,7 @@ import {
   candidateClaimAges,
   claimingPeople,
   dobParts,
+  piaAsOfPlan,
   planWithClaimAges,
   refineClaimingMonthly,
   sweepClaimingStrategies,
@@ -87,7 +90,13 @@ function heatColor(t: number): string {
   return `color-mix(in srgb, var(--good) ${Math.round(t * 70)}%, var(--surface-1))`
 }
 
-function EmptyState({ planId }: { planId: string }) {
+function EmptyState({ plan }: { plan: Plan }) {
+  const planId = plan.id
+  // An earnings history that gives no benefit estimate is said by name, with the resolver's reason.
+  const unresolved = plan.household.people.flatMap((person) => {
+    const stream = socialSecurityStreamFor(plan, person.id)
+    return stream?.earnings && stream.earnings.length > 0 ? [noBenefitEstimateReason(person, stream, piaAsOfPlan(plan))] : []
+  })
   return (
     <div className="empty-state">
       <h2>No Social Security to analyze yet</h2>
@@ -97,6 +106,9 @@ function EmptyState({ planId }: { planId: string }) {
         Add a benefit for at least one person on the Social Security entry form and enter its monthly benefit (PIA)
         or earnings record, then come back here. A benefit of $0 has nothing to analyze.
       </p>
+      {unresolved.map((reason) => (
+        <p key={reason}>{reason}</p>
+      ))}
       {/* The recovery path is a chrome control, not a hunt through the rail (#427). */}
       <p>
         <Link to={`/plan/${planId}/social-security`} className="btn btn-secondary btn-small">
@@ -117,7 +129,7 @@ export function SsAnalysisPage() {
       <section>
         <div className="card">
           <h2>Social Security Optimizer</h2>
-          <EmptyState planId={plan.id} />
+          <EmptyState plan={plan} />
         </div>
       </section>
     )
@@ -1249,10 +1261,13 @@ function FicaReturnPanel({ discountPct }: { discountPct: number }) {
   const { plan } = usePlan()
   const [selfEmployed, setSelfEmployed] = useState(false)
   const startYear = currentStartYear()
-  const people = claimingPeople(plan, startYear)
   const discountRate = discountPct / 100
-
-  const withEarnings = people.filter((p) => p.stream.earnings && p.stream.earnings.length > 0)
+  // Everyone with an earnings history, whether or not it gives a benefit
+  // estimate: the tax paid so far needs only the rows, the rates and CPI-U.
+  const withEarnings = plan.household.people.flatMap((person) => {
+    const stream = socialSecurityStreamFor(plan, person.id)
+    return stream?.earnings && stream.earnings.length > 0 ? [{ person, stream }] : []
+  })
 
   return (
     <details className="ss-explainer mt-lg">
@@ -1286,7 +1301,27 @@ function FicaReturnPanel({ discountPct }: { discountPct: number }) {
             )
           }
           const result = oasdiReturnForPerson(plan, person.id, { startYear, discountRate, selfEmployed })
-          if (result === null) return null
+          if (result === null) {
+            // No benefit estimate from this history: the tax paid so far, and why the rest is missing.
+            const paid = oasdiPaidIn(stream.earnings ?? [], { selfEmployed, startYear, inflationPct: plan.assumptions.inflationPct })
+            return (
+              <div key={person.id} className="callout callout--info" style={{ marginTop: '0.6rem' }}>
+                <strong>{person.name}</strong>
+                <ScrollRegion label={`Paid in: ${person.name}`} style={{ border: 'none' }}>
+                  <table className="claim-table">
+                    <tbody>
+                      <PaidInSoFarRows paid={paid} startYear={startYear} />
+                    </tbody>
+                  </table>
+                </ScrollRegion>
+                <ExcludedYearsNote paid={paid} />
+                <p className="muted small mt-xs">
+                  {noBenefitEstimateReason(person, stream, piaAsOfPlan(plan, startYear))} So the benefits and the ratio are
+                  not shown.
+                </p>
+              </div>
+            )
+          }
           const { paid } = result
           return (
             <div key={person.id} className="callout callout--info" style={{ marginTop: '0.6rem' }}>
@@ -1294,15 +1329,12 @@ function FicaReturnPanel({ discountPct }: { discountPct: number }) {
               <ScrollRegion label={`Paid in vs. received: ${person.name}`} style={{ border: 'none' }}>
                 <table className="claim-table">
                   <tbody>
-                    <tr><td>Paid in so far (OASDI, {startYear} dollars)</td><td>{fmtMoney(paid.paidInToday)}</td></tr>
+                    <PaidInSoFarRows paid={paid} startYear={startYear} />
                     {paid.projectedYears.length > 0 ? (
                       <tr>
                         <td>What your projected work will pay ({paid.projectedYears[0]}–{paid.projectedYears[paid.projectedYears.length - 1]}, {startYear} dollars)</td>
                         <td>{fmtMoney(paid.projectedToday)}</td>
                       </tr>
-                    ) : null}
-                    {paid.employerToday > 0 ? (
-                      <tr><td className="muted small">Employer paid so far (context)</td><td className="muted small">{fmtMoney(paid.employerToday)}</td></tr>
                     ) : null}
                     {paid.projectedEmployerToday > 0 ? (
                       <tr><td className="muted small">Employer's share of the projected work (context)</td><td className="muted small">{fmtMoney(paid.projectedEmployerToday)}</td></tr>
@@ -1315,12 +1347,7 @@ function FicaReturnPanel({ discountPct }: { discountPct: number }) {
                   </tbody>
                 </table>
               </ScrollRegion>
-              {paid.excludedYears.length > 0 ? (
-                <p className="muted small mt-xs">
-                  Not counted: earnings in {paid.excludedYears.join(', ')}, from a year before Social Security taxed this
-                  kind of work.
-                </p>
-              ) : null}
+              <ExcludedYearsNote paid={paid} />
               <p className="muted small mt-xs">
                 At a {discountPct}% real discount rate. Paid in uses each year's tax rate and wage cap, adjusted to{' '}
                 {startYear} dollars for price inflation with no interest added. The projected work is the earnings your
@@ -1334,6 +1361,48 @@ function FicaReturnPanel({ discountPct }: { discountPct: number }) {
       )}
     </details>
   )
+}
+
+/** The tax paid so far and the employer's share beside it, in the start year's dollars. */
+function PaidInSoFarRows({ paid, startYear }: { paid: OasdiPaidIn; startYear: number }) {
+  return (
+    <>
+      <tr><td>Paid in so far (OASDI, {startYear} dollars)</td><td>{fmtMoney(paid.paidInToday)}</td></tr>
+      {paid.employerToday > 0 ? (
+        <tr><td className="muted small">Employer paid so far (context)</td><td className="muted small">{fmtMoney(paid.employerToday)}</td></tr>
+      ) : null}
+    </>
+  )
+}
+
+function ExcludedYearsNote({ paid }: { paid: OasdiPaidIn }) {
+  return paid.excludedYears.length > 0 ? (
+    <p className="muted small mt-xs">
+      Not counted: earnings in {paid.excludedYears.join(', ')}, from a year before Social Security taxed this kind of
+      work.
+    </p>
+  ) : null
+}
+
+/**
+ * Why a person with an earnings history has no benefit estimate, from the one
+ * PIA resolver's own result: the benefit formula it models starts with people
+ * who turned 62 in 1979, a history can give a PIA of $0, and an entered PIA
+ * of $0 wins over the history.
+ */
+function noBenefitEstimateReason(
+  person: Person,
+  stream: Extract<Plan['incomes'][number], { type: 'socialSecurity' }>,
+  asOf: ReturnType<typeof piaAsOfPlan>,
+): string {
+  const resolved = resolveStreamPiaMonthly(stream, person, asOf)
+  if (resolved.status === 'earningsError') {
+    return resolved.error.code === 'eligibility_before_1979'
+      ? `${person.name} turned 62 before 1979, and benefits for people who did use an older formula the planner does not compute. Entering the benefit (PIA) from a Social Security statement gives the benefit side.`
+      : `The benefit formula could not use ${person.name}'s earnings history: ${resolved.error.message}`
+  }
+  if (resolved.status === 'entered') return `${person.name}'s entered benefit (PIA) is $0, and it is used instead of the earnings history.`
+  return `${person.name}'s earnings history gives no benefit (a PIA of $0).`
 }
 
 /** A switching strategy in words, e.g. "Survivor at 60, switch to own at 70". */

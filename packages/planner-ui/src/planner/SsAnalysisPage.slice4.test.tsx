@@ -12,6 +12,8 @@ import { MemoryRouter } from 'react-router'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createEmptyPlan, parsePlan, type FormerSpouse, type Plan } from '@retiregolden/engine/model/plan'
+import { oasdiPaidIn } from '@retiregolden/engine/socialSecurity/analysis/oasdiReturn'
+import { fmtMoney } from './format'
 import { getExampleById } from './examples/registry'
 import { waitFor } from '../testSupport/settle'
 import { SsAnalysisPage } from './SsAnalysisPage'
@@ -152,6 +154,44 @@ describe('Social Security analysis page on the engine models', () => {
     const panel = container.querySelector('details.ss-explainer')!.textContent.replace(/\s+/gu, ' ')
     expect(panel).toContain("Pat's benefit is a disability benefit, paid from the onset of the disability rather than from a claim age")
     expect(panel).not.toContain('Ratio (get back')
+  })
+
+  it('paid in: a history with no benefit estimate still shows what was paid in so far, and says why the rest is missing (PR #757 review 3)', async () => {
+    // Robin turned 62 in 1977: the resolver refuses the history (eligibility before 1979).
+    const earnings = Array.from({ length: 30 }, (_, i) => ({ year: 1946 + i, amount: 6_000 }))
+    const draft = createEmptyPlan({ newId: id })
+    draft.household.filingStatus = 'marriedFilingJointly'
+    draft.household.people = [
+      { id: 'p1', name: 'Pat', dob: '1960-05-01', sex: 'male', retirementAge: null, longevity: { planningAge: 92, source: 'manual' } },
+      { id: 'p2', name: 'Robin', dob: '1915-03-01', sex: 'female', retirementAge: null, longevity: { planningAge: 115, source: 'manual' } },
+    ]
+    draft.assumptions.inflationPct = 2.5
+    draft.incomes = [
+      { type: 'socialSecurity', id: id(), personId: 'p1', piaMonthly: 2_000, earnings: null, claimAge: { years: 67, months: 0 } },
+      { type: 'socialSecurity', id: id(), personId: 'p2', piaMonthly: null, earnings, claimAge: { years: 65, months: 0 } },
+    ]
+    const parsed = parsePlan(draft)
+    if (!parsed.ok) throw new Error(parsed.issues.join('; '))
+    await render(parsed.plan)
+    await openTab('Benefits only')
+    const panel = container.querySelector('details.ss-explainer')!.textContent.replace(/\s+/gu, ' ')
+    const paid = oasdiPaidIn(earnings, { selfEmployed: false, startYear: 2026, inflationPct: 2.5 })
+    expect(panel).toContain(`Paid in so far (OASDI, 2026 dollars)${fmtMoney(paid.paidInToday)}`)
+    expect(panel).toContain('Robin turned 62 before 1979, and benefits for people who did use an older formula the planner does not compute.')
+    expect(panel).toContain('So the benefits and the ratio are not shown.')
+    expect(panel).not.toContain('Enter an earnings history')
+  })
+
+  it('a household whose only history gives no benefit estimate is told why on the empty page', async () => {
+    const earnings = Array.from({ length: 30 }, (_, i) => ({ year: 1946 + i, amount: 6_000 }))
+    const draft = createEmptyPlan({ newId: id })
+    draft.household.people[0] = { id: 'p1', name: 'Robin', dob: '1915-03-01', sex: 'female', retirementAge: null, longevity: { planningAge: 115, source: 'manual' } }
+    draft.incomes = [{ type: 'socialSecurity', id: id(), personId: 'p1', piaMonthly: null, earnings, claimAge: { years: 65, months: 0 } }]
+    const parsed = parsePlan(draft)
+    if (!parsed.ok) throw new Error(parsed.issues.join('; '))
+    await render(parsed.plan)
+    expect(text()).toContain('No Social Security to analyze yet')
+    expect(text()).toContain('Robin turned 62 before 1979')
   })
 
   it('survivor switching: strategies paying the same benefits are shown once, the survivor benefit at 62 alone first', async () => {
